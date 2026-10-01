@@ -106,6 +106,15 @@ describe('write-offs', () => {
     expect(asEmployee.status).toBe(403);
   });
 
+  it('should refuse a write-off of more than is in stock straight away', async () => {
+    const response = await report(employeeToken, { quantity: 11 });
+    const saved = await context.db.selectFrom('write_offs').selectAll().execute();
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain('Only 10 in stock');
+    expect(saved).toHaveLength(0);
+  });
+
   it('should not let family members report losses', async () => {
     const familyToken = await loginAs(context, 'family');
 

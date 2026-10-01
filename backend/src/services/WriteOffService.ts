@@ -105,6 +105,11 @@ export class WriteOffService {
   /** Admins' write-offs apply straight away; employees' wait for approval. */
   async request(input: WriteOffInput, user: PublicUser): Promise<WriteOffDto> {
     const id = await this.transactions.run(async (repos) => {
+      const product = await repos.products.findById(input.productId, true);
+      const inStock = product?.quantity_on_hand ?? 0;
+      if (product && input.quantity > inStock) {
+        throw new ValidationError(`Only ${inStock} in stock, so at most ${inStock} can be written off`);
+      }
       const { id, productName } = await createWriteOffRecord(repos, { ...input, returnId: null, requestedBy: user.id });
       const what = `${input.quantity} × ${productName} (${input.reason})`;
       await repos.activityLog.create({

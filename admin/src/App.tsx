@@ -7,6 +7,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
 import { ActivityPage } from './pages/ActivityPage';
 import { AlertsPage } from './pages/AlertsPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { InventoryDetailPage } from './pages/InventoryDetailPage';
 import { InventoryPage } from './pages/InventoryPage';
@@ -16,6 +17,9 @@ import { ProductFormPage } from './pages/ProductFormPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { StockCountDetailPage } from './pages/StockCountDetailPage';
+import { StockCountsPage } from './pages/StockCountsPage';
 import { UsersPage } from './pages/UsersPage';
 
 const queryClient = new QueryClient({
@@ -64,6 +68,10 @@ function App() {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="people" element={<UsersPage />} />
               <Route path="alerts" element={<AlertsPage />} />
+              <Route path="approvals" element={<ApprovalsPage />} />
+              <Route path="counts" element={<StockCountsPage />} />
+              <Route path="counts/:id" element={<StockCountDetailPage />} />
+              <Route path="settings" element={<SettingsPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>

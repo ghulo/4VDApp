@@ -82,7 +82,7 @@ function SummaryFigures({ summary }: { summary: ReportSummary }) {
       <div className="summary">
         <div className="summary__hero">
           <span className="summary__hero-value">{formatMoney(current.revenue)}</span>
-          <span className="summary__label">in sales, {describeChange(change.revenue)}</span>
+          <span className="summary__label">in sales after refunds, {describeChange(change.revenue)}</span>
         </div>
         <dl className="summary__figures">
           <div>
@@ -93,6 +93,17 @@ function SummaryFigures({ summary }: { summary: ReportSummary }) {
           <div>
             <dt>Margin</dt>
             <dd>{current.margin === null ? 'Unknown' : percent.format(current.margin)}</dd>
+          </div>
+          <div>
+            <dt>Refunds</dt>
+            <dd>{formatMoney(current.refunds)}</dd>
+          </div>
+          <div>
+            <dt>Stock losses</dt>
+            <dd>{formatMoney(current.stockLosses)}</dd>
+            {current.lossUnitsWithoutCost > 0 && (
+              <dd className="summary__change">plus {current.lossUnitsWithoutCost} units without a cost price</dd>
+            )}
           </div>
           <div>
             <dt>Units sold</dt>
@@ -135,6 +146,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                 <th scope="col" className="table__numeric">Sales</th>
                 <th scope="col" className="table__numeric">Units</th>
                 <th scope="col" className="table__numeric">Revenue</th>
+                <th scope="col" className="table__numeric">Refunds</th>
                 <th scope="col" className="table__numeric">Profit</th>
                 <th scope="col" className="table__numeric">Average sale</th>
               </tr>
@@ -151,6 +163,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                   <td className="table__numeric">{person.salesCount}</td>
                   <td className="table__numeric">{person.unitsSold}</td>
                   <td className="table__numeric">{formatMoney(person.revenue)}</td>
+                  <td className="table__numeric">{formatMoney(person.refunds)}</td>
                   <td className="table__numeric">{formatMoney(person.profit)}</td>
                   <td className="table__numeric">{person.salesCount === 0 ? '–' : formatMoney(person.averageSale)}</td>
                 </tr>

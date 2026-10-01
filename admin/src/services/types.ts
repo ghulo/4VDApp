@@ -89,7 +89,8 @@ export interface InventoryDetail extends InventoryItem {
   recentAdjustments: StockAdjustment[];
 }
 
-export const MANUAL_STOCK_REASONS = ['Restock', 'Return', 'Damage', 'Recount', 'Manual adjustment'] as const;
+// Returns, damage and recounts have their own flows (Sales, Write off, Counts).
+export const MANUAL_STOCK_REASONS = ['Restock', 'Manual adjustment'] as const;
 export type StockReason = (typeof MANUAL_STOCK_REASONS)[number];
 
 export interface Sale {
@@ -102,6 +103,8 @@ export interface Sale {
   soldBy: string | null;
   saleDate: string;
   notes: string | null;
+  /** Units returned or waiting for a return decision. */
+  returnedQuantity: number;
 }
 
 export interface Dashboard {
@@ -140,7 +143,11 @@ export interface AppNotification {
 export const USER_ROLES: UserRole[] = ['admin', 'employee', 'family'];
 
 export interface PeriodTotals {
+  /** After refunds. */
   revenue: number;
+  refunds: number;
+  stockLosses: number;
+  lossUnitsWithoutCost: number;
   revenueWithoutCost: number;
   cost: number;
   profit: number;
@@ -162,6 +169,7 @@ export interface TeamRow {
   /** Deactivated or removed since; kept so their past sales still show. */
   hasLeft: boolean;
   salesCount: number;
+  refunds: number;
   unitsSold: number;
   revenue: number;
   profit: number;
@@ -198,4 +206,94 @@ export interface ActivityEntry {
   details: Record<string, unknown> | null;
   createdAt: string;
   user: { id: number; name: string } | null;
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type ReturnCondition = 'resellable' | 'damaged';
+export const WRITE_OFF_REASONS = ['damaged', 'lost', 'expired', 'other'] as const;
+export type WriteOffReason = (typeof WRITE_OFF_REASONS)[number];
+export type CountStatus = 'open' | 'submitted' | 'closed' | 'cancelled';
+export type CountLineStatus = 'match' | 'pending' | 'approved' | 'rejected';
+
+export interface PersonRef {
+  id: number;
+  name: string;
+}
+
+export interface AppSettings {
+  refundApprovalLimit: number;
+  returnWindowDays: number;
+}
+
+export interface ReturnItem {
+  id: number;
+  saleId: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  refundAmount: number;
+  condition: ReturnCondition;
+  notes: string | null;
+  status: ApprovalStatus;
+  needsApprovalBecause: string[];
+  soldBy: PersonRef | null;
+  saleDate: string;
+  requestedBy: PersonRef | null;
+  requestedAt: string;
+  decidedBy: PersonRef | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+}
+
+export interface WriteOff {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  reason: WriteOffReason;
+  unitCost: number | null;
+  value: number | null;
+  returnId: number | null;
+  notes: string | null;
+  status: ApprovalStatus;
+  requestedBy: PersonRef | null;
+  requestedAt: string;
+  decidedBy: PersonRef | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+}
+
+export interface StockCountSummary {
+  id: number;
+  category: PersonRef | null;
+  status: CountStatus;
+  startedBy: PersonRef | null;
+  startedAt: string;
+  submittedAt: string | null;
+  closedAt: string | null;
+}
+
+export interface StockCountLine {
+  productId: number;
+  productName: string;
+  sku: string | null;
+  categoryName: string;
+  countedQuantity: number | null;
+  status: CountLineStatus | null;
+  decisionNote: string | null;
+  expectedQuantity?: number;
+  difference?: number;
+  value?: number | null;
+}
+
+export interface StockCount extends StockCountSummary {
+  totals: { products: number; counted: number; differences: number | null; pending: number | null; shortageValue: number | null };
+  lines: StockCountLine[];
+}
+
+export interface ApprovalSummary {
+  returns: number;
+  writeOffs: number;
+  countLines: number;
+  total: number;
 }

@@ -1204,3 +1204,120 @@ textarea:focus-visible {
     animation: none !important;
   }
 }
+
+/* Approvals: one row per request, the decision on the right. */
+.approval-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.approval-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 12px 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.approval-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.approval-row__what {
+  display: grid;
+  gap: 2px;
+}
+
+.approval-row__title {
+  font-weight: 600;
+}
+
+.approval-row__meta {
+  color: var(--steel);
+  font-size: 0.875rem;
+}
+
+.approval-row__why {
+  font-size: 0.875rem;
+}
+
+.decision {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.decision__buttons,
+.decision__reject {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.decision__reject input {
+  width: 260px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--steel);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+/* Waiting on the owner borrows the low-stock yellow: it means "look at me". */
+.status-pill--pending,
+.status-pill--submitted {
+  border-color: var(--signal-low);
+  color: var(--signal-low-ink);
+}
+
+.status-pill--approved,
+.status-pill--match,
+.status-pill--closed {
+  border-color: var(--stock-ok);
+  color: var(--stock-ok);
+}
+
+.status-pill--rejected {
+  border-color: var(--signal-out);
+  color: var(--signal-out);
+}
+
+.table__expanded td {
+  background: var(--concrete);
+}
+
+.return-form,
+.settings-form {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+
+@media (max-width: 760px) {
+  .approval-row {
+    grid-template-columns: 1fr;
+  }
+
+  .decision,
+  .decision__buttons,
+  .decision__reject {
+    justify-items: start;
+    justify-content: flex-start;
+  }
+
+  .decision__reject input {
+    width: 100%;
+  }
+}

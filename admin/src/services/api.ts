@@ -1,6 +1,15 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
   ActivityEntry,
+  ApprovalStatus,
+  ApprovalSummary,
+  AppSettings,
+  ReturnCondition,
+  ReturnItem,
+  StockCount,
+  StockCountSummary,
+  WriteOff,
+  WriteOffReason,
   AppNotification,
   Category,
   Dashboard,
@@ -189,4 +198,52 @@ export const exportsApi = {
 export const activityApi = {
   list: (query: { page: number; userId?: number; action?: string }) =>
     paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
+};
+
+export const settingsApi = {
+  get: async () => (await apiRequest<AppSettings>('/settings')).data,
+  update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
+};
+
+export const returnsApi = {
+  list: async (status?: ApprovalStatus) => (await apiRequest<ReturnItem[]>('/returns', { query: { status } })).data,
+  request: async (
+    saleId: number,
+    input: { quantity: number; condition: ReturnCondition; refundAmount?: number; notes: string | null },
+  ) => (await apiRequest<ReturnItem>(`/sales/${saleId}/returns`, { method: 'POST', body: input })).data,
+  approve: async (id: number) => (await apiRequest<ReturnItem>(`/returns/${id}/approve`, { method: 'POST' })).data,
+  reject: async (id: number, note: string) =>
+    (await apiRequest<ReturnItem>(`/returns/${id}/reject`, { method: 'POST', body: { note } })).data,
+};
+
+export const writeOffsApi = {
+  list: async (status?: ApprovalStatus) => (await apiRequest<WriteOff[]>('/write-offs', { query: { status } })).data,
+  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
+    (await apiRequest<WriteOff>('/write-offs', { method: 'POST', body: input })).data,
+  approve: async (id: number) => (await apiRequest<WriteOff>(`/write-offs/${id}/approve`, { method: 'POST' })).data,
+  reject: async (id: number, note: string) =>
+    (await apiRequest<WriteOff>(`/write-offs/${id}/reject`, { method: 'POST', body: { note } })).data,
+};
+
+export const stockCountsApi = {
+  list: async () => (await apiRequest<StockCountSummary[]>('/stock-counts')).data,
+  get: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}`)).data,
+  start: async (categoryId: number | null) =>
+    (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId } })).data,
+  cancel: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}/cancel`, { method: 'POST' })).data,
+  approveLine: async (id: number, productId: number) =>
+    (await apiRequest<StockCount>(`/stock-counts/${id}/lines/${productId}/approve`, { method: 'POST' })).data,
+  rejectLine: async (id: number, productId: number, note: string) =>
+    (await apiRequest<StockCount>(`/stock-counts/${id}/lines/${productId}/reject`, { method: 'POST', body: { note } })).data,
+  approveAll: async (id: number) =>
+    (
+      await apiRequest<{ approved: number; failed: Array<{ productId: number; productName: string; message: string }> }>(
+        `/stock-counts/${id}/approve-all`,
+        { method: 'POST' },
+      )
+    ).data,
+};
+
+export const approvalsApi = {
+  summary: async () => (await apiRequest<ApprovalSummary>('/approvals/summary')).data,
 };

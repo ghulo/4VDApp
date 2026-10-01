@@ -1,17 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
-import { notificationsApi } from '../services/api';
+import { approvalsApi, notificationsApi } from '../services/api';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', end: true },
   { to: '/inventory', label: 'Stock' },
+  { to: '/counts', label: 'Counts' },
   { to: '/sales', label: 'Sales' },
   { to: '/reports', label: 'Reports' },
   { to: '/products', label: 'Products' },
   { to: '/categories', label: 'Categories' },
   { to: '/people', label: 'People' },
   { to: '/activity', label: 'Activity' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 const ALERT_POLL_MS = 60_000;
@@ -26,12 +28,26 @@ export function Layout() {
     refetchInterval: ALERT_POLL_MS,
   });
   const unreadCount = unread.data ?? 0;
+  const approvals = useQuery({
+    queryKey: ['approvals', 'summary'],
+    queryFn: approvalsApi.summary,
+    refetchInterval: ALERT_POLL_MS,
+  });
+  const waitingCount = approvals.data?.total ?? 0;
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <p className="sidebar__brand">4VD</p>
         <nav className="sidebar__nav" aria-label="Main">
+          <NavLink to="/approvals" className="sidebar__link">
+            Approvals
+            {waitingCount > 0 && (
+              <span className="sidebar__badge" aria-label={`${waitingCount} waiting for you`}>
+                {waitingCount}
+              </span>
+            )}
+          </NavLink>
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className="sidebar__link">
               {item.label}

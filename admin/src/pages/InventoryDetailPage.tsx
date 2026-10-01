@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { StockTag } from '../components/StockTag';
+import { WriteOffForm } from '../components/WriteOffForm';
 import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '../services/types';
 import { formatDateTime, formatSignedQuantity } from '../utils/format';
@@ -43,6 +44,9 @@ export function InventoryDetailPage() {
             ))}
           </div>
           <AdjustStockForm item={item} />
+          <h3 className="subheading">Damaged, lost or expired</h3>
+          <p className="field-hint">Takes the units out of stock and records the loss at cost price in Reports.</p>
+          <WriteOffForm productId={item.productId} inStock={item.quantity} />
         </section>
 
         <section className="panel" aria-labelledby="history-heading">
@@ -104,7 +108,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
 
   function chooseDirection(next: Direction) {
     setDirection(next);
-    setReason(next === 'add' ? 'Restock' : 'Damage');
+    setReason(next === 'add' ? 'Restock' : 'Manual adjustment');
   }
 
   function handleSubmit(event: FormEvent) {
@@ -124,9 +128,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
     });
   }
 
-  const reasons = MANUAL_STOCK_REASONS.filter((option) =>
-    direction === 'add' ? option !== 'Damage' : option !== 'Restock' && option !== 'Return',
-  );
+  const reasons = MANUAL_STOCK_REASONS.filter((option) => direction === 'add' || option !== 'Restock');
   const hasChange = Number(amount) > 0 || (reorderLevel !== '' && Number(reorderLevel) !== item.reorderLevel);
 
   return (

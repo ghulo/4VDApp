@@ -1,7 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { Fragment, type FormEvent, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
 import { productsApi, salesApi } from '../services/api';
 import type { PricingTier, Product } from '../services/types';
@@ -142,6 +143,8 @@ function SalesHistory() {
   const startDate = params.get('from') ?? '';
   const endDate = params.get('to') ?? '';
 
+  const [returningId, setReturningId] = useState<number | null>(null);
+  const [returnMessage, setReturnMessage] = useState<string | null>(null);
   const sales = useQuery({
     queryKey: ['sales', { page, startDate, endDate }],
     queryFn: () => salesApi.list({ page, startDate: startDate || undefined, endDate: endDate || undefined }),
@@ -179,6 +182,11 @@ function SalesHistory() {
         )}
       </div>
 
+      {returnMessage && (
+        <p className="form-success" role="status">
+          {returnMessage}
+        </p>
+      )}
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
       {sales.data && sales.data.items.length === 0 && (
@@ -202,21 +210,59 @@ function SalesHistory() {
                     Total
                   </th>
                   <th scope="col">Sold by</th>
+                  <th scope="col">
+                    <span className="visually-hidden">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sales.data.items.map((sale) => (
-                  <tr key={sale.id}>
-                    <td>{formatDateTime(sale.saleDate)}</td>
-                    <td>
-                      {sale.productName}
-                      {sale.notes && <span className="table__secondary">{sale.notes}</span>}
-                    </td>
-                    <td className="table__numeric">{sale.quantity}</td>
-                    <td className="table__numeric">{formatMoney(sale.pricePerUnit)}</td>
-                    <td className="table__numeric">{formatMoney(sale.totalAmount)}</td>
-                    <td>{sale.soldBy ?? 'Unknown'}</td>
-                  </tr>
+                  <Fragment key={sale.id}>
+                    <tr>
+                      <td>{formatDateTime(sale.saleDate)}</td>
+                      <td>
+                        {sale.productName}
+                        {sale.notes && <span className="table__secondary">{sale.notes}</span>}
+                        {sale.returnedQuantity > 0 && (
+                          <span className="table__secondary">
+                            {sale.returnedQuantity} of {sale.quantity} returned
+                          </span>
+                        )}
+                      </td>
+                      <td className="table__numeric">{sale.quantity}</td>
+                      <td className="table__numeric">{formatMoney(sale.pricePerUnit)}</td>
+                      <td className="table__numeric">{formatMoney(sale.totalAmount)}</td>
+                      <td>{sale.soldBy ?? 'Unknown'}</td>
+                      <td>
+                        {sale.returnedQuantity < sale.quantity && (
+                          <button
+                            type="button"
+                            className="text-button"
+                            aria-expanded={returningId === sale.id}
+                            onClick={() => {
+                              setReturnMessage(null);
+                              setReturningId(returningId === sale.id ? null : sale.id);
+                            }}
+                          >
+                            {returningId === sale.id ? 'Close' : 'Return'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {returningId === sale.id && (
+                      <tr className="table__expanded">
+                        <td colSpan={7}>
+                          <ReturnForm
+                            sale={sale}
+                            onDone={(message) => {
+                              setReturningId(null);
+                              setReturnMessage(message);
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

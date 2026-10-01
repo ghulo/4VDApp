@@ -78,6 +78,15 @@ export function ProductDetailScreen({ route, navigation }: Props) {
         {canRecordSales(user) && item.stock.isInStock && (
           <Button label="Record a sale" onPress={() => navigation.navigate('RecordSale', { productId })} />
         )}
+        {canRecordSales(user) && item.stock.isInStock && (
+          <Button
+            label="Report damage or loss"
+            variant="quiet"
+            onPress={() =>
+              navigation.navigate('WriteOff', { productId, productName: item.name, inStock: item.stock.quantity })
+            }
+          />
+        )}
         <Button
           label={isFavorite ? 'Remove from favorites' : 'Save to favorites'}
           variant="quiet"

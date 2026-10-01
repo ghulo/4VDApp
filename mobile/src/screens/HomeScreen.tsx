@@ -6,13 +6,26 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, Vie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
-import { favoritesApi, inventoryApi, productsApi, reportsApi } from '../services/api';
+import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, reportsApi } from '../services/api';
+import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
 import { formatMoney } from '../utils/format';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
+/** Decided requests stay on Home this long, so a rejection reason isn't missed. */
+const DECIDED_SHOWN_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const REQUEST_STATUS: Record<string, string> = {
+  pending: 'Waiting for the owner',
+  submitted: 'Waiting for the owner',
+  approved: 'Approved',
+  closed: 'Reviewed',
+  rejected: 'Rejected',
+  cancelled: 'Cancelled',
+};
 
 const longDate = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 const timeOfDay = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -66,12 +79,14 @@ export function HomeScreen() {
     select: (page) => page.meta.total,
   });
   const favoriteCount = useQuery({ queryKey: ['favorites', 'ids'], queryFn: favoritesApi.ids, select: (ids) => ids.length });
+  const counts = useQuery({ queryKey: ['stock-counts'], queryFn: countsApi.list, enabled: sells });
+  const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
   async function refresh() {
     setIsRefreshing(true);
     await Promise.all(
-      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory']].map((queryKey) =>
+      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -84,6 +99,13 @@ export function HomeScreen() {
   }
 
   const firstName = user.name.split(' ')[0];
+  const openCounts = counts.data?.filter((count) => count.status === 'open').length ?? 0;
+  const visibleRequests = (requests.data ?? []).filter(
+    (request) =>
+      request.status === 'pending' ||
+      request.status === 'submitted' ||
+      (request.decidedAt !== null && now.getTime() - new Date(request.decidedAt).getTime() < DECIDED_SHOWN_DAYS * MS_PER_DAY),
+  );
   const recentSales = thisMonth.data?.recentSales.slice(0, RECENT_SALES_SHOWN) ?? [];
 
   return (
@@ -160,6 +182,14 @@ export function HomeScreen() {
               onPress={() => navigation.navigate('MySales')}
             />
           )}
+          {sells && (
+            <ToolTile
+              colors={colors}
+              title="Stock count"
+              detail={openCounts > 0 ? `${openCounts} ${openCounts === 1 ? 'count' : 'counts'} open` : 'Start a count'}
+              onPress={() => navigation.navigate('Counts')}
+            />
+          )}
           <ToolTile
             colors={colors}
             title="Account"
@@ -167,6 +197,14 @@ export function HomeScreen() {
             onPress={() => navigation.navigate('Main', { screen: 'Account' })}
           />
         </View>
+
+        {sells && visibleRequests.length > 0 && (
+          <Section title="Your requests" colors={colors}>
+            {visibleRequests.map((request) => (
+              <RequestRow key={`${request.type}-${request.id}`} request={request} colors={colors} />
+            ))}
+          </Section>
+        )}
 
         <Section title="Running low" colors={colors}>
           {lowStock.isPending && <Muted colors={colors}>Checking stock…</Muted>}
@@ -217,6 +255,20 @@ export function HomeScreen() {
         )}
       </View>
     </ScrollView>
+  );
+}
+
+function RequestRow({ request, colors }: { request: MyRequest; colors: ThemeColors }) {
+  const isRejected = request.status === 'rejected';
+  const isWaiting = request.status === 'pending' || request.status === 'submitted';
+  return (
+    <View style={[styles.requestRow, { borderTopColor: colors.line }]}>
+      <Text style={[styles.rowName, { color: colors.ink }]}>{request.summary}</Text>
+      <Text style={[styles.requestStatus, { color: isRejected ? colors.signalOut : isWaiting ? colors.signalLowInk : colors.stockOk }]}>
+        {REQUEST_STATUS[request.status] ?? request.status}
+        {isRejected && request.decisionNote ? `: ${request.decisionNote}` : ''}
+      </Text>
+    </View>
   );
 }
 
@@ -331,4 +383,6 @@ const styles = StyleSheet.create({
   rowValue: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
   rowTime: { width: 52, textAlign: 'right', fontFamily: fonts.body, fontSize: 14, fontVariant: ['tabular-nums'] },
   muted: { fontFamily: fonts.body, fontSize: 15, paddingVertical: spacing.sm },
+  requestRow: { paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, gap: 2 },
+  requestStatus: { fontFamily: fonts.bodyBold, fontSize: 14 },
 });

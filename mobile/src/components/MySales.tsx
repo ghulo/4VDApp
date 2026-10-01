@@ -1,5 +1,8 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { RootStackParamList } from '../navigation/types';
 import { reportsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
@@ -29,6 +32,7 @@ export const MY_SALES_QUERY_KEY = ['reports', 'my-sales'];
 
 export function MySales() {
   const colors = useThemeColors();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const month = monthRanges();
   const mySales = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, month.startDate],
@@ -45,7 +49,9 @@ export function MySales() {
           <Text style={[styles.hero, { color: colors.ink }]}>{formatMoney(mySales.data.current.revenue)}</Text>
           <Text style={[styles.muted, { color: colors.steel }]}>
             {mySales.data.current.salesCount} {mySales.data.current.salesCount === 1 ? 'sale' : 'sales'},{' '}
-            {mySales.data.current.unitsSold} units. Last month: {formatMoney(mySales.data.previous.revenue)}
+            {mySales.data.current.unitsSold} units
+            {mySales.data.current.refunds > 0 ? `, after ${formatMoney(mySales.data.current.refunds)} in refunds` : ''}. Last month:{' '}
+            {formatMoney(mySales.data.previous.revenue)}
           </Text>
           {mySales.data.recentSales.length > 0 ? (
             <View style={styles.list}>
@@ -56,6 +62,27 @@ export function MySales() {
                   </Text>
                   <Text style={[styles.rowAmount, { color: colors.ink }]}>{formatMoney(sale.totalAmount)}</Text>
                   <Text style={[styles.rowDate, { color: colors.steel }]}>{shortDate.format(new Date(sale.saleDate))}</Text>
+                  {sale.returnedQuantity < sale.quantity ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Return ${sale.productName}`}
+                      hitSlop={8}
+                      onPress={() =>
+                        navigation.navigate('Return', {
+                          saleId: sale.id,
+                          productName: sale.productName,
+                          quantity: sale.quantity,
+                          pricePerUnit: sale.pricePerUnit,
+                          returnedQuantity: sale.returnedQuantity,
+                          saleDate: sale.saleDate,
+                        })
+                      }
+                    >
+                      <Text style={[styles.rowAction, { color: colors.ink }]}>Return</Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={[styles.rowAction, { color: colors.steel }]}>Returned</Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -78,4 +105,5 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, fontFamily: fonts.body, fontSize: 15 },
   rowAmount: { fontFamily: fonts.bodyBold, fontSize: 15, fontVariant: ['tabular-nums'] },
   rowDate: { fontFamily: fonts.body, fontSize: 13, minWidth: 48, textAlign: 'right' },
+  rowAction: { fontFamily: fonts.bodyBold, fontSize: 14, textDecorationLine: 'underline' },
 });

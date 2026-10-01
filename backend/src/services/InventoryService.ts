@@ -88,18 +88,39 @@ export class InventoryService {
     if (!item) throw new NotFoundError(`No stock record for product ${productId}`);
 
     await this.transactions.run(async (repos) => {
-      if (input.reorderLevel !== undefined) {
+      if (input.reorderLevel !== undefined && input.reorderLevel !== item.reorder_level) {
         await repos.inventory.setReorderLevel(productId, input.reorderLevel);
+        await repos.activityLog.create({
+          userId: adjustedBy,
+          action: 'stock.adjusted',
+          entityType: 'product',
+          entityId: productId,
+          summary: `Changed reorder level of ${item.product_name} from ${item.reorder_level} to ${input.reorderLevel}`,
+          details: { reorderLevel: { from: item.reorder_level, to: input.reorderLevel } },
+        });
       }
       if (input.quantity !== undefined) {
-        await applyStockChange(repos, {
+        const reason = input.reason ?? 'Manual adjustment';
+        const { before, after } = await applyStockChange(repos, {
           productId,
           productName: item.product_name,
           delta: input.quantity,
-          reason: input.reason ?? 'Manual adjustment',
+          reason,
           notes: input.notes,
           adjustedBy,
           reorderLevel: input.reorderLevel ?? item.reorder_level,
+        });
+        const amount = Math.abs(input.quantity);
+        await repos.activityLog.create({
+          userId: adjustedBy,
+          action: 'stock.adjusted',
+          entityType: 'product',
+          entityId: productId,
+          summary:
+            input.quantity > 0
+              ? `Added ${amount} to ${item.product_name} (${reason})`
+              : `Removed ${amount} from ${item.product_name} (${reason})`,
+          details: { quantity: input.quantity, reason, notes: input.notes, before, after },
         });
       }
     });
@@ -124,7 +145,7 @@ export async function applyStockChange(
     adjustedBy: number;
     reorderLevel: number;
   },
-): Promise<void> {
+): Promise<{ before: number; after: number }> {
   const result = await repos.inventory.applyDelta(change.productId, change.delta);
   if (!result) {
     throw new ValidationError(`Not enough stock of ${change.productName} to remove ${Math.abs(change.delta)}`);
@@ -145,6 +166,7 @@ export async function applyStockChange(
     reorderLevel: change.reorderLevel,
   });
   if (alert) await repos.notifications.createForRoles(['admin'], alert);
+  return result;
 }
 
 function buildWarnings(quantity: number, reorderLevel: number): string[] {

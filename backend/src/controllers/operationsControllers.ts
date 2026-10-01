@@ -63,7 +63,7 @@ export function createUserController(userService: UserService) {
 
     async create(req: Request, res: Response): Promise<void> {
       const input = parseInput(createUserSchema, req.body);
-      sendSuccess(res, await userService.create(input), { statusCode: 201, message: 'Account created' });
+      sendSuccess(res, await userService.create(input, req.user!.id), { statusCode: 201, message: 'Account created' });
     },
 
     async update(req: Request, res: Response): Promise<void> {

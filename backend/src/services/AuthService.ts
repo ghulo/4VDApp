@@ -1,5 +1,6 @@
 import type { AppConfig } from '../config/env.js';
 import { UnauthorizedError } from '../errors/httpErrors.js';
+import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import type { PublicUser } from '../types/auth.js';
@@ -29,6 +30,7 @@ export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly activityLogRepository: ActivityLogRepository,
     private readonly config: AuthConfig,
   ) {}
 
@@ -42,6 +44,13 @@ export class AuthService {
     }
 
     const publicUser = toPublicUser(user);
+    await this.activityLogRepository.create({
+      userId: user.id,
+      action: 'auth.logged_in',
+      entityType: 'user',
+      entityId: user.id,
+      summary: `${user.name} logged in`,
+    });
     return { ...(await this.issueTokens(publicUser)), user: publicUser };
   }
 

@@ -134,3 +134,85 @@ describe('catalog activity', () => {
     expect(response.body.data[0].user.name).toBe('Test admin');
   });
 });
+
+describe('stock, sales, people and login activity', () => {
+  async function createProduct() {
+    const category = await createTestCategory(context.db);
+    const created = await request(context.app)
+      .post('/api/products')
+      .set(auth(adminToken))
+      .send({ name: 'Oak Chair', categoryId: category.id, price: 100, stock: 20, reorderLevel: 5 });
+    return created.body.data.id as number;
+  }
+
+  it('should log stock adjustments and reorder level changes', async () => {
+    const productId = await createProduct();
+
+    await request(context.app)
+      .patch(`/api/inventory/${productId}`)
+      .set(auth(adminToken))
+      .send({ quantity: -3, reason: 'Damage', reorderLevel: 8 });
+    const response = await listActivity('?action=stock');
+
+    expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual([
+      'Removed 3 from Oak Chair (Damage)',
+      'Changed reorder level of Oak Chair from 5 to 8',
+    ]);
+    expect(response.body.data[0].details).toMatchObject({ quantity: -3, before: 20, after: 17 });
+  });
+
+  it('should log nothing when a stock adjustment fails', async () => {
+    const productId = await createProduct();
+
+    await request(context.app)
+      .patch(`/api/inventory/${productId}`)
+      .set(auth(adminToken))
+      .send({ quantity: -500, reason: 'Damage', reorderLevel: 1 });
+    const response = await listActivity('?action=stock');
+
+    expect(response.body.data).toEqual([]);
+  });
+
+  it('should log a sale with the seller', async () => {
+    const productId = await createProduct();
+    const employeeToken = await loginAs(context, 'employee');
+
+    await request(context.app).post('/api/sales').set(auth(employeeToken)).send({ productId, quantity: 2 });
+    const response = await listActivity('?action=sale.recorded');
+
+    expect(response.body.data[0]).toMatchObject({
+      summary: 'Sold 2 × Oak Chair for €200.00',
+      entityType: 'sale',
+      user: { name: 'Test employee' },
+    });
+  });
+
+  it('should log people changes without ever storing a password', async () => {
+    const created = await request(context.app)
+      .post('/api/users')
+      .set(auth(adminToken))
+      .send({ email: 'sam@test.local', name: 'Sam', role: 'employee', password: 'first-secret-pw' });
+    const samId = created.body.data.id;
+    await request(context.app)
+      .put(`/api/users/${samId}`)
+      .set(auth(adminToken))
+      .send({ role: 'family', password: 'second-secret-pw' });
+    await request(context.app).delete(`/api/users/${samId}`).set(auth(adminToken));
+
+    const response = await listActivity('?action=user');
+
+    expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual([
+      'Removed Sam',
+      "Changed Sam's role from employee to family; set a new password for Sam",
+      'Added Sam as employee',
+    ]);
+    expect(JSON.stringify(response.body)).not.toMatch(/secret-pw/);
+  });
+
+  it('should log logins', async () => {
+    const response = await listActivity('?action=auth.logged_in');
+
+    // beforeEach logged the admin in once.
+    expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual(['Test admin logged in']);
+  });
+});

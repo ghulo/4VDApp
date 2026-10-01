@@ -2,6 +2,7 @@ import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
+import { formatEuro, roundMoney } from '../utils/money.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
@@ -84,6 +85,14 @@ export class SalesService {
         notes: `Sale #${id}`,
         adjustedBy: soldBy,
         reorderLevel: product.reorder_level ?? 0,
+      });
+      await repos.activityLog.create({
+        userId: soldBy,
+        action: 'sale.recorded',
+        entityType: 'sale',
+        entityId: id,
+        summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(roundMoney(pricePerUnit * input.quantity))}`,
+        details: { productId: product.id, quantity: input.quantity, pricePerUnit },
       });
       return id;
     });

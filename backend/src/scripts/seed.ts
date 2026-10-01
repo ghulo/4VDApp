@@ -72,6 +72,8 @@ async function seedAdmin(db: DatabaseClient): Promise<void> {
 async function seedDemoProducts(db: DatabaseClient): Promise<void> {
   const categories = await db.selectFrom('categories').select(['id', 'name']).where('deleted_at', 'is', null).execute();
   const categoryIdByName = new Map(categories.map((category) => [category.name, category.id]));
+  const admin = await db.selectFrom('users').select('id').where('role', '=', 'admin').orderBy('id').executeTakeFirst();
+  const adminId = admin?.id ?? null;
 
   for (const demo of DEMO_PRODUCTS) {
     const categoryId = categoryIdByName.get(demo.category);
@@ -86,7 +88,15 @@ async function seedDemoProducts(db: DatabaseClient): Promise<void> {
         .values({ name: demo.name, category_id: categoryId, base_price: demo.price, cost_price: demo.cost, sku: demo.sku })
         .returning('id')
         .executeTakeFirstOrThrow();
-      await trx.insertInto('inventory').values({ product_id: product.id, quantity_on_hand: demo.stock }).execute();
+      await trx
+        .insertInto('inventory')
+        .values({ product_id: product.id, quantity_on_hand: demo.stock, last_restocked_at: new Date() })
+        .execute();
+      // Same audit entry the API writes when a product is created with stock.
+      await trx
+        .insertInto('stock_adjustments')
+        .values({ product_id: product.id, adjustment_quantity: demo.stock, reason: 'Initial stock', adjusted_by: adminId })
+        .execute();
       for (const [quantityMin, price] of demo.tiers) {
         await trx.insertInto('bulk_pricing_tiers').values({ product_id: product.id, quantity_min: quantityMin, price }).execute();
       }

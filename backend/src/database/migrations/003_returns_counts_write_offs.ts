@@ -32,6 +32,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       refund_amount DECIMAL(12, 2) NOT NULL CHECK (refund_amount >= 0),
       condition VARCHAR(20) NOT NULL CHECK (condition IN ('resellable', 'damaged')),
       notes TEXT,
+      -- Why it waited for the owner, worked out with the limits in force when it was asked.
+      approval_reasons TEXT[] NOT NULL DEFAULT '{}',
       ${approvalColumns}
     )`,
     sql`CREATE TABLE write_offs (

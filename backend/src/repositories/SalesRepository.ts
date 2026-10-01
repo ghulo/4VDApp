@@ -19,7 +19,13 @@ export interface SaleRecord {
   sold_by_name: string | null;
   sale_date: Date;
   notes: string | null;
+  /** Units returned or waiting for a return decision. */
+  returned_quantity: string;
 }
+
+const returnedQuantity = sql<string>`(
+  select coalesce(sum(r.quantity), 0) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved')
+)`.as('returned_quantity');
 
 export type RevenuePeriod = 'daily' | 'weekly' | 'monthly';
 
@@ -56,6 +62,7 @@ export class SalesRepository {
           'u.name as sold_by_name',
           's.sale_date',
           's.notes',
+          returnedQuantity,
         ])
         .orderBy('s.sale_date', 'desc')
         .orderBy('s.id', 'desc')
@@ -109,6 +116,7 @@ export class SalesRepository {
         'u.name as sold_by_name',
         's.sale_date',
         's.notes',
+        returnedQuantity,
       ])
       .where('s.id', '=', id)
       .executeTakeFirst();

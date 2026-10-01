@@ -169,6 +169,7 @@ export interface ReturnsTable extends ApprovalColumns {
   refund_amount: Decimal;
   condition: ReturnCondition;
   notes: string | null;
+  approval_reasons: ColumnType<string[], string[] | undefined, never>;
 }
 
 export interface WriteOffsTable extends ApprovalColumns {

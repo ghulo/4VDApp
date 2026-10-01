@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
+import { createReturnsController } from '../controllers/returnsController.js';
 import { createSettingsController } from '../controllers/settingsController.js';
 import { createWriteOffsController } from '../controllers/writeOffsController.js';
 
@@ -20,6 +21,17 @@ export function createWriteOffRoutes({ writeOffService, guards }: Container): Ro
 
   router.get('/', ...guards.admin, controller.list);
   router.post('/', ...guards.staff, controller.request);
+  router.post('/:id/approve', ...guards.admin, controller.approve);
+  router.post('/:id/reject', ...guards.admin, controller.reject);
+
+  return router;
+}
+
+export function createReturnRoutes({ returnService, guards }: Container): Router {
+  const controller = createReturnsController(returnService);
+  const router = Router();
+
+  router.get('/', ...guards.admin, controller.list);
   router.post('/:id/approve', ...guards.admin, controller.approve);
   router.post('/:id/reject', ...guards.admin, controller.reject);
 

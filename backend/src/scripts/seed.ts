@@ -7,11 +7,13 @@ import { TransactionManager } from '../repositories/TransactionManager.js';
 import { SalesService } from '../services/SalesService.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
+import { seedDemoAccounts } from './demoAccounts.js';
 
 /**
  * Usage:
  *   npm run seed            -> starter categories + the admin account
- *   npm run seed -- --demo  -> also adds demo products and a month of sales (local testing only)
+ *   npm run seed:demo       -> also adds demo products, a month of sales and one
+ *                              demo login per role (local testing only; refused in production)
  *
  * Safe to run more than once: existing rows are left alone.
  */
@@ -162,6 +164,7 @@ async function main(): Promise<void> {
     await seedCategories(db);
     await seedAdmin(db);
     if (process.argv.includes('--demo')) {
+      await seedDemoAccounts(db, config.nodeEnv);
       await seedDemoProducts(db);
       await seedDemoSales(db);
     }

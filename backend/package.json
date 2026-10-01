@@ -18,6 +18,7 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "migrate:down": "tsx src/scripts/migrate.ts --down",
     "seed": "tsx src/scripts/seed.ts",
+    "seed:demo": "tsx src/scripts/seed.ts --demo",
     "db:setup": "npm run migrate && npm run seed",
     "migrate:prod": "node dist/scripts/migrate.js"
   },

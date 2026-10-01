@@ -6,299 +6,261 @@ Development: http://localhost:3000/api
 Production: [Your production domain]/api
 ```
 
+The health check lives outside `/api`: `GET /health`.
+
 ## Authentication
-**Method:** JWT Tokens (JSON Web Tokens)
+**Method:** JWT access token + single-use refresh token
 
 **Flow:**
-1. User logs in with credentials
-2. Server returns JWT token + refresh token
-3. Include token in Authorization header for subsequent requests
-4. Token expires after 7 days
-5. Use refresh token to get new JWT
+1. `POST /auth/login` with email and password
+2. The server returns an access token (valid 7 days, `JWT_EXPIRES_IN`) and a refresh token (valid 30 days, `REFRESH_TOKEN_TTL_DAYS`)
+3. Send the access token on every request: `Authorization: Bearer <token>`
+4. When a request returns 401, call `POST /auth/refresh` with the refresh token to get a **new pair**. The old refresh token stops working, so store the new one
+5. `POST /auth/logout` revokes the refresh token
 
-**Header Format:**
-```
-Authorization: Bearer <jwt_token>
-```
+The server checks the account on every authenticated request, so deactivating someone or changing their role takes effect immediately.
 
-**JWT Payload:**
+**JWT payload:**
 ```json
-{
-  "userId": 1,
-  "email": "user@example.com",
-  "role": "admin",
-  "iat": 1234567890,
-  "exp": 1234654290
-}
+{ "userId": 1, "email": "user@example.com", "role": "admin", "iat": 1234567890, "exp": 1234654290 }
 ```
+
+## Roles
+| Role | Can do |
+|------|--------|
+| `admin` | Everything |
+| `employee` | Browse products, record sales, favorites |
+| `family` | Browse products, favorites |
+
+"Public" endpoints below work without a token. With an admin token they also return admin-only fields (cost prices, hidden products).
 
 ## Rate Limiting
-**Enabled:** Yes
+Per 15 minutes:
+- Visitors (no token): 100 requests per IP
+- Logged-in users: 500 requests per account
+- Admins: 1000 requests per account
+- Failed logins: 10 per IP (successful logins don't count)
 
-**Limits:**
-- Public endpoints: 100 requests per 15 minutes per IP
-- Authenticated endpoints: 500 requests per 15 minutes per user
-- Admin endpoints: 1000 requests per 15 minutes per admin
-
-**Response Header:**
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1234567890
-```
+Responses carry the standard `RateLimit` and `RateLimit-Policy` headers (IETF draft 8). Going over returns `429`.
 
 ## Response Format
-All responses follow this structure:
+Every response has the same shape:
 ```json
 {
-  "success": true/false,
+  "success": true,
   "data": {},
-  "message": "Success/error message",
+  "message": "OK",
   "error": null,
-  "meta": {
-    "page": 1,
-    "total": 100,
-    "limit": 20
-  }
+  "meta": { "page": 1, "limit": 20, "total": 100 }
 }
 ```
+- `meta` is only present on paginated lists
+- On failure, `success` is `false`, `data` is `null`, `error` is a machine-readable code and `message` is a sentence you can show to a person
+
+**Error codes:** `VALIDATION_ERROR` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `RATE_LIMITED` (429), `INTERNAL_ERROR` (500).
+
+Validation errors list every problem at once, e.g. `"email: Invalid email address; password: Too small"`.
+
+## Pagination
+Lists accept `page` (default 1) and `limit` (default 20, max 100).
 
 ---
 
-## Endpoints
+## Auth
 
-### Products
+| Method & path | Auth | Body | Returns |
+|---|---|---|---|
+| `POST /auth/login` | – | `{ email, password }` | `{ token, refreshToken, user }` |
+| `POST /auth/refresh` | – | `{ refreshToken }` | `{ token, refreshToken }` |
+| `POST /auth/logout` | any user | `{ refreshToken? }` (omit to log out on every device) | `null` |
+| `GET /auth/me` | any user | – | the user |
 
-#### GET /products
-Fetch all products with filtering options
-- **Query Params:**
-  - `category`: Filter by category
-  - `search`: Search by name
-  - `inStock`: true/false
-  - `limit`: Results per page
-  - `page`: Page number
-- **Response:** Array of products with images, prices, stock levels
-- **Auth:** Not required
-
-#### GET /products/:id
-Fetch single product details
-- **Params:** `id` - Product ID
-- **Response:** Product object with full details, bulk pricing tiers
-- **Auth:** Not required
-
-#### POST /products (Admin only)
-Add new product
-- **Auth:** Required (admin role)
-- **Body:**
-  ```json
-  {
-    "name": "Product Name",
-    "description": "Description",
-    "category": "Category",
-    "price": 100,
-    "stock": 50,
-    "image": "image_url",
-    "bulkPricingTiers": [
-      { "quantity": 10, "price": 90 },
-      { "quantity": 50, "price": 80 }
-    ]
-  }
-  ```
-
-#### PUT /products/:id (Admin only)
-Update product
-- **Params:** `id` - Product ID
-- **Auth:** Required (admin role)
-- **Body:** Same as POST
-
-#### DELETE /products/:id (Admin only)
-Delete product
-- **Params:** `id` - Product ID
-- **Auth:** Required (admin role)
+A user looks like `{ id, email, name, role, isActive, createdAt }`.
 
 ---
 
-### Authentication
+## Categories
 
-#### POST /auth/login
-User login
-- **Body:**
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "password123"
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "token": "jwt_token",
-    "refreshToken": "refresh_token",
-    "user": {
-      "id": 1,
-      "email": "user@example.com",
-      "role": "admin"
-    }
-  }
-  ```
-
-#### POST /auth/refresh
-Refresh JWT token using refresh token
-- **Body:**
-  ```json
-  {
-    "refreshToken": "refresh_token"
-  }
-  ```
-- **Response:** New JWT token
-
-#### POST /auth/logout
-Logout user
-- **Auth:** Required
-- **Response:** Success message
+| Method & path | Auth | Notes |
+|---|---|---|
+| `GET /categories` | public | Includes `productCount` |
+| `POST /categories` | admin | `{ name, description? }`. Names are unique, ignoring letter case |
+| `PUT /categories/:id` | admin | Same body |
+| `DELETE /categories/:id` | admin | `409` while products still use it |
 
 ---
 
-### Inventory
+## Products
 
-#### GET /inventory
-Get real-time stock levels
-- **Auth:** Not required
-- **Response:** Array of products with current stock
+### GET /products (public)
+Query: `search` (name or SKU), `categoryId`, `inStock` (`true`/`false`), `page`, `limit`.
+Hidden products (`isActive: false`) are only listed for admins.
 
-#### GET /inventory/:productId
-Get stock level for specific product
-- **Params:** `productId` - Product ID
-- **Auth:** Not required
-- **Response:** Stock count, reorder level, warnings
+### GET /products/:id (public)
 
-#### PATCH /inventory/:productId
-Update stock (manual adjustment)
-- **Params:** `productId` - Product ID
-- **Auth:** Required (admin role)
-- **Body:**
-  ```json
-  {
-    "quantity": 10,
-    "reason": "Manual adjustment/Sale/Return"
-  }
-  ```
-
----
-
-### Sales & Analytics
-
-#### GET /sales
-Get sales history with filters
-- **Query Params:**
-  - `startDate`: Start date for range
-  - `endDate`: End date for range
-  - `productId`: Filter by product
-  - `limit`: Results per page
-- **Auth:** Required (admin role)
-- **Response:** Sales records with dates, quantities, prices
-
-#### GET /analytics/dashboard
-Get admin dashboard data
-- **Auth:** Required (admin role)
-- **Response:**
-  ```json
-  {
-    "totalSales": 0,
-    "totalRevenue": 0,
-    "topProducts": [],
-    "lowStockItems": [],
-    "recentSales": [],
-    "inventoryValue": 0
-  }
-  ```
-
-#### GET /analytics/revenue
-Get revenue trends
-- **Query Params:**
-  - `period`: "daily", "weekly", "monthly"
-  - `startDate`: Start date
-  - `endDate`: End date
-- **Auth:** Required (admin role)
-- **Response:** Revenue data for charting
-
-#### GET /analytics/products/:productId
-Get product-specific analytics
-- **Params:** `productId` - Product ID
-- **Auth:** Required (admin role)
-- **Response:** Sales count, revenue, trends, stock history
-
----
-
-### Bulk Pricing
-
-#### GET /pricing/tiers/:productId
-Get bulk pricing tiers for product
-- **Auth:** Not required
-- **Response:** Array of pricing tiers
-
-#### PUT /pricing/tiers/:productId (Admin only)
-Update bulk pricing tiers
-- **Auth:** Required (admin role)
-- **Body:**
-  ```json
-  {
-    "tiers": [
-      { "quantity": 10, "price": 90 },
-      { "quantity": 50, "price": 80 }
-    ]
-  }
-  ```
-
----
-
-### Users & Access
-
-#### GET /users
-List users with access
-- **Auth:** Required (admin role)
-- **Response:** Array of users, roles, access levels
-
-#### POST /users (Admin only)
-Create new user account
-- **Auth:** Required (admin role)
-- **Body:** User details (email, role, name)
-
-#### PUT /users/:id (Admin only)
-Update user permissions/role
-- **Auth:** Required (admin role)
-
-#### DELETE /users/:id (Admin only)
-Remove user access
-- **Auth:** Required (admin role)
-
----
-
-## Error Codes
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Created |
-| 400 | Bad Request |
-| 401 | Unauthorized (missing/invalid token) |
-| 403 | Forbidden (insufficient permissions) |
-| 404 | Not Found |
-| 429 | Too Many Requests (rate limited) |
-| 500 | Server Error |
-
-## Error Response Example
+**Product shape:**
 ```json
 {
-  "success": false,
-  "error": "Product not found",
-  "message": "The product with ID 999 does not exist",
-  "statusCode": 404
+  "id": 1,
+  "name": "Oak Dining Chair",
+  "description": null,
+  "sku": "FUR-CHAIR-OAK",
+  "imageUrl": null,
+  "isActive": true,
+  "category": { "id": 1, "name": "Furniture" },
+  "price": 89,
+  "costPrice": 45,
+  "stock": { "quantity": 40, "reorderLevel": 10, "isInStock": true, "isLowStock": false },
+  "bulkPricingTiers": [ { "quantity": 10, "price": 80 }, { "quantity": 50, "price": 72 } ],
+  "createdAt": "2026-10-01T06:15:56.867Z",
+  "updatedAt": "2026-10-01T06:15:56.867Z"
 }
 ```
+`costPrice` is only included for admins.
+
+### POST /products (admin)
+```json
+{
+  "name": "Oak Dining Chair",
+  "categoryId": 1,
+  "price": 89,
+  "costPrice": 45,
+  "sku": "FUR-CHAIR-OAK",
+  "description": "Optional",
+  "imageUrl": "https://…",
+  "isActive": true,
+  "stock": 40,
+  "reorderLevel": 10,
+  "bulkPricingTiers": [ { "quantity": 10, "price": 80 } ]
+}
+```
+Required: `name`, `categoryId`, `price`. The starting `stock` is logged as an "Initial stock" adjustment. Duplicate SKU returns `409`.
+
+### PUT /products/:id (admin)
+Same body **without `stock` or `reorderLevel`**. Stock changes go through `PATCH /inventory/:productId` so they're logged. If `bulkPricingTiers` is left out, the current tiers stay (and must still be valid for the new price).
+
+### DELETE /products/:id (admin)
+Soft delete: the product disappears everywhere, but sales history still refers to it.
+
+---
+
+## Bulk Pricing
+
+Rules for tiers: quantity at least 2, no duplicate quantities, and each tier must be **cheaper** than the base price and than every smaller tier. At most 20 tiers.
+
+| Method & path | Auth | Body / returns |
+|---|---|---|
+| `GET /pricing/tiers/:productId` | public | `{ productId, basePrice, tiers }` |
+| `PUT /pricing/tiers/:productId` | admin | `{ tiers: [ { quantity, price } ] }`, replaces all tiers |
+
+---
+
+## Inventory
+
+### GET /inventory (public)
+Query: `lowStock` (`true` = at or below reorder level), `search`, `page`, `limit`. Sorted with the emptiest (relative to reorder level) first.
+
+Item: `{ productId, productName, sku, quantity, reorderLevel, isLowStock, lastRestockedAt, updatedAt }`
+
+### GET /inventory/:productId (public)
+The item plus `warnings` (e.g. `["Out of stock"]`) and the 20 most recent `recentAdjustments`: `{ id, quantity, reason, notes, adjustedBy, date }`.
+
+### PATCH /inventory/:productId (admin)
+```json
+{ "quantity": -3, "reason": "Damage", "notes": "Dropped in storage", "reorderLevel": 5 }
+```
+- `quantity` is a change: positive adds, negative removes. Needs a `reason`: `Restock`, `Return`, `Damage`, `Recount` or `Manual adjustment`
+- `reorderLevel` is optional; send it alone to change only the warning level
+- Stock can never go below zero (`400`)
+- When stock drops to the reorder level, or runs out, every admin gets a notification
+
+---
+
+## Sales
+
+### POST /sales (admin, employee)
+```json
+{ "productId": 1, "quantity": 12, "notes": "Optional", "saleDate": "2026-09-30T14:00:00Z" }
+```
+The unit price comes from the product's bulk tiers for that quantity. Units leave stock in the same transaction (logged as a "Sale" adjustment). `saleDate` is optional (defaults to now) and can't be in the future. Hidden products can't be sold.
+
+Returns `{ id, productId, productName, quantity, pricePerUnit, totalAmount, soldBy, saleDate, notes }`.
+
+### GET /sales (admin)
+Query: `startDate`, `endDate`, `productId`, `page`, `limit`. A date without a time includes that whole day (`endDate=2026-10-31` includes the 31st).
+
+Returns `data: { sales: [...], totalRevenue }`, where `totalRevenue` covers every sale matching the filters, not just the page.
+
+---
+
+## Analytics (admin)
+
+### GET /analytics/dashboard
+Query: `days` (default 30, max 366).
+```json
+{
+  "periodDays": 30,
+  "totalSales": 24,
+  "unitsSold": 51,
+  "totalRevenue": 4310,
+  "totalProfit": 2104,
+  "topProducts": [ { "productId": 1, "productName": "…", "unitsSold": 10, "revenue": 890 } ],
+  "lowStockItems": [ { "productId": 4, "productName": "…", "quantity": 1, "reorderLevel": 10 } ],
+  "lowStockCount": 3,
+  "recentSales": [ { "id": 24, "productName": "…", "quantity": 2, "totalAmount": 70, "saleDate": "…" } ],
+  "inventoryValue": 4250
+}
+```
+`totalProfit` only counts products with a cost price. `inventoryValue` uses cost price, or the sale price when cost is unknown.
+
+### GET /analytics/revenue
+Query: `period` (`daily` | `weekly` | `monthly`, default `daily`), `startDate`, `endDate`, `productId`. Defaults to the last 30 days / 12 weeks / 12 months. Periods with no sales are included as zero. Buckets are in UTC.
+
+Returns `{ period, startDate, endDate, totalRevenue, points: [ { periodStart: "2026-09-01", revenue, unitsSold, salesCount } ] }`.
+
+### GET /analytics/products/:productId
+`{ productId, productName, salesCount, revenue, revenueLast12Months, currentStock, monthlyTrend, stockHistory }`
+
+---
+
+## Users (admin)
+
+| Method & path | Body | Notes |
+|---|---|---|
+| `GET /users` | – | Query: `role`, `page`, `limit` |
+| `POST /users` | `{ email, name, role, password }` | Password at least 8 characters. Duplicate email returns `409` |
+| `PUT /users/:id` | any of `{ name, role, isActive, password }` | A new password, a role change or deactivation logs them out everywhere |
+| `DELETE /users/:id` | – | Soft delete. You can't delete yourself |
+
+The last active admin can't be demoted, deactivated or deleted (`409`).
+
+---
+
+## Notifications (any logged-in user)
+
+| Method & path | Notes |
+|---|---|
+| `GET /notifications` | Query: `unreadOnly`, `page`, `limit`. Returns `data: { notifications, unreadCount }` |
+| `PATCH /notifications/:id/read` | Only your own notifications |
+| `POST /notifications/read-all` | |
+
+A notification: `{ id, title, message, type, isRead, createdAt }`, where `type` is `low_stock` or `out_of_stock`.
+
+---
+
+## Favorites (any logged-in user)
+
+| Method & path | Notes |
+|---|---|
+| `GET /favorites` | Your favorite products (full product objects), newest first |
+| `GET /favorites/ids` | Just the product ids |
+| `PUT /favorites/:productId` | Adding twice is fine |
+| `DELETE /favorites/:productId` | |
+
+---
 
 ## Notes
-- All timestamps are in UTC
-- Prices are in currency units (e.g., euros)
-- Images should be uploaded separately (multipart/form-data)
-- Pagination defaults to 20 items per page
-- All POST/PUT/PATCH requests require Content-Type: application/json
+- All timestamps are ISO 8601 in UTC
+- Money is in euros, as numbers with up to two decimals
+- Images are links (`imageUrl`); uploading files isn't built yet
+- Every `POST`/`PUT`/`PATCH` body is JSON (`Content-Type: application/json`, max 1 MB)

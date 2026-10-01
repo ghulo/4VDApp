@@ -11,21 +11,23 @@ Logistics and inventory app. It keeps track of every item the business holds, ho
 ## Features
 
 ### Mobile App (Family & Employees)
-- [ ] Product catalog with images
-- [ ] Stock availability display
-- [ ] Price display (single unit + bulk pricing tiers)
-- [ ] Search & filter products by category
-- [ ] Push notifications for low stock
-- [ ] Favorites/wishlist
+- [x] Product catalog with images (image links for now)
+- [x] Stock availability display
+- [x] Price display (single unit + bulk pricing tiers)
+- [x] Search & filter products by category or stock
+- [x] Favorites/wishlist
+- [x] Record sales (employees and admins)
+- [ ] Push notifications for low stock (alerts currently show in the admin dashboard)
 
 ### Admin Dashboard
-- [ ] Real-time inventory tracking
-- [ ] Sales analytics & revenue trends
-- [ ] Bulk pricing management
-- [ ] Add/edit/delete products with image upload
-- [ ] Revenue reports & sales history
-- [ ] Low stock alerts
-- [ ] User activity logs
+- [x] Real-time inventory tracking with a full stock history
+- [x] Sales analytics & revenue trends
+- [x] Bulk pricing management
+- [x] Add/edit/delete products (image links; file upload not built yet)
+- [x] Revenue reports & sales history
+- [x] Low stock alerts
+- [x] Manage people and their roles
+- [ ] User activity logs (only stock changes are logged so far)
 - [ ] Inventory forecasting
 
 ## Project Structure
@@ -33,29 +35,35 @@ Logistics and inventory app. It keeps track of every item the business holds, ho
 4VDApp/
 ├── backend/          # Express REST API (see docs/ARCHITECTURE.md for layers)
 │   ├── src/
-│   │   ├── config/
+│   │   ├── config/        # environment variables, checked on startup
 │   │   ├── constants/
-│   │   ├── controllers/
+│   │   ├── controllers/   # parse the request, call a service, send the response
+│   │   ├── database/      # connection, table types, migrations
 │   │   ├── errors/
-│   │   ├── middlewares/
-│   │   ├── models/
-│   │   ├── repositories/
+│   │   ├── middlewares/   # auth, rate limits, error handling
+│   │   ├── repositories/  # all SQL lives here
 │   │   ├── routes/
-│   │   ├── services/
+│   │   ├── scripts/       # migrate and seed commands
+│   │   ├── services/      # business rules
 │   │   ├── types/
 │   │   ├── utils/
-│   │   ├── validators/
+│   │   ├── validators/    # request schemas (zod)
 │   │   ├── app.ts
+│   │   ├── container.ts   # wires repositories and services together
 │   │   └── server.ts
 │   ├── tests/
 │   └── .env.example
 ├── admin/            # React admin dashboard
 │   ├── src/
+│   │   ├── auth/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/      # API client
+│   │   └── utils/
 │   └── .env.example
 ├── mobile/           # Expo React Native app
 │   ├── src/
 │   │   ├── components/
-│   │   ├── hooks/
 │   │   ├── navigation/
 │   │   ├── screens/
 │   │   ├── services/
@@ -69,6 +77,7 @@ Logistics and inventory app. It keeps track of every item the business holds, ho
     ├── DATABASE.md
     ├── DEPLOYMENT.md
     └── ENGINEERING_RULES.md
+docker-compose.yml    # local PostgreSQL
 ```
 
 Each app is its own npm package with its own `package.json`, so you install and run them separately.
@@ -77,37 +86,54 @@ Each app is its own npm package with its own `package.json`, so you install and 
 
 ### Prerequisites
 - Node.js v22 LTS or newer
-- PostgreSQL v14 or newer
+- Docker Desktop (runs PostgreSQL locally), or your own PostgreSQL 14+
 - npm
 - Expo Go on your phone, or an iOS/Android simulator
 
 ### Local Setup
 
-**Backend** (runs on http://localhost:3000):
+**1. Database** (from the repo root):
+```bash
+docker compose up -d
+```
+This starts PostgreSQL on port 5432 with two databases: `four_vd_app` for your data and `four_vd_app_test`, which the tests wipe.
+
+**2. Backend** (runs on http://localhost:3000):
 ```bash
 cd backend
 npm install
-cp .env.example .env   # then fill in your database credentials and JWT secret
+cp .env.example .env     # set JWT_SECRET and the SEED_ADMIN_* values
+npm run db:setup         # creates the tables, starter categories and your admin account
+npm run seed -- --demo   # optional: demo products and a month of demo sales
 npm run dev
 ```
-Check it is up: `curl http://localhost:3000/health`
+Check it's up: `curl http://localhost:3000/health`
 
-**Admin dashboard** (runs on http://localhost:5173):
+**3. Admin dashboard** (runs on http://localhost:5173):
 ```bash
 cd admin
 npm install
 cp .env.example .env
 npm run dev
 ```
+Log in with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` from `backend/.env`.
 
-**Mobile:**
+**4. Mobile:**
 ```bash
 cd mobile
 npm install
-cp .env.example .env
+cp .env.example .env     # set EXPO_PUBLIC_API_URL to your computer's Wi-Fi IP, e.g. http://192.168.0.20:3000
 npm start
-# Scan the QR code with Expo Go, or press i / a for a simulator
 ```
+Scan the QR code with Expo Go (phone and computer on the same Wi-Fi). On Windows, if the phone can't connect, allow Node.js through the firewall for private networks.
+
+### Tests
+```bash
+cd backend
+npm test           # unit + integration tests (needs the Docker database running)
+npm run typecheck
+```
+For the front ends: `cd admin && npm run build && npm run lint`, and `cd mobile && npm run typecheck`.
 
 ## Environment Variables
 Every app has a `.env.example` listing what it needs. Copy it to `.env` and fill it in. Never commit `.env` files.
@@ -125,5 +151,5 @@ Every app has a `.env.example` listing what it needs. Copy it to `.env` and fill
 - **Roles:** Admin, Employee, Family Member
 
 ## Project Status
-- Phase: Planning and beginning of development
+- Phase: First full version, running locally. Not deployed yet
 - Last Updated: 2026-10-01

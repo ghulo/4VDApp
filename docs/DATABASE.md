@@ -3,6 +3,21 @@
 ## Overview
 PostgreSQL database for managing products, inventory, pricing, and sales tracking.
 
+The source of truth is the migration code in `backend/src/database/migrations/`; the SQL below is the original plan.
+The real schema differs in these ways:
+
+- **Timestamps are `TIMESTAMPTZ`** (always stored as UTC) instead of `TIMESTAMP`
+- **`users.password` is called `password_hash`**, and `role` has a CHECK for `admin`, `employee`, `family`
+- **Soft delete:** `users`, `categories` and `products` have `deleted_at`. `categories` also has `updated_at`
+- **Uniqueness ignores deleted rows:** category names (case-insensitive) and SKUs only need to be unique among rows that aren't deleted (partial unique indexes)
+- **CHECK constraints** stop negative stock, negative prices, zero-quantity sales and adjustments, and tiers below 2 units
+- **`stock_adjustments.reason` is required**
+- **Child rows cascade:** `inventory`, `bulk_pricing_tiers` and `product_images` are removed with their product
+- **New `refresh_tokens` table** (`user_id`, `token_hash` (SHA-256), `expires_at`, `revoked_at`), which makes logout and single-use refresh tokens possible
+- **New `favorites` table** (`user_id`, `product_id`, `created_at`, composite primary key) for the wishlist
+- **`idx_inventory_product` and `idx_users_email` were dropped:** those columns are `UNIQUE`, so PostgreSQL already indexes them
+- **`sales.total_amount` is `DECIMAL(12, 2)`** so large orders can't overflow
+
 ## Tables
 
 ### users
@@ -163,25 +178,22 @@ CREATE INDEX idx_users_email ON users(email);
 
 ## Migration Plan
 
-**Initial Setup:** When you start the project
+Migrations are written with Kysely and live in `backend/src/database/migrations/`, numbered in run order and registered in `migrations/index.ts`.
 
-**Steps:**
-1. Create all tables in order (respecting foreign keys)
-2. Add indexes for performance
-3. Insert initial categories
-4. Create initial admin user
-
-**Commands:**
+**Commands** (run from `backend/`):
 ```bash
-npm run migrate
-# or
-npm run db:setup
+docker compose up -d       # from the repo root: local PostgreSQL + a separate test database
+npm run db:setup           # migrate + seed (categories and the admin from SEED_ADMIN_* in .env)
+npm run migrate            # apply pending migrations
+npm run migrate:down       # undo the most recent migration
+npm run seed -- --demo     # also add demo products and a month of demo sales (local only)
+npm run migrate:prod       # in production, after `npm run build`
 ```
 
-**Schema versioning:**
-- V1: Initial tables (products, inventory, users, sales)
-- V2: Add notifications and audit trail (stock_adjustments)
-- V3: Multi-image support (product_images)
+**Adding a migration:** create `00N_short_name.ts` with `up` and `down`, add it to `migrations/index.ts`, and update `src/database/types.ts` to match.
+
+**Schema versions:**
+- 001_initial_schema: every table above, including notifications, stock adjustments, product images, refresh tokens and favorites
 
 ---
 

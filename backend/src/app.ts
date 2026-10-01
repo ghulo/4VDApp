@@ -3,20 +3,28 @@ import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { AppConfig } from './config/env.js';
+import { createContainer } from './container.js';
+import type { DatabaseClient } from './database/connection.js';
+import { identifyRequester } from './middlewares/authenticate.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFoundHandler } from './middlewares/notFoundHandler.js';
-import { publicRateLimiter } from './middlewares/rateLimiter.js';
+import { createApiRateLimiter } from './middlewares/rateLimiter.js';
 import { healthRoutes } from './routes/healthRoutes.js';
-import { apiRoutes } from './routes/index.js';
+import { createApiRoutes } from './routes/index.js';
 
 /**
  * Build the Express app without starting a server, so tests can exercise it
  * with supertest and server.ts stays responsible only for listening.
  */
-export function createApp(config: AppConfig): Express {
+export function createApp(config: AppConfig, db: DatabaseClient): Express {
   const app = express();
+  const container = createContainer(config, db);
 
   app.disable('x-powered-by');
+  // Render and most hosts sit behind one proxy; without this every request
+  // looks like it comes from the proxy and shares one rate limit.
+  if (config.nodeEnv === 'production') app.set('trust proxy', 1);
+
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins }));
   app.use(compression());
@@ -25,7 +33,7 @@ export function createApp(config: AppConfig): Express {
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.
   app.use('/health', healthRoutes);
-  app.use('/api', publicRateLimiter, apiRoutes);
+  app.use('/api', identifyRequester(config.jwtSecret), createApiRateLimiter(), createApiRoutes(container));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

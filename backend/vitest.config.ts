@@ -4,5 +4,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // Integration tests share one test database and wipe it between tests,
+    // so files must run one at a time.
+    fileParallelism: false,
+    testTimeout: 20_000,
+    hookTimeout: 30_000,
   },
 });

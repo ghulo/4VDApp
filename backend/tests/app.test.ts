@@ -1,15 +1,19 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { loadConfig } from '../src/config/env.js';
+import { createDatabase } from '../src/database/connection.js';
 
+// These tests never reach the database; the client only connects on first query.
 const testConfig = loadConfig({
   NODE_ENV: 'test',
-  DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+  DATABASE_URL: 'postgresql://test:test@localhost:5432/unused_test',
   JWT_SECRET: 'test-secret-that-is-long-enough',
 });
+const db = createDatabase(testConfig.databaseUrl);
+const app = createApp(testConfig, db);
 
-const app = createApp(testConfig);
+afterAll(() => db.destroy());
 
 describe('GET /health', () => {
   it('should report the API as healthy', async () => {

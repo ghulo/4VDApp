@@ -1,8 +1,12 @@
 // Limits come from docs/API.md. Windows are in milliseconds.
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
+export const RATE_LIMIT_WINDOW_MS = FIFTEEN_MINUTES_MS;
+
 export const RATE_LIMITS = {
-  PUBLIC: { windowMs: FIFTEEN_MINUTES_MS, limit: 100 },
-  AUTHENTICATED: { windowMs: FIFTEEN_MINUTES_MS, limit: 500 },
-  ADMIN: { windowMs: FIFTEEN_MINUTES_MS, limit: 1000 },
+  PUBLIC: 100,
+  AUTHENTICATED: 500,
+  ADMIN: 1000,
+  // Failed logins per IP. Low on purpose to slow down password guessing.
+  FAILED_LOGINS: 10,
 } as const;

@@ -72,10 +72,11 @@ function toPeriodTotals(row: TotalsRow): PeriodTotals {
 export class ReportsService {
   constructor(private readonly reportsRepository: ReportsRepository) {}
 
-  async summary(range: DateRange) {
+  /** `compareWith` defaults to the same length of time immediately before `range`. */
+  async summary(range: DateRange, compareWith: DateRange = previousRange(range)) {
     const [currentRow, previousRow] = await Promise.all([
       this.reportsRepository.totals(range),
-      this.reportsRepository.totals(previousRange(range)),
+      this.reportsRepository.totals(compareWith),
     ]);
     const current = toPeriodTotals(currentRow);
     const previous = toPeriodTotals(previousRow);
@@ -153,10 +154,10 @@ export class ReportsService {
   }
 
   /** The caller's own numbers. Deliberately no cost or profit. */
-  async mySales(userId: number, range: DateRange) {
+  async mySales(userId: number, range: DateRange, compareWith: DateRange = previousRange(range)) {
     const [currentRow, previousRow, recent] = await Promise.all([
       this.reportsRepository.totals(range, userId),
-      this.reportsRepository.totals(previousRange(range), userId),
+      this.reportsRepository.totals(compareWith, userId),
       this.reportsRepository.recentSalesBy(userId, range, MY_RECENT_SALES_LIMIT),
     ]);
     const pick = (row: TotalsRow) => ({

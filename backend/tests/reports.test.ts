@@ -105,6 +105,32 @@ describe('GET /api/reports/summary', () => {
     expect(response.body.data.change.revenue).toBeNull();
   });
 
+  it('should compare with an explicit period when one is given', async () => {
+    const productId = await createProduct();
+    await sell(adminToken, productId, 1, '2026-03-02T12:00:00Z');
+    await sell(adminToken, productId, 2, '2026-02-02T12:00:00Z');
+    await sell(adminToken, productId, 3, '2026-02-20T12:00:00Z');
+
+    // March 1-3 against February 1-3, not against the days just before March 1.
+    const response = await request(context.app)
+      .get(
+        '/api/reports/summary?startDate=2026-03-01&endDate=2026-03-03' +
+          '&previousStartDate=2026-02-01&previousEndDate=2026-02-03',
+      )
+      .set(auth(adminToken));
+
+    expect(response.body.data.previous).toMatchObject({ revenue: 200, unitsSold: 2 });
+    expect(response.body.data.change.revenue).toBe(-0.5);
+  });
+
+  it('should need both ends of an explicit comparison period', async () => {
+    const response = await request(context.app)
+      .get(`/api/reports/summary?${MARCH}&previousStartDate=2026-02-01`)
+      .set(auth(adminToken));
+
+    expect(response.status).toBe(400);
+  });
+
   it('should include sales late on a date-only end date', async () => {
     const productId = await createProduct();
     await sell(adminToken, productId, 1, '2026-03-31T22:30:00Z');
@@ -240,6 +266,20 @@ describe('GET /api/reports/my-sales', () => {
       expect.objectContaining({ productName: 'Oak Chair', quantity: 2, totalAmount: 200 }),
     ]);
     expect(JSON.stringify(response.body)).not.toMatch(/profit|cost/i);
+  });
+
+  it('should compare with the calendar month the app asks for', async () => {
+    const productId = await createProduct();
+    const employeeToken = await loginAs(context, 'employee');
+    await sell(employeeToken, productId, 1, '2026-01-30T12:00:00Z');
+    await sell(employeeToken, productId, 2, '2026-02-10T12:00:00Z');
+
+    const response = await request(context.app)
+      .get(`/api/reports/my-sales?${MARCH}&previousStartDate=2026-02-01&previousEndDate=2026-02-28`)
+      .set(auth(employeeToken));
+
+    // January 30 sits inside the "same length before" window but is not February.
+    expect(response.body.data.previous).toEqual({ salesCount: 1, unitsSold: 2, revenue: 200 });
   });
 
   it('should not be available to family members', async () => {

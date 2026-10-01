@@ -1,16 +1,16 @@
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
 import { type CsvColumn, toCsv } from '../utils/csv.js';
 import { roundMoney } from '../utils/money.js';
+import { zonedDateTime, zonedDay } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 import type { ReportsService, TeamRow } from './ReportsService.js';
 
-const isoDay = (date: Date) => date.toISOString().slice(0, 10);
+/** First and last day included in an end-exclusive range, as dates in `timeZone`. */
+const dayRangeLabel = (range: DateRange, timeZone: string) =>
+  `${zonedDay(range.startDate, timeZone)}-to-${zonedDay(new Date(range.endDate.getTime() - 1), timeZone)}`;
 
-/** The last day included in an end-exclusive range, for filenames. */
-const lastIncludedDay = (range: DateRange) => isoDay(new Date(range.endDate.getTime() - 1));
-
-const SALES_COLUMNS: CsvColumn<SaleExportRow>[] = [
-  { header: 'Date', value: (row) => row.sale_date.toISOString() },
+const salesColumns = (timeZone: string): CsvColumn<SaleExportRow>[] => [
+  { header: 'Date', value: (row) => zonedDateTime(row.sale_date, timeZone) },
   { header: 'Product', value: (row) => row.product_name },
   { header: 'SKU', value: (row) => row.sku },
   { header: 'Quantity', value: (row) => row.quantity_sold },
@@ -62,28 +62,28 @@ export class ExportService {
     private readonly reportsService: ReportsService,
   ) {}
 
-  async sales(range: DateRange): Promise<CsvFile> {
+  async sales(range: DateRange, timeZone: string): Promise<CsvFile> {
     const rows = await this.reportsRepository.salesForExport(range);
     return {
-      filename: `4vd-sales-${isoDay(range.startDate)}-to-${lastIncludedDay(range)}.csv`,
-      content: toCsv(SALES_COLUMNS, rows),
+      filename: `4vd-sales-${dayRangeLabel(range, timeZone)}.csv`,
+      content: toCsv(salesColumns(timeZone), rows),
     };
   }
 
-  async stock(): Promise<CsvFile> {
+  async stock(timeZone: string): Promise<CsvFile> {
     const [products, suggestions] = await Promise.all([
       this.reportsRepository.salesVelocity(new Date(0)),
       this.reportsService.reorderSuggestions(),
     ]);
     const daysLeftById = new Map(suggestions.map((row) => [row.productId, row.daysLeft]));
     const rows = products.map((product) => ({ ...product, daysLeft: daysLeftById.get(product.product_id) ?? null }));
-    return { filename: `4vd-stock-${isoDay(new Date())}.csv`, content: toCsv(STOCK_COLUMNS, rows) };
+    return { filename: `4vd-stock-${zonedDay(new Date(), timeZone)}.csv`, content: toCsv(STOCK_COLUMNS, rows) };
   }
 
-  async team(range: DateRange): Promise<CsvFile> {
+  async team(range: DateRange, timeZone: string): Promise<CsvFile> {
     const rows = await this.reportsService.team(range);
     return {
-      filename: `4vd-team-${isoDay(range.startDate)}-to-${lastIncludedDay(range)}.csv`,
+      filename: `4vd-team-${dayRangeLabel(range, timeZone)}.csv`,
       content: toCsv(TEAM_COLUMNS, rows),
     };
   }

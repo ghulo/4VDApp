@@ -10,7 +10,8 @@ const round = (value: number, decimals: number) => Math.round(value * 10 ** deci
 /** 0.25 means +25%. Null when the previous value was 0, since any change from 0 is infinite. */
 export function relativeChange(current: number, previous: number): number | null {
   if (previous === 0) return null;
-  return round((current - previous) / previous, 4);
+  // Divide by the size of the baseline so going from a loss to a profit reads as a rise.
+  return round((current - previous) / Math.abs(previous), 4);
 }
 
 /** The same length of time, immediately before `range`. */

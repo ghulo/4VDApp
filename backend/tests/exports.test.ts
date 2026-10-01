@@ -44,6 +44,35 @@ describe('CSV exports', () => {
     expect(response.text).toContain(',Oak Chair,SKU-2,2,100,200,60,80,Test admin,');
   });
 
+  it('should name the file and write dates in the admin timezone', async () => {
+    const created = await request(context.app)
+      .post('/api/products')
+      .set(auth(adminToken))
+      .send({ name: 'Night Lamp', categoryId, price: 50, stock: 5 });
+    // 00:30 on September 1st in Dublin (UTC+1 in summer).
+    await request(context.app)
+      .post('/api/sales')
+      .set(auth(adminToken))
+      .send({ productId: created.body.data.id, quantity: 1, saleDate: '2026-08-31T23:30:00Z' });
+
+    const response = await download(
+      '/api/exports/sales.csv?startDate=2026-08-31T23:00:00Z&endDate=2026-09-30T23:00:00Z&tz=Europe/Dublin',
+    );
+
+    expect(response.headers['content-disposition']).toBe('attachment; filename="4vd-sales-2026-09-01-to-2026-09-30.csv"');
+    expect(response.text).toContain('\r\n2026-09-01 00:30,Night Lamp,');
+  });
+
+  it('should write Excel-friendly UTC dates when no timezone is given, and reject unknown ones', async () => {
+    await createAndSell('Oak Chair', 2);
+
+    const utc = await download('/api/exports/sales.csv?startDate=2026-03-01&endDate=2026-03-31');
+    const unknown = await download('/api/exports/sales.csv?startDate=2026-03-01&endDate=2026-03-31&tz=Mars/Olympus');
+
+    expect(utc.text).toContain('\r\n2026-03-10 12:00,Oak Chair,');
+    expect(unknown.status).toBe(400);
+  });
+
   it('should keep a product name with commas, quotes and line breaks in one cell', async () => {
     await createAndSell('Chair, "oak"\nlarge', 1);
 

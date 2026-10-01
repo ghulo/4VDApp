@@ -7,7 +7,8 @@ import { parseInput } from '../validators/validate.js';
 export function createReportsController(reportsService: ReportsService) {
   return {
     async summary(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await reportsService.summary(parseInput(reportRangeSchema, req.query)));
+      const { previous, ...range } = parseInput(reportRangeSchema, req.query);
+      sendSuccess(res, await reportsService.summary(range, previous));
     },
 
     async team(req: Request, res: Response): Promise<void> {
@@ -25,7 +26,8 @@ export function createReportsController(reportsService: ReportsService) {
     },
 
     async mySales(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await reportsService.mySales(req.user!.id, parseInput(reportRangeSchema, req.query)));
+      const { previous, ...range } = parseInput(reportRangeSchema, req.query);
+      sendSuccess(res, await reportsService.mySales(req.user!.id, range, previous));
     },
   };
 }

@@ -8,6 +8,11 @@ describe('relativeChange', () => {
     expect(relativeChange(75, 100)).toBe(-0.25);
   });
 
+  it('should show an improvement from a loss as a rise, not a fall', () => {
+    expect(relativeChange(100, -100)).toBe(2);
+    expect(relativeChange(-50, -100)).toBe(0.5);
+  });
+
   it('should return null when there is nothing to compare against', () => {
     expect(relativeChange(100, 0)).toBeNull();
     expect(relativeChange(0, 0)).toBeNull();

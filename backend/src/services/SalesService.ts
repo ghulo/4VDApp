@@ -4,7 +4,7 @@ import type { SaleRecord, SalesRepository } from '../repositories/SalesRepositor
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { applyStockChange } from './InventoryService.js';
-import { toMoney } from './mappers.js';
+import { toMoney, toMoneyOrNull } from './mappers.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
 
 export interface SaleDto {
@@ -71,6 +71,7 @@ export class SalesService {
         productId: product.id,
         quantity: input.quantity,
         pricePerUnit,
+        unitCost: toMoneyOrNull(product.cost_price),
         soldBy,
         notes: input.notes,
         saleDate: input.saleDate,

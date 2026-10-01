@@ -49,7 +49,7 @@ export async function setupTestApp(): Promise<TestContext> {
 /** Empty every table between tests but keep the schema. */
 export async function resetData(db: DatabaseClient): Promise<void> {
   await sql`TRUNCATE users, refresh_tokens, categories, products, inventory, bulk_pricing_tiers,
-    sales, stock_adjustments, product_images, notifications, favorites RESTART IDENTITY CASCADE`.execute(db);
+    sales, stock_adjustments, product_images, notifications, favorites, activity_log RESTART IDENTITY CASCADE`.execute(db);
 }
 
 // Hashing is slow on purpose; hash the shared test password once.

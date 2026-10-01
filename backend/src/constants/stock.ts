@@ -5,6 +5,9 @@ export const MANUAL_STOCK_REASONS = ['Restock', 'Return', 'Damage', 'Recount', '
 export const SYSTEM_STOCK_REASONS = {
   INITIAL_STOCK: 'Initial stock',
   SALE: 'Sale',
+  RETURN: 'Return',
+  WRITE_OFF: 'Write-off',
+  RECOUNT: 'Recount',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

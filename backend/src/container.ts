@@ -10,6 +10,8 @@ import { NotificationRepository } from './repositories/NotificationRepository.js
 import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
+import { WriteOffRepository } from './repositories/WriteOffRepository.js';
+import { WriteOffService } from './services/WriteOffService.js';
 import { AnalyticsService } from './services/AnalyticsService.js';
 import { FavoriteService } from './services/FavoriteService.js';
 import { NotificationService } from './services/NotificationService.js';
@@ -52,6 +54,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const activityLogRepository = new ActivityLogRepository(db);
   const reportsRepository = new ReportsRepository(db);
   const settingsRepository = new SettingsRepository(db);
+  const writeOffRepository = new WriteOffRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
   const categoryService = new CategoryService(categoryRepository, transactions);
@@ -72,6 +75,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const reportsService = new ReportsService(reportsRepository);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
+  const writeOffService = new WriteOffService(writeOffRepository, transactions);
 
   const authenticated = requireAuth(userRepository);
   const guards = {
@@ -101,6 +105,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
     reportsService,
     exportService,
     settingsService,
+    writeOffService,
     guards,
   };
 }

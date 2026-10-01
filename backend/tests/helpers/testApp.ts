@@ -95,3 +95,31 @@ export async function loginAs(
 export async function createTestCategory(db: DatabaseClient, name = 'Furniture') {
   return db.insertInto('categories').values({ name }).returningAll().executeTakeFirstOrThrow();
 }
+
+/** Create a product through the API (so stock and the audit trail are set up) and return its id. */
+export async function createTestProduct(
+  context: TestContext,
+  adminToken: string,
+  overrides: Record<string, unknown> = {},
+): Promise<number> {
+  let categoryId = overrides.categoryId as number | undefined;
+  if (categoryId === undefined) {
+    const existing = await context.db.selectFrom('categories').select('id').orderBy('id').executeTakeFirst();
+    categoryId = existing?.id ?? (await createTestCategory(context.db)).id;
+  }
+  const response = await request(context.app)
+    .post('/api/products')
+    .set({ Authorization: `Bearer ${adminToken}` })
+    .send({ name: 'Oak Chair', price: 100, costPrice: 60, stock: 10, reorderLevel: 2, ...overrides, categoryId });
+  if (response.status !== 201) throw new Error(`Test product failed: ${JSON.stringify(response.body)}`);
+  return response.body.data.id as number;
+}
+
+export async function stockOf(context: TestContext, productId: number): Promise<number> {
+  const row = await context.db
+    .selectFrom('inventory')
+    .select('quantity_on_hand')
+    .where('product_id', '=', productId)
+    .executeTakeFirstOrThrow();
+  return row.quantity_on_hand;
+}

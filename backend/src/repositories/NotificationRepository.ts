@@ -10,6 +10,10 @@ export interface NewNotification {
 export class NotificationRepository {
   constructor(private readonly db: DatabaseClient) {}
 
+  async createForUser(userId: number, notification: NewNotification): Promise<void> {
+    await this.db.insertInto('notifications').values({ user_id: userId, ...notification }).execute();
+  }
+
   /** Send the same notification to every active user with one of the roles. */
   async createForRoles(roles: Array<'admin' | 'employee' | 'family'>, notification: NewNotification): Promise<number> {
     const result = await this.db

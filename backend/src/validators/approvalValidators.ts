@@ -1,5 +1,17 @@
 import { z } from 'zod';
-import { trimmedString } from './validate.js';
+import { APPROVAL_STATUSES, WRITE_OFF_REASONS } from '../constants/approvals.js';
+import { idSchema, optionalText, trimmedString } from './validate.js';
+
+const MAX_UNITS = 1_000_000;
+
+export const approvalListQuerySchema = z.object({ status: z.enum(APPROVAL_STATUSES).optional() });
+
+export const writeOffSchema = z.object({
+  productId: idSchema,
+  quantity: z.number().int().min(1).max(MAX_UNITS),
+  reason: z.enum(WRITE_OFF_REASONS),
+  notes: optionalText(1000),
+});
 
 export const updateSettingsSchema = z
   .object({

@@ -94,6 +94,11 @@ export class ProductRepository {
     return this.baseQuery(includeInactive).select(this.columns).where('p.id', '=', id).executeTakeFirst();
   }
 
+  findByIds(ids: number[], includeInactive: boolean): Promise<ProductRecord[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.baseQuery(includeInactive).select(this.columns).where('p.id', 'in', ids).execute();
+  }
+
   async exists(id: number): Promise<boolean> {
     const row = await this.db
       .selectFrom('products')

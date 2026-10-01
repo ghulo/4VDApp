@@ -7,6 +7,13 @@ import {
   createPricingRoutes,
   createProductRoutes,
 } from './catalogRoutes.js';
+import {
+  createAnalyticsRoutes,
+  createFavoriteRoutes,
+  createNotificationRoutes,
+  createSalesRoutes,
+  createUserRoutes,
+} from './operationsRoutes.js';
 
 /** Root router for everything under /api. */
 export function createApiRoutes(container: Container): Router {
@@ -17,6 +24,11 @@ export function createApiRoutes(container: Container): Router {
   router.use('/products', createProductRoutes(container));
   router.use('/inventory', createInventoryRoutes(container));
   router.use('/pricing', createPricingRoutes(container));
+  router.use('/sales', createSalesRoutes(container));
+  router.use('/analytics', createAnalyticsRoutes(container));
+  router.use('/users', createUserRoutes(container));
+  router.use('/notifications', createNotificationRoutes(container));
+  router.use('/favorites', createFavoriteRoutes(container));
 
   return router;
 }

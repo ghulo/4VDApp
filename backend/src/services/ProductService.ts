@@ -88,6 +88,18 @@ export class ProductService {
     return this.toDto(product, tiers, isAdmin);
   }
 
+  /** Products in the same order as `ids`, skipping any that no longer exist. */
+  async getManyByIds(ids: number[], viewerRole: UserRole | undefined): Promise<ProductDto[]> {
+    const isAdmin = viewerRole === 'admin';
+    const products = await this.productRepository.findByIds(ids, isAdmin);
+    const tiersByProduct = await this.pricingTierRepository.findByProductIds(products.map((product) => product.id));
+    const productById = new Map(products.map((product) => [product.id, product]));
+    return ids
+      .map((id) => productById.get(id))
+      .filter((product): product is ProductRecord => product !== undefined)
+      .map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], isAdmin));
+  }
+
   /**
    * Creates the product, its stock record and its pricing tiers together, and
    * logs the starting stock in the audit trail. All or nothing.

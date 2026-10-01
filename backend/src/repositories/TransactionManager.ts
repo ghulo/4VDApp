@@ -3,6 +3,7 @@ import { InventoryRepository } from './InventoryRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
 import { PricingTierRepository } from './PricingTierRepository.js';
 import { ProductRepository } from './ProductRepository.js';
+import { SalesRepository } from './SalesRepository.js';
 import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
@@ -12,6 +13,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     inventory: new InventoryRepository(db),
     stockAdjustments: new StockAdjustmentRepository(db),
     notifications: new NotificationRepository(db),
+    sales: new SalesRepository(db),
   };
 }
 

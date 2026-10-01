@@ -7,6 +7,7 @@ import type { ProductData, ProductRecord, ProductRepository } from '../repositor
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
+import { type ProductSnapshot, describeProductChanges } from './activity/describeProductChanges.js';
 import { isLowStock } from './inventory/stockAlerts.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { type PricingTier, validatePricingTiers } from './pricing/bulkPricing.js';
@@ -122,6 +123,14 @@ export class ProductService {
             adjustedBy: createdBy,
           });
         }
+        await repos.activityLog.create({
+          userId: createdBy,
+          action: 'product.created',
+          entityType: 'product',
+          entityId: id,
+          summary: `Added product ${input.name}`,
+          details: { price: input.price, stock: input.stock },
+        });
         return id;
       });
       return this.getById(productId, 'admin');
@@ -132,19 +141,41 @@ export class ProductService {
   }
 
   /** Full update. Stock is deliberately not editable here; use the inventory endpoint. */
-  async update(id: number, input: ProductInput): Promise<ProductDto> {
-    if (!(await this.productRepository.exists(id))) throw new NotFoundError(`Product ${id} does not exist`);
+  async update(id: number, input: ProductInput, actorId: number): Promise<ProductDto> {
+    const existing = await this.productRepository.findById(id, true);
+    if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
     await this.ensureCategoryExists(input.categoryId);
 
+    const existingTiers = await this.pricingTierRepository.findByProductId(id);
     // If the price changed but tiers were not sent, the existing tiers must
     // still be valid against the new price.
-    const tiersToCheck = input.bulkPricingTiers ?? (await this.pricingTierRepository.findByProductId(id));
-    const tiers = validatePricingTiers(input.price, tiersToCheck);
+    const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? existingTiers);
+    const change = describeProductChanges(toSnapshot(existing, existingTiers), {
+      name: input.name,
+      description: input.description,
+      categoryId: input.categoryId,
+      price: input.price,
+      costPrice: input.costPrice,
+      imageUrl: input.imageUrl,
+      sku: input.sku,
+      isActive: input.isActive,
+      bulkPricingTiers: input.bulkPricingTiers ? tiers : undefined,
+    });
 
     try {
       await this.transactions.run(async (repos) => {
         await repos.products.update(id, this.toProductData(input));
         if (input.bulkPricingTiers) await repos.pricingTiers.replaceForProduct(id, tiers);
+        if (change) {
+          await repos.activityLog.create({
+            userId: actorId,
+            action: 'product.updated',
+            entityType: 'product',
+            entityId: id,
+            summary: change.summary,
+            details: change.details,
+          });
+        }
       });
     } catch (error) {
       if (isUniqueViolation(error) && input.sku) throw new ConflictError(SKU_TAKEN_MESSAGE(input.sku));
@@ -154,9 +185,20 @@ export class ProductService {
   }
 
   /** Soft delete: hidden everywhere, but sales history keeps pointing at it. */
-  async delete(id: number): Promise<void> {
-    const wasDeleted = await this.productRepository.softDelete(id);
-    if (!wasDeleted) throw new NotFoundError(`Product ${id} does not exist`);
+  async delete(id: number, actorId: number): Promise<void> {
+    const existing = await this.productRepository.findById(id, true);
+    if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
+
+    await this.transactions.run(async (repos) => {
+      await repos.products.softDelete(id);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'product.deleted',
+        entityType: 'product',
+        entityId: id,
+        summary: `Deleted product ${existing.name}`,
+      });
+    });
   }
 
   private async ensureCategoryExists(categoryId: number): Promise<void> {
@@ -201,4 +243,18 @@ export class ProductService {
       updatedAt: product.updated_at.toISOString(),
     };
   }
+}
+
+function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapshot {
+  return {
+    name: product.name,
+    description: product.description,
+    categoryId: product.category_id,
+    price: toMoney(product.base_price),
+    costPrice: toMoneyOrNull(product.cost_price),
+    imageUrl: product.image_url,
+    sku: product.sku,
+    isActive: product.is_active,
+    bulkPricingTiers: tiers,
+  };
 }

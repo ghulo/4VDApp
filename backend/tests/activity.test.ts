@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { ActivityLogRepository } from '../src/repositories/ActivityLogRepository.js';
-import { createTestUser, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
+import { createTestCategory, createTestUser, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
 let adminToken: string;
@@ -66,5 +66,71 @@ describe('GET /api/activity', () => {
     const response = await listActivity('?action=DROP%20TABLE');
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe('catalog activity', () => {
+  async function activitySummaries(action: string) {
+    const response = await listActivity(`?action=${action}`);
+    return response.body.data.map((entry: { summary: string }) => entry.summary);
+  }
+
+  it('should log creating, editing, re-pricing and deleting a product', async () => {
+    const category = await createTestCategory(context.db);
+    const created = await request(context.app)
+      .post('/api/products')
+      .set(auth(adminToken))
+      .send({ name: 'Oak Chair', categoryId: category.id, price: 89, stock: 5 });
+    const productId = created.body.data.id;
+
+    await request(context.app)
+      .put(`/api/products/${productId}`)
+      .set(auth(adminToken))
+      .send({ name: 'Oak Chair', categoryId: category.id, price: 95 });
+    await request(context.app)
+      .put(`/api/pricing/tiers/${productId}`)
+      .set(auth(adminToken))
+      .send({ tiers: [{ quantity: 10, price: 90 }] });
+    await request(context.app).delete(`/api/products/${productId}`).set(auth(adminToken));
+
+    expect(await activitySummaries('product,pricing')).toEqual([
+      'Deleted product Oak Chair',
+      'Updated bulk prices for Oak Chair',
+      'Changed price of Oak Chair from €89.00 to €95.00',
+      'Added product Oak Chair',
+    ]);
+  });
+
+  it('should not log a product save that changed nothing', async () => {
+    const category = await createTestCategory(context.db);
+    const created = await request(context.app)
+      .post('/api/products')
+      .set(auth(adminToken))
+      .send({ name: 'Lamp', categoryId: category.id, price: 30 });
+
+    await request(context.app)
+      .put(`/api/products/${created.body.data.id}`)
+      .set(auth(adminToken))
+      .send({ name: 'Lamp', categoryId: category.id, price: 30 });
+
+    expect(await activitySummaries('product.updated')).toEqual([]);
+  });
+
+  it('should log category changes with the admin as the author', async () => {
+    const created = await request(context.app).post('/api/categories').set(auth(adminToken)).send({ name: 'Lighting' });
+    await request(context.app)
+      .put(`/api/categories/${created.body.data.id}`)
+      .set(auth(adminToken))
+      .send({ name: 'Lamps' });
+    await request(context.app).delete(`/api/categories/${created.body.data.id}`).set(auth(adminToken));
+
+    const response = await listActivity('?action=category');
+
+    expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual([
+      'Deleted category Lamps',
+      'Renamed category Lighting to Lamps',
+      'Added category Lighting',
+    ]);
+    expect(response.body.data[0].user.name).toBe('Test admin');
   });
 });

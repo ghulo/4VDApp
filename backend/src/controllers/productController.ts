@@ -26,12 +26,12 @@ export function createProductController(productService: ProductService) {
     async update(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       const input = parseInput(updateProductSchema, req.body);
-      sendSuccess(res, await productService.update(id, input), { message: 'Product updated' });
+      sendSuccess(res, await productService.update(id, input, req.user!.id), { message: 'Product updated' });
     },
 
     async remove(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      await productService.delete(id);
+      await productService.delete(id, req.user!.id);
       sendSuccess(res, null, { message: 'Product deleted' });
     },
   };

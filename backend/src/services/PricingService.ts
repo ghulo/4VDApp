@@ -25,13 +25,25 @@ export class PricingService {
     return { productId, basePrice: toMoney(product.base_price), tiers };
   }
 
-  async replaceTiers(productId: number, tiers: PricingTier[]): Promise<PricingTiersDto> {
+  async replaceTiers(productId: number, tiers: PricingTier[], actorId: number): Promise<PricingTiersDto> {
     const product = await this.productRepository.findById(productId, true);
     if (!product) throw new NotFoundError(`Product ${productId} does not exist`);
 
     const basePrice = toMoney(product.base_price);
     const sortedTiers = validatePricingTiers(basePrice, tiers);
-    await this.transactions.run((repos) => repos.pricingTiers.replaceForProduct(productId, sortedTiers));
+    const previousTiers = await this.pricingTierRepository.findByProductId(productId);
+
+    await this.transactions.run(async (repos) => {
+      await repos.pricingTiers.replaceForProduct(productId, sortedTiers);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'pricing.updated',
+        entityType: 'product',
+        entityId: productId,
+        summary: `Updated bulk prices for ${product.name}`,
+        details: { from: previousTiers, to: sortedTiers },
+      });
+    });
     return { productId, basePrice, tiers: sortedTiers };
   }
 }

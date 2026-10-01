@@ -47,7 +47,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const activityLogRepository = new ActivityLogRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, config);
-  const categoryService = new CategoryService(categoryRepository);
+  const categoryService = new CategoryService(categoryRepository, transactions);
   const productService = new ProductService(productRepository, categoryRepository, pricingTierRepository, transactions);
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);

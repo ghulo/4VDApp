@@ -14,7 +14,7 @@ export function createPricingController(pricingService: PricingService) {
     async replaceTiers(req: Request, res: Response): Promise<void> {
       const { productId } = parseInput(productIdParamsSchema, req.params);
       const { tiers } = parseInput(replacePricingTiersSchema, req.body);
-      sendSuccess(res, await pricingService.replaceTiers(productId, tiers), { message: 'Pricing tiers updated' });
+      sendSuccess(res, await pricingService.replaceTiers(productId, tiers, req.user!.id), { message: 'Pricing tiers updated' });
     },
   };
 }

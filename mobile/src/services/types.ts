@@ -45,3 +45,15 @@ export interface Sale {
   pricePerUnit: number;
   totalAmount: number;
 }
+
+export interface SalesTotals {
+  salesCount: number;
+  unitsSold: number;
+  revenue: number;
+}
+
+export interface MySales {
+  current: SalesTotals;
+  previous: SalesTotals;
+  recentSales: Array<{ id: number; productName: string; quantity: number; totalAmount: number; saleDate: string }>;
+}

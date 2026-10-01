@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
 import { Button, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
@@ -57,9 +58,25 @@ export function ReturnScreen({ route, navigation }: Props) {
       }),
     onSuccess: () => {
       for (const key of [['reports'], ['products'], ['inventory'], ['approvals']]) queryClient.invalidateQueries({ queryKey: key });
-      navigation.goBack();
     },
   });
+
+  if (submit.data) {
+    const refundText = formatMoney(submit.data.refundAmount);
+    return submit.data.status === 'pending' ? (
+      <Confirmation
+        title="Sent to the owner"
+        message={`Don't give the ${refundText} refund yet. The owner has to approve this return first. You'll see the answer under Your requests on Home.`}
+        onDone={() => navigation.goBack()}
+      />
+    ) : (
+      <Confirmation
+        title="Returned"
+        message={`Give the customer ${refundText}. ${condition === 'damaged' ? 'The damaged units were written off.' : 'The units are back in stock.'}`}
+        onDone={() => navigation.goBack()}
+      />
+    );
+  }
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

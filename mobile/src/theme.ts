@@ -32,7 +32,7 @@ const dark: typeof light = {
   signalOut: '#ef5b4f',
   stockOk: '#6bbf91',
   onInk: '#161c23',
-  heroInk: '#2a3542',
+  heroInk: '#2c3a49',
   heroText: '#e6ebf0',
   heroMuted: '#9aa6b4',
 };

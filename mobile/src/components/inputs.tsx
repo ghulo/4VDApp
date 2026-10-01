@@ -89,7 +89,8 @@ export function ChoiceRow<TValue extends string>({ label, options, value, onChan
             <Pressable
               key={option.value}
               accessibilityRole="radio"
-              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={option.label}
+              accessibilityState={{ selected: isSelected, checked: isSelected }}
               onPress={() => onChange(option.value)}
               style={[
                 styles.choice,

@@ -60,7 +60,7 @@ export function DecisionControls({ subject, onApprove, onReject, isBusy, error }
             Reject
           </button>
           <button type="button" className="button button--quiet" onClick={() => setIsRejecting(false)}>
-            Keep it
+            Cancel
           </button>
         </form>
       ) : (

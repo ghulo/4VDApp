@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { secureStorage } from './secureStorage';
 import type { PaginationMeta } from './types';
 
 interface ApiResponse<TData> {
@@ -26,8 +26,9 @@ const TOKEN_KEY = 'fourvd.accessToken';
 const REFRESH_KEY = 'fourvd.refreshToken';
 
 /**
- * Tokens live in the phone's secure storage (Keychain / Keystore). They are
- * also cached in memory because secure storage reads are async and slow.
+ * Tokens live in the phone's secure storage (Keychain / Keystore), or the
+ * browser's storage on the web. They are also cached in memory because
+ * secure storage reads are async and slow.
  */
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -35,8 +36,8 @@ let refreshToken: string | null = null;
 export const tokenStore = {
   async load(): Promise<boolean> {
     [accessToken, refreshToken] = await Promise.all([
-      SecureStore.getItemAsync(TOKEN_KEY),
-      SecureStore.getItemAsync(REFRESH_KEY),
+      secureStorage.getItem(TOKEN_KEY),
+      secureStorage.getItem(REFRESH_KEY),
     ]);
     return accessToken !== null;
   },
@@ -46,12 +47,12 @@ export const tokenStore = {
   async save(token: string, refresh: string): Promise<void> {
     accessToken = token;
     refreshToken = refresh;
-    await Promise.all([SecureStore.setItemAsync(TOKEN_KEY, token), SecureStore.setItemAsync(REFRESH_KEY, refresh)]);
+    await Promise.all([secureStorage.setItem(TOKEN_KEY, token), secureStorage.setItem(REFRESH_KEY, refresh)]);
   },
   async clear(): Promise<void> {
     accessToken = null;
     refreshToken = null;
-    await Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+    await Promise.all([secureStorage.removeItem(TOKEN_KEY), secureStorage.removeItem(REFRESH_KEY)]);
   },
 };
 

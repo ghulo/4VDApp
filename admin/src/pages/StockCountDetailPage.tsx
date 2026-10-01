@@ -50,7 +50,7 @@ export function StockCountDetailPage() {
           Stock counts
         </Link>
         <h1 className="page-title">Count of {data.category?.name ?? 'the whole shop'}</h1>
-        <p className="page-intro">
+        <p className="page-intro page-intro--wide">
           <StatusPill status={data.status} /> Started by {data.startedBy?.name ?? 'Unknown'} on {formatDateTime(data.startedAt)}.{' '}
           {data.totals.counted} of {data.totals.products} products counted.
         </p>
@@ -71,7 +71,7 @@ export function StockCountDetailPage() {
             <dd>{formatMoney(Math.abs(shortage))}</dd>
           </div>
         </dl>
-        <div className="form-actions">
+        <div className="form-actions form-actions--spaced">
           {data.status === 'submitted' && (data.totals.pending ?? 0) > 0 && (
             <button type="button" className="button button--primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending}>
               {applyAll.isPending ? 'Correcting…' : 'Apply all differences'}

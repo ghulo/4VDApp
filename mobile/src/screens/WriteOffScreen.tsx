@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
 import { Button, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
@@ -36,9 +37,21 @@ export function WriteOffScreen({ route, navigation }: Props) {
     mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null }),
     onSuccess: () => {
       for (const key of [['products'], ['inventory'], ['approvals']]) queryClient.invalidateQueries({ queryKey: key });
-      navigation.goBack();
     },
   });
+
+  if (submit.data) {
+    const what = `${submit.data.quantity} × ${productName}`;
+    return submit.data.status === 'pending' ? (
+      <Confirmation
+        title="Sent to the owner"
+        message={`${what} will leave the stock once the owner approves it. You'll see the answer under Your requests on Home.`}
+        onDone={() => navigation.goBack()}
+      />
+    ) : (
+      <Confirmation title="Written off" message={`${what} has been taken out of stock.`} onDone={() => navigation.goBack()} />
+    );
+  }
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

@@ -1321,3 +1321,23 @@ textarea:focus-visible {
     width: 100%;
   }
 }
+
+.page-intro--wide {
+  max-width: none;
+}
+
+.form-actions--spaced:not(:empty) {
+  margin-top: 16px;
+}
+
+/* Product links inside rows keep the ink colour instead of the browser's blue. */
+.approval-row__title a {
+  color: inherit;
+}
+
+/* The comparison under a figure is a small note, not another figure. */
+.summary__figures .summary__change {
+  color: var(--steel);
+  font-size: 0.875rem;
+  font-weight: 400;
+}

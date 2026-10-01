@@ -91,3 +91,50 @@ export interface InventoryDetail extends InventoryItem {
 
 export const MANUAL_STOCK_REASONS = ['Restock', 'Return', 'Damage', 'Recount', 'Manual adjustment'] as const;
 export type StockReason = (typeof MANUAL_STOCK_REASONS)[number];
+
+export interface Sale {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  pricePerUnit: number;
+  totalAmount: number;
+  soldBy: string | null;
+  saleDate: string;
+  notes: string | null;
+}
+
+export interface Dashboard {
+  periodDays: number;
+  totalSales: number;
+  unitsSold: number;
+  totalRevenue: number;
+  totalProfit: number;
+  topProducts: Array<{ productId: number; productName: string; unitsSold: number; revenue: number }>;
+  lowStockCount: number;
+  inventoryValue: number;
+}
+
+export interface RevenuePoint {
+  periodStart: string;
+  revenue: number;
+  unitsSold: number;
+  salesCount: number;
+}
+
+export interface RevenueSeries {
+  period: 'daily' | 'weekly' | 'monthly';
+  totalRevenue: number;
+  points: RevenuePoint[];
+}
+
+export interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const USER_ROLES: UserRole[] = ['admin', 'employee', 'family'];

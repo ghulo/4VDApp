@@ -5,6 +5,7 @@ import { EmptyState } from './components/Feedback';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
+import { AlertsPage } from './pages/AlertsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { InventoryDetailPage } from './pages/InventoryDetailPage';
 import { InventoryPage } from './pages/InventoryPage';
@@ -12,6 +13,8 @@ import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { ProductFormPage } from './pages/ProductFormPage';
 import { ProductsPage } from './pages/ProductsPage';
+import { SalesPage } from './pages/SalesPage';
+import { UsersPage } from './pages/UsersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +58,9 @@ function App() {
               <Route path="products/new" element={<ProductFormPage />} />
               <Route path="products/:id" element={<ProductFormPage />} />
               <Route path="categories" element={<CategoriesPage />} />
+              <Route path="sales" element={<SalesPage />} />
+              <Route path="people" element={<UsersPage />} />
+              <Route path="alerts" element={<AlertsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

@@ -2,13 +2,16 @@ import 'dotenv/config';
 import { sql } from 'kysely';
 import { loadConfig } from '../config/env.js';
 import { createDatabase, type DatabaseClient } from '../database/connection.js';
+import { SalesRepository } from '../repositories/SalesRepository.js';
+import { TransactionManager } from '../repositories/TransactionManager.js';
+import { SalesService } from '../services/SalesService.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
 
 /**
  * Usage:
  *   npm run seed            -> starter categories + the admin account
- *   npm run seed -- --demo  -> also adds demo products (for local testing only)
+ *   npm run seed -- --demo  -> also adds demo products and a month of sales (local testing only)
  *
  * Safe to run more than once: existing rows are left alone.
  */
@@ -105,6 +108,53 @@ async function seedDemoProducts(db: DatabaseClient): Promise<void> {
   logger.info('Demo products ready', { count: DEMO_PRODUCTS.length });
 }
 
+/**
+ * A month of believable sales, recorded through the real SalesService so
+ * stock, history and alerts stay consistent. Skipped if any sales exist.
+ */
+async function seedDemoSales(db: DatabaseClient): Promise<void> {
+  const existing = await db.selectFrom('sales').select('id').limit(1).executeTakeFirst();
+  if (existing) return;
+
+  const admin = await db.selectFrom('users').select('id').where('role', '=', 'admin').orderBy('id').executeTakeFirst();
+  if (!admin) return;
+
+  const salesService = new SalesService(new SalesRepository(db), new TransactionManager(db));
+  const products = await db
+    .selectFrom('products as p')
+    .innerJoin('inventory as i', 'i.product_id', 'p.id')
+    .select(['p.id', 'i.quantity_on_hand'])
+    .where('p.deleted_at', 'is', null)
+    .execute();
+  const remaining = new Map(products.map((product) => [product.id, product.quantity_on_hand]));
+
+  // Deterministic "random" so every machine gets the same demo data.
+  let seed = 42;
+  const random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+
+  let recorded = 0;
+  for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+    const salesToday = Math.floor(random() * 3);
+    for (let index = 0; index < salesToday; index++) {
+      const product = products[Math.floor(random() * products.length)];
+      if (!product) continue;
+      const available = remaining.get(product.id) ?? 0;
+      // Leave a little stock so the demo isn't all sold out.
+      const quantity = Math.min(1 + Math.floor(random() * 4), available - 1);
+      if (quantity < 1) continue;
+
+      const saleDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000 - Math.floor(random() * 8) * 60 * 60 * 1000);
+      await salesService.record({ productId: product.id, quantity, notes: null, saleDate }, admin.id);
+      remaining.set(product.id, available - quantity);
+      recorded++;
+    }
+  }
+  logger.info('Demo sales ready', { count: recorded });
+}
+
 async function main(): Promise<void> {
   const config = loadConfig();
   const db = createDatabase(config.databaseUrl);
@@ -113,6 +163,7 @@ async function main(): Promise<void> {
     await seedAdmin(db);
     if (process.argv.includes('--demo')) {
       await seedDemoProducts(db);
+      await seedDemoSales(db);
     }
   } finally {
     await db.destroy();

@@ -1,16 +1,29 @@
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
+import { notificationsApi } from '../services/api';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', end: true },
   { to: '/inventory', label: 'Stock' },
+  { to: '/sales', label: 'Sales' },
   { to: '/products', label: 'Products' },
   { to: '/categories', label: 'Categories' },
+  { to: '/people', label: 'People' },
 ];
+
+const ALERT_POLL_MS = 60_000;
 
 export function Layout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
+  // Poll so a low-stock alert from an employee's sale shows up without a reload.
+  const unread = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => (await notificationsApi.list(1, true)).unreadCount,
+    refetchInterval: ALERT_POLL_MS,
+  });
+  const unreadCount = unread.data ?? 0;
 
   return (
     <div className="shell">
@@ -22,6 +35,14 @@ export function Layout() {
               {item.label}
             </NavLink>
           ))}
+          <NavLink to="/alerts" className="sidebar__link">
+            Alerts
+            {unreadCount > 0 && (
+              <span className="sidebar__badge" aria-label={`${unreadCount} unread`}>
+                {unreadCount}
+              </span>
+            )}
+          </NavLink>
         </nav>
         <div className="sidebar__account">
           <span className="sidebar__user">{user.name}</span>

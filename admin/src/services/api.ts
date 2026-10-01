@@ -1,14 +1,19 @@
 import { apiRequest, tokenStore } from './apiClient';
 import type {
+  AppNotification,
   Category,
+  Dashboard,
   InventoryDetail,
   InventoryItem,
   Paginated,
   PricingTier,
   Product,
   ProductInput,
+  RevenueSeries,
+  Sale,
   StockReason,
   User,
+  UserRole,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -43,6 +48,7 @@ export const authApi = {
 
 export interface ProductListQuery {
   page: number;
+  limit?: number;
   search?: string;
   categoryId?: number;
   inStock?: boolean;
@@ -95,4 +101,55 @@ export const inventoryApi = {
 export const pricingApi = {
   replace: async (productId: number, tiers: PricingTier[]) =>
     (await apiRequest<{ tiers: PricingTier[] }>(`/pricing/tiers/${productId}`, { method: 'PUT', body: { tiers } })).data,
+};
+
+export interface SaleListQuery {
+  page: number;
+  startDate?: string;
+  endDate?: string;
+  productId?: number;
+}
+
+export const salesApi = {
+  async list(query: SaleListQuery) {
+    const { data, meta } = await apiRequest<{ sales: Sale[]; totalRevenue: number }>('/sales', {
+      query: { limit: 20, ...query },
+    });
+    return { items: data.sales, totalRevenue: data.totalRevenue, meta: meta! };
+  },
+  record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string }) =>
+    (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
+};
+
+export const analyticsApi = {
+  dashboard: async (days: number) => (await apiRequest<Dashboard>('/analytics/dashboard', { query: { days } })).data,
+  revenue: async (period: RevenueSeries['period'], startDate?: string) =>
+    (await apiRequest<RevenueSeries>('/analytics/revenue', { query: { period, startDate } })).data,
+};
+
+export const usersApi = {
+  list: (page: number) => paginated<User>('/users', { page, limit: 50 }),
+  create: async (input: { email: string; name: string; role: UserRole; password: string }) =>
+    (await apiRequest<User>('/users', { method: 'POST', body: input })).data,
+  update: async (id: number, input: { name?: string; role?: UserRole; isActive?: boolean; password?: string }) =>
+    (await apiRequest<User>(`/users/${id}`, { method: 'PUT', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest(`/users/${id}`, { method: 'DELETE' });
+  },
+};
+
+export const notificationsApi = {
+  async list(page: number, unreadOnly = false) {
+    const { data, meta } = await apiRequest<{ notifications: AppNotification[]; unreadCount: number }>(
+      '/notifications',
+      { query: { page, limit: 20, unreadOnly } },
+    );
+    return { items: data.notifications, unreadCount: data.unreadCount, meta: meta! };
+  },
+  markRead: async (id: number) => {
+    await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+  },
+  markAllRead: async () => {
+    await apiRequest('/notifications/read-all', { method: 'POST' });
+  },
 };

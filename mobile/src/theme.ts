@@ -14,6 +14,10 @@ const light = {
   signalOut: '#c8362b',
   stockOk: '#3d7a5a',
   onInk: '#ffffff',
+  // The slate block at the top of Home.
+  heroInk: '#1c2530',
+  heroText: '#ffffff',
+  heroMuted: '#a9b5c2',
 };
 
 const dark: typeof light = {
@@ -28,6 +32,9 @@ const dark: typeof light = {
   signalOut: '#ef5b4f',
   stockOk: '#6bbf91',
   onInk: '#161c23',
+  heroInk: '#2a3542',
+  heroText: '#e6ebf0',
+  heroMuted: '#9aa6b4',
 };
 
 export type ThemeColors = typeof light;

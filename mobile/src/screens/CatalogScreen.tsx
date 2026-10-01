@@ -1,11 +1,11 @@
-import { useNavigation } from '@react-navigation/native';
+import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ProductCard } from '../components/ProductCard';
 import { EmptyState, ErrorState, Loading } from '../components/ui';
-import type { RootStackParamList } from '../navigation/types';
+import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { categoriesApi, productsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 
@@ -14,10 +14,17 @@ const SEARCH_DEBOUNCE_MS = 300;
 export function CatalogScreen() {
   const colors = useThemeColors();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<MainTabParamList, 'Catalog'>>();
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [inStockOnly, setInStockOnly] = useState(false);
+
+  // A search typed on Home arrives as a route param.
+  const searchFromHome = route.params?.search;
+  useEffect(() => {
+    if (searchFromHome !== undefined) setSearchDraft(searchFromHome);
+  }, [searchFromHome]);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchDraft.trim()), SEARCH_DEBOUNCE_MS);

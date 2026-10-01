@@ -12,7 +12,7 @@ const shortDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'sho
  * Last month is sent explicitly so "Last month" really means last month,
  * not "the same number of days before the 1st".
  */
-function monthRanges(now = new Date()) {
+export function monthRanges(now = new Date()) {
   const year = now.getFullYear();
   const month = now.getMonth();
   const start = new Date(year, month, 1);

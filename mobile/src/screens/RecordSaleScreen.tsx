@@ -69,6 +69,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
     onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['reports', 'my-sales'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       setSavedMessage(`Sold ${sale.quantity} × ${sale.productName} for ${formatMoney(sale.totalAmount)}.`);
       setQuantity(1);
       setNotes('');

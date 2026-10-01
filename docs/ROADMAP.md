@@ -10,7 +10,7 @@ Order: get the data right first, then build the smart parts on top of it.
 | # | Piece | Covers | Status |
 |---|---|---|---|
 | 0 | Lock-down and polish | Login required for all data, fixes from the reports review, docs | Done |
-| 0b | Employee home screen | A Home tab in the mobile app with today's numbers and every tool | In progress |
+| 0b | Employee home screen | A Home tab in the mobile app with today's numbers and every tool | Done |
 | 1 | Returns and stock counts | Undo or partly refund a sale; count shelves and approve the differences; write off damaged, lost or expired stock with a reason | Not started |
 | 2 | Price control and team | Time-limited discounts, price history, a minimum price or margin; sales targets, commission, finer permissions | Not started |
 | 3 | Push notifications | Phone (Expo push) and PC (browser) alerts with per-person settings | Not started |

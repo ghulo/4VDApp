@@ -49,7 +49,7 @@ export function MySales() {
           <Text style={[styles.hero, { color: colors.ink }]}>{formatMoney(mySales.data.current.revenue)}</Text>
           <Text style={[styles.muted, { color: colors.steel }]}>
             {mySales.data.current.salesCount} {mySales.data.current.salesCount === 1 ? 'sale' : 'sales'},{' '}
-            {mySales.data.current.unitsSold} units
+            {mySales.data.current.unitsSold} {mySales.data.current.unitsSold === 1 ? 'unit' : 'units'}
             {mySales.data.current.refunds > 0 ? `, after ${formatMoney(mySales.data.current.refunds)} in refunds` : ''}. Last month:{' '}
             {formatMoney(mySales.data.previous.revenue)}
           </Text>

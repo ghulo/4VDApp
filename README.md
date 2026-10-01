@@ -104,9 +104,11 @@ cd backend
 npm install
 cp .env.example .env     # set JWT_SECRET and the SEED_ADMIN_* values
 npm run db:setup         # creates the tables, starter categories and your admin account
-npm run seed -- --demo   # optional: demo products and a month of demo sales
+npm run seed:demo       # optional: demo products, a month of sales and demo logins (never in production)
 npm run dev
 ```
+After pulling new code, run `npm run migrate` to add any new tables; the server doesn't do it on start.
+
 Check it's up: `curl http://localhost:3000/health`
 
 **3. Admin dashboard** (runs on http://localhost:5173):
@@ -126,6 +128,25 @@ cp .env.example .env     # set EXPO_PUBLIC_API_URL to your computer's Wi-Fi IP, 
 npm start
 ```
 Scan the QR code with Expo Go (phone and computer on the same Wi-Fi). On Windows, if the phone can't connect, allow Node.js through the firewall for private networks.
+
+**5. Try the mobile app in a browser** (no phone needed):
+```bash
+cd mobile
+npm run web              # opens http://localhost:8081
+```
+It shows phone-width in the middle of the window. The login is kept in the browser's storage instead of the phone's keychain.
+
+### Demo logins
+
+`npm run seed:demo` creates one account per role on your local database. The passwords are public on purpose, so the command refuses to run when `NODE_ENV=production`.
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `demo-admin@4vd.local` | `demo-admin-4vd` |
+| Employee | `demo-employee@4vd.local` | `demo-employee-4vd` |
+| Family | `demo-family@4vd.local` | `demo-family-4vd` |
+
+Running it again resets them if a password was changed or an account was switched off.
 
 ### Tests
 ```bash

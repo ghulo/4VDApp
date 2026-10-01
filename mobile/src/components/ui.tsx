@@ -25,6 +25,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || loading }}
       disabled={disabled || loading}
       onPress={onPress}

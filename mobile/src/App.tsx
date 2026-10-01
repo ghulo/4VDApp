@@ -3,9 +3,11 @@ import { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold } from '@expo-goog
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
+import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Loading } from './components/ui';
 import { RootNavigator } from './navigation/RootNavigator';
+import { useThemeColors } from './theme';
 import { ApiError } from './services/apiClient';
 import { AuthProvider } from './state/AuthProvider';
 
@@ -20,7 +22,17 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * In a laptop browser, keep the app phone-width and centred instead of
+ * stretching across the whole window. Phones are unaffected.
+ */
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  column: Platform.OS === 'web' ? { flex: 1, width: '100%', maxWidth: 520, alignSelf: 'center' } : { flex: 1 },
+});
+
 export default function App() {
+  const colors = useThemeColors();
   const [fontsLoaded] = useFonts({
     Barlow_400Regular,
     Barlow_600SemiBold,
@@ -31,7 +43,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>{fontsLoaded ? <RootNavigator /> : <Loading />}</AuthProvider>
+        {/* The page colour fills the browser window around the phone-width column. */}
+        <View style={[styles.page, { backgroundColor: colors.background }]}>
+          <View style={styles.column}>
+            <AuthProvider>{fontsLoaded ? <RootNavigator /> : <Loading />}</AuthProvider>
+          </View>
+        </View>
       </QueryClientProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>

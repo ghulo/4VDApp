@@ -9,7 +9,7 @@ export function createCategoryRoutes({ categoryService, guards }: Container): Ro
   const controller = createCategoryController(categoryService);
   const router = Router();
 
-  router.get('/', controller.list);
+  router.get('/', guards.authenticated, controller.list);
   router.post('/', ...guards.admin, controller.create);
   router.put('/:id', ...guards.admin, controller.update);
   router.delete('/:id', ...guards.admin, controller.remove);
@@ -21,8 +21,8 @@ export function createProductRoutes({ productService, guards }: Container): Rout
   const controller = createProductController(productService);
   const router = Router();
 
-  router.get('/', controller.list);
-  router.get('/:id', controller.getById);
+  router.get('/', guards.authenticated, controller.list);
+  router.get('/:id', guards.authenticated, controller.getById);
   router.post('/', ...guards.admin, controller.create);
   router.put('/:id', ...guards.admin, controller.update);
   router.delete('/:id', ...guards.admin, controller.remove);
@@ -34,8 +34,8 @@ export function createInventoryRoutes({ inventoryService, guards }: Container): 
   const controller = createInventoryController(inventoryService);
   const router = Router();
 
-  router.get('/', controller.list);
-  router.get('/:productId', controller.getByProductId);
+  router.get('/', guards.authenticated, controller.list);
+  router.get('/:productId', guards.authenticated, controller.getByProductId);
   router.patch('/:productId', ...guards.admin, controller.adjust);
 
   return router;
@@ -45,7 +45,7 @@ export function createPricingRoutes({ pricingService, guards }: Container): Rout
   const controller = createPricingController(pricingService);
   const router = Router();
 
-  router.get('/tiers/:productId', controller.getTiers);
+  router.get('/tiers/:productId', guards.authenticated, controller.getTiers);
   router.put('/tiers/:productId', ...guards.admin, controller.replaceTiers);
 
   return router;

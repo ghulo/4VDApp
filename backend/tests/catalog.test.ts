@@ -4,6 +4,7 @@ import { createTestCategory, loginAs, resetData, setupTestApp, type TestContext 
 
 let context: TestContext;
 let adminToken: string;
+let browserToken: string;
 let categoryId: number;
 
 beforeAll(async () => {
@@ -12,11 +13,14 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetData(context.db);
   adminToken = await loginAs(context, 'admin');
+  // Catalog reads need a login; family is the least-privileged role that can browse.
+  browserToken = await loginAs(context, 'family', { email: 'browser@test.local' });
   categoryId = (await createTestCategory(context.db)).id;
 });
 afterAll(() => context.db.destroy());
 
 const asAdmin = () => ({ Authorization: `Bearer ${adminToken}` });
+const asBrowser = () => ({ Authorization: `Bearer ${browserToken}` });
 
 function createProduct(overrides: Record<string, unknown> = {}) {
   return request(context.app)
@@ -59,7 +63,7 @@ describe('products', () => {
   it('should record the starting stock in the audit trail', async () => {
     const { body } = await createProduct();
 
-    const inventory = await request(context.app).get(`/api/inventory/${body.data.id}`);
+    const inventory = await request(context.app).get(`/api/inventory/${body.data.id}`).set(asBrowser());
 
     expect(inventory.body.data.recentAdjustments).toEqual([
       expect.objectContaining({ quantity: 25, reason: 'Initial stock', adjustedBy: 'Test admin' }),
@@ -70,12 +74,10 @@ describe('products', () => {
     const { body } = await createProduct();
     const familyToken = await loginAs(context, 'family');
 
-    const asVisitor = await request(context.app).get(`/api/products/${body.data.id}`);
     const asFamily = await request(context.app)
       .get(`/api/products/${body.data.id}`)
       .set('Authorization', `Bearer ${familyToken}`);
 
-    expect(asVisitor.body.data).not.toHaveProperty('costPrice');
     expect(asFamily.body.data).not.toHaveProperty('costPrice');
   });
 
@@ -142,9 +144,9 @@ describe('products', () => {
     await createProduct();
     await createProduct({ name: 'Brass Lamp', sku: 'LAMP-1', categoryId: lighting.id, stock: 0, bulkPricingTiers: [] });
 
-    const bySearch = await request(context.app).get('/api/products?search=lamp');
-    const byCategory = await request(context.app).get(`/api/products?categoryId=${lighting.id}`);
-    const inStockOnly = await request(context.app).get('/api/products?inStock=true');
+    const bySearch = await request(context.app).get('/api/products?search=lamp').set(asBrowser());
+    const byCategory = await request(context.app).get(`/api/products?categoryId=${lighting.id}`).set(asBrowser());
+    const inStockOnly = await request(context.app).get('/api/products?inStock=true').set(asBrowser());
 
     expect(bySearch.body.data.map((p: { name: string }) => p.name)).toEqual(['Brass Lamp']);
     expect(byCategory.body.data).toHaveLength(1);
@@ -156,18 +158,18 @@ describe('products', () => {
     await createProduct({ name: '50% Off Chair' });
     await createProduct({ name: 'Plain Chair', sku: 'CHAIR-2' });
 
-    const response = await request(context.app).get('/api/products?search=50%25');
+    const response = await request(context.app).get('/api/products?search=50%25').set(asBrowser());
 
     expect(response.body.data).toHaveLength(1);
   });
 
-  it('should hide inactive products from visitors but show them to admins', async () => {
+  it('should hide inactive products from non-admins but show them to admins', async () => {
     await createProduct({ isActive: false });
 
-    const asVisitor = await request(context.app).get('/api/products');
+    const asBrowserList = await request(context.app).get('/api/products').set(asBrowser());
     const asAdminList = await request(context.app).get('/api/products').set(asAdmin());
 
-    expect(asVisitor.body.data).toHaveLength(0);
+    expect(asBrowserList.body.data).toHaveLength(0);
     expect(asAdminList.body.data).toHaveLength(1);
   });
 
@@ -207,7 +209,7 @@ describe('inventory', () => {
     const { body } = await createProduct({ stock: 3 });
 
     const response = await adjust(body.data.id, { quantity: -4, reason: 'Damage' });
-    const inventory = await request(context.app).get(`/api/inventory/${body.data.id}`);
+    const inventory = await request(context.app).get(`/api/inventory/${body.data.id}`).set(asBrowser());
 
     expect(response.status).toBe(400);
     expect(response.body.message).toMatch(/Not enough stock/);
@@ -239,7 +241,7 @@ describe('inventory', () => {
     await createProduct({ name: 'Almost out', sku: 'B', stock: 1 });
     await createProduct({ name: 'Running low', sku: 'C', stock: 8 });
 
-    const response = await request(context.app).get('/api/inventory?lowStock=true');
+    const response = await request(context.app).get('/api/inventory?lowStock=true').set(asBrowser());
 
     expect(response.body.data.map((item: { productName: string }) => item.productName)).toEqual([
       'Almost out',
@@ -256,7 +258,7 @@ describe('pricing tiers', () => {
       .put(`/api/pricing/tiers/${body.data.id}`)
       .set(asAdmin())
       .send({ tiers: [{ quantity: 5, price: 95 }] });
-    const fetched = await request(context.app).get(`/api/pricing/tiers/${body.data.id}`);
+    const fetched = await request(context.app).get(`/api/pricing/tiers/${body.data.id}`).set(asBrowser());
 
     expect(response.status).toBe(200);
     expect(fetched.body.data).toEqual({ productId: body.data.id, basePrice: 100, tiers: [{ quantity: 5, price: 95 }] });
@@ -267,7 +269,7 @@ describe('categories', () => {
   it('should list categories with how many products they have', async () => {
     await createProduct();
 
-    const response = await request(context.app).get('/api/categories');
+    const response = await request(context.app).get('/api/categories').set(asBrowser());
 
     expect(response.body.data).toEqual([expect.objectContaining({ name: 'Furniture', productCount: 1 })]);
   });
@@ -285,5 +287,23 @@ describe('categories', () => {
 
     expect(response.status).toBe(409);
     expect(response.body.message).toMatch(/1 product/);
+  });
+});
+
+describe('access', () => {
+  const readEndpoints = ['/api/products', '/api/products/1', '/api/categories', '/api/inventory', '/api/inventory/1', '/api/pricing/tiers/1'];
+
+  it.each(readEndpoints)('should require login for GET %s', async (path) => {
+    const response = await request(context.app).get(path);
+
+    expect(response.status).toBe(401);
+  });
+
+  it('should let any logged-in role browse the catalog', async () => {
+    const familyToken = await loginAs(context, 'family');
+
+    const response = await request(context.app).get('/api/products').set({ Authorization: `Bearer ${familyToken}` });
+
+    expect(response.status).toBe(200);
   });
 });

@@ -17,6 +17,8 @@ The real schema differs in these ways:
 - **New `favorites` table** (`user_id`, `product_id`, `created_at`, composite primary key) for the wishlist
 - **`idx_inventory_product` and `idx_users_email` were dropped:** those columns are `UNIQUE`, so PostgreSQL already indexes them
 - **`sales.total_amount` is `DECIMAL(12, 2)`** so large orders can't overflow
+- **`sales.unit_cost`** (migration 002): the product's cost when it was sold, so profit doesn't change when a cost price is edited. Sales from before this migration were filled in from the cost price at the time of the migration
+- **New `activity_log` table** (migration 002): `user_id`, `action`, `entity_type`, `entity_id`, `summary`, `details` (JSONB), `created_at`, indexed by time, user and entity
 
 ## Tables
 
@@ -194,6 +196,7 @@ npm run migrate:prod       # in production, after `npm run build`
 
 **Schema versions:**
 - 001_initial_schema: every table above, including notifications, stock adjustments, product images, refresh tokens and favorites
+- 002_reports_and_activity: `sales.unit_cost` and the `activity_log` table
 
 ---
 

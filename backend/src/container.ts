@@ -17,6 +17,8 @@ import { InventoryRepository } from './repositories/InventoryRepository.js';
 import { PricingTierRepository } from './repositories/PricingTierRepository.js';
 import { ProductRepository } from './repositories/ProductRepository.js';
 import { RefreshTokenRepository } from './repositories/RefreshTokenRepository.js';
+import { ReportsRepository } from './repositories/ReportsRepository.js';
+import { ReportsService } from './services/ReportsService.js';
 import { StockAdjustmentRepository } from './repositories/StockAdjustmentRepository.js';
 import { TransactionManager } from './repositories/TransactionManager.js';
 import { UserRepository } from './repositories/UserRepository.js';
@@ -45,6 +47,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const notificationRepository = new NotificationRepository(db);
   const favoriteRepository = new FavoriteRepository(db);
   const activityLogRepository = new ActivityLogRepository(db);
+  const reportsRepository = new ReportsRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
   const categoryService = new CategoryService(categoryRepository, transactions);
@@ -62,6 +65,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const activityLogService = new ActivityLogService(activityLogRepository);
+  const reportsService = new ReportsService(reportsRepository);
 
   const authenticated = requireAuth(userRepository);
   const guards = {
@@ -87,6 +91,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
     favoriteService,
     activityLogRepository,
     activityLogService,
+    reportsRepository,
+    reportsService,
     guards,
   };
 }

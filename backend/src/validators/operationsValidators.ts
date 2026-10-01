@@ -9,14 +9,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'must be a date like 2026-10-01');
 
 /** "2026-10-01" as a start means the very beginning of that day (UTC). */
-const startDateQuery = isoDate.transform((value) => new Date(value));
+export const startDateQuery = isoDate.transform((value) => new Date(value));
 
 /**
  * "2026-10-31" as an end date means "up to and including the 31st", so a
  * date without a time is pushed to the start of the next day (ranges are
  * end-exclusive internally).
  */
-const endDateQuery = isoDate.transform((value) =>
+export const endDateQuery = isoDate.transform((value) =>
   DATE_ONLY.test(value) ? new Date(new Date(value).getTime() + MS_PER_DAY) : new Date(value),
 );
 

@@ -15,6 +15,7 @@ import {
   createSalesRoutes,
   createUserRoutes,
 } from './operationsRoutes.js';
+import { createReportsRoutes } from './reportsRoutes.js';
 
 /** Root router for everything under /api. */
 export function createApiRoutes(container: Container): Router {
@@ -31,6 +32,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/notifications', createNotificationRoutes(container));
   router.use('/favorites', createFavoriteRoutes(container));
   router.use('/activity', createActivityRoutes(container));
+  router.use('/reports', createReportsRoutes(container));
 
   return router;
 }

@@ -15,6 +15,8 @@ export interface ResolvedPeriod {
   previousStartDate?: string;
   previousEndDate?: string;
   label: string;
+  /** "Custom dates" is picked but one date is still empty; this month is shown meanwhile. */
+  waitingForDates?: true;
 }
 
 const MS_PER_MINUTE = 60 * 1000;
@@ -63,11 +65,13 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
 
   if (key === 'custom' && custom?.from && custom.to) {
     const start = localDay(custom.from);
-    const end = new Date(localDay(custom.to).getTime() + MS_PER_DAY);
+    const last = localDay(custom.to);
+    // Next local midnight by calendar, not +24h: clock-change days are 23 or 25 hours.
+    const end = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
     return {
       startDate: start.toISOString(),
       endDate: end.toISOString(),
-      label: `${dayLabel.format(start)} to ${dayLabel.format(localDay(custom.to))}`,
+      label: `${dayLabel.format(start)} to ${dayLabel.format(last)}`,
     };
   }
 
@@ -104,6 +108,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
     }
     default: {
       // "custom" without both dates picked yet also lands here and shows this month.
+      const waitingForDates = key === 'custom' ? ({ waitingForDates: true } as const) : {};
       const start = new Date(year, month, 1);
       const end = nowToTheMinute(now);
       return {
@@ -112,6 +117,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
         previousStartDate: new Date(year, month - 1, 1).toISOString(),
         previousEndDate: sameMomentEarlier(end, { months: 1 }, start).toISOString(),
         label: `${monthLabel.format(start)} so far`,
+        ...waitingForDates,
       };
     }
   }

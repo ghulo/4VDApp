@@ -159,6 +159,8 @@ export interface TeamRow {
   userId: number;
   name: string;
   role: UserRole;
+  /** Deactivated or removed since; kept so their past sales still show. */
+  hasLeft: boolean;
   salesCount: number;
   unitsSold: number;
   revenue: number;

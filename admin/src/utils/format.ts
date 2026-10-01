@@ -1,3 +1,11 @@
+import type { UserRole } from '../services/types';
+
+export const ROLE_LABEL: Record<UserRole, string> = {
+  admin: 'Admin',
+  employee: 'Employee',
+  family: 'Family',
+};
+
 const moneyFormatter = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
 const dateFormatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {

@@ -5,12 +5,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { usersApi } from '../services/api';
 import { type User, type UserRole, USER_ROLES } from '../services/types';
 import { errorMessage } from '../utils/errors';
-
-const ROLE_LABEL: Record<UserRole, string> = {
-  admin: 'Admin',
-  employee: 'Employee',
-  family: 'Family',
-};
+import { ROLE_LABEL } from '../utils/format';
 
 const ROLE_HINT: Record<UserRole, string> = {
   admin: 'Everything, including this dashboard',

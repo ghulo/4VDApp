@@ -26,6 +26,8 @@ export interface TeamRow {
   userId: number;
   name: string;
   role: string;
+  /** Deactivated or removed since; kept so their past sales still show. */
+  hasLeft: boolean;
   salesCount: number;
   unitsSold: number;
   revenue: number;
@@ -101,6 +103,7 @@ export class ReportsService {
         userId: row.user_id,
         name: row.name,
         role: row.role,
+        hasLeft: row.has_left,
         salesCount,
         unitsSold: Number(row.units_sold),
         revenue,
@@ -116,7 +119,7 @@ export class ReportsService {
       const revenue = Number(row.revenue);
       const cost = Number(row.cost);
       const profit = Number(row.profit);
-      // Margin is only meaningful when every sale in the group had a known cost.
+      // Sales without a known cost are left out of the margin, as in the summary.
       return {
         id: row.id,
         name: row.name,
@@ -124,7 +127,7 @@ export class ReportsService {
         revenue,
         cost,
         profit,
-        margin: row.has_unknown_cost ? null : margin(profit, revenue),
+        margin: margin(profit, Number(row.revenue_with_cost)),
         hasUnknownCost: row.has_unknown_cost,
       };
     });

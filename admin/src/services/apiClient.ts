@@ -157,6 +157,10 @@ export function saveDownload(blob: Blob, filename: string): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  // Some Safari and Firefox versions ignore clicks on detached links, or cancel
+  // the download if the URL is revoked straight away.
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

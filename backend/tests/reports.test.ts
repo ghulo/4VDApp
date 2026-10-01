@@ -154,6 +154,18 @@ describe('GET /api/reports/summary', () => {
     expect(missing.status).toBe(400);
   });
 
+  it('should not allow an extra day for exact times, only fit a full year of dates', async () => {
+    const overByHalfADay = await request(context.app)
+      .get('/api/reports/summary?startDate=2026-01-01T00:00:00Z&endDate=2027-01-02T12:00:00Z')
+      .set(auth(adminToken));
+    const fullYear = await request(context.app)
+      .get('/api/reports/summary?startDate=2026-01-01&endDate=2027-01-01')
+      .set(auth(adminToken));
+
+    expect(overByHalfADay.status).toBe(400);
+    expect(fullYear.status).toBe(200);
+  });
+
   it('should be admin only', async () => {
     const employeeToken = await loginAs(context, 'employee');
 
@@ -192,7 +204,20 @@ describe('GET /api/reports/team', () => {
 
     const response = await request(context.app).get(`/api/reports/team?${MARCH}`).set(auth(adminToken));
 
-    expect(response.body.data).toContainEqual(expect.objectContaining({ userId: leaver.id, revenue: 100 }));
+    expect(response.body.data).toContainEqual(expect.objectContaining({ userId: leaver.id, revenue: 100, hasLeft: true }));
+    expect(response.body.data).toContainEqual(expect.objectContaining({ name: 'Test admin', hasLeft: false }));
+  });
+
+  it('should still credit sales of a product that was deleted later', async () => {
+    const productId = await createProduct();
+    await sell(adminToken, productId, 1, '2026-03-10T12:00:00Z');
+    await request(context.app).delete(`/api/products/${productId}`).set(auth(adminToken));
+
+    const team = await request(context.app).get(`/api/reports/team?${MARCH}`).set(auth(adminToken));
+    const profit = await request(context.app).get(`/api/reports/profit?${MARCH}`).set(auth(adminToken));
+
+    expect(team.body.data).toContainEqual(expect.objectContaining({ name: 'Test admin', revenue: 100 }));
+    expect(profit.body.data).toEqual([expect.objectContaining({ id: productId, revenue: 100, profit: 40 })]);
   });
 });
 
@@ -223,6 +248,20 @@ describe('GET /api/reports/profit', () => {
       .set(auth(adminToken));
 
     expect(response.body.data).toEqual([expect.objectContaining({ name: 'Furniture', revenue: 100, profit: 40 })]);
+  });
+
+  it('should leave unknown-cost sales out of a group margin instead of hiding the margin', async () => {
+    const chair = await createProduct();
+    const lamp = await createProduct({ name: 'Mystery Lamp', costPrice: null });
+    await sell(adminToken, chair, 2, '2026-03-05T12:00:00Z');
+    await sell(adminToken, lamp, 1, '2026-03-05T12:00:00Z');
+
+    const response = await request(context.app)
+      .get(`/api/reports/profit?${MARCH}&groupBy=category`)
+      .set(auth(adminToken));
+
+    // 80 profit on the 200 of revenue with a known cost; the lamp's 100 is left out.
+    expect(response.body.data).toEqual([expect.objectContaining({ revenue: 300, profit: 80, margin: 0.4, hasUnknownCost: true })]);
   });
 
   it('should reject an unknown grouping', async () => {

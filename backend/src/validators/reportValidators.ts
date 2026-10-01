@@ -4,9 +4,9 @@ import { endDateQuery, startDateQuery } from './operationsValidators.js';
 const MAX_RANGE_DAYS = 366;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const isWithinMaxRange = (start: Date, end: Date) =>
-  // + 1 day: a full year picked as date-only start and end pushes the end to the next midnight.
-  end.getTime() - start.getTime() <= (MAX_RANGE_DAYS + 1) * MS_PER_DAY;
+// A full year of dates (e.g. 1 Jan to 1 Jan, end pushed to the next midnight)
+// is 366 days, or 367 only across a leap day, so no extra allowance is needed.
+const isWithinMaxRange = (start: Date, end: Date) => end.getTime() - start.getTime() <= MAX_RANGE_DAYS * MS_PER_DAY;
 
 export const reportRangeSchema = z
   .object({

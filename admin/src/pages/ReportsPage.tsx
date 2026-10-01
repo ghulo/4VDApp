@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
@@ -22,12 +22,18 @@ export function ReportsPage() {
   const period = (params.get('period') as PeriodKey | null) ?? 'this-month';
   const from = params.get('from') ?? '';
   const to = params.get('to') ?? '';
-  const range = resolvePeriod(period, { from, to });
-  const rangeKey = { startDate: range.startDate, endDate: range.endDate };
+  // Work the range out once per selection: ranges ending "now" must not
+  // change on every render, or the queries below would refetch in a loop.
+  const range = useMemo(() => resolvePeriod(period, { from, to }), [period, from, to]);
+  const rangeKey = useMemo(() => ({ startDate: range.startDate, endDate: range.endDate }), [range]);
+  const comparedRange = useMemo(
+    () => ({ ...rangeKey, previousStartDate: range.previousStartDate, previousEndDate: range.previousEndDate }),
+    [range, rangeKey],
+  );
 
   const summary = useQuery({
-    queryKey: ['reports', 'summary', rangeKey],
-    queryFn: () => reportsApi.summary(rangeKey),
+    queryKey: ['reports', 'summary', comparedRange],
+    queryFn: () => reportsApi.summary(comparedRange),
     placeholderData: keepPreviousData,
   });
 

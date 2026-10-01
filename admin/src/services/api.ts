@@ -164,8 +164,13 @@ export interface ReportRange {
   endDate: string;
 }
 
+export interface ComparedRange extends ReportRange {
+  previousStartDate?: string;
+  previousEndDate?: string;
+}
+
 export const reportsApi = {
-  summary: async (range: ReportRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
+  summary: async (range: ComparedRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
   team: async (range: ReportRange) => (await apiRequest<TeamRow[]>('/reports/team', { query: { ...range } })).data,
   profit: async (range: ReportRange, groupBy: 'product' | 'category') =>
     (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy } })).data,
@@ -174,7 +179,9 @@ export const reportsApi = {
 
 export const exportsApi = {
   async download(kind: 'sales' | 'stock' | 'team', range?: ReportRange): Promise<void> {
-    const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, range ? { ...range } : {});
+    // The server names files and writes dates in the admin's own timezone.
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, { ...range, tz });
     saveDownload(blob, filename ?? `4vd-${kind}.csv`);
   },
 };

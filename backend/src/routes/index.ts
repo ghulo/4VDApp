@@ -15,6 +15,7 @@ import {
   createSalesRoutes,
   createUserRoutes,
 } from './operationsRoutes.js';
+import { createSettingsRoutes } from './approvalRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
 import { createReportsRoutes } from './reportsRoutes.js';
 
@@ -35,6 +36,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/activity', createActivityRoutes(container));
   router.use('/reports', createReportsRoutes(container));
   router.use('/exports', createExportsRoutes(container));
+  router.use('/settings', createSettingsRoutes(container));
 
   return router;
 }

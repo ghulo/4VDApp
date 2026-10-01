@@ -6,6 +6,7 @@ import { NotificationRepository } from './NotificationRepository.js';
 import { PricingTierRepository } from './PricingTierRepository.js';
 import { ProductRepository } from './ProductRepository.js';
 import { SalesRepository } from './SalesRepository.js';
+import { SettingsRepository } from './SettingsRepository.js';
 import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
 import { UserRepository } from './UserRepository.js';
 
@@ -20,6 +21,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     activityLog: new ActivityLogRepository(db),
     categories: new CategoryRepository(db),
     users: new UserRepository(db),
+    settings: new SettingsRepository(db),
   };
 }
 

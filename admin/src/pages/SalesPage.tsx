@@ -46,7 +46,7 @@ function RecordSaleForm() {
   const record = useMutation({
     mutationFn: salesApi.record,
     onSuccess: (sale) => {
-      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications']) {
+      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       setSavedMessage(`Sold ${sale.quantity} × ${sale.productName} for ${formatMoney(sale.totalAmount)}.`);

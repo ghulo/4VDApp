@@ -1,5 +1,6 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
+  ActivityEntry,
   AppNotification,
   Category,
   Dashboard,
@@ -176,4 +177,9 @@ export const exportsApi = {
     const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, range ? { ...range } : {});
     saveDownload(blob, filename ?? `4vd-${kind}.csv`);
   },
+};
+
+export const activityApi = {
+  list: (query: { page: number; userId?: number; action?: string }) =>
+    paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
 };

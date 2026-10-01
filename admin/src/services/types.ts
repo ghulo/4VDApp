@@ -186,3 +186,14 @@ export interface ReorderSuggestion {
   daysLeft: number | null;
   suggestedOrder: number;
 }
+
+export interface ActivityEntry {
+  id: number;
+  action: string;
+  entityType: string | null;
+  entityId: number | null;
+  summary: string;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+  user: { id: number; name: string } | null;
+}

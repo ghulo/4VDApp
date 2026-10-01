@@ -4,7 +4,8 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
 import { StockTag } from '../components/StockTag';
-import { inventoryApi } from '../services/api';
+import { inventoryApi, reportsApi } from '../services/api';
+import type { ReorderSuggestion } from '../services/types';
 import { formatDate } from '../utils/format';
 
 export function InventoryPage() {
@@ -18,6 +19,10 @@ export function InventoryPage() {
     queryFn: () => inventoryApi.list({ page, search, lowStock }),
     placeholderData: keepPreviousData,
   });
+  const suggestions = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
+  const suggestionById = new Map<number, ReorderSuggestion>(
+    (suggestions.data ?? []).map((suggestion) => [suggestion.productId, suggestion]),
+  );
 
   function updateParams(changes: Record<string, string | null>) {
     const next = new URLSearchParams(params);
@@ -34,7 +39,7 @@ export function InventoryPage() {
     <>
       <header className="page-header">
         <h1 className="page-title">Stock</h1>
-        <p className="page-intro">Emptiest first. Open a product to add or remove stock.</p>
+        <p className="page-intro">Emptiest first. &quot;Runs out in&quot; is based on the last 30 days of sales.</p>
       </header>
 
       <div className="toolbar">
@@ -73,6 +78,10 @@ export function InventoryPage() {
                   <th scope="col" className="table__numeric">
                     Reorder at
                   </th>
+                  <th scope="col">Runs out in</th>
+                  <th scope="col" className="table__numeric">
+                    Reorder
+                  </th>
                   <th scope="col">Last restocked</th>
                 </tr>
               </thead>
@@ -89,6 +98,8 @@ export function InventoryPage() {
                       {item.sku && <span className="table__secondary">{item.sku}</span>}
                     </td>
                     <td className="table__numeric">{item.reorderLevel}</td>
+                    <td>{describeRunway(suggestionById.get(item.productId))}</td>
+                    <td className="table__numeric">{suggestionById.get(item.productId)?.suggestedOrder || '–'}</td>
                     <td>{item.lastRestockedAt ? formatDate(item.lastRestockedAt) : 'Never'}</td>
                   </tr>
                 ))}
@@ -104,4 +115,11 @@ export function InventoryPage() {
       )}
     </>
   );
+}
+
+function describeRunway(suggestion: ReorderSuggestion | undefined): string {
+  if (!suggestion) return '–';
+  if (suggestion.daysLeft === null) return 'No recent sales';
+  if (suggestion.daysLeft === 0) return 'Today';
+  return `About ${suggestion.daysLeft} ${suggestion.daysLeft === 1 ? 'day' : 'days'}`;
 }

@@ -5,6 +5,7 @@ import { EmptyState } from './components/Feedback';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
+import { ActivityPage } from './pages/ActivityPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { InventoryDetailPage } from './pages/InventoryDetailPage';
@@ -63,6 +64,7 @@ function App() {
               <Route path="reports" element={<ReportsPage />} />
               <Route path="people" element={<UsersPage />} />
               <Route path="alerts" element={<AlertsPage />} />
+              <Route path="activity" element={<ActivityPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

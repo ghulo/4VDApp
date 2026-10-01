@@ -1194,6 +1194,10 @@ textarea:focus-visible {
   font-weight: 400;
 }
 
+.activity-row {
+  grid-template-columns: 1fr auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/products', label: 'Products' },
   { to: '/categories', label: 'Categories' },
   { to: '/people', label: 'People' },
+  { to: '/activity', label: 'Activity' },
 ];
 
 const ALERT_POLL_MS = 60_000;

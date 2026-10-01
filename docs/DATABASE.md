@@ -151,6 +151,24 @@ CREATE TABLE notifications (
 
 ---
 
+### settings
+Owner-editable limits, one row per key: `key` (primary key), `value` (JSONB), `updated_by`, `updated_at`. Seeded with `refund_approval_limit = 50` and `return_window_days = 14`.
+
+### returns
+A refund for part or all of a sale. `sale_id`, `quantity`, `refund_amount`, `condition` (`resellable` or `damaged`), `notes`, `approval_reasons` (TEXT[], why it waited, worked out with the limits in force when it was asked), and the approval columns: `status` (`pending`, `approved` or `rejected`), `requested_by`, `requested_at`, `decided_by`, `decided_at`, `decision_note`.
+
+### write_offs
+Stock that left as a loss. `product_id`, `quantity`, `reason` (`damaged`, `lost`, `expired` or `other`), `unit_cost` (cost price when reported), `return_id` (set when it came from a damaged return), `notes`, and the same approval columns.
+
+### stock_counts
+A count session. `category_id` (null = whole shop), `status` (`open`, `submitted`, `closed` or `cancelled`), `started_by`, `started_at`, `submitted_by`, `submitted_at`, `closed_at`.
+
+### stock_count_lines
+One counted product: `count_id`, `product_id` (unique together), `counted_quantity`, `expected_quantity` and `unit_cost` (both captured when counted), `counted_by`, `counted_at`, `status` (null until submitted, then `match`, `pending`, `approved` or `rejected`), `decided_by`, `decided_at`, `decision_note`.
+
+### sales_ledger (view)
+Sales, plus approved returns as negative rows dated when approved: `sale_id`, `return_id` (null for a sale), `product_id`, `sold_by`, `occurred_at`, `units`, `revenue`, `unit_cost`, `cost`. Every money report reads this, so refunds count the same way everywhere.
+
 ## Indexes (for performance)
 ```sql
 CREATE INDEX idx_products_category ON products(category_id);

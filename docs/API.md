@@ -169,7 +169,7 @@ The item plus `warnings` (e.g. `["Out of stock"]`) and the 20 most recent `recen
 ```json
 { "quantity": -3, "reason": "Damage", "notes": "Dropped in storage", "reorderLevel": 5 }
 ```
-- `quantity` is a change: positive adds, negative removes. Needs a `reason`: `Restock`, `Return`, `Damage`, `Recount` or `Manual adjustment`
+- `quantity` is a change: positive adds, negative removes. Needs a `reason`: `Restock` or `Manual adjustment`. Returns, damage and recounts go through their own endpoints below, so losses are always valued and reviewed
 - `reorderLevel` is optional; send it alone to change only the warning level
 - Stock can never go below zero (`400`)
 - When stock drops to the reorder level, or runs out, every admin gets a notification
@@ -265,17 +265,52 @@ All report endpoints take `startDate` and `endDate` (required, ISO, end exclusiv
 
 Profit uses each sale's cost at the time of sale (`unit_cost`). Sales of products without a cost price are left out of cost, profit and margin; their revenue is reported as `revenueWithoutCost`.
 
+Money comes from the `sales_ledger` view: sales on their sale date, plus approved returns as negative rows on the day they were approved. So a refund lowers revenue and profit in the period it was approved and never changes a past period. A restocked return takes back the refund and gives back the cost of the units, so a full refund lowers profit by that sale's margin. `salesCount` counts sales only.
+
 | Method & path | Auth | Returns |
 |---|---|---|
 | `GET /reports/summary` | admin | `{ current, previous, change }`: totals for both periods and relative change (`0.12` = +12%, `null` when the previous value was 0) |
-| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, profit, averageSale }`; `hasLeft` is true for people deactivated or removed since |
+| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, refunds, profit, averageSale }`; refunds count against the person who made the sale; `hasLeft` is true for people deactivated or removed since |
 | `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first; margin leaves out sales with no cost |
 | `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder }`, soonest to run out first. No date range |
-| `GET /reports/my-sales` | admin, employee | The caller's own `current` and `previous` `{ salesCount, unitsSold, revenue }` and their 10 latest `recentSales`. Never cost or profit |
+| `GET /reports/my-sales` | admin, employee | The caller's own `current` and `previous` `{ salesCount, unitsSold, revenue, refunds }` and their 10 latest `recentSales` `{ id, productName, quantity, pricePerUnit, totalAmount, saleDate, returnedQuantity }`. Never cost or profit |
 
-Totals shape: `{ revenue, revenueWithoutCost, cost, profit, margin, unitsSold, salesCount }`.
+Totals shape: `{ revenue, refunds, revenueWithoutCost, cost, profit, margin, unitsSold, salesCount, stockLosses, lossUnitsWithoutCost }`. `revenue` is after refunds. `stockLosses` is the value at cost of approved write-offs plus approved count differences in the period; a surplus found in a count lowers it. `lossUnitsWithoutCost` counts lost units whose product had no cost price.
 
 Reorder maths: `averageDailySales` = units sold in the last 30 days ÷ 30; `daysLeft` = stock ÷ that, rounded down (`null` without recent sales); `suggestedOrder` = `max(0, ceil(average × 30 + reorderLevel − stock))`.
+
+---
+
+## Returns, write-offs and stock counts
+
+Employees start these; the owner approves. Admin actions never wait. Nothing touches stock or money until it is approved. Rejecting always needs `{ "note": "..." }` (up to 500 characters), which the employee sees. Deciding something that was already decided gives `409`.
+
+**What waits for approval when an employee does it:** a refund above the refund limit, a return of a sale older than the return window, anything damaged, every write-off, and every count line that differs from what the system expected.
+
+| Method & path | Auth | Purpose |
+|---|---|---|
+| `GET /settings` | admin, employee | `{ refundApprovalLimit, returnWindowDays }` (defaults 50 and 14) |
+| `PUT /settings` | admin | Change one or both |
+| `POST /sales/:saleId/returns` | admin, employee (employees: own sales only, else `403`) | `{ quantity, condition: "resellable" \| "damaged", refundAmount?, notes? }`. `refundAmount` defaults to what was paid for those units and can't be more. Pending returns count against what is left to return |
+| `GET /returns?status=pending\|approved\|rejected` | admin | `{ id, saleId, productId, productName, quantity, refundAmount, condition, notes, status, needsApprovalBecause, soldBy, saleDate, requestedBy, requestedAt, decidedBy, decidedAt, decisionNote }` |
+| `POST /returns/:id/approve`, `POST /returns/:id/reject` | admin | Approving a resellable return puts the units back (stock reason `Return`). A damaged one creates an approved write-off instead |
+| `POST /write-offs` | admin, employee | `{ productId, quantity, reason: "damaged" \| "lost" \| "expired" \| "other", notes? }`. Captures today's cost price |
+| `GET /write-offs?status=` | admin | `{ id, productId, productName, quantity, reason, unitCost, value, returnId, notes, status, requestedBy, ... }` |
+| `POST /write-offs/:id/approve`, `/reject` | admin | Approving removes the stock (reason `Write-off`); `409` if it is no longer there |
+| `POST /stock-counts` | admin, employee | `{ categoryId? }` (none = whole shop). `409` if it overlaps an open or submitted count; the whole shop overlaps every category |
+| `GET /stock-counts` | admin, employee | Open and submitted counts, then the 20 latest closed or cancelled |
+| `GET /stock-counts/:id` | admin, employee | The count, `totals { products, counted, differences, pending, shortageValue }` and one line per product `{ productId, productName, sku, categoryName, countedQuantity, status, decisionNote, expectedQuantity, difference, value }`. Employees get no expected numbers, differences or values until the count is closed |
+| `PUT /stock-counts/:id/lines/:productId` | admin, employee | `{ countedQuantity }`. Counting again replaces the line. Only while open (`409` after) |
+| `POST /stock-counts/:id/submit` | admin, employee | Matching lines become `match`, the others `pending`. With no differences the count closes at once |
+| `POST /stock-counts/:id/cancel` | the person who started it, or an admin | Only while open |
+| `POST /stock-counts/:id/lines/:productId/approve`, `/reject` | admin | Approving applies counted − expected to today's stock (reason `Recount`), so sales since the count are kept. `409` if that would go below zero |
+| `POST /stock-counts/:id/approve-all` | admin | `{ approved, failed: [{ productId, productName, message }] }` |
+| `GET /approvals/summary` | admin | `{ returns, writeOffs, countLines, total }` waiting |
+| `GET /approvals/mine` | admin, employee | The caller's own returns, write-offs and submitted counts from the last 30 days: `{ type, id, summary, status, decisionNote, requestedAt, decidedAt }` |
+
+When something starts waiting, every admin gets a notification. When it is decided, the employee who asked gets one too.
+
+`GET /sales` items gain `returnedQuantity` (returned or waiting for a decision).
 
 ---
 
@@ -285,7 +320,7 @@ CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The 
 
 | Method & path | Contents |
 |---|---|
-| `GET /exports/sales.csv?startDate&endDate` | One row per sale: date, product, SKU, quantity, unit price, total, unit cost, profit, sold by, notes |
+| `GET /exports/sales.csv?startDate&endDate` | One row per sale: date, product, SKU, quantity, unit price, total, unit cost, profit, sold by, notes, type. Approved returns are extra rows with type `Return`, negative quantity and amounts, dated when they were approved |
 | `GET /exports/stock.csv` | One row per active product: name, SKU, category, stock, reorder level, price, cost, stock value, days left |
 | `GET /exports/team.csv?startDate&endDate` | The team report |
 
@@ -296,7 +331,7 @@ CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The 
 `GET /activity?userId&entityType&entityId&action&page&limit`: newest first.
 
 - `action`: comma-separated exact actions or prefixes, e.g. `stock`, `sale.recorded`, `product,pricing,category`
-- `entityType`: `product`, `category`, `user` or `sale`
+- `entityType`: `product`, `category`, `user`, `sale`, `return`, `write_off`, `stock_count` or `settings`
 
 Entry: `{ id, action, entityType, entityId, summary, details, createdAt, user: { id, name } | null }`.
 

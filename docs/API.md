@@ -32,7 +32,7 @@ The server checks the account on every authenticated request, so deactivating so
 | `employee` | Browse products, record sales, favorites |
 | `family` | Browse products, favorites |
 
-"Public" endpoints below work without a token. With an admin token they also return admin-only fields (cost prices, hidden products).
+Every endpoint except login and token refresh needs a token. Endpoints marked "any role" work for admin, employee and family; with an admin token they also return admin-only fields (cost prices, hidden products).
 
 ## Rate Limiting
 Per 15 minutes:
@@ -83,7 +83,7 @@ A user looks like `{ id, email, name, role, isActive, createdAt }`.
 
 | Method & path | Auth | Notes |
 |---|---|---|
-| `GET /categories` | public | Includes `productCount` |
+| `GET /categories` | any role | Includes `productCount` |
 | `POST /categories` | admin | `{ name, description? }`. Names are unique, ignoring letter case |
 | `PUT /categories/:id` | admin | Same body |
 | `DELETE /categories/:id` | admin | `409` while products still use it |
@@ -92,11 +92,11 @@ A user looks like `{ id, email, name, role, isActive, createdAt }`.
 
 ## Products
 
-### GET /products (public)
+### GET /products (any role)
 Query: `search` (name or SKU), `categoryId`, `inStock` (`true`/`false`), `page`, `limit`.
 Hidden products (`isActive: false`) are only listed for admins.
 
-### GET /products/:id (public)
+### GET /products/:id (any role)
 
 **Product shape:**
 ```json
@@ -150,19 +150,19 @@ Rules for tiers: quantity at least 2, no duplicate quantities, and each tier mus
 
 | Method & path | Auth | Body / returns |
 |---|---|---|
-| `GET /pricing/tiers/:productId` | public | `{ productId, basePrice, tiers }` |
+| `GET /pricing/tiers/:productId` | any role | `{ productId, basePrice, tiers }` |
 | `PUT /pricing/tiers/:productId` | admin | `{ tiers: [ { quantity, price } ] }`, replaces all tiers |
 
 ---
 
 ## Inventory
 
-### GET /inventory (public)
+### GET /inventory (any role)
 Query: `lowStock` (`true` = at or below reorder level), `search`, `page`, `limit`. Sorted with the emptiest (relative to reorder level) first.
 
 Item: `{ productId, productName, sku, quantity, reorderLevel, isLowStock, lastRestockedAt, updatedAt }`
 
-### GET /inventory/:productId (public)
+### GET /inventory/:productId (any role)
 The item plus `warnings` (e.g. `["Out of stock"]`) and the 20 most recent `recentAdjustments`: `{ id, quantity, reason, notes, adjustedBy, date }`.
 
 ### PATCH /inventory/:productId (admin)
@@ -268,8 +268,8 @@ Profit uses each sale's cost at the time of sale (`unit_cost`). Sales of product
 | Method & path | Auth | Returns |
 |---|---|---|
 | `GET /reports/summary` | admin | `{ current, previous, change }`: totals for both periods and relative change (`0.12` = +12%, `null` when the previous value was 0) |
-| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, salesCount, unitsSold, revenue, profit, averageSale }` |
-| `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first |
+| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, profit, averageSale }`; `hasLeft` is true for people deactivated or removed since |
+| `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first; margin leaves out sales with no cost |
 | `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder }`, soonest to run out first. No date range |
 | `GET /reports/my-sales` | admin, employee | The caller's own `current` and `previous` `{ salesCount, unitsSold, revenue }` and their 10 latest `recentSales`. Never cost or profit |
 

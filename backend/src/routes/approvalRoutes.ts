@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
+import { createApprovalsController } from '../controllers/approvalsController.js';
 import { createReturnsController } from '../controllers/returnsController.js';
 import { createSettingsController } from '../controllers/settingsController.js';
 import { createStockCountsController } from '../controllers/stockCountsController.js';
@@ -53,6 +54,16 @@ export function createStockCountRoutes({ stockCountService, guards }: Container)
   router.post('/:id/lines/:productId/approve', ...guards.admin, controller.approveLine);
   router.post('/:id/lines/:productId/reject', ...guards.admin, controller.rejectLine);
   router.post('/:id/approve-all', ...guards.admin, controller.approveAll);
+
+  return router;
+}
+
+export function createApprovalRoutes({ approvalService, guards }: Container): Router {
+  const controller = createApprovalsController(approvalService);
+  const router = Router();
+
+  router.get('/summary', ...guards.admin, controller.summary);
+  router.get('/mine', ...guards.staff, controller.mine);
 
   return router;
 }

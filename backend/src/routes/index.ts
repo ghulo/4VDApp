@@ -15,7 +15,9 @@ import {
   createSalesRoutes,
   createUserRoutes,
 } from './operationsRoutes.js';
-import { createReturnRoutes, createSettingsRoutes, createStockCountRoutes, createWriteOffRoutes } from './approvalRoutes.js';
+import {
+  createApprovalRoutes,
+  createReturnRoutes, createSettingsRoutes, createStockCountRoutes, createWriteOffRoutes } from './approvalRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
 import { createReportsRoutes } from './reportsRoutes.js';
 
@@ -40,6 +42,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/write-offs', createWriteOffRoutes(container));
   router.use('/returns', createReturnRoutes(container));
   router.use('/stock-counts', createStockCountRoutes(container));
+  router.use('/approvals', createApprovalRoutes(container));
 
   return router;
 }

@@ -49,7 +49,9 @@ export async function setupTestApp(): Promise<TestContext> {
 /** Empty every table between tests but keep the schema. */
 export async function resetData(db: DatabaseClient): Promise<void> {
   await sql`TRUNCATE users, refresh_tokens, categories, products, inventory, bulk_pricing_tiers,
-    sales, stock_adjustments, product_images, notifications, favorites, activity_log RESTART IDENTITY CASCADE`.execute(db);
+    sales, stock_adjustments, product_images, notifications, favorites, activity_log,
+    settings, returns, write_offs, stock_counts, stock_count_lines RESTART IDENTITY CASCADE`.execute(db);
+  await sql`INSERT INTO settings (key, value) VALUES ('refund_approval_limit', '50'), ('return_window_days', '14')`.execute(db);
 }
 
 // Hashing is slow on purpose; hash the shared test password once.
@@ -92,4 +94,32 @@ export async function loginAs(
 
 export async function createTestCategory(db: DatabaseClient, name = 'Furniture') {
   return db.insertInto('categories').values({ name }).returningAll().executeTakeFirstOrThrow();
+}
+
+/** Create a product through the API (so stock and the audit trail are set up) and return its id. */
+export async function createTestProduct(
+  context: TestContext,
+  adminToken: string,
+  overrides: Record<string, unknown> = {},
+): Promise<number> {
+  let categoryId = overrides.categoryId as number | undefined;
+  if (categoryId === undefined) {
+    const existing = await context.db.selectFrom('categories').select('id').orderBy('id').executeTakeFirst();
+    categoryId = existing?.id ?? (await createTestCategory(context.db)).id;
+  }
+  const response = await request(context.app)
+    .post('/api/products')
+    .set({ Authorization: `Bearer ${adminToken}` })
+    .send({ name: 'Oak Chair', price: 100, costPrice: 60, stock: 10, reorderLevel: 2, ...overrides, categoryId });
+  if (response.status !== 201) throw new Error(`Test product failed: ${JSON.stringify(response.body)}`);
+  return response.body.data.id as number;
+}
+
+export async function stockOf(context: TestContext, productId: number): Promise<number> {
+  const row = await context.db
+    .selectFrom('inventory')
+    .select('quantity_on_hand')
+    .where('product_id', '=', productId)
+    .executeTakeFirstOrThrow();
+  return row.quantity_on_hand;
 }

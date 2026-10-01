@@ -5,12 +5,16 @@ import { Text, useColorScheme } from 'react-native';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
+import { CountScreen } from '../screens/CountScreen';
+import { CountsScreen } from '../screens/CountsScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MySalesScreen } from '../screens/MySalesScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { RecordSaleScreen } from '../screens/RecordSaleScreen';
+import { ReturnScreen } from '../screens/ReturnScreen';
+import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
 import { fonts, useThemeColors } from '../theme';
 import type { MainTabParamList, RootStackParamList } from './types';
@@ -104,6 +108,18 @@ export function RootNavigator() {
               options={{ title: 'Record a sale', presentation: 'modal' }}
             />
             <Stack.Screen name="MySales" component={MySalesScreen} options={{ title: 'My sales', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="Return" component={ReturnScreen} options={{ title: 'Return a sale', presentation: 'modal' }} />
+            <Stack.Screen
+              name="WriteOff"
+              component={WriteOffScreen}
+              options={{ title: 'Report damage or loss', presentation: 'modal' }}
+            />
+            <Stack.Screen name="Counts" component={CountsScreen} options={{ title: 'Stock counts', headerBackTitle: 'Back' }} />
+            <Stack.Screen
+              name="Count"
+              component={CountScreen}
+              options={({ route }) => ({ title: `Counting ${route.params.title.toLowerCase()}`, headerBackTitle: 'Back' })}
+            />
           </>
         )}
       </Stack.Navigator>

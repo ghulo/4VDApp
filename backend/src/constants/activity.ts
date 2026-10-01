@@ -12,9 +12,21 @@ export const ACTIVITY_ACTIONS = [
   'user.created',
   'user.updated',
   'user.deleted',
+  'return.requested',
+  'return.approved',
+  'return.rejected',
+  'write_off.requested',
+  'write_off.approved',
+  'write_off.rejected',
+  'count.started',
+  'count.submitted',
+  'count.cancelled',
+  'count.line_approved',
+  'count.line_rejected',
+  'settings.updated',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

@@ -19,6 +19,16 @@ export interface SaleRecord {
   sold_by_name: string | null;
   sale_date: Date;
   notes: string | null;
+  /** Units returned or waiting for a return decision. */
+  returned_quantity: string;
+}
+
+const returnedQuantity = sql<string>`(
+  select coalesce(sum(r.quantity), 0) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved')
+)`.as('returned_quantity');
+
+function ledgerRange(range?: DateRange) {
+  return range ? sql`l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}` : sql`true`;
 }
 
 export type RevenuePeriod = 'daily' | 'weekly' | 'monthly';
@@ -56,6 +66,7 @@ export class SalesRepository {
           'u.name as sold_by_name',
           's.sale_date',
           's.notes',
+          returnedQuantity,
         ])
         .orderBy('s.sale_date', 'desc')
         .orderBy('s.id', 'desc')
@@ -109,23 +120,25 @@ export class SalesRepository {
         'u.name as sold_by_name',
         's.sale_date',
         's.notes',
+        returnedQuantity,
       ])
       .where('s.id', '=', id)
       .executeTakeFirst();
   }
 
+  /** Dashboard totals from `sales_ledger`, so refunds count the same way as in reports. */
   async totals(range?: DateRange): Promise<{ salesCount: number; unitsSold: number; revenue: number; profit: number }> {
-    const row = await this.filteredQuery(range ?? {})
-      .select([
-        sql<string>`count(*)`.as('sales_count'),
-        sql<string>`coalesce(sum(s.quantity_sold), 0)`.as('units_sold'),
-        sql<string>`coalesce(sum(s.total_amount), 0)`.as('revenue'),
-        // Profit only counts sales whose cost was known when they were made.
-        sql<string>`coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0)`.as(
-          'profit',
-        ),
-      ])
-      .executeTakeFirstOrThrow();
+    const result = await sql<{ sales_count: string; units_sold: string; revenue: string; profit: string }>`
+      select
+        count(*) filter (where l.return_id is null) as sales_count,
+        coalesce(sum(l.units), 0) as units_sold,
+        coalesce(sum(l.revenue), 0) as revenue,
+        -- Profit only counts sales whose cost was known when they were made.
+        coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit
+      from sales_ledger l
+      where ${ledgerRange(range)}
+    `.execute(this.db);
+    const row = result.rows[0]!;
     return {
       salesCount: Number(row.sales_count),
       unitsSold: Number(row.units_sold),
@@ -135,17 +148,16 @@ export class SalesRepository {
   }
 
   async topProducts(range: DateRange | undefined, limit: number) {
-    const rows = await this.filteredQuery(range ?? {})
-      .select([
-        's.product_id',
-        'p.name as product_name',
-        sql<string>`sum(s.quantity_sold)`.as('units_sold'),
-        sql<string>`sum(s.total_amount)`.as('revenue'),
-      ])
-      .groupBy(['s.product_id', 'p.name'])
-      .orderBy(sql`sum(s.total_amount)`, 'desc')
-      .limit(limit)
-      .execute();
+    const result = await sql<{ product_id: number; product_name: string; units_sold: string; revenue: string }>`
+      select l.product_id, p.name as product_name, sum(l.units) as units_sold, sum(l.revenue) as revenue
+      from sales_ledger l
+      join products p on p.id = l.product_id
+      where ${ledgerRange(range)}
+      group by l.product_id, p.name
+      order by sum(l.revenue) desc
+      limit ${limit}
+    `.execute(this.db);
+    const rows = result.rows;
     return rows.map((row) => ({
       productId: row.product_id,
       productName: row.product_name,
@@ -161,7 +173,7 @@ export class SalesRepository {
   async revenueByPeriod(period: RevenuePeriod, range: DateRange, productId?: number) {
     const unit = { daily: 'day', weekly: 'week', monthly: 'month' }[period];
     const step = { daily: '1 day', weekly: '1 week', monthly: '1 month' }[period];
-    const productFilter = productId ? sql`and s.product_id = ${productId}` : sql``;
+    const productFilter = productId ? sql`and l.product_id = ${productId}` : sql``;
 
     const result = await sql<{ period_start: string; revenue: string; units_sold: string; sales_count: string }>`
       with buckets as (
@@ -173,14 +185,14 @@ export class SalesRepository {
       )
       select
         to_char(b.period_start, 'YYYY-MM-DD') as period_start,
-        coalesce(sum(s.total_amount), 0) as revenue,
-        coalesce(sum(s.quantity_sold), 0) as units_sold,
-        count(s.id) as sales_count
+        coalesce(sum(l.revenue), 0) as revenue,
+        coalesce(sum(l.units), 0) as units_sold,
+        count(l.sale_id) filter (where l.return_id is null) as sales_count
       from buckets b
-      left join sales s
-        on date_trunc(${unit}, s.sale_date at time zone 'UTC') = b.period_start
-        and s.sale_date >= ${range.startDate}
-        and s.sale_date < ${range.endDate}
+      left join sales_ledger l
+        on date_trunc(${unit}, l.occurred_at at time zone 'UTC') = b.period_start
+        and l.occurred_at >= ${range.startDate}
+        and l.occurred_at < ${range.endDate}
         ${productFilter}
       group by b.period_start
       order by b.period_start

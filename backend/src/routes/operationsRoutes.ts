@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
+import { createReturnsController } from '../controllers/returnsController.js';
 import {
   createAnalyticsController,
   createFavoriteController,
@@ -8,13 +9,16 @@ import {
   createUserController,
 } from '../controllers/operationsControllers.js';
 
-export function createSalesRoutes({ salesService, guards }: Container): Router {
+export function createSalesRoutes({ salesService, returnService, guards }: Container): Router {
   const controller = createSalesController(salesService);
+  const returns = createReturnsController(returnService);
   const router = Router();
 
   router.get('/', ...guards.admin, controller.list);
   // Employees record sales too; only admins see the full history.
   router.post('/', ...guards.staff, controller.record);
+  // Employees may return only their own sales; the service checks that.
+  router.post('/:saleId/returns', ...guards.staff, returns.request);
 
   return router;
 }

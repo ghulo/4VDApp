@@ -1,4 +1,11 @@
 import type { ColumnType, Generated, Insertable, Selectable, Updateable } from 'kysely';
+import type {
+  ApprovalStatus,
+  CountLineStatus,
+  CountStatus,
+  ReturnCondition,
+  WriteOffReason,
+} from '../constants/approvals.js';
 
 /**
  * TypeScript view of the tables created by the migrations in ./migrations.
@@ -138,6 +145,82 @@ export interface ActivityLogTable {
   created_at: CreatedAt;
 }
 
+export interface SettingsTable {
+  key: string;
+  value: ColumnType<unknown, string, string>;
+  updated_by: number | null;
+  updated_at: Date | null;
+}
+
+/** Shared by every table whose rows wait for the owner's decision. */
+interface ApprovalColumns {
+  status: ApprovalStatus;
+  requested_by: number | null;
+  requested_at: ColumnType<Date, Date | undefined, Date>;
+  decided_by: number | null;
+  decided_at: Date | null;
+  decision_note: string | null;
+}
+
+export interface ReturnsTable extends ApprovalColumns {
+  id: Generated<number>;
+  sale_id: number;
+  quantity: number;
+  refund_amount: Decimal;
+  condition: ReturnCondition;
+  notes: string | null;
+  approval_reasons: ColumnType<string[], string[] | undefined, never>;
+}
+
+export interface WriteOffsTable extends ApprovalColumns {
+  id: Generated<number>;
+  product_id: number;
+  quantity: number;
+  reason: WriteOffReason;
+  unit_cost: Decimal | null;
+  return_id: number | null;
+  notes: string | null;
+}
+
+export interface StockCountsTable {
+  id: Generated<number>;
+  category_id: number | null;
+  status: CountStatus;
+  started_by: number | null;
+  started_at: ColumnType<Date, Date | undefined, never>;
+  submitted_by: number | null;
+  submitted_at: Date | null;
+  closed_at: Date | null;
+}
+
+export interface StockCountLinesTable {
+  id: Generated<number>;
+  count_id: number;
+  product_id: number;
+  counted_quantity: number;
+  expected_quantity: number;
+  unit_cost: Decimal | null;
+  counted_by: number | null;
+  counted_at: ColumnType<Date, Date | undefined, Date>;
+  status: CountLineStatus | null;
+  decided_by: number | null;
+  decided_at: Date | null;
+  decision_note: string | null;
+}
+
+/** Read-only view: sales, plus approved returns as negative rows. */
+export interface SalesLedgerView {
+  sale_id: number;
+  return_id: number | null;
+  product_id: number;
+  sold_by: number | null;
+  occurred_at: Date;
+  units: number;
+  revenue: string;
+  unit_cost: string | null;
+  cost: string | null;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -151,6 +234,12 @@ export interface Database {
   notifications: NotificationsTable;
   favorites: FavoritesTable;
   activity_log: ActivityLogTable;
+  settings: SettingsTable;
+  returns: ReturnsTable;
+  write_offs: WriteOffsTable;
+  stock_counts: StockCountsTable;
+  stock_count_lines: StockCountLinesTable;
+  sales_ledger: SalesLedgerView;
 }
 
 export type UserRow = Selectable<UsersTable>;

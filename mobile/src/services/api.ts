@@ -1,5 +1,21 @@
 import { apiRequest, tokenStore } from './apiClient';
-import type { Category, InventoryItem, MySales, PaginationMeta, Product, Sale, User } from './types';
+import type {
+  AppSettings,
+  Category,
+  InventoryItem,
+  MyRequest,
+  MySales,
+  PaginationMeta,
+  Product,
+  ReturnCondition,
+  ReturnResult,
+  Sale,
+  StockCount,
+  StockCountSummary,
+  User,
+  WriteOffReason,
+  WriteOffResult,
+} from './types';
 
 const PAGE_SIZE = 20;
 
@@ -74,4 +90,34 @@ export const inventoryApi = {
     const { data, meta } = await apiRequest<InventoryItem[]>('/inventory', { query: { lowStock: true, limit } });
     return { items: data, meta: meta! };
   },
+};
+
+export const settingsApi = {
+  get: async () => (await apiRequest<AppSettings>('/settings')).data,
+};
+
+export const returnsApi = {
+  request: async (
+    saleId: number,
+    input: { quantity: number; condition: ReturnCondition; refundAmount?: number; notes: string | null },
+  ) => (await apiRequest<ReturnResult>(`/sales/${saleId}/returns`, { method: 'POST', body: input })).data,
+};
+
+export const writeOffsApi = {
+  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
+    (await apiRequest<WriteOffResult>('/write-offs', { method: 'POST', body: input })).data,
+};
+
+export const countsApi = {
+  list: async () => (await apiRequest<StockCountSummary[]>('/stock-counts')).data,
+  get: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}`)).data,
+  start: async (categoryId: number | null) =>
+    (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId } })).data,
+  count: async (id: number, productId: number, countedQuantity: number) =>
+    (await apiRequest<StockCount>(`/stock-counts/${id}/lines/${productId}`, { method: 'PUT', body: { countedQuantity } })).data,
+  submit: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}/submit`, { method: 'POST' })).data,
+};
+
+export const approvalsApi = {
+  mine: async () => (await apiRequest<MyRequest[]>('/approvals/mine')).data,
 };

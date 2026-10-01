@@ -194,12 +194,12 @@ describe('inventory', () => {
     const { body } = await createProduct();
 
     await adjust(body.data.id, { quantity: 10, reason: 'Restock' });
-    const response = await adjust(body.data.id, { quantity: -5, reason: 'Damage', notes: 'Dropped in storage' });
+    const response = await adjust(body.data.id, { quantity: -5, reason: 'Manual adjustment', notes: 'Dropped in storage' });
 
     expect(response.status).toBe(200);
     expect(response.body.data.quantity).toBe(30);
     expect(response.body.data.recentAdjustments.map((a: { reason: string }) => a.reason)).toEqual([
-      'Damage',
+      'Manual adjustment',
       'Restock',
       'Initial stock',
     ]);
@@ -208,7 +208,7 @@ describe('inventory', () => {
   it('should never let stock go below zero', async () => {
     const { body } = await createProduct({ stock: 3 });
 
-    const response = await adjust(body.data.id, { quantity: -4, reason: 'Damage' });
+    const response = await adjust(body.data.id, { quantity: -4, reason: 'Manual adjustment' });
     const inventory = await request(context.app).get(`/api/inventory/${body.data.id}`).set(asBrowser());
 
     expect(response.status).toBe(400);
@@ -228,8 +228,8 @@ describe('inventory', () => {
   it('should notify admins once when stock drops to the reorder level', async () => {
     const { body } = await createProduct({ stock: 15, reorderLevel: 10 });
 
-    await adjust(body.data.id, { quantity: -6, reason: 'Damage' });
-    await adjust(body.data.id, { quantity: -2, reason: 'Damage' });
+    await adjust(body.data.id, { quantity: -6, reason: 'Manual adjustment' });
+    await adjust(body.data.id, { quantity: -2, reason: 'Manual adjustment' });
     const notifications = await context.db.selectFrom('notifications').selectAll().execute();
 
     expect(notifications).toHaveLength(1);

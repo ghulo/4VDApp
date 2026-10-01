@@ -6,6 +6,7 @@ export interface TotalsRow {
   sales_count: string;
   units_sold: string;
   revenue: string;
+  refunds: string;
   revenue_without_cost: string;
   cost: string;
   profit: string;
@@ -19,7 +20,13 @@ export interface TeamQueryRow {
   sales_count: string;
   units_sold: string;
   revenue: string;
+  refunds: string;
   profit: string;
+}
+
+export interface StockLossRow {
+  stock_losses: string;
+  loss_units_without_cost: string;
 }
 
 export interface ProfitQueryRow {
@@ -49,17 +56,21 @@ export interface MySaleRow {
   id: number;
   product_name: string;
   quantity_sold: number;
-  total_amount: string;
-  sale_date: Date;
-}
-
-export interface SaleExportRow {
-  sale_date: Date;
-  product_name: string;
-  sku: string | null;
-  quantity_sold: number;
   price_per_unit: string;
   total_amount: string;
+  sale_date: Date;
+  returned_quantity: string;
+}
+
+/** A sale, or an approved return as a negative row on the day it was approved. */
+export interface SaleExportRow {
+  kind: 'Sale' | 'Return';
+  occurred_at: Date;
+  product_name: string;
+  sku: string | null;
+  quantity: number;
+  unit_price: string;
+  total: string;
   unit_cost: string | null;
   sold_by_name: string | null;
   notes: string | null;
@@ -69,18 +80,46 @@ export interface SaleExportRow {
 export class ReportsRepository {
   constructor(private readonly db: DatabaseClient) {}
 
+  /**
+   * Money for the period from `sales_ledger`: sales on their sale date and
+   * approved refunds (negative) on the day they were approved.
+   */
   async totals(range: DateRange, soldBy?: number): Promise<TotalsRow> {
-    const sellerFilter = soldBy === undefined ? sql`` : sql`and s.sold_by = ${soldBy}`;
+    const sellerFilter = soldBy === undefined ? sql`` : sql`and l.sold_by = ${soldBy}`;
     const result = await sql<TotalsRow>`
       select
-        count(*) as sales_count,
-        coalesce(sum(s.quantity_sold), 0) as units_sold,
-        coalesce(sum(s.total_amount), 0) as revenue,
-        coalesce(sum(s.total_amount) filter (where s.unit_cost is null), 0) as revenue_without_cost,
-        coalesce(sum(s.quantity_sold * s.unit_cost) filter (where s.unit_cost is not null), 0) as cost,
-        coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0) as profit
-      from sales s
-      where s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate} ${sellerFilter}
+        count(*) filter (where l.return_id is null) as sales_count,
+        coalesce(sum(l.units), 0) as units_sold,
+        coalesce(sum(l.revenue), 0) as revenue,
+        coalesce(-sum(l.revenue) filter (where l.return_id is not null), 0) as refunds,
+        coalesce(sum(l.revenue) filter (where l.unit_cost is null), 0) as revenue_without_cost,
+        coalesce(sum(l.cost) filter (where l.unit_cost is not null), 0) as cost,
+        coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit
+      from sales_ledger l
+      where l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate} ${sellerFilter}
+    `.execute(this.db);
+    return result.rows[0]!;
+  }
+
+  /**
+   * Stock lost in the period, valued at cost: approved write-offs plus
+   * approved count differences (a surplus counts against the losses).
+   */
+  async stockLosses(range: DateRange): Promise<StockLossRow> {
+    const result = await sql<StockLossRow>`
+      with losses as (
+        select w.quantity as units, w.unit_cost
+        from write_offs w
+        where w.status = 'approved' and w.decided_at >= ${range.startDate} and w.decided_at < ${range.endDate}
+        union all
+        select l.expected_quantity - l.counted_quantity, l.unit_cost
+        from stock_count_lines l
+        where l.status = 'approved' and l.decided_at >= ${range.startDate} and l.decided_at < ${range.endDate}
+      )
+      select
+        coalesce(sum(units * unit_cost) filter (where unit_cost is not null), 0) as stock_losses,
+        coalesce(sum(abs(units)) filter (where unit_cost is null), 0) as loss_units_without_cost
+      from losses
     `.execute(this.db);
     return result.rows[0]!;
   }
@@ -96,14 +135,15 @@ export class ReportsRepository {
         u.name,
         u.role,
         (not u.is_active or u.deleted_at is not null) as has_left,
-        count(s.id) as sales_count,
-        coalesce(sum(s.quantity_sold), 0) as units_sold,
-        coalesce(sum(s.total_amount), 0) as revenue,
-        coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0) as profit
+        count(l.sale_id) filter (where l.return_id is null) as sales_count,
+        coalesce(sum(l.units), 0) as units_sold,
+        coalesce(sum(l.revenue), 0) as revenue,
+        coalesce(-sum(l.revenue) filter (where l.return_id is not null), 0) as refunds,
+        coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit
       from users u
-      left join sales s
-        on s.sold_by = u.id and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
-      where (u.role in ('admin', 'employee') and u.is_active and u.deleted_at is null) or s.id is not null
+      left join sales_ledger l
+        on l.sold_by = u.id and l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
+      where (u.role in ('admin', 'employee') and u.is_active and u.deleted_at is null) or l.sale_id is not null
       group by u.id, u.name, u.role, u.is_active, u.deleted_at
       order by revenue desc, u.name
     `.execute(this.db);
@@ -115,16 +155,16 @@ export class ReportsRepository {
     const result = await sql<ProfitQueryRow>`
       select
         ${group},
-        sum(s.quantity_sold) as units_sold,
-        sum(s.total_amount) as revenue,
-        coalesce(sum(s.quantity_sold * s.unit_cost) filter (where s.unit_cost is not null), 0) as cost,
-        coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0) as profit,
-        coalesce(sum(s.total_amount) filter (where s.unit_cost is not null), 0) as revenue_with_cost,
-        bool_or(s.unit_cost is null) as has_unknown_cost
-      from sales s
-      join products p on p.id = s.product_id
+        sum(l.units) as units_sold,
+        sum(l.revenue) as revenue,
+        coalesce(sum(l.cost) filter (where l.unit_cost is not null), 0) as cost,
+        coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit,
+        coalesce(sum(l.revenue) filter (where l.unit_cost is not null), 0) as revenue_with_cost,
+        bool_or(l.unit_cost is null) as has_unknown_cost
+      from sales_ledger l
+      join products p on p.id = l.product_id
       join categories c on c.id = p.category_id
-      where s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
+      where l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
       group by ${group}
       order by profit desc, revenue desc
     `.execute(this.db);
@@ -160,7 +200,9 @@ export class ReportsRepository {
 
   async recentSalesBy(soldBy: number, range: DateRange, limit: number): Promise<MySaleRow[]> {
     const result = await sql<MySaleRow>`
-      select s.id, p.name as product_name, s.quantity_sold, s.total_amount, s.sale_date
+      select s.id, p.name as product_name, s.quantity_sold, s.price_per_unit, s.total_amount, s.sale_date,
+             (select coalesce(sum(r.quantity), 0) from returns r
+              where r.sale_id = s.id and r.status in ('pending', 'approved')) as returned_quantity
       from sales s
       join products p on p.id = s.product_id
       where s.sold_by = ${soldBy} and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
@@ -172,14 +214,28 @@ export class ReportsRepository {
 
   async salesForExport(range: DateRange): Promise<SaleExportRow[]> {
     const result = await sql<SaleExportRow>`
-      select s.sale_date, p.name as product_name, p.sku, s.quantity_sold, s.price_per_unit, s.total_amount,
-             s.unit_cost, u.name as sold_by_name, s.notes
-      from sales s
-      join products p on p.id = s.product_id
-      left join users u on u.id = s.sold_by
-      where s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
-      order by s.sale_date, s.id
+      select kind, occurred_at, product_name, sku, quantity, unit_price, total, unit_cost, sold_by_name, notes
+      from (
+        select 'Sale' as kind, s.sale_date as occurred_at, p.name as product_name, p.sku, s.quantity_sold as quantity,
+               s.price_per_unit as unit_price, s.total_amount as total, s.unit_cost, u.name as sold_by_name, s.notes,
+               s.id as row_id
+        from sales s
+        join products p on p.id = s.product_id
+        left join users u on u.id = s.sold_by
+        where s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
+        union all
+        select 'Return', r.decided_at, p.name, p.sku, -r.quantity,
+               round(r.refund_amount / r.quantity, 2), -r.refund_amount, s.unit_cost, u.name, r.notes,
+               r.id
+        from returns r
+        join sales s on s.id = r.sale_id
+        join products p on p.id = s.product_id
+        left join users u on u.id = s.sold_by
+        where r.status = 'approved' and r.decided_at >= ${range.startDate} and r.decided_at < ${range.endDate}
+      ) rows
+      order by occurred_at, kind desc, row_id
     `.execute(this.db);
     return result.rows;
   }
+
 }

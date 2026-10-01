@@ -18,6 +18,8 @@ export interface SaleDto {
   soldBy: string | null;
   saleDate: string;
   notes: string | null;
+  /** Units returned or waiting for a return decision. */
+  returnedQuantity: number;
 }
 
 export interface RecordSaleInput {
@@ -113,5 +115,6 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     soldBy: sale.sold_by_name,
     saleDate: sale.sale_date.toISOString(),
     notes: sale.notes,
+    returnedQuantity: Number(sale.returned_quantity),
   };
 }

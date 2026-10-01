@@ -40,7 +40,7 @@ describe('CSV exports', () => {
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toContain('text/csv');
     expect(response.headers['content-disposition']).toBe('attachment; filename="4vd-sales-2026-03-01-to-2026-03-31.csv"');
-    expect(response.text.startsWith('﻿Date,Product,SKU,Quantity,Unit price,Total,Unit cost,Profit,Sold by,Notes\r\n')).toBe(true);
+    expect(response.text.startsWith('﻿Date,Product,SKU,Quantity,Unit price,Total,Unit cost,Profit,Sold by,Notes,Type\r\n')).toBe(true);
     expect(response.text).toContain(',Oak Chair,SKU-2,2,100,200,60,80,Test admin,');
   });
 
@@ -104,8 +104,8 @@ describe('CSV exports', () => {
 
     const response = await download('/api/exports/team.csv?startDate=2026-03-01&endDate=2026-03-31');
 
-    expect(response.text).toContain('Name,Role,Sales,Units sold,Revenue,Profit,Average sale');
-    expect(response.text).toContain('Test admin,admin,1,2,200,80,200');
+    expect(response.text).toContain('Name,Role,Sales,Units sold,Revenue,Refunds,Profit,Average sale');
+    expect(response.text).toContain('Test admin,admin,1,2,200,0,80,200');
   });
 
   it('should be admin only and return JSON errors', async () => {

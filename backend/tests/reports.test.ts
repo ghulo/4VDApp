@@ -80,6 +80,9 @@ describe('GET /api/reports/summary', () => {
       margin: 0.4,
       unitsSold: 3,
       salesCount: 2,
+      refunds: 0,
+      stockLosses: 0,
+      lossUnitsWithoutCost: 0,
     });
     expect(response.body.data.previous.revenue).toBe(100);
     expect(response.body.data.change).toEqual({ revenue: 2, profit: 2, unitsSold: 2, salesCount: 1 });
@@ -299,8 +302,8 @@ describe('GET /api/reports/my-sales', () => {
     const response = await request(context.app).get(`/api/reports/my-sales?${MARCH}`).set(auth(employeeToken));
 
     expect(response.status).toBe(200);
-    expect(response.body.data.current).toEqual({ salesCount: 1, unitsSold: 2, revenue: 200 });
-    expect(response.body.data.previous).toEqual({ salesCount: 1, unitsSold: 1, revenue: 100 });
+    expect(response.body.data.current).toEqual({ salesCount: 1, unitsSold: 2, revenue: 200, refunds: 0 });
+    expect(response.body.data.previous).toEqual({ salesCount: 1, unitsSold: 1, revenue: 100, refunds: 0 });
     expect(response.body.data.recentSales).toEqual([
       expect.objectContaining({ productName: 'Oak Chair', quantity: 2, totalAmount: 200 }),
     ]);
@@ -318,7 +321,7 @@ describe('GET /api/reports/my-sales', () => {
       .set(auth(employeeToken));
 
     // January 30 sits inside the "same length before" window but is not February.
-    expect(response.body.data.previous).toEqual({ salesCount: 1, unitsSold: 2, revenue: 200 });
+    expect(response.body.data.previous).toEqual({ salesCount: 1, unitsSold: 2, revenue: 200, refunds: 0 });
   });
 
   it('should not be available to family members', async () => {

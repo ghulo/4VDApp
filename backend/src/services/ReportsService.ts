@@ -1,4 +1,4 @@
-import type { ReportsRepository, TotalsRow } from '../repositories/ReportsRepository.js';
+import type { ReportsRepository, StockLossRow, TotalsRow } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
 import {
   type DateRange,
@@ -13,13 +13,20 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MY_RECENT_SALES_LIMIT = 10;
 
 export interface PeriodTotals {
+  /** After refunds. */
   revenue: number;
+  /** Refunds approved in the period, as a positive amount. */
+  refunds: number;
   revenueWithoutCost: number;
   cost: number;
   profit: number;
   margin: number | null;
   unitsSold: number;
   salesCount: number;
+  /** Value at cost of stock written off or found missing in counts; a surplus lowers it. */
+  stockLosses: number;
+  /** Units lost whose product had no cost price, so they have no value above. */
+  lossUnitsWithoutCost: number;
 }
 
 export interface TeamRow {
@@ -31,6 +38,7 @@ export interface TeamRow {
   salesCount: number;
   unitsSold: number;
   revenue: number;
+  refunds: number;
   profit: number;
   averageSale: number;
 }
@@ -56,18 +64,21 @@ export interface ReorderRow {
   suggestedOrder: number;
 }
 
-function toPeriodTotals(row: TotalsRow): PeriodTotals {
+function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
   const revenue = Number(row.revenue);
   const revenueWithoutCost = Number(row.revenue_without_cost);
   const profit = Number(row.profit);
   return {
     revenue,
+    refunds: Number(row.refunds),
     revenueWithoutCost,
     cost: Number(row.cost),
     profit,
     margin: margin(profit, revenue - revenueWithoutCost),
     unitsSold: Number(row.units_sold),
     salesCount: Number(row.sales_count),
+    stockLosses: roundMoney(Number(losses.stock_losses)),
+    lossUnitsWithoutCost: Number(losses.loss_units_without_cost),
   };
 }
 
@@ -76,12 +87,14 @@ export class ReportsService {
 
   /** `compareWith` defaults to the same length of time immediately before `range`. */
   async summary(range: DateRange, compareWith: DateRange = previousRange(range)) {
-    const [currentRow, previousRow] = await Promise.all([
+    const [currentRow, previousRow, currentLosses, previousLosses] = await Promise.all([
       this.reportsRepository.totals(range),
       this.reportsRepository.totals(compareWith),
+      this.reportsRepository.stockLosses(range),
+      this.reportsRepository.stockLosses(compareWith),
     ]);
-    const current = toPeriodTotals(currentRow);
-    const previous = toPeriodTotals(previousRow);
+    const current = toPeriodTotals(currentRow, currentLosses);
+    const previous = toPeriodTotals(previousRow, previousLosses);
     return {
       current,
       previous,
@@ -107,6 +120,7 @@ export class ReportsService {
         salesCount,
         unitsSold: Number(row.units_sold),
         revenue,
+        refunds: Number(row.refunds),
         profit: Number(row.profit),
         averageSale: salesCount === 0 ? 0 : roundMoney(revenue / salesCount),
       };
@@ -167,6 +181,7 @@ export class ReportsService {
       salesCount: Number(row.sales_count),
       unitsSold: Number(row.units_sold),
       revenue: Number(row.revenue),
+      refunds: Number(row.refunds),
     });
     return {
       current: pick(currentRow),
@@ -175,8 +190,10 @@ export class ReportsService {
         id: sale.id,
         productName: sale.product_name,
         quantity: sale.quantity_sold,
+        pricePerUnit: Number(sale.price_per_unit),
         totalAmount: Number(sale.total_amount),
         saleDate: sale.sale_date.toISOString(),
+        returnedQuantity: Number(sale.returned_quantity),
       })),
     };
   }

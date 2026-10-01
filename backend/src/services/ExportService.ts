@@ -10,20 +10,21 @@ const dayRangeLabel = (range: DateRange, timeZone: string) =>
   `${zonedDay(range.startDate, timeZone)}-to-${zonedDay(new Date(range.endDate.getTime() - 1), timeZone)}`;
 
 const salesColumns = (timeZone: string): CsvColumn<SaleExportRow>[] => [
-  { header: 'Date', value: (row) => zonedDateTime(row.sale_date, timeZone) },
+  { header: 'Date', value: (row) => zonedDateTime(row.occurred_at, timeZone) },
   { header: 'Product', value: (row) => row.product_name },
   { header: 'SKU', value: (row) => row.sku },
-  { header: 'Quantity', value: (row) => row.quantity_sold },
-  { header: 'Unit price', value: (row) => Number(row.price_per_unit) },
-  { header: 'Total', value: (row) => Number(row.total_amount) },
+  { header: 'Quantity', value: (row) => row.quantity },
+  { header: 'Unit price', value: (row) => Number(row.unit_price) },
+  { header: 'Total', value: (row) => Number(row.total) },
   { header: 'Unit cost', value: (row) => (row.unit_cost === null ? null : Number(row.unit_cost)) },
   {
     header: 'Profit',
-    value: (row) =>
-      row.unit_cost === null ? null : roundMoney(row.quantity_sold * (Number(row.price_per_unit) - Number(row.unit_cost))),
+    value: (row) => (row.unit_cost === null ? null : roundMoney(Number(row.total) - row.quantity * Number(row.unit_cost))),
   },
   { header: 'Sold by', value: (row) => row.sold_by_name },
   { header: 'Notes', value: (row) => row.notes },
+  // Last, so the columns people already rely on keep their places.
+  { header: 'Type', value: (row) => row.kind },
 ];
 
 type StockExportRow = VelocityRow & { daysLeft: number | null };
@@ -47,6 +48,7 @@ const TEAM_COLUMNS: CsvColumn<TeamRow>[] = [
   { header: 'Sales', value: (row) => row.salesCount },
   { header: 'Units sold', value: (row) => row.unitsSold },
   { header: 'Revenue', value: (row) => row.revenue },
+  { header: 'Refunds', value: (row) => row.refunds },
   { header: 'Profit', value: (row) => row.profit },
   { header: 'Average sale', value: (row) => row.averageSale },
 ];

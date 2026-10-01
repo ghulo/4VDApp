@@ -151,11 +151,11 @@ describe('stock, sales, people and login activity', () => {
     await request(context.app)
       .patch(`/api/inventory/${productId}`)
       .set(auth(adminToken))
-      .send({ quantity: -3, reason: 'Damage', reorderLevel: 8 });
+      .send({ quantity: -3, reason: 'Manual adjustment', reorderLevel: 8 });
     const response = await listActivity('?action=stock');
 
     expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual([
-      'Removed 3 from Oak Chair (Damage)',
+      'Removed 3 from Oak Chair (Manual adjustment)',
       'Changed reorder level of Oak Chair from 5 to 8',
     ]);
     expect(response.body.data[0].details).toMatchObject({ quantity: -3, before: 20, after: 17 });
@@ -167,7 +167,7 @@ describe('stock, sales, people and login activity', () => {
     await request(context.app)
       .patch(`/api/inventory/${productId}`)
       .set(auth(adminToken))
-      .send({ quantity: -500, reason: 'Damage', reorderLevel: 1 });
+      .send({ quantity: -500, reason: 'Manual adjustment', reorderLevel: 1 });
     const response = await listActivity('?action=stock');
 
     expect(response.body.data).toEqual([]);

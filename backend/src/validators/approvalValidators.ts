@@ -33,3 +33,9 @@ export const returnSchema = z.object({
   refundAmount: z.number().min(0).max(10_000_000).optional(),
   notes: optionalText(1000),
 });
+
+export const startCountSchema = z.object({ categoryId: idSchema.nullish().transform((value) => value ?? null) });
+
+export const countLineParamsSchema = z.object({ id: idSchema, productId: idSchema });
+
+export const countLineSchema = z.object({ countedQuantity: z.number().int().min(0).max(MAX_UNITS) });

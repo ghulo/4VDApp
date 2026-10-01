@@ -8,6 +8,7 @@ import { ProductRepository } from './ProductRepository.js';
 import { SalesRepository } from './SalesRepository.js';
 import { ReturnRepository } from './ReturnRepository.js';
 import { SettingsRepository } from './SettingsRepository.js';
+import { StockCountRepository } from './StockCountRepository.js';
 import { WriteOffRepository } from './WriteOffRepository.js';
 import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
 import { UserRepository } from './UserRepository.js';
@@ -26,6 +27,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     settings: new SettingsRepository(db),
     writeOffs: new WriteOffRepository(db),
     returns: new ReturnRepository(db),
+    stockCounts: new StockCountRepository(db),
   };
 }
 

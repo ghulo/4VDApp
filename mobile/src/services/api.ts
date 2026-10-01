@@ -61,6 +61,9 @@ export const salesApi = {
 };
 
 export const reportsApi = {
-  mySales: async (startDate: string, endDate: string) =>
-    (await apiRequest<MySales>('/reports/my-sales', { query: { startDate, endDate } })).data,
+  mySales: async (range: { startDate: string; endDate: string; previousStartDate: string; previousEndDate: string }) => {
+    const { startDate, endDate, previousStartDate, previousEndDate } = range;
+    const query = { startDate, endDate, previousStartDate, previousEndDate };
+    return (await apiRequest<MySales>('/reports/my-sales', { query })).data;
+  },
 };

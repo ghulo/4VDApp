@@ -261,7 +261,7 @@ A notification: `{ id, title, message, type, isRead, createdAt }`, where `type` 
 
 ## Reports
 
-All report endpoints take `startDate` and `endDate` (required, ISO, end exclusive; a date-only `endDate` includes that whole day; at most 366 days). The comparison period is the same length immediately before.
+All report endpoints take `startDate` and `endDate` (required, ISO, end exclusive; a date-only `endDate` includes that whole day; at most 366 days). The comparison period is the same length immediately before, unless `summary` or `my-sales` is given an explicit `previousStartDate` and `previousEndDate` (both or neither), e.g. the same days last month or last calendar month.
 
 Profit uses each sale's cost at the time of sale (`unit_cost`). Sales of products without a cost price are left out of cost, profit and margin; their revenue is reported as `revenueWithoutCost`.
 
@@ -281,7 +281,7 @@ Reorder maths: `averageDailySales` = units sold in the last 30 days ÷ 30; `days
 
 ## Exports (admin)
 
-CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The filename is in the `Content-Disposition` header.
+CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The filename is in the `Content-Disposition` header. Pass `tz` (an IANA timezone such as `Europe/Dublin`, default `UTC`) so the filename and the Date column (`2026-09-01 00:30`) use local dates.
 
 | Method & path | Contents |
 |---|---|

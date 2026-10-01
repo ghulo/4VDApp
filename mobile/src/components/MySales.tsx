@@ -7,21 +7,32 @@ import { errorMessage, formatMoney } from '../utils/format';
 const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
 const shortDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
-/** This calendar month in the phone's own timezone; the API compares it with last month. */
-function thisMonth(now = new Date()) {
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return { startDate: start.toISOString(), endDate: end.toISOString(), name: monthName.format(start) };
+/**
+ * This calendar month and last calendar month, in the phone's own timezone.
+ * Last month is sent explicitly so "Last month" really means last month,
+ * not "the same number of days before the 1st".
+ */
+function monthRanges(now = new Date()) {
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const start = new Date(year, month, 1);
+  return {
+    startDate: start.toISOString(),
+    endDate: new Date(year, month + 1, 1).toISOString(),
+    previousStartDate: new Date(year, month - 1, 1).toISOString(),
+    previousEndDate: start.toISOString(),
+    name: monthName.format(start),
+  };
 }
 
 export const MY_SALES_QUERY_KEY = ['reports', 'my-sales'];
 
 export function MySales() {
   const colors = useThemeColors();
-  const month = thisMonth();
+  const month = monthRanges();
   const mySales = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, month.startDate],
-    queryFn: () => reportsApi.mySales(month.startDate, month.endDate),
+    queryFn: () => reportsApi.mySales(month),
   });
 
   return (

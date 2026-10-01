@@ -6,6 +6,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   CORS_ORIGINS: z.string().default(''),
   SENTRY_DSN: z.string().optional(),
 });
@@ -16,6 +17,7 @@ export interface AppConfig {
   databaseUrl: string;
   jwtSecret: string;
   jwtExpiresIn: string;
+  refreshTokenTtlDays: number;
   corsOrigins: string[];
   sentryDsn?: string;
 }
@@ -42,6 +44,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: env.DATABASE_URL,
     jwtSecret: env.JWT_SECRET,
     jwtExpiresIn: env.JWT_EXPIRES_IN,
+    refreshTokenTtlDays: env.REFRESH_TOKEN_TTL_DAYS,
     corsOrigins: env.CORS_ORIGINS.split(',')
       .map((origin) => origin.trim())
       .filter((origin) => origin.length > 0),

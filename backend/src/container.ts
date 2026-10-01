@@ -2,7 +2,9 @@ import type { RequestHandler } from 'express';
 import type { AppConfig } from './config/env.js';
 import type { DatabaseClient } from './database/connection.js';
 import { requireAuth, requireRole } from './middlewares/authenticate.js';
+import { ActivityLogRepository } from './repositories/ActivityLogRepository.js';
 import { CategoryRepository } from './repositories/CategoryRepository.js';
+import { ActivityLogService } from './services/ActivityLogService.js';
 import { FavoriteRepository } from './repositories/FavoriteRepository.js';
 import { NotificationRepository } from './repositories/NotificationRepository.js';
 import { SalesRepository } from './repositories/SalesRepository.js';
@@ -42,6 +44,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const salesRepository = new SalesRepository(db);
   const notificationRepository = new NotificationRepository(db);
   const favoriteRepository = new FavoriteRepository(db);
+  const activityLogRepository = new ActivityLogRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, config);
   const categoryService = new CategoryService(categoryRepository);
@@ -58,6 +61,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const userService = new UserService(userRepository, refreshTokenRepository);
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
+  const activityLogService = new ActivityLogService(activityLogRepository);
 
   const authenticated = requireAuth(userRepository);
   const guards = {
@@ -81,6 +85,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
     userService,
     notificationService,
     favoriteService,
+    activityLogRepository,
+    activityLogService,
     guards,
   };
 }

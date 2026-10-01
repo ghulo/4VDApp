@@ -1,10 +1,13 @@
 import type { DatabaseClient } from '../database/connection.js';
+import { ActivityLogRepository } from './ActivityLogRepository.js';
+import { CategoryRepository } from './CategoryRepository.js';
 import { InventoryRepository } from './InventoryRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
 import { PricingTierRepository } from './PricingTierRepository.js';
 import { ProductRepository } from './ProductRepository.js';
 import { SalesRepository } from './SalesRepository.js';
 import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
+import { UserRepository } from './UserRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -14,6 +17,9 @@ function createTransactionalRepositories(db: DatabaseClient) {
     stockAdjustments: new StockAdjustmentRepository(db),
     notifications: new NotificationRepository(db),
     sales: new SalesRepository(db),
+    activityLog: new ActivityLogRepository(db),
+    categories: new CategoryRepository(db),
+    users: new UserRepository(db),
   };
 }
 

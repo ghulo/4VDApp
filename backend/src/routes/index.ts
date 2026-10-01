@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
+import { createActivityRoutes } from './activityRoutes.js';
 import { createAuthRoutes } from './authRoutes.js';
 import {
   createCategoryRoutes,
@@ -29,6 +30,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/users', createUserRoutes(container));
   router.use('/notifications', createNotificationRoutes(container));
   router.use('/favorites', createFavoriteRoutes(container));
+  router.use('/activity', createActivityRoutes(container));
 
   return router;
 }

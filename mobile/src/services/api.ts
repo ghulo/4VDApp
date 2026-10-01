@@ -1,5 +1,5 @@
 import { apiRequest, tokenStore } from './apiClient';
-import type { Category, MySales, PaginationMeta, Product, Sale, User } from './types';
+import type { Category, InventoryItem, MySales, PaginationMeta, Product, Sale, User } from './types';
 
 const PAGE_SIZE = 20;
 
@@ -65,5 +65,13 @@ export const reportsApi = {
     const { startDate, endDate, previousStartDate, previousEndDate } = range;
     const query = { startDate, endDate, previousStartDate, previousEndDate };
     return (await apiRequest<MySales>('/reports/my-sales', { query })).data;
+  },
+};
+
+export const inventoryApi = {
+  /** Low and sold-out products, emptiest first. */
+  async lowStock(limit: number): Promise<{ items: InventoryItem[]; meta: PaginationMeta }> {
+    const { data, meta } = await apiRequest<InventoryItem[]>('/inventory', { query: { lowStock: true, limit } });
+    return { items: data, meta: meta! };
   },
 };

@@ -6,7 +6,9 @@ import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
+import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { MySalesScreen } from '../screens/MySalesScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { RecordSaleScreen } from '../screens/RecordSaleScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
@@ -41,6 +43,7 @@ function MainTabs() {
         tabBarIconStyle: { display: 'none' },
       }}
     >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel('Home') }} />
       <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: 'Products', tabBarLabel: tabLabel('Products') }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ tabBarLabel: tabLabel('Favorites') }} />
       {showSell && (
@@ -100,6 +103,7 @@ export function RootNavigator() {
               component={RecordSaleScreen}
               options={{ title: 'Record a sale', presentation: 'modal' }}
             />
+            <Stack.Screen name="MySales" component={MySalesScreen} options={{ title: 'My sales', headerBackTitle: 'Back' }} />
           </>
         )}
       </Stack.Navigator>

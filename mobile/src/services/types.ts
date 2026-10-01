@@ -57,3 +57,12 @@ export interface MySales {
   previous: SalesTotals;
   recentSales: Array<{ id: number; productName: string; quantity: number; totalAmount: number; saleDate: string }>;
 }
+
+export interface InventoryItem {
+  productId: number;
+  productName: string;
+  sku: string | null;
+  quantity: number;
+  reorderLevel: number;
+  isLowStock: boolean;
+}

@@ -1,4 +1,4 @@
-import { apiRequest, tokenStore } from './apiClient';
+import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
   AppNotification,
   Category,
@@ -9,9 +9,13 @@ import type {
   PricingTier,
   Product,
   ProductInput,
+  ProfitRow,
+  ReorderSuggestion,
+  ReportSummary,
   RevenueSeries,
   Sale,
   StockReason,
+  TeamRow,
   User,
   UserRole,
 } from './types';
@@ -151,5 +155,25 @@ export const notificationsApi = {
   },
   markAllRead: async () => {
     await apiRequest('/notifications/read-all', { method: 'POST' });
+  },
+};
+
+export interface ReportRange {
+  startDate: string;
+  endDate: string;
+}
+
+export const reportsApi = {
+  summary: async (range: ReportRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
+  team: async (range: ReportRange) => (await apiRequest<TeamRow[]>('/reports/team', { query: { ...range } })).data,
+  profit: async (range: ReportRange, groupBy: 'product' | 'category') =>
+    (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy } })).data,
+  reorderSuggestions: async () => (await apiRequest<ReorderSuggestion[]>('/reports/reorder-suggestions')).data,
+};
+
+export const exportsApi = {
+  async download(kind: 'sales' | 'stock' | 'team', range?: ReportRange): Promise<void> {
+    const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, range ? { ...range } : {});
+    saveDownload(blob, filename ?? `4vd-${kind}.csv`);
   },
 };

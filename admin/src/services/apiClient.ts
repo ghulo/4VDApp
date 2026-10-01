@@ -104,13 +104,9 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   }
 }
 
-/** Calls the API, refreshing the session once if the access token expired. */
-export async function apiRequest<TData>(
-  path: string,
-  options: RequestOptions = {},
-): Promise<{ data: TData; meta?: PaginationMeta }> {
+/** Send a request, refreshing the session once if the access token expired. */
+async function sendWithRefresh(path: string, options: RequestOptions): Promise<Response> {
   let response = await send(path, options);
-
   if (response.status === 401 && tokenStore.refresh && !path.startsWith('/auth/')) {
     if (await refreshSession()) {
       response = await send(path, options);
@@ -119,14 +115,48 @@ export async function apiRequest<TData>(
       onSessionExpired();
     }
   }
+  return response;
+}
 
+function toApiError(response: Response, body: ApiResponse<unknown> | null): ApiError {
+  return new ApiError(
+    body?.message ?? `The server answered with status ${response.status}`,
+    response.status,
+    body?.error ?? null,
+  );
+}
+
+export async function apiRequest<TData>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<{ data: TData; meta?: PaginationMeta }> {
+  const response = await sendWithRefresh(path, options);
   const body = (await response.json().catch(() => null)) as ApiResponse<TData> | null;
-  if (!response.ok || !body?.success) {
-    throw new ApiError(
-      body?.message ?? `The server answered with status ${response.status}`,
-      response.status,
-      body?.error ?? null,
-    );
-  }
+  if (!response.ok || !body?.success) throw toApiError(response, body);
   return { data: body.data, meta: body.meta };
+}
+
+/** Fetch a file (e.g. a CSV export) through the authenticated API. */
+export async function apiDownload(
+  path: string,
+  query: RequestOptions['query'] = {},
+): Promise<{ blob: Blob; filename: string | null }> {
+  const response = await sendWithRefresh(path, { query });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiResponse<unknown> | null;
+    throw toApiError(response, body);
+  }
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? null;
+  return { blob: await response.blob(), filename };
+}
+
+/** Hand a downloaded file to the browser to save. */
+export function saveDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }

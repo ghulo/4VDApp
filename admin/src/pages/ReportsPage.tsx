@@ -6,7 +6,7 @@ import { PeriodPicker } from '../components/PeriodPicker';
 import { exportsApi, reportsApi } from '../services/api';
 import type { ReportSummary } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney } from '../utils/format';
+import { formatMoney, ROLE_LABEL } from '../utils/format';
 import { type PeriodKey, resolvePeriod } from '../utils/periods';
 
 const percent = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 });
@@ -55,6 +55,9 @@ export function ReportsPage() {
       </header>
 
       <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
+      {range.waitingForDates && (
+        <p className="field-hint">Pick both a start and an end date. Until then this shows {range.label}.</p>
+      )}
 
       <section className="panel" aria-labelledby="summary-heading">
         <h2 id="summary-heading" className="panel__title">
@@ -141,7 +144,9 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                 <tr key={person.userId} className={person.salesCount === 0 ? 'table__row--muted' : undefined}>
                   <td>
                     <span className="table__primary-link">{person.name}</span>
-                    <span className="table__secondary">{person.role === 'admin' ? 'Admin' : 'Employee'}</span>
+                    <span className="table__secondary">
+                      {person.hasLeft ? `${ROLE_LABEL[person.role]}, no longer on the team` : ROLE_LABEL[person.role]}
+                    </span>
                   </td>
                   <td className="table__numeric">{person.salesCount}</td>
                   <td className="table__numeric">{person.unitsSold}</td>

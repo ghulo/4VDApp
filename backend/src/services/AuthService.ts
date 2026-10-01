@@ -44,6 +44,8 @@ export class AuthService {
     }
 
     const publicUser = toPublicUser(user);
+    const tokens = await this.issueTokens(publicUser);
+    // Logged once the session exists, so the log never shows a login that failed.
     await this.activityLogRepository.create({
       userId: user.id,
       action: 'auth.logged_in',
@@ -51,7 +53,7 @@ export class AuthService {
       entityId: user.id,
       summary: `${user.name} logged in`,
     });
-    return { ...(await this.issueTokens(publicUser)), user: publicUser };
+    return { ...tokens, user: publicUser };
   }
 
   /** Swap a refresh token for a new pair. The old refresh token stops working. */

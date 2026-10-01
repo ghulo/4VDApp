@@ -47,7 +47,7 @@ const sell = (token: string, quantity: number, extra: Record<string, unknown> = 
 describe('sales', () => {
   it('should charge the bulk price and take the units out of stock', async () => {
     const response = await sell(adminToken, 12);
-    const inventory = await request(context.app).get(`/api/inventory/${productId}`);
+    const inventory = await request(context.app).get(`/api/inventory/${productId}`).set(auth(adminToken));
 
     expect(response.status).toBe(201);
     expect(response.body.data).toMatchObject({ quantity: 12, pricePerUnit: 90, totalAmount: 1080 });

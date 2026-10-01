@@ -55,4 +55,18 @@ describe('resolvePeriod', () => {
     expect(range.previousStartDate).toBeUndefined();
     expect(range.previousEndDate).toBeUndefined();
   });
+
+  it('should end a custom range at the next local midnight, even on a clock-change day', () => {
+    // 25 October 2026 is 25 hours long in Europe, when the clocks go back.
+    const range = resolvePeriod('custom', { from: '2026-10-20', to: '2026-10-25' }, at(2026, 11, 1));
+
+    expect(range.endDate).toBe(iso(at(2026, 10, 26)));
+  });
+
+  it('should flag a custom range with only one date picked, instead of silently showing this month', () => {
+    const range = resolvePeriod('custom', { from: '2026-03-01', to: '' }, at(2026, 10, 3));
+
+    expect(range.waitingForDates).toBe(true);
+    expect(resolvePeriod('custom', { from: '2026-03-01', to: '2026-03-02' }, at(2026, 10, 3)).waitingForDates).toBeUndefined();
+  });
 });

@@ -15,6 +15,7 @@ export interface TeamQueryRow {
   user_id: number;
   name: string;
   role: string;
+  has_left: boolean;
   sales_count: string;
   units_sold: string;
   revenue: string;
@@ -28,6 +29,7 @@ export interface ProfitQueryRow {
   revenue: string;
   cost: string;
   profit: string;
+  revenue_with_cost: string;
   has_unknown_cost: boolean;
 }
 
@@ -93,6 +95,7 @@ export class ReportsRepository {
         u.id as user_id,
         u.name,
         u.role,
+        (not u.is_active or u.deleted_at is not null) as has_left,
         count(s.id) as sales_count,
         coalesce(sum(s.quantity_sold), 0) as units_sold,
         coalesce(sum(s.total_amount), 0) as revenue,
@@ -101,7 +104,7 @@ export class ReportsRepository {
       left join sales s
         on s.sold_by = u.id and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
       where (u.role in ('admin', 'employee') and u.is_active and u.deleted_at is null) or s.id is not null
-      group by u.id, u.name, u.role
+      group by u.id, u.name, u.role, u.is_active, u.deleted_at
       order by revenue desc, u.name
     `.execute(this.db);
     return result.rows;
@@ -116,6 +119,7 @@ export class ReportsRepository {
         sum(s.total_amount) as revenue,
         coalesce(sum(s.quantity_sold * s.unit_cost) filter (where s.unit_cost is not null), 0) as cost,
         coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0) as profit,
+        coalesce(sum(s.total_amount) filter (where s.unit_cost is not null), 0) as revenue_with_cost,
         bool_or(s.unit_cost is null) as has_unknown_cost
       from sales s
       join products p on p.id = s.product_id
@@ -128,7 +132,12 @@ export class ReportsRepository {
   }
 
   /** Active products with stock and how many sold since `since`. */
-  async salesVelocity(since: Date): Promise<VelocityRow[]> {
+  /** Pass `since: null` when only the stock columns are needed, to skip counting sales. */
+  async salesVelocity(since: Date | null): Promise<VelocityRow[]> {
+    const unitsSold =
+      since === null
+        ? sql`0`
+        : sql`coalesce((select sum(s.quantity_sold) from sales s where s.product_id = p.id and s.sale_date >= ${since}), 0)`;
     const result = await sql<VelocityRow>`
       select
         p.id as product_id,
@@ -139,9 +148,7 @@ export class ReportsRepository {
         i.reorder_level,
         p.base_price,
         p.cost_price,
-        coalesce((
-          select sum(s.quantity_sold) from sales s where s.product_id = p.id and s.sale_date >= ${since}
-        ), 0) as units_sold_recently
+        ${unitsSold} as units_sold_recently
       from products p
       join inventory i on i.product_id = p.id
       join categories c on c.id = p.category_id

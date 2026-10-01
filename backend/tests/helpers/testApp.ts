@@ -75,8 +75,12 @@ export async function createTestUser(
 }
 
 /** Create a user with the given role and return a valid access token for them. */
-export async function loginAs(context: TestContext, role: UserRole): Promise<string> {
-  const user = await createTestUser(context.db, role);
+export async function loginAs(
+  context: TestContext,
+  role: UserRole,
+  overrides: { email?: string } = {},
+): Promise<string> {
+  const user = await createTestUser(context.db, role, overrides);
   const response = await request(context.app)
     .post('/api/auth/login')
     .send({ email: user.email, password: TEST_PASSWORD });

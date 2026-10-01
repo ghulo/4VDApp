@@ -39,19 +39,22 @@
 ### Directory Structure (Best Practices)
 ```
 backend/src/
-├── config/           # Configuration (DB, env, constants)
-├── middlewares/      # Express middlewares (auth, error handling, logging)
-├── routes/           # API route definitions
-├── controllers/      # Request handlers, input validation
-├── services/         # Business logic layer
-├── repositories/     # Data access layer (ORM queries)
-├── models/           # Database models/schemas
-├── utils/            # Helpers, utilities, constants
-├── validators/       # Input validation schemas
-├── errors/           # Custom error classes
-├── types/            # TypeScript types/interfaces (if using TS)
-├── constants/        # App-wide constants
-└── server.js         # Express app initialization
+├── config/           # Environment loading and validation
+├── constants/        # App-wide constants (rate limits, stock reasons, activity actions)
+├── controllers/      # Request handlers: parse input, call a service, send the response
+├── database/         # Kysely connection, table types and migrations
+├── errors/           # Custom HTTP error classes
+├── middlewares/      # Auth, rate limiting, error handling
+├── repositories/     # Data access (Kysely queries)
+├── routes/           # API route definitions and role guards
+├── scripts/          # migrate and seed commands
+├── services/         # Business logic
+├── types/            # Shared TypeScript types
+├── utils/            # Helpers (CSV, logging, tokens, passwords)
+├── validators/       # Zod input schemas
+├── app.ts            # Express app setup
+├── container.ts      # Wires repositories, services and guards together
+└── server.ts         # Starts the HTTP server
 ```
 
 ### Key Layers

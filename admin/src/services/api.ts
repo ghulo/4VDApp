@@ -1,5 +1,6 @@
-import { apiRequest, tokenStore } from './apiClient';
+import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
+  ActivityEntry,
   AppNotification,
   Category,
   Dashboard,
@@ -9,9 +10,13 @@ import type {
   PricingTier,
   Product,
   ProductInput,
+  ProfitRow,
+  ReorderSuggestion,
+  ReportSummary,
   RevenueSeries,
   Sale,
   StockReason,
+  TeamRow,
   User,
   UserRole,
 } from './types';
@@ -152,4 +157,36 @@ export const notificationsApi = {
   markAllRead: async () => {
     await apiRequest('/notifications/read-all', { method: 'POST' });
   },
+};
+
+export interface ReportRange {
+  startDate: string;
+  endDate: string;
+}
+
+export interface ComparedRange extends ReportRange {
+  previousStartDate?: string;
+  previousEndDate?: string;
+}
+
+export const reportsApi = {
+  summary: async (range: ComparedRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
+  team: async (range: ReportRange) => (await apiRequest<TeamRow[]>('/reports/team', { query: { ...range } })).data,
+  profit: async (range: ReportRange, groupBy: 'product' | 'category') =>
+    (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy } })).data,
+  reorderSuggestions: async () => (await apiRequest<ReorderSuggestion[]>('/reports/reorder-suggestions')).data,
+};
+
+export const exportsApi = {
+  async download(kind: 'sales' | 'stock' | 'team', range?: ReportRange): Promise<void> {
+    // The server names files and writes dates in the admin's own timezone.
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, { ...range, tz });
+    saveDownload(blob, filename ?? `4vd-${kind}.csv`);
+  },
+};
+
+export const activityApi = {
+  list: (query: { page: number; userId?: number; action?: string }) =>
+    paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
 };

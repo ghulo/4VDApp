@@ -259,6 +259,51 @@ A notification: `{ id, title, message, type, isRead, createdAt }`, where `type` 
 
 ---
 
+## Reports
+
+All report endpoints take `startDate` and `endDate` (required, ISO, end exclusive; a date-only `endDate` includes that whole day; at most 366 days). The comparison period is the same length immediately before, unless `summary` or `my-sales` is given an explicit `previousStartDate` and `previousEndDate` (both or neither), e.g. the same days last month or last calendar month.
+
+Profit uses each sale's cost at the time of sale (`unit_cost`). Sales of products without a cost price are left out of cost, profit and margin; their revenue is reported as `revenueWithoutCost`.
+
+| Method & path | Auth | Returns |
+|---|---|---|
+| `GET /reports/summary` | admin | `{ current, previous, change }`: totals for both periods and relative change (`0.12` = +12%, `null` when the previous value was 0) |
+| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, salesCount, unitsSold, revenue, profit, averageSale }` |
+| `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first |
+| `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder }`, soonest to run out first. No date range |
+| `GET /reports/my-sales` | admin, employee | The caller's own `current` and `previous` `{ salesCount, unitsSold, revenue }` and their 10 latest `recentSales`. Never cost or profit |
+
+Totals shape: `{ revenue, revenueWithoutCost, cost, profit, margin, unitsSold, salesCount }`.
+
+Reorder maths: `averageDailySales` = units sold in the last 30 days ÷ 30; `daysLeft` = stock ÷ that, rounded down (`null` without recent sales); `suggestedOrder` = `max(0, ceil(average × 30 + reorderLevel − stock))`.
+
+---
+
+## Exports (admin)
+
+CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The filename is in the `Content-Disposition` header. Pass `tz` (an IANA timezone such as `Europe/Dublin`, default `UTC`) so the filename and the Date column (`2026-09-01 00:30`) use local dates.
+
+| Method & path | Contents |
+|---|---|
+| `GET /exports/sales.csv?startDate&endDate` | One row per sale: date, product, SKU, quantity, unit price, total, unit cost, profit, sold by, notes |
+| `GET /exports/stock.csv` | One row per active product: name, SKU, category, stock, reorder level, price, cost, stock value, days left |
+| `GET /exports/team.csv?startDate&endDate` | The team report |
+
+---
+
+## Activity (admin)
+
+`GET /activity?userId&entityType&entityId&action&page&limit`: newest first.
+
+- `action`: comma-separated exact actions or prefixes, e.g. `stock`, `sale.recorded`, `product,pricing,category`
+- `entityType`: `product`, `category`, `user` or `sale`
+
+Entry: `{ id, action, entityType, entityId, summary, details, createdAt, user: { id, name } | null }`.
+
+Logged actions: `auth.logged_in`, `product.created`, `product.updated`, `product.deleted`, `pricing.updated`, `stock.adjusted`, `sale.recorded`, `category.created`, `category.updated`, `category.deleted`, `user.created`, `user.updated`, `user.deleted`. Passwords are never logged.
+
+---
+
 ## Notes
 - All timestamps are ISO 8601 in UTC
 - Money is in euros, as numbers with up to two decimals

@@ -76,6 +76,7 @@ export class SalesRepository {
     productId: number;
     quantity: number;
     pricePerUnit: number;
+    unitCost: number | null;
     soldBy: number;
     notes: string | null;
     saleDate?: Date;
@@ -86,6 +87,7 @@ export class SalesRepository {
         product_id: sale.productId,
         quantity_sold: sale.quantity,
         price_per_unit: sale.pricePerUnit,
+        unit_cost: sale.unitCost,
         sold_by: sale.soldBy,
         notes: sale.notes,
         ...(sale.saleDate && { sale_date: sale.saleDate }),
@@ -118,8 +120,8 @@ export class SalesRepository {
         sql<string>`count(*)`.as('sales_count'),
         sql<string>`coalesce(sum(s.quantity_sold), 0)`.as('units_sold'),
         sql<string>`coalesce(sum(s.total_amount), 0)`.as('revenue'),
-        // Profit only counts products whose cost price is known.
-        sql<string>`coalesce(sum(s.quantity_sold * (s.price_per_unit - p.cost_price)) filter (where p.cost_price is not null), 0)`.as(
+        // Profit only counts sales whose cost was known when they were made.
+        sql<string>`coalesce(sum(s.quantity_sold * (s.price_per_unit - s.unit_cost)) filter (where s.unit_cost is not null), 0)`.as(
           'profit',
         ),
       ])

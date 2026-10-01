@@ -26,7 +26,9 @@ export function createApp(config: AppConfig, db: DatabaseClient): Express {
   if (config.nodeEnv === 'production') app.set('trust proxy', 1);
 
   app.use(helmet());
-  app.use(cors({ origin: config.corsOrigins }));
+  // Browsers hide Content-Disposition from cross-origin JS unless it is exposed,
+  // and the admin dashboard needs it to name downloaded CSV files.
+  app.use(cors({ origin: config.corsOrigins, exposedHeaders: ['Content-Disposition'] }));
   app.use(compression());
   app.use(express.json({ limit: '1mb' }));
 

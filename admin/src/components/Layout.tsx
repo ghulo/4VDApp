@@ -7,9 +7,11 @@ const NAV_ITEMS = [
   { to: '/', label: 'Overview', end: true },
   { to: '/inventory', label: 'Stock' },
   { to: '/sales', label: 'Sales' },
+  { to: '/reports', label: 'Reports' },
   { to: '/products', label: 'Products' },
   { to: '/categories', label: 'Categories' },
   { to: '/people', label: 'People' },
+  { to: '/activity', label: 'Activity' },
 ];
 
 const ALERT_POLL_MS = 60_000;

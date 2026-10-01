@@ -81,6 +81,8 @@ export interface SalesTable {
   product_id: number;
   quantity_sold: number;
   price_per_unit: Decimal;
+  /** Product cost when sold; null when it was unknown. */
+  unit_cost: Decimal | null;
   // Computed by PostgreSQL (GENERATED ALWAYS AS ... STORED), never written.
   total_amount: ColumnType<string, never, never>;
   sold_by: number | null;
@@ -124,6 +126,18 @@ export interface FavoritesTable {
   created_at: CreatedAt;
 }
 
+export interface ActivityLogTable {
+  id: Generated<number>;
+  user_id: number | null;
+  action: string;
+  entity_type: string | null;
+  entity_id: number | null;
+  summary: string;
+  // pg serialises plain objects to JSON for us and parses JSONB on the way out.
+  details: ColumnType<Record<string, unknown> | null, Record<string, unknown> | null | undefined, never>;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -136,6 +150,7 @@ export interface Database {
   product_images: ProductImagesTable;
   notifications: NotificationsTable;
   favorites: FavoritesTable;
+  activity_log: ActivityLogTable;
 }
 
 export type UserRow = Selectable<UsersTable>;
@@ -147,3 +162,4 @@ export type InventoryRow = Selectable<InventoryTable>;
 export type BulkPricingTierRow = Selectable<BulkPricingTiersTable>;
 export type SaleRow = Selectable<SalesTable>;
 export type NotificationRow = Selectable<NotificationsTable>;
+export type ActivityLogRow = Selectable<ActivityLogTable>;

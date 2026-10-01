@@ -1,5 +1,5 @@
 import { apiRequest, tokenStore } from './apiClient';
-import type { Category, PaginationMeta, Product, Sale, User } from './types';
+import type { Category, MySales, PaginationMeta, Product, Sale, User } from './types';
 
 const PAGE_SIZE = 20;
 
@@ -58,4 +58,12 @@ export const favoritesApi = {
 export const salesApi = {
   record: async (input: { productId: number; quantity: number; notes: string | null }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
+};
+
+export const reportsApi = {
+  mySales: async (range: { startDate: string; endDate: string; previousStartDate: string; previousEndDate: string }) => {
+    const { startDate, endDate, previousStartDate, previousEndDate } = range;
+    const query = { startDate, endDate, previousStartDate, previousEndDate };
+    return (await apiRequest<MySales>('/reports/my-sales', { query })).data;
+  },
 };

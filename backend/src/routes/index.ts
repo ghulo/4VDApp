@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
+import { createActivityRoutes } from './activityRoutes.js';
 import { createAuthRoutes } from './authRoutes.js';
 import {
   createCategoryRoutes,
@@ -14,6 +15,8 @@ import {
   createSalesRoutes,
   createUserRoutes,
 } from './operationsRoutes.js';
+import { createExportsRoutes } from './exportsRoutes.js';
+import { createReportsRoutes } from './reportsRoutes.js';
 
 /** Root router for everything under /api. */
 export function createApiRoutes(container: Container): Router {
@@ -29,6 +32,9 @@ export function createApiRoutes(container: Container): Router {
   router.use('/users', createUserRoutes(container));
   router.use('/notifications', createNotificationRoutes(container));
   router.use('/favorites', createFavoriteRoutes(container));
+  router.use('/activity', createActivityRoutes(container));
+  router.use('/reports', createReportsRoutes(container));
+  router.use('/exports', createExportsRoutes(container));
 
   return router;
 }

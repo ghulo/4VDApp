@@ -68,6 +68,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
     mutationFn: () => salesApi.record({ productId: product.id, quantity, notes: notes.trim() || null }),
     onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['reports', 'my-sales'] });
       setSavedMessage(`Sold ${sale.quantity} × ${sale.productName} for ${formatMoney(sale.totalAmount)}.`);
       setQuantity(1);
       setNotes('');

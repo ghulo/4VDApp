@@ -138,3 +138,62 @@ export interface AppNotification {
 }
 
 export const USER_ROLES: UserRole[] = ['admin', 'employee', 'family'];
+
+export interface PeriodTotals {
+  revenue: number;
+  revenueWithoutCost: number;
+  cost: number;
+  profit: number;
+  margin: number | null;
+  unitsSold: number;
+  salesCount: number;
+}
+
+export interface ReportSummary {
+  current: PeriodTotals;
+  previous: PeriodTotals;
+  change: { revenue: number | null; profit: number | null; unitsSold: number | null; salesCount: number | null };
+}
+
+export interface TeamRow {
+  userId: number;
+  name: string;
+  role: UserRole;
+  salesCount: number;
+  unitsSold: number;
+  revenue: number;
+  profit: number;
+  averageSale: number;
+}
+
+export interface ProfitRow {
+  id: number;
+  name: string;
+  unitsSold: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number | null;
+  hasUnknownCost: boolean;
+}
+
+export interface ReorderSuggestion {
+  productId: number;
+  productName: string;
+  quantity: number;
+  reorderLevel: number;
+  averageDailySales: number;
+  daysLeft: number | null;
+  suggestedOrder: number;
+}
+
+export interface ActivityEntry {
+  id: number;
+  action: string;
+  entityType: string | null;
+  entityId: number | null;
+  summary: string;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+  user: { id: number; name: string } | null;
+}

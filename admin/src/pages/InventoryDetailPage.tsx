@@ -94,6 +94,8 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
       // Lists and product pages show stock too; refetch them next time they're viewed.
       queryClient.invalidateQueries({ queryKey: ['inventory'], exact: false });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
       setAmount('');
       setNotes('');
       setSavedMessage(`Stock is now ${updated.quantity}.`);

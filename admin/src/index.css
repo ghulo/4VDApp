@@ -1188,6 +1188,16 @@ textarea:focus-visible {
   text-align: center;
 }
 
+.summary__change {
+  color: var(--steel);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.activity-row {
+  grid-template-columns: 1fr auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

@@ -3,7 +3,7 @@ import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { AppConfig } from './config/env.js';
-import { createContainer } from './container.js';
+import { type Container, type ContainerOptions, createContainer } from './container.js';
 import type { DatabaseClient } from './database/connection.js';
 import { identifyRequester } from './middlewares/authenticate.js';
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -16,9 +16,14 @@ import { createApiRoutes } from './routes/index.js';
  * Build the Express app without starting a server, so tests can exercise it
  * with supertest and server.ts stays responsible only for listening.
  */
-export function createApp(config: AppConfig, db: DatabaseClient): Express {
+export interface AppOptions extends ContainerOptions {
+  /** Share one container with the server, which also runs background work. */
+  container?: Container;
+}
+
+export function createApp(config: AppConfig, db: DatabaseClient, options: AppOptions = {}): Express {
   const app = express();
-  const container = createContainer(config, db);
+  const container = options.container ?? createContainer(config, db, options);
 
   app.disable('x-powered-by');
   // Render and most hosts sit behind one proxy; without this every request

@@ -30,6 +30,8 @@ export interface UsersTable {
   is_active: Generated<boolean>;
   monthly_target: Decimal | null;
   commission_percent: Decimal | null;
+  /** Push topic -> false when switched off; missing means on. */
+  push_preferences: ColumnType<Record<string, boolean>, Record<string, boolean> | undefined, Record<string, boolean>>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;
@@ -128,7 +130,20 @@ export interface NotificationsTable {
   message: string;
   type: string | null;
   is_read: Generated<boolean>;
+  /** Set once the background sender has pushed it (or decided not to). */
+  pushed_at: Date | null;
   created_at: CreatedAt;
+}
+
+export interface PushSubscriptionsTable {
+  id: Generated<number>;
+  user_id: number;
+  kind: 'expo' | 'web';
+  /** Expo push token, or Web Push endpoint URL. */
+  token: string;
+  keys: ColumnType<{ p256dh: string; auth: string } | null, { p256dh: string; auth: string } | null | undefined, { p256dh: string; auth: string } | null>;
+  created_at: CreatedAt;
+  last_used_at: Date | null;
 }
 
 export interface FavoritesTable {
@@ -255,6 +270,7 @@ export interface Database {
   activity_log: ActivityLogTable;
   settings: SettingsTable;
   promotions: PromotionsTable;
+  push_subscriptions: PushSubscriptionsTable;
   returns: ReturnsTable;
   write_offs: WriteOffsTable;
   stock_counts: StockCountsTable;

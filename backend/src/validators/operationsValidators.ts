@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { booleanQuerySchema, idSchema, optionalText, paginationSchema, trimmedString } from './validate.js';
@@ -84,3 +85,22 @@ export const userQuerySchema = paginationSchema.extend({
 export const notificationQuerySchema = paginationSchema.extend({
   unreadOnly: booleanQuerySchema.default(false),
 });
+
+export const pushPreferencesSchema = z
+  .object(Object.fromEntries(PUSH_TOPICS.map((topic) => [topic, z.boolean().optional()])) as Record<PushTopic, z.ZodOptional<z.ZodBoolean>>)
+  .strict()
+  .refine((input) => Object.values(input).some((value) => value !== undefined), {
+    message: `send at least one of: ${PUSH_TOPICS.join(', ')}`,
+  });
+
+/** An Expo push token from the phone app, or a browser's Web Push subscription. */
+export const pushDeviceSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('expo'), token: z.string().regex(/^Expo(nent)?PushToken\[[^\]]+\]$/, 'not an Expo push token') }),
+  z.object({
+    kind: z.literal('web'),
+    endpoint: z.url({ protocol: /^https$/ }).max(2000),
+    keys: z.object({ p256dh: z.string().min(1).max(500), auth: z.string().min(1).max(500) }),
+  }),
+]);
+
+export const removePushDeviceSchema = z.object({ token: z.string().min(1).max(2000) });

@@ -19,6 +19,8 @@ import type {
   PriceChange,
   PricingTier,
   Promotion,
+  PushSettings,
+  PushTopic,
   Product,
   ProductInput,
   ProfitRow,
@@ -193,6 +195,19 @@ export const notificationsApi = {
   markAllRead: async () => {
     await apiRequest('/notifications/read-all', { method: 'POST' });
   },
+};
+
+export const pushApi = {
+  settings: async () => (await apiRequest<PushSettings>('/notifications/push')).data,
+  updatePreferences: async (changes: Partial<Record<PushTopic, boolean>>) =>
+    (await apiRequest<PushSettings>('/notifications/push/preferences', { method: 'PUT', body: changes })).data,
+  addWebDevice: async (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
+    (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: { kind: 'web', ...subscription } })).data,
+  sendTest: async () => {
+    await apiRequest('/notifications/push/test', { method: 'POST' });
+  },
+  removeDevice: async (token: string) =>
+    (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
 };
 
 export interface ReportRange {

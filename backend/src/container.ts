@@ -28,6 +28,9 @@ import { PricingTierRepository } from './repositories/PricingTierRepository.js';
 import { ProductRepository } from './repositories/ProductRepository.js';
 import { PromotionRepository } from './repositories/PromotionRepository.js';
 import { PromotionService } from './services/PromotionService.js';
+import { PushRepository } from './repositories/PushRepository.js';
+import { type PushSenders, PushService } from './services/PushService.js';
+import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
 import { RefreshTokenRepository } from './repositories/RefreshTokenRepository.js';
 import { ReportsRepository } from './repositories/ReportsRepository.js';
 import { ReportsService } from './services/ReportsService.js';
@@ -46,7 +49,12 @@ import { ProductService } from './services/ProductService.js';
  * together (constructor injection, see docs/ARCHITECTURE.md). Tests can build
  * their own container with fakes instead.
  */
-export function createContainer(config: AppConfig, db: DatabaseClient) {
+export interface ContainerOptions {
+  /** Tests pass fakes so nothing is sent to Expo or browsers. */
+  pushSenders?: PushSenders;
+}
+
+export function createContainer(config: AppConfig, db: DatabaseClient, options: ContainerOptions = {}) {
   const transactions = new TransactionManager(db);
   const userRepository = new UserRepository(db);
   const refreshTokenRepository = new RefreshTokenRepository(db);
@@ -97,6 +105,14 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
+  const pushService = new PushService(
+    new PushRepository(db),
+    options.pushSenders ?? {
+      expo: new ExpoPushSender(),
+      web: config.webPush ? new WebPushSender(config.webPush) : null,
+    },
+    config.webPush?.publicKey ?? null,
+  );
 
   const authenticated = requireAuth(userRepository);
   const guards = {
@@ -131,6 +147,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
     stockCountService,
     approvalService,
     promotionService,
+    pushService,
     guards,
   };
 }

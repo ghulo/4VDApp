@@ -5,6 +5,8 @@ import type {
   InventoryItem,
   MyRequest,
   MySales,
+  PushSettings,
+  PushTopic,
   PaginationMeta,
   Product,
   ReturnCondition,
@@ -74,6 +76,20 @@ export const favoritesApi = {
 export const salesApi = {
   record: async (input: { productId: number; quantity: number; notes: string | null }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
+};
+
+export const pushApi = {
+  settings: async () => (await apiRequest<PushSettings>('/notifications/push')).data,
+  updatePreferences: async (changes: Partial<Record<PushTopic, boolean>>) =>
+    (await apiRequest<PushSettings>('/notifications/push/preferences', { method: 'PUT', body: changes })).data,
+  addDevice: async (
+    device: { kind: 'expo'; token: string } | { kind: 'web'; endpoint: string; keys: { p256dh: string; auth: string } },
+  ) => (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: device })).data,
+  sendTest: async () => {
+    await apiRequest('/notifications/push/test', { method: 'POST' });
+  },
+  removeDevice: async (token: string) =>
+    (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
 };
 
 export const reportsApi = {

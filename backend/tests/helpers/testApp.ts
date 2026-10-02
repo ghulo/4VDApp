@@ -4,6 +4,7 @@ import { type Kysely, sql } from 'kysely';
 import request from 'supertest';
 import { createApp } from '../../src/app.js';
 import { type AppConfig, loadConfig } from '../../src/config/env.js';
+import { type Container, type ContainerOptions, createContainer } from '../../src/container.js';
 import { createDatabase, type DatabaseClient } from '../../src/database/connection.js';
 import { runMigrations } from '../../src/database/migrator.js';
 import type { UserRole } from '../../src/database/types.js';
@@ -15,6 +16,7 @@ export interface TestContext {
   app: Express;
   db: DatabaseClient;
   config: AppConfig;
+  container: Container;
 }
 
 function testDatabaseUrl(): string {
@@ -30,7 +32,10 @@ function testDatabaseUrl(): string {
 }
 
 /** Fresh schema for each test file. */
-export async function setupTestApp(): Promise<TestContext> {
+const NO_PUSH = { send: async () => ({ deadTokens: [] }) };
+
+/** Push senders default to ones that send nothing. */
+export async function setupTestApp(options: ContainerOptions = {}): Promise<TestContext> {
   const databaseUrl = testDatabaseUrl();
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -43,14 +48,15 @@ export async function setupTestApp(): Promise<TestContext> {
   await sql`CREATE SCHEMA public`.execute(db);
   await runMigrations(db as Kysely<unknown>);
 
-  return { app: createApp(config, db), db, config };
+  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, ...options });
+  return { app: createApp(config, db, { container }), db, config, container };
 }
 
 /** Empty every table between tests but keep the schema. */
 export async function resetData(db: DatabaseClient): Promise<void> {
   await sql`TRUNCATE users, refresh_tokens, categories, products, inventory, bulk_pricing_tiers,
     sales, stock_adjustments, product_images, notifications, favorites, activity_log,
-    settings, returns, write_offs, stock_counts, stock_count_lines, promotions RESTART IDENTITY CASCADE`.execute(db);
+    settings, returns, write_offs, stock_counts, stock_count_lines, promotions, push_subscriptions RESTART IDENTITY CASCADE`.execute(db);
   await sql`INSERT INTO settings (key, value) VALUES ('refund_approval_limit', '50'), ('return_window_days', '14')`.execute(db);
 }
 

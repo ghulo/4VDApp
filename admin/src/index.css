@@ -1305,6 +1305,53 @@ textarea:focus-visible {
   max-width: 560px;
 }
 
+.push-device {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.push-device__status {
+  margin: 0;
+}
+
+.push-topics {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.push-topic {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.push-topic input {
+  /* Undo the full-width text-field styling every input gets. */
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--ink);
+}
+
+.push-topic > span {
+  display: grid;
+  gap: 2px;
+}
+
+.push-topic__label {
+  font-weight: 600;
+}
+
 @media (max-width: 760px) {
   .approval-row {
     grid-template-columns: 1fr;

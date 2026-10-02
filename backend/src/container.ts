@@ -35,6 +35,9 @@ import { AssistantService } from './services/AssistantService.js';
 import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
+import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
+import { EmailService } from './services/email/EmailService.js';
+import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
@@ -59,6 +62,8 @@ import { ProductService } from './services/ProductService.js';
 export interface ContainerOptions {
   /** Tests pass fakes so nothing is sent to Expo or browsers. */
   pushSenders?: PushSenders;
+  /** Tests pass a fake so no email leaves the machine. */
+  emailSender?: EmailSender;
   /** Tests pass a fake so nothing is sent to an AI service. Null switches the AI helpers off. */
   aiProvider?: AiProvider | null;
 }
@@ -148,6 +153,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     promotionService,
     settingsService,
   );
+  const emailService = new EmailService(
+    new EmailOutboxRepository(db),
+    options.emailSender ??
+      (config.email.resendApiKey ? new ResendSender(config.email.resendApiKey, config.email.from) : new LogSender()),
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -195,6 +205,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     dailySummaryService,
     assistantService,
     priceSuggestionService,
+    emailService,
     guards,
   };
 }

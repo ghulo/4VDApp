@@ -21,6 +21,16 @@ const envSchema = z.object({
         return false;
       }
     }, 'must be a time zone like Europe/Budapest'),
+  /** Where the dashboard and the employee app live; links in emails point here. */
+  DASHBOARD_URL: z.url().default('http://localhost:5173'),
+  TEAM_APP_URL: z.url().default('http://localhost:8081'),
+  /** Emails are printed to the log until this is set. */
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('4VD <onboarding@resend.dev>'),
+  /** Public "create your shop" sign-up. Off while 4VD serves one shop. */
+  ALLOW_SIGNUP: z.enum(['true', 'false']).default('false'),
+  /** Google sign-in (OAuth client ID from Google Cloud). Off when not set. */
+  GOOGLE_CLIENT_ID: z.string().optional(),
   /** Claude (Anthropic), for the AI helpers. Used first when set. */
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-sonnet-5-5'),
@@ -44,6 +54,11 @@ export interface AppConfig {
   corsOrigins: string[];
   sentryDsn?: string;
   shopTimeZone: string;
+  dashboardUrl: string;
+  teamAppUrl: string;
+  email: { resendApiKey?: string; from: string };
+  allowSignup: boolean;
+  googleClientId?: string;
   /** Null when no AI key is set, which switches the AI helpers off. */
   ai?: { provider: 'anthropic' | 'gemini'; apiKey: string; model: string; workspaceId?: string };
   /** Web push is switched off unless all three are set. */
@@ -78,6 +93,11 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter((origin) => origin.length > 0),
     sentryDsn: env.SENTRY_DSN || undefined,
     shopTimeZone: env.SHOP_TIME_ZONE,
+    dashboardUrl: env.DASHBOARD_URL.replace(/\/$/, ''),
+    teamAppUrl: env.TEAM_APP_URL.replace(/\/$/, ''),
+    email: { resendApiKey: env.RESEND_API_KEY || undefined, from: env.EMAIL_FROM },
+    allowSignup: env.ALLOW_SIGNUP === 'true',
+    googleClientId: env.GOOGLE_CLIENT_ID || undefined,
     ai: env.ANTHROPIC_API_KEY
       ? {
           provider: 'anthropic',

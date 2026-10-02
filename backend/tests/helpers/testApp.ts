@@ -34,6 +34,7 @@ function testDatabaseUrl(): string {
 
 /** Fresh schema for each test file. */
 const NO_PUSH = { send: async () => ({ deadTokens: [] }) };
+const NO_EMAIL = { send: async () => undefined };
 
 /** Push senders default to ones that send nothing. */
 export async function setupTestApp(options: ContainerOptions = {}): Promise<TestContext> {
@@ -49,7 +50,7 @@ export async function setupTestApp(options: ContainerOptions = {}): Promise<Test
   await sql`CREATE SCHEMA public`.execute(db);
   await runMigrations(db as Kysely<unknown>);
 
-  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, aiProvider: null, ...options });
+  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, aiProvider: null, emailSender: NO_EMAIL, ...options });
   return { app: createApp(config, db, { container }), db, config, container };
 }
 

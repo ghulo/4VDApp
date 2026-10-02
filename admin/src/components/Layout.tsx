@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { approvalsApi, notificationsApi } from '../services/api';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { LogoMark } from './LogoMark';
 
 interface NavItem {
   to: string;
@@ -67,7 +68,10 @@ export function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <p className="sidebar__brand">4VD</p>
+        <Link to="/" className="sidebar__brand" aria-label="4VD, go to Overview">
+          <LogoMark size={34} />
+          4VD
+        </Link>
         <nav className="sidebar__nav" aria-label="Main">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="sidebar__group">

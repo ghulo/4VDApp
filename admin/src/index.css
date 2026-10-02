@@ -39,7 +39,7 @@
   --brand: #5bbf92;
   --brand-ink: #08130e;
   --brand-soft: #18352a;
-  --brand-deep: #0b231a;
+  --brand-deep: #163d2e;
   --brass: #d9a945;
   --warn: #f0a73a;
   --danger: #f07563;
@@ -122,24 +122,27 @@ p {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding: 28px 14px 20px;
-  background: var(--board);
-  color: var(--board-text);
+  padding: 24px 14px 20px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
 }
 
-/* The brand sits on a short yellow rule, like the edge of a shelf label. */
 .sidebar__brand {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 2.75rem;
-  line-height: 0.9;
-  letter-spacing: -0.01em;
-  padding: 0 12px 12px;
-  background: linear-gradient(var(--signal-low), var(--signal-low)) 12px 100% / 40px 4px no-repeat;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.625rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-decoration: none;
 }
 
 .sidebar__nav {
@@ -151,51 +154,49 @@ p {
 .sidebar__group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .sidebar__group-label {
   padding: 0 12px 4px;
-  color: var(--board-muted);
+  color: var(--ink-muted);
   font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .sidebar__link {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 38px;
   padding: 6px 12px;
   border-radius: var(--radius-small);
-  color: var(--board-muted);
-  font-family: var(--font-display);
+  color: var(--ink-muted);
   font-weight: 600;
-  font-size: 1.1875rem;
-  line-height: 1.3;
   text-decoration: none;
 }
 
 .sidebar__link:hover {
-  color: var(--board-text);
-  background: var(--board-raised);
+  color: var(--ink);
+  background: var(--surface-sunk);
 }
 
 .sidebar__link.active {
-  color: var(--board-text);
-  background: var(--board-raised);
-  box-shadow: inset 4px 0 0 var(--signal-low);
+  color: var(--brand);
+  background: var(--brand-soft);
 }
 
 .sidebar__account {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 0 12px;
+  gap: 10px;
+  padding: 0 10px;
   font-size: 0.875rem;
 }
 
 .sidebar__user {
-  color: var(--board-muted);
+  color: var(--ink-muted);
 }
 
 .sidebar__logout {
@@ -232,14 +233,13 @@ p {
   }
 
   .sidebar__brand {
-    font-size: 1.75rem;
+    font-size: 1.375rem;
     padding: 0;
   }
 
-  .sidebar__brand {
-    padding-bottom: 8px;
-    background-size: 28px 3px;
-    background-position: 0 100%;
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
 
   .sidebar__nav {
@@ -263,8 +263,8 @@ p {
     padding: 4px 10px;
   }
 
-  .sidebar__link.active {
-    box-shadow: inset 0 -3px 0 var(--signal-low);
+  .sidebar__link {
+    min-height: 34px;
   }
 
   .sidebar__account {
@@ -296,9 +296,10 @@ p {
 .page-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(2.25rem, 4vw, 3.25rem);
-  line-height: 1;
-  letter-spacing: -0.015em;
+  font-size: clamp(2rem, 3.6vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
 }
 
 .page-intro {
@@ -468,10 +469,10 @@ p {
   gap: 20px 40px;
   margin-bottom: 24px;
   padding: 28px 32px;
-  border-radius: var(--radius-panel);
+  border-radius: var(--radius-board);
   background: var(--board);
   color: var(--board-text);
-  border-bottom: 6px solid var(--signal-low);
+  box-shadow: inset 0 -4px 0 var(--brass);
 }
 
 .today-board__main {
@@ -485,10 +486,10 @@ p {
 
 .today-board__figure {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(3.5rem, 9vw, 6rem);
-  line-height: 0.95;
-  letter-spacing: -0.025em;
+  font-weight: 800;
+  font-size: clamp(3.5rem, 8vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -531,8 +532,8 @@ p {
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
-  padding: 6px 14px 6px 10px;
-  border-radius: var(--radius-small);
+  padding: 6px 16px 6px 12px;
+  border-radius: 999px;
   background: var(--board-raised);
   color: var(--board-muted);
   text-decoration: none;
@@ -547,13 +548,14 @@ p {
   color: var(--board-text);
 }
 
+/* Something to do: brass, with dark text that reads in both themes. */
 .today-tag--on {
-  background: var(--signal-low);
-  color: #1c2530;
+  background: var(--brass);
+  color: #122019;
 }
 
 .today-tag--on .today-tag__count {
-  color: #1c2530;
+  color: #122019;
 }
 
 .today-tag:hover {
@@ -683,8 +685,8 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-small);
-  padding: 8px 10px;
-  min-height: 40px;
+  padding: 10px 12px;
+  min-height: 44px;
   width: 100%;
 }
 
@@ -771,12 +773,12 @@ textarea:focus-visible {
 }
 
 .button--primary {
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--brand);
+  color: var(--brand-ink);
 }
 
 .button--primary:not(:disabled):hover {
-  background: color-mix(in srgb, var(--ink) 85%, var(--steel));
+  background: color-mix(in srgb, var(--brand) 88%, var(--ink));
 }
 
 .button--quiet {
@@ -786,7 +788,7 @@ textarea:focus-visible {
 }
 
 .button--quiet:not(:disabled):hover {
-  background: var(--concrete);
+  background: var(--surface-sunk);
 }
 
 .button--danger {
@@ -803,7 +805,8 @@ textarea:focus-visible {
 }
 
 .text-link {
-  color: var(--ink);
+  color: var(--brand);
+  font-weight: 600;
   text-underline-offset: 3px;
 }
 
@@ -1151,29 +1154,80 @@ textarea:focus-visible {
 .login {
   min-height: 100vh;
   display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  background: var(--bg);
+}
+
+.login__story {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 48px;
+  background: var(--brand-deep);
+  color: #ffffff;
+}
+
+.login__mark {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.login__headline {
+  max-width: 14ch;
+  font-weight: 800;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.login__small-print {
+  color: #b9cfc4;
+  font-size: 0.875rem;
+}
+
+.login__side {
+  display: grid;
   place-items: center;
-  padding: 24px 16px;
-  background: var(--board);
+  padding: 32px 20px;
 }
 
 .login__card {
-  width: min(380px, 100%);
-  padding: 32px;
-  background: var(--surface);
-  border-radius: var(--radius-panel);
-  border-top: 6px solid var(--signal-low);
+  width: min(400px, 100%);
 }
 
-.login__brand {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 3.5rem;
-  line-height: 1;
+.login__title {
+  font-weight: 800;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
 }
 
 .login__subtitle {
-  color: var(--steel);
+  color: var(--ink-muted);
   margin: 4px 0 28px;
+}
+
+.login__theme {
+  margin-top: 28px;
+}
+
+@media (max-width: 860px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+
+  .login__story {
+    padding: 24px 20px;
+  }
+
+  .login__headline,
+  .login__small-print {
+    display: none;
+  }
 }
 
 /* ---------- Sales summary & chart ---------- */
@@ -1424,12 +1478,12 @@ textarea:focus-visible {
 
 .sidebar__badge {
   display: inline-block;
-  min-width: 20px;
+  min-width: 22px;
   margin-left: 8px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--signal-low);
-  color: #1c2530;
+  padding: 0 7px;
+  border-radius: 11px;
+  background: var(--brand);
+  color: var(--brand-ink);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 20px;

@@ -53,6 +53,17 @@ export class RefreshTokenRepository {
       .execute();
   }
 
+  /** End every session except `keepSessionId` (the device asking). */
+  async revokeAllForUserExcept(userId: number, keepSessionId: string | undefined): Promise<void> {
+    let query = this.db
+      .updateTable('refresh_tokens')
+      .set({ revoked_at: new Date() })
+      .where('user_id', '=', userId)
+      .where('revoked_at', 'is', null);
+    if (keepSessionId) query = query.where('session_id', '!=', keepSessionId);
+    await query.execute();
+  }
+
   async revokeAllForUser(userId: number): Promise<void> {
     await this.db
       .updateTable('refresh_tokens')

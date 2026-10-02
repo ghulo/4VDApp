@@ -5,6 +5,8 @@ export interface RequestIdentity {
   userId: number;
   email: string;
   role: UserRole;
+  /** The device session this token belongs to, so "log out other devices" can spare it. */
+  sessionId?: string;
 }
 
 /** The user as the API exposes it. Never includes the password hash. */

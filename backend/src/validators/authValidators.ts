@@ -12,6 +12,24 @@ export const newPasswordSchema = z
 /** Tokens from emailed links: base64url, 43 characters for 32 bytes. */
 export const linkTokenParamsSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{20,100}$/, 'not a valid link') });
 
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+const linkToken = z.string().regex(/^[A-Za-z0-9_-]{20,100}$/, 'not a valid link');
+
+export const resetPasswordSchema = z.object({ token: linkToken, password: newPasswordSchema });
+
+export const linkTokenBodySchema = z.object({ token: linkToken });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().max(200).optional(),
+  newPassword: newPasswordSchema,
+});
+
+export const changeEmailSchema = z.object({
+  password: z.string().max(200).optional(),
+  newEmail: emailSchema,
+});
+
 export const inviteSchema = z.object({
   email: emailSchema,
   role: z.enum(USER_ROLES),

@@ -33,7 +33,7 @@ export function requireAuth(userRepository: UserRepository): RequestHandler {
 
     req.user = toPublicUser(user);
     // Trust the database role over the token, in case it changed since login.
-    req.identity = { userId: user.id, email: user.email, role: user.role };
+    req.identity = { userId: user.id, email: user.email, role: user.role, sessionId: req.identity.sessionId };
     next();
   };
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '../config/env.js';
 import { UnauthorizedError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
@@ -106,14 +107,15 @@ export class AuthService {
     user: PublicUser,
     session: { sessionId?: string; userAgent?: string | null; ip?: string | null } = {},
   ): Promise<TokenPair> {
+    const sessionId = session.sessionId ?? randomUUID();
     const token = signAccessToken(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role, sessionId },
       this.config.jwtSecret,
       this.config.jwtExpiresIn,
     );
     const refreshToken = generateRefreshToken();
     const expiresAt = new Date(Date.now() + this.config.refreshTokenTtlDays * MS_PER_DAY);
-    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt, session);
+    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt, { ...session, sessionId });
     return { token, refreshToken };
   }
 }

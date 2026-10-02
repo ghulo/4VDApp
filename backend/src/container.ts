@@ -38,6 +38,8 @@ import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
 import { InviteRepository } from './repositories/InviteRepository.js';
 import { InviteService } from './services/InviteService.js';
+import { AccountTokenRepository } from './repositories/AccountTokenRepository.js';
+import { AccountService } from './services/AccountService.js';
 import { EmailService } from './services/email/EmailService.js';
 import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
@@ -168,6 +170,13 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     transactions,
     config.dashboardUrl,
   );
+  const accountService = new AccountService(
+    userRepository,
+    new AccountTokenRepository(db),
+    refreshTokenRepository,
+    emailService,
+    config.dashboardUrl,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -217,6 +226,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     priceSuggestionService,
     emailService,
     inviteService,
+    accountService,
     guards,
   };
 }

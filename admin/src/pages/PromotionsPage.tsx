@@ -4,7 +4,7 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { categoriesApi, productsApi, promotionsApi } from '../services/api';
 import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate } from '../utils/format';
+import { formatPromotionDay } from '../utils/format';
 
 const STATUS_LABEL: Record<PromotionStatus, string> = {
   scheduled: 'Starts later',
@@ -21,10 +21,8 @@ const STATUS_PILL: Record<PromotionStatus, string> = {
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-/** "2026-10-02" for today, in the browser's time zone. */
-const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-/** The last day included: ends are stored as the start of the next day. */
-const lastDay = (endsAt: string) => formatDate(new Date(new Date(endsAt).getTime() - 1).toISOString());
+/** "2026-10-02": today as a UTC day, matching how promotion dates are stored. */
+const today = () => new Date().toISOString().slice(0, 10);
 
 export function PromotionsPage() {
   const promotions = useQuery({ queryKey: ['promotions'], queryFn: promotionsApi.list });
@@ -98,7 +96,7 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
       <td>{promotion.product ? promotion.product.name : `All of ${promotion.category?.name ?? 'a category'}`}</td>
       <td className="table__numeric">−{promotion.percentOff}%</td>
       <td>
-        {formatDate(promotion.startsAt)} – {lastDay(promotion.endsAt)}
+        {formatPromotionDay(promotion.startsAt)} – {formatPromotionDay(promotion.endsAt, true)}
       </td>
       <td>
         <span className={STATUS_PILL[promotion.status]}>{STATUS_LABEL[promotion.status]}</span>

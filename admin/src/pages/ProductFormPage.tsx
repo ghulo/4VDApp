@@ -5,7 +5,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { categoriesApi, productsApi } from '../services/api';
 import type { Category, PriceChange, Product, ProductInput } from '../services/types';
-import { formatDate, formatDateTime, formatMoney } from '../utils/format';
+import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -148,7 +148,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         {product?.promotion && (
           <p className="page-intro">
             On promotion: {product.promotion.name}, −{product.promotion.percentOff}% ({formatMoney(product.promotion.price)})
-            until {formatDate(new Date(new Date(product.promotion.endsAt).getTime() - 1).toISOString())}.{' '}
+            until {formatPromotionDay(product.promotion.endsAt, true)}.{' '}
             <Link to="/promotions" className="text-link">
               Promotions
             </Link>

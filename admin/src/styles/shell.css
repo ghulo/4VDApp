@@ -633,3 +633,25 @@
   color: var(--ink-muted);
   font-size: var(--text-xs);
 }
+
+/* While a saved session is checked: the mark in the middle of the page. */
+.splash {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  min-height: 100vh;
+  color: var(--ink-muted);
+}
+
+/* A short "nothing here" inside a card is a quiet note, not a heading. */
+.card .empty-state:not(.empty-state--art) .empty-state__title {
+  color: var(--ink-muted);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.table__primary-link,
+.table__secondary {
+  white-space: nowrap;
+}

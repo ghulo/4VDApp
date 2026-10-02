@@ -135,8 +135,11 @@ CREATE TABLE product_images (
 );
 ```
 
+### push_subscriptions
+Where push alerts go: `user_id`, `kind` (`expo` or `web`), `token` (unique: the Expo push token or the Web Push endpoint), `keys` (JSONB, Web Push only), `created_at`, `last_used_at`. `users.push_preferences` (JSONB) holds topics switched off, e.g. `{ "stock": false }`; a missing topic is on.
+
 ### notifications
-Push notification logs
+In-app notifications, and the outbox for push alerts: `pushed_at` is set once the background sender has handled a row.
 ```sql
 CREATE TABLE notifications (
   id SERIAL PRIMARY KEY,

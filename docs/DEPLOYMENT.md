@@ -62,6 +62,7 @@
      - NODE_ENV: production
      - DATABASE_URL: (from Postgres service)
      - JWT_SECRET: (your secret key)
+     - VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT: for computer and browser alerts. Make a new pair with `npx web-push generate-vapid-keys` (don't reuse the local ones); the subject is a `mailto:` address push services can contact
 
 4. **Create PostgreSQL Database**
    - New PostgreSQL database
@@ -102,6 +103,8 @@
    - Submit for review (1-3 days)
 
 ### Android
+
+0. **Phone alerts need an Expo project ID.** Run `eas init` in `mobile` once (free Expo account). It adds `extra.eas.projectId` to `app.json`, which the app needs to get a push token. Until then the Account screen says phone alerts only work in the installed app. Expo Go can't receive them.
 
 1. **Build for Play Store**
    ```bash

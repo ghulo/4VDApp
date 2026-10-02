@@ -1333,7 +1333,14 @@ textarea:focus-visible {
 }
 
 .push-topic input {
-  margin-top: 3px;
+  /* Undo the full-width text-field styling every input gets. */
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--ink);
 }
 
 .push-topic > span {

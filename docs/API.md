@@ -261,7 +261,21 @@ The last active admin can't be demoted, deactivated or deleted (`409`).
 | `PATCH /notifications/:id/read` | Only your own notifications |
 | `POST /notifications/read-all` | |
 
-A notification: `{ id, title, message, type, isRead, createdAt }`, where `type` is `low_stock` or `out_of_stock`.
+A notification: `{ id, title, message, type, isRead, createdAt }`, where `type` is `low_stock`, `out_of_stock`, `approval` (something waits for the owner), `approval_decision` (the owner decided on your request) or `test`.
+
+### Push alerts
+
+New notifications are also pushed to the person's phones and browsers, within about 5 seconds, by a background sender in the server. Alerts more than 15 minutes old are dropped instead of sent late. Each person chooses topics: admins get `stock` and `approvals`, employees get `decisions`, family members get none.
+
+| Method & path | Body / returns |
+|---|---|
+| `GET /notifications/push` | `{ topics: [ { topic, enabled } ], deviceCount, webPushPublicKey }`; `webPushPublicKey` is null when the server has no Web Push keys |
+| `PUT /notifications/push/preferences` | Any of `{ stock, approvals, decisions }` as booleans. Returns the settings |
+| `POST /notifications/push/devices` | `{ kind: 'expo', token }` from the Android app, or `{ kind: 'web', endpoint, keys: { p256dh, auth } }` from a browser. A device belongs to whoever registered it last |
+| `DELETE /notifications/push/devices` | `{ token }` (the Expo token or Web Push endpoint). The apps call this when switching off and when logging out |
+| `POST /notifications/push/test` | Sends a test alert to all your devices, whatever your topics. `202` |
+
+Devices that Expo or the browser report as gone are forgotten automatically.
 
 ---
 

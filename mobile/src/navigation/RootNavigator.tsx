@@ -23,12 +23,12 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 /** Text-only tab labels: plain words read better than a row of generic icons. */
-/** Condensed sign lettering, with a yellow bar over the tab you're on. */
-function tabLabel(label: string) {
+/** The current tab gets the brand colour and a small brass dot above it. */
+function tabLabel(label: string, dotColor: string) {
   return ({ focused, color }: { focused: boolean; color: string }) => (
-    <View style={{ alignItems: 'center', gap: 4 }}>
-      <View style={{ width: 28, height: 3, borderRadius: 2, backgroundColor: focused ? '#f2b705' : 'transparent' }} />
-      <Text style={{ color, fontFamily: fonts.displayBold, fontSize: 17 }}>{label}</Text>
+    <View style={{ alignItems: 'center', gap: 5 }}>
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: focused ? dotColor : 'transparent' }} />
+      <Text style={{ color, fontFamily: focused ? fonts.display : fonts.bodyBold, fontSize: 14 }}>{label}</Text>
     </View>
   );
 }
@@ -44,24 +44,24 @@ function MainTabs() {
         headerStyle: { backgroundColor: colors.surface },
         headerTitleStyle: { fontFamily: fonts.displayBold, fontSize: 24, color: colors.ink },
         headerShadowVisible: false,
-        tabBarStyle: { backgroundColor: colors.heroInk, borderTopColor: colors.heroInk, height: 64 },
-        tabBarActiveTintColor: colors.heroText,
-        tabBarInactiveTintColor: colors.heroMuted,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line, height: 64 },
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.inkMuted,
         tabBarIcon: () => null,
         tabBarIconStyle: { display: 'none' },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel('Home') }} />
-      <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: 'Products', tabBarLabel: tabLabel('Products') }} />
-      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ tabBarLabel: tabLabel('Favorites') }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel('Home', colors.brass) }} />
+      <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: 'Products', tabBarLabel: tabLabel('Products', colors.brass) }} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ tabBarLabel: tabLabel('Favorites', colors.brass) }} />
       {showSell && (
         <Tab.Screen
           name="Sell"
           component={RecordSaleScreen}
-          options={{ title: 'Record a sale', tabBarLabel: tabLabel('Sell') }}
+          options={{ title: 'Record a sale', tabBarLabel: tabLabel('Sell', colors.brass) }}
         />
       )}
-      <Tab.Screen name="Account" component={AccountScreen} options={{ tabBarLabel: tabLabel('Account') }} />
+      <Tab.Screen name="Account" component={AccountScreen} options={{ tabBarLabel: tabLabel('Account', colors.brass) }} />
     </Tab.Navigator>
   );
 }

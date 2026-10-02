@@ -115,7 +115,7 @@ export function HomeScreen() {
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={[styles.hero, { backgroundColor: colors.heroInk, paddingTop: insets.top + spacing.xl }]}>
+      <View style={[styles.hero, { backgroundColor: colors.heroInk, marginTop: insets.top + spacing.md }]}>
         <Text style={[styles.greeting, { color: colors.heroText }]}>
           {greeting(now)}, {firstName}
         </Text>
@@ -363,13 +363,20 @@ function Muted({ colors, children }: { colors: ThemeColors; children: ReactNode 
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
-  // The slate board, with the yellow shelf edge along the bottom.
-  hero: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs, borderBottomWidth: 6, borderBottomColor: '#f2b705' },
+  // The deep-pine board, with a brass edge along the bottom.
+  hero: {
+    marginHorizontal: spacing.md,
+    padding: spacing.xl,
+    gap: spacing.xs,
+    borderRadius: radius.board,
+    borderBottomWidth: 4,
+    borderBottomColor: '#d9a945',
+  },
   greeting: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
   date: { fontFamily: fonts.body, fontSize: 16 },
   todayBlock: { marginTop: spacing.xl },
   todayCaption: { fontFamily: fonts.bodyBold, fontSize: 14 },
-  todayFigure: { fontFamily: fonts.displayBold, fontSize: 76, lineHeight: 78, letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  todayFigure: { fontFamily: fonts.display, fontSize: 64, lineHeight: 70, letterSpacing: -2, fontVariant: ['tabular-nums'] },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },
   target: { marginTop: spacing.md, gap: spacing.xs },
   targetTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },

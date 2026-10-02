@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, TextField } from '../components/ui';
 import { useAuth } from '../state/useAuth';
 import { LogoMark } from '../components/LogoMark';
+import { DASHBOARD_URL } from '../services/apiClient';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 
@@ -66,6 +67,14 @@ export function LoginScreen() {
             )}
 
             <Button label="Log in" onPress={handleLogin} loading={isSubmitting} disabled={!email || !password} />
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(`${DASHBOARD_URL}/forgot-password`)}
+              hitSlop={8}
+              style={styles.forgot}
+            >
+              <Text style={[styles.forgotText, { color: colors.brand }]}>Forgot your password?</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -81,5 +90,7 @@ const styles = StyleSheet.create({
   card: { padding: spacing.xl, borderRadius: radius.board },
   title: { fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.5 },
   subtitle: { fontFamily: fonts.body, fontSize: 15, marginTop: spacing.xs, marginBottom: spacing.xl },
+  forgot: { marginTop: spacing.lg, alignSelf: 'center' },
+  forgotText: { fontFamily: fonts.bodyBold, fontSize: 15 },
   error: { fontFamily: fonts.bodyBold, fontSize: 15, marginBottom: spacing.md },
 });

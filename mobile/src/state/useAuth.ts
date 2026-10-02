@@ -10,6 +10,8 @@ export interface AuthContextValue {
   state: AuthState;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Replace the signed-in person's details after they edit their profile. */
+  updateUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

@@ -7,6 +7,10 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  phone: string | null;
+  /** Path to the photo (use mediaSrc); null shows initials. */
+  avatarUrl: string | null;
+  theme: 'light' | 'dark' | 'system';
 }
 
 export interface PaginationMeta {

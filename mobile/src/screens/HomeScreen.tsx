@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../components/Avatar';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, reportsApi } from '../services/api';
@@ -116,10 +117,21 @@ export function HomeScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.hero, { backgroundColor: colors.heroInk, marginTop: insets.top + spacing.md }]}>
-        <Text style={[styles.greeting, { color: colors.heroText }]}>
-          {greeting(now)}, {firstName}
-        </Text>
-        <Text style={[styles.date, { color: colors.heroMuted }]}>{longDate.format(now)}</Text>
+        <View style={styles.greetingRow}>
+          <View style={styles.greetingText}>
+            <Text style={[styles.greeting, { color: colors.heroText }]}>
+              {greeting(now)}, {firstName}
+            </Text>
+            <Text style={[styles.date, { color: colors.heroMuted }]}>{longDate.format(now)}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Your account"
+            onPress={() => navigation.navigate('Main', { screen: 'Account' })}
+          >
+            <Avatar name={user.name} url={user.avatarUrl} size={44} />
+          </Pressable>
+        </View>
 
         {sells && (
           <View style={styles.todayBlock} accessible accessibilityLabel={todayLabel(today.data?.current)}>
@@ -372,6 +384,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     borderBottomColor: '#d9a945',
   },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  greetingText: { flex: 1, gap: spacing.xs },
   greeting: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
   date: { fontFamily: fonts.body, fontSize: 16 },
   todayBlock: { marginTop: spacing.xl },

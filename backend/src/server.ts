@@ -25,6 +25,9 @@ const summaryTimer = setInterval(() => {
   container.dailySummaryService
     .sendIfDue()
     .catch((error) => logger.error('Sending the daily summary failed', { error: String(error) }));
+  container.weeklyReportService
+    .sendIfDue()
+    .catch((error) => logger.error('Sending the weekly report failed', { error: String(error) }));
 }, SUMMARY_CHECK_MS);
 
 const pushTimer = setInterval(() => {

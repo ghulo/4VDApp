@@ -53,6 +53,7 @@ export const profileSchema = z
     name: z.string().trim().min(1).max(255).optional(),
     phone: optionalText(50),
     theme: z.enum(['light', 'dark', 'system']).optional(),
+    emailWeeklyReport: z.boolean().optional(),
   })
   .strict();
 

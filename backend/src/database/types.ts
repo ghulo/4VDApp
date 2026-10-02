@@ -34,6 +34,7 @@ export interface UsersTable {
   phone: string | null;
   avatar_media_id: string | null;
   theme: Generated<'light' | 'dark' | 'system'>;
+  email_weekly_report: Generated<boolean>;
   last_login_at: Date | null;
   monthly_target: Decimal | null;
   commission_percent: Decimal | null;

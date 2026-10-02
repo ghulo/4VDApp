@@ -48,6 +48,7 @@ import { BusinessService } from './services/BusinessService.js';
 import { SessionService } from './services/SessionService.js';
 import { GoogleAuthService } from './services/GoogleAuthService.js';
 import { SignupService } from './services/SignupService.js';
+import { WeeklyReportService } from './services/WeeklyReportService.js';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './services/google/googleVerifier.js';
 import { UserIdentityRepository } from './repositories/UserIdentityRepository.js';
 import { EmailService } from './services/email/EmailService.js';
@@ -202,6 +203,17 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     inviteService,
   );
   const signupService = new SignupService(config.allowSignup, userRepository, accountService, transactions);
+  const weeklyReportService = new WeeklyReportService(
+    reportsRepository,
+    reportsService,
+    insightsService,
+    settingsService,
+    settingsRepository,
+    userRepository,
+    emailService,
+    config.shopTimeZone,
+    config.dashboardUrl,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -258,6 +270,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     sessionService,
     googleAuthService,
     signupService,
+    weeklyReportService,
     guards,
   };
 }

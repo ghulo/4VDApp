@@ -20,6 +20,8 @@ export interface PublicUser {
   /** Path to the photo, e.g. /api/media/<id>; null shows initials. */
   avatarUrl: string | null;
   theme: 'light' | 'dark' | 'system';
+  /** Gets the Monday report email (admins only receive it). */
+  emailWeeklyReport: boolean;
   /** Euros of sales (after refunds) the owner hopes for each month; null when not set. */
   monthlyTarget: number | null;
   /** Share of their sales (after refunds) they earn; null when not set. */

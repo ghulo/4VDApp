@@ -59,6 +59,19 @@ function plain(lines: Array<string | undefined>): string {
   return `${lines.filter((line) => line !== undefined).join('\n\n')}\n\n-- \n4VD`;
 }
 
+export interface WeeklyReportData {
+  /** e.g. "28 Sept – 4 Oct" */
+  weekLabel: string;
+  revenue: string;
+  /** e.g. "up 12% on the week before"; null when there's nothing to compare. */
+  change: string | null;
+  profit: string;
+  salesCount: number;
+  topProducts: Array<{ name: string; revenue: string; units: number }>;
+  warnings: number;
+  link: string;
+}
+
 export const emailTemplates = {
   invite(input: { shopName: string; inviterName: string; role: string; link: string }): EmailContent {
     const subject = `${input.inviterName} invited you to ${input.shopName} on 4VD`;
@@ -125,6 +138,40 @@ export const emailTemplates = {
         note: 'This link expires in 24 hours. Until then you keep logging in with your old email.',
       }),
       text: plain([`Hi ${input.name},`, `Use this email for 4VD: ${input.link}`, 'This link expires in 24 hours.']),
+    };
+  },
+
+  weeklyReport(input: { name: string } & WeeklyReportData): EmailContent {
+    const subject = `Your week at 4VD: ${input.revenue} in sales`;
+    const summary = `${input.revenue} from ${input.salesCount} ${input.salesCount === 1 ? 'sale' : 'sales'}, ${input.profit} profit${input.change ? `, ${input.change}` : ''}.`;
+    const best = input.topProducts.length
+      ? input.topProducts.map((product, index) => `${index + 1}. ${product.name}: ${product.revenue} (${product.units} sold)`)
+      : ['No sales last week.'];
+    const warnings =
+      input.warnings === 0
+        ? 'Nothing needs your attention right now.'
+        : `${input.warnings} ${input.warnings === 1 ? 'thing needs' : 'things need'} your attention on the Overview page.`;
+    return {
+      subject,
+      html: render({
+        subject,
+        paragraphs: [
+          `Hi ${escapeHtml(input.name)}, here is last week (${escapeHtml(input.weekLabel)}).`,
+          `<strong>${escapeHtml(summary)}</strong>`,
+          `Best sellers:<br>${best.map(escapeHtml).join('<br>')}`,
+          escapeHtml(warnings),
+        ],
+        button: { label: 'Open the dashboard', link: input.link },
+        note: 'You can switch this email off on your Profile page.',
+      }),
+      text: plain([
+        `Hi ${input.name}, here is last week (${input.weekLabel}).`,
+        summary,
+        `Best sellers:\n${best.join('\n')}`,
+        warnings,
+        `Open the dashboard: ${input.link}`,
+        'You can switch this email off on your Profile page.',
+      ]),
     };
   },
 

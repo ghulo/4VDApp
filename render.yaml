@@ -25,7 +25,7 @@ services:
         generateValue: true
       - key: SHOP_TIME_ZONE
         value: Europe/Budapest
-      # The dashboard's address, e.g. https://4vd-dashboard.onrender.com (asked once on setup).
+      # The dashboard's address, e.g. https://fourvd-dashboard.onrender.com (asked once on setup).
       - key: CORS_ORIGINS
         sync: false
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
@@ -52,7 +52,7 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # The API's address, e.g. https://4vd-api.onrender.com (asked once on setup).
+      # The API's address, e.g. https://fourvd-api.onrender.com (asked once on setup).
       - key: VITE_API_URL
         sync: false
 

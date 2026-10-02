@@ -13,7 +13,6 @@ import { type Kysely, sql } from 'kysely';
  */
 export async function up(db: Kysely<unknown>): Promise<void> {
   const statements = [
-    sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`,
     sql`CREATE TABLE businesses (
       id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,

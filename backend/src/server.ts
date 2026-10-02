@@ -2,12 +2,18 @@ import 'dotenv/config';
 import { createApp } from './app.js';
 import { loadConfig } from './config/env.js';
 import { createContainer } from './container.js';
+import { ensureFirstAdmin } from './database/firstAdmin.js';
 import { createDatabase } from './database/connection.js';
 import { logger } from './utils/logger.js';
 
 const config = loadConfig();
 const db = createDatabase(config.databaseUrl);
 const container = createContainer(config, db);
+await ensureFirstAdmin(db, {
+  email: process.env.SEED_ADMIN_EMAIL,
+  password: process.env.SEED_ADMIN_PASSWORD,
+  name: process.env.SEED_ADMIN_NAME,
+});
 const app = createApp(config, db, { container });
 
 /** How often new notifications are pushed to phones and browsers. */

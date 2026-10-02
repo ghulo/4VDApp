@@ -49,6 +49,8 @@ Everything Render needs is in `render.yaml` at the repo root: the API (built fro
 3. **Create the first admin** (works on the free plan, no shell or database access needed): in `fourvd-api` → **Environment**, add `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (12+ characters) and `SEED_ADMIN_NAME`, and save. On start-up the API creates that admin if none exists yet. Log in to the dashboard, then **delete those three settings** so the password isn't left lying around. Demo data and demo logins are refused in production.
 4. **After that, pushes to `main` deploy by themselves**, but only when the GitHub checks pass (`autoDeployTrigger: checksPass`), and only the part whose folder changed. The API applies database migrations every time it starts.
 
+**The employee app** (`4vd-app`, address `https://fourvd-app.onrender.com`) is the mobile app built for browsers. Staff open that address on their phone and log in. On an iPhone, **Share → Add to Home Screen** turns it into a full-screen app with its own icon (also needed for iPhone alerts); on Android, Chrome offers **Install app**. Its address must be in `CORS_ORIGINS` on the API next to the dashboard's, separated by a comma.
+
 **Free plan caveats** (check Render's pricing page, these change):
 - A free web service sleeps after a few minutes without visitors and takes a while to wake. While it sleeps, push alerts and the daily summary don't go out. Switch `4vd-api` to the `starter` plan for real use.
 - A free database has limited storage and may expire after a trial period. Use a paid database before real data goes in.

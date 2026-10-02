@@ -25,7 +25,8 @@ services:
         generateValue: true
       - key: SHOP_TIME_ZONE
         value: Europe/Budapest
-      # The dashboard's address, e.g. https://fourvd-dashboard.onrender.com (asked once on setup).
+      # Both front ends, comma-separated, e.g.
+      # https://fourvd-dashboard.onrender.com,https://fourvd-app.onrender.com (asked once on setup).
       - key: CORS_ORIGINS
         sync: false
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
@@ -55,6 +56,29 @@ services:
       # The API's address, e.g. https://fourvd-api.onrender.com (asked once on setup).
       - key: VITE_API_URL
         sync: false
+
+  # The employee app (the mobile app, built for browsers). Staff open it on any
+  # phone; on an iPhone, Share > Add to Home Screen makes it a full-screen app.
+  - name: 4vd-app
+    type: web
+    runtime: static
+    rootDir: mobile
+    buildCommand: npm ci && npx expo export --platform web --output-dir dist
+    staticPublishPath: ./dist
+    autoDeployTrigger: checksPass
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # The alerts service worker must never be served stale.
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+    envVars:
+      # Not a secret: the address the app talks to, baked in at build time.
+      - key: EXPO_PUBLIC_API_URL
+        value: https://fourvd-api.onrender.com
 
 databases:
   - name: 4vd-db

@@ -21,7 +21,12 @@ const envSchema = z.object({
         return false;
       }
     }, 'must be a time zone like Europe/Budapest'),
-  /** Google Gemini, for the AI helpers. Without a key they're switched off. */
+  /** Claude (Anthropic), for the AI helpers. Used first when set. */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
+  /** Only for keys made outside a workspace: which workspace to bill. */
+  ANTHROPIC_WORKSPACE_ID: z.string().optional(),
+  /** Google Gemini, used when there's no Anthropic key. Without either, the AI helpers are off. */
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
   VAPID_PUBLIC_KEY: z.string().optional(),
@@ -40,7 +45,7 @@ export interface AppConfig {
   sentryDsn?: string;
   shopTimeZone: string;
   /** Null when no AI key is set, which switches the AI helpers off. */
-  ai?: { provider: 'gemini'; apiKey: string; model: string };
+  ai?: { provider: 'anthropic' | 'gemini'; apiKey: string; model: string; workspaceId?: string };
   /** Web push is switched off unless all three are set. */
   webPush?: { publicKey: string; privateKey: string; subject: string };
 }
@@ -73,7 +78,16 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter((origin) => origin.length > 0),
     sentryDsn: env.SENTRY_DSN || undefined,
     shopTimeZone: env.SHOP_TIME_ZONE,
-    ai: env.GEMINI_API_KEY ? { provider: 'gemini', apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL } : undefined,
+    ai: env.ANTHROPIC_API_KEY
+      ? {
+          provider: 'anthropic',
+          apiKey: env.ANTHROPIC_API_KEY,
+          model: env.ANTHROPIC_MODEL,
+          workspaceId: env.ANTHROPIC_WORKSPACE_ID || undefined,
+        }
+      : env.GEMINI_API_KEY
+        ? { provider: 'gemini', apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL }
+        : undefined,
     webPush:
       env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
         ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }

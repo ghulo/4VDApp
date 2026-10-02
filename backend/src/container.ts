@@ -33,6 +33,7 @@ import { InsightsRepository } from './repositories/InsightsRepository.js';
 import { InsightsService } from './services/InsightsService.js';
 import { AssistantService } from './services/AssistantService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
+import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
@@ -124,9 +125,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const aiProvider =
     options.aiProvider !== undefined
       ? options.aiProvider
-      : config.ai
-        ? new GeminiProvider(config.ai.apiKey, config.ai.model)
-        : null;
+      : config.ai?.provider === 'anthropic'
+        ? new ClaudeProvider(config.ai.apiKey, config.ai.model, { workspaceId: config.ai.workspaceId })
+        : config.ai?.provider === 'gemini'
+          ? new GeminiProvider(config.ai.apiKey, config.ai.model)
+          : null;
   const assistantService = new AssistantService(
     aiProvider,
     reportsRepository,

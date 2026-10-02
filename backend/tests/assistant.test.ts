@@ -3,6 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AiUnavailableError } from '../src/errors/httpErrors.js';
 import { type AiProvider, GeminiProvider } from '../src/services/ai/aiProvider.js';
 import { NameMasker } from '../src/services/ai/nameMasker.js';
+import { ClaudeProvider } from '../src/services/ai/claudeProvider.js';
+import type Anthropic from '@anthropic-ai/sdk';
 import { createTestProduct, createTestUser, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 interface FakeAi extends AiProvider {
@@ -120,5 +122,29 @@ describe('GeminiProvider', () => {
     const limited = (async () => new Response('{}', { status: 429 })) as typeof fetch;
 
     await expect(new GeminiProvider('key', 'model', limited).generate({ instructions: '', request: '' })).rejects.toThrow('free limit');
+  });
+});
+
+describe('ClaudeProvider', () => {
+  /** Stands in for the SDK client: records the request and returns `reply`. */
+  const fakeClient = (reply: Record<string, unknown>) => {
+    const seen: Record<string, unknown>[] = [];
+    const client = { beta: { messages: { create: async (params: Record<string, unknown>) => (seen.push(params), reply) } } };
+    return { client: client as unknown as Anthropic, seen };
+  };
+
+  it('should ask with the instructions as the system prompt and return the text', async () => {
+    const { client, seen } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'About €200.' }] });
+
+    const answer = await new ClaudeProvider('key', 'claude-opus-5-5', { client }).generate({ instructions: 'Be brief', request: 'Sales?' });
+
+    expect(answer).toBe('About €200.');
+    expect(seen[0]).toMatchObject({ model: 'claude-opus-5-5', system: 'Be brief', fallbacks: 'default', messages: [{ role: 'user', content: 'Sales?' }] });
+  });
+
+  it('should turn a refusal into a readable message', async () => {
+    const { client } = fakeClient({ stop_reason: 'refusal', stop_details: { category: null }, content: [] });
+
+    await expect(new ClaudeProvider('key', 'model', { client }).generate({ instructions: '', request: '' })).rejects.toThrow('ask');
   });
 });

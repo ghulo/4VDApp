@@ -48,12 +48,17 @@ export function createUserRoutes({ userService, guards }: Container): Router {
   return router;
 }
 
-export function createNotificationRoutes({ notificationService, guards }: Container): Router {
-  const controller = createNotificationController(notificationService);
+export function createNotificationRoutes({ notificationService, pushService, guards }: Container): Router {
+  const controller = createNotificationController(notificationService, pushService);
   const router = Router();
 
   router.use(guards.authenticated);
   router.get('/', controller.list);
+  router.get('/push', controller.pushSettings);
+  router.put('/push/preferences', controller.updatePushPreferences);
+  router.post('/push/devices', controller.addPushDevice);
+  // DELETE with a body: the token is a long URL, too awkward for the path.
+  router.delete('/push/devices', controller.removePushDevice);
   router.post('/read-all', controller.markAllRead);
   router.patch('/:id/read', controller.markRead);
 

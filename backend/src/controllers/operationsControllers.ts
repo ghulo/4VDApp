@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { AnalyticsService } from '../services/AnalyticsService.js';
 import type { FavoriteService } from '../services/FavoriteService.js';
 import type { NotificationService } from '../services/NotificationService.js';
+import type { PushService } from '../services/PushService.js';
 import type { SalesService } from '../services/SalesService.js';
 import type { UserService } from '../services/UserService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
@@ -9,7 +10,10 @@ import {
   createUserSchema,
   dashboardQuerySchema,
   notificationQuerySchema,
+  pushDeviceSchema,
+  pushPreferencesSchema,
   recordSaleSchema,
+  removePushDeviceSchema,
   revenueQuerySchema,
   saleQuerySchema,
   updateUserSchema,
@@ -80,8 +84,34 @@ export function createUserController(userService: UserService) {
   };
 }
 
-export function createNotificationController(notificationService: NotificationService) {
+export function createNotificationController(notificationService: NotificationService, pushService: PushService) {
   return {
+    async pushSettings(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await pushService.settings(req.user!.id, req.user!.role));
+    },
+
+    async updatePushPreferences(req: Request, res: Response): Promise<void> {
+      const changes = parseInput(pushPreferencesSchema, req.body);
+      sendSuccess(res, await pushService.updatePreferences(req.user!.id, req.user!.role, changes), { message: 'Saved' });
+    },
+
+    async addPushDevice(req: Request, res: Response): Promise<void> {
+      const device = parseInput(pushDeviceSchema, req.body);
+      await pushService.addDevice(
+        req.user!.id,
+        device.kind === 'expo'
+          ? { kind: 'expo', token: device.token, keys: null }
+          : { kind: 'web', token: device.endpoint, keys: device.keys },
+      );
+      sendSuccess(res, await pushService.settings(req.user!.id, req.user!.role), { statusCode: 201, message: 'Alerts switched on' });
+    },
+
+    async removePushDevice(req: Request, res: Response): Promise<void> {
+      const { token } = parseInput(removePushDeviceSchema, req.body);
+      await pushService.removeDevice(req.user!.id, token);
+      sendSuccess(res, await pushService.settings(req.user!.id, req.user!.role), { message: 'Alerts switched off' });
+    },
+
     async list(req: Request, res: Response): Promise<void> {
       const query = parseInput(notificationQuerySchema, req.query);
       const { items, meta, unreadCount } = await notificationService.list(req.user!.id, query);

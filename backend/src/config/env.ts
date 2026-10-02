@@ -9,6 +9,9 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   CORS_ORIGINS: z.string().default(''),
   SENTRY_DSN: z.string().optional(),
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 });
 
 export interface AppConfig {
@@ -20,6 +23,8 @@ export interface AppConfig {
   refreshTokenTtlDays: number;
   corsOrigins: string[];
   sentryDsn?: string;
+  /** Web push is switched off unless all three are set. */
+  webPush?: { publicKey: string; privateKey: string; subject: string };
 }
 
 /**
@@ -49,5 +54,9 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .map((origin) => origin.trim())
       .filter((origin) => origin.length > 0),
     sentryDsn: env.SENTRY_DSN || undefined,
+    webPush:
+      env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
+        ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }
+        : undefined,
   };
 }

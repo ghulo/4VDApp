@@ -9,6 +9,8 @@ export const NOTIFICATION_TYPES = {
   APPROVAL: 'approval',
   /** The owner decided on someone's request. */
   APPROVAL_DECISION: 'approval_decision',
+  /** Sent on request from the alert settings; always pushed. */
+  TEST: 'test',
 } as const;
 
 const TOPIC_BY_TYPE: Record<string, PushTopic> = {

@@ -1,0 +1,94 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { StyleSheet, Switch, Text, View } from 'react-native';
+import { currentPushToken, disablePush, enablePush, pushUnavailableReason } from '../push/devicePush';
+import { pushApi } from '../services/api';
+import type { PushSettings, PushTopic } from '../services/types';
+import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { errorMessage } from '../utils/format';
+import { Button } from './ui';
+
+const TOPIC_LABEL: Record<PushTopic, string> = {
+  stock: 'Stock running low or out',
+  approvals: 'Requests waiting for you',
+  decisions: 'Answers to my returns, damage reports and counts',
+};
+
+const SETTINGS_KEY = ['push-settings'];
+
+/** Alerts on this phone, and which kinds this person wants. Hidden for people who get none. */
+export function PushSettingsPanel() {
+  const colors = useThemeColors();
+  const queryClient = useQueryClient();
+  const settings = useQuery({ queryKey: SETTINGS_KEY, queryFn: pushApi.settings });
+  const token = useQuery({ queryKey: [...SETTINGS_KEY, 'this-device'], queryFn: currentPushToken });
+
+  const toggleDevice = useMutation({
+    mutationFn: (on: boolean) => (on ? enablePush(settings.data?.webPushPublicKey ?? null) : disablePush()),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SETTINGS_KEY }),
+  });
+  const sendTest = useMutation({ mutationFn: pushApi.sendTest });
+  const saveTopic = useMutation({
+    mutationFn: (change: { topic: PushTopic; enabled: boolean }) => pushApi.updatePreferences({ [change.topic]: change.enabled }),
+    onSuccess: (updated: PushSettings) => queryClient.setQueryData(SETTINGS_KEY, updated),
+  });
+
+  if (!settings.data || settings.data.topics.length === 0) return null;
+  const unavailable = pushUnavailableReason(settings.data.webPushPublicKey);
+  const isOn = Boolean(token.data);
+
+  return (
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <Text style={[styles.title, { color: colors.ink }]} accessibilityRole="header">
+        Alerts
+      </Text>
+      {unavailable ? (
+        <Text style={[styles.detail, { color: colors.steel }]}>{unavailable}</Text>
+      ) : (
+        <>
+          <Text style={[styles.detail, { color: colors.ink }]}>
+            {isOn ? 'On for this phone, even when the app is closed.' : 'Off for this phone.'}
+          </Text>
+          <Button
+            label={isOn ? 'Turn off on this phone' : 'Turn on for this phone'}
+            variant={isOn ? 'quiet' : 'primary'}
+            loading={toggleDevice.isPending}
+            onPress={() => toggleDevice.mutate(!isOn)}
+          />
+        </>
+      )}
+      {toggleDevice.isError && (
+        <Text style={[styles.detail, { color: colors.signalOut }]} accessibilityRole="alert">
+          {errorMessage(toggleDevice.error)}
+        </Text>
+      )}
+      {isOn && (
+        <Button label={sendTest.isSuccess ? 'Test alert sent' : 'Send a test alert'} variant="quiet" loading={sendTest.isPending} onPress={() => sendTest.mutate()} />
+      )}
+      {settings.data.topics.map(({ topic, enabled }) => (
+        <View key={topic} style={[styles.topic, { borderTopColor: colors.line }]}>
+          <Text style={[styles.topicLabel, { color: colors.ink }]}>{TOPIC_LABEL[topic]}</Text>
+          <Switch
+            accessibilityLabel={TOPIC_LABEL[topic]}
+            value={enabled}
+            disabled={saveTopic.isPending}
+            onValueChange={(value) => saveTopic.mutate({ topic, enabled: value })}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.sm },
+  title: { fontFamily: fonts.displayBold, fontSize: 22 },
+  detail: { fontFamily: fonts.body, fontSize: 15 },
+  topic: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 48,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  topicLabel: { flex: 1, fontFamily: fonts.body, fontSize: 16 },
+});

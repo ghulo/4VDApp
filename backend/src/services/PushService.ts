@@ -1,4 +1,4 @@
-import { PUSH_TOPICS, type PushTopic, pushTopicFor } from '../constants/notifications.js';
+import { NOTIFICATION_TYPES, PUSH_TOPICS, type PushTopic, pushTopicFor } from '../constants/notifications.js';
 import type { UserRole } from '../database/types.js';
 import type { NewDevice, PushRepository } from '../repositories/PushRepository.js';
 import type { PushMessage, PushSender } from './push/senders.js';
@@ -59,6 +59,15 @@ export class PushService {
     return this.settings(userId, role);
   }
 
+  /** A test alert to every device of this person, sent with the next batch. */
+  async sendTest(userId: number): Promise<void> {
+    await this.pushRepository.createTestNotification(userId, {
+      title: 'Test alert from 4VD',
+      message: 'Alerts are working on this device.',
+      type: NOTIFICATION_TYPES.TEST,
+    });
+  }
+
   async addDevice(userId: number, device: NewDevice): Promise<void> {
     await this.pushRepository.saveDevice(userId, device);
   }
@@ -76,6 +85,7 @@ export class PushService {
   async sendPending(): Promise<number> {
     const claimed = await this.pushRepository.claimUnpushed(new Date(Date.now() - MAX_PUSH_DELAY_MS), CLAIM_BATCH_SIZE);
     const wanted = claimed.filter((notification) => {
+      if (notification.type === NOTIFICATION_TYPES.TEST) return true;
       const topic = pushTopicFor(notification.type);
       return topic !== null && notification.push_preferences[topic] !== false;
     });

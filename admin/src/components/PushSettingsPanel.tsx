@@ -24,6 +24,7 @@ export function PushSettingsPanel() {
     mutationFn: (on: boolean) => (on ? enablePush(settings.data!.webPushPublicKey!) : disablePush()),
     onSettled: refresh,
   });
+  const sendTest = useMutation({ mutationFn: pushApi.sendTest });
   const saveTopic = useMutation({
     mutationFn: (change: { topic: PushTopic; enabled: boolean }) => pushApi.updatePreferences({ [change.topic]: change.enabled }),
     onSuccess: (updated: PushSettings) => queryClient.setQueryData(SETTINGS_KEY, updated),
@@ -54,6 +55,21 @@ export function PushSettingsPanel() {
           {toggleBrowser.isError && (
             <p className="form-error" role="alert">
               {errorMessage(toggleBrowser.error)}
+            </p>
+          )}
+
+          {settings.data.deviceCount > 0 && (
+            <p className="push-device__status">
+              <button
+                type="button"
+                className="button button--quiet"
+                disabled={sendTest.isPending}
+                onClick={() => sendTest.mutate()}
+              >
+                Send a test alert
+              </button>{' '}
+              {sendTest.isSuccess && <span className="field-hint">Sent to all your devices. It arrives within a few seconds.</span>}
+              {sendTest.isError && <span className="form-error">{errorMessage(sendTest.error)}</span>}
             </p>
           )}
 

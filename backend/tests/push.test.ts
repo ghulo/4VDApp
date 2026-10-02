@@ -127,6 +127,17 @@ describe('push alerts', () => {
     expect(expo.sent).toHaveLength(0);
   });
 
+  it('should send a test alert even with every topic switched off', async () => {
+    await addDevice(adminToken, { kind: 'expo', token: PHONE });
+    await request(context.app).put('/api/notifications/push/preferences').set(auth(adminToken)).send({ stock: false, approvals: false });
+
+    const response = await request(context.app).post('/api/notifications/push/test').set(auth(adminToken));
+    await context.container.pushService.sendPending();
+
+    expect(response.status).toBe(202);
+    expect(expo.sent).toEqual([expect.objectContaining({ title: 'Test alert from 4VD' })]);
+  });
+
   it('should reject a token that is not a push token, and let people remove a device', async () => {
     const bad = await addDevice(adminToken, { kind: 'expo', token: 'hello' });
     await addDevice(adminToken, BROWSER);

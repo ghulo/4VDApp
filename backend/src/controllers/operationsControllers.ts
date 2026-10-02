@@ -106,6 +106,11 @@ export function createNotificationController(notificationService: NotificationSe
       sendSuccess(res, await pushService.settings(req.user!.id, req.user!.role), { statusCode: 201, message: 'Alerts switched on' });
     },
 
+    async sendTestPush(req: Request, res: Response): Promise<void> {
+      await pushService.sendTest(req.user!.id);
+      sendSuccess(res, null, { statusCode: 202, message: 'Test alert on its way' });
+    },
+
     async removePushDevice(req: Request, res: Response): Promise<void> {
       const { token } = parseInput(removePushDeviceSchema, req.body);
       await pushService.removeDevice(req.user!.id, token);

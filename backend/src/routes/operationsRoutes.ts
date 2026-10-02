@@ -57,6 +57,7 @@ export function createNotificationRoutes({ notificationService, pushService, gua
   router.get('/push', controller.pushSettings);
   router.put('/push/preferences', controller.updatePushPreferences);
   router.post('/push/devices', controller.addPushDevice);
+  router.post('/push/test', controller.sendTestPush);
   // DELETE with a body: the token is a long URL, too awkward for the path.
   router.delete('/push/devices', controller.removePushDevice);
   router.post('/read-all', controller.markAllRead);

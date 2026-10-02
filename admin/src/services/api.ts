@@ -203,6 +203,9 @@ export const pushApi = {
     (await apiRequest<PushSettings>('/notifications/push/preferences', { method: 'PUT', body: changes })).data,
   addWebDevice: async (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: { kind: 'web', ...subscription } })).data,
+  sendTest: async () => {
+    await apiRequest('/notifications/push/test', { method: 'POST' });
+  },
   removeDevice: async (token: string) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
 };

@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { Button } from '../components/ui';
 import { API_URL } from '../services/apiClient';
 import { useAuth, useCurrentUser } from '../state/useAuth';
@@ -22,6 +23,7 @@ export function AccountScreen() {
         <Text style={[styles.detail, { color: colors.steel }]}>{user.email}</Text>
         <Text style={[styles.detail, { color: colors.ink }]}>{ROLE_DESCRIPTION[user.role]}</Text>
       </View>
+      <PushSettingsPanel />
       <Button label="Log out" variant="quiet" onPress={logout} />
       <Text style={[styles.footnote, { color: colors.steel }]}>Connected to {API_URL}</Text>
     </ScrollView>

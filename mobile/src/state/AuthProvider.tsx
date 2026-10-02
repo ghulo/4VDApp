@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../services/api';
 import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
+import { disablePush } from '../push/devicePush';
 import { AuthContext, type AuthState } from './useAuth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -30,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // The next person on this phone shouldn't get these alerts.
+    await disablePush().catch(() => undefined);
     await authApi.logout().catch(() => undefined);
     // Don't show the next person on this phone someone else's cached data.
     queryClient.clear();

@@ -72,6 +72,10 @@ export class PushRepository {
     return Number(row.total);
   }
 
+  async createTestNotification(userId: number, notification: { title: string; message: string; type: string }): Promise<void> {
+    await this.db.insertInto('notifications').values({ user_id: userId, ...notification }).execute();
+  }
+
   async preferences(userId: number): Promise<Record<string, boolean>> {
     const row = await this.db.selectFrom('users').select('push_preferences').where('id', '=', userId).executeTakeFirst();
     return row?.push_preferences ?? {};

@@ -53,6 +53,11 @@ export class UserRepository {
       .executeTakeFirst();
   }
 
+  async businessName(businessId: number): Promise<string | undefined> {
+    const row = await this.db.selectFrom('businesses').select('name').where('id', '=', businessId).executeTakeFirst();
+    return row?.name;
+  }
+
   async countActiveAdmins(): Promise<number> {
     const row = await this.db
       .selectFrom('users')

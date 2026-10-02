@@ -36,6 +36,8 @@ import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
+import { InviteRepository } from './repositories/InviteRepository.js';
+import { InviteService } from './services/InviteService.js';
 import { EmailService } from './services/email/EmailService.js';
 import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
@@ -158,6 +160,14 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     options.emailSender ??
       (config.email.resendApiKey ? new ResendSender(config.email.resendApiKey, config.email.from) : new LogSender()),
   );
+  const inviteService = new InviteService(
+    new InviteRepository(db),
+    userRepository,
+    authService,
+    emailService,
+    transactions,
+    config.dashboardUrl,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -206,6 +216,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     assistantService,
     priceSuggestionService,
     emailService,
+    inviteService,
     guards,
   };
 }

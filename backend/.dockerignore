@@ -1,0 +1,8 @@
+# Keep the image small and secrets out of it.
+node_modules
+dist
+coverage
+tests
+.env
+.env.*
+*.log

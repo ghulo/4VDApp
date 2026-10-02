@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../services/api';
 import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
+import { disablePush } from '../push/browserPush';
 import { AuthContext, type AuthState } from './useAuth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // The next person to use this browser shouldn't get the owner's alerts.
+    await disablePush().catch(() => undefined);
     await authApi.logout().catch(() => undefined);
     setState({ status: 'signedOut' });
   }, []);

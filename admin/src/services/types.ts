@@ -235,6 +235,16 @@ export interface AppSettings {
   minimumMarginPercent: number;
 }
 
+export type PushTopic = 'stock' | 'approvals' | 'decisions';
+
+export interface PushSettings {
+  topics: Array<{ topic: PushTopic; enabled: boolean }>;
+  /** Phones and browsers getting this person's alerts. */
+  deviceCount: number;
+  /** Null when the server has no Web Push keys. */
+  webPushPublicKey: string | null;
+}
+
 export type PromotionStatus = 'scheduled' | 'running' | 'finished' | 'ended';
 
 export interface Promotion {

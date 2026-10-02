@@ -303,12 +303,18 @@ Money comes from the `sales_ledger` view: sales on their sale date, plus approve
 | `GET /reports/summary` | admin | `{ current, previous, change }`: totals for both periods and relative change (`0.12` = +12%, `null` when the previous value was 0) |
 | `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, refunds, profit, averageSale, monthlyTarget, commissionPercent, commission }`; `commission` is revenue after refunds × `commissionPercent` (`null` when none is set); refunds count against the person who made the sale; `hasLeft` is true for people deactivated or removed since |
 | `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first; margin leaves out sales with no cost |
-| `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder }`, soonest to run out first. No date range |
+| `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder, trend, lastSoldAt }`, soonest to run out first. No date range. `trend` is `rising`, `falling`, `steady` or `null` |
+| `GET /reports/insights` | admin | What needs attention, most urgent first: `[ { kind, severity, title, detail, productId } ]`. `kind` is `sold_out`, `running_out` (within 7 days), `missing_stock` (count shortfalls and lost write-offs, last 30 days), `unusual_sale` (last 7 days, at least 5 units and 4× the product's usual sale), `below_cost` (last 7 days) or `dead_stock` (in stock, no sale in 60 days). `severity` is `urgent`, `warning` or `info` |
+| `GET /reports/daily-summary` | admin | What tonight's summary would say right now: `{ title, message, salesLine }` |
 | `GET /reports/my-sales` | admin, employee | The caller's `monthlyTarget` (or `null`), their own `current` and `previous` `{ salesCount, unitsSold, revenue, refunds }` and their 10 latest `recentSales` `{ id, productName, quantity, pricePerUnit, totalAmount, saleDate, returnedQuantity }`. Never cost or profit |
 
 Totals shape: `{ revenue, refunds, revenueWithoutCost, cost, profit, margin, unitsSold, salesCount, stockLosses, lossUnitsWithoutCost }`. `revenue` is after refunds. `stockLosses` is the value at cost of approved write-offs plus approved count differences in the period; a surplus found in a count lowers it. `lossUnitsWithoutCost` counts lost units whose product had no cost price.
 
-Reorder maths: `averageDailySales` = units sold in the last 30 days ÷ 30; `daysLeft` = stock ÷ that, rounded down (`null` without recent sales); `suggestedOrder` = `max(0, ceil(average × 30 + reorderLevel − stock))`.
+Forecast maths (`backend/src/services/reports/forecast.ts`): sales from the last 8 weeks, or since the product's first sale or creation if later (stretched to at least a week). Daily rate = (2 × last 2 weeks + the 6 before) ÷ 3, so recent weeks count double. Once a product has 3 sales, no single sale counts as more than 4× the usual size (at least 5 units), so one bulk order doesn't set the pace. With 4+ weeks and 14+ units, each weekday gets its own weight (busy Saturdays, quiet Mondays) in the shop's time zone (`SHOP_TIME_ZONE`, default `Europe/Budapest`). `daysLeft` walks forward day by day until stock can't cover a day's demand; `suggestedOrder` = demand over the next 30 days + `reorderLevel` − stock, rounded up.
+
+### Daily summary
+
+Every admin gets a `daily_summary` notification (and push alert, topic `summary`) once a day after `dailySummaryHour` (setting, default 20, shop time): today's sales and profit against the same weekday last week, the urgent warnings and how many others there are. The last day sent is stored as the `daily_summary_last_sent` setting, so restarts and extra servers don't send it twice.
 
 ---
 

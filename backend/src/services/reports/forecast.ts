@@ -6,6 +6,8 @@
  *   moves the forecast quickly without one odd day taking over.
  * - With enough history, each day of the week gets its own weight, so a
  *   shop that sells most on Saturdays runs out on a Saturday, not mid-week.
+ * - One-off bulk orders are capped, so a single sale of 1,500 doesn't make
+ *   the shop expect 200 a day from then on.
  */
 
 export const FORECAST_HISTORY_DAYS = 56;
@@ -16,6 +18,10 @@ const MIN_HISTORY_DAYS = 7;
 const MIN_DAYS_FOR_WEEKDAYS = 28;
 const MIN_UNITS_FOR_WEEKDAYS = 14;
 const ORDER_FOR_DAYS = 30;
+/** With this many sales to judge by, no one sale counts for more than 4× the usual size (and at least 5). */
+const MIN_SALES_FOR_CAP = 3;
+const BULK_FACTOR = 4;
+const MIN_BULK_CAP = 5;
 /** Further out than a year is "not soon"; stop counting. */
 const MAX_FORECAST_DAYS = 365;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -62,13 +68,16 @@ export function weekdayIn(date: Date, timeZone: string): number {
 
 export function forecast(input: ForecastInput): Forecast {
   const now = input.now.getTime();
-  const windowStart = Math.max(now - FORECAST_HISTORY_DAYS * MS_PER_DAY, input.availableSince.getTime());
+  // A sale entered after the fact can predate the product's record; it clearly existed by then.
+  const firstSale = Math.min(...input.sales.map((sale) => sale.at.getTime()));
+  const availableSince = Math.min(input.availableSince.getTime(), firstSale);
+  const windowStart = Math.max(now - FORECAST_HISTORY_DAYS * MS_PER_DAY, availableSince);
   const historyDays = Math.max(MIN_HISTORY_DAYS, (now - windowStart) / MS_PER_DAY);
   const recentDays = Math.min(RECENT_DAYS, historyDays);
   const olderDays = historyDays - recentDays;
   const recentStart = now - recentDays * MS_PER_DAY;
 
-  const inWindow = input.sales.filter((sale) => sale.at.getTime() >= windowStart && sale.at.getTime() <= now);
+  const inWindow = capBulkSales(input.sales.filter((sale) => sale.at.getTime() >= windowStart && sale.at.getTime() <= now));
   const recentUnits = sum(inWindow.filter((sale) => sale.at.getTime() >= recentStart).map((sale) => sale.units));
   const totalUnits = sum(inWindow.map((sale) => sale.units));
   const recentRate = recentUnits / recentDays;
@@ -92,6 +101,15 @@ export function forecast(input: ForecastInput): Forecast {
     ),
     trend: olderDays >= RECENT_DAYS ? trendOf(recentRate, olderRate) : null,
   };
+}
+
+function capBulkSales(sales: Array<{ at: Date; units: number }>) {
+  if (sales.length < MIN_SALES_FOR_CAP) return sales;
+  const sizes = sales.map((sale) => sale.units).sort((a, b) => a - b);
+  const middle = Math.floor(sizes.length / 2);
+  const median = sizes.length % 2 === 1 ? sizes[middle]! : (sizes[middle - 1]! + sizes[middle]!) / 2;
+  const cap = Math.max(MIN_BULK_CAP, BULK_FACTOR * median);
+  return sales.map((sale) => (sale.units > cap ? { at: sale.at, units: cap } : sale));
 }
 
 /** How much busier each weekday is than average; they average to 1. */

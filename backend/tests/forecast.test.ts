@@ -65,6 +65,16 @@ describe('forecast', () => {
     expect(result.daysLeft).toBe(7);
   });
 
+  it('should not let one bulk order set the pace', () => {
+    const sales = [...steadySales(10, 1), { at: daysAgo(1), units: 1500 }];
+
+    const result = forecast({ sales, now: NOW, availableSince: longAgo, stock: 100, reorderLevel: 0, timeZone: TZ });
+
+    // The 1,500 counts as 5: 15 units in the last 2 weeks, none before, so (2 × 15/14 + 0) / 3 ≈ 0.71 a day.
+    expect(result.averageDailySales).toBeLessThan(1);
+    expect(result.daysLeft).toBeGreaterThan(100);
+  });
+
   it('should expect busy weekdays to sell more', () => {
     // 8 weeks: 7 units every Saturday, 1 on every other day.
     const sales = Array.from({ length: 56 }, (_, index) => {

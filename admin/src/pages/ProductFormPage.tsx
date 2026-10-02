@@ -409,7 +409,7 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
         <div className="price-suggestion__result" aria-live="polite">
           <p className="price-suggestion__headline">
             {DECISION_TEXT[result.decision]} {formatMoney(result.suggestedPrice)}
-            <span className="price-suggestion__confidence"> · {result.confidence} confidence</span>
+            <span className="price-suggestion__confidence">, {result.confidence} confidence</span>
           </p>
           <p>{result.summary}</p>
           <ul className="price-suggestion__reasons">

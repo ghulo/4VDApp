@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
-import { analyticsApi, inventoryApi, reportsApi } from '../services/api';
+import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
 
@@ -34,6 +35,8 @@ export function OverviewPage() {
               : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`}
         </p>
       </header>
+
+      <TodayBoard lowCount={lowCount} />
 
       <AttentionPanel />
 
@@ -72,12 +75,76 @@ export function OverviewPage() {
   );
 }
 
+const weekdayFormatter = new Intl.DateTimeFormat('en-GB', { weekday: 'long' });
+
+/** Today so far, against the same hours of the same weekday last week. */
+function todayRange(now = new Date()) {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekAgo = (date: Date) => new Date(date.getTime() - 7 * MS_PER_DAY).toISOString();
+  return {
+    startDate: midnight.toISOString(),
+    endDate: now.toISOString(),
+    previousStartDate: weekAgo(midnight),
+    previousEndDate: weekAgo(now),
+  };
+}
+
+/** The shop's day on one slate board: the figure the owner checks first, and what's waiting. */
+function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
+  // Fixed once per visit so the query key doesn't change on every render.
+  const [range] = useState(() => todayRange());
+  const today = useQuery({ queryKey: ['reports', 'summary', 'today', range.startDate], queryFn: () => reportsApi.summary(range) });
+  const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
+  const weekday = weekdayFormatter.format(new Date());
+  const current = today.data?.current;
+  const previous = today.data?.previous;
+  const change = today.data?.change.revenue ?? null;
+  const waiting = approvals.data?.total ?? 0;
+
+  return (
+    <section className="today-board" aria-label="Today so far">
+      <div className="today-board__main">
+        <p className="today-board__label">Sales today</p>
+        <p className="today-board__figure">{current ? formatMoney(current.revenue) : today.isError ? 'Not available' : '…'}</p>
+        {current && previous && (
+          <p className="today-board__compare">
+            {change === null
+              ? `Nothing sold by this time last ${weekday}.`
+              : `${change >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(change * 100))}% against last ${weekday}, which had ${formatMoney(previous.revenue)} by this time`}
+          </p>
+        )}
+      </div>
+      <dl className="today-board__figures">
+        <div>
+          <dt>Sales</dt>
+          <dd>{current?.salesCount ?? '–'}</dd>
+        </div>
+        <div>
+          <dt>Profit</dt>
+          <dd>{current ? formatMoney(current.profit) : '–'}</dd>
+        </div>
+        <div>
+          <dt>Items sold</dt>
+          <dd>{current?.unitsSold ?? '–'}</dd>
+        </div>
+      </dl>
+      <div className="today-board__tags">
+        <Link to="/approvals" className={`today-tag${waiting > 0 ? ' today-tag--on' : ''}`}>
+          <span className="today-tag__count">{waiting}</span> waiting for you
+        </Link>
+        <Link to="/inventory?lowStock=true" className={`today-tag${lowCount ? ' today-tag--on' : ''}`}>
+          <span className="today-tag__count">{lowCount ?? '–'}</span> to restock
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 const SEVERITY_LABEL: Record<Insight['severity'], string> = { urgent: 'Urgent', warning: 'Check', info: 'Idea' };
 
 /** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
 function AttentionPanel() {
   const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights });
-  const summary = useQuery({ queryKey: ['reports', 'daily-summary'], queryFn: reportsApi.dailySummary });
 
   return (
     <section className="panel" aria-labelledby="attention-heading">
@@ -86,11 +153,6 @@ function AttentionPanel() {
           Needs your attention
         </h2>
       </div>
-      {summary.data && (
-        <p className="attention__summary">
-          <strong>{summary.data.title}.</strong> {summary.data.salesLine}
-        </p>
-      )}
       {insights.isPending && <Loading />}
       {insights.isError && <ErrorNotice error={insights.error} onRetry={() => insights.refetch()} />}
       {insights.data && insights.data.length === 0 && (

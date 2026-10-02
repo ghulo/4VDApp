@@ -3,19 +3,45 @@ import { NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { approvalsApi, notificationsApi } from '../services/api';
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Overview', end: true },
-  { to: '/ask', label: 'Ask' },
-  { to: '/inventory', label: 'Stock' },
-  { to: '/counts', label: 'Counts' },
-  { to: '/sales', label: 'Sales' },
-  { to: '/reports', label: 'Reports' },
-  { to: '/products', label: 'Products' },
-  { to: '/promotions', label: 'Promotions' },
-  { to: '/categories', label: 'Categories' },
-  { to: '/people', label: 'People' },
-  { to: '/activity', label: 'Activity' },
-  { to: '/settings', label: 'Settings' },
+interface NavItem {
+  to: string;
+  label: string;
+  end?: boolean;
+  /** Which waiting count to show next to it, if any. */
+  badge?: 'approvals' | 'alerts';
+}
+
+/** Grouped the way the owner works: what needs doing now, the shelves, then the business. */
+const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: 'Today',
+    items: [
+      { to: '/', label: 'Overview', end: true },
+      { to: '/approvals', label: 'Approvals', badge: 'approvals' },
+      { to: '/alerts', label: 'Alerts', badge: 'alerts' },
+      { to: '/ask', label: 'Ask' },
+    ],
+  },
+  {
+    label: 'Shelves',
+    items: [
+      { to: '/inventory', label: 'Stock' },
+      { to: '/counts', label: 'Counts' },
+      { to: '/products', label: 'Products' },
+      { to: '/promotions', label: 'Promotions' },
+      { to: '/categories', label: 'Categories' },
+    ],
+  },
+  {
+    label: 'Business',
+    items: [
+      { to: '/sales', label: 'Sales' },
+      { to: '/reports', label: 'Reports' },
+      { to: '/people', label: 'People' },
+      { to: '/activity', label: 'Activity' },
+      { to: '/settings', label: 'Settings' },
+    ],
+  },
 ];
 
 const ALERT_POLL_MS = 60_000;
@@ -42,27 +68,27 @@ export function Layout() {
       <aside className="sidebar">
         <p className="sidebar__brand">4VD</p>
         <nav className="sidebar__nav" aria-label="Main">
-          <NavLink to="/approvals" className="sidebar__link">
-            Approvals
-            {waitingCount > 0 && (
-              <span className="sidebar__badge" aria-label={`${waitingCount} waiting for you`}>
-                {waitingCount}
-              </span>
-            )}
-          </NavLink>
-          {NAV_ITEMS.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className="sidebar__link">
-              {item.label}
-            </NavLink>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="sidebar__group">
+              <p className="sidebar__group-label">{group.label}</p>
+              {group.items.map((item) => {
+                const count = item.badge === 'approvals' ? waitingCount : item.badge === 'alerts' ? unreadCount : 0;
+                return (
+                  <NavLink key={item.to} to={item.to} end={item.end} className="sidebar__link">
+                    {item.label}
+                    {count > 0 && (
+                      <span
+                        className="sidebar__badge"
+                        aria-label={item.badge === 'approvals' ? `${count} waiting for you` : `${count} unread`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
           ))}
-          <NavLink to="/alerts" className="sidebar__link">
-            Alerts
-            {unreadCount > 0 && (
-              <span className="sidebar__badge" aria-label={`${unreadCount} unread`}>
-                {unreadCount}
-              </span>
-            )}
-          </NavLink>
         </nav>
         <div className="sidebar__account">
           <span className="sidebar__user">{user.name}</span>

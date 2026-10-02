@@ -4,6 +4,7 @@ import { returnsApi } from '../services/api';
 import type { ReturnCondition, Sale } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
+import { Button } from './ui';
 
 /** Return part or all of a sale. The owner's returns go through straight away. */
 export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: string) => void }) {
@@ -104,13 +105,11 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
           {errorMessage(mutation.error)}
         </p>
       )}
-      <button
-        type="submit"
-        className="button button--primary"
-        disabled={!isQuantityValid || !isRefundValid || mutation.isPending}
-      >
+      <Button type="submit"
+       
+        disabled={!isQuantityValid || !isRefundValid || mutation.isPending} variant="primary">
         {mutation.isPending ? 'Returning…' : `Return and refund ${isRefundValid && isQuantityValid ? formatMoney(refundAmount) : ''}`}
-      </button>
+      </Button>
     </form>
   );
 }

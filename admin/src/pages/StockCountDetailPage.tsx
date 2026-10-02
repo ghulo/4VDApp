@@ -7,6 +7,7 @@ import { stockCountsApi } from '../services/api';
 import type { StockCount, StockCountLine } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney, formatSignedQuantity } from '../utils/format';
+import { Button, Card, PageHeader, StatGrid, StatTile } from '../components/ui';
 
 const AFFECTED_QUERIES = ['stock-counts', 'approvals', 'inventory', 'products', 'reports', 'activity'];
 
@@ -45,44 +46,41 @@ export function StockCountDetailPage() {
 
   return (
     <>
-      <header className="page-header">
-        <Link to="/counts" className="back-link">
-          Stock counts
-        </Link>
-        <h1 className="page-title">Count of {data.category?.name ?? 'the whole shop'}</h1>
-        <p className="page-intro page-intro--wide">
-          <StatusPill status={data.status} /> Started by {data.startedBy?.name ?? 'Unknown'} on {formatDateTime(data.startedAt)}.{' '}
-          {data.totals.counted} of {data.totals.products} products counted.
-        </p>
-      </header>
+      <PageHeader
+        title={`Count of ${data.category?.name ?? 'the whole shop'}`}
+        crumbs={[{ label: 'Stock counts', to: '/counts' }]}
+        meta={<StatusPill status={data.status} />}
+        description={`Started by ${data.startedBy?.name ?? 'Unknown'} on ${formatDateTime(data.startedAt)}. ${data.totals.counted} of ${data.totals.products} products counted.`}
+        actions={
+          <>
+            {data.status === 'open' && (
+              <Button variant="danger-text" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
+                Cancel this count
+              </Button>
+            )}
+            {data.status === 'submitted' && (data.totals.pending ?? 0) > 0 && (
+              <Button variant="primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending}>
+                {applyAll.isPending ? 'Correcting…' : 'Apply all differences'}
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      <section className="panel">
-        <dl className="summary__figures">
-          <div>
-            <dt>Products that differ</dt>
-            <dd>{data.totals.differences}</dd>
-          </div>
-          <div>
-            <dt>Still waiting for you</dt>
-            <dd>{data.totals.pending}</dd>
-          </div>
-          <div>
-            <dt>{shortage >= 0 ? 'Missing, at cost' : 'Found extra, at cost'}</dt>
-            <dd>{formatMoney(Math.abs(shortage))}</dd>
-          </div>
-        </dl>
-        <div className="form-actions form-actions--spaced">
-          {data.status === 'submitted' && (data.totals.pending ?? 0) > 0 && (
-            <button type="button" className="button button--primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending}>
-              {applyAll.isPending ? 'Correcting…' : 'Apply all differences'}
-            </button>
-          )}
-          {data.status === 'open' && (
-            <button type="button" className="button button--danger-text" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-              Cancel this count
-            </button>
-          )}
-        </div>
+      <StatGrid>
+        <StatTile label="Products that differ" value={data.totals.differences} />
+        <StatTile
+          label="Still waiting for you"
+          value={data.totals.pending ?? 0}
+          tone={(data.totals.pending ?? 0) > 0 ? 'warn' : 'default'}
+        />
+        <StatTile
+          label={shortage >= 0 ? 'Missing, at cost' : 'Found extra, at cost'}
+          value={formatMoney(Math.abs(shortage))}
+          tone={shortage > 0 ? 'danger' : 'default'}
+        />
+      </StatGrid>
+      <div className="count-notes">
         {data.status === 'open' && (
           <p className="field-hint">Employees are still counting. Differences can be approved once they submit the count.</p>
         )}
@@ -96,18 +94,18 @@ export function StockCountDetailPage() {
             {errorMessage(applyAll.error ?? cancel.error)}
           </p>
         )}
-      </section>
+      </div>
 
-      <section className="panel" aria-labelledby="lines-heading">
-        <div className="panel__header">
-          <h2 id="lines-heading" className="panel__title">
-            Products
-          </h2>
+      <Card
+        title="Products"
+        flush
+        actions={
           <label className="toggle">
             <input type="checkbox" checked={onlyDifferences} onChange={(event) => setOnlyDifferences(event.target.checked)} />
             Only show differences
           </label>
-        </div>
+        }
+      >
         {shown.length === 0 ? (
           <EmptyState title={onlyDifferences ? 'No differences' : 'Nothing to count'} />
         ) : (
@@ -131,7 +129,7 @@ export function StockCountDetailPage() {
             </table>
           </div>
         )}
-      </section>
+      </Card>
     </>
   );
 }

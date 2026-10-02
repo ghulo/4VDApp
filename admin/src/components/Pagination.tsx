@@ -1,4 +1,5 @@
 import type { PaginationMeta } from '../services/types';
+import { Button } from './ui';
 
 interface PaginationProps {
   meta: PaginationMeta;
@@ -18,22 +19,12 @@ export function Pagination({ meta, onPageChange, itemLabel }: PaginationProps) {
       </span>
       {pageCount > 1 && (
         <span className="pagination__buttons">
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={meta.page <= 1}
-            onClick={() => onPageChange(meta.page - 1)}
-          >
+          <Button size="sm" disabled={meta.page <= 1} onClick={() => onPageChange(meta.page - 1)}>
             Previous
-          </button>
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={meta.page >= pageCount}
-            onClick={() => onPageChange(meta.page + 1)}
-          >
+          </Button>
+          <Button size="sm" disabled={meta.page >= pageCount} onClick={() => onPageChange(meta.page + 1)}>
             Next
-          </button>
+          </Button>
         </span>
       )}
     </nav>

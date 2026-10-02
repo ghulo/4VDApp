@@ -2,65 +2,50 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { StatusPill } from '../components/Decision';
-import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading } from '../components/Feedback';
 import { categoriesApi, stockCountsApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime } from '../utils/format';
+import { Button, DataTable, EmptyState, PageHeader } from '../components/ui';
+import { ClipboardText } from '@phosphor-icons/react';
 
 export function StockCountsPage() {
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: stockCountsApi.list });
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Stock counts</h1>
-        <p className="page-intro">
-          Count the shelves and compare with what the system expects. Employees count on their phones; you approve the
-          differences.
-        </p>
-      </header>
-      <section className="panel">
-        <h2 className="panel__title">Start a count</h2>
-        <StartCountForm />
-      </section>
-      <section className="panel" aria-labelledby="counts-heading">
-        <h2 id="counts-heading" className="panel__title">
-          Counts
-        </h2>
-        {counts.isPending && <Loading />}
-        {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
-        {counts.data?.length === 0 && <EmptyState title="No counts yet" />}
-        {counts.data && counts.data.length > 0 && (
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">What</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Started by</th>
-                  <th scope="col">Started</th>
-                </tr>
-              </thead>
-              <tbody>
-                {counts.data.map((count) => (
-                  <tr key={count.id}>
-                    <td>
-                      <Link to={`/counts/${count.id}`} className="table__primary-link">
-                        {count.category?.name ?? 'Whole shop'}
-                      </Link>
-                    </td>
-                    <td>
-                      <StatusPill status={count.status} />
-                    </td>
-                    <td>{count.startedBy?.name ?? 'Unknown'}</td>
-                    <td>{formatDateTime(count.startedAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <PageHeader
+        title="Stock counts"
+        description="Count the shelves and compare with what the system expects. Employees count on their phones; you approve the differences."
+        actions={<StartCountForm />}
+      />
+      {counts.isPending && <Loading />}
+      {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
+      {counts.data && (
+        <DataTable
+          caption="Stock counts"
+          rows={counts.data}
+          rowKey={(count) => count.id}
+          columns={[
+            {
+              header: 'What',
+              cell: (count) => (
+                <Link to={`/counts/${count.id}`} className="table__primary-link">
+                  {count.category?.name ?? 'Whole shop'}
+                </Link>
+              ),
+            },
+            { header: 'Status', cell: (count) => <StatusPill status={count.status} /> },
+            { header: 'Started by', cell: (count) => count.startedBy?.name ?? 'Unknown' },
+            { header: 'Started', cell: (count) => formatDateTime(count.startedAt) },
+          ]}
+          empty={
+            <EmptyState art title="No counts yet">
+              Start one above. Employees then count on their phones, and you approve any differences here.
+            </EmptyState>
+          }
+        />
+      )}
     </>
   );
 }
@@ -86,20 +71,20 @@ function StartCountForm() {
 
   return (
     <form className="inline-form" onSubmit={handleSubmit}>
-      <label className="inline-field">
-        Count
-        <select value={scope} onChange={(event) => setScope(event.target.value)}>
+      <label className="visually-hidden" htmlFor="count-scope">
+        What to count
+      </label>
+      <select id="count-scope" className="setting-select" value={scope} onChange={(event) => setScope(event.target.value)}>
           <option value="">The whole shop</option>
           {categories.data?.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
-        </select>
-      </label>
-      <button type="submit" className="button button--primary" disabled={start.isPending}>
+      </select>
+      <Button type="submit" variant="primary" icon={ClipboardText} disabled={start.isPending}>
         {start.isPending ? 'Starting…' : 'Start count'}
-      </button>
+      </Button>
       {start.isError && (
         <p className="form-error" role="alert">
           {errorMessage(start.error)}

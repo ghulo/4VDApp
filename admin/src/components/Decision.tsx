@@ -1,6 +1,7 @@
 import { type FormEvent, useId, useState } from 'react';
 import type { ApprovalStatus, CountLineStatus, CountStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
+import { Badge, Button, type Tone } from './ui';
 
 const STATUS_LABEL: Record<ApprovalStatus | CountLineStatus | CountStatus, string> = {
   pending: 'Waiting for you',
@@ -13,8 +14,19 @@ const STATUS_LABEL: Record<ApprovalStatus | CountLineStatus | CountStatus, strin
   cancelled: 'Cancelled',
 };
 
+const STATUS_TONE: Record<ApprovalStatus | CountLineStatus | CountStatus, Tone> = {
+  pending: 'warn',
+  approved: 'ok',
+  rejected: 'danger',
+  match: 'ok',
+  open: 'info',
+  submitted: 'warn',
+  closed: 'ok',
+  cancelled: 'neutral',
+};
+
 export function StatusPill({ status }: { status: ApprovalStatus | CountLineStatus | CountStatus }) {
-  return <span className={`status-pill status-pill--${status}`}>{STATUS_LABEL[status]}</span>;
+  return <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>;
 }
 
 interface DecisionControlsProps {
@@ -56,33 +68,23 @@ export function DecisionControls({ subject, onApprove, onReject, isBusy, error }
             onChange={(event) => setNote(event.target.value)}
             autoFocus
           />
-          <button type="submit" className="button button--danger" disabled={!note.trim() || isBusy}>
+          <Button type="submit" disabled={!note.trim() || isBusy} variant="danger">
             Reject
-          </button>
-          <button type="button" className="button button--quiet" onClick={() => setIsRejecting(false)}>
+          </Button>
+          <Button onClick={() => setIsRejecting(false)}>
             Cancel
-          </button>
+          </Button>
         </form>
       ) : (
         <div className="decision__buttons">
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={onApprove}
+          <Button onClick={onApprove}
             disabled={isBusy}
-            aria-label={`Approve ${subject}`}
-          >
+            aria-label={`Approve ${subject}`} variant="primary">
             Approve
-          </button>
-          <button
-            type="button"
-            className="button button--quiet"
-            onClick={() => setIsRejecting(true)}
-            disabled={isBusy}
-            aria-label={`Reject ${subject}`}
-          >
+          </Button>
+          <Button onClick={() => setIsRejecting(true)} disabled={isBusy} aria-label={`Reject ${subject}`}>
             Reject
-          </button>
+          </Button>
         </div>
       )}
       {Boolean(error) && (

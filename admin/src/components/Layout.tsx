@@ -243,7 +243,7 @@ export function Layout() {
         </button>
       </aside>
 
-      <main className="main halftone-field">
+      <main className="main">
         <div className="main__frame rails">
           <Outlet />
         </div>

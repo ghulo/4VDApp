@@ -1,8 +1,8 @@
 import type { Icon } from '@phosphor-icons/react';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router';
+import { buttonClass, type ButtonVariant } from './buttonClass';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 interface Look {
   variant?: ButtonVariant;
@@ -10,18 +10,6 @@ interface Look {
   /** A line icon shown before the label (or alone, with an aria-label). */
   icon?: Icon;
   children?: ReactNode;
-}
-
-/** The class list for anything that should look like a button. */
-export function buttonClass({
-  variant = 'secondary',
-  size = 'md',
-  iconOnly = false,
-  wide = false,
-}: { variant?: ButtonVariant; size?: 'md' | 'sm'; iconOnly?: boolean; wide?: boolean } = {}): string {
-  return ['button', `button--${variant}`, size === 'sm' && 'button--sm', iconOnly && 'button--icon', wide && 'button--wide']
-    .filter(Boolean)
-    .join(' ');
 }
 
 function Contents({ icon: IconComponent, children, size }: Look) {

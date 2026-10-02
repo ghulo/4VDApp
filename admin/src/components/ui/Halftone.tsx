@@ -64,7 +64,6 @@ export function Halftone({ className }: { className?: string }) {
       focusable="false"
     >
       <circle className="halftone-art__outline" cx={CENTER.x} cy={CENTER.y} r={RADIUS + 1.2} />
-      <ellipse className="halftone-art__outline" cx={CENTER.x} cy={CENTER.y} rx={RADIUS + 1.2} ry={9} />
       <g fill="currentColor">
         {DOTS.map((dot) => (
           <circle

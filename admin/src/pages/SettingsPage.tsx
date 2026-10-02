@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { ErrorNotice, Loading } from '../components/Feedback';
 import { BusinessPanel } from '../components/BusinessPanel';
+import { ErrorNotice, Loading } from '../components/Feedback';
+import { Button, Card, PageHeader, SettingRow } from '../components/ui';
 import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -14,18 +15,14 @@ export function SettingsPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-intro">
-          When an employee's return has to wait for you, and how low a promotion may take a price.
-        </p>
-      </header>
-      <section className="panel">
-        {settings.isPending && <Loading />}
-        {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
-        {settings.data && <SettingsForm initial={settings.data} />}
-      </section>
+      <PageHeader
+        title="Settings"
+        description="Your shop's details, when a return has to wait for you, and how low a promotion may take a price."
+      />
       <BusinessPanel />
+      {settings.isPending && <Loading />}
+      {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
+      {settings.data && <SettingsForm initial={settings.data} />}
     </>
   );
 }
@@ -69,75 +66,97 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     Number(minimumMargin) >= 0;
 
   return (
-    <form className="settings-form" onSubmit={handleSubmit}>
-      <label className="field field--narrow">
-        <span className="field__label">Refunds above this need your approval (€)</span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step={1}
-          value={limit}
-          onChange={(event) => setLimit(event.target.value)}
-        />
-        <span className="field-hint">
-          Smaller refunds go through straight away, so the customer isn't kept waiting.
-        </span>
-      </label>
-      <label className="field field--narrow">
-        <span className="field__label">Returns of sales older than this many days need your approval</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          value={windowDays}
-          onChange={(event) => setWindowDays(event.target.value)}
-        />
-      </label>
-      <p className="field-hint">
-        Damaged stock, write-offs and count differences always wait for you. Your own returns go straight through.
-      </p>
-      <label className="field field--narrow">
-        <span className="field__label">Minimum margin on promotions (%)</span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step={1}
-          value={minimumMargin}
-          onChange={(event) => setMinimumMargin(event.target.value)}
-        />
-        <span className="field-hint">
-          A promotion can't take a price below cost plus this much. 0 means never below cost; 10 means cost + 10%.
-        </span>
-      </label>
-      <label className="field field--narrow">
-        <span className="field__label">Send my daily summary at</span>
-        <select value={summaryHour} onChange={(event) => setSummaryHour(Number(event.target.value))}>
-          {Array.from({ length: 24 }, (_, hour) => (
-            <option key={hour} value={hour}>
-              {String(hour).padStart(2, '0')}:00
-            </option>
-          ))}
-        </select>
-        <span className="field-hint">
-          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts on your Profile page.
-        </span>
-      </label>
-      {save.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(save.error)}
-        </p>
-      )}
-      {saved && (
-        <p className="form-success" role="status">
-          Saved.
-        </p>
-      )}
-      <button type="submit" className="button button--primary" disabled={!isValid || save.isPending}>
-        {save.isPending ? 'Saving…' : 'Save changes'}
-      </button>
+    <form onSubmit={handleSubmit}>
+      <Card
+        title="Approvals and prices"
+        description="Damaged stock, write-offs and count differences always wait for you. Your own returns go straight through."
+        footer={
+          <>
+            {save.isError && (
+              <span className="form-error" role="alert">
+                {errorMessage(save.error)}
+              </span>
+            )}
+            {saved && !save.isError && (
+              <span className="form-success" role="status">
+                Saved.
+              </span>
+            )}
+            <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
+              {save.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </>
+        }
+      >
+        <SettingRow
+          title="Refunds that need your approval"
+          description="Refunds above this amount wait for you. Smaller ones go through straight away, so the customer isn't kept waiting."
+        >
+          <span className="unit-input">
+            <span aria-hidden="true">€</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={1}
+              aria-label="Refunds above this need your approval, in euros"
+              value={limit}
+              onChange={(event) => setLimit(event.target.value)}
+            />
+          </span>
+        </SettingRow>
+        <SettingRow
+          title="Returns of older sales"
+          description="Returns of sales older than this many days wait for you."
+        >
+          <span className="unit-input">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              aria-label="Days after a sale before its return needs your approval"
+              value={windowDays}
+              onChange={(event) => setWindowDays(event.target.value)}
+            />
+            <span aria-hidden="true">days</span>
+          </span>
+        </SettingRow>
+        <SettingRow
+          title="Minimum margin on promotions"
+          description="A promotion can't take a price below cost plus this much. 0 means never below cost; 10 means cost + 10%."
+        >
+          <span className="unit-input">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={1}
+              aria-label="Minimum margin on promotions, in percent"
+              value={minimumMargin}
+              onChange={(event) => setMinimumMargin(event.target.value)}
+            />
+            <span aria-hidden="true">%</span>
+          </span>
+        </SettingRow>
+        <SettingRow
+          title="Daily summary"
+          description="Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts on your Profile page."
+        >
+          <select
+            aria-label="Send my daily summary at"
+            className="setting-select"
+            value={summaryHour}
+            onChange={(event) => setSummaryHour(Number(event.target.value))}
+          >
+            {Array.from({ length: 24 }, (_, hour) => (
+              <option key={hour} value={hour}>
+                {String(hour).padStart(2, '0')}:00
+              </option>
+            ))}
+          </select>
+        </SettingRow>
+      </Card>
     </form>
   );
 }

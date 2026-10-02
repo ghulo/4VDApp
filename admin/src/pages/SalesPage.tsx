@@ -8,6 +8,7 @@ import { productsApi, salesApi } from '../services/api';
 import type { PricingTier, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
+import { Button, Card, PageHeader } from '../components/ui';
 
 /** Same rule as the backend: the biggest tier the quantity reaches. */
 function unitPriceFor(product: Product, quantity: number): number {
@@ -20,14 +21,13 @@ function unitPriceFor(product: Product, quantity: number): number {
 export function SalesPage() {
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Sales</h1>
-        <p className="page-intro">Recording a sale takes the units out of stock and uses the bulk price automatically.</p>
-      </header>
-      <section className="panel">
-        <h2 className="panel__title">Record a sale</h2>
+      <PageHeader
+        title="Sales"
+        description="Recording a sale takes the units out of stock and uses the bulk price automatically."
+      />
+      <Card title="Record a sale">
         <RecordSaleForm />
-      </section>
+      </Card>
       <SalesHistory />
     </>
   );
@@ -126,13 +126,11 @@ function RecordSaleForm() {
         </p>
       )}
 
-      <button
-        type="submit"
-        className="button button--primary"
-        disabled={!selected || !isQuantityValid || exceedsStock || record.isPending}
-      >
+      <Button type="submit"
+       
+        disabled={!selected || !isQuantityValid || exceedsStock || record.isPending} variant="primary">
         {record.isPending ? 'Recording…' : 'Record sale'}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -162,10 +160,7 @@ function SalesHistory() {
   }
 
   return (
-    <section aria-labelledby="history-heading">
-      <h2 id="history-heading" className="panel__title section-title">
-        History
-      </h2>
+    <Card title="History">
       <div className="toolbar">
         <label className="inline-field">
           From
@@ -270,6 +265,6 @@ function SalesHistory() {
           <Pagination meta={sales.data.meta} itemLabel="sales" onPageChange={(next) => updateParams({ page: String(next) })} />
         </>
       )}
-    </section>
+    </Card>
   );
 }

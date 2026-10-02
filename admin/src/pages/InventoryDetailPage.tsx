@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { StockTag } from '../components/StockTag';
@@ -8,6 +8,8 @@ import { WriteOffForm } from '../components/WriteOffForm';
 import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '../services/types';
 import { formatDateTime, formatSignedQuantity } from '../utils/format';
+import { Button, ButtonLink, Card, PageHeader } from '../components/ui';
+import { PencilSimple } from '@phosphor-icons/react';
 
 export function InventoryDetailPage() {
   const productId = Number(useParams().productId);
@@ -22,19 +24,19 @@ export function InventoryDetailPage() {
   const item = query.data;
   return (
     <>
-      <header className="page-header">
-        <Link to="/inventory" className="back-link">
-          Stock
-        </Link>
-        <h1 className="page-title">{item.productName}</h1>
-        {item.sku && <p className="page-intro">SKU {item.sku}</p>}
-      </header>
+      <PageHeader
+        title={item.productName}
+        description={item.sku ? `SKU ${item.sku}` : undefined}
+        crumbs={[{ label: 'Stock', to: '/inventory' }]}
+        actions={
+          <ButtonLink to={`/products/${item.productId}`} icon={PencilSimple}>
+            Edit product
+          </ButtonLink>
+        }
+      />
 
       <div className="split">
-        <section className="panel" aria-labelledby="level-heading">
-          <h2 id="level-heading" className="panel__title">
-            On the shelf
-          </h2>
+        <Card title="On the shelf">
           <div className="stock-hero">
             <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} size="large" />
             {item.warnings.map((warning) => (
@@ -47,12 +49,9 @@ export function InventoryDetailPage() {
           <h3 className="subheading">Damaged, lost or expired</h3>
           <p className="field-hint">Takes the units out of stock and records the loss at cost price in Reports.</p>
           <WriteOffForm productId={item.productId} inStock={item.quantity} />
-        </section>
+        </Card>
 
-        <section className="panel" aria-labelledby="history-heading">
-          <h2 id="history-heading" className="panel__title">
-            History
-          </h2>
+        <Card title="History">
           {item.recentAdjustments.length === 0 ? (
             <EmptyState title="No changes yet" />
           ) : (
@@ -74,7 +73,7 @@ export function InventoryDetailPage() {
               ))}
             </ol>
           )}
-        </section>
+        </Card>
       </div>
     </>
   );
@@ -199,9 +198,9 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
         </p>
       )}
 
-      <button type="submit" className="button button--primary" disabled={!hasChange || mutation.isPending}>
+      <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary">
         {mutation.isPending ? 'Saving…' : 'Save stock change'}
-      </button>
+      </Button>
     </form>
   );
 }

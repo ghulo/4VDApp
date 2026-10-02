@@ -5,6 +5,7 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { returnsApi, stockCountsApi, writeOffsApi } from '../services/api';
 import type { ReturnItem, WriteOff } from '../services/types';
 import { formatDateTime, formatMoney } from '../utils/format';
+import { ButtonLink, Card, PageHeader } from '../components/ui';
 
 /** Everything that changes stock or money changes the reports and activity too. */
 const AFFECTED_QUERIES = ['returns', 'write-offs', 'approvals', 'sales', 'inventory', 'products', 'reports', 'activity'];
@@ -19,12 +20,10 @@ function useInvalidateAll() {
 export function ApprovalsPage() {
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Approvals</h1>
-        <p className="page-intro">
-          What employees asked for that needs your decision. Nothing here touches stock or money until you approve it.
-        </p>
-      </header>
+      <PageHeader
+        title="Approvals"
+        description="What employees asked for that needs your decision. Nothing here touches stock or money until you approve it."
+      />
       <PendingReturns />
       <PendingWriteOffs />
       <PendingCounts />
@@ -35,10 +34,7 @@ export function ApprovalsPage() {
 function PendingReturns() {
   const returns = useQuery({ queryKey: ['returns', 'pending'], queryFn: () => returnsApi.list('pending') });
   return (
-    <section className="panel" aria-labelledby="returns-heading">
-      <h2 id="returns-heading" className="panel__title">
-        Returns
-      </h2>
+    <Card title="Returns">
       {returns.isPending && <Loading />}
       {returns.isError && <ErrorNotice error={returns.error} onRetry={() => returns.refetch()} />}
       {returns.data?.length === 0 && <EmptyState title="No returns waiting" />}
@@ -49,7 +45,7 @@ function PendingReturns() {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -90,10 +86,7 @@ function ReturnRow({ item }: { item: ReturnItem }) {
 function PendingWriteOffs() {
   const writeOffs = useQuery({ queryKey: ['write-offs', 'pending'], queryFn: () => writeOffsApi.list('pending') });
   return (
-    <section className="panel" aria-labelledby="write-offs-heading">
-      <h2 id="write-offs-heading" className="panel__title">
-        Damaged, lost or expired stock
-      </h2>
+    <Card title="Damaged, lost or expired stock">
       {writeOffs.isPending && <Loading />}
       {writeOffs.isError && <ErrorNotice error={writeOffs.error} onRetry={() => writeOffs.refetch()} />}
       {writeOffs.data?.length === 0 && <EmptyState title="No write-offs waiting" />}
@@ -104,7 +97,7 @@ function PendingWriteOffs() {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -143,10 +136,7 @@ function PendingCounts() {
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: stockCountsApi.list });
   const submitted = counts.data?.filter((count) => count.status === 'submitted') ?? [];
   return (
-    <section className="panel" aria-labelledby="counts-heading">
-      <h2 id="counts-heading" className="panel__title">
-        Stock counts
-      </h2>
+    <Card title="Stock counts">
       {counts.isPending && <Loading />}
       {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
       {counts.data && submitted.length === 0 && <EmptyState title="No counts waiting" />}
@@ -160,13 +150,13 @@ function PendingCounts() {
                   By {count.startedBy?.name ?? 'Unknown'}, submitted {count.submittedAt && formatDateTime(count.submittedAt)}.
                 </span>
               </div>
-              <Link to={`/counts/${count.id}`} className="button button--primary">
+              <ButtonLink to={`/counts/${count.id}`} variant="primary">
                 Review differences
-              </Link>
+              </ButtonLink>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }

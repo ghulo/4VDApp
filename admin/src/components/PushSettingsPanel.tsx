@@ -4,6 +4,7 @@ import { pushApi } from '../services/api';
 import type { PushSettings, PushTopic } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading } from './Feedback';
+import { Button, Card, SettingRow } from './ui';
 
 const TOPIC_TEXT: Record<PushTopic, { label: string; hint: string }> = {
   stock: { label: 'Stock running low or out', hint: 'When a sale or loss takes a product to its reorder level or to zero.' },
@@ -32,73 +33,74 @@ export function PushSettingsPanel() {
   });
 
   return (
-    <section className="panel" aria-labelledby="push-heading">
-      <h2 id="push-heading" className="panel__title">
-        Alerts
-      </h2>
+    <Card title="Alerts" description="Alerts reach this computer and the 4VD app on your phone, even when they're closed.">
       {settings.isPending && <Loading />}
       {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
       {settings.data && (
-        <div className="settings-form">
-          <div className="push-device">
-            <BrowserStatus settings={settings.data} isOn={Boolean(thisBrowser.data)} />
+        <>
+          <SettingRow
+            title="This computer"
+            description={
+              toggleBrowser.isError ? (
+                <span className="form-error" role="alert">
+                  {errorMessage(toggleBrowser.error)}
+                </span>
+              ) : (
+                <BrowserStatus settings={settings.data} isOn={Boolean(thisBrowser.data)} />
+              )
+            }
+          >
             {isPushSupported() && settings.data.webPushPublicKey && (
-              <button
-                type="button"
-                className={thisBrowser.data ? 'button button--quiet' : 'button button--primary'}
+              <Button
+                variant={thisBrowser.data ? 'secondary' : 'primary'}
                 disabled={toggleBrowser.isPending || thisBrowser.isPending}
                 onClick={() => toggleBrowser.mutate(!thisBrowser.data)}
               >
-                {toggleBrowser.isPending ? 'Working…' : thisBrowser.data ? 'Turn off on this computer' : 'Turn on for this computer'}
-              </button>
+                {toggleBrowser.isPending ? 'Working…' : thisBrowser.data ? 'Turn off' : 'Turn on'}
+              </Button>
             )}
-          </div>
-          {toggleBrowser.isError && (
-            <p className="form-error" role="alert">
-              {errorMessage(toggleBrowser.error)}
-            </p>
-          )}
+          </SettingRow>
 
           {settings.data.deviceCount > 0 && (
-            <p className="push-device__status">
-              <button
-                type="button"
-                className="button button--quiet"
-                disabled={sendTest.isPending}
-                onClick={() => sendTest.mutate()}
-              >
+            <SettingRow
+              title="Test"
+              description={
+                sendTest.isSuccess ? (
+                  'Sent to all your devices. It arrives within a few seconds.'
+                ) : sendTest.isError ? (
+                  <span className="form-error">{errorMessage(sendTest.error)}</span>
+                ) : (
+                  'Check that alerts reach your devices.'
+                )
+              }
+            >
+              <Button disabled={sendTest.isPending} onClick={() => sendTest.mutate()}>
                 Send a test alert
-              </button>{' '}
-              {sendTest.isSuccess && <span className="field-hint">Sent to all your devices. It arrives within a few seconds.</span>}
-              {sendTest.isError && <span className="form-error">{errorMessage(sendTest.error)}</span>}
-            </p>
+              </Button>
+            </SettingRow>
           )}
 
-          <fieldset className="push-topics">
-            <legend className="field__label">Send me alerts for</legend>
-            {settings.data.topics.map(({ topic, enabled }) => (
-              <label key={topic} className="push-topic">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  disabled={saveTopic.isPending}
-                  onChange={(event) => saveTopic.mutate({ topic, enabled: event.target.checked })}
-                />
-                <span>
-                  <span className="push-topic__label">{TOPIC_TEXT[topic].label}</span>
-                  <span className="field-hint">{TOPIC_TEXT[topic].hint}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
+          {settings.data.topics.map(({ topic, enabled }) => (
+            <SettingRow key={topic} title={TOPIC_TEXT[topic].label} description={TOPIC_TEXT[topic].hint}>
+              <input
+                type="checkbox"
+                role="switch"
+                className="switch"
+                aria-label={`Alerts for ${TOPIC_TEXT[topic].label.toLowerCase()}`}
+                checked={enabled}
+                disabled={saveTopic.isPending}
+                onChange={(event) => saveTopic.mutate({ topic, enabled: event.target.checked })}
+              />
+            </SettingRow>
+          ))}
           {saveTopic.isError && (
             <p className="form-error" role="alert">
               {errorMessage(saveTopic.error)}
             </p>
           )}
-        </div>
+        </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -110,8 +112,8 @@ function BrowserStatus({ settings, isOn }: { settings: PushSettings; isOn: boole
   else if (isOn) text = 'On for this computer, even when the dashboard is closed.';
   else text = 'Off for this computer.';
   return (
-    <p className="push-device__status">
-      {text} <span className="field-hint">{devices}</span>
-    </p>
+    <>
+      {text} {devices}
+    </>
   );
 }

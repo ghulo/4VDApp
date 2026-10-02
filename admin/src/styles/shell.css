@@ -219,6 +219,7 @@
   color: var(--ink-muted);
   font: inherit;
   font-size: var(--text-sm);
+  text-align: left;
   cursor: pointer;
 }
 
@@ -276,7 +277,24 @@
 
 .main {
   grid-area: main;
+  position: relative;
+  isolation: isolate;
   min-width: 0;
+}
+
+/* The halftone dots fill the gutters either side of the frame. They sit on a
+   fixed, screen-sized layer so only one screen of dots is ever painted. */
+.main::before {
+  content: '';
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  left: var(--sidebar-w);
+  z-index: -1;
+  background-image: var(--dots-image);
+  background-size: 8px 8px;
+  pointer-events: none;
 }
 
 .main__frame {
@@ -392,6 +410,10 @@
 
   .main__frame {
     padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+
+  .main::before {
+    left: 0;
   }
 }
 

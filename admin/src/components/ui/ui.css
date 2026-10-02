@@ -602,3 +602,80 @@
   width: 140px;
   margin-bottom: var(--space-2);
 }
+
+/* ---------- Switch (a checkbox with role="switch") ---------- */
+
+input.switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line-strong);
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+input.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.12s;
+}
+
+input.switch:checked {
+  background: var(--brand);
+}
+
+input.switch:checked::after {
+  transform: translateX(16px);
+}
+
+input.switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input.switch:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* A short number input with its unit beside it: "€ [ 50 ]", "[ 14 ] days". */
+.unit-input {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.unit-input input {
+  width: 96px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.setting-select {
+  width: auto;
+  min-width: 110px;
+}
+
+/* A setting row holding a stack of labelled fields instead of one control. */
+.setting-row--fields {
+  display: block;
+}
+
+.setting-row--fields .field:last-child,
+.setting-row--fields .field-row:last-child .field {
+  margin-bottom: 0;
+}
+.table__nowrap { white-space: nowrap; }

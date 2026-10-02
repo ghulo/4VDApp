@@ -5,6 +5,7 @@ import { categoriesApi, productsApi, promotionsApi } from '../services/api';
 import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatPromotionDay } from '../utils/format';
+import { Badge, Button, Card, PageHeader, type Tone } from '../components/ui';
 
 const STATUS_LABEL: Record<PromotionStatus, string> = {
   scheduled: 'Starts later',
@@ -13,11 +14,11 @@ const STATUS_LABEL: Record<PromotionStatus, string> = {
   ended: 'Ended early',
 };
 
-const STATUS_PILL: Record<PromotionStatus, string> = {
-  scheduled: 'status-pill status-pill--pending',
-  running: 'status-pill status-pill--approved',
-  finished: 'status-pill',
-  ended: 'status-pill',
+const STATUS_TONE: Record<PromotionStatus, Tone> = {
+  scheduled: 'info',
+  running: 'ok',
+  finished: 'neutral',
+  ended: 'neutral',
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -29,18 +30,14 @@ export function PromotionsPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Promotions</h1>
-        <p className="page-intro">
-          A discount for one product or a whole category. It applies by itself to every sale while it runs, and prices go
-          back when it ends. Discounts never stack, and bulk prices win when they're cheaper.
-        </p>
-      </header>
+      <PageHeader
+        title="Promotions"
+        description="A discount for one product or a whole category. It applies by itself to every sale while it runs, and prices go back when it ends. Discounts never stack, and bulk prices win when they're cheaper."
+      />
 
-      <section className="panel">
-        <h2 className="panel__title">New promotion</h2>
+      <Card title="New promotion">
         <PromotionForm />
-      </section>
+      </Card>
 
       {promotions.isPending && <Loading />}
       {promotions.isError && <ErrorNotice error={promotions.error} onRetry={() => promotions.refetch()} />}
@@ -48,7 +45,7 @@ export function PromotionsPage() {
         <EmptyState title="No promotions yet">Create one above, e.g. 15% off Lighting for a week.</EmptyState>
       )}
       {promotions.data && promotions.data.length > 0 && (
-        <section className="panel">
+        <Card title="All promotions" flush>
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -70,7 +67,7 @@ export function PromotionsPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       )}
     </>
   );
@@ -99,18 +96,13 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
         {formatPromotionDay(promotion.startsAt)} – {formatPromotionDay(promotion.endsAt, true)}
       </td>
       <td>
-        <span className={STATUS_PILL[promotion.status]}>{STATUS_LABEL[promotion.status]}</span>
+        <Badge tone={STATUS_TONE[promotion.status]}>{STATUS_LABEL[promotion.status]}</Badge>
       </td>
       <td>
         {isLive && (
-          <button
-            type="button"
-            className="button button--quiet button--danger-text"
-            disabled={end.isPending}
-            onClick={() => end.mutate()}
-          >
+          <Button variant="danger-text" disabled={end.isPending} onClick={() => end.mutate()}>
             {promotion.status === 'scheduled' ? 'Cancel' : 'End now'}
-          </button>
+          </Button>
         )}
         {end.isError && (
           <p className="form-error" role="alert">
@@ -224,9 +216,9 @@ function PromotionForm() {
           {errorMessage(create.error)}
         </p>
       )}
-      <button type="submit" className="button button--primary" disabled={!isValid || create.isPending}>
+      <Button type="submit" disabled={!isValid || create.isPending} variant="primary">
         {create.isPending ? 'Saving…' : 'Start promotion'}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,9 +1,11 @@
 /* Cloudflare-style decoration: dashed frame rails, halftone dot fields and
    corner brackets. Purely visual; nothing here carries meaning. */
 
-/* A dot grid, used in the side gutters and behind sign-in drawings. */
+/* A dot grid, used in the side gutters and behind sign-in drawings. A tiny
+   repeated SVG (set per theme in tokens.css) is much cheaper to paint than a
+   CSS gradient over a tall page. */
 .halftone-field {
-  background-image: radial-gradient(circle at center, var(--dots) 1px, transparent 1.4px);
+  background-image: var(--dots-image);
   background-size: 8px 8px;
 }
 

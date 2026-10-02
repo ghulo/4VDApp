@@ -3,6 +3,8 @@ import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { assistantApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
+import { Button, Card, PageHeader } from '../components/ui';
+import { Sparkle } from '@phosphor-icons/react';
 
 const EXAMPLES = [
   'What sold best last month?',
@@ -47,13 +49,10 @@ export function AskPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Ask</h1>
-        <p className="page-intro">
-          Ask about sales, stock, profit or the team in your own words. The answer comes from your shop's numbers. Staff names
-          are replaced before anything is sent to the AI service.
-        </p>
-      </header>
+      <PageHeader
+        title="Ask"
+        description="Ask about sales, stock, profit or the team in your own words. The answer comes from your shop's numbers. Staff names are replaced before anything is sent to the AI service."
+      />
 
       {status.isPending && <Loading />}
       {status.isError && <ErrorNotice error={status.error} onRetry={() => status.refetch()} />}
@@ -67,7 +66,7 @@ export function AskPage() {
       )}
 
       {status.data?.enabled && (
-        <section className="panel">
+        <Card>
           <form className="ask-form" onSubmit={handleSubmit}>
             <label className="field">
               <span className="field__label">Your question</span>
@@ -87,9 +86,9 @@ export function AskPage() {
               />
             </label>
             <div className="ask-form__actions">
-              <button type="submit" className="button button--primary" disabled={question.trim().length < 3 || ask.isPending}>
+              <Button type="submit" variant="primary" icon={Sparkle} disabled={question.trim().length < 3 || ask.isPending}>
                 {ask.isPending ? 'Thinking…' : 'Ask'}
-              </button>
+              </Button>
               <span className="field-hint">Answered by {status.data.provider}. It can make mistakes, so check anything important.</span>
             </div>
             <div className="ask-examples" aria-label="Example questions">
@@ -105,14 +104,14 @@ export function AskPage() {
               </p>
             )}
           </form>
-        </section>
+        </Card>
       )}
 
       {history.length > 0 && (
-        <section className="panel" aria-label="Answers" aria-live="polite">
+        <section aria-label="Answers" aria-live="polite">
           <ol className="ask-history">
             {history.map((exchange) => (
-              <li key={exchange.id}>
+              <li key={exchange.id} className="brackets">
                 <p className="ask-history__question">{exchange.question}</p>
                 <p className="ask-history__answer">{exchange.answer}</p>
               </li>

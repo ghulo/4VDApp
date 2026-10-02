@@ -4,6 +4,7 @@ import { writeOffsApi } from '../services/api';
 import { WRITE_OFF_REASONS, type WriteOffReason } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
+import { Button } from './ui';
 
 const REASON_LABEL: Record<WriteOffReason, string> = {
   damaged: 'Damaged',
@@ -83,9 +84,9 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
           {savedMessage}
         </p>
       )}
-      <button type="submit" className="button button--danger" disabled={!isValid || mutation.isPending}>
+      <Button type="submit" disabled={!isValid || mutation.isPending} variant="danger">
         {mutation.isPending ? 'Writing off…' : 'Write off'}
-      </button>
+      </Button>
     </form>
   );
 }

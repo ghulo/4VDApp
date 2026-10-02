@@ -4,6 +4,7 @@ import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
+import { Badge, Button, Card, Field, PageHeader, SettingRow } from '../components/ui';
 import { meApi } from '../services/api';
 import type { Session, User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
@@ -13,18 +14,19 @@ import { formatDateTime, ROLE_LABEL } from '../utils/format';
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
+/** A save result for a card's footer strip. */
 function Result({ error, success }: { error: unknown; success: string | null }) {
   if (error) {
     return (
-      <p className="form-error" role="alert">
+      <span className="form-error" role="alert">
         {errorMessage(error)}
-      </p>
+      </span>
     );
   }
   return success ? (
-    <p className="form-success" role="status">
+    <span className="form-success" role="status">
       {success}
-    </p>
+    </span>
   ) : null;
 }
 
@@ -33,18 +35,16 @@ export function ProfilePage() {
   const user = useCurrentUser();
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Your profile</h1>
-        <p className="page-intro">
-          {ROLE_LABEL[user.role]} at the shop. What you change here is only about you.
-        </p>
-      </header>
+      <PageHeader
+        title="Your profile"
+        description={`${ROLE_LABEL[user.role]} at the shop. What you change here is only about you.`}
+      />
       <DetailsPanel user={user} />
-      <section className="panel">
-        <h2 className="panel__title">Look</h2>
-        <p className="field-hint">Auto follows your computer's light or dark setting.</p>
-        <ThemeSwitch persist />
-      </section>
+      <Card title="Look">
+        <SettingRow title="Theme" description="Auto follows your computer's light or dark setting.">
+          <ThemeSwitch persist />
+        </SettingRow>
+      </Card>
       <PushSettingsPanel />
       {user.role === 'admin' && <EmailsPanel user={user} />}
       <SecurityPanel user={user} />
@@ -84,52 +84,57 @@ function DetailsPanel({ user }: { user: User }) {
     save.mutate();
   }
 
-  return (
-    <section className="panel">
-      <h2 className="panel__title">You</h2>
-      <div className="profile-photo">
-        <Avatar name={user.name} url={user.avatarUrl} size={72} />
-        <div className="profile-photo__actions">
-          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickPhoto} />
-          <button
-            type="button"
-            className="button button--quiet"
-            disabled={upload.isPending}
-            onClick={() => fileInput.current?.click()}
-          >
-            {upload.isPending ? 'Uploading…' : user.avatarUrl ? 'Change photo' : 'Add a photo'}
-          </button>
-          {user.avatarUrl && (
-            <button type="button" className="button button--quiet button--danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
-      {photoError && (
-        <p className="form-error" role="alert">
-          {photoError}
-        </p>
-      )}
-      <Result error={upload.error ?? remove.error} success={null} />
+  const photoProblem = photoError ?? (upload.error || remove.error ? errorMessage(upload.error ?? remove.error) : null);
 
-      <form className="settings-form" onSubmit={handleSubmit}>
-        <div className="field-row">
-          <label className="field">
-            <span className="field__label">Name</span>
-            <input required maxLength={255} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label className="field">
-            <span className="field__label">Phone (optional)</span>
-            <input type="tel" maxLength={50} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
-          </label>
+  return (
+    <form onSubmit={handleSubmit}>
+      <Card
+        title="You"
+        description="Your team sees your name and photo."
+        footer={
+          <>
+            <Result error={save.error} success={save.isSuccess ? 'Saved.' : null} />
+            <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
+              {save.isPending ? 'Saving…' : 'Save'}
+            </Button>
+          </>
+        }
+      >
+        <SettingRow
+          title="Photo"
+          description={
+            photoProblem ? (
+              <span className="form-error" role="alert">
+                {photoProblem}
+              </span>
+            ) : (
+              'A JPG, PNG or WebP under 5 MB.'
+            )
+          }
+        >
+          <Avatar name={user.name} url={user.avatarUrl} size={48} />
+          <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickPhoto} />
+          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
+            {upload.isPending ? 'Uploading…' : user.avatarUrl ? 'Change' : 'Add a photo'}
+          </Button>
+          {user.avatarUrl && (
+            <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
+              Remove
+            </Button>
+          )}
+        </SettingRow>
+        <div className="setting-row setting-row--fields">
+          <div className="field-row">
+            <Field label="Name">
+              <input required maxLength={255} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
+            </Field>
+            <Field label="Phone (optional)">
+              <input type="tel" maxLength={50} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+            </Field>
+          </div>
         </div>
-        <Result error={save.error} success={save.isSuccess ? 'Saved.' : null} />
-        <button type="submit" className="button button--primary" disabled={!name.trim() || save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save'}
-        </button>
-      </form>
-    </section>
+      </Card>
+    </form>
   );
 }
 
@@ -140,22 +145,28 @@ function EmailsPanel({ user }: { user: User }) {
     onSuccess: updateUser,
   });
   return (
-    <section className="panel">
-      <h2 className="panel__title">Emails</h2>
-      <label className="push-topic">
+    <Card title="Emails">
+      <SettingRow
+        title="Weekly report"
+        description={
+          toggle.isError ? (
+            <Result error={toggle.error} success={null} />
+          ) : (
+            "Every Monday evening: last week's sales, best sellers and anything that needs you."
+          )
+        }
+      >
         <input
           type="checkbox"
+          role="switch"
+          className="switch"
+          aria-label="Weekly report email"
           checked={user.emailWeeklyReport}
           disabled={toggle.isPending}
           onChange={(event) => toggle.mutate(event.target.checked)}
         />
-        <span>
-          <span className="push-topic__label">Weekly report</span>
-          <span className="field-hint">Every Monday evening: last week's sales, best sellers and anything that needs you.</span>
-        </span>
-      </label>
-      <Result error={toggle.error} success={null} />
-    </section>
+      </SettingRow>
+    </Card>
   );
 }
 
@@ -187,29 +198,42 @@ function SecurityPanel({ user }: { user: User }) {
     onSuccess: (data) => queryClient.setQueryData(['me', 'security'], data),
   });
 
+  if (security.isPending) return <Loading />;
+  if (security.isError) return <ErrorNotice error={security.error} onRetry={() => security.refetch()} />;
+  const { hasPassword, googleEmail } = security.data;
+
   return (
-    <section className="panel">
-      <h2 className="panel__title">Logging in</h2>
-      {security.isPending && <Loading />}
-      {security.isError && <ErrorNotice error={security.error} onRetry={() => security.refetch()} />}
-      {security.data && (
-        <div className="security">
-          <form
-            className="settings-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              changePassword.mutate();
-            }}
-          >
-            <h3 className="subheading">{security.data.hasPassword ? 'Change your password' : 'Set a password'}</h3>
-            {security.data.hasPassword && (
-              <label className="field">
-                <span className="field__label">Current password</span>
-                <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
-              </label>
+    <>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          changePassword.mutate();
+        }}
+      >
+        <Card
+          title={hasPassword ? 'Password' : 'Set a password'}
+          description={`At least ${MIN_PASSWORD_LENGTH} characters. Your other devices will be logged out.`}
+          footer={
+            <>
+              <Result error={changePassword.error} success={changePassword.isSuccess ? 'Password changed.' : null} />
+              <Button type="submit" variant="primary" disabled={newPassword.length < MIN_PASSWORD_LENGTH || changePassword.isPending}>
+                {hasPassword ? 'Change password' : 'Set password'}
+              </Button>
+            </>
+          }
+        >
+          <div className="field-row">
+            {hasPassword && (
+              <Field label="Current password">
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
+              </Field>
             )}
-            <label className="field">
-              <span className="field__label">New password</span>
+            <Field label="New password">
               <input
                 type="password"
                 autoComplete="new-password"
@@ -217,70 +241,77 @@ function SecurityPanel({ user }: { user: User }) {
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
-              <span className="field-hint">At least {MIN_PASSWORD_LENGTH} characters. Your other devices will be logged out.</span>
-            </label>
-            <Result error={changePassword.error} success={changePassword.isSuccess ? 'Password changed.' : null} />
-            <button
-              type="submit"
-              className="button button--primary"
-              disabled={newPassword.length < MIN_PASSWORD_LENGTH || changePassword.isPending}
-            >
-              {security.data.hasPassword ? 'Change password' : 'Set password'}
-            </button>
-          </form>
+            </Field>
+          </div>
+        </Card>
+      </form>
 
-          <form
-            className="settings-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              changeEmail.mutate();
-            }}
-          >
-            <h3 className="subheading">Your email</h3>
-            <p className="field-hint">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          changeEmail.mutate();
+        }}
+      >
+        <Card
+          title="Email"
+          description={
+            <>
               You log in with <strong>{user.email}</strong>. A new address has to be confirmed before it's used.
-            </p>
-            <label className="field">
-              <span className="field__label">New email</span>
+            </>
+          }
+          footer={
+            <>
+              <Result
+                error={changeEmail.error}
+                success={changeEmail.isSuccess ? `We sent a link to ${newEmail.trim()}. Click it to switch.` : null}
+              />
+              <Button type="submit" disabled={!newEmail.trim() || changeEmail.isPending}>
+                Send confirmation link
+              </Button>
+            </>
+          }
+        >
+          <div className="field-row">
+            <Field label="New email">
               <input type="email" autoComplete="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} />
-            </label>
-            {security.data.hasPassword && (
-              <label className="field">
-                <span className="field__label">Your password</span>
-                <input type="password" autoComplete="current-password" value={emailPassword} onChange={(event) => setEmailPassword(event.target.value)} />
-              </label>
-            )}
-            <Result
-              error={changeEmail.error}
-              success={changeEmail.isSuccess ? `We sent a link to ${newEmail.trim()}. Click it to switch.` : null}
-            />
-            <button type="submit" className="button button--quiet" disabled={!newEmail.trim() || changeEmail.isPending}>
-              Send confirmation link
-            </button>
-          </form>
-
-          <div className="settings-form">
-            <h3 className="subheading">Google</h3>
-            {security.data.googleEmail ? (
-              <>
-                <p className="field-hint">
-                  You can log in with Google as <strong>{security.data.googleEmail}</strong>.
-                </p>
-                <Result error={unlink.error} success={null} />
-                <button type="button" className="button button--quiet button--danger-text" disabled={unlink.isPending} onClick={() => unlink.mutate()}>
-                  Stop using Google to log in
-                </button>
-              </>
-            ) : (
-              <p className="field-hint">
-                Not linked. Use "Sign in with Google" on the login page once, with a Google account that has this email, and it links by
-                itself.
-              </p>
+            </Field>
+            {hasPassword && (
+              <Field label="Your password">
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={emailPassword}
+                  onChange={(event) => setEmailPassword(event.target.value)}
+                />
+              </Field>
             )}
           </div>
-        </div>
-      )}
-    </section>
+        </Card>
+      </form>
+
+      <Card title="Google">
+        <SettingRow
+          title={googleEmail ? 'Linked' : 'Not linked'}
+          description={
+            unlink.isError ? (
+              <Result error={unlink.error} success={null} />
+            ) : googleEmail ? (
+              <>
+                You can log in with Google as <strong>{googleEmail}</strong>.
+              </>
+            ) : (
+              'Use "Sign in with Google" on the login page once, with a Google account that has this email, and it links by itself.'
+            )
+          }
+        >
+          {googleEmail && (
+            <Button variant="danger-text" disabled={unlink.isPending} onClick={() => unlink.mutate()}>
+              Stop using Google to log in
+            </Button>
+          )}
+        </SettingRow>
+      </Card>
+    </>
   );
 }
 
@@ -293,18 +324,23 @@ function DevicesPanel() {
   const others = sessions.data?.filter((session) => !session.current).length ?? 0;
 
   return (
-    <section className="panel">
-      <div className="panel__header">
-        <h2 className="panel__title">Where you're logged in</h2>
-        {others > 0 && (
-          <button type="button" className="button button--quiet" disabled={endOthers.isPending} onClick={() => endOthers.mutate()}>
+    <Card
+      title="Where you're logged in"
+      actions={
+        others > 0 && (
+          <Button size="sm" disabled={endOthers.isPending} onClick={() => endOthers.mutate()}>
             Log out everywhere else
-          </button>
-        )}
-      </div>
+          </Button>
+        )
+      }
+    >
       {sessions.isPending && <Loading />}
       {sessions.isError && <ErrorNotice error={sessions.error} onRetry={() => sessions.refetch()} />}
-      <Result error={endOne.error ?? endOthers.error} success={null} />
+      {(endOne.isError || endOthers.isError) && (
+        <p>
+          <Result error={endOne.error ?? endOthers.error} success={null} />
+        </p>
+      )}
       {sessions.data && (
         <ul className="device-list">
           {sessions.data.map((session) => (
@@ -312,7 +348,7 @@ function DevicesPanel() {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -320,19 +356,19 @@ function DeviceRow({ session, onEnd, busy }: { session: Session; onEnd: () => vo
   return (
     <li className="device-list__row">
       <span>
-        <span className="device-list__name">{session.device}</span>
-        <span className="device-list__meta">
-          {session.current
-            ? 'This device'
-            : session.lastUsedAt
-              ? `Last used ${formatDateTime(session.lastUsedAt)}`
-              : 'Logged in before 4VD tracked devices'}
+        <span className="device-list__name">
+          {session.device} {session.current && <Badge tone="ok">This device</Badge>}
         </span>
+        {!session.current && (
+          <span className="device-list__meta">
+            {session.lastUsedAt ? `Last used ${formatDateTime(session.lastUsedAt)}` : 'Logged in before 4VD tracked devices'}
+          </span>
+        )}
       </span>
       {!session.current && (
-        <button type="button" className="button button--quiet" disabled={busy} onClick={onEnd}>
+        <Button size="sm" disabled={busy} onClick={onEnd}>
           Log out
-        </button>
+        </Button>
       )}
     </li>
   );

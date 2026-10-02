@@ -1,3 +1,4 @@
+import { Package, Receipt, SealCheck, TrendUp } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -9,6 +10,7 @@ import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
+import { Card, Halftone, PageHeader, StatGrid, StatTile } from '../components/ui';
 
 const PERIOD_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -26,52 +28,52 @@ export function OverviewPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Hi {firstName}</h1>
-        <p className="page-intro">
-          {lowCount === undefined
+      <PageHeader
+        title={`Hi ${firstName}`}
+        description={
+          lowCount === undefined
             ? 'Checking stock levels…'
             : lowCount === 0
               ? 'Every product is above its reorder level.'
-              : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`}
-        </p>
-      </header>
+              : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`
+        }
+      />
 
       <SetupGuide />
 
       <TodayBoard lowCount={lowCount} />
 
-      <AttentionPanel />
+      <div className="split">
+        <AttentionPanel />
 
-      <section className="panel" aria-labelledby="restock-heading">
-        <div className="panel__header">
-          <h2 id="restock-heading" className="panel__title">
-            Needs restocking
-          </h2>
-          <Link to="/inventory?lowStock=true" className="text-link">
-            See all stock
-          </Link>
-        </div>
-
-        {lowStock.isPending && <Loading />}
-        {lowStock.isError && <ErrorNotice error={lowStock.error} onRetry={() => lowStock.refetch()} />}
-        {lowStock.data && lowStock.data.items.length === 0 && (
-          <EmptyState title="Nothing to restock">Every product has more than its reorder level.</EmptyState>
-        )}
-        {lowStock.data && lowStock.data.items.length > 0 && (
-          <ul className="restock-list">
-            {lowStock.data.items.map((item) => (
-              <li key={item.productId}>
-                <Link to={`/inventory/${item.productId}`} className="restock-list__row">
-                  <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
-                  <span className="restock-list__name">{item.productName}</span>
-                  <span className="restock-list__meta">Reorder at {item.reorderLevel}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <Card
+          title="Needs restocking"
+          actions={
+            <Link to="/inventory?lowStock=true" className="text-link">
+              See all stock
+            </Link>
+          }
+        >
+          {lowStock.isPending && <Loading />}
+          {lowStock.isError && <ErrorNotice error={lowStock.error} onRetry={() => lowStock.refetch()} />}
+          {lowStock.data && lowStock.data.items.length === 0 && (
+            <EmptyState title="Nothing to restock">Every product has more than its reorder level.</EmptyState>
+          )}
+          {lowStock.data && lowStock.data.items.length > 0 && (
+            <ul className="restock-list">
+              {lowStock.data.items.map((item) => (
+                <li key={item.productId}>
+                  <Link to={`/inventory/${item.productId}`} className="restock-list__row">
+                    <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
+                    <span className="restock-list__name">{item.productName}</span>
+                    <span className="restock-list__meta">Reorder at {item.reorderLevel}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
 
       <SalesSummary />
     </>
@@ -105,41 +107,44 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   const waiting = approvals.data?.total ?? 0;
 
   return (
-    <section className="today-board" aria-label="Today so far">
-      <div className="today-board__main">
-        <p className="today-board__label">Sales today</p>
-        <p className="today-board__figure">{current ? formatMoney(current.revenue) : today.isError ? 'Not available' : '…'}</p>
-        {current && previous && (
-          <p className="today-board__compare">
-            {change === null
-              ? `Nothing sold by this time last ${weekday}.`
-              : `${change >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(change * 100))}% against last ${weekday}, which had ${formatMoney(previous.revenue)} by this time`}
+    <>
+      <section className="today-hero" aria-label="Today so far">
+        <div className="today-hero__text">
+          <p className="today-hero__label">Sales today</p>
+          <p className="today-hero__figure">
+            {current ? formatMoney(current.revenue) : today.isError ? 'Not available' : '…'}
           </p>
-        )}
-      </div>
-      <dl className="today-board__figures">
-        <div>
-          <dt>Sales</dt>
-          <dd>{current?.salesCount ?? '–'}</dd>
+          {current && previous && (
+            <p className="today-hero__compare">
+              {change === null
+                ? `Nothing sold by this time last ${weekday}.`
+                : `${change >= 0 ? 'Up' : 'Down'} ${Math.abs(Math.round(change * 100))}% on last ${weekday}, which had ${formatMoney(previous.revenue)} by this time.`}
+            </p>
+          )}
+          <div className="today-hero__tags">
+            <Link to="/approvals" className="today-tag">
+              <strong>{waiting}</strong> waiting for you
+            </Link>
+            <Link to="/inventory?lowStock=true" className="today-tag">
+              <strong>{lowCount ?? '–'}</strong> to restock
+            </Link>
+          </div>
         </div>
-        <div>
-          <dt>Profit</dt>
-          <dd>{current ? formatMoney(current.profit) : '–'}</dd>
-        </div>
-        <div>
-          <dt>Items sold</dt>
-          <dd>{current?.unitsSold ?? '–'}</dd>
-        </div>
-      </dl>
-      <div className="today-board__tags">
-        <Link to="/approvals" className={`today-tag${waiting > 0 ? ' today-tag--on' : ''}`}>
-          <span className="today-tag__count">{waiting}</span> waiting for you
-        </Link>
-        <Link to="/inventory?lowStock=true" className={`today-tag${lowCount ? ' today-tag--on' : ''}`}>
-          <span className="today-tag__count">{lowCount ?? '–'}</span> to restock
-        </Link>
-      </div>
-    </section>
+        <Halftone className="today-hero__art" />
+      </section>
+      <StatGrid>
+        <StatTile label="Sales" icon={Receipt} value={current?.salesCount ?? '–'} to="/sales" />
+        <StatTile label="Profit" icon={TrendUp} value={current ? formatMoney(current.profit) : '–'} />
+        <StatTile label="Items sold" icon={Package} value={current?.unitsSold ?? '–'} />
+        <StatTile
+          label="Waiting for you"
+          icon={SealCheck}
+          value={waiting}
+          tone={waiting > 0 ? 'warn' : 'default'}
+          to="/approvals"
+        />
+      </StatGrid>
+    </>
   );
 }
 
@@ -150,12 +155,7 @@ function AttentionPanel() {
   const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights });
 
   return (
-    <section className="panel" aria-labelledby="attention-heading">
-      <div className="panel__header">
-        <h2 id="attention-heading" className="panel__title">
-          Needs your attention
-        </h2>
-      </div>
+    <Card title="Needs your attention">
       {insights.isPending && <Loading />}
       {insights.isError && <ErrorNotice error={insights.error} onRetry={() => insights.refetch()} />}
       {insights.data && insights.data.length === 0 && (
@@ -176,7 +176,7 @@ function AttentionPanel() {
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -193,40 +193,25 @@ function SalesSummary() {
   });
 
   return (
-    <section className="panel" aria-labelledby="sales-heading">
-      <div className="panel__header">
-        <h2 id="sales-heading" className="panel__title">
-          Last {PERIOD_DAYS} days
-        </h2>
+    <Card
+      title={`Last ${PERIOD_DAYS} days`}
+      actions={
         <Link to="/sales" className="text-link">
           See all sales
         </Link>
-      </div>
+      }
+    >
 
       {dashboard.isPending && <Loading />}
       {dashboard.isError && <ErrorNotice error={dashboard.error} onRetry={() => dashboard.refetch()} />}
       {dashboard.data && (
         <>
-          <div className="summary">
-            <div className="summary__hero">
-              <span className="summary__hero-value">{formatMoney(dashboard.data.totalRevenue)}</span>
-              <span className="summary__label">in sales</span>
-            </div>
-            <dl className="summary__figures">
-              <div>
-                <dt>Profit</dt>
-                <dd>{formatMoney(dashboard.data.totalProfit)}</dd>
-              </div>
-              <div>
-                <dt>Units sold</dt>
-                <dd>{dashboard.data.unitsSold}</dd>
-              </div>
-              <div>
-                <dt>Stock on hand is worth</dt>
-                <dd>{formatMoney(dashboard.data.inventoryValue)}</dd>
-              </div>
-            </dl>
-          </div>
+          <StatGrid>
+            <StatTile label="In sales" value={formatMoney(dashboard.data.totalRevenue)} />
+            <StatTile label="Profit" value={formatMoney(dashboard.data.totalProfit)} />
+            <StatTile label="Units sold" value={dashboard.data.unitsSold} />
+            <StatTile label="Stock on hand is worth" value={formatMoney(dashboard.data.inventoryValue)} />
+          </StatGrid>
 
           {revenue.data && <RevenueChart points={revenue.data.points} title="Sales per day" />}
 
@@ -251,6 +236,6 @@ function SalesSummary() {
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }

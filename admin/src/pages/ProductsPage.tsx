@@ -1,11 +1,60 @@
+import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
-import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
 import { StockTag } from '../components/StockTag';
+import { ButtonLink, DataTable, EmptyState, PageHeader, type Column } from '../components/ui';
 import { categoriesApi, productsApi } from '../services/api';
+import type { Product } from '../services/types';
 import { formatMoney } from '../utils/format';
+
+const COLUMNS: Column<Product>[] = [
+  {
+    header: 'Product',
+    cell: (product) => (
+      <>
+        <Link to={`/products/${product.id}`} className="table__primary-link">
+          {product.name}
+        </Link>
+        <span className="table__secondary">
+          {product.sku ?? 'No SKU'}
+          {!product.isActive && ', hidden from the app'}
+        </span>
+      </>
+    ),
+  },
+  { header: 'Category', cell: (product) => product.category.name },
+  {
+    header: 'Price',
+    align: 'end',
+    cell: (product) => (
+      <>
+        {formatMoney(product.price)}
+        {product.promotion && (
+          <span className="table__secondary">
+            −{product.promotion.percentOff}% now {formatMoney(product.promotion.price)}
+          </span>
+        )}
+      </>
+    ),
+  },
+  {
+    header: 'Bulk prices',
+    align: 'end',
+    cell: (product) =>
+      product.bulkPricingTiers.length === 0 ? 'None' : `From ${formatMoney(product.bulkPricingTiers.at(-1)!.price)}`,
+  },
+  {
+    header: 'In stock',
+    cell: (product) => (
+      <Link to={`/inventory/${product.id}`} aria-label={`Stock for ${product.name}`}>
+        <StockTag quantity={product.stock.quantity} reorderLevel={product.stock.reorderLevel} />
+      </Link>
+    ),
+  },
+];
 
 export function ProductsPage() {
   const [params, setParams] = useSearchParams();
@@ -34,104 +83,73 @@ export function ProductsPage() {
 
   return (
     <>
-      <header className="page-header page-header--with-action">
-        <div>
-          <h1 className="page-title">Products</h1>
-          <p className="page-intro">Everything in the catalog, including products you've switched off.</p>
-        </div>
-        <Link to="/products/new" className="button button--primary">
-          Add product
-        </Link>
-      </header>
-
-      <div className="toolbar">
-        <SearchInput value={search} onChange={(value) => updateParams({ search: value })} label="Search by name or SKU" />
-        <select
-          aria-label="Category"
-          value={categoryId ?? ''}
-          onChange={(event) => updateParams({ categoryId: event.target.value || null })}
-        >
-          <option value="">All categories</option>
-          {categories.data?.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <PageHeader
+        title="Products"
+        description="Everything in the catalog, including products you've switched off."
+        actions={
+          <ButtonLink to="/products/new" variant="primary" icon={Plus}>
+            Add product
+          </ButtonLink>
+        }
+      />
 
       {products.isPending && <Loading />}
       {products.isError && <ErrorNotice error={products.error} onRetry={() => products.refetch()} />}
-      {products.data && products.data.items.length === 0 && (
-        <EmptyState title={isFiltered ? 'No products match' : 'No products yet'}>
-          {isFiltered ? (
-            'Try a different search or category.'
-          ) : (
-            <Link to="/products/new" className="button button--primary">
-              Add your first product
-            </Link>
-          )}
-        </EmptyState>
-      )}
-      {products.data && products.data.items.length > 0 && (
-        <>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Product</th>
-                  <th scope="col">Category</th>
-                  <th scope="col" className="table__numeric">
-                    Price
-                  </th>
-                  <th scope="col" className="table__numeric">
-                    Bulk prices
-                  </th>
-                  <th scope="col">In stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.data.items.map((product) => (
-                  <tr key={product.id} className={product.isActive ? undefined : 'table__row--muted'}>
-                    <td>
-                      <Link to={`/products/${product.id}`} className="table__primary-link">
-                        {product.name}
-                      </Link>
-                      <span className="table__secondary">
-                        {product.sku ?? 'No SKU'}
-                        {!product.isActive && ', hidden from the app'}
-                      </span>
-                    </td>
-                    <td>{product.category.name}</td>
-                    <td className="table__numeric">
-                      {formatMoney(product.price)}
-                      {product.promotion && (
-                        <span className="table__secondary">
-                          −{product.promotion.percentOff}% now {formatMoney(product.promotion.price)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="table__numeric">
-                      {product.bulkPricingTiers.length === 0
-                        ? 'None'
-                        : `From ${formatMoney(product.bulkPricingTiers.at(-1)!.price)}`}
-                    </td>
-                    <td>
-                      <Link to={`/inventory/${product.id}`} aria-label={`Stock for ${product.name}`}>
-                        <StockTag quantity={product.stock.quantity} reorderLevel={product.stock.reorderLevel} />
-                      </Link>
-                    </td>
-                  </tr>
+      {products.data && (
+        <DataTable
+          caption="Products"
+          columns={COLUMNS}
+          rows={products.data.items}
+          rowKey={(product) => product.id}
+          rowClassName={(product) => (product.isActive ? undefined : 'table__row--muted')}
+          toolbar={
+            <>
+              <SearchInput
+                value={search}
+                onChange={(value) => updateParams({ search: value })}
+                label="Search by name or SKU"
+              />
+              <select
+                aria-label="Category"
+                value={categoryId ?? ''}
+                onChange={(event) => updateParams({ categoryId: event.target.value || null })}
+              >
+                <option value="">All categories</option>
+                {categories.data?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <Pagination
-            meta={products.data.meta}
-            itemLabel="products"
-            onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
-          />
-        </>
+              </select>
+            </>
+          }
+          empty={
+            isFiltered ? (
+              <EmptyState title="No products match">Try a different search or category.</EmptyState>
+            ) : (
+              <EmptyState
+                art
+                title="No products yet"
+                action={
+                  <ButtonLink to="/products/new" variant="primary" icon={Plus}>
+                    Add your first product
+                  </ButtonLink>
+                }
+              >
+                Add what you sell, with its price and how many you have.
+              </EmptyState>
+            )
+          }
+          footer={
+            products.data.items.length > 0 && (
+              <Pagination
+                meta={products.data.meta}
+                itemLabel="products"
+                onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
+              />
+            )
+          }
+        />
       )}
     </>
   );

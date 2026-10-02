@@ -58,3 +58,7 @@ function isKnownTimeZone(timeZone: string): boolean {
 export const exportTimeZoneSchema = z.object({
   tz: z.string().max(64).refine(isKnownTimeZone, 'tz must be a timezone like Europe/Dublin').default('UTC'),
 });
+
+export const askAssistantSchema = z.object({
+  question: z.string().trim().min(3, 'ask a question').max(500, 'keep the question under 500 characters'),
+});

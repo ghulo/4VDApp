@@ -38,6 +38,13 @@ export class NotFoundError extends AppError {
   }
 }
 
+/** The AI service is switched off, over its free limit, or not answering. */
+export class AiUnavailableError extends AppError {
+  constructor(message: string) {
+    super(message, 503, 'AI_UNAVAILABLE');
+  }
+}
+
 export class ConflictError extends AppError {
   constructor(message: string) {
     super(message, 409, 'CONFLICT');

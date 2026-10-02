@@ -36,7 +36,22 @@ export function zonedHour(date: Date, timeZone: string): number {
 /** Midnight at the start of `date`'s day in `timeZone`, as a moment in time. */
 export function startOfZonedDay(date: Date, timeZone: string): Date {
   const { year, month, day } = parts(date, timeZone);
-  const midnightAsUtc = Date.UTC(Number(year), Number(month) - 1, Number(day));
+  return zonedMidnight(Number(year), Number(month), Number(day), timeZone);
+}
+
+/** The first moment of each of the last `count` calendar months in `timeZone`, oldest first, plus the start of next month. */
+export function zonedMonthStarts(date: Date, count: number, timeZone: string): Date[] {
+  const { year, month } = parts(date, timeZone);
+  return Array.from({ length: count + 1 }, (_, index) => {
+    // Date.UTC rolls month -2 or 13 over into the right year for us.
+    const shifted = new Date(Date.UTC(Number(year), Number(month) - count + index, 1));
+    return zonedMidnight(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, 1, timeZone);
+  });
+}
+
+/** Midnight at the start of year-month-day (month 1–12) in `timeZone`. */
+function zonedMidnight(year: number, month: number, day: number, timeZone: string): Date {
+  const midnightAsUtc = Date.UTC(year, month - 1, day);
   // How far the zone is ahead of UTC around then (DST changes happen at night, not midnight).
   const zoned = parts(new Date(midnightAsUtc), timeZone);
   const zonedAsUtc = Date.UTC(Number(zoned.year), Number(zoned.month) - 1, Number(zoned.day), Number(zoned.hour), Number(zoned.minute));

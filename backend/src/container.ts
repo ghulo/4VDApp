@@ -31,6 +31,8 @@ import { PromotionService } from './services/PromotionService.js';
 import { PushRepository } from './repositories/PushRepository.js';
 import { InsightsRepository } from './repositories/InsightsRepository.js';
 import { InsightsService } from './services/InsightsService.js';
+import { AssistantService } from './services/AssistantService.js';
+import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
@@ -55,6 +57,8 @@ import { ProductService } from './services/ProductService.js';
 export interface ContainerOptions {
   /** Tests pass fakes so nothing is sent to Expo or browsers. */
   pushSenders?: PushSenders;
+  /** Tests pass a fake so nothing is sent to an AI service. Null switches the AI helpers off. */
+  aiProvider?: AiProvider | null;
 }
 
 export function createContainer(config: AppConfig, db: DatabaseClient, options: ContainerOptions = {}) {
@@ -117,6 +121,20 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     notificationRepository,
     config.shopTimeZone,
   );
+  const aiProvider =
+    options.aiProvider !== undefined
+      ? options.aiProvider
+      : config.ai
+        ? new GeminiProvider(config.ai.apiKey, config.ai.model)
+        : null;
+  const assistantService = new AssistantService(
+    aiProvider,
+    reportsRepository,
+    reportsService,
+    insightsService,
+    promotionService,
+    config.shopTimeZone,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -162,6 +180,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     pushService,
     insightsService,
     dailySummaryService,
+    assistantService,
     guards,
   };
 }

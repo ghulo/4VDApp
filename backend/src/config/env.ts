@@ -21,6 +21,9 @@ const envSchema = z.object({
         return false;
       }
     }, 'must be a time zone like Europe/Budapest'),
+  /** Google Gemini, for the AI helpers. Without a key they're switched off. */
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
@@ -36,6 +39,8 @@ export interface AppConfig {
   corsOrigins: string[];
   sentryDsn?: string;
   shopTimeZone: string;
+  /** Null when no AI key is set, which switches the AI helpers off. */
+  ai?: { provider: 'gemini'; apiKey: string; model: string };
   /** Web push is switched off unless all three are set. */
   webPush?: { publicKey: string; privateKey: string; subject: string };
 }
@@ -68,6 +73,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .filter((origin) => origin.length > 0),
     sentryDsn: env.SENTRY_DSN || undefined,
     shopTimeZone: env.SHOP_TIME_ZONE,
+    ai: env.GEMINI_API_KEY ? { provider: 'gemini', apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL } : undefined,
     webPush:
       env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
         ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }

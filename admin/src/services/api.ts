@@ -198,6 +198,12 @@ export const notificationsApi = {
   },
 };
 
+export const assistantApi = {
+  status: async () => (await apiRequest<{ enabled: boolean; provider: string | null }>('/assistant')).data,
+  ask: async (question: string) =>
+    (await apiRequest<{ answer: string }>('/assistant/ask', { method: 'POST', body: { question } })).data,
+};
+
 export const pushApi = {
   settings: async () => (await apiRequest<PushSettings>('/notifications/push')).data,
   updatePreferences: async (changes: Partial<Record<PushTopic, boolean>>) =>

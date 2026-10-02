@@ -351,6 +351,17 @@ When something starts waiting, every admin gets a notification. When it is decid
 
 ---
 
+## Assistant (admin)
+
+Questions in plain words, answered by an AI service (Google Gemini, set with `GEMINI_API_KEY` and `GEMINI_MODEL`) from a summary of the shop's own numbers: monthly totals for 12 months, sales per product over 30 and 90 days, stock with forecasts, the team this month and last, warnings, and running promotions. Staff names are swapped for "Person 1", "Person 2" before sending and put back in the answer. The AI service is behind one small interface (`backend/src/services/ai/aiProvider.ts`), so another provider can replace it.
+
+| Method & path | Body / returns |
+|---|---|
+| `GET /assistant` | `{ enabled, provider }` |
+| `POST /assistant/ask` | `{ question }` (3–500 characters) → `{ answer }`. 20 questions per person per 15 minutes. `503` with a readable message when it's switched off, over the free limit, or not answering |
+
+---
+
 ## Exports (admin)
 
 CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The filename is in the `Content-Disposition` header. Pass `tz` (an IANA timezone such as `Europe/Dublin`, default `UTC`) so the filename and the Date column (`2026-09-01 00:30`) use local dates.

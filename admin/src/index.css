@@ -1442,3 +1442,71 @@ textarea:focus-visible {
   font-size: 0.875rem;
   font-weight: 400;
 }
+
+/* ---------- Ask ---------- */
+
+.ask-form {
+  display: grid;
+  gap: 12px;
+}
+
+.ask-form textarea {
+  resize: vertical;
+  font: inherit;
+}
+
+.ask-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ask-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ask-example {
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.ask-example:hover:not(:disabled) {
+  background: var(--concrete);
+}
+
+.ask-example:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ask-history {
+  display: grid;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ask-history li + li {
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.ask-history__question {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.ask-history__answer {
+  margin: 0;
+  white-space: pre-line;
+}

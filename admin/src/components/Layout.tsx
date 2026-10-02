@@ -5,6 +5,7 @@ import { approvalsApi, notificationsApi } from '../services/api';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', end: true },
+  { to: '/ask', label: 'Ask' },
   { to: '/inventory', label: 'Stock' },
   { to: '/counts', label: 'Counts' },
   { to: '/sales', label: 'Sales' },

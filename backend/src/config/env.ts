@@ -23,7 +23,7 @@ const envSchema = z.object({
     }, 'must be a time zone like Europe/Budapest'),
   /** Claude (Anthropic), for the AI helpers. Used first when set. */
   ANTHROPIC_API_KEY: z.string().optional(),
-  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
+  ANTHROPIC_MODEL: z.string().default('claude-sonnet-5-5'),
   /** Only for keys made outside a workspace: which workspace to bill. */
   ANTHROPIC_WORKSPACE_ID: z.string().optional(),
   /** Google Gemini, used when there's no Anthropic key. Without either, the AI helpers are off. */

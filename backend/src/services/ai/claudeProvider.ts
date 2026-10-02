@@ -11,6 +11,7 @@ const TIMEOUT_MS = 60_000;
 export class ClaudeProvider implements AiProvider {
   readonly name: string;
   private readonly client: Anthropic;
+  private readonly isHaiku: boolean;
 
   constructor(
     apiKey: string,
@@ -18,6 +19,7 @@ export class ClaudeProvider implements AiProvider {
     options: { workspaceId?: string; client?: Anthropic } = {},
   ) {
     this.name = `Anthropic ${model}`;
+    this.isHaiku = model.startsWith('claude-haiku');
     this.client =
       options.client ??
       new Anthropic({
@@ -34,11 +36,14 @@ export class ClaudeProvider implements AiProvider {
       response = await this.client.beta.messages.create({
         model: this.model,
         max_tokens: MAX_ANSWER_TOKENS,
-        // If a safety check declines, the API retries on a suitable model instead of failing.
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        // Short answers from data in front of it: low effort is plenty and keeps the cost down.
-        output_config: { effort: 'low' },
+        // Haiku 4.5 accepts neither setting, so it gets a plain request.
+        ...(!this.isHaiku && {
+          // If a safety check declines, the API retries on a suitable model instead of failing.
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default' as const,
+          // Short answers from data in front of it: low effort is plenty and keeps the cost down.
+          output_config: { effort: 'low' as const },
+        }),
         system: instructions,
         messages: [{ role: 'user', content: request }],
       });

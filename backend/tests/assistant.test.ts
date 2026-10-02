@@ -142,6 +142,15 @@ describe('ClaudeProvider', () => {
     expect(seen[0]).toMatchObject({ model: 'claude-opus-5-5', system: 'Be brief', fallbacks: 'default', messages: [{ role: 'user', content: 'Sales?' }] });
   });
 
+  it('should send Haiku a plain request, without effort or fallbacks', async () => {
+    const { client, seen } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Fine.' }] });
+
+    await new ClaudeProvider('key', 'claude-haiku-4-5', { client }).generate({ instructions: '', request: 'Hi' });
+
+    expect(seen[0]).not.toHaveProperty('output_config');
+    expect(seen[0]).not.toHaveProperty('fallbacks');
+  });
+
   it('should turn a refusal into a readable message', async () => {
     const { client } = fakeClient({ stop_reason: 'refusal', stop_details: { category: null }, content: [] });
 

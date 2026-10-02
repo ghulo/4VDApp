@@ -55,11 +55,20 @@ export class GeminiProvider implements AiProvider {
       throw new AiUnavailableError("The AI service's free limit is used up for now. Try again later.");
     }
     if (!response.ok) {
-      logger.warn('Gemini refused the request', { status: response.status, body: (await response.text()).slice(0, 500) });
+      const body = await response.text();
+      logger.warn('Gemini refused the request', { status: response.status, body: body.slice(0, 500) });
+      if (response.status !== 400 && response.status !== 403) {
+        throw new AiUnavailableError('The AI service had a problem. Try again in a minute.');
+      }
+      // Google's own reason is the useful part, e.g. "free tier is not available in your country".
+      let reason: string | undefined;
+      try {
+        reason = (JSON.parse(body) as { error?: { message?: string } }).error?.message;
+      } catch {
+        // Not JSON; fall back to the general message.
+      }
       throw new AiUnavailableError(
-        response.status === 400 || response.status === 403
-          ? 'The AI service refused the request. Check GEMINI_API_KEY and GEMINI_MODEL in the server settings.'
-          : 'The AI service had a problem. Try again in a minute.',
+        reason ? `The AI service refused the request: ${reason}` : 'The AI service refused the request. Check GEMINI_API_KEY and GEMINI_MODEL in the server settings.',
       );
     }
 

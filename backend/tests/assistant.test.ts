@@ -107,6 +107,15 @@ describe('GeminiProvider', () => {
     expect((seen!.init.headers as Record<string, string>)['x-goog-api-key']).toBe('secret-key');
   });
 
+  it('should pass on Google’s reason for refusing', async () => {
+    const refused = (async () =>
+      new Response(JSON.stringify({ error: { message: 'Gemini API free tier is not available in your country.' } }), { status: 400 })) as typeof fetch;
+
+    await expect(new GeminiProvider('key', 'model', refused).generate({ instructions: '', request: '' })).rejects.toThrow(
+      'not available in your country',
+    );
+  });
+
   it('should turn a used-up free quota into a clear message', async () => {
     const limited = (async () => new Response('{}', { status: 429 })) as typeof fetch;
 

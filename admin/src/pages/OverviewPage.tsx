@@ -95,7 +95,7 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   const [range] = useState(() => todayRange());
   const today = useQuery({ queryKey: ['reports', 'summary', 'today', range.startDate], queryFn: () => reportsApi.summary(range) });
   const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
-  const weekday = weekdayFormatter.format(new Date());
+  const weekday = weekdayFormatter.format(new Date(range.endDate));
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;

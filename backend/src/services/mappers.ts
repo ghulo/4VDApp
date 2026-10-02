@@ -21,8 +21,16 @@ export function toPublicUser(user: UserRow): PublicUser {
     name: user.name,
     role: user.role,
     isActive: user.is_active,
+    phone: user.phone,
+    avatarUrl: mediaUrl(user.avatar_media_id),
+    theme: user.theme,
     monthlyTarget: toMoneyOrNull(user.monthly_target),
     commissionPercent: user.commission_percent === null ? null : Number(user.commission_percent),
     createdAt: user.created_at.toISOString(),
   };
+}
+
+/** Where an uploaded image is served from, or null when there isn't one. */
+export function mediaUrl(mediaId: string | null): string | null {
+  return mediaId ? `/api/media/${mediaId}` : null;
 }

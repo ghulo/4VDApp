@@ -40,6 +40,11 @@ import { InviteRepository } from './repositories/InviteRepository.js';
 import { InviteService } from './services/InviteService.js';
 import { AccountTokenRepository } from './repositories/AccountTokenRepository.js';
 import { AccountService } from './services/AccountService.js';
+import { MediaRepository } from './repositories/MediaRepository.js';
+import { MediaService } from './services/MediaService.js';
+import { ProfileService } from './services/ProfileService.js';
+import { BusinessRepository } from './repositories/BusinessRepository.js';
+import { BusinessService } from './services/BusinessService.js';
 import { EmailService } from './services/email/EmailService.js';
 import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
@@ -177,6 +182,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     emailService,
     config.dashboardUrl,
   );
+  const mediaService = new MediaService(new MediaRepository(db));
+  const profileService = new ProfileService(userRepository, mediaService);
+  const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService);
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -227,6 +235,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     emailService,
     inviteService,
     accountService,
+    mediaService,
+    profileService,
+    businessService,
     guards,
   };
 }

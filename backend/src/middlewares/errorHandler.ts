@@ -11,6 +11,17 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return;
   }
 
+  // Errors from Express's body readers (bad JSON, uploads over the limit).
+  const bodyError = err as { type?: string; status?: number };
+  if (bodyError.type === 'entity.too.large') {
+    sendError(res, 413, 'TOO_LARGE', 'That file is too big. Use one under 5 MB.');
+    return;
+  }
+  if (bodyError.type === 'entity.parse.failed') {
+    sendError(res, 400, 'BAD_REQUEST', 'The request body is not valid JSON');
+    return;
+  }
+
   logger.error('Unhandled error', {
     method: req.method,
     path: req.originalUrl,

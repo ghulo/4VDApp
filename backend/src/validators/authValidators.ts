@@ -30,6 +30,43 @@ export const changeEmailSchema = z.object({
   newEmail: emailSchema,
 });
 
+const isTimeZone = (zone: string) => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((value) => (value === '' ? null : value));
+
+export const profileSchema = z
+  .object({
+    name: z.string().trim().min(1).max(255).optional(),
+    phone: optionalText(50),
+    theme: z.enum(['light', 'dark', 'system']).optional(),
+  })
+  .strict();
+
+export const businessSchema = z
+  .object({
+    name: z.string().trim().min(1).max(255).optional(),
+    address: optionalText(500),
+    phone: optionalText(50),
+    timeZone: z.string().refine(isTimeZone, 'not a time zone, e.g. Europe/Belgrade').nullable().optional(),
+  })
+  .strict();
+
+export const mediaParamsSchema = z.object({ id: z.uuid() });
+
 export const inviteSchema = z.object({
   email: emailSchema,
   role: z.enum(USER_ROLES),

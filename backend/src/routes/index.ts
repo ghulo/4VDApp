@@ -22,6 +22,7 @@ import {
 import { createAssistantRoutes } from './assistantRoutes.js';
 import { createInviteRoutes } from './inviteRoutes.js';
 import { createMeRoutes } from './meRoutes.js';
+import { createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
 import { createReportsRoutes } from './reportsRoutes.js';
 
@@ -51,6 +52,8 @@ export function createApiRoutes(container: Container): Router {
   router.use('/assistant', createAssistantRoutes(container));
   router.use('/invites', createInviteRoutes(container));
   router.use('/me', createMeRoutes(container));
+  router.use('/business', createBusinessRoutes(container));
+  router.use('/media', createMediaRoutes(container));
 
   return router;
 }

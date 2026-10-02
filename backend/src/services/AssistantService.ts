@@ -105,6 +105,8 @@ export class AssistantService {
         revenue: row.revenue,
         profit: row.profit,
         margin: row.margin,
+        // True when some of these sales had no cost price, so profit and margin leave them out.
+        hasUnknownCost: row.hasUnknownCost,
       }));
 
     return {

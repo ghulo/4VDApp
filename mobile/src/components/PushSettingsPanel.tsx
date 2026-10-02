@@ -11,6 +11,7 @@ const TOPIC_LABEL: Record<PushTopic, string> = {
   stock: 'Stock running low or out',
   approvals: 'Requests waiting for you',
   decisions: 'Answers to my returns, damage reports and counts',
+  summary: 'Daily summary of sales and warnings',
 };
 
 const SETTINGS_KEY = ['push-settings'];

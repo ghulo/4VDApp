@@ -140,7 +140,7 @@ export interface MyRequest {
   decidedAt: string | null;
 }
 
-export type PushTopic = 'stock' | 'approvals' | 'decisions';
+export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';
 
 export interface PushSettings {
   topics: Array<{ topic: PushTopic; enabled: boolean }>;

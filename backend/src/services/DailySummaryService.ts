@@ -14,6 +14,8 @@ const LAST_SENT_KEY = 'daily_summary_last_sent';
 export interface DailySummary {
   title: string;
   message: string;
+  /** Just the sales sentence, for showing next to the warnings themselves. */
+  salesLine: string;
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -39,7 +41,11 @@ export class DailySummaryService {
     if (!(await this.settingsRepository.claim(LAST_SENT_KEY, zonedDay(now, this.timeZone)))) return false;
 
     const summary = await this.compose(now);
-    await this.notificationRepository.createForRoles(['admin'], { ...summary, type: NOTIFICATION_TYPES.DAILY_SUMMARY });
+    await this.notificationRepository.createForRoles(['admin'], {
+      title: summary.title,
+      message: summary.message,
+      type: NOTIFICATION_TYPES.DAILY_SUMMARY,
+    });
     return true;
   }
 
@@ -56,15 +62,14 @@ export class DailySummaryService {
     const revenue = Number(today.revenue);
     const salesCount = Number(today.sales_count);
 
-    const lines = [
-      `${plural(salesCount, 'sale', 'sales')}, ${formatEuro(Number(today.profit))} profit. Last ${weekday}: ${formatEuro(Number(lastWeek.revenue))}.`,
-    ];
+    const salesLine = `${plural(salesCount, 'sale', 'sales')}, ${formatEuro(Number(today.profit))} profit. Last ${weekday}: ${formatEuro(Number(lastWeek.revenue))}.`;
+    const lines = [salesLine];
     const urgent = insights.filter((insight) => insight.severity === 'urgent');
     const others = insights.length - urgent.length;
     if (urgent.length > 0) lines.push(`Urgent: ${urgent.slice(0, 2).map((insight) => insight.title).join('; ')}${urgent.length > 2 ? ` and ${urgent.length - 2} more` : ''}.`);
     if (others > 0) lines.push(`${plural(others, 'other thing', 'other things')} to look at on the Overview page.`);
     if (insights.length === 0) lines.push('Nothing needs your attention.');
 
-    return { title: `Today: ${formatEuro(revenue)} in sales`, message: lines.join(' ') };
+    return { title: `Today: ${formatEuro(revenue)} in sales`, message: lines.join(' '), salesLine };
   }
 }

@@ -121,5 +121,6 @@ function describeRunway(suggestion: ReorderSuggestion | undefined): string {
   if (!suggestion) return '–';
   if (suggestion.daysLeft === null) return 'No recent sales';
   if (suggestion.daysLeft === 0) return 'Today';
-  return `About ${suggestion.daysLeft} ${suggestion.daysLeft === 1 ? 'day' : 'days'}`;
+  const trend = suggestion.trend === 'rising' ? ', selling faster' : suggestion.trend === 'falling' ? ', selling slower' : '';
+  return `About ${suggestion.daysLeft} ${suggestion.daysLeft === 1 ? 'day' : 'days'}${trend}`;
 }

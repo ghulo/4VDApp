@@ -13,6 +13,7 @@ import type {
   AppNotification,
   Category,
   Dashboard,
+  Insight,
   InventoryDetail,
   InventoryItem,
   Paginated,
@@ -226,6 +227,8 @@ export const reportsApi = {
   profit: async (range: ReportRange, groupBy: 'product' | 'category') =>
     (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy } })).data,
   reorderSuggestions: async () => (await apiRequest<ReorderSuggestion[]>('/reports/reorder-suggestions')).data,
+  insights: async () => (await apiRequest<Insight[]>('/reports/insights')).data,
+  dailySummary: async () => (await apiRequest<{ title: string; message: string; salesLine: string }>('/reports/daily-summary')).data,
 };
 
 export const exportsApi = {

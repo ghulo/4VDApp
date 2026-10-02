@@ -51,6 +51,12 @@ export class ClaudeProvider implements AiProvider {
       throw toUnavailable(error);
     }
 
+    // For keeping an eye on cost: input tokens are the shop data, output the answer.
+    logger.info('Claude answered', {
+      model: response.model,
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    });
     if (response.stop_reason === 'refusal') {
       logger.warn('Claude declined the question', { category: response.stop_details?.category });
       throw new AiUnavailableError("The AI service couldn't answer that. Try asking another way.");

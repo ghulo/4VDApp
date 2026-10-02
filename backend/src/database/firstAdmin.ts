@@ -1,3 +1,4 @@
+import { defaultBusinessId } from './business.js';
 import type { DatabaseClient } from './connection.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
@@ -37,7 +38,14 @@ export async function ensureFirstAdmin(db: DatabaseClient, input: FirstAdminInpu
 
   await db
     .insertInto('users')
-    .values({ email, name: input.name?.trim() || 'Admin', role: 'admin', password_hash: await hashPassword(password) })
+    .values({
+      email,
+      name: input.name?.trim() || 'Admin',
+      role: 'admin',
+      password_hash: await hashPassword(password),
+      business_id: await defaultBusinessId(db),
+      email_verified_at: new Date(),
+    })
     .onConflict((oc) => oc.column('email').doNothing())
     .execute();
   logger.info('Created the first admin account', { email });

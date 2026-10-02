@@ -1,3 +1,4 @@
+import { defaultBusinessId } from '../database/business.js';
 import 'dotenv/config';
 import { sql } from 'kysely';
 import { loadConfig } from '../config/env.js';
@@ -69,7 +70,14 @@ async function seedAdmin(db: DatabaseClient): Promise<void> {
 
   await db
     .insertInto('users')
-    .values({ email, name, role: 'admin', password_hash: await hashPassword(password) })
+    .values({
+      email,
+      name,
+      role: 'admin',
+      password_hash: await hashPassword(password),
+      business_id: await defaultBusinessId(db),
+      email_verified_at: new Date(),
+    })
     .execute();
   logger.info('Admin account created', { email });
 }

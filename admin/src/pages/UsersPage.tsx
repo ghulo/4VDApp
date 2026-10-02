@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { usersApi } from '../services/api';
+import { Avatar } from '../components/Avatar';
+import { invitesApi, usersApi } from '../services/api';
 import { type User, type UserRole, USER_ROLES } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney, ROLE_LABEL } from '../utils/format';
+import { formatDate, formatMoney, ROLE_LABEL } from '../utils/format';
 
 const ROLE_HINT: Record<UserRole, string> = {
   admin: 'Everything, including this dashboard',
@@ -26,9 +27,15 @@ export function UsersPage() {
       </header>
 
       <section className="panel">
-        <h2 className="panel__title">Add a person</h2>
-        <AddUserForm />
+        <h2 className="panel__title">Invite someone</h2>
+        <InviteForm />
+        <details className="fallback">
+          <summary>Or set them up yourself with a first password</summary>
+          <AddUserForm />
+        </details>
       </section>
+
+      <PendingInvites />
 
       {users.isPending && <Loading />}
       {users.isError && <ErrorNotice error={users.error} onRetry={() => users.refetch()} />}
@@ -40,6 +47,107 @@ export function UsersPage() {
         </ul>
       )}
     </>
+  );
+}
+
+function InviteForm() {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<UserRole>('employee');
+
+  const invite = useMutation({
+    mutationFn: () => invitesApi.create({ email: email.trim(), role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invites'] });
+      setEmail('');
+    },
+  });
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    invite.mutate();
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="field-row">
+        <label className="field">
+          <span className="field__label">Their email</span>
+          <input type="email" required autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label className="field">
+          <span className="field__label">Role</span>
+          <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
+            {USER_ROLES.map((option) => (
+              <option key={option} value={option}>
+                {ROLE_LABEL[option]}: {ROLE_HINT[option]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <p className="field-hint">They get an email with a link to choose their own password (or use Google). The link works for 7 days.</p>
+      {invite.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(invite.error)}
+        </p>
+      )}
+      {invite.isSuccess && (
+        <p className="form-success" role="status">
+          Invite sent to {invite.data.data.email}.
+        </p>
+      )}
+      <button type="submit" className="button button--primary" disabled={!email.trim() || invite.isPending}>
+        {invite.isPending ? 'Sending…' : 'Send invite'}
+      </button>
+    </form>
+  );
+}
+
+function PendingInvites() {
+  const queryClient = useQueryClient();
+  const invites = useQuery({ queryKey: ['invites'], queryFn: invitesApi.list });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['invites'] });
+  const resend = useMutation({ mutationFn: invitesApi.resend, onSuccess: refresh });
+  const cancel = useMutation({ mutationFn: invitesApi.cancel, onSuccess: refresh });
+
+  if (!invites.data || invites.data.length === 0) return null;
+  return (
+    <section className="panel">
+      <h2 className="panel__title">Waiting to join</h2>
+      <ul className="category-list">
+        {invites.data.map((invite) => (
+          <li key={invite.id} className="category-list__row">
+            <div>
+              <p className="category-list__name">{invite.email}</p>
+              <p className="category-list__description">
+                {ROLE_LABEL[invite.role]}, invited {formatDate(invite.createdAt)}
+                {invite.invitedBy ? ` by ${invite.invitedBy}` : ''}. Link works until {formatDate(invite.expiresAt)}.
+              </p>
+            </div>
+            <span />
+            <span className="category-list__actions">
+              <button type="button" className="button button--quiet" disabled={resend.isPending} onClick={() => resend.mutate(invite.id)}>
+                Send again
+              </button>
+              <button
+                type="button"
+                className="button button--quiet button--danger-text"
+                disabled={cancel.isPending}
+                onClick={() => cancel.mutate(invite.id)}
+              >
+                Cancel invite
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {(resend.isError || cancel.isError) && (
+        <p className="form-error" role="alert">
+          {errorMessage(resend.error ?? cancel.error)}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -150,9 +258,12 @@ function UserRow({ user }: { user: User }) {
   return (
     <li className={`category-list__row user-row${user.isActive ? '' : ' user-row--inactive'}`}>
       <div>
-        <p className="category-list__name">
-          {user.name}
-          {isSelf && ' (you)'}
+        <p className="category-list__name user-row__name">
+          <Avatar name={user.name} url={user.avatarUrl} size={32} />
+          <span>
+            {user.name}
+            {isSelf && ' (you)'}
+          </span>
         </p>
         <p className="category-list__description">
           {user.email}

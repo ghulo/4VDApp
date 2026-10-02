@@ -21,6 +21,12 @@ import type {
   PriceSuggestion,
   PricingTier,
   Promotion,
+  Business,
+  Invite,
+  InvitePreview,
+  LoginResult,
+  Security,
+  Session,
   PushSettings,
   PushTopic,
   Product,
@@ -85,6 +91,60 @@ export const productsApi = {
   remove: async (id: number) => {
     await apiRequest(`/products/${id}`, { method: 'DELETE' });
   },
+};
+
+/** Public account pages: invites, passwords, email links, Google. */
+export const accountApi = {
+  invitePreview: async (token: string) => (await apiRequest<InvitePreview>(`/auth/invites/${token}`)).data,
+  acceptInvite: async (token: string, input: { name: string; password: string }) =>
+    (await apiRequest<LoginResult>(`/auth/invites/${token}/accept`, { method: 'POST', body: input })).data,
+  acceptInviteWithGoogle: async (token: string, credential: string) =>
+    (await apiRequest<LoginResult>(`/auth/invites/${token}/google`, { method: 'POST', body: { credential } })).data,
+  forgotPassword: async (email: string) =>
+    (await apiRequest<null>('/auth/forgot-password', { method: 'POST', body: { email } })),
+  resetPassword: async (token: string, password: string) =>
+    (await apiRequest<null>('/auth/reset-password', { method: 'POST', body: { token, password } })),
+  verifyEmail: async (token: string) => await apiRequest<null>('/auth/verify-email', { method: 'POST', body: { token } }),
+  resendVerification: async (email: string) =>
+    await apiRequest<null>('/auth/resend-verification', { method: 'POST', body: { email } }),
+  confirmEmailChange: async (token: string) =>
+    await apiRequest<null>('/auth/confirm-email-change', { method: 'POST', body: { token } }),
+  googleStatus: async () => (await apiRequest<{ enabled: boolean; clientId: string | null }>('/auth/google')).data,
+  googleSignIn: async (credential: string) =>
+    (await apiRequest<LoginResult>('/auth/google', { method: 'POST', body: { credential } })).data,
+};
+
+/** The signed-in person's own profile and security. */
+export const meApi = {
+  updateProfile: async (changes: { name?: string; phone?: string | null; theme?: User['theme'] }) =>
+    (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,
+  uploadAvatar: async (file: Blob) => (await apiRequest<User>('/me/avatar', { method: 'PUT', file })).data,
+  removeAvatar: async () => (await apiRequest<User>('/me/avatar', { method: 'DELETE' })).data,
+  changePassword: async (input: { currentPassword?: string; newPassword: string }) =>
+    await apiRequest<null>('/me/password', { method: 'POST', body: input }),
+  changeEmail: async (input: { password?: string; newEmail: string }) =>
+    await apiRequest<null>('/me/email', { method: 'POST', body: input }),
+  security: async () => (await apiRequest<Security>('/me/security')).data,
+  unlinkGoogle: async () => (await apiRequest<Security>('/me/google', { method: 'DELETE' })).data,
+  sessions: async () => (await apiRequest<Session[]>('/me/sessions')).data,
+  endSession: async (id: string) => await apiRequest<null>(`/me/sessions/${id}`, { method: 'DELETE' }),
+  endOtherSessions: async () => await apiRequest<null>('/me/sessions/log-out-others', { method: 'POST' }),
+};
+
+export const businessApi = {
+  get: async () => (await apiRequest<Business>('/business')).data,
+  update: async (changes: Partial<Omit<Business, 'currency' | 'logoUrl'>>) =>
+    (await apiRequest<Business>('/business', { method: 'PUT', body: changes })).data,
+  uploadLogo: async (file: Blob) => (await apiRequest<Business>('/business/logo', { method: 'PUT', file })).data,
+  removeLogo: async () => (await apiRequest<Business>('/business/logo', { method: 'DELETE' })).data,
+};
+
+export const invitesApi = {
+  list: async () => (await apiRequest<Invite[]>('/invites')).data,
+  create: async (input: { email: string; role: UserRole }) =>
+    (await apiRequest<Invite>('/invites', { method: 'POST', body: input })),
+  resend: async (id: number) => await apiRequest<Invite>(`/invites/${id}/resend`, { method: 'POST' }),
+  cancel: async (id: number) => await apiRequest<null>(`/invites/${id}`, { method: 'DELETE' }),
 };
 
 export const promotionsApi = {

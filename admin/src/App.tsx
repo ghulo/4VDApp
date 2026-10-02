@@ -12,12 +12,20 @@ import { CategoriesPage } from './pages/CategoriesPage';
 import { InventoryDetailPage } from './pages/InventoryDetailPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { LoginPage } from './pages/LoginPage';
+import {
+  AcceptInvitePage,
+  ConfirmEmailChangePage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  VerifyEmailPage,
+} from './pages/AccountPages';
 import { OverviewPage } from './pages/OverviewPage';
 import { ProductFormPage } from './pages/ProductFormPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { AskPage } from './pages/AskPage';
 import { StockCountDetailPage } from './pages/StockCountDetailPage';
@@ -52,6 +60,11 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+            <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
+            <Route path="/invite/:token" element={<AcceptInvitePage />} />
             <Route
               element={
                 <RequireAuth>
@@ -76,6 +89,7 @@ function App() {
               <Route path="promotions" element={<PromotionsPage />} />
               <Route path="ask" element={<AskPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>

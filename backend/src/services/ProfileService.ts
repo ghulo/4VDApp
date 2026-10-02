@@ -8,6 +8,7 @@ export interface ProfileChanges {
   name?: string;
   phone?: string | null;
   theme?: 'light' | 'dark' | 'system';
+  emailWeeklyReport?: boolean;
 }
 
 /** The signed-in person's own name, phone, photo and theme. */
@@ -22,6 +23,7 @@ export class ProfileService {
       ...(changes.name !== undefined && { name: changes.name }),
       ...(changes.phone !== undefined && { phone: changes.phone }),
       ...(changes.theme !== undefined && { theme: changes.theme }),
+      ...(changes.emailWeeklyReport !== undefined && { email_weekly_report: changes.emailWeeklyReport }),
     });
     if (!user) throw new NotFoundError(`User ${userId} does not exist`);
     return toPublicUser(user);

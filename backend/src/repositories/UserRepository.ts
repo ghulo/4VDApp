@@ -53,6 +53,18 @@ export class UserRepository {
       .executeTakeFirst();
   }
 
+  /** Active admins who want the Monday report email. */
+  weeklyReportRecipients(): Promise<Array<{ email: string; name: string }>> {
+    return this.db
+      .selectFrom('users')
+      .select(['email', 'name'])
+      .where('role', '=', 'admin')
+      .where('is_active', '=', true)
+      .where('deleted_at', 'is', null)
+      .where('email_weekly_report', '=', true)
+      .execute();
+  }
+
   async createBusiness(name: string): Promise<number> {
     const row = await this.db.insertInto('businesses').values({ name }).returning('id').executeTakeFirstOrThrow();
     return row.id;

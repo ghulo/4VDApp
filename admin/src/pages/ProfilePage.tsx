@@ -46,6 +46,7 @@ export function ProfilePage() {
         <ThemeSwitch persist />
       </section>
       <PushSettingsPanel />
+      {user.role === 'admin' && <EmailsPanel user={user} />}
       <SecurityPanel user={user} />
       <DevicesPanel />
     </>
@@ -128,6 +129,32 @@ function DetailsPanel({ user }: { user: User }) {
           {save.isPending ? 'Saving…' : 'Save'}
         </button>
       </form>
+    </section>
+  );
+}
+
+function EmailsPanel({ user }: { user: User }) {
+  const { updateUser } = useAuth();
+  const toggle = useMutation({
+    mutationFn: (on: boolean) => meApi.updateProfile({ emailWeeklyReport: on }),
+    onSuccess: updateUser,
+  });
+  return (
+    <section className="panel">
+      <h2 className="panel__title">Emails</h2>
+      <label className="push-topic">
+        <input
+          type="checkbox"
+          checked={user.emailWeeklyReport}
+          disabled={toggle.isPending}
+          onChange={(event) => toggle.mutate(event.target.checked)}
+        />
+        <span>
+          <span className="push-topic__label">Weekly report</span>
+          <span className="field-hint">Every Monday evening: last week's sales, best sellers and anything that needs you.</span>
+        </span>
+      </label>
+      <Result error={toggle.error} success={null} />
     </section>
   );
 }

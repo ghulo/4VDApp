@@ -5,6 +5,7 @@ import * as returnsCountsWriteOffs from './003_returns_counts_write_offs.js';
 import * as promotionsAndTargets from './004_promotions_and_targets.js';
 import * as pushNotifications from './005_push_notifications.js';
 import * as accounts from './006_accounts.js';
+import * as weeklyReport from './007_weekly_report.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -19,4 +20,5 @@ export const migrations: Record<string, Migration> = {
   '004_promotions_and_targets': promotionsAndTargets,
   '005_push_notifications': pushNotifications,
   '006_accounts': accounts,
+  '007_weekly_report': weeklyReport,
 };

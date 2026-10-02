@@ -123,7 +123,7 @@ export class InviteService {
   async accept(token: string, input: { name: string; password: string }, device: DeviceInfo): Promise<LoginResult> {
     const invite = await this.openInvite(token);
     const user = await this.createMember(invite, { name: input.name, passwordHash: await hashPassword(input.password) });
-    return this.authService.startSession(user, device, 'joined from an invite');
+    return this.authService.startSession(user, device, 'logged in for the first time');
   }
 
   /** The invite behind a link, if it can still be used. Shared with Google sign-in. */

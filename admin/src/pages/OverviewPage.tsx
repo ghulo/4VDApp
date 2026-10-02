@@ -5,6 +5,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
+import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
@@ -35,6 +36,8 @@ export function OverviewPage() {
               : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`}
         </p>
       </header>
+
+      <SetupGuide />
 
       <TodayBoard lowCount={lowCount} />
 

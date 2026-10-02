@@ -58,7 +58,7 @@ export class GoogleAuthService {
     }
     const user = await this.inviteService.createMember(invite, { name: profile.name, passwordHash: null });
     await this.identities.link(user.id, 'google', profile.subject, profile.email);
-    return this.authService.startSession(user, device, 'joined with Google');
+    return this.authService.startSession(user, device, 'logged in with Google for the first time');
   }
 
   async security(userId: number): Promise<SecurityDto> {

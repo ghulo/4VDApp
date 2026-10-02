@@ -28,6 +28,8 @@ export function SearchInput({ value, onChange, label }: SearchInputProps) {
   return (
     <input
       type="search"
+      // "/" anywhere on the page jumps here.
+      data-page-search
       className="search-input"
       placeholder={label}
       aria-label={label}

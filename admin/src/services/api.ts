@@ -116,7 +116,12 @@ export const accountApi = {
 
 /** The signed-in person's own profile and security. */
 export const meApi = {
-  updateProfile: async (changes: { name?: string; phone?: string | null; theme?: User['theme'] }) =>
+  updateProfile: async (changes: {
+    name?: string;
+    phone?: string | null;
+    theme?: User['theme'];
+    emailWeeklyReport?: boolean;
+  }) =>
     (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,
   uploadAvatar: async (file: Blob) => (await apiRequest<User>('/me/avatar', { method: 'PUT', file })).data,
   removeAvatar: async () => (await apiRequest<User>('/me/avatar', { method: 'DELETE' })).data,

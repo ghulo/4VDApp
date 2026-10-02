@@ -5,6 +5,7 @@ import { type ReactNode, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '../components/Avatar';
+import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, reportsApi } from '../services/api';
@@ -116,6 +117,7 @@ export function HomeScreen() {
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
       keyboardShouldPersistTaps="handled"
     >
+      <WelcomeTour user={user} />
       <View style={[styles.hero, { backgroundColor: colors.heroInk, marginTop: insets.top + spacing.md }]}>
         <View style={styles.greetingRow}>
           <View style={styles.greetingText}>

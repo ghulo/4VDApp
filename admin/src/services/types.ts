@@ -12,6 +12,8 @@ export interface User {
   /** Path to the photo (use mediaSrc); null shows initials. */
   avatarUrl: string | null;
   theme: 'light' | 'dark' | 'system';
+  /** Gets the Monday report email (admins). */
+  emailWeeklyReport: boolean;
   /** Euros of sales (after refunds) hoped for each month; null when not set. */
   monthlyTarget: number | null;
   commissionPercent: number | null;

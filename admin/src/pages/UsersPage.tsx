@@ -165,7 +165,7 @@ function UserRow({ user }: { user: User }) {
               user.commissionPercent !== null && `${user.commissionPercent}% commission`,
             ]
               .filter(Boolean)
-              .join(' · ')}
+              .join(', ')}
           </p>
         )}
       </div>

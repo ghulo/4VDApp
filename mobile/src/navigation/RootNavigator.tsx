@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, useColorScheme } from 'react-native';
+import { Text, useColorScheme, View } from 'react-native';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
@@ -23,9 +23,13 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 /** Text-only tab labels: plain words read better than a row of generic icons. */
+/** Condensed sign lettering, with a yellow bar over the tab you're on. */
 function tabLabel(label: string) {
   return ({ focused, color }: { focused: boolean; color: string }) => (
-    <Text style={{ color, fontFamily: focused ? fonts.bodyBold : fonts.body, fontSize: 14 }}>{label}</Text>
+    <View style={{ alignItems: 'center', gap: 4 }}>
+      <View style={{ width: 28, height: 3, borderRadius: 2, backgroundColor: focused ? '#f2b705' : 'transparent' }} />
+      <Text style={{ color, fontFamily: fonts.displayBold, fontSize: 17 }}>{label}</Text>
+    </View>
   );
 }
 
@@ -40,9 +44,9 @@ function MainTabs() {
         headerStyle: { backgroundColor: colors.surface },
         headerTitleStyle: { fontFamily: fonts.displayBold, fontSize: 24, color: colors.ink },
         headerShadowVisible: false,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
-        tabBarActiveTintColor: colors.ink,
-        tabBarInactiveTintColor: colors.steel,
+        tabBarStyle: { backgroundColor: colors.heroInk, borderTopColor: colors.heroInk, height: 64 },
+        tabBarActiveTintColor: colors.heroText,
+        tabBarInactiveTintColor: colors.heroMuted,
         tabBarIcon: () => null,
         tabBarIconStyle: { display: 'none' },
       }}

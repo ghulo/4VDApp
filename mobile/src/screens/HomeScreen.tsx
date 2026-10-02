@@ -282,9 +282,9 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(share * 100) }}
     >
-      <View style={styles.targetTrack}>
+      <View style={[styles.targetTrack, { backgroundColor: colors.heroRaised }]}>
         <View
-          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: reached ? colors.stockOk : colors.heroText }]}
+          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: reached ? colors.stockOk : colors.signalLow }]}
         />
       </View>
       <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>{label}</Text>
@@ -363,17 +363,17 @@ function Muted({ colors, children }: { colors: ThemeColors; children: ReactNode 
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
-  hero: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
+  // The slate board, with the yellow shelf edge along the bottom.
+  hero: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs, borderBottomWidth: 6, borderBottomColor: '#f2b705' },
   greeting: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
   date: { fontFamily: fonts.body, fontSize: 16 },
   todayBlock: { marginTop: spacing.xl },
   todayCaption: { fontFamily: fonts.bodyBold, fontSize: 14 },
-  todayFigure: { fontFamily: fonts.displayBold, fontSize: 64, lineHeight: 68, fontVariant: ['tabular-nums'] },
+  todayFigure: { fontFamily: fonts.displayBold, fontSize: 76, lineHeight: 78, letterSpacing: -1, fontVariant: ['tabular-nums'] },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },
   target: { marginTop: spacing.md, gap: spacing.xs },
-  // The hero is dark in both themes, so a faint white track works for each.
-  targetTrack: { height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.18)' },
-  targetFill: { height: 8, borderRadius: 4 },
+  targetTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  targetFill: { height: 10, borderRadius: 5 },
   sellButton: {
     marginTop: spacing.xl,
     minHeight: 56,
@@ -405,10 +405,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.panel,
     justifyContent: 'space-between',
   },
-  tileTitle: { fontFamily: fonts.displayBold, fontSize: 22 },
+  tileTitle: { fontFamily: fonts.displayBold, fontSize: 24 },
   tileDetail: { fontFamily: fonts.body, fontSize: 14 },
   section: { borderWidth: 1, borderRadius: radius.panel, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  sectionTitle: { fontFamily: fonts.displayBold, fontSize: 20, marginBottom: spacing.sm },
+  sectionTitle: { fontFamily: fonts.displayBold, fontSize: 24, marginBottom: spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

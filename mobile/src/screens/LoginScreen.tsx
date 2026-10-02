@@ -26,7 +26,7 @@ export function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.ink }]}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.heroInk }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={[styles.card, { backgroundColor: colors.surface, borderTopColor: colors.signalLow }]}>

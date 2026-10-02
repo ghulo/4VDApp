@@ -1,7 +1,8 @@
 import { useColorScheme } from 'react-native';
 
-// Same identity as the admin dashboard: cool concrete, slate ink, and
-// yellow/red reserved for low and sold-out stock.
+// Same identity as the admin dashboard: shop-floor signage. A slate "board"
+// (the same in both themes, like a painted sign) carries the big figures;
+// yellow means "look here" (low stock, waiting, where you are), red sold out.
 const light = {
   background: '#eef1f4',
   surface: '#ffffff',
@@ -14,8 +15,9 @@ const light = {
   signalOut: '#c8362b',
   stockOk: '#3d7a5a',
   onInk: '#ffffff',
-  // The slate block at the top of Home.
+  // The slate board: Home's top block, the login screen and the tab bar.
   heroInk: '#1c2530',
+  heroRaised: '#263241',
   heroText: '#ffffff',
   heroMuted: '#a9b5c2',
 };
@@ -32,9 +34,10 @@ const dark: typeof light = {
   signalOut: '#ef5b4f',
   stockOk: '#6bbf91',
   onInk: '#161c23',
-  heroInk: '#2c3a49',
-  heroText: '#e6ebf0',
-  heroMuted: '#9aa6b4',
+  heroInk: '#0f1419',
+  heroRaised: '#1c2530',
+  heroText: '#ffffff',
+  heroMuted: '#a9b5c2',
 };
 
 export type ThemeColors = typeof light;
@@ -47,7 +50,7 @@ export const fonts = {
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { small: 4, panel: 8 };
+export const radius = { small: 6, panel: 10 };
 
 export function useThemeColors(): ThemeColors {
   return useColorScheme() === 'dark' ? dark : light;

@@ -353,7 +353,7 @@ When something starts waiting, every admin gets a notification. When it is decid
 
 ## Assistant (admin)
 
-Questions in plain words, answered by an AI service (Google Gemini, set with `GEMINI_API_KEY` and `GEMINI_MODEL`) from a summary of the shop's own numbers: monthly totals for 12 months, sales per product over 30 and 90 days, stock with forecasts, the team this month and last, warnings, and running promotions. Staff names are swapped for "Person 1", "Person 2" before sending and put back in the answer. The AI service is behind one small interface (`backend/src/services/ai/aiProvider.ts`), so another provider can replace it.
+Questions in plain words, answered by an AI service: Claude when `ANTHROPIC_API_KEY` is set (`ANTHROPIC_MODEL`, default `claude-opus-5-5` at low effort; `ANTHROPIC_WORKSPACE_ID` only for keys made outside a workspace), otherwise Google Gemini (`GEMINI_API_KEY`, `GEMINI_MODEL`), from a summary of the shop's own numbers: monthly totals for 12 months, sales per product over 30 and 90 days, stock with forecasts, the team this month and last, warnings, and running promotions. Staff names are swapped for "Person 1", "Person 2" before sending and put back in the answer. The AI service is behind one small interface (`backend/src/services/ai/aiProvider.ts`), so another provider can replace it.
 
 | Method & path | Body / returns |
 |---|---|

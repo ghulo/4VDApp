@@ -45,6 +45,7 @@ import { MediaService } from './services/MediaService.js';
 import { ProfileService } from './services/ProfileService.js';
 import { BusinessRepository } from './repositories/BusinessRepository.js';
 import { BusinessService } from './services/BusinessService.js';
+import { SessionService } from './services/SessionService.js';
 import { EmailService } from './services/email/EmailService.js';
 import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
@@ -185,6 +186,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const mediaService = new MediaService(new MediaRepository(db));
   const profileService = new ProfileService(userRepository, mediaService);
   const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService);
+  const sessionService = new SessionService(refreshTokenRepository);
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -238,6 +240,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     mediaService,
     profileService,
     businessService,
+    sessionService,
     guards,
   };
 }

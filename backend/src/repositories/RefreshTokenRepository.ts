@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
 export class RefreshTokenRepository {
@@ -51,6 +52,43 @@ export class RefreshTokenRepository {
       .where('user_id', '=', userId)
       .where('revoked_at', 'is', null)
       .execute();
+  }
+
+  /** Devices still logged in: one row per session, from its newest token. */
+  async activeSessions(userId: number): Promise<
+    Array<{ session_id: string; user_agent: string | null; ip: string | null; last_used_at: Date | null; started_at: Date }>
+  > {
+    const result = await sql<{
+      session_id: string;
+      user_agent: string | null;
+      ip: string | null;
+      last_used_at: Date | null;
+      started_at: Date;
+    }>`
+      select distinct on (session_id)
+        session_id, user_agent, ip, last_used_at,
+        min(created_at) over (partition by session_id) as started_at
+      from refresh_tokens
+      where user_id = ${userId}
+        and session_id in (
+          select session_id from refresh_tokens
+          where user_id = ${userId} and revoked_at is null and expires_at > now()
+        )
+      order by session_id, created_at desc
+    `.execute(this.db);
+    return result.rows;
+  }
+
+  /** End one device's session. False when it isn't this person's. */
+  async revokeSession(userId: number, sessionId: string): Promise<boolean> {
+    const result = await this.db
+      .updateTable('refresh_tokens')
+      .set({ revoked_at: new Date() })
+      .where('user_id', '=', userId)
+      .where('session_id', '=', sessionId)
+      .where('revoked_at', 'is', null)
+      .executeTakeFirst();
+    return result.numUpdatedRows > 0n;
   }
 
   /** End every session except `keepSessionId` (the device asking). */

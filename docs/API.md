@@ -107,7 +107,9 @@ Everyone belongs to a **business** (the shop). Links sent by email carry a one-u
 | `PUT /business/logo` · `DELETE /business/logo` | admin | Image body, resized to 512 px WebP |
 | `GET /media/:id` | public | The picture; cached for a year (a new picture gets a new id) |
 
-Users now also carry `phone`, `avatarUrl` and `theme`.
+Users now also carry `phone`, `avatarUrl`, `theme` and `emailWeeklyReport` (settable through `PUT /me/profile`).
+
+**Weekly report:** every Monday after the daily summary hour (shop time), each active admin with `emailWeeklyReport` on gets an email: last Monday to Sunday's revenue, sales and profit against the week before, the five best sellers, and how many warnings are open. Sent once a week (`weekly_report_last_sent` setting), through the email outbox.
 
 ---
 

@@ -14,5 +14,9 @@ export interface PublicUser {
   name: string;
   role: UserRole;
   isActive: boolean;
+  /** Euros of sales (after refunds) the owner hopes for each month; null when not set. */
+  monthlyTarget: number | null;
+  /** Share of their sales (after refunds) they earn; null when not set. */
+  commissionPercent: number | null;
   createdAt: string;
 }

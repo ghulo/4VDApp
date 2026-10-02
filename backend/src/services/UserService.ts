@@ -1,4 +1,5 @@
-import type { UserRole } from '../database/types.js';
+import type { UserRole, UserRow } from '../database/types.js';
+import { formatEuro } from '../utils/money.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
@@ -7,7 +8,7 @@ import type { PublicUser } from '../types/auth.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { hashPassword } from '../utils/password.js';
-import { toPublicUser } from './mappers.js';
+import { toMoneyOrNull, toPublicUser } from './mappers.js';
 
 export interface CreateUserInput {
   email: string;
@@ -21,6 +22,8 @@ export interface UpdateUserInput {
   role?: UserRole;
   isActive?: boolean;
   password?: string;
+  monthlyTarget?: number | null;
+  commissionPercent?: number | null;
 }
 
 export class UserService {
@@ -82,6 +85,8 @@ export class UserService {
         ...(input.role !== undefined && { role: input.role }),
         ...(input.isActive !== undefined && { is_active: input.isActive }),
         ...(passwordHash !== undefined && { password_hash: passwordHash }),
+        ...(input.monthlyTarget !== undefined && { monthly_target: input.monthlyTarget }),
+        ...(input.commissionPercent !== undefined && { commission_percent: input.commissionPercent }),
       });
       if (!result) throw new NotFoundError(`User ${id} does not exist`);
       await repos.activityLog.create({
@@ -89,13 +94,17 @@ export class UserService {
         action: 'user.updated',
         entityType: 'user',
         entityId: id,
-        summary: describeUserChanges(user.name, user.role, user.is_active, input),
+        summary: describeUserChanges(user, input),
         // Never the password itself, only that it changed.
         details: {
           ...(input.name !== undefined && { name: { from: user.name, to: input.name } }),
           ...(input.role !== undefined && { role: { from: user.role, to: input.role } }),
           ...(input.isActive !== undefined && { isActive: { from: user.is_active, to: input.isActive } }),
           ...(input.password !== undefined && { passwordChanged: true }),
+          ...(input.monthlyTarget !== undefined && { monthlyTarget: { from: toMoneyOrNull(user.monthly_target), to: input.monthlyTarget } }),
+          ...(input.commissionPercent !== undefined && {
+            commissionPercent: { from: user.commission_percent === null ? null : Number(user.commission_percent), to: input.commissionPercent },
+          }),
         },
       });
       return result;
@@ -140,13 +149,21 @@ export class UserService {
   }
 }
 
-function describeUserChanges(name: string, role: UserRole, isActive: boolean, input: UpdateUserInput): string {
+function describeUserChanges(user: UserRow, input: UpdateUserInput): string {
+  const { name, role, is_active: isActive } = user;
   const parts: string[] = [];
   if (input.name !== undefined && input.name !== name) parts.push(`renamed ${name} to ${input.name}`);
   if (input.role !== undefined && input.role !== role) parts.push(`changed ${name}'s role from ${role} to ${input.role}`);
   if (input.isActive === false && isActive) parts.push(`blocked ${name}`);
   if (input.isActive === true && !isActive) parts.push(`let ${name} back in`);
   if (input.password !== undefined) parts.push(`set a new password for ${name}`);
+  if (input.monthlyTarget !== undefined && input.monthlyTarget !== toMoneyOrNull(user.monthly_target)) {
+    parts.push(input.monthlyTarget === null ? `removed ${name}'s monthly target` : `set ${name}'s monthly target to ${formatEuro(input.monthlyTarget)}`);
+  }
+  const commission = user.commission_percent === null ? null : Number(user.commission_percent);
+  if (input.commissionPercent !== undefined && input.commissionPercent !== commission) {
+    parts.push(input.commissionPercent === null ? `removed ${name}'s commission` : `set ${name}'s commission to ${input.commissionPercent}%`);
+  }
   const sentence = parts.length > 0 ? parts.join('; ') : `saved ${name} with no changes`;
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }

@@ -7,6 +7,7 @@ import { type PageRequest, toOffset, toPaginationMeta } from '../utils/paginatio
 import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
+import { bestPromotionFor, priceWithPromotion } from './pricing/promotions.js';
 
 export interface SaleDto {
   id: number;
@@ -54,8 +55,8 @@ export class SalesService {
   }
 
   /**
-   * Record a sale at today's price for that quantity (bulk tiers included)
-   * and take the units out of stock. Both happen together or not at all, so
+   * Record a sale at the price for that quantity (bulk tiers, or a running
+   * promotion when that is cheaper) and take the units out of stock. Both happen together or not at all, so
    * stock and sales history can never disagree.
    */
   async record(input: RecordSaleInput, soldBy: number): Promise<SaleDto> {
@@ -67,8 +68,14 @@ export class SalesService {
       const product = await repos.products.findById(input.productId, false);
       if (!product) throw new NotFoundError(`Product ${input.productId} does not exist or is hidden`);
 
+      const basePrice = toMoney(product.base_price);
       const tiers = await repos.pricingTiers.findByProductId(product.id);
-      const pricePerUnit = calculateUnitPrice(toMoney(product.base_price), tiers, input.quantity);
+      const promotions = await repos.promotions.findRunning(input.saleDate ?? new Date());
+      const { pricePerUnit, promotionId } = priceWithPromotion(
+        basePrice,
+        calculateUnitPrice(basePrice, tiers, input.quantity),
+        bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
+      );
 
       const id = await repos.sales.create({
         productId: product.id,
@@ -76,6 +83,7 @@ export class SalesService {
         pricePerUnit,
         unitCost: toMoneyOrNull(product.cost_price),
         soldBy,
+        promotionId,
         notes: input.notes,
         saleDate: input.saleDate,
       });
@@ -94,7 +102,7 @@ export class SalesService {
         entityType: 'sale',
         entityId: id,
         summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(roundMoney(pricePerUnit * input.quantity))}`,
-        details: { productId: product.id, quantity: input.quantity, pricePerUnit },
+        details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId },
       });
       return id;
     });

@@ -224,6 +224,36 @@ describe('GET /api/reports/team', () => {
   });
 });
 
+describe('targets and commission', () => {
+  it('should show each person their monthly target and work out commission after refunds', async () => {
+    const productId = await createProduct();
+    const employee = await createTestUser(context.db, 'employee');
+    const setTarget = await request(context.app)
+      .put(`/api/users/${employee.id}`)
+      .set(auth(adminToken))
+      .send({ monthlyTarget: 5000, commissionPercent: 3 });
+    const employeeLogin = await request(context.app)
+      .post('/api/auth/login')
+      .send({ email: employee.email, password: 'correct-horse-battery' });
+    const employeeToken = employeeLogin.body.data.token as string;
+    await sell(employeeToken, productId, 3, '2026-03-10T12:00:00Z');
+
+    const team = await request(context.app).get(`/api/reports/team?${MARCH}`).set(auth(adminToken));
+    const mine = await request(context.app).get(`/api/reports/my-sales?${MARCH}`).set(auth(employeeToken));
+    const csv = await request(context.app).get(`/api/exports/team.csv?${MARCH}`).set(auth(adminToken));
+    const log = await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'user.updated').execute();
+
+    expect(setTarget.body.data).toMatchObject({ monthlyTarget: 5000, commissionPercent: 3 });
+    expect(team.body.data).toContainEqual(
+      expect.objectContaining({ userId: employee.id, revenue: 300, monthlyTarget: 5000, commissionPercent: 3, commission: 9 }),
+    );
+    expect(team.body.data).toContainEqual(expect.objectContaining({ name: 'Test admin', commission: null }));
+    expect(mine.body.data.monthlyTarget).toBe(5000);
+    expect(csv.text).toContain('Commission');
+    expect(log[0]!.summary).toContain('monthly target to €5,000.00');
+  });
+});
+
 describe('GET /api/reports/profit', () => {
   it('should break profit down by product, flagging unknown costs', async () => {
     const chair = await createProduct();

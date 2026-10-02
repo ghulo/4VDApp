@@ -89,6 +89,7 @@ export class SalesRepository {
     pricePerUnit: number;
     unitCost: number | null;
     soldBy: number;
+    promotionId: number | null;
     notes: string | null;
     saleDate?: Date;
   }): Promise<number> {
@@ -100,6 +101,7 @@ export class SalesRepository {
         price_per_unit: sale.pricePerUnit,
         unit_cost: sale.unitCost,
         sold_by: sale.soldBy,
+        promotion_id: sale.promotionId,
         notes: sale.notes,
         ...(sale.saleDate && { sale_date: sale.saleDate }),
       })

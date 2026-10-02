@@ -1,10 +1,11 @@
 import type { Request, Response } from 'express';
+import type { ActivityLogService } from '../services/ActivityLogService.js';
 import type { ProductService } from '../services/ProductService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { createProductSchema, productQuerySchema, updateProductSchema } from '../validators/catalogValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
-export function createProductController(productService: ProductService) {
+export function createProductController(productService: ProductService, activityLogService: ActivityLogService) {
   return {
     async list(req: Request, res: Response): Promise<void> {
       const query = parseInput(productQuerySchema, req.query);
@@ -15,6 +16,12 @@ export function createProductController(productService: ProductService) {
     async getById(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await productService.getById(id, req.identity?.role));
+    },
+
+    async priceHistory(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await productService.getById(id, 'admin'); // 404 for a product that doesn't exist
+      sendSuccess(res, await activityLogService.priceHistory(id));
     },
 
     async create(req: Request, res: Response): Promise<void> {

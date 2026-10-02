@@ -4,6 +4,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErr
 import type { CategoryRepository } from '../repositories/CategoryRepository.js';
 import type { PricingTierRepository } from '../repositories/PricingTierRepository.js';
 import type { ProductData, ProductRecord, ProductRepository } from '../repositories/ProductRepository.js';
+import type { PromotionRepository } from '../repositories/PromotionRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
@@ -11,6 +12,7 @@ import { type ProductSnapshot, describeProductChanges } from './activity/describ
 import { isLowStock } from './inventory/stockAlerts.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { type PricingTier, validatePricingTiers } from './pricing/bulkPricing.js';
+import { bestPromotionFor, discountedPrice, type RunningPromotion } from './pricing/promotions.js';
 
 export interface ProductDto {
   id: number;
@@ -25,6 +27,8 @@ export interface ProductDto {
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
+  /** The running promotion for this product, with the price it gives for one unit. */
+  promotion: { id: number; name: string; percentOff: number; endsAt: string; price: number } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,6 +64,7 @@ export class ProductService {
     private readonly productRepository: ProductRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly pricingTierRepository: PricingTierRepository,
+    private readonly promotionRepository: PromotionRepository,
     private readonly transactions: TransactionManager,
   ) {}
 
@@ -73,10 +78,13 @@ export class ProductService {
       limit: query.limit,
       offset: toOffset(query),
     });
-    const tiersByProduct = await this.pricingTierRepository.findByProductIds(products.map((product) => product.id));
+    const [tiersByProduct, promotions] = await Promise.all([
+      this.pricingTierRepository.findByProductIds(products.map((product) => product.id)),
+      this.promotionRepository.findRunning(new Date()),
+    ]);
 
     return {
-      items: products.map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], isAdmin)),
+      items: products.map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], promotions, isAdmin)),
       meta: toPaginationMeta(query, total),
     };
   }
@@ -85,20 +93,26 @@ export class ProductService {
     const isAdmin = viewerRole === 'admin';
     const product = await this.productRepository.findById(id, isAdmin);
     if (!product) throw new NotFoundError(`Product ${id} does not exist`);
-    const tiers = await this.pricingTierRepository.findByProductId(id);
-    return this.toDto(product, tiers, isAdmin);
+    const [tiers, promotions] = await Promise.all([
+      this.pricingTierRepository.findByProductId(id),
+      this.promotionRepository.findRunning(new Date()),
+    ]);
+    return this.toDto(product, tiers, promotions, isAdmin);
   }
 
   /** Products in the same order as `ids`, skipping any that no longer exist. */
   async getManyByIds(ids: number[], viewerRole: UserRole | undefined): Promise<ProductDto[]> {
     const isAdmin = viewerRole === 'admin';
     const products = await this.productRepository.findByIds(ids, isAdmin);
-    const tiersByProduct = await this.pricingTierRepository.findByProductIds(products.map((product) => product.id));
+    const [tiersByProduct, promotions] = await Promise.all([
+      this.pricingTierRepository.findByProductIds(products.map((product) => product.id)),
+      this.promotionRepository.findRunning(new Date()),
+    ]);
     const productById = new Map(products.map((product) => [product.id, product]));
     return ids
       .map((id) => productById.get(id))
       .filter((product): product is ProductRecord => product !== undefined)
-      .map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], isAdmin));
+      .map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], promotions, isAdmin));
   }
 
   /**
@@ -129,7 +143,7 @@ export class ProductService {
           entityType: 'product',
           entityId: id,
           summary: `Added product ${input.name}`,
-          details: { price: input.price, stock: input.stock },
+          details: { price: input.price, costPrice: input.costPrice, stock: input.stock },
         });
         return id;
       });
@@ -219,8 +233,15 @@ export class ProductService {
     };
   }
 
-  private toDto(product: ProductRecord, tiers: PricingTier[], includeCost: boolean): ProductDto {
+  private toDto(
+    product: ProductRecord,
+    tiers: PricingTier[],
+    runningPromotions: RunningPromotion[],
+    includeCost: boolean,
+  ): ProductDto {
     const quantity = product.quantity_on_hand ?? 0;
+    const price = toMoney(product.base_price);
+    const promotion = bestPromotionFor({ id: product.id, categoryId: product.category_id }, runningPromotions);
     const reorderLevel = product.reorder_level ?? DEFAULT_REORDER_LEVEL;
     return {
       id: product.id,
@@ -230,7 +251,7 @@ export class ProductService {
       imageUrl: product.image_url,
       isActive: product.is_active,
       category: { id: product.category_id, name: product.category_name },
-      price: toMoney(product.base_price),
+      price,
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
       stock: {
         quantity,
@@ -239,6 +260,13 @@ export class ProductService {
         isLowStock: isLowStock(quantity, reorderLevel),
       },
       bulkPricingTiers: tiers,
+      promotion: promotion && {
+        id: promotion.id,
+        name: promotion.name,
+        percentOff: promotion.percentOff,
+        endsAt: promotion.endsAt.toISOString(),
+        price: discountedPrice(price, promotion.percentOff),
+      },
       createdAt: product.created_at.toISOString(),
       updatedAt: product.updated_at.toISOString(),
     };

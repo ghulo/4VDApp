@@ -17,9 +17,10 @@ export const updateSettingsSchema = z
   .object({
     refundApprovalLimit: z.number().min(0).max(100_000).optional(),
     returnWindowDays: z.number().int().min(0).max(3650).optional(),
+    minimumMarginPercent: z.number().min(0).max(1000).optional(),
   })
   .refine((input) => Object.values(input).some((value) => value !== undefined), {
-    message: 'send refundApprovalLimit, returnWindowDays, or both',
+    message: 'send at least one of: refundApprovalLimit, returnWindowDays, minimumMarginPercent',
   });
 
 /** Rejecting always needs a reason the employee can read. */

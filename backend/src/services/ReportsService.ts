@@ -41,6 +41,10 @@ export interface TeamRow {
   refunds: number;
   profit: number;
   averageSale: number;
+  monthlyTarget: number | null;
+  commissionPercent: number | null;
+  /** Revenue after refunds × commission; null when no commission is set. */
+  commission: number | null;
 }
 
 export interface ProfitRow {
@@ -112,6 +116,7 @@ export class ReportsService {
     return rows.map((row) => {
       const salesCount = Number(row.sales_count);
       const revenue = Number(row.revenue);
+      const commissionPercent = row.commission_percent === null ? null : Number(row.commission_percent);
       return {
         userId: row.user_id,
         name: row.name,
@@ -123,6 +128,9 @@ export class ReportsService {
         refunds: Number(row.refunds),
         profit: Number(row.profit),
         averageSale: salesCount === 0 ? 0 : roundMoney(revenue / salesCount),
+        monthlyTarget: row.monthly_target === null ? null : Number(row.monthly_target),
+        commissionPercent,
+        commission: commissionPercent === null ? null : roundMoney((revenue * commissionPercent) / 100),
       };
     });
   }
@@ -172,10 +180,11 @@ export class ReportsService {
 
   /** The caller's own numbers. Deliberately no cost or profit. */
   async mySales(userId: number, range: DateRange, compareWith: DateRange = previousRange(range)) {
-    const [currentRow, previousRow, recent] = await Promise.all([
+    const [currentRow, previousRow, recent, monthlyTarget] = await Promise.all([
       this.reportsRepository.totals(range, userId),
       this.reportsRepository.totals(compareWith, userId),
       this.reportsRepository.recentSalesBy(userId, range, MY_RECENT_SALES_LIMIT),
+      this.reportsRepository.monthlyTarget(userId),
     ]);
     const pick = (row: TotalsRow) => ({
       salesCount: Number(row.sales_count),
@@ -184,6 +193,7 @@ export class ReportsService {
       refunds: Number(row.refunds),
     });
     return {
+      monthlyTarget,
       current: pick(currentRow),
       previous: pick(previousRow),
       recentSales: recent.map((sale) => ({

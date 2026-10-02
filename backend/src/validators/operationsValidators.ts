@@ -68,9 +68,11 @@ export const updateUserSchema = z
     role: z.enum(USER_ROLES).optional(),
     isActive: z.boolean().optional(),
     password: password.optional(),
+    monthlyTarget: z.number().min(0).max(100_000_000).nullable().optional(),
+    commissionPercent: z.number().min(0).max(100).nullable().optional(),
   })
   .refine((input) => Object.values(input).some((value) => value !== undefined), {
-    message: 'send at least one of: name, role, isActive, password',
+    message: 'send at least one of: name, role, isActive, password, monthlyTarget, commissionPercent',
   });
 
 export const userQuerySchema = paginationSchema.extend({

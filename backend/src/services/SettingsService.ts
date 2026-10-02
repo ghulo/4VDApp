@@ -7,11 +7,14 @@ export interface AppSettings {
   refundApprovalLimit: number;
   /** Employee returns of sales older than this many days wait for the owner. */
   returnWindowDays: number;
+  /** No promotion may bring a price below cost plus this percentage. */
+  minimumMarginPercent: number;
 }
 
 const KEYS: Record<keyof AppSettings, string> = {
   refundApprovalLimit: 'refund_approval_limit',
   returnWindowDays: 'return_window_days',
+  minimumMarginPercent: 'minimum_margin_percent',
 };
 
 export class SettingsService {
@@ -26,7 +29,11 @@ export class SettingsService {
       const value = Number(stored.get(KEYS[name]));
       return Number.isFinite(value) ? value : DEFAULT_SETTINGS[name];
     };
-    return { refundApprovalLimit: read('refundApprovalLimit'), returnWindowDays: read('returnWindowDays') };
+    return {
+      refundApprovalLimit: read('refundApprovalLimit'),
+      returnWindowDays: read('returnWindowDays'),
+      minimumMarginPercent: read('minimumMarginPercent'),
+    };
   }
 
   async update(input: Partial<AppSettings>, userId: number): Promise<AppSettings> {
@@ -52,7 +59,12 @@ export class SettingsService {
 }
 
 function describe(name: keyof AppSettings, from: number, to: number): string {
-  return name === 'refundApprovalLimit'
-    ? `the refund approval limit from €${from} to €${to}`
-    : `the return window from ${from} to ${to} days`;
+  switch (name) {
+    case 'refundApprovalLimit':
+      return `the refund approval limit from €${from} to €${to}`;
+    case 'returnWindowDays':
+      return `the return window from ${from} to ${to} days`;
+    case 'minimumMarginPercent':
+      return `the minimum margin from ${from}% to ${to}%`;
+  }
 }

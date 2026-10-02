@@ -77,7 +77,7 @@ export class ExportService {
 
   async stock(timeZone: string): Promise<CsvFile> {
     const [products, suggestions] = await Promise.all([
-      this.reportsRepository.salesVelocity(null),
+      this.reportsRepository.activeProducts(),
       this.reportsService.reorderSuggestions(),
     ]);
     const daysLeftById = new Map(suggestions.map((row) => [row.productId, row.daysLeft]));

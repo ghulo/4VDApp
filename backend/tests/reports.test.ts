@@ -314,9 +314,10 @@ describe('GET /api/reports/reorder-suggestions', () => {
 
     const response = await request(context.app).get('/api/reports/reorder-suggestions').set(auth(adminToken));
 
+    // A product added today counts as a week old: 15 units ÷ 7 days.
     expect(response.body.data).toEqual([
-      { productId: fast, productName: 'Fast seller', quantity: 15, reorderLevel: 10, averageDailySales: 0.5, daysLeft: 30, suggestedOrder: 10 },
-      expect.objectContaining({ productName: 'Never sold', daysLeft: null, suggestedOrder: 6 }),
+      expect.objectContaining({ productId: fast, productName: 'Fast seller', quantity: 15, averageDailySales: 2.14, daysLeft: 7, suggestedOrder: 60 }),
+      expect.objectContaining({ productName: 'Never sold', daysLeft: null, suggestedOrder: 6, lastSoldAt: null }),
     ]);
   });
 });

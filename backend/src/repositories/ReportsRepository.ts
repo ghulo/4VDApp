@@ -51,7 +51,15 @@ export interface VelocityRow {
   reorder_level: number;
   base_price: string;
   cost_price: string | null;
-  units_sold_recently: string;
+  created_at: Date;
+  /** Null when it has never sold. */
+  last_sold_at: Date | null;
+}
+
+export interface ProductSaleRow {
+  product_id: number;
+  sale_date: Date;
+  quantity_sold: number;
 }
 
 export interface MySaleRow {
@@ -180,13 +188,8 @@ export class ReportsRepository {
     return result.rows;
   }
 
-  /** Active products with stock and how many sold since `since`. */
-  /** Pass `since: null` when only the stock columns are needed, to skip counting sales. */
-  async salesVelocity(since: Date | null): Promise<VelocityRow[]> {
-    const unitsSold =
-      since === null
-        ? sql`0`
-        : sql`coalesce((select sum(s.quantity_sold) from sales s where s.product_id = p.id and s.sale_date >= ${since}), 0)`;
+  /** Every active product with its stock, price, cost, and when it last sold. */
+  async activeProducts(): Promise<VelocityRow[]> {
     const result = await sql<VelocityRow>`
       select
         p.id as product_id,
@@ -197,7 +200,8 @@ export class ReportsRepository {
         i.reorder_level,
         p.base_price,
         p.cost_price,
-        ${unitsSold} as units_sold_recently
+        p.created_at,
+        (select max(s.sale_date) from sales s where s.product_id = p.id) as last_sold_at
       from products p
       join inventory i on i.product_id = p.id
       join categories c on c.id = p.category_id
@@ -205,6 +209,15 @@ export class ReportsRepository {
       order by p.name
     `.execute(this.db);
     return result.rows;
+  }
+
+  /** Individual sales since `since`, for forecasting. */
+  async salesSince(since: Date): Promise<ProductSaleRow[]> {
+    return this.db
+      .selectFrom('sales')
+      .select(['product_id', 'sale_date', 'quantity_sold'])
+      .where('sale_date', '>=', since)
+      .execute();
   }
 
   async recentSalesBy(soldBy: number, range: DateRange, limit: number): Promise<MySaleRow[]> {

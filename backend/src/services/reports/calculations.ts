@@ -1,5 +1,3 @@
-export const REORDER_WINDOW_DAYS = 30;
-
 export interface DateRange {
   startDate: Date;
   endDate: Date;
@@ -23,18 +21,4 @@ export function previousRange(range: DateRange): DateRange {
 export function margin(profit: number, revenueWithKnownCost: number): number | null {
   if (revenueWithKnownCost === 0) return null;
   return round(profit / revenueWithKnownCost, 4);
-}
-
-/**
- * Based on the last 30 days of sales: how long current stock lasts, and how
- * many to order so there's enough for the next 30 days plus the reorder buffer.
- */
-export function reorderSuggestion(input: { unitsSoldLast30Days: number; quantity: number; reorderLevel: number }) {
-  const perDay = input.unitsSoldLast30Days / REORDER_WINDOW_DAYS;
-  const neededForWindow = perDay * REORDER_WINDOW_DAYS;
-  return {
-    averageDailySales: round(perDay, 2),
-    daysLeft: perDay === 0 ? null : Math.floor(input.quantity / perDay),
-    suggestedOrder: Math.max(0, Math.ceil(neededForWindow + input.reorderLevel - input.quantity)),
-  };
 }

@@ -51,6 +51,10 @@ Everything Render needs is in `render.yaml` at the repo root: the API (built fro
 
 **The employee app** (`4vd-app`, address `https://fourvd-app.onrender.com`) is the mobile app built for browsers. Staff open that address on their phone and log in. On an iPhone, **Share → Add to Home Screen** turns it into a full-screen app with its own icon (also needed for iPhone alerts); on Android, Chrome offers **Install app**. Its address must be in `CORS_ORIGINS` on the API next to the dashboard's, separated by a comma.
 
+**Emails and Google sign-in** (optional, best once the domain is bought):
+- Emails: add the domain at resend.com, add the DNS records it shows, then set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `4VD <hello@your-domain.com>`) on `fourvd-api`. Until then invite and reset emails only appear in the API's logs.
+- Google: in Google Cloud, create an OAuth client ID of type "Web application", add the dashboard's and the app's addresses under "Authorised JavaScript origins", and set `GOOGLE_CLIENT_ID` on `fourvd-api`. The Google button appears by itself.
+
 **Free plan caveats** (check Render's pricing page, these change):
 - A free web service sleeps after a few minutes without visitors and takes a while to wake. While it sleeps, push alerts and the daily summary don't go out. Switch `4vd-api` to the `starter` plan for real use.
 - A free database has limited storage and may expire after a trial period. Use a paid database before real data goes in.

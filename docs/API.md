@@ -79,6 +79,38 @@ A user looks like `{ id, email, name, role, isActive, createdAt }`.
 
 ---
 
+## Accounts and profiles
+
+Everyone belongs to a **business** (the shop). Links sent by email carry a one-use random token (only its hash is stored): invites last 7 days, email confirmations 24 hours, password resets 1 hour. Emails are queued in `email_outbox` and sent by the background loop through Resend (`RESEND_API_KEY`), or printed to the server log when no key is set. Links open the dashboard (`DASHBOARD_URL`). Login refuses accounts whose email isn't confirmed yet.
+
+| Method & path | Auth | Body / returns |
+|---|---|---|
+| `GET /invites` | admin | Open invites: `{ id, email, role, invitedBy, expiresAt, createdAt }` |
+| `POST /invites` | admin | `{ email, role }` → emails a link; replaces an older open invite to the same email. `409` if the email already has an account |
+| `POST /invites/:id/resend` · `DELETE /invites/:id` | admin | New link (the old one stops working) · cancel |
+| `GET /auth/invites/:token` | public | `{ email, role, shopName, invitedBy }`; `410` when used, cancelled or expired |
+| `POST /auth/invites/:token/accept` | public | `{ name, password }` → a verified account and a session (`{ token, refreshToken, user }`) |
+| `POST /auth/invites/:token/google` | public | `{ credential }` (Google ID token) → same, when the Google email matches the invite |
+| `POST /auth/forgot-password` · `POST /auth/resend-verification` | public | `{ email }` → `202` either way; at most one email a minute per account |
+| `POST /auth/reset-password` | public | `{ token, password }` → logs out every device |
+| `POST /auth/verify-email` · `POST /auth/confirm-email-change` | public | `{ token }` |
+| `GET /auth/google` · `POST /auth/google` | public | `{ enabled, clientId }` · `{ credential }` → session. Never creates an account: signs in a linked Google account, or links one whose verified email matches an existing account |
+| `POST /auth/signup` | public | Only with `ALLOW_SIGNUP=true`: `{ shopName, name, email, password }` → new business + owner, verification email |
+| `PUT /me/profile` | signed in | Any of `{ name, phone, theme }` → the user |
+| `PUT /me/avatar` · `DELETE /me/avatar` | signed in | The image itself as the body (`Content-Type: image/*`, max 5 MB) → resized to 256 px WebP |
+| `POST /me/password` | signed in | `{ currentPassword?, newPassword }`; other devices are logged out |
+| `POST /me/email` | signed in | `{ newEmail, password? }` → link to the new address; switches when clicked, old address told |
+| `GET /me/security` · `DELETE /me/google` | signed in | `{ hasPassword, googleEmail }` · remove Google (refused without a password) |
+| `GET /me/sessions` | signed in | Devices: `{ id, device, ip, lastUsedAt, startedAt, current }` |
+| `DELETE /me/sessions/:id` · `POST /me/sessions/log-out-others` | signed in | Log out one device · every other device |
+| `GET /business` · `PUT /business` | signed in · admin | `{ name, address, phone, currency, timeZone, logoUrl }` |
+| `PUT /business/logo` · `DELETE /business/logo` | admin | Image body, resized to 512 px WebP |
+| `GET /media/:id` | public | The picture; cached for a year (a new picture gets a new id) |
+
+Users now also carry `phone`, `avatarUrl` and `theme`.
+
+---
+
 ## Categories
 
 | Method & path | Auth | Notes |

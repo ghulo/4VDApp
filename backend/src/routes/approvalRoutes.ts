@@ -12,7 +12,7 @@ export function createSettingsRoutes({ settingsService, guards }: Container): Ro
 
   // Employees read the limits so the phone can say when something needs approval.
   router.get('/', ...guards.staff, controller.get);
-  router.put('/', ...guards.admin, controller.update);
+  router.put('/', ...guards.manage, controller.update);
 
   return router;
 }
@@ -21,10 +21,10 @@ export function createWriteOffRoutes({ writeOffService, guards }: Container): Ro
   const controller = createWriteOffsController(writeOffService);
   const router = Router();
 
-  router.get('/', ...guards.admin, controller.list);
+  router.get('/', ...guards.oversee, controller.list);
   router.post('/', ...guards.staff, controller.request);
-  router.post('/:id/approve', ...guards.admin, controller.approve);
-  router.post('/:id/reject', ...guards.admin, controller.reject);
+  router.post('/:id/approve', ...guards.oversee, controller.approve);
+  router.post('/:id/reject', ...guards.oversee, controller.reject);
 
   return router;
 }
@@ -33,9 +33,9 @@ export function createReturnRoutes({ returnService, guards }: Container): Router
   const controller = createReturnsController(returnService);
   const router = Router();
 
-  router.get('/', ...guards.admin, controller.list);
-  router.post('/:id/approve', ...guards.admin, controller.approve);
-  router.post('/:id/reject', ...guards.admin, controller.reject);
+  router.get('/', ...guards.oversee, controller.list);
+  router.post('/:id/approve', ...guards.oversee, controller.approve);
+  router.post('/:id/reject', ...guards.oversee, controller.reject);
 
   return router;
 }
@@ -51,9 +51,9 @@ export function createStockCountRoutes({ stockCountService, guards }: Container)
   router.post('/:id/submit', ...guards.staff, controller.submit);
   // The service lets only the starter or an admin cancel.
   router.post('/:id/cancel', ...guards.staff, controller.cancel);
-  router.post('/:id/lines/:productId/approve', ...guards.admin, controller.approveLine);
-  router.post('/:id/lines/:productId/reject', ...guards.admin, controller.rejectLine);
-  router.post('/:id/approve-all', ...guards.admin, controller.approveAll);
+  router.post('/:id/lines/:productId/approve', ...guards.oversee, controller.approveLine);
+  router.post('/:id/lines/:productId/reject', ...guards.oversee, controller.rejectLine);
+  router.post('/:id/approve-all', ...guards.oversee, controller.approveAll);
 
   return router;
 }
@@ -62,7 +62,7 @@ export function createApprovalRoutes({ approvalService, guards }: Container): Ro
   const controller = createApprovalsController(approvalService);
   const router = Router();
 
-  router.get('/summary', ...guards.admin, controller.summary);
+  router.get('/summary', ...guards.oversee, controller.summary);
   router.get('/mine', ...guards.staff, controller.mine);
 
   return router;

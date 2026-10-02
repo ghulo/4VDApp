@@ -9,6 +9,8 @@ import { ButtonLink, DataTable, EmptyState, PageHeader, type Column } from '../c
 import { categoriesApi, productsApi } from '../services/api';
 import type { Product } from '../services/types';
 import { formatMoney } from '../utils/format';
+import { useCurrentUser } from '../auth/useAuth';
+import { canManage } from '../auth/roles';
 
 const COLUMNS: Column<Product>[] = [
   {
@@ -57,6 +59,7 @@ const COLUMNS: Column<Product>[] = [
 ];
 
 export function ProductsPage() {
+  const { role } = useCurrentUser();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
   const search = params.get('search') ?? '';
@@ -87,9 +90,11 @@ export function ProductsPage() {
         title="Products"
         description="Everything in the catalog, including products you've switched off."
         actions={
-          <ButtonLink to="/products/new" variant="primary" icon={Plus}>
-            Add product
-          </ButtonLink>
+          canManage(role) && (
+            <ButtonLink to="/products/new" variant="primary" icon={Plus}>
+              Add product
+            </ButtonLink>
+          )
         }
       />
 
@@ -131,9 +136,11 @@ export function ProductsPage() {
                 art
                 title="No products yet"
                 action={
-                  <ButtonLink to="/products/new" variant="primary" icon={Plus}>
-                    Add your first product
-                  </ButtonLink>
+                  canManage(role) && (
+                    <ButtonLink to="/products/new" variant="primary" icon={Plus}>
+                      Add your first product
+                    </ButtonLink>
+                  )
                 }
               >
                 Add what you sell, with its price and how many you have.

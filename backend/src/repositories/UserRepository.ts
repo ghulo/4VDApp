@@ -1,5 +1,6 @@
 import type { DatabaseClient } from '../database/connection.js';
 import type { NewUserRow, UserRole, UserRow, UserUpdate } from '../database/types.js';
+import { OVERSEER_ROLES } from '../utils/roles.js';
 
 export interface UserListFilters {
   role?: UserRole;
@@ -53,12 +54,12 @@ export class UserRepository {
       .executeTakeFirst();
   }
 
-  /** Active admins who want the Monday report email. */
+  /** Active people who oversee the shop and want the Monday report email. */
   weeklyReportRecipients(): Promise<Array<{ email: string; name: string }>> {
     return this.db
       .selectFrom('users')
       .select(['email', 'name'])
-      .where('role', '=', 'admin')
+      .where('role', 'in', OVERSEER_ROLES)
       .where('is_active', '=', true)
       .where('deleted_at', 'is', null)
       .where('email_weekly_report', '=', true)
@@ -75,11 +76,12 @@ export class UserRepository {
     return row?.name;
   }
 
-  async countActiveAdmins(): Promise<number> {
+  /** Active people with one of the roles (e.g. to keep at least one developer). */
+  async countActive(roles: UserRole[]): Promise<number> {
     const row = await this.db
       .selectFrom('users')
       .select((eb) => eb.fn.countAll<string>().as('total'))
-      .where('role', '=', 'admin')
+      .where('role', 'in', roles)
       .where('is_active', '=', true)
       .where('deleted_at', 'is', null)
       .executeTakeFirstOrThrow();

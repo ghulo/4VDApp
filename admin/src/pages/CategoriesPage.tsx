@@ -5,6 +5,7 @@ import { errorMessage } from '../utils/errors';
 import { categoriesApi } from '../services/api';
 import type { Category } from '../services/types';
 import { Button, Card, PageHeader } from '../components/ui';
+import { ManagersOnly } from '../components/ManagersOnly';
 
 export function CategoriesPage() {
   const query = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
@@ -16,20 +17,22 @@ export function CategoriesPage() {
         description="Every product belongs to one category. People filter by these in the mobile app."
       />
 
-      <Card title="New category">
-        <CategoryForm />
-      </Card>
+      <ManagersOnly note="Only the developer or an admin can add, rename or delete categories.">
+        <Card title="New category">
+          <CategoryForm />
+        </Card>
 
-      {query.isPending && <Loading />}
-      {query.isError && <ErrorNotice error={query.error} onRetry={() => query.refetch()} />}
-      {query.data && query.data.length === 0 && <EmptyState title="No categories yet">Add one above to start your catalog.</EmptyState>}
-      {query.data && query.data.length > 0 && (
-        <ul className="category-list">
-          {query.data.map((category) => (
-            <CategoryRow key={category.id} category={category} />
-          ))}
-        </ul>
-      )}
+        {query.isPending && <Loading />}
+        {query.isError && <ErrorNotice error={query.error} onRetry={() => query.refetch()} />}
+        {query.data && query.data.length === 0 && <EmptyState title="No categories yet">Add one above to start your catalog.</EmptyState>}
+        {query.data && query.data.length > 0 && (
+          <ul className="category-list">
+            {query.data.map((category) => (
+              <CategoryRow key={category.id} category={category} />
+            ))}
+          </ul>
+        )}
+      </ManagersOnly>
     </>
   );
 }

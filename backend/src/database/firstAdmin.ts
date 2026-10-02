@@ -24,7 +24,7 @@ export async function ensureFirstAdmin(db: DatabaseClient, input: FirstAdminInpu
   const anyAdmin = await db
     .selectFrom('users')
     .select('id')
-    .where('role', '=', 'admin')
+    .where('role', 'in', ['developer', 'admin'])
     .where('deleted_at', 'is', null)
     .executeTakeFirst();
   if (anyAdmin) {
@@ -41,7 +41,7 @@ export async function ensureFirstAdmin(db: DatabaseClient, input: FirstAdminInpu
     .values({
       email,
       name: input.name?.trim() || 'Admin',
-      role: 'admin',
+      role: 'developer',
       password_hash: await hashPassword(password),
       business_id: await defaultBusinessId(db),
       email_verified_at: new Date(),

@@ -32,6 +32,7 @@ import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
+import { canManage } from '../auth/roles';
 
 interface NavItem {
   to: string;
@@ -40,6 +41,8 @@ interface NavItem {
   end?: boolean;
   /** Which waiting count to show next to it, if any. */
   badge?: 'approvals' | 'alerts';
+  /** Hidden from the owner, who sees the business but doesn't change its setup. */
+  managersOnly?: boolean;
 }
 
 /** Grouped the way the owner works: what needs doing now, the shelves, then the business. */
@@ -70,7 +73,7 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
       { to: '/reports', label: 'Reports', icon: ChartLine },
       { to: '/people', label: 'People', icon: Users },
       { to: '/activity', label: 'Activity', icon: ClockCounterClockwise },
-      { to: '/settings', label: 'Settings', icon: Gear },
+      { to: '/settings', label: 'Settings', icon: Gear, managersOnly: true },
     ],
   },
 ];
@@ -204,7 +207,7 @@ export function Layout() {
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="sidebar__group">
               <p className="sidebar__group-label">{group.label}</p>
-              {group.items.map((item) => {
+              {group.items.filter((item) => !item.managersOnly || canManage(user.role)).map((item) => {
                 const count = item.badge === 'approvals' ? waitingCount : item.badge === 'alerts' ? unreadCount : 0;
                 const ItemIcon = item.icon;
                 return (

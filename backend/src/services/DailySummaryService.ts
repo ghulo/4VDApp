@@ -6,6 +6,7 @@ import { formatEuro } from '../utils/money.js';
 import { startOfZonedDay, zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { InsightsService } from './InsightsService.js';
 import type { SettingsService } from './SettingsService.js';
+import { OVERSEER_ROLES } from '../utils/roles.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Remembers the last day a summary went out, so restarts and second servers don't resend it. */
@@ -41,7 +42,7 @@ export class DailySummaryService {
     if (!(await this.settingsRepository.claim(LAST_SENT_KEY, zonedDay(now, this.timeZone)))) return false;
 
     const summary = await this.compose(now);
-    await this.notificationRepository.createForRoles(['admin'], {
+    await this.notificationRepository.createForRoles(OVERSEER_ROLES, {
       title: summary.title,
       message: summary.message,
       type: NOTIFICATION_TYPES.DAILY_SUMMARY,

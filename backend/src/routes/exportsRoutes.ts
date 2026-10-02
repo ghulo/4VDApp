@@ -6,7 +6,7 @@ export function createExportsRoutes({ exportService, guards }: Container): Route
   const controller = createExportsController(exportService);
   const router = Router();
 
-  router.use(...guards.admin);
+  router.use(...guards.oversee);
   router.get('/sales.csv', controller.sales);
   router.get('/stock.csv', controller.stock);
   router.get('/team.csv', controller.team);

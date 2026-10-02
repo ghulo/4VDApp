@@ -4,13 +4,16 @@ import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
 import { invitesApi, usersApi } from '../services/api';
-import { type User, type UserRole, USER_ROLES } from '../services/types';
+import { type User, type UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, ROLE_LABEL } from '../utils/format';
-import { Button, Card, PageHeader } from '../components/ui';
+import { Badge, Button, Card, PageHeader } from '../components/ui';
+import { assignableRoles, canHandOut, canManage } from '../auth/roles';
 
 const ROLE_HINT: Record<UserRole, string> = {
-  admin: 'Everything, including this dashboard',
+  developer: 'Everything, and the only one who hands out the top roles',
+  admin: 'Runs the shop: products, stock, people and settings',
+  owner: 'Sees everything and decides requests, without changing the setup',
   employee: 'Browse products and record sales',
   family: 'Browse products and favorites',
 };
@@ -18,21 +21,26 @@ const ROLE_HINT: Record<UserRole, string> = {
 const MIN_PASSWORD_LENGTH = 8;
 
 export function UsersPage() {
+  const currentUser = useCurrentUser();
   const users = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
 
   return (
     <>
       <PageHeader title="People" description="Who can use the app, and what they can do." />
 
-      <Card title="Invite someone">
-        <InviteForm />
-        <details className="fallback">
-          <summary>Or set them up yourself with a first password</summary>
-          <AddUserForm />
-        </details>
-      </Card>
+      {canManage(currentUser.role) && (
+        <>
+          <Card title="Invite someone">
+            <InviteForm />
+            <details className="fallback">
+              <summary>Or set them up yourself with a first password</summary>
+              <AddUserForm />
+            </details>
+          </Card>
 
-      <PendingInvites />
+          <PendingInvites />
+        </>
+      )}
 
       {users.isPending && <Loading />}
       {users.isError && <ErrorNotice error={users.error} onRetry={() => users.refetch()} />}
@@ -48,6 +56,7 @@ export function UsersPage() {
 }
 
 function InviteForm() {
+  const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('employee');
@@ -75,7 +84,7 @@ function InviteForm() {
         <label className="field">
           <span className="field__label">Role</span>
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            {USER_ROLES.map((option) => (
+            {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
                 {ROLE_LABEL[option]}: {ROLE_HINT[option]}
               </option>
@@ -143,6 +152,7 @@ function PendingInvites() {
 }
 
 function AddUserForm() {
+  const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -183,7 +193,7 @@ function AddUserForm() {
         <label className="field">
           <span className="field__label">Role</span>
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            {USER_ROLES.map((option) => (
+            {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
                 {ROLE_LABEL[option]}: {ROLE_HINT[option]}
               </option>
@@ -231,6 +241,8 @@ function UserRow({ user }: { user: User }) {
   const sells = user.role !== 'family';
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const isSelf = user.id === currentUser.id;
+  // Others with a top role are the developer's to change; your own role is changed by someone else.
+  const canEdit = isSelf ? canManage(currentUser.role) : canHandOut(currentUser.role, user.role);
 
   const onDone = () => queryClient.invalidateQueries({ queryKey: ['users'] });
   const update = useMutation({
@@ -271,20 +283,24 @@ function UserRow({ user }: { user: User }) {
           </p>
         )}
       </div>
-      <select
-        aria-label={`Role for ${user.name}`}
-        value={user.role}
-        disabled={update.isPending}
-        onChange={(event) => update.mutate({ role: event.target.value as UserRole })}
-      >
-        {USER_ROLES.map((option) => (
-          <option key={option} value={option}>
-            {ROLE_LABEL[option]}
-          </option>
-        ))}
-      </select>
+      {canEdit && !isSelf ? (
+        <select
+          aria-label={`Role for ${user.name}`}
+          value={user.role}
+          disabled={update.isPending}
+          onChange={(event) => update.mutate({ role: event.target.value as UserRole })}
+        >
+          {assignableRoles(currentUser.role).map((option) => (
+            <option key={option} value={option}>
+              {ROLE_LABEL[option]}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{ROLE_LABEL[user.role]}</Badge>
+      )}
       <span className="category-list__actions">
-        {isSettingTargets ? (
+        {!canEdit ? null : isSettingTargets ? (
           <form
             className="inline-form"
             onSubmit={(event) => {

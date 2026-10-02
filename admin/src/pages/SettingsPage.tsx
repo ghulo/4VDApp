@@ -6,6 +6,7 @@ import { Button, Card, PageHeader, SettingRow } from '../components/ui';
 import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
+import { ManagersOnly } from '../components/ManagersOnly';
 
 export function SettingsPage() {
   const settings = useQuery({
@@ -19,10 +20,12 @@ export function SettingsPage() {
         title="Settings"
         description="Your shop's details, when a return has to wait for you, and how low a promotion may take a price."
       />
-      <BusinessPanel />
-      {settings.isPending && <Loading />}
-      {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
-      {settings.data && <SettingsForm initial={settings.data} />}
+      <ManagersOnly note="Only the developer or an admin can change the shop's settings.">
+        <BusinessPanel />
+        {settings.isPending && <Loading />}
+        {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
+        {settings.data && <SettingsForm initial={settings.data} />}
+      </ManagersOnly>
     </>
   );
 }

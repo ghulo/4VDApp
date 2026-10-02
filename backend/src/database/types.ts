@@ -18,7 +18,7 @@ type Decimal = ColumnType<string, number | string, number | string>;
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
 type UpdatedAt = ColumnType<Date, Date | undefined, Date>;
 
-export const USER_ROLES = ['admin', 'employee', 'family'] as const;
+export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export interface UsersTable {
@@ -79,7 +79,7 @@ export interface MediaTable {
   created_at: CreatedAt;
 }
 
-export const INVITE_ROLES = ['admin', 'employee', 'family'] as const;
+export const INVITE_ROLES = ['developer', 'admin', 'owner', 'employee', 'family'] as const;
 
 export interface InvitesTable {
   id: Generated<number>;

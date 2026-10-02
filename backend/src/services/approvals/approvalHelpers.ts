@@ -1,10 +1,11 @@
 import { ConflictError } from '../../errors/httpErrors.js';
 import { NOTIFICATION_TYPES } from '../../constants/notifications.js';
 import type { TransactionalRepositories } from '../../repositories/TransactionManager.js';
+import { OVERSEER_ROLES } from '../../utils/roles.js';
 
 /** Tell every admin something is waiting in the Approvals inbox. */
 export function notifyAdminsOfPending(repos: TransactionalRepositories, what: string, message: string) {
-  return repos.notifications.createForRoles(['admin'], {
+  return repos.notifications.createForRoles(OVERSEER_ROLES, {
     title: `New ${what} waiting for approval`,
     message,
     type: NOTIFICATION_TYPES.APPROVAL,

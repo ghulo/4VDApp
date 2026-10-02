@@ -10,9 +10,9 @@ export function createBusinessRoutes({ profileService, businessService, guards }
   const router = Router();
 
   router.get('/', guards.authenticated, controller.getBusiness);
-  router.put('/', ...guards.admin, controller.updateBusiness);
-  router.put('/logo', ...guards.admin, readImage, controller.setLogo);
-  router.delete('/logo', ...guards.admin, controller.removeLogo);
+  router.put('/', ...guards.manage, controller.updateBusiness);
+  router.put('/logo', ...guards.manage, readImage, controller.setLogo);
+  router.delete('/logo', ...guards.manage, controller.removeLogo);
 
   return router;
 }

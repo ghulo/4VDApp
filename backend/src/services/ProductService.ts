@@ -13,6 +13,7 @@ import { isLowStock } from './inventory/stockAlerts.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { type PricingTier, validatePricingTiers } from './pricing/bulkPricing.js';
 import { bestPromotionFor, discountedPrice, type RunningPromotion } from './pricing/promotions.js';
+import { canOversee } from '../utils/roles.js';
 
 export interface ProductDto {
   id: number;
@@ -69,7 +70,7 @@ export class ProductService {
   ) {}
 
   async list(query: ProductQuery, viewerRole: UserRole | undefined): Promise<Paginated<ProductDto>> {
-    const isAdmin = viewerRole === 'admin';
+    const isAdmin = canOversee(viewerRole);
     const { products, total } = await this.productRepository.findMany({
       categoryId: query.categoryId,
       search: query.search,
@@ -90,7 +91,7 @@ export class ProductService {
   }
 
   async getById(id: number, viewerRole: UserRole | undefined): Promise<ProductDto> {
-    const isAdmin = viewerRole === 'admin';
+    const isAdmin = canOversee(viewerRole);
     const product = await this.productRepository.findById(id, isAdmin);
     if (!product) throw new NotFoundError(`Product ${id} does not exist`);
     const [tiers, promotions] = await Promise.all([
@@ -102,7 +103,7 @@ export class ProductService {
 
   /** Products in the same order as `ids`, skipping any that no longer exist. */
   async getManyByIds(ids: number[], viewerRole: UserRole | undefined): Promise<ProductDto[]> {
-    const isAdmin = viewerRole === 'admin';
+    const isAdmin = canOversee(viewerRole);
     const products = await this.productRepository.findByIds(ids, isAdmin);
     const [tiersByProduct, promotions] = await Promise.all([
       this.pricingTierRepository.findByProductIds(products.map((product) => product.id)),

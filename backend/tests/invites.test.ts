@@ -99,13 +99,13 @@ describe('invites', () => {
     const oldToken = tokenFrom(await linkSentTo('ana@example.com'));
     await request(context.app).post(`/api/invites/${first.body.data.id}/resend`).set(auth(adminToken));
     const newToken = tokenFrom(await linkSentTo('ana@example.com'));
-    await invite({ email: 'ana@example.com', role: 'admin' });
+    await invite({ email: 'ana@example.com', role: 'family' });
 
     const list = await request(context.app).get('/api/invites').set(auth(adminToken));
 
     expect(newToken).not.toBe(oldToken);
     expect((await accept(oldToken)).status).toBe(410);
-    expect(list.body.data).toEqual([expect.objectContaining({ email: 'ana@example.com', role: 'admin', invitedBy: 'Test admin' })]);
+    expect(list.body.data).toEqual([expect.objectContaining({ email: 'ana@example.com', role: 'family', invitedBy: 'Test admin' })]);
   });
 
   it('should only let admins invite, and want a sensible password', async () => {

@@ -164,7 +164,7 @@ export class ReportsRepository {
       from users u
       left join sales_ledger l
         on l.sold_by = u.id and l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
-      where (u.role in ('admin', 'employee') and u.is_active and u.deleted_at is null) or l.sale_id is not null
+      where (u.role in ('developer', 'admin', 'owner', 'employee') and u.is_active and u.deleted_at is null) or l.sale_id is not null
       group by u.id
       order by revenue desc, u.name
     `.execute(this.db);

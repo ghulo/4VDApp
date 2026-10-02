@@ -37,7 +37,8 @@ describe('sign-up when switched on', () => {
     expect(signup.status).toBe(201);
     expect(blocked.status).toBe(401);
     expect(login.status).toBe(200);
-    expect(login.body.data.user.role).toBe('admin');
+    // The person who creates a shop runs it: they become its developer.
+    expect(login.body.data.user.role).toBe('developer');
     expect(business.body.data.name).toBe('Dacaj Furniture');
   });
 

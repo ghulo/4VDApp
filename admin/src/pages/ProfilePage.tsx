@@ -10,6 +10,7 @@ import type { Session, User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, ROLE_LABEL } from '../utils/format';
+import { canOversee } from '../auth/roles';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -46,7 +47,7 @@ export function ProfilePage() {
         </SettingRow>
       </Card>
       <PushSettingsPanel />
-      {user.role === 'admin' && <EmailsPanel user={user} />}
+      {canOversee(user.role) && <EmailsPanel user={user} />}
       <SecurityPanel user={user} />
       <DevicesPanel />
     </>

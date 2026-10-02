@@ -3,12 +3,13 @@ import type { PricingService } from '../services/PricingService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { replacePricingTiersSchema } from '../validators/catalogValidators.js';
 import { parseInput, productIdParamsSchema } from '../validators/validate.js';
+import { canOversee } from '../utils/roles.js';
 
 export function createPricingController(pricingService: PricingService) {
   return {
     async getTiers(req: Request, res: Response): Promise<void> {
       const { productId } = parseInput(productIdParamsSchema, req.params);
-      sendSuccess(res, await pricingService.getTiers(productId, req.identity?.role === 'admin'));
+      sendSuccess(res, await pricingService.getTiers(productId, canOversee(req.identity?.role)));
     },
 
     async replaceTiers(req: Request, res: Response): Promise<void> {

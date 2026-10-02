@@ -4,19 +4,23 @@ import { useNavigate } from 'react-router';
 import { productsApi, usersApi } from '../services/api';
 import { ROLE_LABEL } from '../utils/format';
 import { rankMatches, type Searchable } from './matching';
+import { useCurrentUser } from '../auth/useAuth';
+import { canManage } from '../auth/roles';
 
 interface Command extends Searchable {
   id: string;
   group: 'Actions' | 'Pages' | 'Products' | 'People';
   hint?: string;
   to: string;
+  /** Only for the developer and admins. */
+  managersOnly?: boolean;
 }
 
 const ACTIONS: Command[] = [
-  { id: 'add-product', group: 'Actions', label: 'Add a product', keywords: 'new create item', to: '/products/new' },
-  { id: 'invite', group: 'Actions', label: 'Invite someone', keywords: 'add person staff employee team', to: '/people' },
+  { id: 'add-product', group: 'Actions', label: 'Add a product', keywords: 'new create item', to: '/products/new', managersOnly: true },
+  { id: 'invite', group: 'Actions', label: 'Invite someone', keywords: 'add person staff employee team', to: '/people', managersOnly: true },
   { id: 'sale', group: 'Actions', label: 'Record a sale', keywords: 'sell new sale', to: '/sales' },
-  { id: 'promotion', group: 'Actions', label: 'Start a promotion', keywords: 'discount sale offer', to: '/promotions' },
+  { id: 'promotion', group: 'Actions', label: 'Start a promotion', keywords: 'discount sale offer', to: '/promotions', managersOnly: true },
   { id: 'count', group: 'Actions', label: 'Start a stock count', keywords: 'count shelves inventory', to: '/counts' },
   { id: 'ask', group: 'Actions', label: 'Ask a question', keywords: 'ai assistant help', to: '/ask' },
 ];
@@ -44,6 +48,7 @@ const MAX_PER_GROUP = 6;
 /** Jump anywhere or start something, by typing. Ctrl/Cmd+K opens it. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const { role } = useCurrentUser();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -76,14 +81,14 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       to: '/people',
     }));
     const ranked = [
-      ...rankMatches(trimmed, ACTIONS),
+      ...rankMatches(trimmed, ACTIONS.filter((action) => !action.managersOnly || canManage(role))),
       ...rankMatches(trimmed, PAGES),
       // Products already come back filtered by the server's search.
       ...productCommands,
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),
     ];
     return GROUP_ORDER.flatMap((group) => ranked.filter((command) => command.group === group).slice(0, MAX_PER_GROUP));
-  }, [trimmed, products.data, people.data]);
+  }, [trimmed, products.data, people.data, role]);
 
   useEffect(() => {
     input.current?.focus();

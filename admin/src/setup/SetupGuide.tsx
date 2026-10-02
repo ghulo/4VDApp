@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { businessApi, invitesApi, productsApi, pushApi, usersApi } from '../services/api';
 import { Button, ButtonLink, Card } from '../components/ui';
 import { setupSteps } from './steps';
+import { useCurrentUser } from '../auth/useAuth';
+import { canManage } from '../auth/roles';
 
 const HIDDEN_KEY = '4vd.setupGuide.hidden';
 
@@ -16,7 +18,8 @@ function readHidden(): boolean {
 
 /** A checklist for a new shop at the top of Overview, until it's done or hidden. */
 export function SetupGuide() {
-  const [hidden, setHidden] = useState(readHidden);
+  const { role } = useCurrentUser();
+  const [hidden, setHidden] = useState(() => readHidden() || !canManage(role));
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: !hidden });
   const products = useQuery({
     queryKey: ['products', { page: 1, limit: 1, purpose: 'count' }],

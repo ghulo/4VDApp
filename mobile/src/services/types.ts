@@ -1,6 +1,6 @@
 // Mirrors the shapes the backend returns (see docs/API.md).
 
-export type UserRole = 'admin' | 'employee' | 'family';
+export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
 
 export interface User {
   id: number;

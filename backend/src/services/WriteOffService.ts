@@ -8,6 +8,7 @@ import { roundMoney } from '../utils/money.js';
 import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
+import { canOversee } from '../utils/roles.js';
 
 export interface WriteOffInput {
   productId: number;
@@ -120,7 +121,7 @@ export class WriteOffService {
         summary: `Reported ${what}`,
         details: { productId: input.productId, quantity: input.quantity, reason: input.reason, notes: input.notes },
       });
-      if (user.role === 'admin') {
+      if (canOversee(user.role)) {
         await approveWriteOff(repos, id, user.id, { removeStock: true });
       } else {
         await notifyAdminsOfPending(repos, 'write-off', `${user.name} reported ${what}.`);

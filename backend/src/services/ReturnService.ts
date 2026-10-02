@@ -10,6 +10,7 @@ import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 import type { AppSettings, SettingsService } from './SettingsService.js';
 import { approveWriteOff, createWriteOffRecord } from './WriteOffService.js';
+import { canOversee } from '../utils/roles.js';
 
 export interface ReturnInput {
   quantity: number;
@@ -73,12 +74,12 @@ export class ReturnService {
     const id = await this.transactions.run(async (repos) => {
       const sale = await repos.returns.lockSale(saleId);
       if (!sale) throw new NotFoundError(`Sale ${saleId} does not exist`);
-      if (user.role !== 'admin' && sale.sold_by !== user.id) {
+      if (!canOversee(user.role) && sale.sold_by !== user.id) {
         throw new ForbiddenError('You can only return your own sales. Ask the owner to return this one.');
       }
       const refundAmount = validate(sale, input);
       const reasons =
-        user.role === 'admin'
+        canOversee(user.role)
           ? []
           : approvalReasons({ refundAmount, condition: input.condition, saleDate: sale.sale_date, now: new Date() }, settings);
 

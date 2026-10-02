@@ -35,7 +35,7 @@ export class SignupService {
       return repos.users.create({
         email: input.email,
         name: input.name,
-        role: 'admin',
+        role: 'developer',
         password_hash: passwordHash,
         business_id: businessId,
         email_verified_at: null,

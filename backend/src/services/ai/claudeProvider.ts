@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import type { z } from 'zod';
 import { AiUnavailableError } from '../../errors/httpErrors.js';
 import { logger } from '../../utils/logger.js';
 import type { AiProvider } from './aiProvider.js';
@@ -67,6 +69,34 @@ export class ClaudeProvider implements AiProvider {
       .trim();
     if (!text) throw new AiUnavailableError("The AI service couldn't answer that. Try asking another way.");
     return text;
+  }
+
+  /** Structured outputs: the API guarantees JSON matching the schema, and the SDK parses it. */
+  async generateJson<T>({ instructions, request }: { instructions: string; request: string }, schema: z.ZodType<T>): Promise<T> {
+    let response;
+    try {
+      response = await this.client.messages.parse({
+        model: this.model,
+        max_tokens: MAX_ANSWER_TOKENS,
+        system: instructions,
+        messages: [{ role: 'user', content: request }],
+        output_config: {
+          format: zodOutputFormat(schema),
+          ...(!this.isHaiku && { effort: 'low' as const }),
+        },
+      });
+    } catch (error) {
+      throw toUnavailable(error);
+    }
+    logger.info('Claude answered', {
+      model: response.model,
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+    });
+    if (response.stop_reason === 'refusal' || response.parsed_output == null) {
+      throw new AiUnavailableError("The AI service couldn't answer that. Try again.");
+    }
+    return response.parsed_output as T;
   }
 }
 

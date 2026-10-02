@@ -1,4 +1,5 @@
 import request from 'supertest';
+import type { z } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AiUnavailableError } from '../src/errors/httpErrors.js';
 import { type AiProvider, GeminiProvider } from '../src/services/ai/aiProvider.js';
@@ -10,6 +11,8 @@ import { createTestProduct, createTestUser, loginAs, resetData, setupTestApp, ty
 interface FakeAi extends AiProvider {
   lastRequest: string;
   reply: string;
+  /** What generateJson returns. */
+  jsonReply: unknown;
   failWith: Error | null;
 }
 
@@ -18,11 +21,17 @@ const fakeAi: FakeAi = {
   name: 'Fake AI',
   lastRequest: '',
   reply: 'Person 1 sold the most.',
+  jsonReply: null,
   failWith: null,
   async generate({ request }: { instructions: string; request: string }) {
     fakeAi.lastRequest = request;
     if (fakeAi.failWith) throw fakeAi.failWith;
     return fakeAi.reply;
+  },
+  async generateJson<T>({ request }: { instructions: string; request: string }, schema: z.ZodType<T>) {
+    fakeAi.lastRequest = request;
+    if (fakeAi.failWith) throw fakeAi.failWith;
+    return schema.parse(fakeAi.jsonReply);
   },
 };
 
@@ -80,6 +89,49 @@ describe('assistant', () => {
     const response = await request(context.app).get('/api/assistant').set(auth(adminToken));
 
     expect(response.body.data).toEqual({ enabled: true, provider: 'Fake AI' });
+  });
+});
+
+describe('price suggestions', () => {
+  const suggestion = (overrides: Record<string, unknown> = {}) => ({
+    suggestedPrice: 109.9,
+    decision: 'raise',
+    confidence: 'medium',
+    summary: 'It sells fast with room to go up.',
+    reasons: ['Sells about 2 a day.', 'Similar chairs sell for 120.'],
+    watchOut: 'Watch sales for two weeks.',
+    ...overrides,
+  });
+  const suggest = (productId: number) =>
+    request(context.app).post(`/api/assistant/price-suggestions/${productId}`).set(auth(adminToken));
+
+  it('should suggest a price from the product’s own sales and similar products', async () => {
+    const chair = await createTestProduct(context, adminToken, { name: 'Oak Chair', price: 100, costPrice: 60, stock: 50 });
+    await createTestProduct(context, adminToken, { name: 'Pine Chair', price: 80, costPrice: 50, stock: 5 });
+    await request(context.app).post('/api/sales').set(auth(adminToken)).send({ productId: chair, quantity: 2 });
+    fakeAi.jsonReply = suggestion();
+
+    const response = await suggest(chair);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({ currentPrice: 100, costPrice: 60, suggestedPrice: 109.9, decision: 'raise', provider: 'Fake AI' });
+    expect(fakeAi.lastRequest).toContain('Pine Chair');
+    expect(fakeAi.lastRequest).toContain('"unitPrice":100');
+  });
+
+  it('should never suggest below cost plus the minimum margin', async () => {
+    const chair = await createTestProduct(context, adminToken, { price: 100, costPrice: 60 });
+    await request(context.app).put('/api/settings').set(auth(adminToken)).send({ minimumMarginPercent: 10 });
+    fakeAi.jsonReply = suggestion({ suggestedPrice: 50, decision: 'lower' });
+
+    const response = await suggest(chair);
+
+    expect(response.body.data).toMatchObject({ suggestedPrice: 66, minimumPrice: 66, decision: 'lower' });
+    expect(response.body.data.reasons.at(-1)).toContain('minimum price');
+  });
+
+  it('should answer 404 for a product that doesn’t exist', async () => {
+    expect((await suggest(9999)).status).toBe(404);
   });
 });
 

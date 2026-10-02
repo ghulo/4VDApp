@@ -4,8 +4,8 @@ import { RATE_LIMIT_WINDOW_MS, RATE_LIMITS } from '../constants/rateLimits.js';
 import type { Container } from '../container.js';
 import { createAssistantController } from '../controllers/assistantController.js';
 
-export function createAssistantRoutes({ assistantService, guards }: Container): Router {
-  const controller = createAssistantController(assistantService);
+export function createAssistantRoutes({ assistantService, priceSuggestionService, guards }: Container): Router {
+  const controller = createAssistantController(assistantService, priceSuggestionService);
   const router = Router();
   const questionLimit = rateLimit({
     windowMs: RATE_LIMIT_WINDOW_MS,
@@ -19,6 +19,7 @@ export function createAssistantRoutes({ assistantService, guards }: Container): 
   router.use(...guards.admin);
   router.get('/', controller.status);
   router.post('/ask', questionLimit, controller.ask);
+  router.post('/price-suggestions/:productId', questionLimit, controller.suggestPrice);
 
   return router;
 }

@@ -46,6 +46,7 @@ export interface VelocityRow {
   product_id: number;
   product_name: string;
   sku: string | null;
+  category_id: number;
   category_name: string;
   quantity_on_hand: number;
   reorder_level: number;
@@ -54,6 +55,14 @@ export interface VelocityRow {
   created_at: Date;
   /** Null when it has never sold. */
   last_sold_at: Date | null;
+}
+
+export interface PriceSalesRow {
+  price_per_unit: string;
+  sales_count: string;
+  units: string;
+  first_sold: Date;
+  last_sold: Date;
 }
 
 export interface ProductSaleRow {
@@ -195,6 +204,7 @@ export class ReportsRepository {
         p.id as product_id,
         p.name as product_name,
         p.sku,
+        p.category_id,
         c.name as category_name,
         i.quantity_on_hand,
         i.reorder_level,
@@ -207,6 +217,19 @@ export class ReportsRepository {
       join categories c on c.id = p.category_id
       where p.deleted_at is null and p.is_active
       order by p.name
+    `.execute(this.db);
+    return result.rows;
+  }
+
+  /** How a product sold at each unit price since `since`: bulk tiers and promotions show up as their own rows. */
+  async salesByPrice(productId: number, since: Date): Promise<PriceSalesRow[]> {
+    const result = await sql<PriceSalesRow>`
+      select price_per_unit, count(*) as sales_count, sum(quantity_sold) as units,
+             min(sale_date) as first_sold, max(sale_date) as last_sold
+      from sales
+      where product_id = ${productId} and sale_date >= ${since}
+      group by price_per_unit
+      order by price_per_unit desc
     `.execute(this.db);
     return result.rows;
   }

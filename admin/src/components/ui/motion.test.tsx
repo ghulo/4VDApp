@@ -35,7 +35,8 @@ describe('RollingNumber', () => {
   it('should be read out as the plain value, with one rolling strip per digit', () => {
     const html = renderToStaticMarkup(<RollingNumber value="€1,204.50" />);
 
-    expect(html).toContain('aria-label="€1,204.50"');
+    expect(html).toContain('<span class="visually-hidden">€1,204.50</span>');
+    expect(html).not.toContain('role="text"');
     expect(html.match(/class="roll__strip"/g)).toHaveLength(6);
     expect(html).toContain('€');
   });

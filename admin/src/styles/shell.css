@@ -391,6 +391,16 @@
     display: none;
   }
 
+  /* Thumb-sized rows in the drawer. */
+  .sidebar__link {
+    height: 44px;
+  }
+
+  .segmented__option,
+  .segmented--small .segmented__option {
+    height: 40px;
+  }
+
   /* A collapsed choice from a big screen doesn't apply to the drawer. */
   .app--collapsed .sidebar__group-label,
   .app--collapsed .sidebar__label {

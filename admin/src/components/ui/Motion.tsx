@@ -16,7 +16,8 @@ export function RollingNumber({ value, className }: { value: string; className?:
   }, []);
 
   return (
-    <span className={['roll', className].filter(Boolean).join(' ')} aria-label={value} role="text">
+    <span className={['roll', className].filter(Boolean).join(' ')}>
+      <span className="visually-hidden">{value}</span>
       {[...value].map((character, index) =>
         DIGITS.includes(character) ? (
           <span key={index} className="roll__digit" aria-hidden="true">

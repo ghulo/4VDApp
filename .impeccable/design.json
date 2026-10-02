@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T21:30:00Z",
+  "title": "Design System: 4VD",
+  "extensions": {
+    "colorMeta": {
+      "signal-orange": { "role": "primary", "displayName": "Signal Orange", "canonical": "#ff5e1f" },
+      "ember-text": { "role": "primary", "displayName": "Ember Text", "canonical": "#c2410c" },
+      "pillar-ink": { "role": "neutral", "displayName": "Pillar Ink", "canonical": "#1c0f08" },
+      "warm-canvas": { "role": "neutral", "displayName": "Warm Canvas", "canonical": "#faf9f7" },
+      "night-canvas": { "role": "neutral", "displayName": "Night Canvas", "canonical": "#151414" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#ebe7e3" }
+    },
+    "shadows": [
+      { "name": "float", "value": "0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)", "purpose": "Command palette and phone drawer." },
+      { "name": "glow", "value": "0 0 0 1px rgb(255 94 31 / 0.35), 0 0 18px rgb(255 94 31 / 0.28)", "purpose": "Primary button under the pointer." },
+      { "name": "board-halo", "value": "0 0 60px -20px rgb(255 94 31 / 0.55)", "purpose": "The today board only." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for state changes and entrances." },
+      { "name": "fast", "value": "150ms", "purpose": "Hover, press and colour changes." },
+      { "name": "page-in", "value": "260ms", "purpose": "The one fade when a page opens." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "640px" },
+      { "name": "drawer", "value": "900px" },
+      { "name": "compact", "value": "1100px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a view.",
+      "html": "<button class=\"ds-btn-primary\">Add product</button>",
+      "css": ".ds-btn-primary { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #ff5e1f; color: #1c0f08; font: 600 14px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1), box-shadow 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: #ff7038; box-shadow: 0 0 0 1px rgb(255 94 31 / 0.35), 0 0 18px rgb(255 94 31 / 0.28); } .ds-btn-primary:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; color: #1f1b19; box-shadow: inset 0 0 0 1px #d9d3ce; font: 500 14px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background-color 150ms; } .ds-btn-secondary:hover { background: #f4f2ef; } .ds-btn-secondary:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labelled input.",
+      "html": "<label class=\"ds-field\"><span>Shop name</span><input class=\"ds-input\" value=\"4VD\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; font: 600 13px 'Hanken Grotesk', system-ui, sans-serif; color: #1f1b19; } .ds-input { height: 36px; padding: 6px 10px; border: 1px solid #d9d3ce; border-radius: 8px; background: #fff; font: 400 14px 'Hanken Grotesk', system-ui, sans-serif; } .ds-input:focus-visible { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgb(29 78 216 / 0.25); }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "A short status label with a tinted fill.",
+      "html": "<span class=\"ds-badge\">Waiting for you</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; background: #fef3e2; color: #b45309; font: 600 12px 'Hanken Grotesk', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A hairline-framed block with a footer strip.",
+      "html": "<section class=\"ds-card\"><h2>Your shop</h2><p>Shown to your team.</p><div class=\"ds-card-foot\"><button class=\"ds-card-save\">Save</button></div></section>",
+      "css": ".ds-card { border: 1px solid #ebe7e3; border-radius: 12px; background: #fff; font-family: 'Hanken Grotesk', system-ui, sans-serif; overflow: hidden; } .ds-card h2 { margin: 16px 24px 0; font-size: 16px; font-weight: 600; } .ds-card p { margin: 2px 24px 16px; color: #6b635f; font-size: 14px; } .ds-card-foot { display: flex; justify-content: flex-end; padding: 12px 24px; border-top: 1px solid #ebe7e3; background: #f4f2ef; } .ds-card-save { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #ff5e1f; color: #1c0f08; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Four Pillars",
+    "overview": "Four equal pillars hold up one roof: the four Dacaj brothers holding up the family shop. The interface carries that idea as structure and fairness: hairline frames meeting at small square corner nodes, equal columns, nothing louder than its job needs. Language from Cloudflare's interface, rigour from the SBB design system. Quiet until touched, then a small glow or quick transition; orange is the shop's one voice.",
+    "keyCharacteristics": [
+      "Hairline frames with corner nodes; flat surfaces, no drop shadows at rest.",
+      "One orange voice (#ff5e1f) on warm neutrals, with near-black text on it.",
+      "Halftone dots as texture and as data (dot-matrix charts, dotted drawings).",
+      "Medium-weight type with tight tracking on large sizes; never heavy.",
+      "Quick, soft motion (150ms, gentle ease-out); off when the computer asks for less.",
+      "Both themes are first-class; dark is warm (#151414), not blue-black."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Signal Orange covers well under a tenth of any screen. If two things on a page are orange, one of them is wrong.", "section": "colors" },
+      { "name": "The Dark Text On Orange Rule", "body": "Text on Signal Orange is always Pillar Ink. White on this orange reaches only 3:1 and fails reading contrast.", "section": "colors" },
+      { "name": "The No Shouting Rule", "body": "No weight above 600 outside the wordmark, no all-caps labels, sentence case everywhere.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Every number that can sit in a column uses tabular figures.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "Nothing casts a shadow until it floats or is pointed at.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do build every page from the kit in admin/src/components/ui/.",
+      "Do use tokens from admin/src/styles/tokens.css; mirror changes in mobile/src/theme.ts.",
+      "Do keep Signal Orange for the one main action and live status.",
+      "Do put text on orange in Pillar Ink (#1c0f08).",
+      "Do keep touch targets at least 44px on phones.",
+      "Do write sentence case, verb-first buttons and errors that say how to fix.",
+      "Do wrap motion in prefers-reduced-motion: no-preference."
+    ],
+    "donts": [
+      "Don't put white text on Signal Orange.",
+      "Don't add drop shadows to cards or tables.",
+      "Don't use weights above 600 outside the wordmark, or all-caps labels.",
+      "Don't add a second accent colour; status colours are for status only.",
+      "Don't paint CSS gradients across tall areas.",
+      "Don't let colour alone carry meaning: badges and tags always have words."
+    ]
+  }
+}

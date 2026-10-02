@@ -306,7 +306,7 @@ function SecurityPanel({ user }: { user: User }) {
         >
           {googleEmail && (
             <Button variant="danger-text" disabled={unlink.isPending} onClick={() => unlink.mutate()}>
-              Stop using Google to log in
+              Unlink Google
             </Button>
           )}
         </SettingRow>

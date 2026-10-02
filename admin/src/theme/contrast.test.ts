@@ -1,9 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import stylesheet from '../index.css?raw';
 import { contrastRatio } from './contrast';
 
 // Normalise Windows line endings so the selectors below match either way.
-const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const css = stylesheet.replace(/\r\n/g, '\n');
 
 /** The `--name: #hex` pairs inside the first block that starts with `selector`. */
 function tokens(selector: string): Record<string, string> {

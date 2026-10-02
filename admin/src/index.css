@@ -2077,3 +2077,81 @@ kbd {
     display: none;
   }
 }
+
+/* ---------- Setup guide ---------- */
+
+.setup-guide {
+  border-color: var(--brand);
+}
+
+.setup-guide__progress {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.setup-guide__bar {
+  height: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-sunk);
+}
+
+.setup-guide__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--brand);
+}
+
+.setup-guide__steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-step {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.setup-step:first-child {
+  border-top: 0;
+}
+
+.setup-step__check {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--brand-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.setup-step--done .setup-step__check {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.setup-step__title {
+  display: block;
+  font-weight: 600;
+}
+
+.setup-step--done .setup-step__title {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+}
+
+.setup-step__why {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}

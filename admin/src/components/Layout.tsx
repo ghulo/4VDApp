@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { approvalsApi, notificationsApi } from '../services/api';
+import { ThemeSwitch } from '../theme/ThemeSwitch';
 
 interface NavItem {
   to: string;
@@ -91,6 +92,7 @@ export function Layout() {
           ))}
         </nav>
         <div className="sidebar__account">
+          <ThemeSwitch />
           <span className="sidebar__user">{user.name}</span>
           <button type="button" className="sidebar__logout" onClick={logout}>
             Log out

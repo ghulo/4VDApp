@@ -830,8 +830,17 @@ textarea:focus-visible {
 }
 
 .segmented__option[aria-checked='true'] {
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.segmented--small {
+  margin-bottom: 0;
+}
+
+.segmented--small .segmented__option {
+  padding: 4px 10px;
+  font-size: 0.875rem;
 }
 
 .form-error {

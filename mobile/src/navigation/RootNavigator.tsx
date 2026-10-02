@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, useColorScheme, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
@@ -16,7 +16,7 @@ import { RecordSaleScreen } from '../screens/RecordSaleScreen';
 import { ReturnScreen } from '../screens/ReturnScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
-import { fonts, useThemeColors } from '../theme';
+import { fonts, useTheme, useThemeColors } from '../theme';
 import type { MainTabParamList, RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -68,8 +68,7 @@ function MainTabs() {
 
 export function RootNavigator() {
   const { state } = useAuth();
-  const colors = useThemeColors();
-  const scheme = useColorScheme();
+  const { colors, scheme } = useTheme();
 
   const baseTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme: Theme = {
@@ -80,7 +79,7 @@ export function RootNavigator() {
       card: colors.surface,
       text: colors.ink,
       border: colors.line,
-      primary: colors.ink,
+      primary: colors.brand,
     },
   };
 

@@ -48,7 +48,7 @@ export async function setupTestApp(options: ContainerOptions = {}): Promise<Test
   await sql`CREATE SCHEMA public`.execute(db);
   await runMigrations(db as Kysely<unknown>);
 
-  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, ...options });
+  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, aiProvider: null, ...options });
   return { app: createApp(config, db, { container }), db, config, container };
 }
 

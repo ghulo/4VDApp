@@ -10,9 +10,9 @@ export interface EmailContent {
   text: string;
 }
 
-const BRAND = '#1D5C45';
-const INK = '#122019';
-const MUTED = '#55665D';
+const BRAND = '#C2410C';
+const INK = '#1F1B19';
+const MUTED = '#6B635F';
 
 const ROLE_NAMES: Record<string, string> = { admin: 'an admin', employee: 'an employee', family: 'a family member' };
 
@@ -46,11 +46,11 @@ function render({ subject, paragraphs, button, note }: Layout): string {
     : '';
   const small = note ? `<p style="margin:0;font-size:13px;line-height:20px;color:${MUTED}">${note}</p>` : '';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:0;background:#F3F5F2;font-family:'Hanken Grotesk',Helvetica,Arial,sans-serif">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F3F5F2;padding:32px 16px"><tr><td align="center">
+<body style="margin:0;padding:0;background:#FAF9F7;font-family:'Hanken Grotesk',Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF9F7;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
 <tr><td style="padding:0 0 16px"><span style="display:inline-block;padding:6px 12px;border-radius:8px;background:${BRAND};color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px">4VD</span></td></tr>
-<tr><td style="background:#ffffff;border-radius:14px;padding:32px 28px;border:1px solid #D9E0DA">${body}${action}${small}</td></tr>
+<tr><td style="background:#ffffff;border-radius:14px;padding:32px 28px;border:1px solid #EBE7E3">${body}${action}${small}</td></tr>
 <tr><td style="padding:16px 4px 0;font-size:12px;line-height:18px;color:${MUTED}">You're getting this because of your 4VD account.</td></tr>
 </table></td></tr></table></body></html>`;
 }

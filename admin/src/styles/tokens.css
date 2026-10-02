@@ -1,0 +1,102 @@
+/* 4VD design tokens, after Cloudflare's design language (see
+   docs/superpowers/specs/2026-10-02-cloudflare-structure-design.md).
+   One loud colour (orange) on warm neutrals; status colours come as a strong
+   colour plus a faint tint. The theme script in index.html always sets
+   data-theme, so these two blocks are the only place colours are defined.
+   Contrast is checked by src/theme/contrast.test.ts. */
+:root,
+[data-theme='light'] {
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-sunk: #f4f2ef;
+  --fill: #efece8;
+  --ink: #1f1b19;
+  --ink-muted: #6b635f;
+  --line: #ebe7e3;
+  --line-strong: #d9d3ce;
+  --brand: #c2410c;
+  --brand-ink: #ffffff;
+  --brand-soft: #fff4ed;
+  --accent: #ff5e1f;
+  --hero: #ff5e1f;
+  --hero-ink: #1c0f08;
+  --hero-muted: #3f1d0f;
+  --ok: #047857;
+  --ok-soft: #e6f5ee;
+  --warn: #b45309;
+  --warn-soft: #fef3e2;
+  --danger: #b91c1c;
+  --danger-soft: #fdecec;
+  --info: #1d4ed8;
+  --info-soft: #e8efff;
+  --focus: #1d4ed8;
+  --dots: #d9d3ce;
+  --shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #151414;
+  --surface: #1c1b1a;
+  --surface-sunk: #111010;
+  --fill: #262422;
+  --ink: #f2ebe7;
+  --ink-muted: #9a9390;
+  --line: #2c2927;
+  --line-strong: #3d3936;
+  --brand: #ff7038;
+  --brand-ink: #1a120e;
+  --brand-soft: #3a1f12;
+  --accent: #ff5e1f;
+  --hero: #ff5e1f;
+  --hero-ink: #1c0f08;
+  --hero-muted: #3f1d0f;
+  --ok: #34d399;
+  --ok-soft: #0f3326;
+  --warn: #fbbf24;
+  --warn-soft: #3a2c0d;
+  --danger: #f87171;
+  --danger-soft: #3b1717;
+  --info: #60a5fa;
+  --info-soft: #14263f;
+  --focus: #60a5fa;
+  --dots: #34302d;
+  --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+:root {
+  --chart-series: var(--accent);
+
+  /* Older names still used by page styles; they follow the tokens above. */
+  --concrete: var(--bg);
+  --steel: var(--ink-muted);
+  --signal-low: var(--warn);
+  --signal-low-ink: var(--warn);
+  --signal-out: var(--danger);
+  --stock-ok: var(--ok);
+
+  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+  --font-display: var(--font-body);
+
+  /* Type: 12 / 13 / 14 (base) / 16, headings medium weight with tight tracking. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+
+  /* 4px grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --radius-small: 8px;
+  --radius-panel: 12px;
+  --radius-board: 16px;
+}

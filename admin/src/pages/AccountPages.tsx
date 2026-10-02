@@ -9,6 +9,7 @@ import { GoogleButton } from '../components/GoogleButton';
 import { accountApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { ROLE_LABEL } from '../utils/format';
+import { Button } from '../components/ui';
 
 const MIN_PASSWORD_LENGTH = 8;
 function BackToLogin() {
@@ -54,9 +55,9 @@ export function ForgotPasswordPage() {
             <input type="email" autoComplete="email" required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <FormError error={send.error} />
-          <button type="submit" className="button button--primary button--wide" disabled={!email.trim() || send.isPending}>
+          <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide>
             {send.isPending ? 'Sending…' : 'Email me a link'}
-          </button>
+          </Button>
         </form>
       )}
       <BackToLogin />
@@ -102,13 +103,11 @@ export function ResetPasswordPage() {
             />
           </label>
           <FormError error={reset.error} />
-          <button
-            type="submit"
-            className="button button--primary button--wide"
-            disabled={password.length < MIN_PASSWORD_LENGTH || reset.isPending}
-          >
+          <Button type="submit"
+           
+            disabled={password.length < MIN_PASSWORD_LENGTH || reset.isPending} variant="primary" wide>
             {reset.isPending ? 'Saving…' : 'Save new password'}
-          </button>
+          </Button>
         </form>
       )}
       <BackToLogin />
@@ -234,13 +233,11 @@ export function AcceptInvitePage() {
               <span className="field-hint">At least {MIN_PASSWORD_LENGTH} characters.</span>
             </label>
             <FormError error={accept.error ?? google.error} />
-            <button
-              type="submit"
-              className="button button--primary button--wide"
-              disabled={!name.trim() || password.length < MIN_PASSWORD_LENGTH || accept.isPending}
-            >
+            <Button type="submit"
+             
+              disabled={!name.trim() || password.length < MIN_PASSWORD_LENGTH || accept.isPending} variant="primary" wide>
               {accept.isPending ? 'Setting up…' : 'Join'}
-            </button>
+            </Button>
           </form>
           <GoogleButton onCredential={(credential) => google.mutate(credential)} />
         </>

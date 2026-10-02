@@ -28,12 +28,12 @@ export function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.heroInk }]}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.brandRow}>
             <LogoMark size={52} />
-            <Text style={styles.brand}>4VD</Text>
+            <Text style={[styles.brand, { color: colors.ink }]}>4VD</Text>
           </View>
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <Text style={[styles.title, { color: colors.ink }]}>Log in</Text>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl },
-  brand: { fontFamily: fonts.display, fontSize: 40, letterSpacing: -1, color: '#ffffff' },
+  brand: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: -1.5 },
   card: { padding: spacing.xl, borderRadius: radius.board },
   title: { fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.5 },
   subtitle: { fontFamily: fonts.body, fontSize: 15, marginTop: spacing.xs, marginBottom: spacing.xl },

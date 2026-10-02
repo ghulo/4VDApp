@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import stylesheet from '../index.css?raw';
+import stylesheet from '../styles/tokens.css?raw';
 import { contrastRatio } from './contrast';
 
 // Normalise Windows line endings so the selectors below match either way.
@@ -8,7 +8,7 @@ const css = stylesheet.replace(/\r\n/g, '\n');
 /** The `--name: #hex` pairs inside the first block that starts with `selector`. */
 function tokens(selector: string): Record<string, string> {
   const start = css.indexOf(selector);
-  if (start === -1) throw new Error(`No ${selector} block in index.css`);
+  if (start === -1) throw new Error(`No ${selector} block in tokens.css`);
   const block = css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start));
   return Object.fromEntries([...block.matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{6})/g)].map((match) => [match[1], match[2]]));
 }
@@ -24,12 +24,22 @@ const PAIRS: Array<[string, string, number]> = [
   ['ink', 'surface', 4.5],
   ['ink-muted', 'surface', 4.5],
   ['ink-muted', 'bg', 4.5],
+  ['ink-muted', 'surface-sunk', 4.5],
   ['brand-ink', 'brand', 4.5],
   ['brand', 'surface', 4.5],
+  ['brand', 'brand-soft', 4.5],
+  ['hero-ink', 'hero', 4.5],
+  ['cta-ink', 'cta', 4.5],
+  ['hero-muted', 'hero', 4.5],
+  ['accent', 'surface', 3],
   ['danger', 'surface', 4.5],
+  ['ok', 'ok-soft', 4.5],
+  ['warn', 'warn-soft', 4.5],
+  ['danger', 'danger-soft', 4.5],
+  ['info', 'info-soft', 4.5],
   ['warn', 'surface', 3],
   ['ok', 'surface', 3],
-  ['brass', 'surface', 3],
+  ['focus', 'surface', 3],
 ];
 
 describe('contrastRatio', () => {
@@ -44,9 +54,5 @@ describe.each(Object.entries(THEMES))('%s theme colours', (_name, theme) => {
     expect(theme[foreground], `--${foreground} missing`).toBeDefined();
     expect(theme[background], `--${background} missing`).toBeDefined();
     expect(contrastRatio(theme[foreground]!, theme[background]!)).toBeGreaterThanOrEqual(minimum);
-  });
-
-  it('should keep white text readable on the deep pine boards', () => {
-    expect(contrastRatio('#ffffff', theme['brand-deep']!)).toBeGreaterThanOrEqual(4.5);
   });
 });

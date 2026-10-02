@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { businessApi, invitesApi, productsApi, pushApi, usersApi } from '../services/api';
+import { Button, ButtonLink, Card } from '../components/ui';
 import { setupSteps } from './steps';
 
 const HIDDEN_KEY = '4vd.setupGuide.hidden';
@@ -50,20 +50,16 @@ export function SetupGuide() {
   }
 
   return (
-    <section className="panel setup-guide" aria-labelledby="setup-heading">
-      <div className="panel__header">
-        <div>
-          <h2 id="setup-heading" className="panel__title">
-            Get 4VD ready
-          </h2>
-          <p className="setup-guide__progress">
-            {done} of {steps.length} done
-          </p>
-        </div>
-        <button type="button" className="button button--quiet" onClick={hide}>
+    <Card
+      className="setup-guide"
+      title="Get 4VD ready"
+      description={`${done} of ${steps.length} done`}
+      actions={
+        <Button variant="ghost" size="sm" onClick={hide}>
           Hide
-        </button>
-      </div>
+        </Button>
+      }
+    >
       <div className="setup-guide__bar" aria-hidden="true">
         <span style={{ width: `${(done / steps.length) * 100}%` }} />
       </div>
@@ -81,13 +77,13 @@ export function SetupGuide() {
               {!step.done && <span className="setup-step__why">{step.why}</span>}
             </span>
             {!step.done && (
-              <Link to={step.to} className="button button--quiet">
+              <ButtonLink to={step.to} size="sm">
                 {step.action}
-              </Link>
+              </ButtonLink>
             )}
           </li>
         ))}
       </ol>
-    </section>
+    </Card>
   );
 }

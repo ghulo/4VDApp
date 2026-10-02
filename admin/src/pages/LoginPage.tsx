@@ -8,6 +8,7 @@ import { accountApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { useFinishSignIn } from '../auth/finishSignIn';
 import { OpenTheApp } from '../components/OpenTheApp';
+import { Button } from '../components/ui';
 
 const NOT_CONFIRMED = 'Confirm your email first';
 
@@ -97,9 +98,9 @@ export function LoginPage() {
           </p>
         )}
 
-        <button type="submit" className="button button--primary button--wide" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} variant="primary" wide>
           {isSubmitting ? 'Logging in…' : 'Log in'}
-        </button>
+        </Button>
       </form>
       <GoogleButton label="signin_with" onCredential={(credential) => google.mutate(credential)} />
       <p className="login__links">

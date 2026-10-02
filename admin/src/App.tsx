@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Link, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
 import { EmptyState } from './components/Feedback';
 import { Layout } from './components/Layout';
@@ -31,6 +31,7 @@ import { AskPage } from './pages/AskPage';
 import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
 import { UsersPage } from './pages/UsersPage';
+import { ButtonLink } from './components/ui';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,9 +47,9 @@ const queryClient = new QueryClient({
 function NotFoundPage() {
   return (
     <EmptyState title="This page doesn't exist">
-      <Link to="/" className="button button--primary">
+      <ButtonLink to="/" variant="primary">
         Go to overview
-      </Link>
+      </ButtonLink>
     </EmptyState>
   );
 }

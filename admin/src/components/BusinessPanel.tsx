@@ -6,6 +6,7 @@ import type { Business } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
+import { Button, Card, Field, SettingRow } from './ui';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 // The time zones people in and around the shop's region are most likely to need, then everything else.
@@ -19,14 +20,9 @@ function allTimeZones(): string[] {
 /** The shop's own details, shown to staff and used for dates, emails and (later) receipts. */
 export function BusinessPanel() {
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
-  return (
-    <section className="panel">
-      <h2 className="panel__title">Your shop</h2>
-      {business.isPending && <Loading />}
-      {business.isError && <ErrorNotice error={business.error} onRetry={() => business.refetch()} />}
-      {business.data && <BusinessForm initial={business.data} />}
-    </section>
-  );
+  if (business.isPending) return <Loading />;
+  if (business.isError) return <ErrorNotice error={business.error} onRetry={() => business.refetch()} />;
+  return <BusinessForm initial={business.data} />;
 }
 
 function BusinessForm({ initial }: { initial: Business }) {
@@ -66,67 +62,75 @@ function BusinessForm({ initial }: { initial: Business }) {
   }
 
   return (
-    <>
-      <div className="profile-photo">
-        {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" /> : <LogoMark size={72} />}
-        <div className="profile-photo__actions">
+    <form onSubmit={handleSubmit}>
+      <Card
+        title="Your shop"
+        description="Shown to your team, in invites and in emails."
+        footer={
+          <>
+            {save.isError && (
+              <span className="form-error" role="alert">
+                {errorMessage(save.error)}
+              </span>
+            )}
+            {save.isSuccess && (
+              <span className="form-success" role="status">
+                Saved.
+              </span>
+            )}
+            <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
+              {save.isPending ? 'Saving…' : 'Save shop details'}
+            </Button>
+          </>
+        }
+      >
+        <SettingRow
+          title="Logo"
+          description={
+            logoError || upload.isError || remove.isError ? (
+              <span className="form-error" role="alert">
+                {logoError ?? errorMessage(upload.error ?? remove.error)}
+              </span>
+            ) : (
+              'A square JPG, PNG or WebP under 5 MB.'
+            )
+          }
+        >
+          {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" /> : <LogoMark size={48} />}
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickLogo} />
-          <button type="button" className="button button--quiet" disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
-            {upload.isPending ? 'Uploading…' : logo ? 'Change logo' : 'Add your logo'}
-          </button>
+          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
+            {upload.isPending ? 'Uploading…' : logo ? 'Change' : 'Add your logo'}
+          </Button>
           {logo && (
-            <button type="button" className="button button--quiet button--danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
+            <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
               Remove
-            </button>
+            </Button>
           )}
+        </SettingRow>
+        <div className="setting-row setting-row--fields">
+          <Field label="Shop name">
+            <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
+          </Field>
+          <Field label="Address (optional)">
+            <input maxLength={500} autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />
+          </Field>
+          <div className="field-row">
+            <Field label="Phone (optional)">
+              <input type="tel" maxLength={50} value={phone} onChange={(event) => setPhone(event.target.value)} />
+            </Field>
+            <Field label="Time zone">
+              <select value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
+                <option value="">Server default</option>
+                {allTimeZones().map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
         </div>
-      </div>
-      {(logoError || upload.isError || remove.isError) && (
-        <p className="form-error" role="alert">
-          {logoError ?? errorMessage(upload.error ?? remove.error)}
-        </p>
-      )}
-      <form className="settings-form" onSubmit={handleSubmit}>
-        <label className="field">
-          <span className="field__label">Shop name</span>
-          <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
-          <span className="field-hint">Shown in invites and emails.</span>
-        </label>
-        <label className="field">
-          <span className="field__label">Address (optional)</span>
-          <input maxLength={500} autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />
-        </label>
-        <div className="field-row">
-          <label className="field">
-            <span className="field__label">Phone (optional)</span>
-            <input type="tel" maxLength={50} value={phone} onChange={(event) => setPhone(event.target.value)} />
-          </label>
-          <label className="field">
-            <span className="field__label">Time zone</span>
-            <select value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
-              <option value="">Server default</option>
-              {allTimeZones().map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {save.isError && (
-          <p className="form-error" role="alert">
-            {errorMessage(save.error)}
-          </p>
-        )}
-        {save.isSuccess && (
-          <p className="form-success" role="status">
-            Saved.
-          </p>
-        )}
-        <button type="submit" className="button button--primary" disabled={!name.trim() || save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save shop details'}
-        </button>
-      </form>
-    </>
+      </Card>
+    </form>
   );
 }

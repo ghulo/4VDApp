@@ -6,6 +6,8 @@ import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
 import type { Category, PriceChange, Product, ProductInput } from '../services/types';
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
+import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
+import { Package } from '@phosphor-icons/react';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -140,34 +142,41 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
   return (
     <>
-      <header className="page-header">
-        <Link to="/products" className="back-link">
-          Products
-        </Link>
-        <h1 className="page-title">{isNew ? 'Add product' : product.name}</h1>
-        {product?.promotion && (
-          <p className="page-intro">
-            On promotion: {product.promotion.name}, −{product.promotion.percentOff}% ({formatMoney(product.promotion.price)})
-            until {formatPromotionDay(product.promotion.endsAt, true)}.{' '}
-            <Link to="/promotions" className="text-link">
-              Promotions
-            </Link>
-          </p>
-        )}
-      </header>
+      <PageHeader
+        title={isNew ? 'Add product' : product.name}
+        crumbs={[{ label: 'Products', to: '/products' }]}
+        meta={product?.promotion && <Badge tone="brand">−{product.promotion.percentOff}% now</Badge>}
+        description={
+          product?.promotion && (
+            <>
+              On promotion: {product.promotion.name}, −{product.promotion.percentOff}% (
+              {formatMoney(product.promotion.price)}) until {formatPromotionDay(product.promotion.endsAt, true)}.{' '}
+              <Link to="/promotions" className="text-link">
+                Promotions
+              </Link>
+            </>
+          )
+        }
+        actions={
+          !isNew && (
+            <ButtonLink to={`/inventory/${product.id}`} icon={Package}>
+              Stock and history
+            </ButtonLink>
+          )
+        }
+      />
 
       {categories.length === 0 ? (
         <div className="notice">
           <p>Products need a category. Create one first.</p>
-          <Link to="/categories" className="button button--primary">
+          <ButtonLink to="/categories" variant="primary">
             Go to categories
-          </Link>
+          </ButtonLink>
         </div>
       ) : (
         <>
         <form className="product-form" onSubmit={handleSubmit}>
-          <section className="panel">
-            <h2 className="panel__title">Details</h2>
+          <Card title="Details">
             <label className="field">
               <span className="field__label">Name</span>
               <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
@@ -217,10 +226,9 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
               />
               Show in the mobile app
             </label>
-          </section>
+          </Card>
 
-          <section className="panel">
-            <h2 className="panel__title">Price</h2>
+          <Card title="Price">
             <div className="field-row">
               <label className="field">
                 <span className="field__label">Price per unit (€)</span>
@@ -279,29 +287,22 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         onChange={(event) => updateTier(tier.key, 'price', event.target.value)}
                       />
                     </label>
-                    <button
-                      type="button"
-                      className="button button--quiet"
+                    <Button
                       aria-label={`Remove tier from ${tier.quantity || 'blank'} units`}
                       onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
             )}
-            <button
-              type="button"
-              className="button button--quiet"
-              onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}
-            >
+            <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
               Add bulk price
-            </button>
-          </section>
+            </Button>
+          </Card>
 
-          <section className="panel">
-            <h2 className="panel__title">Stock</h2>
+          <Card title="Stock">
             {isNew ? (
               <div className="field-row">
                 <label className="field">
@@ -336,7 +337,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                 .
               </p>
             )}
-          </section>
+          </Card>
 
           {save.isError && (
             <p className="form-error" role="alert">
@@ -345,28 +346,28 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
           )}
 
           <div className="form-actions">
-            <button type="submit" className="button button--primary" disabled={save.isPending}>
+            <Button type="submit" disabled={save.isPending} variant="primary">
               {save.isPending ? 'Saving…' : isNew ? 'Add product' : 'Save changes'}
-            </button>
-            <Link to="/products" className="button button--quiet">
+            </Button>
+            <ButtonLink to="/products">
               Cancel
-            </Link>
+            </ButtonLink>
             {!isNew && (
               <span className="form-actions__danger">
                 {confirmingDelete ? (
                   <>
                     <span>Delete {product.name}? Sales history is kept.</span>
-                    <button type="button" className="button button--danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
+                    <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
                       {remove.isPending ? 'Deleting…' : 'Delete product'}
-                    </button>
-                    <button type="button" className="button button--quiet" onClick={() => setConfirmingDelete(false)}>
+                    </Button>
+                    <Button onClick={() => setConfirmingDelete(false)}>
                       Keep it
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button type="button" className="button button--quiet button--danger-text" onClick={() => setConfirmingDelete(true)}>
+                  <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
                     Delete product
-                  </button>
+                  </Button>
                 )}
               </span>
             )}
@@ -396,9 +397,9 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
   return (
     <div className="price-suggestion">
       {!result && (
-        <button type="button" className="button button--quiet" disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
+        <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
           {suggestion.isPending ? 'Looking at sales…' : 'Suggest a price'}
-        </button>
+        </Button>
       )}
       {suggestion.isError && (
         <p className="form-error" role="alert">
@@ -406,7 +407,7 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
         </p>
       )}
       {result && (
-        <div className="price-suggestion__result" aria-live="polite">
+        <div className="price-suggestion__result brackets" aria-live="polite">
           <p className="price-suggestion__headline">
             {DECISION_TEXT[result.decision]} {formatMoney(result.suggestedPrice)}
             <span className="price-suggestion__confidence">, {result.confidence} confidence</span>
@@ -420,13 +421,13 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
           <p className="field-hint">Watch out: {result.watchOut}</p>
           <div className="price-suggestion__actions">
             {result.decision !== 'keep' && (
-              <button type="button" className="button button--primary" onClick={() => onUse(result.suggestedPrice)}>
+              <Button variant="primary" onClick={() => onUse(result.suggestedPrice)}>
                 Use {formatMoney(result.suggestedPrice)}
-              </button>
+              </Button>
             )}
-            <button type="button" className="button button--quiet" disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
+            <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
               {suggestion.isPending ? 'Looking again…' : 'Ask again'}
-            </button>
+            </Button>
             <span className="field-hint">By {result.provider}. Nothing changes until you save.</span>
           </div>
         </div>
@@ -448,10 +449,7 @@ function PriceHistory({ productId }: { productId: number }) {
   });
 
   return (
-    <section className="panel product-form" aria-labelledby="price-history-heading">
-      <h2 id="price-history-heading" className="panel__title">
-        Price history
-      </h2>
+    <Card title="Price history" className="product-form">
       {history.isPending && <Loading />}
       {history.isError && <ErrorNotice error={history.error} onRetry={() => history.refetch()} />}
       {history.data && history.data.length === 0 && <p className="field-hint">No price changes recorded yet.</p>}
@@ -479,6 +477,6 @@ function PriceHistory({ productId }: { productId: number }) {
           </table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

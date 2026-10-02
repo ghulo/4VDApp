@@ -1,14 +1,16 @@
-import type { ReactNode } from 'react';
 import { errorMessage } from '../utils/errors';
+import { Button } from './ui';
+
+export { EmptyState } from './ui';
 
 export function ErrorNotice({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
     <div className="notice notice--error" role="alert">
       <p>{errorMessage(error)}</p>
       {onRetry && (
-        <button type="button" className="button button--quiet" onClick={onRetry}>
+        <Button size="sm" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -19,14 +21,5 @@ export function Loading({ label = 'Loading…' }: { label?: string }) {
     <p className="loading" role="status">
       {label}
     </p>
-  );
-}
-
-export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="empty-state">
-      <p className="empty-state__title">{title}</p>
-      {children}
-    </div>
   );
 }

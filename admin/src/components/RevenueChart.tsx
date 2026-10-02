@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import type { RevenuePoint } from '../services/types';
 import { formatMoney } from '../utils/format';
+import { dotColumn } from './ui/dots';
 
 const WIDTH = 720;
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 28, left: 56 };
 const MAX_BAR_WIDTH = 24;
 const BAR_GAP = 2;
-const CORNER_RADIUS = 4;
+/** Distance between dots: each day's column is drawn in dots, like Cloudflare's waveforms. */
+const DOT_STEP = 6;
 const TICK_COUNT = 4;
 
 const dayLabel = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -24,21 +26,6 @@ function niceMax(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const step = [1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= value)!;
   return step * magnitude;
-}
-
-/** A column with a 4px rounded top and a square base on the baseline. */
-function columnPath(x: number, y: number, width: number, height: number): string {
-  const radius = Math.min(CORNER_RADIUS, width / 2, height);
-  const bottom = y + height;
-  return [
-    `M${x},${bottom}`,
-    `V${y + radius}`,
-    `Q${x},${y} ${x + radius},${y}`,
-    `H${x + width - radius}`,
-    `Q${x + width},${y} ${x + width},${y + radius}`,
-    `V${bottom}`,
-    'Z',
-  ].join(' ');
 }
 
 interface RevenueChartProps {
@@ -138,12 +125,22 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
                 >
                   {/* The whole column is the hit target, not just the painted bar. */}
                   <rect x={bandX} y={MARGIN.top} width={band} height={plotHeight} fill="transparent" />
-                  {height > 0 && (
-                    <path
-                      className={isActive ? 'chart__bar chart__bar--active' : 'chart__bar'}
-                      d={columnPath(x, y, barWidth, height)}
+                  {dotColumn({
+                    x,
+                    base: MARGIN.top + plotHeight,
+                    height,
+                    width: barWidth,
+                    step: DOT_STEP,
+                    top: MARGIN.top,
+                  }).map((dot) => (
+                    <circle
+                      key={`${dot.x}-${dot.y}`}
+                      className={dot.lit ? (isActive ? 'chart__dot chart__dot--active' : 'chart__dot') : 'chart__dot chart__dot--empty'}
+                      cx={dot.x}
+                      cy={dot.y}
+                      r={dot.lit ? 2.1 : 1.1}
                     />
-                  )}
+                  ))}
                   {index % labelEvery === 0 && (
                     <text className="chart__tick" x={bandX + band / 2} y={HEIGHT - 8} textAnchor="middle">
                       {dayLabel.format(new Date(point.periodStart))}

@@ -1,7 +1,8 @@
 import {
   HankenGrotesk_400Regular,
+  HankenGrotesk_500Medium,
   HankenGrotesk_600SemiBold,
-  HankenGrotesk_800ExtraBold,
+  HankenGrotesk_700Bold,
 } from '@expo-google-fonts/hanken-grotesk';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
@@ -47,8 +48,9 @@ function Shell() {
   const { colors, scheme } = useTheme();
   const [fontsLoaded] = useFonts({
     HankenGrotesk_400Regular,
+    HankenGrotesk_500Medium,
     HankenGrotesk_600SemiBold,
-    HankenGrotesk_800ExtraBold,
+    HankenGrotesk_700Bold,
   });
 
   return (

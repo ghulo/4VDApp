@@ -1,7 +1,9 @@
+import { Checks } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
+import { Button, PageHeader } from '../components/ui';
 import { notificationsApi } from '../services/api';
 import { formatDateTime } from '../utils/format';
 
@@ -20,22 +22,25 @@ export function AlertsPage() {
 
   return (
     <>
-      <header className="page-header page-header--with-action">
-        <div>
-          <h1 className="page-title">Alerts</h1>
-          <p className="page-intro">You get an alert when a product reaches its reorder level or runs out.</p>
-        </div>
-        {alerts.data && alerts.data.unreadCount > 0 && (
-          <button type="button" className="button button--quiet" onClick={() => markAllRead.mutate()}>
-            Mark all as read
-          </button>
-        )}
-      </header>
+      <PageHeader
+        title="Alerts"
+        description="You get an alert when a product reaches its reorder level or runs out."
+        actions={
+          alerts.data &&
+          alerts.data.unreadCount > 0 && (
+            <Button icon={Checks} onClick={() => markAllRead.mutate()}>
+              Mark all as read
+            </Button>
+          )
+        }
+      />
 
       {alerts.isPending && <Loading />}
       {alerts.isError && <ErrorNotice error={alerts.error} onRetry={() => alerts.refetch()} />}
       {alerts.data && alerts.data.items.length === 0 && (
-        <EmptyState title="No alerts">Stock alerts will show up here.</EmptyState>
+        <EmptyState art title="No alerts">
+          When a product reaches its reorder level or runs out, you'll see it here.
+        </EmptyState>
       )}
       {alerts.data && alerts.data.items.length > 0 && (
         <>
@@ -52,9 +57,9 @@ export function AlertsPage() {
                 <span className="category-list__count">{formatDateTime(alert.createdAt)}</span>
                 <span className="category-list__actions">
                   {!alert.isRead && (
-                    <button type="button" className="button button--quiet" onClick={() => markRead.mutate(alert.id)}>
+                    <Button size="sm" onClick={() => markRead.mutate(alert.id)}>
                       Mark as read
-                    </button>
+                    </Button>
                   )}
                 </span>
               </li>

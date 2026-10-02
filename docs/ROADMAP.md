@@ -31,4 +31,7 @@ Order: get the data right first, then build the smart parts on top of it.
 | Identity and design system | Four-pillar logo, pine and brass colours, Hanken Grotesk, light/dark/auto in both apps | Done |
 | Accounts and profiles | Invites, email verification, password reset, Google sign-in (needs a key), devices, profiles with photos, business profile, sign-up behind a switch | Done |
 | Polish | Weekly report email, Ctrl+K command palette, setup guide, staff welcome tour, every screen checked in both themes | Done |
+| New look | Cloudflare-style redesign: orange on warm neutrals, icon sidebar and top bar, a small component kit every page is built from, dotted charts, rolling figures, glow and halftone drawings; the phone app follows | Done |
+| Albanian | The dashboard, the team app and the emails in English and Albanian, switchable per person | Next |
+| Roles | You as the main admin with everything on phone and computer; lighter roles for the owner (Dad) and family | Next |
 | Launch | Domain, Resend, Google key, paid Render plans, wipe test data | Waiting on the domain |

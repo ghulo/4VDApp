@@ -1,0 +1,130 @@
+/* 4VD design tokens, after Cloudflare's design language (see
+   docs/superpowers/specs/2026-10-02-cloudflare-structure-design.md).
+   One loud colour (orange) on warm neutrals; status colours come as a strong
+   colour plus a faint tint. The theme script in index.html always sets
+   data-theme, so these two blocks are the only place colours are defined.
+   Contrast is checked by src/theme/contrast.test.ts. */
+:root,
+[data-theme='light'] {
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-sunk: #f4f2ef;
+  --fill: #efece8;
+  --ink: #1f1b19;
+  --ink-muted: #6b635f;
+  --line: #ebe7e3;
+  --line-strong: #d9d3ce;
+  --brand: #c2410c;
+  --brand-ink: #ffffff;
+  --brand-soft: #fff4ed;
+  --accent: #ff5e1f;
+  --cta: #ff5e1f;
+  --cta-hover: #ff7038;
+  --cta-ink: #1c0f08;
+  --hero: #ff5e1f;
+  --hero-ink: #1c0f08;
+  --hero-muted: #3f1d0f;
+  --glow: 0 0 0 1px rgb(255 94 31 / 0.35), 0 0 18px rgb(255 94 31 / 0.28);
+  --glow-text: 0 0 14px rgb(255 94 31 / 0.25);
+  --tint: rgb(255 94 31 / 0.1);
+  --topbar: rgb(255 255 255 / 0.78);
+  --ok: #047857;
+  --ok-soft: #e6f5ee;
+  --warn: #b45309;
+  --warn-soft: #fef3e2;
+  --danger: #b91c1c;
+  --danger-soft: #fdecec;
+  --info: #1d4ed8;
+  --info-soft: #e8efff;
+  --focus: #1d4ed8;
+  --dots: #d9d3ce;
+  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23d9d3ce'/%3E%3C/svg%3E");
+  --shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #151414;
+  --surface: #1c1b1a;
+  --surface-sunk: #111010;
+  --fill: #262422;
+  --ink: #f2ebe7;
+  --ink-muted: #9a9390;
+  --line: #2c2927;
+  --line-strong: #3d3936;
+  --brand: #ff7038;
+  --brand-ink: #1a120e;
+  --brand-soft: #3a1f12;
+  --accent: #ff5e1f;
+  --cta: #ff5e1f;
+  --cta-hover: #ff7038;
+  --cta-ink: #1c0f08;
+  --hero: #ff5e1f;
+  --hero-ink: #1c0f08;
+  --hero-muted: #3f1d0f;
+  --glow: 0 0 0 1px rgb(255 94 31 / 0.5), 0 0 24px rgb(255 94 31 / 0.35);
+  --glow-text: 0 0 16px rgb(255 94 31 / 0.55);
+  --tint: rgb(255 94 31 / 0.14);
+  --topbar: rgb(28 27 26 / 0.72);
+  --ok: #34d399;
+  --ok-soft: #0f3326;
+  --warn: #fbbf24;
+  --warn-soft: #3a2c0d;
+  --danger: #f87171;
+  --danger-soft: #3b1717;
+  --info: #60a5fa;
+  --info-soft: #14263f;
+  --focus: #60a5fa;
+  --dots: #34302d;
+  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%2334302d'/%3E%3C/svg%3E");
+  --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+:root {
+  --chart-series: var(--accent);
+
+  /* Older names still used by page styles; they follow the tokens above. */
+  --concrete: var(--bg);
+  --steel: var(--ink-muted);
+  --signal-low: var(--warn);
+  --signal-low-ink: var(--warn);
+  --signal-out: var(--danger);
+  --stock-ok: var(--ok);
+
+  --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+  --font-display: var(--font-body);
+
+  /* Type: 12 / 13 / 14 (base) / 16, headings medium weight with tight tracking. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+
+  /* 4px grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --control-h: 36px;
+  --control-h-sm: 30px;
+  --radius-small: 8px;
+  --radius-panel: 12px;
+  --radius-board: 16px;
+
+  /* Motion: quick and soft, never bouncy. */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 150ms;
+}
+
+/* Phones: bigger controls for thumbs, like SBB's element sizes (44px minimum). */
+@media (max-width: 900px) {
+  :root {
+    --control-h: 44px;
+    --control-h-sm: 36px;
+  }
+}

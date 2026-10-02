@@ -1,17 +1,42 @@
+import {
+  Bell,
+  CaretDoubleLeft,
+  CaretDoubleRight,
+  ChartLine,
+  ClipboardText,
+  ClockCounterClockwise,
+  Gear,
+  House,
+  List,
+  MagnifyingGlass,
+  Package,
+  Percent,
+  Receipt,
+  SealCheck,
+  SignOut,
+  Sparkle,
+  SquaresFour,
+  Tag,
+  Users,
+  X,
+  type Icon,
+} from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
-import { Link, NavLink, Outlet } from 'react-router';
-import { useAuth, useCurrentUser } from '../auth/useAuth';
-import { approvalsApi, notificationsApi } from '../services/api';
+import { approvalsApi, businessApi, notificationsApi } from '../services/api';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { LogoMark } from './LogoMark';
+import { Button } from './ui';
 
 interface NavItem {
   to: string;
   label: string;
+  icon: Icon;
   end?: boolean;
   /** Which waiting count to show next to it, if any. */
   badge?: 'approvals' | 'alerts';
@@ -22,30 +47,30 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Today',
     items: [
-      { to: '/', label: 'Overview', end: true },
-      { to: '/approvals', label: 'Approvals', badge: 'approvals' },
-      { to: '/alerts', label: 'Alerts', badge: 'alerts' },
-      { to: '/ask', label: 'Ask' },
+      { to: '/', label: 'Overview', icon: House, end: true },
+      { to: '/approvals', label: 'Approvals', icon: SealCheck, badge: 'approvals' },
+      { to: '/alerts', label: 'Alerts', icon: Bell, badge: 'alerts' },
+      { to: '/ask', label: 'Ask', icon: Sparkle },
     ],
   },
   {
     label: 'Shelves',
     items: [
-      { to: '/inventory', label: 'Stock' },
-      { to: '/counts', label: 'Counts' },
-      { to: '/products', label: 'Products' },
-      { to: '/promotions', label: 'Promotions' },
-      { to: '/categories', label: 'Categories' },
+      { to: '/inventory', label: 'Stock', icon: Package },
+      { to: '/counts', label: 'Counts', icon: ClipboardText },
+      { to: '/products', label: 'Products', icon: Tag },
+      { to: '/promotions', label: 'Promotions', icon: Percent },
+      { to: '/categories', label: 'Categories', icon: SquaresFour },
     ],
   },
   {
     label: 'Business',
     items: [
-      { to: '/sales', label: 'Sales' },
-      { to: '/reports', label: 'Reports' },
-      { to: '/people', label: 'People' },
-      { to: '/activity', label: 'Activity' },
-      { to: '/settings', label: 'Settings' },
+      { to: '/sales', label: 'Sales', icon: Receipt },
+      { to: '/reports', label: 'Reports', icon: ChartLine },
+      { to: '/people', label: 'People', icon: Users },
+      { to: '/activity', label: 'Activity', icon: ClockCounterClockwise },
+      { to: '/settings', label: 'Settings', icon: Gear },
     ],
   },
 ];
@@ -54,13 +79,60 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 const ALERT_POLL_MS = 60_000;
+const COLLAPSED_KEY = '4vd.sidebar.collapsed';
 
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === 'yes';
+  } catch {
+    return false;
+  }
+}
+
+/** The signed-in frame: a top bar, the sidebar (a drawer on phones) and the page. */
 export function Layout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const togglePalette = useCallback(() => setPaletteOpen((open) => !open), []);
   useShortcuts(togglePalette);
   const user = useCurrentUser();
   const { logout } = useAuth();
+  const location = useLocation();
+
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+
+  function toggleCollapsed() {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? 'yes' : 'no');
+    } catch {
+      // Blocked storage: remembered for this visit only.
+    }
+  }
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    menuButton.current?.focus();
+  }, []);
+
+  // Moving to another page closes the drawer on phones.
+  const [lastPath, setLastPath] = useState(location.pathname);
+  if (location.pathname !== lastPath) {
+    setLastPath(location.pathname);
+    setDrawerOpen(false);
+  }
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDrawer();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [drawerOpen, closeDrawer]);
+
   // Poll so a low-stock alert from an employee's sale shows up without a reload.
   const unread = useQuery({
     queryKey: ['notifications', 'unread-count'],
@@ -74,27 +146,77 @@ export function Layout() {
     refetchInterval: ALERT_POLL_MS,
   });
   const waitingCount = approvals.data?.total ?? 0;
+  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
 
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <Link to="/" className="sidebar__brand" aria-label="4VD, go to Overview">
-          <LogoMark size={34} />
-          4VD
+    <div className={collapsed ? 'app app--collapsed' : 'app'}>
+      <header className="topbar">
+        <button
+          ref={menuButton}
+          type="button"
+          className="button button--ghost button--icon topbar__menu"
+          aria-label="Open the menu"
+          aria-expanded={drawerOpen}
+          aria-controls="sidebar"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <List size={20} aria-hidden="true" />
+        </button>
+        <Link to="/" className="topbar__brand" aria-label="4VD, go to Overview">
+          <LogoMark size={28} />
+          <span className="topbar__name">4VD</span>
         </Link>
-        <button type="button" className="sidebar__search" onClick={() => setPaletteOpen(true)}>
-          <span>Search</span>
+        {business.data && (
+          <>
+            <span className="topbar__slash" aria-hidden="true">
+              /
+            </span>
+            <Link to="/settings" className="topbar__shop">
+              {business.data.name}
+            </Link>
+          </>
+        )}
+        <button type="button" className="topbar__search" onClick={() => setPaletteOpen(true)}>
+          <MagnifyingGlass size={16} aria-hidden="true" />
+          <span className="topbar__search-label">Search or jump to</span>
           <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
         </button>
+        <div className="topbar__end">
+          <ThemeSwitch persist compact />
+          <NavLink to="/profile" className="topbar__user" aria-label={`Your profile, ${user.name}`}>
+            <Avatar name={user.name} url={user.avatarUrl} size={28} />
+          </NavLink>
+          <Button variant="ghost" icon={SignOut} aria-label="Log out" title="Log out" onClick={logout} />
+        </div>
+      </header>
+
+      {drawerOpen && <div className="drawer-backdrop" onClick={closeDrawer} aria-hidden="true" />}
+
+      <aside id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label="Main menu">
+        <div className="sidebar__drawer-head">
+          <span className="topbar__brand">
+            <LogoMark size={28} />
+            <span className="topbar__name">4VD</span>
+          </span>
+          <Button variant="ghost" icon={X} aria-label="Close the menu" onClick={closeDrawer} />
+        </div>
         <nav className="sidebar__nav" aria-label="Main">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="sidebar__group">
               <p className="sidebar__group-label">{group.label}</p>
               {group.items.map((item) => {
                 const count = item.badge === 'approvals' ? waitingCount : item.badge === 'alerts' ? unreadCount : 0;
+                const ItemIcon = item.icon;
                 return (
-                  <NavLink key={item.to} to={item.to} end={item.end} className="sidebar__link">
-                    {item.label}
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className="sidebar__link"
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <ItemIcon size={18} className="sidebar__icon" aria-hidden="true" />
+                    <span className="sidebar__label">{item.label}</span>
                     {count > 0 && (
                       <span
                         className="sidebar__badge"
@@ -109,19 +231,22 @@ export function Layout() {
             </div>
           ))}
         </nav>
-        <div className="sidebar__account">
-          <ThemeSwitch persist />
-          <NavLink to="/profile" className="sidebar__user">
-            <Avatar name={user.name} url={user.avatarUrl} size={28} />
-            <span>{user.name}</span>
-          </NavLink>
-          <button type="button" className="sidebar__logout" onClick={logout}>
-            Log out
-          </button>
-        </div>
+        <button
+          type="button"
+          className="sidebar__collapse"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+          title={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+        >
+          {collapsed ? <CaretDoubleRight size={16} aria-hidden="true" /> : <CaretDoubleLeft size={16} aria-hidden="true" />}
+          <span className="sidebar__label">Collapse</span>
+        </button>
       </aside>
+
       <main className="main">
-        <Outlet />
+        <div className="main__frame rails">
+          <Outlet />
+        </div>
       </main>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>

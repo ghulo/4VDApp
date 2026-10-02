@@ -7,6 +7,7 @@ import { invitesApi, usersApi } from '../services/api';
 import { type User, type UserRole, USER_ROLES } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, ROLE_LABEL } from '../utils/format';
+import { Button, Card, PageHeader } from '../components/ui';
 
 const ROLE_HINT: Record<UserRole, string> = {
   admin: 'Everything, including this dashboard',
@@ -21,19 +22,15 @@ export function UsersPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">People</h1>
-        <p className="page-intro">Who can use the app, and what they can do.</p>
-      </header>
+      <PageHeader title="People" description="Who can use the app, and what they can do." />
 
-      <section className="panel">
-        <h2 className="panel__title">Invite someone</h2>
+      <Card title="Invite someone">
         <InviteForm />
         <details className="fallback">
           <summary>Or set them up yourself with a first password</summary>
           <AddUserForm />
         </details>
-      </section>
+      </Card>
 
       <PendingInvites />
 
@@ -97,9 +94,9 @@ function InviteForm() {
           Invite sent to {invite.data.data.email}.
         </p>
       )}
-      <button type="submit" className="button button--primary" disabled={!email.trim() || invite.isPending}>
+      <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary">
         {invite.isPending ? 'Sending…' : 'Send invite'}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -113,8 +110,7 @@ function PendingInvites() {
 
   if (!invites.data || invites.data.length === 0) return null;
   return (
-    <section className="panel">
-      <h2 className="panel__title">Waiting to join</h2>
+    <Card title="Waiting to join">
       <ul className="category-list">
         {invites.data.map((invite) => (
           <li key={invite.id} className="category-list__row">
@@ -127,17 +123,12 @@ function PendingInvites() {
             </div>
             <span />
             <span className="category-list__actions">
-              <button type="button" className="button button--quiet" disabled={resend.isPending} onClick={() => resend.mutate(invite.id)}>
+              <Button disabled={resend.isPending} onClick={() => resend.mutate(invite.id)}>
                 Send again
-              </button>
-              <button
-                type="button"
-                className="button button--quiet button--danger-text"
-                disabled={cancel.isPending}
-                onClick={() => cancel.mutate(invite.id)}
-              >
+              </Button>
+              <Button variant="danger-text" disabled={cancel.isPending} onClick={() => cancel.mutate(invite.id)}>
                 Cancel invite
-              </button>
+              </Button>
             </span>
           </li>
         ))}
@@ -147,7 +138,7 @@ function PendingInvites() {
           {errorMessage(resend.error ?? cancel.error)}
         </p>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -222,9 +213,9 @@ function AddUserForm() {
           {savedMessage}
         </p>
       )}
-      <button type="submit" className="button button--primary" disabled={create.isPending}>
+      <Button type="submit" disabled={create.isPending} variant="primary">
         Add person
-      </button>
+      </Button>
     </form>
   );
 }
@@ -325,12 +316,12 @@ function UserRow({ user }: { user: User }) {
               value={commission}
               onChange={(event) => setCommission(event.target.value)}
             />
-            <button type="submit" className="button button--primary" disabled={update.isPending}>
+            <Button type="submit" disabled={update.isPending} variant="primary">
               Save
-            </button>
-            <button type="button" className="button button--quiet" onClick={() => setIsSettingTargets(false)}>
+            </Button>
+            <Button onClick={() => setIsSettingTargets(false)}>
               Cancel
-            </button>
+            </Button>
           </form>
         ) : isResetting ? (
           <form
@@ -350,50 +341,42 @@ function UserRow({ user }: { user: User }) {
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
             />
-            <button type="submit" className="button button--primary">
+            <Button type="submit" variant="primary">
               Set password
-            </button>
-            <button type="button" className="button button--quiet" onClick={() => setIsResetting(false)}>
+            </Button>
+            <Button onClick={() => setIsResetting(false)}>
               Cancel
-            </button>
+            </Button>
           </form>
         ) : (
           <>
             {sells && (
-              <button type="button" className="button button--quiet" onClick={() => setIsSettingTargets(true)}>
+              <Button onClick={() => setIsSettingTargets(true)}>
                 Target & commission
-              </button>
+              </Button>
             )}
-            <button type="button" className="button button--quiet" onClick={() => setIsResetting(true)}>
+            <Button onClick={() => setIsResetting(true)}>
               New password
-            </button>
+            </Button>
             {!isSelf && (
-              <button
-                type="button"
-                className="button button--quiet"
-                onClick={() => update.mutate({ isActive: !user.isActive })}
-              >
+              <Button onClick={() => update.mutate({ isActive: !user.isActive })}>
                 {user.isActive ? 'Block access' : 'Allow access'}
-              </button>
+              </Button>
             )}
             {!isSelf &&
               (confirmingRemove ? (
                 <>
-                  <button type="button" className="button button--danger" onClick={() => remove.mutate()}>
+                  <Button variant="danger" onClick={() => remove.mutate()}>
                     Remove {user.name.split(' ')[0]}
-                  </button>
-                  <button type="button" className="button button--quiet" onClick={() => setConfirmingRemove(false)}>
+                  </Button>
+                  <Button onClick={() => setConfirmingRemove(false)}>
                     Keep
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className="button button--quiet button--danger-text"
-                  onClick={() => setConfirmingRemove(true)}
-                >
+                <Button variant="danger-text" onClick={() => setConfirmingRemove(true)}>
                   Remove
-                </button>
+                </Button>
               ))}
           </>
         )}

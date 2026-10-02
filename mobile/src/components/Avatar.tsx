@@ -4,7 +4,7 @@ import { mediaSrc } from '../services/apiClient';
 import { fonts } from '../theme';
 
 // Muted tones that keep white initials readable in both themes (same as the dashboard).
-const COLOURS = ['#1d5c45', '#7a4f12', '#3d5a80', '#7b3f61', '#2f6f6a', '#6b5b2e'];
+const COLOURS = ['#c2410c', '#9a3412', '#1e40af', '#6d28d9', '#047857', '#57534e'];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);

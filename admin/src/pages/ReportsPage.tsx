@@ -8,6 +8,7 @@ import type { ReportSummary } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney, ROLE_LABEL } from '../utils/format';
 import { type PeriodKey, resolvePeriod } from '../utils/periods';
+import { Button, Card, PageHeader } from '../components/ui';
 
 const percent = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 });
 
@@ -49,24 +50,18 @@ export function ReportsPage() {
 
   return (
     <>
-      <header className="page-header">
-        <h1 className="page-title">Reports</h1>
-        <p className="page-intro">How much you sold and earned in {range.label}, and who sold it.</p>
-      </header>
+      <PageHeader title="Reports" description={<>How much you sold and earned in {range.label}, and who sold it.</>} />
 
       <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
       {range.waitingForDates && (
         <p className="field-hint">Pick both a start and an end date. Until then this shows {range.label}.</p>
       )}
 
-      <section className="panel" aria-labelledby="summary-heading">
-        <h2 id="summary-heading" className="panel__title">
-          Money
-        </h2>
+      <Card title="Money">
         {summary.isPending && <Loading />}
         {summary.isError && <ErrorNotice error={summary.error} onRetry={() => summary.refetch()} />}
         {summary.data && <SummaryFigures summary={summary.data} />}
-      </section>
+      </Card>
 
       <TeamTable range={rangeKey} />
       <ProfitTable range={rangeKey} />
@@ -130,10 +125,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
   });
 
   return (
-    <section className="panel" aria-labelledby="team-heading">
-      <h2 id="team-heading" className="panel__title">
-        Team
-      </h2>
+    <Card title="Team">
       {team.isPending && <Loading />}
       {team.isError && <ErrorNotice error={team.error} onRetry={() => team.refetch()} />}
       {team.data && team.data.length === 0 && <EmptyState title="No admins or employees yet" />}
@@ -184,7 +176,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
           </table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -197,12 +189,10 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
   });
 
   return (
-    <section className="panel" aria-labelledby="profit-heading">
-      <div className="panel__header">
-        <h2 id="profit-heading" className="panel__title">
-          Profit by {groupBy}
-        </h2>
-        <div className="segmented" role="radiogroup" aria-label="Group profit by">
+    <Card
+      title={`Profit by ${groupBy}`}
+      actions={
+        <div className="segmented segmented--small" role="radiogroup" aria-label="Group profit by">
           {(['product', 'category'] as const).map((option) => (
             <button
               key={option}
@@ -216,7 +206,8 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
             </button>
           ))}
         </div>
-      </div>
+      }
+    >
       {profit.isPending && <Loading />}
       {profit.isError && <ErrorNotice error={profit.error} onRetry={() => profit.refetch()} />}
       {profit.data && profit.data.length === 0 && <EmptyState title="No sales in this period" />}
@@ -251,7 +242,7 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
           </table>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -261,26 +252,23 @@ function Exports({ range }: { range: { startDate: string; endDate: string } }) {
   });
 
   return (
-    <section className="panel" aria-labelledby="exports-heading">
-      <h2 id="exports-heading" className="panel__title">
-        Download for Excel
-      </h2>
+    <Card title="Download for Excel">
       <div className="form-actions">
-        <button type="button" className="button button--quiet" onClick={() => download.mutate('sales')} disabled={download.isPending}>
+        <Button onClick={() => download.mutate('sales')} disabled={download.isPending}>
           Sales in this period
-        </button>
-        <button type="button" className="button button--quiet" onClick={() => download.mutate('team')} disabled={download.isPending}>
+        </Button>
+        <Button onClick={() => download.mutate('team')} disabled={download.isPending}>
           Team report
-        </button>
-        <button type="button" className="button button--quiet" onClick={() => download.mutate('stock')} disabled={download.isPending}>
+        </Button>
+        <Button onClick={() => download.mutate('stock')} disabled={download.isPending}>
           Current stock
-        </button>
+        </Button>
       </div>
       {download.isError && (
         <p className="form-error" role="alert">
           {errorMessage(download.error)}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

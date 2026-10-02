@@ -1,0 +1,814 @@
+/* Styles for the component kit in this folder. Measurements follow Cloudflare's
+   Kumo: 36px controls, 8px corners, hairline cards, 12px table cells. */
+
+/* ---------- Button ---------- */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--control-h);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-small);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The exact Cloudflare orange, with near-black text so it stays readable,
+   and a soft neon glow when pointed at. */
+.button--primary {
+  background: var(--cta);
+  color: var(--cta-ink);
+  font-weight: 600;
+}
+
+.button--primary:not(:disabled):hover {
+  background: var(--cta-hover);
+  box-shadow: var(--glow);
+}
+
+/* Secondary: the surface with a hairline ring, like Kumo. "quiet" is the old name. */
+.button--secondary,
+.button--quiet {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.button--secondary:not(:disabled):hover,
+.button--quiet:not(:disabled):hover {
+  background: var(--surface-sunk);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.button--ghost:not(:disabled):hover {
+  background: var(--fill);
+}
+
+.button--danger {
+  background: var(--danger);
+  color: var(--surface);
+}
+
+.button--danger:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 88%, var(--ink));
+}
+
+/* Text-only destructive action, for "Delete" next to the main buttons. */
+.button--danger-text {
+  background: transparent;
+  color: var(--danger);
+  box-shadow: none;
+}
+
+.button--danger-text:not(:disabled):hover {
+  background: var(--danger-soft);
+}
+
+.button--sm {
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  font-size: var(--text-sm);
+}
+
+.button--icon {
+  width: var(--control-h);
+  padding: 0;
+}
+
+.button--sm.button--icon {
+  width: var(--control-h-sm);
+}
+
+.button--wide {
+  width: 100%;
+}
+
+.text-link {
+  color: var(--brand);
+  font-weight: 500;
+  text-underline-offset: 3px;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Page header ---------- */
+
+.page-header {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.crumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.crumbs [aria-current='page'] {
+  color: var(--ink);
+}
+
+.page-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+}
+
+.page-header__text {
+  min-width: 0;
+}
+
+.page-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.page-header__title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.page-header__description {
+  margin-top: var(--space-1);
+  max-width: 68ch;
+  color: var(--ink-muted);
+  font-size: var(--text-lg);
+}
+
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Card and setting row ---------- */
+
+.card {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+}
+
+.card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) 0;
+}
+
+.card__heading {
+  min-width: 0;
+}
+
+.card__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.card__description {
+  margin-top: 2px;
+  color: var(--ink-muted);
+}
+
+.card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.card__body {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.card--flush > .card__body {
+  padding: 0;
+}
+
+.card--flush > .card__head {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+/* The footer strip: recessed, with the actions on the right. */
+.card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+}
+
+.card__foot > :first-child:not(:only-child):not(.button) {
+  margin-right: auto;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+}
+
+.setting-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.setting-row:last-child {
+  padding-bottom: 0;
+}
+
+.setting-row__title {
+  font-weight: 600;
+}
+
+.setting-row__description {
+  margin-top: 2px;
+  color: var(--ink-muted);
+  max-width: 60ch;
+}
+
+.setting-row__control {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .setting-row {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-row__control {
+    justify-content: flex-start;
+  }
+}
+
+/* ---------- Data table ---------- */
+
+.data-table {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.card .data-table {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.data-table__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.data-table__toolbar select {
+  width: auto;
+}
+
+.data-table__scroll {
+  overflow-x: auto;
+}
+
+.data-table__empty {
+  padding: var(--space-6) var(--space-5);
+}
+
+.data-table__footer {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+
+.table th {
+  padding: 10px var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table td {
+  transition: background-color var(--fast) var(--ease);
+}
+
+.table tbody tr:hover td {
+  background: color-mix(in srgb, var(--surface-sunk) 60%, var(--surface));
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: var(--space-4);
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: var(--space-4);
+}
+
+.table__numeric,
+.table th.table__numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table__primary-link {
+  display: block;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.table__primary-link:hover {
+  color: var(--brand);
+}
+
+.table__secondary {
+  display: block;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.table__row--muted td {
+  color: var(--ink-muted);
+}
+
+.table__expanded td,
+.table tbody tr.table__expanded:hover td {
+  background: var(--surface-sunk);
+}
+
+.table td a:has(.stock-tag) {
+  text-decoration: none;
+}
+
+/* ---------- Stat grid ---------- */
+
+/* Cells share hairlines, like Cloudflare's feature grids. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--line);
+  gap: 1px;
+  overflow: hidden;
+}
+
+.stat {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.stat {
+  transition: background-color var(--fast) var(--ease);
+}
+
+.stat--link:hover {
+  background: var(--surface-sunk);
+}
+
+.stat__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.stat__value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__hint {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.stat--warn .stat__value {
+  color: var(--warn);
+}
+
+.stat--danger .stat__value {
+  color: var(--danger);
+}
+
+/* ---------- Badge ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge--neutral {
+  background: var(--fill);
+  color: var(--ink-muted);
+}
+
+.badge--ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge--warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge--info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.badge--brand {
+  background: var(--tint);
+  color: var(--brand);
+}
+
+/* ---------- Field ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.field__hint,
+.field-hint {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.field__error {
+  color: var(--danger);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.field--narrow {
+  max-width: 220px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 var(--space-4);
+}
+
+/* ---------- Empty state ---------- */
+
+.empty-state {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.empty-state__title {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.empty-state__body {
+  max-width: 52ch;
+}
+
+.empty-state__action {
+  margin-top: var(--space-2);
+}
+
+.empty-state--art {
+  justify-items: center;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.empty-state__art {
+  width: 140px;
+  margin-bottom: var(--space-2);
+}
+
+/* ---------- Switch (a checkbox with role="switch") ---------- */
+
+input.switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line-strong);
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+input.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.12s;
+}
+
+input.switch:checked {
+  background: var(--brand);
+}
+
+input.switch:checked::after {
+  transform: translateX(16px);
+}
+
+input.switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input.switch:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* A short number input with its unit beside it: "€ [ 50 ]", "[ 14 ] days". */
+.unit-input {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.unit-input input {
+  width: 96px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.setting-select {
+  width: auto;
+  min-width: 110px;
+}
+
+/* A setting row holding a stack of labelled fields instead of one control. */
+.setting-row--fields {
+  display: block;
+}
+
+.setting-row--fields .field:last-child,
+.setting-row--fields .field-row:last-child .field {
+  margin-bottom: 0;
+}
+.table__nowrap { white-space: nowrap; }
+
+/* ---------- Rolling number ---------- */
+
+/* Each digit is a 0-9 strip in a one-digit window, slid to its value. */
+.roll {
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
+}
+
+.roll__digit {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.roll__strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.roll__strip > span {
+  height: 1em;
+  line-height: 1;
+}
+
+/* ---------- Dot-matrix bars ---------- */
+
+.dot-bars {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.dot-bars__lit {
+  fill: currentColor;
+}
+
+.dot-bars__unlit {
+  fill: currentColor;
+  opacity: 0.18;
+}
+
+/* ---------- Status pill on a dotted line ---------- */
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.status-line::before,
+.status-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-image: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  background-size: 6px 1px;
+  opacity: 0.45;
+}
+
+.status-line__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ---------- Highlighted phrase ---------- */
+
+/* The key words of a sentence, on a soft tint, like Cloudflare's headlines. */
+mark.highlight {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--tint);
+  color: var(--brand);
+  text-shadow: var(--glow-text);
+}
+
+/* ---------- Corner nodes ---------- */
+
+/* Small squares on the four corners of a framed block, where its lines would
+   meet the page grid. The block's own content can keep overflow: hidden. */
+.nodes {
+  position: relative;
+}
+
+.nodes::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) top left / 7px 7px,
+    linear-gradient(var(--line-strong), var(--line-strong)) top right / 7px 7px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom left / 7px 7px,
+    linear-gradient(var(--line-strong), var(--line-strong)) bottom right / 7px 7px;
+  background-repeat: no-repeat;
+}
+
+.stat-grid-frame {
+  margin-bottom: var(--space-4);
+}
+
+.stat-grid-frame > .stat-grid {
+  margin-bottom: 0;
+}

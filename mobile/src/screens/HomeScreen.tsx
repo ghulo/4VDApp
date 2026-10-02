@@ -298,7 +298,7 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
     >
       <View style={[styles.targetTrack, { backgroundColor: colors.heroRaised }]}>
         <View
-          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: reached ? colors.stockOk : colors.signalLow }]}
+          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: colors.heroText, opacity: reached ? 1 : 0.75 }]}
         />
       </View>
       <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>{label}</Text>
@@ -377,14 +377,12 @@ function Muted({ colors, children }: { colors: ThemeColors; children: ReactNode 
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
-  // The deep-pine board, with a brass edge along the bottom.
+  // The orange board, like the hero block on Cloudflare's site.
   hero: {
     marginHorizontal: spacing.md,
     padding: spacing.xl,
     gap: spacing.xs,
     borderRadius: radius.board,
-    borderBottomWidth: 4,
-    borderBottomColor: '#d9a945',
   },
   greetingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   greetingText: { flex: 1, gap: spacing.xs },

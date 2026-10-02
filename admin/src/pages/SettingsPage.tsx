@@ -122,7 +122,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
           ))}
         </select>
         <span className="field-hint">
-          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts below.
+          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts on your Profile page.
         </span>
       </label>
       {save.isError && (

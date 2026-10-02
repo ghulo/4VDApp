@@ -1933,3 +1933,8 @@ textarea:focus-visible {
 .google-sign-in__button {
   min-height: 44px;
 }
+
+/* Buttons in forms stay their natural width instead of stretching across the grid. */
+.settings-form > .button {
+  justify-self: start;
+}

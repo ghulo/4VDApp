@@ -295,7 +295,11 @@ function DeviceRow({ session, onEnd, busy }: { session: Session; onEnd: () => vo
       <span>
         <span className="device-list__name">{session.device}</span>
         <span className="device-list__meta">
-          {session.current ? 'This device' : `Last used ${session.lastUsedAt ? formatDateTime(session.lastUsedAt) : 'a while ago'}`}
+          {session.current
+            ? 'This device'
+            : session.lastUsedAt
+              ? `Last used ${formatDateTime(session.lastUsedAt)}`
+              : 'Logged in before 4VD tracked devices'}
         </span>
       </span>
       {!session.current && (

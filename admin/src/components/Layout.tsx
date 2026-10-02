@@ -1,4 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { CommandPalette } from '../command/CommandPalette';
+import { useShortcuts } from '../command/useShortcuts';
 import { Link, NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { approvalsApi, notificationsApi } from '../services/api';
@@ -47,9 +50,15 @@ const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
   },
 ];
 
+/** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
 const ALERT_POLL_MS = 60_000;
 
 export function Layout() {
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const togglePalette = useCallback(() => setPaletteOpen((open) => !open), []);
+  useShortcuts(togglePalette);
   const user = useCurrentUser();
   const { logout } = useAuth();
   // Poll so a low-stock alert from an employee's sale shows up without a reload.
@@ -73,6 +82,10 @@ export function Layout() {
           <LogoMark size={34} />
           4VD
         </Link>
+        <button type="button" className="sidebar__search" onClick={() => setPaletteOpen(true)}>
+          <span>Search</span>
+          <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
+        </button>
         <nav className="sidebar__nav" aria-label="Main">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="sidebar__group">
@@ -110,6 +123,7 @@ export function Layout() {
       <main className="main">
         <Outlet />
       </main>
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );
 }

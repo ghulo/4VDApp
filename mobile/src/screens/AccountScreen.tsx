@@ -3,7 +3,8 @@ import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { Button } from '../components/ui';
 import { API_URL } from '../services/apiClient';
 import { useAuth, useCurrentUser } from '../state/useAuth';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { ChoiceRow } from '../components/inputs';
+import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors } from '../theme';
 
 const ROLE_DESCRIPTION = {
   admin: 'Admin. Manage everything from the admin dashboard.',
@@ -13,6 +14,7 @@ const ROLE_DESCRIPTION = {
 
 export function AccountScreen() {
   const colors = useThemeColors();
+  const { preference, setPreference } = useTheme();
   const user = useCurrentUser();
   const { logout } = useAuth();
 
@@ -22,6 +24,18 @@ export function AccountScreen() {
         <Text style={[styles.name, { color: colors.ink }]}>{user.name}</Text>
         <Text style={[styles.detail, { color: colors.steel }]}>{user.email}</Text>
         <Text style={[styles.detail, { color: colors.ink }]}>{ROLE_DESCRIPTION[user.role]}</Text>
+      </View>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <ChoiceRow
+          label="Theme"
+          options={[
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+            { value: 'system', label: 'Auto' },
+          ]}
+          value={preference}
+          onChange={(next: ThemePreference) => setPreference(next)}
+        />
       </View>
       <PushSettingsPanel />
       <Button label="Log out" variant="quiet" onPress={logout} />

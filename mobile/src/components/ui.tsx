@@ -32,7 +32,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
       style={({ pressed }) => [
         styles.button,
         isPrimary
-          ? { backgroundColor: colors.ink }
+          ? { backgroundColor: colors.brand }
           : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: 'transparent' },
         (disabled || loading) && styles.disabled,
         pressed && styles.pressed,

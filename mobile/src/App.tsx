@@ -1,5 +1,8 @@
-import { Barlow_400Regular, Barlow_600SemiBold } from '@expo-google-fonts/barlow';
-import { BarlowCondensed_600SemiBold, BarlowCondensed_700Bold } from '@expo-google-fonts/barlow-condensed';
+import {
+  HankenGrotesk_400Regular,
+  HankenGrotesk_600SemiBold,
+  HankenGrotesk_800ExtraBold,
+} from '@expo-google-fonts/hanken-grotesk';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -7,9 +10,10 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Loading } from './components/ui';
 import { RootNavigator } from './navigation/RootNavigator';
-import { useThemeColors } from './theme';
+import { useTheme } from './theme';
 import { ApiError } from './services/apiClient';
 import { AuthProvider } from './state/AuthProvider';
+import { ThemeProvider } from './state/ThemeProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,12 +36,19 @@ const styles = StyleSheet.create({
 });
 
 export default function App() {
-  const colors = useThemeColors();
+  return (
+    <ThemeProvider>
+      <Shell />
+    </ThemeProvider>
+  );
+}
+
+function Shell() {
+  const { colors, scheme } = useTheme();
   const [fontsLoaded] = useFonts({
-    Barlow_400Regular,
-    Barlow_600SemiBold,
-    BarlowCondensed_600SemiBold,
-    BarlowCondensed_700Bold,
+    HankenGrotesk_400Regular,
+    HankenGrotesk_600SemiBold,
+    HankenGrotesk_800ExtraBold,
   });
 
   return (
@@ -50,7 +61,7 @@ export default function App() {
           </View>
         </View>
       </QueryClientProvider>
-      <StatusBar style="auto" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </SafeAreaProvider>
   );
 }

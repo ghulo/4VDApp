@@ -6,8 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
-    <title>4VD Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;800&display=swap" rel="stylesheet" />
+    <title>4VD</title>
+    <!-- Apply the saved theme before anything paints (same rules as src/theme/theme.ts). -->
+    <script>
+      (function () {
+        var choice = 'system';
+        try { choice = localStorage.getItem('4vd.theme') || 'system'; } catch (e) {}
+        if (choice !== 'light' && choice !== 'dark') {
+          choice = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = choice;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

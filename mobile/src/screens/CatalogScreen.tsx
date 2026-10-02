@@ -121,7 +121,7 @@ function Chip({ label, isSelected, onPress }: { label: string; isSelected: boole
       onPress={onPress}
       style={[
         styles.chip,
-        isSelected ? { backgroundColor: colors.ink, borderColor: colors.ink } : { borderColor: colors.lineStrong },
+        isSelected ? { backgroundColor: colors.brand, borderColor: colors.brand } : { borderColor: colors.lineStrong },
       ]}
     >
       <Text style={[styles.chipLabel, { color: isSelected ? colors.onInk : colors.ink }]}>{label}</Text>

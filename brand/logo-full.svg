@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="4VD">
-  <!-- Four equal pillars under one roof: the four Dacaj brothers holding up the family home and shop. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 64" role="img" aria-label="4VD">
   <rect width="64" height="64" rx="14" fill="#1D5C45"/>
   <path d="M11 25 L32 11 L53 25" fill="none" stroke="#D9A945" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
   <rect x="14" y="30" width="6.5" height="22" rx="1.5" fill="#FFFFFF"/>
   <rect x="24.5" y="30" width="6.5" height="22" rx="1.5" fill="#FFFFFF"/>
   <rect x="35" y="30" width="6.5" height="22" rx="1.5" fill="#FFFFFF"/>
   <rect x="45.5" y="30" width="6.5" height="22" rx="1.5" fill="#FFFFFF"/>
+  <text x="80" y="47" font-family="'Hanken Grotesk', sans-serif" font-weight="800" font-size="42" letter-spacing="-1" fill="#122019">4VD</text>
 </svg>

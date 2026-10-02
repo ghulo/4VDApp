@@ -136,6 +136,15 @@ export function HomeScreen() {
           </View>
         )}
 
+        {sells && thisMonth.data?.monthlyTarget ? (
+          <TargetBar
+            colors={colors}
+            revenue={thisMonth.data.current.revenue}
+            target={thisMonth.data.monthlyTarget}
+            monthName={month.name}
+          />
+        ) : null}
+
         {sells && (
           <Pressable
             accessibilityRole="button"
@@ -258,6 +267,31 @@ export function HomeScreen() {
   );
 }
 
+/** Progress towards the monthly target the owner set; full once it is reached. */
+function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors; revenue: number; target: number; monthName: string }) {
+  const share = Math.min(Math.max(revenue / target, 0), 1);
+  const reached = revenue >= target;
+  const label = reached
+    ? `Target of ${formatMoney(target)} reached for ${monthName}`
+    : `${formatMoney(target - revenue)} to go to your ${monthName} target of ${formatMoney(target)}`;
+  return (
+    <View
+      style={styles.target}
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(share * 100) }}
+    >
+      <View style={styles.targetTrack}>
+        <View
+          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: reached ? colors.stockOk : colors.heroText }]}
+        />
+      </View>
+      <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>{label}</Text>
+    </View>
+  );
+}
+
 function RequestRow({ request, colors }: { request: MyRequest; colors: ThemeColors }) {
   const isRejected = request.status === 'rejected';
   const isWaiting = request.status === 'pending' || request.status === 'submitted';
@@ -336,6 +370,10 @@ const styles = StyleSheet.create({
   todayCaption: { fontFamily: fonts.bodyBold, fontSize: 14 },
   todayFigure: { fontFamily: fonts.displayBold, fontSize: 64, lineHeight: 68, fontVariant: ['tabular-nums'] },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },
+  target: { marginTop: spacing.md, gap: spacing.xs },
+  // The hero is dark in both themes, so a faint white track works for each.
+  targetTrack: { height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.18)' },
+  targetFill: { height: 8, borderRadius: 4 },
   sellButton: {
     marginTop: spacing.xl,
     minHeight: 56,

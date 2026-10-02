@@ -6,8 +6,8 @@ import { Button, EmptyState, ErrorState, Loading, TextField } from '../component
 import { productsApi, salesApi } from '../services/api';
 import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
-import { errorMessage, formatMoney } from '../utils/format';
-import { unitPriceFor } from '../utils/pricing';
+import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
+import { salePriceFor } from '../utils/pricing';
 
 /** Used both as the "Sell" tab and as a modal opened from a product. */
 export function RecordSaleScreen() {
@@ -49,7 +49,7 @@ function ProductPicker({ products, onPick }: { products: Product[]; onPick: (id:
         >
           <Text style={[styles.pickerName, { color: colors.ink }]}>{product.name}</Text>
           <Text style={[styles.pickerMeta, { color: colors.steel }]}>
-            {formatMoney(product.price)}, {product.stock.quantity} in stock
+            {formatMoney(product.promotion?.price ?? product.price)}, {product.stock.quantity} in stock
           </Text>
         </Pressable>
       ))}
@@ -76,7 +76,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
     },
   });
 
-  const unitPrice = unitPriceFor(product.price, product.bulkPricingTiers, quantity);
+  const { unitPrice, isPromotion } = salePriceFor(product, quantity);
   const maxQuantity = product.stock.quantity;
   const change = (delta: number) => {
     setSavedMessage(null);
@@ -112,7 +112,9 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
           {quantity} × {formatMoney(unitPrice)} = {formatMoney(unitPrice * quantity)}
         </Text>
         {unitPrice < product.price && (
-          <Text style={[styles.hint, { color: colors.stockOk }]}>Bulk price applied</Text>
+          <Text style={[styles.hint, { color: colors.stockOk }]}>
+            {isPromotion && product.promotion ? `${product.promotion.name}: ${promotionLabel(product.promotion)}` : 'Bulk price applied'}
+          </Text>
         )}
       </View>
 

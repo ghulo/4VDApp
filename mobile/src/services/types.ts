@@ -36,6 +36,8 @@ export interface Product {
   price: number;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
+  /** The running promotion, with the price it gives for one unit. */
+  promotion: { id: number; name: string; percentOff: number; endsAt: string; price: number } | null;
 }
 
 export interface Sale {
@@ -66,6 +68,8 @@ export interface RecentSale {
 }
 
 export interface MySales {
+  /** Euros of sales (after refunds) the owner hopes for each month; null when not set. */
+  monthlyTarget: number | null;
   current: SalesTotals;
   previous: SalesTotals;
   recentSales: RecentSale[];

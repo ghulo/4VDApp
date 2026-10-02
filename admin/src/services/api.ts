@@ -16,7 +16,9 @@ import type {
   InventoryDetail,
   InventoryItem,
   Paginated,
+  PriceChange,
   PricingTier,
+  Promotion,
   Product,
   ProductInput,
   ProfitRow,
@@ -71,6 +73,7 @@ export interface ProductListQuery {
 export const productsApi = {
   list: (query: ProductListQuery) => paginated<Product>('/products', { limit: 20, ...query }),
   get: async (id: number) => (await apiRequest<Product>(`/products/${id}`)).data,
+  priceHistory: async (id: number) => (await apiRequest<PriceChange[]>(`/products/${id}/price-history`)).data,
   create: async (input: ProductInput) =>
     (await apiRequest<Product>('/products', { method: 'POST', body: input })).data,
   update: async (id: number, input: ProductInput) =>
@@ -78,6 +81,20 @@ export const productsApi = {
   remove: async (id: number) => {
     await apiRequest(`/products/${id}`, { method: 'DELETE' });
   },
+};
+
+export const promotionsApi = {
+  list: async () => (await apiRequest<Promotion[]>('/promotions')).data,
+  /** Dates like "2026-10-07"; the end day is included. */
+  create: async (input: {
+    name: string;
+    percentOff: number;
+    productId?: number;
+    categoryId?: number;
+    startsAt: string;
+    endsAt: string;
+  }) => (await apiRequest<Promotion>('/promotions', { method: 'POST', body: input })).data,
+  end: async (id: number) => (await apiRequest<Promotion>(`/promotions/${id}/end`, { method: 'POST' })).data,
 };
 
 export const categoriesApi = {
@@ -145,7 +162,17 @@ export const usersApi = {
   list: (page: number) => paginated<User>('/users', { page, limit: 50 }),
   create: async (input: { email: string; name: string; role: UserRole; password: string }) =>
     (await apiRequest<User>('/users', { method: 'POST', body: input })).data,
-  update: async (id: number, input: { name?: string; role?: UserRole; isActive?: boolean; password?: string }) =>
+  update: async (
+    id: number,
+    input: {
+      name?: string;
+      role?: UserRole;
+      isActive?: boolean;
+      password?: string;
+      monthlyTarget?: number | null;
+      commissionPercent?: number | null;
+    },
+  ) =>
     (await apiRequest<User>(`/users/${id}`, { method: 'PUT', body: input })).data,
   remove: async (id: number) => {
     await apiRequest(`/users/${id}`, { method: 'DELETE' });

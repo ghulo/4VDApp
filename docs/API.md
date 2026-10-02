@@ -142,6 +142,23 @@ Same body **without `stock` or `reorderLevel`**. Stock changes go through `PATCH
 ### DELETE /products/:id (admin)
 Soft delete: the product disappears everywhere, but sales history still refers to it.
 
+### GET /products/:id/price-history (admin)
+Every price and cost change, newest first, read from the activity log: `[ { changedAt, changedBy, price: { from, to } | null, costPrice: { from, to } | null } ]`. The product's creation is the first entry, with `from: null`.
+
+Every product also carries `promotion`: `{ id, name, percentOff, endsAt, price }` for the biggest running promotion (`price` is one unit after the discount), or `null`.
+
+---
+
+## Promotions (admin)
+
+A percentage off (more than 0, at most 90) for **one product or one category**, between two dates. Dates are whole UTC days, both included: `startsAt` `"2026-10-01"` means from the start of that day, `endsAt` `"2026-10-07"` means until the end of that day (returned end-exclusive, as `2026-10-08T00:00:00Z`).
+
+| Method & path | Body / returns |
+|---|---|
+| `GET /promotions` | All promotions, newest first: `{ id, name, percentOff, product, category, startsAt, endsAt, endedEarlyAt, status, createdBy, createdAt }`; `status` is `scheduled`, `running`, `finished` or `ended` (ended early) |
+| `POST /promotions` | `{ name, percentOff, productId \| categoryId, startsAt, endsAt }`. `400` naming the products when the discount would take any of them below cost plus the minimum margin (products without a cost price aren't checked) |
+| `POST /promotions/:id/end` | Ends a running promotion now, or cancels a scheduled one. `409` if it already ended |
+
 ---
 
 ## Bulk Pricing
@@ -182,7 +199,7 @@ The item plus `warnings` (e.g. `["Out of stock"]`) and the 20 most recent `recen
 ```json
 { "productId": 1, "quantity": 12, "notes": "Optional", "saleDate": "2026-09-30T14:00:00Z" }
 ```
-The unit price comes from the product's bulk tiers for that quantity. Units leave stock in the same transaction (logged as a "Sale" adjustment). `saleDate` is optional (defaults to now) and can't be in the future. Hidden products can't be sold.
+The unit price comes from the product's bulk tiers for that quantity, or from the biggest running promotion when that is cheaper (discounts never stack; the sale stores `promotion_id`). Units leave stock in the same transaction (logged as a "Sale" adjustment). `saleDate` is optional (defaults to now) and can't be in the future. Hidden products can't be sold.
 
 Returns `{ id, productId, productName, quantity, pricePerUnit, totalAmount, soldBy, saleDate, notes }`.
 
@@ -229,7 +246,7 @@ Returns `{ period, startDate, endDate, totalRevenue, points: [ { periodStart: "2
 |---|---|---|
 | `GET /users` | – | Query: `role`, `page`, `limit` |
 | `POST /users` | `{ email, name, role, password }` | Password at least 8 characters. Duplicate email returns `409` |
-| `PUT /users/:id` | any of `{ name, role, isActive, password }` | A new password, a role change or deactivation logs them out everywhere |
+| `PUT /users/:id` | any of `{ name, role, isActive, password, monthlyTarget, commissionPercent }` | A new password, a role change or deactivation logs them out everywhere. `monthlyTarget` (euros) and `commissionPercent` (0–100) can be `null` to remove them |
 | `DELETE /users/:id` | – | Soft delete. You can't delete yourself |
 
 The last active admin can't be demoted, deactivated or deleted (`409`).
@@ -270,10 +287,10 @@ Money comes from the `sales_ledger` view: sales on their sale date, plus approve
 | Method & path | Auth | Returns |
 |---|---|---|
 | `GET /reports/summary` | admin | `{ current, previous, change }`: totals for both periods and relative change (`0.12` = +12%, `null` when the previous value was 0) |
-| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, refunds, profit, averageSale }`; refunds count against the person who made the sale; `hasLeft` is true for people deactivated or removed since |
+| `GET /reports/team` | admin | Per admin/employee, plus anyone who sold in the period: `{ userId, name, role, hasLeft, salesCount, unitsSold, revenue, refunds, profit, averageSale, monthlyTarget, commissionPercent, commission }`; `commission` is revenue after refunds × `commissionPercent` (`null` when none is set); refunds count against the person who made the sale; `hasLeft` is true for people deactivated or removed since |
 | `GET /reports/profit?groupBy=product\|category` | admin | `{ id, name, unitsSold, revenue, cost, profit, margin, hasUnknownCost }`, most profitable first; margin leaves out sales with no cost |
 | `GET /reports/reorder-suggestions` | admin | Per active product: `{ productId, productName, quantity, reorderLevel, averageDailySales, daysLeft, suggestedOrder }`, soonest to run out first. No date range |
-| `GET /reports/my-sales` | admin, employee | The caller's own `current` and `previous` `{ salesCount, unitsSold, revenue, refunds }` and their 10 latest `recentSales` `{ id, productName, quantity, pricePerUnit, totalAmount, saleDate, returnedQuantity }`. Never cost or profit |
+| `GET /reports/my-sales` | admin, employee | The caller's `monthlyTarget` (or `null`), their own `current` and `previous` `{ salesCount, unitsSold, revenue, refunds }` and their 10 latest `recentSales` `{ id, productName, quantity, pricePerUnit, totalAmount, saleDate, returnedQuantity }`. Never cost or profit |
 
 Totals shape: `{ revenue, refunds, revenueWithoutCost, cost, profit, margin, unitsSold, salesCount, stockLosses, lossUnitsWithoutCost }`. `revenue` is after refunds. `stockLosses` is the value at cost of approved write-offs plus approved count differences in the period; a surplus found in a count lowers it. `lossUnitsWithoutCost` counts lost units whose product had no cost price.
 

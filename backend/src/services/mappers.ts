@@ -21,6 +21,8 @@ export function toPublicUser(user: UserRow): PublicUser {
     name: user.name,
     role: user.role,
     isActive: user.is_active,
+    monthlyTarget: toMoneyOrNull(user.monthly_target),
+    commissionPercent: user.commission_percent === null ? null : Number(user.commission_percent),
     createdAt: user.created_at.toISOString(),
   };
 }

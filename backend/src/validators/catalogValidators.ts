@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MANUAL_STOCK_REASONS } from '../constants/stock.js';
+import { endDateQuery, startDateQuery } from './operationsValidators.js';
 import { booleanQuerySchema, idSchema, optionalText, paginationSchema, trimmedString } from './validate.js';
 
 const MAX_PRICE = 99_999_999.99;
@@ -98,4 +99,16 @@ export const stockAdjustmentSchema = z
 
 export const replacePricingTiersSchema = z.object({
   tiers: pricingTiersSchema,
+});
+
+// ---------- Promotions ----------
+
+/** Dates like "2026-10-07"; the end day is included. */
+export const createPromotionSchema = z.object({
+  name: trimmedString(255),
+  percentOff: z.number().gt(0).max(90),
+  productId: idSchema.optional(),
+  categoryId: idSchema.optional(),
+  startsAt: startDateQuery,
+  endsAt: endDateQuery,
 });

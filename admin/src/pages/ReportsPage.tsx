@@ -149,6 +149,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                 <th scope="col" className="table__numeric">Refunds</th>
                 <th scope="col" className="table__numeric">Profit</th>
                 <th scope="col" className="table__numeric">Average sale</th>
+                <th scope="col" className="table__numeric">Commission</th>
               </tr>
             </thead>
             <tbody>
@@ -162,10 +163,21 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                   </td>
                   <td className="table__numeric">{person.salesCount}</td>
                   <td className="table__numeric">{person.unitsSold}</td>
-                  <td className="table__numeric">{formatMoney(person.revenue)}</td>
+                  <td className="table__numeric">
+                    {formatMoney(person.revenue)}
+                    {person.monthlyTarget !== null && (
+                      <span className="table__secondary">target {formatMoney(person.monthlyTarget)} a month</span>
+                    )}
+                  </td>
                   <td className="table__numeric">{formatMoney(person.refunds)}</td>
                   <td className="table__numeric">{formatMoney(person.profit)}</td>
                   <td className="table__numeric">{person.salesCount === 0 ? '–' : formatMoney(person.averageSale)}</td>
+                  <td className="table__numeric">
+                    {person.commission === null ? '–' : formatMoney(person.commission)}
+                    {person.commissionPercent !== null && (
+                      <span className="table__secondary">{person.commissionPercent}% of revenue</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -5,6 +5,7 @@ import { InventoryRepository } from './InventoryRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
 import { PricingTierRepository } from './PricingTierRepository.js';
 import { ProductRepository } from './ProductRepository.js';
+import { PromotionRepository } from './PromotionRepository.js';
 import { SalesRepository } from './SalesRepository.js';
 import { ReturnRepository } from './ReturnRepository.js';
 import { SettingsRepository } from './SettingsRepository.js';
@@ -28,6 +29,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     writeOffs: new WriteOffRepository(db),
     returns: new ReturnRepository(db),
     stockCounts: new StockCountRepository(db),
+    promotions: new PromotionRepository(db),
   };
 }
 

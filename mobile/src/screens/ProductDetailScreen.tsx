@@ -8,7 +8,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi, productsApi } from '../services/api';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
-import { errorMessage, formatMoney } from '../utils/format';
+import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
 
@@ -54,8 +54,16 @@ export function ProductDetailScreen({ route, navigation }: Props) {
         </Text>
         <Text style={[styles.name, { color: colors.ink }]}>{item.name}</Text>
         <Text style={[styles.price, { color: colors.ink }]}>
-          {formatMoney(item.price)} <Text style={[styles.unit, { color: colors.steel }]}>each</Text>
+          {formatMoney(item.promotion?.price ?? item.price)} <Text style={[styles.unit, { color: colors.steel }]}>each</Text>
+          {item.promotion && (
+            <Text style={[styles.wasPrice, { color: colors.steel }]}> {formatMoney(item.price)}</Text>
+          )}
         </Text>
+        {item.promotion && (
+          <Text style={[styles.promotion, { color: colors.stockOk }]}>
+            {item.promotion.name}: {promotionLabel(item.promotion)}
+          </Text>
+        )}
         {item.description && <Text style={[styles.description, { color: colors.ink }]}>{item.description}</Text>}
       </View>
 
@@ -119,6 +127,8 @@ const styles = StyleSheet.create({
   category: { fontFamily: fonts.body, fontSize: 14 },
   name: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 32 },
   price: { fontFamily: fonts.bodyBold, fontSize: 22, marginTop: spacing.xs },
+  wasPrice: { fontFamily: fonts.body, fontSize: 16, textDecorationLine: 'line-through' },
+  promotion: { fontFamily: fonts.bodyBold, fontSize: 15 },
   unit: { fontFamily: fonts.body, fontSize: 16 },
   description: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, marginTop: spacing.sm },
   tierRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderTopWidth: 1 },

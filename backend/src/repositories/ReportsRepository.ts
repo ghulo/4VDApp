@@ -17,6 +17,8 @@ export interface TeamQueryRow {
   name: string;
   role: string;
   has_left: boolean;
+  monthly_target: string | null;
+  commission_percent: string | null;
   sales_count: string;
   units_sold: string;
   revenue: string;
@@ -135,6 +137,8 @@ export class ReportsRepository {
         u.name,
         u.role,
         (not u.is_active or u.deleted_at is not null) as has_left,
+        u.monthly_target,
+        u.commission_percent,
         count(l.sale_id) filter (where l.return_id is null) as sales_count,
         coalesce(sum(l.units), 0) as units_sold,
         coalesce(sum(l.revenue), 0) as revenue,
@@ -144,10 +148,15 @@ export class ReportsRepository {
       left join sales_ledger l
         on l.sold_by = u.id and l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
       where (u.role in ('admin', 'employee') and u.is_active and u.deleted_at is null) or l.sale_id is not null
-      group by u.id, u.name, u.role, u.is_active, u.deleted_at
+      group by u.id
       order by revenue desc, u.name
     `.execute(this.db);
     return result.rows;
+  }
+
+  async monthlyTarget(userId: number): Promise<number | null> {
+    const row = await this.db.selectFrom('users').select('monthly_target').where('id', '=', userId).executeTakeFirst();
+    return row?.monthly_target == null ? null : Number(row.monthly_target);
   }
 
   async profitBy(range: DateRange, groupBy: 'product' | 'category'): Promise<ProfitQueryRow[]> {

@@ -8,6 +8,9 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  /** Euros of sales (after refunds) hoped for each month; null when not set. */
+  monthlyTarget: number | null;
+  commissionPercent: number | null;
   createdAt: string;
 }
 
@@ -46,6 +49,8 @@ export interface Product {
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
+  /** The running promotion, with the price it gives for one unit. */
+  promotion: { id: number; name: string; percentOff: number; endsAt: string; price: number } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -174,6 +179,10 @@ export interface TeamRow {
   revenue: number;
   profit: number;
   averageSale: number;
+  monthlyTarget: number | null;
+  commissionPercent: number | null;
+  /** Revenue after refunds × commission; null when none is set. */
+  commission: number | null;
 }
 
 export interface ProfitRow {
@@ -223,6 +232,31 @@ export interface PersonRef {
 export interface AppSettings {
   refundApprovalLimit: number;
   returnWindowDays: number;
+  minimumMarginPercent: number;
+}
+
+export type PromotionStatus = 'scheduled' | 'running' | 'finished' | 'ended';
+
+export interface Promotion {
+  id: number;
+  name: string;
+  percentOff: number;
+  product: PersonRef | null;
+  category: PersonRef | null;
+  startsAt: string;
+  /** End-exclusive: "until 7 Oct" ends at the start of 8 Oct. */
+  endsAt: string;
+  endedEarlyAt: string | null;
+  status: PromotionStatus;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface PriceChange {
+  changedAt: string;
+  changedBy: string | null;
+  price: { from: number | null; to: number } | null;
+  costPrice: { from: number | null; to: number | null } | null;
 }
 
 export interface ReturnItem {

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
-import { formatMoney } from '../utils/format';
+import { formatMoney, promotionLabel } from '../utils/format';
 import { StockTag } from './StockTag';
 
 interface ProductCardProps {
@@ -17,7 +17,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${product.name}, ${formatMoney(product.price)}`}
+      accessibilityLabel={`${product.name}, ${formatMoney(product.promotion?.price ?? product.price)}${product.promotion ? `, ${promotionLabel(product.promotion)}` : ''}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -37,7 +37,17 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
           {product.name}
         </Text>
         <Text style={[styles.category, { color: colors.steel }]}>{product.category.name}</Text>
-        <Text style={[styles.price, { color: colors.ink }]}>{formatMoney(product.price)}</Text>
+        {product.promotion ? (
+          <>
+            <Text style={[styles.price, { color: colors.ink }]}>
+              {formatMoney(product.promotion.price)}{' '}
+              <Text style={[styles.wasPrice, { color: colors.steel }]}>{formatMoney(product.price)}</Text>
+            </Text>
+            <Text style={[styles.promotion, { color: colors.stockOk }]}>{promotionLabel(product.promotion)}</Text>
+          </>
+        ) : (
+          <Text style={[styles.price, { color: colors.ink }]}>{formatMoney(product.price)}</Text>
+        )}
         {cheapestTier && (
           <Text style={[styles.bulk, { color: colors.steel }]}>
             {formatMoney(cheapestTier.price)} each from {cheapestTier.quantity}
@@ -66,4 +76,6 @@ const styles = StyleSheet.create({
   category: { fontFamily: fonts.body, fontSize: 13 },
   price: { fontFamily: fonts.bodyBold, fontSize: 16, marginTop: 2 },
   bulk: { fontFamily: fonts.body, fontSize: 13 },
+  wasPrice: { fontFamily: fonts.body, fontSize: 14, textDecorationLine: 'line-through' },
+  promotion: { fontFamily: fonts.bodyBold, fontSize: 13 },
 });

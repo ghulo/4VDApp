@@ -50,7 +50,7 @@ export async function setupTestApp(): Promise<TestContext> {
 export async function resetData(db: DatabaseClient): Promise<void> {
   await sql`TRUNCATE users, refresh_tokens, categories, products, inventory, bulk_pricing_tiers,
     sales, stock_adjustments, product_images, notifications, favorites, activity_log,
-    settings, returns, write_offs, stock_counts, stock_count_lines RESTART IDENTITY CASCADE`.execute(db);
+    settings, returns, write_offs, stock_counts, stock_count_lines, promotions RESTART IDENTITY CASCADE`.execute(db);
   await sql`INSERT INTO settings (key, value) VALUES ('refund_approval_limit', '50'), ('return_window_days', '14')`.execute(db);
 }
 

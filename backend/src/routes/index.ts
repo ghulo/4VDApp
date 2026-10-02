@@ -7,6 +7,7 @@ import {
   createInventoryRoutes,
   createPricingRoutes,
   createProductRoutes,
+  createPromotionRoutes,
 } from './catalogRoutes.js';
 import {
   createAnalyticsRoutes,
@@ -30,6 +31,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/products', createProductRoutes(container));
   router.use('/inventory', createInventoryRoutes(container));
   router.use('/pricing', createPricingRoutes(container));
+  router.use('/promotions', createPromotionRoutes(container));
   router.use('/sales', createSalesRoutes(container));
   router.use('/analytics', createAnalyticsRoutes(container));
   router.use('/users', createUserRoutes(container));

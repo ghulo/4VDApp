@@ -28,6 +28,8 @@ export interface UsersTable {
   name: string;
   role: UserRole;
   is_active: Generated<boolean>;
+  monthly_target: Decimal | null;
+  commission_percent: Decimal | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;
@@ -93,6 +95,8 @@ export interface SalesTable {
   // Computed by PostgreSQL (GENERATED ALWAYS AS ... STORED), never written.
   total_amount: ColumnType<string, never, never>;
   sold_by: number | null;
+  /** The promotion that set the price, if any. */
+  promotion_id: number | null;
   sale_date: ColumnType<Date, Date | undefined, Date>;
   notes: string | null;
   created_at: CreatedAt;
@@ -143,6 +147,21 @@ export interface ActivityLogTable {
   // pg serialises plain objects to JSON for us and parses JSONB on the way out.
   details: ColumnType<Record<string, unknown> | null, Record<string, unknown> | null | undefined, never>;
   created_at: CreatedAt;
+}
+
+export interface PromotionsTable {
+  id: Generated<number>;
+  name: string;
+  percent_off: Decimal;
+  /** Exactly one of product_id and category_id is set. */
+  product_id: number | null;
+  category_id: number | null;
+  starts_at: Date;
+  /** End-exclusive. */
+  ends_at: Date;
+  created_by: number | null;
+  created_at: CreatedAt;
+  ended_early_at: Date | null;
 }
 
 export interface SettingsTable {
@@ -235,6 +254,7 @@ export interface Database {
   favorites: FavoritesTable;
   activity_log: ActivityLogTable;
   settings: SettingsTable;
+  promotions: PromotionsTable;
   returns: ReturnsTable;
   write_offs: WriteOffsTable;
   stock_counts: StockCountsTable;

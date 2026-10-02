@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { categoriesApi, productsApi } from '../services/api';
-import type { Category, Product, ProductInput } from '../services/types';
+import type { Category, PriceChange, Product, ProductInput } from '../services/types';
+import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -144,6 +145,15 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
           Products
         </Link>
         <h1 className="page-title">{isNew ? 'Add product' : product.name}</h1>
+        {product?.promotion && (
+          <p className="page-intro">
+            On promotion: {product.promotion.name}, −{product.promotion.percentOff}% ({formatMoney(product.promotion.price)})
+            until {formatPromotionDay(product.promotion.endsAt, true)}.{' '}
+            <Link to="/promotions" className="text-link">
+              Promotions
+            </Link>
+          </p>
+        )}
       </header>
 
       {categories.length === 0 ? (
@@ -154,6 +164,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
           </Link>
         </div>
       ) : (
+        <>
         <form className="product-form" onSubmit={handleSubmit}>
           <section className="panel">
             <h2 className="panel__title">Details</h2>
@@ -365,7 +376,57 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
             </p>
           )}
         </form>
+        {!isNew && <PriceHistory productId={product.id} />}
+        </>
       )}
     </>
+  );
+}
+
+const describePriceChange = (change: { from: number | null; to: number | null }) =>
+  change.from === null
+    ? `${change.to === null ? 'none' : formatMoney(change.to)} to start`
+    : `${formatMoney(change.from)} → ${change.to === null ? 'none' : formatMoney(change.to)}`;
+
+/** Every price and cost change, from the activity log. */
+function PriceHistory({ productId }: { productId: number }) {
+  const history = useQuery({
+    queryKey: ['products', productId, 'price-history'],
+    queryFn: () => productsApi.priceHistory(productId),
+  });
+
+  return (
+    <section className="panel product-form" aria-labelledby="price-history-heading">
+      <h2 id="price-history-heading" className="panel__title">
+        Price history
+      </h2>
+      {history.isPending && <Loading />}
+      {history.isError && <ErrorNotice error={history.error} onRetry={() => history.refetch()} />}
+      {history.data && history.data.length === 0 && <p className="field-hint">No price changes recorded yet.</p>}
+      {history.data && history.data.length > 0 && (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">When</th>
+                <th scope="col">Price</th>
+                <th scope="col">Cost</th>
+                <th scope="col">Who</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.data.map((change: PriceChange) => (
+                <tr key={change.changedAt}>
+                  <td>{formatDateTime(change.changedAt)}</td>
+                  <td>{change.price ? describePriceChange(change.price) : '–'}</td>
+                  <td>{change.costPrice ? describePriceChange(change.costPrice) : '–'}</td>
+                  <td>{change.changedBy ?? 'Removed user'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

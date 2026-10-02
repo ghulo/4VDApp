@@ -26,6 +26,8 @@ import { UserService } from './services/UserService.js';
 import { InventoryRepository } from './repositories/InventoryRepository.js';
 import { PricingTierRepository } from './repositories/PricingTierRepository.js';
 import { ProductRepository } from './repositories/ProductRepository.js';
+import { PromotionRepository } from './repositories/PromotionRepository.js';
+import { PromotionService } from './services/PromotionService.js';
 import { RefreshTokenRepository } from './repositories/RefreshTokenRepository.js';
 import { ReportsRepository } from './repositories/ReportsRepository.js';
 import { ReportsService } from './services/ReportsService.js';
@@ -63,10 +65,17 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const writeOffRepository = new WriteOffRepository(db);
   const returnRepository = new ReturnRepository(db);
   const stockCountRepository = new StockCountRepository(db);
+  const promotionRepository = new PromotionRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
   const categoryService = new CategoryService(categoryRepository, transactions);
-  const productService = new ProductService(productRepository, categoryRepository, pricingTierRepository, transactions);
+  const productService = new ProductService(
+    productRepository,
+    categoryRepository,
+    pricingTierRepository,
+    promotionRepository,
+    transactions,
+  );
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
   const salesService = new SalesService(salesRepository, transactions);
@@ -87,6 +96,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
   const returnService = new ReturnService(returnRepository, settingsService, transactions);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
+  const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
 
   const authenticated = requireAuth(userRepository);
   const guards = {
@@ -120,6 +130,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient) {
     returnService,
     stockCountService,
     approvalService,
+    promotionService,
     guards,
   };
 }

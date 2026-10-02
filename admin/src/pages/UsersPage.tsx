@@ -5,7 +5,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { usersApi } from '../services/api';
 import { type User, type UserRole, USER_ROLES } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { ROLE_LABEL } from '../utils/format';
+import { formatMoney, ROLE_LABEL } from '../utils/format';
 
 const ROLE_HINT: Record<UserRole, string> = {
   admin: 'Everything, including this dashboard',
@@ -126,6 +126,10 @@ function UserRow({ user }: { user: User }) {
   const queryClient = useQueryClient();
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [isSettingTargets, setIsSettingTargets] = useState(false);
+  const [target, setTarget] = useState(user.monthlyTarget === null ? '' : String(user.monthlyTarget));
+  const [commission, setCommission] = useState(user.commissionPercent === null ? '' : String(user.commissionPercent));
+  const sells = user.role !== 'family';
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const isSelf = user.id === currentUser.id;
 
@@ -134,7 +138,9 @@ function UserRow({ user }: { user: User }) {
     mutationFn: (input: Parameters<typeof usersApi.update>[1]) => usersApi.update(user.id, input),
     onSuccess: () => {
       onDone();
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
       setIsResetting(false);
+      setIsSettingTargets(false);
       setNewPassword('');
     },
   });
@@ -152,6 +158,16 @@ function UserRow({ user }: { user: User }) {
           {user.email}
           {!user.isActive && ', can’t log in'}
         </p>
+        {sells && (user.monthlyTarget !== null || user.commissionPercent !== null) && (
+          <p className="category-list__description">
+            {[
+              user.monthlyTarget !== null && `Target ${formatMoney(user.monthlyTarget)} a month`,
+              user.commissionPercent !== null && `${user.commissionPercent}% commission`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        )}
       </div>
       <select
         aria-label={`Role for ${user.name}`}
@@ -166,7 +182,46 @@ function UserRow({ user }: { user: User }) {
         ))}
       </select>
       <span className="category-list__actions">
-        {isResetting ? (
+        {isSettingTargets ? (
+          <form
+            className="inline-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              update.mutate({
+                monthlyTarget: target === '' ? null : Number(target),
+                commissionPercent: commission === '' ? null : Number(commission),
+              });
+            }}
+          >
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={1}
+              aria-label={`Monthly sales target for ${user.name} in euros`}
+              placeholder="Target € / month"
+              value={target}
+              onChange={(event) => setTarget(event.target.value)}
+            />
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              step={0.5}
+              aria-label={`Commission for ${user.name} in percent`}
+              placeholder="Commission %"
+              value={commission}
+              onChange={(event) => setCommission(event.target.value)}
+            />
+            <button type="submit" className="button button--primary" disabled={update.isPending}>
+              Save
+            </button>
+            <button type="button" className="button button--quiet" onClick={() => setIsSettingTargets(false)}>
+              Cancel
+            </button>
+          </form>
+        ) : isResetting ? (
           <form
             className="inline-form"
             onSubmit={(event) => {
@@ -193,6 +248,11 @@ function UserRow({ user }: { user: User }) {
           </form>
         ) : (
           <>
+            {sells && (
+              <button type="button" className="button button--quiet" onClick={() => setIsSettingTargets(true)}>
+                Target & commission
+              </button>
+            )}
             <button type="button" className="button button--quiet" onClick={() => setIsResetting(true)}>
               New password
             </button>

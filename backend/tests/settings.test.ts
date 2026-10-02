@@ -23,14 +23,14 @@ describe('settings', () => {
     const response = await request(context.app).get('/api/settings').set(auth(employeeToken));
 
     expect(response.status).toBe(200);
-    expect(response.body.data).toEqual({ refundApprovalLimit: 50, returnWindowDays: 14 });
+    expect(response.body.data).toEqual({ refundApprovalLimit: 50, returnWindowDays: 14, minimumMarginPercent: 0 });
   });
 
   it('should let the admin change a limit and log it', async () => {
     const response = await request(context.app).put('/api/settings').set(auth(adminToken)).send({ refundApprovalLimit: 80 });
     const log = await context.db.selectFrom('activity_log').selectAll().where('action', '=', 'settings.updated').execute();
 
-    expect(response.body.data).toEqual({ refundApprovalLimit: 80, returnWindowDays: 14 });
+    expect(response.body.data).toEqual({ refundApprovalLimit: 80, returnWindowDays: 14, minimumMarginPercent: 0 });
     expect(log).toHaveLength(1);
   });
 

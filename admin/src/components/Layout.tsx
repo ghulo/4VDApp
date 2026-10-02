@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/sales', label: 'Sales' },
   { to: '/reports', label: 'Reports' },
   { to: '/products', label: 'Products' },
+  { to: '/promotions', label: 'Promotions' },
   { to: '/categories', label: 'Categories' },
   { to: '/people', label: 'People' },
   { to: '/activity', label: 'Activity' },

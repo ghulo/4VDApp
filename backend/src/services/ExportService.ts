@@ -51,6 +51,9 @@ const TEAM_COLUMNS: CsvColumn<TeamRow>[] = [
   { header: 'Refunds', value: (row) => row.refunds },
   { header: 'Profit', value: (row) => row.profit },
   { header: 'Average sale', value: (row) => row.averageSale },
+  { header: 'Monthly target', value: (row) => row.monthlyTarget },
+  { header: 'Commission %', value: (row) => row.commissionPercent },
+  { header: 'Commission', value: (row) => row.commission },
 ];
 
 export interface CsvFile {

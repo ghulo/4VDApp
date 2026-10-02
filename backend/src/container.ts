@@ -32,6 +32,7 @@ import { PushRepository } from './repositories/PushRepository.js';
 import { InsightsRepository } from './repositories/InsightsRepository.js';
 import { InsightsService } from './services/InsightsService.js';
 import { AssistantService } from './services/AssistantService.js';
+import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
@@ -138,6 +139,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     promotionService,
     config.shopTimeZone,
   );
+  const priceSuggestionService = new PriceSuggestionService(
+    aiProvider,
+    productService,
+    reportsRepository,
+    reportsService,
+    activityLogService,
+    promotionService,
+    settingsService,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -184,6 +194,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     insightsService,
     dailySummaryService,
     assistantService,
+    priceSuggestionService,
     guards,
   };
 }

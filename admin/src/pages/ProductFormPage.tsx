@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
-import { categoriesApi, productsApi } from '../services/api';
+import { assistantApi, categoriesApi, productsApi } from '../services/api';
 import type { Category, PriceChange, Product, ProductInput } from '../services/types';
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 
@@ -247,6 +247,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
               </label>
             </div>
             {margin !== null && <p className="field-hint">Margin {margin}%. Only admins can see what it costs you.</p>}
+            {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
             <h3 className="subheading">Bulk prices</h3>
             <p className="field-hint">
@@ -380,6 +381,57 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         </>
       )}
     </>
+  );
+}
+
+const DECISION_TEXT = { raise: 'Raise to', lower: 'Lower to', keep: 'Keep at' } as const;
+
+/** Asks the AI for a price; "Use this price" only fills the field, the owner still saves. */
+function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (price: number) => void }) {
+  const status = useQuery({ queryKey: ['assistant', 'status'], queryFn: assistantApi.status });
+  const suggestion = useMutation({ mutationFn: () => assistantApi.suggestPrice(productId) });
+  if (!status.data?.enabled) return null;
+  const result = suggestion.data;
+
+  return (
+    <div className="price-suggestion">
+      {!result && (
+        <button type="button" className="button button--quiet" disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
+          {suggestion.isPending ? 'Looking at sales…' : 'Suggest a price'}
+        </button>
+      )}
+      {suggestion.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(suggestion.error)}
+        </p>
+      )}
+      {result && (
+        <div className="price-suggestion__result" aria-live="polite">
+          <p className="price-suggestion__headline">
+            {DECISION_TEXT[result.decision]} {formatMoney(result.suggestedPrice)}
+            <span className="price-suggestion__confidence"> · {result.confidence} confidence</span>
+          </p>
+          <p>{result.summary}</p>
+          <ul className="price-suggestion__reasons">
+            {result.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+          <p className="field-hint">Watch out: {result.watchOut}</p>
+          <div className="price-suggestion__actions">
+            {result.decision !== 'keep' && (
+              <button type="button" className="button button--primary" onClick={() => onUse(result.suggestedPrice)}>
+                Use {formatMoney(result.suggestedPrice)}
+              </button>
+            )}
+            <button type="button" className="button button--quiet" disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
+              {suggestion.isPending ? 'Looking again…' : 'Ask again'}
+            </button>
+            <span className="field-hint">By {result.provider}. Nothing changes until you save.</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

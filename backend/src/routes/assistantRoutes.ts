@@ -16,7 +16,7 @@ export function createAssistantRoutes({ assistantService, priceSuggestionService
     message: { success: false, data: null, message: 'That is a lot of questions. Try again in a few minutes.', error: 'RATE_LIMITED' },
   });
 
-  router.use(...guards.admin);
+  router.use(...guards.oversee);
   router.get('/', controller.status);
   router.post('/ask', questionLimit, controller.ask);
   router.post('/price-suggestions/:productId', questionLimit, controller.suggestPrice);

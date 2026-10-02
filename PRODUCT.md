@@ -47,8 +47,9 @@ general enough for that, but the shop comes first whenever the two conflict.
 
 ## Capabilities and Constraints
 
-- Roles today: admin, employee, family. Wanted: the operator as the main admin
-  with full access everywhere; the owner and family with lighter roles.
+- Roles: **developer** (the operator: everything, and the only one who hands
+  out the top roles), **owner** (sees everything and decides requests, changes
+  nothing else), **admin** (runs the shop), **employee**, **family**.
 - Languages: **English and Albanian** are both required (not built yet; the
   interface is English only today).
 - Money in euros; shop time zone is configurable (Europe/Budapest by default).

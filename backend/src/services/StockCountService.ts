@@ -8,6 +8,7 @@ import { roundMoney } from '../utils/money.js';
 import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
+import { canOversee } from '../utils/roles.js';
 
 export interface StockCountLineDto {
   productId: number;
@@ -91,7 +92,7 @@ export class StockCountService {
     const count = await this.stockCountRepository.findById(id);
     if (!count) throw new NotFoundError(`Stock count ${id} does not exist`);
     const products = await this.stockCountRepository.products(id, count.category_id);
-    return toCountDto(count, products, user.role === 'admin' || count.status === 'closed');
+    return toCountDto(count, products, canOversee(user.role) || count.status === 'closed');
   }
 
   async countLine(id: number, productId: number, counted: number, user: PublicUser): Promise<StockCountDto> {
@@ -147,7 +148,7 @@ export class StockCountService {
   async cancel(id: number, user: PublicUser): Promise<StockCountDto> {
     await this.transactions.run(async (repos) => {
       const count = await this.lockCount(repos, id);
-      if (user.role !== 'admin' && count.started_by !== user.id) {
+      if (!canOversee(user.role) && count.started_by !== user.id) {
         throw new ForbiddenError('Only the person who started this count, or the owner, can cancel it');
       }
       if (count.status !== 'open') throw new ConflictError(`This count was already ${count.status}`);

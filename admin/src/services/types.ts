@@ -1,6 +1,6 @@
 // Mirrors the shapes the backend returns (see docs/API.md).
 
-export type UserRole = 'admin' | 'employee' | 'family';
+export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
 
 export interface User {
   id: number;
@@ -151,7 +151,7 @@ export interface AppNotification {
   createdAt: string;
 }
 
-export const USER_ROLES: UserRole[] = ['admin', 'employee', 'family'];
+export const USER_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'employee', 'family'];
 
 export interface PeriodTotals {
   /** After refunds. */

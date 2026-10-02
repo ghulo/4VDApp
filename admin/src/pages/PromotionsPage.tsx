@@ -6,6 +6,7 @@ import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatPromotionDay } from '../utils/format';
 import { Badge, Button, Card, PageHeader, type Tone } from '../components/ui';
+import { ManagersOnly } from '../components/ManagersOnly';
 
 const STATUS_LABEL: Record<PromotionStatus, string> = {
   scheduled: 'Starts later',
@@ -35,40 +36,42 @@ export function PromotionsPage() {
         description="A discount for one product or a whole category. It applies by itself to every sale while it runs, and prices go back when it ends. Discounts never stack, and bulk prices win when they're cheaper."
       />
 
-      <Card title="New promotion">
-        <PromotionForm />
-      </Card>
-
-      {promotions.isPending && <Loading />}
-      {promotions.isError && <ErrorNotice error={promotions.error} onRetry={() => promotions.refetch()} />}
-      {promotions.data && promotions.data.length === 0 && (
-        <EmptyState title="No promotions yet">Create one above, e.g. 15% off Lighting for a week.</EmptyState>
-      )}
-      {promotions.data && promotions.data.length > 0 && (
-        <Card title="All promotions" flush>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th scope="col">Promotion</th>
-                  <th scope="col">Applies to</th>
-                  <th scope="col" className="table__numeric">Discount</th>
-                  <th scope="col">Dates</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">
-                    <span className="visually-hidden">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {promotions.data.map((promotion) => (
-                  <PromotionRow key={promotion.id} promotion={promotion} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <ManagersOnly note="Only the developer or an admin can start or end promotions.">
+        <Card title="New promotion">
+          <PromotionForm />
         </Card>
-      )}
+
+        {promotions.isPending && <Loading />}
+        {promotions.isError && <ErrorNotice error={promotions.error} onRetry={() => promotions.refetch()} />}
+        {promotions.data && promotions.data.length === 0 && (
+          <EmptyState title="No promotions yet">Create one above, e.g. 15% off Lighting for a week.</EmptyState>
+        )}
+        {promotions.data && promotions.data.length > 0 && (
+          <Card title="All promotions" flush>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Promotion</th>
+                    <th scope="col">Applies to</th>
+                    <th scope="col" className="table__numeric">Discount</th>
+                    <th scope="col">Dates</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">
+                      <span className="visually-hidden">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {promotions.data.map((promotion) => (
+                    <PromotionRow key={promotion.id} promotion={promotion} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+      </ManagersOnly>
     </>
   );
 }

@@ -9,7 +9,9 @@ const CLAIM_BATCH_SIZE = 200;
 
 /** Which alerts each role can get at all; the settings only show these. */
 const TOPICS_BY_ROLE: Record<UserRole, PushTopic[]> = {
+  developer: ['stock', 'approvals', 'summary'],
   admin: ['stock', 'approvals', 'summary'],
+  owner: ['stock', 'approvals', 'summary'],
   employee: ['decisions'],
   family: [],
 };

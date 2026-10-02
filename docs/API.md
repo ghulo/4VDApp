@@ -28,11 +28,13 @@ The server checks the account on every authenticated request, so deactivating so
 ## Roles
 | Role | Can do |
 |------|--------|
-| `admin` | Everything |
-| `employee` | Browse products, record sales, favorites |
+| `developer` | Everything. The only role that can give, change or take away the `developer`, `admin` and `owner` roles. The first account on a server, and whoever signs up a new shop, is the developer. There is always at least one |
+| `admin` | Runs the shop: products, stock, promotions, settings, and people with the `employee` or `family` role |
+| `owner` | Sees the whole business (reports, sales, activity, people, cost prices), approves or rejects requests, records sales; changes nothing else |
+| `employee` | Browse products, record sales, send requests (returns, write-offs, counts), favorites |
 | `family` | Browse products, favorites |
 
-Every endpoint except login and token refresh needs a token. Endpoints marked "any role" work for admin, employee and family; with an admin token they also return admin-only fields (cost prices, hidden products).
+Every endpoint except login and token refresh needs a token. Endpoints marked "any role" work for every role; with a `developer`, `admin` or `owner` token they also return the fields for people who run the shop (cost prices, hidden products). In the tables below, **admin** means `developer` or `admin`, and endpoints that read the business or decide requests (reports, analytics, activity, sales history, approvals, `GET /users`, `GET /promotions`, exports, assistant) also accept `owner`. The rules live in `backend/src/utils/roles.ts`.
 
 ## Rate Limiting
 Per 15 minutes:

@@ -8,6 +8,7 @@ import type { Category, PriceChange, Product, ProductInput } from '../services/t
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
 import { Package } from '@phosphor-icons/react';
+import { ManagersOnly } from '../components/ManagersOnly';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -175,209 +176,211 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         </div>
       ) : (
         <>
-        <form className="product-form" onSubmit={handleSubmit}>
-          <Card title="Details">
-            <label className="field">
-              <span className="field__label">Name</span>
-              <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
-            </label>
-            <div className="field-row">
+        <ManagersOnly note="Only the developer or an admin can change this.">
+          <form className="product-form" onSubmit={handleSubmit}>
+            <Card title="Details">
               <label className="field">
-                <span className="field__label">Category</span>
-                <select required value={draft.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
-                  <option value="" disabled>
-                    Choose a category
-                  </option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <span className="field__label">Name</span>
+                <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
               </label>
-              <label className="field">
-                <span className="field__label">SKU (optional)</span>
-                <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
-              </label>
-            </div>
-            <label className="field">
-              <span className="field__label">Description (optional)</span>
-              <textarea
-                rows={3}
-                maxLength={5000}
-                value={draft.description}
-                onChange={(event) => update('description', event.target.value)}
-              />
-            </label>
-            <label className="field">
-              <span className="field__label">Image link (optional)</span>
-              <input
-                type="url"
-                placeholder="https://"
-                value={draft.imageUrl}
-                onChange={(event) => update('imageUrl', event.target.value)}
-              />
-            </label>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={draft.isActive}
-                onChange={(event) => update('isActive', event.target.checked)}
-              />
-              Show in the mobile app
-            </label>
-          </Card>
-
-          <Card title="Price">
-            <div className="field-row">
-              <label className="field">
-                <span className="field__label">Price per unit (€)</span>
-                <input
-                  required
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  inputMode="decimal"
-                  value={draft.price}
-                  onChange={(event) => update('price', event.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span className="field__label">What it costs you (€, optional)</span>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  inputMode="decimal"
-                  value={draft.costPrice}
-                  onChange={(event) => update('costPrice', event.target.value)}
-                />
-              </label>
-            </div>
-            {margin !== null && <p className="field-hint">Margin {margin}%. Only admins can see what it costs you.</p>}
-            {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
-
-            <h3 className="subheading">Bulk prices</h3>
-            <p className="field-hint">
-              Cheaper per unit for bigger orders. Each tier must cost less than the one before it.
-            </p>
-            {draft.tiers.length > 0 && (
-              <ul className="tier-list">
-                {draft.tiers.map((tier) => (
-                  <li key={tier.key} className="tier-list__row">
-                    <label className="field">
-                      <span className="field__label">From quantity</span>
-                      <input
-                        type="number"
-                        min={2}
-                        step={1}
-                        inputMode="numeric"
-                        value={tier.quantity}
-                        onChange={(event) => updateTier(tier.key, 'quantity', event.target.value)}
-                      />
-                    </label>
-                    <label className="field">
-                      <span className="field__label">Price per unit (€)</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        inputMode="decimal"
-                        value={tier.price}
-                        onChange={(event) => updateTier(tier.key, 'price', event.target.value)}
-                      />
-                    </label>
-                    <Button
-                      aria-label={`Remove tier from ${tier.quantity || 'blank'} units`}
-                      onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
-                    >
-                      Remove
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
-              Add bulk price
-            </Button>
-          </Card>
-
-          <Card title="Stock">
-            {isNew ? (
               <div className="field-row">
                 <label className="field">
-                  <span className="field__label">Starting stock</span>
+                  <span className="field__label">Category</span>
+                  <select required value={draft.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
+                    <option value="" disabled>
+                      Choose a category
+                    </option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span className="field__label">SKU (optional)</span>
+                  <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
+                </label>
+              </div>
+              <label className="field">
+                <span className="field__label">Description (optional)</span>
+                <textarea
+                  rows={3}
+                  maxLength={5000}
+                  value={draft.description}
+                  onChange={(event) => update('description', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field__label">Image link (optional)</span>
+                <input
+                  type="url"
+                  placeholder="https://"
+                  value={draft.imageUrl}
+                  onChange={(event) => update('imageUrl', event.target.value)}
+                />
+              </label>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={draft.isActive}
+                  onChange={(event) => update('isActive', event.target.checked)}
+                />
+                Show in the mobile app
+              </label>
+            </Card>
+
+            <Card title="Price">
+              <div className="field-row">
+                <label className="field">
+                  <span className="field__label">Price per unit (€)</span>
                   <input
+                    required
                     type="number"
                     min={0}
-                    step={1}
-                    inputMode="numeric"
-                    value={draft.stock}
-                    onChange={(event) => update('stock', event.target.value)}
+                    step="0.01"
+                    inputMode="decimal"
+                    value={draft.price}
+                    onChange={(event) => update('price', event.target.value)}
                   />
                 </label>
                 <label className="field">
-                  <span className="field__label">Warn me when stock reaches</span>
+                  <span className="field__label">What it costs you (€, optional)</span>
                   <input
                     type="number"
                     min={0}
-                    step={1}
-                    inputMode="numeric"
-                    value={draft.reorderLevel}
-                    onChange={(event) => update('reorderLevel', event.target.value)}
+                    step="0.01"
+                    inputMode="decimal"
+                    value={draft.costPrice}
+                    onChange={(event) => update('costPrice', event.target.value)}
                   />
                 </label>
               </div>
-            ) : (
+              {margin !== null && <p className="field-hint">Margin {margin}%. Only admins can see what it costs you.</p>}
+              {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
+
+              <h3 className="subheading">Bulk prices</h3>
               <p className="field-hint">
-                {product.stock.quantity} in stock. Stock changes are logged, so they're made on the{' '}
-                <Link to={`/inventory/${product.id}`} className="text-link">
-                  stock page
-                </Link>
-                .
+                Cheaper per unit for bigger orders. Each tier must cost less than the one before it.
+              </p>
+              {draft.tiers.length > 0 && (
+                <ul className="tier-list">
+                  {draft.tiers.map((tier) => (
+                    <li key={tier.key} className="tier-list__row">
+                      <label className="field">
+                        <span className="field__label">From quantity</span>
+                        <input
+                          type="number"
+                          min={2}
+                          step={1}
+                          inputMode="numeric"
+                          value={tier.quantity}
+                          onChange={(event) => updateTier(tier.key, 'quantity', event.target.value)}
+                        />
+                      </label>
+                      <label className="field">
+                        <span className="field__label">Price per unit (€)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          inputMode="decimal"
+                          value={tier.price}
+                          onChange={(event) => updateTier(tier.key, 'price', event.target.value)}
+                        />
+                      </label>
+                      <Button
+                        aria-label={`Remove tier from ${tier.quantity || 'blank'} units`}
+                        onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
+                Add bulk price
+              </Button>
+            </Card>
+
+            <Card title="Stock">
+              {isNew ? (
+                <div className="field-row">
+                  <label className="field">
+                    <span className="field__label">Starting stock</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={draft.stock}
+                      onChange={(event) => update('stock', event.target.value)}
+                    />
+                  </label>
+                  <label className="field">
+                    <span className="field__label">Warn me when stock reaches</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      value={draft.reorderLevel}
+                      onChange={(event) => update('reorderLevel', event.target.value)}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <p className="field-hint">
+                  {product.stock.quantity} in stock. Stock changes are logged, so they're made on the{' '}
+                  <Link to={`/inventory/${product.id}`} className="text-link">
+                    stock page
+                  </Link>
+                  .
+                </p>
+              )}
+            </Card>
+
+            {save.isError && (
+              <p className="form-error" role="alert">
+                {errorMessage(save.error)}
               </p>
             )}
-          </Card>
 
-          {save.isError && (
-            <p className="form-error" role="alert">
-              {errorMessage(save.error)}
-            </p>
-          )}
-
-          <div className="form-actions">
-            <Button type="submit" disabled={save.isPending} variant="primary">
-              {save.isPending ? 'Saving…' : isNew ? 'Add product' : 'Save changes'}
-            </Button>
-            <ButtonLink to="/products">
-              Cancel
-            </ButtonLink>
-            {!isNew && (
-              <span className="form-actions__danger">
-                {confirmingDelete ? (
-                  <>
-                    <span>Delete {product.name}? Sales history is kept.</span>
-                    <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
-                      {remove.isPending ? 'Deleting…' : 'Delete product'}
+            <div className="form-actions">
+              <Button type="submit" disabled={save.isPending} variant="primary">
+                {save.isPending ? 'Saving…' : isNew ? 'Add product' : 'Save changes'}
+              </Button>
+              <ButtonLink to="/products">
+                Cancel
+              </ButtonLink>
+              {!isNew && (
+                <span className="form-actions__danger">
+                  {confirmingDelete ? (
+                    <>
+                      <span>Delete {product.name}? Sales history is kept.</span>
+                      <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
+                        {remove.isPending ? 'Deleting…' : 'Delete product'}
+                      </Button>
+                      <Button onClick={() => setConfirmingDelete(false)}>
+                        Keep it
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
+                      Delete product
                     </Button>
-                    <Button onClick={() => setConfirmingDelete(false)}>
-                      Keep it
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
-                    Delete product
-                  </Button>
-                )}
-              </span>
+                  )}
+                </span>
+              )}
+            </div>
+            {remove.isError && (
+              <p className="form-error" role="alert">
+                {errorMessage(remove.error)}
+              </p>
             )}
-          </div>
-          {remove.isError && (
-            <p className="form-error" role="alert">
-              {errorMessage(remove.error)}
-            </p>
-          )}
-        </form>
+          </form>
+        </ManagersOnly>
         {!isNew && <PriceHistory productId={product.id} />}
         </>
       )}

@@ -6,7 +6,7 @@ export function createActivityRoutes({ activityLogService, guards }: Container):
   const controller = createActivityController(activityLogService);
   const router = Router();
 
-  router.get('/', ...guards.admin, controller.list);
+  router.get('/', ...guards.oversee, controller.list);
 
   return router;
 }

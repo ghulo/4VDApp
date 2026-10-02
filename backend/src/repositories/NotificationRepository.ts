@@ -1,5 +1,5 @@
 import type { DatabaseClient } from '../database/connection.js';
-import type { NotificationRow } from '../database/types.js';
+import type { NotificationRow, UserRole } from '../database/types.js';
 
 export interface NewNotification {
   title: string;
@@ -15,7 +15,7 @@ export class NotificationRepository {
   }
 
   /** Send the same notification to every active user with one of the roles. */
-  async createForRoles(roles: Array<'admin' | 'employee' | 'family'>, notification: NewNotification): Promise<number> {
+  async createForRoles(roles: UserRole[], notification: NewNotification): Promise<number> {
     const result = await this.db
       .insertInto('notifications')
       .columns(['user_id', 'title', 'message', 'type'])

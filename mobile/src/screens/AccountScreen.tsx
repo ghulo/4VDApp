@@ -13,7 +13,9 @@ import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors 
 import { errorMessage } from '../utils/format';
 
 const ROLE_DESCRIPTION = {
-  admin: 'Admin. Manage everything from the admin dashboard.',
+  developer: 'Developer. Everything, here and on the 4VD website.',
+  admin: 'Admin. Run the shop from the 4VD website.',
+  owner: 'Owner. See the whole business and decide requests on the 4VD website.',
   employee: 'Employee. You can browse products and record sales.',
   family: 'Family. You can browse products and save favorites.',
 } as const;

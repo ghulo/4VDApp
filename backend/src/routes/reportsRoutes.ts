@@ -6,13 +6,13 @@ export function createReportsRoutes({ reportsService, insightsService, dailySumm
   const controller = createReportsController(reportsService, insightsService, dailySummaryService);
   const router = Router();
 
-  router.get('/summary', ...guards.admin, controller.summary);
-  router.get('/team', ...guards.admin, controller.team);
-  router.get('/profit', ...guards.admin, controller.profit);
-  router.get('/reorder-suggestions', ...guards.admin, controller.reorderSuggestions);
-  router.get('/insights', ...guards.admin, controller.insights);
+  router.get('/summary', ...guards.oversee, controller.summary);
+  router.get('/team', ...guards.oversee, controller.team);
+  router.get('/profit', ...guards.oversee, controller.profit);
+  router.get('/reorder-suggestions', ...guards.oversee, controller.reorderSuggestions);
+  router.get('/insights', ...guards.oversee, controller.insights);
   // What tonight's summary would say right now, for the Overview page.
-  router.get('/daily-summary', ...guards.admin, controller.dailySummary);
+  router.get('/daily-summary', ...guards.oversee, controller.dailySummary);
   // Employees see their own numbers; family members don't sell.
   router.get('/my-sales', ...guards.staff, controller.mySales);
 

@@ -14,8 +14,8 @@ export function createSalesRoutes({ salesService, returnService, guards }: Conta
   const returns = createReturnsController(returnService);
   const router = Router();
 
-  router.get('/', ...guards.admin, controller.list);
-  // Employees record sales too; only admins see the full history.
+  router.get('/', ...guards.oversee, controller.list);
+  // Employees record sales too; only the people who run the shop see the full history.
   router.post('/', ...guards.staff, controller.record);
   // Employees may return only their own sales; the service checks that.
   router.post('/:saleId/returns', ...guards.staff, returns.request);
@@ -27,7 +27,7 @@ export function createAnalyticsRoutes({ analyticsService, guards }: Container): 
   const controller = createAnalyticsController(analyticsService);
   const router = Router();
 
-  router.use(...guards.admin);
+  router.use(...guards.oversee);
   router.get('/dashboard', controller.dashboard);
   router.get('/revenue', controller.revenue);
   router.get('/products/:productId', controller.product);
@@ -39,11 +39,11 @@ export function createUserRoutes({ userService, guards }: Container): Router {
   const controller = createUserController(userService);
   const router = Router();
 
-  router.use(...guards.admin);
-  router.get('/', controller.list);
-  router.post('/', controller.create);
-  router.put('/:id', controller.update);
-  router.delete('/:id', controller.remove);
+  // The owner may see who works here; only managers change it (UserService checks who may touch whom).
+  router.get('/', ...guards.oversee, controller.list);
+  router.post('/', ...guards.manage, controller.create);
+  router.put('/:id', ...guards.manage, controller.update);
+  router.delete('/:id', ...guards.manage, controller.remove);
 
   return router;
 }

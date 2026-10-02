@@ -1,6 +1,6 @@
 import type { UserRole, UserRow } from '../database/types.js';
 import { formatEuro } from '../utils/money.js';
-import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -8,7 +8,10 @@ import type { PublicUser } from '../types/auth.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { hashPassword } from '../utils/password.js';
+import { canHandOut, canManage, MANAGER_ROLES } from '../utils/roles.js';
 import { toMoneyOrNull, toPublicUser } from './mappers.js';
+
+const TOP_ROLE_MESSAGE = 'Only the developer can add or change an owner, admin or developer';
 
 export interface CreateUserInput {
   email: string;
@@ -48,6 +51,7 @@ export class UserService {
     const passwordHash = await hashPassword(input.password);
     const actor = await this.userRepository.findById(actorId);
     if (!actor) throw new NotFoundError(`User ${actorId} does not exist`);
+    if (!canHandOut(actor.role, input.role)) throw new ForbiddenError(TOP_ROLE_MESSAGE);
 
     try {
       return await this.transactions.run(async (repos) => {
@@ -80,8 +84,15 @@ export class UserService {
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundError(`User ${id} does not exist`);
 
-    const losesAdmin = user.role === 'admin' && ((input.role && input.role !== 'admin') || input.isActive === false);
-    if (losesAdmin) await this.ensureAnotherAdminRemains(id === actingUserId);
+    await this.keepSomeoneInCharge(user, input, id === actingUserId);
+    const actor = id === actingUserId ? user : await this.userRepository.findById(actingUserId);
+    if (!actor) throw new NotFoundError(`User ${actingUserId} does not exist`);
+    // People may always change their own details; changing someone with a top
+    // role, or giving anyone a top role, is for the developer.
+    if (id !== actingUserId && !canHandOut(actor.role, user.role)) throw new ForbiddenError(TOP_ROLE_MESSAGE);
+    if (input.role && input.role !== user.role && !canHandOut(actor.role, input.role)) {
+      throw new ForbiddenError(TOP_ROLE_MESSAGE);
+    }
     const passwordHash = input.password === undefined ? undefined : await hashPassword(input.password);
 
     const updated = await this.transactions.run(async (repos) => {
@@ -127,7 +138,10 @@ export class UserService {
 
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundError(`User ${id} does not exist`);
-    if (user.role === 'admin') await this.ensureAnotherAdminRemains(false);
+    const actor = await this.userRepository.findById(actingUserId);
+    if (!actor) throw new NotFoundError(`User ${actingUserId} does not exist`);
+    if (!canHandOut(actor.role, user.role)) throw new ForbiddenError(TOP_ROLE_MESSAGE);
+    await this.keepSomeoneInCharge(user, { isActive: false }, false);
 
     await this.transactions.run(async (repos) => {
       await repos.users.softDelete(id);
@@ -143,8 +157,22 @@ export class UserService {
   }
 
   /** Never let the app end up with nobody who can manage it. */
-  private async ensureAnotherAdminRemains(isSelf: boolean): Promise<void> {
-    if ((await this.userRepository.countActiveAdmins()) <= 1) {
+  /**
+   * The shop always keeps a developer and someone who can manage it, so nobody
+   * can lock everyone out by demoting, blocking or removing the last one.
+   */
+  private async keepSomeoneInCharge(user: UserRow, change: UpdateUserInput, isSelf: boolean): Promise<void> {
+    const leaves = (keeps: (role: UserRole) => boolean) =>
+      keeps(user.role) && ((change.role !== undefined && !keeps(change.role)) || change.isActive === false);
+
+    if (leaves((role) => role === 'developer') && (await this.userRepository.countActive(['developer'])) <= 1) {
+      throw new ConflictError(
+        isSelf
+          ? "You're the only developer. Make someone else a developer first."
+          : 'This is the only developer left. Make someone else a developer first.',
+      );
+    }
+    if (leaves(canManage) && (await this.userRepository.countActive(MANAGER_ROLES)) <= 1) {
       throw new ConflictError(
         isSelf
           ? "You're the only admin. Make someone else an admin first."

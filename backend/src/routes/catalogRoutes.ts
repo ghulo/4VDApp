@@ -11,9 +11,9 @@ export function createCategoryRoutes({ categoryService, guards }: Container): Ro
   const router = Router();
 
   router.get('/', guards.authenticated, controller.list);
-  router.post('/', ...guards.admin, controller.create);
-  router.put('/:id', ...guards.admin, controller.update);
-  router.delete('/:id', ...guards.admin, controller.remove);
+  router.post('/', ...guards.manage, controller.create);
+  router.put('/:id', ...guards.manage, controller.update);
+  router.delete('/:id', ...guards.manage, controller.remove);
 
   return router;
 }
@@ -24,10 +24,10 @@ export function createProductRoutes({ productService, activityLogService, guards
 
   router.get('/', guards.authenticated, controller.list);
   router.get('/:id', guards.authenticated, controller.getById);
-  router.get('/:id/price-history', ...guards.admin, controller.priceHistory);
-  router.post('/', ...guards.admin, controller.create);
-  router.put('/:id', ...guards.admin, controller.update);
-  router.delete('/:id', ...guards.admin, controller.remove);
+  router.get('/:id/price-history', ...guards.oversee, controller.priceHistory);
+  router.post('/', ...guards.manage, controller.create);
+  router.put('/:id', ...guards.manage, controller.update);
+  router.delete('/:id', ...guards.manage, controller.remove);
 
   return router;
 }
@@ -38,7 +38,7 @@ export function createInventoryRoutes({ inventoryService, guards }: Container): 
 
   router.get('/', guards.authenticated, controller.list);
   router.get('/:productId', guards.authenticated, controller.getByProductId);
-  router.patch('/:productId', ...guards.admin, controller.adjust);
+  router.patch('/:productId', ...guards.manage, controller.adjust);
 
   return router;
 }
@@ -47,10 +47,9 @@ export function createPromotionRoutes({ promotionService, guards }: Container): 
   const controller = createPromotionController(promotionService);
   const router = Router();
 
-  router.use(...guards.admin);
-  router.get('/', controller.list);
-  router.post('/', controller.create);
-  router.post('/:id/end', controller.end);
+  router.get('/', ...guards.oversee, controller.list);
+  router.post('/', ...guards.manage, controller.create);
+  router.post('/:id/end', ...guards.manage, controller.end);
 
   return router;
 }
@@ -60,7 +59,7 @@ export function createPricingRoutes({ pricingService, guards }: Container): Rout
   const router = Router();
 
   router.get('/tiers/:productId', guards.authenticated, controller.getTiers);
-  router.put('/tiers/:productId', ...guards.admin, controller.replaceTiers);
+  router.put('/tiers/:productId', ...guards.manage, controller.replaceTiers);
 
   return router;
 }

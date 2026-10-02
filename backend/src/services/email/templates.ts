@@ -14,7 +14,13 @@ const BRAND = '#C2410C';
 const INK = '#1F1B19';
 const MUTED = '#6B635F';
 
-const ROLE_NAMES: Record<string, string> = { admin: 'an admin', employee: 'an employee', family: 'a family member' };
+const ROLE_NAMES: Record<string, string> = {
+  developer: 'the developer',
+  admin: 'an admin',
+  owner: 'the owner',
+  employee: 'an employee',
+  family: 'a family member',
+};
 
 function escapeHtml(value: string): string {
   return value

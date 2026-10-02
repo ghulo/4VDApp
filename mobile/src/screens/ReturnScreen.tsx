@@ -8,7 +8,7 @@ import { Button, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { returnsApi, settingsApi } from '../services/api';
 import type { ReturnCondition } from '../services/types';
-import { useCurrentUser } from '../state/useAuth';
+import { decidesRequests, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 
@@ -40,7 +40,7 @@ export function ReturnScreen({ route, navigation }: Props) {
 
   // Same rules as the server, so the employee knows before sending.
   const reasons: string[] = [];
-  if (user.role !== 'admin' && settings.data) {
+  if (!decidesRequests(user) && settings.data) {
     if (refundAmount > settings.data.refundApprovalLimit) reasons.push(`the refund is over ${formatMoney(settings.data.refundApprovalLimit)}`);
     if (Date.now() - new Date(sale.saleDate).getTime() > settings.data.returnWindowDays * MS_PER_DAY) {
       reasons.push(`it was sold more than ${settings.data.returnWindowDays} days ago`);

@@ -1,5 +1,5 @@
 import type { UserRole } from '../database/types.js';
-import { ConflictError, GoneError, NotFoundError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
 import type { InviteRecord, InviteRepository } from '../repositories/InviteRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -8,6 +8,7 @@ import { hashPassword } from '../utils/password.js';
 import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates } from './email/templates.js';
+import { canHandOut } from '../utils/roles.js';
 
 const INVITE_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -61,6 +62,7 @@ export class InviteService {
   /** A new invite replaces any open one to the same email. */
   async invite(actorId: number, email: string, role: UserRole): Promise<InviteDto> {
     const actor = await this.actor(actorId);
+    if (!canHandOut(actor.role, role)) throw new ForbiddenError('Only the developer can invite an owner, admin or developer');
     if (await this.userRepository.findByEmail(email)) {
       throw new ConflictError(`${email} already has an account`);
     }

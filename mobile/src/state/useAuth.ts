@@ -29,7 +29,12 @@ export function useCurrentUser(): User {
   return state.user;
 }
 
-/** Employees and admins can record sales; family members only browse. */
+/** Everyone but family records sales; family members only browse. */
 export function canRecordSales(user: User): boolean {
-  return user.role === 'admin' || user.role === 'employee';
+  return user.role !== 'family';
+}
+
+/** The developer, admins and the owner decide requests, so theirs never wait. Same rule as the server. */
+export function decidesRequests(user: User): boolean {
+  return user.role === 'developer' || user.role === 'admin' || user.role === 'owner';
 }

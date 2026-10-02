@@ -8,7 +8,7 @@ import { Button, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { writeOffsApi } from '../services/api';
 import type { WriteOffReason } from '../services/types';
-import { useCurrentUser } from '../state/useAuth';
+import { decidesRequests, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 
@@ -62,7 +62,7 @@ export function WriteOffScreen({ route, navigation }: Props) {
       <ChoiceRow label="What happened" options={REASONS} value={reason} onChange={setReason} />
       <TextField label="Note (optional)" value={notes} onChangeText={setNotes} maxLength={1000} placeholder="e.g. dropped in the stockroom" />
 
-      {user.role !== 'admin' && (
+      {!decidesRequests(user) && (
         <View style={[styles.notice, { borderColor: colors.signalLow, backgroundColor: colors.surface }]}>
           <Text style={[styles.noticeText, { color: colors.ink }]}>The owner approves this before it leaves the stock.</Text>
         </View>
@@ -70,7 +70,7 @@ export function WriteOffScreen({ route, navigation }: Props) {
 
       {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
       <Button
-        label={user.role === 'admin' ? 'Write off' : 'Send to the owner'}
+        label={decidesRequests(user) ? 'Write off' : 'Send to the owner'}
         onPress={() => submit.mutate()}
         disabled={!isValid}
         loading={submit.isPending}

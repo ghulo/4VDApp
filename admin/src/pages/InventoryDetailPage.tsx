@@ -10,6 +10,7 @@ import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '..
 import { formatDateTime, formatSignedQuantity } from '../utils/format';
 import { Button, ButtonLink, Card, PageHeader } from '../components/ui';
 import { PencilSimple } from '@phosphor-icons/react';
+import { ManagersOnly } from '../components/ManagersOnly';
 
 export function InventoryDetailPage() {
   const productId = Number(useParams().productId);
@@ -131,76 +132,78 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
   const hasChange = Number(amount) > 0 || (reorderLevel !== '' && Number(reorderLevel) !== item.reorderLevel);
 
   return (
-    <form className="adjust-form" onSubmit={handleSubmit}>
-      <div className="segmented" role="radiogroup" aria-label="Add or remove stock">
-        {(['add', 'remove'] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={direction === option}
-            className="segmented__option"
-            onClick={() => chooseDirection(option)}
-          >
-            {option === 'add' ? 'Add stock' : 'Remove stock'}
-          </button>
-        ))}
-      </div>
+    <ManagersOnly note="Only the developer or an admin can correct stock. Report damage or losses from the team app.">
+      <form className="adjust-form" onSubmit={handleSubmit}>
+        <div className="segmented" role="radiogroup" aria-label="Add or remove stock">
+          {(['add', 'remove'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={direction === option}
+              className="segmented__option"
+              onClick={() => chooseDirection(option)}
+            >
+              {option === 'add' ? 'Add stock' : 'Remove stock'}
+            </button>
+          ))}
+        </div>
 
-      <div className="field-row">
+        <div className="field-row">
+          <label className="field">
+            <span className="field__label">How many</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={direction === 'remove' ? item.quantity : undefined}
+              step={1}
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">Reason</span>
+            <select value={reason} onChange={(event) => setReason(event.target.value as StockReason)}>
+              {reasons.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <label className="field">
-          <span className="field__label">How many</span>
+          <span className="field__label">Note (optional)</span>
+          <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
+        </label>
+
+        <label className="field field--narrow">
+          <span className="field__label">Warn me when stock reaches</span>
           <input
             type="number"
             inputMode="numeric"
-            min={1}
-            max={direction === 'remove' ? item.quantity : undefined}
+            min={0}
             step={1}
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            value={reorderLevel}
+            onChange={(event) => setReorderLevel(event.target.value)}
           />
         </label>
-        <label className="field">
-          <span className="field__label">Reason</span>
-          <select value={reason} onChange={(event) => setReason(event.target.value as StockReason)}>
-            {reasons.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-        </label>
-      </div>
 
-      <label className="field">
-        <span className="field__label">Note (optional)</span>
-        <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
-      </label>
+        {mutation.isError && (
+          <p className="form-error" role="alert">
+            {errorMessage(mutation.error)}
+          </p>
+        )}
+        {savedMessage && (
+          <p className="form-success" role="status">
+            {savedMessage}
+          </p>
+        )}
 
-      <label className="field field--narrow">
-        <span className="field__label">Warn me when stock reaches</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          value={reorderLevel}
-          onChange={(event) => setReorderLevel(event.target.value)}
-        />
-      </label>
-
-      {mutation.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(mutation.error)}
-        </p>
-      )}
-      {savedMessage && (
-        <p className="form-success" role="status">
-          {savedMessage}
-        </p>
-      )}
-
-      <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary">
-        {mutation.isPending ? 'Saving…' : 'Save stock change'}
-      </Button>
-    </form>
+        <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary">
+          {mutation.isPending ? 'Saving…' : 'Save stock change'}
+        </Button>
+      </form>
+    </ManagersOnly>
   );
 }

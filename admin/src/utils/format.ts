@@ -1,7 +1,9 @@
 import type { UserRole } from '../services/types';
 
 export const ROLE_LABEL: Record<UserRole, string> = {
+  developer: 'Developer',
   admin: 'Admin',
+  owner: 'Owner',
   employee: 'Employee',
   family: 'Family',
 };

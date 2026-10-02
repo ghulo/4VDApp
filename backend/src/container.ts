@@ -68,6 +68,7 @@ import { CategoryService } from './services/CategoryService.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
 import { ProductService } from './services/ProductService.js';
+import { MANAGER_ROLES, OVERSEER_ROLES, SELLER_ROLES } from './utils/roles.js';
 
 /**
  * The one place where repositories and services are created and wired
@@ -226,9 +227,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const authenticated = requireAuth(userRepository);
   const guards = {
     authenticated,
-    // Arrays so routes can spread them: router.post('/', ...guards.admin, handler)
-    admin: [authenticated, requireRole('admin')] as RequestHandler[],
-    staff: [authenticated, requireRole('admin', 'employee')] as RequestHandler[],
+    // Arrays so routes can spread them: router.post('/', ...guards.manage, handler).
+    // Who is in each group: utils/roles.ts.
+    manage: [authenticated, requireRole(...MANAGER_ROLES)] as RequestHandler[],
+    oversee: [authenticated, requireRole(...OVERSEER_ROLES)] as RequestHandler[],
+    staff: [authenticated, requireRole(...SELLER_ROLES)] as RequestHandler[],
   };
 
   return {

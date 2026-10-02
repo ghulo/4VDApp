@@ -1,13 +1,7 @@
 import type { ReportsRepository, StockLossRow, TotalsRow } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
-import {
-  type DateRange,
-  margin,
-  previousRange,
-  REORDER_WINDOW_DAYS,
-  relativeChange,
-  reorderSuggestion,
-} from './reports/calculations.js';
+import { type DateRange, margin, previousRange, relativeChange } from './reports/calculations.js';
+import { FORECAST_HISTORY_DAYS, forecast, type Trend } from './reports/forecast.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MY_RECENT_SALES_LIMIT = 10;
@@ -66,6 +60,10 @@ export interface ReorderRow {
   averageDailySales: number;
   daysLeft: number | null;
   suggestedOrder: number;
+  /** Last 2 weeks against the 6 before; null without enough history. */
+  trend: Trend | null;
+  /** Null when it has never sold. */
+  lastSoldAt: string | null;
 }
 
 function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
@@ -87,7 +85,11 @@ function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
 }
 
 export class ReportsService {
-  constructor(private readonly reportsRepository: ReportsRepository) {}
+  constructor(
+    private readonly reportsRepository: ReportsRepository,
+    /** The shop's time zone, for busy and quiet days of the week. */
+    private readonly timeZone: string,
+  ) {}
 
   /** `compareWith` defaults to the same length of time immediately before `range`. */
   async summary(range: DateRange, compareWith: DateRange = previousRange(range)) {
@@ -155,20 +157,34 @@ export class ReportsService {
     });
   }
 
-  async reorderSuggestions(): Promise<ReorderRow[]> {
-    const since = new Date(Date.now() - REORDER_WINDOW_DAYS * MS_PER_DAY);
-    const rows = await this.reportsRepository.salesVelocity(since);
-    return rows
+  /** Every active product: when it runs out at the current pace, and how many to order. Soonest first. */
+  async reorderSuggestions(now = new Date()): Promise<ReorderRow[]> {
+    const [products, sales] = await Promise.all([
+      this.reportsRepository.activeProducts(),
+      this.reportsRepository.salesSince(new Date(now.getTime() - FORECAST_HISTORY_DAYS * MS_PER_DAY)),
+    ]);
+    const salesByProduct = new Map<number, Array<{ at: Date; units: number }>>();
+    for (const sale of sales) {
+      const list = salesByProduct.get(sale.product_id) ?? [];
+      list.push({ at: sale.sale_date, units: sale.quantity_sold });
+      salesByProduct.set(sale.product_id, list);
+    }
+
+    return products
       .map((row) => ({
         productId: row.product_id,
         productName: row.product_name,
         quantity: row.quantity_on_hand,
         reorderLevel: row.reorder_level,
-        ...reorderSuggestion({
-          unitsSoldLast30Days: Number(row.units_sold_recently),
-          quantity: row.quantity_on_hand,
+        ...forecast({
+          sales: salesByProduct.get(row.product_id) ?? [],
+          now,
+          availableSince: row.created_at,
+          stock: row.quantity_on_hand,
           reorderLevel: row.reorder_level,
+          timeZone: this.timeZone,
         }),
+        lastSoldAt: row.last_sold_at?.toISOString() ?? null,
       }))
       .sort((a, b) => {
         if (a.daysLeft === null && b.daysLeft === null) return a.productName.localeCompare(b.productName);

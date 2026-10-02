@@ -9,6 +9,18 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   CORS_ORIGINS: z.string().default(''),
   SENTRY_DSN: z.string().optional(),
+  /** The shop's own time zone: days of the week in forecasts, and when the daily summary goes out. */
+  SHOP_TIME_ZONE: z
+    .string()
+    .default('Europe/Budapest')
+    .refine((zone) => {
+      try {
+        new Intl.DateTimeFormat('en', { timeZone: zone });
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'must be a time zone like Europe/Budapest'),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
@@ -23,6 +35,7 @@ export interface AppConfig {
   refreshTokenTtlDays: number;
   corsOrigins: string[];
   sentryDsn?: string;
+  shopTimeZone: string;
   /** Web push is switched off unless all three are set. */
   webPush?: { publicKey: string; privateKey: string; subject: string };
 }
@@ -54,6 +67,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       .map((origin) => origin.trim())
       .filter((origin) => origin.length > 0),
     sentryDsn: env.SENTRY_DSN || undefined,
+    shopTimeZone: env.SHOP_TIME_ZONE,
     webPush:
       env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
         ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }

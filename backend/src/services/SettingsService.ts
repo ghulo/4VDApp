@@ -9,12 +9,15 @@ export interface AppSettings {
   returnWindowDays: number;
   /** No promotion may bring a price below cost plus this percentage. */
   minimumMarginPercent: number;
+  /** Hour (0–23, shop time) the owner's daily summary goes out. */
+  dailySummaryHour: number;
 }
 
 const KEYS: Record<keyof AppSettings, string> = {
   refundApprovalLimit: 'refund_approval_limit',
   returnWindowDays: 'return_window_days',
   minimumMarginPercent: 'minimum_margin_percent',
+  dailySummaryHour: 'daily_summary_hour',
 };
 
 export class SettingsService {
@@ -33,6 +36,7 @@ export class SettingsService {
       refundApprovalLimit: read('refundApprovalLimit'),
       returnWindowDays: read('returnWindowDays'),
       minimumMarginPercent: read('minimumMarginPercent'),
+      dailySummaryHour: read('dailySummaryHour'),
     };
   }
 
@@ -66,5 +70,7 @@ function describe(name: keyof AppSettings, from: number, to: number): string {
       return `the return window from ${from} to ${to} days`;
     case 'minimumMarginPercent':
       return `the minimum margin from ${from}% to ${to}%`;
+    case 'dailySummaryHour':
+      return `the daily summary time from ${from}:00 to ${to}:00`;
   }
 }

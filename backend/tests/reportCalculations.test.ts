@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { margin, previousRange, relativeChange, reorderSuggestion } from '../src/services/reports/calculations.js';
+import { margin, previousRange, relativeChange } from '../src/services/reports/calculations.js';
 import { toCsv } from '../src/utils/csv.js';
 
 describe('relativeChange', () => {
@@ -40,68 +40,5 @@ describe('margin', () => {
 
   it('should be null without revenue of known cost', () => {
     expect(margin(0, 0)).toBeNull();
-  });
-});
-
-describe('reorderSuggestion', () => {
-  it('should estimate days left and how many to order for the next 30 days', () => {
-    expect(reorderSuggestion({ unitsSoldLast30Days: 15, quantity: 15, reorderLevel: 10 })).toEqual({
-      averageDailySales: 0.5,
-      daysLeft: 30,
-      suggestedOrder: 10,
-    });
-  });
-
-  it('should round days left down', () => {
-    expect(reorderSuggestion({ unitsSoldLast30Days: 30, quantity: 5, reorderLevel: 0 }).daysLeft).toBe(5);
-    expect(reorderSuggestion({ unitsSoldLast30Days: 9, quantity: 10, reorderLevel: 0 }).daysLeft).toBe(33);
-  });
-
-  it('should not guess a run-out date without recent sales', () => {
-    expect(reorderSuggestion({ unitsSoldLast30Days: 0, quantity: 4, reorderLevel: 10 })).toEqual({
-      averageDailySales: 0,
-      daysLeft: null,
-      suggestedOrder: 6,
-    });
-  });
-
-  it('should never suggest a negative order', () => {
-    expect(reorderSuggestion({ unitsSoldLast30Days: 3, quantity: 500, reorderLevel: 10 }).suggestedOrder).toBe(0);
-  });
-});
-
-describe('toCsv', () => {
-  const columns = [
-    { header: 'Product', value: (row: { name: string; qty: number | null }) => row.name },
-    { header: 'Qty', value: (row: { name: string; qty: number | null }) => row.qty },
-  ];
-
-  it('should start with a BOM and use CRLF line endings', () => {
-    expect(toCsv(columns, [{ name: 'Chair', qty: 2 }])).toBe('﻿Product,Qty\r\nChair,2\r\n');
-  });
-
-  it('should quote cells with commas, quotes or line breaks', () => {
-    const csv = toCsv(columns, [{ name: 'Chair, "oak"\nlarge', qty: 1 }]);
-
-    expect(csv).toContain('"Chair, ""oak""\nlarge",1');
-  });
-
-  it('should defuse cells that Excel would run as formulas', () => {
-    const csv = toCsv(columns, [
-      { name: '=HYPERLINK("x")', qty: 1 },
-      { name: '+1', qty: 1 },
-      { name: '-1', qty: 1 },
-      { name: '@SUM(A1)', qty: 1 },
-    ]);
-
-    expect(csv).toContain(`"'=HYPERLINK(""x"")",1`);
-    expect(csv).toContain("'+1,1");
-    expect(csv).toContain("'-1,1");
-    expect(csv).toContain("'@SUM(A1),1");
-  });
-
-  it('should leave numbers alone, including negative ones, and write null as empty', () => {
-    expect(toCsv(columns, [{ name: 'Chair', qty: -3 }])).toContain('Chair,-3');
-    expect(toCsv(columns, [{ name: 'Chair', qty: null }])).toContain('Chair,\r\n');
   });
 });

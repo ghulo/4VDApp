@@ -27,3 +27,18 @@ export function zonedDateTime(date: Date, timeZone: string): string {
   const { year, month, day, hour, minute } = parts(date, timeZone);
   return `${year}-${month}-${day} ${hour}:${minute}`;
 }
+
+/** The hour (0–23) on the clock in `timeZone`. */
+export function zonedHour(date: Date, timeZone: string): number {
+  return Number(parts(date, timeZone).hour);
+}
+
+/** Midnight at the start of `date`'s day in `timeZone`, as a moment in time. */
+export function startOfZonedDay(date: Date, timeZone: string): Date {
+  const { year, month, day } = parts(date, timeZone);
+  const midnightAsUtc = Date.UTC(Number(year), Number(month) - 1, Number(day));
+  // How far the zone is ahead of UTC around then (DST changes happen at night, not midnight).
+  const zoned = parts(new Date(midnightAsUtc), timeZone);
+  const zonedAsUtc = Date.UTC(Number(zoned.year), Number(zoned.month) - 1, Number(zoned.day), Number(zoned.hour), Number(zoned.minute));
+  return new Date(midnightAsUtc - (zonedAsUtc - midnightAsUtc));
+}

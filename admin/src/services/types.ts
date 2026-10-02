@@ -204,6 +204,19 @@ export interface ReorderSuggestion {
   averageDailySales: number;
   daysLeft: number | null;
   suggestedOrder: number;
+  /** Last 2 weeks against the 6 before; null without enough history. */
+  trend: 'rising' | 'falling' | 'steady' | null;
+  lastSoldAt: string | null;
+}
+
+export type InsightSeverity = 'urgent' | 'warning' | 'info';
+
+export interface Insight {
+  kind: 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock';
+  severity: InsightSeverity;
+  title: string;
+  detail: string;
+  productId: number;
 }
 
 export interface ActivityEntry {
@@ -233,9 +246,11 @@ export interface AppSettings {
   refundApprovalLimit: number;
   returnWindowDays: number;
   minimumMarginPercent: number;
+  /** Hour (0–23, shop time) the daily summary goes out. */
+  dailySummaryHour: number;
 }
 
-export type PushTopic = 'stock' | 'approvals' | 'decisions';
+export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';
 
 export interface PushSettings {
   topics: Array<{ topic: PushTopic; enabled: boolean }>;

@@ -81,6 +81,7 @@ describe('push alerts', () => {
     expect(saved.body.data.topics).toEqual([
       { topic: 'stock', enabled: false },
       { topic: 'approvals', enabled: true },
+      { topic: 'summary', enabled: true },
     ]);
     expect(expo.sent).toHaveLength(0);
   });

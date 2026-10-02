@@ -9,6 +9,7 @@ const TOPIC_TEXT: Record<PushTopic, { label: string; hint: string }> = {
   stock: { label: 'Stock running low or out', hint: 'When a sale or loss takes a product to its reorder level or to zero.' },
   approvals: { label: 'Requests waiting for you', hint: 'Returns, damage reports and count differences from employees.' },
   decisions: { label: 'Decisions on my requests', hint: 'When the owner approves or rejects something you sent.' },
+  summary: { label: 'Daily summary', hint: "Each evening: the day's sales and anything that needs your attention." },
 };
 
 const SETTINGS_KEY = ['push-settings'];

@@ -425,6 +425,60 @@ p {
   font-size: 0.875rem;
 }
 
+.attention__summary {
+  margin: 0 0 12px;
+}
+
+.attention__row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  align-items: start;
+  gap: 16px;
+  padding: 12px 8px 12px 12px;
+  border-top: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  color: inherit;
+  text-decoration: none;
+}
+
+.restock-list li:first-child .attention__row {
+  border-top: 0;
+}
+
+.attention__row:hover {
+  background: var(--concrete);
+}
+
+.attention__row--urgent {
+  border-left-color: var(--signal-out);
+}
+
+.attention__row--warning {
+  border-left-color: var(--signal-low);
+}
+
+.attention__severity {
+  color: var(--steel);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.attention__row--urgent .attention__severity {
+  color: var(--signal-out);
+}
+
+.attention__row--warning .attention__severity {
+  color: var(--signal-low-ink);
+}
+
+.attention__detail {
+  display: block;
+  color: var(--steel);
+  font-size: 0.875rem;
+}
+
 /* ---------- Toolbar, inputs, buttons ---------- */
 
 .toolbar {

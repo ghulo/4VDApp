@@ -1,5 +1,5 @@
 /** What a person can switch push alerts on or off for. */
-export const PUSH_TOPICS = ['stock', 'approvals', 'decisions'] as const;
+export const PUSH_TOPICS = ['stock', 'approvals', 'decisions', 'summary'] as const;
 export type PushTopic = (typeof PUSH_TOPICS)[number];
 
 export const NOTIFICATION_TYPES = {
@@ -9,6 +9,8 @@ export const NOTIFICATION_TYPES = {
   APPROVAL: 'approval',
   /** The owner decided on someone's request. */
   APPROVAL_DECISION: 'approval_decision',
+  /** The owner's end-of-day summary. */
+  DAILY_SUMMARY: 'daily_summary',
   /** Sent on request from the alert settings; always pushed. */
   TEST: 'test',
 } as const;
@@ -18,6 +20,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.OUT_OF_STOCK]: 'stock',
   [NOTIFICATION_TYPES.APPROVAL]: 'approvals',
   [NOTIFICATION_TYPES.APPROVAL_DECISION]: 'decisions',
+  [NOTIFICATION_TYPES.DAILY_SUMMARY]: 'summary',
 };
 
 /** Null for notification types that are never pushed. */

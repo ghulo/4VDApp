@@ -13,6 +13,14 @@ const app = createApp(config, db, { container });
 /** How often new notifications are pushed to phones and browsers. */
 const PUSH_INTERVAL_MS = 5_000;
 let isPushing = false;
+/** The daily summary checks once a minute whether its hour has come. */
+const SUMMARY_CHECK_MS = 60_000;
+const summaryTimer = setInterval(() => {
+  container.dailySummaryService
+    .sendIfDue()
+    .catch((error) => logger.error('Sending the daily summary failed', { error: String(error) }));
+}, SUMMARY_CHECK_MS);
+
 const pushTimer = setInterval(() => {
   // Skip a beat rather than overlap if sending is slow.
   if (isPushing) return;
@@ -34,6 +42,7 @@ const server = app.listen(config.port, () => {
 function shutdown(signal: string): void {
   logger.info('Shutting down', { signal });
   clearInterval(pushTimer);
+  clearInterval(summaryTimer);
   server.close(() => {
     db.destroy().finally(() => process.exit(0));
   });

@@ -4,7 +4,8 @@ import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
-import { analyticsApi, inventoryApi } from '../services/api';
+import { analyticsApi, inventoryApi, reportsApi } from '../services/api';
+import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
 
 const PERIOD_DAYS = 30;
@@ -33,6 +34,8 @@ export function OverviewPage() {
               : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`}
         </p>
       </header>
+
+      <AttentionPanel />
 
       <section className="panel" aria-labelledby="restock-heading">
         <div className="panel__header">
@@ -66,6 +69,49 @@ export function OverviewPage() {
 
       <SalesSummary />
     </>
+  );
+}
+
+const SEVERITY_LABEL: Record<Insight['severity'], string> = { urgent: 'Urgent', warning: 'Check', info: 'Idea' };
+
+/** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
+function AttentionPanel() {
+  const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights });
+  const summary = useQuery({ queryKey: ['reports', 'daily-summary'], queryFn: reportsApi.dailySummary });
+
+  return (
+    <section className="panel" aria-labelledby="attention-heading">
+      <div className="panel__header">
+        <h2 id="attention-heading" className="panel__title">
+          Needs your attention
+        </h2>
+      </div>
+      {summary.data && (
+        <p className="attention__summary">
+          <strong>{summary.data.title}.</strong> {summary.data.salesLine}
+        </p>
+      )}
+      {insights.isPending && <Loading />}
+      {insights.isError && <ErrorNotice error={insights.error} onRetry={() => insights.refetch()} />}
+      {insights.data && insights.data.length === 0 && (
+        <EmptyState title="All clear">Nothing is running out, missing or selling oddly.</EmptyState>
+      )}
+      {insights.data && insights.data.length > 0 && (
+        <ul className="restock-list">
+          {insights.data.map((insight) => (
+            <li key={`${insight.kind}-${insight.productId}-${insight.title}`}>
+              <Link to={`/inventory/${insight.productId}`} className={`attention__row attention__row--${insight.severity}`}>
+                <span className="attention__severity">{SEVERITY_LABEL[insight.severity]}</span>
+                <span>
+                  <span className="restock-list__name">{insight.title}</span>
+                  <span className="attention__detail">{insight.detail}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

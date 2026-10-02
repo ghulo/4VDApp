@@ -29,6 +29,9 @@ import { ProductRepository } from './repositories/ProductRepository.js';
 import { PromotionRepository } from './repositories/PromotionRepository.js';
 import { PromotionService } from './services/PromotionService.js';
 import { PushRepository } from './repositories/PushRepository.js';
+import { InsightsRepository } from './repositories/InsightsRepository.js';
+import { InsightsService } from './services/InsightsService.js';
+import { DailySummaryService } from './services/DailySummaryService.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
 import { RefreshTokenRepository } from './repositories/RefreshTokenRepository.js';
@@ -97,7 +100,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const activityLogService = new ActivityLogService(activityLogRepository);
-  const reportsService = new ReportsService(reportsRepository);
+  const reportsService = new ReportsService(reportsRepository, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
@@ -105,6 +108,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
+  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
+  const dailySummaryService = new DailySummaryService(
+    reportsRepository,
+    insightsService,
+    settingsService,
+    settingsRepository,
+    notificationRepository,
+    config.shopTimeZone,
+  );
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -148,6 +160,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     approvalService,
     promotionService,
     pushService,
+    insightsService,
+    dailySummaryService,
     guards,
   };
 }

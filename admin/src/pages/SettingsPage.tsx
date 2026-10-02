@@ -35,6 +35,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const [limit, setLimit] = useState(String(initial.refundApprovalLimit));
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
+  const [summaryHour, setSummaryHour] = useState(initial.dailySummaryHour);
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -43,6 +44,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         refundApprovalLimit: Number(limit),
         returnWindowDays: Number(windowDays),
         minimumMarginPercent: Number(minimumMargin),
+        dailySummaryHour: summaryHour,
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['settings'], updated);
@@ -108,6 +110,19 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         />
         <span className="field-hint">
           A promotion can't take a price below cost plus this much. 0 means never below cost; 10 means cost + 10%.
+        </span>
+      </label>
+      <label className="field field--narrow">
+        <span className="field__label">Send my daily summary at</span>
+        <select value={summaryHour} onChange={(event) => setSummaryHour(Number(event.target.value))}>
+          {Array.from({ length: 24 }, (_, hour) => (
+            <option key={hour} value={hour}>
+              {String(hour).padStart(2, '0')}:00
+            </option>
+          ))}
+        </select>
+        <span className="field-hint">
+          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts below.
         </span>
       </label>
       {save.isError && (

@@ -67,6 +67,15 @@ export const businessSchema = z
 
 export const mediaParamsSchema = z.object({ id: z.uuid() });
 
+export const googleCredentialSchema = z.object({ credential: z.string().min(1).max(5000) });
+
+export const signupSchema = z.object({
+  shopName: z.string().trim().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
+  email: emailSchema,
+  password: newPasswordSchema,
+});
+
 export const inviteSchema = z.object({
   email: emailSchema,
   role: z.enum(USER_ROLES),

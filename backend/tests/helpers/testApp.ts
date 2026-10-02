@@ -37,12 +37,14 @@ const NO_PUSH = { send: async () => ({ deadTokens: [] }) };
 const NO_EMAIL = { send: async () => undefined };
 
 /** Push senders default to ones that send nothing. */
-export async function setupTestApp(options: ContainerOptions = {}): Promise<TestContext> {
+/** `env` overrides settings, e.g. { ALLOW_SIGNUP: 'true' }. */
+export async function setupTestApp(options: ContainerOptions = {}, env: Record<string, string> = {}): Promise<TestContext> {
   const databaseUrl = testDatabaseUrl();
   const config = loadConfig({
     NODE_ENV: 'test',
     DATABASE_URL: databaseUrl,
     JWT_SECRET: 'integration-test-secret-long-enough',
+    ...env,
   });
   const db = createDatabase(databaseUrl);
 

@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import type { AccountService } from '../services/AccountService.js';
+import type { SignupService } from '../services/SignupService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import {
   changeEmailSchema,
@@ -7,10 +8,21 @@ import {
   forgotPasswordSchema,
   linkTokenBodySchema,
   resetPasswordSchema,
+  signupSchema,
 } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
 
 const CHECK_INBOX = 'If that email has an account, we sent it a link. Check the inbox (and spam).';
+
+export function createSignupController(signupService: SignupService) {
+  return {
+    async signup(req: Request, res: Response): Promise<void> {
+      const input = parseInput(signupSchema, req.body);
+      await signupService.signup(input);
+      sendSuccess(res, null, { statusCode: 201, message: `Almost there: we sent a link to ${input.email}. Click it to finish.` });
+    },
+  };
+}
 
 export function createAccountController(accountService: AccountService) {
   return {

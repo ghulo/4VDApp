@@ -5,6 +5,8 @@ export interface RequestIdentity {
   userId: number;
   email: string;
   role: UserRole;
+  /** The device session this token belongs to, so "log out other devices" can spare it. */
+  sessionId?: string;
 }
 
 /** The user as the API exposes it. Never includes the password hash. */
@@ -14,6 +16,10 @@ export interface PublicUser {
   name: string;
   role: UserRole;
   isActive: boolean;
+  phone: string | null;
+  /** Path to the photo, e.g. /api/media/<id>; null shows initials. */
+  avatarUrl: string | null;
+  theme: 'light' | 'dark' | 'system';
   /** Euros of sales (after refunds) the owner hopes for each month; null when not set. */
   monthlyTarget: number | null;
   /** Share of their sales (after refunds) they earn; null when not set. */

@@ -1,20 +1,25 @@
 import type { Request, Response } from 'express';
-import type { AuthService } from '../services/AuthService.js';
+import type { AuthService, DeviceInfo } from '../services/AuthService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { loginSchema, logoutSchema, refreshTokenSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
+
+/** What the devices list shows for this browser or phone. */
+export function deviceOf(req: Request): DeviceInfo {
+  return { userAgent: req.get('user-agent') ?? null, ip: req.ip ?? null };
+}
 
 export function createAuthController(authService: AuthService) {
   return {
     async login(req: Request, res: Response): Promise<void> {
       const { email, password } = parseInput(loginSchema, req.body);
-      const result = await authService.login(email, password);
+      const result = await authService.login(email, password, deviceOf(req));
       sendSuccess(res, result, { message: 'Logged in' });
     },
 
     async refresh(req: Request, res: Response): Promise<void> {
       const { refreshToken } = parseInput(refreshTokenSchema, req.body);
-      const tokens = await authService.refresh(refreshToken);
+      const tokens = await authService.refresh(refreshToken, deviceOf(req));
       sendSuccess(res, tokens, { message: 'Session refreshed' });
     },
 

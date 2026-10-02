@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { approvalsApi, notificationsApi } from '../services/api';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { Avatar } from './Avatar';
 import { LogoMark } from './LogoMark';
 
 interface NavItem {
@@ -96,8 +97,11 @@ export function Layout() {
           ))}
         </nav>
         <div className="sidebar__account">
-          <ThemeSwitch />
-          <span className="sidebar__user">{user.name}</span>
+          <ThemeSwitch persist />
+          <NavLink to="/profile" className="sidebar__user">
+            <Avatar name={user.name} url={user.avatarUrl} size={28} />
+            <span>{user.name}</span>
+          </NavLink>
           <button type="button" className="sidebar__logout" onClick={logout}>
             Log out
           </button>

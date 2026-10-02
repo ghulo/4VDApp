@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '../config/env.js';
 import { UnauthorizedError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
+import type { UserRow } from '../database/types.js';
 import type { PublicUser } from '../types/auth.js';
 import { verifyPassword } from '../utils/password.js';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../utils/tokens.js';
@@ -24,6 +26,12 @@ export interface LoginResult extends TokenPair {
   user: PublicUser;
 }
 
+/** Shown in the list of devices someone is logged in on. */
+export interface DeviceInfo {
+  userAgent?: string | null;
+  ip?: string | null;
+}
+
 type AuthConfig = Pick<AppConfig, 'jwtSecret' | 'jwtExpiresIn' | 'refreshTokenTtlDays'>;
 
 export class AuthService {
@@ -34,7 +42,7 @@ export class AuthService {
     private readonly config: AuthConfig,
   ) {}
 
-  async login(email: string, password: string): Promise<LoginResult> {
+  async login(email: string, password: string, device: DeviceInfo = {}): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(email);
     const isPasswordCorrect = await verifyPassword(password, user?.password_hash ?? DUMMY_PASSWORD_HASH);
 
@@ -42,29 +50,45 @@ export class AuthService {
     if (!user || !isPasswordCorrect || !user.is_active) {
       throw new UnauthorizedError('Email or password is incorrect');
     }
+    if (!user.email_verified_at) {
+      throw new UnauthorizedError('Confirm your email first: use the link we sent you');
+    }
+    return this.startSession(user, device);
+  }
 
+  /**
+   * Log someone in whose identity was already proven (password, invite link,
+   * Google). Starts a new device session.
+   */
+  async startSession(user: UserRow, device: DeviceInfo = {}, how = 'logged in'): Promise<LoginResult> {
     const publicUser = toPublicUser(user);
-    const tokens = await this.issueTokens(publicUser);
+    const tokens = await this.issueTokens(publicUser, { userAgent: device.userAgent, ip: device.ip });
+    await this.userRepository.update(user.id, { last_login_at: new Date() });
     // Logged once the session exists, so the log never shows a login that failed.
     await this.activityLogRepository.create({
       userId: user.id,
       action: 'auth.logged_in',
       entityType: 'user',
       entityId: user.id,
-      summary: `${user.name} logged in`,
+      summary: `${user.name} ${how}`,
     });
     return { ...tokens, user: publicUser };
   }
 
   /** Swap a refresh token for a new pair. The old refresh token stops working. */
-  async refresh(refreshToken: string): Promise<TokenPair> {
+  async refresh(refreshToken: string, device: DeviceInfo = {}): Promise<TokenPair> {
     const consumed = await this.refreshTokenRepository.consumeValid(hashRefreshToken(refreshToken));
     if (!consumed) throw new UnauthorizedError('Session expired, please log in again');
 
     const user = await this.userRepository.findById(consumed.userId);
     if (!user || !user.is_active) throw new UnauthorizedError('Session expired, please log in again');
 
-    return this.issueTokens(toPublicUser(user));
+    // Same device, same session: keep its id so it stays one row in the devices list.
+    return this.issueTokens(toPublicUser(user), {
+      sessionId: consumed.sessionId,
+      userAgent: device.userAgent ?? consumed.userAgent,
+      ip: device.ip,
+    });
   }
 
   /**
@@ -79,15 +103,19 @@ export class AuthService {
     }
   }
 
-  private async issueTokens(user: PublicUser): Promise<TokenPair> {
+  private async issueTokens(
+    user: PublicUser,
+    session: { sessionId?: string; userAgent?: string | null; ip?: string | null } = {},
+  ): Promise<TokenPair> {
+    const sessionId = session.sessionId ?? randomUUID();
     const token = signAccessToken(
-      { userId: user.id, email: user.email, role: user.role },
+      { userId: user.id, email: user.email, role: user.role, sessionId },
       this.config.jwtSecret,
       this.config.jwtExpiresIn,
     );
     const refreshToken = generateRefreshToken();
     const expiresAt = new Date(Date.now() + this.config.refreshTokenTtlDays * MS_PER_DAY);
-    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt);
+    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt, { ...session, sessionId });
     return { token, refreshToken };
   }
 }

@@ -25,6 +25,18 @@ services:
         generateValue: true
       - key: SHOP_TIME_ZONE
         value: Europe/Budapest
+      # Links in emails (invites, password resets) open these.
+      - key: DASHBOARD_URL
+        value: https://fourvd-dashboard.onrender.com
+      - key: TEAM_APP_URL
+        value: https://fourvd-app.onrender.com
+      # Optional: real emails (otherwise they're only printed to the log), and Google sign-in.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       # Both front ends, comma-separated, e.g.
       # https://fourvd-dashboard.onrender.com,https://fourvd-app.onrender.com (asked once on setup).
       - key: CORS_ORIGINS
@@ -56,6 +68,9 @@ services:
       # The API's address, e.g. https://fourvd-api.onrender.com (asked once on setup).
       - key: VITE_API_URL
         sync: false
+      # Where staff are sent after accepting an invite.
+      - key: VITE_TEAM_APP_URL
+        value: https://fourvd-app.onrender.com
 
   # The employee app (the mobile app, built for browsers). Staff open it on any
   # phone; on an iPhone, Share > Add to Home Screen makes it a full-screen app.
@@ -79,6 +94,9 @@ services:
       # Not a secret: the address the app talks to, baked in at build time.
       - key: EXPO_PUBLIC_API_URL
         value: https://fourvd-api.onrender.com
+      # Its pages handle forgotten passwords.
+      - key: EXPO_PUBLIC_DASHBOARD_URL
+        value: https://fourvd-dashboard.onrender.com
 
 databases:
   - name: 4vd-db

@@ -46,14 +46,19 @@ export class UserService {
     const existing = await this.userRepository.findByEmail(input.email);
     if (existing) throw new ConflictError(`An account for ${input.email} already exists`);
     const passwordHash = await hashPassword(input.password);
+    const actor = await this.userRepository.findById(actorId);
+    if (!actor) throw new NotFoundError(`User ${actorId} does not exist`);
 
     try {
       return await this.transactions.run(async (repos) => {
+        // Made by the owner, who vouches for the address, so it counts as verified.
         const user = await repos.users.create({
           email: input.email,
           name: input.name,
           role: input.role,
           password_hash: passwordHash,
+          business_id: actor.business_id,
+          email_verified_at: new Date(),
         });
         await repos.activityLog.create({
           userId: actorId,

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { User } from '../services/types';
+import type { LoginResult, User } from '../services/types';
 
 export type AuthState =
   | { status: 'loading' }
@@ -10,6 +10,10 @@ export interface AuthContextValue {
   state: AuthState;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */
+  adoptSession: (result: LoginResult) => Promise<'signedIn' | 'notAdmin'>;
+  /** Replace the signed-in person's details after they edit their profile. */
+  updateUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

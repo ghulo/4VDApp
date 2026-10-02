@@ -2,6 +2,8 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 import { authApi } from '../services/api';
 import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
 import { disablePush } from '../push/browserPush';
+import type { LoginResult, User } from '../services/types';
+import { applyTheme } from '../theme/theme';
 import { AuthContext, type AuthState } from './useAuth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -29,7 +31,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.logout();
       throw new Error('This dashboard is for admins. Use the mobile app to browse products.');
     }
+    applyTheme(user.theme);
     setState({ status: 'signedIn', user });
+  }, []);
+
+  /**
+   * Keep a session started elsewhere (invite accepted, Google sign-in). Only
+   * admins use the dashboard; for anyone else the tokens are dropped and the
+   * caller sends them to the employee app instead.
+   */
+  const adoptSession = useCallback(async (result: LoginResult): Promise<'signedIn' | 'notAdmin'> => {
+    tokenStore.save(result.token, result.refreshToken);
+    if (result.user.role !== 'admin') {
+      await authApi.logout().catch(() => undefined);
+      return 'notAdmin';
+    }
+    applyTheme(result.user.theme);
+    setState({ status: 'signedIn', user: result.user });
+    return 'signedIn';
   }, []);
 
   const logout = useCallback(async () => {
@@ -39,6 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'signedOut' });
   }, []);
 
-  const value = useMemo(() => ({ state, login, logout }), [state, login, logout]);
+  const updateUser = useCallback((user: User) => setState({ status: 'signedIn', user }), []);
+
+  const value = useMemo(
+    () => ({ state, login, logout, adoptSession, updateUser }),
+    [state, login, logout, adoptSession, updateUser],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

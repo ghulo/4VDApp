@@ -16,7 +16,7 @@ await ensureFirstAdmin(db, {
 });
 const app = createApp(config, db, { container });
 
-/** How often new notifications are pushed to phones and browsers. */
+/** How often new notifications are pushed to phones and browsers, and queued emails sent. */
 const PUSH_INTERVAL_MS = 5_000;
 let isPushing = false;
 /** The daily summary checks once a minute whether its hour has come. */
@@ -31,9 +31,14 @@ const pushTimer = setInterval(() => {
   // Skip a beat rather than overlap if sending is slow.
   if (isPushing) return;
   isPushing = true;
-  container.pushService
-    .sendPending()
-    .catch((error) => logger.error('Sending push alerts failed', { error: String(error) }))
+  Promise.all([
+    container.pushService
+      .sendPending()
+      .catch((error) => logger.error('Sending push alerts failed', { error: String(error) })),
+    container.emailService
+      .sendPending()
+      .catch((error) => logger.error('Sending emails failed', { error: String(error) })),
+  ])
     .finally(() => {
       isPushing = false;
     });

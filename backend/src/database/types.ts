@@ -24,10 +24,17 @@ export type UserRole = (typeof USER_ROLES)[number];
 export interface UsersTable {
   id: Generated<number>;
   email: string;
-  password_hash: string;
+  /** Null for people who only sign in with Google. */
+  password_hash: string | null;
   name: string;
   role: UserRole;
   is_active: Generated<boolean>;
+  business_id: number;
+  email_verified_at: Date | null;
+  phone: string | null;
+  avatar_media_id: string | null;
+  theme: Generated<'light' | 'dark' | 'system'>;
+  last_login_at: Date | null;
   monthly_target: Decimal | null;
   commission_percent: Decimal | null;
   /** Push topic -> false when switched off; missing means on. */
@@ -43,6 +50,80 @@ export interface RefreshTokensTable {
   token_hash: string;
   expires_at: Date;
   revoked_at: Date | null;
+  /** Stays the same across refreshes: one per device. */
+  session_id: Generated<string>;
+  user_agent: string | null;
+  ip: string | null;
+  last_used_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface BusinessesTable {
+  id: Generated<number>;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  currency: Generated<string>;
+  time_zone: string | null;
+  logo_media_id: string | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+export interface MediaTable {
+  id: Generated<string>;
+  business_id: number | null;
+  mime: string;
+  bytes: Buffer;
+  created_at: CreatedAt;
+}
+
+export const INVITE_ROLES = ['admin', 'employee', 'family'] as const;
+
+export interface InvitesTable {
+  id: Generated<number>;
+  business_id: number;
+  email: string;
+  role: UserRole;
+  token_hash: string;
+  invited_by: number | null;
+  expires_at: Date;
+  accepted_at: Date | null;
+  revoked_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export type AccountTokenPurpose = 'verify_email' | 'reset_password' | 'change_email';
+
+export interface AccountTokensTable {
+  id: Generated<number>;
+  user_id: number;
+  purpose: AccountTokenPurpose;
+  token_hash: string;
+  new_email: string | null;
+  expires_at: Date;
+  used_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface UserIdentitiesTable {
+  id: Generated<number>;
+  user_id: number;
+  provider: 'google' | 'apple';
+  subject: string;
+  email: string | null;
+  created_at: CreatedAt;
+}
+
+export interface EmailOutboxTable {
+  id: Generated<number>;
+  to_address: string;
+  subject: string;
+  html: string;
+  text: string;
+  attempts: Generated<number>;
+  last_error: string | null;
+  sent_at: Date | null;
   created_at: CreatedAt;
 }
 
@@ -271,6 +352,12 @@ export interface Database {
   settings: SettingsTable;
   promotions: PromotionsTable;
   push_subscriptions: PushSubscriptionsTable;
+  businesses: BusinessesTable;
+  media: MediaTable;
+  invites: InvitesTable;
+  account_tokens: AccountTokensTable;
+  user_identities: UserIdentitiesTable;
+  email_outbox: EmailOutboxTable;
   returns: ReturnsTable;
   write_offs: WriteOffsTable;
   stock_counts: StockCountsTable;

@@ -7,10 +7,16 @@ interface AccessTokenClaims {
   userId: number;
   email: string;
   role: UserRole;
+  sid?: string;
 }
 
 export function signAccessToken(identity: RequestIdentity, secret: string, expiresIn: string): string {
-  const claims: AccessTokenClaims = { userId: identity.userId, email: identity.email, role: identity.role };
+  const claims: AccessTokenClaims = {
+    userId: identity.userId,
+    email: identity.email,
+    role: identity.role,
+    ...(identity.sessionId && { sid: identity.sessionId }),
+  };
   return jwt.sign(claims, secret, {
     expiresIn: expiresIn as SignOptions['expiresIn'],
     algorithm: 'HS256',
@@ -24,11 +30,11 @@ export function verifyAccessToken(token: string, secret: string): RequestIdentit
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     if (typeof decoded !== 'object' || decoded === null) return null;
 
-    const { userId, email, role } = decoded as Partial<AccessTokenClaims>;
+    const { userId, email, role, sid } = decoded as Partial<AccessTokenClaims>;
     const isValidRole = typeof role === 'string' && (USER_ROLES as readonly string[]).includes(role);
     if (typeof userId !== 'number' || typeof email !== 'string' || !isValidRole) return null;
 
-    return { userId, email, role: role as UserRole };
+    return { userId, email, role: role as UserRole, ...(typeof sid === 'string' && { sessionId: sid }) };
   } catch {
     return null;
   }

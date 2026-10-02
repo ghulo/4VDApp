@@ -1,3 +1,4 @@
+import { defaultBusinessId } from '../database/business.js';
 import type { AppConfig } from '../config/env.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { UserRole } from '../database/types.js';
@@ -27,10 +28,11 @@ export async function seedDemoAccounts(db: DatabaseClient, nodeEnv: AppConfig['n
       is_active: true,
       deleted_at: null,
       password_hash: await hashPassword(account.password),
+      email_verified_at: new Date(),
     };
     await db
       .insertInto('users')
-      .values({ email: account.email, ...values })
+      .values({ email: account.email, business_id: await defaultBusinessId(db), ...values })
       .onConflict((oc) => oc.column('email').doUpdateSet(values))
       .execute();
   }

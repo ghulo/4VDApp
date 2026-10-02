@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { PushSettingsPanel } from '../components/PushSettingsPanel';
+import { BusinessPanel } from '../components/BusinessPanel';
 import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -25,7 +25,7 @@ export function SettingsPage() {
         {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
         {settings.data && <SettingsForm initial={settings.data} />}
       </section>
-      <PushSettingsPanel />
+      <BusinessPanel />
     </>
   );
 }
@@ -122,7 +122,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
           ))}
         </select>
         <span className="field-hint">
-          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts below.
+          Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts on your Profile page.
         </span>
       </label>
       {save.isError && (

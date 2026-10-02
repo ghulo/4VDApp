@@ -195,10 +195,6 @@ p {
   font-size: 0.875rem;
 }
 
-.sidebar__user {
-  color: var(--ink-muted);
-}
-
 .sidebar__logout {
   align-self: flex-start;
   padding: 0;
@@ -1799,4 +1795,146 @@ textarea:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+/* ---------- Accounts and profiles ---------- */
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sidebar__user:hover,
+.sidebar__user.active {
+  color: var(--brand);
+}
+
+.user-row__name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-photo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-photo__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.business-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-panel);
+  object-fit: contain;
+  background: var(--surface-sunk);
+}
+
+.security {
+  display: grid;
+  gap: 32px;
+}
+
+.security .subheading {
+  margin-top: 0;
+}
+
+.device-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.device-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.device-list__row:first-child {
+  border-top: 0;
+}
+
+.device-list__name {
+  display: block;
+  font-weight: 600;
+}
+
+.device-list__meta {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.fallback {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.fallback summary {
+  color: var(--brand);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fallback[open] summary {
+  margin-bottom: 16px;
+}
+
+.login__links {
+  margin-top: 20px;
+}
+
+.google-sign-in {
+  margin-top: 20px;
+}
+
+.google-sign-in__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.google-sign-in__divider::before,
+.google-sign-in__divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+.google-sign-in__button {
+  min-height: 44px;
+}
+
+/* Buttons in forms stay their natural width instead of stretching across the grid. */
+.settings-form > .button {
+  justify-self: start;
 }

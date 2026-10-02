@@ -35,6 +35,23 @@ import { AssistantService } from './services/AssistantService.js';
 import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
+import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
+import { InviteRepository } from './repositories/InviteRepository.js';
+import { InviteService } from './services/InviteService.js';
+import { AccountTokenRepository } from './repositories/AccountTokenRepository.js';
+import { AccountService } from './services/AccountService.js';
+import { MediaRepository } from './repositories/MediaRepository.js';
+import { MediaService } from './services/MediaService.js';
+import { ProfileService } from './services/ProfileService.js';
+import { BusinessRepository } from './repositories/BusinessRepository.js';
+import { BusinessService } from './services/BusinessService.js';
+import { SessionService } from './services/SessionService.js';
+import { GoogleAuthService } from './services/GoogleAuthService.js';
+import { SignupService } from './services/SignupService.js';
+import { GoogleIdTokenVerifier, type GoogleVerifier } from './services/google/googleVerifier.js';
+import { UserIdentityRepository } from './repositories/UserIdentityRepository.js';
+import { EmailService } from './services/email/EmailService.js';
+import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
@@ -59,6 +76,10 @@ import { ProductService } from './services/ProductService.js';
 export interface ContainerOptions {
   /** Tests pass fakes so nothing is sent to Expo or browsers. */
   pushSenders?: PushSenders;
+  /** Tests pass a fake Google check and client id. */
+  google?: { verifier: GoogleVerifier; clientId: string };
+  /** Tests pass a fake so no email leaves the machine. */
+  emailSender?: EmailSender;
   /** Tests pass a fake so nothing is sent to an AI service. Null switches the AI helpers off. */
   aiProvider?: AiProvider | null;
 }
@@ -148,6 +169,39 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     promotionService,
     settingsService,
   );
+  const emailService = new EmailService(
+    new EmailOutboxRepository(db),
+    options.emailSender ??
+      (config.email.resendApiKey ? new ResendSender(config.email.resendApiKey, config.email.from) : new LogSender()),
+  );
+  const inviteService = new InviteService(
+    new InviteRepository(db),
+    userRepository,
+    authService,
+    emailService,
+    transactions,
+    config.dashboardUrl,
+  );
+  const accountService = new AccountService(
+    userRepository,
+    new AccountTokenRepository(db),
+    refreshTokenRepository,
+    emailService,
+    config.dashboardUrl,
+  );
+  const mediaService = new MediaService(new MediaRepository(db));
+  const profileService = new ProfileService(userRepository, mediaService);
+  const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService);
+  const sessionService = new SessionService(refreshTokenRepository);
+  const googleAuthService = new GoogleAuthService(
+    options.google?.verifier ?? (config.googleClientId ? new GoogleIdTokenVerifier(config.googleClientId) : null),
+    options.google?.clientId ?? config.googleClientId ?? null,
+    new UserIdentityRepository(db),
+    userRepository,
+    authService,
+    inviteService,
+  );
+  const signupService = new SignupService(config.allowSignup, userRepository, accountService, transactions);
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -195,6 +249,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     dailySummaryService,
     assistantService,
     priceSuggestionService,
+    emailService,
+    inviteService,
+    accountService,
+    mediaService,
+    profileService,
+    businessService,
+    sessionService,
+    googleAuthService,
+    signupService,
     guards,
   };
 }

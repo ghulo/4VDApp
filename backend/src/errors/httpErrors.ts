@@ -45,6 +45,13 @@ export class AiUnavailableError extends AppError {
   }
 }
 
+/** A link that worked once but no longer does: used, cancelled or expired. */
+export class GoneError extends AppError {
+  constructor(message: string) {
+    super(message, 410, 'GONE');
+  }
+}
+
 export class ConflictError extends AppError {
   constructor(message: string) {
     super(message, 409, 'CONFLICT');

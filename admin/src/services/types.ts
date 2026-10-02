@@ -8,6 +8,10 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  phone: string | null;
+  /** Path to the photo (use mediaSrc); null shows initials. */
+  avatarUrl: string | null;
+  theme: 'light' | 'dark' | 'system';
   /** Euros of sales (after refunds) hoped for each month; null when not set. */
   monthlyTarget: number | null;
   commissionPercent: number | null;
@@ -272,6 +276,51 @@ export interface PriceSuggestion {
   reasons: string[];
   watchOut: string;
   provider: string;
+}
+
+export interface LoginResult {
+  token: string;
+  refreshToken: string;
+  user: User;
+}
+
+export interface Invite {
+  id: number;
+  email: string;
+  role: UserRole;
+  invitedBy: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface InvitePreview {
+  email: string;
+  role: UserRole;
+  shopName: string;
+  invitedBy: string | null;
+}
+
+export interface Business {
+  name: string;
+  address: string | null;
+  phone: string | null;
+  currency: string;
+  timeZone: string | null;
+  logoUrl: string | null;
+}
+
+export interface Security {
+  hasPassword: boolean;
+  googleEmail: string | null;
+}
+
+export interface Session {
+  id: string;
+  device: string;
+  ip: string | null;
+  lastUsedAt: string | null;
+  startedAt: string;
+  current: boolean;
 }
 
 export type PromotionStatus = 'scheduled' | 'running' | 'finished' | 'ended';

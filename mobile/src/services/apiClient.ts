@@ -89,6 +89,8 @@ function refreshSession(): Promise<boolean> {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** A file sent as-is (e.g. a photo), instead of JSON. */
+  file?: Blob;
   query?: Record<string, string | number | boolean | undefined>;
 }
 
@@ -99,14 +101,16 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     .join('&');
   const url = `${API_URL}/api${path}${queryString ? `?${queryString}` : ''}`;
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': options.file ? options.file.type || 'image/jpeg' : 'application/json',
+  };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   try {
     return await fetch(url, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
     });
   } catch {
     throw new ApiError(`Can't reach the server at ${API_URL}. Check your connection and the API address.`, 0);
@@ -134,3 +138,11 @@ export async function apiRequest<TData>(
   }
   return { data: body.data, meta: body.meta };
 }
+
+/** Full address of an uploaded picture, from the path the API gives (e.g. /api/media/…). */
+export function mediaSrc(path: string | null | undefined): string | null {
+  return path ? `${API_URL}${path}` : null;
+}
+
+/** Where the dashboard lives; its pages handle forgotten passwords and email links. */
+export const DASHBOARD_URL = process.env.EXPO_PUBLIC_DASHBOARD_URL ?? 'http://localhost:5173';

@@ -81,6 +81,8 @@ async function refreshSession(): Promise<boolean> {
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** A file sent as-is (e.g. a photo), instead of JSON. */
+  file?: Blob;
   query?: Record<string, string | number | boolean | undefined>;
 }
 
@@ -90,14 +92,16 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     if (value !== undefined && value !== '') url.searchParams.set(key, String(value));
   }
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': options.file ? options.file.type || 'application/octet-stream' : 'application/json',
+  };
   if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
 
   try {
     return await fetch(url, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
     });
   } catch {
     throw new ApiError(`Can't reach the server at ${API_URL}. Check that the backend is running.`, 0, 'NETWORK');
@@ -163,4 +167,9 @@ export function saveDownload(blob: Blob, filename: string): void {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Full address of an uploaded picture, from the path the API gives (e.g. /api/media/…). */
+export function mediaSrc(path: string | null | undefined): string | null {
+  return path ? `${API_URL}${path}` : null;
 }

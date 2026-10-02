@@ -18,6 +18,7 @@ import { ProductsPage } from './pages/ProductsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PromotionsPage } from './pages/PromotionsPage';
 import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
 import { UsersPage } from './pages/UsersPage';
@@ -71,6 +72,7 @@ function App() {
               <Route path="approvals" element={<ApprovalsPage />} />
               <Route path="counts" element={<StockCountsPage />} />
               <Route path="counts/:id" element={<StockCountDetailPage />} />
+              <Route path="promotions" element={<PromotionsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="*" element={<NotFoundPage />} />

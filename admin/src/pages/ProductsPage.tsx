@@ -103,7 +103,14 @@ export function ProductsPage() {
                       </span>
                     </td>
                     <td>{product.category.name}</td>
-                    <td className="table__numeric">{formatMoney(product.price)}</td>
+                    <td className="table__numeric">
+                      {formatMoney(product.price)}
+                      {product.promotion && (
+                        <span className="table__secondary">
+                          −{product.promotion.percentOff}% now {formatMoney(product.promotion.price)}
+                        </span>
+                      )}
+                    </td>
                     <td className="table__numeric">
                       {product.bulkPricingTiers.length === 0
                         ? 'None'

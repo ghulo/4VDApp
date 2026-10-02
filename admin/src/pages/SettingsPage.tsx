@@ -16,7 +16,7 @@ export function SettingsPage() {
       <header className="page-header">
         <h1 className="page-title">Settings</h1>
         <p className="page-intro">
-          When an employee's return has to wait for you. Your own returns always go straight through.
+          When an employee's return has to wait for you, and how low a promotion may take a price.
         </p>
       </header>
       <section className="panel">
@@ -32,6 +32,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const queryClient = useQueryClient();
   const [limit, setLimit] = useState(String(initial.refundApprovalLimit));
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
+  const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -39,6 +40,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
       settingsApi.update({
         refundApprovalLimit: Number(limit),
         returnWindowDays: Number(windowDays),
+        minimumMarginPercent: Number(minimumMargin),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['settings'], updated);
@@ -58,7 +60,9 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     Number(limit) >= 0 &&
     windowDays !== '' &&
     Number.isInteger(Number(windowDays)) &&
-    Number(windowDays) >= 0;
+    Number(windowDays) >= 0 &&
+    minimumMargin !== '' &&
+    Number(minimumMargin) >= 0;
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
@@ -87,7 +91,23 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
           onChange={(event) => setWindowDays(event.target.value)}
         />
       </label>
-      <p className="field-hint">Damaged stock, write-offs and count differences always wait for you.</p>
+      <p className="field-hint">
+        Damaged stock, write-offs and count differences always wait for you. Your own returns go straight through.
+      </p>
+      <label className="field field--narrow">
+        <span className="field__label">Minimum margin on promotions (%)</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={1}
+          value={minimumMargin}
+          onChange={(event) => setMinimumMargin(event.target.value)}
+        />
+        <span className="field-hint">
+          A promotion can't take a price below cost plus this much. 0 means never below cost; 10 means cost + 10%.
+        </span>
+      </label>
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}

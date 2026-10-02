@@ -154,17 +154,17 @@
 .today-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
   align-items: center;
-  gap: var(--space-5);
-  margin-bottom: var(--space-4);
+  gap: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-5);
   padding: var(--space-6) var(--space-6) var(--space-5);
-  overflow: hidden;
-  border-radius: var(--radius-board);
+  border-radius: 2px;
   background:
-    radial-gradient(60% 90% at 85% 50%, rgb(255 214 170 / 0.55), transparent 70%),
-    radial-gradient(50% 80% at 0% 0%, rgb(255 150 80 / 0.35), transparent 70%),
+    radial-gradient(45% 70% at 78% 105%, rgb(255 236 170 / 0.85), rgb(255 190 120 / 0.35) 45%, transparent 75%),
+    radial-gradient(60% 80% at 0% 0%, rgb(255 120 60 / 0.4), transparent 70%),
     var(--hero);
+  box-shadow: 0 0 60px -20px rgb(255 94 31 / 0.55);
   color: var(--hero-ink);
 }
 
@@ -216,13 +216,29 @@
   background: rgb(255 251 245 / 0.6);
 }
 
+/* The last 30 days as a dot-matrix waveform beside the figure. */
 .today-hero__art {
+  display: grid;
+  gap: var(--space-2);
+  height: 150px;
+  grid-template-rows: minmax(0, 1fr) auto;
   color: var(--hero-ink);
-  opacity: 0.85;
 }
 
-.today-hero__art .halftone-art__outline {
-  stroke: rgb(28 15 8 / 0.3);
+.today-hero__art-label {
+  color: var(--hero-muted);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+.today-hero__status {
+  grid-column: 1 / -1;
+  margin: 0 calc(-1 * var(--space-6));
+}
+
+/* Corner nodes on the orange block read darker than on the page. */
+.today-hero.nodes::after {
+  --line-strong: var(--ink-muted);
 }
 
 @media (max-width: 760px) {
@@ -233,6 +249,10 @@
 
   .today-hero__art {
     display: none;
+  }
+
+  .today-hero__status {
+    margin: 0 calc(-1 * var(--space-5));
   }
 }
 
@@ -506,12 +526,109 @@
   letter-spacing: -0.03em;
 }
 
+/* The drawing with shop moments floating around it. The story panel clips
+   the cards that run off its edge, like Cloudflare's dashed notification cards. */
+.login__story {
+  overflow: hidden;
+}
+
+.login__scene {
+  position: relative;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+}
+
 .login__art {
-  align-self: center;
-  width: min(340px, 80%);
+  width: min(300px, 70%);
   padding: var(--space-5);
   border-radius: 50%;
   background: var(--surface-sunk);
+}
+
+.login__moment {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  backdrop-filter: blur(2px);
+}
+
+.login__moment strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.login__moment > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.login__moment--accent > svg {
+  color: var(--accent);
+}
+
+.login__moment--warn > svg {
+  color: var(--warn);
+}
+
+.login__moment--ok > svg {
+  color: var(--ok);
+}
+
+.login__moment--a {
+  top: 6%;
+  left: -12px;
+}
+
+.login__moment--b {
+  top: 18%;
+  right: -28px;
+}
+
+.login__moment--c {
+  bottom: 14%;
+  left: 6%;
+}
+
+.login__moment--d {
+  bottom: 2%;
+  right: 4%;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login__moment {
+    animation: moment-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .login__moment--b {
+    animation-delay: 0.12s;
+  }
+
+  .login__moment--c {
+    animation-delay: 0.24s;
+  }
+
+  .login__moment--d {
+    animation-delay: 0.36s;
+  }
+}
+
+@keyframes moment-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 .login__headline {
@@ -567,7 +684,7 @@
     border-bottom: 1px dashed var(--line-strong);
   }
 
-  .login__art,
+  .login__scene,
   .login__headline,
   .login__small-print {
     display: none;
@@ -1378,5 +1495,26 @@
 
 .price-suggestion__result {
   border: 0;
+  border-radius: 2px;
+}
+
+/* The sales chart, in dots. */
+.chart__dot {
+  fill: var(--chart-series);
+}
+
+.chart__dot--active {
+  fill: var(--ink);
+}
+
+.chart__dot--empty {
+  fill: var(--line-strong);
+}
+
+.chart__column:focus-visible .chart__dot:not(.chart__dot--empty) {
+  fill: var(--focus);
+}
+
+.stat-grid-frame > .stat-grid {
   border-radius: 2px;
 }

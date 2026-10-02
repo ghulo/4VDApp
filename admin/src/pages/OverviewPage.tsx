@@ -10,7 +10,7 @@ import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
-import { Card, Halftone, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Card, DotBars, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
 
 const PERIOD_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -31,11 +31,18 @@ export function OverviewPage() {
       <PageHeader
         title={`Hi ${firstName}`}
         description={
-          lowCount === undefined
-            ? 'Checking stock levels…'
-            : lowCount === 0
-              ? 'Every product is above its reorder level.'
-              : `${lowCount} ${lowCount === 1 ? 'product needs' : 'products need'} restocking${outCount ? `, ${outCount} already sold out` : ''}.`
+          lowCount === undefined ? (
+            'Checking stock levels…'
+          ) : lowCount === 0 ? (
+            'Every product is above its reorder level.'
+          ) : (
+            <>
+              <mark className="highlight">
+                {lowCount} {lowCount === 1 ? 'product needs' : 'products need'} restocking
+              </mark>
+              {outCount ? `, ${outCount} already sold out` : ''}.
+            </>
+          )
         }
       />
 
@@ -80,6 +87,16 @@ export function OverviewPage() {
   );
 }
 
+/** Sales per day for the last 30 days (shared by the today block and the chart). */
+function useRevenue() {
+  return useQuery({
+    queryKey: ['analytics', 'revenue', 'daily', PERIOD_DAYS],
+    queryFn: () =>
+      // Start of the day 29 days ago, so the chart shows exactly 30 whole days.
+      analyticsApi.revenue('daily', new Date(Date.now() - (PERIOD_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10)),
+  });
+}
+
 const weekdayFormatter = new Intl.DateTimeFormat('en-GB', { weekday: 'long' });
 
 /** Today so far, against the same hours of the same weekday last week. */
@@ -105,14 +122,15 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
   const waiting = approvals.data?.total ?? 0;
+  const revenue = useRevenue();
 
   return (
     <>
-      <section className="today-hero" aria-label="Today so far">
+      <section className="today-hero nodes" aria-label="Today so far">
         <div className="today-hero__text">
           <p className="today-hero__label">Sales today</p>
           <p className="today-hero__figure">
-            {current ? formatMoney(current.revenue) : today.isError ? 'Not available' : '…'}
+            {current ? <RollingNumber value={formatMoney(current.revenue)} /> : today.isError ? 'Not available' : '…'}
           </p>
           {current && previous && (
             <p className="today-hero__compare">
@@ -130,7 +148,17 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
             </Link>
           </div>
         </div>
-        <Halftone className="today-hero__art" />
+        <div className="today-hero__art">
+          {revenue.data && <DotBars values={revenue.data.points.map((point) => point.revenue)} />}
+          <span className="today-hero__art-label">Last {PERIOD_DAYS} days</span>
+        </div>
+        <div className="today-hero__status">
+          <StatusLine>
+            {current && current.salesCount > 0
+              ? `${current.salesCount} ${current.salesCount === 1 ? 'sale' : 'sales'} recorded today`
+              : 'Ready for the first sale of the day'}
+          </StatusLine>
+        </div>
       </section>
       <StatGrid>
         <StatTile label="Sales" icon={Receipt} value={current?.salesCount ?? '–'} to="/sales" />
@@ -185,12 +213,7 @@ function SalesSummary() {
     queryKey: ['analytics', 'dashboard', PERIOD_DAYS],
     queryFn: () => analyticsApi.dashboard(PERIOD_DAYS),
   });
-  const revenue = useQuery({
-    queryKey: ['analytics', 'revenue', 'daily', PERIOD_DAYS],
-    queryFn: () =>
-      // Start of the day 29 days ago, so the chart shows exactly 30 whole days.
-      analyticsApi.revenue('daily', new Date(Date.now() - (PERIOD_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10)),
-  });
+  const revenue = useRevenue();
 
   return (
     <Card

@@ -2,9 +2,13 @@ import type { Icon } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
-/** Figures side by side in cells that share their borders. */
+/** Figures side by side in cells that share their borders, with corner nodes. */
 export function StatGrid({ children }: { children: ReactNode }) {
-  return <div className="stat-grid">{children}</div>;
+  return (
+    <div className="stat-grid-frame nodes">
+      <div className="stat-grid">{children}</div>
+    </div>
+  );
 }
 
 interface StatTileProps {

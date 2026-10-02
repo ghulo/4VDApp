@@ -18,9 +18,16 @@
   --brand-ink: #ffffff;
   --brand-soft: #fff4ed;
   --accent: #ff5e1f;
+  --cta: #ff5e1f;
+  --cta-hover: #ff7038;
+  --cta-ink: #1c0f08;
   --hero: #ff5e1f;
   --hero-ink: #1c0f08;
   --hero-muted: #3f1d0f;
+  --glow: 0 0 0 1px rgb(255 94 31 / 0.35), 0 0 18px rgb(255 94 31 / 0.28);
+  --glow-text: 0 0 14px rgb(255 94 31 / 0.25);
+  --tint: rgb(255 94 31 / 0.1);
+  --topbar: rgb(255 255 255 / 0.78);
   --ok: #047857;
   --ok-soft: #e6f5ee;
   --warn: #b45309;
@@ -49,9 +56,16 @@
   --brand-ink: #1a120e;
   --brand-soft: #3a1f12;
   --accent: #ff5e1f;
+  --cta: #ff5e1f;
+  --cta-hover: #ff7038;
+  --cta-ink: #1c0f08;
   --hero: #ff5e1f;
   --hero-ink: #1c0f08;
   --hero-muted: #3f1d0f;
+  --glow: 0 0 0 1px rgb(255 94 31 / 0.5), 0 0 24px rgb(255 94 31 / 0.35);
+  --glow-text: 0 0 16px rgb(255 94 31 / 0.55);
+  --tint: rgb(255 94 31 / 0.14);
+  --topbar: rgb(28 27 26 / 0.72);
   --ok: #34d399;
   --ok-soft: #0f3326;
   --warn: #fbbf24;
@@ -101,4 +115,8 @@
   --radius-small: 8px;
   --radius-panel: 12px;
   --radius-board: 16px;
+
+  /* Motion: quick and soft, never bouncy. */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 150ms;
 }

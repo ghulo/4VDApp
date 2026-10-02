@@ -29,6 +29,7 @@ const PAIRS: Array<[string, string, number]> = [
   ['brand', 'surface', 4.5],
   ['brand', 'brand-soft', 4.5],
   ['hero-ink', 'hero', 4.5],
+  ['cta-ink', 'cta', 4.5],
   ['hero-muted', 'hero', 4.5],
   ['accent', 'surface', 3],
   ['danger', 'surface', 4.5],

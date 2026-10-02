@@ -28,7 +28,9 @@
   gap: var(--space-3);
   padding: 0 var(--space-4);
   border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--topbar);
+  backdrop-filter: saturate(1.4) blur(12px);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
 }
 
 .topbar__menu {
@@ -166,8 +168,12 @@
   color: var(--ink);
 }
 
+.sidebar__link {
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
 .sidebar__link.active {
-  background: var(--brand-soft);
+  background: var(--tint);
   color: var(--brand);
 }
 
@@ -181,6 +187,7 @@
   width: 3px;
   border-radius: 0 2px 2px 0;
   background: var(--accent);
+  box-shadow: 0 0 10px rgb(255 94 31 / 0.7);
 }
 
 .sidebar__icon {
@@ -199,6 +206,7 @@
   padding: 0 6px;
   border-radius: 999px;
   background: var(--accent);
+  box-shadow: 0 0 10px rgb(255 94 31 / 0.45);
   color: var(--hero-ink);
   font-size: var(--text-xs);
   font-weight: 700;
@@ -405,7 +413,8 @@
     position: fixed;
     inset: 0;
     z-index: 30;
-    background: rgb(0 0 0 / 0.4);
+    background: rgb(0 0 0 / 0.35);
+    backdrop-filter: blur(3px);
   }
 
   .main__frame {
@@ -541,7 +550,8 @@
   justify-items: center;
   align-items: start;
   padding: 12vh 16px 16px;
-  background: rgb(0 0 0 / 0.4);
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(4px);
 }
 
 .palette {
@@ -612,7 +622,7 @@
 }
 
 .palette__item[aria-selected='true'] {
-  background: var(--brand-soft);
+  background: var(--tint);
   color: var(--brand);
 }
 
@@ -654,4 +664,18 @@
 .table__primary-link,
 .table__secondary {
   white-space: nowrap;
+}
+
+/* Each page fades in when it opens: one quiet moment, no sliding sections. */
+@media (prefers-reduced-motion: no-preference) {
+  .main__frame > * {
+    animation: page-in 260ms var(--ease) both;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }

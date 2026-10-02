@@ -260,6 +260,20 @@ export interface PushSettings {
   webPushPublicKey: string | null;
 }
 
+export interface PriceSuggestion {
+  productId: number;
+  currentPrice: number;
+  costPrice: number | null;
+  minimumPrice: number | null;
+  suggestedPrice: number;
+  decision: 'raise' | 'lower' | 'keep';
+  confidence: 'low' | 'medium' | 'high';
+  summary: string;
+  reasons: string[];
+  watchOut: string;
+  provider: string;
+}
+
 export type PromotionStatus = 'scheduled' | 'running' | 'finished' | 'ended';
 
 export interface Promotion {

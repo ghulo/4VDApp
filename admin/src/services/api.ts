@@ -18,6 +18,7 @@ import type {
   InventoryItem,
   Paginated,
   PriceChange,
+  PriceSuggestion,
   PricingTier,
   Promotion,
   PushSettings,
@@ -202,6 +203,8 @@ export const assistantApi = {
   status: async () => (await apiRequest<{ enabled: boolean; provider: string | null }>('/assistant')).data,
   ask: async (question: string) =>
     (await apiRequest<{ answer: string }>('/assistant/ask', { method: 'POST', body: { question } })).data,
+  suggestPrice: async (productId: number) =>
+    (await apiRequest<PriceSuggestion>(`/assistant/price-suggestions/${productId}`, { method: 'POST' })).data,
 };
 
 export const pushApi = {

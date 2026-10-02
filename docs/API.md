@@ -359,6 +359,7 @@ Questions in plain words, answered by an AI service: Claude when `ANTHROPIC_API_
 |---|---|
 | `GET /assistant` | `{ enabled, provider }` |
 | `POST /assistant/ask` | `{ question }` (3–500 characters) → `{ answer }`. 20 questions per person per 15 minutes. `503` with a readable message when it's switched off, over the free limit, or not answering |
+| `POST /assistant/price-suggestions/:productId` | A suggested price from the product's price, cost, minimum price, bulk prices, sales pace and trend, sales at each unit price over 180 days, price changes, promotions, and similar products in its category (no staff names). Returns `{ productId, currentPrice, costPrice, minimumPrice, suggestedPrice, decision, confidence, summary, reasons, watchOut, provider }`; `decision` is `raise`, `lower` or `keep`. Never below `minimumPrice` (cost plus the minimum margin), and never applied automatically. Shares the 20-per-15-minutes limit |
 
 ---
 

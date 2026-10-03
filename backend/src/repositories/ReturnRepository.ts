@@ -35,7 +35,9 @@ export interface LockedSale {
   price_per_unit: string;
   sold_by: number | null;
   sale_date: Date;
-  /** Units already returned or waiting for approval. */
+  /** Set when the sale was undone; it can't be returned then. */
+  undone_at: Date | null;
+  /** Units already returned or waiting for approval (undone returns don't count). */
   returned_quantity: number;
 }
 
@@ -92,7 +94,7 @@ export class ReturnRepository {
     const sale = await this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select(['s.id', 's.product_id', 'p.name as product_name', 's.quantity_sold', 's.price_per_unit', 's.sold_by', 's.sale_date'])
+      .select(['s.id', 's.product_id', 'p.name as product_name', 's.quantity_sold', 's.price_per_unit', 's.sold_by', 's.sale_date', 's.undone_at'])
       .where('s.id', '=', saleId)
       .forUpdate('s')
       .executeTakeFirst();
@@ -102,6 +104,7 @@ export class ReturnRepository {
       .select(sql<string>`coalesce(sum(quantity), 0)`.as('units'))
       .where('sale_id', '=', saleId)
       .where('status', 'in', ['pending', 'approved'])
+      .where('undone_at', 'is', null)
       .executeTakeFirstOrThrow();
     return { ...sale, returned_quantity: Number(returned.units) };
   }

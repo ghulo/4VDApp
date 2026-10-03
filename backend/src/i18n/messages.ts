@@ -10,6 +10,9 @@ const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : 
 
 export type ApprovalKind = 'return' | 'write-off' | 'stock count';
 
+/** What kind of entry was undone or restored (see services/undo). */
+export type UndoneKind = 'sale' | 'return' | 'write_off' | 'count_line' | 'stock' | 'edit' | 'settings';
+
 export interface ServerMessages {
   language: Language;
   roleName: Record<string, string>;
@@ -37,6 +40,12 @@ export interface ServerMessages {
   writeOffRejected: (what: string) => string;
   countReviewed: (scope: string) => string;
   countReviewedMessage: string;
+  undoneTitle: (kind: UndoneKind, what: string) => string;
+  undoneMessage: (note: string | null) => string;
+  restoredTitle: (kind: UndoneKind, what: string) => string;
+  restoredMessage: string;
+  /** What a settings change is about, in titles. */
+  settingsWhat: string;
 
   dailyTitle: (revenue: number) => string;
   dailySales: (p: { sales: number; profit: number; lastWeek: number }) => string;
@@ -101,6 +110,16 @@ export interface ServerMessages {
   };
 }
 
+const enUndoneKind: Record<UndoneKind, string> = {
+  sale: 'sale',
+  return: 'return',
+  write_off: 'write-off',
+  count_line: 'count',
+  stock: 'stock change',
+  edit: 'change',
+  settings: 'change',
+};
+
 export const en: ServerMessages = {
   language: 'en',
   roleName: { developer: 'the developer', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member' },
@@ -129,6 +148,11 @@ export const en: ServerMessages = {
   writeOffRejected: (what) => `Your write-off of ${what} was rejected`,
   countReviewed: (scope) => `Your stock count of ${scope} was reviewed`,
   countReviewedMessage: 'The stock has been corrected where the owner approved it.',
+  undoneTitle: (kind, what) => `Your ${enUndoneKind[kind]} ${kind === 'edit' || kind === 'settings' ? 'to' : 'of'} ${what} was undone`,
+  undoneMessage: (note) => (note ? `Reason: ${note}` : 'No reason was given.'),
+  restoredTitle: (kind, what) => `Your ${enUndoneKind[kind]} ${kind === 'edit' || kind === 'settings' ? 'to' : 'of'} ${what} was restored`,
+  restoredMessage: 'It counts again.',
+  settingsWhat: 'the shop settings',
 
   dailyTitle: (revenue) => `Today: ${money(revenue, 'en')} in sales`,
   dailySales: ({ sales, profit, lastWeek }) =>
@@ -202,6 +226,16 @@ export const en: ServerMessages = {
   },
 };
 
+const sqUndoneKind: Record<UndoneKind, string> = {
+  sale: 'Shitja jote',
+  return: 'Kthimi yt',
+  write_off: 'Heqja jote nga stoku',
+  count_line: 'Numërimi yt',
+  stock: 'Ndryshimi yt i stokut',
+  edit: 'Ndryshimi yt',
+  settings: 'Ndryshimi yt',
+};
+
 export const sq: ServerMessages = {
   language: 'sq',
   roleName: { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes' },
@@ -232,6 +266,11 @@ export const sq: ServerMessages = {
   writeOffRejected: (what) => `Heqja jote nga stoku (${what}) u refuzua`,
   countReviewed: (scope) => `Numërimi yt i stokut (${scope}) u shqyrtua`,
   countReviewedMessage: 'Stoku u korrigjua aty ku e miratoi pronari.',
+  undoneTitle: (kind, what) => `${sqUndoneKind[kind]} (${what}) u anulua`,
+  undoneMessage: (note) => (note ? `Arsyeja: ${note}` : 'Nuk u dha asnjë arsye.'),
+  restoredTitle: (kind, what) => `${sqUndoneKind[kind]} (${what}) u rikthye`,
+  restoredMessage: 'Vlen sërish.',
+  settingsWhat: 'cilësimet e dyqanit',
 
   dailyTitle: (revenue) => `Sot: ${money(revenue, 'sq')} në shitje`,
   dailySales: ({ sales, profit, lastWeek }) =>

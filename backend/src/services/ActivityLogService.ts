@@ -1,4 +1,8 @@
-import type { ActivityFilters, ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
+import type { UserRole } from '../database/types.js';
+import { NotFoundError } from '../errors/httpErrors.js';
+import type { ActivityFilters, ActivityLogRepository, ActivityRecord } from '../repositories/ActivityLogRepository.js';
+import type { UndoRepository } from '../repositories/UndoRepository.js';
+import { undoStatesFor } from './undo/undoStates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 
 /** Enough for any one product's price changes; the app has a handful a year. */
@@ -17,12 +21,18 @@ interface FieldChange {
   to: unknown;
 }
 
+type Viewer = { id: number; role: UserRole };
+
 export interface ActivityQuery extends PageRequest, Omit<ActivityFilters, 'limit' | 'offset'> {}
 
 export class ActivityLogService {
-  constructor(private readonly activityLogRepository: ActivityLogRepository) {}
+  constructor(
+    private readonly activityLogRepository: ActivityLogRepository,
+    private readonly undoRepository: UndoRepository,
+  ) {}
 
-  async list(query: ActivityQuery) {
+  /** A page of entries, each with its undo state as `viewer` sees it. */
+  async list(query: ActivityQuery, viewer: Viewer) {
     const { entries, total } = await this.activityLogRepository.findMany({
       userId: query.userId,
       entityType: query.entityType,
@@ -31,19 +41,28 @@ export class ActivityLogService {
       limit: query.limit,
       offset: toOffset(query),
     });
-    return {
-      items: entries.map((entry) => ({
-        id: entry.id,
-        action: entry.action,
-        entityType: entry.entity_type,
-        entityId: entry.entity_id,
-        summary: entry.summary,
-        details: entry.details,
-        createdAt: entry.created_at.toISOString(),
-        user: entry.user_id === null ? null : { id: entry.user_id, name: entry.user_name ?? 'Removed user' },
-      })),
-      meta: toPaginationMeta(query, total),
-    };
+    return { items: await this.toDtos(entries, viewer), meta: toPaginationMeta(query, total) };
+  }
+
+  async get(id: number, viewer: Viewer) {
+    const { entries } = await this.activityLogRepository.findMany({ id, limit: 1, offset: 0 });
+    if (entries.length === 0) throw new NotFoundError(`Activity entry ${id} does not exist`);
+    return (await this.toDtos(entries, viewer))[0]!;
+  }
+
+  private async toDtos(entries: ActivityRecord[], viewer: Viewer) {
+    const undo = await undoStatesFor(this.undoRepository, entries, viewer);
+    return entries.map((entry) => ({
+      id: entry.id,
+      action: entry.action,
+      entityType: entry.entity_type,
+      entityId: entry.entity_id,
+      summary: entry.summary,
+      details: entry.details,
+      createdAt: entry.created_at.toISOString(),
+      user: entry.user_id === null ? null : { id: entry.user_id, name: entry.user_name ?? 'Removed user' },
+      undo: undo.get(entry.id) ?? null,
+    }));
   }
 
   /** Every change to a product's price or cost, newest first, read from the activity log. */

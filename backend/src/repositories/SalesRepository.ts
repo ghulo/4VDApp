@@ -24,7 +24,7 @@ export interface SaleRecord {
 }
 
 const returnedQuantity = sql<string>`(
-  select coalesce(sum(r.quantity), 0) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved')
+  select coalesce(sum(r.quantity), 0) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null
 )`.as('returned_quantity');
 
 function ledgerRange(range?: DateRange) {

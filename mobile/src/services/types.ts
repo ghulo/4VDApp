@@ -137,7 +137,7 @@ export interface StockCount extends StockCountSummary {
 }
 
 export interface MyRequest {
-  type: 'return' | 'write_off' | 'count';
+  type: 'return' | 'write_off' | 'count' | 'sale';
   id: number;
   summary: string;
   status: string;

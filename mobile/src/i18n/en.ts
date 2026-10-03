@@ -83,6 +83,7 @@ export const en = {
       closed: 'Reviewed',
       rejected: 'Rejected',
       cancelled: 'Cancelled',
+      undone: 'Undone',
     } as Record<string, string>,
     morning: 'Good morning',
     afternoon: 'Good afternoon',

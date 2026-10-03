@@ -40,7 +40,7 @@ export class SettingsService {
     };
   }
 
-  async update(input: Partial<AppSettings>, userId: number): Promise<AppSettings> {
+  async update(input: Partial<AppSettings>, userId: number, logExtra?: Record<string, unknown>): Promise<AppSettings> {
     const before = await this.get();
     const changes = (Object.keys(input) as Array<keyof AppSettings>).filter(
       (name) => input[name] !== undefined && input[name] !== before[name],
@@ -54,7 +54,7 @@ export class SettingsService {
           entityType: 'settings',
           entityId: null,
           summary: `Changed ${changes.map((name) => describe(name, before[name], input[name]!)).join(' and ')}`,
-          details: Object.fromEntries(changes.map((name) => [name, { from: before[name], to: input[name] }])),
+          details: { ...Object.fromEntries(changes.map((name) => [name, { from: before[name], to: input[name] }])), ...logExtra },
         });
       });
     }

@@ -155,8 +155,11 @@ export class ProductService {
     }
   }
 
-  /** Full update. Stock is deliberately not editable here; use the inventory endpoint. */
-  async update(id: number, input: ProductInput, actorId: number): Promise<ProductDto> {
+  /**
+   * Full update. Stock is deliberately not editable here; use the inventory endpoint.
+   * `logExtra` is added to the logged details (an undo marks its own change with it).
+   */
+  async update(id: number, input: ProductInput, actorId: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     const existing = await this.productRepository.findById(id, true);
     if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
     await this.ensureCategoryExists(input.categoryId);
@@ -188,7 +191,7 @@ export class ProductService {
             entityType: 'product',
             entityId: id,
             summary: change.summary,
-            details: change.details,
+            details: { ...change.details, ...logExtra },
           });
         }
       });

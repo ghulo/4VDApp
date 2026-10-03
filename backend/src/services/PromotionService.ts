@@ -95,7 +95,7 @@ export class PromotionService {
     return toPromotionDto((await this.promotionRepository.findById(id))!, new Date());
   }
 
-  async endEarly(id: number, actorId: number): Promise<PromotionDto> {
+  async endEarly(id: number, actorId: number, logExtra?: Record<string, unknown>): Promise<PromotionDto> {
     const existing = await this.promotionRepository.findById(id);
     if (!existing) throw new NotFoundError(`Promotion ${id} does not exist`);
     const now = new Date();
@@ -110,6 +110,7 @@ export class PromotionService {
         entityType: 'promotion',
         entityId: id,
         summary: status === 'scheduled' ? `Cancelled promotion "${existing.name}"` : `Ended promotion "${existing.name}" early`,
+        details: logExtra ?? null,
       });
     });
     return toPromotionDto((await this.promotionRepository.findById(id))!, now);

@@ -44,6 +44,8 @@ const TRANSLATED = [
   'src/pages/AskPage.tsx',
   'src/pages/AlertsPage.tsx',
   'src/pages/ActivityPage.tsx',
+  'src/components/activity/UndoConfirm.tsx',
+  'src/components/activity/activityText.ts',
   'src/components/RevenueChart.tsx',
   'src/components/PeriodPicker.tsx',
   'src/utils/periods.ts',

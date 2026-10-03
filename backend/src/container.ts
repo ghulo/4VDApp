@@ -49,6 +49,9 @@ import { SessionService } from './services/SessionService.js';
 import { GoogleAuthService } from './services/GoogleAuthService.js';
 import { SignupService } from './services/SignupService.js';
 import { WeeklyReportService } from './services/WeeklyReportService.js';
+import { UndoService } from './services/undo/UndoService.js';
+import { EditReverts } from './services/undo/editReverts.js';
+import { UndoRepository } from './repositories/UndoRepository.js';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './services/google/googleVerifier.js';
 import { UserIdentityRepository } from './repositories/UserIdentityRepository.js';
 import { EmailService } from './services/email/EmailService.js';
@@ -128,7 +131,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const userService = new UserService(userRepository, refreshTokenRepository, transactions);
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
-  const activityLogService = new ActivityLogService(activityLogRepository);
+  const undoRepository = new UndoRepository(db);
+  const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
   const reportsService = new ReportsService(reportsRepository, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
@@ -137,6 +141,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
+  const undoService = new UndoService(
+    transactions,
+    undoRepository,
+    new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
+  );
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -258,6 +267,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     returnService,
     stockCountService,
     approvalService,
+    undoService,
     promotionService,
     pushService,
     insightsService,

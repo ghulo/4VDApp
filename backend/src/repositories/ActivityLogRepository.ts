@@ -12,6 +12,8 @@ export interface NewActivity {
 }
 
 export interface ActivityFilters {
+  /** One entry by its id. */
+  id?: number;
   userId?: number;
   entityType?: ActivityEntityType;
   entityId?: number;
@@ -31,6 +33,10 @@ export interface ActivityRecord {
   created_at: Date;
   user_id: number | null;
   user_name: string | null;
+  /** Set when this entry itself was undone (stock changes and edits). */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 export class ActivityLogRepository {
@@ -52,6 +58,7 @@ export class ActivityLogRepository {
 
   async findMany(filters: ActivityFilters): Promise<{ entries: ActivityRecord[]; total: number }> {
     let query = this.db.selectFrom('activity_log as a').leftJoin('users as u', 'u.id', 'a.user_id');
+    if (filters.id) query = query.where('a.id', '=', filters.id);
     if (filters.userId) query = query.where('a.user_id', '=', filters.userId);
     if (filters.entityType) query = query.where('a.entity_type', '=', filters.entityType);
     if (filters.entityId) query = query.where('a.entity_id', '=', filters.entityId);
@@ -74,6 +81,9 @@ export class ActivityLogRepository {
           'a.created_at',
           'a.user_id',
           'u.name as user_name',
+          'a.undone_at',
+          'a.undone_by',
+          'a.undo_note',
         ])
         .orderBy('a.created_at', 'desc')
         .orderBy('a.id', 'desc')

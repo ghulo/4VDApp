@@ -8,6 +8,7 @@ import * as accounts from './006_accounts.js';
 import * as weeklyReport from './007_weekly_report.js';
 import * as roles from './008_roles.js';
 import * as language from './009_language.js';
+import * as undo from './010_undo.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -25,4 +26,5 @@ export const migrations: Record<string, Migration> = {
   '007_weekly_report': weeklyReport,
   '008_roles': roles,
   '009_language': language,
+  '010_undo': undo,
 };

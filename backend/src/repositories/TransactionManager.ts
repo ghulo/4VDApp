@@ -13,6 +13,7 @@ import { SettingsRepository } from './SettingsRepository.js';
 import { StockCountRepository } from './StockCountRepository.js';
 import { WriteOffRepository } from './WriteOffRepository.js';
 import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
+import { UndoRepository } from './UndoRepository.js';
 import { UserRepository } from './UserRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
@@ -32,6 +33,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     stockCounts: new StockCountRepository(db),
     promotions: new PromotionRepository(db),
     invites: new InviteRepository(db),
+    undo: new UndoRepository(db),
   };
 }
 

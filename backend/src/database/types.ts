@@ -187,6 +187,10 @@ export interface SalesTable {
   sale_date: ColumnType<Date, Date | undefined, Date>;
   notes: string | null;
   created_at: CreatedAt;
+  /** Set when someone undid it (it stays, crossed out); cleared on restore. */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 export interface StockAdjustmentsTable {
@@ -247,6 +251,10 @@ export interface ActivityLogTable {
   // pg serialises plain objects to JSON for us and parses JSONB on the way out.
   details: ColumnType<Record<string, unknown> | null, Record<string, unknown> | null | undefined, never>;
   created_at: CreatedAt;
+  /** Set when someone undid it (it stays, crossed out); cleared on restore. */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 export interface PromotionsTable {
@@ -289,6 +297,10 @@ export interface ReturnsTable extends ApprovalColumns {
   condition: ReturnCondition;
   notes: string | null;
   approval_reasons: ColumnType<string[], string[] | undefined, never>;
+  /** Set when someone undid it (it stays, crossed out); cleared on restore. */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 export interface WriteOffsTable extends ApprovalColumns {
@@ -299,6 +311,10 @@ export interface WriteOffsTable extends ApprovalColumns {
   unit_cost: Decimal | null;
   return_id: number | null;
   notes: string | null;
+  /** Set when someone undid it (it stays, crossed out); cleared on restore. */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 export interface StockCountsTable {
@@ -325,6 +341,10 @@ export interface StockCountLinesTable {
   decided_by: number | null;
   decided_at: Date | null;
   decision_note: string | null;
+  /** Set when someone undid it (it stays, crossed out); cleared on restore. */
+  undone_at: Date | null;
+  undone_by: number | null;
+  undo_note: string | null;
 }
 
 /** Read-only view: sales, plus approved returns as negative rows. */

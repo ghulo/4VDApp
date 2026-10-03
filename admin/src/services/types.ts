@@ -238,6 +238,39 @@ export interface ActivityEntry {
   details: Record<string, unknown> | null;
   createdAt: string;
   user: { id: number; name: string } | null;
+  /** Null for entries that can't be undone. */
+  undo: UndoInfo | null;
+}
+
+export type UndoKind =
+  | 'sale'
+  | 'return'
+  | 'write_off'
+  | 'count_line'
+  | 'stock'
+  | 'product_edit'
+  | 'pricing_edit'
+  | 'settings_edit'
+  | 'reorder_edit'
+  | 'promotion';
+
+/** What an undo does; the dashboard words it (components/activity/activityText). */
+export interface UndoEffect {
+  stock?: { product: string; delta: number };
+  money?: { amount: number; day: string };
+  fields?: Array<{ field: string; from: unknown; to: unknown }>;
+}
+
+export interface UndoInfo {
+  state: 'undoable' | 'undone' | 'locked' | 'forbidden';
+  /** Whether the viewer may undo or restore this person's entries at all. */
+  allowed: boolean;
+  kind: UndoKind;
+  undoneBy: { id: number; name: string } | null;
+  undoneAt: string | null;
+  note: string | null;
+  effect: UndoEffect;
+  lockedReason: 'linked_return' | 'not_approved' | 'from_return' | 'changed_since' | 'cannot_restore' | null;
 }
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';

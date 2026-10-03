@@ -1,6 +1,6 @@
 import type { ApprovalStatus, ReturnCondition } from '../constants/approvals.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import { ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { LockedSale, ReturnRecord, ReturnRepository } from '../repositories/ReturnRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import type { PublicUser } from '../types/auth.js';
@@ -75,6 +75,7 @@ export class ReturnService {
     const id = await this.transactions.run(async (repos) => {
       const sale = await repos.returns.lockSale(saleId);
       if (!sale) throw new NotFoundError(`Sale ${saleId} does not exist`);
+      if (sale.undone_at) throw new ConflictError("This sale was undone, so it can't be returned");
       if (!canOversee(user.role) && sale.sold_by !== user.id) {
         throw new ForbiddenError('You can only return your own sales. Ask the owner to return this one.');
       }

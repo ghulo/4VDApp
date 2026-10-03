@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES = {
   APPROVAL_DECISION: 'approval_decision',
   /** The owner's end-of-day summary. */
   DAILY_SUMMARY: 'daily_summary',
+  /** Someone undid or restored one of this person's entries. */
+  UNDONE: 'undone',
   /** Sent on request from the alert settings; always pushed. */
   TEST: 'test',
 } as const;
@@ -21,6 +23,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.APPROVAL]: 'approvals',
   [NOTIFICATION_TYPES.APPROVAL_DECISION]: 'decisions',
   [NOTIFICATION_TYPES.DAILY_SUMMARY]: 'summary',
+  [NOTIFICATION_TYPES.UNDONE]: 'decisions',
 };
 
 /** Null for notification types that are never pushed. */

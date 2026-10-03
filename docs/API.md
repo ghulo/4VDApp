@@ -418,11 +418,26 @@ CSV files (UTF-8 with BOM, opens in Excel). Errors still come back as JSON. The 
 `GET /activity?userId&entityType&entityId&action&page&limit`: newest first.
 
 - `action`: comma-separated exact actions or prefixes, e.g. `stock`, `sale.recorded`, `product,pricing,category`
-- `entityType`: `product`, `category`, `user`, `sale`, `return`, `write_off`, `stock_count` or `settings`
+- `entityType`: `product`, `category`, `user`, `sale`, `return`, `write_off`, `stock_count`, `settings`, `promotion` or `activity`
 
-Entry: `{ id, action, entityType, entityId, summary, details, createdAt, user: { id, name } | null }`.
+Entry: `{ id, action, entityType, entityId, summary, details, createdAt, user: { id, name } | null, undo }`.
 
-Logged actions: `auth.logged_in`, `product.created`, `product.updated`, `product.deleted`, `pricing.updated`, `stock.adjusted`, `sale.recorded`, `category.created`, `category.updated`, `category.deleted`, `user.created`, `user.updated`, `user.deleted`. Passwords are never logged.
+`undo` is null for entries that can't be undone (sign-ins, deletions, users…). Otherwise, as the person asking sees it:
+
+```ts
+{
+  state: 'undoable' | 'undone' | 'locked' | 'forbidden';
+  allowed: boolean;            // may this viewer undo/restore this person's entries at all
+  kind: 'sale' | 'return' | 'write_off' | 'count_line' | 'stock' | 'product_edit' | 'pricing_edit' | 'settings_edit' | 'reorder_edit' | 'promotion';
+  undoneBy: { id, name } | null; undoneAt: string | null; note: string | null;
+  effect: { stock?: { product, delta }; money?: { amount, day }; fields?: [{ field, from, to }] }; // what an undo does
+  lockedReason: 'linked_return' | 'not_approved' | 'from_return' | 'changed_since' | 'cannot_restore' | null;
+}
+```
+
+`POST /activity/:id/undo` body `{ note?: string (max 500) }` and `POST /activity/:id/restore`: undo or restore what the entry did; answers with the entry. Nothing is deleted: the sale, return, write-off, count line or edit is marked undone, stock moves back, and an undone sale leaves the money totals of the day it was made. Who may: the developer anyone; the owner and admins employees and themselves (`403` otherwise). `404` when the entry can't be undone, `409` when it was already undone, a return blocks it, there isn't enough stock to restore, or the field was changed again since.
+
+Logged actions: `auth.logged_in`, `product.created`, `product.updated`, `product.deleted`, `pricing.updated`, `stock.adjusted`, `sale.recorded`, `category.created`, `category.updated`, `category.deleted`, `user.created`, `user.updated`, `user.deleted`, `undo.applied`, `undo.restored` (`entityType: 'activity'`, `entityId` = the original entry). A revert's own change carries `details.undoOf`. Passwords are never logged.
 
 ---
 

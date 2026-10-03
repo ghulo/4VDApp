@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
 import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
 import { Receipt } from 'phosphor-react-native/src/icons/Receipt';
+import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
@@ -126,6 +127,7 @@ export function HomeScreen() {
       <View style={styles.body}>
         {sells && (
           <View style={[styles.today, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <HalftoneCorner color={colors.lineStrong} />
             <Text style={[styles.todayHeadline, { color: colors.ink }]} accessibilityLiveRegion="polite">
               {today.data
                 ? today.data.current.salesCount > 0
@@ -246,6 +248,38 @@ export function HomeScreen() {
   );
 }
 
+const HALFTONE_SIZE = 132;
+const HALFTONE_STEP = 11;
+
+/**
+ * 4VD's dots as a quiet texture: a halftone fading out from the card's top
+ * right corner, like the dotted drawings on the dashboard. Decoration only.
+ */
+function HalftoneCorner({ color }: { color: string }) {
+  const dots: Array<{ x: number; y: number; r: number }> = [];
+  for (let x = HALFTONE_STEP / 2; x < HALFTONE_SIZE; x += HALFTONE_STEP) {
+    for (let y = HALFTONE_STEP / 2; y < HALFTONE_SIZE; y += HALFTONE_STEP) {
+      const fromCorner = Math.hypot(HALFTONE_SIZE - x, y) / HALFTONE_SIZE;
+      const r = 2.4 * (1 - fromCorner);
+      if (r > 0.5) dots.push({ x, y, r });
+    }
+  }
+  return (
+    <Svg
+      width={HALFTONE_SIZE}
+      height={HALFTONE_SIZE}
+      style={styles.halftone}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {dots.map((dot) => (
+        <Circle key={`${dot.x}-${dot.y}`} cx={dot.x} cy={dot.y} r={dot.r} fill={color} />
+      ))}
+    </Svg>
+  );
+}
+
 /** Progress towards the monthly target the owner set; full once it is reached. */
 function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors; revenue: number; target: number; monthName: string }) {
   const t = useT();
@@ -352,7 +386,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   body: { padding: spacing.lg, gap: spacing.lg },
   // The day in a sentence on plain paper; the one orange thing is the sale button.
-  today: { padding: spacing.xl, gap: spacing.xs, borderWidth: 1, borderRadius: radius.panel },
+  today: { padding: spacing.xl, gap: spacing.xs, borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },
+  halftone: { position: 'absolute', top: 0, right: 0 },
   todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },
   todayAction: { marginTop: spacing.lg },

@@ -8,8 +8,8 @@ import { idParamsSchema, parseInput } from '../validators/validate.js';
 export function createActivityController(activityLogService: ActivityLogService, undoService: UndoService) {
   return {
     async list(req: Request, res: Response): Promise<void> {
-      const { action, ...query } = parseInput(activityQuerySchema, req.query);
-      const { items, meta } = await activityLogService.list({ ...query, actions: action }, req.user!);
+      const { action, exclude, ...query } = parseInput(activityQuerySchema, req.query);
+      const { items, meta } = await activityLogService.list({ ...query, actions: action, excludeActions: exclude }, req.user!);
       sendSuccess(res, items, { meta });
     },
 

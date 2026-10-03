@@ -209,6 +209,7 @@ export interface SaleListQuery {
   startDate?: string;
   endDate?: string;
   productId?: number;
+  soldBy?: number;
 }
 
 export const salesApi = {
@@ -316,7 +317,7 @@ export const exportsApi = {
 };
 
 export const activityApi = {
-  list: (query: { page: number; userId?: number; action?: string }) =>
+  list: (query: { page: number; userId?: number; action?: string; exclude?: string }) =>
     paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
   undo: async (id: number, note: string) =>
     (await apiRequest<ActivityEntry>(`/activity/${id}/undo`, { method: 'POST', body: note ? { note } : {} })).data,

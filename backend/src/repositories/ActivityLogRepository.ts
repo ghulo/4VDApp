@@ -19,6 +19,8 @@ export interface ActivityFilters {
   entityId?: number;
   /** Each item is an exact action ("stock.adjusted") or a prefix ("stock"). */
   actions?: string[];
+  /** Same format as `actions`, left out of the results. */
+  excludeActions?: string[];
   limit: number;
   offset: number;
 }
@@ -67,6 +69,9 @@ export class ActivityLogRepository {
       query = query.where((eb) =>
         eb.or(actions.map((action) => (action.includes('.') ? eb('a.action', '=', action) : eb('a.action', 'like', `${action}.%`)))),
       );
+    }
+    for (const action of filters.excludeActions ?? []) {
+      query = action.includes('.') ? query.where('a.action', '!=', action) : query.where('a.action', 'not like', `${action}.%`);
     }
 
     const [entries, count] = await Promise.all([

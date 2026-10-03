@@ -3,8 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { mediaSrc } from '../services/apiClient';
 import { fonts } from '../theme';
 
-// Muted tones that keep white initials readable in both themes (same as the dashboard).
-const COLOURS = ['#c2410c', '#9a3412', '#1e40af', '#6d28d9', '#047857', '#57534e'];
+// Warm ink, stone, ember, clay and two greens: from the palette's family, all
+// dark enough for white initials (5:1 or more). Keep both apps' lists the same.
+const COLOURS = ['#1f1b19', '#57534e', '#9a3412', '#7c5a3c', '#047857', '#3f6212'];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);

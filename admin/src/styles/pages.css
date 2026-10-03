@@ -154,7 +154,9 @@
    quiet links to what's waiting. Paper and a hairline, like every card. */
 .today {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5) var(--space-6);
   margin-bottom: var(--space-5);
   padding: var(--space-5) var(--space-6);
   border: 1px solid var(--line);
@@ -214,9 +216,33 @@
   background: var(--warn);
 }
 
+.today__text {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* The last 30 days as a dot-matrix strip, in ink: the brand's dots, carrying data. */
+.today__dots {
+  display: grid;
+  gap: var(--space-2);
+  width: min(300px, 100%);
+  margin: 0;
+}
+
+.today__dots figcaption {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
 @media (max-width: 760px) {
   .today {
+    grid-template-columns: 1fr;
     padding: var(--space-5);
+  }
+
+  .today__dots {
+    width: 100%;
   }
 
   .today__link {
@@ -728,8 +754,13 @@
   fill: var(--chart-series);
 }
 
-.chart__bar--active {
+.chart__bar--active,
+.chart__dot--active {
   fill: var(--ink);
+}
+
+.chart__dot {
+  fill: var(--chart-series);
 }
 
 .chart__plot:focus-visible {
@@ -793,6 +824,29 @@
 
 .user-row select {
   width: auto;
+}
+
+/* Everything you can do to a person sits behind one "Manage" button, in a
+   panel under their row, so the list stays a list. */
+.user-row__manage {
+  grid-column: 1 / -1;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.user-row__caret {
+  transition: transform var(--fast) var(--ease);
+}
+
+.user-row__manage-toggle.is-open .user-row__caret {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-row__caret {
+    transition: none;
+  }
 }
 
 .user-row--inactive .category-list__name {
@@ -947,6 +1001,11 @@
   display: grid;
   gap: 16px;
   max-width: 560px;
+}
+
+/* Buttons keep their own width, like every other form's submit button. */
+.settings-form > .button {
+  justify-self: start;
 }
 
 .push-device {

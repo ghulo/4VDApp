@@ -35,6 +35,7 @@ export interface SaleQuery extends PageRequest {
   startDate?: Date;
   endDate?: Date;
   productId?: number;
+  soldBy?: number;
 }
 
 export class SalesService {
@@ -48,6 +49,7 @@ export class SalesService {
       startDate: query.startDate,
       endDate: query.endDate,
       productId: query.productId,
+      soldBy: query.soldBy,
       limit: query.limit,
       offset: toOffset(query),
     });

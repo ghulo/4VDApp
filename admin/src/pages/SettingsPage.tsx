@@ -70,6 +70,12 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     Number(windowDays) >= 0 &&
     minimumMargin !== '' &&
     Number(minimumMargin) >= 0;
+  // Save only turns orange once there's something to save, so one card at a time asks for action.
+  const hasChanges =
+    Number(limit) !== initial.refundApprovalLimit ||
+    Number(windowDays) !== initial.returnWindowDays ||
+    Number(minimumMargin) !== initial.minimumMarginPercent ||
+    summaryHour !== initial.dailySummaryHour;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -88,7 +94,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!isValid || save.isPending}>
               {save.isPending ? t.settings.saving : t.settings.saveChanges}
             </Button>
           </>

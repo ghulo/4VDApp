@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
-import { productsApi, salesApi } from '../services/api';
+import { productsApi, salesApi, usersApi } from '../services/api';
 import type { PricingTier, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
@@ -144,12 +144,27 @@ function SalesHistory() {
   const page = Number(params.get('page') ?? 1);
   const startDate = params.get('from') ?? '';
   const endDate = params.get('to') ?? '';
+  const productId = params.get('product') ?? '';
+  const soldBy = params.get('seller') ?? '';
+  // Every product, sold out or not, and everyone who has ever sold: history keeps them all.
+  const products = useQuery({
+    queryKey: ['products', { page: 1, limit: 100, purpose: 'filter' }],
+    queryFn: () => productsApi.list({ page: 1, limit: 100 }),
+  });
+  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
 
   const [returningId, setReturningId] = useState<number | null>(null);
   const [returnMessage, setReturnMessage] = useState<string | null>(null);
   const sales = useQuery({
-    queryKey: ['sales', { page, startDate, endDate }],
-    queryFn: () => salesApi.list({ page, startDate: startDate || undefined, endDate: endDate || undefined }),
+    queryKey: ['sales', { page, startDate, endDate, productId, soldBy }],
+    queryFn: () =>
+      salesApi.list({
+        page,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        productId: productId ? Number(productId) : undefined,
+        soldBy: soldBy ? Number(soldBy) : undefined,
+      }),
     placeholderData: keepPreviousData,
   });
 
@@ -174,6 +189,22 @@ function SalesHistory() {
           {t.sales.to}
           <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateParams({ to: event.target.value })} />
         </label>
+        <select aria-label={t.sales.product} value={productId} onChange={(event) => updateParams({ product: event.target.value })}>
+          <option value="">{t.sales.anyProduct}</option>
+          {products.data?.items.map((product) => (
+            <option key={product.id} value={product.id}>
+              {product.name}
+            </option>
+          ))}
+        </select>
+        <select aria-label={t.sales.soldBy} value={soldBy} onChange={(event) => updateParams({ seller: event.target.value })}>
+          <option value="">{t.sales.anyone}</option>
+          {people.data?.items.map((person) => (
+            <option key={person.id} value={person.id}>
+              {person.name}
+            </option>
+          ))}
+        </select>
         {sales.data && (
           <span className="toolbar__summary">
             {t.sales.totalFrom({ amount: formatMoney(sales.data.totalRevenue), count: sales.data.meta.total })}
@@ -189,7 +220,7 @@ function SalesHistory() {
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
       {sales.data && sales.data.items.length === 0 && (
-        <EmptyState title={startDate || endDate ? t.sales.noSalesInDates : t.sales.noSalesYet} />
+        <EmptyState title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
       )}
       {sales.data && sales.data.items.length > 0 && (
         <>

@@ -816,6 +816,22 @@ input.switch:focus-visible {
 }
 .table__nowrap { white-space: nowrap; }
 
+/* ---------- Dot-matrix ---------- */
+
+.dot-matrix {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.dot-matrix__lit {
+  fill: var(--ink);
+}
+
+.dot-matrix__unlit {
+  fill: var(--line-strong);
+}
+
 /* ---------- Metric cards (analytics boards) ---------- */
 
 .metric-grid {
@@ -939,8 +955,10 @@ input.switch:focus-visible {
   height: 120px;
 }
 
-.metric__area {
-  fill: color-mix(in srgb, var(--chart-series) 18%, transparent);
+/* The area under the line is a halftone (a dot pattern set in MetricCard). */
+.metric__halftone {
+  fill: var(--chart-series);
+  opacity: 0.55;
 }
 
 .metric__line {

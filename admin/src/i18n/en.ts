@@ -293,6 +293,8 @@ export const en = {
     nothingToRestockHint: 'Every product has more than its reorder level.',
     reorderAt: (level: number) => `Reorder at ${level}`,
     todaySoFar: 'Today so far',
+    last30Days: 'Last 30 days',
+    salesLast30Days: 'Sales per day over the last 30 days',
     notAvailable: 'Not available',
     takenToday: (p: { amount: string; count: number }) =>
       `${p.amount} from ${p.count} ${p.count === 1 ? 'sale' : 'sales'} so far today.`,
@@ -313,6 +315,8 @@ export const en = {
     seeReports: 'See figures and trends in Reports',
   },
   sales: {
+    anyProduct: 'Every product',
+    anyone: 'Anyone',
     title: 'Sales',
     description: 'Recording a sale takes the units out of stock and uses the bulk price automatically.',
     record: 'Record a sale',
@@ -331,7 +335,7 @@ export const en = {
     from: 'From',
     to: 'To',
     totalFrom: (p: { amount: string; count: number }) => `${p.amount} from ${p.count} ${p.count === 1 ? 'sale' : 'sales'}`,
-    noSalesInDates: 'No sales in these dates',
+    noSalesInDates: 'No sales match these filters',
     noSalesYet: 'No sales yet',
     when: 'When',
     qty: 'Qty',
@@ -358,7 +362,7 @@ export const en = {
     title: 'Activity',
     description: 'Who changed what, newest first.',
     kinds: {
-      all: 'Everything',
+      all: 'All changes',
       products: 'Products and prices',
       stock: 'Stock',
       sales: 'Sales',
@@ -367,6 +371,7 @@ export const en = {
       counts: 'Stock counts',
       people: 'People',
       logins: 'Logins',
+      everything: 'Everything, including logins',
     },
     whatChanged: 'What changed',
     who: 'Who',
@@ -829,6 +834,7 @@ export const en = {
     start: 'Start promotion',
   },
   people: {
+    manage: 'Manage',
     roleHints: {
       developer: 'Everything, and the only one who hands out the top roles',
       admin: 'Runs the shop: products, stock, people and settings',

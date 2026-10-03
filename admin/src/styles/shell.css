@@ -289,8 +289,24 @@
   min-width: 0;
 }
 
+/* 4VD's halftone dots fill the margins either side of the page column, like
+   Cloudflare's framed pages. They sit on a fixed, screen-sized layer so only
+   one screen of dots is ever painted; the column itself is plain canvas. */
+.main::before {
+  content: '';
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  left: var(--sidebar-w);
+  z-index: -1;
+  background-image: var(--dots-image);
+  background-size: 8px 8px;
+  pointer-events: none;
+}
+
 .main__frame {
-  max-width: 1200px;
+  max-width: 1120px;
   min-height: 100%;
   margin: 0 auto;
   padding: var(--space-6) var(--space-7) var(--space-7);

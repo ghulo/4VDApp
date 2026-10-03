@@ -63,6 +63,13 @@ function BusinessForm({ initial }: { initial: Business }) {
     save.mutate();
   }
 
+  // Save only turns orange once there's something to save, like the other settings card.
+  const hasChanges =
+    name.trim() !== initial.name ||
+    address.trim() !== (initial.address ?? '') ||
+    phone.trim() !== (initial.phone ?? '') ||
+    timeZone !== (initial.timeZone ?? '');
+
   return (
     <form onSubmit={handleSubmit}>
       <Card
@@ -80,7 +87,7 @@ function BusinessForm({ initial }: { initial: Business }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || save.isPending}>
               {save.isPending ? t.settings.saving : t.business.save}
             </Button>
           </>

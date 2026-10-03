@@ -129,7 +129,7 @@
   ],
   "narrative": {
     "northStar": "Calm Shop",
-    "overview": "Four equal pillars hold up one roof: the four Dacaj brothers holding up the family shop. The interface carries that idea as structure and fairness rather than ornament: hairline frames, equal columns, nothing bigger or louder than its job. The structure is Cloudflare's dashboard (a grouped sidebar, warm neutrals, hairline tables, Ctrl K to jump anywhere, dense analytics cards); the rigour is the SBB design system's (reduced content, plain words, responsive spacing, 44px touch targets); the finish is anthropic.com's calm (a serif voice for headings, ink-coloured underlined links, generous quiet around the few things that matter).\n\nIt is a working tool for a shop counter, read in the morning and used all day. Working screens are plain paper on a warm canvas. The Overview is a calm morning page that says the day in one serif sentence; the dense figures live on Reports. Data is drawn in ink, so orange keeps exactly one meaning: act here, or you are here. Halftone dots survive only as brand moments: sign-in, empty states, the mark.",
+    "overview": "Four equal pillars hold up one roof: the four Dacaj brothers holding up the family shop. The interface carries that idea as structure and fairness rather than ornament: hairline frames, equal columns, nothing bigger or louder than its job. The structure is Cloudflare's dashboard (a grouped sidebar, warm neutrals, hairline tables, Ctrl K to jump anywhere, dense analytics cards); the rigour is the SBB design system's (reduced content, plain words, responsive spacing, 44px touch targets); the finish is anthropic.com's calm (a serif voice for headings, ink-coloured underlined links, generous quiet around the few things that matter).\n\nIt is a working tool for a shop counter, read in the morning and used all day. Working screens are plain paper on a warm canvas. The Overview is a calm morning page that says the day in one serif sentence; the dense figures live on Reports. Data is drawn in ink, so orange keeps exactly one meaning: act here, or you are here. Dots are the brand signature: a halftone field frames the page column, data is drawn in dots, and the mark is made of them; never in tables or forms.",
     "keyCharacteristics": [
       "Ink on warm paper; flat surfaces separated by hairlines, no shadows at rest.",
       "One orange voice (`#ff5e1f`): the main button, the current menu item, the logo.",
@@ -164,7 +164,7 @@
     ],
     "donts": [
       "**Don't** put white text on Signal Orange.",
-      "**Don't** add glows, corner nodes, dashed rails or a dot field to working screens.",
+      "**Don't** add glows, corner nodes or dashed rails; keep dots out of tables, forms and from behind text.",
       "**Don't** colour charts, counts, links or badges orange.",
       "**Don't** add drop shadows to cards or tables.",
       "**Don't** use the serif for figures, tables, card titles or controls.",

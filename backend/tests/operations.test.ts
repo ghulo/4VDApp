@@ -106,6 +106,17 @@ describe('sales', () => {
     expect(response.body.data.totalRevenue).toBe(100);
     expect(response.body.meta.total).toBe(1);
   });
+  it('should list only the sales one person recorded', async () => {
+    const employeeToken = await loginAs(context, 'employee');
+    await sell(adminToken, 1);
+    await sell(employeeToken, 2);
+    const employeeId = (await context.db.selectFrom('users').select('id').where('role', '=', 'employee').executeTakeFirstOrThrow()).id;
+
+    const response = await request(context.app).get(`/api/sales?soldBy=${employeeId}`).set(auth(adminToken));
+
+    expect(response.body.data.sales.map((sale: { quantity: number }) => sale.quantity)).toEqual([2]);
+    expect(response.body.data.totalRevenue).toBe(200);
+  });
 });
 
 describe('analytics', () => {

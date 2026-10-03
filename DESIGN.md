@@ -195,7 +195,9 @@ It is a working tool for a shop counter, read in the morning and used all day.
 Working screens are plain paper on a warm canvas. The Overview is a calm morning
 page that says the day in one serif sentence; the dense figures live on Reports.
 Data is drawn in ink, so orange keeps exactly one meaning: act here, or you are
-here. Halftone dots survive only as brand moments: sign-in, empty states, the mark.
+here. Dots are the brand's signature (Cloudflare's and Anthropic's language too):
+a halftone field frames the page column, data is drawn in dots, and the four-pillar
+mark is made of them. They stay out of tables and forms, where they'd be noise.
 
 **Key Characteristics:**
 - Ink on warm paper; flat surfaces separated by hairlines, no shadows at rest.
@@ -248,6 +250,13 @@ and counts are never orange.
 bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would
 read as a button.
 
+**The Dots Rule.** Dots are 4VD's identity, used at low volume rather than removed:
+the 8px halftone field in the margins either side of the page column (desktop; the
+column itself is plain canvas, max 1120px), data drawn in dots (the sales chart as
+dot columns, metric graphs as a halftone area under a line, the Today card's
+30-day dot-matrix strip with faint unlit dots), the halftone corner on the team
+app's Today card, and the four-pillar drawing. Never in tables, forms or behind text.
+
 **The Dark Text On Orange Rule.** Text on Signal Orange is always Pillar Ink. White
 on this orange reaches only 3:1. Contrast pairs are guarded by
 `admin/src/theme/contrast.test.ts` (WCAG AA).
@@ -293,8 +302,9 @@ A 56px top bar (see-through with blur) spans the page: logo and shop name, a sea
 field labelled "Search or jump to" with a Ctrl K hint, theme switch and account on
 the right. Under it a 232px sidebar sits on the left in named groups (Today,
 Shelves, Business) and collapses to 60px icons; under 900px it becomes a drawer
-opened from the top bar. The page lives in a plain frame of at most 1200px on the
-warm canvas; there is no decoration in the gutters.
+opened from the top bar. The page lives in a plain column of at most 1120px on the
+warm canvas, framed on desktop by the halftone dot field in the margins (a fixed,
+screen-sized layer, so only one screen of dots is painted).
 
 Spacing runs on a 4px grid (4, 8, 12, 16, 24, 32, 48). Page padding steps down with
 the screen, after SBB's responsive spacing: 32/48px on desktop, 32/24px under
@@ -400,19 +410,23 @@ A plain paper card with generous padding (24px by 32px): one serif sentence abou
 the day ("No sales yet today."), a muted comparison line under it ("Last Saturday
 had €140.00 by this time."), and two quiet ink links with tabular counts
 ("0 waiting for you", "3 to restock"). Something waiting gets a small Warn dot; the
-words still carry the meaning. Links grow to 44px on phones.
+words still carry the meaning. Links grow to 44px on phones. On the right (below on
+phones) a dot-matrix strip of the last 30 days in Ink, unlit dots in Strong
+Hairline, captioned "Last 30 days" (`DotMatrix` in the kit).
 
 ### Metric card (signature, Reports)
 A hairline card with a muted label, an overflow button, a tabular figure, a change
-said in words in the status colour ("Much more"), and an edge-to-edge area graph in
-Muted Ink at 18% fill with a 2px line. No data shows a faint wave and a small pill.
+said in words in the status colour ("Much more"), and an edge-to-edge area graph: a
+2px Muted Ink line over a halftone area (a 6px dot pattern). No data shows a faint
+wave and a small pill.
 
 ### Sales chart
-Bars in Muted Ink, the active bar in Ink, hairline grid, an ink tooltip with paper
-text. Every bar is reachable by keyboard, and "Show as table" offers the same data
-as a table.
+Each day a column of dots (6px apart, as many columns as fit the day's width) in
+Muted Ink, the active day in Ink; no unlit dots, so values read cleanly; hairline
+grid, an ink tooltip with paper text. One keyboard stop, arrow keys walk the days,
+and "Show as table" offers the same data as a table.
 
-### Halftone drawing (brand moments only)
+### Halftone drawing
 The four-pillar building drawn in orange dots inside a thin strong-hairline circle,
 over an 8px dot field. It appears on sign-in (with floating "shop moment" cards), as
 empty-state art (140px), and in the logo. Nowhere else.
@@ -435,7 +449,7 @@ empty-state art (140px), and in the logo. Nowhere else.
 
 ### Don't:
 - **Don't** put white text on Signal Orange.
-- **Don't** add glows, corner nodes, dashed rails or a dot field to working screens.
+- **Don't** add glows, corner nodes or dashed rails; keep dots out of tables, forms and from behind text.
 - **Don't** colour charts, counts, links or badges orange.
 - **Don't** add drop shadows to cards or tables.
 - **Don't** use the serif for figures, tables, card titles or controls.

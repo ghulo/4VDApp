@@ -1,6 +1,7 @@
-# Render Blueprint: the whole app online in one go (see docs/DEPLOYMENT.md).
-# Render reads this when you choose New > Blueprint and pick this repo.
-# Each part redeploys by itself when its own folder changes on main, once the GitHub checks pass.
+# Render Blueprint: the API and its database (see docs/DEPLOYMENT.md).
+# The dashboard and the team app are hosted on Cloudflare Pages instead
+# (dashboard.4vd.app and app.4vd.app); the API is api.4vd.app.
+# The API redeploys by itself when backend/ changes on main, once the GitHub checks pass.
 
 services:
   # The API, from backend/Dockerfile. Applies database migrations on every start.
@@ -27,9 +28,9 @@ services:
         value: Europe/Budapest
       # Links in emails (invites, password resets) open these.
       - key: DASHBOARD_URL
-        value: https://fourvd-dashboard.onrender.com
+        value: https://dashboard.4vd.app
       - key: TEAM_APP_URL
-        value: https://fourvd-app.onrender.com
+        value: https://app.4vd.app
       # Optional: real emails (otherwise they're only printed to the log), and Google sign-in.
       - key: RESEND_API_KEY
         sync: false
@@ -37,10 +38,11 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # Both front ends, comma-separated, e.g.
-      # https://fourvd-dashboard.onrender.com,https://fourvd-app.onrender.com (asked once on setup).
+      # Both front ends (on Cloudflare), comma-separated. The two onrender.com
+      # addresses keep the old front ends working during the move; remove them
+      # once dashboard.4vd.app and app.4vd.app are live.
       - key: CORS_ORIGINS
-        sync: false
+        value: https://dashboard.4vd.app,https://app.4vd.app,https://fourvd-dashboard.onrender.com,https://fourvd-app.onrender.com
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
       - key: ANTHROPIC_API_KEY
         sync: false
@@ -50,53 +52,6 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
-
-  # The owner's dashboard: plain files, free, never sleeps.
-  - name: 4vd-dashboard
-    type: web
-    runtime: static
-    rootDir: admin
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    autoDeployTrigger: checksPass
-    # Every page is handled by the app itself, so unknown paths load index.html.
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      # The API's address, e.g. https://fourvd-api.onrender.com (asked once on setup).
-      - key: VITE_API_URL
-        sync: false
-      # Where staff are sent after accepting an invite.
-      - key: VITE_TEAM_APP_URL
-        value: https://fourvd-app.onrender.com
-
-  # The employee app (the mobile app, built for browsers). Staff open it on any
-  # phone; on an iPhone, Share > Add to Home Screen makes it a full-screen app.
-  - name: 4vd-app
-    type: web
-    runtime: static
-    rootDir: mobile
-    buildCommand: npm ci && npx expo export --platform web --output-dir dist
-    staticPublishPath: ./dist
-    autoDeployTrigger: checksPass
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    headers:
-      # The alerts service worker must never be served stale.
-      - path: /sw.js
-        name: Cache-Control
-        value: no-cache
-    envVars:
-      # Not a secret: the address the app talks to, baked in at build time.
-      - key: EXPO_PUBLIC_API_URL
-        value: https://fourvd-api.onrender.com
-      # Its pages handle forgotten passwords.
-      - key: EXPO_PUBLIC_DASHBOARD_URL
-        value: https://fourvd-dashboard.onrender.com
 
 databases:
   - name: 4vd-db

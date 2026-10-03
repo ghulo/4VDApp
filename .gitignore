@@ -10,6 +10,9 @@ coverage/
 .env
 .env.*
 !.env.example
+# Public production addresses for the front ends (no secrets)
+!admin/.env.production
+!mobile/.env.production
 
 # Expo / React Native
 .expo/

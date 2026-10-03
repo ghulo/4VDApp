@@ -129,11 +129,11 @@ export class ReportsRepository {
       with losses as (
         select w.quantity as units, w.unit_cost
         from write_offs w
-        where w.status = 'approved' and w.decided_at >= ${range.startDate} and w.decided_at < ${range.endDate}
+        where w.status = 'approved' and w.undone_at is null and w.decided_at >= ${range.startDate} and w.decided_at < ${range.endDate}
         union all
         select l.expected_quantity - l.counted_quantity, l.unit_cost
         from stock_count_lines l
-        where l.status = 'approved' and l.decided_at >= ${range.startDate} and l.decided_at < ${range.endDate}
+        where l.status = 'approved' and l.undone_at is null and l.decided_at >= ${range.startDate} and l.decided_at < ${range.endDate}
       )
       select
         coalesce(sum(units * unit_cost) filter (where unit_cost is not null), 0) as stock_losses,
@@ -211,7 +211,7 @@ export class ReportsRepository {
         p.base_price,
         p.cost_price,
         p.created_at,
-        (select max(s.sale_date) from sales s where s.product_id = p.id) as last_sold_at
+        (select max(s.sale_date) from sales s where s.product_id = p.id and s.undone_at is null) as last_sold_at
       from products p
       join inventory i on i.product_id = p.id
       join categories c on c.id = p.category_id
@@ -227,7 +227,7 @@ export class ReportsRepository {
       select price_per_unit, count(*) as sales_count, sum(quantity_sold) as units,
              min(sale_date) as first_sold, max(sale_date) as last_sold
       from sales
-      where product_id = ${productId} and sale_date >= ${since}
+      where product_id = ${productId} and sale_date >= ${since} and undone_at is null
       group by price_per_unit
       order by price_per_unit desc
     `.execute(this.db);
@@ -240,6 +240,7 @@ export class ReportsRepository {
       .selectFrom('sales')
       .select(['product_id', 'sale_date', 'quantity_sold'])
       .where('sale_date', '>=', since)
+      .where('undone_at', 'is', null)
       .execute();
   }
 
@@ -250,7 +251,7 @@ export class ReportsRepository {
               where r.sale_id = s.id and r.status in ('pending', 'approved')) as returned_quantity
       from sales s
       join products p on p.id = s.product_id
-      where s.sold_by = ${soldBy} and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
+      where s.sold_by = ${soldBy} and s.undone_at is null and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
       order by s.sale_date desc, s.id desc
       limit ${limit}
     `.execute(this.db);
@@ -267,7 +268,7 @@ export class ReportsRepository {
         from sales s
         join products p on p.id = s.product_id
         left join users u on u.id = s.sold_by
-        where s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
+        where s.undone_at is null and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
         union all
         select 'Return', r.decided_at, p.name, p.sku, -r.quantity,
                round(r.refund_amount / r.quantity, 2), -r.refund_amount, s.unit_cost, u.name, r.notes,
@@ -276,7 +277,8 @@ export class ReportsRepository {
         join sales s on s.id = r.sale_id
         join products p on p.id = s.product_id
         left join users u on u.id = s.sold_by
-        where r.status = 'approved' and r.decided_at >= ${range.startDate} and r.decided_at < ${range.endDate}
+        where r.status = 'approved' and r.undone_at is null and s.undone_at is null
+          and r.decided_at >= ${range.startDate} and r.decided_at < ${range.endDate}
       ) rows
       order by occurred_at, kind desc, row_id
     `.execute(this.db);

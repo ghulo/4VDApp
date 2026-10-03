@@ -40,7 +40,7 @@ export class InsightsRepository {
              sum((s.unit_cost - s.price_per_unit) * s.quantity_sold) as shortfall
       from sales s
       join products p on p.id = s.product_id
-      where s.sale_date >= ${since} and s.unit_cost is not null and s.price_per_unit < s.unit_cost
+      where s.sale_date >= ${since} and s.undone_at is null and s.unit_cost is not null and s.price_per_unit < s.unit_cost
       group by p.id, p.name
       order by shortfall desc
     `.execute(this.db);
@@ -69,9 +69,11 @@ export class InsightsRepository {
         select avg(earlier.quantity_sold) as usual, count(*) as how_many
         from sales earlier
         where earlier.product_id = s.product_id
+          and earlier.undone_at is null
           and earlier.sale_date >= ${input.baselineSince} and earlier.sale_date < ${input.since}
       ) baseline
       where s.sale_date >= ${input.since}
+        and s.undone_at is null
         and s.quantity_sold >= ${input.minQuantity}
         and baseline.how_many >= ${input.minHistory}
         and s.quantity_sold >= ${input.factor} * baseline.usual
@@ -86,11 +88,11 @@ export class InsightsRepository {
       with missing as (
         select l.product_id, l.expected_quantity - l.counted_quantity as units
         from stock_count_lines l
-        where l.status = 'approved' and l.decided_at >= ${since} and l.counted_quantity < l.expected_quantity
+        where l.status = 'approved' and l.undone_at is null and l.decided_at >= ${since} and l.counted_quantity < l.expected_quantity
         union all
         select w.product_id, w.quantity
         from write_offs w
-        where w.status = 'approved' and w.reason = 'lost' and w.decided_at >= ${since}
+        where w.status = 'approved' and w.undone_at is null and w.reason = 'lost' and w.decided_at >= ${since}
       )
       select p.id as product_id, p.name as product_name, sum(m.units) as units, count(*) as times
       from missing m

@@ -9,6 +9,7 @@ import type { PricingTier, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { Button, Card, PageHeader } from '../components/ui';
+import { useT } from '../i18n/useT';
 
 /** Same rule as the backend: the biggest tier the quantity reaches. */
 function unitPriceFor(product: Product, quantity: number): number {
@@ -19,13 +20,14 @@ function unitPriceFor(product: Product, quantity: number): number {
 }
 
 export function SalesPage() {
+  const t = useT();
   return (
     <>
       <PageHeader
-        title="Sales"
-        description="Recording a sale takes the units out of stock and uses the bulk price automatically."
+        title={t.sales.title}
+        description={t.sales.description}
       />
-      <Card title="Record a sale">
+      <Card title={t.sales.record}>
         <RecordSaleForm />
       </Card>
       <SalesHistory />
@@ -34,6 +36,7 @@ export function SalesPage() {
 }
 
 function RecordSaleForm() {
+  const t = useT();
   const queryClient = useQueryClient();
   const products = useQuery({
     queryKey: ['products', { page: 1, limit: 100, inStock: true }],
@@ -50,7 +53,7 @@ function RecordSaleForm() {
       for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
-      setSavedMessage(`Sold ${sale.quantity} × ${sale.productName} for ${formatMoney(sale.totalAmount)}.`);
+      setSavedMessage(t.sales.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }));
       setQuantity('1');
       setNotes('');
     },
@@ -72,26 +75,26 @@ function RecordSaleForm() {
 
   if (products.isPending) return <Loading />;
   if (products.isError) return <ErrorNotice error={products.error} onRetry={() => products.refetch()} />;
-  if (sellable.length === 0) return <EmptyState title="Nothing in stock to sell" />;
+  if (sellable.length === 0) return <EmptyState title={t.sales.nothingInStock} />;
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Product</span>
+          <span className="field__label">{t.sales.product}</span>
           <select required value={productId} onChange={(event) => setProductId(event.target.value)}>
             <option value="" disabled>
-              Choose a product
+              {t.sales.chooseProduct}
             </option>
             {sellable.map((product) => (
               <option key={product.id} value={product.id}>
-                {product.name} ({product.stock.quantity} in stock)
+                {t.sales.inStockOption(product.name, product.stock.quantity)}
               </option>
             ))}
           </select>
         </label>
         <label className="field">
-          <span className="field__label">Quantity</span>
+          <span className="field__label">{t.sales.quantity}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -104,15 +107,15 @@ function RecordSaleForm() {
         </label>
       </div>
       <label className="field">
-        <span className="field__label">Note (optional)</span>
+        <span className="field__label">{t.sales.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </label>
 
       {selected && unitPrice !== null && (
         <p className={exceedsStock ? 'form-error' : 'sale-preview'}>
           {exceedsStock
-            ? `Only ${selected.stock.quantity} in stock.`
-            : `${parsedQuantity} × ${formatMoney(unitPrice)} = ${formatMoney(unitPrice * parsedQuantity)}${unitPrice < selected.price ? ' (bulk price)' : ''}`}
+            ? t.sales.onlyInStock(selected.stock.quantity)
+            : `${parsedQuantity} × ${formatMoney(unitPrice)} = ${formatMoney(unitPrice * parsedQuantity)}${unitPrice < selected.price ? t.sales.bulkPrice : ''}`}
         </p>
       )}
       {record.isError && (
@@ -129,13 +132,14 @@ function RecordSaleForm() {
       <Button type="submit"
        
         disabled={!selected || !isQuantityValid || exceedsStock || record.isPending} variant="primary">
-        {record.isPending ? 'Recording…' : 'Record sale'}
+        {record.isPending ? t.sales.recording : t.sales.recordSale}
       </Button>
     </form>
   );
 }
 
 function SalesHistory() {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
   const startDate = params.get('from') ?? '';
@@ -160,19 +164,19 @@ function SalesHistory() {
   }
 
   return (
-    <Card title="History">
+    <Card title={t.sales.history}>
       <div className="toolbar">
         <label className="inline-field">
-          From
+          {t.sales.from}
           <input type="date" value={startDate} max={endDate || undefined} onChange={(event) => updateParams({ from: event.target.value })} />
         </label>
         <label className="inline-field">
-          To
+          {t.sales.to}
           <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateParams({ to: event.target.value })} />
         </label>
         {sales.data && (
           <span className="toolbar__summary">
-            {formatMoney(sales.data.totalRevenue)} from {sales.data.meta.total} {sales.data.meta.total === 1 ? 'sale' : 'sales'}
+            {t.sales.totalFrom({ amount: formatMoney(sales.data.totalRevenue), count: sales.data.meta.total })}
           </span>
         )}
       </div>
@@ -185,7 +189,7 @@ function SalesHistory() {
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
       {sales.data && sales.data.items.length === 0 && (
-        <EmptyState title={startDate || endDate ? 'No sales in these dates' : 'No sales yet'} />
+        <EmptyState title={startDate || endDate ? t.sales.noSalesInDates : t.sales.noSalesYet} />
       )}
       {sales.data && sales.data.items.length > 0 && (
         <>
@@ -193,20 +197,20 @@ function SalesHistory() {
             <table className="table">
               <thead>
                 <tr>
-                  <th scope="col">When</th>
-                  <th scope="col">Product</th>
+                  <th scope="col">{t.sales.when}</th>
+                  <th scope="col">{t.sales.product}</th>
                   <th scope="col" className="table__numeric">
-                    Qty
+                    {t.sales.qty}
                   </th>
                   <th scope="col" className="table__numeric">
-                    Each
+                    {t.sales.each}
                   </th>
                   <th scope="col" className="table__numeric">
-                    Total
+                    {t.sales.total}
                   </th>
-                  <th scope="col">Sold by</th>
+                  <th scope="col">{t.sales.soldBy}</th>
                   <th scope="col">
-                    <span className="visually-hidden">Actions</span>
+                    <span className="visually-hidden">{t.sales.actions}</span>
                   </th>
                 </tr>
               </thead>
@@ -220,14 +224,14 @@ function SalesHistory() {
                         {sale.notes && <span className="table__secondary">{sale.notes}</span>}
                         {sale.returnedQuantity > 0 && (
                           <span className="table__secondary">
-                            {sale.returnedQuantity} of {sale.quantity} returned
+                            {t.sales.returned(sale.returnedQuantity, sale.quantity)}
                           </span>
                         )}
                       </td>
                       <td className="table__numeric">{sale.quantity}</td>
                       <td className="table__numeric">{formatMoney(sale.pricePerUnit)}</td>
                       <td className="table__numeric">{formatMoney(sale.totalAmount)}</td>
-                      <td>{sale.soldBy ?? 'Unknown'}</td>
+                      <td>{sale.soldBy ?? t.sales.unknown}</td>
                       <td>
                         {sale.returnedQuantity < sale.quantity && (
                           <button
@@ -239,7 +243,7 @@ function SalesHistory() {
                               setReturningId(returningId === sale.id ? null : sale.id);
                             }}
                           >
-                            {returningId === sale.id ? 'Close' : 'Return'}
+                            {returningId === sale.id ? t.sales.close : t.sales.return}
                           </button>
                         )}
                       </td>
@@ -262,7 +266,7 @@ function SalesHistory() {
               </tbody>
             </table>
           </div>
-          <Pagination meta={sales.data.meta} itemLabel="sales" onPageChange={(next) => updateParams({ page: String(next) })} />
+          <Pagination meta={sales.data.meta} itemLabel={t.sales.items} onPageChange={(next) => updateParams({ page: String(next) })} />
         </>
       )}
     </Card>

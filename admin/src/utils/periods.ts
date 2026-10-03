@@ -1,12 +1,8 @@
+import { type Catalogue, en } from '../i18n/en';
+
 export type PeriodKey = 'this-month' | 'last-month' | 'last-30-days' | 'this-year' | 'custom';
 
-export const PERIOD_OPTIONS: Array<{ key: PeriodKey; label: string }> = [
-  { key: 'this-month', label: 'This month' },
-  { key: 'last-month', label: 'Last month' },
-  { key: 'last-30-days', label: 'Last 30 days' },
-  { key: 'this-year', label: 'This year' },
-  { key: 'custom', label: 'Custom dates' },
-];
+export const PERIOD_KEYS: PeriodKey[] = ['this-month', 'last-month', 'last-30-days', 'this-year', 'custom'];
 
 export interface ResolvedPeriod {
   startDate: string;
@@ -21,8 +17,6 @@ export interface ResolvedPeriod {
 
 const MS_PER_MINUTE = 60 * 1000;
 const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
-const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
-const dayLabel = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** "2026-03-05" read as local midnight (new Date("2026-03-05") would be UTC). */
 function localDay(isoDay: string): Date {
@@ -59,7 +53,14 @@ function sameMomentEarlier(moment: Date, back: { months?: number; years?: number
  * Periods that are still running ("this month", "this year") end now and are
  * compared with the same stretch of the previous month or year.
  */
-export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: string }, now: Date = new Date()): ResolvedPeriod {
+export function resolvePeriod(
+  key: PeriodKey,
+  custom?: { from: string; to: string },
+  now: Date = new Date(),
+  t: Catalogue = en,
+): ResolvedPeriod {
+  const monthLabel = new Intl.DateTimeFormat(t.dateLocale, { month: 'long', year: 'numeric' });
+  const dayLabel = new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short', year: 'numeric' });
   const year = now.getFullYear();
   const month = now.getMonth();
 
@@ -71,7 +72,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
     return {
       startDate: start.toISOString(),
       endDate: end.toISOString(),
-      label: `${dayLabel.format(start)} to ${dayLabel.format(last)}`,
+      label: t.periods.range(dayLabel.format(start), dayLabel.format(last)),
     };
   }
 
@@ -91,7 +92,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
       return {
         startDate: new Date(end.getTime() - 30 * MS_PER_DAY).toISOString(),
         endDate: end.toISOString(),
-        label: 'Last 30 days',
+        label: t.periods.options['last-30-days'],
       };
     }
     case 'this-year': {
@@ -103,7 +104,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
         endDate: end.toISOString(),
         previousStartDate: previousStart.toISOString(),
         previousEndDate: sameMomentEarlier(end, { years: 1 }, start).toISOString(),
-        label: `${year} so far`,
+        label: t.periods.soFar(String(year)),
       };
     }
     default: {
@@ -116,7 +117,7 @@ export function resolvePeriod(key: PeriodKey, custom?: { from: string; to: strin
         endDate: end.toISOString(),
         previousStartDate: new Date(year, month - 1, 1).toISOString(),
         previousEndDate: sameMomentEarlier(end, { months: 1 }, start).toISOString(),
-        label: `${monthLabel.format(start)} so far`,
+        label: t.periods.soFar(monthLabel.format(start)),
         ...waitingForDates,
       };
     }

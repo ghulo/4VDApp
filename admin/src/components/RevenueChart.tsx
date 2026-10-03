@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { RevenuePoint } from '../services/types';
 import { formatMoney } from '../utils/format';
 import { dotColumn } from './ui/dots';
+import { useT } from '../i18n/useT';
 
 const WIDTH = 720;
 const HEIGHT = 220;
@@ -12,13 +13,6 @@ const BAR_GAP = 2;
 const DOT_STEP = 6;
 const TICK_COUNT = 4;
 
-const dayLabel = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-const compactMoney = new Intl.NumberFormat('en-IE', {
-  style: 'currency',
-  currency: 'EUR',
-  notation: 'compact',
-  maximumFractionDigits: 1,
-});
 
 /** Round the axis top up to a clean number (1, 2, 2.5 or 5 times a power of ten). */
 function niceMax(value: number): number {
@@ -34,6 +28,19 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ points, title }: RevenueChartProps) {
+  const t = useT();
+  const { dayLabel, compactMoney } = useMemo(
+    () => ({
+      dayLabel: new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+      compactMoney: new Intl.NumberFormat(t.numberLocale, {
+        style: 'currency',
+        currency: 'EUR',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }),
+    }),
+    [t],
+  );
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
 
@@ -55,7 +62,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
       <figcaption className="chart__header">
         <span className="chart__title">{title}</span>
         <button type="button" className="text-button" onClick={() => setShowTable((value) => !value)}>
-          {showTable ? 'Show chart' : 'Show as table'}
+          {showTable ? t.chart.showChart : t.chart.showTable}
         </button>
       </figcaption>
 
@@ -64,12 +71,12 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Day</th>
+                <th scope="col">{t.chart.day}</th>
                 <th scope="col" className="table__numeric">
-                  Revenue
+                  {t.chart.revenue}
                 </th>
                 <th scope="col" className="table__numeric">
-                  Sales
+                  {t.chart.sales}
                 </th>
               </tr>
             </thead>
@@ -89,7 +96,10 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
           <svg
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             role="img"
-            aria-label={`${title}. Best day ${best ? `${dayLabel.format(new Date(best.periodStart))} with ${formatMoney(best.revenue)}` : 'none yet'}.`}
+            aria-label={t.chart.summary({
+              title,
+              best: best ? { day: dayLabel.format(new Date(best.periodStart)), amount: formatMoney(best.revenue) } : null,
+            })}
           >
             {ticks.map((tick) => (
               <g key={tick}>
@@ -117,7 +127,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
                   key={point.periodStart}
                   tabIndex={0}
                   role="img"
-                  aria-label={`${dayLabel.format(new Date(point.periodStart))}: ${formatMoney(point.revenue)} from ${point.salesCount} sales`}
+                  aria-label={t.chart.point({ day: dayLabel.format(new Date(point.periodStart)), amount: formatMoney(point.revenue), count: point.salesCount })}
                   onPointerEnter={() => setActiveIndex(index)}
                   onFocus={() => setActiveIndex(index)}
                   onBlur={() => setActiveIndex(null)}
@@ -169,8 +179,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
             >
               <strong>{formatMoney(active.revenue)}</strong>
               <span>
-                {dayLabel.format(new Date(active.periodStart))}, {active.salesCount}{' '}
-                {active.salesCount === 1 ? 'sale' : 'sales'}
+                {dayLabel.format(new Date(active.periodStart))}, {t.chart.salesCount(active.salesCount)}
               </span>
             </div>
           )}

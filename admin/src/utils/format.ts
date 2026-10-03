@@ -25,6 +25,9 @@ const date = (options: Intl.DateTimeFormatOptions) =>
   cached(JSON.stringify(options), () => new Intl.DateTimeFormat(LOCALES[current].date, options));
 
 export const formatMoney = (amount: number) => money().format(amount);
+/** 0.125 → "12.5%" ("12,5%" in Albanian). */
+export const formatPercent = (fraction: number) =>
+  cached('percent', () => new Intl.NumberFormat(LOCALES[current].money, { style: 'percent', maximumFractionDigits: 1 })).format(fraction);
 export const formatDate = (iso: string) => date({ day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
 
 /**

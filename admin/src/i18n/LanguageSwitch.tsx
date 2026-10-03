@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/useAuth';
 import { meApi } from '../services/api';
 import type { Language } from './language';
@@ -14,13 +15,23 @@ export function LanguageSwitch({ className = '', persist = false }: LanguageSwit
   const t = useT();
   const { language, setLanguage } = useLanguage();
   const { updateUser } = useAuth();
+  const queryClient = useQueryClient();
   const options: Array<{ value: Language; label: string }> = [
     { value: 'en', label: t.language.english },
     { value: 'sq', label: t.language.albanian },
   ];
 
   function choose(next: Language) {
-    if (persist) meApi.updateProfile({ language: next }).then(updateUser).catch(() => undefined);
+    if (persist) {
+      meApi
+        .updateProfile({ language: next })
+        .then((user) => {
+          updateUser(user);
+          // Alerts and the attention list come from the server in the saved language.
+          return queryClient.invalidateQueries();
+        })
+        .catch(() => undefined);
+    }
     setLanguage(next);
   }
 

@@ -38,6 +38,15 @@ const TRANSLATED = [
   'src/utils/errors.ts',
   'src/command/matching.ts',
   'src/command/useShortcuts.ts',
+  'src/pages/OverviewPage.tsx',
+  'src/pages/SalesPage.tsx',
+  'src/pages/ReportsPage.tsx',
+  'src/pages/AskPage.tsx',
+  'src/pages/AlertsPage.tsx',
+  'src/pages/ActivityPage.tsx',
+  'src/components/RevenueChart.tsx',
+  'src/components/PeriodPicker.tsx',
+  'src/utils/periods.ts',
 ];
 
 /** Brand and symbols that are fine to write directly. */

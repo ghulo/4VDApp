@@ -8,14 +8,15 @@ import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
-import type { Insight } from '../services/types';
 import { formatMoney } from '../utils/format';
 import { Card, DotBars, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
+import { useT } from '../i18n/useT';
 
 const PERIOD_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function OverviewPage() {
+  const t = useT();
   const user = useCurrentUser();
   const lowStock = useQuery({
     queryKey: ['inventory', { lowStock: true, page: 1, limit: 50 }],
@@ -29,18 +30,18 @@ export function OverviewPage() {
   return (
     <>
       <PageHeader
-        title={`Hi ${firstName}`}
+        title={t.overview.hi(firstName ?? user.name)}
         description={
           lowCount === undefined ? (
-            'Checking stock levels…'
+            t.overview.checkingStock
           ) : lowCount === 0 ? (
-            'Every product is above its reorder level.'
+            t.overview.allAbove
           ) : (
             <>
               <mark className="highlight">
-                {lowCount} {lowCount === 1 ? 'product needs' : 'products need'} restocking
+                {t.overview.needRestock(lowCount)}
               </mark>
-              {outCount ? `, ${outCount} already sold out` : ''}.
+              {outCount ? t.overview.soldOut(outCount) : ''}.
             </>
           )
         }
@@ -54,17 +55,17 @@ export function OverviewPage() {
         <AttentionPanel />
 
         <Card
-          title="Needs restocking"
+          title={t.overview.needsRestocking}
           actions={
             <Link to="/inventory?lowStock=true" className="text-link">
-              See all stock
+              {t.overview.seeAllStock}
             </Link>
           }
         >
           {lowStock.isPending && <Loading />}
           {lowStock.isError && <ErrorNotice error={lowStock.error} onRetry={() => lowStock.refetch()} />}
           {lowStock.data && lowStock.data.items.length === 0 && (
-            <EmptyState title="Nothing to restock">Every product has more than its reorder level.</EmptyState>
+            <EmptyState title={t.overview.nothingToRestock}>{t.overview.nothingToRestockHint}</EmptyState>
           )}
           {lowStock.data && lowStock.data.items.length > 0 && (
             <ul className="restock-list">
@@ -73,7 +74,7 @@ export function OverviewPage() {
                   <Link to={`/inventory/${item.productId}`} className="restock-list__row">
                     <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
                     <span className="restock-list__name">{item.productName}</span>
-                    <span className="restock-list__meta">Reorder at {item.reorderLevel}</span>
+                    <span className="restock-list__meta">{t.overview.reorderAt(item.reorderLevel)}</span>
                   </Link>
                 </li>
               ))}
@@ -97,8 +98,6 @@ function useRevenue() {
   });
 }
 
-const weekdayFormatter = new Intl.DateTimeFormat('en-GB', { weekday: 'long' });
-
 /** Today so far, against the same hours of the same weekday last week. */
 function todayRange(now = new Date()) {
   const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -113,11 +112,12 @@ function todayRange(now = new Date()) {
 
 /** The shop's day on one slate board: the figure the owner checks first, and what's waiting. */
 function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
+  const t = useT();
   // Fixed once per visit so the query key doesn't change on every render.
   const [range] = useState(() => todayRange());
   const today = useQuery({ queryKey: ['reports', 'summary', 'today', range.startDate], queryFn: () => reportsApi.summary(range) });
   const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
-  const weekday = weekdayFormatter.format(new Date(range.endDate));
+  const weekday = new Intl.DateTimeFormat(t.dateLocale, { weekday: 'long' }).format(new Date(range.endDate));
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
@@ -126,46 +126,51 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
 
   return (
     <>
-      <section className="today-hero nodes" aria-label="Today so far">
+      <section className="today-hero nodes" aria-label={t.overview.todaySoFar}>
         <div className="today-hero__text">
-          <p className="today-hero__label">Sales today</p>
+          <p className="today-hero__label">{t.overview.salesToday}</p>
           <p className="today-hero__figure">
-            {current ? <RollingNumber value={formatMoney(current.revenue)} /> : today.isError ? 'Not available' : '…'}
+            {current ? <RollingNumber value={formatMoney(current.revenue)} /> : today.isError ? t.overview.notAvailable : '…'}
           </p>
           {current && previous && (
             <p className="today-hero__compare">
               {change === null
-                ? `Nothing sold by this time last ${weekday}.`
-                : `${change >= 0 ? 'Up' : 'Down'} ${Math.abs(Math.round(change * 100))}% on last ${weekday}, which had ${formatMoney(previous.revenue)} by this time.`}
+                ? t.overview.nothingLastWeek(weekday)
+                : t.overview.comparedLastWeek({
+                    up: change >= 0,
+                    percent: Math.abs(Math.round(change * 100)),
+                    weekday,
+                    amount: formatMoney(previous.revenue),
+                  })}
             </p>
           )}
           <div className="today-hero__tags">
             <Link to="/approvals" className="today-tag">
-              <strong>{waiting}</strong> waiting for you
+              <strong>{waiting}</strong> {t.overview.waitingForYou}
             </Link>
             <Link to="/inventory?lowStock=true" className="today-tag">
-              <strong>{lowCount ?? '–'}</strong> to restock
+              <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
             </Link>
           </div>
         </div>
         <div className="today-hero__art">
           {revenue.data && <DotBars values={revenue.data.points.map((point) => point.revenue)} />}
-          <span className="today-hero__art-label">Last {PERIOD_DAYS} days</span>
+          <span className="today-hero__art-label">{t.overview.lastDays(PERIOD_DAYS)}</span>
         </div>
         <div className="today-hero__status">
           <StatusLine>
             {current && current.salesCount > 0
-              ? `${current.salesCount} ${current.salesCount === 1 ? 'sale' : 'sales'} recorded today`
-              : 'Ready for the first sale of the day'}
+              ? t.overview.salesRecorded(current.salesCount)
+              : t.overview.readyForFirst}
           </StatusLine>
         </div>
       </section>
       <StatGrid>
-        <StatTile label="Sales" icon={Receipt} value={current?.salesCount ?? '–'} to="/sales" />
-        <StatTile label="Profit" icon={TrendUp} value={current ? formatMoney(current.profit) : '–'} />
-        <StatTile label="Items sold" icon={Package} value={current?.unitsSold ?? '–'} />
+        <StatTile label={t.overview.sales} icon={Receipt} value={current?.salesCount ?? '–'} to="/sales" />
+        <StatTile label={t.overview.profit} icon={TrendUp} value={current ? formatMoney(current.profit) : '–'} />
+        <StatTile label={t.overview.itemsSold} icon={Package} value={current?.unitsSold ?? '–'} />
         <StatTile
-          label="Waiting for you"
+          label={t.overview.waitingTile}
           icon={SealCheck}
           value={waiting}
           tone={waiting > 0 ? 'warn' : 'default'}
@@ -176,25 +181,24 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   );
 }
 
-const SEVERITY_LABEL: Record<Insight['severity'], string> = { urgent: 'Urgent', warning: 'Check', info: 'Idea' };
-
 /** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
 function AttentionPanel() {
+  const t = useT();
   const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights });
 
   return (
-    <Card title="Needs your attention">
+    <Card title={t.overview.attention}>
       {insights.isPending && <Loading />}
       {insights.isError && <ErrorNotice error={insights.error} onRetry={() => insights.refetch()} />}
       {insights.data && insights.data.length === 0 && (
-        <EmptyState title="All clear">Nothing is running out, missing or selling oddly.</EmptyState>
+        <EmptyState title={t.overview.allClear}>{t.overview.allClearHint}</EmptyState>
       )}
       {insights.data && insights.data.length > 0 && (
         <ul className="restock-list">
           {insights.data.map((insight) => (
             <li key={`${insight.kind}-${insight.productId}-${insight.title}`}>
               <Link to={`/inventory/${insight.productId}`} className={`attention__row attention__row--${insight.severity}`}>
-                <span className="attention__severity">{SEVERITY_LABEL[insight.severity]}</span>
+                <span className="attention__severity">{t.overview.severity[insight.severity]}</span>
                 <span>
                   <span className="restock-list__name">{insight.title}</span>
                   <span className="attention__detail">{insight.detail}</span>
@@ -209,6 +213,7 @@ function AttentionPanel() {
 }
 
 function SalesSummary() {
+  const t = useT();
   const dashboard = useQuery({
     queryKey: ['analytics', 'dashboard', PERIOD_DAYS],
     queryFn: () => analyticsApi.dashboard(PERIOD_DAYS),
@@ -217,10 +222,10 @@ function SalesSummary() {
 
   return (
     <Card
-      title={`Last ${PERIOD_DAYS} days`}
+      title={t.overview.lastDays(PERIOD_DAYS)}
       actions={
         <Link to="/sales" className="text-link">
-          See all sales
+          {t.overview.seeAllSales}
         </Link>
       }
     >
@@ -230,17 +235,17 @@ function SalesSummary() {
       {dashboard.data && (
         <>
           <StatGrid>
-            <StatTile label="In sales" value={formatMoney(dashboard.data.totalRevenue)} />
-            <StatTile label="Profit" value={formatMoney(dashboard.data.totalProfit)} />
-            <StatTile label="Units sold" value={dashboard.data.unitsSold} />
-            <StatTile label="Stock on hand is worth" value={formatMoney(dashboard.data.inventoryValue)} />
+            <StatTile label={t.overview.inSales} value={formatMoney(dashboard.data.totalRevenue)} />
+            <StatTile label={t.overview.profit} value={formatMoney(dashboard.data.totalProfit)} />
+            <StatTile label={t.overview.unitsSold} value={dashboard.data.unitsSold} />
+            <StatTile label={t.overview.stockWorth} value={formatMoney(dashboard.data.inventoryValue)} />
           </StatGrid>
 
-          {revenue.data && <RevenueChart points={revenue.data.points} title="Sales per day" />}
+          {revenue.data && <RevenueChart points={revenue.data.points} title={t.overview.salesPerDay} />}
 
           {dashboard.data.topProducts.length > 0 ? (
             <>
-              <h3 className="subheading">Best sellers</h3>
+              <h3 className="subheading">{t.overview.bestSellers}</h3>
               <ol className="top-products">
                 {dashboard.data.topProducts.map((product) => (
                   <li key={product.productId}>
@@ -248,14 +253,14 @@ function SalesSummary() {
                       {product.productName}
                     </Link>
                     <span className="top-products__figures">
-                      {formatMoney(product.revenue)}, {product.unitsSold} sold
+                      {t.overview.sold(formatMoney(product.revenue), product.unitsSold)}
                     </span>
                   </li>
                 ))}
               </ol>
             </>
           ) : (
-            <p className="field-hint">No sales yet in this period. Record one on the Sales page.</p>
+            <p className="field-hint">{t.overview.noSalesYet}</p>
           )}
         </>
       )}

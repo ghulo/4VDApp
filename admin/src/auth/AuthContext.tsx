@@ -4,6 +4,7 @@ import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
 import { disablePush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
+import { useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 import { canOversee } from './roles';
 
@@ -11,6 +12,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() =>
     tokenStore.access ? { status: 'loading' } : { status: 'signedOut' },
   );
+  // The language saved on the account follows the person, like the theme.
+  const { setLanguage } = useLanguage();
 
   // Restore the session on page load if we still have a token.
   useEffect(() => {
@@ -19,12 +22,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     authApi
       .me()
-      .then((user) => setState({ status: 'signedIn', user }))
+      .then((user) => {
+        setLanguage(user.language);
+        setState({ status: 'signedIn', user });
+      })
       .catch(() => {
         tokenStore.clear();
         setState({ status: 'signedOut' });
       });
-  }, []);
+  }, [setLanguage]);
 
   const login = useCallback(async (email: string, password: string) => {
     const user = await authApi.login(email, password);
@@ -33,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('This dashboard is for the people who run the shop. Use the team app to sell and browse products.');
     }
     applyTheme(user.theme);
+    setLanguage(user.language);
     setState({ status: 'signedIn', user });
-  }, []);
+  }, [setLanguage]);
 
   /**
    * Keep a session started elsewhere (invite accepted, Google sign-in). Only
@@ -48,9 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return 'notAdmin';
     }
     applyTheme(result.user.theme);
+    setLanguage(result.user.language);
     setState({ status: 'signedIn', user: result.user });
     return 'signedIn';
-  }, []);
+  }, [setLanguage]);
 
   const logout = useCallback(async () => {
     // The next person to use this browser shouldn't get the owner's alerts.

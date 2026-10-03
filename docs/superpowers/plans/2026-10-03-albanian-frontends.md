@@ -48,7 +48,7 @@
 
 1. **Signing in with an account whose language differs from the sign-in screen's.** The saved account language should take over right after sign-in, with no stale-English flash on the next page. Test: Task 2's `AuthContext` test.
 2. **Albanian text is longer (~20–30%).** Buttons, table headers, the sidebar and stat tiles must wrap or truncate cleanly at 360px and 1280px, never overflow. Check: Task 9 visual pass at both widths.
-3. **Formatting after a switch.** Money and dates already on screen must re-render in the new locale ("1.204,50 €"), not only new renders. Test: Task 2 `format.test.ts` and the keyed remount.
+3. **Formatting after a switch.** Money and dates already on screen must re-render in the new locale ("1204,50 € (12 045,50 € from five digits)"), not only new renders. Test: Task 2 `format.test.ts` and the keyed remount.
 4. **Untranslated leftovers.** A forgotten JSX string shows up as English in an Albanian screen. Guard: the hard-coded-text scanner tests (Tasks 3 and 7) over every migrated file.
 5. **Storage blocked or empty.** In a private window or with storage disabled, the app must still work, defaulting to the browser or phone language, then English. Test: Task 2 `readLanguage` cases.
 

@@ -7,8 +7,9 @@ import { AuthShell } from '../components/AuthShell';
 import { Loading } from '../components/Feedback';
 import { GoogleButton } from '../components/GoogleButton';
 import { accountApi } from '../services/api';
+import { useLanguage, useT } from '../i18n/useT';
+import { hasSavedLanguage } from '../i18n/language';
 import { errorMessage } from '../utils/errors';
-import { ROLE_LABEL } from '../utils/format';
 import { Button } from '../components/ui';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -169,6 +170,7 @@ export function ConfirmEmailChangePage() {
 // ---------- Accept an invite ----------
 
 export function AcceptInvitePage() {
+  const t = useT();
   const { token = '' } = useParams();
   const invite = useQuery({ queryKey: ['invite', token], queryFn: () => accountApi.invitePreview(token), retry: false });
   const [name, setName] = useState('');
@@ -183,6 +185,13 @@ export function AcceptInvitePage() {
     mutationFn: (credential: string) => accountApi.acceptInviteWithGoogle(token, credential),
     onSuccess: finish,
   });
+
+  // Open in the language the invite was sent in, unless this browser already has a choice.
+  const { setLanguage } = useLanguage();
+  const inviteLanguage = invite.data?.language;
+  useEffect(() => {
+    if (inviteLanguage && !hasSavedLanguage()) setLanguage(inviteLanguage);
+  }, [inviteLanguage, setLanguage]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -209,7 +218,7 @@ export function AcceptInvitePage() {
   return (
     <AuthShell
       title={`Join ${shopName}`}
-      subtitle={`${invitedBy ?? 'The owner'} invited ${email} as ${ROLE_LABEL[role].toLowerCase()}.`}
+      subtitle={`${invitedBy ?? 'The owner'} invited ${email} as ${t.common.roles[role].toLowerCase()}.`}
     >
       {sentToApp ? (
         <OpenTheApp />

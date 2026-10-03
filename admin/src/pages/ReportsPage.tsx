@@ -4,9 +4,10 @@ import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { exportsApi, reportsApi } from '../services/api';
+import { useT } from '../i18n/useT';
 import type { ReportSummary } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney, ROLE_LABEL } from '../utils/format';
+import { formatMoney } from '../utils/format';
 import { type PeriodKey, resolvePeriod } from '../utils/periods';
 import { Button, Card, PageHeader } from '../components/ui';
 
@@ -118,6 +119,7 @@ function SummaryFigures({ summary }: { summary: ReportSummary }) {
 }
 
 function TeamTable({ range }: { range: { startDate: string; endDate: string } }) {
+  const t = useT();
   const team = useQuery({
     queryKey: ['reports', 'team', range],
     queryFn: () => reportsApi.team(range),
@@ -150,7 +152,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                   <td>
                     <span className="table__primary-link">{person.name}</span>
                     <span className="table__secondary">
-                      {person.hasLeft ? `${ROLE_LABEL[person.role]}, no longer on the team` : ROLE_LABEL[person.role]}
+                      {person.hasLeft ? `${t.common.roles[person.role]}, no longer on the team` : t.common.roles[person.role]}
                     </span>
                   </td>
                   <td className="table__numeric">{person.salesCount}</td>

@@ -4,9 +4,10 @@ import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
 import { invitesApi, usersApi } from '../services/api';
+import { useT } from '../i18n/useT';
 import { type User, type UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatMoney, ROLE_LABEL } from '../utils/format';
+import { formatDate, formatMoney } from '../utils/format';
 import { Badge, Button, Card, PageHeader } from '../components/ui';
 import { assignableRoles, canHandOut, canManage } from '../auth/roles';
 
@@ -56,6 +57,7 @@ export function UsersPage() {
 }
 
 function InviteForm() {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
@@ -86,7 +88,7 @@ function InviteForm() {
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
             {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
-                {ROLE_LABEL[option]}: {ROLE_HINT[option]}
+                {t.common.roles[option]}: {ROLE_HINT[option]}
               </option>
             ))}
           </select>
@@ -111,6 +113,7 @@ function InviteForm() {
 }
 
 function PendingInvites() {
+  const t = useT();
   const queryClient = useQueryClient();
   const invites = useQuery({ queryKey: ['invites'], queryFn: invitesApi.list });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['invites'] });
@@ -126,7 +129,7 @@ function PendingInvites() {
             <div>
               <p className="category-list__name">{invite.email}</p>
               <p className="category-list__description">
-                {ROLE_LABEL[invite.role]}, invited {formatDate(invite.createdAt)}
+                {t.common.roles[invite.role]}, invited {formatDate(invite.createdAt)}
                 {invite.invitedBy ? ` by ${invite.invitedBy}` : ''}. Link works until {formatDate(invite.expiresAt)}.
               </p>
             </div>
@@ -152,6 +155,7 @@ function PendingInvites() {
 }
 
 function AddUserForm() {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -195,7 +199,7 @@ function AddUserForm() {
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
             {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
-                {ROLE_LABEL[option]}: {ROLE_HINT[option]}
+                {t.common.roles[option]}: {ROLE_HINT[option]}
               </option>
             ))}
           </select>
@@ -231,6 +235,7 @@ function AddUserForm() {
 }
 
 function UserRow({ user }: { user: User }) {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [newPassword, setNewPassword] = useState('');
@@ -292,12 +297,12 @@ function UserRow({ user }: { user: User }) {
         >
           {assignableRoles(currentUser.role).map((option) => (
             <option key={option} value={option}>
-              {ROLE_LABEL[option]}
+              {t.common.roles[option]}
             </option>
           ))}
         </select>
       ) : (
-        <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{ROLE_LABEL[user.role]}</Badge>
+        <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{t.common.roles[user.role]}</Badge>
       )}
       <span className="category-list__actions">
         {!canEdit ? null : isSettingTargets ? (

@@ -120,6 +120,7 @@ export const meApi = {
     name?: string;
     phone?: string | null;
     theme?: User['theme'];
+    language?: User['language'];
     emailWeeklyReport?: boolean;
   }) =>
     (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,

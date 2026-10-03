@@ -6,10 +6,12 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { Badge, Button, Card, Field, PageHeader, SettingRow } from '../components/ui';
 import { meApi } from '../services/api';
+import { useT } from '../i18n/useT';
 import type { Session, User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, ROLE_LABEL } from '../utils/format';
+import { formatDateTime } from '../utils/format';
 import { canOversee } from '../auth/roles';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -33,17 +35,21 @@ function Result({ error, success }: { error: unknown; success: string | null }) 
 
 /** The signed-in person's own details, look, alerts and security. */
 export function ProfilePage() {
+  const t = useT();
   const user = useCurrentUser();
   return (
     <>
       <PageHeader
         title="Your profile"
-        description={`${ROLE_LABEL[user.role]} at the shop. What you change here is only about you.`}
+        description={`${t.common.roles[user.role]} at the shop. What you change here is only about you.`}
       />
       <DetailsPanel user={user} />
       <Card title="Look">
         <SettingRow title="Theme" description="Auto follows your computer's light or dark setting.">
           <ThemeSwitch persist />
+        </SettingRow>
+        <SettingRow title={t.language.label} description={t.language.description}>
+          <LanguageSwitch persist />
         </SettingRow>
       </Card>
       <PushSettingsPanel />

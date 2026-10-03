@@ -1,0 +1,36 @@
+import type { Language } from '../services/types';
+
+export type { Language };
+export const LANGUAGES: Language[] = ['en', 'sq'];
+export const LANGUAGE_STORAGE_KEY = '4vd.language';
+
+const isLanguage = (value: unknown): value is Language => value === 'en' || value === 'sq';
+
+/** The saved choice; else the browser's language if it's Albanian; else English. */
+export function readLanguage(storage: Pick<Storage, 'getItem'> | null, browserLanguages: readonly string[]): Language {
+  try {
+    const saved = storage?.getItem(LANGUAGE_STORAGE_KEY);
+    if (isLanguage(saved)) return saved;
+  } catch {
+    // Blocked storage: decide from the browser.
+  }
+  return browserLanguages.some((tag) => tag.toLowerCase().startsWith('sq')) ? 'sq' : 'en';
+}
+
+/** localStorage, or null when the browser blocks it. */
+export function safeStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** True when someone already picked a language in this browser. */
+export function hasSavedLanguage(): boolean {
+  try {
+    return safeStorage()?.getItem(LANGUAGE_STORAGE_KEY) != null;
+  } catch {
+    return false;
+  }
+}

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { productsApi, usersApi } from '../services/api';
-import { ROLE_LABEL } from '../utils/format';
+import { useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
@@ -48,6 +48,7 @@ const MAX_PER_GROUP = 6;
 /** Jump anywhere or start something, by typing. Ctrl/Cmd+K opens it. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const t = useT();
   const { role } = useCurrentUser();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -77,7 +78,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       group: 'People',
       label: user.name,
       keywords: user.email,
-      hint: ROLE_LABEL[user.role],
+      hint: t.common.roles[user.role],
       to: '/people',
     }));
     const ranked = [
@@ -88,7 +89,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),
     ];
     return GROUP_ORDER.flatMap((group) => ranked.filter((command) => command.group === group).slice(0, MAX_PER_GROUP));
-  }, [trimmed, products.data, people.data, role]);
+  }, [trimmed, products.data, people.data, role, t]);
 
   useEffect(() => {
     input.current?.focus();

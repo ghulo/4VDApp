@@ -1,6 +1,7 @@
 import { Bell, ClipboardText, Receipt, SealCheck, type Icon } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { LogoMark } from './LogoMark';
 import { Halftone } from './ui';
 
@@ -45,7 +46,10 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           <h1 className="login__title">{title}</h1>
           {subtitle && <p className="login__subtitle">{subtitle}</p>}
           {children}
-          <ThemeSwitch className="login__theme" />
+          <div className="login__prefs">
+            <ThemeSwitch />
+            <LanguageSwitch />
+          </div>
         </div>
       </div>
     </div>

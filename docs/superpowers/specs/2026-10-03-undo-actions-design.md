@@ -66,14 +66,14 @@ Edits don't move stock or money by themselves (a price change only affects futur
 
 **Edits (revert).** A `revertEdit` per kind (`product`, `pricing`, `settings`, `promotion`) reads the `from` values from the edit's activity entry, checks that no later activity entry changed the same fields of the same thing ("latest change only"), applies the old values through the existing services (so validation, price-history and logging stay the same), and records `*.reverted` with the before/after. Revert state is kept on the activity entry: migration 010 also adds `undone_at`, `undone_by`, `undo_note` to `activity_log` for these.
 
-**Data.** Migration 010 adds to `sales`, `returns`, `write_offs`, `stock_count_lines` and `stock_adjustments` (manual ones): `undone_at TIMESTAMPTZ NULL`, `undone_by INT NULL REFERENCES users(id)`, `undo_note TEXT NULL`. Restore clears them and records a new activity entry. The `sales_ledger` view leaves out undone sales and undone returns, so every money report (overview, reports, team, daily summary, weekly email, exports, the AI's numbers) agrees automatically. Loss totals leave out undone write-offs.
+**Data.** Migration 010 adds to `sales`, `returns`, `write_offs`, `stock_count_lines` and `activity_log` (for manual stock changes and edits, whose state lives on their log entry): `undone_at TIMESTAMPTZ NULL`, `undone_by INT NULL REFERENCES users(id)`, `undo_note TEXT NULL`. Restore clears them and records a new activity entry. The `sales_ledger` view leaves out undone sales and undone returns, so every money report (overview, reports, team, daily summary, weekly email, exports, the AI's numbers) agrees automatically. Loss totals leave out undone write-offs.
 
 **Stock.** Undo and restore change stock through the existing `applyStockChange`, with new system reasons `Undo` and `Restore` and a note pointing at the original entry ("Undo of sale #12"). The stock history therefore explains every change, and low-stock alerts keep working.
 
-**Server.** An `UndoService` with one function per kind (`undoSale`, `undoReturn`, `undoWriteOff`, `undoCountLine`, `undoStockAdjustment`, and matching restores). Each runs in one transaction, locks the row, checks permission, linked entries and stock, applies the change, logs it and notifies the person. Endpoints (overseers only):
-- `POST /api/undo/:kind/:id` with `{ note? }`
-- `POST /api/undo/:kind/:id/restore`
-- Activity entries returned by `GET /api/activity?userId=` gain `undo: { kind, id, state: 'undoable' | 'undone' | 'locked', undoneBy?, undoneAt?, note?, effect }`. `effect` is the plain-language preview for the confirmation; `locked` comes with the reason ("Undo the return first").
+**Server.** An `UndoService` with one function per kind (`undoSale`, `undoReturn`, `undoWriteOff`, `undoCountLine`, `undoStockAdjustment`, and matching restores). Each runs in one transaction, locks the row, checks permission, linked entries and stock, applies the change, logs it and notifies the person. Endpoints (overseers only), keyed by the activity entry the person clicked:
+- `POST /api/activity/:id/undo` with `{ note? }`
+- `POST /api/activity/:id/restore`
+- Activity entries returned by `GET /api/activity?userId=` gain `undo: { state: 'undoable' | 'undone' | 'locked' | 'forbidden', kind, undoneBy, undoneAt, note, effect, lockedReason }`. `effect` holds the facts for the confirmation (stock change, money and day, field before/after), worded by the dashboard in the reader's language.
 
 **Permission rule** (one function, unit-tested): `canUndo(actor, owner)`. The Developer may undo anyone. The Owner and Admins may undo employees and themselves. Nobody else may undo anything.
 

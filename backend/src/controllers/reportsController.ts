@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { DailySummaryService } from '../services/DailySummaryService.js';
 import type { InsightsService } from '../services/InsightsService.js';
 import type { ReportsService } from '../services/ReportsService.js';
+import { messages } from '../i18n/messages.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { profitQuerySchema, reportRangeSchema } from '../validators/reportValidators.js';
 import { parseInput } from '../validators/validate.js';
@@ -31,12 +32,12 @@ export function createReportsController(
       sendSuccess(res, await reportsService.reorderSuggestions());
     },
 
-    async insights(_req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await insightsService.list());
+    async insights(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await insightsService.list(new Date(), messages[req.user!.language]));
     },
 
-    async dailySummary(_req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await dailySummaryService.compose());
+    async dailySummary(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await dailySummaryService.compose(new Date(), messages[req.user!.language]));
     },
 
     async mySales(req: Request, res: Response): Promise<void> {

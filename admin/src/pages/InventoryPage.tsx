@@ -8,8 +8,11 @@ import { inventoryApi, reportsApi } from '../services/api';
 import type { ReorderSuggestion } from '../services/types';
 import { formatDate } from '../utils/format';
 import { ButtonLink, DataTable, EmptyState, PageHeader } from '../components/ui';
+import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 
 export function InventoryPage() {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
   const search = params.get('search') ?? '';
@@ -39,24 +42,24 @@ export function InventoryPage() {
   return (
     <>
       <PageHeader
-        title="Stock"
-        description="Emptiest first. &quot;Runs out in&quot; is based on the last 30 days of sales."
+        title={t.inventory.title}
+        description={t.inventory.description}
       />
 
       {query.isPending && <Loading />}
       {query.isError && <ErrorNotice error={query.error} onRetry={() => query.refetch()} />}
       {query.data && (
         <DataTable
-          caption="Stock"
+          caption={t.inventory.title}
           rows={query.data.items}
           rowKey={(item) => item.productId}
           columns={[
             {
-              header: 'In stock',
+              header: t.inventory.inStock,
               cell: (item) => <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />,
             },
             {
-              header: 'Product',
+              header: t.inventory.product,
               cell: (item) => (
                 <>
                   <Link to={`/inventory/${item.productId}`} className="table__primary-link">
@@ -66,12 +69,12 @@ export function InventoryPage() {
                 </>
               ),
             },
-            { header: 'Reorder at', align: 'end', cell: (item) => item.reorderLevel },
-            { header: 'Runs out in', cell: (item) => describeRunway(suggestionById.get(item.productId)) },
-            { header: 'Reorder', align: 'end', cell: (item) => suggestionById.get(item.productId)?.suggestedOrder || '–' },
+            { header: t.inventory.reorderAt, align: 'end', cell: (item) => item.reorderLevel },
+            { header: t.inventory.runsOutIn, cell: (item) => describeRunway(t, suggestionById.get(item.productId)) },
+            { header: t.inventory.reorder, align: 'end', cell: (item) => suggestionById.get(item.productId)?.suggestedOrder || '–' },
             {
-              header: 'Last restocked',
-              cell: (item) => (item.lastRestockedAt ? formatDate(item.lastRestockedAt) : 'Never'),
+              header: t.inventory.lastRestocked,
+              cell: (item) => (item.lastRestockedAt ? formatDate(item.lastRestockedAt) : t.inventory.never),
             },
           ]}
           toolbar={
@@ -79,7 +82,7 @@ export function InventoryPage() {
               <SearchInput
                 value={search}
                 onChange={(value) => updateParams({ search: value })}
-                label="Search by name or SKU"
+                label={t.inventory.search}
               />
               <label className="toggle">
                 <input
@@ -89,24 +92,24 @@ export function InventoryPage() {
                   checked={lowStock}
                   onChange={(event) => updateParams({ lowStock: event.target.checked ? 'true' : null })}
                 />
-                Only low stock
+                {t.inventory.onlyLow}
               </label>
             </>
           }
           empty={
             search || lowStock ? (
-              <EmptyState title="No products match">Try a different search or turn off "Only low stock".</EmptyState>
+              <EmptyState title={t.inventory.noMatch}>{t.inventory.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art
-                title="No products yet"
+                title={t.inventory.noneYet}
                 action={
                   <ButtonLink to="/products/new" variant="primary">
-                    Add your first product
+                    {t.inventory.addFirst}
                   </ButtonLink>
                 }
               >
-                Stock levels appear here once you add products.
+                {t.inventory.emptyHint}
               </EmptyState>
             )
           }
@@ -114,7 +117,7 @@ export function InventoryPage() {
             query.data.items.length > 0 && (
               <Pagination
                 meta={query.data.meta}
-                itemLabel="products"
+                itemLabel={t.inventory.items}
                 onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
               />
             )
@@ -125,10 +128,10 @@ export function InventoryPage() {
   );
 }
 
-function describeRunway(suggestion: ReorderSuggestion | undefined): string {
+function describeRunway(t: Catalogue, suggestion: ReorderSuggestion | undefined): string {
   if (!suggestion) return '–';
-  if (suggestion.daysLeft === null) return 'No recent sales';
-  if (suggestion.daysLeft === 0) return 'Today';
-  const trend = suggestion.trend === 'rising' ? ', selling faster' : suggestion.trend === 'falling' ? ', selling slower' : '';
-  return `About ${suggestion.daysLeft} ${suggestion.daysLeft === 1 ? 'day' : 'days'}${trend}`;
+  if (suggestion.daysLeft === null) return t.inventory.noRecentSales;
+  if (suggestion.daysLeft === 0) return t.inventory.today;
+  const trend = suggestion.trend === 'rising' ? t.inventory.faster : suggestion.trend === 'falling' ? t.inventory.slower : '';
+  return t.inventory.about(suggestion.daysLeft, trend);
 }

@@ -5,10 +5,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../navigation/types';
 import { reportsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
-import { errorMessage, formatMoney } from '../utils/format';
+import { errorMessage, formatDateWith, formatMoney } from '../utils/format';
+import { useT } from '../i18n/useT';
 
-const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long' });
-const shortDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 /**
  * This calendar month and last calendar month, in the phone's own timezone.
@@ -24,7 +23,7 @@ export function monthRanges(now = new Date()) {
     endDate: new Date(year, month + 1, 1).toISOString(),
     previousStartDate: new Date(year, month - 1, 1).toISOString(),
     previousEndDate: start.toISOString(),
-    name: monthName.format(start),
+    name: formatDateWith(start, { month: 'long' }),
   };
 }
 
@@ -32,8 +31,10 @@ export const MY_SALES_QUERY_KEY = ['reports', 'my-sales'];
 
 export function MySales() {
   const colors = useThemeColors();
+  const t = useT();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const month = monthRanges();
+  const month = monthRanges(new Date());
+  const shortDate = { format: (date: Date) => formatDateWith(date, { day: 'numeric', month: 'short' }) };
   const mySales = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, month.startDate],
     queryFn: () => reportsApi.mySales(month),
@@ -41,17 +42,19 @@ export function MySales() {
 
   return (
     <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-      <Text style={[styles.title, { color: colors.ink }]}>My sales in {month.name}</Text>
-      {mySales.isPending && <Text style={[styles.muted, { color: colors.steel }]}>Loading…</Text>}
+      <Text style={[styles.title, { color: colors.ink }]}>{t.mySales.title(month.name)}</Text>
+      {mySales.isPending && <Text style={[styles.muted, { color: colors.steel }]}>{t.mySales.loading}</Text>}
       {mySales.isError && <Text style={[styles.muted, { color: colors.signalOut }]}>{errorMessage(mySales.error)}</Text>}
       {mySales.data && (
         <>
           <Text style={[styles.hero, { color: colors.ink }]}>{formatMoney(mySales.data.current.revenue)}</Text>
           <Text style={[styles.muted, { color: colors.steel }]}>
-            {mySales.data.current.salesCount} {mySales.data.current.salesCount === 1 ? 'sale' : 'sales'},{' '}
-            {mySales.data.current.unitsSold} {mySales.data.current.unitsSold === 1 ? 'unit' : 'units'}
-            {mySales.data.current.refunds > 0 ? `, after ${formatMoney(mySales.data.current.refunds)} in refunds` : ''}. Last month:{' '}
-            {formatMoney(mySales.data.previous.revenue)}
+            {t.mySales.summary({
+              sales: mySales.data.current.salesCount,
+              units: mySales.data.current.unitsSold,
+              refunds: mySales.data.current.refunds > 0 ? formatMoney(mySales.data.current.refunds) : null,
+              lastMonth: formatMoney(mySales.data.previous.revenue),
+            })}
           </Text>
           {mySales.data.recentSales.length > 0 ? (
             <View style={styles.list}>
@@ -65,7 +68,7 @@ export function MySales() {
                   {sale.returnedQuantity < sale.quantity ? (
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`Return ${sale.productName}`}
+                      accessibilityLabel={t.mySales.returnLabel(sale.productName)}
                       hitSlop={8}
                       onPress={() =>
                         navigation.navigate('Return', {
@@ -78,16 +81,16 @@ export function MySales() {
                         })
                       }
                     >
-                      <Text style={[styles.rowAction, { color: colors.ink }]}>Return</Text>
+                      <Text style={[styles.rowAction, { color: colors.ink }]}>{t.mySales.return}</Text>
                     </Pressable>
                   ) : (
-                    <Text style={[styles.rowAction, { color: colors.steel }]}>Returned</Text>
+                    <Text style={[styles.rowAction, { color: colors.steel }]}>{t.mySales.returned}</Text>
                   )}
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={[styles.muted, { color: colors.steel }]}>No sales yet this month.</Text>
+            <Text style={[styles.muted, { color: colors.steel }]}>{t.mySales.none}</Text>
           )}
         </>
       )}

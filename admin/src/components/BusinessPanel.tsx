@@ -7,6 +7,7 @@ import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
 import { Button, Card, Field, SettingRow } from './ui';
+import { useT } from '../i18n/useT';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 // The time zones people in and around the shop's region are most likely to need, then everything else.
@@ -26,6 +27,7 @@ export function BusinessPanel() {
 }
 
 function BusinessForm({ initial }: { initial: Business }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [name, setName] = useState(initial.name);
   const [address, setAddress] = useState(initial.address ?? '');
@@ -50,7 +52,7 @@ function BusinessForm({ initial }: { initial: Business }) {
     setLogoError(null);
     if (!file) return;
     if (file.size > MAX_LOGO_BYTES) {
-      setLogoError('That file is too big. Use one under 5 MB.');
+      setLogoError(t.business.tooBig);
       return;
     }
     upload.mutate(file);
@@ -64,8 +66,8 @@ function BusinessForm({ initial }: { initial: Business }) {
   return (
     <form onSubmit={handleSubmit}>
       <Card
-        title="Your shop"
-        description="Shown to your team, in invites and in emails."
+        title={t.business.title}
+        description={t.business.description}
         footer={
           <>
             {save.isError && (
@@ -75,52 +77,52 @@ function BusinessForm({ initial }: { initial: Business }) {
             )}
             {save.isSuccess && (
               <span className="form-success" role="status">
-                Saved.
+                {t.settings.saved}
               </span>
             )}
             <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save shop details'}
+              {save.isPending ? t.settings.saving : t.business.save}
             </Button>
           </>
         }
       >
         <SettingRow
-          title="Logo"
+          title={t.business.logo}
           description={
             logoError || upload.isError || remove.isError ? (
               <span className="form-error" role="alert">
                 {logoError ?? errorMessage(upload.error ?? remove.error)}
               </span>
             ) : (
-              'A square JPG, PNG or WebP under 5 MB.'
+              t.business.logoHint
             )
           }
         >
           {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" /> : <LogoMark size={48} />}
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickLogo} />
           <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
-            {upload.isPending ? 'Uploading…' : logo ? 'Change' : 'Add your logo'}
+            {upload.isPending ? t.profile.uploading : logo ? t.profile.change : t.business.addLogo}
           </Button>
           {logo && (
             <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
-              Remove
+              {t.profile.remove}
             </Button>
           )}
         </SettingRow>
         <div className="setting-row setting-row--fields">
-          <Field label="Shop name">
+          <Field label={t.business.shopName}>
             <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <Field label="Address (optional)">
+          <Field label={t.business.address}>
             <input maxLength={500} autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />
           </Field>
           <div className="field-row">
-            <Field label="Phone (optional)">
+            <Field label={t.profile.phone}>
               <input type="tel" maxLength={50} value={phone} onChange={(event) => setPhone(event.target.value)} />
             </Field>
-            <Field label="Time zone">
+            <Field label={t.business.timeZone}>
               <select value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>
-                <option value="">Server default</option>
+                <option value="">{t.business.serverDefault}</option>
                 {allTimeZones().map((zone) => (
                   <option key={zone} value={zone}>
                     {zone.replace(/_/g, ' ')}

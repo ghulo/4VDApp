@@ -6,19 +6,14 @@ import type { PushSettings, PushTopic } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { Button } from './ui';
-
-const TOPIC_LABEL: Record<PushTopic, string> = {
-  stock: 'Stock running low or out',
-  approvals: 'Requests waiting for you',
-  decisions: 'Answers to my returns, damage reports and counts',
-  summary: 'Daily summary of sales and warnings',
-};
+import { useT } from '../i18n/useT';
 
 const SETTINGS_KEY = ['push-settings'];
 
 /** Alerts on this phone, and which kinds this person wants. Hidden for people who get none. */
 export function PushSettingsPanel() {
   const colors = useThemeColors();
+  const t = useT();
   const queryClient = useQueryClient();
   const settings = useQuery({ queryKey: SETTINGS_KEY, queryFn: pushApi.settings });
   const token = useQuery({ queryKey: [...SETTINGS_KEY, 'this-device'], queryFn: currentPushToken });
@@ -40,17 +35,17 @@ export function PushSettingsPanel() {
   return (
     <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
       <Text style={[styles.title, { color: colors.ink }]} accessibilityRole="header">
-        Alerts
+        {t.push.title}
       </Text>
       {unavailable ? (
         <Text style={[styles.detail, { color: colors.steel }]}>{unavailable}</Text>
       ) : (
         <>
           <Text style={[styles.detail, { color: colors.ink }]}>
-            {isOn ? 'On for this phone, even when the app is closed.' : 'Off for this phone.'}
+            {isOn ? t.push.on : t.push.off}
           </Text>
           <Button
-            label={isOn ? 'Turn off on this phone' : 'Turn on for this phone'}
+            label={isOn ? t.push.turnOff : t.push.turnOn}
             variant={isOn ? 'quiet' : 'primary'}
             loading={toggleDevice.isPending}
             onPress={() => toggleDevice.mutate(!isOn)}
@@ -63,13 +58,13 @@ export function PushSettingsPanel() {
         </Text>
       )}
       {isOn && (
-        <Button label={sendTest.isSuccess ? 'Test alert sent' : 'Send a test alert'} variant="quiet" loading={sendTest.isPending} onPress={() => sendTest.mutate()} />
+        <Button label={sendTest.isSuccess ? t.push.testSent : t.push.sendTest} variant="quiet" loading={sendTest.isPending} onPress={() => sendTest.mutate()} />
       )}
       {settings.data.topics.map(({ topic, enabled }) => (
         <View key={topic} style={[styles.topic, { borderTopColor: colors.line }]}>
-          <Text style={[styles.topicLabel, { color: colors.ink }]}>{TOPIC_LABEL[topic]}</Text>
+          <Text style={[styles.topicLabel, { color: colors.ink }]}>{t.push.topics[topic]}</Text>
           <Switch
-            accessibilityLabel={TOPIC_LABEL[topic]}
+            accessibilityLabel={t.push.topics[topic]}
             value={enabled}
             disabled={saveTopic.isPending}
             onValueChange={(value) => saveTopic.mutate({ topic, enabled: value })}

@@ -6,10 +6,12 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { Badge, Button, Card, Field, PageHeader, SettingRow } from '../components/ui';
 import { meApi } from '../services/api';
+import { useT } from '../i18n/useT';
 import type { Session, User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, ROLE_LABEL } from '../utils/format';
+import { formatDateTime } from '../utils/format';
 import { canOversee } from '../auth/roles';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -33,17 +35,21 @@ function Result({ error, success }: { error: unknown; success: string | null }) 
 
 /** The signed-in person's own details, look, alerts and security. */
 export function ProfilePage() {
+  const t = useT();
   const user = useCurrentUser();
   return (
     <>
       <PageHeader
-        title="Your profile"
-        description={`${ROLE_LABEL[user.role]} at the shop. What you change here is only about you.`}
+        title={t.profile.title}
+        description={t.profile.description(t.common.roles[user.role])}
       />
       <DetailsPanel user={user} />
-      <Card title="Look">
-        <SettingRow title="Theme" description="Auto follows your computer's light or dark setting.">
+      <Card title={t.profile.look}>
+        <SettingRow title={t.theme.label} description={t.profile.themeHint}>
           <ThemeSwitch persist />
+        </SettingRow>
+        <SettingRow title={t.language.label} description={t.language.description}>
+          <LanguageSwitch persist />
         </SettingRow>
       </Card>
       <PushSettingsPanel />
@@ -55,6 +61,7 @@ export function ProfilePage() {
 }
 
 function DetailsPanel({ user }: { user: User }) {
+  const t = useT();
   const { updateUser } = useAuth();
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? '');
@@ -74,7 +81,7 @@ function DetailsPanel({ user }: { user: User }) {
     setPhotoError(null);
     if (!file) return;
     if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoError('That photo is too big. Use one under 5 MB.');
+      setPhotoError(t.profile.photoTooBig);
       return;
     }
     upload.mutate(file);
@@ -90,46 +97,46 @@ function DetailsPanel({ user }: { user: User }) {
   return (
     <form onSubmit={handleSubmit}>
       <Card
-        title="You"
-        description="Your team sees your name and photo."
+        title={t.profile.you}
+        description={t.profile.youHint}
         footer={
           <>
-            <Result error={save.error} success={save.isSuccess ? 'Saved.' : null} />
+            <Result error={save.error} success={save.isSuccess ? t.profile.saved : null} />
             <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save'}
+              {save.isPending ? t.auth.saving : t.common.save}
             </Button>
           </>
         }
       >
         <SettingRow
-          title="Photo"
+          title={t.profile.photo}
           description={
             photoProblem ? (
               <span className="form-error" role="alert">
                 {photoProblem}
               </span>
             ) : (
-              'A JPG, PNG or WebP under 5 MB.'
+              t.profile.photoHint
             )
           }
         >
           <Avatar name={user.name} url={user.avatarUrl} size={48} />
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickPhoto} />
           <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
-            {upload.isPending ? 'Uploading…' : user.avatarUrl ? 'Change' : 'Add a photo'}
+            {upload.isPending ? t.profile.uploading : user.avatarUrl ? t.profile.change : t.profile.addPhoto}
           </Button>
           {user.avatarUrl && (
             <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
-              Remove
+              {t.profile.remove}
             </Button>
           )}
         </SettingRow>
         <div className="setting-row setting-row--fields">
           <div className="field-row">
-            <Field label="Name">
+            <Field label={t.profile.name}>
               <input required maxLength={255} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
             </Field>
-            <Field label="Phone (optional)">
+            <Field label={t.profile.phone}>
               <input type="tel" maxLength={50} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
             </Field>
           </div>
@@ -140,20 +147,21 @@ function DetailsPanel({ user }: { user: User }) {
 }
 
 function EmailsPanel({ user }: { user: User }) {
+  const t = useT();
   const { updateUser } = useAuth();
   const toggle = useMutation({
     mutationFn: (on: boolean) => meApi.updateProfile({ emailWeeklyReport: on }),
     onSuccess: updateUser,
   });
   return (
-    <Card title="Emails">
+    <Card title={t.profile.emails}>
       <SettingRow
-        title="Weekly report"
+        title={t.profile.weeklyReport}
         description={
           toggle.isError ? (
             <Result error={toggle.error} success={null} />
           ) : (
-            "Every Monday evening: last week's sales, best sellers and anything that needs you."
+            t.profile.weeklyReportHint
           )
         }
       >
@@ -161,7 +169,7 @@ function EmailsPanel({ user }: { user: User }) {
           type="checkbox"
           role="switch"
           className="switch"
-          aria-label="Weekly report email"
+          aria-label={t.profile.weeklyReportEmail}
           checked={user.emailWeeklyReport}
           disabled={toggle.isPending}
           onChange={(event) => toggle.mutate(event.target.checked)}
@@ -172,6 +180,7 @@ function EmailsPanel({ user }: { user: User }) {
 }
 
 function SecurityPanel({ user }: { user: User }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const security = useQuery({ queryKey: ['me', 'security'], queryFn: meApi.security });
 
@@ -212,20 +221,20 @@ function SecurityPanel({ user }: { user: User }) {
         }}
       >
         <Card
-          title={hasPassword ? 'Password' : 'Set a password'}
-          description={`At least ${MIN_PASSWORD_LENGTH} characters. Your other devices will be logged out.`}
+          title={hasPassword ? t.profile.password : t.profile.setPasswordTitle}
+          description={t.profile.passwordHint(MIN_PASSWORD_LENGTH)}
           footer={
             <>
-              <Result error={changePassword.error} success={changePassword.isSuccess ? 'Password changed.' : null} />
+              <Result error={changePassword.error} success={changePassword.isSuccess ? t.profile.passwordChanged : null} />
               <Button type="submit" variant="primary" disabled={newPassword.length < MIN_PASSWORD_LENGTH || changePassword.isPending}>
-                {hasPassword ? 'Change password' : 'Set password'}
+                {hasPassword ? t.profile.changePassword : t.profile.setPassword}
               </Button>
             </>
           }
         >
           <div className="field-row">
             {hasPassword && (
-              <Field label="Current password">
+              <Field label={t.profile.currentPassword}>
                 <input
                   type="password"
                   autoComplete="current-password"
@@ -234,7 +243,7 @@ function SecurityPanel({ user }: { user: User }) {
                 />
               </Field>
             )}
-            <Field label="New password">
+            <Field label={t.profile.newPassword}>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -254,30 +263,30 @@ function SecurityPanel({ user }: { user: User }) {
         }}
       >
         <Card
-          title="Email"
+          title={t.profile.email}
           description={
             <>
-              You log in with <strong>{user.email}</strong>. A new address has to be confirmed before it's used.
+              {t.profile.emailHintBefore} <strong>{user.email}</strong>. {t.profile.emailHintAfter}
             </>
           }
           footer={
             <>
               <Result
                 error={changeEmail.error}
-                success={changeEmail.isSuccess ? `We sent a link to ${newEmail.trim()}. Click it to switch.` : null}
+                success={changeEmail.isSuccess ? t.profile.linkSent(newEmail.trim()) : null}
               />
               <Button type="submit" disabled={!newEmail.trim() || changeEmail.isPending}>
-                Send confirmation link
+                {t.profile.sendConfirmation}
               </Button>
             </>
           }
         >
           <div className="field-row">
-            <Field label="New email">
+            <Field label={t.profile.newEmail}>
               <input type="email" autoComplete="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} />
             </Field>
             {hasPassword && (
-              <Field label="Your password">
+              <Field label={t.profile.yourPassword}>
                 <input
                   type="password"
                   autoComplete="current-password"
@@ -292,22 +301,22 @@ function SecurityPanel({ user }: { user: User }) {
 
       <Card title="Google">
         <SettingRow
-          title={googleEmail ? 'Linked' : 'Not linked'}
+          title={googleEmail ? t.profile.linked : t.profile.notLinked}
           description={
             unlink.isError ? (
               <Result error={unlink.error} success={null} />
             ) : googleEmail ? (
               <>
-                You can log in with Google as <strong>{googleEmail}</strong>.
+                {t.profile.googleAs} <strong>{googleEmail}</strong>.
               </>
             ) : (
-              'Use "Sign in with Google" on the login page once, with a Google account that has this email, and it links by itself.'
+              t.profile.googleHowTo
             )
           }
         >
           {googleEmail && (
             <Button variant="danger-text" disabled={unlink.isPending} onClick={() => unlink.mutate()}>
-              Unlink Google
+              {t.profile.unlinkGoogle}
             </Button>
           )}
         </SettingRow>
@@ -317,6 +326,7 @@ function SecurityPanel({ user }: { user: User }) {
 }
 
 function DevicesPanel() {
+  const t = useT();
   const queryClient = useQueryClient();
   const sessions = useQuery({ queryKey: ['me', 'sessions'], queryFn: meApi.sessions });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me', 'sessions'] });
@@ -326,11 +336,11 @@ function DevicesPanel() {
 
   return (
     <Card
-      title="Where you're logged in"
+      title={t.profile.devices}
       actions={
         others > 0 && (
           <Button size="sm" disabled={endOthers.isPending} onClick={() => endOthers.mutate()}>
-            Log out everywhere else
+            {t.profile.logOutElsewhere}
           </Button>
         )
       }
@@ -354,21 +364,22 @@ function DevicesPanel() {
 }
 
 function DeviceRow({ session, onEnd, busy }: { session: Session; onEnd: () => void; busy: boolean }) {
+  const t = useT();
   return (
     <li className="device-list__row">
       <span>
         <span className="device-list__name">
-          {session.device} {session.current && <Badge tone="ok">This device</Badge>}
+          {session.device} {session.current && <Badge tone="ok">{t.profile.thisDevice}</Badge>}
         </span>
         {!session.current && (
           <span className="device-list__meta">
-            {session.lastUsedAt ? `Last used ${formatDateTime(session.lastUsedAt)}` : 'Logged in before 4VD tracked devices'}
+            {session.lastUsedAt ? t.profile.lastUsed(formatDateTime(session.lastUsedAt)) : t.profile.untracked}
           </span>
         )}
       </span>
       {!session.current && (
         <Button size="sm" disabled={busy} onClick={onEnd}>
-          Log out
+          {t.profile.logOut}
         </Button>
       )}
     </li>

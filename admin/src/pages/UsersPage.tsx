@@ -4,36 +4,31 @@ import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
 import { invitesApi, usersApi } from '../services/api';
+import { useT } from '../i18n/useT';
 import { type User, type UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatMoney, ROLE_LABEL } from '../utils/format';
+import { formatDate, formatMoney } from '../utils/format';
 import { Badge, Button, Card, PageHeader } from '../components/ui';
 import { assignableRoles, canHandOut, canManage } from '../auth/roles';
-
-const ROLE_HINT: Record<UserRole, string> = {
-  developer: 'Everything, and the only one who hands out the top roles',
-  admin: 'Runs the shop: products, stock, people and settings',
-  owner: 'Sees everything and decides requests, without changing the setup',
-  employee: 'Browse products and record sales',
-  family: 'Browse products and favorites',
-};
+import type { Language } from '../services/types';
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export function UsersPage() {
+  const t = useT();
   const currentUser = useCurrentUser();
   const users = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
 
   return (
     <>
-      <PageHeader title="People" description="Who can use the app, and what they can do." />
+      <PageHeader title={t.people.title} description={t.people.description} />
 
       {canManage(currentUser.role) && (
         <>
-          <Card title="Invite someone">
+          <Card title={t.people.invite}>
             <InviteForm />
             <details className="fallback">
-              <summary>Or set them up yourself with a first password</summary>
+              <summary>{t.people.setUpYourself}</summary>
               <AddUserForm />
             </details>
           </Card>
@@ -56,13 +51,15 @@ export function UsersPage() {
 }
 
 function InviteForm() {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('employee');
+  const [language, setLanguage] = useState<Language>(currentUser.language);
 
   const invite = useMutation({
-    mutationFn: () => invitesApi.create({ email: email.trim(), role }),
+    mutationFn: () => invitesApi.create({ email: email.trim(), role, language }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invites'] });
       setEmail('');
@@ -78,21 +75,32 @@ function InviteForm() {
     <form onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Their email</span>
+          <span className="field__label">{t.people.theirEmail}</span>
           <input type="email" required autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
         <label className="field">
-          <span className="field__label">Role</span>
+          <span className="field__label">{t.people.role}</span>
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
             {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
-                {ROLE_LABEL[option]}: {ROLE_HINT[option]}
+                {t.common.roles[option]}: {t.people.roleHints[option]}
               </option>
             ))}
           </select>
         </label>
+        <label className="field field--narrow">
+          <span className="field__label">{t.people.language}</span>
+          <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+            <option value="en" lang="en" translate="no">
+              {t.language.english}
+            </option>
+            <option value="sq" lang="sq" translate="no">
+              {t.language.albanian}
+            </option>
+          </select>
+        </label>
       </div>
-      <p className="field-hint">They get an email with a link to choose their own password (or use Google). The link works for 7 days.</p>
+      <p className="field-hint">{t.people.inviteHint}</p>
       {invite.isError && (
         <p className="form-error" role="alert">
           {errorMessage(invite.error)}
@@ -100,17 +108,18 @@ function InviteForm() {
       )}
       {invite.isSuccess && (
         <p className="form-success" role="status">
-          Invite sent to {invite.data.data.email}.
+          {t.people.inviteSent(invite.data.data.email)}
         </p>
       )}
       <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary">
-        {invite.isPending ? 'Sending…' : 'Send invite'}
+        {invite.isPending ? t.people.sending : t.people.sendInvite}
       </Button>
     </form>
   );
 }
 
 function PendingInvites() {
+  const t = useT();
   const queryClient = useQueryClient();
   const invites = useQuery({ queryKey: ['invites'], queryFn: invitesApi.list });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['invites'] });
@@ -119,24 +128,28 @@ function PendingInvites() {
 
   if (!invites.data || invites.data.length === 0) return null;
   return (
-    <Card title="Waiting to join">
+    <Card title={t.people.waiting}>
       <ul className="category-list">
         {invites.data.map((invite) => (
           <li key={invite.id} className="category-list__row">
             <div>
               <p className="category-list__name">{invite.email}</p>
               <p className="category-list__description">
-                {ROLE_LABEL[invite.role]}, invited {formatDate(invite.createdAt)}
-                {invite.invitedBy ? ` by ${invite.invitedBy}` : ''}. Link works until {formatDate(invite.expiresAt)}.
+                {t.people.invited({
+                  role: t.common.roles[invite.role],
+                  on: formatDate(invite.createdAt),
+                  by: invite.invitedBy,
+                  until: formatDate(invite.expiresAt),
+                })}
               </p>
             </div>
             <span />
             <span className="category-list__actions">
               <Button disabled={resend.isPending} onClick={() => resend.mutate(invite.id)}>
-                Send again
+                {t.people.sendAgain}
               </Button>
               <Button variant="danger-text" disabled={cancel.isPending} onClick={() => cancel.mutate(invite.id)}>
-                Cancel invite
+                {t.people.cancelInvite}
               </Button>
             </span>
           </li>
@@ -152,6 +165,7 @@ function PendingInvites() {
 }
 
 function AddUserForm() {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
@@ -164,7 +178,7 @@ function AddUserForm() {
     mutationFn: usersApi.create,
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      setSavedMessage(`${user.name} can now log in with ${user.email}.`);
+      setSavedMessage(t.people.canLogIn(user.name, user.email));
       setName('');
       setEmail('');
       setPassword('');
@@ -181,27 +195,27 @@ function AddUserForm() {
     <form onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Name</span>
+          <span className="field__label">{t.people.name}</span>
           <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <label className="field">
-          <span className="field__label">Email</span>
+          <span className="field__label">{t.people.email}</span>
           <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
       </div>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Role</span>
+          <span className="field__label">{t.people.role}</span>
           <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
             {assignableRoles(currentUser.role).map((option) => (
               <option key={option} value={option}>
-                {ROLE_LABEL[option]}: {ROLE_HINT[option]}
+                {t.common.roles[option]}: {t.people.roleHints[option]}
               </option>
             ))}
           </select>
         </label>
         <label className="field">
-          <span className="field__label">First password</span>
+          <span className="field__label">{t.people.firstPassword}</span>
           <input
             type="text"
             autoComplete="off"
@@ -212,7 +226,7 @@ function AddUserForm() {
           />
         </label>
       </div>
-      <p className="field-hint">At least {MIN_PASSWORD_LENGTH} characters. Share it with them privately.</p>
+      <p className="field-hint">{t.people.passwordHint(MIN_PASSWORD_LENGTH)}</p>
       {create.isError && (
         <p className="form-error" role="alert">
           {errorMessage(create.error)}
@@ -224,13 +238,14 @@ function AddUserForm() {
         </p>
       )}
       <Button type="submit" disabled={create.isPending} variant="primary">
-        Add person
+        {t.people.add}
       </Button>
     </form>
   );
 }
 
 function UserRow({ user }: { user: User }) {
+  const t = useT();
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [newPassword, setNewPassword] = useState('');
@@ -265,18 +280,18 @@ function UserRow({ user }: { user: User }) {
           <Avatar name={user.name} url={user.avatarUrl} size={32} />
           <span>
             {user.name}
-            {isSelf && ' (you)'}
+            {isSelf && t.people.you}
           </span>
         </p>
         <p className="category-list__description">
           {user.email}
-          {!user.isActive && ', can’t log in'}
+          {!user.isActive && t.people.blocked}
         </p>
         {sells && (user.monthlyTarget !== null || user.commissionPercent !== null) && (
           <p className="category-list__description">
             {[
-              user.monthlyTarget !== null && `Target ${formatMoney(user.monthlyTarget)} a month`,
-              user.commissionPercent !== null && `${user.commissionPercent}% commission`,
+              user.monthlyTarget !== null && t.people.target(formatMoney(user.monthlyTarget)),
+              user.commissionPercent !== null && t.people.commission(user.commissionPercent),
             ]
               .filter(Boolean)
               .join(', ')}
@@ -285,19 +300,19 @@ function UserRow({ user }: { user: User }) {
       </div>
       {canEdit && !isSelf ? (
         <select
-          aria-label={`Role for ${user.name}`}
+          aria-label={t.people.roleFor(user.name)}
           value={user.role}
           disabled={update.isPending}
           onChange={(event) => update.mutate({ role: event.target.value as UserRole })}
         >
           {assignableRoles(currentUser.role).map((option) => (
             <option key={option} value={option}>
-              {ROLE_LABEL[option]}
+              {t.common.roles[option]}
             </option>
           ))}
         </select>
       ) : (
-        <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{ROLE_LABEL[user.role]}</Badge>
+        <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{t.common.roles[user.role]}</Badge>
       )}
       <span className="category-list__actions">
         {!canEdit ? null : isSettingTargets ? (
@@ -316,8 +331,8 @@ function UserRow({ user }: { user: User }) {
               inputMode="decimal"
               min={0}
               step={1}
-              aria-label={`Monthly sales target for ${user.name} in euros`}
-              placeholder="Target € / month"
+              aria-label={t.people.targetFor(user.name)}
+              placeholder={t.people.targetPlaceholder}
               value={target}
               onChange={(event) => setTarget(event.target.value)}
             />
@@ -327,16 +342,16 @@ function UserRow({ user }: { user: User }) {
               min={0}
               max={100}
               step={0.5}
-              aria-label={`Commission for ${user.name} in percent`}
-              placeholder="Commission %"
+              aria-label={t.people.commissionFor(user.name)}
+              placeholder={t.people.commissionPlaceholder}
               value={commission}
               onChange={(event) => setCommission(event.target.value)}
             />
             <Button type="submit" disabled={update.isPending} variant="primary">
-              Save
+              {t.common.save}
             </Button>
             <Button onClick={() => setIsSettingTargets(false)}>
-              Cancel
+              {t.common.cancel}
             </Button>
           </form>
         ) : isResetting ? (
@@ -349,8 +364,8 @@ function UserRow({ user }: { user: User }) {
           >
             <input
               type="text"
-              aria-label={`New password for ${user.name}`}
-              placeholder="New password"
+              aria-label={t.people.newPasswordFor(user.name)}
+              placeholder={t.people.newPassword}
               autoComplete="off"
               minLength={MIN_PASSWORD_LENGTH}
               required
@@ -358,40 +373,40 @@ function UserRow({ user }: { user: User }) {
               onChange={(event) => setNewPassword(event.target.value)}
             />
             <Button type="submit" variant="primary">
-              Set password
+              {t.people.setPassword}
             </Button>
             <Button onClick={() => setIsResetting(false)}>
-              Cancel
+              {t.common.cancel}
             </Button>
           </form>
         ) : (
           <>
             {sells && (
               <Button onClick={() => setIsSettingTargets(true)}>
-                Target & commission
+                {t.people.targetAndCommission}
               </Button>
             )}
             <Button onClick={() => setIsResetting(true)}>
-              New password
+              {t.people.newPassword}
             </Button>
             {!isSelf && (
               <Button onClick={() => update.mutate({ isActive: !user.isActive })}>
-                {user.isActive ? 'Block access' : 'Allow access'}
+                {user.isActive ? t.people.block : t.people.allow}
               </Button>
             )}
             {!isSelf &&
               (confirmingRemove ? (
                 <>
                   <Button variant="danger" onClick={() => remove.mutate()}>
-                    Remove {user.name.split(' ')[0]}
+                    {t.people.removeName(user.name.split(' ')[0] ?? user.name)}
                   </Button>
                   <Button onClick={() => setConfirmingRemove(false)}>
-                    Keep
+                    {t.people.keep}
                   </Button>
                 </>
               ) : (
                 <Button variant="danger-text" onClick={() => setConfirmingRemove(true)}>
-                  Remove
+                  {t.people.remove}
                 </Button>
               ))}
           </>

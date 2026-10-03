@@ -9,6 +9,8 @@ import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format
 import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
 import { Package } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
+import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -97,6 +99,7 @@ export function ProductFormPage() {
 
 function ProductForm({ product, categories }: { product?: Product; categories: Category[] }) {
   const isNew = product === undefined;
+  const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<ProductDraft>(() => toDraft(product));
@@ -144,16 +147,20 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   return (
     <>
       <PageHeader
-        title={isNew ? 'Add product' : product.name}
-        crumbs={[{ label: 'Products', to: '/products' }]}
-        meta={product?.promotion && <Badge tone="brand">−{product.promotion.percentOff}% now</Badge>}
+        title={isNew ? t.productForm.addProduct : product.name}
+        crumbs={[{ label: t.nav.items.products, to: '/products' }]}
+        meta={product?.promotion && <Badge tone="brand">{t.productForm.promotionNow(product.promotion.percentOff)}</Badge>}
         description={
           product?.promotion && (
             <>
-              On promotion: {product.promotion.name}, −{product.promotion.percentOff}% (
-              {formatMoney(product.promotion.price)}) until {formatPromotionDay(product.promotion.endsAt, true)}.{' '}
+              {t.productForm.onPromotion({
+                name: product.promotion.name,
+                percent: product.promotion.percentOff,
+                price: formatMoney(product.promotion.price),
+                until: formatPromotionDay(product.promotion.endsAt, true),
+              })}{' '}
               <Link to="/promotions" className="text-link">
-                Promotions
+                {t.nav.items.promotions}
               </Link>
             </>
           )
@@ -161,7 +168,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         actions={
           !isNew && (
             <ButtonLink to={`/inventory/${product.id}`} icon={Package}>
-              Stock and history
+              {t.productForm.stockAndHistory}
             </ButtonLink>
           )
         }
@@ -169,26 +176,26 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
       {categories.length === 0 ? (
         <div className="notice">
-          <p>Products need a category. Create one first.</p>
+          <p>{t.productForm.needCategory}</p>
           <ButtonLink to="/categories" variant="primary">
-            Go to categories
+            {t.productForm.goToCategories}
           </ButtonLink>
         </div>
       ) : (
         <>
-        <ManagersOnly note="Only the developer or an admin can change this.">
+        <ManagersOnly note={t.productForm.managersOnly}>
           <form className="product-form" onSubmit={handleSubmit}>
-            <Card title="Details">
+            <Card title={t.productForm.details}>
               <label className="field">
-                <span className="field__label">Name</span>
+                <span className="field__label">{t.productForm.name}</span>
                 <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
               </label>
               <div className="field-row">
                 <label className="field">
-                  <span className="field__label">Category</span>
+                  <span className="field__label">{t.productForm.category}</span>
                   <select required value={draft.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
                     <option value="" disabled>
-                      Choose a category
+                      {t.productForm.chooseCategory}
                     </option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -198,12 +205,12 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   </select>
                 </label>
                 <label className="field">
-                  <span className="field__label">SKU (optional)</span>
+                  <span className="field__label">{t.productForm.sku}</span>
                   <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
                 </label>
               </div>
               <label className="field">
-                <span className="field__label">Description (optional)</span>
+                <span className="field__label">{t.productForm.description}</span>
                 <textarea
                   rows={3}
                   maxLength={5000}
@@ -212,7 +219,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                 />
               </label>
               <label className="field">
-                <span className="field__label">Image link (optional)</span>
+                <span className="field__label">{t.productForm.image}</span>
                 <input
                   type="url"
                   placeholder="https://"
@@ -226,14 +233,14 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   checked={draft.isActive}
                   onChange={(event) => update('isActive', event.target.checked)}
                 />
-                Show in the mobile app
+                {t.productForm.showInApp}
               </label>
             </Card>
 
-            <Card title="Price">
+            <Card title={t.productForm.price}>
               <div className="field-row">
                 <label className="field">
-                  <span className="field__label">Price per unit (€)</span>
+                  <span className="field__label">{t.productForm.pricePerUnit}</span>
                   <input
                     required
                     type="number"
@@ -245,7 +252,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   />
                 </label>
                 <label className="field">
-                  <span className="field__label">What it costs you (€, optional)</span>
+                  <span className="field__label">{t.productForm.costPrice}</span>
                   <input
                     type="number"
                     min={0}
@@ -256,19 +263,17 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   />
                 </label>
               </div>
-              {margin !== null && <p className="field-hint">Margin {margin}%. Only admins can see what it costs you.</p>}
+              {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
               {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
-              <h3 className="subheading">Bulk prices</h3>
-              <p className="field-hint">
-                Cheaper per unit for bigger orders. Each tier must cost less than the one before it.
-              </p>
+              <h3 className="subheading">{t.productForm.bulkPrices}</h3>
+              <p className="field-hint">{t.productForm.bulkHint}</p>
               {draft.tiers.length > 0 && (
                 <ul className="tier-list">
                   {draft.tiers.map((tier) => (
                     <li key={tier.key} className="tier-list__row">
                       <label className="field">
-                        <span className="field__label">From quantity</span>
+                        <span className="field__label">{t.productForm.fromQuantity}</span>
                         <input
                           type="number"
                           min={2}
@@ -279,7 +284,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         />
                       </label>
                       <label className="field">
-                        <span className="field__label">Price per unit (€)</span>
+                        <span className="field__label">{t.productForm.pricePerUnit}</span>
                         <input
                           type="number"
                           min={0}
@@ -290,25 +295,25 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         />
                       </label>
                       <Button
-                        aria-label={`Remove tier from ${tier.quantity || 'blank'} units`}
+                        aria-label={t.productForm.removeTier(tier.quantity || t.productForm.blank)}
                         onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
                       >
-                        Remove
+                        {t.productForm.remove}
                       </Button>
                     </li>
                   ))}
                 </ul>
               )}
               <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
-                Add bulk price
+                {t.productForm.addBulk}
               </Button>
             </Card>
 
-            <Card title="Stock">
+            <Card title={t.productForm.stock}>
               {isNew ? (
                 <div className="field-row">
                   <label className="field">
-                    <span className="field__label">Starting stock</span>
+                    <span className="field__label">{t.productForm.startingStock}</span>
                     <input
                       type="number"
                       min={0}
@@ -319,7 +324,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     />
                   </label>
                   <label className="field">
-                    <span className="field__label">Warn me when stock reaches</span>
+                    <span className="field__label">{t.productForm.warnAt}</span>
                     <input
                       type="number"
                       min={0}
@@ -332,9 +337,9 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                 </div>
               ) : (
                 <p className="field-hint">
-                  {product.stock.quantity} in stock. Stock changes are logged, so they're made on the{' '}
+                  {t.productForm.stockElsewhereBefore(product.stock.quantity)}{' '}
                   <Link to={`/inventory/${product.id}`} className="text-link">
-                    stock page
+                    {t.productForm.stockPage}
                   </Link>
                   .
                 </p>
@@ -349,26 +354,26 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
             <div className="form-actions">
               <Button type="submit" disabled={save.isPending} variant="primary">
-                {save.isPending ? 'Saving…' : isNew ? 'Add product' : 'Save changes'}
+                {save.isPending ? t.productForm.saving : isNew ? t.productForm.addProduct : t.productForm.saveChanges}
               </Button>
               <ButtonLink to="/products">
-                Cancel
+                {t.common.cancel}
               </ButtonLink>
               {!isNew && (
                 <span className="form-actions__danger">
                   {confirmingDelete ? (
                     <>
-                      <span>Delete {product.name}? Sales history is kept.</span>
+                      <span>{t.productForm.deleteConfirm(product.name)}</span>
                       <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
-                        {remove.isPending ? 'Deleting…' : 'Delete product'}
+                        {remove.isPending ? t.productForm.deleting : t.productForm.deleteProduct}
                       </Button>
                       <Button onClick={() => setConfirmingDelete(false)}>
-                        Keep it
+                        {t.productForm.keepIt}
                       </Button>
                     </>
                   ) : (
                     <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
-                      Delete product
+                      {t.productForm.deleteProduct}
                     </Button>
                   )}
                 </span>
@@ -388,10 +393,9 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   );
 }
 
-const DECISION_TEXT = { raise: 'Raise to', lower: 'Lower to', keep: 'Keep at' } as const;
-
 /** Asks the AI for a price; "Use this price" only fills the field, the owner still saves. */
 function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (price: number) => void }) {
+  const t = useT();
   const status = useQuery({ queryKey: ['assistant', 'status'], queryFn: assistantApi.status });
   const suggestion = useMutation({ mutationFn: () => assistantApi.suggestPrice(productId) });
   if (!status.data?.enabled) return null;
@@ -401,7 +405,7 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
     <div className="price-suggestion">
       {!result && (
         <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
-          {suggestion.isPending ? 'Looking at sales…' : 'Suggest a price'}
+          {suggestion.isPending ? t.productForm.lookingAtSales : t.productForm.suggestPrice}
         </Button>
       )}
       {suggestion.isError && (
@@ -412,8 +416,8 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
       {result && (
         <div className="price-suggestion__result brackets" aria-live="polite">
           <p className="price-suggestion__headline">
-            {DECISION_TEXT[result.decision]} {formatMoney(result.suggestedPrice)}
-            <span className="price-suggestion__confidence">, {result.confidence} confidence</span>
+            {t.productForm.decision[result.decision]} {formatMoney(result.suggestedPrice)}
+            <span className="price-suggestion__confidence">, {t.productForm.confidence[result.confidence]}</span>
           </p>
           <p>{result.summary}</p>
           <ul className="price-suggestion__reasons">
@@ -421,17 +425,17 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
               <li key={reason}>{reason}</li>
             ))}
           </ul>
-          <p className="field-hint">Watch out: {result.watchOut}</p>
+          <p className="field-hint">{t.productForm.watchOut(result.watchOut)}</p>
           <div className="price-suggestion__actions">
             {result.decision !== 'keep' && (
               <Button variant="primary" onClick={() => onUse(result.suggestedPrice)}>
-                Use {formatMoney(result.suggestedPrice)}
+                {t.productForm.use(formatMoney(result.suggestedPrice))}
               </Button>
             )}
             <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
-              {suggestion.isPending ? 'Looking again…' : 'Ask again'}
+              {suggestion.isPending ? t.productForm.lookingAgain : t.productForm.askAgain}
             </Button>
-            <span className="field-hint">By {result.provider}. Nothing changes until you save.</span>
+            <span className="field-hint">{t.productForm.by(result.provider)}</span>
           </div>
         </div>
       )}
@@ -439,41 +443,42 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
   );
 }
 
-const describePriceChange = (change: { from: number | null; to: number | null }) =>
+const describePriceChange = (t: Catalogue, change: { from: number | null; to: number | null }) =>
   change.from === null
-    ? `${change.to === null ? 'none' : formatMoney(change.to)} to start`
-    : `${formatMoney(change.from)} → ${change.to === null ? 'none' : formatMoney(change.to)}`;
+    ? t.productForm.toStart(change.to === null ? t.productForm.none : formatMoney(change.to))
+    : `${formatMoney(change.from)} → ${change.to === null ? t.productForm.none : formatMoney(change.to)}`;
 
 /** Every price and cost change, from the activity log. */
 function PriceHistory({ productId }: { productId: number }) {
+  const t = useT();
   const history = useQuery({
     queryKey: ['products', productId, 'price-history'],
     queryFn: () => productsApi.priceHistory(productId),
   });
 
   return (
-    <Card title="Price history" className="product-form">
+    <Card title={t.productForm.priceHistory} className="product-form">
       {history.isPending && <Loading />}
       {history.isError && <ErrorNotice error={history.error} onRetry={() => history.refetch()} />}
-      {history.data && history.data.length === 0 && <p className="field-hint">No price changes recorded yet.</p>}
+      {history.data && history.data.length === 0 && <p className="field-hint">{t.productForm.noChanges}</p>}
       {history.data && history.data.length > 0 && (
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">When</th>
-                <th scope="col">Price</th>
-                <th scope="col">Cost</th>
-                <th scope="col">Who</th>
+                <th scope="col">{t.productForm.when}</th>
+                <th scope="col">{t.productForm.price}</th>
+                <th scope="col">{t.productForm.cost}</th>
+                <th scope="col">{t.productForm.who}</th>
               </tr>
             </thead>
             <tbody>
               {history.data.map((change: PriceChange) => (
                 <tr key={change.changedAt}>
                   <td>{formatDateTime(change.changedAt)}</td>
-                  <td>{change.price ? describePriceChange(change.price) : '–'}</td>
-                  <td>{change.costPrice ? describePriceChange(change.costPrice) : '–'}</td>
-                  <td>{change.changedBy ?? 'Removed user'}</td>
+                  <td>{change.price ? describePriceChange(t, change.price) : '–'}</td>
+                  <td>{change.costPrice ? describePriceChange(t, change.costPrice) : '–'}</td>
+                  <td>{change.changedBy ?? t.productForm.removedUser}</td>
                 </tr>
               ))}
             </tbody>

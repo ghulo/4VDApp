@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { en } from '../src/i18n/messages.js';
 import { getStockAlert } from '../src/services/inventory/stockAlerts.js';
 
 const change = (before: number, after: number, reorderLevel = 10) => ({
@@ -30,6 +31,6 @@ describe('getStockAlert', () => {
   });
 
   it('should include the remaining quantity in the message', () => {
-    expect(getStockAlert(change(15, 4))?.message).toContain('Only 4 left');
+    expect(getStockAlert(change(15, 4))?.write(en).message).toContain('Only 4 left');
   });
 });

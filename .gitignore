@@ -35,3 +35,32 @@ Thumbs.db
 
 # Plan progress notes (local scratch)
 .superpowers/
+
+# Local links the skills installer makes to .agents/skills (absolute paths)
+.claude/skills/design-md
+.claude/skills/web-design-guidelines
+.claude/skills/vercel-react-best-practices
+.claude/skills/vercel-react-native-skills
+# Links the skills installer makes to .agents/skills (absolute paths)
+.claude/skills/cavecrew
+.claude/skills/caveman
+.claude/skills/caveman-commit
+.claude/skills/caveman-compress
+.claude/skills/caveman-discover
+.claude/skills/caveman-evidence-review
+.claude/skills/caveman-explore
+.claude/skills/caveman-help
+.claude/skills/caveman-learn
+.claude/skills/caveman-manage
+.claude/skills/caveman-optimize
+.claude/skills/caveman-review
+.claude/skills/caveman-setup
+.claude/skills/caveman-stats
+.claude/skills/investigate-first
+.claude/skills/lean-build
+.claude/skills/megacave
+.claude/skills/migration
+.claude/skills/safe-refactor
+.claude/skills/surgical-patch
+.claude/skills/ultracave
+.claude/skills/verify-and-stop

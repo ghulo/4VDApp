@@ -6,8 +6,10 @@ import { Pagination } from '../components/Pagination';
 import { Button, PageHeader } from '../components/ui';
 import { notificationsApi } from '../services/api';
 import { formatDateTime } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 export function AlertsPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const alerts = useQuery({
@@ -23,13 +25,13 @@ export function AlertsPage() {
   return (
     <>
       <PageHeader
-        title="Alerts"
-        description="You get an alert when a product reaches its reorder level or runs out."
+        title={t.alerts.title}
+        description={t.alerts.description}
         actions={
           alerts.data &&
           alerts.data.unreadCount > 0 && (
             <Button icon={Checks} onClick={() => markAllRead.mutate()}>
-              Mark all as read
+              {t.alerts.markAllRead}
             </Button>
           )
         }
@@ -38,8 +40,8 @@ export function AlertsPage() {
       {alerts.isPending && <Loading />}
       {alerts.isError && <ErrorNotice error={alerts.error} onRetry={() => alerts.refetch()} />}
       {alerts.data && alerts.data.items.length === 0 && (
-        <EmptyState art title="No alerts">
-          When a product reaches its reorder level or runs out, you'll see it here.
+        <EmptyState art title={t.alerts.none}>
+          {t.alerts.noneHint}
         </EmptyState>
       )}
       {alerts.data && alerts.data.items.length > 0 && (
@@ -58,14 +60,14 @@ export function AlertsPage() {
                 <span className="category-list__actions">
                   {!alert.isRead && (
                     <Button size="sm" onClick={() => markRead.mutate(alert.id)}>
-                      Mark as read
+                      {t.alerts.markRead}
                     </Button>
                   )}
                 </span>
               </li>
             ))}
           </ul>
-          <Pagination meta={alerts.data.meta} itemLabel="alerts" onPageChange={setPage} />
+          <Pagination meta={alerts.data.meta} itemLabel={t.alerts.items} onPageChange={setPage} />
         </>
       )}
     </>

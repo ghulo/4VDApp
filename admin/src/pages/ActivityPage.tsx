@@ -5,18 +5,21 @@ import { Pagination } from '../components/Pagination';
 import { activityApi, usersApi } from '../services/api';
 import { formatDateTime } from '../utils/format';
 import { DataTable, EmptyState, PageHeader } from '../components/ui';
+import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 
 /** Kinds of change a person would filter by, mapped to action prefixes. */
-const KINDS = [
-  { value: '', label: 'Everything' },
-  { value: 'product,pricing,category', label: 'Products and prices' },
-  { value: 'stock', label: 'Stock' },
-  { value: 'sale', label: 'Sales' },
-  { value: 'user', label: 'People' },
-  { value: 'auth', label: 'Logins' },
+const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }> = [
+  { value: '', key: 'all' },
+  { value: 'product,pricing,category', key: 'products' },
+  { value: 'stock', key: 'stock' },
+  { value: 'sale', key: 'sales' },
+  { value: 'user', key: 'people' },
+  { value: 'auth', key: 'logins' },
 ];
 
 export function ActivityPage() {
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
   const userId = params.get('userId') ? Number(params.get('userId')) : undefined;
@@ -41,45 +44,45 @@ export function ActivityPage() {
 
   return (
     <>
-      <PageHeader title="Activity" description="Who changed what, newest first." />
+      <PageHeader title={t.activity.title} description={t.activity.description} />
 
       {activity.isPending && <Loading />}
       {activity.isError && <ErrorNotice error={activity.error} onRetry={() => activity.refetch()} />}
       {activity.data && (
         <DataTable
-          caption="Activity"
+          caption={t.activity.title}
           rows={activity.data.items}
           rowKey={(entry) => entry.id}
           columns={[
-            { header: 'What changed', cell: (entry) => entry.summary },
-            { header: 'Who', cell: (entry) => entry.user?.name ?? 'The system' },
-            { header: 'When', cell: (entry) => formatDateTime(entry.createdAt), className: 'table__nowrap' },
+            { header: t.activity.whatChanged, cell: (entry) => entry.summary },
+            { header: t.activity.who, cell: (entry) => entry.user?.name ?? t.activity.system },
+            { header: t.activity.when, cell: (entry) => formatDateTime(entry.createdAt), className: 'table__nowrap' },
           ]}
           toolbar={
             <>
-              <select aria-label="Person" value={userId ?? ''} onChange={(event) => updateParams({ userId: event.target.value })}>
-                <option value="">Everyone</option>
+              <select aria-label={t.activity.person} value={userId ?? ''} onChange={(event) => updateParams({ userId: event.target.value })}>
+                <option value="">{t.activity.everyone}</option>
                 {people.data?.items.map((person) => (
                   <option key={person.id} value={person.id}>
                     {person.name}
                   </option>
                 ))}
               </select>
-              <select aria-label="Kind of change" value={action} onChange={(event) => updateParams({ kind: event.target.value })}>
+              <select aria-label={t.activity.kind} value={action} onChange={(event) => updateParams({ kind: event.target.value })}>
                 {KINDS.map((kind) => (
-                  <option key={kind.label} value={kind.value}>
-                    {kind.label}
+                  <option key={kind.key} value={kind.value}>
+                    {t.activity.kinds[kind.key]}
                   </option>
                 ))}
               </select>
             </>
           }
-          empty={<EmptyState title="Nothing here yet">Changes show up here as people use the app.</EmptyState>}
+          empty={<EmptyState title={t.activity.empty}>{t.activity.emptyHint}</EmptyState>}
           footer={
             activity.data.items.length > 0 && (
               <Pagination
                 meta={activity.data.meta}
-                itemLabel="changes"
+                itemLabel={t.activity.items}
                 onPageChange={(next) => updateParams({ page: String(next) })}
               />
             )

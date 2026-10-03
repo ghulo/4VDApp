@@ -2,52 +2,85 @@ import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { productsApi, usersApi } from '../services/api';
-import { ROLE_LABEL } from '../utils/format';
+import { useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
+import { type Catalogue, en } from '../i18n/en';
+
+type Group = keyof Catalogue['palette']['groups'];
+type ActionKey = keyof Catalogue['palette']['actions'];
+type PageKey = keyof Catalogue['palette']['pageKeywords'];
 
 interface Command extends Searchable {
   id: string;
-  group: 'Actions' | 'Pages' | 'Products' | 'People';
+  group: Group;
   hint?: string;
   to: string;
   /** Only for the developer and admins. */
   managersOnly?: boolean;
 }
 
-const ACTIONS: Command[] = [
-  { id: 'add-product', group: 'Actions', label: 'Add a product', keywords: 'new create item', to: '/products/new', managersOnly: true },
-  { id: 'invite', group: 'Actions', label: 'Invite someone', keywords: 'add person staff employee team', to: '/people', managersOnly: true },
-  { id: 'sale', group: 'Actions', label: 'Record a sale', keywords: 'sell new sale', to: '/sales' },
-  { id: 'promotion', group: 'Actions', label: 'Start a promotion', keywords: 'discount sale offer', to: '/promotions', managersOnly: true },
-  { id: 'count', group: 'Actions', label: 'Start a stock count', keywords: 'count shelves inventory', to: '/counts' },
-  { id: 'ask', group: 'Actions', label: 'Ask a question', keywords: 'ai assistant help', to: '/ask' },
+const ACTIONS: Array<{ key: ActionKey; to: string; managersOnly?: boolean }> = [
+  { key: 'addProduct', to: '/products/new', managersOnly: true },
+  { key: 'invite', to: '/people', managersOnly: true },
+  { key: 'sale', to: '/sales' },
+  { key: 'promotion', to: '/promotions', managersOnly: true },
+  { key: 'count', to: '/counts' },
+  { key: 'ask', to: '/ask' },
 ];
 
-const PAGES: Command[] = [
-  ['Overview', '/', 'home dashboard today'],
-  ['Approvals', '/approvals', 'requests waiting returns damage'],
-  ['Alerts', '/alerts', 'notifications'],
-  ['Stock', '/inventory', 'inventory levels reorder'],
-  ['Counts', '/counts', 'stock count shelves'],
-  ['Products', '/products', 'catalog items'],
-  ['Promotions', '/promotions', 'discounts'],
-  ['Categories', '/categories', 'groups'],
-  ['Sales', '/sales', 'orders history'],
-  ['Reports', '/reports', 'profit team revenue export'],
-  ['People', '/people', 'users staff team invites'],
-  ['Activity', '/activity', 'log history audit'],
-  ['Settings', '/settings', 'shop business limits'],
-  ['Your profile', '/profile', 'account password email photo devices'],
-].map(([label, to, keywords]) => ({ id: `page-${to}`, group: 'Pages' as const, label: label!, to: to!, keywords }));
+const PAGES: Array<[PageKey, string]> = [
+  ['overview', '/'],
+  ['approvals', '/approvals'],
+  ['alerts', '/alerts'],
+  ['stock', '/inventory'],
+  ['counts', '/counts'],
+  ['products', '/products'],
+  ['promotions', '/promotions'],
+  ['categories', '/categories'],
+  ['sales', '/sales'],
+  ['reports', '/reports'],
+  ['people', '/people'],
+  ['activity', '/activity'],
+  ['settings', '/settings'],
+  ['profile', '/profile'],
+];
 
-const GROUP_ORDER: Command['group'][] = ['Actions', 'Pages', 'Products', 'People'];
+const pageLabel = (t: Catalogue, key: PageKey) => (key === 'profile' ? t.palette.yourProfile : t.nav.items[key]);
+
+/**
+ * Commands in the reader's language. The English words are kept as extra
+ * keywords, so "stock" still finds Stoku when the dashboard is in Albanian.
+ */
+function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command[] } {
+  return {
+    actions: ACTIONS.map(({ key, to, managersOnly }) => ({
+      id: `action-${key}`,
+      group: 'actions',
+      label: t.palette.actions[key].label,
+      keywords: `${t.palette.actions[key].keywords} ${en.palette.actions[key].label} ${en.palette.actions[key].keywords}`,
+      to,
+      managersOnly,
+    })),
+    pages: PAGES.map(([key, to]) => ({
+      id: `page-${to}`,
+      group: 'pages',
+      label: pageLabel(t, key),
+      keywords: `${t.palette.pageKeywords[key]} ${pageLabel(en, key)} ${en.palette.pageKeywords[key]}`,
+      to,
+    })),
+  };
+}
+
+const GROUP_ORDER: Group[] = ['actions', 'pages', 'products', 'people'];
 const MAX_PER_GROUP = 6;
 
 /** Jump anywhere or start something, by typing. Ctrl/Cmd+K opens it. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const t = useT();
+  const commands = useMemo(() => staticCommands(t), [t]);
   const { role } = useCurrentUser();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -66,29 +99,29 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const results = useMemo(() => {
     const productCommands: Command[] = (trimmed.length >= 2 ? (products.data?.items ?? []) : []).map((product) => ({
       id: `product-${product.id}`,
-      group: 'Products',
+      group: 'products',
       label: product.name,
       keywords: product.sku ?? undefined,
-      hint: `${product.stock.quantity} in stock`,
+      hint: t.palette.inStock(product.stock.quantity),
       to: `/products/${product.id}`,
     }));
     const peopleCommands: Command[] = (people.data?.items ?? []).map((user) => ({
       id: `user-${user.id}`,
-      group: 'People',
+      group: 'people',
       label: user.name,
       keywords: user.email,
-      hint: ROLE_LABEL[user.role],
+      hint: t.common.roles[user.role],
       to: '/people',
     }));
     const ranked = [
-      ...rankMatches(trimmed, ACTIONS.filter((action) => !action.managersOnly || canManage(role))),
-      ...rankMatches(trimmed, PAGES),
+      ...rankMatches(trimmed, commands.actions.filter((action) => !action.managersOnly || canManage(role))),
+      ...rankMatches(trimmed, commands.pages),
       // Products already come back filtered by the server's search.
       ...productCommands,
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),
     ];
     return GROUP_ORDER.flatMap((group) => ranked.filter((command) => command.group === group).slice(0, MAX_PER_GROUP));
-  }, [trimmed, products.data, people.data, role]);
+  }, [trimmed, products.data, people.data, role, t, commands]);
 
   useEffect(() => {
     input.current?.focus();
@@ -122,7 +155,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         className="palette"
         role="dialog"
         aria-modal="true"
-        aria-label="Search and jump"
+        aria-label={t.palette.label}
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -134,7 +167,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           aria-expanded="true"
           aria-controls="palette-results"
           aria-activedescendant={results[active] ? `palette-${results[active]!.id}` : undefined}
-          placeholder="Search pages, products, people, or type what to do"
+          placeholder={t.palette.placeholder}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -143,13 +176,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         />
         <ul id="palette-results" className="palette__results" role="listbox">
           {results.length === 0 && (
-            <li className="palette__empty">{products.isFetching ? 'Searching…' : `Nothing matches "${trimmed}".`}</li>
+            <li className="palette__empty">{products.isFetching ? t.palette.searching : t.palette.nothing(trimmed)}</li>
           )}
           {results.map((command, index) => {
             const startsGroup = index === 0 || results[index - 1]!.group !== command.group;
             return (
               <li key={command.id} role="presentation">
-                {startsGroup && <p className="palette__group">{command.group}</p>}
+                {startsGroup && <p className="palette__group">{t.palette.groups[command.group]}</p>}
                 <button
                   id={`palette-${command.id}`}
                   type="button"
@@ -167,7 +200,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           })}
         </ul>
         <p className="palette__footer">
-          <kbd>↑</kbd> <kbd>↓</kbd> to move, <kbd>Enter</kbd> to open, <kbd>Esc</kbd> to close
+          <kbd>↑</kbd> <kbd>↓</kbd> {t.palette.toMove} <kbd>Enter</kbd> {t.palette.toOpen} <kbd>Esc</kbd> {t.palette.toClose}
         </p>
       </div>
     </div>

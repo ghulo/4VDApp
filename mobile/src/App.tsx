@@ -15,6 +15,7 @@ import { useTheme } from './theme';
 import { ApiError } from './services/apiClient';
 import { AuthProvider } from './state/AuthProvider';
 import { ThemeProvider } from './state/ThemeProvider';
+import { I18nProvider } from './i18n/I18nProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,9 +39,11 @@ const styles = StyleSheet.create({
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <Shell />
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <Shell />
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 

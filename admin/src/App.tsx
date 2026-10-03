@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
+import { I18nProvider } from './i18n/I18nProvider';
 import { EmptyState } from './components/Feedback';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
@@ -32,6 +33,7 @@ import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
 import { UsersPage } from './pages/UsersPage';
 import { ButtonLink } from './components/ui';
+import { useT } from './i18n/useT';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,10 +47,11 @@ const queryClient = new QueryClient({
 });
 
 function NotFoundPage() {
+  const t = useT();
   return (
-    <EmptyState title="This page doesn't exist">
+    <EmptyState title={t.notFound.title}>
       <ButtonLink to="/" variant="primary">
-        Go to overview
+        {t.notFound.back}
       </ButtonLink>
     </EmptyState>
   );
@@ -56,48 +59,50 @@ function NotFoundPage() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-            <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
-            <Route path="/invite/:token" element={<AcceptInvitePage />} />
-            <Route
-              element={
-                <RequireAuth>
-                  <Layout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<OverviewPage />} />
-              <Route path="inventory" element={<InventoryPage />} />
-              <Route path="inventory/:productId" element={<InventoryDetailPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="products/new" element={<ProductFormPage />} />
-              <Route path="products/:id" element={<ProductFormPage />} />
-              <Route path="categories" element={<CategoriesPage />} />
-              <Route path="sales" element={<SalesPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="people" element={<UsersPage />} />
-              <Route path="alerts" element={<AlertsPage />} />
-              <Route path="approvals" element={<ApprovalsPage />} />
-              <Route path="counts" element={<StockCountsPage />} />
-              <Route path="counts/:id" element={<StockCountDetailPage />} />
-              <Route path="promotions" element={<PromotionsPage />} />
-              <Route path="ask" element={<AskPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="activity" element={<ActivityPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+              <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
+              <Route path="/invite/:token" element={<AcceptInvitePage />} />
+              <Route
+                element={
+                  <RequireAuth>
+                    <Layout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<OverviewPage />} />
+                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="inventory/:productId" element={<InventoryDetailPage />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="products/new" element={<ProductFormPage />} />
+                <Route path="products/:id" element={<ProductFormPage />} />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="sales" element={<SalesPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="people" element={<UsersPage />} />
+                <Route path="alerts" element={<AlertsPage />} />
+                <Route path="approvals" element={<ApprovalsPage />} />
+                <Route path="counts" element={<StockCountsPage />} />
+                <Route path="counts/:id" element={<StockCountDetailPage />} />
+                <Route path="promotions" element={<PromotionsPage />} />
+                <Route path="ask" element={<AskPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="activity" element={<ActivityPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
 

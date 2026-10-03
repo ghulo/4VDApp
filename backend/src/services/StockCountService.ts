@@ -6,6 +6,7 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import type { PublicUser } from '../types/auth.js';
 import { roundMoney } from '../utils/money.js';
 import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
+import { en, type ServerMessages } from '../i18n/messages.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
 import { canOversee } from '../utils/roles.js';
@@ -135,10 +136,8 @@ export class StockCountService {
       if (pending === 0) {
         await repos.stockCounts.setStatus(id, 'closed');
       } else {
-        await notifyAdminsOfPending(
-          repos,
-          'stock count',
-          `${user.name} counted ${scopeLabel(count)}: ${pending} ${pending === 1 ? 'product differs' : 'products differ'} from the system.`,
+        await notifyAdminsOfPending(repos, 'stock count', (t) =>
+          t.countPending({ name: user.name, scope: scopeLabel(count, t), differences: pending }),
         );
       }
     });
@@ -255,18 +254,15 @@ export class StockCountService {
     const stillPending = await repos.stockCounts.lines(count.id, 'pending');
     if (stillPending.length > 0) return;
     await repos.stockCounts.setStatus(count.id, 'closed');
-    await notifyRequester(
-      repos,
-      count.submitted_by,
-      adminId,
-      `Your stock count of ${scopeLabel(count)} was reviewed`,
-      'The stock has been corrected where the owner approved it.',
-    );
+    await notifyRequester(repos, count.submitted_by, adminId, (t) => ({
+      title: t.countReviewed(scopeLabel(count, t)),
+      message: t.countReviewedMessage,
+    }));
   }
 }
 
-export function scopeLabel(count: { category_name: string | null }): string {
-  return count.category_name ?? 'the whole shop';
+export function scopeLabel(count: { category_name: string | null }, t: ServerMessages = en): string {
+  return count.category_name ?? t.wholeShop;
 }
 
 function toSummaryDto(count: StockCountRecord): StockCountSummaryDto {

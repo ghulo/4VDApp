@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { accountApi } from '../services/api';
+import { activeCatalogue, useLanguage, useT } from '../i18n/useT';
 
 interface GoogleIdentity {
   accounts: {
@@ -27,7 +28,7 @@ function loadGoogleScript(): Promise<void> {
     script.src = SCRIPT_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Google sign-in could not load'));
+    script.onerror = () => reject(new Error(activeCatalogue().google.couldNotLoad));
     document.head.appendChild(script);
   });
   return scriptLoading;
@@ -42,6 +43,8 @@ export function GoogleButton({ onCredential, label = 'continue_with' }: { onCred
   const container = useRef<HTMLDivElement>(null);
   const callback = useRef(onCredential);
   const [failed, setFailed] = useState(false);
+  const t = useT();
+  const { language } = useLanguage();
   // Keep the latest handler without re-rendering Google's button.
   useEffect(() => {
     callback.current = onCredential;
@@ -60,6 +63,7 @@ export function GoogleButton({ onCredential, label = 'continue_with' }: { onCred
           size: 'large',
           shape: 'rectangular',
           text: label,
+          locale: language,
           width: container.current.offsetWidth || 320,
         });
       })
@@ -67,14 +71,14 @@ export function GoogleButton({ onCredential, label = 'continue_with' }: { onCred
     return () => {
       cancelled = true;
     };
-  }, [clientId, label]);
+  }, [clientId, label, language]);
 
   if (!clientId) return null;
   return (
     <div className="google-sign-in">
-      <p className="google-sign-in__divider">or</p>
+      <p className="google-sign-in__divider">{t.common.or}</p>
       <div ref={container} className="google-sign-in__button" />
-      {failed && <p className="field-hint">Google sign-in couldn't load. Use your email and password.</p>}
+      {failed && <p className="field-hint">{t.google.couldNotLoadHint}</p>}
     </div>
   );
 }

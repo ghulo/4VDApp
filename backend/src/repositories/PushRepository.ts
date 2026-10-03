@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { type NewNotification, NotificationRepository } from './NotificationRepository.js';
 
 export interface DeviceRecord {
   user_id: number;
@@ -72,8 +73,8 @@ export class PushRepository {
     return Number(row.total);
   }
 
-  async createTestNotification(userId: number, notification: { title: string; message: string; type: string }): Promise<void> {
-    await this.db.insertInto('notifications').values({ user_id: userId, ...notification }).execute();
+  async createTestNotification(userId: number, notification: NewNotification): Promise<void> {
+    await new NotificationRepository(this.db).createForUser(userId, notification);
   }
 
   async preferences(userId: number): Promise<Record<string, boolean>> {

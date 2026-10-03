@@ -1,19 +1,25 @@
 import { Bell, ClipboardText, Receipt, SealCheck, type Icon } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { LogoMark } from './LogoMark';
 import { Halftone } from './ui';
+import type { Catalogue } from '../i18n/en';
+import { useT } from '../i18n/useT';
+
+type MomentKey = keyof Catalogue['shell']['moments'];
 
 /** Moments from a shop day, floating around the drawing like Cloudflare's dashed cards. */
-const MOMENTS: Array<{ icon: Icon; tone: 'accent' | 'warn' | 'ok'; title: string; detail: string; at: string }> = [
-  { icon: Receipt, tone: 'accent', title: 'Sale recorded', detail: '2 × Ceramic Vase, €70.00', at: 'login__moment--a' },
-  { icon: Bell, tone: 'warn', title: 'Low stock', detail: 'Brass Floor Lamp, 2 left', at: 'login__moment--b' },
-  { icon: SealCheck, tone: 'ok', title: 'Return approved', detail: 'Oak Dining Chair', at: 'login__moment--c' },
-  { icon: ClipboardText, tone: 'accent', title: 'Count finished', detail: 'Lighting, 1 difference', at: 'login__moment--d' },
+const MOMENTS: Array<{ icon: Icon; tone: 'accent' | 'warn' | 'ok'; key: MomentKey; at: string }> = [
+  { icon: Receipt, tone: 'accent', key: 'sale', at: 'login__moment--a' },
+  { icon: Bell, tone: 'warn', key: 'lowStock', at: 'login__moment--b' },
+  { icon: SealCheck, tone: 'ok', key: 'returned', at: 'login__moment--c' },
+  { icon: ClipboardText, tone: 'accent', key: 'counted', at: 'login__moment--d' },
 ];
 
 /** The split screen used by login and every page reached from an email link. */
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
+  const t = useT();
   return (
     <div className="login">
       <section className="login__story halftone-field" aria-label="4VD">
@@ -25,19 +31,19 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           <div className="login__art">
             <Halftone />
           </div>
-          {MOMENTS.map(({ icon: MomentIcon, tone, title: momentTitle, detail, at }) => (
+          {MOMENTS.map(({ icon: MomentIcon, tone, key, at }) => (
             <div key={at} className={`login__moment login__moment--${tone} ${at}`}>
               <MomentIcon size={16} weight="bold" />
               <span>
-                <strong>{momentTitle}</strong>
-                <span>{detail}</span>
+                <strong>{t.shell.moments[key].title}</strong>
+                <span>{t.shell.moments[key].detail}</span>
               </span>
             </div>
           ))}
         </div>
         <div>
-          <p className="login__headline">Your shop, your stock and your team in one place.</p>
-          <p className="login__small-print">4VD is named for the four Dacaj brothers.</p>
+          <p className="login__headline">{t.shell.headline}</p>
+          <p className="login__small-print">{t.shell.smallPrint}</p>
         </div>
       </section>
       <div className="login__side">
@@ -45,7 +51,10 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           <h1 className="login__title">{title}</h1>
           {subtitle && <p className="login__subtitle">{subtitle}</p>}
           {children}
-          <ThemeSwitch className="login__theme" />
+          <div className="login__prefs">
+            <ThemeSwitch />
+            <LanguageSwitch />
+          </div>
         </div>
       </div>
     </div>

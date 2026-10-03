@@ -22,16 +22,17 @@ export function getStockAlert(change: StockChange): NewNotification | null {
   if (before > 0 && after === 0) {
     return {
       type: 'out_of_stock',
-      title: `Out of stock: ${productName}`,
-      message: `${productName} has run out. Restock it to keep selling.`,
+      write: (t) => ({ title: t.outOfStockTitle(productName), message: t.outOfStockMessage(productName) }),
     };
   }
 
   if (!isLowStock(before, reorderLevel) && isLowStock(after, reorderLevel)) {
     return {
       type: 'low_stock',
-      title: `Low stock: ${productName}`,
-      message: `Only ${after} left of ${productName} (reorder level is ${reorderLevel}).`,
+      write: (t) => ({
+        title: t.lowStockTitle(productName),
+        message: t.lowStockMessage({ product: productName, left: after, reorderLevel }),
+      }),
     };
   }
 

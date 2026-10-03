@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { pushApi } from '../services/api';
 import { secureStorage } from '../services/secureStorage';
+import { activeCatalogue } from '../i18n/useT';
 
 /**
  * Phones: Expo push. See devicePush.web.ts for the app opened in a browser.
@@ -26,8 +27,8 @@ const projectId: string | undefined = Constants.expoConfig?.extra?.eas?.projectI
 
 /** Null when alerts can work here, otherwise why not, in words for the person. */
 export function pushUnavailableReason(_webPushPublicKey: string | null): string | null {
-  if (!Device.isDevice) return 'Alerts only work on a real phone, not a simulator.';
-  if (!projectId) return 'Phone alerts work in the installed app (APK), not in Expo Go.';
+  if (!Device.isDevice) return activeCatalogue().push.simulator;
+  if (!projectId) return activeCatalogue().push.expoGo;
   return null;
 }
 
@@ -37,13 +38,13 @@ export const currentPushToken = () => secureStorage.getItem(TOKEN_KEY);
 export async function enablePush(_webPushPublicKey: string | null): Promise<void> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Alerts',
+      name: activeCatalogue().push.channel,
       importance: Notifications.AndroidImportance.HIGH,
     });
   }
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== 'granted') {
-    throw new Error('Notifications are blocked for 4VD. Allow them in the phone settings, then try again.');
+    throw new Error(activeCatalogue().push.blocked);
   }
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
   await pushApi.addDevice({ kind: 'expo', token });

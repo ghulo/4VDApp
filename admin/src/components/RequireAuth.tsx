@@ -2,16 +2,18 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '../auth/useAuth';
 import { LogoMark } from './LogoMark';
+import { useT } from '../i18n/useT';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { state } = useAuth();
   const location = useLocation();
+  const t = useT();
 
   if (state.status === 'loading') {
     return (
       <div className="splash" role="status">
         <LogoMark size={40} />
-        <span>Restoring your session…</span>
+        <span>{t.common.restoringSession}</span>
       </div>
     );
   }

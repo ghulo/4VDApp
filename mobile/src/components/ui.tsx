@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 interface ButtonProps {
   label: string;
@@ -68,19 +69,21 @@ export function TextField({ label, ...inputProps }: TextInputProps & { label: st
 
 export function Loading() {
   const colors = useThemeColors();
+  const t = useT();
   return (
     <View style={styles.centered}>
-      <ActivityIndicator color={colors.steel} accessibilityLabel="Loading" />
+      <ActivityIndicator color={colors.steel} accessibilityLabel={t.common.loading} />
     </View>
   );
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const colors = useThemeColors();
+  const t = useT();
   return (
     <View style={styles.centered} accessibilityRole="alert">
       <Text style={[styles.stateText, { color: colors.ink }]}>{errorMessage(error)}</Text>
-      {onRetry && <Button label="Try again" variant="quiet" onPress={onRetry} />}
+      {onRetry && <Button label={t.common.tryAgain} variant="quiet" onPress={onRetry} />}
     </View>
   );
 }

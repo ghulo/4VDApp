@@ -2,7 +2,8 @@ import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import type { NotificationRepository } from '../repositories/NotificationRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
-import { formatEuro } from '../utils/money.js';
+import { LANGUAGES, type Language } from '../i18n/language.js';
+import { en, messages, type ServerMessages } from '../i18n/messages.js';
 import { startOfZonedDay, zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { InsightsService } from './InsightsService.js';
 import type { SettingsService } from './SettingsService.js';
@@ -18,8 +19,6 @@ export interface DailySummary {
   /** Just the sales sentence, for showing next to the warnings themselves. */
   salesLine: string;
 }
-
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /** The owner's end-of-day message: today's sales and what needs attention. Sent through the alerts. */
 export class DailySummaryService {
@@ -41,36 +40,39 @@ export class DailySummaryService {
     if (zonedHour(now, this.timeZone) < dailySummaryHour) return false;
     if (!(await this.settingsRepository.claim(LAST_SENT_KEY, zonedDay(now, this.timeZone)))) return false;
 
-    const summary = await this.compose(now);
+    const summaries = Object.fromEntries(
+      await Promise.all(LANGUAGES.map(async (language) => [language, await this.compose(now, messages[language])] as const)),
+    ) as Record<Language, DailySummary>;
     await this.notificationRepository.createForRoles(OVERSEER_ROLES, {
-      title: summary.title,
-      message: summary.message,
       type: NOTIFICATION_TYPES.DAILY_SUMMARY,
+      write: (t) => ({ title: summaries[t.language].title, message: summaries[t.language].message }),
     });
     return true;
   }
 
   /** Today so far against the same weekday last week, plus the warnings. */
-  async compose(now = new Date()): Promise<DailySummary> {
+  async compose(now = new Date(), t: ServerMessages = en): Promise<DailySummary> {
     const startOfToday = startOfZonedDay(now, this.timeZone);
     const weekAgo = (date: Date) => new Date(date.getTime() - 7 * MS_PER_DAY);
     const [today, lastWeek, insights] = await Promise.all([
       this.reportsRepository.totals({ startDate: startOfToday, endDate: now }),
       this.reportsRepository.totals({ startDate: weekAgo(startOfToday), endDate: weekAgo(now) }),
-      this.insightsService.list(now),
+      this.insightsService.list(now, t),
     ]);
-    const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: this.timeZone }).format(now);
-    const revenue = Number(today.revenue);
-    const salesCount = Number(today.sales_count);
-
-    const salesLine = `${plural(salesCount, 'sale', 'sales')}, ${formatEuro(Number(today.profit))} profit. Last ${weekday}: ${formatEuro(Number(lastWeek.revenue))}.`;
+    const salesLine = t.dailySales({
+      sales: Number(today.sales_count),
+      profit: Number(today.profit),
+      lastWeek: Number(lastWeek.revenue),
+    });
     const lines = [salesLine];
     const urgent = insights.filter((insight) => insight.severity === 'urgent');
     const others = insights.length - urgent.length;
-    if (urgent.length > 0) lines.push(`Urgent: ${urgent.slice(0, 2).map((insight) => insight.title).join('; ')}${urgent.length > 2 ? ` and ${urgent.length - 2} more` : ''}.`);
-    if (others > 0) lines.push(`${plural(others, 'other thing', 'other things')} to look at on the Overview page.`);
-    if (insights.length === 0) lines.push('Nothing needs your attention.');
+    if (urgent.length > 0) {
+      lines.push(t.dailyUrgent({ titles: urgent.slice(0, 2).map((insight) => insight.title), more: Math.max(0, urgent.length - 2) }));
+    }
+    if (others > 0) lines.push(t.dailyOthers(others));
+    if (insights.length === 0) lines.push(t.dailyNothing);
 
-    return { title: `Today: ${formatEuro(revenue)} in sales`, message: lines.join(' '), salesLine };
+    return { title: t.dailyTitle(Number(today.revenue)), message: lines.join(' '), salesLine };
   }
 }

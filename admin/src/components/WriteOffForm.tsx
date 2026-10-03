@@ -5,17 +5,12 @@ import { WRITE_OFF_REASONS, type WriteOffReason } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { Button } from './ui';
-
-const REASON_LABEL: Record<WriteOffReason, string> = {
-  damaged: 'Damaged',
-  lost: 'Lost',
-  expired: 'Expired',
-  other: 'Other',
-};
+import { useT } from '../i18n/useT';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
 export function WriteOffForm({ productId, inStock }: { productId: number; inStock: number }) {
   const queryClient = useQueryClient();
+  const t = useT();
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState<WriteOffReason>('damaged');
   const [notes, setNotes] = useState('');
@@ -32,8 +27,8 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
       setNotes('');
       setSavedMessage(
         writeOff.value === null
-          ? `Wrote off ${writeOff.quantity}. There's no cost price, so the loss has no value.`
-          : `Wrote off ${writeOff.quantity}, a loss of ${formatMoney(writeOff.value)} at cost.`,
+          ? t.writeOff.noCost(writeOff.quantity)
+          : t.writeOff.withCost(writeOff.quantity, formatMoney(writeOff.value)),
       );
     },
   });
@@ -48,7 +43,7 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
     <form className="adjust-form" onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">How many</span>
+          <span className="field__label">{t.writeOff.howMany}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -60,18 +55,18 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
           />
         </label>
         <label className="field">
-          <span className="field__label">Why</span>
+          <span className="field__label">{t.writeOff.why}</span>
           <select value={reason} onChange={(event) => setReason(event.target.value as WriteOffReason)}>
             {WRITE_OFF_REASONS.map((option) => (
               <option key={option} value={option}>
-                {REASON_LABEL[option]}
+                {t.writeOff.reasons[option]}
               </option>
             ))}
           </select>
         </label>
       </div>
       <label className="field">
-        <span className="field__label">Note (optional)</span>
+        <span className="field__label">{t.writeOff.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </label>
       {mutation.isError && (
@@ -85,7 +80,7 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
         </p>
       )}
       <Button type="submit" disabled={!isValid || mutation.isPending} variant="danger">
-        {mutation.isPending ? 'Writing off…' : 'Write off'}
+        {mutation.isPending ? t.writeOff.writingOff : t.writeOff.writeOff}
       </Button>
     </form>
   );

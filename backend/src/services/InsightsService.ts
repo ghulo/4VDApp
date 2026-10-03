@@ -1,6 +1,7 @@
 import type { InsightsRepository } from '../repositories/InsightsRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
+import { en, type ServerMessages } from '../i18n/messages.js';
 import type { ReportsService } from './ReportsService.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -26,7 +27,6 @@ export interface Insight {
 }
 
 const SEVERITY_ORDER: Record<InsightSeverity, number> = { urgent: 0, warning: 1, info: 2 };
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /** Things the owner should look at, worked out fresh from sales, stock, counts and write-offs. */
 export class InsightsService {
@@ -36,7 +36,8 @@ export class InsightsService {
     private readonly reportsService: ReportsService,
   ) {}
 
-  async list(now = new Date()): Promise<Insight[]> {
+  /** Written in the reader's language (`t`), English by default. */
+  async list(now = new Date(), t: ServerMessages = en): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
     const [forecasts, products, belowCost, unusual, missing] = await Promise.all([
       this.reportsService.reorderSuggestions(now),
@@ -59,18 +60,21 @@ export class InsightsService {
         insights.push({
           kind: 'sold_out',
           severity: 'urgent',
-          title: `${row.productName} is sold out`,
-          detail: `It was selling about ${row.averageDailySales} a day. Order about ${row.suggestedOrder}.`,
+          title: t.insight.soldOutTitle(row.productName),
+          detail: t.insight.soldOutDetail({ perDay: row.averageDailySales, order: row.suggestedOrder }),
           productId: row.productId,
         });
       } else if (row.quantity > 0 && row.daysLeft !== null && row.daysLeft <= RUNNING_OUT_DAYS) {
-        const when = row.daysLeft === 0 ? 'today' : `in about ${plural(row.daysLeft, 'day', 'days')}`;
-        const pace = row.trend === 'rising' ? ', and picking up' : '';
         insights.push({
           kind: 'running_out',
           severity: row.daysLeft <= URGENT_DAYS ? 'urgent' : 'warning',
-          title: `${row.productName} runs out ${when}`,
-          detail: `${row.quantity} left, selling about ${row.averageDailySales} a day${pace}. Order about ${row.suggestedOrder}.`,
+          title: t.insight.runningOutTitle({ product: row.productName, daysLeft: row.daysLeft }),
+          detail: t.insight.runningOutDetail({
+            left: row.quantity,
+            perDay: row.averageDailySales,
+            rising: row.trend === 'rising',
+            order: row.suggestedOrder,
+          }),
           productId: row.productId,
         });
       }
@@ -81,8 +85,8 @@ export class InsightsService {
       insights.push({
         kind: 'missing_stock',
         severity: times >= 2 ? 'urgent' : 'warning',
-        title: `${plural(Number(row.units), 'unit', 'units')} of ${row.product_name} went missing`,
-        detail: `${times === 1 ? 'Once' : `${times} times`} in the last ${MISSING_STOCK_DAYS} days, from counts that came up short or stock reported lost.`,
+        title: t.insight.missingTitle({ product: row.product_name, units: Number(row.units) }),
+        detail: t.insight.missingDetail({ times, days: MISSING_STOCK_DAYS }),
         productId: row.product_id,
       });
     }
@@ -91,8 +95,8 @@ export class InsightsService {
       insights.push({
         kind: 'unusual_sale',
         severity: 'warning',
-        title: `Unusually big sale: ${row.quantity_sold} × ${row.product_name}`,
-        detail: `Sale #${row.sale_id}${row.sold_by_name ? ` by ${row.sold_by_name}` : ''}. A sale is usually about ${Number(row.usual_quantity)}. Check it wasn't a typing mistake.`,
+        title: t.insight.unusualTitle({ product: row.product_name, quantity: row.quantity_sold }),
+        detail: t.insight.unusualDetail({ saleId: row.sale_id, seller: row.sold_by_name, usual: Number(row.usual_quantity) }),
         productId: row.product_id,
       });
     }
@@ -101,8 +105,12 @@ export class InsightsService {
       insights.push({
         kind: 'below_cost',
         severity: 'warning',
-        title: `${row.product_name} sold below cost`,
-        detail: `${plural(Number(row.sales_count), 'sale', 'sales')} in the last ${RECENT_SALES_DAYS} days brought in ${formatEuro(roundMoney(Number(row.shortfall)))} less than cost. Check its price and promotions.`,
+        title: t.insight.belowCostTitle(row.product_name),
+        detail: t.insight.belowCostDetail({
+          sales: Number(row.sales_count),
+          days: RECENT_SALES_DAYS,
+          shortfall: roundMoney(Number(row.shortfall)),
+        }),
         productId: row.product_id,
       });
     }
@@ -115,8 +123,8 @@ export class InsightsService {
         insights.push({
           kind: 'dead_stock',
           severity: 'info',
-          title: `${row.product_name} hasn't sold in ${DEAD_STOCK_DAYS}+ days`,
-          detail: `${row.quantity_on_hand} in stock${tiedUp === null ? '' : `, ${formatEuro(tiedUp)} tied up at cost`}. A promotion could move it.`,
+          title: t.insight.deadStockTitle({ product: row.product_name, days: DEAD_STOCK_DAYS }),
+          detail: t.insight.deadStockDetail({ inStock: row.quantity_on_hand, tiedUp }),
           productId: row.product_id,
         });
       }

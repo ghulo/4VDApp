@@ -1,6 +1,7 @@
 import { CaretRight } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { useT } from '../../i18n/useT';
 
 export interface Crumb {
   label: string;
@@ -20,10 +21,11 @@ interface PageHeaderProps {
 
 /** The top of every page: where you are, what it is, what you can do. */
 export function PageHeader({ title, description, crumbs, actions, meta }: PageHeaderProps) {
+  const t = useT();
   return (
     <header className="page-header">
       {crumbs && crumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="crumbs">
+        <nav aria-label={t.common.breadcrumb} className="crumbs">
           <ol>
             {crumbs.map((crumb) => (
               <li key={crumb.to}>

@@ -96,10 +96,10 @@ export const productsApi = {
 /** Public account pages: invites, passwords, email links, Google. */
 export const accountApi = {
   invitePreview: async (token: string) => (await apiRequest<InvitePreview>(`/auth/invites/${token}`)).data,
-  acceptInvite: async (token: string, input: { name: string; password: string }) =>
+  acceptInvite: async (token: string, input: { name: string; password: string; language?: User['language'] }) =>
     (await apiRequest<LoginResult>(`/auth/invites/${token}/accept`, { method: 'POST', body: input })).data,
-  acceptInviteWithGoogle: async (token: string, credential: string) =>
-    (await apiRequest<LoginResult>(`/auth/invites/${token}/google`, { method: 'POST', body: { credential } })).data,
+  acceptInviteWithGoogle: async (token: string, credential: string, language?: User['language']) =>
+    (await apiRequest<LoginResult>(`/auth/invites/${token}/google`, { method: 'POST', body: { credential, language } })).data,
   forgotPassword: async (email: string) =>
     (await apiRequest<null>('/auth/forgot-password', { method: 'POST', body: { email } })),
   resetPassword: async (token: string, password: string) =>
@@ -120,6 +120,7 @@ export const meApi = {
     name?: string;
     phone?: string | null;
     theme?: User['theme'];
+    language?: User['language'];
     emailWeeklyReport?: boolean;
   }) =>
     (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,
@@ -146,7 +147,7 @@ export const businessApi = {
 
 export const invitesApi = {
   list: async () => (await apiRequest<Invite[]>('/invites')).data,
-  create: async (input: { email: string; role: UserRole }) =>
+  create: async (input: { email: string; role: UserRole; language?: User['language'] }) =>
     (await apiRequest<Invite>('/invites', { method: 'POST', body: input })),
   resend: async (id: number) => await apiRequest<Invite>(`/invites/${id}/resend`, { method: 'POST' }),
   cancel: async (id: number) => await apiRequest<null>(`/invites/${id}`, { method: 'DELETE' }),

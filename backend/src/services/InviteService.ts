@@ -9,6 +9,8 @@ import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates } from './email/templates.js';
 import { canHandOut } from '../utils/roles.js';
+import type { Language } from '../i18n/language.js';
+import { messages } from '../i18n/messages.js';
 
 const INVITE_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -28,6 +30,8 @@ export interface InvitePreviewDto {
   role: UserRole;
   shopName: string;
   invitedBy: string | null;
+  /** The language the invite was sent in; the invite page opens in it. */
+  language: Language;
 }
 
 const toDto = (invite: InviteRecord): InviteDto => ({
@@ -60,8 +64,9 @@ export class InviteService {
   }
 
   /** A new invite replaces any open one to the same email. */
-  async invite(actorId: number, email: string, role: UserRole): Promise<InviteDto> {
+  async invite(actorId: number, email: string, role: UserRole, language?: Language): Promise<InviteDto> {
     const actor = await this.actor(actorId);
+    const inviteLanguage = language ?? actor.language;
     if (!canHandOut(actor.role, role)) throw new ForbiddenError('Only the developer can invite an owner, admin or developer');
     if (await this.userRepository.findByEmail(email)) {
       throw new ConflictError(`${email} already has an account`);
@@ -75,6 +80,7 @@ export class InviteService {
         businessId: actor.business_id,
         email,
         role,
+        language: inviteLanguage,
         tokenHash: hash,
         invitedBy: actor.id,
         expiresAt: this.expiry(),
@@ -90,7 +96,7 @@ export class InviteService {
     });
     await this.emailService.queue(
       email,
-      emailTemplates.invite({ shopName: business, inviterName: actor.name, role, link: this.link(token) }),
+      emailTemplates.invite({ shopName: business, inviterName: actor.name, role, link: this.link(token) }, messages[inviteLanguage]),
     );
     return toDto((await this.inviteRepository.findById(id, actor.business_id))!);
   }
@@ -104,7 +110,10 @@ export class InviteService {
     await this.inviteRepository.replaceToken(invite.id, hash, this.expiry());
     await this.emailService.queue(
       invite.email,
-      emailTemplates.invite({ shopName: invite.business_name, inviterName: actor.name, role: invite.role, link: this.link(token) }),
+      emailTemplates.invite(
+        { shopName: invite.business_name, inviterName: actor.name, role: invite.role, link: this.link(token) },
+        messages[invite.language],
+      ),
     );
     return toDto((await this.inviteRepository.findById(invite.id, actor.business_id))!);
   }
@@ -119,12 +128,26 @@ export class InviteService {
   /** What the invite page shows before someone accepts. */
   async preview(token: string): Promise<InvitePreviewDto> {
     const invite = await this.openInvite(token);
-    return { email: invite.email, role: invite.role, shopName: invite.business_name, invitedBy: invite.invited_by_name };
+    return {
+      email: invite.email,
+      role: invite.role,
+      shopName: invite.business_name,
+      invitedBy: invite.invited_by_name,
+      language: invite.language,
+    };
   }
 
-  async accept(token: string, input: { name: string; password: string }, device: DeviceInfo): Promise<LoginResult> {
+  async accept(
+    token: string,
+    input: { name: string; password: string; language?: Language },
+    device: DeviceInfo,
+  ): Promise<LoginResult> {
     const invite = await this.openInvite(token);
-    const user = await this.createMember(invite, { name: input.name, passwordHash: await hashPassword(input.password) });
+    const user = await this.createMember(invite, {
+      name: input.name,
+      passwordHash: await hashPassword(input.password),
+      language: input.language,
+    });
     return this.authService.startSession(user, device, 'logged in for the first time');
   }
 
@@ -137,8 +160,11 @@ export class InviteService {
     return invite;
   }
 
-  /** Turns an open invite into a verified account. Shared with Google sign-in. */
-  async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null }) {
+  /**
+   * Turns an open invite into a verified account. Shared with Google sign-in.
+   * The language the invite page was shown in wins over the invite's own.
+   */
+  async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
     if (await this.userRepository.findByEmail(invite.email)) {
       throw new ConflictError(`${invite.email} already has an account. Log in instead.`);
     }
@@ -148,6 +174,7 @@ export class InviteService {
         email: invite.email,
         name: details.name,
         role: invite.role,
+        language: details.language ?? invite.language,
         password_hash: details.passwordHash,
         business_id: invite.business_id,
         email_verified_at: new Date(),

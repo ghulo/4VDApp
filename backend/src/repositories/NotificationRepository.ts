@@ -1,39 +1,53 @@
 import type { DatabaseClient } from '../database/connection.js';
 import type { NotificationRow, UserRole } from '../database/types.js';
+import { LANGUAGES } from '../i18n/language.js';
+import { messages, type ServerMessages } from '../i18n/messages.js';
 
+/**
+ * A notification written once per language: `write` gets the reader's
+ * catalogue, so everyone reads it in the language they chose.
+ */
 export interface NewNotification {
-  title: string;
-  message: string;
   type: string;
+  write: (t: ServerMessages) => { title: string; message: string };
 }
 
 export class NotificationRepository {
   constructor(private readonly db: DatabaseClient) {}
 
   async createForUser(userId: number, notification: NewNotification): Promise<void> {
-    await this.db.insertInto('notifications').values({ user_id: userId, ...notification }).execute();
+    const user = await this.db.selectFrom('users').select('language').where('id', '=', userId).executeTakeFirst();
+    if (!user) return;
+    const text = notification.write(messages[user.language]);
+    await this.db.insertInto('notifications').values({ user_id: userId, type: notification.type, ...text }).execute();
   }
 
-  /** Send the same notification to every active user with one of the roles. */
+  /** Send the same notification to every active user with one of the roles, each in their language. */
   async createForRoles(roles: UserRole[], notification: NewNotification): Promise<number> {
-    const result = await this.db
-      .insertInto('notifications')
-      .columns(['user_id', 'title', 'message', 'type'])
-      .expression((eb) =>
-        eb
-          .selectFrom('users')
-          .select([
-            'id',
-            eb.val(notification.title).as('title'),
-            eb.val(notification.message).as('message'),
-            eb.val(notification.type).as('type'),
-          ])
-          .where('role', 'in', roles)
-          .where('is_active', '=', true)
-          .where('deleted_at', 'is', null),
-      )
-      .executeTakeFirst();
-    return Number(result.numInsertedOrUpdatedRows ?? 0n);
+    let sent = 0;
+    for (const language of LANGUAGES) {
+      const text = notification.write(messages[language]);
+      const result = await this.db
+        .insertInto('notifications')
+        .columns(['user_id', 'title', 'message', 'type'])
+        .expression((eb) =>
+          eb
+            .selectFrom('users')
+            .select([
+              'id',
+              eb.val(text.title).as('title'),
+              eb.val(text.message).as('message'),
+              eb.val(notification.type).as('type'),
+            ])
+            .where('role', 'in', roles)
+            .where('language', '=', language)
+            .where('is_active', '=', true)
+            .where('deleted_at', 'is', null),
+        )
+        .executeTakeFirst();
+      sent += Number(result.numInsertedOrUpdatedRows ?? 0n);
+    }
+    return sent;
   }
 
   async findForUser(userId: number, options: { unreadOnly: boolean; limit: number; offset: number }) {

@@ -18,6 +18,7 @@ import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
 import { fonts, useTheme, useThemeColors } from '../theme';
 import type { MainTabParamList, RootStackParamList } from './types';
+import { useT } from '../i18n/useT';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -35,6 +36,7 @@ function tabLabel(label: string, dotColor: string) {
 
 function MainTabs() {
   const colors = useThemeColors();
+  const t = useT();
   const { state } = useAuth();
   const showSell = state.status === 'signedIn' && canRecordSales(state.user);
 
@@ -51,17 +53,17 @@ function MainTabs() {
         tabBarIconStyle: { display: 'none' },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel('Home', colors.brass) }} />
-      <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: 'Products', tabBarLabel: tabLabel('Products', colors.brass) }} />
-      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ tabBarLabel: tabLabel('Favorites', colors.brass) }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel(t.nav.tabs.home, colors.brass) }} />
+      <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: t.nav.tabs.products, tabBarLabel: tabLabel(t.nav.tabs.products, colors.brass) }} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t.nav.tabs.favorites, tabBarLabel: tabLabel(t.nav.tabs.favorites, colors.brass) }} />
       {showSell && (
         <Tab.Screen
           name="Sell"
           component={RecordSaleScreen}
-          options={{ title: 'Record a sale', tabBarLabel: tabLabel('Sell', colors.brass) }}
+          options={{ title: t.nav.recordSale, tabBarLabel: tabLabel(t.nav.tabs.sell, colors.brass) }}
         />
       )}
-      <Tab.Screen name="Account" component={AccountScreen} options={{ tabBarLabel: tabLabel('Account', colors.brass) }} />
+      <Tab.Screen name="Account" component={AccountScreen} options={{ title: t.nav.tabs.account, tabBarLabel: tabLabel(t.nav.tabs.account, colors.brass) }} />
     </Tab.Navigator>
   );
 }
@@ -69,6 +71,7 @@ function MainTabs() {
 export function RootNavigator() {
   const { state } = useAuth();
   const { colors, scheme } = useTheme();
+  const t = useT();
 
   const baseTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navigationTheme: Theme = {
@@ -103,25 +106,25 @@ export function RootNavigator() {
             <Stack.Screen
               name="ProductDetail"
               component={ProductDetailScreen}
-              options={({ route }) => ({ title: route.params.name, headerBackTitle: 'Back' })}
+              options={({ route }) => ({ title: route.params.name, headerBackTitle: t.nav.back })}
             />
             <Stack.Screen
               name="RecordSale"
               component={RecordSaleScreen}
-              options={{ title: 'Record a sale', presentation: 'modal' }}
+              options={{ title: t.nav.recordSale, presentation: 'modal' }}
             />
-            <Stack.Screen name="MySales" component={MySalesScreen} options={{ title: 'My sales', headerBackTitle: 'Back' }} />
-            <Stack.Screen name="Return" component={ReturnScreen} options={{ title: 'Return a sale', presentation: 'modal' }} />
+            <Stack.Screen name="MySales" component={MySalesScreen} options={{ title: t.nav.mySales, headerBackTitle: t.nav.back }} />
+            <Stack.Screen name="Return" component={ReturnScreen} options={{ title: t.nav.returnSale, presentation: 'modal' }} />
             <Stack.Screen
               name="WriteOff"
               component={WriteOffScreen}
-              options={{ title: 'Report damage or loss', presentation: 'modal' }}
+              options={{ title: t.nav.writeOff, presentation: 'modal' }}
             />
-            <Stack.Screen name="Counts" component={CountsScreen} options={{ title: 'Stock counts', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="Counts" component={CountsScreen} options={{ title: t.nav.counts, headerBackTitle: t.nav.back }} />
             <Stack.Screen
               name="Count"
               component={CountScreen}
-              options={({ route }) => ({ title: `Counting ${route.params.title.toLowerCase()}`, headerBackTitle: 'Back' })}
+              options={({ route }) => ({ title: t.nav.counting(route.params.title), headerBackTitle: t.nav.back })}
             />
           </>
         )}

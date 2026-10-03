@@ -33,10 +33,14 @@ import { Avatar } from './Avatar';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { canManage } from '../auth/roles';
+import type { Catalogue } from '../i18n/en';
+import { useT } from '../i18n/useT';
+
+type NavKey = keyof Catalogue['nav']['items'];
 
 interface NavItem {
   to: string;
-  label: string;
+  key: NavKey;
   icon: Icon;
   end?: boolean;
   /** Which waiting count to show next to it, if any. */
@@ -46,34 +50,34 @@ interface NavItem {
 }
 
 /** Grouped the way the owner works: what needs doing now, the shelves, then the business. */
-const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
+const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: NavItem[] }> = [
   {
-    label: 'Today',
+    key: 'today',
     items: [
-      { to: '/', label: 'Overview', icon: House, end: true },
-      { to: '/approvals', label: 'Approvals', icon: SealCheck, badge: 'approvals' },
-      { to: '/alerts', label: 'Alerts', icon: Bell, badge: 'alerts' },
-      { to: '/ask', label: 'Ask', icon: Sparkle },
+      { to: '/', key: 'overview', icon: House, end: true },
+      { to: '/approvals', key: 'approvals', icon: SealCheck, badge: 'approvals' },
+      { to: '/alerts', key: 'alerts', icon: Bell, badge: 'alerts' },
+      { to: '/ask', key: 'ask', icon: Sparkle },
     ],
   },
   {
-    label: 'Shelves',
+    key: 'shelves',
     items: [
-      { to: '/inventory', label: 'Stock', icon: Package },
-      { to: '/counts', label: 'Counts', icon: ClipboardText },
-      { to: '/products', label: 'Products', icon: Tag },
-      { to: '/promotions', label: 'Promotions', icon: Percent },
-      { to: '/categories', label: 'Categories', icon: SquaresFour },
+      { to: '/inventory', key: 'stock', icon: Package },
+      { to: '/counts', key: 'counts', icon: ClipboardText },
+      { to: '/products', key: 'products', icon: Tag },
+      { to: '/promotions', key: 'promotions', icon: Percent },
+      { to: '/categories', key: 'categories', icon: SquaresFour },
     ],
   },
   {
-    label: 'Business',
+    key: 'business',
     items: [
-      { to: '/sales', label: 'Sales', icon: Receipt },
-      { to: '/reports', label: 'Reports', icon: ChartLine },
-      { to: '/people', label: 'People', icon: Users },
-      { to: '/activity', label: 'Activity', icon: ClockCounterClockwise },
-      { to: '/settings', label: 'Settings', icon: Gear, managersOnly: true },
+      { to: '/sales', key: 'sales', icon: Receipt },
+      { to: '/reports', key: 'reports', icon: ChartLine },
+      { to: '/people', key: 'people', icon: Users },
+      { to: '/activity', key: 'activity', icon: ClockCounterClockwise },
+      { to: '/settings', key: 'settings', icon: Gear, managersOnly: true },
     ],
   },
 ];
@@ -100,6 +104,7 @@ export function Layout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const location = useLocation();
+  const t = useT();
 
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -158,14 +163,14 @@ export function Layout() {
           ref={menuButton}
           type="button"
           className="button button--ghost button--icon topbar__menu"
-          aria-label="Open the menu"
+          aria-label={t.nav.openMenu}
           aria-expanded={drawerOpen}
           aria-controls="sidebar"
           onClick={() => setDrawerOpen(true)}
         >
           <List size={20} aria-hidden="true" />
         </button>
-        <Link to="/" className="topbar__brand" aria-label="4VD, go to Overview">
+        <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
           <LogoMark size={28} />
           <span className="topbar__name">4VD</span>
         </Link>
@@ -181,49 +186,50 @@ export function Layout() {
         )}
         <button type="button" className="topbar__search" onClick={() => setPaletteOpen(true)}>
           <MagnifyingGlass size={16} aria-hidden="true" />
-          <span className="topbar__search-label">Search or jump to</span>
+          <span className="topbar__search-label">{t.nav.search}</span>
           <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
         </button>
         <div className="topbar__end">
           <ThemeSwitch persist compact />
-          <NavLink to="/profile" className="topbar__user" aria-label={`Your profile, ${user.name}`}>
+          <NavLink to="/profile" className="topbar__user" aria-label={t.nav.yourProfile(user.name)}>
             <Avatar name={user.name} url={user.avatarUrl} size={28} />
           </NavLink>
-          <Button variant="ghost" icon={SignOut} aria-label="Log out" title="Log out" onClick={logout} />
+          <Button variant="ghost" icon={SignOut} aria-label={t.nav.logOut} title={t.nav.logOut} onClick={logout} />
         </div>
       </header>
 
       {drawerOpen && <div className="drawer-backdrop" onClick={closeDrawer} aria-hidden="true" />}
 
-      <aside id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label="Main menu">
+      <aside id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
         <div className="sidebar__drawer-head">
           <span className="topbar__brand">
             <LogoMark size={28} />
             <span className="topbar__name">4VD</span>
           </span>
-          <Button variant="ghost" icon={X} aria-label="Close the menu" onClick={closeDrawer} />
+          <Button variant="ghost" icon={X} aria-label={t.nav.closeMenu} onClick={closeDrawer} />
         </div>
-        <nav className="sidebar__nav" aria-label="Main">
+        <nav className="sidebar__nav" aria-label={t.nav.main}>
           {NAV_GROUPS.map((group) => (
-            <div key={group.label} className="sidebar__group">
-              <p className="sidebar__group-label">{group.label}</p>
+            <div key={group.key} className="sidebar__group">
+              <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
               {group.items.filter((item) => !item.managersOnly || canManage(user.role)).map((item) => {
                 const count = item.badge === 'approvals' ? waitingCount : item.badge === 'alerts' ? unreadCount : 0;
                 const ItemIcon = item.icon;
+                const label = t.nav.items[item.key];
                 return (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     end={item.end}
                     className="sidebar__link"
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? label : undefined}
                   >
                     <ItemIcon size={18} className="sidebar__icon" aria-hidden="true" />
-                    <span className="sidebar__label">{item.label}</span>
+                    <span className="sidebar__label">{label}</span>
                     {count > 0 && (
                       <span
                         className="sidebar__badge"
-                        aria-label={item.badge === 'approvals' ? `${count} waiting for you` : `${count} unread`}
+                        aria-label={item.badge === 'approvals' ? t.nav.waiting(count) : t.nav.unread(count)}
                       >
                         {count}
                       </span>
@@ -238,11 +244,11 @@ export function Layout() {
           type="button"
           className="sidebar__collapse"
           onClick={toggleCollapsed}
-          aria-label={collapsed ? 'Expand the menu' : 'Collapse the menu'}
-          title={collapsed ? 'Expand the menu' : 'Collapse the menu'}
+          aria-label={collapsed ? t.nav.expand : t.nav.collapseMenu}
+          title={collapsed ? t.nav.expand : t.nav.collapseMenu}
         >
           {collapsed ? <CaretDoubleRight size={16} aria-hidden="true" /> : <CaretDoubleLeft size={16} aria-hidden="true" />}
-          <span className="sidebar__label">Collapse</span>
+          <span className="sidebar__label">{t.nav.collapse}</span>
         </button>
       </aside>
 

@@ -12,7 +12,9 @@ import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, repor
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
-import { formatMoney } from '../utils/format';
+import { formatDateWith, formatMoney } from '../utils/format';
+import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
@@ -20,23 +22,11 @@ const RECENT_SALES_SHOWN = 3;
 const DECIDED_SHOWN_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const REQUEST_STATUS: Record<string, string> = {
-  pending: 'Waiting for the owner',
-  submitted: 'Waiting for the owner',
-  approved: 'Approved',
-  closed: 'Reviewed',
-  rejected: 'Rejected',
-  cancelled: 'Cancelled',
-};
-
-const longDate = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-const timeOfDay = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-function greeting(now: Date): string {
+function greeting(t: Catalogue, now: Date): string {
   const hour = now.getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return t.home.morning;
+  if (hour < 18) return t.home.afternoon;
+  return t.home.evening;
 }
 
 /** Today and yesterday in the phone's own timezone. */
@@ -50,10 +40,9 @@ function dayRanges(now = new Date()) {
   };
 }
 
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
-
 export function HomeScreen() {
   const colors = useThemeColors();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const user = useCurrentUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -65,6 +54,7 @@ export function HomeScreen() {
 
   const day = dayRanges(now);
   const month = monthRanges(now);
+  const longDate = { format: (date: Date) => formatDateWith(date, { weekday: 'long', day: 'numeric', month: 'long' }) };
   const today = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, day.startDate],
     queryFn: () => reportsApi.mySales(day),
@@ -122,13 +112,13 @@ export function HomeScreen() {
         <View style={styles.greetingRow}>
           <View style={styles.greetingText}>
             <Text style={[styles.greeting, { color: colors.heroText }]}>
-              {greeting(now)}, {firstName}
+              {t.home.greeting(greeting(t, now), firstName ?? user.name)}
             </Text>
             <Text style={[styles.date, { color: colors.heroMuted }]}>{longDate.format(now)}</Text>
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Your account"
+            accessibilityLabel={t.home.yourAccount}
             onPress={() => navigation.navigate('Main', { screen: 'Account' })}
           >
             <Avatar name={user.name} url={user.avatarUrl} size={44} />
@@ -136,15 +126,15 @@ export function HomeScreen() {
         </View>
 
         {sells && (
-          <View style={styles.todayBlock} accessible accessibilityLabel={todayLabel(today.data?.current)}>
-            <Text style={[styles.todayCaption, { color: colors.heroMuted }]}>Your sales today</Text>
+          <View style={styles.todayBlock} accessible accessibilityLabel={todayLabel(t, today.data?.current)}>
+            <Text style={[styles.todayCaption, { color: colors.heroMuted }]}>{t.home.salesToday}</Text>
             <Text style={[styles.todayFigure, { color: colors.heroText }]}>
-              {today.data ? formatMoney(today.data.current.revenue) : today.isError ? 'Not available' : '…'}
+              {today.data ? formatMoney(today.data.current.revenue) : today.isError ? t.home.notAvailable : '…'}
             </Text>
             {today.data && (
               <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>
-                {plural(today.data.current.salesCount, 'sale', 'sales')}
-                {thisMonth.data ? `, ${formatMoney(thisMonth.data.current.revenue)} so far in ${month.name}` : ''}
+                {t.home.sales(today.data.current.salesCount)}
+                {thisMonth.data ? t.home.soFarIn(formatMoney(thisMonth.data.current.revenue), month.name) : ''}
               </Text>
             )}
           </View>
@@ -166,7 +156,7 @@ export function HomeScreen() {
             style={({ pressed }) => [styles.sellButton, { backgroundColor: colors.heroText }, pressed && styles.pressed]}
           >
             <Text style={[styles.sellPlus, { color: colors.heroInk }]}>+</Text>
-            <Text style={[styles.sellLabel, { color: colors.heroInk }]}>Record a sale</Text>
+            <Text style={[styles.sellLabel, { color: colors.heroInk }]}>{t.home.recordSale}</Text>
           </Pressable>
         )}
       </View>
@@ -176,9 +166,9 @@ export function HomeScreen() {
           value={search}
           onChangeText={setSearch}
           onSubmitEditing={openSearch}
-          placeholder="Search products by name or SKU"
+          placeholder={t.home.searchPlaceholder}
           placeholderTextColor={colors.steel}
-          accessibilityLabel="Search products"
+          accessibilityLabel={t.home.searchLabel}
           autoCorrect={false}
           returnKeyType="search"
           style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface }]}
@@ -187,59 +177,59 @@ export function HomeScreen() {
         <View style={styles.tools}>
           <ToolTile
             colors={colors}
-            title="Products"
-            detail={productCount.data === undefined ? 'Browse the catalogue' : plural(productCount.data, 'product', 'products')}
+            title={t.home.products}
+            detail={productCount.data === undefined ? t.home.browse : t.home.productCount(productCount.data)}
             onPress={() => navigation.navigate('Main', { screen: 'Catalog' })}
           />
           <ToolTile
             colors={colors}
-            title="Favorites"
-            detail={favoriteCount.data ? `${favoriteCount.data} saved` : 'Nothing saved yet'}
+            title={t.home.favorites}
+            detail={favoriteCount.data ? t.home.saved(favoriteCount.data) : t.home.nothingSaved}
             onPress={() => navigation.navigate('Main', { screen: 'Favorites' })}
           />
           {sells && (
             <ToolTile
               colors={colors}
-              title="My sales"
-              detail={thisMonth.data ? plural(thisMonth.data.current.salesCount, 'sale', 'sales') + ` in ${month.name}` : month.name}
+              title={t.home.mySales}
+              detail={thisMonth.data ? t.home.salesIn(t.home.sales(thisMonth.data.current.salesCount), month.name) : month.name}
               onPress={() => navigation.navigate('MySales')}
             />
           )}
           {sells && (
             <ToolTile
               colors={colors}
-              title="Stock count"
-              detail={openCounts > 0 ? `${openCounts} ${openCounts === 1 ? 'count' : 'counts'} open` : 'Start a count'}
+              title={t.home.stockCount}
+              detail={openCounts > 0 ? t.home.countsOpen(openCounts) : t.home.startCount}
               onPress={() => navigation.navigate('Counts')}
             />
           )}
           <ToolTile
             colors={colors}
-            title="Account"
+            title={t.home.account}
             detail={user.email}
             onPress={() => navigation.navigate('Main', { screen: 'Account' })}
           />
         </View>
 
         {sells && visibleRequests.length > 0 && (
-          <Section title="Your requests" colors={colors}>
+          <Section title={t.home.yourRequests} colors={colors}>
             {visibleRequests.map((request) => (
               <RequestRow key={`${request.type}-${request.id}`} request={request} colors={colors} />
             ))}
           </Section>
         )}
 
-        <Section title="Running low" colors={colors}>
-          {lowStock.isPending && <Muted colors={colors}>Checking stock…</Muted>}
-          {lowStock.isError && <Muted colors={colors}>Stock levels could not be loaded. Pull down to try again.</Muted>}
-          {lowStock.data?.items.length === 0 && <Muted colors={colors}>Everything is well stocked.</Muted>}
+        <Section title={t.home.runningLow} colors={colors}>
+          {lowStock.isPending && <Muted colors={colors}>{t.home.checkingStock}</Muted>}
+          {lowStock.isError && <Muted colors={colors}>{t.home.stockFailed}</Muted>}
+          {lowStock.data?.items.length === 0 && <Muted colors={colors}>{t.home.wellStocked}</Muted>}
           {lowStock.data?.items.map((item) => {
             const isOut = item.quantity === 0;
             return (
               <Pressable
                 key={item.productId}
                 accessibilityRole="button"
-                accessibilityLabel={`${item.productName}, ${isOut ? 'sold out' : `${item.quantity} left`}`}
+                accessibilityLabel={`${item.productName}, ${isOut ? t.home.soldOut : t.home.left(item.quantity)}`}
                 onPress={() => navigation.navigate('ProductDetail', { productId: item.productId, name: item.productName })}
                 style={({ pressed }) => [styles.row, { borderTopColor: colors.line }, pressed && styles.pressed]}
               >
@@ -248,22 +238,22 @@ export function HomeScreen() {
                   {item.productName}
                 </Text>
                 <Text style={[styles.rowValue, { color: isOut ? colors.signalOut : colors.ink }]}>
-                  {isOut ? 'Sold out' : `${item.quantity} left`}
+                  {isOut ? t.home.soldOut : t.home.left(item.quantity)}
                 </Text>
               </Pressable>
             );
           })}
           {lowStock.data && lowStock.data.meta.total > lowStock.data.items.length && (
             <Muted colors={colors}>
-              And {plural(lowStock.data.meta.total - lowStock.data.items.length, 'more product', 'more products')}.
+              {t.home.andMore(lowStock.data.meta.total - lowStock.data.items.length)}
             </Muted>
           )}
         </Section>
 
         {sells && (
-          <Section title="Your latest sales" colors={colors}>
+          <Section title={t.home.latestSales} colors={colors}>
             {thisMonth.data && recentSales.length === 0 && (
-              <Muted colors={colors}>No sales yet this month. Record one with the button at the top.</Muted>
+              <Muted colors={colors}>{t.home.noSalesYet}</Muted>
             )}
             {recentSales.map((sale) => (
               <View key={sale.id} style={[styles.row, { borderTopColor: colors.line }]}>
@@ -283,11 +273,12 @@ export function HomeScreen() {
 
 /** Progress towards the monthly target the owner set; full once it is reached. */
 function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors; revenue: number; target: number; monthName: string }) {
+  const t = useT();
   const share = Math.min(Math.max(revenue / target, 0), 1);
   const reached = revenue >= target;
   const label = reached
-    ? `Target of ${formatMoney(target)} reached for ${monthName}`
-    : `${formatMoney(target - revenue)} to go to your ${monthName} target of ${formatMoney(target)}`;
+    ? t.home.targetReached(formatMoney(target), monthName)
+    : t.home.targetToGo({ left: formatMoney(target - revenue), month: monthName, target: formatMoney(target) });
   return (
     <View
       style={styles.target}
@@ -307,30 +298,31 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
 }
 
 function RequestRow({ request, colors }: { request: MyRequest; colors: ThemeColors }) {
+  const t = useT();
   const isRejected = request.status === 'rejected';
   const isWaiting = request.status === 'pending' || request.status === 'submitted';
   return (
     <View style={[styles.requestRow, { borderTopColor: colors.line }]}>
       <Text style={[styles.rowName, { color: colors.ink }]}>{request.summary}</Text>
       <Text style={[styles.requestStatus, { color: isRejected ? colors.signalOut : isWaiting ? colors.signalLowInk : colors.stockOk }]}>
-        {REQUEST_STATUS[request.status] ?? request.status}
+        {t.home.requestStatus[request.status] ?? request.status}
         {isRejected && request.decisionNote ? `: ${request.decisionNote}` : ''}
       </Text>
     </View>
   );
 }
 
-function todayLabel(totals?: { revenue: number; salesCount: number }): string {
-  if (!totals) return 'Your sales today are loading';
-  return `Your sales today: ${formatMoney(totals.revenue)} from ${plural(totals.salesCount, 'sale', 'sales')}`;
+function todayLabel(t: Catalogue, totals?: { revenue: number; salesCount: number }): string {
+  if (!totals) return t.home.todayLoading;
+  return t.home.todayLabel(formatMoney(totals.revenue), t.home.sales(totals.salesCount));
 }
 
 /** "10:42" for today, "28 Sep" for earlier days. */
 function saleTime(iso: string, now: Date): string {
   const date = new Date(iso);
   return date.toDateString() === now.toDateString()
-    ? timeOfDay.format(date)
-    : new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(date);
+    ? formatDateWith(date, { hour: '2-digit', minute: '2-digit' })
+    : formatDateWith(date, { day: 'numeric', month: 'short' });
 }
 
 interface ToolTileProps {

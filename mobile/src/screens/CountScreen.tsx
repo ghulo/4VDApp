@@ -10,6 +10,7 @@ import type { StockCount } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { COUNTS_QUERY_KEY } from './CountsScreen';
+import { useT } from '../i18n/useT';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Count'>;
 
@@ -24,17 +25,18 @@ function nextUncounted(count: StockCount, from: number): number {
 }
 
 export function CountScreen({ route, navigation }: Props) {
+  const t = useT();
   const { countId } = route.params;
   const queryClient = useQueryClient();
   const count = useQuery({ queryKey: [...COUNTS_QUERY_KEY, countId], queryFn: () => countsApi.get(countId) });
 
   if (count.isPending) return <Loading />;
   if (count.isError) return <ErrorState error={count.error} onRetry={() => count.refetch()} />;
-  if (count.data.lines.length === 0) return <EmptyState title="There are no products to count here" />;
+  if (count.data.lines.length === 0) return <EmptyState title={t.counts.noProducts} />;
   if (count.data.status !== 'open') {
     return (
-      <EmptyState title="This count is finished">
-        {count.data.status === 'submitted' ? 'It is waiting for the owner.' : 'Start a new count to count again.'}
+      <EmptyState title={t.counts.finished}>
+        {count.data.status === 'submitted' ? t.counts.waitingForOwner : t.counts.startNew}
       </EmptyState>
     );
   }
@@ -62,6 +64,7 @@ function Counter({
   onSubmitted: () => void;
 }) {
   const colors = useThemeColors();
+  const t = useT();
   const [index, setIndex] = useState(() => Math.max(0, nextUncounted(count, 0)));
   const line = count.lines[index]!;
   const [value, setValue] = useState(line.countedQuantity === null ? '' : String(line.countedQuantity));
@@ -104,7 +107,7 @@ function Counter({
               {item.productName}
             </Text>
             <Text style={[styles.listValue, { color: item.countedQuantity === null ? colors.steel : colors.ink }]}>
-              {item.countedQuantity === null ? 'Not counted' : item.countedQuantity}
+              {item.countedQuantity === null ? t.counts.notCounted : item.countedQuantity}
             </Text>
           </Pressable>
         ))}
@@ -116,10 +119,10 @@ function Counter({
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.progressRow}>
         <Text style={[styles.progress, { color: colors.steel }]}>
-          {count.totals.counted} of {count.totals.products} counted
+          {t.counts.progress(count.totals.counted, count.totals.products)}
         </Text>
         <Pressable accessibilityRole="button" onPress={() => setShowList(true)} hitSlop={12}>
-          <Text style={[styles.link, { color: colors.ink }]}>See the list</Text>
+          <Text style={[styles.link, { color: colors.ink }]}>{t.counts.seeList}</Text>
         </Pressable>
       </View>
       <View style={[styles.track, { backgroundColor: colors.line }]}>
@@ -134,26 +137,26 @@ function Counter({
         {line.sku && <Text style={[styles.sku, { color: colors.steel }]}>SKU {line.sku}</Text>}
       </View>
 
-      <Stepper label="How many are on the shelf?" value={value} onChange={setValue} size="large" />
+      <Stepper label={t.counts.onShelf} value={value} onChange={setValue} size="large" />
 
       {save.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(save.error)}</Text>}
-      <Button label="Save and next" onPress={() => save.mutate()} disabled={!canSave} loading={save.isPending} />
-      <Button label="Skip for now" variant="quiet" onPress={() => goTo((index + 1) % count.lines.length)} />
+      <Button label={t.counts.saveNext} onPress={() => save.mutate()} disabled={!canSave} loading={save.isPending} />
+      <Button label={t.counts.skip} variant="quiet" onPress={() => goTo((index + 1) % count.lines.length)} />
 
       <View style={[styles.submitBox, { borderColor: colors.line }]}>
         {confirmingSubmit ? (
           <>
             <Text style={[styles.submitText, { color: colors.ink }]}>
               {uncounted === 0
-                ? 'Everything is counted. Send it to the owner?'
-                : `${uncounted} ${uncounted === 1 ? 'product is' : 'products are'} not counted and will be left as they are. Send it anyway?`}
+                ? t.counts.allCounted
+                : t.counts.someLeft(uncounted)}
             </Text>
             {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
-            <Button label="Send the count" onPress={() => submit.mutate()} loading={submit.isPending} />
-            <Button label="Keep counting" variant="quiet" onPress={() => setConfirmingSubmit(false)} />
+            <Button label={t.counts.send} onPress={() => submit.mutate()} loading={submit.isPending} />
+            <Button label={t.counts.keepCounting} variant="quiet" onPress={() => setConfirmingSubmit(false)} />
           </>
         ) : (
-          <Button label="Finish count" variant="quiet" onPress={() => setConfirmingSubmit(true)} disabled={count.totals.counted === 0} />
+          <Button label={t.counts.finish} variant="quiet" onPress={() => setConfirmingSubmit(true)} disabled={count.totals.counted === 0} />
         )}
       </View>
     </ScrollView>

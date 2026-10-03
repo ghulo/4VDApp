@@ -124,7 +124,12 @@ export class WriteOffService {
       if (canOversee(user.role)) {
         await approveWriteOff(repos, id, user.id, { removeStock: true });
       } else {
-        await notifyAdminsOfPending(repos, 'write-off', `${user.name} reported ${what}.`);
+        await notifyAdminsOfPending(repos, 'write-off', (t) =>
+          t.writeOffPending({
+            name: user.name,
+            what: `${input.quantity} × ${productName} (${t.writeOffReason[input.reason] ?? input.reason})`,
+          }),
+        );
       }
       return id;
     });
@@ -144,13 +149,10 @@ export class WriteOffService {
         entityId: id,
         summary: `Approved the write-off of ${what}`,
       });
-      await notifyRequester(
-        repos,
-        writeOff.requested_by,
-        admin.id,
-        `Your write-off of ${what} was approved`,
-        'The stock has been updated.',
-      );
+      await notifyRequester(repos, writeOff.requested_by, admin.id, (t) => ({
+        title: t.writeOffApproved(what),
+        message: t.writeOffApprovedMessage,
+      }));
     });
     return this.get(id);
   }
@@ -168,7 +170,7 @@ export class WriteOffService {
         entityId: id,
         summary: `Rejected the write-off of ${what}: ${note}`,
       });
-      await notifyRequester(repos, writeOff.requested_by, admin.id, `Your write-off of ${what} was rejected`, note);
+      await notifyRequester(repos, writeOff.requested_by, admin.id, (t) => ({ title: t.writeOffRejected(what), message: note }));
     });
     return this.get(id);
   }

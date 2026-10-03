@@ -12,8 +12,8 @@ export function createInviteController(inviteService: InviteService) {
     },
 
     async create(req: Request, res: Response): Promise<void> {
-      const { email, role } = parseInput(inviteSchema, req.body);
-      sendSuccess(res, await inviteService.invite(req.user!.id, email, role), { statusCode: 201, message: `Invite sent to ${email}` });
+      const { email, role, language } = parseInput(inviteSchema, req.body);
+      sendSuccess(res, await inviteService.invite(req.user!.id, email, role, language), { statusCode: 201, message: `Invite sent to ${email}` });
     },
 
     async resend(req: Request, res: Response): Promise<void> {

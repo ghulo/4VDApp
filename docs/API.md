@@ -88,9 +88,9 @@ Everyone belongs to a **business** (the shop). Links sent by email carry a one-u
 | Method & path | Auth | Body / returns |
 |---|---|---|
 | `GET /invites` | admin | Open invites: `{ id, email, role, invitedBy, expiresAt, createdAt }` |
-| `POST /invites` | admin | `{ email, role }` → emails a link; replaces an older open invite to the same email. `409` if the email already has an account |
+| `POST /invites` | admin | `{ email, role, language? }` → emails a link in that language (`en` or `sq`; the inviter's own when left out), and the new account starts in it; replaces an older open invite to the same email. `409` if the email already has an account |
 | `POST /invites/:id/resend` · `DELETE /invites/:id` | admin | New link (the old one stops working) · cancel |
-| `GET /auth/invites/:token` | public | `{ email, role, shopName, invitedBy }`; `410` when used, cancelled or expired |
+| `GET /auth/invites/:token` | public | `{ email, role, shopName, invitedBy, language }` (the invite page opens in `language`); `410` when used, cancelled or expired |
 | `POST /auth/invites/:token/accept` | public | `{ name, password }` → a verified account and a session (`{ token, refreshToken, user }`) |
 | `POST /auth/invites/:token/google` | public | `{ credential }` (Google ID token) → same, when the Google email matches the invite |
 | `POST /auth/forgot-password` · `POST /auth/resend-verification` | public | `{ email }` → `202` either way; at most one email a minute per account |
@@ -98,7 +98,7 @@ Everyone belongs to a **business** (the shop). Links sent by email carry a one-u
 | `POST /auth/verify-email` · `POST /auth/confirm-email-change` | public | `{ token }` |
 | `GET /auth/google` · `POST /auth/google` | public | `{ enabled, clientId }` · `{ credential }` → session. Never creates an account: signs in a linked Google account, or links one whose verified email matches an existing account |
 | `POST /auth/signup` | public | Only with `ALLOW_SIGNUP=true`: `{ shopName, name, email, password }` → new business + owner, verification email |
-| `PUT /me/profile` | signed in | Any of `{ name, phone, theme }` → the user |
+| `PUT /me/profile` | signed in | Any of `{ name, phone, theme, language, emailWeeklyReport }` → the user |
 | `PUT /me/avatar` · `DELETE /me/avatar` | signed in | The image itself as the body (`Content-Type: image/*`, max 5 MB) → resized to 256 px WebP |
 | `POST /me/password` | signed in | `{ currentPassword?, newPassword }`; other devices are logged out |
 | `POST /me/email` | signed in | `{ newEmail, password? }` → link to the new address; switches when clicked, old address told |
@@ -109,7 +109,9 @@ Everyone belongs to a **business** (the shop). Links sent by email carry a one-u
 | `PUT /business/logo` · `DELETE /business/logo` | admin | Image body, resized to 512 px WebP |
 | `GET /media/:id` | public | The picture; cached for a year (a new picture gets a new id) |
 
-Users now also carry `phone`, `avatarUrl`, `theme` and `emailWeeklyReport` (settable through `PUT /me/profile`).
+Users now also carry `phone`, `avatarUrl`, `theme`, `language` (`en` or `sq`) and `emailWeeklyReport` (settable through `PUT /me/profile`).
+
+**Language:** alerts, push notifications, the daily summary, the attention list (`/reports/insights`, `/reports/daily-summary`) and every email are written in the reader's `language`. Error messages and the Activity log are still English.
 
 **Weekly report:** every Monday after the daily summary hour (shop time), each active admin with `emailWeeklyReport` on gets an email: last Monday to Sunday's revenue, sales and profit against the week before, the five best sellers, and how many warnings are open. Sent once a week (`weekly_report_last_sent` setting), through the email outbox.
 

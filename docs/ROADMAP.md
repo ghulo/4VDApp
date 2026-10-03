@@ -32,6 +32,8 @@ Order: get the data right first, then build the smart parts on top of it.
 | Accounts and profiles | Invites, email verification, password reset, Google sign-in (needs a key), devices, profiles with photos, business profile, sign-up behind a switch | Done |
 | Polish | Weekly report email, Ctrl+K command palette, setup guide, staff welcome tour, every screen checked in both themes | Done |
 | New look | Cloudflare-style redesign: orange on warm neutrals, icon sidebar and top bar, a small component kit every page is built from, dotted charts, rolling figures, glow and halftone drawings; the phone app follows | Done |
-| Albanian | The dashboard, the team app and the emails in English and Albanian, switchable per person | Next |
+| Albanian | The dashboard, the team app, alerts and emails in English and Albanian, switchable per person | Done |
+| Product photos | Upload a photo for every product (required for new ones), shown in the team app and the stock lists so staff can tell products apart | Next |
+| Albanian, part 2 | Server error messages, the Activity log, request summaries on the team app's Home and the AI price suggestion in Albanian | Later |
 | Roles | Developer (you: everything, hands out the top roles), Owner (Dad: sees everything and decides requests), Admin, Employee, Family | Done |
 | Launch | Domain, Resend, Google key, paid Render plans, wipe test data | Waiting on the domain |

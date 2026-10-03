@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../navigation/types';
 import { reportsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
-import { errorMessage, formatMoney } from '../utils/format';
+import { errorMessage, formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
 
@@ -14,7 +14,7 @@ import { useT } from '../i18n/useT';
  * Last month is sent explicitly so "Last month" really means last month,
  * not "the same number of days before the 1st".
  */
-export function monthRanges(now = new Date(), locale = 'en-GB') {
+export function monthRanges(now = new Date()) {
   const year = now.getFullYear();
   const month = now.getMonth();
   const start = new Date(year, month, 1);
@@ -23,7 +23,7 @@ export function monthRanges(now = new Date(), locale = 'en-GB') {
     endDate: new Date(year, month + 1, 1).toISOString(),
     previousStartDate: new Date(year, month - 1, 1).toISOString(),
     previousEndDate: start.toISOString(),
-    name: new Intl.DateTimeFormat(locale, { month: 'long' }).format(start),
+    name: formatDateWith(start, { month: 'long' }),
   };
 }
 
@@ -33,8 +33,8 @@ export function MySales() {
   const colors = useThemeColors();
   const t = useT();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const month = monthRanges(new Date(), t.dateLocale);
-  const shortDate = new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short' });
+  const month = monthRanges(new Date());
+  const shortDate = { format: (date: Date) => formatDateWith(date, { day: 'numeric', month: 'short' }) };
   const mySales = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, month.startDate],
     queryFn: () => reportsApi.mySales(month),

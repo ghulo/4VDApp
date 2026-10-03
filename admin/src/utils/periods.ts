@@ -1,4 +1,5 @@
 import { type Catalogue, en } from '../i18n/en';
+import { formatDateWith } from './format';
 
 export type PeriodKey = 'this-month' | 'last-month' | 'last-30-days' | 'this-year' | 'custom';
 
@@ -59,8 +60,8 @@ export function resolvePeriod(
   now: Date = new Date(),
   t: Catalogue = en,
 ): ResolvedPeriod {
-  const monthLabel = new Intl.DateTimeFormat(t.dateLocale, { month: 'long', year: 'numeric' });
-  const dayLabel = new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short', year: 'numeric' });
+  const monthLabel = { format: (date: Date) => formatDateWith(date, { month: 'long', year: 'numeric' }) };
+  const dayLabel = { format: (date: Date) => formatDateWith(date, { day: 'numeric', month: 'short', year: 'numeric' }) };
   const year = now.getFullYear();
   const month = now.getMonth();
 

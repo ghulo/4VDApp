@@ -4,8 +4,6 @@
  * numbers or names are functions.
  */
 export const en = {
-  /** Locale for dates written out in words (month and day names). */
-  dateLocale: 'en-GB',
   language: { label: 'Language', english: 'English', albanian: 'Shqip' },
   nav: {
     tabs: { home: 'Home', products: 'Products', favorites: 'Favorites', sell: 'Sell', account: 'Account' },

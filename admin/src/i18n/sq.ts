@@ -2,8 +2,6 @@ import type { Catalogue } from './en';
 
 /** Every word the dashboard shows, in Albanian. Terms follow the glossary in the Albanian plan. */
 export const sq: Catalogue = {
-  dateLocale: 'sq-AL',
-  numberLocale: 'sq-AL',
   language: {
     label: 'Gjuha',
     english: 'English',
@@ -167,7 +165,7 @@ export const sq: Catalogue = {
   profile: {
     title: 'Profili yt',
     description: (role) => `${role} në dyqan. Çfarë ndryshon këtu të prek vetëm ty.`,
-    look: 'Pamja',
+    look: 'Paraqitja',
     themeHint: 'Auto ndjek cilësimin e çelët ose të errët të kompjuterit.',
     photoTooBig: 'Kjo foto është shumë e madhe. Përdor një nën 5 MB.',
     you: 'Ti',

@@ -2,7 +2,6 @@ import type { Catalogue } from './en';
 
 /** Every word the team app shows, in Albanian. Terms follow the glossary in the Albanian plan. */
 export const sq: Catalogue = {
-  dateLocale: 'sq-AL',
   language: { label: 'Gjuha', english: 'English', albanian: 'Shqip' },
   nav: {
     tabs: { home: 'Kreu', products: 'Produkte', favorites: 'Favoritet', sell: 'Shit', account: 'Llogaria' },
@@ -111,7 +110,7 @@ export const sq: Catalogue = {
     stockFailed: 'Nivelet e stokut nuk u ngarkuan. Tërhiq poshtë për të provuar përsëri.',
     wellStocked: 'Gjithçka ka stok të mjaftueshëm.',
     soldOut: 'Mbaroi',
-    left: (n) => `${n} të mbetura`,
+    left: (n) => `${n === 1 ? 'mbetet' : 'mbeten'} ${n}`,
     andMore: (n) => `Dhe ${n} ${n === 1 ? 'produkt tjetër' : 'produkte të tjera'}.`,
     latestSales: 'Shitjet e tua të fundit',
     noSalesYet: 'Ende pa shitje këtë muaj. Regjistro një me butonin lart.',

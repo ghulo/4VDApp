@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { RevenuePoint } from '../services/types';
-import { formatMoney } from '../utils/format';
+import { formatCompactMoney, formatDateWith, formatMoney } from '../utils/format';
 import { dotColumn } from './ui/dots';
 import { useT } from '../i18n/useT';
 
@@ -29,18 +29,8 @@ interface RevenueChartProps {
 
 export function RevenueChart({ points, title }: RevenueChartProps) {
   const t = useT();
-  const { dayLabel, compactMoney } = useMemo(
-    () => ({
-      dayLabel: new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
-      compactMoney: new Intl.NumberFormat(t.numberLocale, {
-        style: 'currency',
-        currency: 'EUR',
-        notation: 'compact',
-        maximumFractionDigits: 1,
-      }),
-    }),
-    [t],
-  );
+  const dayLabel = { format: (date: Date) => formatDateWith(date, { day: 'numeric', month: 'short', timeZone: 'UTC' }) };
+  const compactMoney = { format: formatCompactMoney };
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
 

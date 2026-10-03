@@ -4,10 +4,6 @@
  * numbers or names are functions.
  */
 export const en = {
-  /** Locale for dates written out in words (month and day names). */
-  dateLocale: 'en-GB',
-  /** Locale for numbers and money. */
-  numberLocale: 'en-IE',
   language: {
     label: 'Language',
     english: 'English',

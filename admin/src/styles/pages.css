@@ -493,7 +493,17 @@
 
 .category-list__actions {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Grid children may shrink below their text (long emails, longer Albanian labels) instead of widening the row. */
+.category-list__row > * {
+  min-width: 0;
+}
+
+.category-list__description {
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Login and email-link pages ---------- */

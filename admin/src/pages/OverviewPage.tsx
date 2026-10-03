@@ -8,7 +8,7 @@ import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
-import { formatMoney } from '../utils/format';
+import { formatDateWith, formatMoney } from '../utils/format';
 import { Card, DotBars, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
 import { useT } from '../i18n/useT';
 
@@ -117,7 +117,7 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   const [range] = useState(() => todayRange());
   const today = useQuery({ queryKey: ['reports', 'summary', 'today', range.startDate], queryFn: () => reportsApi.summary(range) });
   const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
-  const weekday = new Intl.DateTimeFormat(t.dateLocale, { weekday: 'long' }).format(new Date(range.endDate));
+  const weekday = formatDateWith(new Date(range.endDate), { weekday: 'long' });
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;

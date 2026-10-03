@@ -12,7 +12,7 @@ import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, repor
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
-import { formatMoney } from '../utils/format';
+import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
@@ -53,8 +53,8 @@ export function HomeScreen() {
   const now = new Date();
 
   const day = dayRanges(now);
-  const month = monthRanges(now, t.dateLocale);
-  const longDate = new Intl.DateTimeFormat(t.dateLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+  const month = monthRanges(now);
+  const longDate = { format: (date: Date) => formatDateWith(date, { weekday: 'long', day: 'numeric', month: 'long' }) };
   const today = useQuery({
     queryKey: [...MY_SALES_QUERY_KEY, day.startDate],
     queryFn: () => reportsApi.mySales(day),
@@ -261,7 +261,7 @@ export function HomeScreen() {
                   {sale.quantity} × {sale.productName}
                 </Text>
                 <Text style={[styles.rowValue, { color: colors.ink }]}>{formatMoney(sale.totalAmount)}</Text>
-                <Text style={[styles.rowTime, { color: colors.steel }]}>{saleTime(t, sale.saleDate, now)}</Text>
+                <Text style={[styles.rowTime, { color: colors.steel }]}>{saleTime(sale.saleDate, now)}</Text>
               </View>
             ))}
           </Section>
@@ -318,11 +318,11 @@ function todayLabel(t: Catalogue, totals?: { revenue: number; salesCount: number
 }
 
 /** "10:42" for today, "28 Sep" for earlier days. */
-function saleTime(t: Catalogue, iso: string, now: Date): string {
+function saleTime(iso: string, now: Date): string {
   const date = new Date(iso);
   return date.toDateString() === now.toDateString()
-    ? new Intl.DateTimeFormat(t.dateLocale, { hour: '2-digit', minute: '2-digit' }).format(date)
-    : new Intl.DateTimeFormat(t.dateLocale, { day: 'numeric', month: 'short' }).format(date);
+    ? formatDateWith(date, { hour: '2-digit', minute: '2-digit' })
+    : formatDateWith(date, { day: 'numeric', month: 'short' });
 }
 
 interface ToolTileProps {

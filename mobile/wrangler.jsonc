@@ -1,0 +1,12 @@
+// Cloudflare Workers (static assets) config for the team app: app.4vd.app.
+// Cloudflare builds with `npm ci && npx expo export --platform web --output-dir dist`,
+// then `npx wrangler deploy` uploads dist/.
+{
+  "name": "4vd-app",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Every screen is handled by the app itself, so unknown paths load index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

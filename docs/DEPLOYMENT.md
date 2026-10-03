@@ -39,8 +39,8 @@
 
 | Address | What | Where |
 |---|---|---|
-| `dashboard.4vd.app` | The owner's dashboard (`admin/`) | Cloudflare Pages |
-| `app.4vd.app` | The team app, built for browsers (`mobile/`) | Cloudflare Pages |
+| `dashboard.4vd.app` | The owner's dashboard (`admin/`) | Cloudflare Workers (static assets) |
+| `app.4vd.app` | The team app, built for browsers (`mobile/`) | Cloudflare Workers (static assets) |
 | `api.4vd.app` | The API and background jobs (`backend/`) | Render (`render.yaml`) |
 | PostgreSQL | The data | Render |
 
@@ -52,15 +52,15 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 3. Back on Render, **Verify**. It turns green and gets its certificate (minutes, sometimes up to an hour).
 4. Check: `https://api.4vd.app/health` answers.
 
-**2. Dashboard on Cloudflare Pages**
-1. Cloudflare → **Workers & Pages → Create → Pages → Connect to Git** → pick the 4VD repo.
-2. Project name `4vd-dashboard`, production branch `main`, framework preset **None**.
-3. Build command `npm ci && npm run build`, build output `dist`, **Root directory `admin`**.
-4. Environment variable: `NODE_VERSION` = `22`. Save and deploy.
-5. Project → **Custom domains → Set up a custom domain** → `dashboard.4vd.app`. Cloudflare adds the DNS record itself.
+**2. Dashboard on Cloudflare Workers** (`admin/wrangler.jsonc` serves `dist/` as a single-page app)
+1. Cloudflare → **Workers & Pages → Create → Import a repository** → pick the 4VD repo.
+2. Project name `4vd-dashboard` (must match the `name` in `admin/wrangler.jsonc`).
+3. Build command `npm ci && npm run build`. Deploy command `npx wrangler deploy`. Preview command `npx wrangler versions upload`.
+4. **Advanced settings**: Path (root directory) `admin`; build variable `NODE_VERSION` = `22`. Deploy.
+5. Worker → **Settings → Domains & Routes → Add → Custom domain** → `dashboard.4vd.app`. Cloudflare adds the DNS record itself.
 
-**3. Team app on Cloudflare Pages**
-Same as the dashboard, with: project name `4vd-app`, **root directory `mobile`**, build command `npm ci && npx expo export --platform web --output-dir dist`, output `dist`, `NODE_VERSION` = `22`, custom domain `app.4vd.app`.
+**3. Team app on Cloudflare Workers** (`mobile/wrangler.jsonc`)
+Same as the dashboard, with: project name `4vd-app`, path `mobile`, build command `npm ci && npx expo export --platform web --output-dir dist`, `NODE_VERSION` = `22`, custom domain `app.4vd.app`.
 
 **4. Check everything**
 Open `https://dashboard.4vd.app`, log in, switch a page or two. Open `https://app.4vd.app` on a phone and log in. Then:

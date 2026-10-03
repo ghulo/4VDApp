@@ -12,19 +12,13 @@ import { useAuth, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
-
-const ROLE_DESCRIPTION = {
-  developer: 'Developer. Everything, here and on the 4VD website.',
-  admin: 'Admin. Run the shop from the 4VD website.',
-  owner: 'Owner. See the whole business and decide requests on the 4VD website.',
-  employee: 'Employee. You can browse products and record sales.',
-  family: 'Family. You can browse products and save favorites.',
-} as const;
+import { useT } from '../i18n/useT';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
 export function AccountScreen() {
   const colors = useThemeColors();
+  const t = useT();
   const { preference, setPreference } = useTheme();
   const user = useCurrentUser();
   const { logout, updateUser } = useAuth();
@@ -51,7 +45,7 @@ export function AccountScreen() {
     if (!asset) return;
     const blob = await (await fetch(asset.uri)).blob();
     if (blob.size > MAX_PHOTO_BYTES) {
-      setPhotoError('That photo is too big. Use one under 5 MB.');
+      setPhotoError(t.account.photoTooBig);
       return;
     }
     upload.mutate(blob);
@@ -70,7 +64,7 @@ export function AccountScreen() {
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={panel}>
         <View style={styles.identity}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Change your photo" onPress={pickPhoto} disabled={upload.isPending}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t.account.changePhotoLabel} onPress={pickPhoto} disabled={upload.isPending}>
             <Avatar name={user.name} url={user.avatarUrl} size={64} />
           </Pressable>
           <View style={styles.identityText}>
@@ -78,10 +72,10 @@ export function AccountScreen() {
             <Text style={[styles.detail, { color: colors.inkMuted }]}>{user.email}</Text>
           </View>
         </View>
-        <Text style={[styles.detail, { color: colors.ink }]}>{ROLE_DESCRIPTION[user.role]}</Text>
+        <Text style={[styles.detail, { color: colors.ink }]}>{t.account.roles[user.role]}</Text>
         <Pressable accessibilityRole="button" onPress={pickPhoto} disabled={upload.isPending} hitSlop={8}>
           <Text style={[styles.link, { color: colors.brand }]}>
-            {upload.isPending ? 'Uploading…' : user.avatarUrl ? 'Change photo' : 'Add a photo'}
+            {upload.isPending ? t.account.uploading : user.avatarUrl ? t.account.changePhoto : t.account.addPhoto}
           </Text>
         </Pressable>
         {(photoError || upload.isError) && (
@@ -92,24 +86,24 @@ export function AccountScreen() {
       </View>
 
       <View style={panel}>
-        <TextField label="Name" value={name} onChangeText={setName} autoComplete="name" maxLength={255} />
-        <TextField label="Phone (optional)" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" maxLength={50} />
+        <TextField label={t.account.name} value={name} onChangeText={setName} autoComplete="name" maxLength={255} />
+        <TextField label={t.account.phone} value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" maxLength={50} />
         {save.isError && (
           <Text style={[styles.detail, { color: colors.danger }]} accessibilityRole="alert">
             {errorMessage(save.error)}
           </Text>
         )}
-        {save.isSuccess && !changed && <Text style={[styles.detail, { color: colors.ok }]}>Saved.</Text>}
-        <Button label="Save" onPress={() => save.mutate()} disabled={!name.trim() || !changed} loading={save.isPending} />
+        {save.isSuccess && !changed && <Text style={[styles.detail, { color: colors.ok }]}>{t.account.saved}</Text>}
+        <Button label={t.account.save} onPress={() => save.mutate()} disabled={!name.trim() || !changed} loading={save.isPending} />
       </View>
 
       <View style={panel}>
         <ChoiceRow
-          label="Theme"
+          label={t.account.theme}
           options={[
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'system', label: 'Auto' },
+            { value: 'light', label: t.account.light },
+            { value: 'dark', label: t.account.dark },
+            { value: 'system', label: t.account.auto },
           ]}
           value={preference}
           onChange={chooseTheme}
@@ -120,15 +114,15 @@ export function AccountScreen() {
 
       <View style={panel}>
         <Text style={[styles.detail, { color: colors.ink }]}>
-          Change your password or email, or see where you're logged in, on your profile in the 4VD website.
+          {t.account.onWebsite}
         </Text>
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL(`${DASHBOARD_URL}/forgot-password`)} hitSlop={8}>
-          <Text style={[styles.link, { color: colors.brand }]}>Reset my password</Text>
+          <Text style={[styles.link, { color: colors.brand }]}>{t.account.resetPassword}</Text>
         </Pressable>
       </View>
 
-      <Button label="Log out" variant="quiet" onPress={logout} />
-      <Text style={[styles.footnote, { color: colors.inkMuted }]}>Connected to {API_URL}</Text>
+      <Button label={t.account.logOut} variant="quiet" onPress={logout} />
+      <Text style={[styles.footnote, { color: colors.inkMuted }]}>{t.account.connectedTo(API_URL)}</Text>
     </ScrollView>
   );
 }

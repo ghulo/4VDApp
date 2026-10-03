@@ -1,4 +1,5 @@
 import { pushApi } from '../services/api';
+import { activeCatalogue } from '../i18n/useT';
 
 /**
  * The app opened in a browser (including an iPhone home-screen app): Web Push
@@ -11,9 +12,9 @@ const isSupported = () =>
 /** Null when alerts can work here, otherwise why not, in words for the person. */
 export function pushUnavailableReason(webPushPublicKey: string | null): string | null {
   if (!isSupported()) {
-    return 'This browser can’t show alerts. On an iPhone, add 4VD to the Home Screen from Safari’s Share menu and open it from there.';
+    return activeCatalogue().push.browserUnsupported;
   }
-  if (!webPushPublicKey) return 'Browser alerts are switched off on the server.';
+  if (!webPushPublicKey) return activeCatalogue().push.browserNoKeys;
   return null;
 }
 
@@ -34,10 +35,10 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
 }
 
 export async function enablePush(webPushPublicKey: string | null): Promise<void> {
-  if (!webPushPublicKey) throw new Error('Browser alerts are switched off on the server.');
+  if (!webPushPublicKey) throw new Error(activeCatalogue().push.browserNoKeys);
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    throw new Error('The browser is blocking notifications for 4VD. Allow them in the site settings, then try again.');
+    throw new Error(activeCatalogue().push.browserBlocked);
   }
   const worker = (await existingRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
   await navigator.serviceWorker.ready;

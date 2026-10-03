@@ -8,9 +8,11 @@ import { DASHBOARD_URL } from '../services/apiClient';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
+import { useT } from '../i18n/useT';
 
 export function LoginScreen() {
   const colors = useThemeColors();
+  const t = useT();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,11 +39,11 @@ export function LoginScreen() {
             <Text style={[styles.brand, { color: colors.ink }]}>4VD</Text>
           </View>
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.title, { color: colors.ink }]}>Log in</Text>
-            <Text style={[styles.subtitle, { color: colors.inkMuted }]}>Use the email your account was set up with.</Text>
+            <Text style={[styles.title, { color: colors.ink }]}>{t.login.title}</Text>
+            <Text style={[styles.subtitle, { color: colors.inkMuted }]}>{t.login.subtitle}</Text>
 
             <TextField
-              label="Email"
+              label={t.login.email}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -51,7 +53,7 @@ export function LoginScreen() {
               returnKeyType="next"
             />
             <TextField
-              label="Password"
+              label={t.login.password}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -67,14 +69,14 @@ export function LoginScreen() {
               </Text>
             )}
 
-            <Button label="Log in" onPress={handleLogin} loading={isSubmitting} disabled={!email || !password} />
+            <Button label={t.login.logIn} onPress={handleLogin} loading={isSubmitting} disabled={!email || !password} />
             <Pressable
               accessibilityRole="link"
               onPress={() => Linking.openURL(`${DASHBOARD_URL}/forgot-password`)}
               hitSlop={8}
               style={styles.forgot}
             >
-              <Text style={[styles.forgotText, { color: colors.brand }]}>Forgot your password?</Text>
+              <Text style={[styles.forgotText, { color: colors.brand }]}>{t.login.forgot}</Text>
             </Pressable>
             <View style={styles.language}>
               <LanguageSwitch />

@@ -7,9 +7,11 @@ import { EmptyState, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi } from '../services/api';
 import { spacing, useThemeColors } from '../theme';
+import { useT } from '../i18n/useT';
 
 export function FavoritesScreen() {
   const colors = useThemeColors();
+  const t = useT();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const favorites = useQuery({ queryKey: ['favorites', 'list'], queryFn: favoritesApi.list });
 
@@ -32,7 +34,7 @@ export function FavoritesScreen() {
         refreshing={favorites.isRefetching}
         onRefresh={() => favorites.refetch()}
         ListEmptyComponent={
-          <EmptyState title="No favorites yet">Open a product and tap "Save to favorites" to keep it here.</EmptyState>
+          <EmptyState title={t.favorites.none}>{t.favorites.noneHint}</EmptyState>
         }
       />
     </View>

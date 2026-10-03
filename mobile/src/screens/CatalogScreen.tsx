@@ -8,11 +8,13 @@ import { EmptyState, ErrorState, Loading } from '../components/ui';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { categoriesApi, productsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { useT } from '../i18n/useT';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function CatalogScreen() {
   const colors = useThemeColors();
+  const t = useT();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<MainTabParamList, 'Catalog'>>();
   const [searchDraft, setSearchDraft] = useState('');
@@ -50,16 +52,16 @@ export function CatalogScreen() {
         <TextInput
           value={searchDraft}
           onChangeText={setSearchDraft}
-          placeholder="Search by name or SKU"
+          placeholder={t.catalog.search}
           placeholderTextColor={colors.steel}
-          accessibilityLabel="Search products"
+          accessibilityLabel={t.catalog.searchLabel}
           autoCorrect={false}
           returnKeyType="search"
           clearButtonMode="while-editing"
           style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.background }]}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          <Chip label="All" isSelected={categoryId === undefined} onPress={() => setCategoryId(undefined)} />
+          <Chip label={t.catalog.all} isSelected={categoryId === undefined} onPress={() => setCategoryId(undefined)} />
           {categories.data?.map((category) => (
             <Chip
               key={category.id}
@@ -70,11 +72,11 @@ export function CatalogScreen() {
           ))}
         </ScrollView>
         <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: colors.ink }]}>Only show what's in stock</Text>
+          <Text style={[styles.toggleLabel, { color: colors.ink }]}>{t.catalog.inStockOnly}</Text>
           <Switch
             value={inStockOnly}
             onValueChange={setInStockOnly}
-            accessibilityLabel="Only show what's in stock"
+            accessibilityLabel={t.catalog.inStockOnly}
             trackColor={{ true: colors.ink, false: colors.lineStrong }}
           />
         </View>
@@ -101,8 +103,8 @@ export function CatalogScreen() {
           refreshing={products.isRefetching && !products.isFetchingNextPage}
           onRefresh={() => products.refetch()}
           ListEmptyComponent={
-            <EmptyState title={isFiltered ? 'Nothing matches' : 'No products yet'}>
-              {isFiltered ? 'Try another search or category.' : 'Products added in the admin dashboard show up here.'}
+            <EmptyState title={isFiltered ? t.catalog.nothingMatches : t.catalog.noneYet}>
+              {isFiltered ? t.catalog.tryAnother : t.catalog.addedInDashboard}
             </EmptyState>
           }
           ListFooterComponent={products.isFetchingNextPage ? <Loading /> : null}

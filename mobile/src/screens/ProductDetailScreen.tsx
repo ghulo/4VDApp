@@ -9,10 +9,12 @@ import { favoritesApi, productsApi } from '../services/api';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
 
 export function ProductDetailScreen({ route, navigation }: Props) {
+  const t = useT();
   const { productId } = route.params;
   const colors = useThemeColors();
   const user = useCurrentUser();
@@ -50,11 +52,11 @@ export function ProductDetailScreen({ route, navigation }: Props) {
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
         <Text style={[styles.category, { color: colors.steel }]}>
           {item.category.name}
-          {item.sku ? `, SKU ${item.sku}` : ''}
+          {item.sku ? t.product.sku(item.sku) : ''}
         </Text>
         <Text style={[styles.name, { color: colors.ink }]}>{item.name}</Text>
         <Text style={[styles.price, { color: colors.ink }]}>
-          {formatMoney(item.promotion?.price ?? item.price)} <Text style={[styles.unit, { color: colors.steel }]}>each</Text>
+          {formatMoney(item.promotion?.price ?? item.price)} <Text style={[styles.unit, { color: colors.steel }]}>{t.product.each}</Text>
           {item.promotion && (
             <Text style={[styles.wasPrice, { color: colors.steel }]}> {formatMoney(item.price)}</Text>
           )}
@@ -68,27 +70,27 @@ export function ProductDetailScreen({ route, navigation }: Props) {
       </View>
 
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-        <Text style={[styles.panelTitle, { color: colors.ink }]}>In stock</Text>
+        <Text style={[styles.panelTitle, { color: colors.ink }]}>{t.product.inStock}</Text>
         <StockTag quantity={item.stock.quantity} reorderLevel={item.stock.reorderLevel} size="large" />
       </View>
 
       {item.bulkPricingTiers.length > 0 && (
         <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-          <Text style={[styles.panelTitle, { color: colors.ink }]}>Bulk prices</Text>
-          <TierRow quantityLabel={`1 to ${item.bulkPricingTiers[0]!.quantity - 1}`} price={item.price} />
+          <Text style={[styles.panelTitle, { color: colors.ink }]}>{t.product.bulkPrices}</Text>
+          <TierRow quantityLabel={t.product.upTo(item.bulkPricingTiers[0]!.quantity - 1)} price={item.price} />
           {item.bulkPricingTiers.map((tier) => (
-            <TierRow key={tier.quantity} quantityLabel={`${tier.quantity} or more`} price={tier.price} />
+            <TierRow key={tier.quantity} quantityLabel={t.product.orMore(tier.quantity)} price={tier.price} />
           ))}
         </View>
       )}
 
       <View style={styles.actions}>
         {canRecordSales(user) && item.stock.isInStock && (
-          <Button label="Record a sale" onPress={() => navigation.navigate('RecordSale', { productId })} />
+          <Button label={t.product.recordSale} onPress={() => navigation.navigate('RecordSale', { productId })} />
         )}
         {canRecordSales(user) && item.stock.isInStock && (
           <Button
-            label="Report damage or loss"
+            label={t.product.reportLoss}
             variant="quiet"
             onPress={() =>
               navigation.navigate('WriteOff', { productId, productName: item.name, inStock: item.stock.quantity })
@@ -96,7 +98,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
           />
         )}
         <Button
-          label={isFavorite ? 'Remove from favorites' : 'Save to favorites'}
+          label={isFavorite ? t.product.removeFavorite : t.product.saveFavorite}
           variant="quiet"
           onPress={() => toggleFavorite.mutate()}
           disabled={favoriteIds.isPending}
@@ -111,10 +113,11 @@ export function ProductDetailScreen({ route, navigation }: Props) {
 
 function TierRow({ quantityLabel, price }: { quantityLabel: string; price: number }) {
   const colors = useThemeColors();
+  const t = useT();
   return (
     <View style={[styles.tierRow, { borderTopColor: colors.line }]}>
       <Text style={[styles.tierQuantity, { color: colors.ink }]}>{quantityLabel}</Text>
-      <Text style={[styles.tierPrice, { color: colors.ink }]}>{formatMoney(price)} each</Text>
+      <Text style={[styles.tierPrice, { color: colors.ink }]}>{t.product.eachPrice(formatMoney(price))}</Text>
     </View>
   );
 }

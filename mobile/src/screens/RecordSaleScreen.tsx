@@ -8,9 +8,11 @@ import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
+import { useT } from '../i18n/useT';
 
 /** Used both as the "Sell" tab and as a modal opened from a product. */
 export function RecordSaleScreen() {
+  const t = useT();
   const route = useRoute();
   const presetProductId = (route.params as { productId?: number } | undefined)?.productId;
   const [productId, setProductId] = useState<number | undefined>(presetProductId);
@@ -22,7 +24,7 @@ export function RecordSaleScreen() {
 
   if (products.isPending) return <Loading />;
   if (products.isError) return <ErrorState error={products.error} onRetry={() => products.refetch()} />;
-  if (products.data.items.length === 0) return <EmptyState title="Nothing in stock to sell" />;
+  if (products.data.items.length === 0) return <EmptyState title={t.sell.nothingInStock} />;
 
   const selected = products.data.items.find((product) => product.id === productId);
   return selected ? (
@@ -34,9 +36,10 @@ export function RecordSaleScreen() {
 
 function ProductPicker({ products, onPick }: { products: Product[]; onPick: (id: number) => void }) {
   const colors = useThemeColors();
+  const t = useT();
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
-      <Text style={[styles.hint, { color: colors.steel }]}>Which product did you sell?</Text>
+      <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.whichProduct}</Text>
       {products.map((product) => (
         <Pressable
           key={product.id}
@@ -59,6 +62,7 @@ function ProductPicker({ products, onPick }: { products: Product[]; onPick: (id:
 
 function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProduct?: () => void }) {
   const colors = useThemeColors();
+  const t = useT();
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
@@ -70,7 +74,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['reports', 'my-sales'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      setSavedMessage(`Sold ${sale.quantity} × ${sale.productName} for ${formatMoney(sale.totalAmount)}.`);
+      setSavedMessage(t.sell.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }));
       setQuantity(1);
       setNotes('');
     },
@@ -94,31 +98,31 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
         <Text style={[styles.pickerMeta, { color: colors.steel }]}>{maxQuantity} in stock</Text>
         {onChangeProduct && (
           <Pressable accessibilityRole="button" onPress={onChangeProduct} hitSlop={8}>
-            <Text style={[styles.link, { color: colors.ink }]}>Choose a different product</Text>
+            <Text style={[styles.link, { color: colors.ink }]}>{t.sell.chooseDifferent}</Text>
           </Pressable>
         )}
       </View>
 
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
-        <Text style={[styles.label, { color: colors.ink }]}>How many</Text>
+        <Text style={[styles.label, { color: colors.ink }]}>{t.sell.howMany}</Text>
         <View style={styles.stepper}>
-          <StepButton label="−" accessibilityLabel="One less" onPress={() => change(-1)} disabled={quantity <= 1} />
+          <StepButton label="−" accessibilityLabel={t.sell.oneLess} onPress={() => change(-1)} disabled={quantity <= 1} />
           <Text style={[styles.quantity, { color: colors.ink }]} accessibilityLiveRegion="polite">
             {quantity}
           </Text>
-          <StepButton label="+" accessibilityLabel="One more" onPress={() => change(1)} disabled={quantity >= maxQuantity} />
+          <StepButton label="+" accessibilityLabel={t.sell.oneMore} onPress={() => change(1)} disabled={quantity >= maxQuantity} />
         </View>
         <Text style={[styles.total, { color: colors.ink }]}>
           {quantity} × {formatMoney(unitPrice)} = {formatMoney(unitPrice * quantity)}
         </Text>
         {unitPrice < product.price && (
           <Text style={[styles.hint, { color: colors.stockOk }]}>
-            {isPromotion && product.promotion ? `${product.promotion.name}: ${promotionLabel(product.promotion)}` : 'Bulk price applied'}
+            {isPromotion && product.promotion ? `${product.promotion.name}: ${promotionLabel(product.promotion)}` : t.sell.bulkApplied}
           </Text>
         )}
       </View>
 
-      <TextField label="Note (optional)" value={notes} onChangeText={setNotes} maxLength={1000} />
+      <TextField label={t.sell.note} value={notes} onChangeText={setNotes} maxLength={1000} />
 
       {record.isError && (
         <Text style={[styles.message, { color: colors.signalOut }]} accessibilityRole="alert">
@@ -131,7 +135,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
         </Text>
       )}
 
-      <Button label="Record sale" onPress={() => record.mutate()} loading={record.isPending} />
+      <Button label={t.sell.record} onPress={() => record.mutate()} loading={record.isPending} />
     </ScrollView>
   );
 }

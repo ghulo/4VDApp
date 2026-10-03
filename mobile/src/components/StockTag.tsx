@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { fonts, useThemeColors } from '../theme';
+import { useT } from '../i18n/useT';
 
 type StockLevel = 'out' | 'low' | 'ok';
 
@@ -9,11 +10,6 @@ function stockLevel(quantity: number, reorderLevel: number): StockLevel {
   return 'ok';
 }
 
-const LEVEL_LABEL: Record<StockLevel, string> = {
-  out: 'Sold out',
-  low: 'Low stock',
-  ok: 'In stock',
-};
 
 interface StockTagProps {
   quantity: number;
@@ -27,6 +23,7 @@ interface StockTagProps {
  */
 export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagProps) {
   const colors = useThemeColors();
+  const t = useT();
   const level = stockLevel(quantity, reorderLevel);
   const fill = Math.min(quantity / Math.max(reorderLevel * 2, 1), 1);
   const barColor = { out: colors.signalOut, low: colors.signalLow, ok: colors.stockOk }[level];
@@ -36,7 +33,7 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
     <View
       style={[styles.container, isLarge && styles.containerLarge]}
       accessible
-      accessibilityLabel={`${quantity} in stock, ${LEVEL_LABEL[level].toLowerCase()}`}
+      accessibilityLabel={t.stockTag.label(quantity, t.stockTag[level])}
     >
       <Text
         style={[
@@ -51,7 +48,7 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
         <View style={[styles.fill, { width: `${fill * 100}%`, backgroundColor: barColor }]} />
         <View style={[styles.notch, { backgroundColor: colors.surface }]} />
       </View>
-      <Text style={[styles.label, { color: colors.steel }]}>{LEVEL_LABEL[level]}</Text>
+      <Text style={[styles.label, { color: colors.steel }]}>{t.stockTag[level]}</Text>
     </View>
   );
 }

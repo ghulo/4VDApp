@@ -11,19 +11,16 @@ import type { WriteOffReason } from '../services/types';
 import { decidesRequests, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
+import { useT } from '../i18n/useT';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WriteOff'>;
 
-const REASONS = [
-  { value: 'damaged', label: 'Damaged' },
-  { value: 'lost', label: 'Lost' },
-  { value: 'expired', label: 'Expired' },
-  { value: 'other', label: 'Other' },
-] as const;
+const REASONS = ['damaged', 'lost', 'expired', 'other'] as const;
 
 export function WriteOffScreen({ route, navigation }: Props) {
   const { productId, productName, inStock } = route.params;
   const colors = useThemeColors();
+  const t = useT();
   const user = useCurrentUser();
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState('1');
@@ -44,12 +41,12 @@ export function WriteOffScreen({ route, navigation }: Props) {
     const what = `${submit.data.quantity} × ${productName}`;
     return submit.data.status === 'pending' ? (
       <Confirmation
-        title="Sent to the owner"
-        message={`${what} will leave the stock once the owner approves it. You'll see the answer under Your requests on Home.`}
+        title={t.writeOff.sentTitle}
+        message={t.writeOff.sentMessage(what)}
         onDone={() => navigation.goBack()}
       />
     ) : (
-      <Confirmation title="Written off" message={`${what} has been taken out of stock.`} onDone={() => navigation.goBack()} />
+      <Confirmation title={t.writeOff.doneTitle} message={t.writeOff.doneMessage(what)} onDone={() => navigation.goBack()} />
     );
   }
 
@@ -58,19 +55,27 @@ export function WriteOffScreen({ route, navigation }: Props) {
       <Text style={[styles.title, { color: colors.ink }]}>{productName}</Text>
       <Text style={[styles.muted, { color: colors.steel }]}>{inStock} in stock</Text>
 
-      <Stepper label="How many" value={quantity} onChange={setQuantity} min={1} max={inStock} />
-      <ChoiceRow label="What happened" options={REASONS} value={reason} onChange={setReason} />
-      <TextField label="Note (optional)" value={notes} onChangeText={setNotes} maxLength={1000} placeholder="e.g. dropped in the stockroom" />
+      <Stepper label={t.writeOff.howMany} value={quantity} onChange={setQuantity} min={1} max={inStock} />
+      <ChoiceRow
+        label={t.writeOff.whatHappened}
+        options={REASONS.map((value) => ({ value, label: t.writeOff.reasons[value] }))} value={reason} onChange={setReason} />
+      <TextField
+        label={t.writeOff.note}
+        value={notes}
+        onChangeText={setNotes}
+        maxLength={1000}
+        placeholder={t.writeOff.notePlaceholder}
+      />
 
       {!decidesRequests(user) && (
         <View style={[styles.notice, { borderColor: colors.signalLow, backgroundColor: colors.surface }]}>
-          <Text style={[styles.noticeText, { color: colors.ink }]}>The owner approves this before it leaves the stock.</Text>
+          <Text style={[styles.noticeText, { color: colors.ink }]}>{t.writeOff.ownerApproves}</Text>
         </View>
       )}
 
       {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
       <Button
-        label={decidesRequests(user) ? 'Write off' : 'Send to the owner'}
+        label={decidesRequests(user) ? t.writeOff.writeOff : t.writeOff.send}
         onPress={() => submit.mutate()}
         disabled={!isValid}
         loading={submit.isPending}

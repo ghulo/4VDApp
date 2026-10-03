@@ -126,6 +126,95 @@ export class UndoRepository {
       .executeTakeFirst();
   }
 
+  // Batched reads for showing undo state on a page of activity entries.
+
+  salesByIds(ids: number[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('sales as s')
+      .innerJoin('products as p', 'p.id', 's.product_id')
+      .select([
+        's.id',
+        'p.name as product_name',
+        's.quantity_sold',
+        's.total_amount',
+        's.sale_date',
+        's.sold_by',
+        's.undone_at',
+        's.undone_by',
+        's.undo_note',
+        sql<string>`(select count(*) from returns r
+          where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null)`.as('standing_returns'),
+      ])
+      .where('s.id', 'in', ids)
+      .execute();
+  }
+
+  returnsByIds(ids: number[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('returns as r')
+      .innerJoin('sales as s', 's.id', 'r.sale_id')
+      .innerJoin('products as p', 'p.id', 's.product_id')
+      .select([
+        'r.id',
+        'p.name as product_name',
+        'r.quantity',
+        'r.refund_amount',
+        'r.condition',
+        'r.status',
+        'r.decided_at',
+        'r.requested_by',
+        'r.undone_at',
+        'r.undone_by',
+        'r.undo_note',
+      ])
+      .where('r.id', 'in', ids)
+      .execute();
+  }
+
+  writeOffsByIds(ids: number[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('write_offs as w')
+      .innerJoin('products as p', 'p.id', 'w.product_id')
+      .select(['w.id', 'p.name as product_name', 'w.quantity', 'w.status', 'w.return_id', 'w.requested_by', 'w.undone_at', 'w.undone_by', 'w.undo_note'])
+      .where('w.id', 'in', ids)
+      .execute();
+  }
+
+  countLinesByCounts(countIds: number[]) {
+    if (countIds.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('stock_count_lines as l')
+      .innerJoin('stock_counts as c', 'c.id', 'l.count_id')
+      .innerJoin('products as p', 'p.id', 'l.product_id')
+      .select([
+        'l.count_id',
+        'l.product_id',
+        'p.name as product_name',
+        'l.counted_quantity',
+        'l.expected_quantity',
+        'l.status',
+        'c.submitted_by',
+        'l.undone_at',
+        'l.undone_by',
+        'l.undo_note',
+      ])
+      .where('l.count_id', 'in', countIds)
+      .execute();
+  }
+
+  usersByIds(ids: number[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db.selectFrom('users').select(['id', 'name', 'role']).where('id', 'in', ids).execute();
+  }
+
+  productNames(ids: number[]) {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.db.selectFrom('products').select(['id', 'name']).where('id', 'in', ids).execute();
+  }
+
   /** Mark a row undone (with who and why), or clear it again on restore. `at` puts back an earlier state. */
   async mark(row: UndoRow, undo: { by: number; note: string | null; at?: Date } | null): Promise<void> {
     const values = undo

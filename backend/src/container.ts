@@ -131,7 +131,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const userService = new UserService(userRepository, refreshTokenRepository, transactions);
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
-  const activityLogService = new ActivityLogService(activityLogRepository);
+  const undoRepository = new UndoRepository(db);
+  const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
   const reportsService = new ReportsService(reportsRepository, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
@@ -140,7 +141,6 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
-  const undoRepository = new UndoRepository(db);
   const undoService = new UndoService(
     transactions,
     undoRepository,

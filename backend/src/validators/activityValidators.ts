@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { ACTIVITY_ENTITY_TYPES } from '../constants/activity.js';
 import { idSchema, paginationSchema } from './validate.js';
 
+export const undoBodySchema = z.object({
+  note: z.string().trim().max(500).optional(),
+});
+
 export const activityQuerySchema = paginationSchema.extend({
   userId: idSchema.optional(),
   entityType: z.enum(ACTIVITY_ENTITY_TYPES).optional(),

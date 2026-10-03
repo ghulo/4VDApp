@@ -35,3 +35,7 @@ Thumbs.db
 
 # Plan progress notes (local scratch)
 .superpowers/
+
+# Local links the skills installer makes to .agents/skills (absolute paths)
+.claude/skills/design-md
+.claude/skills/web-design-guidelines

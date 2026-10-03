@@ -4,6 +4,8 @@
 {
   "name": "4vd-app",
   "compatibility_date": "2026-10-01",
+  // The address it answers on; Cloudflare creates the DNS record and certificate.
+  "routes": [{ "pattern": "app.4vd.app", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
     // Every screen is handled by the app itself, so unknown paths load index.html.

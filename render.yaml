@@ -11,9 +11,8 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    # Free is fine for trying it out, but it sleeps when idle, and while asleep
-    # no alerts or daily summary go out. Use starter for real use.
-    plan: free
+    # Starter (0.5 CPU, 512 MB): always on, so alerts and the daily summary go out.
+    plan: starter
     region: frankfurt
     healthCheckPath: /health
     autoDeployTrigger: checksPass
@@ -55,6 +54,7 @@ services:
 
 databases:
   - name: 4vd-db
-    plan: free
+    # Basic-256mb: kept for good, with point-in-time restore (3 days on the Hobby workspace).
+    plan: basic-256mb
     region: frankfurt
     postgresMajorVersion: "17"

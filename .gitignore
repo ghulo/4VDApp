@@ -39,3 +39,5 @@ Thumbs.db
 # Local links the skills installer makes to .agents/skills (absolute paths)
 .claude/skills/design-md
 .claude/skills/web-design-guidelines
+.claude/skills/vercel-react-best-practices
+.claude/skills/vercel-react-native-skills

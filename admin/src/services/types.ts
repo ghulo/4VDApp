@@ -136,6 +136,8 @@ export interface Dashboard {
 export interface RevenuePoint {
   periodStart: string;
   revenue: number;
+  /** Only sales of products with a cost price, like the reports' profit. */
+  profit: number;
   unitsSold: number;
   salesCount: number;
 }

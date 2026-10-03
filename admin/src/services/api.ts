@@ -224,8 +224,8 @@ export const salesApi = {
 
 export const analyticsApi = {
   dashboard: async (days: number) => (await apiRequest<Dashboard>('/analytics/dashboard', { query: { days } })).data,
-  revenue: async (period: RevenueSeries['period'], startDate?: string) =>
-    (await apiRequest<RevenueSeries>('/analytics/revenue', { query: { period, startDate } })).data,
+  revenue: async (period: RevenueSeries['period'], startDate?: string, endDate?: string) =>
+    (await apiRequest<RevenueSeries>('/analytics/revenue', { query: { period, startDate, endDate } })).data,
 };
 
 export const usersApi = {

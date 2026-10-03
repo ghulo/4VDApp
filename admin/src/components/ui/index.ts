@@ -5,6 +5,7 @@ export { buttonClass, type ButtonVariant } from './buttonClass';
 export { Card, SettingRow } from './Card';
 export { DataTable, type Column } from './DataTable';
 export { EmptyState } from './EmptyState';
+export { MetricCard, MetricGrid } from './MetricCard';
 export { Field } from './Field';
 export { Halftone } from './Halftone';
 export { PageHeader, type Crumb } from './PageHeader';

@@ -27,6 +27,8 @@ const TRANSLATED = [
   'src/components/ui/Halftone.tsx',
   'src/components/ui/Motion.tsx',
   'src/components/ui/PageHeader.tsx',
+  'src/components/ui/MetricCard.tsx',
+  'src/components/AnalyticsBoard.tsx',
   'src/components/ui/Stat.tsx',
   'src/theme/ThemeSwitch.tsx',
   'src/command/CommandPalette.tsx',

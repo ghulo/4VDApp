@@ -3,13 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
+import { AnalyticsBoard } from '../components/AnalyticsBoard';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatMoney } from '../utils/format';
-import { Card, DotBars, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
+import { Card, DotBars, MetricCard, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
+import { usePeriodParams } from '../utils/usePeriodParams';
 import { useT } from '../i18n/useT';
 
 const PERIOD_DAYS = 30;
@@ -50,6 +53,8 @@ export function OverviewPage() {
       <SetupGuide />
 
       <TodayBoard lowCount={lowCount} />
+
+      <OverviewAnalytics />
 
       <div className="split">
         <AttentionPanel />
@@ -181,6 +186,32 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   );
 }
 
+/** The shop's figures for a period the owner picks, Cloudflare-style: a card per figure with its trend. */
+function OverviewAnalytics() {
+  const { period, from, to, comparedRange, changePeriod } = usePeriodParams('last-30-days');
+  return (
+    <AnalyticsBoard range={comparedRange} controls={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}>
+      {() => <StockWorthCard />}
+    </AnalyticsBoard>
+  );
+}
+
+/** What the stock on the shelves cost; the same today whatever period is picked. */
+function StockWorthCard() {
+  const t = useT();
+  const dashboard = useQuery({
+    queryKey: ['analytics', 'dashboard', PERIOD_DAYS],
+    queryFn: () => analyticsApi.dashboard(PERIOD_DAYS),
+  });
+  return (
+    <MetricCard
+      label={t.analytics.stockWorth}
+      value={dashboard.data ? formatMoney(dashboard.data.inventoryValue) : '–'}
+      to="/inventory"
+    />
+  );
+}
+
 /** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
 function AttentionPanel() {
   const t = useT();
@@ -234,13 +265,6 @@ function SalesSummary() {
       {dashboard.isError && <ErrorNotice error={dashboard.error} onRetry={() => dashboard.refetch()} />}
       {dashboard.data && (
         <>
-          <StatGrid>
-            <StatTile label={t.overview.inSales} value={formatMoney(dashboard.data.totalRevenue)} />
-            <StatTile label={t.overview.profit} value={formatMoney(dashboard.data.totalProfit)} />
-            <StatTile label={t.overview.unitsSold} value={dashboard.data.unitsSold} />
-            <StatTile label={t.overview.stockWorth} value={formatMoney(dashboard.data.inventoryValue)} />
-          </StatGrid>
-
           {revenue.data && <RevenueChart points={revenue.data.points} title={t.overview.salesPerDay} />}
 
           {dashboard.data.topProducts.length > 0 ? (

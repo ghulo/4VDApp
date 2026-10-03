@@ -8,7 +8,7 @@ import { Button } from '../ui';
 import { effectSentence } from './activityText';
 
 /** An undo changes stock, money and whatever was edited, so everything that shows them refreshes. */
-const AFFECTED_QUERIES = ['activity', 'reports', 'inventory', 'products', 'sales', 'approvals', 'promotions', 'settings'];
+const AFFECTED_QUERIES = ['activity', 'reports', 'analytics', 'inventory', 'products', 'sales', 'approvals', 'promotions', 'settings'];
 
 interface UndoConfirmProps {
   entry: ActivityEntry & { undo: NonNullable<ActivityEntry['undo']> };

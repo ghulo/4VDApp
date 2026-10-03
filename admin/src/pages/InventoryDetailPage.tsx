@@ -11,8 +11,10 @@ import { formatDateTime, formatSignedQuantity } from '../utils/format';
 import { Button, ButtonLink, Card, PageHeader } from '../components/ui';
 import { PencilSimple } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
+import { useT } from '../i18n/useT';
 
 export function InventoryDetailPage() {
+  const t = useT();
   const productId = Number(useParams().productId);
   const query = useQuery({
     queryKey: ['inventory', productId],
@@ -27,34 +29,35 @@ export function InventoryDetailPage() {
     <>
       <PageHeader
         title={item.productName}
-        description={item.sku ? `SKU ${item.sku}` : undefined}
-        crumbs={[{ label: 'Stock', to: '/inventory' }]}
+        description={item.sku ? t.inventory.sku(item.sku) : undefined}
+        crumbs={[{ label: t.inventory.title, to: '/inventory' }]}
         actions={
           <ButtonLink to={`/products/${item.productId}`} icon={PencilSimple}>
-            Edit product
+            {t.inventory.editProduct}
           </ButtonLink>
         }
       />
 
       <div className="split">
-        <Card title="On the shelf">
+        <Card title={t.inventory.onShelf}>
           <div className="stock-hero">
             <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} size="large" />
-            {item.warnings.map((warning) => (
-              <p key={warning} className="stock-hero__warning">
-                {warning}
-              </p>
-            ))}
+            {/* Written here rather than taken from the server, so they follow the language. */}
+            {item.quantity === 0 ? (
+              <p className="stock-hero__warning">{t.inventory.outWarning}</p>
+            ) : item.quantity <= item.reorderLevel ? (
+              <p className="stock-hero__warning">{t.inventory.lowWarning(item.reorderLevel)}</p>
+            ) : null}
           </div>
           <AdjustStockForm item={item} />
-          <h3 className="subheading">Damaged, lost or expired</h3>
-          <p className="field-hint">Takes the units out of stock and records the loss at cost price in Reports.</p>
+          <h3 className="subheading">{t.inventory.lossTitle}</h3>
+          <p className="field-hint">{t.inventory.lossHint}</p>
           <WriteOffForm productId={item.productId} inStock={item.quantity} />
         </Card>
 
-        <Card title="History">
+        <Card title={t.inventory.history}>
           {item.recentAdjustments.length === 0 ? (
-            <EmptyState title="No changes yet" />
+            <EmptyState title={t.inventory.noChanges} />
           ) : (
             <ol className="history">
               {item.recentAdjustments.map((adjustment) => (
@@ -63,7 +66,7 @@ export function InventoryDetailPage() {
                     {formatSignedQuantity(adjustment.quantity)}
                   </span>
                   <span className="history__what">
-                    {adjustment.reason}
+                    {t.stockReasons[adjustment.reason] ?? adjustment.reason}
                     {adjustment.notes && <span className="history__notes">{adjustment.notes}</span>}
                   </span>
                   <span className="history__when">
@@ -84,6 +87,7 @@ type Direction = 'add' | 'remove';
 
 function AdjustStockForm({ item }: { item: InventoryDetail }) {
   const queryClient = useQueryClient();
+  const t = useT();
   const [direction, setDirection] = useState<Direction>('add');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState<StockReason>('Restock');
@@ -102,7 +106,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
       queryClient.invalidateQueries({ queryKey: ['activity'] });
       setAmount('');
       setNotes('');
-      setSavedMessage(`Stock is now ${updated.quantity}.`);
+      setSavedMessage(t.inventory.nowAt(updated.quantity));
     },
   });
 
@@ -132,9 +136,9 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
   const hasChange = Number(amount) > 0 || (reorderLevel !== '' && Number(reorderLevel) !== item.reorderLevel);
 
   return (
-    <ManagersOnly note="Only the developer or an admin can correct stock. Report damage or losses from the team app.">
+    <ManagersOnly note={t.inventory.managersOnly}>
       <form className="adjust-form" onSubmit={handleSubmit}>
-        <div className="segmented" role="radiogroup" aria-label="Add or remove stock">
+        <div className="segmented" role="radiogroup" aria-label={t.inventory.addOrRemove}>
           {(['add', 'remove'] as const).map((option) => (
             <button
               key={option}
@@ -144,14 +148,14 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
               className="segmented__option"
               onClick={() => chooseDirection(option)}
             >
-              {option === 'add' ? 'Add stock' : 'Remove stock'}
+              {option === 'add' ? t.inventory.add : t.inventory.remove}
             </button>
           ))}
         </div>
 
         <div className="field-row">
           <label className="field">
-            <span className="field__label">How many</span>
+            <span className="field__label">{t.inventory.howMany}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -163,22 +167,24 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
             />
           </label>
           <label className="field">
-            <span className="field__label">Reason</span>
+            <span className="field__label">{t.inventory.reason}</span>
             <select value={reason} onChange={(event) => setReason(event.target.value as StockReason)}>
               {reasons.map((option) => (
-                <option key={option}>{option}</option>
+                <option key={option} value={option}>
+                  {t.stockReasons[option] ?? option}
+                </option>
               ))}
             </select>
           </label>
         </div>
 
         <label className="field">
-          <span className="field__label">Note (optional)</span>
+          <span className="field__label">{t.inventory.note}</span>
           <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
         </label>
 
         <label className="field field--narrow">
-          <span className="field__label">Warn me when stock reaches</span>
+          <span className="field__label">{t.inventory.warnAt}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -201,7 +207,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
         )}
 
         <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary">
-          {mutation.isPending ? 'Saving…' : 'Save stock change'}
+          {mutation.isPending ? t.inventory.saving : t.inventory.save}
         </Button>
       </form>
     </ManagersOnly>

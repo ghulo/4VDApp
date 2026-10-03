@@ -5,10 +5,12 @@ import type { ReturnCondition, Sale } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { Button } from './ui';
+import { useT } from '../i18n/useT';
 
 /** Return part or all of a sale. The owner's returns go through straight away. */
 export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: string) => void }) {
   const queryClient = useQueryClient();
+  const t = useT();
   const left = sale.quantity - sale.returnedQuantity;
   const [quantity, setQuantity] = useState(String(left));
   const [condition, setCondition] = useState<ReturnCondition>('resellable');
@@ -35,8 +37,8 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
       }
       onDone(
         item.condition === 'damaged'
-          ? `Refunded ${formatMoney(item.refundAmount)} and wrote off ${item.quantity} damaged.`
-          : `Refunded ${formatMoney(item.refundAmount)} and put ${item.quantity} back in stock.`,
+          ? t.returnForm.refundedDamaged({ amount: formatMoney(item.refundAmount), quantity: item.quantity })
+          : t.returnForm.refundedBack({ amount: formatMoney(item.refundAmount), quantity: item.quantity }),
       );
     },
   });
@@ -50,7 +52,7 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
     <form className="return-form" onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Units coming back</span>
+          <span className="field__label">{t.returnForm.unitsBack}</span>
           <input
             type="number"
             inputMode="numeric"
@@ -61,11 +63,11 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
             onChange={(event) => setQuantity(event.target.value)}
           />
           <span className="field-hint">
-            {left} of {sale.quantity} can still be returned
+            {t.returnForm.canReturn(left, sale.quantity)}
           </span>
         </label>
         <label className="field">
-          <span className="field__label">Refund</span>
+          <span className="field__label">{t.returnForm.refund}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -76,11 +78,11 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
             value={refund}
             onChange={(event) => setRefund(event.target.value)}
           />
-          <span className="field-hint">They paid {isQuantityValid ? formatMoney(paid) : '…'}</span>
+          <span className="field-hint">{t.returnForm.theyPaid(isQuantityValid ? formatMoney(paid) : '…')}</span>
         </label>
       </div>
 
-      <div className="segmented" role="radiogroup" aria-label="Condition">
+      <div className="segmented" role="radiogroup" aria-label={t.returnForm.condition}>
         {(['resellable', 'damaged'] as const).map((option) => (
           <button
             key={option}
@@ -90,13 +92,13 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
             className="segmented__option"
             onClick={() => setCondition(option)}
           >
-            {option === 'resellable' ? 'Back on the shelf' : 'Damaged, write it off'}
+            {option === 'resellable' ? t.returnForm.resellable : t.returnForm.damaged}
           </button>
         ))}
       </div>
 
       <label className="field">
-        <span className="field__label">Note (optional)</span>
+        <span className="field__label">{t.returnForm.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </label>
 
@@ -108,7 +110,9 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
       <Button type="submit"
        
         disabled={!isQuantityValid || !isRefundValid || mutation.isPending} variant="primary">
-        {mutation.isPending ? 'Returning…' : `Return and refund ${isRefundValid && isQuantityValid ? formatMoney(refundAmount) : ''}`}
+        {mutation.isPending
+          ? t.returnForm.returning
+          : t.returnForm.returnAndRefund(isRefundValid && isQuantityValid ? formatMoney(refundAmount) : '')}
       </Button>
     </form>
   );

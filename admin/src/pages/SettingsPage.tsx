@@ -7,8 +7,10 @@ import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ManagersOnly } from '../components/ManagersOnly';
+import { useT } from '../i18n/useT';
 
 export function SettingsPage() {
+  const t = useT();
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
@@ -17,10 +19,10 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Settings"
-        description="Your shop's details, when a return has to wait for you, and how low a promotion may take a price."
+        title={t.settings.title}
+        description={t.settings.description}
       />
-      <ManagersOnly note="Only the developer or an admin can change the shop's settings.">
+      <ManagersOnly note={t.settings.managersOnly}>
         <BusinessPanel />
         {settings.isPending && <Loading />}
         {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
@@ -32,6 +34,7 @@ export function SettingsPage() {
 
 function SettingsForm({ initial }: { initial: AppSettings }) {
   const queryClient = useQueryClient();
+  const t = useT();
   const [limit, setLimit] = useState(String(initial.refundApprovalLimit));
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
@@ -71,8 +74,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   return (
     <form onSubmit={handleSubmit}>
       <Card
-        title="Approvals and prices"
-        description="Damaged stock, write-offs and count differences always wait for you. Your own returns go straight through."
+        title={t.settings.approvals}
+        description={t.settings.approvalsHint}
         footer={
           <>
             {save.isError && (
@@ -82,18 +85,18 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
             )}
             {saved && !save.isError && (
               <span className="form-success" role="status">
-                Saved.
+                {t.settings.saved}
               </span>
             )}
             <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save changes'}
+              {save.isPending ? t.settings.saving : t.settings.saveChanges}
             </Button>
           </>
         }
       >
         <SettingRow
-          title="Refunds that need your approval"
-          description="Refunds above this amount wait for you. Smaller ones go through straight away, so the customer isn't kept waiting."
+          title={t.settings.refundLimit}
+          description={t.settings.refundLimitHint}
         >
           <span className="unit-input">
             <span aria-hidden="true">€</span>
@@ -102,15 +105,15 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               inputMode="decimal"
               min={0}
               step={1}
-              aria-label="Refunds above this need your approval, in euros"
+              aria-label={t.settings.refundLimitLabel}
               value={limit}
               onChange={(event) => setLimit(event.target.value)}
             />
           </span>
         </SettingRow>
         <SettingRow
-          title="Returns of older sales"
-          description="Returns of sales older than this many days wait for you."
+          title={t.settings.window}
+          description={t.settings.windowHint}
         >
           <span className="unit-input">
             <input
@@ -118,16 +121,16 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               inputMode="numeric"
               min={0}
               step={1}
-              aria-label="Days after a sale before its return needs your approval"
+              aria-label={t.settings.windowLabel}
               value={windowDays}
               onChange={(event) => setWindowDays(event.target.value)}
             />
-            <span aria-hidden="true">days</span>
+            <span aria-hidden="true">{t.settings.days}</span>
           </span>
         </SettingRow>
         <SettingRow
-          title="Minimum margin on promotions"
-          description="A promotion can't take a price below cost plus this much. 0 means never below cost; 10 means cost + 10%."
+          title={t.settings.margin}
+          description={t.settings.marginHint}
         >
           <span className="unit-input">
             <input
@@ -135,7 +138,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               inputMode="decimal"
               min={0}
               step={1}
-              aria-label="Minimum margin on promotions, in percent"
+              aria-label={t.settings.marginLabel}
               value={minimumMargin}
               onChange={(event) => setMinimumMargin(event.target.value)}
             />
@@ -143,11 +146,11 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
           </span>
         </SettingRow>
         <SettingRow
-          title="Daily summary"
-          description="Shop time. The day's sales and anything that needs you, sent as an alert. Turn it off under Alerts on your Profile page."
+          title={t.settings.summary}
+          description={t.settings.summaryHint}
         >
           <select
-            aria-label="Send my daily summary at"
+            aria-label={t.settings.summaryLabel}
             className="setting-select"
             value={summaryHour}
             onChange={(event) => setSummaryHour(Number(event.target.value))}

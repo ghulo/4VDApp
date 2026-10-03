@@ -33,6 +33,7 @@ import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
 import { UsersPage } from './pages/UsersPage';
 import { ButtonLink } from './components/ui';
+import { useT } from './i18n/useT';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,10 +47,11 @@ const queryClient = new QueryClient({
 });
 
 function NotFoundPage() {
+  const t = useT();
   return (
-    <EmptyState title="This page doesn't exist">
+    <EmptyState title={t.notFound.title}>
       <ButtonLink to="/" variant="primary">
-        Go to overview
+        {t.notFound.back}
       </ButtonLink>
     </EmptyState>
   );

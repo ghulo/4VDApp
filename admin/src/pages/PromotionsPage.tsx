@@ -7,13 +7,7 @@ import { errorMessage } from '../utils/errors';
 import { formatPromotionDay } from '../utils/format';
 import { Badge, Button, Card, PageHeader, type Tone } from '../components/ui';
 import { ManagersOnly } from '../components/ManagersOnly';
-
-const STATUS_LABEL: Record<PromotionStatus, string> = {
-  scheduled: 'Starts later',
-  running: 'Running',
-  finished: 'Finished',
-  ended: 'Ended early',
-};
+import { useT } from '../i18n/useT';
 
 const STATUS_TONE: Record<PromotionStatus, Tone> = {
   scheduled: 'info',
@@ -27,38 +21,39 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function PromotionsPage() {
+  const t = useT();
   const promotions = useQuery({ queryKey: ['promotions'], queryFn: promotionsApi.list });
 
   return (
     <>
       <PageHeader
-        title="Promotions"
-        description="A discount for one product or a whole category. It applies by itself to every sale while it runs, and prices go back when it ends. Discounts never stack, and bulk prices win when they're cheaper."
+        title={t.promotions.title}
+        description={t.promotions.description}
       />
 
-      <ManagersOnly note="Only the developer or an admin can start or end promotions.">
-        <Card title="New promotion">
+      <ManagersOnly note={t.promotions.managersOnly}>
+        <Card title={t.promotions.new}>
           <PromotionForm />
         </Card>
 
         {promotions.isPending && <Loading />}
         {promotions.isError && <ErrorNotice error={promotions.error} onRetry={() => promotions.refetch()} />}
         {promotions.data && promotions.data.length === 0 && (
-          <EmptyState title="No promotions yet">Create one above, e.g. 15% off Lighting for a week.</EmptyState>
+          <EmptyState title={t.promotions.none}>{t.promotions.noneHint}</EmptyState>
         )}
         {promotions.data && promotions.data.length > 0 && (
-          <Card title="All promotions" flush>
+          <Card title={t.promotions.all} flush>
             <div className="table-wrap">
               <table className="table">
                 <thead>
                   <tr>
-                    <th scope="col">Promotion</th>
-                    <th scope="col">Applies to</th>
-                    <th scope="col" className="table__numeric">Discount</th>
-                    <th scope="col">Dates</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">{t.promotions.promotion}</th>
+                    <th scope="col">{t.promotions.appliesTo}</th>
+                    <th scope="col" className="table__numeric">{t.promotions.discount}</th>
+                    <th scope="col">{t.promotions.dates}</th>
+                    <th scope="col">{t.promotions.status_}</th>
                     <th scope="col">
-                      <span className="visually-hidden">Actions</span>
+                      <span className="visually-hidden">{t.promotions.actions}</span>
                     </th>
                   </tr>
                 </thead>
@@ -77,6 +72,7 @@ export function PromotionsPage() {
 }
 
 function PromotionRow({ promotion }: { promotion: Promotion }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const end = useMutation({
     mutationFn: () => promotionsApi.end(promotion.id),
@@ -91,20 +87,20 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
     <tr className={isLive ? undefined : 'table__row--muted'}>
       <td>
         <span className="table__primary-link">{promotion.name}</span>
-        {promotion.createdBy && <span className="table__secondary">by {promotion.createdBy}</span>}
+        {promotion.createdBy && <span className="table__secondary">{t.promotions.by(promotion.createdBy)}</span>}
       </td>
-      <td>{promotion.product ? promotion.product.name : `All of ${promotion.category?.name ?? 'a category'}`}</td>
+      <td>{promotion.product ? promotion.product.name : t.promotions.allOf(promotion.category?.name ?? t.promotions.aCategory)}</td>
       <td className="table__numeric">−{promotion.percentOff}%</td>
       <td>
         {formatPromotionDay(promotion.startsAt)} – {formatPromotionDay(promotion.endsAt, true)}
       </td>
       <td>
-        <Badge tone={STATUS_TONE[promotion.status]}>{STATUS_LABEL[promotion.status]}</Badge>
+        <Badge tone={STATUS_TONE[promotion.status]}>{t.promotions.status[promotion.status]}</Badge>
       </td>
       <td>
         {isLive && (
           <Button variant="danger-text" disabled={end.isPending} onClick={() => end.mutate()}>
-            {promotion.status === 'scheduled' ? 'Cancel' : 'End now'}
+            {promotion.status === 'scheduled' ? t.promotions.cancel : t.promotions.endNow}
           </Button>
         )}
         {end.isError && (
@@ -119,6 +115,7 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
 
 function PromotionForm() {
   const queryClient = useQueryClient();
+  const t = useT();
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
   const products = useQuery({
     queryKey: ['products', 'all-for-promotions'],
@@ -164,11 +161,11 @@ function PromotionForm() {
     <form className="settings-form" onSubmit={handleSubmit}>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">Name</span>
-          <input required maxLength={255} placeholder="Autumn sale" value={name} onChange={(event) => setName(event.target.value)} />
+          <span className="field__label">{t.promotions.name}</span>
+          <input required maxLength={255} placeholder={t.promotions.namePlaceholder} value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <label className="field field--narrow">
-          <span className="field__label">Discount (%)</span>
+          <span className="field__label">{t.promotions.discountPercent}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -182,17 +179,17 @@ function PromotionForm() {
         </label>
       </div>
       <label className="field">
-        <span className="field__label">Applies to</span>
+        <span className="field__label">{t.promotions.appliesTo}</span>
         <select required value={target} onChange={(event) => setTarget(event.target.value)}>
-          <option value="">Choose a category or product…</option>
-          <optgroup label="Whole category">
+          <option value="">{t.promotions.choose}</option>
+          <optgroup label={t.promotions.wholeCategory}>
             {categories.data?.map((category) => (
               <option key={category.id} value={`category:${category.id}`}>
                 {category.name}
               </option>
             ))}
           </optgroup>
-          <optgroup label="One product">
+          <optgroup label={t.promotions.oneProduct}>
             {products.data?.items.map((product) => (
               <option key={product.id} value={`product:${product.id}`}>
                 {product.name}
@@ -203,24 +200,22 @@ function PromotionForm() {
       </label>
       <div className="field-row">
         <label className="field">
-          <span className="field__label">First day</span>
+          <span className="field__label">{t.promotions.firstDay}</span>
           <input type="date" required value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
         </label>
         <label className="field">
-          <span className="field__label">Last day</span>
+          <span className="field__label">{t.promotions.lastDay}</span>
           <input type="date" required min={startsAt} value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
         </label>
       </div>
-      <p className="field-hint">
-        A discount that would take any product below cost plus your minimum margin (see Settings) is refused.
-      </p>
+      <p className="field-hint">{t.promotions.marginHint}</p>
       {create.isError && (
         <p className="form-error" role="alert">
           {errorMessage(create.error)}
         </p>
       )}
       <Button type="submit" disabled={!isValid || create.isPending} variant="primary">
-        {create.isPending ? 'Saving…' : 'Start promotion'}
+        {create.isPending ? t.promotions.saving : t.promotions.start}
       </Button>
     </form>
   );

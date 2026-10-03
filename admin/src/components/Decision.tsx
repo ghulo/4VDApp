@@ -2,17 +2,7 @@ import { type FormEvent, useId, useState } from 'react';
 import type { ApprovalStatus, CountLineStatus, CountStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { Badge, Button, type Tone } from './ui';
-
-const STATUS_LABEL: Record<ApprovalStatus | CountLineStatus | CountStatus, string> = {
-  pending: 'Waiting for you',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  match: 'Matched',
-  open: 'Counting',
-  submitted: 'Waiting for you',
-  closed: 'Done',
-  cancelled: 'Cancelled',
-};
+import { useT } from '../i18n/useT';
 
 const STATUS_TONE: Record<ApprovalStatus | CountLineStatus | CountStatus, Tone> = {
   pending: 'warn',
@@ -26,7 +16,8 @@ const STATUS_TONE: Record<ApprovalStatus | CountLineStatus | CountStatus, Tone> 
 };
 
 export function StatusPill({ status }: { status: ApprovalStatus | CountLineStatus | CountStatus }) {
-  return <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>;
+  const t = useT();
+  return <Badge tone={STATUS_TONE[status]}>{t.decision.status[status]}</Badge>;
 }
 
 interface DecisionControlsProps {
@@ -43,6 +34,7 @@ interface DecisionControlsProps {
  * a browser prompt, and the employee sees what is typed here.
  */
 export function DecisionControls({ subject, onApprove, onReject, isBusy, error }: DecisionControlsProps) {
+  const t = useT();
   const [isRejecting, setIsRejecting] = useState(false);
   const [note, setNote] = useState('');
   const noteId = useId();
@@ -57,33 +49,33 @@ export function DecisionControls({ subject, onApprove, onReject, isBusy, error }
       {isRejecting ? (
         <form className="decision__reject" onSubmit={submitRejection}>
           <label htmlFor={noteId} className="visually-hidden">
-            Why are you rejecting {subject}?
+            {t.decision.whyReject(subject)}
           </label>
           <input
             id={noteId}
             type="text"
             maxLength={500}
-            placeholder="Reason the employee will see"
+            placeholder={t.decision.reasonPlaceholder}
             value={note}
             onChange={(event) => setNote(event.target.value)}
             autoFocus
           />
           <Button type="submit" disabled={!note.trim() || isBusy} variant="danger">
-            Reject
+            {t.decision.reject}
           </Button>
           <Button onClick={() => setIsRejecting(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
         </form>
       ) : (
         <div className="decision__buttons">
           <Button onClick={onApprove}
             disabled={isBusy}
-            aria-label={`Approve ${subject}`} variant="primary">
-            Approve
+            aria-label={t.decision.approveLabel(subject)} variant="primary">
+            {t.decision.approve}
           </Button>
-          <Button onClick={() => setIsRejecting(true)} disabled={isBusy} aria-label={`Reject ${subject}`}>
-            Reject
+          <Button onClick={() => setIsRejecting(true)} disabled={isBusy} aria-label={t.decision.rejectLabel(subject)}>
+            {t.decision.reject}
           </Button>
         </div>
       )}

@@ -147,7 +147,7 @@ export const businessApi = {
 
 export const invitesApi = {
   list: async () => (await apiRequest<Invite[]>('/invites')).data,
-  create: async (input: { email: string; role: UserRole }) =>
+  create: async (input: { email: string; role: UserRole; language?: User['language'] }) =>
     (await apiRequest<Invite>('/invites', { method: 'POST', body: input })),
   resend: async (id: number) => await apiRequest<Invite>(`/invites/${id}/resend`, { method: 'POST' }),
   cancel: async (id: number) => await apiRequest<null>(`/invites/${id}`, { method: 'DELETE' }),

@@ -11,47 +11,49 @@ import type { Product } from '../services/types';
 import { formatMoney } from '../utils/format';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
+import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 
-const COLUMNS: Column<Product>[] = [
+const columns = (t: Catalogue): Column<Product>[] => [
   {
-    header: 'Product',
+    header: t.products.product,
     cell: (product) => (
       <>
         <Link to={`/products/${product.id}`} className="table__primary-link">
           {product.name}
         </Link>
         <span className="table__secondary">
-          {product.sku ?? 'No SKU'}
-          {!product.isActive && ', hidden from the app'}
+          {product.sku ?? t.products.noSku}
+          {!product.isActive && t.products.hidden}
         </span>
       </>
     ),
   },
-  { header: 'Category', cell: (product) => product.category.name },
+  { header: t.products.category, cell: (product) => product.category.name },
   {
-    header: 'Price',
+    header: t.products.price,
     align: 'end',
     cell: (product) => (
       <>
         {formatMoney(product.price)}
         {product.promotion && (
           <span className="table__secondary">
-            −{product.promotion.percentOff}% now {formatMoney(product.promotion.price)}
+            {t.products.promotionNow(product.promotion.percentOff, formatMoney(product.promotion.price))}
           </span>
         )}
       </>
     ),
   },
   {
-    header: 'Bulk prices',
+    header: t.products.bulkPrices,
     align: 'end',
     cell: (product) =>
-      product.bulkPricingTiers.length === 0 ? 'None' : `From ${formatMoney(product.bulkPricingTiers.at(-1)!.price)}`,
+      product.bulkPricingTiers.length === 0 ? t.products.none : t.products.from(formatMoney(product.bulkPricingTiers.at(-1)!.price)),
   },
   {
-    header: 'In stock',
+    header: t.products.inStock,
     cell: (product) => (
-      <Link to={`/inventory/${product.id}`} aria-label={`Stock for ${product.name}`}>
+      <Link to={`/inventory/${product.id}`} aria-label={t.products.stockFor(product.name)}>
         <StockTag quantity={product.stock.quantity} reorderLevel={product.stock.reorderLevel} />
       </Link>
     ),
@@ -59,6 +61,7 @@ const COLUMNS: Column<Product>[] = [
 ];
 
 export function ProductsPage() {
+  const t = useT();
   const { role } = useCurrentUser();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
@@ -87,12 +90,12 @@ export function ProductsPage() {
   return (
     <>
       <PageHeader
-        title="Products"
-        description="Everything in the catalog, including products you've switched off."
+        title={t.products.title}
+        description={t.products.description}
         actions={
           canManage(role) && (
             <ButtonLink to="/products/new" variant="primary" icon={Plus}>
-              Add product
+              {t.products.add}
             </ButtonLink>
           )
         }
@@ -102,8 +105,8 @@ export function ProductsPage() {
       {products.isError && <ErrorNotice error={products.error} onRetry={() => products.refetch()} />}
       {products.data && (
         <DataTable
-          caption="Products"
-          columns={COLUMNS}
+          caption={t.products.title}
+          columns={columns(t)}
           rows={products.data.items}
           rowKey={(product) => product.id}
           rowClassName={(product) => (product.isActive ? undefined : 'table__row--muted')}
@@ -112,14 +115,14 @@ export function ProductsPage() {
               <SearchInput
                 value={search}
                 onChange={(value) => updateParams({ search: value })}
-                label="Search by name or SKU"
+                label={t.products.search}
               />
               <select
-                aria-label="Category"
+                aria-label={t.products.category}
                 value={categoryId ?? ''}
                 onChange={(event) => updateParams({ categoryId: event.target.value || null })}
               >
-                <option value="">All categories</option>
+                <option value="">{t.products.allCategories}</option>
                 {categories.data?.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -130,20 +133,20 @@ export function ProductsPage() {
           }
           empty={
             isFiltered ? (
-              <EmptyState title="No products match">Try a different search or category.</EmptyState>
+              <EmptyState title={t.products.noMatch}>{t.products.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art
-                title="No products yet"
+                title={t.products.none_yet}
                 action={
                   canManage(role) && (
                     <ButtonLink to="/products/new" variant="primary" icon={Plus}>
-                      Add your first product
+                      {t.products.addFirst}
                     </ButtonLink>
                   )
                 }
               >
-                Add what you sell, with its price and how many you have.
+                {t.products.emptyHint}
               </EmptyState>
             )
           }
@@ -151,7 +154,7 @@ export function ProductsPage() {
             products.data.items.length > 0 && (
               <Pagination
                 meta={products.data.meta}
-                itemLabel="products"
+                itemLabel={t.products.items}
                 onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
               />
             )

@@ -67,3 +67,6 @@ Thumbs.db
 .claude/skills/surgical-patch
 .claude/skills/ultracave
 .claude/skills/verify-and-stop
+
+# Wrangler (Cloudflare) local state
+.wrangler

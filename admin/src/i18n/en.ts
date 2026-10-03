@@ -556,6 +556,8 @@ export const en = {
     Return: 'Return',
     'Write-off': 'Write-off',
     Recount: 'Recount',
+    Undo: 'Undo',
+    Restore: 'Restore',
   } as Record<string, string>,
   inventory: {
     title: 'Stock',

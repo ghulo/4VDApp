@@ -9,6 +9,8 @@ export const SYSTEM_STOCK_REASONS = {
   RETURN: 'Return',
   WRITE_OFF: 'Write-off',
   RECOUNT: 'Recount',
+  UNDO: 'Undo',
+  RESTORE: 'Restore',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

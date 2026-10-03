@@ -551,6 +551,8 @@ export const sq: Catalogue = {
     Return: 'Kthim',
     'Write-off': 'Heqje nga stoku',
     Recount: 'Rinumërim',
+    Undo: 'Anulim',
+    Restore: 'Rikthim',
   },
   inventory: {
     title: 'Stoku',

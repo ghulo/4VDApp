@@ -248,7 +248,7 @@ export class ReportsRepository {
     const result = await sql<MySaleRow>`
       select s.id, p.name as product_name, s.quantity_sold, s.price_per_unit, s.total_amount, s.sale_date,
              (select coalesce(sum(r.quantity), 0) from returns r
-              where r.sale_id = s.id and r.status in ('pending', 'approved')) as returned_quantity
+              where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null) as returned_quantity
       from sales s
       join products p on p.id = s.product_id
       where s.sold_by = ${soldBy} and s.undone_at is null and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}

@@ -44,6 +44,7 @@ export function LanguageSwitch({ className = '', persist = false }: LanguageSwit
           role="radio"
           aria-checked={language === option.value}
           lang={option.value}
+          translate="no"
           className="segmented__option"
           onClick={() => choose(option.value)}
         >

@@ -91,10 +91,10 @@ function InviteForm() {
         <label className="field field--narrow">
           <span className="field__label">{t.people.language}</span>
           <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-            <option value="en" lang="en">
+            <option value="en" lang="en" translate="no">
               {t.language.english}
             </option>
-            <option value="sq" lang="sq">
+            <option value="sq" lang="sq" translate="no">
               {t.language.albanian}
             </option>
           </select>

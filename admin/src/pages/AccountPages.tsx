@@ -14,10 +14,11 @@ import { Button } from '../components/ui';
 
 const MIN_PASSWORD_LENGTH = 8;
 function BackToLogin() {
+  const t = useT();
   return (
     <p className="login__links">
       <Link to="/login" className="text-link">
-        Back to log in
+        {t.auth.backToLogin}
       </Link>
     </p>
   );
@@ -35,6 +36,7 @@ function FormError({ error }: { error: unknown }) {
 // ---------- Forgot password ----------
 
 export function ForgotPasswordPage() {
+  const t = useT();
   const [email, setEmail] = useState('');
   const send = useMutation({ mutationFn: () => accountApi.forgotPassword(email.trim()) });
 
@@ -44,20 +46,20 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthShell title="Forgot your password?" subtitle="We'll email you a link to choose a new one.">
+    <AuthShell title={t.auth.forgot} subtitle={t.auth.forgotSubtitle}>
       {send.isSuccess ? (
         <p className="form-success" role="status">
-          If that email has an account, we sent it a link. Check the inbox (and spam).
+          {t.auth.forgotSent}
         </p>
       ) : (
         <form onSubmit={handleSubmit} noValidate>
           <label className="field">
-            <span className="field__label">Email</span>
+            <span className="field__label">{t.auth.email}</span>
             <input type="email" autoComplete="email" required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <FormError error={send.error} />
           <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide>
-            {send.isPending ? 'Sending…' : 'Email me a link'}
+            {send.isPending ? t.auth.sending : t.auth.emailMeLink}
           </Button>
         </form>
       )}
@@ -69,6 +71,7 @@ export function ForgotPasswordPage() {
 // ---------- Reset password ----------
 
 export function ResetPasswordPage() {
+  const t = useT();
   const { token = '' } = useParams();
   const [password, setPassword] = useState('');
   const reset = useMutation({ mutationFn: () => accountApi.resetPassword(token, password) });
@@ -79,20 +82,20 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell title="Choose a new password" subtitle={`At least ${MIN_PASSWORD_LENGTH} characters. Every device will be logged out.`}>
+    <AuthShell title={t.auth.newPasswordTitle} subtitle={t.auth.newPasswordSubtitle(MIN_PASSWORD_LENGTH)}>
       {reset.isSuccess ? (
         <>
           <p className="form-success" role="status">
-            Password changed. Log in with your new password.
+            {t.auth.passwordChanged}
           </p>
           <Link to="/login" className="button button--primary button--wide">
-            Log in
+            {t.auth.logIn}
           </Link>
         </>
       ) : (
         <form onSubmit={handleSubmit} noValidate>
           <label className="field">
-            <span className="field__label">New password</span>
+            <span className="field__label">{t.auth.newPassword}</span>
             <input
               type="password"
               autoComplete="new-password"
@@ -107,7 +110,7 @@ export function ResetPasswordPage() {
           <Button type="submit"
            
             disabled={password.length < MIN_PASSWORD_LENGTH || reset.isPending} variant="primary" wide>
-            {reset.isPending ? 'Saving…' : 'Save new password'}
+            {reset.isPending ? t.auth.saving : t.auth.saveNewPassword}
           </Button>
         </form>
       )}
@@ -120,6 +123,7 @@ export function ResetPasswordPage() {
 
 /** Runs the link's action once on arrival, then shows how it went. */
 function LinkActionPage({ title, action, done }: { title: string; action: (token: string) => Promise<unknown>; done: string }) {
+  const t = useT();
   const { token = '' } = useParams();
   const run = useMutation({ mutationFn: () => action(token) });
   const started = useRef(false);
@@ -133,17 +137,17 @@ function LinkActionPage({ title, action, done }: { title: string; action: (token
 
   return (
     <AuthShell title={title}>
-      {run.isPending && <Loading label="Checking the link…" />}
+      {run.isPending && <Loading label={t.auth.checkingLink} />}
       {run.isSuccess && (
         <>
           <p className="form-success" role="status">
             {done}
           </p>
           <Link to="/login" className="button button--primary button--wide">
-            Log in
+            {t.auth.logIn}
           </Link>
           <p className="field-hint">
-            Staff: <a href={TEAM_APP_URL}>open the 4VD app</a> and log in there.
+            {t.auth.staff} <a href={TEAM_APP_URL}>{t.auth.openTheApp}</a> {t.auth.andLogIn}
           </p>
         </>
       )}
@@ -154,17 +158,13 @@ function LinkActionPage({ title, action, done }: { title: string; action: (token
 }
 
 export function VerifyEmailPage() {
-  return <LinkActionPage title="Confirming your email" action={accountApi.verifyEmail} done="Email confirmed. You can log in now." />;
+  const t = useT();
+  return <LinkActionPage title={t.auth.confirmingEmail} action={accountApi.verifyEmail} done={t.auth.emailConfirmed} />;
 }
 
 export function ConfirmEmailChangePage() {
-  return (
-    <LinkActionPage
-      title="Switching your email"
-      action={accountApi.confirmEmailChange}
-      done="Done. Log in with your new email from now on."
-    />
-  );
+  const t = useT();
+  return <LinkActionPage title={t.auth.switchingEmail} action={accountApi.confirmEmailChange} done={t.auth.emailSwitched} />;
 }
 
 // ---------- Accept an invite ----------
@@ -200,14 +200,14 @@ export function AcceptInvitePage() {
 
   if (invite.isPending) {
     return (
-      <AuthShell title="Opening your invite">
+      <AuthShell title={t.auth.openingInvite}>
         <Loading />
       </AuthShell>
     );
   }
   if (invite.isError) {
     return (
-      <AuthShell title="This invite doesn't work">
+      <AuthShell title={t.auth.inviteBroken}>
         <FormError error={invite.error} />
         <BackToLogin />
       </AuthShell>
@@ -217,8 +217,8 @@ export function AcceptInvitePage() {
   const { shopName, invitedBy, role, email } = invite.data;
   return (
     <AuthShell
-      title={`Join ${shopName}`}
-      subtitle={`${invitedBy ?? 'The owner'} invited ${email} as ${t.common.roles[role].toLowerCase()}.`}
+      title={t.auth.join(shopName)}
+      subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}
     >
       {sentToApp ? (
         <OpenTheApp />
@@ -226,11 +226,11 @@ export function AcceptInvitePage() {
         <>
           <form onSubmit={handleSubmit} noValidate>
             <label className="field">
-              <span className="field__label">Your name</span>
+              <span className="field__label">{t.auth.yourName}</span>
               <input autoComplete="name" required maxLength={255} autoFocus value={name} onChange={(event) => setName(event.target.value)} />
             </label>
             <label className="field">
-              <span className="field__label">Choose a password</span>
+              <span className="field__label">{t.auth.choosePassword}</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -239,13 +239,13 @@ export function AcceptInvitePage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <span className="field-hint">At least {MIN_PASSWORD_LENGTH} characters.</span>
+              <span className="field-hint">{t.auth.atLeast(MIN_PASSWORD_LENGTH)}</span>
             </label>
             <FormError error={accept.error ?? google.error} />
             <Button type="submit"
              
               disabled={!name.trim() || password.length < MIN_PASSWORD_LENGTH || accept.isPending} variant="primary" wide>
-              {accept.isPending ? 'Setting up…' : 'Join'}
+              {accept.isPending ? t.auth.settingUp : t.auth.joinButton}
             </Button>
           </form>
           <GoogleButton onCredential={(credential) => google.mutate(credential)} />

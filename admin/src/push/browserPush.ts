@@ -1,4 +1,5 @@
 import { pushApi } from '../services/api';
+import { activeCatalogue } from '../i18n/useT';
 
 /** Browser support for alerts while the dashboard is closed. */
 export const isPushSupported = () =>
@@ -25,7 +26,7 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
 export async function enablePush(publicKey: string): Promise<void> {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
-    throw new Error('The browser is blocking notifications for this site. Allow them in the address bar, then try again.');
+    throw new Error(activeCatalogue().push.blocked);
   }
   const worker = await registration();
   await navigator.serviceWorker.ready;

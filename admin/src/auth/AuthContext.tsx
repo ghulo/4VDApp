@@ -4,7 +4,7 @@ import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
 import { disablePush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
-import { useLanguage } from '../i18n/useT';
+import { activeCatalogue, useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 import { canOversee } from './roles';
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const user = await authApi.login(email, password);
     if (!canOversee(user.role)) {
       await authApi.logout();
-      throw new Error('This dashboard is for the people who run the shop. Use the team app to sell and browse products.');
+      throw new Error(activeCatalogue().auth.dashboardOnly);
     }
     applyTheme(user.theme);
     setLanguage(user.language);

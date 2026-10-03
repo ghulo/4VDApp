@@ -1,11 +1,12 @@
 import { Fragment, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { setFormatLanguage } from '../utils/format';
-import { CATALOGUES, I18nContext, useLanguage } from './useT';
+import { CATALOGUES, I18nContext, setActiveLanguage, useLanguage } from './useT';
 import { type Language, LANGUAGE_STORAGE_KEY, readLanguage, safeStorage } from './language';
 
 /** Formats and tags the page; a choice someone made is also remembered for next time. */
 function apply(language: Language, remember: boolean): void {
   setFormatLanguage(language);
+  setActiveLanguage(language);
   document.documentElement.lang = language;
   if (!remember) return;
   try {

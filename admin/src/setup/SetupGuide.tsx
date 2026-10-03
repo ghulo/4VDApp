@@ -5,6 +5,7 @@ import { Button, ButtonLink, Card } from '../components/ui';
 import { setupSteps } from './steps';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
+import { useT } from '../i18n/useT';
 
 const HIDDEN_KEY = '4vd.setupGuide.hidden';
 
@@ -18,6 +19,7 @@ function readHidden(): boolean {
 
 /** A checklist for a new shop at the top of Overview, until it's done or hidden. */
 export function SetupGuide() {
+  const t = useT();
   const { role } = useCurrentUser();
   const [hidden, setHidden] = useState(() => readHidden() || !canManage(role));
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: !hidden });
@@ -39,7 +41,7 @@ export function SetupGuide() {
     peopleCount: people.data.meta.total,
     openInvites: invites.data.length,
     alertDevices: alerts.data.deviceCount,
-  });
+  }, t);
   const done = steps.filter((step) => step.done).length;
   if (done === steps.length) return null;
 
@@ -55,11 +57,11 @@ export function SetupGuide() {
   return (
     <Card
       className="setup-guide"
-      title="Get 4VD ready"
-      description={`${done} of ${steps.length} done`}
+      title={t.setup.title}
+      description={t.setup.progress(done, steps.length)}
       actions={
         <Button variant="ghost" size="sm" onClick={hide}>
-          Hide
+          {t.setup.hide}
         </Button>
       }
     >
@@ -75,7 +77,7 @@ export function SetupGuide() {
             <span className="setup-step__text">
               <span className="setup-step__title">
                 {step.title}
-                {step.done && <span className="visually-hidden"> (done)</span>}
+                {step.done && <span className="visually-hidden"> {t.common.done}</span>}
               </span>
               {!step.done && <span className="setup-step__why">{step.why}</span>}
             </span>

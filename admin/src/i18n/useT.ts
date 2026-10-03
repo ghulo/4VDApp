@@ -13,10 +13,21 @@ interface I18nValue {
 
 export const I18nContext = createContext<I18nValue | null>(null);
 
+let active: Catalogue = en;
+
+/** Called by the provider so plain functions (outside components) can use the current words. */
+export function setActiveLanguage(language: Language): void {
+  active = CATALOGUES[language];
+}
+
+/** The current words, for code that isn't a component (error helpers, formatters). */
+export const activeCatalogue = (): Catalogue => active;
+
+/** Outside the provider (a component rendered on its own, e.g. in a test) everything is English. */
+const STANDALONE: I18nValue = { language: 'en', t: en, setLanguage: () => undefined };
+
 function useI18n(): I18nValue {
-  const value = useContext(I18nContext);
-  if (!value) throw new Error('useT must be used inside <I18nProvider>');
-  return value;
+  return useContext(I18nContext) ?? STANDALONE;
 }
 
 /** The words for the current language. */

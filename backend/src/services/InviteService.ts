@@ -30,6 +30,8 @@ export interface InvitePreviewDto {
   role: UserRole;
   shopName: string;
   invitedBy: string | null;
+  /** The language the invite was sent in; the invite page opens in it. */
+  language: Language;
 }
 
 const toDto = (invite: InviteRecord): InviteDto => ({
@@ -126,7 +128,13 @@ export class InviteService {
   /** What the invite page shows before someone accepts. */
   async preview(token: string): Promise<InvitePreviewDto> {
     const invite = await this.openInvite(token);
-    return { email: invite.email, role: invite.role, shopName: invite.business_name, invitedBy: invite.invited_by_name };
+    return {
+      email: invite.email,
+      role: invite.role,
+      shopName: invite.business_name,
+      invitedBy: invite.invited_by_name,
+      language: invite.language,
+    };
   }
 
   async accept(token: string, input: { name: string; password: string }, device: DeviceInfo): Promise<LoginResult> {

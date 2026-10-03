@@ -1,5 +1,7 @@
 // Mirrors the shapes the backend returns (see docs/API.md).
 
+export type Language = 'en' | 'sq';
+
 export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
 
 export interface User {
@@ -12,6 +14,8 @@ export interface User {
   /** Path to the photo (use mediaSrc); null shows initials. */
   avatarUrl: string | null;
   theme: 'light' | 'dark' | 'system';
+  /** The language they read 4VD in. */
+  language: Language;
   /** Gets the Monday report email (admins). */
   emailWeeklyReport: boolean;
   /** Euros of sales (after refunds) hoped for each month; null when not set. */
@@ -300,6 +304,8 @@ export interface InvitePreview {
   role: UserRole;
   shopName: string;
   invitedBy: string | null;
+  /** The invite page opens in this language. */
+  language: Language;
 }
 
 export interface Business {

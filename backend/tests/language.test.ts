@@ -102,6 +102,16 @@ describe('emails in each person’s language', () => {
     expect(email.text).toContain(sq.email.inviteButton);
   });
 
+  it('should tell the invite page which language the invite was sent in', async () => {
+    await api().post('/api/invites').set(auth(adminToken)).send({ email: 'ana@example.com', role: 'employee', language: 'sq' });
+    const email = await newestEmailTo('ana@example.com');
+    const token = /https?:\/\/\S+/.exec(email.text)![0].split('/').at(-1)!;
+
+    const preview = await api().get(`/api/auth/invites/${token}`);
+
+    expect(preview.body.data.language).toBe('sq');
+  });
+
   it('should send the weekly report in each recipient’s language', async () => {
     await createTestUser(context.db, 'owner');
     await context.db.updateTable('users').set({ language: 'sq' }).where('email', '=', 'owner@test.local').execute();

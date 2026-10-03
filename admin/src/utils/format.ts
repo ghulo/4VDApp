@@ -30,6 +30,9 @@ export const formatCompactMoney = (amount: number) =>
       ).format(amount);
 
 /** 0.125 → "12.5%" ("12,5%" in Albanian). */
+/** A rise above this (+300%, four times as much) reads as noise in percent, so it's said in words. */
+export const MUCH_MORE = 3;
+
 export const formatPercent = (fraction: number) =>
   current === 'sq'
     ? `${albanianNumber(fraction * 100, 1).replace(/,0$/, '')}%`

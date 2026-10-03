@@ -69,7 +69,7 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
       {team.data && team.data.length === 0 && <EmptyState title={t.reports.noTeam} />}
       {team.data && team.data.length > 0 && (
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table--stack">
             <thead>
               <tr>
                 <th scope="col">{t.reports.person}</th>
@@ -91,18 +91,18 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
                       {person.hasLeft ? t.reports.hasLeft(t.common.roles[person.role]) : t.common.roles[person.role]}
                     </span>
                   </td>
-                  <td className="table__numeric">{person.salesCount}</td>
-                  <td className="table__numeric">{person.unitsSold}</td>
-                  <td className="table__numeric">
+                  <td className="table__numeric" data-label={t.reports.sales}>{person.salesCount}</td>
+                  <td className="table__numeric" data-label={t.reports.units}>{person.unitsSold}</td>
+                  <td className="table__numeric" data-label={t.reports.revenue}>
                     {formatMoney(person.revenue)}
                     {person.monthlyTarget !== null && (
                       <span className="table__secondary">{t.reports.target(formatMoney(person.monthlyTarget))}</span>
                     )}
                   </td>
-                  <td className="table__numeric">{formatMoney(person.refunds)}</td>
-                  <td className="table__numeric">{formatMoney(person.profit)}</td>
-                  <td className="table__numeric">{person.salesCount === 0 ? '–' : formatMoney(person.averageSale)}</td>
-                  <td className="table__numeric">
+                  <td className="table__numeric" data-label={t.reports.refunds}>{formatMoney(person.refunds)}</td>
+                  <td className="table__numeric" data-label={t.reports.profit}>{formatMoney(person.profit)}</td>
+                  <td className="table__numeric" data-label={t.reports.averageSale}>{person.salesCount === 0 ? '–' : formatMoney(person.averageSale)}</td>
+                  <td className="table__numeric" data-label={t.reports.commission}>
                     {person.commission === null ? '–' : formatMoney(person.commission)}
                     {person.commissionPercent !== null && (
                       <span className="table__secondary">{t.reports.ofRevenue(person.commissionPercent)}</span>
@@ -152,7 +152,7 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
       {profit.data && profit.data.length === 0 && <EmptyState title={t.reports.noSales} />}
       {profit.data && profit.data.length > 0 && (
         <div className="table-wrap">
-          <table className="table">
+          <table className="table table--stack">
             <thead>
               <tr>
                 <th scope="col">{groupBy === 'product' ? t.reports.product : t.reports.category}</th>
@@ -170,11 +170,11 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
                     {row.name}
                     {row.hasUnknownCost && <span className="table__secondary">{t.reports.noCostPrice}</span>}
                   </td>
-                  <td className="table__numeric">{row.unitsSold}</td>
-                  <td className="table__numeric">{formatMoney(row.revenue)}</td>
-                  <td className="table__numeric">{formatMoney(row.cost)}</td>
-                  <td className="table__numeric">{formatMoney(row.profit)}</td>
-                  <td className="table__numeric">{row.margin === null ? t.reports.unknown : formatPercent(row.margin)}</td>
+                  <td className="table__numeric" data-label={t.reports.units}>{row.unitsSold}</td>
+                  <td className="table__numeric" data-label={t.reports.revenue}>{formatMoney(row.revenue)}</td>
+                  <td className="table__numeric" data-label={t.reports.cost}>{formatMoney(row.cost)}</td>
+                  <td className="table__numeric" data-label={t.reports.profit}>{formatMoney(row.profit)}</td>
+                  <td className="table__numeric" data-label={t.reports.margin}>{row.margin === null ? t.reports.unknown : formatPercent(row.margin)}</td>
                 </tr>
               ))}
             </tbody>

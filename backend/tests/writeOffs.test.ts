@@ -59,6 +59,20 @@ describe('write-offs', () => {
     expect(await notificationsFor('was approved')).toHaveLength(1);
   });
 
+  it('should mark the "waiting for approval" alert read once it is decided', async () => {
+    const approvedLater = (await report(employeeToken)).body.data.id;
+    const rejectedLater = (await report(employeeToken, { quantity: 1 })).body.data.id;
+    const unread = async () =>
+      (await notificationsFor('waiting for approval')).filter((notification) => !notification.is_read).length;
+    expect(await unread()).toBe(2);
+
+    await request(context.app).post(`/api/write-offs/${approvedLater}/approve`).set(auth(adminToken));
+    expect(await unread()).toBe(1);
+
+    await request(context.app).post(`/api/write-offs/${rejectedLater}/reject`).set(auth(adminToken)).send({ note: 'Not broken' });
+    expect(await unread()).toBe(0);
+  });
+
   it('should leave stock alone when rejected, and keep the reason', async () => {
     const { body } = await report(employeeToken);
 

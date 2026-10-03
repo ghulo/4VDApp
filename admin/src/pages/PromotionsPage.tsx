@@ -44,7 +44,7 @@ export function PromotionsPage() {
         {promotions.data && promotions.data.length > 0 && (
           <Card title={t.promotions.all} flush>
             <div className="table-wrap">
-              <table className="table">
+              <table className="table table--stack">
                 <thead>
                   <tr>
                     <th scope="col">{t.promotions.promotion}</th>
@@ -89,12 +89,12 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
         <span className="table__primary-link">{promotion.name}</span>
         {promotion.createdBy && <span className="table__secondary">{t.promotions.by(promotion.createdBy)}</span>}
       </td>
-      <td>{promotion.product ? promotion.product.name : t.promotions.allOf(promotion.category?.name ?? t.promotions.aCategory)}</td>
-      <td className="table__numeric">−{promotion.percentOff}%</td>
-      <td>
+      <td data-label={t.promotions.appliesTo}>{promotion.product ? promotion.product.name : t.promotions.allOf(promotion.category?.name ?? t.promotions.aCategory)}</td>
+      <td className="table__numeric" data-label={t.promotions.discount}>−{promotion.percentOff}%</td>
+      <td data-label={t.promotions.dates}>
         {formatPromotionDay(promotion.startsAt)} – {formatPromotionDay(promotion.endsAt, true)}
       </td>
-      <td>
+      <td data-label={t.promotions.status_}>
         <Badge tone={STATUS_TONE[promotion.status]}>{t.promotions.status[promotion.status]}</Badge>
       </td>
       <td>

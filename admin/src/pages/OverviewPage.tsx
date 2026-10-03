@@ -10,7 +10,7 @@ import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
-import { formatDateWith, formatMoney } from '../utils/format';
+import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
 import { Card, DotBars, MetricCard, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { useT } from '../i18n/useT';
@@ -141,12 +141,16 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
             <p className="today-hero__compare">
               {change === null
                 ? t.overview.nothingLastWeek(weekday)
-                : t.overview.comparedLastWeek({
-                    up: change >= 0,
-                    percent: Math.abs(Math.round(change * 100)),
-                    weekday,
-                    amount: formatMoney(previous.revenue),
-                  })}
+                : current.revenue === 0
+                  ? t.overview.noSalesYetToday({ weekday, amount: formatMoney(previous.revenue) })
+                  : change > MUCH_MORE
+                    ? t.overview.muchMoreThanLastWeek({ weekday, amount: formatMoney(previous.revenue) })
+                    : t.overview.comparedLastWeek({
+                        up: change >= 0,
+                        percent: Math.abs(Math.round(change * 100)),
+                        weekday,
+                        amount: formatMoney(previous.revenue),
+                      })}
             </p>
           )}
           <div className="today-hero__tags">

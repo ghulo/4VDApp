@@ -194,7 +194,7 @@ function SalesHistory() {
       {sales.data && sales.data.items.length > 0 && (
         <>
           <div className="table-wrap">
-            <table className="table">
+            <table className="table table--stack">
               <thead>
                 <tr>
                   <th scope="col">{t.sales.when}</th>
@@ -218,8 +218,8 @@ function SalesHistory() {
                 {sales.data.items.map((sale) => (
                   <Fragment key={sale.id}>
                     <tr>
-                      <td>{formatDateTime(sale.saleDate)}</td>
-                      <td>
+                      <td data-label={t.sales.when}>{formatDateTime(sale.saleDate)}</td>
+                      <td className="table__title">
                         {sale.productName}
                         {sale.notes && <span className="table__secondary">{sale.notes}</span>}
                         {sale.returnedQuantity > 0 && (
@@ -228,10 +228,10 @@ function SalesHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="table__numeric">{sale.quantity}</td>
-                      <td className="table__numeric">{formatMoney(sale.pricePerUnit)}</td>
-                      <td className="table__numeric">{formatMoney(sale.totalAmount)}</td>
-                      <td>{sale.soldBy ?? t.sales.unknown}</td>
+                      <td className="table__numeric" data-label={t.sales.qty}>{sale.quantity}</td>
+                      <td className="table__numeric" data-label={t.sales.each}>{formatMoney(sale.pricePerUnit)}</td>
+                      <td className="table__numeric" data-label={t.sales.total}>{formatMoney(sale.totalAmount)}</td>
+                      <td data-label={t.sales.soldBy}>{sale.soldBy ?? t.sales.unknown}</td>
                       <td>
                         {sale.returnedQuantity < sale.quantity && (
                           <button

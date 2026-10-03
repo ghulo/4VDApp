@@ -10,6 +10,13 @@ import { messages, type ServerMessages } from '../i18n/messages.js';
 export interface NewNotification {
   type: string;
   write: (t: ServerMessages) => { title: string; message: string };
+  /** The request it's about, so deciding the request can close it. */
+  subject?: NotificationSubject;
+}
+
+export interface NotificationSubject {
+  type: 'return' | 'write_off' | 'stock_count';
+  id: number;
 }
 
 export class NotificationRepository {
@@ -19,7 +26,16 @@ export class NotificationRepository {
     const user = await this.db.selectFrom('users').select('language').where('id', '=', userId).executeTakeFirst();
     if (!user) return;
     const text = notification.write(messages[user.language]);
-    await this.db.insertInto('notifications').values({ user_id: userId, type: notification.type, ...text }).execute();
+    await this.db
+      .insertInto('notifications')
+      .values({
+        user_id: userId,
+        type: notification.type,
+        subject_type: notification.subject?.type ?? null,
+        subject_id: notification.subject?.id ?? null,
+        ...text,
+      })
+      .execute();
   }
 
   /** Send the same notification to every active user with one of the roles, each in their language. */
@@ -29,7 +45,7 @@ export class NotificationRepository {
       const text = notification.write(messages[language]);
       const result = await this.db
         .insertInto('notifications')
-        .columns(['user_id', 'title', 'message', 'type'])
+        .columns(['user_id', 'title', 'message', 'type', 'subject_type', 'subject_id'])
         .expression((eb) =>
           eb
             .selectFrom('users')
@@ -38,6 +54,8 @@ export class NotificationRepository {
               eb.val(text.title).as('title'),
               eb.val(text.message).as('message'),
               eb.val(notification.type).as('type'),
+              eb.val(notification.subject?.type ?? null).as('subject_type'),
+              eb.val(notification.subject?.id ?? null).as('subject_id'),
             ])
             .where('role', 'in', roles)
             .where('language', '=', language)
@@ -79,6 +97,17 @@ export class NotificationRepository {
       .where('user_id', '=', userId)
       .executeTakeFirst();
     return result.numUpdatedRows > 0n;
+  }
+
+  /** Everyone's unread alerts about this request, once it's been decided. */
+  async markSubjectRead(subject: NotificationSubject): Promise<void> {
+    await this.db
+      .updateTable('notifications')
+      .set({ is_read: true })
+      .where('subject_type', '=', subject.type)
+      .where('subject_id', '=', subject.id)
+      .where('is_read', '=', false)
+      .execute();
   }
 
   async markAllRead(userId: number): Promise<void> {

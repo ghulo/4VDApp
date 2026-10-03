@@ -1393,7 +1393,10 @@
 }
 
 /* Tables inside a card's body: framed, the same as a DataTable. */
+/* Positioned so screen-reader-only text inside (absolute) stays in the scroll
+   box; otherwise it escapes and makes the whole page scroll sideways on phones. */
 .table-wrap {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-small);

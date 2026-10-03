@@ -294,6 +294,8 @@ export const sq: Catalogue = {
     nothingLastWeek: () => 'Asgjë e shitur deri në këtë orë javën e kaluar.',
     comparedLastWeek: (p) =>
       `${p.up ? 'Rritje' : 'Rënie'} ${p.percent}% krahasuar me javën e kaluar, kur deri në këtë orë kishte ${p.amount}.`,
+    noSalesYetToday: (p) => `Asnjë shitje ende sot. Javën e kaluar deri në këtë orë kishte ${p.amount}.`,
+    muchMoreThanLastWeek: (p) => `Shumë më tepër se javën e kaluar, kur deri në këtë orë kishte ${p.amount}.`,
     waitingForYou: 'presin për ty',
     toRestock: 'për të furnizuar',
     lastDays: (days) => `${days} ditët e fundit`,
@@ -444,6 +446,8 @@ export const sq: Catalogue = {
     refresh: 'Rifresko shifrat',
     refreshing: 'Duke rifreskuar shifrat…',
     noData: 'Pa të dhëna',
+    muchMore: 'Shumë më tepër',
+    muchMoreThanBefore: 'shumë më tepër se periudha më parë',
     open: (label) => `Hap ${label}`,
     revenue: 'Të ardhurat',
     profit: 'Fitimi',

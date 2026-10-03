@@ -1,4 +1,5 @@
 import type { UserRole } from '../database/types.js';
+import type { Language } from '../i18n/language.js';
 
 /** Who is making the request, taken from a valid access token. */
 export interface RequestIdentity {
@@ -20,6 +21,8 @@ export interface PublicUser {
   /** Path to the photo, e.g. /api/media/<id>; null shows initials. */
   avatarUrl: string | null;
   theme: 'light' | 'dark' | 'system';
+  /** The language they read 4VD in: 'en' or 'sq' (Albanian). */
+  language: Language;
   /** Gets the Monday report email (admins only receive it). */
   emailWeeklyReport: boolean;
   /** Euros of sales (after refunds) the owner hopes for each month; null when not set. */

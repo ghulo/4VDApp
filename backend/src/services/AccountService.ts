@@ -5,6 +5,7 @@ import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashAccountToken, newAccountToken } from '../utils/accountTokens.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import type { EmailService } from './email/EmailService.js';
+import { messages } from '../i18n/messages.js';
 import { emailTemplates } from './email/templates.js';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -33,7 +34,7 @@ export class AccountService {
     const token = await this.newToken(user.id, 'reset_password', RESET_HOURS);
     await this.emailService.queue(
       user.email,
-      emailTemplates.resetPassword({ name: user.name, link: `${this.dashboardUrl}/reset-password/${token}` }),
+      emailTemplates.resetPassword({ name: user.name, link: `${this.dashboardUrl}/reset-password/${token}` }, messages[user.language]),
     );
   }
 
@@ -61,7 +62,7 @@ export class AccountService {
     const token = await this.newToken(user.id, 'verify_email', VERIFY_HOURS);
     await this.emailService.queue(
       user.email,
-      emailTemplates.verifyEmail({ name: user.name, link: `${this.dashboardUrl}/verify-email/${token}` }),
+      emailTemplates.verifyEmail({ name: user.name, link: `${this.dashboardUrl}/verify-email/${token}` }, messages[user.language]),
     );
   }
 
@@ -94,7 +95,7 @@ export class AccountService {
     const token = await this.newToken(user.id, 'change_email', VERIFY_HOURS, newEmail);
     await this.emailService.queue(
       newEmail,
-      emailTemplates.confirmNewEmail({ name: user.name, link: `${this.dashboardUrl}/confirm-email/${token}` }),
+      emailTemplates.confirmNewEmail({ name: user.name, link: `${this.dashboardUrl}/confirm-email/${token}` }, messages[user.language]),
     );
   }
 
@@ -108,7 +109,7 @@ export class AccountService {
       throw new ConflictError(`${used.newEmail} is already used by another account`);
     }
     await this.userRepository.update(user.id, { email: used.newEmail, email_verified_at: new Date() });
-    await this.emailService.queue(user.email, emailTemplates.emailChanged({ name: user.name, newEmail: used.newEmail }));
+    await this.emailService.queue(user.email, emailTemplates.emailChanged({ name: user.name, newEmail: used.newEmail }, messages[user.language]));
     await this.refreshTokenRepository.revokeAllForUser(user.id);
   }
 

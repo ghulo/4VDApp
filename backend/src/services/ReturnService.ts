@@ -11,6 +11,7 @@ import { toIsoOrNull, toMoney } from './mappers.js';
 import type { AppSettings, SettingsService } from './SettingsService.js';
 import { approveWriteOff, createWriteOffRecord } from './WriteOffService.js';
 import { canOversee } from '../utils/roles.js';
+import { en, type ServerMessages } from '../i18n/messages.js';
 
 export interface ReturnInput {
   quantity: number;
@@ -44,22 +45,22 @@ export interface ReturnDto {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LIST_LIMIT = 200;
 
-/** Why an employee's return has to wait for the owner. Admins never wait. */
+/**
+ * Why an employee's return has to wait for the owner. Admins never wait.
+ * Written in English for the record unless another language is given.
+ */
 export function approvalReasons(
   input: { refundAmount: number; condition: ReturnCondition; saleDate: Date; now: Date },
   settings: AppSettings,
+  t: ServerMessages = en,
 ): string[] {
   const reasons: string[] = [];
-  if (input.refundAmount > settings.refundApprovalLimit) reasons.push(`refund over ${formatWholeEuro(settings.refundApprovalLimit)}`);
+  if (input.refundAmount > settings.refundApprovalLimit) reasons.push(t.reasonRefundOver(settings.refundApprovalLimit));
   if (input.now.getTime() - input.saleDate.getTime() > settings.returnWindowDays * MS_PER_DAY) {
-    reasons.push(`sold more than ${settings.returnWindowDays} days ago`);
+    reasons.push(t.reasonSoldDaysAgo(settings.returnWindowDays));
   }
-  if (input.condition === 'damaged') reasons.push('damaged item');
+  if (input.condition === 'damaged') reasons.push(t.reasonDamaged);
   return reasons;
-}
-
-function formatWholeEuro(amount: number): string {
-  return Number.isInteger(amount) ? `€${amount}` : formatEuro(amount);
 }
 
 export class ReturnService {
@@ -78,10 +79,8 @@ export class ReturnService {
         throw new ForbiddenError('You can only return your own sales. Ask the owner to return this one.');
       }
       const refundAmount = validate(sale, input);
-      const reasons =
-        canOversee(user.role)
-          ? []
-          : approvalReasons({ refundAmount, condition: input.condition, saleDate: sale.sale_date, now: new Date() }, settings);
+      const reasonInput = { refundAmount, condition: input.condition, saleDate: sale.sale_date, now: new Date() };
+      const reasons = canOversee(user.role) ? [] : approvalReasons(reasonInput, settings);
 
       const id = await repos.returns.create({
         saleId,
@@ -105,7 +104,9 @@ export class ReturnService {
       if (reasons.length === 0) {
         await approveReturn(repos, id, user.id);
       } else {
-        await notifyAdminsOfPending(repos, 'return', `${user.name} returned ${what} (${reasons.join(', ')}).`);
+        await notifyAdminsOfPending(repos, 'return', (t) =>
+          t.returnPending({ name: user.name, what, reasons: approvalReasons(reasonInput, settings, t) }),
+        );
       }
       return id;
     });
@@ -125,7 +126,10 @@ export class ReturnService {
         entityId: id,
         summary: `Approved the return of ${what}, refund ${formatEuro(toMoney(item.refund_amount))}`,
       });
-      await notifyRequester(repos, item.requested_by, admin.id, `Your return of ${what} was approved`, 'The refund has been recorded.');
+      await notifyRequester(repos, item.requested_by, admin.id, (t) => ({
+        title: t.returnApproved(what),
+        message: t.returnApprovedMessage,
+      }));
     });
     return this.get(id);
   }
@@ -143,7 +147,7 @@ export class ReturnService {
         entityId: id,
         summary: `Rejected the return of ${what}: ${note}`,
       });
-      await notifyRequester(repos, item.requested_by, admin.id, `Your return of ${what} was rejected`, note);
+      await notifyRequester(repos, item.requested_by, admin.id, (t) => ({ title: t.returnRejected(what), message: note }));
     });
     return this.get(id);
   }

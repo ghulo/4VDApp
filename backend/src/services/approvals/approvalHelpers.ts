@@ -2,13 +2,17 @@ import { ConflictError } from '../../errors/httpErrors.js';
 import { NOTIFICATION_TYPES } from '../../constants/notifications.js';
 import type { TransactionalRepositories } from '../../repositories/TransactionManager.js';
 import { OVERSEER_ROLES } from '../../utils/roles.js';
+import type { ApprovalKind, ServerMessages } from '../../i18n/messages.js';
 
 /** Tell every admin something is waiting in the Approvals inbox. */
-export function notifyAdminsOfPending(repos: TransactionalRepositories, what: string, message: string) {
+export function notifyAdminsOfPending(
+  repos: TransactionalRepositories,
+  kind: ApprovalKind,
+  message: (t: ServerMessages) => string,
+) {
   return repos.notifications.createForRoles(OVERSEER_ROLES, {
-    title: `New ${what} waiting for approval`,
-    message,
     type: NOTIFICATION_TYPES.APPROVAL,
+    write: (t) => ({ title: t.pendingTitle(kind), message: message(t) }),
   });
 }
 
@@ -17,11 +21,10 @@ export async function notifyRequester(
   repos: TransactionalRepositories,
   requestedBy: number | null,
   decidedBy: number,
-  title: string,
-  message: string,
+  write: (t: ServerMessages) => { title: string; message: string },
 ): Promise<void> {
   if (requestedBy === null || requestedBy === decidedBy) return;
-  await repos.notifications.createForUser(requestedBy, { title, message, type: NOTIFICATION_TYPES.APPROVAL_DECISION });
+  await repos.notifications.createForUser(requestedBy, { type: NOTIFICATION_TYPES.APPROVAL_DECISION, write });
 }
 
 /** Approving or rejecting twice (double click, two admins) must not apply twice. */

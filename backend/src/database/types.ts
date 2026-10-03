@@ -6,6 +6,7 @@ import type {
   ReturnCondition,
   WriteOffReason,
 } from '../constants/approvals.js';
+import type { Language } from '../i18n/language.js';
 
 /**
  * TypeScript view of the tables created by the migrations in ./migrations.
@@ -34,6 +35,7 @@ export interface UsersTable {
   phone: string | null;
   avatar_media_id: string | null;
   theme: Generated<'light' | 'dark' | 'system'>;
+  language: Generated<Language>;
   email_weekly_report: Generated<boolean>;
   last_login_at: Date | null;
   monthly_target: Decimal | null;
@@ -88,6 +90,7 @@ export interface InvitesTable {
   role: UserRole;
   token_hash: string;
   invited_by: number | null;
+  language: Generated<Language>;
   expires_at: Date;
   accepted_at: Date | null;
   revoked_at: Date | null;

@@ -1,4 +1,5 @@
 import type { DatabaseClient } from '../database/connection.js';
+import type { Language } from '../i18n/language.js';
 import type { NewUserRow, UserRole, UserRow, UserUpdate } from '../database/types.js';
 import { OVERSEER_ROLES } from '../utils/roles.js';
 
@@ -55,10 +56,10 @@ export class UserRepository {
   }
 
   /** Active people who oversee the shop and want the Monday report email. */
-  weeklyReportRecipients(): Promise<Array<{ email: string; name: string }>> {
+  weeklyReportRecipients(): Promise<Array<{ email: string; name: string; language: Language }>> {
     return this.db
       .selectFrom('users')
-      .select(['email', 'name'])
+      .select(['email', 'name', 'language'])
       .where('role', 'in', OVERSEER_ROLES)
       .where('is_active', '=', true)
       .where('deleted_at', 'is', null)

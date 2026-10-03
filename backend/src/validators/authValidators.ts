@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
+import { LANGUAGES } from '../i18n/language.js';
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -53,6 +54,7 @@ export const profileSchema = z
     name: z.string().trim().min(1).max(255).optional(),
     phone: optionalText(50),
     theme: z.enum(['light', 'dark', 'system']).optional(),
+    language: z.enum(LANGUAGES).optional(),
     emailWeeklyReport: z.boolean().optional(),
   })
   .strict();
@@ -80,6 +82,8 @@ export const signupSchema = z.object({
 export const inviteSchema = z.object({
   email: emailSchema,
   role: z.enum(USER_ROLES),
+  /** The invite email and the new account's language; the inviter's own when left out. */
+  language: z.enum(LANGUAGES).optional(),
 });
 
 export const acceptInviteSchema = z.object({

@@ -1,6 +1,7 @@
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { NotFoundError } from '../errors/httpErrors.js';
 import type { PublicUser } from '../types/auth.js';
+import type { Language } from '../i18n/language.js';
 import { toPublicUser } from './mappers.js';
 import type { MediaService } from './MediaService.js';
 
@@ -8,10 +9,11 @@ export interface ProfileChanges {
   name?: string;
   phone?: string | null;
   theme?: 'light' | 'dark' | 'system';
+  language?: Language;
   emailWeeklyReport?: boolean;
 }
 
-/** The signed-in person's own name, phone, photo and theme. */
+/** The signed-in person's own name, phone, photo, theme and language. */
 export class ProfileService {
   constructor(
     private readonly userRepository: UserRepository,
@@ -23,6 +25,7 @@ export class ProfileService {
       ...(changes.name !== undefined && { name: changes.name }),
       ...(changes.phone !== undefined && { phone: changes.phone }),
       ...(changes.theme !== undefined && { theme: changes.theme }),
+      ...(changes.language !== undefined && { language: changes.language }),
       ...(changes.emailWeeklyReport !== undefined && { email_weekly_report: changes.emailWeeklyReport }),
     });
     if (!user) throw new NotFoundError(`User ${userId} does not exist`);

@@ -1,5 +1,6 @@
 import type { DatabaseClient } from '../database/connection.js';
 import type { UserRole } from '../database/types.js';
+import type { Language } from '../i18n/language.js';
 
 export interface InviteRecord {
   id: number;
@@ -7,6 +8,7 @@ export interface InviteRecord {
   business_name: string;
   email: string;
   role: UserRole;
+  language: Language;
   invited_by_name: string | null;
   expires_at: Date;
   accepted_at: Date | null;
@@ -28,6 +30,7 @@ export class InviteRepository {
         'b.name as business_name',
         'i.email',
         'i.role',
+        'i.language',
         'u.name as invited_by_name',
         'i.expires_at',
         'i.accepted_at',
@@ -40,6 +43,7 @@ export class InviteRepository {
     businessId: number;
     email: string;
     role: UserRole;
+    language: Language;
     tokenHash: string;
     invitedBy: number;
     expiresAt: Date;
@@ -50,6 +54,7 @@ export class InviteRepository {
         business_id: invite.businessId,
         email: invite.email,
         role: invite.role,
+        language: invite.language,
         token_hash: invite.tokenHash,
         invited_by: invite.invitedBy,
         expires_at: invite.expiresAt,

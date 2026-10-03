@@ -64,9 +64,8 @@ export class PushService {
   /** A test alert to every device of this person, sent with the next batch. */
   async sendTest(userId: number): Promise<void> {
     await this.pushRepository.createTestNotification(userId, {
-      title: 'Test alert from 4VD',
-      message: 'Alerts are working on this device.',
       type: NOTIFICATION_TYPES.TEST,
+      write: (t) => ({ title: t.testAlertTitle, message: t.testAlertMessage }),
     });
   }
 

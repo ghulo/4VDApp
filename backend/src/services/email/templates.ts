@@ -1,8 +1,11 @@
 /**
  * Account emails. Each has an HTML part (simple tables and inline styles, the
  * only thing every email app renders the same) and a plain-text part.
- * Anything a person typed is escaped before it goes into the HTML.
+ * Anything a person typed is escaped before it goes into the HTML. Each is
+ * written in the reader's language: pass their catalogue as `t`.
  */
+
+import { en, type ServerMessages } from '../../i18n/messages.js';
 
 export interface EmailContent {
   subject: string;
@@ -14,14 +17,6 @@ const BRAND = '#C2410C';
 const INK = '#1F1B19';
 const MUTED = '#6B635F';
 
-const ROLE_NAMES: Record<string, string> = {
-  developer: 'the developer',
-  admin: 'an admin',
-  owner: 'the owner',
-  employee: 'an employee',
-  family: 'a family member',
-};
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -32,6 +27,7 @@ function escapeHtml(value: string): string {
 }
 
 interface Layout {
+  t: ServerMessages;
   subject: string;
   /** Short paragraphs, already escaped. */
   paragraphs: string[];
@@ -40,7 +36,7 @@ interface Layout {
   note?: string;
 }
 
-function render({ subject, paragraphs, button, note }: Layout): string {
+function render({ t, subject, paragraphs, button, note }: Layout): string {
   const body = paragraphs
     .map((paragraph) => `<p style="margin:0 0 16px;font-size:16px;line-height:24px;color:${INK}">${paragraph}</p>`)
     .join('');
@@ -48,16 +44,16 @@ function render({ subject, paragraphs, button, note }: Layout): string {
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px"><tr><td style="border-radius:8px;background:${BRAND}">
         <a href="${escapeHtml(button.link)}" style="display:inline-block;padding:14px 24px;font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px">${escapeHtml(button.label)}</a>
       </td></tr></table>
-      <p style="margin:0 0 16px;font-size:13px;line-height:20px;color:${MUTED}">Or paste this link into your browser:<br><a href="${escapeHtml(button.link)}" style="color:${BRAND};word-break:break-all">${escapeHtml(button.link)}</a></p>`
+      <p style="margin:0 0 16px;font-size:13px;line-height:20px;color:${MUTED}">${escapeHtml(t.email.pasteLink)}<br><a href="${escapeHtml(button.link)}" style="color:${BRAND};word-break:break-all">${escapeHtml(button.link)}</a></p>`
     : '';
   const small = note ? `<p style="margin:0;font-size:13px;line-height:20px;color:${MUTED}">${note}</p>` : '';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(subject)}</title></head>
+  return `<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background:#FAF9F7;font-family:'Hanken Grotesk',Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF9F7;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
 <tr><td style="padding:0 0 16px"><span style="display:inline-block;padding:6px 12px;border-radius:8px;background:${BRAND};color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px">4VD</span></td></tr>
 <tr><td style="background:#ffffff;border-radius:14px;padding:32px 28px;border:1px solid #EBE7E3">${body}${action}${small}</td></tr>
-<tr><td style="padding:16px 4px 0;font-size:12px;line-height:18px;color:${MUTED}">You're getting this because of your 4VD account.</td></tr>
+<tr><td style="padding:16px 4px 0;font-size:12px;line-height:18px;color:${MUTED}">${escapeHtml(t.email.footer)}</td></tr>
 </table></td></tr></table></body></html>`;
 }
 
@@ -79,125 +75,132 @@ export interface WeeklyReportData {
 }
 
 export const emailTemplates = {
-  invite(input: { shopName: string; inviterName: string; role: string; link: string }): EmailContent {
-    const subject = `${input.inviterName} invited you to ${input.shopName} on 4VD`;
-    const role = ROLE_NAMES[input.role] ?? input.role;
+  invite(input: { shopName: string; inviterName: string; role: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.inviteSubject({ inviter: input.inviterName, shop: input.shopName });
+    const role = t.roleName[input.role] ?? input.role;
     return {
       subject,
       html: render({
+        t,
         subject,
         paragraphs: [
-          `${escapeHtml(input.inviterName)} has invited you to join <strong>${escapeHtml(input.shopName)}</strong> on 4VD as ${escapeHtml(role)}.`,
-          'Choose your password (or use Google) to set up your account.',
+          t.email.inviteBody({
+            inviter: escapeHtml(input.inviterName),
+            shop: `<strong>${escapeHtml(input.shopName)}</strong>`,
+            role: escapeHtml(role),
+          }),
+          escapeHtml(t.email.inviteChoosePassword),
         ],
-        button: { label: 'Accept the invite', link: input.link },
-        note: 'This link works once and expires in 7 days. If you weren’t expecting it, you can ignore this email.',
+        button: { label: t.email.inviteButton, link: input.link },
+        note: escapeHtml(t.email.inviteNote),
       }),
       text: plain([
-        `${input.inviterName} has invited you to join ${input.shopName} on 4VD as ${role}.`,
-        `Accept the invite: ${input.link}`,
-        'This link works once and expires in 7 days.',
+        t.email.inviteBody({ inviter: input.inviterName, shop: input.shopName, role }),
+        `${t.email.inviteButton}: ${input.link}`,
+        t.email.inviteNoteShort,
       ]),
     };
   },
 
-  verifyEmail(input: { name: string; link: string }): EmailContent {
-    const subject = 'Confirm your email for 4VD';
+  verifyEmail(input: { name: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.verifySubject;
     return {
       subject,
       html: render({
+        t,
         subject,
-        paragraphs: [`Hi ${escapeHtml(input.name)},`, 'Please confirm this is your email address.'],
-        button: { label: 'Confirm my email', link: input.link },
-        note: 'This link expires in 24 hours.',
+        paragraphs: [escapeHtml(t.email.greeting(input.name)), escapeHtml(t.email.verifyBody)],
+        button: { label: t.email.verifyButton, link: input.link },
+        note: escapeHtml(t.email.expires24h),
       }),
-      text: plain([`Hi ${input.name},`, `Confirm your email: ${input.link}`, 'This link expires in 24 hours.']),
+      text: plain([t.email.greeting(input.name), `${t.email.verifyButton}: ${input.link}`, t.email.expires24h]),
     };
   },
 
-  resetPassword(input: { name: string; link: string }): EmailContent {
-    const subject = 'Reset your 4VD password';
+  resetPassword(input: { name: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.resetSubject;
     return {
       subject,
       html: render({
+        t,
         subject,
-        paragraphs: [`Hi ${escapeHtml(input.name)},`, 'Someone asked to reset the password for your 4VD account. If it was you, choose a new one here.'],
-        button: { label: 'Choose a new password', link: input.link },
-        note: 'This link works once and expires in 1 hour. If you didn’t ask for this, ignore this email; your password stays the same.',
+        paragraphs: [escapeHtml(t.email.greeting(input.name)), escapeHtml(t.email.resetBody)],
+        button: { label: t.email.resetButton, link: input.link },
+        note: escapeHtml(t.email.resetNote),
       }),
-      text: plain([
-        `Hi ${input.name},`,
-        `Choose a new password: ${input.link}`,
-        'This link works once and expires in 1 hour. If you didn’t ask for this, ignore this email.',
-      ]),
+      text: plain([t.email.greeting(input.name), `${t.email.resetButton}: ${input.link}`, t.email.resetNoteShort]),
     };
   },
 
-  confirmNewEmail(input: { name: string; link: string }): EmailContent {
-    const subject = 'Confirm your new email for 4VD';
+  confirmNewEmail(input: { name: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.confirmSubject;
     return {
       subject,
       html: render({
+        t,
         subject,
-        paragraphs: [`Hi ${escapeHtml(input.name)},`, 'Confirm this address to start using it to log in to 4VD.'],
-        button: { label: 'Use this email', link: input.link },
-        note: 'This link expires in 24 hours. Until then you keep logging in with your old email.',
+        paragraphs: [escapeHtml(t.email.greeting(input.name)), escapeHtml(t.email.confirmBody)],
+        button: { label: t.email.confirmButton, link: input.link },
+        note: escapeHtml(t.email.confirmNote),
       }),
-      text: plain([`Hi ${input.name},`, `Use this email for 4VD: ${input.link}`, 'This link expires in 24 hours.']),
+      text: plain([t.email.greeting(input.name), `${t.email.confirmButton}: ${input.link}`, t.email.expires24h]),
     };
   },
 
-  weeklyReport(input: { name: string } & WeeklyReportData): EmailContent {
-    const subject = `Your week at 4VD: ${input.revenue} in sales`;
-    const summary = `${input.revenue} from ${input.salesCount} ${input.salesCount === 1 ? 'sale' : 'sales'}, ${input.profit} profit${input.change ? `, ${input.change}` : ''}.`;
+  weeklyReport(input: { name: string } & WeeklyReportData, t: ServerMessages = en): EmailContent {
+    const subject = t.email.weeklySubject(input.revenue);
+    const summary = t.email.weeklySummary({
+      revenue: input.revenue,
+      sales: input.salesCount,
+      profit: input.profit,
+      change: input.change,
+    });
     const best = input.topProducts.length
-      ? input.topProducts.map((product, index) => `${index + 1}. ${product.name}: ${product.revenue} (${product.units} sold)`)
-      : ['No sales last week.'];
-    const warnings =
-      input.warnings === 0
-        ? 'Nothing needs your attention right now.'
-        : `${input.warnings} ${input.warnings === 1 ? 'thing needs' : 'things need'} your attention on the Overview page.`;
+      ? input.topProducts.map((product, index) =>
+          t.email.weeklyProduct({ rank: index + 1, name: product.name, revenue: product.revenue, units: product.units }),
+        )
+      : [t.email.weeklyNoSales];
+    const warnings = t.email.weeklyWarnings(input.warnings);
+    const intro = t.email.weeklyIntro({ name: input.name, week: input.weekLabel });
     return {
       subject,
       html: render({
+        t,
         subject,
         paragraphs: [
-          `Hi ${escapeHtml(input.name)}, here is last week (${escapeHtml(input.weekLabel)}).`,
+          escapeHtml(intro),
           `<strong>${escapeHtml(summary)}</strong>`,
-          `Best sellers:<br>${best.map(escapeHtml).join('<br>')}`,
+          `${escapeHtml(t.email.weeklyBestSellers)}<br>${best.map(escapeHtml).join('<br>')}`,
           escapeHtml(warnings),
         ],
-        button: { label: 'Open the dashboard', link: input.link },
-        note: 'You can switch this email off on your Profile page.',
+        button: { label: t.email.weeklyButton, link: input.link },
+        note: escapeHtml(t.email.weeklyNote),
       }),
       text: plain([
-        `Hi ${input.name}, here is last week (${input.weekLabel}).`,
+        intro,
         summary,
-        `Best sellers:\n${best.join('\n')}`,
+        `${t.email.weeklyBestSellers}\n${best.join('\n')}`,
         warnings,
-        `Open the dashboard: ${input.link}`,
-        'You can switch this email off on your Profile page.',
+        `${t.email.weeklyButton}: ${input.link}`,
+        t.email.weeklyNote,
       ]),
     };
   },
 
-  emailChanged(input: { name: string; newEmail: string }): EmailContent {
-    const subject = 'Your 4VD email was changed';
+  emailChanged(input: { name: string; newEmail: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.changedSubject;
     return {
       subject,
       html: render({
+        t,
         subject,
         paragraphs: [
-          `Hi ${escapeHtml(input.name)},`,
-          `Your 4VD account now logs in with <strong>${escapeHtml(input.newEmail)}</strong>, and this address won't be used any more.`,
-          'If you didn’t do this, tell the shop owner straight away.',
+          escapeHtml(t.email.greeting(input.name)),
+          t.email.changedBody(`<strong>${escapeHtml(input.newEmail)}</strong>`),
+          escapeHtml(t.email.changedWarning),
         ],
       }),
-      text: plain([
-        `Hi ${input.name},`,
-        `Your 4VD account now logs in with ${input.newEmail}.`,
-        'If you didn’t do this, tell the shop owner straight away.',
-      ]),
+      text: plain([t.email.greeting(input.name), t.email.changedBody(input.newEmail), t.email.changedWarning]),
     };
   },
 };

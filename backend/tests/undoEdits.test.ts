@@ -136,7 +136,7 @@ describe('reverting other edits', () => {
     await undoService().undo(entryId, people.admin, null);
 
     const promotion = await context.db.selectFrom('promotions').selectAll().where('id', '=', created.body.data.id).executeTakeFirstOrThrow();
-    expect(promotion.ends_at.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(promotion.ended_early_at).not.toBeNull();
     await expect(undoService().restore(entryId, people.admin)).rejects.toThrow(/new promotion/i);
   });
 });

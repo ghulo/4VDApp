@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { GoogleAuthService } from '../services/GoogleAuthService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { googleCredentialSchema, linkTokenParamsSchema } from '../validators/authValidators.js';
+import { googleCredentialSchema, googleInviteSchema, linkTokenParamsSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
 import { deviceOf } from './authController.js';
 
@@ -18,8 +18,8 @@ export function createGoogleController(googleAuthService: GoogleAuthService) {
 
     async acceptInvite(req: Request, res: Response): Promise<void> {
       const { token } = parseInput(linkTokenParamsSchema, req.params);
-      const { credential } = parseInput(googleCredentialSchema, req.body);
-      sendSuccess(res, await googleAuthService.acceptInvite(token, credential, deviceOf(req)), {
+      const { credential, language } = parseInput(googleInviteSchema, req.body);
+      sendSuccess(res, await googleAuthService.acceptInvite(token, credential, deviceOf(req), language), {
         statusCode: 201,
         message: 'Welcome to 4VD',
       });

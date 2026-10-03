@@ -177,6 +177,7 @@ export const sq: Catalogue = {
     sku: (sku) => `, SKU ${sku}`,
     each: 'copa',
     eachPrice: (price) => `${price} copa`,
+    bulkFrom: (price, quantity) => `${price} copa nga ${quantity} copë`,
     inStock: 'Në stok',
     bulkPrices: 'Çmime me shumicë',
     upTo: (n) => `1 deri ${n}`,

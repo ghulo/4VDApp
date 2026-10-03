@@ -71,19 +71,23 @@ const TRANSLATED = [
 const ALLOWED = /^(4VD|Google|English|Shqip|Enter|Esc|Ctrl|Tab|[^A-Za-zËëÇç]*)$/;
 
 /** JSX text matches can catch code between tags (`a < b ? (`); real words don't contain these. */
-const CODE = /[=(){};?&|]|\.\w/;
+const CODE = /[=(){};?&|$]|\.\w/;
+
+/** `} else {` and friends sit between braces too. */
+const KEYWORD = /^(else|catch|finally|while|try|do|as const|from)\b/;
 
 const PATTERNS = [
   /(?<![=-])>\s*([A-Za-zËëÇç][^<>{}]*?)\s*</g, // JSX text: <p>Save changes</p>, not `=> Promise<T>`
   /\b(?:placeholder|title|aria-label|alt|label|description|subtitle|hint)="([A-ZËÇ][^"]*|[^"]* [^"]*)"/g, // attributes: placeholder="Search", not settings like "signin_with"
   /\b(?:label|title|description|subtitle|hint|placeholder|message|group):\s*'([A-ZËÇ][^']*|[^']* [^']*)'/g, // fields: { label: 'Light' }, not keys like 'actions'
+  /\}[ \t]*([A-Za-zËëÇç][^{}<>\n]*?)[ \t]*\{/g, // words between expressions: {price} each from {n}
 ];
 
 function hardCoded(file: string): string[] {
   const source = SOURCES[`/${file}`];
   if (source === undefined) throw new Error(`${file} does not exist`);
   return PATTERNS.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1]!.trim())).filter(
-    (text) => text && !ALLOWED.test(text) && !CODE.test(text),
+    (text) => text && !ALLOWED.test(text) && !CODE.test(text) && !KEYWORD.test(text),
   );
 }
 

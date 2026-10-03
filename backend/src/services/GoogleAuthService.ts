@@ -4,6 +4,7 @@ import type { UserRepository } from '../repositories/UserRepository.js';
 import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
 import type { GoogleVerifier } from './google/googleVerifier.js';
 import type { InviteService } from './InviteService.js';
+import type { Language } from '../i18n/language.js';
 
 const NO_ACCOUNT = 'No 4VD account uses this Google email. Ask the shop owner for an invite.';
 
@@ -50,13 +51,13 @@ export class GoogleAuthService {
   }
 
   /** Accept an invite with the Google account it was sent to; no password needed. */
-  async acceptInvite(inviteToken: string, credential: string, device: DeviceInfo): Promise<LoginResult> {
+  async acceptInvite(inviteToken: string, credential: string, device: DeviceInfo, language?: Language): Promise<LoginResult> {
     const profile = await this.verify(credential);
     const invite = await this.inviteService.openInvite(inviteToken);
     if (!profile.emailVerified || profile.email !== invite.email) {
       throw new ForbiddenError(`This invite is for ${invite.email}. Use the Google account with that email, or choose a password.`);
     }
-    const user = await this.inviteService.createMember(invite, { name: profile.name, passwordHash: null });
+    const user = await this.inviteService.createMember(invite, { name: profile.name, passwordHash: null, language });
     await this.identities.link(user.id, 'google', profile.subject, profile.email);
     return this.authService.startSession(user, device, 'logged in with Google for the first time');
   }

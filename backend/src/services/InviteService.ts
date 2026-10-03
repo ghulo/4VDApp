@@ -137,9 +137,17 @@ export class InviteService {
     };
   }
 
-  async accept(token: string, input: { name: string; password: string }, device: DeviceInfo): Promise<LoginResult> {
+  async accept(
+    token: string,
+    input: { name: string; password: string; language?: Language },
+    device: DeviceInfo,
+  ): Promise<LoginResult> {
     const invite = await this.openInvite(token);
-    const user = await this.createMember(invite, { name: input.name, passwordHash: await hashPassword(input.password) });
+    const user = await this.createMember(invite, {
+      name: input.name,
+      passwordHash: await hashPassword(input.password),
+      language: input.language,
+    });
     return this.authService.startSession(user, device, 'logged in for the first time');
   }
 
@@ -152,8 +160,11 @@ export class InviteService {
     return invite;
   }
 
-  /** Turns an open invite into a verified account. Shared with Google sign-in. */
-  async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null }) {
+  /**
+   * Turns an open invite into a verified account. Shared with Google sign-in.
+   * The language the invite page was shown in wins over the invite's own.
+   */
+  async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
     if (await this.userRepository.findByEmail(invite.email)) {
       throw new ConflictError(`${invite.email} already has an account. Log in instead.`);
     }
@@ -163,7 +174,7 @@ export class InviteService {
         email: invite.email,
         name: details.name,
         role: invite.role,
-        language: invite.language,
+        language: details.language ?? invite.language,
         password_hash: details.passwordHash,
         business_id: invite.business_id,
         email_verified_at: new Date(),

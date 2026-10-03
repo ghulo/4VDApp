@@ -181,6 +181,7 @@ export const en = {
     sku: (sku: string) => `, SKU ${sku}`,
     each: 'each',
     eachPrice: (price: string) => `${price} each`,
+    bulkFrom: (price: string, quantity: number) => `${price} each from ${quantity}`,
     inStock: 'In stock',
     bulkPrices: 'Bulk prices',
     upTo: (n: number) => `1 to ${n}`,

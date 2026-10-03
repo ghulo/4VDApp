@@ -176,18 +176,19 @@ export function AcceptInvitePage() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const { finish, sentToApp } = useFinishSignIn();
+  const { language, setLanguage } = useLanguage();
 
   const accept = useMutation({
-    mutationFn: () => accountApi.acceptInvite(token, { name: name.trim(), password }),
+    // The account starts in the language this page is shown in.
+    mutationFn: () => accountApi.acceptInvite(token, { name: name.trim(), password, language }),
     onSuccess: finish,
   });
   const google = useMutation({
-    mutationFn: (credential: string) => accountApi.acceptInviteWithGoogle(token, credential),
+    mutationFn: (credential: string) => accountApi.acceptInviteWithGoogle(token, credential, language),
     onSuccess: finish,
   });
 
   // Open in the language the invite was sent in, unless this browser already has a choice.
-  const { setLanguage } = useLanguage();
   const inviteLanguage = invite.data?.language;
   useEffect(() => {
     if (inviteLanguage && !hasSavedLanguage()) setLanguage(inviteLanguage);

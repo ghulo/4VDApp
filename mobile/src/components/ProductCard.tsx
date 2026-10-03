@@ -4,6 +4,7 @@ import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { formatMoney, promotionLabel } from '../utils/format';
 import { StockTag } from './StockTag';
+import { useT } from '../i18n/useT';
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +13,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const colors = useThemeColors();
+  const t = useT();
   const cheapestTier = product.bulkPricingTiers.at(-1);
 
   return (
@@ -50,7 +52,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         )}
         {cheapestTier && (
           <Text style={[styles.bulk, { color: colors.steel }]}>
-            {formatMoney(cheapestTier.price)} each from {cheapestTier.quantity}
+            {t.product.bulkFrom(formatMoney(cheapestTier.price), cheapestTier.quantity)}
           </Text>
         )}
       </View>

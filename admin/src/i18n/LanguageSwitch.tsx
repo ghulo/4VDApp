@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth';
 import { meApi } from '../services/api';
 import type { Language } from './language';
 import { useLanguage, useT } from './useT';
+import { rememberSignInPick } from './signInLanguage';
 
 interface LanguageSwitchProps {
   className?: string;
@@ -22,6 +23,8 @@ export function LanguageSwitch({ className = '', persist = false }: LanguageSwit
   ];
 
   function choose(next: Language) {
+    // On a sign-in screen the pick is remembered, and saved to the account once signed in.
+    if (!persist) rememberSignInPick(next);
     if (persist) {
       meApi
         .updateProfile({ language: next })

@@ -93,6 +93,18 @@ describe('emails in each person’s language', () => {
     expect(accepted.body.data.user.language).toBe('sq');
   });
 
+  it('should start the account in the language the invite page was shown in', async () => {
+    await api().post('/api/invites').set(auth(adminToken)).send({ email: 'ana@example.com', role: 'employee', language: 'sq' });
+    const email = await newestEmailTo('ana@example.com');
+    const token = /https?:\/\/\S+/.exec(email.text)![0].split('/').at(-1)!;
+
+    const accepted = await api()
+      .post(`/api/auth/invites/${token}/accept`)
+      .send({ name: 'Ana Kovač', password: 'a-long-password', language: 'en' });
+
+    expect(accepted.body.data.user.language).toBe('en');
+  });
+
   it('should send an invite in the inviter’s own language when none is picked', async () => {
     await setLanguage(adminToken, 'sq');
 

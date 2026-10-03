@@ -72,6 +72,9 @@ export const mediaParamsSchema = z.object({ id: z.uuid() });
 
 export const googleCredentialSchema = z.object({ credential: z.string().min(1).max(5000) });
 
+/** Accepting an invite: the language the invite page was shown in becomes the account's. */
+export const googleInviteSchema = googleCredentialSchema.extend({ language: z.enum(LANGUAGES).optional() });
+
 export const signupSchema = z.object({
   shopName: z.string().trim().min(1).max(255),
   name: z.string().trim().min(1).max(255),
@@ -89,6 +92,8 @@ export const inviteSchema = z.object({
 export const acceptInviteSchema = z.object({
   name: z.string().trim().min(1).max(255),
   password: newPasswordSchema,
+  /** The language the invite page was shown in; the invite's own when left out. */
+  language: z.enum(LANGUAGES).optional(),
 });
 
 export const loginSchema = z.object({

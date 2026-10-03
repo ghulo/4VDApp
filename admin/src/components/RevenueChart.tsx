@@ -9,6 +9,9 @@ const MARGIN = { top: 12, right: 8, bottom: 28, left: 56 };
 const MAX_BAR_WIDTH = 14;
 /** Room between bars, as a share of each day's slot. */
 const BAR_GAP = 0.35;
+/** Each day is drawn as a column of dots, 4VD's signature; this is their spacing. */
+const DOT_STEP = 6;
+const DOT_RADIUS = 2.2;
 const TICK_COUNT = 4;
 
 /** Round the axis top up to a clean number (1, 2, 2.5 or 5 times a power of ten). */
@@ -17,6 +20,23 @@ function niceMax(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const step = [1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= value)!;
   return step * magnitude;
+}
+
+/**
+ * The dots that fill a bar from its top down to the baseline: as many dot
+ * columns as fit its width, and at least one dot for any sale at all.
+ */
+function dotsFor(x: number, width: number, top: number, base: number): Array<{ x: number; y: number }> {
+  const columns = Math.max(1, Math.floor(width / DOT_STEP));
+  const rows = Math.max(1, Math.round((base - top) / DOT_STEP));
+  const left = x + (width - (columns - 1) * DOT_STEP) / 2;
+  const dots: Array<{ x: number; y: number }> = [];
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      dots.push({ x: left + column * DOT_STEP, y: base - DOT_STEP / 2 - row * DOT_STEP });
+    }
+  }
+  return dots;
 }
 
 interface RevenueChartProps {
@@ -131,16 +151,16 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
                 <g key={point.periodStart} className="chart__column" onPointerEnter={() => setActiveIndex(index)}>
                   {/* The whole column is the hit target, not just the painted bar. */}
                   <rect x={bandX} y={MARGIN.top} width={band} height={plotHeight} fill="transparent" />
-                  {point.revenue > 0 && (
-                    <rect
-                      className={index === activeIndex ? 'chart__bar chart__bar--active' : 'chart__bar'}
-                      x={bandX + (band - barWidth) / 2}
-                      y={y}
-                      width={barWidth}
-                      height={MARGIN.top + plotHeight - y}
-                      rx={Math.min(2, barWidth / 2)}
-                    />
-                  )}
+                  {point.revenue > 0 &&
+                    dotsFor(bandX + (band - barWidth) / 2, barWidth, y, MARGIN.top + plotHeight).map((dot) => (
+                      <circle
+                        key={`${dot.x}-${dot.y}`}
+                        className={index === activeIndex ? 'chart__dot chart__dot--active' : 'chart__dot'}
+                        cx={dot.x}
+                        cy={dot.y}
+                        r={DOT_RADIUS}
+                      />
+                    ))}
                   {index % labelEvery === 0 && (
                     <text className="chart__tick" x={bandX + band / 2} y={HEIGHT - 8} textAnchor="middle">
                       {dayLabel.format(new Date(point.periodStart))}

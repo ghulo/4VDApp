@@ -54,6 +54,18 @@ describe('GET /api/activity', () => {
     expect(byEntity.body.data).toHaveLength(1);
   });
 
+  it('should leave out excluded kinds, like logins', async () => {
+    const repository = new ActivityLogRepository(context.db);
+    await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, summary: 'Added category Lighting' });
+
+    // beforeEach logged the admin in, so there's one login to hide.
+    const withoutLogins = await listActivity('?exclude=auth');
+    const withoutOneAction = await listActivity('?exclude=auth.logged_in,category');
+
+    expect(withoutLogins.body.data.map((entry: { action: string }) => entry.action)).toEqual(['category.created']);
+    expect(withoutOneAction.body.data).toEqual([]);
+  });
+
   it('should be admin only', async () => {
     const employeeToken = await loginAs(context, 'employee');
 

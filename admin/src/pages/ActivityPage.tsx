@@ -11,7 +11,11 @@ import type { ActivityEntry } from '../services/types';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
-/** Kinds of change a person would filter by, mapped to action prefixes. */
+/**
+ * Kinds of change a person would filter by, mapped to action prefixes. The
+ * default leaves logins out: they outnumber real changes and bury what can be undone.
+ */
+const EVERYTHING = 'everything';
 const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }> = [
   { value: '', key: 'all' },
   { value: 'product,pricing,category', key: 'products' },
@@ -22,6 +26,7 @@ const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }>
   { value: 'count', key: 'counts' },
   { value: 'user', key: 'people' },
   { value: 'auth', key: 'logins' },
+  { value: EVERYTHING, key: 'everything' },
 ];
 
 export function ActivityPage() {
@@ -34,7 +39,13 @@ export function ActivityPage() {
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
   const activity = useQuery({
     queryKey: ['activity', { page, userId, action }],
-    queryFn: () => activityApi.list({ page, userId, action: action || undefined }),
+    queryFn: () =>
+      activityApi.list({
+        page,
+        userId,
+        action: action && action !== EVERYTHING ? action : undefined,
+        exclude: action === '' ? 'auth' : undefined,
+      }),
     placeholderData: keepPreviousData,
   });
 

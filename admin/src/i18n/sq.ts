@@ -290,6 +290,8 @@ export const sq: Catalogue = {
     nothingToRestockHint: 'Çdo produkt ka më shumë se niveli i porosisë.',
     reorderAt: (level) => `Porosit kur arrin ${level}`,
     todaySoFar: 'Sot deri tani',
+    last30Days: '30 ditët e fundit',
+    salesLast30Days: 'Shitjet për ditë në 30 ditët e fundit',
     notAvailable: 'Nuk disponohet',
     takenToday: (p) => `${p.amount} nga ${p.count} shitje deri tani sot.`,
     noSalesToday: 'Ende pa shitje sot.',
@@ -308,6 +310,8 @@ export const sq: Catalogue = {
     seeReports: 'Shiko shifrat dhe prirjet te Raportet',
   },
   sales: {
+    anyProduct: 'Çdo produkt',
+    anyone: 'Kushdo',
     title: 'Shitje',
     description: 'Regjistrimi i një shitjeje i heq copët nga stoku dhe përdor vetë çmimin me shumicë.',
     record: 'Regjistro një shitje',
@@ -326,7 +330,7 @@ export const sq: Catalogue = {
     from: 'Nga',
     to: 'Deri',
     totalFrom: (p) => `${p.amount} nga ${p.count} shitje`,
-    noSalesInDates: 'Asnjë shitje në këto data',
+    noSalesInDates: 'Asnjë shitje nuk përputhet me këto filtra',
     noSalesYet: 'Ende pa shitje',
     when: 'Kur',
     qty: 'Sasia',
@@ -353,7 +357,7 @@ export const sq: Catalogue = {
     title: 'Aktiviteti',
     description: 'Kush ndryshoi çfarë, më të rejat në krye.',
     kinds: {
-      all: 'Të gjitha',
+      all: 'Të gjitha ndryshimet',
       products: 'Produkte dhe çmime',
       stock: 'Stoku',
       sales: 'Shitje',
@@ -362,6 +366,7 @@ export const sq: Catalogue = {
       counts: 'Numërime stoku',
       people: 'Njerëzit',
       logins: 'Hyrje',
+      everything: 'Gjithçka, bashkë me hyrjet',
     },
     whatChanged: 'Çfarë ndryshoi',
     who: 'Kush',
@@ -820,6 +825,7 @@ export const sq: Catalogue = {
     start: 'Nis ofertën',
   },
   people: {
+    manage: 'Menaxho',
     roleHints: {
       developer: 'Gjithçka, dhe i vetmi që jep rolet më të larta',
       admin: 'Drejton dyqanin: produktet, stokun, njerëzit dhe cilësimet',

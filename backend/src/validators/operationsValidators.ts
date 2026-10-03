@@ -34,6 +34,8 @@ export const saleQuerySchema = paginationSchema.extend({
   startDate: startDateQuery.optional(),
   endDate: endDateQuery.optional(),
   productId: idSchema.optional(),
+  // The person who recorded the sale.
+  soldBy: idSchema.optional(),
 });
 
 // ---------- Analytics ----------

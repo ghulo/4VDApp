@@ -4,6 +4,7 @@ export { Button, ButtonLink } from './Button';
 export { buttonClass, type ButtonVariant } from './buttonClass';
 export { Card, SettingRow } from './Card';
 export { DataTable, type Column } from './DataTable';
+export { DotMatrix } from './DotMatrix';
 export { EmptyState } from './EmptyState';
 export { MetricCard, MetricGrid } from './MetricCard';
 export { Field } from './Field';

@@ -6,12 +6,14 @@ import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
-import { approvalsApi, inventoryApi, reportsApi } from '../services/api';
+import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
-import { Card, PageHeader } from '../components/ui';
+import { Card, DotMatrix, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** Days in the Today card's dot strip. */
+const DOT_DAYS = 30;
 
 export function OverviewPage() {
   const t = useT();
@@ -110,6 +112,11 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
   const waiting = approvals.data?.total ?? 0;
+  const lastDays = useQuery({
+    queryKey: ['analytics', 'revenue', 'daily', DOT_DAYS],
+    // Start of the day 29 days ago, so the strip shows exactly 30 whole days.
+    queryFn: () => analyticsApi.revenue('daily', new Date(Date.now() - (DOT_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10)),
+  });
 
   function compare(): string | null {
     if (!current || !previous) return null;
@@ -122,31 +129,39 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
 
   return (
     <section className="today" aria-label={t.overview.todaySoFar} aria-busy={today.isPending}>
-      {today.isPending && <Loading />}
-      {today.isError && <ErrorNotice error={today.error} onRetry={() => today.refetch()} />}
-      {current && (
-        <>
-          <p className="today__headline">
-            {current.salesCount > 0
-              ? t.overview.takenToday({ amount: formatMoney(current.revenue), count: current.salesCount })
-              : t.overview.noSalesToday}
-          </p>
-          <p className="today__compare">
-            {compare()}
-            {current.salesCount > 0 && <> {t.overview.todayFacts({ items: current.unitsSold, profit: formatMoney(current.profit) })}</>}
-          </p>
-        </>
-      )}
-      <div className="today__links">
-        <Link to="/approvals" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
-          <strong>{waiting}</strong> {t.overview.waitingForYou}
-          <CaretRight size={14} aria-hidden="true" />
-        </Link>
-        <Link to="/inventory?lowStock=true" className="today__link">
-          <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
-          <CaretRight size={14} aria-hidden="true" />
-        </Link>
+      <div className="today__text">
+        {today.isPending && <Loading />}
+        {today.isError && <ErrorNotice error={today.error} onRetry={() => today.refetch()} />}
+        {current && (
+          <>
+            <p className="today__headline">
+              {current.salesCount > 0
+                ? t.overview.takenToday({ amount: formatMoney(current.revenue), count: current.salesCount })
+                : t.overview.noSalesToday}
+            </p>
+            <p className="today__compare">
+              {compare()}
+              {current.salesCount > 0 && <> {t.overview.todayFacts({ items: current.unitsSold, profit: formatMoney(current.profit) })}</>}
+            </p>
+          </>
+        )}
+        <div className="today__links">
+          <Link to="/approvals" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
+            <strong>{waiting}</strong> {t.overview.waitingForYou}
+            <CaretRight size={14} aria-hidden="true" />
+          </Link>
+          <Link to="/inventory?lowStock=true" className="today__link">
+            <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
+            <CaretRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
       </div>
+      {lastDays.data && (
+        <figure className="today__dots">
+          <DotMatrix values={lastDays.data.points.map((point) => point.revenue)} label={t.overview.salesLast30Days} />
+          <figcaption>{t.overview.last30Days}</figcaption>
+        </figure>
+      )}
     </section>
   );
 }

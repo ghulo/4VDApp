@@ -30,6 +30,7 @@ interface MetricCardProps {
 export function MetricCard({ label, value, change, series, large, to, hint }: MetricCardProps) {
   const t = useT();
   const headingId = useId();
+  const dotsId = useId();
   const direction = change === undefined ? undefined : changeDirection(change);
   const paths = series ? sparklinePaths(series) : null;
   const muchMore = change !== undefined && change !== null && change > MUCH_MORE;
@@ -69,7 +70,13 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
       {series &&
         (paths ? (
           <svg className="metric__graph" viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-            <path className="metric__area" d={paths.area} />
+            {/* The area is filled with a fine dot grid: a halftone, not a flat wash. */}
+            <defs>
+              <pattern id={dotsId} width="6" height="6" patternUnits="userSpaceOnUse">
+                <circle className="metric__halftone" cx="3" cy="3" r="1.1" />
+              </pattern>
+            </defs>
+            <path className="metric__area" d={paths.area} fill={`url(#${dotsId})`} />
             <path className="metric__line" d={paths.line} vectorEffect="non-scaling-stroke" />
           </svg>
         ) : (

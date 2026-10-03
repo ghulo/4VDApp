@@ -1,5 +1,6 @@
+import { CaretDown } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -256,6 +257,8 @@ function UserRow({ user }: { user: User }) {
   const [commission, setCommission] = useState(user.commissionPercent === null ? '' : String(user.commissionPercent));
   const sells = user.role !== 'family';
   const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [isManaging, setIsManaging] = useState(false);
+  const panelId = useId();
   const isSelf = user.id === currentUser.id;
   // Others with a top role are the developer's to change; your own role is changed by someone else.
   const canEdit = isSelf ? canManage(currentUser.role) : canHandOut(currentUser.role, user.role);
@@ -318,104 +321,122 @@ function UserRow({ user }: { user: User }) {
       ) : (
         <Badge tone={user.role === 'developer' || user.role === 'owner' ? 'brand' : 'neutral'}>{t.common.roles[user.role]}</Badge>
       )}
-      <span className="category-list__actions">
-        {!canEdit ? null : isSettingTargets ? (
-          <form
-            className="inline-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              update.mutate({
-                monthlyTarget: target === '' ? null : Number(target),
-                commissionPercent: commission === '' ? null : Number(commission),
-              });
-            }}
-          >
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={1}
-              aria-label={t.people.targetFor(user.name)}
-              placeholder={t.people.targetPlaceholder}
-              value={target}
-              onChange={(event) => setTarget(event.target.value)}
-            />
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              max={100}
-              step={0.5}
-              aria-label={t.people.commissionFor(user.name)}
-              placeholder={t.people.commissionPlaceholder}
-              value={commission}
-              onChange={(event) => setCommission(event.target.value)}
-            />
-            <Button type="submit" disabled={update.isPending} variant="primary">
-              {t.common.save}
-            </Button>
-            <Button onClick={() => setIsSettingTargets(false)}>
-              {t.common.cancel}
-            </Button>
-          </form>
-        ) : isResetting ? (
-          <form
-            className="inline-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              update.mutate({ password: newPassword });
-            }}
-          >
-            <input
-              type="text"
-              aria-label={t.people.newPasswordFor(user.name)}
-              placeholder={t.people.newPassword}
-              autoComplete="off"
-              minLength={MIN_PASSWORD_LENGTH}
-              required
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-            />
-            <Button type="submit" variant="primary">
-              {t.people.setPassword}
-            </Button>
-            <Button onClick={() => setIsResetting(false)}>
-              {t.common.cancel}
-            </Button>
-          </form>
-        ) : (
-          <>
-            {sells && (
-              <Button onClick={() => setIsSettingTargets(true)}>
-                {t.people.targetAndCommission}
-              </Button>
-            )}
-            <Button onClick={() => setIsResetting(true)}>
-              {t.people.newPassword}
-            </Button>
-            {!isSelf && (
-              <Button onClick={() => update.mutate({ isActive: !user.isActive })}>
-                {user.isActive ? t.people.block : t.people.allow}
-              </Button>
-            )}
-            {!isSelf &&
-              (confirmingRemove ? (
-                <>
-                  <Button variant="danger" onClick={() => remove.mutate()}>
-                    {t.people.removeName(user.name.split(' ')[0] ?? user.name)}
-                  </Button>
-                  <Button onClick={() => setConfirmingRemove(false)}>
-                    {t.people.keep}
-                  </Button>
-                </>
-              ) : (
-                <Button variant="danger-text" onClick={() => setConfirmingRemove(true)}>
-                  {t.people.remove}
+      {canEdit ? (
+        <Button
+          aria-expanded={isManaging}
+          aria-controls={panelId}
+          className={isManaging ? 'user-row__manage-toggle is-open' : 'user-row__manage-toggle'}
+          onClick={() => setIsManaging((open) => !open)}
+        >
+          {t.people.manage}
+          <span className="visually-hidden"> {user.name}</span>
+          <CaretDown size={14} weight="bold" aria-hidden="true" className="user-row__caret" />
+        </Button>
+      ) : (
+        <span aria-hidden="true" />
+      )}
+      {canEdit && isManaging && (
+        <div id={panelId} className="user-row__manage">
+          <span className="category-list__actions">
+            {isSettingTargets ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  update.mutate({
+                    monthlyTarget: target === '' ? null : Number(target),
+                    commissionPercent: commission === '' ? null : Number(commission),
+                  });
+                }}
+              >
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={1}
+                  aria-label={t.people.targetFor(user.name)}
+                  placeholder={t.people.targetPlaceholder}
+                  value={target}
+                  onChange={(event) => setTarget(event.target.value)}
+                />
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  aria-label={t.people.commissionFor(user.name)}
+                  placeholder={t.people.commissionPlaceholder}
+                  value={commission}
+                  onChange={(event) => setCommission(event.target.value)}
+                />
+                <Button type="submit" disabled={update.isPending} variant="primary">
+                  {t.common.save}
                 </Button>
-              ))}
-          </>
-        )}
-      </span>
+                <Button onClick={() => setIsSettingTargets(false)}>
+                  {t.common.cancel}
+                </Button>
+              </form>
+            ) : isResetting ? (
+              <form
+                className="inline-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  update.mutate({ password: newPassword });
+                }}
+              >
+                <input
+                  type="text"
+                  aria-label={t.people.newPasswordFor(user.name)}
+                  placeholder={t.people.newPassword}
+                  autoComplete="off"
+                  minLength={MIN_PASSWORD_LENGTH}
+                  required
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                />
+                <Button type="submit" variant="primary">
+                  {t.people.setPassword}
+                </Button>
+                <Button onClick={() => setIsResetting(false)}>
+                  {t.common.cancel}
+                </Button>
+              </form>
+            ) : (
+              <>
+                {sells && (
+                  <Button onClick={() => setIsSettingTargets(true)}>
+                    {t.people.targetAndCommission}
+                  </Button>
+                )}
+                <Button onClick={() => setIsResetting(true)}>
+                  {t.people.newPassword}
+                </Button>
+                {!isSelf && (
+                  <Button onClick={() => update.mutate({ isActive: !user.isActive })}>
+                    {user.isActive ? t.people.block : t.people.allow}
+                  </Button>
+                )}
+                {!isSelf &&
+                  (confirmingRemove ? (
+                    <>
+                      <Button variant="danger" onClick={() => remove.mutate()}>
+                        {t.people.removeName(user.name.split(' ')[0] ?? user.name)}
+                      </Button>
+                      <Button onClick={() => setConfirmingRemove(false)}>
+                        {t.people.keep}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="danger-text" onClick={() => setConfirmingRemove(true)}>
+                      {t.people.remove}
+                    </Button>
+                  ))}
+              </>
+            )}
+          </span>
+        </div>
+      )}
       {error && (
         <p className="form-error" role="alert">
           {errorMessage(error)}

@@ -5,6 +5,7 @@ export interface SaleFilters {
   startDate?: Date;
   endDate?: Date;
   productId?: number;
+  soldBy?: number;
   limit: number;
   offset: number;
 }
@@ -49,6 +50,7 @@ export class SalesRepository {
     if (filters.startDate) query = query.where('s.sale_date', '>=', filters.startDate);
     if (filters.endDate) query = query.where('s.sale_date', '<', filters.endDate);
     if (filters.productId) query = query.where('s.product_id', '=', filters.productId);
+    if (filters.soldBy) query = query.where('s.sold_by', '=', filters.soldBy);
     return query;
   }
 

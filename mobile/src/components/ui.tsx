@@ -33,16 +33,19 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
       style={({ pressed }) => [
         styles.button,
         isPrimary
-          ? { backgroundColor: colors.brand }
+          ? { backgroundColor: disabled ? colors.fill : colors.cta }
           : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: 'transparent' },
-        (disabled || loading) && styles.disabled,
+        // A disabled main button goes neutral rather than a washed-out orange.
+        disabled && !isPrimary && styles.disabled,
         pressed && styles.pressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? colors.onInk : colors.ink} />
+        <ActivityIndicator color={isPrimary ? colors.ctaInk : colors.ink} />
       ) : (
-        <Text style={[styles.buttonLabel, { color: isPrimary ? colors.onInk : colors.ink }]}>{label}</Text>
+        <Text style={[styles.buttonLabel, { color: isPrimary ? (disabled ? colors.inkMuted : colors.ctaInk) : colors.ink }]}>
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -125,5 +128,5 @@ const styles = StyleSheet.create({
   },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   stateText: { fontFamily: fonts.body, fontSize: 16, textAlign: 'center' },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 22 },
+  emptyTitle: { fontFamily: fonts.serif, fontSize: 24 },
 });

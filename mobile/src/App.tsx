@@ -4,6 +4,8 @@ import {
   HankenGrotesk_600SemiBold,
   HankenGrotesk_700Bold,
 } from '@expo-google-fonts/hanken-grotesk';
+// Only the one serif weight in use, so the other weights' files aren't bundled.
+import { SourceSerif4_500Medium } from '@expo-google-fonts/source-serif-4/500Medium';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -54,6 +56,7 @@ function Shell() {
     HankenGrotesk_500Medium,
     HankenGrotesk_600SemiBold,
     HankenGrotesk_700Bold,
+    SourceSerif4_500Medium,
   });
 
   return (

@@ -1,7 +1,14 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, View } from 'react-native';
+// One file per icon: the package's main entry would bundle all of them.
+import { House } from 'phosphor-react-native/src/icons/House';
+import { Package } from 'phosphor-react-native/src/icons/Package';
+import { Plus } from 'phosphor-react-native/src/icons/Plus';
+import { Star } from 'phosphor-react-native/src/icons/Star';
+import { User } from 'phosphor-react-native/src/icons/User';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
@@ -23,13 +30,21 @@ import { useT } from '../i18n/useT';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-/** Text-only tab labels: plain words read better than a row of generic icons. */
-/** The current tab gets the brand colour and a small brass dot above it. */
-function tabLabel(label: string, dotColor: string) {
-  return ({ focused, color }: { focused: boolean; color: string }) => (
-    <View style={{ alignItems: 'center', gap: 5 }}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: focused ? dotColor : 'transparent' }} />
-      <Text style={{ color, fontFamily: focused ? fonts.display : fonts.bodyBold, fontSize: 14 }}>{label}</Text>
+type TabIcon = typeof House;
+
+const TAB_BAR_HEIGHT = 64;
+
+/** A tab's icon: filled when it's the current tab, outlined otherwise. */
+function tabIcon(Icon: TabIcon) {
+  return ({ focused, color }: { focused: boolean; color: string }) => <Icon size={24} color={color} weight={focused ? 'fill' : 'regular'} />;
+}
+
+/** Selling is the counter's main job, so its tab is the one orange button in the bar. */
+function SellIcon() {
+  const colors = useThemeColors();
+  return (
+    <View style={[styles.sellIcon, { backgroundColor: colors.cta }]}>
+      <Plus size={20} color={colors.ctaInk} weight="bold" />
     </View>
   );
 }
@@ -39,31 +54,50 @@ function MainTabs() {
   const t = useT();
   const { state } = useAuth();
   const showSell = state.status === 'signedIn' && canRecordSales(state.user);
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { fontFamily: fonts.displayBold, fontSize: 24, color: colors.ink },
+        headerTitleStyle: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
         headerShadowVisible: false,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line, height: 64 },
-        tabBarActiveTintColor: colors.brand,
+        // Tall enough for a thumb (icon over label), plus the phone's home-bar area.
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.line,
+          height: TAB_BAR_HEIGHT + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: insets.bottom + 6,
+        },
+        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
+        tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.inkMuted,
-        tabBarIcon: () => null,
-        tabBarIconStyle: { display: 'none' },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: tabLabel(t.nav.tabs.home, colors.brass) }} />
-      <Tab.Screen name="Catalog" component={CatalogScreen} options={{ title: t.nav.tabs.products, tabBarLabel: tabLabel(t.nav.tabs.products, colors.brass) }} />
-      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: t.nav.tabs.favorites, tabBarLabel: tabLabel(t.nav.tabs.favorites, colors.brass) }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false, tabBarLabel: t.nav.tabs.home, tabBarIcon: tabIcon(House) }} />
+      <Tab.Screen
+        name="Catalog"
+        component={CatalogScreen}
+        options={{ title: t.nav.tabs.products, tabBarLabel: t.nav.tabs.products, tabBarIcon: tabIcon(Package) }}
+      />
+      <Tab.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{ title: t.nav.tabs.favorites, tabBarLabel: t.nav.tabs.favorites, tabBarIcon: tabIcon(Star) }}
+      />
       {showSell && (
         <Tab.Screen
           name="Sell"
           component={RecordSaleScreen}
-          options={{ title: t.nav.recordSale, tabBarLabel: tabLabel(t.nav.tabs.sell, colors.brass) }}
+          options={{ title: t.nav.recordSale, tabBarLabel: t.nav.tabs.sell, tabBarIcon: () => <SellIcon /> }}
         />
       )}
-      <Tab.Screen name="Account" component={AccountScreen} options={{ title: t.nav.tabs.account, tabBarLabel: tabLabel(t.nav.tabs.account, colors.brass) }} />
+      <Tab.Screen
+        name="Account"
+        component={AccountScreen}
+        options={{ title: t.nav.tabs.account, tabBarLabel: t.nav.tabs.account, tabBarIcon: tabIcon(User) }}
+      />
     </Tab.Navigator>
   );
 }
@@ -93,7 +127,7 @@ export function RootNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
-          headerTitleStyle: { fontFamily: fonts.display, color: colors.ink },
+          headerTitleStyle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
           headerTintColor: colors.ink,
           headerShadowVisible: false,
         }}
@@ -132,3 +166,7 @@ export function RootNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  sellIcon: { width: 44, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+});

@@ -4,11 +4,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
+import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
+import { Receipt } from 'phosphor-react-native/src/icons/Receipt';
 import { Avatar } from '../components/Avatar';
+import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
-import { approvalsApi, countsApi, favoritesApi, inventoryApi, productsApi, reportsApi } from '../services/api';
+import { approvalsApi, countsApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
@@ -65,12 +69,6 @@ export function HomeScreen() {
     queryFn: () => reportsApi.mySales(month),
     enabled: sells,
   });
-  const productCount = useQuery({
-    queryKey: ['products', { page: 1, limit: 1, purpose: 'count' }],
-    queryFn: () => productsApi.list({ page: 1, limit: 1 }),
-    select: (page) => page.meta.total,
-  });
-  const favoriteCount = useQuery({ queryKey: ['favorites', 'ids'], queryFn: favoritesApi.ids, select: (ids) => ids.length });
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: countsApi.list, enabled: sells });
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
@@ -108,60 +106,54 @@ export function HomeScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <WelcomeTour user={user} />
-      <View style={[styles.hero, { backgroundColor: colors.heroInk, marginTop: insets.top + spacing.md }]}>
-        <View style={styles.greetingRow}>
-          <View style={styles.greetingText}>
-            <Text style={[styles.greeting, { color: colors.heroText }]}>
-              {t.home.greeting(greeting(t, now), firstName ?? user.name)}
-            </Text>
-            <Text style={[styles.date, { color: colors.heroMuted }]}>{longDate.format(now)}</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t.home.yourAccount}
-            onPress={() => navigation.navigate('Main', { screen: 'Account' })}
-          >
-            <Avatar name={user.name} url={user.avatarUrl} size={44} />
-          </Pressable>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
+        <View style={styles.greetingText}>
+          <Text style={[styles.greeting, { color: colors.ink }]} accessibilityRole="header">
+            {t.home.greeting(greeting(t, now), firstName ?? user.name)}
+          </Text>
+          <Text style={[styles.date, { color: colors.inkMuted }]}>{longDate.format(now)}</Text>
         </View>
-
-        {sells && (
-          <View style={styles.todayBlock} accessible accessibilityLabel={todayLabel(t, today.data?.current)}>
-            <Text style={[styles.todayCaption, { color: colors.heroMuted }]}>{t.home.salesToday}</Text>
-            <Text style={[styles.todayFigure, { color: colors.heroText }]}>
-              {today.data ? formatMoney(today.data.current.revenue) : today.isError ? t.home.notAvailable : '…'}
-            </Text>
-            {today.data && (
-              <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>
-                {t.home.sales(today.data.current.salesCount)}
-                {thisMonth.data ? t.home.soFarIn(formatMoney(thisMonth.data.current.revenue), month.name) : ''}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {sells && thisMonth.data?.monthlyTarget ? (
-          <TargetBar
-            colors={colors}
-            revenue={thisMonth.data.current.revenue}
-            target={thisMonth.data.monthlyTarget}
-            monthName={month.name}
-          />
-        ) : null}
-
-        {sells && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('RecordSale', {})}
-            style={({ pressed }) => [styles.sellButton, { backgroundColor: colors.heroText }, pressed && styles.pressed]}
-          >
-            <Text style={[styles.sellPlus, { color: colors.heroInk }]}>+</Text>
-            <Text style={[styles.sellLabel, { color: colors.heroInk }]}>{t.home.recordSale}</Text>
-          </Pressable>
-        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t.home.yourAccount}
+          onPress={() => navigation.navigate('Main', { screen: 'Account' })}
+          hitSlop={8}
+        >
+          <Avatar name={user.name} url={user.avatarUrl} size={44} />
+        </Pressable>
       </View>
 
       <View style={styles.body}>
+        {sells && (
+          <View style={[styles.today, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <Text style={[styles.todayHeadline, { color: colors.ink }]} accessibilityLiveRegion="polite">
+              {today.data
+                ? today.data.current.salesCount > 0
+                  ? t.home.takenToday(formatMoney(today.data.current.revenue), today.data.current.salesCount)
+                  : t.home.noSalesToday
+                : today.isError
+                  ? t.home.notAvailable
+                  : '…'}
+            </Text>
+            {thisMonth.data && (
+              <Text style={[styles.todayDetail, { color: colors.inkMuted }]}>
+                {t.home.monthSoFar(formatMoney(thisMonth.data.current.revenue), month.name)}
+              </Text>
+            )}
+            {thisMonth.data?.monthlyTarget ? (
+              <TargetBar
+                colors={colors}
+                revenue={thisMonth.data.current.revenue}
+                target={thisMonth.data.monthlyTarget}
+                monthName={month.name}
+              />
+            ) : null}
+            <View style={styles.todayAction}>
+              <Button label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
+            </View>
+          </View>
+        )}
+
         <TextInput
           value={search}
           onChangeText={setSearch}
@@ -174,42 +166,25 @@ export function HomeScreen() {
           style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface }]}
         />
 
-        <View style={styles.tools}>
-          <ToolTile
-            colors={colors}
-            title={t.home.products}
-            detail={productCount.data === undefined ? t.home.browse : t.home.productCount(productCount.data)}
-            onPress={() => navigation.navigate('Main', { screen: 'Catalog' })}
-          />
-          <ToolTile
-            colors={colors}
-            title={t.home.favorites}
-            detail={favoriteCount.data ? t.home.saved(favoriteCount.data) : t.home.nothingSaved}
-            onPress={() => navigation.navigate('Main', { screen: 'Favorites' })}
-          />
-          {sells && (
-            <ToolTile
+        {sells && (
+          <View style={[styles.jobs, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+            <JobRow
               colors={colors}
+              icon={Receipt}
               title={t.home.mySales}
               detail={thisMonth.data ? t.home.salesIn(t.home.sales(thisMonth.data.current.salesCount), month.name) : month.name}
               onPress={() => navigation.navigate('MySales')}
             />
-          )}
-          {sells && (
-            <ToolTile
+            <JobRow
               colors={colors}
+              icon={ClipboardText}
               title={t.home.stockCount}
               detail={openCounts > 0 ? t.home.countsOpen(openCounts) : t.home.startCount}
               onPress={() => navigation.navigate('Counts')}
+              last
             />
-          )}
-          <ToolTile
-            colors={colors}
-            title={t.home.account}
-            detail={user.email}
-            onPress={() => navigation.navigate('Main', { screen: 'Account' })}
-          />
-        </View>
+          </View>
+        )}
 
         {sells && visibleRequests.length > 0 && (
           <Section title={t.home.yourRequests} colors={colors}>
@@ -287,12 +262,10 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(share * 100) }}
     >
-      <View style={[styles.targetTrack, { backgroundColor: colors.heroRaised }]}>
-        <View
-          style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: colors.heroText, opacity: reached ? 1 : 0.75 }]}
-        />
+      <View style={[styles.targetTrack, { backgroundColor: colors.fill }]}>
+        <View style={[styles.targetFill, { width: `${share * 100}%`, backgroundColor: reached ? colors.ok : colors.ink }]} />
       </View>
-      <Text style={[styles.todayDetail, { color: colors.heroMuted }]}>{label}</Text>
+      <Text style={[styles.todayDetail, { color: colors.inkMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -313,11 +286,6 @@ function RequestRow({ request, colors }: { request: MyRequest; colors: ThemeColo
   );
 }
 
-function todayLabel(t: Catalogue, totals?: { revenue: number; salesCount: number }): string {
-  if (!totals) return t.home.todayLoading;
-  return t.home.todayLabel(formatMoney(totals.revenue), t.home.sales(totals.salesCount));
-}
-
 /** "10:42" for today, "28 Sep" for earlier days. */
 function saleTime(iso: string, now: Date): string {
   const date = new Date(iso);
@@ -326,29 +294,36 @@ function saleTime(iso: string, now: Date): string {
     : formatDateWith(date, { day: 'numeric', month: 'short' });
 }
 
-interface ToolTileProps {
+interface JobRowProps {
   colors: ThemeColors;
+  icon: typeof Receipt;
   title: string;
   detail: string;
   onPress: () => void;
+  last?: boolean;
 }
 
-function ToolTile({ colors, title, detail, onPress }: ToolTileProps) {
+/** A job the bottom tabs don't cover, as a full-width row that's easy to hit. */
+function JobRow({ colors, icon: Icon, title, detail, onPress, last }: JobRowProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${detail}`}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.tile,
-        { backgroundColor: colors.surface, borderColor: colors.line },
-        pressed && { backgroundColor: colors.background },
+        styles.job,
+        !last && { borderBottomColor: colors.line, borderBottomWidth: StyleSheet.hairlineWidth },
+        pressed && { backgroundColor: colors.surfaceSunk },
       ]}
     >
-      <Text style={[styles.tileTitle, { color: colors.ink }]}>{title}</Text>
-      <Text style={[styles.tileDetail, { color: colors.steel }]} numberOfLines={1}>
-        {detail}
-      </Text>
+      <Icon size={24} color={colors.ink} />
+      <View style={styles.jobText}>
+        <Text style={[styles.jobTitle, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.jobDetail, { color: colors.steel }]} numberOfLines={1}>
+          {detail}
+        </Text>
+      </View>
+      <CaretRight size={18} color={colors.inkMuted} />
     </Pressable>
   );
 }
@@ -370,37 +345,20 @@ function Muted({ colors, children }: { colors: ThemeColors; children: ReactNode 
 
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
-  // The orange board, like the hero block on Cloudflare's site.
-  hero: {
-    marginHorizontal: spacing.md,
-    padding: spacing.xl,
-    gap: spacing.xs,
-    borderRadius: radius.board,
-  },
-  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  greetingText: { flex: 1, gap: spacing.xs },
-  greeting: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
+  greetingText: { flex: 1, gap: 2 },
+  greeting: { fontFamily: fonts.serif, fontSize: 30, lineHeight: 36 },
   date: { fontFamily: fonts.body, fontSize: 16 },
-  todayBlock: { marginTop: spacing.xl },
-  todayCaption: { fontFamily: fonts.bodyBold, fontSize: 14 },
-  todayFigure: { fontFamily: fonts.display, fontSize: 64, lineHeight: 70, letterSpacing: -2, fontVariant: ['tabular-nums'] },
-  todayDetail: { fontFamily: fonts.body, fontSize: 15 },
-  target: { marginTop: spacing.md, gap: spacing.xs },
-  targetTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
-  targetFill: { height: 10, borderRadius: 5 },
-  sellButton: {
-    marginTop: spacing.xl,
-    minHeight: 56,
-    borderRadius: radius.small,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  sellPlus: { fontFamily: fonts.displayBold, fontSize: 28, lineHeight: 30 },
-  sellLabel: { fontFamily: fonts.displayBold, fontSize: 22 },
   pressed: { opacity: 0.8 },
   body: { padding: spacing.lg, gap: spacing.lg },
+  // The day in a sentence on plain paper; the one orange thing is the sale button.
+  today: { padding: spacing.xl, gap: spacing.xs, borderWidth: 1, borderRadius: radius.panel },
+  todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
+  todayDetail: { fontFamily: fonts.body, fontSize: 15 },
+  todayAction: { marginTop: spacing.lg },
+  target: { marginTop: spacing.md, gap: spacing.xs },
+  targetTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  targetFill: { height: 8, borderRadius: 4 },
   search: {
     minHeight: 48,
     borderWidth: 1,
@@ -409,20 +367,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 16,
   },
-  tools: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  tile: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 88,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderRadius: radius.panel,
-    justifyContent: 'space-between',
-  },
-  tileTitle: { fontFamily: fonts.displayBold, fontSize: 24 },
-  tileDetail: { fontFamily: fonts.body, fontSize: 14 },
+  jobs: { borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },
+  job: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 64, paddingHorizontal: spacing.lg },
+  jobText: { flex: 1, gap: 2 },
+  jobTitle: { fontFamily: fonts.bodyBold, fontSize: 17 },
+  jobDetail: { fontFamily: fonts.body, fontSize: 14 },
   section: { borderWidth: 1, borderRadius: radius.panel, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  sectionTitle: { fontFamily: fonts.displayBold, fontSize: 24, marginBottom: spacing.sm },
+  sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 18, marginBottom: spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

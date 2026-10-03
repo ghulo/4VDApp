@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
 
-// Same tokens as the dashboard (admin/src/styles/tokens.css), after Cloudflare's
-// look: warm neutrals, one orange accent, quiet status colours with tints. The
-// orange board on Home carries the big figures in near-black.
+// Same tokens as the dashboard (admin/src/styles/tokens.css, DESIGN.md "Calm
+// Shop"): ink on warm paper, quiet status colours with tints, and orange only
+// for the main action (with near-black text on it) and where you are.
 const light = {
   background: '#faf9f7',
   surface: '#ffffff',
@@ -45,36 +45,36 @@ const dark: typeof light = {
   okSoft: '#0f3326',
 };
 
-/** Older names the screens still use; they follow the new colours. */
+/** Roles the screens ask for, plus older names they still use. */
 function withAliases(palette: typeof light) {
   return {
     ...palette,
+    // The main action: Signal Orange with near-black text (white fails contrast).
+    cta: palette.accent,
+    ctaInk: '#1c0f08',
+    // A chosen chip or option: ink, so orange keeps meaning "act here".
+    selected: palette.ink,
+    onSelected: palette.surface,
     steel: palette.inkMuted,
     signalLow: palette.warn,
     signalLowInk: palette.warn,
     signalOut: palette.danger,
     stockOk: palette.ok,
-    onInk: palette.brandInk,
-    // Older name for the accent dot under the current tab.
-    brass: palette.accent,
-    // The orange board: near-black text on it in both themes (4.5:1 or more).
-    heroInk: palette.accent,
-    heroRaised: 'rgba(255, 251, 245, 0.4)',
-    heroText: '#1c0f08',
-    heroMuted: '#3f1d0f',
   };
 }
 
 export const palettes = { light: withAliases(light), dark: withAliases(dark) };
 export type ThemeColors = (typeof palettes)['light'];
 
-// Medium-weight headings with tight tracking, like Cloudflare; never heavy.
+// Hanken Grotesk for everything, figures included; the serif (Source Serif 4)
+// only for screen titles and the day's headline on Home, as on the dashboard.
 export const fonts = {
   body: 'HankenGrotesk_400Regular',
   bodyMedium: 'HankenGrotesk_500Medium',
   bodyBold: 'HankenGrotesk_600SemiBold',
   display: 'HankenGrotesk_600SemiBold',
   displayBold: 'HankenGrotesk_700Bold',
+  serif: 'SourceSerif4_500Medium',
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };

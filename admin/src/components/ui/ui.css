@@ -353,7 +353,9 @@
   width: auto;
 }
 
+/* Positioned for the same reason as .table-wrap: keeps hidden labels in the scroll box. */
 .data-table__scroll {
+  position: relative;
   overflow-x: auto;
 }
 
@@ -445,6 +447,103 @@
 
 .table td a:has(.stock-tag) {
   text-decoration: none;
+}
+
+/* Phones: a stacking table shows each row as a small block. The title cell
+   (.table__title, else the first) heads it; every other cell is a line with its
+   column name (data-label) on the left and the value on the right. The header
+   row stays for screen readers only. */
+@media (max-width: 599px) {
+  .table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .table--stack,
+  .table--stack tbody {
+    display: block;
+  }
+
+  .table--stack tr {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .table--stack tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .table--stack td,
+  .table--stack td:first-child,
+  .table--stack td:last-child {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--space-3);
+    align-items: baseline;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .table--stack tbody tr:hover td {
+    background: none;
+  }
+
+  .table--stack td::before {
+    content: attr(data-label);
+    color: var(--ink-muted);
+    font-size: var(--text-sm);
+    text-align: left;
+  }
+
+  .table--stack td > * {
+    grid-column: 2;
+  }
+
+  .table--stack td:empty {
+    display: none;
+  }
+
+  /* The title cell, and cells without a column name (row actions), read as plain blocks. */
+  .table--stack td.table__title,
+  .table--stack tr:not(:has(.table__title)) > td:first-child,
+  .table--stack td:not([data-label]) {
+    display: block;
+    text-align: left;
+  }
+
+  .table--stack td.table__title,
+  .table--stack tr:not(:has(.table__title)) > td:first-child {
+    order: -1;
+    margin-bottom: var(--space-1);
+    font-weight: 600;
+  }
+
+  .table--stack td.table__title::before,
+  .table--stack tr:not(:has(.table__title)) > td:first-child::before,
+  .table--stack td:not([data-label])::before {
+    content: none;
+  }
+
+  .table--stack .table__secondary {
+    font-weight: 400;
+  }
+
+  .table--stack .table__row--muted td,
+  .table--stack tr.table__row--muted {
+    color: var(--ink-muted);
+  }
+
+  .table--stack .table__expanded {
+    background: var(--surface-sunk);
+  }
 }
 
 /* ---------- Stat grid ---------- */

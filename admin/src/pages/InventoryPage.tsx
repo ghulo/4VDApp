@@ -60,6 +60,7 @@ export function InventoryPage() {
             },
             {
               header: t.inventory.product,
+              title: true,
               cell: (item) => (
                 <>
                   <Link to={`/inventory/${item.productId}`} className="table__primary-link">

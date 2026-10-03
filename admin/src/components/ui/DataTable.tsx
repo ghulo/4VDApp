@@ -6,6 +6,8 @@ export interface Column<Row> {
   /** Numbers line up on the right. */
   align?: 'start' | 'end';
   className?: string;
+  /** On phones, where rows stack, this cell heads the row. Defaults to the first cell. */
+  title?: boolean;
 }
 
 interface DataTableProps<Row> {
@@ -38,7 +40,10 @@ export function DataTable<Row>({
   footer,
 }: DataTableProps<Row>) {
   const cellClass = (column: Column<Row>) =>
-    [column.align === 'end' && 'table__numeric', column.className].filter(Boolean).join(' ') || undefined;
+    [column.align === 'end' && 'table__numeric', column.title && 'table__title', column.className].filter(Boolean).join(' ') ||
+    undefined;
+  // Stacked rows on phones name each value with its column; hidden headers (like actions) get none.
+  const cellLabel = (column: Column<Row>) => (typeof column.header === 'string' ? column.header : undefined);
 
   return (
     <div className="data-table">
@@ -47,7 +52,7 @@ export function DataTable<Row>({
         <div className="data-table__empty">{empty}</div>
       ) : (
         <div className="data-table__scroll">
-          <table className="table">
+          <table className="table table--stack">
             <caption className="visually-hidden">{caption}</caption>
             <thead>
               <tr>
@@ -63,7 +68,7 @@ export function DataTable<Row>({
                 <Fragment key={rowKey(row)}>
                   <tr className={rowClassName?.(row)}>
                     {columns.map((column, index) => (
-                      <td key={index} className={cellClass(column)}>
+                      <td key={index} className={cellClass(column)} data-label={cellLabel(column)}>
                         {column.cell(row)}
                       </td>
                     ))}

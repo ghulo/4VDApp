@@ -5,7 +5,7 @@ import type { LockedSale, ReturnRecord, ReturnRepository } from '../repositories
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import type { PublicUser } from '../types/auth.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
-import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
+import { assertPending, closePendingAlerts, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 import type { AppSettings, SettingsService } from './SettingsService.js';
@@ -105,7 +105,7 @@ export class ReturnService {
       if (reasons.length === 0) {
         await approveReturn(repos, id, user.id);
       } else {
-        await notifyAdminsOfPending(repos, 'return', (t) =>
+        await notifyAdminsOfPending(repos, 'return', { type: 'return', id }, (t) =>
           t.returnPending({ name: user.name, what, reasons: approvalReasons(reasonInput, settings, t) }),
         );
       }
@@ -117,6 +117,7 @@ export class ReturnService {
   async approve(id: number, admin: PublicUser): Promise<ReturnDto> {
     await this.transactions.run(async (repos) => {
       assertPending(await this.lock(repos, id), 'return');
+      await closePendingAlerts(repos, { type: 'return', id });
       await approveReturn(repos, id, admin.id);
       const item = (await repos.returns.findById(id))!;
       const what = `${item.quantity} × ${item.product_name}`;
@@ -138,6 +139,7 @@ export class ReturnService {
   async reject(id: number, admin: PublicUser, note: string): Promise<ReturnDto> {
     await this.transactions.run(async (repos) => {
       assertPending(await this.lock(repos, id), 'return');
+      await closePendingAlerts(repos, { type: 'return', id });
       await repos.returns.decide(id, { status: 'rejected', decidedBy: admin.id, note });
       const item = (await repos.returns.findById(id))!;
       const what = `${item.quantity} × ${item.product_name}`;

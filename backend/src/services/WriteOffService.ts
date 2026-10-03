@@ -5,7 +5,7 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import type { WriteOffRecord, WriteOffRepository } from '../repositories/WriteOffRepository.js';
 import type { PublicUser } from '../types/auth.js';
 import { roundMoney } from '../utils/money.js';
-import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
+import { assertPending, closePendingAlerts, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
 import { canOversee } from '../utils/roles.js';
@@ -124,7 +124,7 @@ export class WriteOffService {
       if (canOversee(user.role)) {
         await approveWriteOff(repos, id, user.id, { removeStock: true });
       } else {
-        await notifyAdminsOfPending(repos, 'write-off', (t) =>
+        await notifyAdminsOfPending(repos, 'write-off', { type: 'write_off', id }, (t) =>
           t.writeOffPending({
             name: user.name,
             what: `${input.quantity} × ${productName} (${t.writeOffReason[input.reason] ?? input.reason})`,
@@ -139,6 +139,7 @@ export class WriteOffService {
   async approve(id: number, admin: PublicUser): Promise<WriteOffDto> {
     await this.transactions.run(async (repos) => {
       assertPending(await this.lock(repos, id), 'write-off');
+      await closePendingAlerts(repos, { type: 'write_off', id });
       await approveWriteOff(repos, id, admin.id, { removeStock: true });
       const writeOff = (await repos.writeOffs.findById(id))!;
       const what = `${writeOff.quantity} × ${writeOff.product_name}`;
@@ -160,6 +161,7 @@ export class WriteOffService {
   async reject(id: number, admin: PublicUser, note: string): Promise<WriteOffDto> {
     await this.transactions.run(async (repos) => {
       assertPending(await this.lock(repos, id), 'write-off');
+      await closePendingAlerts(repos, { type: 'write_off', id });
       await repos.writeOffs.decide(id, { status: 'rejected', decidedBy: admin.id, note });
       const writeOff = (await repos.writeOffs.findById(id))!;
       const what = `${writeOff.quantity} × ${writeOff.product_name}`;

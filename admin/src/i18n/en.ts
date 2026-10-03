@@ -297,6 +297,10 @@ export const en = {
     nothingLastWeek: (weekday: string) => `Nothing sold by this time last ${weekday}.`,
     comparedLastWeek: (p: { up: boolean; percent: number; weekday: string; amount: string }) =>
       `${p.up ? 'Up' : 'Down'} ${p.percent}% on last ${p.weekday}, which had ${p.amount} by this time.`,
+    noSalesYetToday: (p: { weekday: string; amount: string }) =>
+      `No sales yet today. Last ${p.weekday} had ${p.amount} by this time.`,
+    muchMoreThanLastWeek: (p: { weekday: string; amount: string }) =>
+      `Much more than last ${p.weekday}, which had ${p.amount} by this time.`,
     waitingForYou: 'waiting for you',
     toRestock: 'to restock',
     lastDays: (days: number) => `Last ${days} days`,
@@ -448,6 +452,8 @@ export const en = {
     refresh: 'Refresh the figures',
     refreshing: 'Refreshing the figures…',
     noData: 'No data',
+    muchMore: 'Much more',
+    muchMoreThanBefore: 'much more than the period before',
     open: (label: string) => `Open ${label}`,
     revenue: 'Revenue',
     profit: 'Profit',

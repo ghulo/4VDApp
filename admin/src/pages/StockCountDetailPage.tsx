@@ -117,7 +117,7 @@ export function StockCountDetailPage() {
           <EmptyState title={onlyDifferences ? t.counts.noDifferences : t.counts.nothingToCount} />
         ) : (
           <div className="table-wrap">
-            <table className="table">
+            <table className="table table--stack">
               <thead>
                 <tr>
                   <th scope="col">{t.counts.product}</th>
@@ -159,10 +159,10 @@ function LineRow({ countId, line, onChange }: { countId: number; line: StockCoun
         </Link>
         <span className="table__secondary">{line.sku ?? line.categoryName}</span>
       </td>
-      <td className="table__numeric">{line.expectedQuantity ?? '–'}</td>
-      <td className="table__numeric">{line.countedQuantity ?? t.counts.notCounted}</td>
-      <td className="table__numeric">{line.difference === undefined ? '–' : formatSignedQuantity(line.difference)}</td>
-      <td className="table__numeric">{line.value === undefined || line.value === null ? '–' : formatMoney(line.value)}</td>
+      <td className="table__numeric" data-label={t.counts.expected}>{line.expectedQuantity ?? '–'}</td>
+      <td className="table__numeric" data-label={t.counts.counted}>{line.countedQuantity ?? t.counts.notCounted}</td>
+      <td className="table__numeric" data-label={t.counts.difference}>{line.difference === undefined ? '–' : formatSignedQuantity(line.difference)}</td>
+      <td className="table__numeric" data-label={t.counts.value}>{line.value === undefined || line.value === null ? '–' : formatMoney(line.value)}</td>
       <td>
         {line.status === 'pending' ? (
           <DecisionControls

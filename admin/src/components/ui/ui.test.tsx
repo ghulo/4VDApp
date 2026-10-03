@@ -12,6 +12,7 @@ import {
   EmptyState,
   Field,
   Halftone,
+  MetricCard,
   PageHeader,
   SettingRow,
   StatGrid,
@@ -154,6 +155,46 @@ describe('DataTable', () => {
 
     expect(html).not.toContain('<table');
     expect(html).toContain('Nothing yet');
+  });
+  it('should name each cell with its column so rows can stack on phones', () => {
+    const html = render(
+      <DataTable
+        caption="Products"
+        columns={[...columns, { header: <span className="visually-hidden">Actions</span>, cell: () => 'Edit' }]}
+        rows={[{ id: 1, name: 'Oak Chair' }]}
+        rowKey={(row) => row.id}
+      />,
+    );
+
+    expect(html).toContain('class="table table--stack"');
+    expect(html).toContain('data-label="Price"');
+    // A hidden header gives no name, so the cell shows as a plain block.
+    expect(html).toMatch(/<td>Edit<\/td>/);
+  });
+
+  it('should mark the cell that heads the row on phones', () => {
+    const html = render(
+      <DataTable caption="Products" columns={[columns[1]!, { ...columns[0]!, title: true }]} rows={[{ id: 1, name: 'Oak Chair' }]} rowKey={(row) => row.id} />,
+    );
+
+    expect(html).toContain('class="table__title" data-label="Name">Oak Chair');
+  });
+});
+
+describe('MetricCard', () => {
+  it('should show a percent change with its meaning for screen readers', () => {
+    const html = render(<MetricCard label="Revenue" value="€100" change={0.25} />);
+
+    expect(html).toContain('25%');
+    expect(html).toContain('up 25% on the period before');
+  });
+
+  it('should say "Much more" instead of a huge percent', () => {
+    const html = render(<MetricCard label="Revenue" value="€100" change={770.9} />);
+
+    expect(html).toContain('Much more');
+    expect(html).toContain('much more than the period before');
+    expect(html).not.toContain('%');
   });
 });
 

@@ -221,6 +221,9 @@ export interface NotificationsTable {
   is_read: Generated<boolean>;
   /** Set once the background sender has pushed it (or decided not to). */
   pushed_at: Date | null;
+  /** The request it's about, e.g. a write-off waiting for approval; deciding it marks the alert read. */
+  subject_type: string | null;
+  subject_id: number | null;
   created_at: CreatedAt;
 }
 

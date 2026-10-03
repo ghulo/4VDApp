@@ -2,7 +2,7 @@ import { DotsThree } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
-import { formatPercent } from '../../utils/format';
+import { formatPercent, MUCH_MORE } from '../../utils/format';
 import { changeDirection, PLACEHOLDER_WAVE, SPARK_HEIGHT, SPARK_WIDTH, sparklinePaths } from './sparkline';
 
 const ARROWS = { up: '↗', down: '↘', flat: '→' } as const;
@@ -32,6 +32,7 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
   const headingId = useId();
   const direction = change === undefined ? undefined : changeDirection(change);
   const paths = series ? sparklinePaths(series) : null;
+  const muchMore = change !== undefined && change !== null && change > MUCH_MORE;
 
   return (
     <article className={large ? 'metric metric--large' : 'metric'} aria-labelledby={headingId}>
@@ -50,10 +51,14 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
         {direction && change !== null && change !== undefined && (
           <span className={`metric__change metric__change--${direction}`}>
             <span aria-hidden="true">
-              {ARROWS[direction]} {formatPercent(Math.abs(change))}
+              {ARROWS[direction]} {muchMore ? t.analytics.muchMore : formatPercent(Math.abs(change))}
             </span>
             <span className="visually-hidden">
-              {direction === 'flat' ? t.reports.sameAsBefore : t.reports.change({ up: direction === 'up', percent: formatPercent(Math.abs(change)) })}
+              {muchMore
+                ? t.analytics.muchMoreThanBefore
+                : direction === 'flat'
+                  ? t.reports.sameAsBefore
+                  : t.reports.change({ up: direction === 'up', percent: formatPercent(Math.abs(change)) })}
             </span>
           </span>
         )}

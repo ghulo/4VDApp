@@ -5,7 +5,7 @@ import type { CountProductRow, StockCountRecord, StockCountRepository } from '..
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import type { PublicUser } from '../types/auth.js';
 import { roundMoney } from '../utils/money.js';
-import { assertPending, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
+import { assertPending, closePendingAlerts, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
@@ -136,7 +136,7 @@ export class StockCountService {
       if (pending === 0) {
         await repos.stockCounts.setStatus(id, 'closed');
       } else {
-        await notifyAdminsOfPending(repos, 'stock count', (t) =>
+        await notifyAdminsOfPending(repos, 'stock count', { type: 'stock_count', id }, (t) =>
           t.countPending({ name: user.name, scope: scopeLabel(count, t), differences: pending }),
         );
       }
@@ -254,6 +254,7 @@ export class StockCountService {
     const stillPending = await repos.stockCounts.lines(count.id, 'pending');
     if (stillPending.length > 0) return;
     await repos.stockCounts.setStatus(count.id, 'closed');
+    await closePendingAlerts(repos, { type: 'stock_count', id: count.id });
     await notifyRequester(repos, count.submitted_by, adminId, (t) => ({
       title: t.countReviewed(scopeLabel(count, t)),
       message: t.countReviewedMessage,

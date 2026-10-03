@@ -6,7 +6,8 @@
     <title>4VD</title>
     <!-- Installable: "Add to Home Screen" opens it full screen with this icon. -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#FF5E1F" />
+    <meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151414" media="(prefers-color-scheme: dark)" />
     <!-- iPhone: needed for the home-screen app and its push alerts. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,7 +15,9 @@
     <meta name="apple-mobile-web-app-title" content="4VD" />
     <style>
       html, body, #root { height: 100%; margin: 0; }
-      body { background: #FF5E1F; overflow: hidden; }
+      /* The warm canvas, so nothing orange shows around the app while it loads. */
+      body { background: #faf9f7; overflow: hidden; }
+      @media (prefers-color-scheme: dark) { body { background: #151414; } }
       #root { display: flex; }
     </style>
   </head>

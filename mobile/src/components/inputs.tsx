@@ -94,10 +94,10 @@ export function ChoiceRow<TValue extends string>({ label, options, value, onChan
               onPress={() => onChange(option.value)}
               style={[
                 styles.choice,
-                { borderColor: isSelected ? colors.brand : colors.lineStrong, backgroundColor: isSelected ? colors.brand : colors.surface },
+                { borderColor: isSelected ? colors.selected : colors.lineStrong, backgroundColor: isSelected ? colors.selected : colors.surface },
               ]}
             >
-              <Text style={[styles.choiceLabel, { color: isSelected ? colors.onInk : colors.ink }]}>{option.label}</Text>
+              <Text style={[styles.choiceLabel, { color: isSelected ? colors.onSelected : colors.ink }]}>{option.label}</Text>
             </Pressable>
           );
         })}

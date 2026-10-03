@@ -76,7 +76,7 @@ export function LoginScreen() {
               hitSlop={8}
               style={styles.forgot}
             >
-              <Text style={[styles.forgotText, { color: colors.brand }]}>{t.login.forgot}</Text>
+              <Text style={[styles.forgotText, { color: colors.ink }]}>{t.login.forgot}</Text>
             </Pressable>
             <View style={styles.language}>
               <LanguageSwitch />
@@ -94,10 +94,10 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl },
   brand: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: -1.5 },
   card: { padding: spacing.xl, borderRadius: radius.board },
-  title: { fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.5 },
+  title: { fontFamily: fonts.serif, fontSize: 30 },
   subtitle: { fontFamily: fonts.body, fontSize: 15, marginTop: spacing.xs, marginBottom: spacing.xl },
   forgot: { marginTop: spacing.lg, alignSelf: 'center' },
   language: { marginTop: spacing.xl },
-  forgotText: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  forgotText: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
   error: { fontFamily: fonts.bodyBold, fontSize: 15, marginBottom: spacing.md },
 });

@@ -74,7 +74,7 @@ export function AccountScreen() {
         </View>
         <Text style={[styles.detail, { color: colors.ink }]}>{t.account.roles[user.role]}</Text>
         <Pressable accessibilityRole="button" onPress={pickPhoto} disabled={upload.isPending} hitSlop={8}>
-          <Text style={[styles.link, { color: colors.brand }]}>
+          <Text style={[styles.link, { color: colors.ink }]}>
             {upload.isPending ? t.account.uploading : user.avatarUrl ? t.account.changePhoto : t.account.addPhoto}
           </Text>
         </Pressable>
@@ -117,7 +117,7 @@ export function AccountScreen() {
           {t.account.onWebsite}
         </Text>
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL(`${DASHBOARD_URL}/forgot-password`)} hitSlop={8}>
-          <Text style={[styles.link, { color: colors.brand }]}>{t.account.resetPassword}</Text>
+          <Text style={[styles.link, { color: colors.ink }]}>{t.account.resetPassword}</Text>
         </Pressable>
       </View>
 
@@ -134,6 +134,6 @@ const styles = StyleSheet.create({
   identityText: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
   detail: { fontFamily: fonts.body, fontSize: 15 },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
   footnote: { fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
 });

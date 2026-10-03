@@ -49,7 +49,7 @@ export function WelcomeTour({ user }: { user: User }) {
 
           <View style={styles.dots} accessibilityLabel={t.tour.step(step + 1, cards.length)}>
             {cards.map((_, index) => (
-              <View key={index} style={[styles.dot, { backgroundColor: index === step ? colors.brand : colors.line }]} />
+              <View key={index} style={[styles.dot, { backgroundColor: index === step ? colors.ink : colors.line }]} />
             ))}
           </View>
 

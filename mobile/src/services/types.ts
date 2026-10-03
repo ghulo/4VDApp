@@ -11,6 +11,8 @@ export interface User {
   /** Path to the photo (use mediaSrc); null shows initials. */
   avatarUrl: string | null;
   theme: 'light' | 'dark' | 'system';
+  /** The language they read 4VD in. */
+  language: 'en' | 'sq';
 }
 
 export interface PaginationMeta {

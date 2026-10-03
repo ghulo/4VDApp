@@ -5,12 +5,15 @@ import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
 import { disablePush } from '../push/devicePush';
 import type { User } from '../services/types';
 import { useTheme } from '../theme';
+import { useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({ status: 'loading' });
   const { setPreference } = useTheme();
+  // The language saved on the account follows the person, like the theme.
+  const { setLanguage } = useLanguage();
 
   // Restore the session from secure storage when the app starts.
   useEffect(() => {
@@ -22,21 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const user = await authApi.me();
         // The theme someone picked follows them from device to device.
         setPreference(user.theme);
+        setLanguage(user.language);
         setState({ status: 'signedIn', user });
       })
       .catch(async () => {
         await tokenStore.clear();
         setState({ status: 'signedOut' });
       });
-  }, [setPreference]);
+  }, [setPreference, setLanguage]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const user = await authApi.login(email, password);
       setPreference(user.theme);
+      setLanguage(user.language);
       setState({ status: 'signedIn', user });
     },
-    [setPreference],
+    [setPreference, setLanguage],
   );
 
   const updateUser = useCallback((user: User) => setState({ status: 'signedIn', user }), []);

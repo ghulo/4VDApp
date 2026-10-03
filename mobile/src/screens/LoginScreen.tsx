@@ -7,6 +7,7 @@ import { LogoMark } from '../components/LogoMark';
 import { DASHBOARD_URL } from '../services/apiClient';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 
 export function LoginScreen() {
   const colors = useThemeColors();
@@ -75,6 +76,9 @@ export function LoginScreen() {
             >
               <Text style={[styles.forgotText, { color: colors.brand }]}>Forgot your password?</Text>
             </Pressable>
+            <View style={styles.language}>
+              <LanguageSwitch />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -91,6 +95,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: 28, letterSpacing: -0.5 },
   subtitle: { fontFamily: fonts.body, fontSize: 15, marginTop: spacing.xs, marginBottom: spacing.xl },
   forgot: { marginTop: spacing.lg, alignSelf: 'center' },
+  language: { marginTop: spacing.xl },
   forgotText: { fontFamily: fonts.bodyBold, fontSize: 15 },
   error: { fontFamily: fonts.bodyBold, fontSize: 15, marginBottom: spacing.md },
 });

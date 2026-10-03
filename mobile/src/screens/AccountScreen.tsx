@@ -11,6 +11,7 @@ import { API_URL, DASHBOARD_URL } from '../services/apiClient';
 import { useAuth, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
+import { LanguageSwitch } from '../i18n/LanguageSwitch';
 
 const ROLE_DESCRIPTION = {
   developer: 'Developer. Everything, here and on the 4VD website.',
@@ -113,6 +114,7 @@ export function AccountScreen() {
           value={preference}
           onChange={chooseTheme}
         />
+        <LanguageSwitch persist />
       </View>
       <PushSettingsPanel />
 

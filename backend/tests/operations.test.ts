@@ -127,7 +127,7 @@ describe('analytics', () => {
     expect(response.body.data.topProducts[0]).toMatchObject({ productName: 'Oak Chair', unitsSold: 25 });
   });
 
-  it('should return revenue per day including days with no sales', async () => {
+  it('should return revenue and profit per day including days with no sales', async () => {
     await sell(adminToken, 1, { saleDate: '2026-03-01T10:00:00Z' });
     await sell(adminToken, 1, { saleDate: '2026-03-03T10:00:00Z' });
 
@@ -136,9 +136,9 @@ describe('analytics', () => {
       .set(auth(adminToken));
 
     expect(response.body.data.points).toEqual([
-      { periodStart: '2026-03-01', revenue: 100, unitsSold: 1, salesCount: 1 },
-      { periodStart: '2026-03-02', revenue: 0, unitsSold: 0, salesCount: 0 },
-      { periodStart: '2026-03-03', revenue: 100, unitsSold: 1, salesCount: 1 },
+      { periodStart: '2026-03-01', revenue: 100, profit: 40, unitsSold: 1, salesCount: 1 },
+      { periodStart: '2026-03-02', revenue: 0, profit: 0, unitsSold: 0, salesCount: 0 },
+      { periodStart: '2026-03-03', revenue: 100, profit: 40, unitsSold: 1, salesCount: 1 },
     ]);
     expect(response.body.data.totalRevenue).toBe(200);
   });

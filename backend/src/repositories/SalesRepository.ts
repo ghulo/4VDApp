@@ -177,7 +177,7 @@ export class SalesRepository {
     const step = { daily: '1 day', weekly: '1 week', monthly: '1 month' }[period];
     const productFilter = productId ? sql`and l.product_id = ${productId}` : sql``;
 
-    const result = await sql<{ period_start: string; revenue: string; units_sold: string; sales_count: string }>`
+    const result = await sql<{ period_start: string; revenue: string; profit: string; units_sold: string; sales_count: string }>`
       with buckets as (
         select generate_series(
           date_trunc(${unit}, ${range.startDate}::timestamptz at time zone 'UTC'),
@@ -188,6 +188,8 @@ export class SalesRepository {
       select
         to_char(b.period_start, 'YYYY-MM-DD') as period_start,
         coalesce(sum(l.revenue), 0) as revenue,
+        -- Same rule as the reports' profit: only lines with a known cost count.
+        coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit,
         coalesce(sum(l.units), 0) as units_sold,
         count(l.sale_id) filter (where l.return_id is null) as sales_count
       from buckets b
@@ -203,6 +205,7 @@ export class SalesRepository {
     return result.rows.map((row) => ({
       periodStart: row.period_start,
       revenue: Number(row.revenue),
+      profit: Number(row.profit),
       unitsSold: Number(row.units_sold),
       salesCount: Number(row.sales_count),
     }));

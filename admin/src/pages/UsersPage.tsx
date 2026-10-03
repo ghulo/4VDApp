@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
@@ -286,6 +287,9 @@ function UserRow({ user }: { user: User }) {
         <p className="category-list__description">
           {user.email}
           {!user.isActive && t.people.blocked}
+        </p>
+        <p className="category-list__description">
+          <Link to={`/activity?userId=${user.id}`}>{t.activity.seeActivity(user.name.split(' ')[0] ?? user.name)}</Link>
         </p>
         {sells && (user.monthlyTarget !== null || user.commissionPercent !== null) && (
           <p className="category-list__description">

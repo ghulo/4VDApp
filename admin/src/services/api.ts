@@ -318,6 +318,9 @@ export const exportsApi = {
 export const activityApi = {
   list: (query: { page: number; userId?: number; action?: string }) =>
     paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
+  undo: async (id: number, note: string) =>
+    (await apiRequest<ActivityEntry>(`/activity/${id}/undo`, { method: 'POST', body: note ? { note } : {} })).data,
+  restore: async (id: number) => (await apiRequest<ActivityEntry>(`/activity/${id}/restore`, { method: 'POST' })).data,
 };
 
 export const settingsApi = {

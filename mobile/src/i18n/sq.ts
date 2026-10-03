@@ -79,6 +79,7 @@ export const sq: Catalogue = {
       closed: 'Shqyrtuar',
       rejected: 'Refuzuar',
       cancelled: 'Anuluar',
+      undone: 'Zhbërë',
     },
     morning: 'Mirëmëngjes',
     afternoon: 'Mirëdita',

@@ -3,10 +3,11 @@ import { formatEuro } from '../utils/money.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 
 export interface MyRequestDto {
-  type: 'return' | 'write_off' | 'count';
+  type: 'return' | 'write_off' | 'count' | 'sale';
   id: number;
   /** A sentence the employee recognises, e.g. "Return of 2 × Paint, refund €38.00". */
   summary: string;
+  /** `undone` when someone undid it; `decisionNote` then holds their reason. */
   status: string;
   decisionNote: string | null;
   requestedAt: string;
@@ -48,5 +49,7 @@ function describe(row: MyRequestRow): string {
       return `${row.quantity} × ${row.product_name} (${row.reason})`;
     case 'count':
       return `Stock count of ${row.category_name ?? 'the whole shop'}`;
+    case 'sale':
+      return `Sale of ${row.quantity} × ${row.product_name}, ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
   }
 }

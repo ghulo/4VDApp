@@ -299,7 +299,8 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
 
 function RequestRow({ request, colors }: { request: MyRequest; colors: ThemeColors }) {
   const t = useT();
-  const isRejected = request.status === 'rejected';
+  // Undone reads like a rejection: it didn't count, and the reason follows.
+  const isRejected = request.status === 'rejected' || request.status === 'undone';
   const isWaiting = request.status === 'pending' || request.status === 'submitted';
   return (
     <View style={[styles.requestRow, { borderTopColor: colors.line }]}>

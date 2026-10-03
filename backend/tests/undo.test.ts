@@ -72,6 +72,15 @@ describe('undoing a sale', () => {
     expect(logged).toEqual({ user_id: people.admin.id, entity_id: entryId });
   });
 
+  it('should show the employee the undone sale and the reason under their requests', async () => {
+    const { entryId } = await employeeSale(3);
+    await undoService().undo(entryId, people.admin, 'typed 3 instead of 2');
+
+    const mine = await api().get('/api/approvals/mine').set(auth('employee'));
+
+    expect(mine.body.data).toContainEqual(expect.objectContaining({ type: 'sale', status: 'undone', decisionNote: 'typed 3 instead of 2' }));
+  });
+
   it('should restore it: the stock leaves again and the money counts again', async () => {
     const { productId, entryId } = await employeeSale(3);
     await undoService().undo(entryId, people.admin, null);

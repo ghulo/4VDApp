@@ -3,9 +3,10 @@ import { SYSTEM_STOCK_REASONS } from '../../constants/stock.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../errors/httpErrors.js';
 import type { UndoneKind } from '../../i18n/messages.js';
 import type { TransactionalRepositories, TransactionManager } from '../../repositories/TransactionManager.js';
-import type { UndoRow, UndoState } from '../../repositories/UndoRepository.js';
+import type { UndoRepository, UndoRow, UndoState } from '../../repositories/UndoRepository.js';
 import type { PublicUser } from '../../types/auth.js';
 import { applyStockChange } from '../InventoryService.js';
+import type { EditReverts } from './editReverts.js';
 import { canUndo, type UndoTarget, undoTargetOf } from './undoRules.js';
 
 type Mode = 'undo' | 'restore';
@@ -28,6 +29,9 @@ interface UndoPlan {
   check?: (mode: Mode) => Promise<void>;
 }
 
+/** Kinds whose undo puts old values back through the edit services (see editReverts). */
+const EDIT_KINDS = new Set<UndoTarget['kind']>(['product_edit', 'pricing_edit', 'settings_edit', 'reorder_edit', 'promotion']);
+
 /**
  * Undo and restore what a person did, keyed by their activity log entry.
  * Nothing is deleted: the row is marked undone (or cleared on restore), stock
@@ -35,7 +39,11 @@ interface UndoPlan {
  * person is told. Money reports leave undone rows out on the day they happened.
  */
 export class UndoService {
-  constructor(private readonly transactions: TransactionManager) {}
+  constructor(
+    private readonly transactions: TransactionManager,
+    private readonly undoRepository: UndoRepository,
+    private readonly edits: EditReverts,
+  ) {}
 
   undo(entryId: number, actor: PublicUser, note: string | null): Promise<void> {
     return this.run(entryId, actor, 'undo', note);
@@ -46,47 +54,114 @@ export class UndoService {
   }
 
   private async run(entryId: number, actor: PublicUser, mode: Mode, note: string | null): Promise<void> {
+    const entry = await this.undoRepository.findEntry(entryId);
+    if (!entry) throw new NotFoundError(`Activity entry ${entryId} does not exist`);
+    const target = undoTargetOf(entry);
+    if (!target) throw new NotFoundError("This entry can't be undone");
+    if (EDIT_KINDS.has(target.kind)) return this.runEdit(entry, target, actor, mode, note);
+
     await this.transactions.run(async (repos) => {
-      const entry = await repos.undo.findEntry(entryId);
-      if (!entry) throw new NotFoundError(`Activity entry ${entryId} does not exist`);
-      const target = undoTargetOf(entry);
-      if (!target) throw new NotFoundError("This entry can't be undone");
-
       const plan = await planFor(repos, target, entry);
-
-      const owner = plan.ownerId === null ? undefined : await repos.users.findById(plan.ownerId);
-      if (!canUndo(actor, owner ? { id: owner.id, role: owner.role } : null)) {
-        throw new ForbiddenError("You're not allowed to undo this person's actions");
-      }
-      if (mode === 'undo' && plan.state.undone_at) {
-        const by = plan.state.undone_by === null ? undefined : await repos.users.findById(plan.state.undone_by);
-        throw new ConflictError(`This was already undone${by ? ` by ${by.name}` : ''}`);
-      }
-      if (mode === 'restore' && !plan.state.undone_at) throw new ConflictError("This isn't undone, so there is nothing to restore");
+      await assertAllowed(repos, actor, plan.ownerId, plan.state, mode);
       await plan.check?.(mode);
 
       const effect = plan.stock ? await moveStock(repos, plan, mode, actor.id) : null;
       for (const row of plan.rows) await repos.undo.mark(row, mode === 'undo' ? { by: actor.id, note } : null);
-
-      await repos.activityLog.create({
-        userId: actor.id,
-        action: mode === 'undo' ? 'undo.applied' : 'undo.restored',
-        entityType: 'activity',
-        entityId: entryId,
-        summary: `${mode === 'undo' ? 'Undid' : 'Restored'}: ${entry.summary}`,
-        details: { entryId, kind: target.kind, targetId: target.id, note, effect },
-      });
-      if (plan.ownerId !== null && plan.ownerId !== actor.id) {
-        await repos.notifications.createForUser(plan.ownerId, {
-          type: NOTIFICATION_TYPES.UNDONE,
-          write: (t) =>
-            mode === 'undo'
-              ? { title: t.undoneTitle(plan.kind, plan.what), message: t.undoneMessage(note) }
-              : { title: t.restoredTitle(plan.kind, plan.what), message: t.restoredMessage },
-        });
-      }
+      await logAndTell(repos, { entry, target, actor, mode, note, effect, ownerId: plan.ownerId, kind: plan.kind, what: plan.what });
     });
   }
+
+  /**
+   * Edits go through their own services (each with its own transaction), so
+   * the entry is claimed first: marked while locked, so a second click is
+   * refused, and put back as it was if applying the old values fails.
+   */
+  private async runEdit(entry: Entry, target: UndoTarget, actor: PublicUser, mode: Mode, note: string | null): Promise<void> {
+    const row: UndoRow = { table: 'activity_log', id: entry.id };
+    const before = await this.transactions.run(async (repos) => {
+      const locked = await repos.undo.lockEntry(entry.id);
+      if (!locked) throw new NotFoundError(`Activity entry ${entry.id} does not exist`);
+      await assertAllowed(repos, actor, locked.user_id, locked, mode);
+      await this.edits.check(target, entry, mode);
+      await repos.undo.mark(row, mode === 'undo' ? { by: actor.id, note } : null);
+      return locked;
+    });
+
+    let result: Awaited<ReturnType<EditReverts['apply']>>;
+    try {
+      result = await this.edits.apply(target, entry, mode, actor);
+    } catch (error) {
+      const previous =
+        before.undone_at && before.undone_by !== null ? { by: before.undone_by, note: before.undo_note, at: before.undone_at } : null;
+      await this.undoRepository.mark(row, previous);
+      throw error;
+    }
+
+    await this.transactions.run((repos) =>
+      logAndTell(repos, {
+        entry,
+        target,
+        actor,
+        mode,
+        note,
+        effect: { fields: result.fields },
+        ownerId: before.user_id,
+        kind: target.kind === 'settings_edit' ? 'settings' : 'edit',
+        what: result.what,
+      }),
+    );
+  }
+}
+
+type Entry = NonNullable<Awaited<ReturnType<UndoRepository['findEntry']>>>;
+
+/** The hierarchy, then whether it is in the right state to undo or restore. */
+async function assertAllowed(repos: TransactionalRepositories, actor: PublicUser, ownerId: number | null, state: UndoState, mode: Mode) {
+  const owner = ownerId === null ? undefined : await repos.users.findById(ownerId);
+  if (!canUndo(actor, owner ? { id: owner.id, role: owner.role } : null)) {
+    throw new ForbiddenError("You're not allowed to undo this person's actions");
+  }
+  if (mode === 'undo' && state.undone_at) {
+    const by = state.undone_by === null ? undefined : await repos.users.findById(state.undone_by);
+    throw new ConflictError(`This was already undone${by ? ` by ${by.name}` : ''}`);
+  }
+  if (mode === 'restore' && !state.undone_at) throw new ConflictError("This isn't undone, so there is nothing to restore");
+}
+
+/** Log the undo or restore against the original entry, and tell the person whose entry it was. */
+async function logAndTell(
+  repos: TransactionalRepositories,
+  p: {
+    entry: Entry;
+    target: UndoTarget;
+    actor: PublicUser;
+    mode: Mode;
+    note: string | null;
+    effect: unknown;
+    ownerId: number | null;
+    kind: UndoneKind;
+    /** Null for settings: the alert names them in the reader's language. */
+    what: string | null;
+  },
+) {
+  await repos.activityLog.create({
+    userId: p.actor.id,
+    action: p.mode === 'undo' ? 'undo.applied' : 'undo.restored',
+    entityType: 'activity',
+    entityId: p.entry.id,
+    summary: `${p.mode === 'undo' ? 'Undid' : 'Restored'}: ${p.entry.summary}`,
+    details: { entryId: p.entry.id, kind: p.target.kind, targetId: p.target.id, note: p.note, effect: p.effect },
+  });
+  if (p.ownerId === null || p.ownerId === p.actor.id) return;
+  await repos.notifications.createForUser(p.ownerId, {
+    type: NOTIFICATION_TYPES.UNDONE,
+    write: (t) => {
+      const what = p.what ?? t.settingsWhat;
+      return p.mode === 'undo'
+        ? { title: t.undoneTitle(p.kind, what), message: t.undoneMessage(p.note) }
+        : { title: t.restoredTitle(p.kind, what), message: t.restoredMessage };
+    },
+  });
 }
 
 /** Lock the target row and work out what undoing it means. Must run in a transaction. */
@@ -186,7 +261,6 @@ async function planFor(
       };
     }
     default:
-      // Edits are reverted by editReverts (Task 4).
       throw new NotFoundError("This entry can't be undone");
   }
 }

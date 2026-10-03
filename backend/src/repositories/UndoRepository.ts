@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
 /** Who undid a row, and when; null when it stands. */
@@ -30,10 +31,27 @@ export class UndoRepository {
   lockEntry(id: number) {
     return this.db
       .selectFrom('activity_log')
-      .select(['id', 'entity_id', 'details', 'user_id', 'undone_at', 'undone_by'])
+      .select(['id', 'entity_id', 'details', 'user_id', 'undone_at', 'undone_by', 'undo_note'])
       .where('id', '=', id)
       .forUpdate()
       .executeTakeFirst();
+  }
+
+  /**
+   * Entries made after `afterId` about the same thing that still stand: not
+   * undone, and not an undo's own change (those carry `undoOf`).
+   */
+  laterEntries(afterId: number, about: { entityType: 'product' | 'settings'; entityId: number | null; actions: string[] }) {
+    let query = this.db
+      .selectFrom('activity_log')
+      .select(['action', 'details'])
+      .where('id', '>', afterId)
+      .where('entity_type', '=', about.entityType)
+      .where('action', 'in', about.actions)
+      .where('undone_at', 'is', null)
+      .where(sql<boolean>`(details ->> 'undoOf') is null`);
+    if (about.entityId !== null) query = query.where('entity_id', '=', about.entityId);
+    return query.execute();
   }
 
   lockSale(id: number) {
@@ -108,10 +126,10 @@ export class UndoRepository {
       .executeTakeFirst();
   }
 
-  /** Mark a row undone (with who and why), or clear it again on restore. */
-  async mark(row: UndoRow, undo: { by: number; note: string | null } | null): Promise<void> {
+  /** Mark a row undone (with who and why), or clear it again on restore. `at` puts back an earlier state. */
+  async mark(row: UndoRow, undo: { by: number; note: string | null; at?: Date } | null): Promise<void> {
     const values = undo
-      ? { undone_at: new Date(), undone_by: undo.by, undo_note: undo.note }
+      ? { undone_at: undo.at ?? new Date(), undone_by: undo.by, undo_note: undo.note }
       : { undone_at: null, undone_by: null, undo_note: null };
     if (row.table === 'stock_count_lines') {
       await this.db

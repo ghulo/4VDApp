@@ -48,4 +48,7 @@ describe('undoTargetOf', () => {
       expect(undoTargetOf(entry(action))).toBeNull();
     }
   });
+  it('should give nothing for an undo’s own change', () => {
+    expect(undoTargetOf(entry('product.updated', { price: { from: 79, to: 89 }, undoOf: 3 }))).toBeNull();
+  });
 });

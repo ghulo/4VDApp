@@ -45,6 +45,8 @@ export function undoTargetOf(entry: {
   entity_id: number | null;
   details: Record<string, unknown> | null;
 }): UndoTarget | null {
+  // An undo's own change (a revert or restore) is undone by restoring or undoing the original instead.
+  if (entry.details && 'undoOf' in entry.details) return null;
   const entity = entry.entity_id;
   switch (entry.action) {
     case 'sale.recorded':

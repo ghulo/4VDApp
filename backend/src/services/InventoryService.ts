@@ -84,7 +84,12 @@ export class InventoryService {
    * Change stock by hand. The stock update, the audit-trail entry and any
    * low-stock notification are saved together or not at all.
    */
-  async adjust(productId: number, input: StockAdjustmentInput, adjustedBy: number): Promise<InventoryDetailDto> {
+  async adjust(
+    productId: number,
+    input: StockAdjustmentInput,
+    adjustedBy: number,
+    logExtra?: Record<string, unknown>,
+  ): Promise<InventoryDetailDto> {
     const item = await this.inventoryRepository.findByProductId(productId);
     if (!item) throw new NotFoundError(`No stock record for product ${productId}`);
 
@@ -97,7 +102,7 @@ export class InventoryService {
           entityType: 'product',
           entityId: productId,
           summary: `Changed reorder level of ${item.product_name} from ${item.reorder_level} to ${input.reorderLevel}`,
-          details: { reorderLevel: { from: item.reorder_level, to: input.reorderLevel } },
+          details: { reorderLevel: { from: item.reorder_level, to: input.reorderLevel }, ...logExtra },
         });
       }
       if (input.quantity !== undefined) {

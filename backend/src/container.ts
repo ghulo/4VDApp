@@ -50,6 +50,8 @@ import { GoogleAuthService } from './services/GoogleAuthService.js';
 import { SignupService } from './services/SignupService.js';
 import { WeeklyReportService } from './services/WeeklyReportService.js';
 import { UndoService } from './services/undo/UndoService.js';
+import { EditReverts } from './services/undo/editReverts.js';
+import { UndoRepository } from './repositories/UndoRepository.js';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './services/google/googleVerifier.js';
 import { UserIdentityRepository } from './repositories/UserIdentityRepository.js';
 import { EmailService } from './services/email/EmailService.js';
@@ -137,8 +139,13 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const returnService = new ReturnService(returnRepository, settingsService, transactions);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
-  const undoService = new UndoService(transactions);
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
+  const undoRepository = new UndoRepository(db);
+  const undoService = new UndoService(
+    transactions,
+    undoRepository,
+    new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
+  );
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,

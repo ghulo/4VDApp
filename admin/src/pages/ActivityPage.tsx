@@ -59,6 +59,7 @@ export function ActivityPage() {
           size="sm"
           variant={mode === 'undo' ? 'secondary' : 'ghost'}
           aria-expanded={isOpen}
+          aria-controls={isOpen ? `undo-confirm-${entry.id}` : undefined}
           aria-label={mode === 'undo' ? t.undo.undoLabel(entry.summary) : t.undo.restoreLabel(entry.summary)}
           onClick={() => (isOpen ? setOpen(null) : setOpen({ id: entry.id, mode }))}
         >
@@ -118,7 +119,12 @@ export function ActivityPage() {
             entry.undo && (
               <tr className="activity-undo__row">
                 <td colSpan={4}>
-                  <UndoConfirm entry={{ ...entry, undo: entry.undo }} mode={open.mode} onClose={closeConfirm} />
+                  <UndoConfirm
+                    id={`undo-confirm-${entry.id}`}
+                    entry={{ ...entry, undo: entry.undo }}
+                    mode={open.mode}
+                    onClose={closeConfirm}
+                  />
                 </td>
               </tr>
             )

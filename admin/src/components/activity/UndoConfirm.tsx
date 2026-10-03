@@ -15,13 +15,15 @@ interface UndoConfirmProps {
   mode: 'undo' | 'restore';
   /** Called after success or cancel; the page puts focus back on the row's button. */
   onClose: () => void;
+  /** So the row's button can point at this panel (aria-controls). */
+  id: string;
 }
 
 /**
  * The confirmation that opens under an entry: what the undo (or restore) will
  * do, an optional reason the person sees, and the button that does it.
  */
-export function UndoConfirm({ entry, mode, onClose }: UndoConfirmProps) {
+export function UndoConfirm({ entry, mode, onClose, id }: UndoConfirmProps) {
   const t = useT();
   const queryClient = useQueryClient();
   const [note, setNote] = useState('');
@@ -59,10 +61,17 @@ export function UndoConfirm({ entry, mode, onClose }: UndoConfirmProps) {
   if (entry.undo.kind === 'promotion' && mode === 'undo') lines.push(t.undo.promotionEnds);
 
   return (
-    <form className="undo-confirm" aria-labelledby={headingId} onSubmit={submit} onKeyDown={cancelOnEscape}>
-      <h3 id={headingId} ref={headingRef} tabIndex={-1} className="undo-confirm__title">
+    <form
+      id={id}
+      className="undo-confirm"
+      aria-labelledby={headingId}
+      aria-busy={action.isPending}
+      onSubmit={submit}
+      onKeyDown={cancelOnEscape}
+    >
+      <h2 id={headingId} ref={headingRef} tabIndex={-1} className="undo-confirm__title">
         {t.undo.title(mode, kind)}
-      </h3>
+      </h2>
       {lines.length > 0 && (
         <ul className="undo-confirm__effects">
           {lines.map((line) => (

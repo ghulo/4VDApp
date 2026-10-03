@@ -1,9 +1,11 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AnalyticsBoard } from '../components/AnalyticsBoard';
+import { useSalesSeries } from '../components/useSalesSeries';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
-import { exportsApi, reportsApi } from '../services/api';
+import { RevenueChart } from '../components/RevenueChart';
+import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { errorMessage } from '../utils/errors';
 import { formatMoney, formatPercent } from '../utils/format';
@@ -43,14 +45,41 @@ export function ReportsPage() {
               hint={current.lossUnitsWithoutCost > 0 ? t.reports.unitsWithoutCost(current.lossUnitsWithoutCost) : undefined}
               to="/approvals"
             />
+            <StockWorthCard />
           </>
         )}
       </AnalyticsBoard>
 
+      <SalesChart range={rangeKey} />
       <TeamTable range={rangeKey} />
       <ProfitTable range={rangeKey} />
       <Exports range={rangeKey} />
     </>
+  );
+}
+
+/** What the stock on the shelves cost right now, whatever period is picked. */
+function StockWorthCard() {
+  const t = useT();
+  const dashboard = useQuery({ queryKey: ['analytics', 'dashboard', 30], queryFn: () => analyticsApi.dashboard(30) });
+  return (
+    <MetricCard
+      label={t.analytics.stockWorth}
+      value={dashboard.data ? formatMoney(dashboard.data.inventoryValue) : '–'}
+      to="/inventory"
+    />
+  );
+}
+
+function SalesChart({ range }: { range: { startDate: string; endDate: string } }) {
+  const t = useT();
+  const series = useSalesSeries(range);
+  return (
+    <Card>
+      {series.isPending && <Loading />}
+      {series.isError && <ErrorNotice error={series.error} onRetry={() => series.refetch()} />}
+      {series.data && <RevenueChart points={series.data.points} title={t.reports.salesPerDay} />}
+    </Card>
   );
 }
 

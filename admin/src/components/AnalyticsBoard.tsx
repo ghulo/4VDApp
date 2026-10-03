@@ -2,19 +2,12 @@ import { ArrowClockwise } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useT } from '../i18n/useT';
-import { analyticsApi, type ComparedRange, reportsApi } from '../services/api';
-import type { RevenuePoint, ReportSummary, RevenueSeries } from '../services/types';
+import { type ComparedRange, reportsApi } from '../services/api';
+import type { RevenuePoint, ReportSummary } from '../services/types';
 import { formatMoney } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
+import { useSalesSeries } from './useSalesSeries';
 import { Button, MetricCard, MetricGrid } from './ui';
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/** Daily points for up to four months, weekly beyond that, so a mini graph stays readable. */
-function seriesPeriod(range: { startDate: string; endDate: string }): RevenueSeries['period'] {
-  const days = (new Date(range.endDate).getTime() - new Date(range.startDate).getTime()) / MS_PER_DAY;
-  return days <= 120 ? 'daily' : days <= 5 * 365 ? 'weekly' : 'monthly';
-}
 
 interface AnalyticsBoardProps {
   range: ComparedRange;
@@ -37,12 +30,7 @@ export function AnalyticsBoard({ range, controls, children, footer }: AnalyticsB
     queryFn: () => reportsApi.summary(range),
     placeholderData: keepPreviousData,
   });
-  const period = seriesPeriod(range);
-  const series = useQuery({
-    queryKey: ['analytics', 'revenue', period, range.startDate, range.endDate],
-    queryFn: () => analyticsApi.revenue(period, range.startDate, range.endDate),
-    placeholderData: keepPreviousData,
-  });
+  const series = useSalesSeries(range);
   const isRefreshing = summary.isFetching || series.isFetching;
 
   function refresh() {

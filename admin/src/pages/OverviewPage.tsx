@@ -1,21 +1,16 @@
-import { Package, Receipt, SealCheck, TrendUp } from '@phosphor-icons/react';
+import { CaretRight } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
-import { AnalyticsBoard } from '../components/AnalyticsBoard';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
-import { PeriodPicker } from '../components/PeriodPicker';
-import { RevenueChart } from '../components/RevenueChart';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
-import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
+import { approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
-import { Card, DotBars, MetricCard, PageHeader, RollingNumber, StatGrid, StatTile, StatusLine } from '../components/ui';
-import { usePeriodParams } from '../utils/usePeriodParams';
+import { Card, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 
-const PERIOD_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function OverviewPage() {
@@ -35,26 +30,17 @@ export function OverviewPage() {
       <PageHeader
         title={t.overview.hi(firstName ?? user.name)}
         description={
-          lowCount === undefined ? (
-            t.overview.checkingStock
-          ) : lowCount === 0 ? (
-            t.overview.allAbove
-          ) : (
-            <>
-              <mark className="highlight">
-                {t.overview.needRestock(lowCount)}
-              </mark>
-              {outCount ? t.overview.soldOut(outCount) : ''}.
-            </>
-          )
+          lowCount === undefined
+            ? t.overview.checkingStock
+            : lowCount === 0
+              ? t.overview.allAbove
+              : `${t.overview.needRestock(lowCount)}${outCount ? t.overview.soldOut(outCount) : ''}.`
         }
       />
 
       <SetupGuide />
 
-      <TodayBoard lowCount={lowCount} />
-
-      <OverviewAnalytics />
+      <TodayCard lowCount={lowCount} />
 
       <div className="split">
         <AttentionPanel />
@@ -88,19 +74,13 @@ export function OverviewPage() {
         </Card>
       </div>
 
-      <SalesSummary />
+      <p className="overview__more">
+        <Link to="/reports" className="text-link">
+          {t.overview.seeReports}
+        </Link>
+      </p>
     </>
   );
-}
-
-/** Sales per day for the last 30 days (shared by the today block and the chart). */
-function useRevenue() {
-  return useQuery({
-    queryKey: ['analytics', 'revenue', 'daily', PERIOD_DAYS],
-    queryFn: () =>
-      // Start of the day 29 days ago, so the chart shows exactly 30 whole days.
-      analyticsApi.revenue('daily', new Date(Date.now() - (PERIOD_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10)),
-  });
 }
 
 /** Today so far, against the same hours of the same weekday last week. */
@@ -115,8 +95,11 @@ function todayRange(now = new Date()) {
   };
 }
 
-/** The shop's day on one slate board: the figure the owner checks first, and what's waiting. */
-function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
+/**
+ * The shop's day in a sentence or two: what came in so far, how that compares
+ * with the same hours last week, and what's waiting. Calm on a quiet morning.
+ */
+function TodayCard({ lowCount }: { lowCount: number | undefined }) {
   const t = useT();
   // Fixed once per visit so the query key doesn't change on every render.
   const [range] = useState(() => todayRange());
@@ -127,92 +110,44 @@ function TodayBoard({ lowCount }: { lowCount: number | undefined }) {
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
   const waiting = approvals.data?.total ?? 0;
-  const revenue = useRevenue();
+
+  function compare(): string | null {
+    if (!current || !previous) return null;
+    if (change === null) return t.overview.nothingLastWeek(weekday);
+    const amount = formatMoney(previous.revenue);
+    if (current.revenue === 0) return t.overview.lastWeekHad({ weekday, amount });
+    if (change > MUCH_MORE) return t.overview.muchMoreThanLastWeek({ weekday, amount });
+    return t.overview.comparedLastWeek({ up: change >= 0, percent: Math.abs(Math.round(change * 100)), weekday, amount });
+  }
 
   return (
-    <>
-      <section className="today-hero nodes" aria-label={t.overview.todaySoFar}>
-        <div className="today-hero__text">
-          <p className="today-hero__label">{t.overview.salesToday}</p>
-          <p className="today-hero__figure">
-            {current ? <RollingNumber value={formatMoney(current.revenue)} /> : today.isError ? t.overview.notAvailable : '…'}
+    <section className="today" aria-label={t.overview.todaySoFar} aria-busy={today.isPending}>
+      {today.isPending && <Loading />}
+      {today.isError && <ErrorNotice error={today.error} onRetry={() => today.refetch()} />}
+      {current && (
+        <>
+          <p className="today__headline">
+            {current.salesCount > 0
+              ? t.overview.takenToday({ amount: formatMoney(current.revenue), count: current.salesCount })
+              : t.overview.noSalesToday}
           </p>
-          {current && previous && (
-            <p className="today-hero__compare">
-              {change === null
-                ? t.overview.nothingLastWeek(weekday)
-                : current.revenue === 0
-                  ? t.overview.noSalesYetToday({ weekday, amount: formatMoney(previous.revenue) })
-                  : change > MUCH_MORE
-                    ? t.overview.muchMoreThanLastWeek({ weekday, amount: formatMoney(previous.revenue) })
-                    : t.overview.comparedLastWeek({
-                        up: change >= 0,
-                        percent: Math.abs(Math.round(change * 100)),
-                        weekday,
-                        amount: formatMoney(previous.revenue),
-                      })}
-            </p>
-          )}
-          <div className="today-hero__tags">
-            <Link to="/approvals" className="today-tag">
-              <strong>{waiting}</strong> {t.overview.waitingForYou}
-            </Link>
-            <Link to="/inventory?lowStock=true" className="today-tag">
-              <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
-            </Link>
-          </div>
-        </div>
-        <div className="today-hero__art">
-          {revenue.data && <DotBars values={revenue.data.points.map((point) => point.revenue)} />}
-          <span className="today-hero__art-label">{t.overview.lastDays(PERIOD_DAYS)}</span>
-        </div>
-        <div className="today-hero__status">
-          <StatusLine>
-            {current && current.salesCount > 0
-              ? t.overview.salesRecorded(current.salesCount)
-              : t.overview.readyForFirst}
-          </StatusLine>
-        </div>
-      </section>
-      <StatGrid>
-        <StatTile label={t.overview.sales} icon={Receipt} value={current?.salesCount ?? '–'} to="/sales" />
-        <StatTile label={t.overview.profit} icon={TrendUp} value={current ? formatMoney(current.profit) : '–'} />
-        <StatTile label={t.overview.itemsSold} icon={Package} value={current?.unitsSold ?? '–'} />
-        <StatTile
-          label={t.overview.waitingTile}
-          icon={SealCheck}
-          value={waiting}
-          tone={waiting > 0 ? 'warn' : 'default'}
-          to="/approvals"
-        />
-      </StatGrid>
-    </>
-  );
-}
-
-/** The shop's figures for a period the owner picks, Cloudflare-style: a card per figure with its trend. */
-function OverviewAnalytics() {
-  const { period, from, to, comparedRange, changePeriod } = usePeriodParams('last-30-days');
-  return (
-    <AnalyticsBoard range={comparedRange} controls={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}>
-      {() => <StockWorthCard />}
-    </AnalyticsBoard>
-  );
-}
-
-/** What the stock on the shelves cost; the same today whatever period is picked. */
-function StockWorthCard() {
-  const t = useT();
-  const dashboard = useQuery({
-    queryKey: ['analytics', 'dashboard', PERIOD_DAYS],
-    queryFn: () => analyticsApi.dashboard(PERIOD_DAYS),
-  });
-  return (
-    <MetricCard
-      label={t.analytics.stockWorth}
-      value={dashboard.data ? formatMoney(dashboard.data.inventoryValue) : '–'}
-      to="/inventory"
-    />
+          <p className="today__compare">
+            {compare()}
+            {current.salesCount > 0 && <> {t.overview.todayFacts({ items: current.unitsSold, profit: formatMoney(current.profit) })}</>}
+          </p>
+        </>
+      )}
+      <div className="today__links">
+        <Link to="/approvals" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
+          <strong>{waiting}</strong> {t.overview.waitingForYou}
+          <CaretRight size={14} aria-hidden="true" />
+        </Link>
+        <Link to="/inventory?lowStock=true" className="today__link">
+          <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
+          <CaretRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -242,55 +177,6 @@ function AttentionPanel() {
             </li>
           ))}
         </ul>
-      )}
-    </Card>
-  );
-}
-
-function SalesSummary() {
-  const t = useT();
-  const dashboard = useQuery({
-    queryKey: ['analytics', 'dashboard', PERIOD_DAYS],
-    queryFn: () => analyticsApi.dashboard(PERIOD_DAYS),
-  });
-  const revenue = useRevenue();
-
-  return (
-    <Card
-      title={t.overview.lastDays(PERIOD_DAYS)}
-      actions={
-        <Link to="/sales" className="text-link">
-          {t.overview.seeAllSales}
-        </Link>
-      }
-    >
-
-      {dashboard.isPending && <Loading />}
-      {dashboard.isError && <ErrorNotice error={dashboard.error} onRetry={() => dashboard.refetch()} />}
-      {dashboard.data && (
-        <>
-          {revenue.data && <RevenueChart points={revenue.data.points} title={t.overview.salesPerDay} />}
-
-          {dashboard.data.topProducts.length > 0 ? (
-            <>
-              <h3 className="subheading">{t.overview.bestSellers}</h3>
-              <ol className="top-products">
-                {dashboard.data.topProducts.map((product) => (
-                  <li key={product.productId}>
-                    <Link to={`/products/${product.productId}`} className="table__primary-link">
-                      {product.productName}
-                    </Link>
-                    <span className="top-products__figures">
-                      {t.overview.sold(formatMoney(product.revenue), product.unitsSold)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </>
-          ) : (
-            <p className="field-hint">{t.overview.noSalesYet}</p>
-          )}
-        </>
       )}
     </Card>
   );

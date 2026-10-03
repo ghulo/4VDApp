@@ -35,8 +35,7 @@
   cursor: not-allowed;
 }
 
-/* The exact Cloudflare orange, with near-black text so it stays readable,
-   and a soft neon glow when pointed at. */
+/* The one orange thing on a screen, with near-black text so it stays readable. */
 .button--primary {
   background: var(--cta);
   color: var(--cta-ink);
@@ -45,7 +44,13 @@
 
 .button--primary:not(:disabled):hover {
   background: var(--cta-hover);
-  box-shadow: var(--glow);
+}
+
+/* Disabled main buttons go neutral instead of a washed-out orange. */
+.button--primary:disabled {
+  background: var(--fill);
+  color: var(--ink-muted);
+  opacity: 1;
 }
 
 /* Secondary: the surface with a hairline ring, like Kumo. "quiet" is the old name. */
@@ -110,7 +115,7 @@
 }
 
 .text-link {
-  color: var(--brand);
+  color: var(--ink);
   font-weight: 500;
   text-underline-offset: 3px;
 }
@@ -119,10 +124,17 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--brand);
+  color: var(--ink);
   font: inherit;
   font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 3px;
   cursor: pointer;
+}
+
+.text-button:hover {
+  text-decoration-color: currentColor;
 }
 
 .text-button:hover {
@@ -189,11 +201,14 @@
   gap: var(--space-2) var(--space-3);
 }
 
+/* The serif voice: page titles read like a calm editorial heading. */
 .page-header__title {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 500;
   line-height: 1.15;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .page-header__description {
@@ -427,7 +442,8 @@
 }
 
 .table__primary-link:hover {
-  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .table__secondary {
@@ -647,9 +663,10 @@
   color: var(--info);
 }
 
+/* Roles and promotions: a quiet ink chip, so orange stays for the main action. */
 .badge--brand {
-  background: var(--tint);
-  color: var(--brand);
+  background: var(--fill);
+  color: var(--ink);
 }
 
 /* ---------- Field ---------- */
@@ -751,7 +768,7 @@ input.switch::after {
 }
 
 input.switch:checked {
-  background: var(--brand);
+  background: var(--ink);
 }
 
 input.switch:checked::after {
@@ -798,119 +815,6 @@ input.switch:focus-visible {
   margin-bottom: 0;
 }
 .table__nowrap { white-space: nowrap; }
-
-/* ---------- Rolling number ---------- */
-
-/* Each digit is a 0-9 strip in a one-digit window, slid to its value. */
-.roll {
-  display: inline-flex;
-  font-variant-numeric: tabular-nums;
-}
-
-.roll__digit {
-  display: inline-block;
-  height: 1em;
-  overflow: hidden;
-  line-height: 1;
-}
-
-.roll__strip {
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.roll__strip > span {
-  height: 1em;
-  line-height: 1;
-}
-
-/* ---------- Dot-matrix bars ---------- */
-
-.dot-bars {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.dot-bars__lit {
-  fill: currentColor;
-}
-
-.dot-bars__unlit {
-  fill: currentColor;
-  opacity: 0.18;
-}
-
-/* ---------- Status pill on a dotted line ---------- */
-
-.status-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.status-line::before,
-.status-line::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background-image: linear-gradient(90deg, currentColor 50%, transparent 50%);
-  background-size: 6px 1px;
-  opacity: 0.45;
-}
-
-.status-line__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 16px;
-  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-  border-radius: var(--radius-small);
-  background: color-mix(in srgb, currentColor 6%, transparent);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* ---------- Highlighted phrase ---------- */
-
-/* The key words of a sentence, on a soft tint, like Cloudflare's headlines. */
-mark.highlight {
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--tint);
-  color: var(--brand);
-  text-shadow: var(--glow-text);
-}
-
-/* ---------- Corner nodes ---------- */
-
-/* Small squares on the four corners of a framed block, where its lines would
-   meet the page grid. The block's own content can keep overflow: hidden. */
-.nodes {
-  position: relative;
-}
-
-.nodes::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  pointer-events: none;
-  background:
-    linear-gradient(var(--line-strong), var(--line-strong)) top left / 7px 7px,
-    linear-gradient(var(--line-strong), var(--line-strong)) top right / 7px 7px,
-    linear-gradient(var(--line-strong), var(--line-strong)) bottom left / 7px 7px,
-    linear-gradient(var(--line-strong), var(--line-strong)) bottom right / 7px 7px;
-  background-repeat: no-repeat;
-}
-
-.stat-grid-frame {
-  margin-bottom: var(--space-4);
-}
-
-.stat-grid-frame > .stat-grid {
-  margin-bottom: 0;
-}
 
 /* ---------- Metric cards (analytics boards) ---------- */
 
@@ -997,6 +901,12 @@ mark.highlight {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.metric__change-shown {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .metric__change--up {

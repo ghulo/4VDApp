@@ -106,7 +106,7 @@ export function AskPage() {
         <section aria-label={t.ask.answers} aria-live="polite">
           <ol className="ask-history">
             {history.map((exchange) => (
-              <li key={exchange.id} className="brackets">
+              <li key={exchange.id} className="callout">
                 <p className="ask-history__question">{exchange.question}</p>
                 <p className="ask-history__answer">{exchange.answer}</p>
               </li>

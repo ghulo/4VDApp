@@ -414,7 +414,7 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
         </p>
       )}
       {result && (
-        <div className="price-suggestion__result brackets" aria-live="polite">
+        <div className="price-suggestion__result callout" aria-live="polite">
           <p className="price-suggestion__headline">
             {t.productForm.decision[result.decision]} {formatMoney(result.suggestedPrice)}
             <span className="price-suggestion__confidence">, {t.productForm.confidence[result.confidence]}</span>

@@ -279,6 +279,7 @@ export const en = {
     salesInPeriod: 'Sales in this period',
     teamReport: 'Team report',
     currentStock: 'Current stock',
+    salesPerDay: 'Sales per day',
   },
   overview: {
     hi: (name: string) => `Hi ${name}`,
@@ -292,33 +293,24 @@ export const en = {
     nothingToRestockHint: 'Every product has more than its reorder level.',
     reorderAt: (level: number) => `Reorder at ${level}`,
     todaySoFar: 'Today so far',
-    salesToday: 'Sales today',
     notAvailable: 'Not available',
+    takenToday: (p: { amount: string; count: number }) =>
+      `${p.amount} from ${p.count} ${p.count === 1 ? 'sale' : 'sales'} so far today.`,
+    noSalesToday: 'No sales yet today.',
     nothingLastWeek: (weekday: string) => `Nothing sold by this time last ${weekday}.`,
     comparedLastWeek: (p: { up: boolean; percent: number; weekday: string; amount: string }) =>
       `${p.up ? 'Up' : 'Down'} ${p.percent}% on last ${p.weekday}, which had ${p.amount} by this time.`,
-    noSalesYetToday: (p: { weekday: string; amount: string }) =>
-      `No sales yet today. Last ${p.weekday} had ${p.amount} by this time.`,
+    lastWeekHad: (p: { weekday: string; amount: string }) => `Last ${p.weekday} had ${p.amount} by this time.`,
     muchMoreThanLastWeek: (p: { weekday: string; amount: string }) =>
       `Much more than last ${p.weekday}, which had ${p.amount} by this time.`,
+    todayFacts: (p: { items: number; profit: string }) => `${p.items} ${p.items === 1 ? 'item' : 'items'} sold, ${p.profit} profit.`,
     waitingForYou: 'waiting for you',
     toRestock: 'to restock',
-    lastDays: (days: number) => `Last ${days} days`,
-    salesRecorded: (count: number) => `${count} ${count === 1 ? 'sale' : 'sales'} recorded today`,
-    readyForFirst: 'Ready for the first sale of the day',
-    sales: 'Sales',
-    profit: 'Profit',
-    itemsSold: 'Items sold',
-    waitingTile: 'Waiting for you',
     severity: { urgent: 'Urgent', warning: 'Check', info: 'Idea' },
     attention: 'Needs your attention',
     allClear: 'All clear',
     allClearHint: 'Nothing is running out, missing or selling oddly.',
-    seeAllSales: 'See all sales',
-    salesPerDay: 'Sales per day',
-    bestSellers: 'Best sellers',
-    sold: (amount: string, units: number) => `${amount}, ${units} sold`,
-    noSalesYet: 'No sales yet in this period. Record one on the Sales page.',
+    seeReports: 'See figures and trends in Reports',
   },
   sales: {
     title: 'Sales',
@@ -465,6 +457,7 @@ export const en = {
     stockWorth: 'Stock worth (at cost)',
   },
   chart: {
+    keysHint: 'Use the left and right arrow keys to read each day.',
     showChart: 'Show chart',
     showTable: 'Show as table',
     day: 'Day',
@@ -472,7 +465,6 @@ export const en = {
     sales: 'Sales',
     summary: (p: { title: string; best: { day: string; amount: string } | null }) =>
       `${p.title}. Best day ${p.best ? `${p.best.day} with ${p.best.amount}` : 'none yet'}.`,
-    point: (p: { day: string; amount: string; count: number }) => `${p.day}: ${p.amount} from ${p.count} sales`,
     salesCount: (count: number) => `${count} ${count === 1 ? 'sale' : 'sales'}`,
   },
   ask: {

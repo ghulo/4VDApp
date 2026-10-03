@@ -20,7 +20,8 @@
     "seed": "tsx src/scripts/seed.ts",
     "seed:demo": "tsx src/scripts/seed.ts --demo",
     "db:setup": "npm run migrate && npm run seed",
-    "migrate:prod": "node dist/scripts/migrate.js"
+    "migrate:prod": "node dist/scripts/migrate.js",
+    "wipe": "tsx src/scripts/wipe.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

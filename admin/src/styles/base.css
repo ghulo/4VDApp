@@ -38,8 +38,37 @@ h3 {
 }
 
 a {
-  color: var(--brand);
+  color: var(--ink);
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
   text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* The parts the browser draws carry the palette too. */
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--ink);
+}
+
+:root {
+  caret-color: var(--ink);
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Phones: taps act at once (no double-tap zoom wait) and without a grey flash;
+   controls show their own pressed state instead. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :focus-visible {
@@ -111,7 +140,7 @@ input[type='radio'] {
   min-height: 0;
   padding: 0;
   margin: 0;
-  accent-color: var(--brand);
+  accent-color: var(--ink);
   box-shadow: none;
 }
 

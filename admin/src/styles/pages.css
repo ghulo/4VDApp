@@ -68,7 +68,7 @@
   grid-template-rows: auto 4px;
   gap: 3px;
   min-width: 3.25rem;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
@@ -147,113 +147,85 @@
   font-weight: 600;
 }
 
-/* ---------- Today hero (the one loud element on Overview) ---------- */
 
-/* An orange block with a soft glow, like Cloudflare's hero, and the halftone
-   building on the right. Dark text: it keeps 4.5:1 on the orange. */
-.today-hero {
-  position: relative;
+/* ---------- Today (Overview) ---------- */
+
+/* The day in a sentence: a serif headline, the comparison under it, and two
+   quiet links to what's waiting. Paper and a hairline, like every card. */
+.today {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
-  align-items: center;
-  gap: var(--space-5) var(--space-6);
+  gap: var(--space-2);
   margin-bottom: var(--space-5);
-  padding: var(--space-6) var(--space-6) var(--space-5);
-  border-radius: 2px;
-  background:
-    radial-gradient(45% 70% at 78% 105%, rgb(255 236 170 / 0.85), rgb(255 190 120 / 0.35) 45%, transparent 75%),
-    radial-gradient(60% 80% at 0% 0%, rgb(255 120 60 / 0.4), transparent 70%),
-    var(--hero);
-  box-shadow: 0 0 60px -20px rgb(255 94 31 / 0.55);
-  color: var(--hero-ink);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
 }
 
-.today-hero__label {
-  color: var(--hero-muted);
-  font-weight: 600;
+.today__headline {
+  max-width: 28ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums;
+  text-wrap: balance;
 }
 
-.today-hero__figure {
-  margin-top: var(--space-1);
-  font-size: clamp(2.75rem, 6vw, 4rem);
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-}
-
-.today-hero__compare {
-  margin-top: var(--space-3);
-  max-width: 52ch;
-  color: var(--hero-muted);
+.today__compare {
+  max-width: 60ch;
+  color: var(--ink-muted);
   font-size: var(--text-lg);
 }
 
-.today-hero__tags {
+.today__links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-3);
 }
 
-/* Pills on the hero, like the pill buttons on Cloudflare's own hero. */
-.today-tag {
+.today__link {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  height: 32px;
   align-items: center;
-  padding: 0 14px;
-  border: 1px solid rgb(28 15 8 / 0.25);
-  border-radius: 999px;
-  background: rgb(255 251 245 / 0.35);
-  color: var(--hero-ink);
+  gap: 6px;
+  min-height: 32px;
+  color: var(--ink);
   font-weight: 500;
   text-decoration: none;
 }
 
-.today-tag:hover {
-  background: rgb(255 251 245 / 0.6);
+.today__link strong {
+  font-variant-numeric: tabular-nums;
 }
 
-/* The last 30 days as a dot-matrix waveform beside the figure. */
-.today-hero__art {
-  display: grid;
-  gap: var(--space-2);
-  height: 150px;
-  grid-template-rows: minmax(0, 1fr) auto;
-  color: var(--hero-ink);
+.today__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.today-hero__art-label {
-  color: var(--hero-muted);
-  font-size: var(--text-sm);
-  text-align: right;
-}
-
-.today-hero__status {
-  grid-column: 1 / -1;
-  margin: 0 calc(-1 * var(--space-6));
-}
-
-/* Corner nodes on the orange block read darker than on the page. */
-.today-hero.nodes::after {
-  --line-strong: var(--ink-muted);
+/* Something is waiting: a small warm dot, words still carry the meaning. */
+.today__link--due::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warn);
 }
 
 @media (max-width: 760px) {
-  .today-hero {
-    grid-template-columns: 1fr;
+  .today {
     padding: var(--space-5);
   }
 
-  .today-hero__art {
-    display: none;
+  .today__link {
+    min-height: 44px;
   }
+}
 
-  .today-hero__status {
-    margin: 0 calc(-1 * var(--space-5));
-  }
+.overview__more {
+  margin-top: var(--space-2);
 }
 
 /* ---------- Restock list ---------- */
@@ -643,10 +615,12 @@
 
 .login__headline {
   max-width: 18ch;
-  font-size: clamp(1.75rem, 3vw, 2.5rem);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 3.2vw, 2.75rem);
+  font-weight: 500;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .login__small-print {
@@ -665,9 +639,10 @@
 }
 
 .login__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .login__subtitle {
@@ -742,9 +717,10 @@
   stroke-width: 1;
 }
 
+/* Sized in drawing units: the SVG scales with the card, so this lands near 12px on desktop. */
 .chart__tick {
   fill: var(--steel);
-  font-size: 12px;
+  font-size: 9.5px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -753,16 +729,11 @@
 }
 
 .chart__bar--active {
-  fill: color-mix(in srgb, var(--chart-series) 75%, var(--surface));
+  fill: var(--ink);
 }
 
-.chart__column {
-  outline: none;
-}
-
-.chart__column:focus-visible .chart__bar {
-  stroke: var(--focus);
-  stroke-width: 2;
+.chart__plot:focus-visible {
+  border-radius: var(--radius-small);
 }
 
 .chart__tooltip {
@@ -781,31 +752,6 @@
 
 .chart__tooltip strong {
   font-size: 1rem;
-}
-
-
-.top-products {
-  margin: 8px 0 0;
-  padding-left: 1.5rem;
-}
-
-.top-products li {
-  padding: 6px 0;
-}
-
-.top-products li::marker {
-  color: var(--steel);
-  font-variant-numeric: tabular-nums;
-}
-
-.top-products .table__primary-link {
-  display: inline;
-}
-
-.top-products__figures {
-  margin-left: 12px;
-  color: var(--steel);
-  font-size: 0.9375rem;
 }
 
 /* ---------- Sales page ---------- */
@@ -1276,7 +1222,7 @@
 }
 
 .fallback summary {
-  color: var(--brand);
+  color: var(--ink);
   font-weight: 600;
   cursor: pointer;
 }
@@ -1312,10 +1258,6 @@
 
 /* ---------- Setup guide ---------- */
 
-.setup-guide {
-  border-color: var(--brand);
-}
-
 .setup-guide__progress {
   color: var(--ink-muted);
   font-size: 0.875rem;
@@ -1333,7 +1275,7 @@
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: var(--brand);
+  background: var(--ink);
 }
 
 .setup-guide__steps {
@@ -1362,14 +1304,14 @@
   height: 24px;
   border: 2px solid var(--line-strong);
   border-radius: 50%;
-  color: var(--brand-ink);
+  color: var(--surface);
   font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .setup-step--done .setup-step__check {
-  border-color: var(--brand);
-  background: var(--brand);
+  border-color: var(--ink);
+  background: var(--ink);
 }
 
 .setup-step__title {
@@ -1434,13 +1376,8 @@
 
 /* ---------- Setup guide, answers and suggestions ---------- */
 
-.card.setup-guide {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-}
-
 .ask-history li {
   padding: var(--space-4) var(--space-5);
-  border-radius: 2px;
 }
 
 .ask-history li + li {
@@ -1449,28 +1386,6 @@
 
 .price-suggestion__result {
   border: 0;
-  border-radius: 2px;
-}
-
-/* The sales chart, in dots. */
-.chart__dot {
-  fill: var(--chart-series);
-}
-
-.chart__dot--active {
-  fill: var(--ink);
-}
-
-.chart__dot--empty {
-  fill: var(--line-strong);
-}
-
-.chart__column:focus-visible .chart__dot:not(.chart__dot--empty) {
-  fill: var(--focus);
-}
-
-.stat-grid-frame > .stat-grid {
-  border-radius: 2px;
 }
 
 /* Setup controls the owner can see but not change (components/ManagersOnly.tsx). */

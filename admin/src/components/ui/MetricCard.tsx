@@ -1,11 +1,11 @@
-import { DotsThree } from '@phosphor-icons/react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, DotsThree } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
 import { formatPercent, MUCH_MORE } from '../../utils/format';
 import { changeDirection, PLACEHOLDER_WAVE, SPARK_HEIGHT, SPARK_WIDTH, sparklinePaths } from './sparkline';
 
-const ARROWS = { up: '↗', down: '↘', flat: '→' } as const;
+const ARROWS = { up: ArrowUpRight, down: ArrowDownRight, flat: ArrowRight } as const;
 
 interface MetricCardProps {
   label: string;
@@ -50,8 +50,9 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
         <span className="metric__value">{value}</span>
         {direction && change !== null && change !== undefined && (
           <span className={`metric__change metric__change--${direction}`}>
-            <span aria-hidden="true">
-              {ARROWS[direction]} {muchMore ? t.analytics.muchMore : formatPercent(Math.abs(change))}
+            <span className="metric__change-shown" aria-hidden="true">
+              <ChangeArrow direction={direction} />
+              {muchMore ? t.analytics.muchMore : formatPercent(Math.abs(change))}
             </span>
             <span className="visually-hidden">
               {muchMore
@@ -81,6 +82,11 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
         ))}
     </article>
   );
+}
+
+function ChangeArrow({ direction }: { direction: keyof typeof ARROWS }) {
+  const Arrow = ARROWS[direction];
+  return <Arrow size={12} weight="bold" />;
 }
 
 /** Metric cards in a grid: large cards take two columns, everything stacks on a phone. */

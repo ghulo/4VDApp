@@ -1,7 +1,7 @@
-/* Cloudflare-style decoration: dashed frame rails, halftone dot fields and
-   corner brackets. Purely visual; nothing here carries meaning. */
+/* Decoration, kept to the brand moments: the halftone dot field and drawing
+   on sign-in and empty states. Working screens stay plain. */
 
-/* A dot grid, used in the side gutters and behind sign-in drawings. A tiny
+/* A dot grid behind the sign-in drawing. A tiny
    repeated SVG (set per theme in tokens.css) is much cheaper to paint than a
    CSS gradient over a tall page. */
 .halftone-field {
@@ -9,73 +9,10 @@
   background-size: 8px 8px;
 }
 
-/* The frame: dashed vertical rails either side of the content. The dashes are a
-   1px-wide repeating gradient, half on, half off, every 32px. */
-.rails {
-  position: relative;
-}
-
-.rails::before,
-.rails::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background-image: linear-gradient(var(--line-strong) 50%, transparent 50%);
-  background-size: 1px 16px;
-  pointer-events: none;
-}
-
-.rails::before {
-  left: 0;
-}
-
-.rails::after {
-  right: 0;
-}
-
-/* Tiny squares where a horizontal rule meets the rails. */
-.rail-rule {
-  position: relative;
-  height: 1px;
-  background: var(--line);
-}
-
-.rail-rule::before,
-.rail-rule::after {
-  content: '';
-  position: absolute;
-  top: -3px;
-  width: 7px;
-  height: 7px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
-}
-
-.rail-rule::before {
-  left: -4px;
-}
-
-.rail-rule::after {
-  right: -4px;
-}
-
-/* Orange corner brackets around a callout instead of a full border. */
-.brackets {
-  --bracket: 10px;
-  position: relative;
-  background:
-    linear-gradient(var(--accent), var(--accent)) top left / var(--bracket) 1.5px,
-    linear-gradient(var(--accent), var(--accent)) top left / 1.5px var(--bracket),
-    linear-gradient(var(--accent), var(--accent)) top right / var(--bracket) 1.5px,
-    linear-gradient(var(--accent), var(--accent)) top right / 1.5px var(--bracket),
-    linear-gradient(var(--accent), var(--accent)) bottom left / var(--bracket) 1.5px,
-    linear-gradient(var(--accent), var(--accent)) bottom left / 1.5px var(--bracket),
-    linear-gradient(var(--accent), var(--accent)) bottom right / var(--bracket) 1.5px,
-    linear-gradient(var(--accent), var(--accent)) bottom right / 1.5px var(--bracket),
-    color-mix(in srgb, var(--accent) 5%, var(--surface));
-  background-repeat: no-repeat;
+/* An answer or suggestion set apart on sunk paper. */
+.callout {
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
 }
 
 /* The halftone drawing (components/ui/Halftone.tsx). */

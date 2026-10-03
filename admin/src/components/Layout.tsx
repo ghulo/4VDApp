@@ -253,7 +253,7 @@ export function Layout() {
       </aside>
 
       <main className="main">
-        <div className="main__frame rails">
+        <div className="main__frame">
           <Outlet />
         </div>
       </main>

@@ -1,7 +1,7 @@
-/* 4VD design tokens, after Cloudflare's design language (see
-   docs/superpowers/specs/2026-10-02-cloudflare-structure-design.md).
-   One loud colour (orange) on warm neutrals; status colours come as a strong
-   colour plus a faint tint. The theme script in index.html always sets
+/* 4VD design tokens: Cloudflare's structure with a calm, editorial finish
+   (see DESIGN.md, "Calm shop"). Ink on warm paper; orange only for the main
+   action and where you are; status colours come as a strong colour plus a
+   faint tint. The theme script in index.html always sets
    data-theme, so these two blocks are the only place colours are defined.
    Contrast is checked by src/theme/contrast.test.ts. */
 :root,
@@ -21,11 +21,6 @@
   --cta: #ff5e1f;
   --cta-hover: #ff7038;
   --cta-ink: #1c0f08;
-  --hero: #ff5e1f;
-  --hero-ink: #1c0f08;
-  --hero-muted: #3f1d0f;
-  --glow: 0 0 0 1px rgb(255 94 31 / 0.35), 0 0 18px rgb(255 94 31 / 0.28);
-  --glow-text: 0 0 14px rgb(255 94 31 / 0.25);
   --tint: rgb(255 94 31 / 0.1);
   --topbar: rgb(255 255 255 / 0.78);
   --ok: #047857;
@@ -59,11 +54,6 @@
   --cta: #ff5e1f;
   --cta-hover: #ff7038;
   --cta-ink: #1c0f08;
-  --hero: #ff5e1f;
-  --hero-ink: #1c0f08;
-  --hero-muted: #3f1d0f;
-  --glow: 0 0 0 1px rgb(255 94 31 / 0.5), 0 0 24px rgb(255 94 31 / 0.35);
-  --glow-text: 0 0 16px rgb(255 94 31 / 0.55);
   --tint: rgb(255 94 31 / 0.14);
   --topbar: rgb(28 27 26 / 0.72);
   --ok: #34d399;
@@ -82,7 +72,8 @@
 }
 
 :root {
-  --chart-series: var(--accent);
+  /* Data is drawn in ink, so orange keeps meaning "act here". */
+  --chart-series: var(--ink-muted);
 
   /* Older names still used by page styles; they follow the tokens above. */
   --concrete: var(--bg);
@@ -93,13 +84,14 @@
   --stock-ok: var(--ok);
 
   --font-body: 'Hanken Grotesk', system-ui, sans-serif;
-  --font-display: var(--font-body);
+  /* Page titles and the day's headline only; figures and tables stay in the body face. */
+  --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
 
-  /* Type: 12 / 13 / 14 (base) / 16, headings medium weight with tight tracking. */
+  /* Type: 12 / 13 / 15 (base) / 17. Base is 15px so the owner reads it comfortably. */
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
-  --text-base: 0.875rem;
-  --text-lg: 1rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
 
   /* 4px grid. */
   --space-1: 4px;
@@ -114,7 +106,6 @@
   --control-h-sm: 30px;
   --radius-small: 8px;
   --radius-panel: 12px;
-  --radius-board: 16px;
 
   /* Motion: quick and soft, never bouncy. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);

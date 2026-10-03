@@ -1,18 +1,15 @@
-import { useState } from 'react';
+import { type KeyboardEvent, useId, useState } from 'react';
 import type { RevenuePoint } from '../services/types';
 import { formatCompactMoney, formatDateWith, formatMoney } from '../utils/format';
-import { dotColumn } from './ui/dots';
 import { useT } from '../i18n/useT';
 
 const WIDTH = 720;
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 28, left: 56 };
-const MAX_BAR_WIDTH = 24;
-const BAR_GAP = 2;
-/** Distance between dots: each day's column is drawn in dots, like Cloudflare's waveforms. */
-const DOT_STEP = 6;
+const MAX_BAR_WIDTH = 14;
+/** Room between bars, as a share of each day's slot. */
+const BAR_GAP = 0.35;
 const TICK_COUNT = 4;
-
 
 /** Round the axis top up to a clean number (1, 2, 2.5 or 5 times a power of ten). */
 function niceMax(value: number): number {
@@ -33,18 +30,34 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
   const compactMoney = { format: formatCompactMoney };
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
+  const hintId = useId();
 
   const plotWidth = WIDTH - MARGIN.left - MARGIN.right;
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
   const maxValue = niceMax(Math.max(...points.map((point) => point.revenue), 0));
   const band = plotWidth / Math.max(points.length, 1);
-  const barWidth = Math.min(MAX_BAR_WIDTH, band - BAR_GAP);
+  const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, band * (1 - BAR_GAP)));
   const yFor = (value: number) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
   const ticks = Array.from({ length: TICK_COUNT + 1 }, (_, index) => (maxValue / TICK_COUNT) * index);
   // Label roughly every week so dates never collide.
   const labelEvery = Math.max(1, Math.ceil(points.length / 5));
 
   const active = activeIndex === null ? null : points[activeIndex];
+
+  // The plot is one stop for the keyboard; the arrow keys walk the days.
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const last = points.length - 1;
+    const from = activeIndex ?? -1;
+    const next =
+      event.key === 'ArrowRight' ? Math.min(last, from + 1)
+      : event.key === 'ArrowLeft' ? Math.max(0, from === -1 ? last : from - 1)
+      : event.key === 'Home' ? 0
+      : event.key === 'End' ? last
+      : null;
+    if (next === null || last < 0) return;
+    event.preventDefault();
+    setActiveIndex(next);
+  }
   const best = points.reduce<RevenuePoint | null>((top, point) => (point.revenue > (top?.revenue ?? 0) ? point : top), null);
 
   return (
@@ -82,15 +95,20 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
           </table>
         </div>
       ) : (
-        <div className="chart__plot" onPointerLeave={() => setActiveIndex(null)}>
-          <svg
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            role="img"
-            aria-label={t.chart.summary({
-              title,
-              best: best ? { day: dayLabel.format(new Date(best.periodStart)), amount: formatMoney(best.revenue) } : null,
-            })}
-          >
+        <div
+          className="chart__plot"
+          tabIndex={0}
+          role="group"
+          aria-label={t.chart.summary({
+            title,
+            best: best ? { day: dayLabel.format(new Date(best.periodStart)), amount: formatMoney(best.revenue) } : null,
+          })}
+          aria-describedby={hintId}
+          onKeyDown={onKeyDown}
+          onBlur={() => setActiveIndex(null)}
+          onPointerLeave={() => setActiveIndex(null)}
+        >
+          <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true">
             {ticks.map((tick) => (
               <g key={tick}>
                 <line
@@ -108,39 +126,21 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
 
             {points.map((point, index) => {
               const bandX = MARGIN.left + index * band;
-              const x = bandX + (band - barWidth) / 2;
               const y = yFor(point.revenue);
-              const height = MARGIN.top + plotHeight - y;
-              const isActive = index === activeIndex;
               return (
-                <g
-                  key={point.periodStart}
-                  tabIndex={0}
-                  role="img"
-                  aria-label={t.chart.point({ day: dayLabel.format(new Date(point.periodStart)), amount: formatMoney(point.revenue), count: point.salesCount })}
-                  onPointerEnter={() => setActiveIndex(index)}
-                  onFocus={() => setActiveIndex(index)}
-                  onBlur={() => setActiveIndex(null)}
-                  className="chart__column"
-                >
+                <g key={point.periodStart} className="chart__column" onPointerEnter={() => setActiveIndex(index)}>
                   {/* The whole column is the hit target, not just the painted bar. */}
                   <rect x={bandX} y={MARGIN.top} width={band} height={plotHeight} fill="transparent" />
-                  {dotColumn({
-                    x,
-                    base: MARGIN.top + plotHeight,
-                    height,
-                    width: barWidth,
-                    step: DOT_STEP,
-                    top: MARGIN.top,
-                  }).map((dot) => (
-                    <circle
-                      key={`${dot.x}-${dot.y}`}
-                      className={dot.lit ? (isActive ? 'chart__dot chart__dot--active' : 'chart__dot') : 'chart__dot chart__dot--empty'}
-                      cx={dot.x}
-                      cy={dot.y}
-                      r={dot.lit ? 2.1 : 1.1}
+                  {point.revenue > 0 && (
+                    <rect
+                      className={index === activeIndex ? 'chart__bar chart__bar--active' : 'chart__bar'}
+                      x={bandX + (band - barWidth) / 2}
+                      y={y}
+                      width={barWidth}
+                      height={MARGIN.top + plotHeight - y}
+                      rx={Math.min(2, barWidth / 2)}
                     />
-                  ))}
+                  )}
                   {index % labelEvery === 0 && (
                     <text className="chart__tick" x={bandX + band / 2} y={HEIGHT - 8} textAnchor="middle">
                       {dayLabel.format(new Date(point.periodStart))}
@@ -162,6 +162,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
           {active && activeIndex !== null && (
             <div
               className="chart__tooltip"
+              role="status"
               style={{
                 left: `${((MARGIN.left + (activeIndex + 0.5) * band) / WIDTH) * 100}%`,
                 top: `${(yFor(active.revenue) / HEIGHT) * 100}%`,
@@ -173,6 +174,9 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
               </span>
             </div>
           )}
+          <span id={hintId} className="visually-hidden">
+            {t.chart.keysHint}
+          </span>
         </div>
       )}
     </figure>

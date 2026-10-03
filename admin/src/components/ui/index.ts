@@ -10,4 +10,3 @@ export { Field } from './Field';
 export { Halftone } from './Halftone';
 export { PageHeader, type Crumb } from './PageHeader';
 export { StatGrid, StatTile } from './Stat';
-export { DotBars, RollingNumber, StatusLine } from './Motion';

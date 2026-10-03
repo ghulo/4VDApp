@@ -28,9 +28,7 @@ const PAIRS: Array<[string, string, number]> = [
   ['brand-ink', 'brand', 4.5],
   ['brand', 'surface', 4.5],
   ['brand', 'brand-soft', 4.5],
-  ['hero-ink', 'hero', 4.5],
   ['cta-ink', 'cta', 4.5],
-  ['hero-muted', 'hero', 4.5],
   ['accent', 'surface', 3],
   ['danger', 'surface', 4.5],
   ['ok', 'ok-soft', 4.5],
@@ -40,6 +38,10 @@ const PAIRS: Array<[string, string, number]> = [
   ['warn', 'surface', 3],
   ['ok', 'surface', 3],
   ['focus', 'surface', 3],
+  // Count badges and the chart tooltip: paper-coloured text on ink.
+  ['surface', 'ink', 4.5],
+  // The disabled main button: muted words on the fill.
+  ['ink-muted', 'fill', 3],
 ];
 
 describe('contrastRatio', () => {

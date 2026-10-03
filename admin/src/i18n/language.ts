@@ -6,7 +6,7 @@ export const LANGUAGE_STORAGE_KEY = '4vd.language';
 
 const isLanguage = (value: unknown): value is Language => value === 'en' || value === 'sq';
 
-/** The saved choice; else the browser's language if it's Albanian; else English. */
+/** The saved choice; else the first language in the browser's list that 4VD speaks; else English. */
 export function readLanguage(storage: Pick<Storage, 'getItem'> | null, browserLanguages: readonly string[]): Language {
   try {
     const saved = storage?.getItem(LANGUAGE_STORAGE_KEY);
@@ -14,7 +14,11 @@ export function readLanguage(storage: Pick<Storage, 'getItem'> | null, browserLa
   } catch {
     // Blocked storage: decide from the browser.
   }
-  return browserLanguages.some((tag) => tag.toLowerCase().startsWith('sq')) ? 'sq' : 'en';
+  for (const tag of browserLanguages) {
+    const base = tag.toLowerCase().split('-')[0];
+    if (isLanguage(base)) return base;
+  }
+  return 'en';
 }
 
 /** localStorage, or null when the browser blocks it. */

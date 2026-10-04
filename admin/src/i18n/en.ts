@@ -229,6 +229,9 @@ export const en = {
     title: 'Get 4VD ready',
     progress: (done: number, total: number) => `${done} of ${total} done`,
     hide: 'Hide',
+    next: (step: string) => `Next: ${step.charAt(0).toLowerCase()}${step.slice(1)}`,
+    allSteps: 'All steps',
+    fewerSteps: 'Fewer steps',
     steps: {
       details: { title: 'Add your shop details', why: 'Your address and phone go on invites and emails.', action: 'Add details' },
       logo: { title: 'Add your logo', why: 'It shows on invites and the team app.', action: 'Add logo' },
@@ -827,6 +830,7 @@ export const en = {
     items: 'products',
     noRecentSales: 'No recent sales',
     today: 'Today',
+    soldOutNow: 'Sold out',
     faster: ', selling faster',
     slower: ', selling slower',
     about: (days: number, trend: string) => `About ${days} ${days === 1 ? 'day' : 'days'}${trend}`,

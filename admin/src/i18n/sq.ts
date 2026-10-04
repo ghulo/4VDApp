@@ -226,6 +226,9 @@ export const sq: Catalogue = {
     title: 'Përgatit 4VD',
     progress: (done, total) => `${done} nga ${total} të kryera`,
     hide: 'Fshih',
+    next: (step) => `Tjetra: ${step.charAt(0).toLowerCase()}${step.slice(1)}`,
+    allSteps: 'Të gjithë hapat',
+    fewerSteps: 'Më pak hapa',
     steps: {
       details: { title: 'Shto të dhënat e dyqanit', why: 'Adresa dhe telefoni dalin në ftesa dhe emaile.', action: 'Shto të dhënat' },
       logo: { title: 'Shto logon', why: 'Shfaqet në ftesa dhe në aplikacionin e ekipit.', action: 'Shto logon' },
@@ -819,6 +822,7 @@ export const sq: Catalogue = {
     items: 'produkte',
     noRecentSales: 'Pa shitje së fundi',
     today: 'Sot',
+    soldOutNow: 'Mbaroi',
     faster: ', po shitet më shpejt',
     slower: ', po shitet më ngadalë',
     about: (days, trend) => `Rreth ${days} ditë${trend}`,

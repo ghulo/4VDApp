@@ -255,6 +255,11 @@
     width: 100%;
   }
 
+  /* On a phone the drawing waits; the day's words and links come first. */
+  .today__side .shop-sunrise {
+    display: none;
+  }
+
   .today__link {
     min-height: 44px;
   }
@@ -341,6 +346,14 @@
   letter-spacing: 0.06em;
   line-height: 20px;
   text-transform: uppercase;
+}
+
+.attention__row--urgent {
+  background: color-mix(in srgb, var(--danger-soft) 70%, transparent);
+}
+
+.attention__row--urgent:hover {
+  background: var(--danger-soft);
 }
 
 .attention__row--urgent .attention__severity {
@@ -1325,24 +1338,78 @@
 
 /* ---------- Setup guide ---------- */
 
-.setup-guide__progress {
-  color: var(--ink-muted);
-  font-size: 0.875rem;
+/* One quiet strip under the day: progress, the next step, and a way to see
+   every step. It never pushes the day below the fold. */
+.setup-strip {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
 }
 
-.setup-guide__bar {
-  height: 6px;
-  margin-bottom: 8px;
+.setup-strip__row {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+}
+
+.setup-strip__progress {
+  display: grid;
+  gap: 6px;
+}
+
+.setup-strip__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.setup-strip__title span {
+  margin-left: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.setup-strip__bar {
+  height: 4px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--surface-sunk);
 }
 
-.setup-guide__bar span {
+.setup-strip__bar span {
   display: block;
   height: 100%;
-  border-radius: 3px;
-  background: var(--ink);
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.setup-strip__next {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.setup-strip__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.setup-strip .setup-guide__steps {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .setup-strip {
+    padding: var(--space-4);
+  }
+
+  .setup-strip__row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .setup-guide__steps {
@@ -1377,8 +1444,9 @@
 }
 
 .setup-step--done .setup-step__check {
-  border-color: var(--ink);
-  background: var(--ink);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--cta-ink);
 }
 
 .setup-step__title {
@@ -1828,4 +1896,30 @@
 .product-cell__text {
   display: grid;
   min-width: 0;
+}
+
+/* How long stock lasts: red when the shelf is empty, amber inside a week. */
+.runway {
+  font-weight: 500;
+}
+
+.runway--out {
+  color: var(--danger);
+}
+
+.runway--soon {
+  color: var(--warn);
+}
+
+/* Phones: "Reorder at" moves under the name so the name keeps its width. */
+@media (max-width: 600px) {
+  .restock-list__row {
+    grid-template-columns: 4rem 1fr;
+    row-gap: 0;
+  }
+
+  .restock-list__row .restock-list__meta {
+    grid-column: 2;
+    padding-left: calc(40px + var(--space-3));
+  }
 }

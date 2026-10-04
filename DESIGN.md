@@ -17,9 +17,9 @@ colors:
   ink-muted: "#5e5d59"
   hairline: "#e0dbcf"
   hairline-strong: "#cbc3b3"
-  night-canvas: "#1f1e1d"
+  night-canvas: "#191817"
   night-paper: "#262624"
-  night-sunk: "#1a1918"
+  night-sunk: "#151413"
   night-oat: "#30302e"
   night-ink: "#faf9f5"
   night-muted: "#a6a39b"
@@ -95,13 +95,13 @@ spacing:
   "7": "48px"
 components:
   button-primary:
-    backgroundColor: "{colors.signal-orange}"
+    backgroundColor: "{colors.clay}"
     textColor: "{colors.pillar-ink}"
     rounded: "{rounded.control}"
     padding: "0 12px"
     height: "36px"
   button-primary-hover:
-    backgroundColor: "{colors.signal-orange-hover}"
+    backgroundColor: "#df8667"
   button-primary-disabled:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.ink-muted}"
@@ -194,19 +194,20 @@ underlined links, generous quiet around the few things that matter).
 It is a working tool for a shop counter, read in the morning and used all day.
 Working screens are plain paper on a warm canvas. The Overview is a calm morning
 page that says the day in one serif sentence; the dense figures live on Reports.
-Data is drawn in ink, and so are actions; clay marks the brand and where you are.
-Dots are the brand's signature (Cloudflare's and Anthropic's language too):
-a halftone field frames the page column, data is drawn in dots, and the four-pillar
-mark is made of them. They stay out of tables and forms, where they'd be noise.
+Data is drawn in ink; clay marks the brand, the one main action on a screen and
+where you are, so the eye always finds what to do next. Dots are the brand's
+signature (Cloudflare's and Anthropic's language too): the four-pillar mark and the
+shop drawing are made of them. They stay out of the page margins, tables and forms,
+where they'd be noise.
 
 **Key Characteristics:**
 - Ink on ivory paper with oat panels; flat surfaces, no shadows at rest.
-- One clay brand colour (`#d4704f`) for the logo, the drawings and where you are; actions in solid ink.
+- One clay brand colour (`#d4704f`) for the logo, the drawings, the main action and where you are.
 - A serif (Source Serif 4, 500) for page titles, the day's headline and sign-in headings; a grotesk (Hanken Grotesk) for everything else, every figure tabular.
 - Charts and counts in ink and muted ink, never clay.
 - 15px body for comfortable reading; 44px controls on phones.
 - Quick, soft motion (150ms, gentle ease-out); off when the computer asks for less.
-- Both themes first-class; dark is warm (`#151414`), not blue-black.
+- Both themes first-class; dark is warm (`#191817`), not blue-black.
 
 ## Colors
 
@@ -219,11 +220,12 @@ place; status colours stay quiet and come with faint tints.
   the old Signal Orange (#ff5e1f), which looked loud on ivory.
 - **Clay Tint** (14% light, 18% dark): the fill behind the current menu item.
 - **Clay Text** (#a8482a light / #e08a6b dark): the label of the current menu item.
-- **The main button is solid Ink** with Paper text (in dark mode: Night Ink with
-  Ink text), as on anthropic.com. Hover #3d3d3a.
+- **The main button is solid Clay** with Pillar Ink (#1c0f08) text in both themes,
+  as Cloudflare's orange action. Hover lightens to #df8667 (#e08a6b dark). One per
+  screen, so it always answers "what do I do here?".
 
 ### Neutral
-- **Ivory Canvas** (#f0eee6) / **Night Canvas** (#1f1e1d): the page.
+- **Ivory Canvas** (#f0eee6) / **Night Canvas** (#191817): the page.
 - **Paper** (#faf9f5) / **Night Paper** (#262624): cards, tables, sidebar, top bar.
   Dashboard cards have no frame; paper on ivory is enough.
 - **Sunk Paper** (#e8e4da) / **Night Sunk** (#1a1918): card footer strips, row hover,
@@ -245,9 +247,10 @@ place; status colours stay quiet and come with faint tints.
   Metric changes use OK for up, Danger for down, Muted Ink for flat.
 
 ### Named Rules
-**The Clay Rule.** Clay is the brand, not a button: the logo, the dithered drawings
-and where you are (current menu item). Actions are solid ink. Badges, links, charts
-and counts are never clay.
+**The Clay Rule.** Clay means brand and "act here": the logo, the dithered drawings,
+the one main button per screen, progress toward a goal (setup bar and ticks) and
+where you are (current menu item). Badges, links, charts and counts are never clay.
+If two things on one screen are clay buttons, one of them is wrong.
 
 **The Ink Data Rule.** Data is drawn in ink: chart series in Muted Ink, the active
 bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would
@@ -259,8 +262,8 @@ flat fill, slim day bars), line icons in soft chips, single hairlines. The vinta
 is the finish only: ivory paper and grain, the serif, monospace spec labels, ink
 stamps, block meters for stock and targets, and the dithered shop as a recurring
 mascot (sign-in, the team app's Home, the dashboard's Today card, big empty pages).
-The faint 8px dot field in the desktop margins stays. Never dither data, icons or
-anything in tables and forms.
+The page margins are plain canvas (the old dot field competed with the data). Never
+dither data, icons or anything in tables and forms.
 
 **The Contrast Rule.** Every text and colour pair is checked by
 `admin/src/theme/contrast.test.ts` (WCAG AA): clay reaches 3:1 on paper as a UI
@@ -313,8 +316,7 @@ field labelled "Search or jump to" with a Ctrl K hint, theme switch and account 
 the right. Under it a 232px sidebar sits on the left in named groups (Today,
 Shelves, Business) and collapses to 60px icons; under 900px it becomes a drawer
 opened from the top bar. The page lives in a plain column of at most 1120px on the
-warm canvas, framed on desktop by the halftone dot field in the margins (a fixed,
-screen-sized layer, so only one screen of dots is painted).
+warm canvas; the margins either side stay plain.
 
 Spacing runs on a 4px grid (4, 8, 12, 16, 24, 32, 48). Page padding steps down with
 the screen, after SBB's responsive spacing: 32/48px on desktop, 32/24px under
@@ -322,8 +324,10 @@ the screen, after SBB's responsive spacing: 32/48px on desktop, 32/24px under
 serif title, one-line description, actions on the right), then cards stacked 16px
 apart. Two related cards may sit side by side and stack on narrow screens.
 
-Density is earned per page. The Overview is sparse: setup checklist, the day card,
-what needs attention, what needs restocking, and a link to Reports. Reports is the
+Density is earned per page. The Overview is sparse and its first screen is the day:
+the header with "Record a sale", the day card, then a one-line setup strip (progress,
+the next step, "All steps" to open the list), then what needs attention (urgent rows
+on a faint red wash), what needs restocking, and a link to Reports. Reports is the
 dense page: a four-column grid of metric cards (two columns under 960px, one under
 560px) with large cards spanning two.
 
@@ -365,8 +369,8 @@ Calm at rest, a plain answer when touched.
 
 ### Buttons
 - **Shape:** gently rounded (8px), 36px tall (30px small); 44px (36px small) under 900px.
-- **Primary:** solid Ink with Paper text, weight 600; one per view. Hover lifts to
-  #3d3d3a; disabled goes to oat with muted text.
+- **Primary:** solid Clay with Pillar Ink text, weight 600; one per view. Hover
+  lightens to #df8667; disabled goes to oat with muted text.
 - **Secondary:** paper with a strong-hairline ring, weight 500; hover sinks.
   **Ghost:** no fill until hover. **Danger:** red fill for destroying; **Danger
   text:** red words for "Delete" next to other actions.
@@ -420,6 +424,17 @@ Framed like a card; an optional toolbar strip (search, filters) and footer strip
 (pagination); 12px cells (16px at the outer edges), muted 500 headers, hairline
 rows, a soft sunk row hover; numbers right-aligned in tabular figures; an empty
 table shows an empty state instead of headers; stacks on phones (Layout).
+
+### Product photo
+Every product has one: a square photo, 40px with 8px corners beside its name in
+lists (Products, Stock, Overview restocking), 112px with 16px corners in the product
+form, where "Add photo" opens the phone camera or a file picker. Sunk paper with a
+hairline ring and a line box icon while there is none or it fails to load. The
+name always sits next to it, so the picture carries no alt text.
+
+### Stock runway
+"Runs out in" says "Sold out" in Danger for an empty shelf and turns Warn at a
+week or less; the words always carry the meaning.
 
 ### Today card (signature, Overview)
 A plain paper card with generous padding (24px by 32px): one serif sentence about

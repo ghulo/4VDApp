@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Check } from '@phosphor-icons/react';
+import { useId, useState } from 'react';
 import { businessApi, invitesApi, productsApi, pushApi, usersApi } from '../services/api';
-import { Button, ButtonLink, Card } from '../components/ui';
+import { Button, ButtonLink } from '../components/ui';
 import { setupSteps } from './steps';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
@@ -17,11 +18,16 @@ function readHidden(): boolean {
   }
 }
 
-/** A checklist for a new shop at the top of Overview, until it's done or hidden. */
+/**
+ * A new shop's checklist on Overview, until it's done or hidden: one slim strip
+ * with the progress and the next step, opening into every step.
+ */
 export function SetupGuide() {
   const t = useT();
   const { role } = useCurrentUser();
   const [hidden, setHidden] = useState(() => readHidden() || !canManage(role));
+  const [open, setOpen] = useState(false);
+  const listId = useId();
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: !hidden });
   const products = useQuery({
     queryKey: ['products', { page: 1, limit: 1, purpose: 'count' }],
@@ -54,25 +60,37 @@ export function SetupGuide() {
     }
   }
 
+  const next = steps.find((step) => !step.done)!;
+
   return (
-    <Card
-      className="setup-guide"
-      title={t.setup.title}
-      description={t.setup.progress(done, steps.length)}
-      actions={
-        <Button variant="ghost" size="sm" onClick={hide}>
-          {t.setup.hide}
-        </Button>
-      }
-    >
-      <div className="setup-guide__bar" aria-hidden="true">
-        <span style={{ width: `${(done / steps.length) * 100}%` }} />
+    <section className="setup-strip" aria-label={t.setup.title}>
+      <div className="setup-strip__row">
+        <div className="setup-strip__progress">
+          <p className="setup-strip__title">
+            {t.setup.title} <span>{t.setup.progress(done, steps.length)}</span>
+          </p>
+          <div className="setup-strip__bar" aria-hidden="true">
+            <span style={{ width: `${(done / steps.length) * 100}%` }} />
+          </div>
+        </div>
+        <p className="setup-strip__next">{t.setup.next(next.title)}</p>
+        <div className="setup-strip__actions">
+          <ButtonLink to={next.to} size="sm">
+            {next.action}
+          </ButtonLink>
+          <Button variant="ghost" size="sm" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
+            {open ? t.setup.fewerSteps : t.setup.allSteps}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={hide}>
+            {t.setup.hide}
+          </Button>
+        </div>
       </div>
-      <ol className="setup-guide__steps">
+      <ol className="setup-guide__steps" id={listId} hidden={!open}>
         {steps.map((step) => (
           <li key={step.id} className={step.done ? 'setup-step setup-step--done' : 'setup-step'}>
             <span className="setup-step__check" aria-hidden="true">
-              {step.done ? '✓' : ''}
+              {step.done && <Check size={14} weight="bold" />}
             </span>
             <span className="setup-step__text">
               <span className="setup-step__title">
@@ -81,7 +99,7 @@ export function SetupGuide() {
               </span>
               {!step.done && <span className="setup-step__why">{step.why}</span>}
             </span>
-            {!step.done && (
+            {!step.done && step.id !== next.id && (
               <ButtonLink to={step.to} size="sm">
                 {step.action}
               </ButtonLink>
@@ -89,6 +107,6 @@ export function SetupGuide() {
           </li>
         ))}
       </ol>
-    </Card>
+    </section>
   );
 }

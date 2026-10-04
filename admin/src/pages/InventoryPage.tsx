@@ -76,7 +76,13 @@ export function InventoryPage() {
               ),
             },
             { header: t.inventory.reorderAt, align: 'end', cell: (item) => item.reorderLevel },
-            { header: t.inventory.runsOutIn, cell: (item) => describeRunway(t, suggestionById.get(item.productId)) },
+            {
+              header: t.inventory.runsOutIn,
+              cell: (item) => {
+                const suggestion = suggestionById.get(item.productId);
+                return <span className={runwayClass(item.quantity, suggestion)}>{describeRunway(t, item.quantity, suggestion)}</span>;
+              },
+            },
             { header: t.inventory.reorder, align: 'end', cell: (item) => suggestionById.get(item.productId)?.suggestedOrder || '–' },
             {
               header: t.inventory.lastRestocked,
@@ -134,7 +140,15 @@ export function InventoryPage() {
   );
 }
 
-function describeRunway(t: Catalogue, suggestion: ReorderSuggestion | undefined): string {
+/** Empty shelves read in red and a week or less of stock in amber; the words still say it. */
+function runwayClass(quantity: number, suggestion: ReorderSuggestion | undefined): string | undefined {
+  if (quantity === 0) return 'runway runway--out';
+  if (suggestion?.daysLeft != null && suggestion.daysLeft <= 7) return 'runway runway--soon';
+  return undefined;
+}
+
+function describeRunway(t: Catalogue, quantity: number, suggestion: ReorderSuggestion | undefined): string {
+  if (quantity === 0) return t.inventory.soldOutNow;
   if (!suggestion) return '–';
   if (suggestion.daysLeft === null) return t.inventory.noRecentSales;
   if (suggestion.daysLeft === 0) return t.inventory.today;

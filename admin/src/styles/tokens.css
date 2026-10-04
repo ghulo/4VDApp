@@ -1,6 +1,6 @@
 /* 4VD design tokens: Cloudflare's structure with a printed, editorial finish
-   (see DESIGN.md, "Calm shop"). Ink on ivory paper; orange only for the main
-   action and where you are; status colours come as a strong colour plus a
+   (see DESIGN.md, "Calm shop"). Ink on ivory paper; clay for the brand, the
+   one main action per screen and where you are; status colours come as a strong colour plus a
    faint tint. The theme script in index.html always sets
    data-theme, so these two blocks are the only place colours are defined.
    Contrast is checked by src/theme/contrast.test.ts. */
@@ -18,9 +18,9 @@
   --brand-ink: #ffffff;
   --brand-soft: #f5e6dc;
   --accent: #d4704f;
-  --cta: #141413;
-  --cta-hover: #3d3d3a;
-  --cta-ink: #faf9f5;
+  --cta: #d4704f;
+  --cta-hover: #df8667;
+  --cta-ink: #1c0f08;
   --tint: rgb(217 119 87 / 0.14);
   --topbar: rgb(240 238 230 / 0.82);
   --ok: #047857;
@@ -49,9 +49,9 @@
 }
 
 [data-theme='dark'] {
-  --bg: #1f1e1d;
+  --bg: #191817;
   --surface: #262624;
-  --surface-sunk: #1a1918;
+  --surface-sunk: #151413;
   --fill: #30302e;
   --ink: #faf9f5;
   --ink-muted: #a6a39b;
@@ -61,11 +61,11 @@
   --brand-ink: #1a120e;
   --brand-soft: #3a2219;
   --accent: #d4704f;
-  --cta: #faf9f5;
-  --cta-hover: #e8e4da;
-  --cta-ink: #141413;
+  --cta: #d4704f;
+  --cta-hover: #e08a6b;
+  --cta-ink: #1c0f08;
   --tint: rgb(217 119 87 / 0.18);
-  --topbar: rgb(31 30 29 / 0.8);
+  --topbar: rgb(25 24 23 / 0.8);
   --ok: #34d399;
   --ok-soft: #0f3326;
   --warn: #fbbf24;
@@ -92,7 +92,7 @@
 }
 
 :root {
-  /* Data is drawn in ink, so orange keeps meaning "act here". */
+  /* Data is drawn in ink, so clay keeps meaning "act here". */
   --chart-series: var(--ink-muted);
 
   /* Older names still used by page styles; they follow the tokens above. */

@@ -1,4 +1,4 @@
-import { CaretRight } from '@phosphor-icons/react';
+import { CaretRight, Receipt } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -9,7 +9,7 @@ import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
-import { Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
+import { ButtonLink, Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -39,11 +39,18 @@ export function OverviewPage() {
               ? t.overview.allAbove
               : `${t.overview.needRestock(lowCount)}${outCount ? t.overview.soldOut(outCount) : ''}.`
         }
+        actions={
+          user.role !== 'owner' && (
+            <ButtonLink to="/sales" variant="primary" icon={Receipt}>
+              {t.sales.record}
+            </ButtonLink>
+          )
+        }
       />
 
-      <SetupGuide />
-
       <TodayCard lowCount={lowCount} />
+
+      <SetupGuide />
 
       <div className="split">
         <AttentionPanel />

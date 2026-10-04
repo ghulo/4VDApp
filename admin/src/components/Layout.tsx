@@ -186,7 +186,7 @@ export function Layout() {
           <LogoMark size={28} />
           <span className="topbar__name">4VD</span>
         </Link>
-        {business.data && (
+        {business.data && business.data.name.trim().toUpperCase() !== '4VD' && (
           <>
             <span className="topbar__slash" aria-hidden="true">
               /

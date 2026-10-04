@@ -1,8 +1,10 @@
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
+import type { CarwashService } from './CarwashService.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { dayMonth, money } from '../i18n/language.js';
 import { messages, type ServerMessages } from '../i18n/messages.js';
+import { roundMoney } from '../utils/money.js';
 import { startOfZonedDay, zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates, type WeeklyReportData } from './email/templates.js';
@@ -17,11 +19,12 @@ const TOP_PRODUCTS = 5;
 /** Remembers the Monday it last went out, so restarts and second servers don't resend it. */
 const LAST_SENT_KEY = 'weekly_report_last_sent';
 
-/** Monday's email to the owner: last week's sales, best sellers, and what needs attention. */
+/** Monday's email to the owner: last week's sales, best sellers, the carwash, and what needs attention. */
 export class WeeklyReportService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
     private readonly reportsService: ReportsService,
+    private readonly carwashService: CarwashService,
     private readonly insightsService: InsightsService,
     private readonly settingsService: SettingsService,
     private readonly settingsRepository: SettingsRepository,
@@ -56,11 +59,12 @@ export class WeeklyReportService {
     const weekBefore = startOfZonedDay(new Date(weekStart.getTime() - 7 * MS_PER_DAY + MS_PER_DAY / 2), this.timeZone);
     const lastWeek = { startDate: weekStart, endDate: thisMonday };
 
-    const [totals, previous, products, insights] = await Promise.all([
+    const [totals, previous, products, insights, carwash] = await Promise.all([
       this.reportsRepository.totals(lastWeek),
       this.reportsRepository.totals({ startDate: weekBefore, endDate: weekStart }),
       this.reportsService.profit(lastWeek, 'product'),
       this.insightsService.list(now),
+      this.carwashService.totals(lastWeek),
     ]);
     const revenue = Number(totals.revenue);
     const change = relativeChange(revenue, Number(previous.revenue));
@@ -73,6 +77,7 @@ export class WeeklyReportService {
       salesCount: Number(totals.sales_count),
       topProducts: [...products].sort((a, b) => b.revenue - a.revenue).slice(0, TOP_PRODUCTS),
       warnings: insights.length,
+      carwash,
     };
   }
 
@@ -91,6 +96,15 @@ export class WeeklyReportService {
         units: product.unitsSold,
       })),
       warnings: week.warnings,
+      carwash:
+        week.carwash.days === 0
+          ? t.email.weeklyNoCarwash
+          : t.email.weeklyCarwash({
+              carwash: money(week.carwash.carwash, t.language),
+              change: money(week.carwash.change, t.language),
+              total: money(week.carwash.total, t.language),
+              together: money(roundMoney(week.revenue + week.carwash.total), t.language),
+            }),
       link: this.dashboardUrl,
     };
   }

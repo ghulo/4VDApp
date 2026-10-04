@@ -27,6 +27,8 @@ import { InventoryRepository } from './repositories/InventoryRepository.js';
 import { PricingTierRepository } from './repositories/PricingTierRepository.js';
 import { ProductRepository } from './repositories/ProductRepository.js';
 import { PromotionRepository } from './repositories/PromotionRepository.js';
+import { CarwashRepository } from './repositories/CarwashRepository.js';
+import { CarwashService } from './services/CarwashService.js';
 import { PromotionService } from './services/PromotionService.js';
 import { PushRepository } from './repositories/PushRepository.js';
 import { InsightsRepository } from './repositories/InsightsRepository.js';
@@ -133,7 +135,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const undoRepository = new UndoRepository(db);
   const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
-  const reportsService = new ReportsService(reportsRepository, config.shopTimeZone);
+  const carwashService = new CarwashService(new CarwashRepository(db), transactions, config.shopTimeZone);
+  const reportsService = new ReportsService(reportsRepository, carwashService, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
@@ -149,6 +152,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
+    carwashService,
     insightsService,
     settingsService,
     settingsRepository,
@@ -216,6 +220,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const weeklyReportService = new WeeklyReportService(
     reportsRepository,
     reportsService,
+    carwashService,
     insightsService,
     settingsService,
     settingsRepository,
@@ -269,6 +274,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     approvalService,
     undoService,
     promotionService,
+    carwashService,
     pushService,
     insightsService,
     dailySummaryService,

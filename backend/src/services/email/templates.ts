@@ -71,6 +71,8 @@ export interface WeeklyReportData {
   salesCount: number;
   topProducts: Array<{ name: string; revenue: string; units: number }>;
   warnings: number;
+  /** The carwash's week in one sentence. */
+  carwash: string;
   link: string;
 }
 
@@ -171,6 +173,7 @@ export const emailTemplates = {
           escapeHtml(intro),
           `<strong>${escapeHtml(summary)}</strong>`,
           `${escapeHtml(t.email.weeklyBestSellers)}<br>${best.map(escapeHtml).join('<br>')}`,
+          escapeHtml(input.carwash),
           escapeHtml(warnings),
         ],
         button: { label: t.email.weeklyButton, link: input.link },
@@ -180,6 +183,7 @@ export const emailTemplates = {
         intro,
         summary,
         `${t.email.weeklyBestSellers}\n${best.join('\n')}`,
+        input.carwash,
         warnings,
         `${t.email.weeklyButton}: ${input.link}`,
         t.email.weeklyNote,

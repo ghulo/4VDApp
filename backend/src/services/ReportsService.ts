@@ -1,5 +1,6 @@
 import type { ReportsRepository, StockLossRow, TotalsRow } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
+import type { CarwashService } from './CarwashService.js';
 import { type DateRange, margin, previousRange, relativeChange } from './reports/calculations.js';
 import { FORECAST_HISTORY_DAYS, forecast, type Trend } from './reports/forecast.js';
 
@@ -87,17 +88,20 @@ function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
 export class ReportsService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
+    private readonly carwashService: CarwashService,
     /** The shop's time zone, for busy and quiet days of the week. */
     private readonly timeZone: string,
   ) {}
 
   /** `compareWith` defaults to the same length of time immediately before `range`. */
   async summary(range: DateRange, compareWith: DateRange = previousRange(range)) {
-    const [currentRow, previousRow, currentLosses, previousLosses] = await Promise.all([
+    const [currentRow, previousRow, currentLosses, previousLosses, carwash, previousCarwash] = await Promise.all([
       this.reportsRepository.totals(range),
       this.reportsRepository.totals(compareWith),
       this.reportsRepository.stockLosses(range),
       this.reportsRepository.stockLosses(compareWith),
+      this.carwashService.totals(range),
+      this.carwashService.totals(compareWith),
     ]);
     const current = toPeriodTotals(currentRow, currentLosses);
     const previous = toPeriodTotals(previousRow, previousLosses);
@@ -110,6 +114,8 @@ export class ReportsService {
         unitsSold: relativeChange(current.unitsSold, previous.unitsSold),
         salesCount: relativeChange(current.salesCount, previous.salesCount),
       },
+      // The carwash sits beside the shop, never inside its revenue or profit.
+      carwash: { current: carwash, previous: previousCarwash, change: relativeChange(carwash.total, previousCarwash.total) },
     };
   }
 

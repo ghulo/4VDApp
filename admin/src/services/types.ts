@@ -177,6 +177,28 @@ export interface ReportSummary {
   current: PeriodTotals;
   previous: PeriodTotals;
   change: { revenue: number | null; profit: number | null; unitsSold: number | null; salesCount: number | null };
+  /** Beside the shop, never inside its revenue or profit. */
+  carwash: { current: CarwashTotals; previous: CarwashTotals; change: number | null };
+}
+
+export interface CarwashTotals {
+  carwash: number;
+  /** What the change machine made: notes changed into coins. */
+  change: number;
+  /** Carwash + change. */
+  total: number;
+  /** How many days have takings entered. */
+  days: number;
+}
+
+export interface CarwashDay {
+  /** "2026-10-04" */
+  day: string;
+  carwash: number;
+  change: number;
+  total: number;
+  recordedBy: string | null;
+  updatedAt: string;
 }
 
 export interface TeamRow {

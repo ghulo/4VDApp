@@ -21,6 +21,8 @@ import type {
   PriceSuggestion,
   PricingTier,
   Promotion,
+  CarwashDay,
+  CarwashTotals,
   Business,
   Invite,
   InvitePreview,
@@ -305,6 +307,18 @@ export const reportsApi = {
   reorderSuggestions: async () => (await apiRequest<ReorderSuggestion[]>('/reports/reorder-suggestions')).data,
   insights: async () => (await apiRequest<Insight[]>('/reports/insights')).data,
   dailySummary: async () => (await apiRequest<{ title: string; message: string; salesLine: string }>('/reports/daily-summary')).data,
+};
+
+export const carwashApi = {
+  list: async (range: ReportRange) =>
+    (await apiRequest<{ days: CarwashDay[]; totals: CarwashTotals }>('/carwash', { query: { ...range } })).data,
+  /** `day` like "2026-10-04"; entering a day again replaces it. */
+  save: async (day: string, takings: { carwash: number; change: number }) => {
+    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: takings });
+  },
+  remove: async (day: string) => {
+    await apiRequest(`/carwash/${day}`, { method: 'DELETE' });
+  },
 };
 
 export const exportsApi = {

@@ -52,6 +52,8 @@ export interface ServerMessages {
   dailyUrgent: (p: { titles: string[]; more: number }) => string;
   dailyOthers: (n: number) => string;
   dailyNothing: string;
+  dailyCarwash: (p: { carwash: number; change: number; total: number }) => string;
+  dailyCarwashMissing: string;
 
   testAlertTitle: string;
   testAlertMessage: string;
@@ -101,6 +103,8 @@ export interface ServerMessages {
     weeklyBestSellers: string;
     weeklyProduct: (p: { rank: number; name: string; revenue: string; units: number }) => string;
     weeklyNoSales: string;
+    weeklyCarwash: (p: { carwash: string; change: string; total: string; together: string }) => string;
+    weeklyNoCarwash: string;
     weeklyWarnings: (n: number) => string;
     weeklyButton: string;
     weeklyNote: string;
@@ -160,6 +164,9 @@ export const en: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgent: ${titles.join('; ')}${more > 0 ? ` and ${more} more` : ''}.`,
   dailyOthers: (n) => `${count(n, 'other thing', 'other things')} to look at on the Overview page.`,
   dailyNothing: 'Nothing needs your attention.',
+  dailyCarwash: ({ carwash, change, total }) =>
+    `Carwash: ${money(carwash, 'en')} + ${money(change, 'en')} change = ${money(total, 'en')}.`,
+  dailyCarwashMissing: "Today's carwash takings aren't entered yet.",
 
   testAlertTitle: 'Test alert from 4VD',
   testAlertMessage: 'Alerts are working on this device.',
@@ -216,6 +223,9 @@ export const en: ServerMessages = {
     weeklyBestSellers: 'Best sellers:',
     weeklyProduct: ({ rank, name, revenue, units }) => `${rank}. ${name}: ${revenue} (${units} sold)`,
     weeklyNoSales: 'No sales last week.',
+    weeklyCarwash: ({ carwash, change, total, together }) =>
+      `Carwash: ${total} (${carwash} carwash + ${change} change). Shop and carwash together: ${together}.`,
+    weeklyNoCarwash: 'No carwash takings were entered last week.',
     weeklyWarnings: (n) =>
       n === 0 ? 'Nothing needs your attention right now.' : `${n} ${n === 1 ? 'thing needs' : 'things need'} your attention on the Overview page.`,
     weeklyButton: 'Open the dashboard',
@@ -278,6 +288,9 @@ export const sq: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgjente: ${titles.join('; ')}${more > 0 ? ` dhe ${more} të tjera` : ''}.`,
   dailyOthers: (n) => `${count(n, 'gjë tjetër', 'gjëra të tjera')} për të parë te Përmbledhja.`,
   dailyNothing: 'Asgjë nuk kërkon vëmendjen tënde.',
+  dailyCarwash: ({ carwash, change, total }) =>
+    `Lavazhi: ${money(carwash, 'sq')} + ${money(change, 'sq')} këmbim = ${money(total, 'sq')}.`,
+  dailyCarwashMissing: 'Të ardhurat e lavazhit për sot nuk janë futur ende.',
 
   testAlertTitle: 'Njoftim provë nga 4VD',
   testAlertMessage: 'Njoftimet po funksionojnë në këtë pajisje.',
@@ -334,6 +347,9 @@ export const sq: ServerMessages = {
     weeklyBestSellers: 'Më të shiturat:',
     weeklyProduct: ({ rank, name, revenue, units }) => `${rank}. ${name}: ${revenue} (${units} të shitura)`,
     weeklyNoSales: 'Nuk pati shitje javën e kaluar.',
+    weeklyCarwash: ({ carwash, change, total, together }) =>
+      `Lavazhi: ${total} (${carwash} lavazh + ${change} këmbim). Dyqani dhe lavazhi bashkë: ${together}.`,
+    weeklyNoCarwash: 'Nuk u futën të ardhura të lavazhit javën e kaluar.',
     weeklyWarnings: (n) =>
       n === 0 ? 'Asgjë nuk kërkon vëmendjen tënde tani.' : `${n} ${n === 1 ? 'gjë kërkon' : 'gjëra kërkojnë'} vëmendjen tënde te Përmbledhja.`,
     weeklyButton: 'Hap panelin',

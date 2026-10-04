@@ -6,6 +6,8 @@ import { createCarwashRoutes } from './carwashRoutes.js';
 import { createCashCountRoutes } from './cashCountRoutes.js';
 import { createExpenseRoutes } from './expenseRoutes.js';
 import { createCustomerRoutes } from './customerRoutes.js';
+import { createOrderRoutes, createSupplierRoutes } from './orderRoutes.js';
+import { createExpiryRoutes } from './expiryRoutes.js';
 import {
   createCategoryRoutes,
   createInventoryRoutes,
@@ -51,6 +53,9 @@ export function createApiRoutes(container: Container): Router {
   router.use('/cash-counts', createCashCountRoutes(container));
   router.use('/expenses', createExpenseRoutes(container));
   router.use('/customers', createCustomerRoutes(container));
+  router.use('/suppliers', createSupplierRoutes(container));
+  router.use('/orders', createOrderRoutes(container));
+  router.use('/expiry', createExpiryRoutes(container));
   router.use('/exports', createExportsRoutes(container));
   router.use('/settings', createSettingsRoutes(container));
   router.use('/write-offs', createWriteOffRoutes(container));

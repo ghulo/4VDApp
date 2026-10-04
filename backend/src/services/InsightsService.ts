@@ -4,6 +4,7 @@ import { roundMoney } from '../utils/money.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
 import type { ReportsService } from './ReportsService.js';
 import { OVERDUE_DAYS, type TabService } from './TabService.js';
+import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** A product selling out within this many days is worth a warning. */
@@ -16,7 +17,7 @@ const RECENT_SALES_DAYS = 7;
 const MISSING_STOCK_DAYS = 30;
 const UNUSUAL_SALE = { minQuantity: 5, factor: 4, minHistory: 5, baselineDays: 90 };
 
-export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue';
+export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue' | 'expiring';
 export type InsightSeverity = 'urgent' | 'warning' | 'info';
 
 export interface Insight {
@@ -39,12 +40,13 @@ export class InsightsService {
     private readonly reportsRepository: ReportsRepository,
     private readonly reportsService: ReportsService,
     private readonly tabService: TabService,
+    private readonly expiryService: ExpiryService,
   ) {}
 
   /** Written in the reader's language (`t`), English by default. */
   async list(now = new Date(), t: ServerMessages = en): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
-    const [forecasts, products, belowCost, unusual, missing, overdueTabs] = await Promise.all([
+    const [forecasts, products, belowCost, unusual, missing, overdueTabs, expiring] = await Promise.all([
       this.reportsService.reorderSuggestions(now),
       this.reportsRepository.activeProducts(),
       this.insightsRepository.salesBelowCost(daysAgo(RECENT_SALES_DAYS)),
@@ -57,6 +59,7 @@ export class InsightsService {
       }),
       this.insightsRepository.missingStock(daysAgo(MISSING_STOCK_DAYS)),
       this.tabService.overdue(now),
+      this.expiryService.upcoming(undefined, now),
     ]);
     const insights: Insight[] = [];
 
@@ -134,6 +137,16 @@ export class InsightsService {
           productId: row.product_id,
         });
       }
+    }
+
+    for (const expiry of expiring) {
+      insights.push({
+        kind: 'expiring',
+        severity: expiry.daysLeft <= EXPIRY_URGENT_DAYS ? 'urgent' : 'warning',
+        title: t.insight.expiringTitle({ product: expiry.productName, quantity: expiry.quantity, daysLeft: expiry.daysLeft }),
+        detail: t.insight.expiringDetail,
+        productId: expiry.productId,
+      });
     }
 
     for (const customer of overdueTabs) {

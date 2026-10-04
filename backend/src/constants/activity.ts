@@ -37,11 +37,18 @@ export const ACTIVITY_ACTIONS = [
   'customer.updated',
   'customer.archived',
   'tab.paid',
+  'supplier.created',
+  'supplier.removed',
+  'order.created',
+  'order.received',
+  'order.cancelled',
+  'expiry.added',
+  'expiry.cleared',
   'undo.applied',
   'undo.restored',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'activity'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'activity'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

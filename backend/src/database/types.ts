@@ -344,6 +344,49 @@ export interface TabEntriesTable {
   created_by: number | null;
 }
 
+export interface SuppliersTable {
+  id: Generated<number>;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  note: string | null;
+  archived_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface PurchaseOrdersTable {
+  id: Generated<number>;
+  supplier_id: number;
+  status: Generated<'open' | 'received' | 'cancelled'>;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  closed_by: number | null;
+  closed_at: Date | null;
+}
+
+export interface PurchaseOrderLinesTable {
+  id: Generated<number>;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  unit_cost: Decimal | null;
+  received_quantity: number | null;
+}
+
+export interface ExpiryDatesTable {
+  id: Generated<number>;
+  product_id: number;
+  quantity: number;
+  expires_on: ColumnType<string, string, string>;
+  note: string | null;
+  order_line_id: number | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  cleared_by: number | null;
+  cleared_at: Date | null;
+}
+
 export interface SettingsTable {
   key: string;
   value: ColumnType<unknown, string, string>;
@@ -464,6 +507,10 @@ export interface Database {
   expenses: ExpensesTable;
   customers: CustomersTable;
   tab_entries: TabEntriesTable;
+  suppliers: SuppliersTable;
+  purchase_orders: PurchaseOrdersTable;
+  purchase_order_lines: PurchaseOrderLinesTable;
+  expiry_dates: ExpiryDatesTable;
   sales_ledger: SalesLedgerView;
 }
 

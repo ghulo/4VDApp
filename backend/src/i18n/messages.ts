@@ -78,6 +78,8 @@ export interface ServerMessages {
     deadStockDetail: (p: { inStock: number; tiedUp: number | null }) => string;
     tabOverdueTitle: (p: { name: string; amount: number }) => string;
     tabOverdueDetail: (p: { days: number; minimum: number }) => string;
+    expiringTitle: (p: { product: string; quantity: number; daysLeft: number }) => string;
+    expiringDetail: string;
   };
 
   email: {
@@ -214,6 +216,13 @@ export const en: ServerMessages = {
       `${inStock} in stock${tiedUp === null ? '' : `, ${money(tiedUp, 'en')} tied up at cost`}. A promotion could move it.`,
     tabOverdueTitle: ({ name, amount }) => `${name} owes ${money(amount, 'en')} on their tab`,
     tabOverdueDetail: ({ days }) => `The oldest unpaid part is ${days} days old. A friendly reminder might help.`,
+    expiringTitle: ({ product, quantity, daysLeft }) =>
+      daysLeft < 0
+        ? `${quantity} × ${product} expired ${count(-daysLeft, 'day', 'days')} ago`
+        : daysLeft === 0
+          ? `${quantity} × ${product} expire today`
+          : `${quantity} × ${product} expire in ${count(daysLeft, 'day', 'days')}`,
+    expiringDetail: 'Put them on promotion or at the front, or write them off. Then mark them as dealt with on the stock page.',
   },
 
   email: {
@@ -356,6 +365,13 @@ export const sq: ServerMessages = {
       `${inStock} në stok${tiedUp === null ? '' : `, ${money(tiedUp, 'sq')} të bllokuara me koston`}. Një ofertë mund ta lëvizë.`,
     tabOverdueTitle: ({ name, amount }) => `${name} ka borxh ${money(amount, 'sq')}`,
     tabOverdueDetail: ({ days }) => `Pjesa më e vjetër e papaguar është ${days} ditë e vjetër. Një kujtesë miqësore mund të ndihmojë.`,
+    expiringTitle: ({ product, quantity, daysLeft }) =>
+      daysLeft < 0
+        ? `${quantity} × ${product} skaduan para ${count(-daysLeft, 'ditë', 'ditësh')}`
+        : daysLeft === 0
+          ? `${quantity} × ${product} skadojnë sot`
+          : `${quantity} × ${product} skadojnë për ${count(daysLeft, 'ditë', 'ditë')}`,
+    expiringDetail: 'Vendosi në ofertë ose përpara, ose hiqi nga stoku. Pastaj shënoji si të trajtuara te faqja e stokut.',
   },
 
   email: {

@@ -11,6 +11,7 @@ export const SYSTEM_STOCK_REASONS = {
   RECOUNT: 'Recount',
   UNDO: 'Undo',
   RESTORE: 'Restore',
+  DELIVERY: 'Delivery',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

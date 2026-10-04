@@ -6,13 +6,15 @@ import { createSettingsController } from '../controllers/settingsController.js';
 import { createStockCountsController } from '../controllers/stockCountsController.js';
 import { createWriteOffsController } from '../controllers/writeOffsController.js';
 
-export function createSettingsRoutes({ settingsService, guards }: Container): Router {
-  const controller = createSettingsController(settingsService);
+export function createSettingsRoutes({ settingsService, launchService, guards }: Container): Router {
+  const controller = createSettingsController(settingsService, launchService);
   const router = Router();
 
   // Employees read the limits so the phone can say when something needs approval.
   router.get('/', ...guards.staff, controller.get);
   router.put('/', ...guards.manage, controller.update);
+  // What's left before the real shop starts using the app.
+  router.get('/launch-checklist', ...guards.developer, controller.launchChecklist);
 
   return router;
 }

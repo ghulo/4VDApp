@@ -23,6 +23,7 @@ import type {
   Promotion,
   CarwashDay,
   CarwashTotals,
+  LaunchStep,
   Business,
   Invite,
   InvitePreview,
@@ -341,6 +342,8 @@ export const activityApi = {
 export const settingsApi = {
   get: async () => (await apiRequest<AppSettings>('/settings')).data,
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
+  /** Developer only. */
+  launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
 };
 
 export const returnsApi = {

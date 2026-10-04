@@ -181,6 +181,15 @@ export interface ReportSummary {
   carwash: { current: CarwashTotals; previous: CarwashTotals; change: number | null };
 }
 
+export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'weeklyEmail' | 'emails' | 'phoneAlerts' | 'backups';
+
+export interface LaunchStep {
+  key: LaunchStepKey;
+  /** Null when the app can't see it (backups live on GitHub and R2). */
+  done: boolean | null;
+  facts?: { wipedAt?: string; products?: number; sales?: number; employees?: number };
+}
+
 export interface CarwashTotals {
   carwash: number;
   /** What the change machine made: notes changed into coins. */

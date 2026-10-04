@@ -104,6 +104,10 @@ export interface ServerMessages {
     weeklyProduct: (p: { rank: number; name: string; revenue: string; units: number }) => string;
     weeklyNoSales: string;
     weeklyCarwash: (p: { carwash: string; change: string; total: string; together: string }) => string;
+    errorSubject: (count: number) => string;
+    errorIntro: (p: { name: string; count: number }) => string;
+    errorItem: (p: { what: string; count: number }) => string;
+    errorNote: string;
     weeklyNoCarwash: string;
     weeklyWarnings: (n: number) => string;
     weeklyButton: string;
@@ -226,6 +230,11 @@ export const en: ServerMessages = {
     weeklyCarwash: ({ carwash, change, total, together }) =>
       `Carwash: ${total} (${carwash} carwash + ${change} change). Shop and carwash together: ${together}.`,
     weeklyNoCarwash: 'No carwash takings were entered last week.',
+    errorSubject: (count) => `4VD ran into ${count === 1 ? 'an error' : `${count} errors`}`,
+    errorIntro: ({ name, count }) =>
+      `Hi ${name}, the server logged ${count === 1 ? 'an error' : `${count} errors`} since the last email. The app may still be working; this is so you hear about it first.`,
+    errorItem: ({ what, count }) => `${count > 1 ? `${count}× ` : ''}${what}`,
+    errorNote: 'The full details are in the Render logs for 4vd-api. You get at most one of these an hour.',
     weeklyWarnings: (n) =>
       n === 0 ? 'Nothing needs your attention right now.' : `${n} ${n === 1 ? 'thing needs' : 'things need'} your attention on the Overview page.`,
     weeklyButton: 'Open the dashboard',
@@ -350,6 +359,11 @@ export const sq: ServerMessages = {
     weeklyCarwash: ({ carwash, change, total, together }) =>
       `Lavazhi: ${total} (${carwash} lavazh + ${change} këmbim). Dyqani dhe lavazhi bashkë: ${together}.`,
     weeklyNoCarwash: 'Nuk u futën të ardhura të lavazhit javën e kaluar.',
+    errorSubject: (count) => `4VD hasi ${count === 1 ? 'një gabim' : `${count} gabime`}`,
+    errorIntro: ({ name, count }) =>
+      `Përshëndetje ${name}, serveri regjistroi ${count === 1 ? 'një gabim' : `${count} gabime`} që nga emaili i fundit. Aplikacioni mund të punojë ende; kjo është që ta mësosh i pari.`,
+    errorItem: ({ what, count }) => `${count > 1 ? `${count}× ` : ''}${what}`,
+    errorNote: 'Detajet e plota janë te regjistrat e Render për 4vd-api. Merr më së shumti një të tillë në orë.',
     weeklyWarnings: (n) =>
       n === 0 ? 'Asgjë nuk kërkon vëmendjen tënde tani.' : `${n} ${n === 1 ? 'gjë kërkon' : 'gjëra kërkojnë'} vëmendjen tënde te Përmbledhja.`,
     weeklyButton: 'Hap panelin',

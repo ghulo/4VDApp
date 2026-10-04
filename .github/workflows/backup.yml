@@ -1,0 +1,73 @@
+# Weekly copy of the live database, kept in Cloudflare R2 for 90 days.
+# Render's own point-in-time restore only reaches back 3 days; this covers
+# a mistake noticed weeks later. The file is encrypted before it leaves the
+# runner, so R2 only ever holds a locked copy. How to restore: docs/DEPLOYMENT.md.
+#
+# Needs these repository secrets (Settings > Secrets and variables > Actions):
+#   BACKUP_DATABASE_URL   Render's *external* connection string for 4vd-db
+#   BACKUP_PASSPHRASE     a long random phrase; without it a backup can't be opened
+#   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+name: Database backup
+
+on:
+  schedule:
+    # Sundays 02:30 UTC, when the shop is closed.
+    - cron: '30 2 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Back up the database to R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      KEEP_DAYS: 90
+    steps:
+      - name: Check the secrets are set
+        run: |
+          for name in DATABASE_URL PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY R2_BUCKET; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret for $name (see the top of backup.yml)"; exit 1; fi
+          done
+
+      - name: Dump the database
+        # The same major version as the server (17), so the dump always works.
+        run: |
+          FILE="4vd-$(date -u +%Y-%m-%d).dump"
+          echo "FILE=$FILE" >> "$GITHUB_ENV"
+          docker run --rm postgres:17-alpine pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" > "$FILE"
+
+      - name: Make sure the dump can be read back
+        run: |
+          docker run --rm -i postgres:17-alpine pg_restore --list < "$FILE" > contents.txt
+          grep -q "TABLE DATA public sales" contents.txt || { echo "::error::The dump has no sales table"; exit 1; }
+          echo "Dump is $(du -h "$FILE" | cut -f1) with $(grep -c 'TABLE DATA' contents.txt) tables."
+
+      - name: Encrypt it
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output "$FILE.gpg" "$FILE"
+          rm "$FILE"
+
+      - name: Upload to R2
+        run: aws s3 cp "$FILE.gpg" "s3://$R2_BUCKET/database/$FILE.gpg" --endpoint-url "$R2_ENDPOINT"
+
+      - name: Remove copies older than ${{ env.KEEP_DAYS }} days
+        run: |
+          CUTOFF=$(date -u -d "-$KEEP_DAYS days" +%Y-%m-%d)
+          aws s3 ls "s3://$R2_BUCKET/database/" --endpoint-url "$R2_ENDPOINT" | awk '{print $4}' | while read -r name; do
+            day=$(echo "$name" | sed -n 's/^4vd-\([0-9-]*\)\.dump\.gpg$/\1/p')
+            if [ -n "$day" ] && [[ "$day" < "$CUTOFF" ]]; then
+              aws s3 rm "s3://$R2_BUCKET/database/$name" --endpoint-url "$R2_ENDPOINT"
+            fi
+          done

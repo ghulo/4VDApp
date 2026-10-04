@@ -191,6 +191,22 @@ export const emailTemplates = {
     };
   },
 
+  errorAlert(input: { name: string; count: number; items: Array<{ what: string; count: number }> }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.errorSubject(input.count);
+    const intro = t.email.errorIntro({ name: input.name, count: input.count });
+    const items = input.items.map((item) => t.email.errorItem(item));
+    return {
+      subject,
+      html: render({
+        t,
+        subject,
+        paragraphs: [escapeHtml(intro), items.map(escapeHtml).join('<br>')],
+        note: escapeHtml(t.email.errorNote),
+      }),
+      text: plain([intro, items.join('\n'), t.email.errorNote]),
+    };
+  },
+
   emailChanged(input: { name: string; newEmail: string }, t: ServerMessages = en): EmailContent {
     const subject = t.email.changedSubject;
     return {

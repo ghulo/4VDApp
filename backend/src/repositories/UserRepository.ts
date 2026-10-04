@@ -56,6 +56,17 @@ export class UserRepository {
   }
 
   /** Active people who oversee the shop and want the Monday report email. */
+  /** Active developers, who hear when the server runs into errors. */
+  developers(): Promise<Array<{ email: string; name: string; language: Language }>> {
+    return this.db
+      .selectFrom('users')
+      .select(['email', 'name', 'language'])
+      .where('role', '=', 'developer')
+      .where('is_active', '=', true)
+      .where('deleted_at', 'is', null)
+      .execute();
+  }
+
   weeklyReportRecipients(): Promise<Array<{ email: string; name: string; language: Language }>> {
     return this.db
       .selectFrom('users')

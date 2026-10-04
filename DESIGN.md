@@ -464,6 +464,13 @@ The vintage finish, after anthropic.com's textured stock, used sparingly:
   printed as square blocks with 4 × 4 ordered (Bayer) dithering. 4VD's mascot: it
   turns up on sign-in, the team app's Today panel, the dashboard's Today card and
   big empty pages, and nowhere else. Hidden from screen readers.
+- **Glass** (`admin/src/styles/glass.css`, `--glass-*` tokens): frosted panes only
+  on layers that float over the page: the top bar, the Ctrl K palette, the phone
+  menu drawer and the sign-in moment cards. A bright blur (20px, saturate 1.6,
+  brightness 1.06), a thin light edge, a 1px top highlight and a faint top sheen;
+  the palette and drawer use a thicker pane (88%) for dense text. Never on cards,
+  tables or forms. Solid paper when blur isn't supported, or under
+  `prefers-reduced-transparency` or `prefers-contrast: more`.
 - **Block meters:** progress as a row of printed blocks, only for the monthly
   target (20 blocks) and stock tags (10, a wider gap at the reorder point).
 

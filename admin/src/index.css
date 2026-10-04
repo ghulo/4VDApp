@@ -1,8 +1,10 @@
 /* 4VD dashboard styles, in layers: tokens, then bare elements, then decoration,
-   the component kit, the app frame, and last the page-specific rules. */
+   the component kit, the app frame, the page-specific rules, and last the glass
+   on floating layers. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/decor.css';
 @import './components/ui/ui.css';
 @import './styles/shell.css';
 @import './styles/pages.css';
+@import './styles/glass.css';

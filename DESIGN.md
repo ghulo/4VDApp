@@ -1,6 +1,6 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales and team in one calm, precise interface; ink on ivory paper with oat panels, a clay brand colour and dithered drawings.
+description: The Dacaj family shop's stock, sales and team in one calm, precise interface; ink on ivory paper with oat panels, a clay brand colour and one clean shop drawing.
 colors:
   clay: "#d4704f"
   clay-text: "#a8482a"
@@ -216,7 +216,7 @@ place; status colours stay quiet and come with faint tints.
 
 ### Primary
 - **Clay** (#d4704f): the brand colour, after Anthropic's book-cloth orange: the logo
-  tile, the dithered drawings, the 3px marker on the current menu item. Softer than
+  tile, the shop drawing, the 3px marker on the current menu item. Softer than
   the old Signal Orange (#ff5e1f), which looked loud on ivory.
 - **Clay Tint** (14% light, 18% dark): the fill behind the current menu item.
 - **Clay Text** (#a8482a light / #e08a6b dark): the label of the current menu item.
@@ -247,7 +247,7 @@ place; status colours stay quiet and come with faint tints.
   Metric changes use OK for up, Danger for down, Muted Ink for flat.
 
 ### Named Rules
-**The Clay Rule.** Clay means brand and "act here": the logo, the dithered drawings,
+**The Clay Rule.** Clay means brand and "act here": the logo, the shop drawing,
 the one main button per screen, progress toward a goal (setup bar and ticks) and
 where you are (current menu item). Badges, links, charts and counts are never clay.
 If two things on one screen are clay buttons, one of them is wrong.
@@ -260,7 +260,7 @@ read as a button.
 cards, crisp charts (solid bars with softly rounded tops, smooth line graphs over a
 flat fill, slim day bars), line icons in soft chips, single hairlines. The vintage
 is the finish only: ivory paper and grain, the serif, monospace spec labels, ink
-stamps, block meters for stock and targets, and the dithered shop as a recurring
+stamps, block meters for stock and targets, and the shop at sunrise as a recurring
 mascot (sign-in, the team app's Home, the dashboard's Today card, big empty pages).
 The page margins are plain canvas (the old dot field competed with the data). Never
 dither data, icons or anything in tables and forms.
@@ -461,9 +461,10 @@ grid, an ink tooltip with paper text. One keyboard stop, arrow keys walk the day
 and "Show as table" offers the same data as a table.
 
 ### Halftone drawing
-Retired: the round dotted building is replaced everywhere by the dithered shop at
-sunrise (see Printed paper): on sign-in (over the 8px dot field, with floating "shop
-moment" cards), as big empty-state art (240px) and on the Today cards.
+Retired, with every dot field: the drawing is now the vector shop at sunrise (see
+Printed paper): big on sign-in (up to 560px, with floating "shop moment" cards;
+300px on phones, without the cards), as empty-state art (240px) and on the Today
+card (up to 300px, 240px centred on phones).
 
 ### Printed paper (both apps)
 The vintage finish, after anthropic.com's textured stock, used sparingly:
@@ -474,11 +475,15 @@ The vintage finish, after anthropic.com's textured stock, used sparingly:
   sections; one newspaper double rule, under the team app's masthead only.
 - **Icon chips:** jobs (counts, cash, tabs, carwash, stock, sales) use the regular
   line icons in a 44px soft chip: Paper on oat tiles, Oat in empty states.
-- **The shop at sunrise** (`dither.ts` in both apps, kept equal by a test): the
-  four-pillar shop in Ink against a Clay sun with the ground running the width,
-  printed as square blocks with 4 × 4 ordered (Bayer) dithering. 4VD's mascot: it
-  turns up on sign-in, the team app's Today panel, the dashboard's Today card and
-  big empty pages, and nowhere else. Hidden from screen readers.
+- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`): the logo's
+  shapes, drawn crisp: an Ink roof stroke (7 units, round caps), four equal Ink
+  pillars and a base on an Ink ground line running the width, two fading Muted Ink
+  horizon lines under it, and a Clay sun behind with a 16% Clay glow, cut by four
+  printed-sunset stripes that widen toward the ground. Ink follows the theme (dark
+  on paper, ivory at night). The sun rises 18px into view once (1.2s, the house
+  ease), off under reduced motion. 4VD's mascot: sign-in, the dashboard's Today
+  card and big empty pages, and nowhere else. Hidden from screen readers. The team
+  app still prints its Today panel with `dither.ts` until it gets the same drawing.
 - **Glass** (`admin/src/styles/glass.css`, `--glass-*` tokens): frosted panes only
   on layers that float over the page: the top bar, the Ctrl K palette, the phone
   menu drawer and the sign-in moment cards. A bright blur (20px, saturate 1.6,

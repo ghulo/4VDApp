@@ -12,7 +12,7 @@ import {
   DotMatrix,
   EmptyState,
   Field,
-  Halftone,
+  ShopSunrise,
   MetricCard,
   PageHeader,
   SettingRow,
@@ -241,11 +241,11 @@ describe('Badge, StatTile and EmptyState', () => {
     expect(html).toContain('role="alert"');
   });
 
-  it('should draw the halftone building as dots, hidden from screen readers', () => {
-    const html = render(<Halftone />);
+  it('should draw the shop at sunrise in blocks, hidden from screen readers', () => {
+    const html = render(<ShopSunrise />);
 
     expect(html).toContain('aria-hidden="true"');
-    expect(html.match(/<circle/g)!.length).toBeGreaterThan(200);
+    expect(html.match(/<rect/g)!.length).toBeGreaterThan(100);
   });
 });
 
@@ -255,8 +255,8 @@ describe('DotMatrix', () => {
 
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Sales per day"');
-    expect(html.match(/<circle/g)).toHaveLength(15);
-    // Nothing for the empty day, one dot for the small one, a full column for the best.
+    expect(html.match(/<rect/g)).toHaveLength(15);
+    // Nothing for the empty day, one block for the small one, a full column for the best.
     expect(html.match(/dot-matrix__lit/g)).toHaveLength(6);
   });
 });

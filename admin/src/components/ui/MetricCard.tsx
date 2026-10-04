@@ -3,7 +3,7 @@ import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
 import { formatPercent, MUCH_MORE } from '../../utils/format';
-import { changeDirection, PLACEHOLDER_WAVE, SPARK_HEIGHT, SPARK_WIDTH, sparklinePaths } from './sparkline';
+import { changeDirection, SPARK_COLUMNS, SPARK_ROWS, sparkBlocks } from './sparkline';
 
 const ARROWS = { up: ArrowUpRight, down: ArrowDownRight, flat: ArrowRight } as const;
 
@@ -24,15 +24,15 @@ interface MetricCardProps {
 
 /**
  * One figure on an analytics board: the number, which way it moved against
- * the period before, and a filled mini graph of how it got there. With no
- * data it shows a faint wave and "No data" instead of an empty box.
+ * the period before, and a mini graph of how it got there in printed blocks.
+ * With no data it shows the empty block grid and "No data" instead of an empty box.
  */
 export function MetricCard({ label, value, change, series, large, to, hint }: MetricCardProps) {
   const t = useT();
   const headingId = useId();
-  const dotsId = useId();
   const direction = change === undefined ? undefined : changeDirection(change);
-  const paths = series ? sparklinePaths(series) : null;
+  const columns = large ? SPARK_COLUMNS * 2 : SPARK_COLUMNS;
+  const blocks = series ? sparkBlocks(series, SPARK_ROWS, columns) : null;
   const muchMore = change !== undefined && change !== null && change > MUCH_MORE;
 
   return (
@@ -68,26 +68,33 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
       </p>
       {hint && <p className="metric__hint">{hint}</p>}
       {series &&
-        (paths ? (
-          <svg className="metric__graph" viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-            {/* The area is filled with a fine dot grid: a halftone, not a flat wash. */}
-            <defs>
-              <pattern id={dotsId} width="6" height="6" patternUnits="userSpaceOnUse">
-                <circle className="metric__halftone" cx="3" cy="3" r="1.1" />
-              </pattern>
-            </defs>
-            <path className="metric__area" d={paths.area} fill={`url(#${dotsId})`} />
-            <path className="metric__line" d={paths.line} vectorEffect="non-scaling-stroke" />
-          </svg>
+        (blocks ? (
+          <BlockGraph columns={blocks} />
         ) : (
           <div className="metric__empty">
-            <svg className="metric__graph" viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-              <path className="metric__wave" d={PLACEHOLDER_WAVE} vectorEffect="non-scaling-stroke" />
-            </svg>
+            <BlockGraph columns={Array.from({ length: columns }, () => 0)} />
             <span className="metric__no-data">{t.analytics.noData}</span>
           </div>
         ))}
     </article>
+  );
+}
+
+/**
+ * Columns of printed blocks, laid out by CSS grid so they never stretch: lit
+ * blocks in the series colour, the latest column in ink, the rest faint.
+ */
+function BlockGraph({ columns }: { columns: number[] }) {
+  return (
+    <div className="metric__graph" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }} aria-hidden="true">
+      {columns.map((lit, column) => (
+        <span key={column} className={column === columns.length - 1 ? 'metric__column metric__column--latest' : 'metric__column'}>
+          {Array.from({ length: SPARK_ROWS }, (_, row) => (
+            <span key={row} className={row < lit ? 'metric__block metric__block--lit' : 'metric__block'} />
+          ))}
+        </span>
+      ))}
+    </div>
   );
 }
 

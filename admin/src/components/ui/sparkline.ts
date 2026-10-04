@@ -1,33 +1,31 @@
-/** Size of the mini graph's drawing area; the SVG stretches it to the card's width. */
-export const SPARK_WIDTH = 300;
-export const SPARK_HEIGHT = 64;
-/** Keeps the line's stroke from being clipped at the top. */
-const PAD = 3;
-
-const round = (n: number) => Math.round(n * 10) / 10;
+/** Rows of blocks in a metric card's mini graph. */
+export const SPARK_ROWS = 10;
+/** Columns in a metric card's mini graph (twice as many on a large card), so blocks stay near square. */
+export const SPARK_COLUMNS = 36;
 
 /**
- * SVG paths for a filled mini graph of `values`, oldest first: the line, and
- * the area under it down to the bottom edge. Null when there's nothing to draw
- * (no points, or every point is zero), so the card can say "No data".
+ * A metric card's mini graph as printed blocks: for each of `columns` columns
+ * (oldest first), how many of the `rows` blocks are lit. Long series are
+ * averaged down and short ones repeated across columns, so the graph always
+ * fills the card; any non-zero value lights at least one block. Null when there's nothing to draw (no points, or every point is
+ * zero), so the card can say "No data".
  */
-export function sparklinePaths(values: number[], width = SPARK_WIDTH, height = SPARK_HEIGHT): { line: string; area: string } | null {
+export function sparkBlocks(values: number[], rows = SPARK_ROWS, columns = SPARK_COLUMNS): number[] | null {
   if (values.length === 0 || values.every((value) => value === 0)) return null;
-  // One point is drawn as a flat line across the card.
-  const series = values.length === 1 ? [values[0]!, values[0]!] : values;
-  const max = Math.max(...series);
-  const min = Math.min(0, ...series);
-  const span = max - min || 1;
-  const step = width / (series.length - 1);
-  const points = series.map((value, index) => [round(index * step), round(PAD + (height - PAD) * (1 - (value - min) / span))] as const);
-  const line = `M${points.map(([x, y]) => `${x},${y}`).join(' L')}`;
-  const area = `${line} L${points.at(-1)![0]},${height} L${points[0]![0]},${height} Z`;
-  return { line, area };
+  const averaged = Array.from({ length: columns }, (_, column) => {
+    const start = Math.floor((column * values.length) / columns);
+    const end = Math.max(start + 1, Math.floor(((column + 1) * values.length) / columns));
+    const bucket = values.slice(start, end);
+    return bucket.reduce((sum, value) => sum + value, 0) / bucket.length;
+  });
+  // Refunds can make a day negative: blocks count up from the lowest day, or from zero.
+  const min = Math.min(0, ...averaged);
+  const span = Math.max(...averaged) - min || 1;
+  return averaged.map((value) => {
+    const lit = Math.round(((value - min) / span) * rows);
+    return value !== 0 && lit === 0 ? 1 : lit;
+  });
 }
-
-/** A soft wave shown faintly behind "No data", like an empty instrument. */
-export const PLACEHOLDER_WAVE =
-  'M0,44 C25,44 35,36 55,38 C75,40 85,50 105,48 C125,46 135,30 155,30 C175,30 185,46 205,46 C225,46 235,36 255,38 C275,40 285,48 300,46';
 
 /** Which way a change points; null when there's nothing to compare with. */
 export function changeDirection(change: number | null): 'up' | 'down' | 'flat' | null {

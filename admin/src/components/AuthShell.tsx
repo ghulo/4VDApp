@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { LogoMark } from './LogoMark';
-import { Halftone } from './ui';
+import { ShopSunrise } from './ui';
 import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
 
@@ -29,7 +29,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
         </p>
         <div className="login__scene" aria-hidden="true">
           <div className="login__art">
-            <Halftone />
+            <ShopSunrise />
           </div>
           {MOMENTS.map(({ icon: MomentIcon, tone, key, at }) => (
             <div key={at} className={`login__moment login__moment--${tone} ${at}`}>

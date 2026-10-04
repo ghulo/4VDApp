@@ -1,5 +1,5 @@
-/* Decoration, kept to the brand moments: the halftone dot field and drawing
-   on sign-in and empty states. Working screens stay plain. */
+/* Decoration, kept to the brand moments: the halftone dot field behind the
+   sign-in drawing. Working screens stay plain. */
 
 /* A dot grid behind the sign-in drawing. A tiny
    repeated SVG (set per theme in tokens.css) is much cheaper to paint than a
@@ -13,22 +13,4 @@
 .callout {
   border-radius: var(--radius-small);
   background: var(--surface-sunk);
-}
-
-/* The halftone drawing (components/ui/Halftone.tsx). */
-.halftone-art {
-  display: block;
-  width: 100%;
-  height: auto;
-  color: var(--accent);
-}
-
-.halftone-art__dot--far {
-  opacity: 0.35;
-}
-
-.halftone-art__outline {
-  fill: none;
-  stroke: var(--line-strong);
-  stroke-width: 0.6;
 }

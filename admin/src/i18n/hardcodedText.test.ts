@@ -24,7 +24,7 @@ const TRANSLATED = [
   'src/components/ui/DataTable.tsx',
   'src/components/ui/EmptyState.tsx',
   'src/components/ui/Field.tsx',
-  'src/components/ui/Halftone.tsx',
+  'src/components/ui/ShopSunrise.tsx',
   'src/components/ui/PageHeader.tsx',
   'src/components/ui/MetricCard.tsx',
   'src/components/AnalyticsBoard.tsx',

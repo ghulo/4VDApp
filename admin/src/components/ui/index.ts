@@ -8,7 +8,6 @@ export { DotMatrix } from './DotMatrix';
 export { EmptyState } from './EmptyState';
 export { MetricCard, MetricGrid } from './MetricCard';
 export { Field } from './Field';
-export { Halftone } from './Halftone';
 export { PageHeader, type Crumb } from './PageHeader';
 export { PixelArt } from './PixelArt';
 export { ShopSunrise } from './ShopSunrise';

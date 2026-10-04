@@ -153,12 +153,13 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
                   <rect x={bandX} y={MARGIN.top} width={band} height={plotHeight} fill="transparent" />
                   {point.revenue > 0 &&
                     dotsFor(bandX + (band - barWidth) / 2, barWidth, y, MARGIN.top + plotHeight).map((dot) => (
-                      <circle
+                      <rect
                         key={`${dot.x}-${dot.y}`}
                         className={index === activeIndex ? 'chart__dot chart__dot--active' : 'chart__dot'}
-                        cx={dot.x}
-                        cy={dot.y}
-                        r={DOT_RADIUS}
+                        x={dot.x - DOT_RADIUS}
+                        y={dot.y - DOT_RADIUS}
+                        width={DOT_RADIUS * 2}
+                        height={DOT_RADIUS * 2}
                       />
                     ))}
                   {index % labelEvery === 0 && (

@@ -256,9 +256,9 @@ read as a button.
 **The Dots Rule.** Dots are 4VD's identity, used at low volume rather than removed:
 the 8px halftone field in the margins either side of the page column (desktop; the
 column itself is plain canvas, max 1120px), data drawn in dots (the sales chart as
-dot columns, metric graphs as a halftone area under a line, the Today card's
-30-day dot-matrix strip with faint unlit dots), the halftone corner on the team
-app's Today card, and the four-pillar drawing. Never in tables, forms or behind text.
+block columns, metric graphs as columns of printed blocks, the Today card's
+30-day strip of square blocks with faint unlit blocks), and the dithered shop at
+sunrise. Never in tables, forms or behind text.
 
 **The Contrast Rule.** Every text and colour pair is checked by
 `admin/src/theme/contrast.test.ts` (WCAG AA): clay reaches 3:1 on paper as a UI
@@ -430,9 +430,11 @@ Hairline, captioned "Last 30 days" (`DotMatrix` in the kit).
 
 ### Metric card (signature, Reports)
 A hairline card with a muted label, an overflow button, a tabular figure, a change
-said in words in the status colour ("Much more"), and an edge-to-edge area graph: a
-2px Muted Ink line over a halftone area (a 6px dot pattern). No data shows a faint
-wave and a small pill.
+said in words in the status colour ("Much more"), and a block graph: columns of 10
+printed blocks laid out by CSS grid (never a stretched SVG), 36 columns (72 on a
+large card), lit blocks in Muted Ink, the latest column in Ink, the rest in Hairline.
+Short series repeat across columns, long ones are averaged. No data shows the empty
+block grid and a small pill.
 
 ### Sales chart
 Each day a column of dots (6px apart, as many columns as fit the day's width) in
@@ -441,9 +443,9 @@ grid, an ink tooltip with paper text. One keyboard stop, arrow keys walk the day
 and "Show as table" offers the same data as a table.
 
 ### Halftone drawing
-The four-pillar building drawn in orange dots inside a thin strong-hairline circle,
-over an 8px dot field. It appears on sign-in (with floating "shop moment" cards), as
-empty-state art (140px), and in the logo. Nowhere else.
+Retired: the round dotted building is replaced everywhere by the dithered shop at
+sunrise (see Printed paper): on sign-in (over the 8px dot field, with floating "shop
+moment" cards), as big empty-state art (240px) and on the Today cards.
 
 ### Printed paper (both apps)
 The vintage, editorial-print finish, after anthropic.com's textured stock:

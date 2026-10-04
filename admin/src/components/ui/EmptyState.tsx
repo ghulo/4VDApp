@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Halftone } from './Halftone';
 import { PixelArt } from './PixelArt';
+import { ShopSunrise } from './ShopSunrise';
 import type { PixelArtName } from './pixelDrawings';
 
 interface EmptyStateProps {
@@ -8,7 +8,7 @@ interface EmptyStateProps {
   /** What to do next, in a sentence. */
   children?: ReactNode;
   action?: ReactNode;
-  /** Draws the halftone building above the words, for big empty pages. */
+  /** Draws the dithered shop above the words, for big empty pages. */
   art?: boolean;
   /** The job's blocky pictogram above the words, for lists of that job. */
   pictogram?: PixelArtName;
@@ -20,7 +20,7 @@ export function EmptyState({ title, children, action, art, pictogram }: EmptySta
     <div className={art ? 'empty-state empty-state--art' : 'empty-state'}>
       {art && (
         <div className="empty-state__art">
-          <Halftone />
+          <ShopSunrise />
         </div>
       )}
       {pictogram && !art && <PixelArt name={pictogram} className="empty-state__pictogram" />}

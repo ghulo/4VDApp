@@ -525,7 +525,7 @@
   background: var(--bg);
 }
 
-/* The story side: halftone dots, the dotted 4VD building, dashed rail on the edge. */
+/* The story side: halftone dots, the dithered shop at sunrise, dashed rail on the edge. */
 .login__story {
   position: relative;
   display: flex;
@@ -561,10 +561,7 @@
 }
 
 .login__art {
-  width: min(300px, 70%);
-  padding: var(--space-5);
-  border-radius: 50%;
-  background: var(--surface-sunk);
+  width: min(380px, 85%);
 }
 
 .login__moment {

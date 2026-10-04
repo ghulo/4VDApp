@@ -28,6 +28,8 @@ export const recordSaleSchema = z.object({
   quantity: z.number().int().min(1).max(1_000_000),
   notes: optionalText(1000),
   saleDate: isoDate.transform((value) => new Date(value)).optional(),
+  /** Puts the sale on this customer's tab instead of taking the money now. */
+  customerId: idSchema.optional(),
 });
 
 export const saleQuerySchema = paginationSchema.extend({

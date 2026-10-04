@@ -194,7 +194,10 @@ function AttentionPanel() {
         <ul className="restock-list">
           {insights.data.map((insight) => (
             <li key={`${insight.kind}-${insight.productId}-${insight.title}`}>
-              <Link to={`/inventory/${insight.productId}`} className={`attention__row attention__row--${insight.severity}`}>
+              <Link
+                to={insight.customerId ? `/tabs?customer=${insight.customerId}` : `/inventory/${insight.productId}`}
+                className={`attention__row attention__row--${insight.severity}`}
+              >
                 <span className="attention__severity">{t.overview.severity[insight.severity]}</span>
                 <span>
                   <span className="restock-list__name">{insight.title}</span>

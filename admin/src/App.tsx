@@ -28,6 +28,7 @@ import { SalesPage } from './pages/SalesPage';
 import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
 import { ExpensesPage } from './pages/ExpensesPage';
+import { TabsPage } from './pages/TabsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PromotionsPage } from './pages/PromotionsPage';
@@ -91,6 +92,7 @@ function App() {
                 <Route path="carwash" element={<CarwashPage />} />
                 <Route path="cash" element={<CashPage />} />
                 <Route path="expenses" element={<ExpensesPage />} />
+                <Route path="tabs" element={<TabsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="people" element={<UsersPage />} />
                 <Route path="alerts" element={<AlertsPage />} />

@@ -3,6 +3,8 @@ import type {
   AppSettings,
   CashPlace,
   CashPlaceToday,
+  Customer,
+  TabEntry,
   Category,
   InventoryItem,
   MyRequest,
@@ -84,7 +86,7 @@ export const favoritesApi = {
 };
 
 export const salesApi = {
-  record: async (input: { productId: number; quantity: number; notes: string | null }) =>
+  record: async (input: { productId: number; quantity: number; notes: string | null; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };
 
@@ -132,6 +134,15 @@ export const returnsApi = {
 export const writeOffsApi = {
   request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
     (await apiRequest<WriteOffResult>('/write-offs', { method: 'POST', body: input })).data,
+};
+
+export const customersApi = {
+  list: async () => (await apiRequest<Customer[]>('/customers')).data,
+  detail: async (id: number) => (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}`)).data,
+  create: async (input: { name: string; phone: string | null; note: string | null }) =>
+    (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
+  pay: async (id: number, input: { amount: number; note: string | null }) =>
+    (await apiRequest<Customer>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
 };
 
 export const cashApi = {

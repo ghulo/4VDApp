@@ -32,6 +32,8 @@ import type {
   ExpensePlace,
   ExpenseTotals,
   RecurringExpense,
+  Customer,
+  TabEntry,
   Business,
   Invite,
   InvitePreview,
@@ -230,7 +232,7 @@ export const salesApi = {
     });
     return { items: data.sales, totalRevenue: data.totalRevenue, meta: meta! };
   },
-  record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string }) =>
+  record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };
 
@@ -349,6 +351,18 @@ export const expensesApi = {
   recurring: async () => (await apiRequest<RecurringExpense[]>('/expenses/recurring')).data,
   stopRepeating: async (id: number) => {
     await apiRequest(`/expenses/recurring/${id}/stop`, { method: 'POST' });
+  },
+};
+
+export const customersApi = {
+  list: async () => (await apiRequest<Customer[]>('/customers')).data,
+  detail: async (id: number) => (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}`)).data,
+  create: async (input: { name: string; phone: string | null; note: string | null }) =>
+    (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
+  pay: async (id: number, input: { amount: number; note: string | null }) =>
+    (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
+  archive: async (id: number) => {
+    await apiRequest(`/customers/${id}/archive`, { method: 'POST' });
   },
 };
 

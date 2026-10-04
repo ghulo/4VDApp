@@ -33,6 +33,8 @@ import { CashCountRepository } from './repositories/CashCountRepository.js';
 import { CashCountService } from './services/CashCountService.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
+import { TabRepository } from './repositories/TabRepository.js';
+import { TabService } from './services/TabService.js';
 import { ErrorAlertService } from './services/ErrorAlertService.js';
 import { LaunchRepository } from './repositories/LaunchRepository.js';
 import { LaunchService } from './services/LaunchService.js';
@@ -159,8 +161,17 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     undoRepository,
     new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
   );
-  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
-  const cashCountService = new CashCountService(new CashCountRepository(db), reportsRepository, settingsService, transactions, config.shopTimeZone);
+  const tabRepository = new TabRepository(db);
+  const tabService = new TabService(tabRepository, transactions);
+  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService);
+  const cashCountService = new CashCountService(
+    new CashCountRepository(db),
+    reportsRepository,
+    tabRepository,
+    settingsService,
+    transactions,
+    config.shopTimeZone,
+  );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
@@ -296,6 +307,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     carwashService,
     cashCountService,
     expenseService,
+    tabService,
     pushService,
     insightsService,
     dailySummaryService,

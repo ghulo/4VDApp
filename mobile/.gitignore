@@ -41,3 +41,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Copied from node_modules on install (scripts/copy-zxing.mjs).
+public/zxing/

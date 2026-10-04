@@ -41,7 +41,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "postinstall": "node scripts/copy-zxing.mjs"
   },
   "private": true
 }

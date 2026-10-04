@@ -350,7 +350,7 @@ Hover answers with a fill change (sunk paper or fill), never light.
 
 Soft, generous corners, as on anthropic.com: 8px on controls, callouts, notices and
 tooltips (6px on segmented options and palette rows); 16px on cards, tables, metric
-cards, panels and the palette; pills only for badges and counts. Borders are single 1px hairlines.
+cards, panels and the palette; pills only for count badges; squared stamps for status. Borders are single 1px hairlines.
 Secondary buttons and the selected segment use a 1px inset ring rather than a
 border. Callouts (AI answers, price suggestions) sit on sunk paper with no border.
 A dashed hairline marks something you can see but not change (the read-only note)
@@ -403,8 +403,15 @@ pills with paper text; collapsed, they shrink onto the icon. The command palette
 (Ctrl K) is a 620px floating panel with grouped results.
 
 ### Badges
-Pill, 22px, tinted fill with strong text in the status colour (ok, warn, danger,
-info, neutral). The words always carry the meaning, never the colour alone.
+Stamps, like a rubber stamp on a stock ticket: 22px, monospace capitals (11px,
+0.06em), a 1px outline in the status colour (ok, warn, danger, info, neutral, ink),
+3px corners, no tinted fill. The Overview's severity tags and the stock warning use
+the same stamp. The words always carry the meaning, never the colour alone.
+
+### Stock tag
+The shelf-tag count over a row of 10 printed blocks (both apps): full at twice the
+reorder level, a wider gap after the fifth block marking the reorder point, lit
+blocks in the stock colour and the rest in Strong Hairline. No rounded bars.
 
 ### Data tables
 Framed like a card; an optional toolbar strip (search, filters) and footer strip

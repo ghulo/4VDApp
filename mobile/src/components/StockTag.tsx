@@ -17,15 +17,18 @@ interface StockTagProps {
   size?: 'regular' | 'large';
 }
 
+const BLOCKS = 10;
+
 /**
- * Shelf-tag style stock count, matching the admin dashboard. The bar is full
- * at twice the reorder level, so the notch in the middle marks "reorder now".
+ * Shelf-tag style stock count, matching the admin dashboard: a row of printed
+ * blocks, full at twice the reorder level, with a wider gap after the fifth
+ * block marking "reorder now".
  */
 export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagProps) {
   const colors = useThemeColors();
   const t = useT();
   const level = stockLevel(quantity, reorderLevel);
-  const fill = Math.min(quantity / Math.max(reorderLevel * 2, 1), 1);
+  const lit = Math.round(Math.min(quantity / Math.max(reorderLevel * 2, 1), 1) * BLOCKS);
   const barColor = { out: colors.signalOut, low: colors.signalLow, ok: colors.stockOk }[level];
   const isLarge = size === 'large';
 
@@ -44,11 +47,17 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
       >
         {quantity}
       </Text>
-      <View style={[styles.gauge, isLarge && styles.gaugeLarge, { backgroundColor: colors.line }]}>
-        <View style={[styles.fill, { width: `${fill * 100}%`, backgroundColor: barColor }]} />
-        <View style={[styles.notch, { backgroundColor: colors.surface }]} />
+      <View style={[styles.gauge, isLarge && styles.gaugeLarge]}>
+        {Array.from({ length: BLOCKS }, (_, index) => (
+          <View
+            key={index}
+            style={[styles.block, index === BLOCKS / 2 && styles.reorderGap, { backgroundColor: index < lit ? barColor : colors.lineStrong }]}
+          />
+        ))}
       </View>
-      <Text style={[styles.label, { color: colors.steel }]}>{t.stockTag[level]}</Text>
+      <Text style={[styles.label, { color: barColor === colors.stockOk ? colors.steel : barColor }]}>
+        {t.stockTag[level].toLocaleUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -58,9 +67,10 @@ const styles = StyleSheet.create({
   containerLarge: { minWidth: 160, gap: 6 },
   count: { fontFamily: fonts.displayBold, fontSize: 24, lineHeight: 26, fontVariant: ['tabular-nums'] },
   countLarge: { fontSize: 64, lineHeight: 66 },
-  gauge: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  gaugeLarge: { height: 8, borderRadius: 3 },
-  fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  notch: { position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2 },
-  label: { fontFamily: fonts.body, fontSize: 12 },
+  gauge: { flexDirection: 'row', gap: 2, height: 6 },
+  gaugeLarge: { gap: 3, height: 10 },
+  block: { flex: 1 },
+  // The reorder point: a wider gap after the fifth block.
+  reorderGap: { marginLeft: 2 },
+  label: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
 });

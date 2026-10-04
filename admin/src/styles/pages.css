@@ -65,9 +65,9 @@
 .stock-tag {
   --tag-color: var(--stock-ok);
   display: inline-grid;
-  grid-template-rows: auto 4px;
-  gap: 3px;
-  min-width: 3.25rem;
+  grid-template-rows: auto 6px;
+  gap: 4px;
+  min-width: 4rem;
   font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   color: var(--ink);
@@ -93,26 +93,22 @@
 }
 
 .stock-tag__gauge {
-  position: relative;
-  background: var(--line);
-  border-radius: 2px;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
 }
 
-.stock-tag__fill {
-  position: absolute;
-  inset: 0 auto 0 0;
+.stock-tag__block {
+  background: var(--line-strong);
+}
+
+.stock-tag__block--lit {
   background: var(--tag-color);
 }
 
-/* The bar is full at twice the reorder level, so the mark sits at 50%. */
-.stock-tag__reorder-mark {
-  position: absolute;
-  left: 50%;
-  top: -1px;
-  bottom: -1px;
-  width: 2px;
-  background: var(--surface);
+/* The reorder point: a wider gap after the fifth block. */
+.stock-tag__block:nth-child(6) {
+  margin-left: 2px;
 }
 
 .stock-tag--large {
@@ -127,7 +123,7 @@
 }
 
 .stock-tag--large .stock-tag__gauge {
-  border-radius: 3px;
+  gap: 3px;
 }
 
 .stock-hero {
@@ -139,12 +135,15 @@
 
 .stock-hero__warning {
   align-self: flex-start;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--warn-soft);
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
   color: var(--warn);
-  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 
@@ -330,23 +329,25 @@
 
 /* The severity reads like a badge: tinted fill, strong text. */
 .attention__severity {
+  /* A stamp, like .badge: monospace capitals in a squared outline. */
   justify-self: start;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--info-soft);
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
   color: var(--info);
-  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 600;
-  line-height: 18px;
+  letter-spacing: 0.06em;
+  line-height: 20px;
+  text-transform: uppercase;
 }
 
 .attention__row--urgent .attention__severity {
-  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .attention__row--warning .attention__severity {
-  background: var(--warn-soft);
   color: var(--warn);
 }
 

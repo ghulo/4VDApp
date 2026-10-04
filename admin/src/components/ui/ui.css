@@ -638,46 +638,46 @@
 /* ---------- Badge ---------- */
 
 .badge {
+  /* A rubber stamp on a stock ticket: monospace capitals in a squared outline,
+     no tinted fill. The colour names the state; the word carries it. */
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: var(--text-xs);
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.06em;
   line-height: 1;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .badge--neutral {
-  background: var(--fill);
   color: var(--ink-muted);
 }
 
 .badge--ok {
-  background: var(--ok-soft);
   color: var(--ok);
 }
 
 .badge--warn {
-  background: var(--warn-soft);
   color: var(--warn);
 }
 
 .badge--danger {
-  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .badge--info {
-  background: var(--info-soft);
   color: var(--info);
 }
 
-/* Roles and promotions: a quiet ink chip, so orange stays for the main action. */
+/* Roles and promotions: an ink stamp, so clay stays for the brand. */
 .badge--brand {
-  background: var(--fill);
   color: var(--ink);
 }
 

@@ -35,8 +35,10 @@ const PAIRS: Array<[string, string, number]> = [
   ['warn', 'warn-soft', 4.5],
   ['danger', 'danger-soft', 4.5],
   ['info', 'info-soft', 4.5],
-  ['warn', 'surface', 3],
-  ['ok', 'surface', 3],
+  // Badges are stamps: status-coloured words straight on paper.
+  ['warn', 'surface', 4.5],
+  ['ok', 'surface', 4.5],
+  ['info', 'surface', 4.5],
   ['focus', 'surface', 3],
   // Count badges and the chart tooltip: paper-coloured text on ink.
   ['surface', 'ink', 4.5],

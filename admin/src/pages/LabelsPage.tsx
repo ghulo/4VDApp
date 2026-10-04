@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import { BarcodeImage } from '../components/BarcodeImage';
+import { QrImage } from '../components/QrImage';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -15,6 +16,9 @@ import { Button, Card, Field, PageHeader } from '../components/ui';
 
 type Layout = 'sheet' | 'roll';
 const LAYOUTS: Layout[] = ['sheet', 'roll'];
+/** Barcodes suit shop scanners; QR codes suit phones (any camera opens the product). */
+type Symbols = 'barcode' | 'qr' | 'both';
+const SYMBOLS: Symbols[] = ['barcode', 'qr', 'both'];
 const MAX_COPIES = 100;
 
 /** Page sizes for printing: an A4 sticker sheet, or one small label at a time on a label printer. */
@@ -35,6 +39,7 @@ export function LabelsPage() {
     Object.fromEntries((params.get('products') ?? '').split(',').filter(Boolean).map((id) => [Number(id), 1])),
   );
   const [layout, setLayout] = useState<Layout>('sheet');
+  const [symbols, setSymbols] = useState<Symbols>('barcode');
   const [search, setSearch] = useState('');
 
   const chosen = (products.data?.items ?? []).filter((product) => (copies[product.id] ?? 0) > 0);
@@ -53,10 +58,19 @@ export function LabelsPage() {
   const labels = chosen.filter((product) => product.barcode).flatMap((product) => Array.from({ length: copies[product.id]! }, () => product));
 
   const sheet = labels.map((product, index) => (
-    <article key={`${product.id}-${index}`} className="label">
-      <p className="label__name">{product.name}</p>
-      <p className="label__price">{formatMoney(product.price)}</p>
-      <BarcodeImage value={product.barcode!} height={layout === 'roll' ? 34 : 40} label={t.barcodes.imageLabel(product.name, product.barcode!)} />
+    <article key={`${product.id}-${index}`} className={symbols === 'barcode' ? 'label' : 'label label--qr'}>
+      {symbols !== 'barcode' && <QrImage code={product.barcode!} size={layout === 'roll' ? 72 : 80} label={t.barcodes.qrLabel(product.name)} />}
+      <div className="label__text">
+        <p className="label__name">{product.name}</p>
+        <p className="label__price">{formatMoney(product.price)}</p>
+        {symbols !== 'qr' && (
+          <BarcodeImage
+            value={product.barcode!}
+            height={symbols === 'both' ? 24 : layout === 'roll' ? 34 : 40}
+            label={t.barcodes.imageLabel(product.name, product.barcode!)}
+          />
+        )}
+      </div>
     </article>
   ));
 
@@ -111,6 +125,14 @@ export function LabelsPage() {
           ))}
         </div>
         <p className="field-hint">{t.labels.layoutHints[layout]}</p>
+        <div className="segmented" role="radiogroup" aria-label={t.labels.symbols}>
+          {SYMBOLS.map((option) => (
+            <button key={option} type="button" role="radio" aria-checked={symbols === option} className="segmented__option" onClick={() => setSymbols(option)}>
+              {t.labels.symbolOptions[option]}
+            </button>
+          ))}
+        </div>
+        <p className="field-hint">{t.labels.symbolHints[symbols]}</p>
         {missing.length > 0 && (
           <div className="callout">
             <p>{t.labels.missing(missing.length)}</p>

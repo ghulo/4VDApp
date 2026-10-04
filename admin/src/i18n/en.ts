@@ -681,6 +681,8 @@ export const en = {
     scanHint: 'With a USB scanner, click here and scan: it saves by itself.',
     save: 'Save barcode',
     create: 'Make a barcode',
+    qrLabel: (name: string) => `QR code of ${name}: opens it in the team app`,
+    qrHint: 'The QR code opens this product in the team app when scanned with any phone camera.',
   },
   labels: {
     title: 'Labels',
@@ -700,6 +702,13 @@ export const en = {
     missing: (count: number) => `${count} of the chosen ${count === 1 ? 'product has' : 'products have'} no barcode, so ${count === 1 ? 'it is' : 'they are'} left out.`,
     createMissing: (count: number) => `Make ${count === 1 ? 'a barcode' : `${count} barcodes`}`,
     printButton: 'Print labels',
+    symbols: 'What to print',
+    symbolOptions: { barcode: 'Barcode', qr: 'QR code', both: 'Both' },
+    symbolHints: {
+      barcode: 'For the shop scanner at the counter.',
+      qr: 'For phones: any camera opens the product in the team app.',
+      both: 'A QR code for phones and a barcode for the shop scanner.',
+    },
     preview: 'Label preview',
   },
   basket: {

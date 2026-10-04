@@ -3,10 +3,11 @@ import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { useT } from '../i18n/useT';
+import { codeFromScan } from '../utils/scanLinks';
 import { Button } from './ui';
 
-/** Product barcodes, plus the Code 128 that some suppliers print. */
-const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
+/** Product barcodes, the Code 128 some suppliers print, and the shop's own QR codes. */
+const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'qr'] as const;
 /** The camera sees the same code many times a second; one read per this long. */
 const SAME_CODE_PAUSE_MS = 1500;
 
@@ -21,10 +22,11 @@ export function BarcodeScanner({ onScan }: { onScan: (code: string) => void }) {
   const last = useRef<{ code: string; at: number } | null>(null);
 
   function handleScan(result: BarcodeScanningResult) {
+    const code = codeFromScan(result.data);
     const now = Date.now();
-    if (last.current && last.current.code === result.data && now - last.current.at < SAME_CODE_PAUSE_MS) return;
-    last.current = { code: result.data, at: now };
-    onScan(result.data);
+    if (last.current && last.current.code === code && now - last.current.at < SAME_CODE_PAUSE_MS) return;
+    last.current = { code, at: now };
+    onScan(code);
   }
 
   if (!permission) return null;

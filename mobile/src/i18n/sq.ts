@@ -192,6 +192,11 @@ export const sq: Catalogue = {
     removeFavorite: 'Hiq nga favoritet',
     saveFavorite: 'Ruaje te favoritet',
   },
+  scan: {
+    title: 'Produkti i skanuar',
+    notFound: 'Asnjë produkt nuk u gjet',
+    notFoundHint: (code) => `Asgjë në dyqan nuk ka kodin ${code}. Etiketa mund të jetë e vjetër.`,
+  },
   sell: {
     nothingInStock: 'Asgjë në stok për të shitur',
     whichProduct: 'Cilin produkt shite?',

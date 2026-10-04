@@ -1733,3 +1733,31 @@
     break-after: page;
   }
 }
+
+
+/* QR codes: next to the barcode on a product's page, and beside the text on labels. */
+.qr-image {
+  display: block;
+}
+
+.barcode-card__symbols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.label--qr {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  text-align: left;
+  column-gap: var(--space-2);
+}
+
+.label__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  justify-items: inherit;
+}

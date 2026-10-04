@@ -19,7 +19,8 @@ const bare = mark.replace(TILE, '');
 const inkOnly = bare.replace(/\s*<circle[^>]*\/>/, '').replace(/\s*<rect[^>]*fill="#FAF9F5"\/>/g, '');
 if (inkOnly.includes('#D4704F') || inkOnly.includes('#FAF9F5')) throw new Error('could not strip the sun from logo-mark.svg');
 
-const out = (path) => new URL(`../mobile/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const fileIn = (app, path) => new URL(`../${app}/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const out = (path) => fileIn('mobile', path);
 
 /** Renders `svg` at `size` px; `padding` is the share of each side left empty (maskable icons get cropped). */
 async function render(svg, size, padding = 0) {
@@ -32,10 +33,13 @@ async function render(svg, size, padding = 0) {
 
 const onIvory = (image) => image.flatten({ background: IVORY });
 
-await (await render(square, 180)).png().toFile(out('public/apple-touch-icon.png'));
-await (await render(square, 192)).png().toFile(out('public/icon-192.png'));
-await (await render(square, 512)).png().toFile(out('public/icon-512.png'));
-await onIvory(await render(bare, 512, 0.06)).png().toFile(out('public/icon-maskable-512.png'));
+// Home-screen icons for both web apps: the team app and the dashboard.
+for (const app of ['mobile', 'admin']) {
+  await (await render(square, 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
+  await (await render(square, 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
+  await (await render(square, 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
+  await onIvory(await render(bare, 512, 0.06)).png().toFile(fileIn(app, 'public/icon-maskable-512.png'));
+}
 await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));
 await (await render(square, 1024)).png().toFile(out('assets/icon.png'));
 await (await render(bare, 1024, 0.1)).png().toFile(out('assets/android-icon-foreground.png'));

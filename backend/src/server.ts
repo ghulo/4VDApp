@@ -15,6 +15,8 @@ await ensureFirstAdmin(db, {
   name: process.env.SEED_ADMIN_NAME,
 });
 const app = createApp(config, db, { container });
+// Every error logged from here on reaches the developer by email (at most hourly).
+logger.onError((message, context) => container.errorAlertService.record(message, context));
 
 /** How often new notifications are pushed to phones and browsers, and queued emails sent. */
 const PUSH_INTERVAL_MS = 5_000;
@@ -28,6 +30,10 @@ const summaryTimer = setInterval(() => {
   container.weeklyReportService
     .sendIfDue()
     .catch((error) => logger.error('Sending the weekly report failed', { error: String(error) }));
+  container.errorAlertService
+    .sendIfDue()
+    // Logged as a warning on purpose: as an error it would be counted again and retried forever.
+    .catch((error) => logger.warn('Sending the error alert failed', { error: String(error) }));
 }, SUMMARY_CHECK_MS);
 
 const pushTimer = setInterval(() => {

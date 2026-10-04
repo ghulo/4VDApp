@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { WIPED_AT_KEY } from '../repositories/LaunchRepository.js';
 
 /** What has to be typed to really delete, so it can't happen by accident. */
 export const WIPE_PHRASE = 'wipe 4vd.app';
@@ -74,6 +75,11 @@ export async function wipeShopData(db: DatabaseClient, options: { apply: boolean
           AND id NOT IN (SELECT logo_media_id FROM businesses WHERE logo_media_id IS NOT NULL)
       `.execute(trx);
       deleted.media = Number(media.numAffectedRows ?? 0n);
+      // Ticks off "test data wiped" on the launch checklist.
+      await sql`
+        INSERT INTO settings (key, value, updated_at) VALUES (${WIPED_AT_KEY}, to_jsonb(now()::text), now())
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+      `.execute(trx);
     }
 
     return { applied: options.apply, keptDevelopers: developers.map((developer) => developer.email), deleted };

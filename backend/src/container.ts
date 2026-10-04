@@ -29,6 +29,9 @@ import { ProductRepository } from './repositories/ProductRepository.js';
 import { PromotionRepository } from './repositories/PromotionRepository.js';
 import { CarwashRepository } from './repositories/CarwashRepository.js';
 import { CarwashService } from './services/CarwashService.js';
+import { ErrorAlertService } from './services/ErrorAlertService.js';
+import { LaunchRepository } from './repositories/LaunchRepository.js';
+import { LaunchService } from './services/LaunchService.js';
 import { PromotionService } from './services/PromotionService.js';
 import { PushRepository } from './repositories/PushRepository.js';
 import { InsightsRepository } from './repositories/InsightsRepository.js';
@@ -229,6 +232,12 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
     config.dashboardUrl,
   );
+  const launchService = new LaunchService(new LaunchRepository(db), {
+    // Resend's shared test sender only reaches the account owner, so it doesn't count as real.
+    realEmails: Boolean(config.email.resendApiKey) && !config.email.from.includes('resend.dev'),
+    phoneAlerts: Boolean(config.webPush),
+  });
+  const errorAlertService = new ErrorAlertService(userRepository, settingsRepository, emailService);
   const pushService = new PushService(
     new PushRepository(db),
     options.pushSenders ?? {
@@ -246,6 +255,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     manage: [authenticated, requireRole(...MANAGER_ROLES)] as RequestHandler[],
     oversee: [authenticated, requireRole(...OVERSEER_ROLES)] as RequestHandler[],
     staff: [authenticated, requireRole(...SELLER_ROLES)] as RequestHandler[],
+    developer: [authenticated, requireRole('developer')] as RequestHandler[],
   };
 
   return {
@@ -290,6 +300,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     googleAuthService,
     signupService,
     weeklyReportService,
+    errorAlertService,
+    launchService,
     guards,
   };
 }

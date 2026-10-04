@@ -1,0 +1,26 @@
+# Checks every 10 minutes that the live API answers. When it doesn't, this
+# run fails and GitHub emails the repository owner, so a server that's down
+# at night is noticed before the morning shift. (The server can't report
+# itself when it's down, so the check has to come from outside.)
+name: Uptime
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Is api.4vd.app up?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask the API's health check, with a few retries
+        run: |
+          for attempt in 1 2 3; do
+            if curl --fail --silent --show-error --max-time 20 https://api.4vd.app/health; then exit 0; fi
+            echo "Attempt $attempt failed; trying again in 30 seconds."
+            sleep 30
+          done
+          echo "::error::api.4vd.app did not answer its health check three times in a row."
+          exit 1

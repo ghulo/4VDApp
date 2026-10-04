@@ -162,66 +162,60 @@ After this, pushes to `main` deploy by themselves: Render redeploys the API once
 
 ---
 
-## Error Tracking & Logging
+## Errors and Uptime
 
-**Service:** Sentry (Free Tier)
+**Error emails.** Every error the server logs is counted, and the developer
+accounts get an email about it: the first error in an hour within a minute,
+anything after that together in the next hour's email (at most one an hour).
+It needs real emails (`RESEND_API_KEY`, `EMAIL_FROM`). Full details are in the
+Render logs for `4vd-api`.
 
-**Setup:**
-```bash
-# Install Sentry in backend
-npm install @sentry/node
-
-# Initialize in server.js
-const Sentry = require('@sentry/node');
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
-});
-app.use(Sentry.Handlers.requestHandler());
-app.use(Sentry.Handlers.errorHandler());
-```
-
-**Benefits:**
-- Real-time error alerts
-- Error source tracking
-- Release tracking
-- Free plan: 5,000 events/month
+**Uptime check.** `.github/workflows/uptime.yml` asks `https://api.4vd.app/health`
+every 10 minutes, three tries each time. When the API doesn't answer, the run
+fails and GitHub emails the repository owner. GitHub pauses scheduled runs in a
+repository with no pushes for 60 days; push something or re-enable it under
+Actions if that happens.
 
 ---
 
 ## Database Backups
 
-**Method:** Managed Backups (Render/Railway/AWS)
+Two layers:
 
-**Render PostgreSQL:**
-- Daily automated backups
-- 7-day retention
-- Point-in-time recovery
+1. **Render point-in-time restore** (3 days on the current plan): for "undo the
+   last few hours". Render dashboard > `4vd-db` > Recovery.
+2. **Weekly encrypted copy in Cloudflare R2**, kept 90 days:
+   `.github/workflows/backup.yml`, Sundays 02:30 UTC. Each copy is checked to be
+   readable before it is encrypted and uploaded.
 
-**Manual Backup (Optional):**
+### One-time setup
+
+1. Cloudflare dashboard > R2 > Create bucket `4vd-backups` (location: EU).
+2. R2 > Manage API tokens > Create token with **Object Read & Write** on that
+   bucket only. Note the Access Key ID, Secret Access Key and your Account ID.
+3. Render dashboard > `4vd-db` > Connect > copy the **External** connection string.
+4. Make a long random passphrase (e.g. a password manager's 6-word phrase) and
+   keep it somewhere safe outside GitHub. **Without it no backup can be opened.**
+5. GitHub > the repository > Settings > Secrets and variables > Actions > New
+   repository secret, one each: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`,
+   `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
+6. Actions > Database backup > Run workflow. It should go green and a file
+   `database/4vd-YYYY-MM-DD.dump.gpg` should appear in the bucket.
+
+### Restore
+
 ```bash
-# Export database
-pg_dump $DATABASE_URL > backup-$(date +%Y-%m-%d).sql
-
-# Restore
-psql $DATABASE_URL < backup-2026-10-01.sql
+# 1. Download the copy from R2 (dashboard, or the aws CLI with the R2 endpoint).
+# 2. Unlock it with the passphrase:
+gpg --decrypt 4vd-2026-10-11.dump.gpg > 4vd.dump
+# 3. Restore into an EMPTY database first and check it (never straight over live data):
+pg_restore --no-owner --no-privileges --dbname "$EMPTY_DATABASE_URL" 4vd.dump
+# 4. When it looks right, point DATABASE_URL on Render at it, or restore into
+#    the live database after taking a fresh copy of what's there now.
 ```
 
----
-
-## Monitoring & Health
-
-**Health Check Endpoint:**
-```javascript
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
-});
-```
-
-**Monitor with:**
-- Render: Built-in health checks
-- Uptime monitoring: UptimeRobot (free)
-- Sentry: Error tracking
+Practise this once after setup, with a local database
+(`docker compose up -d`, then restore into `four_vd_app`), so it isn't new on a bad day.
 
 ---
 
@@ -283,9 +277,9 @@ app.use('/api/', limiter);
 - [ ] Database migrations run successfully
 - [ ] SSL certificate installed (auto with Render)
 - [ ] API health check endpoint working
-- [ ] Sentry error tracking configured
+- [ ] Error emails reach the developer (real emails on)
 - [ ] Rate limiting enabled
-- [ ] Database backups enabled
+- [ ] Weekly R2 backup secrets set and one run green (see Database Backups)
 - [ ] Admin user created
 - [ ] Initial products loaded
 - [ ] Mobile API URL points to production domain

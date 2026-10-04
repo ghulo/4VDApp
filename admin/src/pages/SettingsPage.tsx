@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BusinessPanel } from '../components/BusinessPanel';
+import { LaunchChecklist } from '../components/LaunchChecklist';
+import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Button, Card, PageHeader, SettingRow } from '../components/ui';
 import { settingsApi } from '../services/api';
@@ -11,6 +13,7 @@ import { useT } from '../i18n/useT';
 
 export function SettingsPage() {
   const t = useT();
+  const { role } = useCurrentUser();
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
@@ -22,6 +25,7 @@ export function SettingsPage() {
         title={t.settings.title}
         description={t.settings.description}
       />
+      {role === 'developer' && <LaunchChecklist />}
       <ManagersOnly note={t.settings.managersOnly}>
         <BusinessPanel />
         {settings.isPending && <Loading />}

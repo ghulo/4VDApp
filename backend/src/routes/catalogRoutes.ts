@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { readImage } from './profileRoutes.js';
 import type { Container } from '../container.js';
 import { createCategoryController } from '../controllers/categoryController.js';
 import { createInventoryController } from '../controllers/inventoryController.js';
@@ -27,6 +28,8 @@ export function createProductRoutes({ productService, activityLogService, guards
   router.get('/:id', guards.authenticated, controller.getById);
   router.put('/:id/barcode', ...guards.manage, controller.setBarcode);
   router.post('/:id/barcode', ...guards.manage, controller.createBarcode);
+  router.put('/:id/image', ...guards.manage, readImage, controller.setImage);
+  router.delete('/:id/image', ...guards.manage, controller.removeImage);
   router.get('/:id/price-history', ...guards.oversee, controller.priceHistory);
   router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);

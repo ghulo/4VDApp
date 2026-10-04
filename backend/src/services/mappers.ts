@@ -36,3 +36,10 @@ export function toPublicUser(user: UserRow): PublicUser {
 export function mediaUrl(mediaId: string | null): string | null {
   return mediaId ? `/api/media/${mediaId}` : null;
 }
+
+const MEDIA_URL = /^\/api\/media\/([0-9a-f-]{36})$/i;
+
+/** The id of an uploaded image from its URL, or null for an outside link or none. */
+export function mediaIdFrom(url: string | null): string | null {
+  return url?.match(MEDIA_URL)?.[1] ?? null;
+}

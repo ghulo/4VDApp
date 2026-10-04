@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Link } from 'react-router';
 import { buttonClass, type ButtonVariant } from './buttonClass';
 
@@ -21,7 +21,7 @@ function Contents({ icon: IconComponent, children, size }: Look) {
   );
 }
 
-type ButtonProps = Look & ButtonHTMLAttributes<HTMLButtonElement> & { wide?: boolean };
+type ButtonProps = Look & ButtonHTMLAttributes<HTMLButtonElement> & { wide?: boolean; ref?: Ref<HTMLButtonElement> };
 
 /** Primary for the one main action, secondary for the rest, ghost for quiet ones, danger to destroy. */
 export function Button({ variant, size, icon, wide, className, type = 'button', children, ...rest }: ButtonProps) {

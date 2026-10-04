@@ -171,5 +171,7 @@ export function saveDownload(blob: Blob, filename: string): void {
 
 /** Full address of an uploaded picture, from the path the API gives (e.g. /api/media/…). */
 export function mediaSrc(path: string | null | undefined): string | null {
-  return path ? `${API_URL}${path}` : null;
+  if (!path) return null;
+  // Uploaded pictures live on the API; an outside link is used as it is.
+  return /^https?:\/\//.test(path) ? path : `${API_URL}${path}`;
 }

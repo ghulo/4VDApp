@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
+import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { inventoryApi, reportsApi } from '../services/api';
 import type { ReorderSuggestion } from '../services/types';
@@ -63,12 +64,15 @@ export function InventoryPage() {
               header: t.inventory.product,
               title: true,
               cell: (item) => (
-                <>
-                  <Link to={`/inventory/${item.productId}`} className="table__primary-link">
-                    {item.productName}
-                  </Link>
-                  {item.sku && <span className="table__secondary">{item.sku}</span>}
-                </>
+                <span className="product-cell">
+                  <ProductPhoto src={item.imageUrl} />
+                  <span className="product-cell__text">
+                    <Link to={`/inventory/${item.productId}`} className="table__primary-link">
+                      {item.productName}
+                    </Link>
+                    {item.sku && <span className="table__secondary">{item.sku}</span>}
+                  </span>
+                </span>
               ),
             },
             { header: t.inventory.reorderAt, align: 'end', cell: (item) => item.reorderLevel },

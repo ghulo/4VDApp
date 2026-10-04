@@ -3,18 +3,18 @@ import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { MediaRepository } from '../repositories/MediaRepository.js';
 
 /** Longest side in pixels for each kind of picture. */
-const SIZES = { avatar: 256, logo: 512 } as const;
+const SIZES = { avatar: 256, logo: 512, product: 800 } as const;
 export type MediaKind = keyof typeof SIZES;
 
 /**
- * Small pictures (profile photos, the shop logo), shrunk to WebP and kept in
+ * Small pictures (profile photos, the shop logo, product photos), shrunk to WebP and kept in
  * the database. Enough for one shop; moves to file storage if 4VD becomes a
  * product for many shops.
  */
 export class MediaService {
   constructor(private readonly mediaRepository: MediaRepository) {}
 
-  async store(businessId: number, upload: Buffer, kind: MediaKind): Promise<string> {
+  async store(businessId: number | null, upload: Buffer, kind: MediaKind): Promise<string> {
     let bytes: Buffer;
     try {
       bytes = await sharp(upload, { limitInputPixels: 50_000_000 })

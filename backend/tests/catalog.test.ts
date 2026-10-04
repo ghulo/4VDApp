@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTestCategory, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
@@ -183,6 +184,67 @@ describe('products', () => {
     expect(deleted.status).toBe(200);
     expect(fetched.status).toBe(404);
     expect(row?.deleted_at).not.toBeNull();
+  });
+});
+
+describe('product photos', () => {
+  const photo = () => sharp({ create: { width: 1600, height: 1200, channels: 3, background: '#8a5a3c' } }).jpeg().toBuffer();
+  const upload = async (id: number) =>
+    request(context.app).put(`/api/products/${id}/image`).set(asAdmin()).set('Content-Type', 'image/jpeg').send(await photo());
+
+  it('should take a photo from a phone or computer, shrunk for the web', async () => {
+    const { body } = await createProduct();
+
+    const response = await upload(body.data.id);
+    const served = await request(context.app).get(response.body.data.imageUrl);
+    const size = await sharp(served.body as Buffer).metadata();
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.imageUrl).toMatch(/^\/api\/media\//);
+    expect(size).toMatchObject({ format: 'webp', width: 800, height: 600 });
+  });
+
+  it('should keep the photo when the rest of the product is saved', async () => {
+    const { body } = await createProduct();
+    const { imageUrl } = (await upload(body.data.id)).body.data;
+
+    const saved = await request(context.app)
+      .put(`/api/products/${body.data.id}`)
+      .set(asAdmin())
+      .send({ name: 'Oak Chair', categoryId, price: 110, imageUrl });
+
+    expect(saved.status).toBe(200);
+    expect(saved.body.data.imageUrl).toBe(imageUrl);
+  });
+
+  it('should delete the old picture when the photo is replaced or removed', async () => {
+    const { body } = await createProduct();
+    const first = (await upload(body.data.id)).body.data.imageUrl;
+    const second = (await upload(body.data.id)).body.data.imageUrl;
+
+    const removed = await request(context.app).delete(`/api/products/${body.data.id}/image`).set(asAdmin());
+
+    expect((await request(context.app).get(first)).status).toBe(404);
+    expect((await request(context.app).get(second)).status).toBe(404);
+    expect(removed.body.data.imageUrl).toBeNull();
+  });
+
+  it('should refuse a file that is not a picture, and staff who cannot manage products', async () => {
+    const { body } = await createProduct();
+
+    const notPicture = await request(context.app)
+      .put(`/api/products/${body.data.id}/image`)
+      .set(asAdmin())
+      .set('Content-Type', 'image/png')
+      .send(Buffer.from('not a picture'));
+    const asFamily = await request(context.app)
+      .put(`/api/products/${body.data.id}/image`)
+      .set(asBrowser())
+      .set('Content-Type', 'image/jpeg')
+      .send(await photo());
+
+    expect(notPicture.status).toBe(400);
+    expect(asFamily.status).toBe(403);
   });
 });
 

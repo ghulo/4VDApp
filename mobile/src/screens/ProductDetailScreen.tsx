@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { mediaSrc } from '../services/apiClient';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StockTag } from '../components/StockTag';
 import { Button, ErrorState, Loading } from '../components/ui';
@@ -46,7 +47,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
       {item.imageUrl && (
-        <Image source={item.imageUrl} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
+        <Image source={mediaSrc(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
       )}
 
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>

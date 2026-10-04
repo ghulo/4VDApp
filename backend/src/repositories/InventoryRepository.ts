@@ -13,6 +13,7 @@ export interface InventoryRecord {
   product_id: number;
   product_name: string;
   sku: string | null;
+  image_url: string | null;
   quantity_on_hand: number;
   reorder_level: number;
   last_restocked_at: Date | null;
@@ -33,6 +34,7 @@ export class InventoryRepository {
     'i.product_id',
     'p.name as product_name',
     'p.sku',
+    'p.image_url',
     'i.quantity_on_hand',
     'i.reorder_level',
     'i.last_restocked_at',

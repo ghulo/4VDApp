@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { mediaSrc } from '../services/apiClient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
@@ -28,7 +29,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       ]}
     >
       {product.imageUrl ? (
-        <Image source={product.imageUrl} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
+        <Image source={mediaSrc(product.imageUrl)} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
       ) : (
         <View style={[styles.image, styles.imagePlaceholder, { backgroundColor: colors.background }]}>
           <Text style={[styles.placeholderInitial, { color: colors.steel }]}>{product.name.charAt(0)}</Text>

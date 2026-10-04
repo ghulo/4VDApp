@@ -22,7 +22,8 @@ const pricingTierSchema = z.object({
 const pricingTiersSchema = z.array(pricingTierSchema).max(MAX_TIERS_PER_PRODUCT);
 
 const optionalImageUrl = z
-  .union([z.url({ protocol: /^https?$/ }), z.literal('')])
+  // An outside link, or a photo uploaded to /api/media (kept when the rest of the product is saved).
+  .union([z.url({ protocol: /^https?$/ }), z.string().regex(/^\/api\/media\/[0-9a-f-]{36}$/i), z.literal('')])
   .nullish()
   .transform((value) => (value ? value : null));
 

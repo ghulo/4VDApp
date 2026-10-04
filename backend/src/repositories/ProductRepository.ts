@@ -163,6 +163,10 @@ export class ProductRepository {
     return row?.id;
   }
 
+  async setImageUrl(id: number, imageUrl: string | null): Promise<void> {
+    await this.db.updateTable('products').set({ image_url: imageUrl, updated_at: new Date() }).where('id', '=', id).execute();
+  }
+
   async setBarcode(id: number, barcode: string | null): Promise<void> {
     await this.db.updateTable('products').set({ barcode, updated_at: new Date() }).where('id', '=', id).execute();
   }

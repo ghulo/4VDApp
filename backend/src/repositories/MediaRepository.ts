@@ -3,7 +3,7 @@ import type { DatabaseClient } from '../database/connection.js';
 export class MediaRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  async create(media: { businessId: number; mime: string; bytes: Buffer }): Promise<string> {
+  async create(media: { businessId: number | null; mime: string; bytes: Buffer }): Promise<string> {
     const row = await this.db
       .insertInto('media')
       .values({ business_id: media.businessId, mime: media.mime, bytes: media.bytes })

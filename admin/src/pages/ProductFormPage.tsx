@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarcodeCard } from '../components/BarcodeCard';
-import { type FormEvent, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { ProductPhoto } from '../components/ProductPhoto';
+import { shrinkPhoto } from '../utils/shrinkPhoto';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
 import type { Category, PriceChange, Product, ProductInput } from '../services/types';
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
-import { Package } from '@phosphor-icons/react';
+import { Camera, Package } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
@@ -35,6 +37,15 @@ interface ProductDraft {
 }
 
 let nextTierKey = 1;
+
+/** The API refuses anything bigger; shrinkPhoto keeps phone photos well under it. */
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+/** A photo picked but not uploaded yet; it goes up after the product is saved. */
+interface PickedPhoto {
+  blob: Blob;
+  preview: string;
+}
 
 function toDraft(product?: Product): ProductDraft {
   return {
@@ -105,16 +116,58 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<ProductDraft>(() => toDraft(product));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const location = useLocation();
+  const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [preparingPhoto, setPreparingPhoto] = useState(false);
+  // Set when the product saved but its photo didn't; the page reloads with it.
+  const [photoError, setPhotoError] = useState<string | null>(
+    (location.state as { photoError?: string } | null)?.photoError ?? null,
+  );
+  const photoInput = useRef<HTMLInputElement>(null);
+  const photoButton = useRef<HTMLButtonElement>(null);
+  const shownPhoto = photo?.preview ?? product?.imageUrl ?? null;
+
+  useEffect(() => () => {
+    if (photo) URL.revokeObjectURL(photo.preview);
+  }, [photo]);
+
+  async function pickPhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setPhotoError(null);
+    setPreparingPhoto(true);
+    const blob = await shrinkPhoto(file);
+    setPreparingPhoto(false);
+    if (blob.size > MAX_PHOTO_BYTES) {
+      setPhotoError(t.productForm.photoTooBig);
+      return;
+    }
+    setPhoto({ blob, preview: URL.createObjectURL(blob) });
+  }
 
   const update = <TKey extends keyof ProductDraft>(key: TKey, value: ProductDraft[TKey]) =>
     setDraft((current) => ({ ...current, [key]: value }));
 
   const save = useMutation({
-    mutationFn: (input: ProductInput) => (isNew ? productsApi.create(input) : productsApi.update(product.id, input)),
-    onSuccess: (saved) => {
+    mutationFn: async (input: ProductInput) => {
+      const saved = isNew ? await productsApi.create(input) : await productsApi.update(product.id, input);
+      if (!photo) return { saved, photoFailed: null };
+      try {
+        return { saved: await productsApi.uploadImage(saved.id, photo.blob), photoFailed: null };
+      } catch (error) {
+        return { saved, photoFailed: errorMessage(error) };
+      }
+    },
+    onSuccess: ({ saved, photoFailed }) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      if (photoFailed) {
+        // The product exists now, so open it rather than leave a form that would add it twice.
+        navigate(`/products/${saved.id}`, { replace: true, state: { photoError: t.productForm.photoNotSaved(photoFailed) } });
+        return;
+      }
       navigate(isNew ? `/products/${saved.id}` : '/products', { replace: isNew });
     },
   });
@@ -131,6 +184,11 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!shownPhoto) {
+      setPhotoError(t.productForm.photoNeeded);
+      photoButton.current?.focus();
+      return;
+    }
     save.mutate(toInput(draft, isNew));
   }
 
@@ -187,6 +245,34 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         <ManagersOnly note={t.productForm.managersOnly}>
           <form className="product-form" onSubmit={handleSubmit}>
             <Card title={t.productForm.details}>
+              <div className="photo-field">
+                <ProductPhoto src={shownPhoto} size="lg" />
+                <div className="photo-field__text">
+                  <span className="field__label" id="photo-label">
+                    {t.productForm.photo}
+                  </span>
+                  {photoError ? (
+                    <p className="form-error" role="alert" id="photo-note">
+                      {photoError}
+                    </p>
+                  ) : (
+                    <p className="field-hint" id="photo-note">
+                      {t.productForm.photoHint}
+                    </p>
+                  )}
+                  {/* image/* lets a phone offer its camera as well as its gallery. */}
+                  <input ref={photoInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
+                  <Button
+                    ref={photoButton}
+                    icon={Camera}
+                    aria-describedby="photo-label photo-note"
+                    disabled={preparingPhoto || save.isPending}
+                    onClick={() => photoInput.current?.click()}
+                  >
+                    {preparingPhoto ? t.productForm.preparingPhoto : shownPhoto ? t.productForm.changePhoto : t.productForm.addPhoto}
+                  </Button>
+                </div>
+              </div>
               <label className="field">
                 <span className="field__label">{t.productForm.name}</span>
                 <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
@@ -217,15 +303,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   maxLength={5000}
                   value={draft.description}
                   onChange={(event) => update('description', event.target.value)}
-                />
-              </label>
-              <label className="field">
-                <span className="field__label">{t.productForm.image}</span>
-                <input
-                  type="url"
-                  placeholder="https://"
-                  value={draft.imageUrl}
-                  onChange={(event) => update('imageUrl', event.target.value)}
                 />
               </label>
               <label className="toggle">

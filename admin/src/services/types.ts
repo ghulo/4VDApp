@@ -85,6 +85,7 @@ export interface InventoryItem {
   productId: number;
   productName: string;
   sku: string | null;
+  imageUrl: string | null;
   quantity: number;
   reorderLevel: number;
   isLowStock: boolean;

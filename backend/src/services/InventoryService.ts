@@ -12,6 +12,7 @@ export interface InventoryItemDto {
   productId: number;
   productName: string;
   sku: string | null;
+  imageUrl: string | null;
   quantity: number;
   reorderLevel: number;
   isLowStock: boolean;
@@ -186,6 +187,7 @@ function toInventoryItemDto(item: InventoryRecord): InventoryItemDto {
     productId: item.product_id,
     productName: item.product_name,
     sku: item.sku,
+    imageUrl: item.image_url,
     quantity: item.quantity_on_hand,
     reorderLevel: item.reorder_level,
     isLowStock: isLowStock(item.quantity_on_hand, item.reorder_level),

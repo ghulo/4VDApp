@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
+import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { ButtonLink, DataTable, EmptyState, PageHeader, type Column } from '../components/ui';
 import { categoriesApi, productsApi } from '../services/api';
@@ -18,15 +19,18 @@ const columns = (t: Catalogue): Column<Product>[] => [
   {
     header: t.products.product,
     cell: (product) => (
-      <>
-        <Link to={`/products/${product.id}`} className="table__primary-link">
-          {product.name}
-        </Link>
-        <span className="table__secondary">
-          {product.sku ?? t.products.noSku}
-          {!product.isActive && t.products.hidden}
+      <span className="product-cell">
+        <ProductPhoto src={product.imageUrl} />
+        <span className="product-cell__text">
+          <Link to={`/products/${product.id}`} className="table__primary-link">
+            {product.name}
+          </Link>
+          <span className="table__secondary">
+            {product.sku ?? t.products.noSku}
+            {!product.isActive && t.products.hidden}
+          </span>
         </span>
-      </>
+      </span>
     ),
   },
   { header: t.products.category, cell: (product) => product.category.name },

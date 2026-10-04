@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
@@ -66,7 +67,10 @@ export function OverviewPage() {
                 <li key={item.productId}>
                   <Link to={`/inventory/${item.productId}`} className="restock-list__row">
                     <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
-                    <span className="restock-list__name">{item.productName}</span>
+                    <span className="restock-list__name product-cell">
+                      <ProductPhoto src={item.imageUrl} />
+                      {item.productName}
+                    </span>
                     <span className="restock-list__meta">{t.overview.reorderAt(item.reorderLevel)}</span>
                   </Link>
                 </li>

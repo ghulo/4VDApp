@@ -111,6 +111,8 @@ export const productsApi = {
   setBarcode: async (id: number, barcode: string | null) =>
     (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
   createBarcode: async (id: number) => (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'POST' })).data,
+  uploadImage: async (id: number, file: Blob) =>
+    (await apiRequest<Product>(`/products/${id}/image`, { method: 'PUT', file })).data,
 };
 
 /** Public account pages: invites, passwords, email links, Google. */

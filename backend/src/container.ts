@@ -127,12 +127,14 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
   const categoryService = new CategoryService(categoryRepository, transactions);
+  const mediaService = new MediaService(new MediaRepository(db));
   const productService = new ProductService(
     productRepository,
     categoryRepository,
     pricingTierRepository,
     promotionRepository,
     transactions,
+    mediaService,
   );
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
@@ -233,7 +235,6 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     emailService,
     config.dashboardUrl,
   );
-  const mediaService = new MediaService(new MediaRepository(db));
   const profileService = new ProfileService(userRepository, mediaService);
   const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService);
   const sessionService = new SessionService(refreshTokenRepository);

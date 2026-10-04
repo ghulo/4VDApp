@@ -11,7 +11,8 @@ import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { type ProductSnapshot, describeProductChanges } from './activity/describeProductChanges.js';
 import { isLowStock } from './inventory/stockAlerts.js';
-import { toMoney, toMoneyOrNull } from './mappers.js';
+import { mediaIdFrom, toMoney, toMoneyOrNull } from './mappers.js';
+import type { MediaService } from './MediaService.js';
 import { type PricingTier, validatePricingTiers } from './pricing/bulkPricing.js';
 import { bestPromotionFor, discountedPrice, type RunningPromotion } from './pricing/promotions.js';
 import { canOversee } from '../utils/roles.js';
@@ -69,6 +70,7 @@ export class ProductService {
     private readonly pricingTierRepository: PricingTierRepository,
     private readonly promotionRepository: PromotionRepository,
     private readonly transactions: TransactionManager,
+    private readonly mediaService: MediaService,
   ) {}
 
   async list(query: ProductQuery, viewerRole: UserRole | undefined): Promise<Paginated<ProductDto>> {
@@ -132,6 +134,29 @@ export class ProductService {
         details: { from: product.barcode, to: barcode },
       });
     });
+    return this.getById(id, 'admin');
+  }
+
+  /**
+   * Sets the product's photo from an uploaded picture (from a phone camera or a
+   * computer), or removes it with null. A replaced upload is deleted.
+   */
+  async setImage(id: number, upload: Buffer | null, actorId: number): Promise<ProductDto> {
+    const product = await this.productRepository.findById(id, true);
+    if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    const mediaId = upload ? await this.mediaService.store(null, upload, 'product') : null;
+    const imageUrl = mediaId ? `/api/media/${mediaId}` : null;
+    await this.transactions.run(async (repos) => {
+      await repos.products.setImageUrl(id, imageUrl);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'product.image_set',
+        entityType: 'product',
+        entityId: id,
+        summary: imageUrl ? `Changed the photo of ${product.name}` : `Removed the photo of ${product.name}`,
+      });
+    });
+    await this.mediaService.remove(mediaIdFrom(product.image_url));
     return this.getById(id, 'admin');
   }
 

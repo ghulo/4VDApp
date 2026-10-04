@@ -8,7 +8,7 @@ import { businessSchema, mediaParamsSchema, profileSchema } from '../validators/
 import { parseInput } from '../validators/validate.js';
 
 /** The picture sent as the request body (express.raw has already read it). */
-function uploadedImage(req: Request): Buffer {
+export function uploadedImage(req: Request): Buffer {
   if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
     throw new ValidationError('Send the picture itself, with a Content-Type like image/png');
   }

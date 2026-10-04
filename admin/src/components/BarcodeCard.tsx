@@ -5,6 +5,7 @@ import { productsApi } from '../services/api';
 import type { Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { BarcodeImage } from './BarcodeImage';
+import { QrImage } from './QrImage';
 import { ManagersOnly } from './ManagersOnly';
 import { Button, ButtonLink, Card, Field } from './ui';
 
@@ -32,7 +33,11 @@ export function BarcodeCard({ product }: { product: Product }) {
     <Card title={t.barcodes.title} description={product.barcode ? undefined : t.barcodes.none} className="product-form">
       {product.barcode && (
         <div className="barcode-card__code">
-          <BarcodeImage value={product.barcode} label={t.barcodes.imageLabel(product.name, product.barcode)} />
+          <div className="barcode-card__symbols">
+            <BarcodeImage value={product.barcode} label={t.barcodes.imageLabel(product.name, product.barcode)} />
+            <QrImage code={product.barcode} label={t.barcodes.qrLabel(product.name)} />
+          </div>
+          <p className="field-hint">{t.barcodes.qrHint}</p>
           <div className="form-actions">
             <ButtonLink to={`/labels?products=${product.id}`}>{t.barcodes.printLabel}</ButtonLink>
             <ManagersOnly>

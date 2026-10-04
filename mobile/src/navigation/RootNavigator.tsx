@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { createNavigationContainerRef, DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
+import { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // One file per icon: the package's main entry would bundle all of them.
 import { House } from 'phosphor-react-native/src/icons/House';
@@ -22,6 +23,8 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { MySalesScreen } from '../screens/MySalesScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { RecordSaleScreen } from '../screens/RecordSaleScreen';
+import { ScanResultScreen } from '../screens/ScanResultScreen';
+import { takePendingScan } from '../utils/scanLinks';
 import { TabScreen, TabsScreen } from '../screens/TabsScreen';
 import { ReturnScreen } from '../screens/ReturnScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
@@ -31,6 +34,14 @@ import type { MainTabParamList, RootStackParamList } from './types';
 import { useT } from '../i18n/useT';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+/** Opens the product from a scanned QR link, once someone is signed in and the screens are ready. */
+function openPendingScan() {
+  if (!navigationRef.isReady()) return;
+  const code = takePendingScan();
+  if (code) navigationRef.navigate('ScanResult', { code });
+}
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 type TabIcon = typeof House;
@@ -123,10 +134,15 @@ export function RootNavigator() {
     },
   };
 
+  const signedIn = state.status === 'signedIn';
+  useEffect(() => {
+    if (signedIn) openPendingScan();
+  }, [signedIn]);
+
   if (state.status === 'loading') return <Loading />;
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => signedIn && openPendingScan()}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
@@ -164,6 +180,7 @@ export function RootNavigator() {
               options={({ route }) => ({ title: t.nav.counting(route.params.title), headerBackTitle: t.nav.back })}
             />
             <Stack.Screen name="CashCount" component={CashCountScreen} options={{ title: t.nav.cashCount, presentation: 'modal' }} />
+            <Stack.Screen name="ScanResult" component={ScanResultScreen} options={{ title: t.scan.title, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Carwash" component={CarwashScreen} options={{ title: t.nav.carwash, presentation: 'modal' }} />
             <Stack.Screen name="Tabs" component={TabsScreen} options={{ title: t.nav.customerTabs, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Tab" component={TabScreen} options={({ route }) => ({ title: route.params.name, headerBackTitle: t.nav.back })} />

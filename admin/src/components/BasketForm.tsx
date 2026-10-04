@@ -6,6 +6,7 @@ import { customersApi, productsApi, salesApi } from '../services/api';
 import type { Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
+import { codeFromScan } from '../utils/scanLinks';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
 import { Button, Field } from './ui';
 
@@ -62,7 +63,8 @@ export function BasketForm() {
   async function handleScanKey(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    const code = scan.trim();
+    // A QR-capable scanner reads a product's QR code as its link; the code is inside.
+    const code = codeFromScan(scan);
     if (!code) return;
     const byBarcode = sellable.find((product) => product.barcode === code);
     if (byBarcode) return add(byBarcode);

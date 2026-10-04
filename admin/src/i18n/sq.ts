@@ -673,6 +673,8 @@ export const sq: Catalogue = {
     scanHint: 'Me skaner USB, kliko këtu dhe skano: ruhet vetë.',
     save: 'Ruaj barkodin',
     create: 'Krijo një barkod',
+    qrLabel: (name: string) => `Kodi QR i ${name}: e hap në aplikacionin e ekipit`,
+    qrHint: 'Kodi QR e hap këtë produkt në aplikacionin e ekipit kur skanohet me kamerën e çdo telefoni.',
   },
   labels: {
     title: 'Etiketat',
@@ -692,6 +694,13 @@ export const sq: Catalogue = {
     missing: (count: number) => `${count} nga produktet e zgjedhura ${count === 1 ? 'nuk ka' : 'nuk kanë'} barkod, ndaj ${count === 1 ? 'mbetet jashtë' : 'mbeten jashtë'}.`,
     createMissing: (count: number) => (count === 1 ? 'Krijo një barkod' : `Krijo ${count} barkode`),
     printButton: 'Printo etiketat',
+    symbols: 'Çfarë të printohet',
+    symbolOptions: { barcode: 'Barkod', qr: 'Kod QR', both: 'Të dyja' },
+    symbolHints: {
+      barcode: 'Për skanerin e dyqanit në arkë.',
+      qr: 'Për telefonat: çdo kamerë e hap produktin në aplikacionin e ekipit.',
+      both: 'Një kod QR për telefonat dhe një barkod për skanerin e dyqanit.',
+    },
     preview: 'Pamja e etiketave',
   },
   basket: {

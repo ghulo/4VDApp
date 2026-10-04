@@ -196,6 +196,11 @@ export const en = {
     removeFavorite: 'Remove from favorites',
     saveFavorite: 'Save to favorites',
   },
+  scan: {
+    title: 'Scanned product',
+    notFound: 'No product found',
+    notFoundHint: (code: string) => `Nothing in the shop has the code ${code}. The label may be old.`,
+  },
   sell: {
     nothingInStock: 'Nothing in stock to sell',
     whichProduct: 'Which product did you sell?',

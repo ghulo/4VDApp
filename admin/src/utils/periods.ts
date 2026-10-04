@@ -48,6 +48,19 @@ function sameMomentEarlier(moment: Date, back: { months?: number; years?: number
   return !sameMonth || shifted > limit ? limit : shifted;
 }
 
+export type CompareKey = 'before' | 'last-year';
+export const COMPARE_KEYS: CompareKey[] = ['before', 'last-year'];
+
+/** The same stretch of time one year earlier, for comparing with last year. */
+export function lastYearOf(range: { startDate: string; endDate: string }): { previousStartDate: string; previousEndDate: string } {
+  const back = (iso: string) => {
+    const date = new Date(iso);
+    date.setFullYear(date.getFullYear() - 1);
+    return date.toISOString();
+  };
+  return { previousStartDate: back(range.startDate), previousEndDate: back(range.endDate) };
+}
+
 /**
  * Turn a preset into exact instants in the browser's own timezone, so
  * "this month" starts at local midnight on the 1st. End is exclusive.

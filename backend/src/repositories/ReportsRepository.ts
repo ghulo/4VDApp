@@ -103,6 +103,20 @@ export class ReportsRepository {
    * Money for the period from `sales_ledger`: sales on their sale date and
    * approved refunds (negative) on the day they were approved.
    */
+  /**
+   * Shop sales after refunds for each day from `from` to `to` (both included),
+   * with days read on the shop's clock. Days without sales are left out.
+   */
+  async shopRevenueByDay(from: string, to: string, timeZone: string): Promise<Map<string, number>> {
+    const result = await sql<{ day: string; revenue: string }>`
+      select to_char((l.occurred_at at time zone ${timeZone})::date, 'YYYY-MM-DD') as day, sum(l.revenue) as revenue
+      from sales_ledger l
+      where (l.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
+      group by 1
+    `.execute(this.db);
+    return new Map(result.rows.map((row) => [row.day, Number(row.revenue)]));
+  }
+
   async totals(range: DateRange, soldBy?: number): Promise<TotalsRow> {
     const sellerFilter = soldBy === undefined ? sql`` : sql`and l.sold_by = ${soldBy}`;
     const result = await sql<TotalsRow>`

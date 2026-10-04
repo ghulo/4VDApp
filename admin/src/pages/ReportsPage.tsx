@@ -14,7 +14,7 @@ import { Button, Card, MetricCard, PageHeader } from '../components/ui';
 
 export function ReportsPage() {
   const t = useT();
-  const { period, from, to, range, rangeKey, comparedRange, changePeriod } = usePeriodParams('this-month');
+  const { period, from, to, range, rangeKey, comparedRange, changePeriod, compare, changeCompare } = usePeriodParams('this-month');
 
   return (
     <>
@@ -22,17 +22,20 @@ export function ReportsPage() {
 
       <AnalyticsBoard
         range={comparedRange}
-        controls={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}
+        controls={
+          <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} compare={{ value: compare, onChange: changeCompare }} />
+        }
         footer={({ current }) => (
           <>
             {range.waitingForDates && <p className="field-hint">{t.reports.waitingForDates(range.label)}</p>}
+            {compare === 'last-year' && <p className="field-hint">{t.periods.comparedLastYear}</p>}
             {current.revenueWithoutCost > 0 && (
               <p className="field-hint">{t.reports.revenueWithoutCost(formatMoney(current.revenueWithoutCost))}</p>
             )}
           </>
         )}
       >
-        {({ current, carwash }) => (
+        {({ current, carwash, expenses, netProfit }) => (
           <>
             <MetricCard
               label={t.reports.carwash}
@@ -45,6 +48,13 @@ export function ReportsPage() {
               label={t.reports.together}
               value={formatMoney(current.revenue + carwash.current.total)}
               hint={t.reports.togetherHint}
+            />
+            <MetricCard label={t.reports.expenses} value={formatMoney(expenses.current)} to="/expenses" />
+            <MetricCard
+              label={t.reports.netProfit}
+              value={formatMoney(netProfit.current)}
+              change={netProfit.change}
+              hint={t.reports.netProfitHint}
             />
             <MetricCard
               label={t.analytics.margin}
@@ -229,12 +239,18 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
 function Exports({ range }: { range: { startDate: string; endDate: string } }) {
   const t = useT();
   const download = useMutation({
-    mutationFn: (kind: 'sales' | 'stock' | 'team') => exportsApi.download(kind, kind === 'stock' ? undefined : range),
+    mutationFn: (kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses') => exportsApi.download(kind, kind === 'stock' ? undefined : range),
   });
 
   return (
-    <Card title={t.reports.download}>
+    <Card title={t.reports.download} description={t.reports.forAccountantHint}>
       <div className="form-actions">
+        <Button onClick={() => download.mutate('money')} disabled={download.isPending}>
+          {t.reports.moneyPerDay}
+        </Button>
+        <Button onClick={() => download.mutate('expenses')} disabled={download.isPending}>
+          {t.reports.expensesList}
+        </Button>
         <Button onClick={() => download.mutate('sales')} disabled={download.isPending}>
           {t.reports.salesInPeriod}
         </Button>

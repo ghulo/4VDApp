@@ -1,7 +1,9 @@
+import type { CarwashRepository } from '../repositories/CarwashRepository.js';
+import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
 import { type CsvColumn, toCsv } from '../utils/csv.js';
 import { roundMoney } from '../utils/money.js';
-import { zonedDateTime, zonedDay } from '../utils/zonedDates.js';
+import { zonedDateTime, zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 import type { ReportsService, TeamRow } from './ReportsService.js';
 
@@ -56,6 +58,43 @@ const TEAM_COLUMNS: CsvColumn<TeamRow>[] = [
   { header: 'Commission', value: (row) => row.commission },
 ];
 
+/** One day of money in and out, for the accountant. */
+interface MoneyDay {
+  day: string;
+  shop: number;
+  carwash: number;
+  change: number;
+  expenses: number;
+}
+
+const MONEY_COLUMNS: CsvColumn<MoneyDay & { label?: string }>[] = [
+  { header: 'Date', value: (row) => row.label ?? row.day },
+  { header: 'Shop sales (after refunds)', value: (row) => row.shop },
+  { header: 'Carwash', value: (row) => row.carwash },
+  { header: 'Change machine', value: (row) => row.change },
+  { header: 'Expenses', value: (row) => row.expenses },
+  { header: 'In minus out', value: (row) => roundMoney(row.shop + row.carwash + row.change - row.expenses) },
+];
+
+const EXPENSE_COLUMNS: CsvColumn<ExpenseRecord>[] = [
+  { header: 'Date', value: (row) => row.day },
+  { header: 'What for', value: (row) => row.category },
+  { header: 'For', value: (row) => row.place },
+  { header: 'Amount', value: (row) => Number(row.amount) },
+  { header: 'Note', value: (row) => row.note },
+  { header: 'Repeats monthly', value: (row) => (row.recurring_id === null ? 'no' : 'yes') },
+  { header: 'Added by', value: (row) => row.created_by_name ?? (row.recurring_id === null ? null : 'automatic') },
+];
+
+/** Every calendar day from `from` to `to`, both included. */
+function eachDay(from: string, to: string): string[] {
+  const days: string[] = [];
+  for (let at = Date.parse(`${from}T00:00:00Z`); at <= Date.parse(`${to}T00:00:00Z`); at += 24 * 60 * 60 * 1000) {
+    days.push(new Date(at).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
 export interface CsvFile {
   filename: string;
   content: string;
@@ -65,7 +104,46 @@ export class ExportService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
     private readonly reportsService: ReportsService,
+    private readonly carwashRepository: CarwashRepository,
+    private readonly expenseRepository: ExpenseRepository,
   ) {}
+
+  /** Money in and out per day, shop and carwash together, with a total: what the accountant asks for. */
+  async money(range: DateRange, timeZone: string): Promise<CsvFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const [shop, carwash, expenses] = await Promise.all([
+      this.reportsRepository.shopRevenueByDay(from, to, timeZone),
+      this.carwashRepository.findBetween(from, to),
+      this.expenseRepository.findBetween(from, to),
+    ]);
+    const carwashByDay = new Map(carwash.map((row) => [row.day, row]));
+    const spentByDay = new Map<string, number>();
+    for (const expense of expenses) spentByDay.set(expense.day, roundMoney((spentByDay.get(expense.day) ?? 0) + Number(expense.amount)));
+
+    const rows: Array<MoneyDay & { label?: string }> = eachDay(from, to).map((day) => ({
+      day,
+      shop: roundMoney(shop.get(day) ?? 0),
+      carwash: Number(carwashByDay.get(day)?.carwash_amount ?? 0),
+      change: Number(carwashByDay.get(day)?.change_amount ?? 0),
+      expenses: spentByDay.get(day) ?? 0,
+    }));
+    const sum = (pick: (row: MoneyDay) => number) => roundMoney(rows.reduce((total, row) => total + pick(row), 0));
+    rows.push({
+      day: '',
+      label: 'Total',
+      shop: sum((row) => row.shop),
+      carwash: sum((row) => row.carwash),
+      change: sum((row) => row.change),
+      expenses: sum((row) => row.expenses),
+    });
+    return { filename: `4vd-money-${from}-to-${to}.csv`, content: toCsv(MONEY_COLUMNS, rows) };
+  }
+
+  async expenses(range: DateRange, timeZone: string): Promise<CsvFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = (await this.expenseRepository.findBetween(from, to)).reverse();
+    return { filename: `4vd-expenses-${from}-to-${to}.csv`, content: toCsv(EXPENSE_COLUMNS, rows) };
+  }
 
   async sales(range: DateRange, timeZone: string): Promise<CsvFile> {
     const rows = await this.reportsRepository.salesForExport(range);

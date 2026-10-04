@@ -27,6 +27,11 @@ import type {
   CashCount,
   CashPlace,
   CashPlaceToday,
+  Expense,
+  ExpenseCategory,
+  ExpensePlace,
+  ExpenseTotals,
+  RecurringExpense,
   Business,
   Invite,
   InvitePreview,
@@ -333,8 +338,22 @@ export const cashApi = {
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
 };
 
+export const expensesApi = {
+  list: async (range: ReportRange) =>
+    (await apiRequest<{ expenses: Expense[]; totals: ExpenseTotals }>('/expenses', { query: { ...range } })).data,
+  add: async (input: { day: string; amount: number; category: ExpenseCategory; place: ExpensePlace; note: string | null; repeatMonthly: boolean }) =>
+    (await apiRequest<Expense>('/expenses', { method: 'POST', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest(`/expenses/${id}`, { method: 'DELETE' });
+  },
+  recurring: async () => (await apiRequest<RecurringExpense[]>('/expenses/recurring')).data,
+  stopRepeating: async (id: number) => {
+    await apiRequest(`/expenses/recurring/${id}/stop`, { method: 'POST' });
+  },
+};
+
 export const exportsApi = {
-  async download(kind: 'sales' | 'stock' | 'team', range?: ReportRange): Promise<void> {
+  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', range?: ReportRange): Promise<void> {
     // The server names files and writes dates in the admin's own timezone.
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, { ...range, tz });

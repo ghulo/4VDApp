@@ -2,7 +2,7 @@ import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
-import { zonedDay } from '../utils/zonedDates.js';
+import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 
 export interface CarwashTotals {
@@ -40,16 +40,8 @@ export class CarwashService {
     private readonly timeZone: string,
   ) {}
 
-  /** The shop-time calendar days a report range covers (end-exclusive, like every report range). */
-  private days(range: DateRange): { from: string; to: string } {
-    return {
-      from: zonedDay(range.startDate, this.timeZone),
-      to: zonedDay(new Date(range.endDate.getTime() - 1), this.timeZone),
-    };
-  }
-
   async list(range: DateRange): Promise<{ days: CarwashDayDto[]; totals: CarwashTotals }> {
-    const { from, to } = this.days(range);
+    const { from, to } = zonedDays(range, this.timeZone);
     const [rows, totals] = await Promise.all([this.carwashRepository.findBetween(from, to), this.totals(range)]);
     return {
       days: rows.map((row) => {
@@ -69,7 +61,7 @@ export class CarwashService {
   }
 
   async totals(range: DateRange): Promise<CarwashTotals> {
-    const { from, to } = this.days(range);
+    const { from, to } = zonedDays(range, this.timeZone);
     const row = await this.carwashRepository.totals(from, to);
     const carwash = Number(row.carwash);
     const change = Number(row.change);

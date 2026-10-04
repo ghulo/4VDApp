@@ -30,6 +30,9 @@ const summaryTimer = setInterval(() => {
   container.weeklyReportService
     .sendIfDue()
     .catch((error) => logger.error('Sending the weekly report failed', { error: String(error) }));
+  container.expenseService
+    .fillDue()
+    .catch((error) => logger.error('Adding the monthly expenses failed', { error: String(error) }));
   container.errorAlertService
     .sendIfDue()
     // Logged as a warning on purpose: as an error it would be counted again and retried forever.

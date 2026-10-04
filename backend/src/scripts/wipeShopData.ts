@@ -22,6 +22,8 @@ const EMPTIED = [
   'promotions',
   'carwash_days',
   'cash_counts',
+  'expenses',
+  'recurring_expenses',
   'inventory',
   'products',
   'categories',

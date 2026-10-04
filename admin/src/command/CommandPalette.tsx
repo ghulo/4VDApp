@@ -42,6 +42,7 @@ const PAGES: Array<[PageKey, string]> = [
   ['sales', '/sales'],
   ['carwash', '/carwash'],
   ['cash', '/cash'],
+  ['expenses', '/expenses'],
   ['reports', '/reports'],
   ['people', '/people'],
   ['activity', '/activity'],

@@ -4,6 +4,8 @@ import { CarwashRepository } from './CarwashRepository.js';
 import { CashCountRepository } from './CashCountRepository.js';
 import { ExpenseRepository } from './ExpenseRepository.js';
 import { TabRepository } from './TabRepository.js';
+import { PurchaseOrderRepository } from './PurchaseOrderRepository.js';
+import { ExpiryRepository } from './ExpiryRepository.js';
 import { CategoryRepository } from './CategoryRepository.js';
 import { InventoryRepository } from './InventoryRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
@@ -42,6 +44,8 @@ function createTransactionalRepositories(db: DatabaseClient) {
     cashCounts: new CashCountRepository(db),
     expenses: new ExpenseRepository(db),
     tabs: new TabRepository(db),
+    orders: new PurchaseOrderRepository(db),
+    expiry: new ExpiryRepository(db),
   };
 }
 

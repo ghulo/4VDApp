@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ExpiryCard } from '../components/ExpiryCard';
 import { type FormEvent, useState } from 'react';
 import { useParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
@@ -37,6 +38,8 @@ export function InventoryDetailPage() {
           </ButtonLink>
         }
       />
+
+      <ExpiryCard productId={item.productId} />
 
       <div className="split">
         <Card title={t.inventory.onShelf}>

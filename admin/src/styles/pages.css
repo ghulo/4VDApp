@@ -1525,3 +1525,28 @@
 .undo-confirm .form-error {
   margin: 0;
 }
+
+/* Orders: a short list of what's on an order, and number inputs that sit inside table cells. */
+.plain-list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.input--compact {
+  width: 7rem;
+  text-align: right;
+}
+
+/* One expiry date per row: what and when on the left, "Dealt with" on the right. */
+.expiry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}

@@ -276,6 +276,49 @@ export interface ProfitRow {
   hasUnknownCost: boolean;
 }
 
+export interface ExpiryDate {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  /** "2026-10-12" */
+  expiresOn: string;
+  /** Negative once it has passed. */
+  daysLeft: number;
+  note: string | null;
+  addedBy: string | null;
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  note: string | null;
+}
+
+export interface OrderLine {
+  id: number;
+  productId: number;
+  productName: string;
+  sku: string | null;
+  quantity: number;
+  unitCost: number | null;
+  receivedQuantity: number | null;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  supplier: { id: number; name: string; phone: string | null; email: string | null };
+  status: 'open' | 'received' | 'cancelled';
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  closedAt: string | null;
+  lines: OrderLine[];
+  total: number;
+}
+
 export interface ReorderSuggestion {
   productId: number;
   productName: string;

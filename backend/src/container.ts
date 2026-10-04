@@ -35,6 +35,10 @@ import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { TabRepository } from './repositories/TabRepository.js';
 import { TabService } from './services/TabService.js';
+import { PurchaseOrderRepository } from './repositories/PurchaseOrderRepository.js';
+import { PurchaseOrderService } from './services/PurchaseOrderService.js';
+import { ExpiryRepository } from './repositories/ExpiryRepository.js';
+import { ExpiryService } from './services/ExpiryService.js';
 import { ErrorAlertService } from './services/ErrorAlertService.js';
 import { LaunchRepository } from './repositories/LaunchRepository.js';
 import { LaunchService } from './services/LaunchService.js';
@@ -163,7 +167,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const tabRepository = new TabRepository(db);
   const tabService = new TabService(tabRepository, transactions);
-  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService);
+  const purchaseOrderService = new PurchaseOrderService(new PurchaseOrderRepository(db), transactions);
+  const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
+  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService);
   const cashCountService = new CashCountService(
     new CashCountRepository(db),
     reportsRepository,
@@ -308,6 +314,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     cashCountService,
     expenseService,
     tabService,
+    purchaseOrderService,
+    expiryService,
     pushService,
     insightsService,
     dailySummaryService,

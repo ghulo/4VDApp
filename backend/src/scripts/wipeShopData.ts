@@ -11,6 +11,10 @@ export const WIPE_PHRASE = 'wipe 4vd.app';
  */
 const EMPTIED = [
   'stock_count_lines',
+  'expiry_dates',
+  'purchase_order_lines',
+  'purchase_orders',
+  'suppliers',
   'stock_counts',
   'write_offs',
   'returns',

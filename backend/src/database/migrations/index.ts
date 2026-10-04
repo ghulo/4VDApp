@@ -14,6 +14,8 @@ import * as carwash from './012_carwash.js';
 import * as cashCounts from './013_cash_counts.js';
 import * as expenses from './014_expenses.js';
 import * as customerTabs from './015_customer_tabs.js';
+import * as purchaseOrders from './016_purchase_orders.js';
+import * as expiryDates from './017_expiry_dates.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -37,4 +39,6 @@ export const migrations: Record<string, Migration> = {
   '013_cash_counts': cashCounts,
   '014_expenses': expenses,
   '015_customer_tabs': customerTabs,
+  '016_purchase_orders': purchaseOrders,
+  '017_expiry_dates': expiryDates,
 };

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { EXPENSE_CATEGORIES, EXPENSE_PLACES } from '../constants/expenses.js';
 import { money } from './catalogValidators.js';
-import { carwashDayParamsSchema } from './carwashValidators.js';
+import { calendarDaySchema } from './validate.js';
 
 export const newExpenseSchema = z.object({
-  day: carwashDayParamsSchema.shape.day,
+  day: calendarDaySchema,
   amount: money.refine((value) => value > 0, 'must be more than 0'),
   category: z.enum(EXPENSE_CATEGORIES),
   place: z.enum(EXPENSE_PLACES),

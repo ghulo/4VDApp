@@ -34,6 +34,9 @@ import type {
   RecurringExpense,
   Customer,
   TabEntry,
+  Supplier,
+  PurchaseOrder,
+  ExpiryDate,
   Business,
   Invite,
   InvitePreview,
@@ -363,6 +366,37 @@ export const customersApi = {
     (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
   archive: async (id: number) => {
     await apiRequest(`/customers/${id}/archive`, { method: 'POST' });
+  },
+};
+
+export const suppliersApi = {
+  list: async () => (await apiRequest<Supplier[]>('/suppliers')).data,
+  add: async (input: { name: string; phone: string | null; email: string | null }) =>
+    (await apiRequest<Supplier>('/suppliers', { method: 'POST', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest(`/suppliers/${id}`, { method: 'DELETE' });
+  },
+};
+
+export const ordersApi = {
+  list: async () => (await apiRequest<PurchaseOrder[]>('/orders')).data,
+  usualSuppliers: async () => (await apiRequest<Record<number, number>>('/orders/usual-suppliers')).data,
+  create: async (input: { supplierId: number; note: string | null; lines: Array<{ productId: number; quantity: number; unitCost: number | null }> }) =>
+    (await apiRequest<PurchaseOrder>('/orders', { method: 'POST', body: input })).data,
+  receive: async (
+    id: number,
+    input: { lines: Array<{ lineId: number; receivedQuantity: number; unitCost: number | null; expiresOn: string | null }>; updateCostPrices: boolean },
+  ) =>
+    (await apiRequest<PurchaseOrder>(`/orders/${id}/receive`, { method: 'POST', body: input })).data,
+  cancel: async (id: number) => (await apiRequest<PurchaseOrder>(`/orders/${id}/cancel`, { method: 'POST' })).data,
+};
+
+export const expiryApi = {
+  forProduct: async (productId: number) => (await apiRequest<ExpiryDate[]>('/expiry', { query: { productId } })).data,
+  add: async (input: { productId: number; quantity: number; expiresOn: string; note: string | null }) =>
+    (await apiRequest<ExpiryDate>('/expiry', { method: 'POST', body: input })).data,
+  clear: async (id: number) => {
+    await apiRequest(`/expiry/${id}/clear`, { method: 'POST' });
   },
 };
 

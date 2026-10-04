@@ -29,6 +29,8 @@ import { ProductRepository } from './repositories/ProductRepository.js';
 import { PromotionRepository } from './repositories/PromotionRepository.js';
 import { CarwashRepository } from './repositories/CarwashRepository.js';
 import { CarwashService } from './services/CarwashService.js';
+import { CashCountRepository } from './repositories/CashCountRepository.js';
+import { CashCountService } from './services/CashCountService.js';
 import { ErrorAlertService } from './services/ErrorAlertService.js';
 import { LaunchRepository } from './repositories/LaunchRepository.js';
 import { LaunchService } from './services/LaunchService.js';
@@ -153,9 +155,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
   );
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
+  const cashCountService = new CashCountService(new CashCountRepository(db), settingsService, transactions, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
+    cashCountService,
     insightsService,
     settingsService,
     settingsRepository,
@@ -285,6 +289,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     undoService,
     promotionService,
     carwashService,
+    cashCountService,
     pushService,
     insightsService,
     dailySummaryService,

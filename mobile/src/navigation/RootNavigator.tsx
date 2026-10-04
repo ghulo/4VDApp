@@ -11,6 +11,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
+import { CashCountScreen } from '../screens/CashCountScreen';
 import { CatalogScreen } from '../screens/CatalogScreen';
 import { CountScreen } from '../screens/CountScreen';
 import { CountsScreen } from '../screens/CountsScreen';
@@ -160,6 +161,7 @@ export function RootNavigator() {
               component={CountScreen}
               options={({ route }) => ({ title: t.nav.counting(route.params.title), headerBackTitle: t.nav.back })}
             />
+            <Stack.Screen name="CashCount" component={CashCountScreen} options={{ title: t.nav.cashCount, presentation: 'modal' }} />
           </>
         )}
       </Stack.Navigator>

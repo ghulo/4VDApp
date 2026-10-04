@@ -24,6 +24,9 @@ import type {
   CarwashDay,
   CarwashTotals,
   LaunchStep,
+  CashCount,
+  CashPlace,
+  CashPlaceToday,
   Business,
   Invite,
   InvitePreview,
@@ -320,6 +323,14 @@ export const carwashApi = {
   remove: async (day: string) => {
     await apiRequest(`/carwash/${day}`, { method: 'DELETE' });
   },
+};
+
+export const cashApi = {
+  list: async (range: ReportRange) => (await apiRequest<CashCount[]>('/cash-counts', { query: { ...range } })).data,
+  today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
+  /** Overseers get the result back; staff get null (they count blind). */
+  count: async (input: { place: CashPlace; counted: number; note: string | null }) =>
+    (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
 };
 
 export const exportsApi = {

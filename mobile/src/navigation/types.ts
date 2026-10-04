@@ -19,4 +19,5 @@ export type RootStackParamList = {
   WriteOff: { productId: number; productName: string; inStock: number };
   Counts: undefined;
   Count: { countId: number; title: string };
+  CashCount: undefined;
 };

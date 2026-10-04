@@ -54,6 +54,11 @@ export interface ServerMessages {
   dailyNothing: string;
   dailyCarwash: (p: { carwash: number; change: number; total: number }) => string;
   dailyCarwashMissing: string;
+  /** `difference` is 0 when it matched; `compared` false when the carwash had no takings to compare with. */
+  dailyCash: (p: { place: 'shop' | 'carwash'; difference: number; compared: boolean }) => string;
+  dailyCashMissing: (place: 'shop' | 'carwash') => string;
+  cashDifferenceTitle: (p: { place: 'shop' | 'carwash'; difference: number }) => string;
+  cashDifferenceMessage: (p: { name: string; counted: number; float: number; expected: number }) => string;
 
   testAlertTitle: string;
   testAlertMessage: string;
@@ -171,6 +176,17 @@ export const en: ServerMessages = {
   dailyCarwash: ({ carwash, change, total }) =>
     `Carwash: ${money(carwash, 'en')} + ${money(change, 'en')} change = ${money(total, 'en')}.`,
   dailyCarwashMissing: "Today's carwash takings aren't entered yet.",
+  dailyCash: ({ place, difference, compared }) => {
+    const drawer = place === 'shop' ? 'Shop cash' : 'Carwash cash';
+    if (!compared) return `${drawer} counted; no carwash takings entered to compare with.`;
+    if (difference === 0) return `${drawer} matched.`;
+    return `${drawer}: ${money(Math.abs(difference), 'en')} ${difference < 0 ? 'short' : 'over'}.`;
+  },
+  dailyCashMissing: (place) => `${place === 'shop' ? 'Shop' : 'Carwash'} cash not counted yet.`,
+  cashDifferenceTitle: ({ place, difference }) =>
+    `${place === 'shop' ? 'Shop' : 'Carwash'} cash ${difference < 0 ? 'short' : 'over'} by ${money(Math.abs(difference), 'en')}`,
+  cashDifferenceMessage: ({ name, counted, float, expected }) =>
+    `${name} counted ${money(counted, 'en')} with a ${money(float, 'en')} float. The app expected ${money(expected, 'en')} on top of the float.`,
 
   testAlertTitle: 'Test alert from 4VD',
   testAlertMessage: 'Alerts are working on this device.',
@@ -300,6 +316,17 @@ export const sq: ServerMessages = {
   dailyCarwash: ({ carwash, change, total }) =>
     `Lavazhi: ${money(carwash, 'sq')} + ${money(change, 'sq')} këmbim = ${money(total, 'sq')}.`,
   dailyCarwashMissing: 'Të ardhurat e lavazhit për sot nuk janë futur ende.',
+  dailyCash: ({ place, difference, compared }) => {
+    const drawer = place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit';
+    if (!compared) return `${drawer} u numërua; s’ka të ardhura lavazhi për krahasim.`;
+    if (difference === 0) return `${drawer} përputhet.`;
+    return `${drawer}: ${money(Math.abs(difference), 'sq')} ${difference < 0 ? 'mungesë' : 'tepricë'}.`;
+  },
+  dailyCashMissing: (place) => `${place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit'} nuk është numëruar ende.`,
+  cashDifferenceTitle: ({ place, difference }) =>
+    `${place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit'}: ${difference < 0 ? 'mungesë' : 'tepricë'} ${money(Math.abs(difference), 'sq')}`,
+  cashDifferenceMessage: ({ name, counted, float, expected }) =>
+    `${name} numëroi ${money(counted, 'sq')} me ${money(float, 'sq')} kusur fillestar. Aplikacioni priste ${money(expected, 'sq')} mbi kusurin.`,
 
   testAlertTitle: 'Njoftim provë nga 4VD',
   testAlertMessage: 'Njoftimet po funksionojnë në këtë pajisje.',

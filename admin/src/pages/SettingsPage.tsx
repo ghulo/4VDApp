@@ -43,6 +43,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
   const [summaryHour, setSummaryHour] = useState(initial.dailySummaryHour);
+  const [floatShop, setFloatShop] = useState(String(initial.cashFloatShop));
+  const [floatCarwash, setFloatCarwash] = useState(String(initial.cashFloatCarwash));
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -52,6 +54,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         returnWindowDays: Number(windowDays),
         minimumMarginPercent: Number(minimumMargin),
         dailySummaryHour: summaryHour,
+        cashFloatShop: Number(floatShop),
+        cashFloatCarwash: Number(floatCarwash),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['settings'], updated);
@@ -73,13 +77,19 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     Number.isInteger(Number(windowDays)) &&
     Number(windowDays) >= 0 &&
     minimumMargin !== '' &&
-    Number(minimumMargin) >= 0;
+    Number(minimumMargin) >= 0 &&
+    floatShop !== '' &&
+    Number(floatShop) >= 0 &&
+    floatCarwash !== '' &&
+    Number(floatCarwash) >= 0;
   // Save only turns orange once there's something to save, so one card at a time asks for action.
   const hasChanges =
     Number(limit) !== initial.refundApprovalLimit ||
     Number(windowDays) !== initial.returnWindowDays ||
     Number(minimumMargin) !== initial.minimumMarginPercent ||
-    summaryHour !== initial.dailySummaryHour;
+    summaryHour !== initial.dailySummaryHour ||
+    Number(floatShop) !== initial.cashFloatShop ||
+    Number(floatCarwash) !== initial.cashFloatCarwash;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -153,6 +163,34 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               onChange={(event) => setMinimumMargin(event.target.value)}
             />
             <span aria-hidden="true">%</span>
+          </span>
+        </SettingRow>
+        <SettingRow title={t.settings.floatShop} description={t.settings.floatShopHint}>
+          <span className="unit-input">
+            <span aria-hidden="true">€</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={0.01}
+              aria-label={t.settings.floatShopLabel}
+              value={floatShop}
+              onChange={(event) => setFloatShop(event.target.value)}
+            />
+          </span>
+        </SettingRow>
+        <SettingRow title={t.settings.floatCarwash} description={t.settings.floatCarwashHint}>
+          <span className="unit-input">
+            <span aria-hidden="true">€</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={0.01}
+              aria-label={t.settings.floatCarwashLabel}
+              value={floatCarwash}
+              onChange={(event) => setFloatCarwash(event.target.value)}
+            />
           </span>
         </SettingRow>
         <SettingRow

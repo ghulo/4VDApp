@@ -3,6 +3,7 @@ import type { NotificationRepository } from '../repositories/NotificationReposit
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { CarwashService } from './CarwashService.js';
+import type { CashCountService } from './CashCountService.js';
 import { LANGUAGES, type Language } from '../i18n/language.js';
 import { en, messages, type ServerMessages } from '../i18n/messages.js';
 import { roundMoney } from '../utils/money.js';
@@ -27,6 +28,7 @@ export class DailySummaryService {
   constructor(
     private readonly reportsRepository: ReportsRepository,
     private readonly carwashService: CarwashService,
+    private readonly cashCountService: CashCountService,
     private readonly insightsService: InsightsService,
     private readonly settingsService: SettingsService,
     private readonly settingsRepository: SettingsRepository,
@@ -57,11 +59,12 @@ export class DailySummaryService {
   async compose(now = new Date(), t: ServerMessages = en): Promise<DailySummary> {
     const startOfToday = startOfZonedDay(now, this.timeZone);
     const weekAgo = (date: Date) => new Date(date.getTime() - 7 * MS_PER_DAY);
-    const [today, lastWeek, insights, carwash] = await Promise.all([
+    const [today, lastWeek, insights, carwash, cash] = await Promise.all([
       this.reportsRepository.totals({ startDate: startOfToday, endDate: now }),
       this.reportsRepository.totals({ startDate: weekAgo(startOfToday), endDate: weekAgo(now) }),
       this.insightsService.list(now, t),
       this.carwashService.findDay(zonedDay(now, this.timeZone)),
+      this.cashCountService.summaryLines(now, t),
     ]);
     const salesLine = t.dailySales({
       sales: Number(today.sales_count),
@@ -71,6 +74,7 @@ export class DailySummaryService {
     const lines = [
       salesLine,
       carwash ? t.dailyCarwash({ ...carwash, total: roundMoney(carwash.carwash + carwash.change) }) : t.dailyCarwashMissing,
+      ...cash,
     ];
     const urgent = insights.filter((insight) => insight.severity === 'urgent');
     const others = insights.length - urgent.length;

@@ -25,7 +25,14 @@
       "expo-secure-store",
       "expo-font",
       "expo-image",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "The camera scans product barcodes at the counter.",
+          "recordAudioAndroid": false
+        }
+      ]
     ]
   }
 }

@@ -6,6 +6,7 @@ import type { PricingTierRepository } from '../repositories/PricingTierRepositor
 import type { ProductData, ProductRecord, ProductRepository } from '../repositories/ProductRepository.js';
 import type { PromotionRepository } from '../repositories/PromotionRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
+import { hasValidCheckDigit, inStoreBarcode } from '../utils/barcodes.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { type ProductSnapshot, describeProductChanges } from './activity/describeProductChanges.js';
@@ -20,6 +21,7 @@ export interface ProductDto {
   name: string;
   description: string | null;
   sku: string | null;
+  barcode: string | null;
   imageUrl: string | null;
   isActive: boolean;
   category: { id: number; name: string };
@@ -99,6 +101,50 @@ export class ProductService {
       this.promotionRepository.findRunning(new Date()),
     ]);
     return this.toDto(product, tiers, promotions, isAdmin);
+  }
+
+  /** The product a scanned barcode belongs to. */
+  async getByBarcode(barcode: string, viewerRole: UserRole | undefined): Promise<ProductDto> {
+    const id = await this.productRepository.findIdByBarcode(barcode);
+    if (!id) throw new NotFoundError(`No product has the barcode ${barcode}`);
+    return this.getById(id, viewerRole);
+  }
+
+  /** Sets (or clears, with null) a product's barcode, usually the manufacturer's. */
+  async setBarcode(id: number, barcode: string | null, actorId: number): Promise<ProductDto> {
+    if (barcode !== null && !hasValidCheckDigit(barcode)) {
+      throw new ValidationError(`${barcode} isn't a valid barcode: its last digit doesn't match. Scan it again or check for a typo.`);
+    }
+    const product = await this.productRepository.findById(id, true);
+    if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    if (barcode !== null) {
+      const owner = await this.productRepository.findIdByBarcode(barcode);
+      if (owner !== undefined && owner !== id) throw new ConflictError(`Another product already has the barcode ${barcode}`);
+    }
+    await this.transactions.run(async (repos) => {
+      await repos.products.setBarcode(id, barcode);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'product.barcode_set',
+        entityType: 'product',
+        entityId: id,
+        summary: barcode === null ? `Removed the barcode of ${product.name}` : `Set the barcode of ${product.name} to ${barcode}`,
+        details: { from: product.barcode, to: barcode },
+      });
+    });
+    return this.getById(id, 'admin');
+  }
+
+  /** Makes a shop barcode for a product that has none, so it can be labelled and scanned. */
+  async createBarcode(id: number, actorId: number): Promise<ProductDto> {
+    const product = await this.productRepository.findById(id, true);
+    if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    if (product.barcode) throw new ConflictError(`${product.name} already has a barcode`);
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const barcode = inStoreBarcode(id, attempt);
+      if ((await this.productRepository.findIdByBarcode(barcode)) === undefined) return this.setBarcode(id, barcode, actorId);
+    }
+    throw new ConflictError('Could not make a free barcode for this product');
   }
 
   /** Products in the same order as `ids`, skipping any that no longer exist. */
@@ -252,6 +298,7 @@ export class ProductService {
       name: product.name,
       description: product.description,
       sku: product.sku,
+      barcode: product.barcode,
       imageUrl: product.image_url,
       isActive: product.is_active,
       category: { id: product.category_id, name: product.category_name },

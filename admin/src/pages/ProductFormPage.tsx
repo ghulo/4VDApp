@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BarcodeCard } from '../components/BarcodeCard';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -386,6 +387,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
             )}
           </form>
         </ManagersOnly>
+        {!isNew && <BarcodeCard product={product} />}
         {!isNew && <PriceHistory productId={product.id} />}
         </>
       )}

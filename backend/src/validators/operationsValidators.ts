@@ -32,6 +32,21 @@ export const recordSaleSchema = z.object({
   customerId: idSchema.optional(),
 });
 
+/** Several products sold together. Each product once; the quantity says how many. */
+export const basketSchema = z
+  .object({
+    items: z
+      .array(z.object({ productId: idSchema, quantity: z.number().int().min(1).max(1_000_000) }))
+      .min(1, 'add at least one product')
+      .max(100),
+    notes: optionalText(1000),
+    customerId: idSchema.optional(),
+  })
+  .refine((basket) => new Set(basket.items.map((item) => item.productId)).size === basket.items.length, {
+    message: 'each product can only be in the basket once',
+    path: ['items'],
+  });
+
 export const saleQuerySchema = paginationSchema.extend({
   startDate: startDateQuery.optional(),
   endDate: endDateQuery.optional(),

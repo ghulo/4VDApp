@@ -68,6 +68,7 @@ export const productsApi = {
     return { items: data, meta: meta! };
   },
   get: async (id: number) => (await apiRequest<Product>(`/products/${id}`)).data,
+  byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
 };
 
 export const categoriesApi = {
@@ -86,6 +87,8 @@ export const favoritesApi = {
 };
 
 export const salesApi = {
+  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
+    (await apiRequest<{ sales: Sale[]; total: number }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };
@@ -134,6 +137,13 @@ export const returnsApi = {
 export const writeOffsApi = {
   request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
     (await apiRequest<WriteOffResult>('/write-offs', { method: 'POST', body: input })).data,
+};
+
+export const carwashApi = {
+  today: async () => (await apiRequest<{ day: string; takings: { carwash: number; change: number } | null }>('/carwash/today')).data,
+  save: async (day: string, takings: { carwash: number; change: number }) => {
+    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: takings });
+  },
 };
 
 export const customersApi = {

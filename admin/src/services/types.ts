@@ -52,6 +52,8 @@ export interface Product {
   name: string;
   description: string | null;
   sku: string | null;
+  /** Scanned at the counter: the manufacturer's, or one 4VD made. */
+  barcode: string | null;
   imageUrl: string | null;
   isActive: boolean;
   category: { id: number; name: string };

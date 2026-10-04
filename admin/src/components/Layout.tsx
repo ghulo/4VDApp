@@ -1,5 +1,6 @@
 import {
   Bell,
+  Barcode,
   Truck,
   Notebook,
   Wallet,
@@ -73,6 +74,7 @@ const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: NavItem[
       { to: '/products', key: 'products', icon: Tag },
       { to: '/promotions', key: 'promotions', icon: Percent },
       { to: '/orders', key: 'orders', icon: Truck },
+      { to: '/labels', key: 'labels', icon: Barcode },
       { to: '/categories', key: 'categories', icon: SquaresFour },
     ],
   },

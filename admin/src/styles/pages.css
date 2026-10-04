@@ -1550,3 +1550,186 @@
   padding-block: var(--space-2);
   border-bottom: 1px solid var(--line);
 }
+
+
+/* Barcodes: the code on a product's page, the basket at the counter, and printed labels. */
+.barcode-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.barcode-card__code {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.label-picker {
+  display: grid;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.label-picker__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.basket {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.basket__suggestions {
+  display: grid;
+  margin: calc(-1 * var(--space-3)) 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+
+.basket__suggestion {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.basket__suggestion:hover,
+.basket__suggestion:focus-visible {
+  background: var(--surface-sunk);
+}
+
+.basket__stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.basket__quantity {
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.basket__total {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.basket__change {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Labels: shown as a preview on screen, and the only thing on paper when printing. */
+.labels-print {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.labels-print--sheet {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.labels-print--roll {
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+}
+
+.label {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  justify-items: center;
+  padding: var(--space-2);
+  border: 1px dashed var(--line-strong);
+  background: #ffffff; /* labels are printed on white paper whatever the theme */
+  color: #000000;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.label__name,
+.label__price {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label__name {
+  font-size: var(--text-sm);
+}
+
+.label__price {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The print copy (see LabelsPage) is hidden on screen and is all that prints. */
+.labels-print-root {
+  display: none;
+}
+
+@media print {
+  body > :not(.labels-print-root) {
+    display: none !important;
+  }
+
+  .labels-print-root {
+    display: grid;
+    gap: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+  }
+
+  .labels-print-root.labels-print--sheet {
+    grid-template-columns: repeat(3, 70mm);
+    grid-auto-rows: 37mm;
+  }
+
+  .labels-print-root.labels-print--sheet .label {
+    height: 37mm;
+    padding: 3mm;
+    border: 0;
+  }
+
+  .labels-print-root.labels-print--roll {
+    display: block;
+  }
+
+  .labels-print-root.labels-print--roll .label {
+    width: 50mm;
+    height: 30mm;
+    padding: 1mm;
+    border: 0;
+    break-after: page;
+  }
+}

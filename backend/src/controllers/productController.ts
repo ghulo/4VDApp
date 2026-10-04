@@ -2,7 +2,13 @@ import type { Request, Response } from 'express';
 import type { ActivityLogService } from '../services/ActivityLogService.js';
 import type { ProductService } from '../services/ProductService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { createProductSchema, productQuerySchema, updateProductSchema } from '../validators/catalogValidators.js';
+import {
+  barcodeParamsSchema,
+  createProductSchema,
+  productQuerySchema,
+  setBarcodeSchema,
+  updateProductSchema,
+} from '../validators/catalogValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createProductController(productService: ProductService, activityLogService: ActivityLogService) {
@@ -16,6 +22,22 @@ export function createProductController(productService: ProductService, activity
     async getById(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await productService.getById(id, req.identity?.role));
+    },
+
+    async getByBarcode(req: Request, res: Response): Promise<void> {
+      const { barcode } = parseInput(barcodeParamsSchema, req.params);
+      sendSuccess(res, await productService.getByBarcode(barcode, req.identity?.role));
+    },
+
+    async setBarcode(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      const { barcode } = parseInput(setBarcodeSchema, req.body);
+      sendSuccess(res, await productService.setBarcode(id, barcode, req.user!.id), { message: 'Barcode saved' });
+    },
+
+    async createBarcode(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await productService.createBarcode(id, req.user!.id), { statusCode: 201, message: 'Barcode created' });
     },
 
     async priceHistory(req: Request, res: Response): Promise<void> {

@@ -150,6 +150,8 @@ export interface ProductsTable {
   cost_price: Decimal | null;
   image_url: string | null;
   sku: string | null;
+  /** Scanned at the counter; set through its own endpoints, not the product form. */
+  barcode: ColumnType<string | null, string | null | undefined, string | null>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;

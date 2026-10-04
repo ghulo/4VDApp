@@ -17,7 +17,9 @@ bigger. It uses the same shapes as the sign-in drawing.
   in the interface. It's there for people who ask.
 - The app icons are drawn from the SVG: run `node brand/make_icons.mjs` after
   changing it (needs `npm install` in `backend/` for sharp). Android's themed
-  icon uses the ink shapes alone. Then bump `?v=` on the icon links in
+  icon uses the ink shapes alone. The dashboard's icons (tab and home screen)
+  are the same mark inverted, an ink tile with an ivory shop, so the two apps
+  never look alike side by side. Then bump `?v=` on the icon links in
   `admin/index.html`, `mobile/public/index.html` and both `manifest.json` files,
   or browsers keep showing the old icon.
 

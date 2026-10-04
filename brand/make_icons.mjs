@@ -2,7 +2,7 @@
 // drift from the mark. Run from the repo root: node brand/make_icons.mjs
 // (uses the backend's sharp; run `npm install` in backend/ first).
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const sharp = createRequire(new URL('../backend/package.json', import.meta.url))('sharp');
 const IVORY = '#FAF9F5';
@@ -33,13 +33,28 @@ async function render(svg, size, padding = 0) {
 
 const onIvory = (image) => image.flatten({ background: IVORY });
 
-// Home-screen icons for both web apps: the team app and the dashboard.
-for (const app of ['mobile', 'admin']) {
-  await (await render(square, 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
-  await (await render(square, 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
-  await (await render(square, 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
-  await onIvory(await render(bare, 512, 0.06)).png().toFile(fileIn(app, 'public/icon-maskable-512.png'));
+// The dashboard's icons are the same mark inverted (ink tile, ivory shop, same
+// clay sun), so its home-screen icon and tab never get mixed up with the team app's.
+const INK = '#141413';
+const invert = (svg) =>
+  svg
+    .replaceAll('#FAF9F5', '@ivory@')
+    .replaceAll(INK, '#FAF9F5')
+    .replaceAll('@ivory@', INK)
+    .replace('stroke="#E3DACC"', 'stroke="#30302E"')
+    .replace('on an ivory tile', 'inverted on an ink tile for the dashboard');
+
+// Home-screen icons for both web apps: the team app on ivory, the dashboard inverted.
+for (const [app, tile] of [['mobile', (svg) => svg], ['admin', invert]]) {
+  await (await render(tile(square), 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
+  await (await render(tile(square), 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
+  await (await render(tile(square), 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
+  await (await render(tile(bare), 512, 0.06))
+    .flatten({ background: app === 'admin' ? INK : IVORY })
+    .png()
+    .toFile(fileIn(app, 'public/icon-maskable-512.png'));
 }
+writeFileSync(fileIn('admin', 'public/favicon.svg'), invert(mark));
 await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));
 await (await render(square, 1024)).png().toFile(out('assets/icon.png'));
 await (await render(bare, 1024, 0.1)).png().toFile(out('assets/android-icon-foreground.png'));

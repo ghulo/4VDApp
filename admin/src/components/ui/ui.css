@@ -840,20 +840,57 @@ input.switch:focus-visible {
 
 /* ---------- Dot-matrix ---------- */
 
-/* ---------- Shop at sunrise (dithered drawing) ---------- */
+/* ---------- Shop at sunrise ---------- */
 
 .shop-sunrise {
   display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
 }
 
 .shop-sunrise__sun {
   fill: var(--accent);
 }
 
+.shop-sunrise__glow {
+  fill: var(--accent);
+  opacity: 0.16;
+}
+
 .shop-sunrise__shop {
   fill: var(--ink);
+}
+
+.shop-sunrise__roof {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shop-sunrise__horizon {
+  fill: var(--ink-muted);
+  opacity: 0.45;
+}
+
+.shop-sunrise__horizon--far {
+  opacity: 0.25;
+}
+
+/* The one moment: the sun comes up behind the shop when the drawing appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .shop-sunrise__rise {
+    animation: sun-rise 1.2s var(--ease) both;
+  }
+}
+
+@keyframes sun-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
 
 .day-bars {

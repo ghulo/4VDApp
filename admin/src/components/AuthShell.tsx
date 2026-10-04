@@ -22,7 +22,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
   const t = useT();
   return (
     <div className="login">
-      <section className="login__story halftone-field" aria-label="4VD">
+      <section className="login__story" aria-label="4VD">
         <p className="login__mark">
           <LogoMark size={36} />
           4VD

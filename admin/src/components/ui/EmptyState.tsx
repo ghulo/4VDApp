@@ -7,7 +7,7 @@ interface EmptyStateProps {
   /** What to do next, in a sentence. */
   children?: ReactNode;
   action?: ReactNode;
-  /** Draws the dithered shop above the words, for big empty pages. */
+  /** Draws the shop at sunrise above the words, for big empty pages. */
   art?: boolean;
   /** The job's icon above the words, in a soft chip, for lists of that job. */
   icon?: Icon;

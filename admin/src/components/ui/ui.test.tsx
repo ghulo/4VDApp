@@ -241,11 +241,11 @@ describe('Badge, StatTile and EmptyState', () => {
     expect(html).toContain('role="alert"');
   });
 
-  it('should draw the shop at sunrise in blocks, hidden from screen readers', () => {
+  it('should draw the shop at sunrise with four equal pillars, hidden from screen readers', () => {
     const html = render(<ShopSunrise />);
 
     expect(html).toContain('aria-hidden="true"');
-    expect(html.match(/<rect/g)!.length).toBeGreaterThan(100);
+    expect(html.match(/x="\d+(\.\d+)?" y="76" width="11" height="38"/g)).toHaveLength(4);
   });
 });
 

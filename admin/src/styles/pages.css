@@ -255,9 +255,10 @@
     width: 100%;
   }
 
-  /* On a phone the drawing waits; the day's words and links come first. */
+  /* On a phone the drawing comes after the day's words, smaller and centred. */
   .today__side .shop-sunrise {
-    display: none;
+    width: min(240px, 80%);
+    margin: 0 auto;
   }
 
   .today__link {
@@ -538,7 +539,7 @@
   background: var(--bg);
 }
 
-/* The story side: halftone dots, the dithered shop at sunrise, dashed rail on the edge. */
+/* The story side: the shop at sunrise on sunk paper, a dashed rail on the edge. */
 .login__story {
   position: relative;
   display: flex;
@@ -567,14 +568,15 @@
 
 .login__scene {
   position: relative;
+  flex: 1;
   align-self: stretch;
   display: grid;
   place-items: center;
-  min-height: 320px;
+  min-height: 380px;
 }
 
 .login__art {
-  width: min(380px, 85%);
+  width: min(560px, 100%);
 }
 
 .login__moment {
@@ -626,8 +628,8 @@
 }
 
 .login__moment--c {
-  bottom: 14%;
-  left: 6%;
+  bottom: 3%;
+  left: 4%;
 }
 
 .login__moment--d {
@@ -720,7 +722,16 @@
     border-bottom: 1px dashed var(--line-strong);
   }
 
-  .login__scene,
+  /* On a phone the drawing stays, smaller and without the floating cards. */
+  .login__scene {
+    min-height: 0;
+  }
+
+  .login__art {
+    width: min(300px, 80%);
+  }
+
+  .login__moment,
   .login__headline,
   .login__small-print {
     display: none;

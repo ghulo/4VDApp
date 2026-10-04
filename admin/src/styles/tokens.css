@@ -6,23 +6,23 @@
    Contrast is checked by src/theme/contrast.test.ts. */
 :root,
 [data-theme='light'] {
-  --bg: #f5f2ea;
-  --surface: #fefdfa;
-  --surface-sunk: #eeeae0;
-  --fill: #e8e3d7;
-  --ink: #1f1b19;
-  --ink-muted: #645d57;
-  --line: #e4ded2;
-  --line-strong: #cec6b7;
-  --brand: #c2410c;
+  --bg: #f0eee6;
+  --surface: #faf9f5;
+  --surface-sunk: #e8e4da;
+  --fill: #e3dacc;
+  --ink: #141413;
+  --ink-muted: #5e5d59;
+  --line: #e0dbcf;
+  --line-strong: #cbc3b3;
+  --brand: #a8482a;
   --brand-ink: #ffffff;
-  --brand-soft: #fff4ed;
-  --accent: #ff5e1f;
-  --cta: #ff5e1f;
-  --cta-hover: #ff7038;
-  --cta-ink: #1c0f08;
-  --tint: rgb(255 94 31 / 0.1);
-  --topbar: rgb(254 253 250 / 0.8);
+  --brand-soft: #f5e6dc;
+  --accent: #d4704f;
+  --cta: #141413;
+  --cta-hover: #3d3d3a;
+  --cta-ink: #faf9f5;
+  --tint: rgb(217 119 87 / 0.14);
+  --topbar: rgb(240 238 230 / 0.82);
   --ok: #047857;
   --ok-soft: #e6f5ee;
   --warn: #b45309;
@@ -32,8 +32,8 @@
   --info: #1d4ed8;
   --info-soft: #e8efff;
   --focus: #1d4ed8;
-  --dots: #cec6b7;
-  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23cec6b7'/%3E%3C/svg%3E");
+  --dots: #cbc3b3;
+  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23cbc3b3'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12);
   --grain-opacity: 0.07;
   --grain-blend: multiply;
@@ -42,23 +42,23 @@
 }
 
 [data-theme='dark'] {
-  --bg: #151414;
-  --surface: #1c1b1a;
-  --surface-sunk: #111010;
-  --fill: #262422;
-  --ink: #f2ebe7;
-  --ink-muted: #9a9390;
-  --line: #2c2927;
-  --line-strong: #3d3936;
-  --brand: #ff7038;
+  --bg: #1f1e1d;
+  --surface: #262624;
+  --surface-sunk: #1a1918;
+  --fill: #30302e;
+  --ink: #faf9f5;
+  --ink-muted: #a6a39b;
+  --line: #2f2e2b;
+  --line-strong: #3e3d39;
+  --brand: #e08a6b;
   --brand-ink: #1a120e;
-  --brand-soft: #3a1f12;
-  --accent: #ff5e1f;
-  --cta: #ff5e1f;
-  --cta-hover: #ff7038;
-  --cta-ink: #1c0f08;
-  --tint: rgb(255 94 31 / 0.14);
-  --topbar: rgb(28 27 26 / 0.72);
+  --brand-soft: #3a2219;
+  --accent: #d4704f;
+  --cta: #faf9f5;
+  --cta-hover: #e8e4da;
+  --cta-ink: #141413;
+  --tint: rgb(217 119 87 / 0.18);
+  --topbar: rgb(31 30 29 / 0.8);
   --ok: #34d399;
   --ok-soft: #0f3326;
   --warn: #fbbf24;
@@ -68,8 +68,8 @@
   --info: #60a5fa;
   --info-soft: #14263f;
   --focus: #60a5fa;
-  --dots: #34302d;
-  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%2334302d'/%3E%3C/svg%3E");
+  --dots: #3e3d39;
+  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%233e3d39'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
   --grain-opacity: 0.05;
   --grain-blend: screen;
@@ -92,6 +92,8 @@
   --font-body: 'Hanken Grotesk', system-ui, sans-serif;
   /* Page titles and the day's headline only; figures and tables stay in the body face. */
   --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  /* Small capital labels over figures (DATE, IN STOCK), as on anthropic.com's spec rows. */
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
 
   /* Type: 12 / 13 / 15 (base) / 17. Base is 15px so the owner reads it comfortably. */
   --text-xs: 0.75rem;
@@ -110,8 +112,8 @@
 
   --control-h: 36px;
   --control-h-sm: 30px;
-  --radius-small: 6px;
-  --radius-panel: 8px;
+  --radius-small: 8px;
+  --radius-panel: 16px;
 
   /* Motion: quick and soft, never bouncy. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);

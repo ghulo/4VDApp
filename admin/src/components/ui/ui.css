@@ -231,7 +231,8 @@
 
 .card {
   margin-bottom: var(--space-4);
-  border: 1px solid var(--line);
+  /* Paper on ivory, no frame, like anthropic.com's cards. */
+  border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--surface);
 }
@@ -1061,4 +1062,18 @@ input.switch:focus-visible {
   .metric--large {
     grid-column: auto;
   }
+}
+
+/* ---------- Spec labels ----------
+   The small capital labels over figures and columns, set in monospace like the
+   DATE / CATEGORY rows on anthropic.com. Only short labels, never sentences. */
+.table th,
+.stat__label,
+.metric__label,
+.sidebar__group-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }

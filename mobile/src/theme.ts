@@ -1,21 +1,22 @@
 import { createContext, useContext } from 'react';
+import { Platform } from 'react-native';
 
 // Same tokens as the dashboard (admin/src/styles/tokens.css, DESIGN.md "Calm
-// Shop"): ink on ivory paper, quiet status colours with tints, and orange only
-// for the main action (with near-black text on it) and where you are.
+// Shop"): ink on ivory paper with oat panels, quiet status colours with tints,
+// solid ink for the main action and clay for the brand and where you are.
 const light = {
-  background: '#f5f2ea',
-  surface: '#fefdfa',
-  surfaceSunk: '#eeeae0',
-  fill: '#e8e3d7',
-  ink: '#1f1b19',
-  inkMuted: '#645d57',
-  line: '#e4ded2',
-  lineStrong: '#cec6b7',
-  brand: '#c2410c',
+  background: '#f0eee6',
+  surface: '#faf9f5',
+  surfaceSunk: '#e8e4da',
+  fill: '#e3dacc',
+  ink: '#141413',
+  inkMuted: '#5e5d59',
+  line: '#e0dbcf',
+  lineStrong: '#cbc3b3',
+  brand: '#a8482a',
   brandInk: '#ffffff',
-  brandSoft: '#fff4ed',
-  accent: '#ff5e1f',
+  brandSoft: '#f5e6dc',
+  accent: '#d97757',
   warn: '#b45309',
   warnSoft: '#fef3e2',
   danger: '#b91c1c',
@@ -25,18 +26,18 @@ const light = {
 };
 
 const dark: typeof light = {
-  background: '#151414',
-  surface: '#1c1b1a',
-  surfaceSunk: '#111010',
-  fill: '#262422',
-  ink: '#f2ebe7',
-  inkMuted: '#9a9390',
-  line: '#2c2927',
-  lineStrong: '#3d3936',
-  brand: '#ff7038',
+  background: '#1f1e1d',
+  surface: '#262624',
+  surfaceSunk: '#1a1918',
+  fill: '#30302e',
+  ink: '#faf9f5',
+  inkMuted: '#a6a39b',
+  line: '#2f2e2b',
+  lineStrong: '#3e3d39',
+  brand: '#e08a6b',
   brandInk: '#1a120e',
-  brandSoft: '#3a1f12',
-  accent: '#ff5e1f',
+  brandSoft: '#3a2219',
+  accent: '#d97757',
   warn: '#fbbf24',
   warnSoft: '#3a2c0d',
   danger: '#f87171',
@@ -49,10 +50,11 @@ const dark: typeof light = {
 function withAliases(palette: typeof light) {
   return {
     ...palette,
-    // The main action: Signal Orange with near-black text (white fails contrast).
-    cta: palette.accent,
-    ctaInk: '#1c0f08',
-    // A chosen chip or option: ink, so orange keeps meaning "act here".
+    // The main action: solid ink with paper text, as on anthropic.com. Clay is
+    // the brand's colour (logo, illustrations, where you are), not a button.
+    cta: palette.ink,
+    ctaInk: palette.surface,
+    // A chosen chip or option: ink too.
     selected: palette.ink,
     onSelected: palette.surface,
     steel: palette.inkMuted,
@@ -75,10 +77,12 @@ export const fonts = {
   display: 'HankenGrotesk_600SemiBold',
   displayBold: 'HankenGrotesk_700Bold',
   serif: 'SourceSerif4_500Medium',
+  // Small capital labels (dates, kickers), like anthropic.com's spec rows.
+  mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: "ui-monospace, 'SF Mono', Consolas, monospace" }),
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { small: 6, panel: 8, board: 10 };
+export const radius = { small: 8, panel: 16, board: 20 };
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 

@@ -28,7 +28,7 @@ matters. Motion is quick and quiet, and off when the computer asks for less.
 
 | Name | Light | Dark | Meaning |
 |---|---|---|---|
-| Orange (accent, buttons) | `#FF5E1F` | `#FF5E1F` | the one loud colour: main buttons, the today block, where you are |
+| Clay (brand) | `#D4704F` | `#D4704F` | the brand colour: the logo, illustrations and where you are (main buttons are solid ink) |
 | Orange text (brand) | `#C2410C` | `#FF7038` | links and orange words (darker in light mode so it reads) |
 | Ink | `#1F1B19` | `#F2EBE7` | text, and the text on orange |
 | Warn | `#B45309` | `#FBBF24` | low stock, waiting for you |

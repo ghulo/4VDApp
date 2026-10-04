@@ -2,7 +2,7 @@
 export function LogoMark({ size = 32 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      <rect width="64" height="64" rx="14" fill="#FF5E1F" />
+      <rect width="64" height="64" rx="14" fill="#D4704F" />
       <path d="M11 25 L32 11 L53 25" fill="none" stroke="#1C0F08" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round" />
       {[14, 24.5, 35, 45.5].map((x) => (
         <rect key={x} x={x} y="30" width="6.5" height="22" rx="1.5" fill="#FFFBF5" />

@@ -1,30 +1,30 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales and team in one calm, precise interface; ink on warm paper, one orange voice.
+description: The Dacaj family shop's stock, sales and team in one calm, precise interface; ink on ivory paper with oat panels, a clay brand colour and dithered drawings.
 colors:
-  signal-orange: "#ff5e1f"
-  signal-orange-hover: "#ff7038"
-  orange-tint: "rgb(255 94 31 / 0.1)"
-  orange-tint-dark: "rgb(255 94 31 / 0.14)"
+  clay: "#d4704f"
+  clay-text: "#a8482a"
+  clay-tint: "rgb(217 119 87 / 0.14)"
+  clay-tint-dark: "rgb(217 119 87 / 0.18)"
   ember-text: "#c2410c"
   ember-text-dark: "#ff7038"
   pillar-ink: "#1c0f08"
-  warm-canvas: "#f5f2ea"
-  paper: "#fefdfa"
-  sunk-paper: "#eeeae0"
-  fill: "#e8e3d7"
-  ink: "#1f1b19"
-  ink-muted: "#645d57"
-  hairline: "#e4ded2"
-  hairline-strong: "#cec6b7"
-  night-canvas: "#151414"
-  night-paper: "#1c1b1a"
-  night-sunk: "#111010"
-  night-fill: "#262422"
-  night-ink: "#f2ebe7"
-  night-muted: "#9a9390"
-  night-hairline: "#2c2927"
-  night-hairline-strong: "#3d3936"
+  ivory-canvas: "#f0eee6"
+  paper: "#faf9f5"
+  sunk-paper: "#e8e4da"
+  oat: "#e3dacc"
+  ink: "#141413"
+  ink-muted: "#5e5d59"
+  hairline: "#e0dbcf"
+  hairline-strong: "#cbc3b3"
+  night-canvas: "#1f1e1d"
+  night-paper: "#262624"
+  night-sunk: "#1a1918"
+  night-oat: "#30302e"
+  night-ink: "#faf9f5"
+  night-muted: "#a6a39b"
+  night-hairline: "#2f2e2b"
+  night-hairline-strong: "#3e3d39"
   ok: "#047857"
   ok-soft: "#e6f5ee"
   warn: "#b45309"
@@ -82,8 +82,8 @@ typography:
     lineHeight: 1.4
 rounded:
   segment: "6px"
-  control: "6px"
-  card: "8px"
+  control: "8px"
+  card: "16px"
   pill: "999px"
 spacing:
   "1": "4px"
@@ -194,16 +194,16 @@ underlined links, generous quiet around the few things that matter).
 It is a working tool for a shop counter, read in the morning and used all day.
 Working screens are plain paper on a warm canvas. The Overview is a calm morning
 page that says the day in one serif sentence; the dense figures live on Reports.
-Data is drawn in ink, so orange keeps exactly one meaning: act here, or you are
-here. Dots are the brand's signature (Cloudflare's and Anthropic's language too):
+Data is drawn in ink, and so are actions; clay marks the brand and where you are.
+Dots are the brand's signature (Cloudflare's and Anthropic's language too):
 a halftone field frames the page column, data is drawn in dots, and the four-pillar
 mark is made of them. They stay out of tables and forms, where they'd be noise.
 
 **Key Characteristics:**
-- Ink on warm paper; flat surfaces separated by hairlines, no shadows at rest.
-- One orange voice (`#ff5e1f`): the main button, the current menu item, the logo.
+- Ink on ivory paper with oat panels; flat surfaces, no shadows at rest.
+- One clay brand colour (`#d4704f`) for the logo, the drawings and where you are; actions in solid ink.
 - A serif (Source Serif 4, 500) for page titles, the day's headline and sign-in headings; a grotesk (Hanken Grotesk) for everything else, every figure tabular.
-- Charts and counts in ink and muted ink, never orange.
+- Charts and counts in ink and muted ink, never clay.
 - 15px body for comfortable reading; 44px controls on phones.
 - Quick, soft motion (150ms, gentle ease-out); off when the computer asks for less.
 - Both themes first-class; dark is warm (`#151414`), not blue-black.
@@ -214,26 +214,29 @@ Warm, slightly beige neutrals carry almost everything; one orange marks action a
 place; status colours stay quiet and come with faint tints.
 
 ### Primary
-- **Signal Orange** (#ff5e1f, hover #ff7038): the main button, the 3px marker on the
-  current menu item, the logo tile, the halftone drawing. Text on it is Pillar Ink.
-- **Orange Tint** (10% light, 14% dark): the fill behind the current menu item.
-- **Ember Text** (#c2410c light / #ff7038 dark): the label of the current menu item,
-  where full Signal Orange would be too faint to read as text.
+- **Clay** (#d4704f): the brand colour, after Anthropic's book-cloth orange: the logo
+  tile, the dithered drawings, the 3px marker on the current menu item. Softer than
+  the old Signal Orange (#ff5e1f), which looked loud on ivory.
+- **Clay Tint** (14% light, 18% dark): the fill behind the current menu item.
+- **Clay Text** (#a8482a light / #e08a6b dark): the label of the current menu item.
+- **The main button is solid Ink** with Paper text (in dark mode: Night Ink with
+  Ink text), as on anthropic.com. Hover #3d3d3a.
 
 ### Neutral
-- **Ivory Canvas** (#f5f2ea) / **Night Canvas** (#151414): the page behind frames.
-- **Paper** (#fefdfa) / **Night Paper** (#1c1b1a): cards, tables, sidebar, top bar.
-- **Sunk Paper** (#eeeae0) / **Night Sunk** (#111010): card footer strips, row hover,
+- **Ivory Canvas** (#f0eee6) / **Night Canvas** (#1f1e1d): the page.
+- **Paper** (#faf9f5) / **Night Paper** (#262624): cards, tables, sidebar, top bar.
+  Dashboard cards have no frame; paper on ivory is enough.
+- **Sunk Paper** (#e8e4da) / **Night Sunk** (#1a1918): card footer strips, row hover,
   callouts, the search field, the sign-in story panel.
-- **Fill** (#e8e3d7) / **Night Fill** (#262422): ghost and menu hover, segmented
-  control track, the neutral disabled main button.
-- **Ink** (#1f1b19) / **Night Ink** (#f2ebe7): text, links, the active chart bar,
-  count badges, checked switches and checkboxes, the tooltip.
-- **Muted Ink** (#645d57) / **Night Muted** (#9a9390): descriptions, labels, table
+- **Oat** (#e3dacc) / **Night Oat** (#30302e), token `fill`: the feature panels (the
+  Today panel in both apps, the team app's job tiles), ghost and menu hover, the
+  segmented control track, the disabled main button.
+- **Ink** (#141413) / **Night Ink** (#faf9f5): text, links, the main button, the
+  active chart bar, count badges, checked switches and checkboxes, the tooltip.
+- **Muted Ink** (#5e5d59) / **Night Muted** (#a6a39b): descriptions, labels, table
   headers, and every chart series.
-- **Hairline** (#e4ded2) and **Strong Hairline** (#cec6b7) (night #2c2927 / #3d3936):
+- **Hairline** (#e0dbcf) and **Strong Hairline** (#cbc3b3) (night #2f2e2b / #3e3d39):
   every border, grid line and unlit halftone dot; strong for control strokes.
-- **Pillar Ink** (#1c0f08): text and drawings on Signal Orange.
 
 ### Status
 - **OK** (#047857), **Warn** (#b45309), **Danger** (#b91c1c), **Info** (#1d4ed8),
@@ -242,9 +245,9 @@ place; status colours stay quiet and come with faint tints.
   Metric changes use OK for up, Danger for down, Muted Ink for flat.
 
 ### Named Rules
-**The One Voice Rule.** Orange appears in exactly three places: the main button, the
-current menu item (tint, ember text, 3px marker) and the logo. Badges, links, charts
-and counts are never orange.
+**The Clay Rule.** Clay is the brand, not a button: the logo, the dithered drawings
+and where you are (current menu item). Actions are solid ink. Badges, links, charts
+and counts are never clay.
 
 **The Ink Data Rule.** Data is drawn in ink: chart series in Muted Ink, the active
 bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would
@@ -257,9 +260,9 @@ dot columns, metric graphs as a halftone area under a line, the Today card's
 30-day dot-matrix strip with faint unlit dots), the halftone corner on the team
 app's Today card, and the four-pillar drawing. Never in tables, forms or behind text.
 
-**The Dark Text On Orange Rule.** Text on Signal Orange is always Pillar Ink. White
-on this orange reaches only 3:1. Contrast pairs are guarded by
-`admin/src/theme/contrast.test.ts` (WCAG AA).
+**The Contrast Rule.** Every text and colour pair is checked by
+`admin/src/theme/contrast.test.ts` (WCAG AA): clay reaches 3:1 on paper as a UI
+colour, clay text reaches 4.5:1 on paper and on its tint.
 
 ## Typography
 
@@ -293,8 +296,13 @@ Grotesk.
 **The Tabular Rule.** Every number that can sit in a column or change in place uses
 tabular figures.
 
-**The No Shouting Rule.** No weight above 600 outside the wordmark and count badges,
-no all-caps labels, sentence case everywhere.
+**The No Shouting Rule.** No weight above 600 outside the wordmark and count badges;
+sentence case everywhere except spec labels.
+
+**The Spec Label Rule.** Short labels over figures and columns (table headers, stat
+and metric labels, sidebar group names, the team app's date kicker) are set in
+monospace capitals, 12px, 0.06em tracking, like anthropic.com's DATE / CATEGORY rows.
+Never a sentence, never a button.
 
 ## Layout
 
@@ -340,9 +348,9 @@ Hover answers with a fill change (sunk paper or fill), never light.
 
 ## Shapes
 
-Small, blocky corners, like cut paper: 6px on controls, callouts, notices and
-tooltips (and on segmented options and palette rows); 8px on cards, tables, metric
-cards and the palette; pills only for badges and counts. Borders are single 1px hairlines.
+Soft, generous corners, as on anthropic.com: 8px on controls, callouts, notices and
+tooltips (6px on segmented options and palette rows); 16px on cards, tables, metric
+cards, panels and the palette; pills only for badges and counts. Borders are single 1px hairlines.
 Secondary buttons and the selected segment use a 1px inset ring rather than a
 border. Callouts (AI answers, price suggestions) sit on sunk paper with no border.
 A dashed hairline marks something you can see but not change (the read-only note)
@@ -354,10 +362,9 @@ rails.
 Calm at rest, a plain answer when touched.
 
 ### Buttons
-- **Shape:** gently rounded (6px), 36px tall (30px small); 44px (36px small) under 900px.
-- **Primary:** Signal Orange with Pillar Ink text, weight 600; one per view. Hover
-  brightens to #ff7038; disabled goes to the neutral fill with muted text, never a
-  washed-out orange.
+- **Shape:** gently rounded (8px), 36px tall (30px small); 44px (36px small) under 900px.
+- **Primary:** solid Ink with Paper text, weight 600; one per view. Hover lifts to
+  #3d3d3a; disabled goes to oat with muted text.
 - **Secondary:** paper with a strong-hairline ring, weight 500; hover sinks.
   **Ghost:** no fill until hover. **Danger:** red fill for destroying; **Danger
   text:** red words for "Delete" next to other actions.
@@ -442,8 +449,11 @@ The vintage, editorial-print finish, after anthropic.com's textured stock:
   a test): each job drawn in square blocks on a 12 × 12 grid (receipt, clipboard,
   coins, notebook, drop, crate), in ink. Used on the team app's job tiles and on
   empty states for that job (Muted Ink, 40–48px). Decoration only, always beside words.
-- **Halftone field:** dots swelling towards a panel's bottom edge, like ink pooling
-  on a press; the band under the team app's Today panel.
+- **Dithered drawings** (`mobile/src/components/dither.ts`): scenes printed as
+  square blocks with 4 × 4 ordered (Bayer) dithering, the grainy look of
+  anthropic.com's illustrations. "Shop at sunrise" (the four-pillar shop in Ink
+  against a Clay sun, the ground running the width) heads the team app's Today
+  panel and sign-in. Decoration only, hidden from screen readers.
 - **Block meter:** progress as a row of 20 printed blocks (Ink, OK once reached),
   with the sentence beside it carrying the meaning.
 - **Ruled sections:** on the team app's Home, lists sit under a 2px ink rule and a
@@ -456,7 +466,7 @@ The vintage, editorial-print finish, after anthropic.com's textured stock:
   Card, SettingRow, DataTable, StatGrid, MetricCard, Badge, Button, Field, EmptyState).
 - **Do** use tokens from `admin/src/styles/tokens.css`; mirror changes in
   `mobile/src/theme.ts`.
-- **Do** keep Signal Orange for the main button, the current menu item and the logo.
+- **Do** keep Clay for the logo, the drawings and the current menu item; actions are Ink.
 - **Do** draw data in ink: series in Muted Ink, the active value in Ink.
 - **Do** set page titles in the serif and every figure in tabular Hanken Grotesk.
 - **Do** put callouts on sunk paper (`.callout`) instead of framing them.
@@ -466,7 +476,7 @@ The vintage, editorial-print finish, after anthropic.com's textured stock:
 - **Do** wrap motion in `prefers-reduced-motion: no-preference`.
 
 ### Don't:
-- **Don't** put white text on Signal Orange.
+- **Don't** make buttons clay or bright orange.
 - **Don't** add glows, corner nodes or dashed rails; keep dots, pictograms and grain-heavy textures out of tables, forms and from behind text.
 - **Don't** colour charts, counts, links or badges orange.
 - **Don't** add drop shadows to cards or tables.

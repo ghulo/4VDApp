@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Rect } from 'react-native-svg';
+import Svg, { Rect } from 'react-native-svg';
 import { fonts, spacing, useThemeColors } from '../theme';
+import { shopSunrise } from './dither';
 import { PIXEL_GRID, pixelCells, type PixelArtName } from './pixelDrawings';
 
 /**
  * The team app's printed look (DESIGN.md, "Printed paper"): blocky pictograms,
- * halftone fields, a meter made of blocks and newspaper rules. All drawing is
+ * the dithered shop, a meter made of blocks, kickers and newspaper rules. All drawing is
  * decoration, hidden from screen readers; the words beside it say the same.
  */
 
@@ -25,47 +26,39 @@ export function PixelArt({ name, size = 36, color }: { name: PixelArtName; size?
   );
 }
 
-const FIELD_WIDTH = 360;
-const FIELD_STEP = 8;
+const SUNRISE = { columns: 100, rows: 40 };
+const SUNRISE_RUNS = shopSunrise(SUNRISE.columns, SUNRISE.rows);
 
-function fieldDots(height: number) {
-  const dots: Array<{ x: number; y: number; r: number }> = [];
-  for (let y = FIELD_STEP / 2; y < height; y += FIELD_STEP) {
-    // Dots swell towards the bottom edge, like ink pooling on a press.
-    const r = 3.4 * (y / height) ** 1.4;
-    if (r < 0.4) continue;
-    for (let x = FIELD_STEP / 2; x < FIELD_WIDTH; x += FIELD_STEP) dots.push({ x, y, r });
-  }
-  return dots;
-}
-
-const FIELDS = new Map<number, ReturnType<typeof fieldDots>>();
-
-/** A halftone gradient across the bottom of a panel. Fills its parent's width. */
-export function HalftoneField({ height = 72, color }: { height?: number; color?: string }) {
+/** The shop at sunrise, dithered: the building in ink against a clay sun. Fills its parent's width. */
+export function ShopSunrise() {
   const colors = useThemeColors();
-  let dots = FIELDS.get(height);
-  if (!dots) FIELDS.set(height, (dots = fieldDots(height)));
   return (
     <Svg
       width="100%"
-      height={height}
-      viewBox={`0 0 ${FIELD_WIDTH} ${height}`}
-      preserveAspectRatio="xMidYMax slice"
-      style={styles.field}
+      viewBox={`0 0 ${SUNRISE.columns} ${SUNRISE.rows}`}
+      style={[styles.inert, { aspectRatio: SUNRISE.columns / SUNRISE.rows }]}
       {...hidden}
     >
-      {dots.map((dot) => (
-        <Circle key={`${dot.x}-${dot.y}`} cx={dot.x} cy={dot.y} r={dot.r} fill={color ?? colors.lineStrong} />
+      {SUNRISE_RUNS.sun.map((run) => (
+        <Rect key={`s${run.x}-${run.y}`} x={run.x} y={run.y} width={run.length} height={1.02} fill={colors.accent} />
+      ))}
+      {SUNRISE_RUNS.shop.map((run) => (
+        <Rect key={`b${run.x}-${run.y}`} x={run.x} y={run.y} width={run.length} height={1.02} fill={colors.ink} />
       ))}
     </Svg>
   );
 }
 
+/** A small capital label over a figure or a block, in monospace. */
+export function Kicker({ children }: { children: string }) {
+  const colors = useThemeColors();
+  return <Text style={[styles.kicker, { color: colors.inkMuted }]}>{children.toLocaleUpperCase()}</Text>;
+}
+
 const METER_BLOCKS = 20;
 
 /** Progress as a row of printed blocks; the label next to it carries the meaning. */
-export function BlockMeter({ share, done }: { share: number; done?: boolean }) {
+export function BlockMeter({ share, done, track }: { share: number; done?: boolean; track?: string }) {
   const colors = useThemeColors();
   const lit = Math.round(Math.min(Math.max(share, 0), 1) * METER_BLOCKS);
   return (
@@ -73,7 +66,7 @@ export function BlockMeter({ share, done }: { share: number; done?: boolean }) {
       {Array.from({ length: METER_BLOCKS }, (_, index) => (
         <View
           key={index}
-          style={[styles.block, { backgroundColor: index < lit ? (done ? colors.ok : colors.ink) : colors.fill }]}
+          style={[styles.block, { backgroundColor: index < lit ? (done ? colors.ok : colors.ink) : (track ?? colors.fill) }]}
         />
       ))}
     </View>
@@ -109,9 +102,9 @@ export function PrintSection({ title, aside, children }: { title: string; aside?
 
 const styles = StyleSheet.create({
   inert: { pointerEvents: 'none' },
-  field: { position: 'absolute', left: 0, right: 0, bottom: 0, pointerEvents: 'none' },
   meter: { flexDirection: 'row', gap: 3 },
   block: { flex: 1, height: 10 },
+  kicker: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.8 },
   ruleHeavy: { height: 3 },
   ruleThin: { height: 1, marginTop: 2 },
   section: { borderTopWidth: 2, paddingTop: spacing.sm },

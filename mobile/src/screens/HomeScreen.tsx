@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '../components/Avatar';
 import { LogoMark } from '../components/LogoMark';
 import type { PixelArtName } from '../components/pixelDrawings';
-import { BlockMeter, DoubleRule, HalftoneField, PixelArt, PrintSection } from '../components/print';
+import { BlockMeter, DoubleRule, Kicker, PixelArt, PrintSection, ShopSunrise } from '../components/print';
 import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
@@ -115,7 +115,9 @@ export function HomeScreen() {
       <View style={[styles.masthead, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.mastheadRow}>
           <LogoMark size={28} />
-          <Text style={[styles.date, { color: colors.inkMuted }]}>{longDate.format(now)}</Text>
+          <View style={styles.date}>
+            <Kicker>{longDate.format(now)}</Kicker>
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t.home.yourAccount}
@@ -133,7 +135,8 @@ export function HomeScreen() {
 
       <View style={styles.body}>
         {sells && (
-          <View style={[styles.today, { backgroundColor: colors.surface, borderColor: colors.lineStrong }]}>
+          <View style={[styles.today, { backgroundColor: colors.fill }]}>
+            <ShopSunrise />
             <View style={styles.todayText}>
               <Text style={[styles.todayHeadline, { color: colors.ink }]} accessibilityLiveRegion="polite">
                 {today.data
@@ -169,9 +172,6 @@ export function HomeScreen() {
                   onPress={() => navigation.navigate('MySales')}
                 />
               </View>
-            </View>
-            <View style={styles.todayBand}>
-              <HalftoneField height={56} />
             </View>
           </View>
         )}
@@ -304,7 +304,7 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(share * 100) }}
     >
-      <BlockMeter share={share} done={reached} />
+      <BlockMeter share={share} done={reached} track={colors.surface} />
       <Text style={[styles.todayDetail, { color: colors.inkMuted }]}>{label}</Text>
     </View>
   );
@@ -351,7 +351,8 @@ function JobTile({ colors, art, title, detail, onPress }: JobTileProps) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.tile,
-        { backgroundColor: pressed ? colors.surfaceSunk : colors.surface, borderColor: colors.lineStrong },
+        { backgroundColor: colors.fill },
+        pressed && styles.pressed,
       ]}
     >
       <PixelArt name={art} size={32} />
@@ -371,16 +372,16 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl },
   masthead: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   mastheadRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  date: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  date: { flex: 1 },
+  pressed: { opacity: 0.75 },
   greeting: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 38, marginTop: spacing.sm },
   body: { padding: spacing.lg, gap: spacing.xl },
-  // The day as a printed panel; the one orange thing is the sale button.
-  today: { borderWidth: 1, borderRadius: radius.small, overflow: 'hidden' },
-  todayText: { padding: spacing.xl, gap: spacing.xs },
+  // The day on an oat panel under the dithered shop; the sale button is solid ink.
+  today: { borderRadius: radius.panel, overflow: 'hidden', padding: spacing.xl, paddingBottom: 0 },
+  todayText: { paddingTop: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
   todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },
   todayActions: { marginTop: spacing.lg, gap: spacing.sm },
-  todayBand: { height: 56 },
   target: { marginTop: spacing.md, gap: spacing.sm },
   search: {
     minHeight: 48,
@@ -397,8 +398,7 @@ const styles = StyleSheet.create({
     minHeight: 132,
     padding: spacing.lg,
     gap: spacing.xs,
-    borderWidth: 1,
-    borderRadius: radius.small,
+    borderRadius: radius.panel,
   },
   tileTitle: { fontFamily: fonts.bodyBold, fontSize: 17, marginTop: spacing.sm },
   tileDetail: { fontFamily: fonts.body, fontSize: 14 },

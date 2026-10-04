@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, TextField } from '../components/ui';
 import { useAuth } from '../state/useAuth';
 import { LogoMark } from '../components/LogoMark';
+import { ShopSunrise } from '../components/print';
 import { DASHBOARD_URL } from '../services/apiClient';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
@@ -37,6 +38,9 @@ export function LoginScreen() {
           <View style={styles.brandRow}>
             <LogoMark size={52} />
             <Text style={[styles.brand, { color: colors.ink }]}>4VD</Text>
+          </View>
+          <View style={styles.art}>
+            <ShopSunrise />
           </View>
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <Text style={[styles.title, { color: colors.ink }]}>{t.login.title}</Text>
@@ -91,7 +95,8 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
+  art: { marginBottom: spacing.lg },
   brand: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: -1.5 },
   card: { padding: spacing.xl, borderRadius: radius.board },
   title: { fontFamily: fonts.serif, fontSize: 30 },

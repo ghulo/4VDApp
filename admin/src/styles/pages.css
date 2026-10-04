@@ -164,6 +164,12 @@
   background: var(--fill);
 }
 
+.today__side {
+  display: grid;
+  gap: var(--space-4);
+  width: min(300px, 100%);
+}
+
 .today .dot-matrix__unlit {
   fill: var(--surface);
 }
@@ -245,7 +251,8 @@
     padding: var(--space-5);
   }
 
-  .today__dots {
+  .today__dots,
+  .today__side {
     width: 100%;
   }
 

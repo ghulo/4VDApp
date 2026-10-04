@@ -3,7 +3,7 @@
  * each point, printed as square blocks with ordered (Bayer) dithering, the
  * grainy halftone look of anthropic.com's illustrations. Blocks next to each
  * other in a row are merged into one run so a drawing stays a few hundred shapes.
- * The same code lives in the dashboard (admin/src/components/ui/dither.ts); a test keeps them equal.
+ * The same code lives in the team app (mobile/src/components/dither.ts); a test keeps them equal.
  */
 
 const BAYER_4 = [

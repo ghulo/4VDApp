@@ -837,6 +837,22 @@ input.switch:focus-visible {
 
 /* ---------- Dot-matrix ---------- */
 
+/* ---------- Shop at sunrise (dithered drawing) ---------- */
+
+.shop-sunrise {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.shop-sunrise__sun {
+  fill: var(--accent);
+}
+
+.shop-sunrise__shop {
+  fill: var(--ink);
+}
+
 .dot-matrix {
   display: block;
   width: 100%;

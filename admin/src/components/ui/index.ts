@@ -11,4 +11,5 @@ export { Field } from './Field';
 export { Halftone } from './Halftone';
 export { PageHeader, type Crumb } from './PageHeader';
 export { PixelArt } from './PixelArt';
+export { ShopSunrise } from './ShopSunrise';
 export { StatGrid, StatTile } from './Stat';

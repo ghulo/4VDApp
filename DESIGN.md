@@ -453,7 +453,9 @@ The vintage, editorial-print finish, after anthropic.com's textured stock:
   square blocks with 4 × 4 ordered (Bayer) dithering, the grainy look of
   anthropic.com's illustrations. "Shop at sunrise" (the four-pillar shop in Ink
   against a Clay sun, the ground running the width) heads the team app's Today
-  panel and sign-in. Decoration only, hidden from screen readers.
+  panel and sign-in, and sits above the 30-day chart on the dashboard's Today card
+  (`ShopSunrise`; the dashboard's `dither.ts` is a copy kept equal by a test).
+  Decoration only, hidden from screen readers.
 - **Block meter:** progress as a row of 20 printed blocks (Ink, OK once reached),
   with the sentence beside it carrying the meaning.
 - **Ruled sections:** on the team app's Home, lists sit under a 2px ink rule and a

@@ -105,7 +105,7 @@ function BusinessForm({ initial }: { initial: Business }) {
             )
           }
         >
-          {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" /> : <LogoMark size={48} />}
+          {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" width={72} height={72} /> : <LogoMark size={48} />}
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickLogo} />
           <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
             {upload.isPending ? t.profile.uploading : logo ? t.profile.change : t.business.addLogo}

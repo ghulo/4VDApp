@@ -25,7 +25,7 @@ const light = {
   okSoft: '#e6f5ee',
   // Depth: panels rest above the canvas, fields sit into it, buttons stand on
   // a darker edge like a key and press down into it.
-  raise: '0 0 0 1px rgba(20, 20, 19, 0.04), 0 1px 2px rgba(20, 20, 19, 0.06), 0 4px 14px rgba(20, 20, 19, 0.06)',
+  raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 1px rgba(20, 20, 19, 0.04), 0 1px 2px rgba(20, 20, 19, 0.06), 0 4px 14px rgba(20, 20, 19, 0.06)',
   inset: 'inset 0 1px 2px rgba(20, 20, 19, 0.08)',
   keyDrop: '0 4px 10px rgba(20, 20, 19, 0.14)',
   keyDropPressed: '0 1px 2px rgba(20, 20, 19, 0.12)',
@@ -53,7 +53,7 @@ const dark: typeof light = {
   dangerSoft: '#3b1717',
   ok: '#34d399',
   okSoft: '#0f3326',
-  raise: '0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.28)',
+  raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.28)',
   inset: 'inset 0 1px 3px rgba(0, 0, 0, 0.45)',
   keyDrop: '0 4px 12px rgba(0, 0, 0, 0.45)',
   keyDropPressed: '0 1px 2px rgba(0, 0, 0, 0.4)',

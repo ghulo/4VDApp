@@ -16,7 +16,7 @@ export function ProductPhoto({ src, size = 'sm' }: ProductPhotoProps) {
     <span className={`product-photo product-photo--${size}`}>
       {url ? (
         // The product's name always sits next to it, so the picture itself needs no text.
-        <img src={url} alt="" loading="lazy" decoding="async" onError={() => setBrokenSrc(src)} />
+        <img src={url} alt="" width={size === 'lg' ? 112 : 40} height={size === 'lg' ? 112 : 40} loading="lazy" decoding="async" onError={() => setBrokenSrc(src)} />
       ) : (
         <Package size={size === 'lg' ? 32 : 18} aria-hidden="true" />
       )}

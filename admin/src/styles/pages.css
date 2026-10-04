@@ -158,9 +158,10 @@
   gap: var(--space-5) var(--space-6);
   margin-bottom: var(--space-5);
   padding: var(--space-5) var(--space-6);
-  /* The day on an oat panel, matching the team app's Today panel. */
+  /* The day on an oat panel, lit from the top left, matching the team app's Today panel. */
   border-radius: var(--radius-panel);
-  background: var(--fill);
+  background: var(--sheen), var(--fill);
+  box-shadow: var(--shadow-raise);
 }
 
 .today__side {

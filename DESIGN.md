@@ -349,8 +349,11 @@ still does most of the work; the shadows are soft and warm, never glows.
 - **Float** (`box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)`;
   dark `0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5)`): the command
   palette and the phone drawer, over a 35% black, lightly blurred backdrop.
-- **Raise** (`--shadow-raise`): cards, metric cards, stat grids, notices, panels.
-  A faint ring plus a short, soft drop.
+- **Raise** (`--shadow-raise`): cards, metric cards, stat grids, notices, panels and
+  the active sidebar link. A light lip along the top edge, a faint ring and a short,
+  soft drop.
+- **Sheen** (`--sheen`): the day's headline panel only; oat lit softly from the
+  top left.
 - **Inset** (`--shadow-inset`): fields, the segmented track, a card's footer strip,
   a pressed ghost button. A 1px shadow along the top inside edge.
 - **Key** (`--cta-edge`, `--danger-edge`, `--key-shine`, `--key-drop`): raised

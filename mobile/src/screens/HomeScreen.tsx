@@ -139,7 +139,7 @@ export function HomeScreen() {
 
       <View style={styles.body}>
         {sells && (
-          <View style={[styles.today, { backgroundColor: colors.fill }]}>
+          <View style={[styles.today, { backgroundColor: colors.fill, boxShadow: colors.raise }]}>
             <View style={styles.todayArt}>
               <ShopSunrise />
             </View>

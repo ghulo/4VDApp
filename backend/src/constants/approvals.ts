@@ -15,4 +15,4 @@ export type CountStatus = (typeof COUNT_STATUSES)[number];
 export const COUNT_LINE_STATUSES = ['match', 'pending', 'approved', 'rejected'] as const;
 export type CountLineStatus = (typeof COUNT_LINE_STATUSES)[number];
 
-export const DEFAULT_SETTINGS = { refundApprovalLimit: 50, returnWindowDays: 14, minimumMarginPercent: 0, dailySummaryHour: 20 } as const;
+export const DEFAULT_SETTINGS = { refundApprovalLimit: 50, returnWindowDays: 14, minimumMarginPercent: 0, dailySummaryHour: 20, cashFloatShop: 50, cashFloatCarwash: 0 } as const;

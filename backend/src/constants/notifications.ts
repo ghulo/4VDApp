@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES = {
   APPROVAL_DECISION: 'approval_decision',
   /** The owner's end-of-day summary. */
   DAILY_SUMMARY: 'daily_summary',
+  /** A drawer count didn't match what the app expected. */
+  CASH_DIFFERENCE: 'cash_difference',
   /** Someone undid or restored one of this person's entries. */
   UNDONE: 'undone',
   /** Sent on request from the alert settings; always pushed. */
@@ -23,6 +25,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.APPROVAL]: 'approvals',
   [NOTIFICATION_TYPES.APPROVAL_DECISION]: 'decisions',
   [NOTIFICATION_TYPES.DAILY_SUMMARY]: 'summary',
+  [NOTIFICATION_TYPES.CASH_DIFFERENCE]: 'summary',
   [NOTIFICATION_TYPES.UNDONE]: 'decisions',
 };
 

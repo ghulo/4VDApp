@@ -521,6 +521,8 @@
 
   .table--stack td > * {
     grid-column: 2;
+    /* Badges and links keep their own width instead of stretching across the row. */
+    justify-self: end;
   }
 
   .table--stack td:empty {
@@ -533,6 +535,12 @@
   .table--stack td:not([data-label]) {
     display: block;
     text-align: left;
+  }
+
+  .table--stack td.table__title > *,
+  .table--stack tr:not(:has(.table__title)) > td:first-child > *,
+  .table--stack td:not([data-label]) > * {
+    justify-self: auto;
   }
 
   .table--stack td.table__title,

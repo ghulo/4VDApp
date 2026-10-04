@@ -1,6 +1,8 @@
 import { apiRequest, tokenStore } from './apiClient';
 import type {
   AppSettings,
+  CashPlace,
+  CashPlaceToday,
   Category,
   InventoryItem,
   MyRequest,
@@ -130,6 +132,13 @@ export const returnsApi = {
 export const writeOffsApi = {
   request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
     (await apiRequest<WriteOffResult>('/write-offs', { method: 'POST', body: input })).data,
+};
+
+export const cashApi = {
+  today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
+  count: async (input: { place: CashPlace; counted: number; note: string | null }) => {
+    await apiRequest('/cash-counts', { method: 'POST', body: input });
+  },
 };
 
 export const countsApi = {

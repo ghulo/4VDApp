@@ -4,7 +4,7 @@ import { formatDateWith, formatMoney } from '../../utils/format';
 
 type FieldName = keyof Catalogue['undo']['fields'];
 
-const MONEY_FIELDS = new Set(['price', 'costPrice', 'refundApprovalLimit']);
+const MONEY_FIELDS = new Set(['price', 'costPrice', 'refundApprovalLimit', 'cashFloatShop', 'cashFloatCarwash']);
 /** Fields whose values read well on their own; the rest just "go back to how they were". */
 const PLAIN_FIELDS = new Set(['name', 'sku', 'reorderLevel', 'returnWindowDays', 'minimumMarginPercent', 'dailySummaryHour']);
 

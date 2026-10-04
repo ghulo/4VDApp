@@ -324,6 +324,34 @@ export interface AppSettings {
   minimumMarginPercent: number;
   /** Hour (0–23, shop time) the daily summary goes out. */
   dailySummaryHour: number;
+  /** Change left in each drawer every night; the cash check takes it off the count. */
+  cashFloatShop: number;
+  cashFloatCarwash: number;
+}
+
+export type CashPlace = 'shop' | 'carwash';
+
+export interface CashCount {
+  id: number;
+  place: CashPlace;
+  /** "2026-10-04" */
+  day: string;
+  float: number;
+  counted: number;
+  /** Null when the carwash had no takings entered to compare with. */
+  expected: number | null;
+  /** Below 0 is short, above 0 is over; null when there's nothing to compare with. */
+  difference: number | null;
+  note: string | null;
+  countedBy: string | null;
+  countedAt: string;
+}
+
+export interface CashPlaceToday {
+  place: CashPlace;
+  float: number;
+  countedBy: string | null;
+  countedAt: string | null;
 }
 
 export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';

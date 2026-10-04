@@ -95,6 +95,16 @@ export interface AppSettings {
   returnWindowDays: number;
 }
 
+export type CashPlace = 'shop' | 'carwash';
+
+/** Whether a drawer was counted today; never what the app expects (staff count blind). */
+export interface CashPlaceToday {
+  place: CashPlace;
+  float: number;
+  countedBy: string | null;
+  countedAt: string | null;
+}
+
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type ReturnCondition = 'resellable' | 'damaged';
 export const WRITE_OFF_REASONS = ['damaged', 'lost', 'expired', 'other'] as const;

@@ -284,6 +284,18 @@ export interface CarwashDaysTable {
   updated_at: UpdatedAt;
 }
 
+/** One end-of-day count of a drawer. `day` is a calendar date in shop time. */
+export interface CashCountsTable {
+  id: Generated<number>;
+  place: 'shop' | 'carwash';
+  day: ColumnType<string, string, string>;
+  float_amount: Decimal;
+  counted_amount: Decimal;
+  note: string | null;
+  counted_by: number | null;
+  counted_at: ColumnType<Date, Date | undefined, Date>;
+}
+
 export interface SettingsTable {
   key: string;
   value: ColumnType<unknown, string, string>;
@@ -399,6 +411,7 @@ export interface Database {
   stock_counts: StockCountsTable;
   stock_count_lines: StockCountLinesTable;
   carwash_days: CarwashDaysTable;
+  cash_counts: CashCountsTable;
   sales_ledger: SalesLedgerView;
 }
 

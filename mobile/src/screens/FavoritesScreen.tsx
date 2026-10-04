@@ -8,6 +8,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi } from '../services/api';
 import { spacing, useThemeColors } from '../theme';
 import { useT } from '../i18n/useT';
+import { TabBarSpacer } from '../components/TabBarSpace';
 
 export function FavoritesScreen() {
   const colors = useThemeColors();
@@ -25,6 +26,7 @@ export function FavoritesScreen() {
         keyExtractor={(product) => String(product.id)}
         contentContainerStyle={favorites.data.length === 0 ? styles.emptyList : styles.list}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        ListFooterComponent={TabBarSpacer}
         renderItem={({ item }) => (
           <ProductCard
             product={item}

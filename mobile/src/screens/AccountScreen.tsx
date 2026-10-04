@@ -13,6 +13,7 @@ import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors 
 import { errorMessage } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useT } from '../i18n/useT';
+import { TabBarSpacer } from '../components/TabBarSpace';
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
@@ -123,6 +124,7 @@ export function AccountScreen() {
 
       <Button label={t.account.logOut} variant="quiet" onPress={logout} />
       <Text style={[styles.footnote, { color: colors.inkMuted }]}>{t.account.connectedTo(API_URL)}</Text>
+      <TabBarSpacer />
     </ScrollView>
   );
 }

@@ -7,7 +7,8 @@ import { readFileSync } from 'node:fs';
 const sharp = createRequire(new URL('../backend/package.json', import.meta.url))('sharp');
 const IVORY = '#FAF9F5';
 const mark = readFileSync(new URL('./logo-mark.svg', import.meta.url), 'utf8');
-const TILE = '<rect width="64" height="64" rx="14" fill="#FAF9F5"/>';
+// The tile has a hairline edge so it shows on ivory; icons the phone frames itself drop it.
+const TILE = '<rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="#FAF9F5" stroke="#E3DACC"/>';
 if (!mark.includes(TILE)) throw new Error('logo-mark.svg changed its tile; update make_icons.mjs');
 
 // Phone home screens round the corners themselves, so those icons fill the square.

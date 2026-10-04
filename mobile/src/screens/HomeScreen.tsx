@@ -22,6 +22,7 @@ import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../the
 import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
+import { TabBarSpacer } from '../components/TabBarSpace';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
@@ -139,7 +140,9 @@ export function HomeScreen() {
       <View style={styles.body}>
         {sells && (
           <View style={[styles.today, { backgroundColor: colors.fill }]}>
-            <ShopSunrise />
+            <View style={styles.todayArt}>
+              <ShopSunrise />
+            </View>
             <View style={styles.todayText}>
               <Text style={[styles.todayHeadline, { color: colors.ink }]} accessibilityLiveRegion="polite">
                 {today.data
@@ -287,6 +290,7 @@ export function HomeScreen() {
           </PrintSection>
         )}
       </View>
+      <TabBarSpacer />
     </ScrollView>
   );
 }
@@ -379,8 +383,9 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.75 },
   greeting: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 38, marginTop: spacing.sm },
   body: { padding: spacing.lg, gap: spacing.xl },
-  // The day on an oat panel under the dithered shop; the sale button is solid ink.
+  // The day on an oat panel under the shop at sunrise; the sale button is clay.
   today: { borderRadius: radius.panel, overflow: 'hidden', padding: spacing.xl, paddingBottom: 0 },
+  todayArt: { width: '100%', maxWidth: 280, alignSelf: 'center' },
   todayText: { paddingTop: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
   todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },

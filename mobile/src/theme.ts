@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 // Same tokens as the dashboard (admin/src/styles/tokens.css, DESIGN.md "Calm
 // Shop"): ink on ivory paper with oat panels, quiet status colours with tints,
-// solid ink for the main action and clay for the brand and where you are.
+// clay for the brand, the main action and where you are.
 const light = {
   background: '#f0eee6',
   surface: '#faf9f5',
@@ -16,7 +16,7 @@ const light = {
   brand: '#a8482a',
   brandInk: '#ffffff',
   brandSoft: '#f5e6dc',
-  accent: '#d97757',
+  accent: '#d4704f',
   warn: '#b45309',
   warnSoft: '#fef3e2',
   danger: '#b91c1c',
@@ -26,9 +26,9 @@ const light = {
 };
 
 const dark: typeof light = {
-  background: '#1f1e1d',
+  background: '#191817',
   surface: '#262624',
-  surfaceSunk: '#1a1918',
+  surfaceSunk: '#151413',
   fill: '#30302e',
   ink: '#faf9f5',
   inkMuted: '#a6a39b',
@@ -37,7 +37,7 @@ const dark: typeof light = {
   brand: '#e08a6b',
   brandInk: '#1a120e',
   brandSoft: '#3a2219',
-  accent: '#d97757',
+  accent: '#d4704f',
   warn: '#fbbf24',
   warnSoft: '#3a2c0d',
   danger: '#f87171',
@@ -50,10 +50,10 @@ const dark: typeof light = {
 function withAliases(palette: typeof light) {
   return {
     ...palette,
-    // The main action: solid ink with paper text, as on anthropic.com. Clay is
-    // the brand's colour (logo, illustrations, where you are), not a button.
-    cta: palette.ink,
-    ctaInk: palette.surface,
+    // The main action: solid clay with near-black text, the same in both
+    // themes, so the one thing to do on a screen always stands out.
+    cta: '#d4704f',
+    ctaInk: '#1c0f08',
     // A chosen chip or option: ink too.
     selected: palette.ink,
     onSelected: palette.surface,

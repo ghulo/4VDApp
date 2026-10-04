@@ -16,6 +16,7 @@ import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
 import { useT } from '../i18n/useT';
+import { useTabBarSpace } from '../components/TabBarSpace';
 
 const SEARCH_RESULTS = 8;
 const QUICK_PICKS = 6;
@@ -48,6 +49,7 @@ export function RecordSaleScreen() {
 }
 
 function Basket({ products, initial }: { products: Product[]; initial: Line[] }) {
+  const tabBarSpace = useTabBarSpace();
   const colors = useThemeColors();
   const t = useT();
   const queryClient = useQueryClient();
@@ -249,7 +251,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
           </Text>
         )}
       </ScrollView>
-      <View style={[styles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.line }]}>
+      <View style={[styles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.line, marginBottom: tabBarSpace }]}>
         <Button
           label={`${t.sell.record} · ${formatMoney(total)}`}
           onPress={() => record.mutate()}

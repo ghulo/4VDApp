@@ -10,6 +10,7 @@ import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { categoriesApi, productsApi } from '../services/api';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { useT } from '../i18n/useT';
+import { TabBarSpacer } from '../components/TabBarSpace';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -108,7 +109,12 @@ export function CatalogScreen() {
               {isFiltered ? t.catalog.tryAnother : t.catalog.addedInDashboard}
             </EmptyState>
           }
-          ListFooterComponent={products.isFetchingNextPage ? <Loading /> : null}
+          ListFooterComponent={
+            <>
+              {products.isFetchingNextPage && <Loading />}
+              <TabBarSpacer />
+            </>
+          }
         />
       )}
     </View>

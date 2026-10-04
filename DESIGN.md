@@ -482,11 +482,13 @@ The vintage finish, after anthropic.com's textured stock, used sparingly:
   printed-sunset stripes that widen toward the ground. Ink follows the theme (dark
   on paper, ivory at night). The sun rises 18px into view once (1.2s, the house
   ease), off under reduced motion. 4VD's mascot: sign-in, the dashboard's Today
-  card and big empty pages, and nowhere else. Hidden from screen readers. The team
-  app still prints its Today panel with `dither.ts` until it gets the same drawing.
+  card, the team app's sign-in and Today panel (`mobile/src/components/print.tsx`,
+  the same shapes), and big empty pages, nowhere else. Hidden from screen readers.
 - **Glass** (`admin/src/styles/glass.css`, `--glass-*` tokens): frosted panes only
   on layers that float over the page: the top bar, the Ctrl K palette, the phone
-  menu drawer and the sign-in moment cards. A bright blur (20px, saturate 1.6,
+  menu drawer and the sign-in moment cards. In the team app: the bottom tab bar
+  (expo-blur on iPhone and the web, paper at 62% over it; solid paper on Android),
+  with each tab screen ending in `TabBarSpacer` so its last row clears the bar. A bright blur (20px, saturate 1.6,
   brightness 1.06), a thin light edge, a 1px top highlight and a faint top sheen;
   the palette and drawer use a thicker pane (88%) for dense text. Never on cards,
   tables or forms. Solid paper when blur isn't supported, or under

@@ -8,7 +8,8 @@ import { Package } from 'phosphor-react-native/src/icons/Package';
 import { Plus } from 'phosphor-react-native/src/icons/Plus';
 import { Star } from 'phosphor-react-native/src/icons/Star';
 import { User } from 'phosphor-react-native/src/icons/User';
-import { StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
@@ -63,6 +64,27 @@ function SellIcon() {
   );
 }
 
+/**
+ * The tab bar's frosted pane: a real blur on iPhone and the web. Android's blur
+ * needs extra native setup, so there it stays solid paper.
+ */
+function GlassBar() {
+  const { colors, scheme } = useTheme();
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      {Platform.OS !== 'android' && (
+        <BlurView
+          intensity={40}
+          tint={scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      {/* Paper over the blur, about 62% opaque, keeps the labels readable on any content. */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: Platform.OS === 'android' ? colors.surface : `${colors.surface}9e` }]} />
+    </View>
+  );
+}
+
 function MainTabs() {
   const colors = useThemeColors();
   const t = useT();
@@ -78,13 +100,18 @@ function MainTabs() {
         headerTitleStyle: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
         headerShadowVisible: false,
         // Tall enough for a thumb (icon over label), plus the phone's home-bar area.
+        // Frosted glass over the page, like the dashboard's top bar: the screen
+        // scrolls under it (each tab screen leaves room with TabBarSpacer).
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.lineStrong,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopColor: colors.line,
+          elevation: 0,
           height: TAB_BAR_HEIGHT + insets.bottom,
           paddingTop: 6,
           paddingBottom: insets.bottom + 6,
         },
+        tabBarBackground: () => <GlassBar />,
         tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.inkMuted,

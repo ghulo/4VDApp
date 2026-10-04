@@ -103,7 +103,7 @@ export function CatalogScreen() {
           refreshing={products.isRefetching && !products.isFetchingNextPage}
           onRefresh={() => products.refetch()}
           ListEmptyComponent={
-            <EmptyState title={isFiltered ? t.catalog.nothingMatches : t.catalog.noneYet}>
+            <EmptyState art="crate" title={isFiltered ? t.catalog.nothingMatches : t.catalog.noneYet}>
               {isFiltered ? t.catalog.tryAnother : t.catalog.addedInDashboard}
             </EmptyState>
           }

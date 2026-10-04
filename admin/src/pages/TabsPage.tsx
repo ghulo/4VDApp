@@ -58,7 +58,7 @@ function AllTabs() {
             caption={t.tabs.caption}
             rows={customers.data}
             rowKey={(row) => row.id}
-            empty={<EmptyState title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>}
+            empty={<EmptyState pictogram="notebook" title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>}
             columns={[
               {
                 header: t.tabs.name,

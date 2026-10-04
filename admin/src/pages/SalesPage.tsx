@@ -108,7 +108,7 @@ function SalesHistory() {
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
       {sales.data && sales.data.items.length === 0 && (
-        <EmptyState title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
+        <EmptyState pictogram="receipt" title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
       )}
       {sales.data && sales.data.items.length > 0 && (
         <>

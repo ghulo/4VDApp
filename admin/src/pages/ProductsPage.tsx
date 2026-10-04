@@ -133,7 +133,7 @@ export function ProductsPage() {
           }
           empty={
             isFiltered ? (
-              <EmptyState title={t.products.noMatch}>{t.products.noMatchHint}</EmptyState>
+              <EmptyState pictogram="crate" title={t.products.noMatch}>{t.products.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art

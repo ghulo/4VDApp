@@ -18,6 +18,6 @@ export function ScanResultScreen({ route, navigation }: Props) {
     if (product.data) navigation.replace('ProductDetail', { productId: product.data.id, name: product.data.name });
   }, [product.data, navigation]);
 
-  if (product.isError) return <EmptyState title={t.scan.notFound}>{t.scan.notFoundHint(code)}</EmptyState>;
+  if (product.isError) return <EmptyState art="crate" title={t.scan.notFound}>{t.scan.notFoundHint(code)}</EmptyState>;
   return <Loading />;
 }

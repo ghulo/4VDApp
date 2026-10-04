@@ -40,7 +40,7 @@ export function RecordSaleScreen() {
 
   if (products.isPending) return <Loading />;
   if (products.isError) return <ErrorState error={products.error} onRetry={() => products.refetch()} />;
-  if (products.data.items.length === 0) return <EmptyState title={t.sell.nothingInStock} />;
+  if (products.data.items.length === 0) return <EmptyState art="crate" title={t.sell.nothingInStock} />;
 
   const preset = products.data.items.find((product) => product.id === presetProductId);
   return <Basket key={presetProductId ?? 'tab'} products={products.data.items} initial={preset ? [{ product: preset, quantity: 1 }] : []} />;

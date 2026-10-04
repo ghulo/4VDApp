@@ -99,7 +99,7 @@ export function InventoryPage() {
           }
           empty={
             search || lowStock ? (
-              <EmptyState title={t.inventory.noMatch}>{t.inventory.noMatchHint}</EmptyState>
+              <EmptyState pictogram="crate" title={t.inventory.noMatch}>{t.inventory.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art

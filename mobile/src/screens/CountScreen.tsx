@@ -32,10 +32,10 @@ export function CountScreen({ route, navigation }: Props) {
 
   if (count.isPending) return <Loading />;
   if (count.isError) return <ErrorState error={count.error} onRetry={() => count.refetch()} />;
-  if (count.data.lines.length === 0) return <EmptyState title={t.counts.noProducts} />;
+  if (count.data.lines.length === 0) return <EmptyState art="crate" title={t.counts.noProducts} />;
   if (count.data.status !== 'open') {
     return (
-      <EmptyState title={t.counts.finished}>
+      <EmptyState art="clipboard" title={t.counts.finished}>
         {count.data.status === 'submitted' ? t.counts.waitingForOwner : t.counts.startNew}
       </EmptyState>
     );

@@ -9,14 +9,14 @@ colors:
   ember-text: "#c2410c"
   ember-text-dark: "#ff7038"
   pillar-ink: "#1c0f08"
-  warm-canvas: "#faf9f7"
-  paper: "#ffffff"
-  sunk-paper: "#f4f2ef"
-  fill: "#efece8"
+  warm-canvas: "#f5f2ea"
+  paper: "#fefdfa"
+  sunk-paper: "#eeeae0"
+  fill: "#e8e3d7"
   ink: "#1f1b19"
-  ink-muted: "#6b635f"
-  hairline: "#ebe7e3"
-  hairline-strong: "#d9d3ce"
+  ink-muted: "#645d57"
+  hairline: "#e4ded2"
+  hairline-strong: "#cec6b7"
   night-canvas: "#151414"
   night-paper: "#1c1b1a"
   night-sunk: "#111010"
@@ -82,8 +82,8 @@ typography:
     lineHeight: 1.4
 rounded:
   segment: "6px"
-  control: "8px"
-  card: "12px"
+  control: "6px"
+  card: "8px"
   pill: "999px"
 spacing:
   "1": "4px"
@@ -221,17 +221,17 @@ place; status colours stay quiet and come with faint tints.
   where full Signal Orange would be too faint to read as text.
 
 ### Neutral
-- **Warm Canvas** (#faf9f7) / **Night Canvas** (#151414): the page behind frames.
-- **Paper** (#ffffff) / **Night Paper** (#1c1b1a): cards, tables, sidebar, top bar.
-- **Sunk Paper** (#f4f2ef) / **Night Sunk** (#111010): card footer strips, row hover,
+- **Ivory Canvas** (#f5f2ea) / **Night Canvas** (#151414): the page behind frames.
+- **Paper** (#fefdfa) / **Night Paper** (#1c1b1a): cards, tables, sidebar, top bar.
+- **Sunk Paper** (#eeeae0) / **Night Sunk** (#111010): card footer strips, row hover,
   callouts, the search field, the sign-in story panel.
-- **Fill** (#efece8) / **Night Fill** (#262422): ghost and menu hover, segmented
+- **Fill** (#e8e3d7) / **Night Fill** (#262422): ghost and menu hover, segmented
   control track, the neutral disabled main button.
 - **Ink** (#1f1b19) / **Night Ink** (#f2ebe7): text, links, the active chart bar,
   count badges, checked switches and checkboxes, the tooltip.
-- **Muted Ink** (#6b635f) / **Night Muted** (#9a9390): descriptions, labels, table
+- **Muted Ink** (#645d57) / **Night Muted** (#9a9390): descriptions, labels, table
   headers, and every chart series.
-- **Hairline** (#ebe7e3) and **Strong Hairline** (#d9d3ce) (night #2c2927 / #3d3936):
+- **Hairline** (#e4ded2) and **Strong Hairline** (#cec6b7) (night #2c2927 / #3d3936):
   every border, grid line and unlit halftone dot; strong for control strokes.
 - **Pillar Ink** (#1c0f08): text and drawings on Signal Orange.
 
@@ -340,9 +340,9 @@ Hover answers with a fill change (sunk paper or fill), never light.
 
 ## Shapes
 
-Small, consistent corners: 8px on controls, callouts, notices and tooltips; 6px on
-segmented options and palette rows; 12px on cards, tables, metric cards and the
-palette; pills only for badges and counts. Borders are single 1px hairlines.
+Small, blocky corners, like cut paper: 6px on controls, callouts, notices and
+tooltips (and on segmented options and palette rows); 8px on cards, tables, metric
+cards and the palette; pills only for badges and counts. Borders are single 1px hairlines.
 Secondary buttons and the selected segment use a 1px inset ring rather than a
 border. Callouts (AI answers, price suggestions) sit on sunk paper with no border.
 A dashed hairline marks something you can see but not change (the read-only note)
@@ -354,7 +354,7 @@ rails.
 Calm at rest, a plain answer when touched.
 
 ### Buttons
-- **Shape:** gently rounded (8px), 36px tall (30px small); 44px (36px small) under 900px.
+- **Shape:** gently rounded (6px), 36px tall (30px small); 44px (36px small) under 900px.
 - **Primary:** Signal Orange with Pillar Ink text, weight 600; one per view. Hover
   brightens to #ff7038; disabled goes to the neutral fill with muted text, never a
   washed-out orange.
@@ -370,7 +370,7 @@ buttons look the same. Breadcrumbs and table title links drop the underline unti
 hover.
 
 ### Cards / Containers
-- **Corner Style:** 12px.
+- **Corner Style:** 8px.
 - **Background:** Paper on the canvas.
 - **Shadow Strategy:** none (The Flat Rule).
 - **Border:** one hairline.
@@ -382,7 +382,7 @@ What a setting is on the left (title, one muted sentence, max 60ch), the control
 the right; rows separated by hairlines; stacked under 640px.
 
 ### Inputs / Fields
-- **Style:** strong-hairline stroke, paper fill, 8px corners, 36px tall, 15px text.
+- **Style:** strong-hairline stroke, paper fill, 6px corners, 36px tall, 15px text.
 - **Focus:** Info border plus a 3px soft Info ring. **Disabled:** sunk paper, muted text.
 - **Labels:** always visible above the field; placeholders only show an example.
 - **Error:** red text under the field saying how to fix it.
@@ -431,6 +431,24 @@ The four-pillar building drawn in orange dots inside a thin strong-hairline circ
 over an 8px dot field. It appears on sign-in (with floating "shop moment" cards), as
 empty-state art (140px), and in the logo. Nowhere else.
 
+### Printed paper (both apps)
+The vintage, editorial-print finish, after anthropic.com's textured stock:
+- **Paper grain:** a faint fractal-noise layer over the whole dashboard
+  (`body::after`, `--grain-*` tokens; 7% multiply on light, 5% screen on dark),
+  never taking clicks, off under `prefers-contrast: more` and in print.
+- **Double rule:** a 3px double strong hairline under every page title on the
+  dashboard; a heavy ink line over a hairline under the team app's masthead.
+- **Pixel pictograms** (`pixelDrawings.ts`, identical in both apps and guarded by
+  a test): each job drawn in square blocks on a 12 × 12 grid (receipt, clipboard,
+  coins, notebook, drop, crate), in ink. Used on the team app's job tiles and on
+  empty states for that job (Muted Ink, 40–48px). Decoration only, always beside words.
+- **Halftone field:** dots swelling towards a panel's bottom edge, like ink pooling
+  on a press; the band under the team app's Today panel.
+- **Block meter:** progress as a row of 20 printed blocks (Ink, OK once reached),
+  with the sentence beside it carrying the meaning.
+- **Ruled sections:** on the team app's Home, lists sit under a 2px ink rule and a
+  serif heading instead of in boxed cards.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -449,7 +467,7 @@ empty-state art (140px), and in the logo. Nowhere else.
 
 ### Don't:
 - **Don't** put white text on Signal Orange.
-- **Don't** add glows, corner nodes or dashed rails; keep dots out of tables, forms and from behind text.
+- **Don't** add glows, corner nodes or dashed rails; keep dots, pictograms and grain-heavy textures out of tables, forms and from behind text.
 - **Don't** colour charts, counts, links or badges orange.
 - **Don't** add drop shadows to cards or tables.
 - **Don't** use the serif for figures, tables, card titles or controls.

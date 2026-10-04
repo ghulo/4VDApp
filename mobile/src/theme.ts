@@ -1,17 +1,17 @@
 import { createContext, useContext } from 'react';
 
 // Same tokens as the dashboard (admin/src/styles/tokens.css, DESIGN.md "Calm
-// Shop"): ink on warm paper, quiet status colours with tints, and orange only
+// Shop"): ink on ivory paper, quiet status colours with tints, and orange only
 // for the main action (with near-black text on it) and where you are.
 const light = {
-  background: '#faf9f7',
-  surface: '#ffffff',
-  surfaceSunk: '#f4f2ef',
-  fill: '#efece8',
+  background: '#f5f2ea',
+  surface: '#fefdfa',
+  surfaceSunk: '#eeeae0',
+  fill: '#e8e3d7',
   ink: '#1f1b19',
-  inkMuted: '#6b635f',
-  line: '#ebe7e3',
-  lineStrong: '#d9d3ce',
+  inkMuted: '#645d57',
+  line: '#e4ded2',
+  lineStrong: '#cec6b7',
   brand: '#c2410c',
   brandInk: '#ffffff',
   brandSoft: '#fff4ed',
@@ -78,7 +78,7 @@ export const fonts = {
 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
-export const radius = { small: 8, panel: 12, board: 16 };
+export const radius = { small: 6, panel: 8, board: 10 };
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 

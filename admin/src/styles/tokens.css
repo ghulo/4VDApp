@@ -1,19 +1,19 @@
-/* 4VD design tokens: Cloudflare's structure with a calm, editorial finish
-   (see DESIGN.md, "Calm shop"). Ink on warm paper; orange only for the main
+/* 4VD design tokens: Cloudflare's structure with a printed, editorial finish
+   (see DESIGN.md, "Calm shop"). Ink on ivory paper; orange only for the main
    action and where you are; status colours come as a strong colour plus a
    faint tint. The theme script in index.html always sets
    data-theme, so these two blocks are the only place colours are defined.
    Contrast is checked by src/theme/contrast.test.ts. */
 :root,
 [data-theme='light'] {
-  --bg: #faf9f7;
-  --surface: #ffffff;
-  --surface-sunk: #f4f2ef;
-  --fill: #efece8;
+  --bg: #f5f2ea;
+  --surface: #fefdfa;
+  --surface-sunk: #eeeae0;
+  --fill: #e8e3d7;
   --ink: #1f1b19;
-  --ink-muted: #6b635f;
-  --line: #ebe7e3;
-  --line-strong: #d9d3ce;
+  --ink-muted: #645d57;
+  --line: #e4ded2;
+  --line-strong: #cec6b7;
   --brand: #c2410c;
   --brand-ink: #ffffff;
   --brand-soft: #fff4ed;
@@ -22,7 +22,7 @@
   --cta-hover: #ff7038;
   --cta-ink: #1c0f08;
   --tint: rgb(255 94 31 / 0.1);
-  --topbar: rgb(255 255 255 / 0.78);
+  --topbar: rgb(254 253 250 / 0.8);
   --ok: #047857;
   --ok-soft: #e6f5ee;
   --warn: #b45309;
@@ -32,9 +32,12 @@
   --info: #1d4ed8;
   --info-soft: #e8efff;
   --focus: #1d4ed8;
-  --dots: #d9d3ce;
-  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23d9d3ce'/%3E%3C/svg%3E");
+  --dots: #cec6b7;
+  --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23cec6b7'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12);
+  --grain-opacity: 0.07;
+  --grain-blend: multiply;
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.12 0 0 0 0 0.12 0 0 0 1.6 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   color-scheme: light;
 }
 
@@ -68,6 +71,9 @@
   --dots: #34302d;
   --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%2334302d'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
+  --grain-opacity: 0.05;
+  --grain-blend: screen;
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.95 0 0 0 0 0.95 0 0 0 1.6 -0.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   color-scheme: dark;
 }
 
@@ -104,8 +110,8 @@
 
   --control-h: 36px;
   --control-h-sm: 30px;
-  --radius-small: 8px;
-  --radius-panel: 12px;
+  --radius-small: 6px;
+  --radius-panel: 8px;
 
   /* Motion: quick and soft, never bouncy. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);

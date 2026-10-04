@@ -53,7 +53,7 @@ export function CashPage() {
             caption={t.cash.caption}
             rows={counts.data}
             rowKey={(row) => row.id}
-            empty={<EmptyState title={t.cash.none}>{t.cash.noneHint}</EmptyState>}
+            empty={<EmptyState pictogram="coins" title={t.cash.none}>{t.cash.noneHint}</EmptyState>}
             columns={[
               { header: t.cash.day, cell: (row) => formatDay(row.day), title: true },
               { header: t.cash.drawer, cell: (row) => t.cash.places[row.place] },

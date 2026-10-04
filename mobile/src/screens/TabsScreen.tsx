@@ -19,7 +19,7 @@ export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParam
 
   if (customers.isPending) return <Loading />;
   if (customers.isError) return <ErrorState error={customers.error} onRetry={() => customers.refetch()} />;
-  if (customers.data.length === 0) return <EmptyState title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>;
+  if (customers.data.length === 0) return <EmptyState art="notebook" title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>;
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>

@@ -73,13 +73,14 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
+        // Headers sit on the page's own paper, so a screen reads as one printed sheet.
+        headerStyle: { backgroundColor: colors.background },
         headerTitleStyle: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
         headerShadowVisible: false,
         // Tall enough for a thumb (icon over label), plus the phone's home-bar area.
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.line,
+          borderTopColor: colors.lineStrong,
           height: TAB_BAR_HEIGHT + insets.bottom,
           paddingTop: 6,
           paddingBottom: insets.bottom + 6,
@@ -145,7 +146,7 @@ export function RootNavigator() {
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => signedIn && openPendingScan()}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
+          headerStyle: { backgroundColor: colors.background },
           headerTitleStyle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
           headerTintColor: colors.ink,
           headerShadowVisible: false,
@@ -192,5 +193,5 @@ export function RootNavigator() {
 }
 
 const styles = StyleSheet.create({
-  sellIcon: { width: 44, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sellIcon: { width: 44, height: 28, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
 });

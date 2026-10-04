@@ -179,6 +179,43 @@ export interface ReportSummary {
   change: { revenue: number | null; profit: number | null; unitsSold: number | null; salesCount: number | null };
   /** Beside the shop, never inside its revenue or profit. */
   carwash: { current: CarwashTotals; previous: CarwashTotals; change: number | null };
+  expenses: { current: number; previous: number };
+  /** Shop profit + carwash takings − expenses. */
+  netProfit: { current: number; previous: number; change: number | null };
+}
+
+export const EXPENSE_CATEGORIES = ['rent', 'electricity', 'water', 'wages', 'supplies', 'repairs', 'taxes', 'other'] as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+export const EXPENSE_PLACES = ['shop', 'carwash', 'both'] as const;
+export type ExpensePlace = (typeof EXPENSE_PLACES)[number];
+
+export interface Expense {
+  id: number;
+  /** "2026-10-04" */
+  day: string;
+  amount: number;
+  category: ExpenseCategory;
+  place: ExpensePlace;
+  note: string | null;
+  /** Set when a monthly rule added it. */
+  recurringId: number | null;
+  addedBy: string | null;
+}
+
+export interface ExpenseTotals {
+  total: number;
+  byPlace: Record<ExpensePlace, number>;
+  byCategory: Record<ExpenseCategory, number>;
+}
+
+export interface RecurringExpense {
+  id: number;
+  amount: number;
+  category: ExpenseCategory;
+  place: ExpensePlace;
+  note: string | null;
+  dayOfMonth: number;
+  addedBy: string | null;
 }
 
 export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'weeklyEmail' | 'emails' | 'phoneAlerts' | 'backups';

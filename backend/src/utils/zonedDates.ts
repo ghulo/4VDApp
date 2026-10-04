@@ -28,6 +28,14 @@ export function zonedDateTime(date: Date, timeZone: string): string {
   return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
+/**
+ * The first and last calendar day (both included) an end-exclusive range of
+ * moments covers on the clock in `timeZone`, for data kept per day.
+ */
+export function zonedDays(range: { startDate: Date; endDate: Date }, timeZone: string): { from: string; to: string } {
+  return { from: zonedDay(range.startDate, timeZone), to: zonedDay(new Date(range.endDate.getTime() - 1), timeZone) };
+}
+
 /** The hour (0–23) on the clock in `timeZone`. */
 export function zonedHour(date: Date, timeZone: string): number {
   return Number(parts(date, timeZone).hour);

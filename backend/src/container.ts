@@ -31,6 +31,8 @@ import { CarwashRepository } from './repositories/CarwashRepository.js';
 import { CarwashService } from './services/CarwashService.js';
 import { CashCountRepository } from './repositories/CashCountRepository.js';
 import { CashCountService } from './services/CashCountService.js';
+import { ExpenseRepository } from './repositories/ExpenseRepository.js';
+import { ExpenseService } from './services/ExpenseService.js';
 import { ErrorAlertService } from './services/ErrorAlertService.js';
 import { LaunchRepository } from './repositories/LaunchRepository.js';
 import { LaunchService } from './services/LaunchService.js';
@@ -141,7 +143,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const undoRepository = new UndoRepository(db);
   const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
   const carwashService = new CarwashService(new CarwashRepository(db), transactions, config.shopTimeZone);
-  const reportsService = new ReportsService(reportsRepository, carwashService, config.shopTimeZone);
+  const expenseService = new ExpenseService(new ExpenseRepository(db), transactions, config.shopTimeZone);
+  const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService);
   const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
@@ -290,6 +293,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     promotionService,
     carwashService,
     cashCountService,
+    expenseService,
     pushService,
     insightsService,
     dailySummaryService,

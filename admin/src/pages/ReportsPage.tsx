@@ -32,7 +32,7 @@ export function ReportsPage() {
           </>
         )}
       >
-        {({ current, carwash }) => (
+        {({ current, carwash, expenses, netProfit }) => (
           <>
             <MetricCard
               label={t.reports.carwash}
@@ -45,6 +45,13 @@ export function ReportsPage() {
               label={t.reports.together}
               value={formatMoney(current.revenue + carwash.current.total)}
               hint={t.reports.togetherHint}
+            />
+            <MetricCard label={t.reports.expenses} value={formatMoney(expenses.current)} to="/expenses" />
+            <MetricCard
+              label={t.reports.netProfit}
+              value={formatMoney(netProfit.current)}
+              change={netProfit.change}
+              hint={t.reports.netProfitHint}
             />
             <MetricCard
               label={t.analytics.margin}

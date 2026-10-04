@@ -4,7 +4,7 @@ import type { CashCountRepository, CashPlace } from '../repositories/CashCountRe
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { OVERSEER_ROLES } from '../utils/roles.js';
-import { zonedDay } from '../utils/zonedDates.js';
+import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 import type { SettingsService } from './SettingsService.js';
 
@@ -52,8 +52,7 @@ export class CashCountService {
   ) {}
 
   async list(range: DateRange): Promise<CashCountDto[]> {
-    const from = zonedDay(range.startDate, this.timeZone);
-    const to = zonedDay(new Date(range.endDate.getTime() - 1), this.timeZone);
+    const { from, to } = zonedDays(range, this.timeZone);
     return this.between(from, to);
   }
 

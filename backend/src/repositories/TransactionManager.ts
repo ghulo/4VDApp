@@ -2,6 +2,7 @@ import type { DatabaseClient } from '../database/connection.js';
 import { ActivityLogRepository } from './ActivityLogRepository.js';
 import { CarwashRepository } from './CarwashRepository.js';
 import { CashCountRepository } from './CashCountRepository.js';
+import { ExpenseRepository } from './ExpenseRepository.js';
 import { CategoryRepository } from './CategoryRepository.js';
 import { InventoryRepository } from './InventoryRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
@@ -38,6 +39,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     undo: new UndoRepository(db),
     carwash: new CarwashRepository(db),
     cashCounts: new CashCountRepository(db),
+    expenses: new ExpenseRepository(db),
   };
 }
 

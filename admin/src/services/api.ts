@@ -27,6 +27,11 @@ import type {
   CashCount,
   CashPlace,
   CashPlaceToday,
+  Expense,
+  ExpenseCategory,
+  ExpensePlace,
+  ExpenseTotals,
+  RecurringExpense,
   Business,
   Invite,
   InvitePreview,
@@ -331,6 +336,20 @@ export const cashApi = {
   /** Overseers get the result back; staff get null (they count blind). */
   count: async (input: { place: CashPlace; counted: number; note: string | null }) =>
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
+};
+
+export const expensesApi = {
+  list: async (range: ReportRange) =>
+    (await apiRequest<{ expenses: Expense[]; totals: ExpenseTotals }>('/expenses', { query: { ...range } })).data,
+  add: async (input: { day: string; amount: number; category: ExpenseCategory; place: ExpensePlace; note: string | null; repeatMonthly: boolean }) =>
+    (await apiRequest<Expense>('/expenses', { method: 'POST', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest(`/expenses/${id}`, { method: 'DELETE' });
+  },
+  recurring: async () => (await apiRequest<RecurringExpense[]>('/expenses/recurring')).data,
+  stopRepeating: async (id: number) => {
+    await apiRequest(`/expenses/recurring/${id}/stop`, { method: 'POST' });
+  },
 };
 
 export const exportsApi = {

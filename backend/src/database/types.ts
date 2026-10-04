@@ -7,6 +7,7 @@ import type {
   WriteOffReason,
 } from '../constants/approvals.js';
 import type { Language } from '../i18n/language.js';
+import type { ExpenseCategory, ExpensePlace } from '../constants/expenses.js';
 
 /**
  * TypeScript view of the tables created by the migrations in ./migrations.
@@ -296,6 +297,32 @@ export interface CashCountsTable {
   counted_at: ColumnType<Date, Date | undefined, Date>;
 }
 
+export interface RecurringExpensesTable {
+  id: Generated<number>;
+  amount: Decimal;
+  category: ExpenseCategory;
+  place: ExpensePlace;
+  note: string | null;
+  day_of_month: number;
+  last_filled_on: ColumnType<string, string, string>;
+  stopped_at: Date | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+/** `day` is a calendar date in shop time. */
+export interface ExpensesTable {
+  id: Generated<number>;
+  day: ColumnType<string, string, string>;
+  amount: Decimal;
+  category: ExpenseCategory;
+  place: ExpensePlace;
+  note: string | null;
+  recurring_id: number | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
 export interface SettingsTable {
   key: string;
   value: ColumnType<unknown, string, string>;
@@ -412,6 +439,8 @@ export interface Database {
   stock_count_lines: StockCountLinesTable;
   carwash_days: CarwashDaysTable;
   cash_counts: CashCountsTable;
+  recurring_expenses: RecurringExpensesTable;
+  expenses: ExpensesTable;
   sales_ledger: SalesLedgerView;
 }
 

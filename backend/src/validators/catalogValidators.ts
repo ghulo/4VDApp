@@ -47,6 +47,18 @@ const productFields = {
   bulkPricingTiers: pricingTiersSchema.optional(),
 };
 
+/** What a scanner or a person types: digits and letters, no spaces at the ends. */
+const barcodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[0-9A-Za-z.\-]{4,64}$/, 'a barcode is 4 to 64 letters or digits');
+
+export const barcodeParamsSchema = z.object({ barcode: barcodeSchema });
+
+export const setBarcodeSchema = z.object({
+  barcode: barcodeSchema.nullable(),
+});
+
 export const createProductSchema = z.object({
   ...productFields,
   stock: z.number().int().min(0).max(MAX_STOCK_CHANGE).default(0),

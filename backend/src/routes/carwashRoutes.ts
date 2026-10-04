@@ -7,7 +7,9 @@ export function createCarwashRoutes({ carwashService, guards }: Container): Rout
   const router = Router();
 
   router.get('/', ...guards.oversee, controller.list);
-  router.put('/:day', ...guards.manage, controller.save);
+  // Staff enter today's takings from the team app; the service keeps other days to managers.
+  router.get('/today', ...guards.staff, controller.today);
+  router.put('/:day', ...guards.staff, controller.save);
   router.delete('/:day', ...guards.manage, controller.remove);
 
   return router;

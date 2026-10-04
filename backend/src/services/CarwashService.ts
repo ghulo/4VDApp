@@ -1,4 +1,4 @@
-import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
@@ -68,6 +68,12 @@ export class CarwashService {
     return { carwash, change, total: roundMoney(carwash + change), days: Number(row.days) };
   }
 
+  /** Today in shop time, with what was entered for it (null when nothing yet). */
+  async today(now = new Date()): Promise<{ day: string; takings: CarwashTakings | null }> {
+    const day = zonedDay(now, this.timeZone);
+    return { day, takings: await this.findDay(day) };
+  }
+
   /** What was entered for one day, or null when nothing was. */
   async findDay(day: string): Promise<CarwashTakings | null> {
     const row = await this.carwashRepository.findDay(day);
@@ -75,8 +81,11 @@ export class CarwashService {
   }
 
   /** Enters a day's takings, replacing what was entered before. */
-  async save(day: string, takings: CarwashTakings, actorId: number, now = new Date()): Promise<void> {
-    if (day > zonedDay(now, this.timeZone)) throw new ValidationError("You can't enter takings for a day that hasn't happened yet");
+  async save(day: string, takings: CarwashTakings, actorId: number, options: { anyDay: boolean } = { anyDay: true }, now = new Date()): Promise<void> {
+    const today = zonedDay(now, this.timeZone);
+    if (day > today) throw new ValidationError("You can't enter takings for a day that hasn't happened yet");
+    // Staff enter today's takings from the phone; earlier days are for the people who run the shop.
+    if (!options.anyDay && day !== today) throw new ForbiddenError("You can only enter today's takings");
     const before = await this.carwashRepository.findDay(day);
     await this.transactions.run(async (repos) => {
       await repos.carwash.save({ day, ...takings, recordedBy: actorId });

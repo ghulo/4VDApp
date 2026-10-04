@@ -22,4 +22,5 @@ export type RootStackParamList = {
   CashCount: undefined;
   Tabs: undefined;
   Tab: { customerId: number; name: string };
+  Carwash: undefined;
 };

@@ -33,6 +33,7 @@ export interface ProductRecord {
   cost_price: string | null;
   image_url: string | null;
   sku: string | null;
+  barcode: string | null;
   is_active: boolean;
   quantity_on_hand: number | null;
   reorder_level: number | null;
@@ -63,6 +64,7 @@ export class ProductRepository {
     'p.cost_price',
     'p.image_url',
     'p.sku',
+    'p.barcode',
     'p.is_active',
     'i.quantity_on_hand',
     'i.reorder_level',
@@ -80,7 +82,10 @@ export class ProductRepository {
     }
     if (filters.search) {
       const pattern = `%${escapeLikePattern(filters.search)}%`;
-      query = query.where((eb) => eb.or([eb('p.name', 'ilike', pattern), eb('p.sku', 'ilike', pattern)]));
+      // A scanned barcode matches exactly; names and SKUs match in part.
+      query = query.where((eb) =>
+        eb.or([eb('p.name', 'ilike', pattern), eb('p.sku', 'ilike', pattern), eb('p.barcode', '=', filters.search!.trim())]),
+      );
     }
 
     const [products, count] = await Promise.all([
@@ -145,6 +150,21 @@ export class ProductRepository {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     return result.numUpdatedRows > 0n;
+  }
+
+  /** The live product with this barcode, if any. */
+  async findIdByBarcode(barcode: string): Promise<number | undefined> {
+    const row = await this.db
+      .selectFrom('products')
+      .select('id')
+      .where('barcode', '=', barcode)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+    return row?.id;
+  }
+
+  async setBarcode(id: number, barcode: string | null): Promise<void> {
+    await this.db.updateTable('products').set({ barcode, updated_at: new Date() }).where('id', '=', id).execute();
   }
 
   async softDelete(id: number): Promise<boolean> {

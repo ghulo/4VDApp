@@ -13,6 +13,7 @@ import {
   pushDeviceSchema,
   pushPreferencesSchema,
   recordSaleSchema,
+  basketSchema,
   removePushDeviceSchema,
   revenueQuerySchema,
   saleQuerySchema,
@@ -34,6 +35,11 @@ export function createSalesController(salesService: SalesService) {
       const input = parseInput(recordSaleSchema, req.body);
       const sale = await salesService.record(input, req.user!.id);
       sendSuccess(res, sale, { statusCode: 201, message: 'Sale recorded' });
+    },
+
+    async recordBasket(req: Request, res: Response): Promise<void> {
+      const result = await salesService.recordBasket(parseInput(basketSchema, req.body), req.user!.id);
+      sendSuccess(res, result, { statusCode: 201, message: 'Sale recorded' });
     },
   };
 }

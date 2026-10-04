@@ -37,6 +37,8 @@ export interface Product {
   name: string;
   description: string | null;
   sku: string | null;
+  /** Scanned at the counter. */
+  barcode: string | null;
   imageUrl: string | null;
   category: { id: number; name: string };
   price: number;

@@ -1,23 +1,14 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fragment, type FormEvent, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { Fragment, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { BasketForm } from '../components/BasketForm';
 import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
-import { customersApi, productsApi, salesApi, usersApi } from '../services/api';
-import type { PricingTier, Product } from '../services/types';
-import { errorMessage } from '../utils/errors';
+import { productsApi, salesApi, usersApi } from '../services/api';
 import { formatDateTime, formatMoney } from '../utils/format';
-import { Button, Card, PageHeader } from '../components/ui';
+import { Card, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
-
-/** Same rule as the backend: the biggest tier the quantity reaches. */
-function unitPriceFor(product: Product, quantity: number): number {
-  return product.bulkPricingTiers.reduce(
-    (price: number, tier: PricingTier) => (quantity >= tier.quantity ? tier.price : price),
-    product.price,
-  );
-}
 
 export function SalesPage() {
   const t = useT();
@@ -28,137 +19,10 @@ export function SalesPage() {
         description={t.sales.description}
       />
       <Card title={t.sales.record}>
-        <RecordSaleForm />
+        <BasketForm />
       </Card>
       <SalesHistory />
     </>
-  );
-}
-
-function RecordSaleForm() {
-  const t = useT();
-  const queryClient = useQueryClient();
-  const products = useQuery({
-    queryKey: ['products', { page: 1, limit: 100, inStock: true }],
-    queryFn: () => productsApi.list({ page: 1, limit: 100, inStock: true }),
-  });
-  const [productId, setProductId] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [notes, setNotes] = useState('');
-  const [customerId, setCustomerId] = useState('');
-  const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
-
-  const record = useMutation({
-    mutationFn: salesApi.record,
-    onSuccess: (sale) => {
-      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash']) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
-      setSavedMessage(t.sales.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }));
-      setQuantity('1');
-      setNotes('');
-      setCustomerId('');
-    },
-  });
-
-  // Only active products are sellable; the list endpoint returns hidden ones to admins too.
-  const sellable = products.data?.items.filter((product) => product.isActive) ?? [];
-  const selected = sellable.find((product) => product.id === Number(productId));
-  const parsedQuantity = Number(quantity);
-  const isQuantityValid = Number.isInteger(parsedQuantity) && parsedQuantity >= 1;
-  const unitPrice = selected && isQuantityValid ? unitPriceFor(selected, parsedQuantity) : null;
-  const exceedsStock = selected !== undefined && parsedQuantity > selected.stock.quantity;
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setSavedMessage(null);
-    record.mutate({
-      productId: Number(productId),
-      quantity: parsedQuantity,
-      notes: notes.trim() || null,
-      ...(customerId && { customerId: Number(customerId) }),
-    });
-  }
-
-  if (products.isPending) return <Loading />;
-  if (products.isError) return <ErrorNotice error={products.error} onRetry={() => products.refetch()} />;
-  if (sellable.length === 0) return <EmptyState title={t.sales.nothingInStock} />;
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="field-row">
-        <label className="field">
-          <span className="field__label">{t.sales.product}</span>
-          <select required value={productId} onChange={(event) => setProductId(event.target.value)}>
-            <option value="" disabled>
-              {t.sales.chooseProduct}
-            </option>
-            {sellable.map((product) => (
-              <option key={product.id} value={product.id}>
-                {t.sales.inStockOption(product.name, product.stock.quantity)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field__label">{t.sales.quantity}</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            step={1}
-            required
-            value={quantity}
-            onChange={(event) => setQuantity(event.target.value)}
-          />
-        </label>
-      </div>
-      <div className="field-row">
-        <label className="field">
-          <span className="field__label">{t.sales.note}</span>
-          <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
-        </label>
-        {customers.data && customers.data.length > 0 && (
-          <label className="field">
-            <span className="field__label">{t.tabs.putOnTab}</span>
-            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
-              <option value="">{t.tabs.noTab}</option>
-              {customers.data.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-            {customerId && <span className="field__hint">{t.tabs.onTabHint}</span>}
-          </label>
-        )}
-      </div>
-
-      {selected && unitPrice !== null && (
-        <p className={exceedsStock ? 'form-error' : 'sale-preview'}>
-          {exceedsStock
-            ? t.sales.onlyInStock(selected.stock.quantity)
-            : `${parsedQuantity} × ${formatMoney(unitPrice)} = ${formatMoney(unitPrice * parsedQuantity)}${unitPrice < selected.price ? t.sales.bulkPrice : ''}`}
-        </p>
-      )}
-      {record.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(record.error)}
-        </p>
-      )}
-      {savedMessage && (
-        <p className="form-success" role="status">
-          {savedMessage}
-        </p>
-      )}
-
-      <Button type="submit"
-       
-        disabled={!selected || !isQuantityValid || exceedsStock || record.isPending} variant="primary">
-        {record.isPending ? t.sales.recording : t.sales.recordSale}
-      </Button>
-    </form>
   );
 }
 

@@ -107,6 +107,10 @@ export const productsApi = {
   remove: async (id: number) => {
     await apiRequest(`/products/${id}`, { method: 'DELETE' });
   },
+  byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
+  setBarcode: async (id: number, barcode: string | null) =>
+    (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
+  createBarcode: async (id: number) => (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'POST' })).data,
 };
 
 /** Public account pages: invites, passwords, email links, Google. */
@@ -235,6 +239,8 @@ export const salesApi = {
     });
     return { items: data.sales, totalRevenue: data.totalRevenue, meta: meta! };
   },
+  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
+    (await apiRequest<{ sales: Sale[]; total: number }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };

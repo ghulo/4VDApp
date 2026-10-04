@@ -23,7 +23,10 @@ export function createProductRoutes({ productService, activityLogService, guards
   const router = Router();
 
   router.get('/', guards.authenticated, controller.list);
+  router.get('/barcode/:barcode', guards.authenticated, controller.getByBarcode);
   router.get('/:id', guards.authenticated, controller.getById);
+  router.put('/:id/barcode', ...guards.manage, controller.setBarcode);
+  router.post('/:id/barcode', ...guards.manage, controller.createBarcode);
   router.get('/:id/price-history', ...guards.oversee, controller.priceHistory);
   router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);

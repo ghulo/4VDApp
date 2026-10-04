@@ -1,5 +1,6 @@
 import {
   Bell,
+  Drop,
   CaretDoubleLeft,
   CaretDoubleRight,
   ChartLine,
@@ -74,6 +75,7 @@ const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: NavItem[
     key: 'business',
     items: [
       { to: '/sales', key: 'sales', icon: Receipt },
+      { to: '/carwash', key: 'carwash', icon: Drop },
       { to: '/reports', key: 'reports', icon: ChartLine },
       { to: '/people', key: 'people', icon: Users },
       { to: '/activity', key: 'activity', icon: ClockCounterClockwise },

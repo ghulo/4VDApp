@@ -10,6 +10,7 @@ import * as roles from './008_roles.js';
 import * as language from './009_language.js';
 import * as undo from './010_undo.js';
 import * as alertSubjects from './011_alert_subjects.js';
+import * as carwash from './012_carwash.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -29,4 +30,5 @@ export const migrations: Record<string, Migration> = {
   '009_language': language,
   '010_undo': undo,
   '011_alert_subjects': alertSubjects,
+  '012_carwash': carwash,
 };

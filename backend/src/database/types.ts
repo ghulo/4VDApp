@@ -275,6 +275,15 @@ export interface PromotionsTable {
   ended_early_at: Date | null;
 }
 
+/** One day's carwash takings. `day` is a calendar date in shop time. */
+export interface CarwashDaysTable {
+  day: ColumnType<string, string, string>;
+  carwash_amount: Decimal;
+  change_amount: Decimal;
+  recorded_by: number | null;
+  updated_at: UpdatedAt;
+}
+
 export interface SettingsTable {
   key: string;
   value: ColumnType<unknown, string, string>;
@@ -389,6 +398,7 @@ export interface Database {
   write_offs: WriteOffsTable;
   stock_counts: StockCountsTable;
   stock_count_lines: StockCountLinesTable;
+  carwash_days: CarwashDaysTable;
   sales_ledger: SalesLedgerView;
 }
 

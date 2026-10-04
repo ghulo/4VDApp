@@ -8,7 +8,7 @@ const MAX_STOCK_CHANGE = 1_000_000;
 const MAX_TIERS_PER_PRODUCT = 20;
 
 /** Euros with at most two decimals; rounding guards against 0.1 + 0.2 style floats. */
-const money = z
+export const money = z
   .number()
   .nonnegative()
   .max(MAX_PRICE)

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createActivityRoutes } from './activityRoutes.js';
 import { createAuthRoutes } from './authRoutes.js';
+import { createCarwashRoutes } from './carwashRoutes.js';
 import {
   createCategoryRoutes,
   createInventoryRoutes,
@@ -43,6 +44,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/favorites', createFavoriteRoutes(container));
   router.use('/activity', createActivityRoutes(container));
   router.use('/reports', createReportsRoutes(container));
+  router.use('/carwash', createCarwashRoutes(container));
   router.use('/exports', createExportsRoutes(container));
   router.use('/settings', createSettingsRoutes(container));
   router.use('/write-offs', createWriteOffRoutes(container));

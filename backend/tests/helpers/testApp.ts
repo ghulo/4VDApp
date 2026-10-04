@@ -60,7 +60,7 @@ export async function setupTestApp(options: ContainerOptions = {}, env: Record<s
 export async function resetData(db: DatabaseClient): Promise<void> {
   await sql`TRUNCATE users, refresh_tokens, categories, products, inventory, bulk_pricing_tiers,
     sales, stock_adjustments, product_images, notifications, favorites, activity_log,
-    settings, returns, write_offs, stock_counts, stock_count_lines, promotions, push_subscriptions,
+    settings, returns, write_offs, stock_counts, stock_count_lines, promotions, carwash_days, push_subscriptions,
     businesses, media, invites, account_tokens, user_identities, email_outbox RESTART IDENTITY CASCADE`.execute(db);
   await sql`INSERT INTO settings (key, value) VALUES ('refund_approval_limit', '50'), ('return_window_days', '14')`.execute(db);
   await sql`INSERT INTO businesses (name) VALUES ('Test shop')`.execute(db);

@@ -19,6 +19,7 @@ const EMPTIED = [
   'product_images',
   'favorites',
   'promotions',
+  'carwash_days',
   'inventory',
   'products',
   'categories',

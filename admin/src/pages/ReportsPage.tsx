@@ -32,8 +32,20 @@ export function ReportsPage() {
           </>
         )}
       >
-        {({ current }) => (
+        {({ current, carwash }) => (
           <>
+            <MetricCard
+              label={t.reports.carwash}
+              value={formatMoney(carwash.current.total)}
+              change={carwash.change}
+              hint={t.reports.carwashSplit(formatMoney(carwash.current.carwash), formatMoney(carwash.current.change))}
+              to="/carwash"
+            />
+            <MetricCard
+              label={t.reports.together}
+              value={formatMoney(current.revenue + carwash.current.total)}
+              hint={t.reports.togetherHint}
+            />
             <MetricCard
               label={t.analytics.margin}
               value={current.margin === null ? t.reports.unknown : formatPercent(current.margin)}

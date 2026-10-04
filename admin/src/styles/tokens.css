@@ -35,6 +35,17 @@
   --dots: #cbc3b3;
   --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%23cbc3b3'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12);
+  /* Depth: panels rest a little above the canvas, fields sit into it, and
+     buttons stand on a darker edge like a key and press down into it. */
+  --shadow-raise: 0 0 0 1px rgb(20 20 19 / 0.04), 0 1px 2px rgb(20 20 19 / 0.06), 0 4px 14px rgb(20 20 19 / 0.06);
+  --shadow-raise-hover: 0 0 0 1px rgb(20 20 19 / 0.05), 0 2px 4px rgb(20 20 19 / 0.07), 0 10px 24px rgb(20 20 19 / 0.1);
+  --shadow-inset: inset 0 1px 2px rgb(20 20 19 / 0.08);
+  --key-drop: 0 4px 10px rgb(20 20 19 / 0.14);
+  --key-drop-pressed: 0 1px 2px rgb(20 20 19 / 0.12);
+  --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.4);
+  --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --cta-edge: #a8482a;
+  --danger-edge: #7f1d1d;
   --glass-bg: rgb(250 249 245 / 0.62);
   --glass-bg-strong: rgb(250 249 245 / 0.88);
   --glass-border: rgb(255 255 255 / 0.75);
@@ -78,6 +89,15 @@
   --dots: #3e3d39;
   --dots-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1' fill='%233e3d39'/%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5);
+  --shadow-raise: 0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 18px rgb(0 0 0 / 0.28);
+  --shadow-raise-hover: 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.38);
+  --shadow-inset: inset 0 1px 3px rgb(0 0 0 / 0.45);
+  --key-drop: 0 4px 12px rgb(0 0 0 / 0.45);
+  --key-drop-pressed: 0 1px 2px rgb(0 0 0 / 0.4);
+  --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.3);
+  --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --cta-edge: #9a4024;
+  --danger-edge: #991b1b;
   --glass-bg: rgb(38 38 36 / 0.6);
   --glass-bg-strong: rgb(38 38 36 / 0.88);
   --glass-border: rgb(255 255 255 / 0.09);

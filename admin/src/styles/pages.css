@@ -476,6 +476,7 @@
   margin: 0;
   padding: 0;
   background: var(--surface);
+  box-shadow: var(--shadow-raise);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
 }
@@ -1356,6 +1357,7 @@
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-panel);
   background: var(--surface);
+  box-shadow: var(--shadow-raise);
 }
 
 .setup-strip__row {

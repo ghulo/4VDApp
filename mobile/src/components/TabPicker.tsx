@@ -36,7 +36,7 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
 
   if (value) {
     return (
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.label, { color: colors.ink }]}>{t.tabs.onTabOf(value.name)}</Text>
         <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.onTabHint}</Text>
         <Pressable accessibilityRole="button" onPress={() => pick(null)} hitSlop={8}>
@@ -59,7 +59,7 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
   const exact = (customers.data ?? []).some((customer) => customer.name.toLowerCase() === query);
 
   return (
-    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
       <Text style={[styles.label, { color: colors.ink }]}>{t.tabs.whose}</Text>
       <TextInput
         value={search}

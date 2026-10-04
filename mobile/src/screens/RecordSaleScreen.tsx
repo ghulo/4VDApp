@@ -143,7 +143,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.searchRow}>
-          <View style={[styles.searchField, { borderColor: colors.lineStrong, backgroundColor: colors.surface }]}>
+          <View style={[styles.searchField, { borderColor: colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}>
             <MagnifyingGlass size={20} color={colors.inkMuted} />
             <TextInput
               value={search}
@@ -200,7 +200,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
         <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
           {t.sell.basket}
         </Text>
-        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
           {lines.length === 0 && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.emptyBasket}</Text>}
           {lines.map((line, index) => {
             const { unitPrice, isPromotion } = salePriceFor(line.product, line.quantity);

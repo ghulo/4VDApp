@@ -24,7 +24,7 @@ export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParam
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         {customers.data.map((customer, index) => (
           <Pressable
             key={customer.id}
@@ -74,7 +74,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.owesLabel}</Text>
         <Text style={[styles.big, { color: colors.ink }]}>{data.balance > 0 ? formatMoney(data.balance) : t.tabs.settled}</Text>
         {data.owingSince && <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.since(day(data.owingSince))}</Text>}
@@ -82,7 +82,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
       </View>
 
       {data.balance > 0 && (
-        <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
           <TextField label={t.tabs.paying} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" />
           <Pressable accessibilityRole="button" onPress={() => setAmount(String(data.balance))} hitSlop={8}>
             <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.payAll(formatMoney(data.balance))}</Text>
@@ -94,7 +94,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
       )}
 
       <Text style={[styles.section, { color: colors.ink }]}>{t.tabs.history}</Text>
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         {data.entries.map((entry, index) => (
           <View key={entry.id} style={[styles.row, { borderTopColor: colors.line, borderTopWidth: index === 0 ? 0 : 1, opacity: entry.undone ? 0.5 : 1 }]}>
             <View style={styles.rowText}>

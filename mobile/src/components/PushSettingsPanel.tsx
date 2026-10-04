@@ -33,7 +33,7 @@ export function PushSettingsPanel() {
   const isOn = Boolean(token.data);
 
   return (
-    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
       <Text style={[styles.title, { color: colors.ink }]} accessibilityRole="header">
         {t.push.title}
       </Text>

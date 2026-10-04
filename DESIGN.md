@@ -201,7 +201,7 @@ shop drawing are made of them. They stay out of the page margins, tables and for
 where they'd be noise.
 
 **Key Characteristics:**
-- Ink on ivory paper with oat panels; flat surfaces, no shadows at rest.
+- Ink on ivory paper with oat panels; paper rests just above the canvas, buttons stand up like keys.
 - One clay brand colour (`#d4704f`) for the logo, the drawings, the main action and where you are.
 - A serif (Source Serif 4, 500) for page titles, the day's headline and sign-in headings; a grotesk (Hanken Grotesk) for everything else, every figure tabular.
 - Charts and counts in ink and muted ink, never clay.
@@ -341,16 +341,25 @@ readers only.
 
 ## Elevation & Depth
 
-Flat. Depth comes from tonal layering (canvas, paper, sunk paper) and hairlines.
-One shadow exists, for things that float above the page; nothing glows.
+Tactile, three heights: things you press stand up, paper rests on the canvas, and
+things you type into sit down into it. Tonal layering (canvas, paper, sunk paper)
+still does most of the work; the shadows are soft and warm, never glows.
 
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)`;
   dark `0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5)`): the command
   palette and the phone drawer, over a 35% black, lightly blurred backdrop.
+- **Raise** (`--shadow-raise`): cards, metric cards, stat grids, notices, panels.
+  A faint ring plus a short, soft drop.
+- **Inset** (`--shadow-inset`): fields, the segmented track, a card's footer strip,
+  a pressed ghost button. A 1px shadow along the top inside edge.
+- **Key** (`--cta-edge`, `--danger-edge`, `--key-shine`, `--key-drop`): raised
+  buttons stand on a solid darker edge (3px; 2px on secondary) with a light line
+  along the top and a soft drop under it.
 
-**The Flat Rule.** Nothing casts a shadow or a glow unless it floats above the page.
-Hover answers with a fill change (sunk paper or fill), never light.
+**The Key Rule.** Buttons behave like keys: hover lifts the face 1px onto a taller
+edge, press pushes it down into the edge, disabled sits flat. Ghost and text buttons
+stay flat until pressed. Nothing glows. The team app uses the same values (theme.ts).
 
 ## Shapes
 
@@ -369,12 +378,14 @@ Calm at rest, a plain answer when touched.
 
 ### Buttons
 - **Shape:** gently rounded (8px), 36px tall (30px small); 44px (36px small) under 900px.
-- **Primary:** solid Clay with Pillar Ink text, weight 600; one per view. Hover
-  lightens to #df8667; disabled goes to oat with muted text.
-- **Secondary:** paper with a strong-hairline ring, weight 500; hover sinks.
+- **Primary:** Clay lit from the top (a radial wash from #df8667 into Clay) on a
+  darker clay edge, Pillar Ink text, weight 600; one per view. Hover brightens the
+  wash; disabled goes flat oat with muted text.
+- **Secondary:** paper with a strong-hairline ring on a 2px hairline edge, weight
+  500; press sinks it to sunk paper.
   **Ghost:** no fill until hover. **Danger:** red fill for destroying; **Danger
   text:** red words for "Delete" next to other actions.
-- **Press / Focus:** all buttons press down 1px; focus is a 2px Info ring offset 3px.
+- **Press / Focus:** raised buttons press down into their edge (The Key Rule); focus is a 2px Info ring offset 3px.
 - **Labels:** 1-4 words, starting with a verb or naming the destination.
 
 ### Links
@@ -385,7 +396,7 @@ hover.
 ### Cards / Containers
 - **Corner Style:** 8px.
 - **Background:** Paper on the canvas.
-- **Shadow Strategy:** none (The Flat Rule).
+- **Shadow Strategy:** Raise.
 - **Border:** one hairline.
 - **Internal Padding:** 16px top, 24px sides and bottom; a sunk footer strip holds
   actions on the right and the save result on the left.
@@ -395,7 +406,7 @@ What a setting is on the left (title, one muted sentence, max 60ch), the control
 the right; rows separated by hairlines; stacked under 640px.
 
 ### Inputs / Fields
-- **Style:** strong-hairline stroke, paper fill, 6px corners, 36px tall, 15px text.
+- **Style:** strong-hairline stroke, paper fill, Inset shadow, 6px corners, 36px tall, 15px text.
 - **Focus:** Info border plus a 3px soft Info ring. **Disabled:** sunk paper, muted text.
 - **Labels:** always visible above the field; placeholders only show an example.
 - **Error:** red text under the field saying how to fix it.
@@ -516,7 +527,7 @@ The vintage finish, after anthropic.com's textured stock, used sparingly:
 - **Don't** make buttons clay or bright orange.
 - **Don't** add glows, corner nodes or dashed rails; keep dots, pictograms and grain-heavy textures out of tables, forms and from behind text.
 - **Don't** colour charts, counts, links or badges orange.
-- **Don't** add drop shadows to cards or tables.
+- **Don't** invent shadows: use Raise, Inset, Key or Float, nothing else, and never a glow.
 - **Don't** use the serif for figures, tables, card titles or controls.
 - **Don't** use weights above 600 outside the wordmark and count badges, or all-caps labels.
 - **Don't** add a second accent colour; status colours are for status only.

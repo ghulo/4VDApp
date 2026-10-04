@@ -23,6 +23,15 @@ const light = {
   dangerSoft: '#fdecec',
   ok: '#047857',
   okSoft: '#e6f5ee',
+  // Depth: panels rest above the canvas, fields sit into it, buttons stand on
+  // a darker edge like a key and press down into it.
+  raise: '0 0 0 1px rgba(20, 20, 19, 0.04), 0 1px 2px rgba(20, 20, 19, 0.06), 0 4px 14px rgba(20, 20, 19, 0.06)',
+  inset: 'inset 0 1px 2px rgba(20, 20, 19, 0.08)',
+  keyDrop: '0 4px 10px rgba(20, 20, 19, 0.14)',
+  keyDropPressed: '0 1px 2px rgba(20, 20, 19, 0.12)',
+  keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
+  keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+  ctaEdge: '#a8482a',
 };
 
 const dark: typeof light = {
@@ -44,6 +53,13 @@ const dark: typeof light = {
   dangerSoft: '#3b1717',
   ok: '#34d399',
   okSoft: '#0f3326',
+  raise: '0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.28)',
+  inset: 'inset 0 1px 3px rgba(0, 0, 0, 0.45)',
+  keyDrop: '0 4px 12px rgba(0, 0, 0, 0.45)',
+  keyDropPressed: '0 1px 2px rgba(0, 0, 0, 0.4)',
+  keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+  keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.07)',
+  ctaEdge: '#9a4024',
 };
 
 /** Roles the screens ask for, plus older names they still use. */
@@ -67,6 +83,22 @@ function withAliases(palette: typeof light) {
 
 export const palettes = { light: withAliases(light), dark: withAliases(dark) };
 export type ThemeColors = (typeof palettes)['light'];
+
+/**
+ * A raised button: clay (or paper) on a darker edge that it presses into.
+ * Pair with keyTravel so the face moves down as the edge shrinks.
+ */
+export function keyShadow(colors: ThemeColors, look: 'clay' | 'paper', pressed: boolean): string {
+  if (look === 'paper') {
+    return `${colors.keyShinePaper}, 0 ${pressed ? 0 : 2}px 0 ${colors.lineStrong}`;
+  }
+  return `${colors.keyShine}, 0 ${pressed ? 1 : 3}px 0 ${colors.ctaEdge}, ${pressed ? colors.keyDropPressed : colors.keyDrop}`;
+}
+
+/** How far a key's face moves down when pressed. */
+export function keyTravel(pressed: boolean) {
+  return { transform: [{ translateY: pressed ? 2 : 0 }] };
+}
 
 // Hanken Grotesk for everything, figures included; the serif (Source Serif 4)
 // only for screen titles and the day's headline on Home, as on the dashboard.

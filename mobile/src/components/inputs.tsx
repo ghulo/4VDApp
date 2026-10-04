@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors } from '../theme';
 
 interface StepperProps {
   label: string;
@@ -32,7 +32,7 @@ export function Stepper({ label, value, onChange, min = 0, max, size = 'regular'
           style={[
             styles.input,
             isLarge && styles.inputLarge,
-            { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface },
+            { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset },
           ]}
         />
         <StepButton label="+1" accessibilityLabel={`One more, ${label}`} onPress={() => onChange(String(clamp(current + 1)))} large={isLarge} />
@@ -61,7 +61,8 @@ function StepButton({
       style={({ pressed }) => [
         styles.stepButton,
         large && styles.stepButtonLarge,
-        { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.background : colors.surface },
+        { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
+        { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
       ]}
     >
       <Text style={[styles.stepLabel, { color: colors.ink }]}>{label}</Text>

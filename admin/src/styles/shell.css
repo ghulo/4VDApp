@@ -420,6 +420,7 @@
   padding: 2px;
   border-radius: var(--radius-small);
   background: var(--fill);
+  box-shadow: var(--shadow-inset);
 }
 
 .segmented__option {
@@ -445,7 +446,7 @@
 .segmented__option[aria-checked='true'] {
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 0 0 1px var(--line-strong);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
 }
 
 .segmented--small .segmented__option {
@@ -478,6 +479,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
   background: var(--surface);
+  box-shadow: var(--shadow-raise);
 }
 
 .notice--error {

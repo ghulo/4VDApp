@@ -133,7 +133,7 @@ function Counter({
         />
       </View>
 
-      <View style={[styles.product, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.product, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.category, { color: colors.steel }]}>{line.categoryName}</Text>
         <Text style={[styles.name, { color: colors.ink }]}>{line.productName}</Text>
         {line.sku && <Text style={[styles.sku, { color: colors.steel }]}>SKU {line.sku}</Text>}

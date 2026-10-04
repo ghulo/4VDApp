@@ -51,7 +51,7 @@ export function CountsScreen({ navigation }: Props) {
       </Text>
 
       {open.length > 0 && (
-        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
           <Text style={[styles.panelTitle, { color: colors.ink }]} accessibilityRole="header">
             {t.counts.carryOn}
           </Text>
@@ -70,7 +70,7 @@ export function CountsScreen({ navigation }: Props) {
       )}
 
       {waiting.length > 0 && (
-        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
           <Text style={[styles.panelTitle, { color: colors.ink }]} accessibilityRole="header">
             {t.counts.waiting}
           </Text>
@@ -82,7 +82,7 @@ export function CountsScreen({ navigation }: Props) {
         </View>
       )}
 
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.panelTitle, { color: colors.ink }]} accessibilityRole="header">
           {t.counts.start}
         </Text>

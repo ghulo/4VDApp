@@ -24,8 +24,8 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.line },
-        pressed && { backgroundColor: colors.background },
+        { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise },
+        pressed && { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset },
       ]}
     >
       {product.imageUrl ? (

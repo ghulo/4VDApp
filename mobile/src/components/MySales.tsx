@@ -41,7 +41,7 @@ export function MySales() {
   });
 
   return (
-    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
       <Text style={[styles.title, { color: colors.ink }]}>{t.mySales.title(month.name)}</Text>
       {mySales.isPending && <Text style={[styles.muted, { color: colors.steel }]}>{t.mySales.loading}</Text>}
       {mySales.isError && <Text style={[styles.muted, { color: colors.signalOut }]}>{errorMessage(mySales.error)}</Text>}

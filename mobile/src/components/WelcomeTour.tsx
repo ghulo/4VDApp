@@ -35,7 +35,7 @@ export function WelcomeTour({ user }: { user: User }) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={finish}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: colors.surface }]} accessibilityViewIsModal>
+        <View style={[styles.card, { backgroundColor: colors.surface, boxShadow: colors.raise }]} accessibilityViewIsModal>
           {step === 0 && (
             <View style={styles.welcome}>
               <LogoMark size={40} />

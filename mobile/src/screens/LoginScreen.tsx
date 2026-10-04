@@ -42,7 +42,7 @@ export function LoginScreen() {
           <View style={styles.art}>
             <ShopSunrise />
           </View>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <View style={[styles.card, { backgroundColor: colors.surface, boxShadow: colors.raise }]}>
             <Text style={[styles.title, { color: colors.ink }]}>{t.login.title}</Text>
             <Text style={[styles.subtitle, { color: colors.inkMuted }]}>{t.login.subtitle}</Text>
 

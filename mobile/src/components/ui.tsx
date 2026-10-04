@@ -8,7 +8,7 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { IconChip } from './print';
@@ -35,10 +35,11 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
         styles.button,
         isPrimary
           ? { backgroundColor: disabled ? colors.fill : colors.cta }
-          : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: 'transparent' },
-        // A disabled main button goes neutral rather than a washed-out orange.
+          : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
+        // Raised like a key, pressing down into its edge. Disabled ones sit flat;
+        // a disabled main button goes neutral rather than a washed-out orange.
+        !(disabled || loading) && { boxShadow: keyShadow(colors, isPrimary ? 'clay' : 'paper', pressed), ...keyTravel(pressed) },
         disabled && !isPrimary && styles.disabled,
-        pressed && styles.pressed,
       ]}
     >
       {loading ? (
@@ -63,7 +64,7 @@ export function TextField({ label, ...inputProps }: TextInputProps & { label: st
         {...inputProps}
         style={[
           styles.input,
-          { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.lineStrong },
+          { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.lineStrong, boxShadow: colors.inset },
           inputProps.style,
         ]}
       />
@@ -118,7 +119,6 @@ const styles = StyleSheet.create({
   },
   buttonLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
   disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.8 },
   field: { gap: spacing.xs, marginBottom: spacing.lg },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 14 },
   input: {

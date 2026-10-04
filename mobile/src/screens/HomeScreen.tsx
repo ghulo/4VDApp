@@ -191,7 +191,7 @@ export function HomeScreen() {
           accessibilityLabel={t.home.searchLabel}
           autoCorrect={false}
           returnKeyType="search"
-          style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface }]}
+          style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}
         />
 
         {sells && (

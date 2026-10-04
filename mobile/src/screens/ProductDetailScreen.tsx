@@ -50,7 +50,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
         <Image source={mediaSrc(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
       )}
 
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.category, { color: colors.steel }]}>
           {item.category.name}
           {item.sku ? t.product.sku(item.sku) : ''}
@@ -70,13 +70,13 @@ export function ProductDetailScreen({ route, navigation }: Props) {
         {item.description && <Text style={[styles.description, { color: colors.ink }]}>{item.description}</Text>}
       </View>
 
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.panelTitle, { color: colors.ink }]}>{t.product.inStock}</Text>
         <StockTag quantity={item.stock.quantity} reorderLevel={item.stock.reorderLevel} size="large" />
       </View>
 
       {item.bulkPricingTiers.length > 0 && (
-        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
           <Text style={[styles.panelTitle, { color: colors.ink }]}>{t.product.bulkPrices}</Text>
           <TierRow quantityLabel={t.product.upTo(item.bulkPricingTiers[0]!.quantity - 1)} price={item.price} />
           {item.bulkPricingTiers.map((tier) => (

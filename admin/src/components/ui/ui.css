@@ -30,42 +30,92 @@
   transform: translateY(1px);
 }
 
+/* Keys: raised buttons stand on a darker edge (--edge, --edge-h tall), lift a
+   pixel on hover and press down into the edge, like a keyboard key. */
+.button--primary,
+.button--secondary,
+.button--quiet,
+.button--danger {
+  --edge-h: 3px;
+  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge), var(--key-drop);
+}
+
+.button--primary:not(:disabled):hover,
+.button--secondary:not(:disabled):hover,
+.button--quiet:not(:disabled):hover,
+.button--danger:not(:disabled):hover {
+  --edge-h: 4px;
+  transform: translateY(-1px);
+}
+
+.button--primary:not(:disabled):active,
+.button--secondary:not(:disabled):active,
+.button--quiet:not(:disabled):active,
+.button--danger:not(:disabled):active {
+  --edge-h: 1px;
+  transform: translateY(2px);
+  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge), var(--key-drop-pressed);
+}
+
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* The one orange thing on a screen, with near-black text so it stays readable. */
+/* The one clay thing on a screen, lit from the top, with near-black text so it stays readable. */
 .button--primary {
-  background: var(--cta);
+  --edge: var(--cta-edge);
+  --shine: var(--key-shine);
+  background: radial-gradient(130% 160% at 50% 0%, var(--cta-hover) 0%, var(--cta) 55%);
   color: var(--cta-ink);
   font-weight: 600;
 }
 
 .button--primary:not(:disabled):hover {
-  background: var(--cta-hover);
+  background: radial-gradient(130% 160% at 50% 0%, var(--cta-hover) 15%, var(--cta) 80%);
 }
 
-/* Disabled main buttons go neutral instead of a washed-out orange. */
+/* Disabled buttons sit flat: nothing to press. Main ones go neutral instead of a washed-out orange. */
 .button--primary:disabled {
   background: var(--fill);
   color: var(--ink-muted);
   opacity: 1;
 }
 
-/* Secondary: the surface with a hairline ring, like Kumo. "quiet" is the old name. */
+.button--primary:disabled,
+.button--danger:disabled {
+  box-shadow: none;
+}
+
+/* Secondary: paper with a hairline ring on a shallow edge. "quiet" is the old name. */
 .button--secondary,
 .button--quiet {
+  --edge-h: 2px;
+  --edge: var(--line-strong);
+  --shine: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge);
 }
 
 .button--secondary:not(:disabled):hover,
 .button--quiet:not(:disabled):hover {
-  background: var(--surface-sunk);
+  --edge-h: 3px;
 }
 
+.button--secondary:not(:disabled):active,
+.button--quiet:not(:disabled):active {
+  --edge-h: 0px;
+  background: var(--surface-sunk);
+  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge);
+}
+
+.button--secondary:disabled,
+.button--quiet:disabled {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+/* Ghost: flat until touched, then pressed into the page. */
 .button--ghost {
   background: transparent;
   color: var(--ink);
@@ -75,7 +125,14 @@
   background: var(--fill);
 }
 
+.button--ghost:not(:disabled):active {
+  box-shadow: var(--shadow-inset);
+  transform: translateY(1px);
+}
+
 .button--danger {
+  --edge: var(--danger-edge);
+  --shine: var(--key-shine);
   background: var(--danger);
   color: var(--surface);
 }
@@ -230,10 +287,11 @@
 
 .card {
   margin-bottom: var(--space-4);
-  /* Paper on ivory, no frame, like anthropic.com's cards. */
+  /* Paper resting just above the ivory canvas. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--surface);
+  box-shadow: var(--shadow-raise);
 }
 
 .card__head {
@@ -290,6 +348,7 @@
   border-top: 1px solid var(--line);
   border-radius: 0 0 var(--radius-panel) var(--radius-panel);
   background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
   color: var(--ink-muted);
 }
 
@@ -583,6 +642,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: var(--line);
+  box-shadow: var(--shadow-raise);
   gap: 1px;
   overflow: hidden;
 }
@@ -926,10 +986,11 @@ input.switch:focus-visible {
   gap: var(--space-1);
   min-width: 0;
   padding: var(--space-4) var(--space-4) 0;
-  /* Paper on ivory, no frame, like the other cards. */
+  /* Paper resting above the canvas, like the other cards. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--surface);
+  box-shadow: var(--shadow-raise);
   overflow: hidden;
 }
 

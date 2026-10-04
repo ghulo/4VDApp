@@ -58,7 +58,7 @@ export function AccountScreen() {
     meApi.updateProfile({ theme: next }).then(updateUser).catch(() => undefined);
   }
 
-  const panel = [styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }];
+  const panel = [styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }];
   const changed = name.trim() !== user.name || phone.trim() !== (user.phone ?? '');
 
   return (

@@ -30,7 +30,7 @@ import { TabScreen, TabsScreen } from '../screens/TabsScreen';
 import { ReturnScreen } from '../screens/ReturnScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
-import { fonts, useTheme, useThemeColors } from '../theme';
+import { fonts, keyShadow, useTheme, useThemeColors } from '../theme';
 import type { MainTabParamList, RootStackParamList } from './types';
 import { useT } from '../i18n/useT';
 
@@ -58,7 +58,7 @@ function tabIcon(Icon: TabIcon) {
 function SellIcon() {
   const colors = useThemeColors();
   return (
-    <View style={[styles.sellIcon, { backgroundColor: colors.cta }]}>
+    <View style={[styles.sellIcon, { backgroundColor: colors.cta, boxShadow: keyShadow(colors, 'clay', false) }]}>
       <Plus size={20} color={colors.ctaInk} weight="bold" />
     </View>
   );

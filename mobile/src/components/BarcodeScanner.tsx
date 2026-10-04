@@ -32,7 +32,7 @@ export function BarcodeScanner({ onScan }: { onScan: (code: string) => void }) {
   if (!permission) return null;
   if (!permission.granted) {
     return (
-      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line }]}>
+      <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.text, { color: colors.ink }]}>{t.sell.cameraNeeded}</Text>
         <Button label={t.sell.allowCamera} onPress={() => requestPermission()} />
       </View>

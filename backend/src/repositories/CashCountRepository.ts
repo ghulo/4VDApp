@@ -67,20 +67,6 @@ export class CashCountRepository {
     return row.id;
   }
 
-  /**
-   * Shop sales after refunds for each day from `from` to `to` (both included),
-   * with days read on the shop's clock. Days without sales are left out.
-   */
-  async shopRevenueByDay(from: string, to: string, timeZone: string): Promise<Map<string, number>> {
-    const result = await sql<{ day: string; revenue: string }>`
-      select to_char((l.occurred_at at time zone ${timeZone})::date, 'YYYY-MM-DD') as day, sum(l.revenue) as revenue
-      from sales_ledger l
-      where (l.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
-      group by 1
-    `.execute(this.db);
-    return new Map(result.rows.map((row) => [row.day, Number(row.revenue)]));
-  }
-
   /** Carwash takings (carwash + change) for each day that has them. */
   async carwashTakingsByDay(from: string, to: string): Promise<Map<string, number>> {
     const rows = await this.db

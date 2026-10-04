@@ -1,4 +1,4 @@
-import { PERIOD_KEYS, type PeriodKey } from '../utils/periods';
+import { COMPARE_KEYS, type CompareKey, PERIOD_KEYS, type PeriodKey } from '../utils/periods';
 import { useT } from '../i18n/useT';
 
 interface PeriodPickerProps {
@@ -6,9 +6,11 @@ interface PeriodPickerProps {
   from: string;
   to: string;
   onChange: (next: { period: PeriodKey; from: string; to: string }) => void;
+  /** Shows a "Compare with" choice next to the period, for pages with comparisons. */
+  compare?: { value: CompareKey; onChange: (next: CompareKey) => void };
 }
 
-export function PeriodPicker({ period, from, to, onChange }: PeriodPickerProps) {
+export function PeriodPicker({ period, from, to, onChange, compare }: PeriodPickerProps) {
   const t = useT();
   return (
     <div className="toolbar">
@@ -23,6 +25,15 @@ export function PeriodPicker({ period, from, to, onChange }: PeriodPickerProps) 
           </option>
         ))}
       </select>
+      {compare && (
+        <select aria-label={t.periods.compareWith} value={compare.value} onChange={(event) => compare.onChange(event.target.value as CompareKey)}>
+          {COMPARE_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {t.periods.compareShort[key]}
+            </option>
+          ))}
+        </select>
+      )}
       {period === 'custom' && (
         <>
           <label className="inline-field">

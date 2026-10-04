@@ -80,6 +80,24 @@ describe('expenses', () => {
     expect((await add({ day: '2026-09-03', amount: 10, category: 'stock', place: 'shop' })).status).toBe(400);
   });
 
+  it('should export money in and out per day for the accountant', async () => {
+    const chair = await createTestProduct(context, adminToken, { name: 'Oak Chair', price: 100, costPrice: 60, stock: 5 });
+    await request(context.app).post('/api/sales').set(auth()).send({ productId: chair, quantity: 1, saleDate: '2026-09-02T10:00:00Z' });
+    await request(context.app).put('/api/carwash/2026-09-02').set(auth()).send({ carwash: 50, change: 10 });
+    await add({ day: '2026-09-03', amount: 30, category: 'water', place: 'carwash' });
+
+    const response = await request(context.app)
+      .get('/api/exports/money.csv')
+      .set(auth())
+      .query({ startDate: '2026-09-01T00:00:00+02:00', endDate: '2026-09-04T00:00:00+02:00', tz: 'Europe/Budapest' });
+    const lines = response.text.trim().split(/\r?\n/);
+
+    expect(response.headers['content-disposition']).toContain('4vd-money-2026-09-01-to-2026-09-03.csv');
+    expect(lines).toHaveLength(5);
+    expect(lines[2]).toContain('2026-09-02,100,50,10,0,160');
+    expect(lines[4]).toContain('Total,100,50,10,30,130');
+  });
+
   it('should roll monthly days over the year end', () => {
     expect(nextMonthDay('2026-12-15', 15)).toBe('2027-01-15');
     expect(nextMonthDay('2026-01-31', 28)).toBe('2026-02-28');

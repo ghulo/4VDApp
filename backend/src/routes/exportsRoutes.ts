@@ -10,6 +10,8 @@ export function createExportsRoutes({ exportService, guards }: Container): Route
   router.get('/sales.csv', controller.sales);
   router.get('/stock.csv', controller.stock);
   router.get('/team.csv', controller.team);
+  router.get('/money.csv', controller.money);
+  router.get('/expenses.csv', controller.expenses);
 
   return router;
 }

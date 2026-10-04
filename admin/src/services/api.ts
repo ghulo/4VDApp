@@ -353,7 +353,7 @@ export const expensesApi = {
 };
 
 export const exportsApi = {
-  async download(kind: 'sales' | 'stock' | 'team', range?: ReportRange): Promise<void> {
+  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', range?: ReportRange): Promise<void> {
     // The server names files and writes dates in the admin's own timezone.
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, { ...range, tz });

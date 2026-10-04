@@ -154,6 +154,18 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
             <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
             <CaretRight size={14} aria-hidden="true" />
           </Link>
+          {today.data && (
+            <Link to="/carwash" className="today__link">
+              {today.data.carwash.current.days > 0 ? (
+                <>
+                  <strong>{formatMoney(today.data.carwash.current.total)}</strong> {t.overview.carwashToday}
+                </>
+              ) : (
+                t.overview.carwashMissing
+              )}
+              <CaretRight size={14} aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </div>
       {lastDays.data && (

@@ -1,6 +1,7 @@
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import type { ServerMessages } from '../i18n/messages.js';
 import type { CashCountRepository, CashPlace } from '../repositories/CashCountRepository.js';
+import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { OVERSEER_ROLES } from '../utils/roles.js';
@@ -46,6 +47,7 @@ const isMatch = (difference: number) => Math.abs(difference) < CASH_TOLERANCE;
 export class CashCountService {
   constructor(
     private readonly cashCountRepository: CashCountRepository,
+    private readonly reportsRepository: ReportsRepository,
     private readonly settingsService: SettingsService,
     private readonly transactions: TransactionManager,
     private readonly timeZone: string,
@@ -59,7 +61,7 @@ export class CashCountService {
   private async between(from: string, to: string): Promise<CashCountDto[]> {
     const [rows, shop, carwash] = await Promise.all([
       this.cashCountRepository.findBetween(from, to),
-      this.cashCountRepository.shopRevenueByDay(from, to, this.timeZone),
+      this.reportsRepository.shopRevenueByDay(from, to, this.timeZone),
       this.cashCountRepository.carwashTakingsByDay(from, to),
     ]);
     return rows.map((row) => {

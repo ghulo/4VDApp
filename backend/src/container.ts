@@ -142,10 +142,12 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const undoRepository = new UndoRepository(db);
   const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
-  const carwashService = new CarwashService(new CarwashRepository(db), transactions, config.shopTimeZone);
-  const expenseService = new ExpenseService(new ExpenseRepository(db), transactions, config.shopTimeZone);
+  const carwashRepository = new CarwashRepository(db);
+  const carwashService = new CarwashService(carwashRepository, transactions, config.shopTimeZone);
+  const expenseRepository = new ExpenseRepository(db);
+  const expenseService = new ExpenseService(expenseRepository, transactions, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
-  const exportService = new ExportService(reportsRepository, reportsService);
+  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
   const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions);
@@ -158,7 +160,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
   );
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService);
-  const cashCountService = new CashCountService(new CashCountRepository(db), settingsService, transactions, config.shopTimeZone);
+  const cashCountService = new CashCountService(new CashCountRepository(db), reportsRepository, settingsService, transactions, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,

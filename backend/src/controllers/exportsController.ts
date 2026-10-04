@@ -21,6 +21,16 @@ export function createExportsController(exportService: ExportService) {
       sendCsv(res, await exportService.stock(tz));
     },
 
+    async money(req: Request, res: Response): Promise<void> {
+      const { tz } = parseInput(exportTimeZoneSchema, req.query);
+      sendCsv(res, await exportService.money(parseInput(reportRangeSchema, req.query), tz));
+    },
+
+    async expenses(req: Request, res: Response): Promise<void> {
+      const { tz } = parseInput(exportTimeZoneSchema, req.query);
+      sendCsv(res, await exportService.expenses(parseInput(reportRangeSchema, req.query), tz));
+    },
+
     async team(req: Request, res: Response): Promise<void> {
       const { tz } = parseInput(exportTimeZoneSchema, req.query);
       sendCsv(res, await exportService.team(parseInput(reportRangeSchema, req.query), tz));

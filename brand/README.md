@@ -5,16 +5,19 @@ family shop after them.
 
 ## The mark
 
-Four equal pillars under one roof (`logo-mark.svg`): the four brothers holding up
-the family home and shop. The pillars are the same size on purpose; nobody is
-bigger. The roof is near-black and the pillars cream, on orange.
+The shop at sunrise (`logo-mark.svg`): four equal pillars under one roof, the
+four brothers holding up the family home and shop, with a clay sun rising behind
+them, on an ivory tile. The pillars are the same size on purpose; nobody is
+bigger. It uses the same shapes as the sign-in drawing.
 
 - Use `logo-mark.svg` on its own for icons, favicons and small spaces.
 - Use `logo-full.svg` (mark + "4VD") where there is room for the name.
-- Keep the mark's colours. On an orange background, drop the rounded square
-  and use the roof and pillars alone.
+- Keep the mark's colours: ink `#141413`, clay `#D4704F`, ivory `#FAF9F5`.
 - Don't stretch it, outline it, add shadows, or tell the four-brothers story
   in the interface. It's there for people who ask.
+- The app icons are drawn from the SVG: run `node brand/make_icons.mjs` after
+  changing it (needs `npm install` in `backend/` for sharp). Android's themed
+  icon uses the ink shapes alone.
 
 ## Look and feel
 
@@ -48,5 +51,5 @@ so columns line up.
 
 ## Icons
 
-Line icons from Phosphor in the dashboard. `python brand/make_icons.py` redraws
-the PNG app icons in `mobile/` from the same geometry as the SVG.
+Line icons from Phosphor in the dashboard. `node brand/make_icons.mjs` redraws
+the PNG app icons in `mobile/` from `logo-mark.svg`.

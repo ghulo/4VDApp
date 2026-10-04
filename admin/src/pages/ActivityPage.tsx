@@ -28,6 +28,7 @@ const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }>
   { value: 'carwash', key: 'carwash' },
   { value: 'cash', key: 'cash' },
   { value: 'expense', key: 'expenses' },
+  { value: 'customer,tab', key: 'tabs' },
   { value: 'auth', key: 'logins' },
   { value: EVERYTHING, key: 'everything' },
 ];

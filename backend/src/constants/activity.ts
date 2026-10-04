@@ -33,11 +33,15 @@ export const ACTIVITY_ACTIONS = [
   'expense.added',
   'expense.removed',
   'expense.repeat_stopped',
+  'customer.created',
+  'customer.updated',
+  'customer.archived',
+  'tab.paid',
   'undo.applied',
   'undo.restored',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'activity'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'activity'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

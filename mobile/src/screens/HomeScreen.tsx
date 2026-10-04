@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
 import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
 import { Coins } from 'phosphor-react-native/src/icons/Coins';
+import { Notebook } from 'phosphor-react-native/src/icons/Notebook';
 import { Receipt } from 'phosphor-react-native/src/icons/Receipt';
 import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '../components/Avatar';
@@ -14,7 +15,7 @@ import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
-import { approvalsApi, cashApi, countsApi, inventoryApi, reportsApi } from '../services/api';
+import { approvalsApi, cashApi, countsApi, customersApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
@@ -73,13 +74,15 @@ export function HomeScreen() {
   });
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: countsApi.list, enabled: sells });
   const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today, enabled: sells });
+  const tabs = useQuery({ queryKey: ['customers'], queryFn: customersApi.list, enabled: sells });
+  const owing = tabs.data?.filter((customer) => customer.balance > 0) ?? [];
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
   async function refresh() {
     setIsRefreshing(true);
     await Promise.all(
-      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash']].map((queryKey) =>
+      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -192,6 +195,17 @@ export function HomeScreen() {
               title={t.home.closeDrawer}
               detail={cash.data?.find((entry) => entry.place === 'shop')?.countedAt ? t.home.drawerCounted : t.home.drawerToCount}
               onPress={() => navigation.navigate('CashCount')}
+            />
+            <JobRow
+              colors={colors}
+              icon={Notebook}
+              title={t.home.tabs}
+              detail={
+                owing.length > 0
+                  ? t.home.tabsOwed(formatMoney(owing.reduce((sum, customer) => sum + customer.balance, 0)), owing.length)
+                  : t.home.tabsNone
+              }
+              onPress={() => navigation.navigate('Tabs')}
               last
             />
           </View>

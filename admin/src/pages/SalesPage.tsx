@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
-import { productsApi, salesApi, usersApi } from '../services/api';
+import { customersApi, productsApi, salesApi, usersApi } from '../services/api';
 import type { PricingTier, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
@@ -45,17 +45,20 @@ function RecordSaleForm() {
   const [productId, setProductId] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [notes, setNotes] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const record = useMutation({
     mutationFn: salesApi.record,
     onSuccess: (sale) => {
-      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity']) {
+      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       setSavedMessage(t.sales.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }));
       setQuantity('1');
       setNotes('');
+      setCustomerId('');
     },
   });
 
@@ -70,7 +73,12 @@ function RecordSaleForm() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSavedMessage(null);
-    record.mutate({ productId: Number(productId), quantity: parsedQuantity, notes: notes.trim() || null });
+    record.mutate({
+      productId: Number(productId),
+      quantity: parsedQuantity,
+      notes: notes.trim() || null,
+      ...(customerId && { customerId: Number(customerId) }),
+    });
   }
 
   if (products.isPending) return <Loading />;
@@ -106,10 +114,26 @@ function RecordSaleForm() {
           />
         </label>
       </div>
-      <label className="field">
-        <span className="field__label">{t.sales.note}</span>
-        <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
-      </label>
+      <div className="field-row">
+        <label className="field">
+          <span className="field__label">{t.sales.note}</span>
+          <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
+        </label>
+        {customers.data && customers.data.length > 0 && (
+          <label className="field">
+            <span className="field__label">{t.tabs.putOnTab}</span>
+            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+              <option value="">{t.tabs.noTab}</option>
+              {customers.data.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+            {customerId && <span className="field__hint">{t.tabs.onTabHint}</span>}
+          </label>
+        )}
+      </div>
 
       {selected && unitPrice !== null && (
         <p className={exceedsStock ? 'form-error' : 'sale-preview'}>

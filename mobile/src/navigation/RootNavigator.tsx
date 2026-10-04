@@ -21,6 +21,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { MySalesScreen } from '../screens/MySalesScreen';
 import { ProductDetailScreen } from '../screens/ProductDetailScreen';
 import { RecordSaleScreen } from '../screens/RecordSaleScreen';
+import { TabScreen, TabsScreen } from '../screens/TabsScreen';
 import { ReturnScreen } from '../screens/ReturnScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
@@ -162,6 +163,8 @@ export function RootNavigator() {
               options={({ route }) => ({ title: t.nav.counting(route.params.title), headerBackTitle: t.nav.back })}
             />
             <Stack.Screen name="CashCount" component={CashCountScreen} options={{ title: t.nav.cashCount, presentation: 'modal' }} />
+            <Stack.Screen name="Tabs" component={TabsScreen} options={{ title: t.nav.customerTabs, headerBackTitle: t.nav.back }} />
+            <Stack.Screen name="Tab" component={TabScreen} options={({ route }) => ({ title: route.params.name, headerBackTitle: t.nav.back })} />
           </>
         )}
       </Stack.Navigator>

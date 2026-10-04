@@ -76,6 +76,8 @@ export interface ServerMessages {
     belowCostDetail: (p: { sales: number; days: number; shortfall: number }) => string;
     deadStockTitle: (p: { product: string; days: number }) => string;
     deadStockDetail: (p: { inStock: number; tiedUp: number | null }) => string;
+    tabOverdueTitle: (p: { name: string; amount: number }) => string;
+    tabOverdueDetail: (p: { days: number; minimum: number }) => string;
   };
 
   email: {
@@ -210,6 +212,8 @@ export const en: ServerMessages = {
     deadStockTitle: ({ product, days }) => `${product} hasn't sold in ${days}+ days`,
     deadStockDetail: ({ inStock, tiedUp }) =>
       `${inStock} in stock${tiedUp === null ? '' : `, ${money(tiedUp, 'en')} tied up at cost`}. A promotion could move it.`,
+    tabOverdueTitle: ({ name, amount }) => `${name} owes ${money(amount, 'en')} on their tab`,
+    tabOverdueDetail: ({ days }) => `The oldest unpaid part is ${days} days old. A friendly reminder might help.`,
   },
 
   email: {
@@ -350,6 +354,8 @@ export const sq: ServerMessages = {
     deadStockTitle: ({ product, days }) => `${product} nuk është shitur prej më shumë se ${days} ditësh`,
     deadStockDetail: ({ inStock, tiedUp }) =>
       `${inStock} në stok${tiedUp === null ? '' : `, ${money(tiedUp, 'sq')} të bllokuara me koston`}. Një ofertë mund ta lëvizë.`,
+    tabOverdueTitle: ({ name, amount }) => `${name} ka borxh ${money(amount, 'sq')}`,
+    tabOverdueDetail: ({ days }) => `Pjesa më e vjetër e papaguar është ${days} ditë e vjetër. Një kujtesë miqësore mund të ndihmojë.`,
   },
 
   email: {

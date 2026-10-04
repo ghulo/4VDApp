@@ -29,6 +29,8 @@ export interface RecordSaleInput {
   notes: string | null;
   /** For entering a sale after the fact. Defaults to now. */
   saleDate?: Date;
+  /** Puts the sale on this customer's tab instead of taking the money now. */
+  customerId?: number;
 }
 
 export interface SaleQuery extends PageRequest {
@@ -79,6 +81,11 @@ export class SalesService {
         bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
       );
 
+      const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
+      if (input.customerId !== undefined && (!customer || customer.archived_at)) {
+        throw new NotFoundError(`Customer ${input.customerId} does not exist or their tab is closed`);
+      }
+
       const id = await repos.sales.create({
         productId: product.id,
         quantity: input.quantity,
@@ -98,13 +105,25 @@ export class SalesService {
         adjustedBy: soldBy,
         reorderLevel: product.reorder_level ?? 0,
       });
+      const total = roundMoney(pricePerUnit * input.quantity);
+      if (customer) {
+        await repos.tabs.addEntry({
+          customerId: customer.id,
+          kind: 'charge',
+          amount: total,
+          note: `${input.quantity} × ${product.name}`,
+          saleId: id,
+          createdBy: soldBy,
+          occurredAt: input.saleDate,
+        });
+      }
       await repos.activityLog.create({
         userId: soldBy,
         action: 'sale.recorded',
         entityType: 'sale',
         entityId: id,
-        summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(roundMoney(pricePerUnit * input.quantity))}`,
-        details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId },
+        summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${customer ? ` on ${customer.name}'s tab` : ''}`,
+        details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, customerId: customer?.id ?? null },
       });
       return id;
     });

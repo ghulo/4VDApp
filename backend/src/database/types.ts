@@ -323,6 +323,27 @@ export interface ExpensesTable {
   created_at: CreatedAt;
 }
 
+export interface CustomersTable {
+  id: Generated<number>;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  archived_at: Date | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface TabEntriesTable {
+  id: Generated<number>;
+  customer_id: number;
+  kind: 'charge' | 'payment';
+  amount: Decimal;
+  note: string | null;
+  sale_id: number | null;
+  occurred_at: ColumnType<Date, Date | undefined, Date>;
+  created_by: number | null;
+}
+
 export interface SettingsTable {
   key: string;
   value: ColumnType<unknown, string, string>;
@@ -441,6 +462,8 @@ export interface Database {
   cash_counts: CashCountsTable;
   recurring_expenses: RecurringExpensesTable;
   expenses: ExpensesTable;
+  customers: CustomersTable;
+  tab_entries: TabEntriesTable;
   sales_ledger: SalesLedgerView;
 }
 

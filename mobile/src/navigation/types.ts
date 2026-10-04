@@ -20,4 +20,6 @@ export type RootStackParamList = {
   Counts: undefined;
   Count: { countId: number; title: string };
   CashCount: undefined;
+  Tabs: undefined;
+  Tab: { customerId: number; name: string };
 };

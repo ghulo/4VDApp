@@ -292,11 +292,37 @@ export interface ReorderSuggestion {
 export type InsightSeverity = 'urgent' | 'warning' | 'info';
 
 export interface Insight {
-  kind: 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock';
+  kind: 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue';
   severity: InsightSeverity;
   title: string;
   detail: string;
-  productId: number;
+  /** Null for insights about a customer's tab. */
+  productId: number | null;
+  customerId?: number;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  balance: number;
+  /** When the oldest unpaid charge was made; null when nothing is owed. */
+  owingSince: string | null;
+  lastPaymentAt: string | null;
+  archived: boolean;
+}
+
+export interface TabEntry {
+  id: number;
+  kind: 'charge' | 'payment';
+  amount: number;
+  note: string | null;
+  saleId: number | null;
+  /** The sale was undone, so this charge no longer counts. */
+  undone: boolean;
+  at: string;
+  by: string | null;
 }
 
 export interface ActivityEntry {

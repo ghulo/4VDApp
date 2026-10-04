@@ -24,6 +24,8 @@ const EMPTIED = [
   'cash_counts',
   'expenses',
   'recurring_expenses',
+  'tab_entries',
+  'customers',
   'inventory',
   'products',
   'categories',

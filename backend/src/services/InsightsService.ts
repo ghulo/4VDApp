@@ -3,6 +3,7 @@ import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
 import type { ReportsService } from './ReportsService.js';
+import { OVERDUE_DAYS, type TabService } from './TabService.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** A product selling out within this many days is worth a warning. */
@@ -15,7 +16,7 @@ const RECENT_SALES_DAYS = 7;
 const MISSING_STOCK_DAYS = 30;
 const UNUSUAL_SALE = { minQuantity: 5, factor: 4, minHistory: 5, baselineDays: 90 };
 
-export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock';
+export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue';
 export type InsightSeverity = 'urgent' | 'warning' | 'info';
 
 export interface Insight {
@@ -23,7 +24,10 @@ export interface Insight {
   severity: InsightSeverity;
   title: string;
   detail: string;
-  productId: number;
+  /** The product it's about; null for insights about a customer's tab. */
+  productId: number | null;
+  /** Set for tab insights. */
+  customerId?: number;
 }
 
 const SEVERITY_ORDER: Record<InsightSeverity, number> = { urgent: 0, warning: 1, info: 2 };
@@ -34,12 +38,13 @@ export class InsightsService {
     private readonly insightsRepository: InsightsRepository,
     private readonly reportsRepository: ReportsRepository,
     private readonly reportsService: ReportsService,
+    private readonly tabService: TabService,
   ) {}
 
   /** Written in the reader's language (`t`), English by default. */
   async list(now = new Date(), t: ServerMessages = en): Promise<Insight[]> {
     const daysAgo = (days: number) => new Date(now.getTime() - days * MS_PER_DAY);
-    const [forecasts, products, belowCost, unusual, missing] = await Promise.all([
+    const [forecasts, products, belowCost, unusual, missing, overdueTabs] = await Promise.all([
       this.reportsService.reorderSuggestions(now),
       this.reportsRepository.activeProducts(),
       this.insightsRepository.salesBelowCost(daysAgo(RECENT_SALES_DAYS)),
@@ -51,6 +56,7 @@ export class InsightsService {
         minHistory: UNUSUAL_SALE.minHistory,
       }),
       this.insightsRepository.missingStock(daysAgo(MISSING_STOCK_DAYS)),
+      this.tabService.overdue(now),
     ]);
     const insights: Insight[] = [];
 
@@ -128,6 +134,17 @@ export class InsightsService {
           productId: row.product_id,
         });
       }
+    }
+
+    for (const customer of overdueTabs) {
+      insights.push({
+        kind: 'tab_overdue',
+        severity: 'warning',
+        title: t.insight.tabOverdueTitle({ name: customer.name, amount: customer.balance }),
+        detail: t.insight.tabOverdueDetail({ days: Math.floor((now.getTime() - Date.parse(customer.owingSince!)) / MS_PER_DAY), minimum: OVERDUE_DAYS }),
+        productId: null,
+        customerId: customer.id,
+      });
     }
 
     return insights.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);

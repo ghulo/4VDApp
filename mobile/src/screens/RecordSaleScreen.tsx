@@ -5,9 +5,10 @@ import { MagnifyingGlass } from 'phosphor-react-native/src/icons/MagnifyingGlass
 import { Minus } from 'phosphor-react-native/src/icons/Minus';
 import { Plus } from 'phosphor-react-native/src/icons/Plus';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { TabPicker } from '../components/TabPicker';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
 import { favoritesApi, productsApi, salesApi } from '../services/api';
-import type { Product } from '../services/types';
+import type { Customer, Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
@@ -116,17 +117,22 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+  const [tab, setTab] = useState<Customer | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const record = useMutation({
-    mutationFn: () => salesApi.record({ productId: product.id, quantity, notes: notes.trim() || null }),
+    mutationFn: () => salesApi.record({ productId: product.id, quantity, notes: notes.trim() || null, ...(tab && { customerId: tab.id }) }),
     onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['reports', 'my-sales'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      setSavedMessage(t.sell.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }));
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setSavedMessage(
+        t.sell.sold({ quantity: sale.quantity, product: sale.productName, amount: formatMoney(sale.totalAmount) }) + (tab ? t.tabs.soldOnTab(tab.name) : ''),
+      );
       setQuantity(1);
       setNotes('');
+      setTab(null);
     },
   });
 
@@ -170,6 +176,7 @@ function SaleForm({ product, onChangeProduct }: { product: Product; onChangeProd
         </View>
 
         <TextField label={t.sell.note} value={notes} onChangeText={setNotes} maxLength={1000} />
+        <TabPicker value={tab} onChange={setTab} />
 
         {record.isError && (
           <Text style={[styles.message, { color: colors.signalOut }]} accessibilityRole="alert">

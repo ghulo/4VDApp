@@ -95,6 +95,28 @@ export interface AppSettings {
   returnWindowDays: number;
 }
 
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  balance: number;
+  owingSince: string | null;
+  lastPaymentAt: string | null;
+  archived: boolean;
+}
+
+export interface TabEntry {
+  id: number;
+  kind: 'charge' | 'payment';
+  amount: number;
+  note: string | null;
+  saleId: number | null;
+  undone: boolean;
+  at: string;
+  by: string | null;
+}
+
 export type CashPlace = 'shop' | 'carwash';
 
 /** Whether a drawer was counted today; never what the app expects (staff count blind). */

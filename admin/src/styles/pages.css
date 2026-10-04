@@ -169,7 +169,7 @@
   width: min(300px, 100%);
 }
 
-.today .dot-matrix__unlit {
+.today .day-bars__empty {
   fill: var(--surface);
 }
 
@@ -230,7 +230,7 @@
   gap: var(--space-2);
 }
 
-/* The last 30 days as a dot-matrix strip, in ink: the brand's dots, carrying data. */
+/* The last 30 days as slim bars, the latest in ink. */
 .today__dots {
   display: grid;
   gap: var(--space-2);
@@ -763,13 +763,12 @@
   fill: var(--chart-series);
 }
 
-.chart__bar--active,
-.chart__dot--active {
-  fill: var(--ink);
+.chart__bar {
+  transition: fill var(--fast) var(--ease);
 }
 
-.chart__dot {
-  fill: var(--chart-series);
+.chart__bar--active {
+  fill: var(--ink);
 }
 
 .chart__plot:focus-visible {

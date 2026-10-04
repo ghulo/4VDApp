@@ -1,4 +1,4 @@
-import { Plus } from '@phosphor-icons/react';
+import { Package, Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -133,7 +133,7 @@ export function ProductsPage() {
           }
           empty={
             isFiltered ? (
-              <EmptyState pictogram="crate" title={t.products.noMatch}>{t.products.noMatchHint}</EmptyState>
+              <EmptyState icon={Package} title={t.products.noMatch}>{t.products.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art

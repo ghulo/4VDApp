@@ -1,3 +1,4 @@
+import { Package } from 'phosphor-react-native/src/icons/Package';
 import { useRoute } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -40,7 +41,7 @@ export function RecordSaleScreen() {
 
   if (products.isPending) return <Loading />;
   if (products.isError) return <ErrorState error={products.error} onRetry={() => products.refetch()} />;
-  if (products.data.items.length === 0) return <EmptyState art="crate" title={t.sell.nothingInStock} />;
+  if (products.data.items.length === 0) return <EmptyState icon={Package} title={t.sell.nothingInStock} />;
 
   const preset = products.data.items.find((product) => product.id === presetProductId);
   return <Basket key={presetProductId ?? 'tab'} products={products.data.items} initial={preset ? [{ product: preset, quantity: 1 }] : []} />;

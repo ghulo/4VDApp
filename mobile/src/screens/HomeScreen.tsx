@@ -1,3 +1,7 @@
+import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
+import { Coins } from 'phosphor-react-native/src/icons/Coins';
+import { Drop } from 'phosphor-react-native/src/icons/Drop';
+import { Notebook } from 'phosphor-react-native/src/icons/Notebook';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -6,8 +10,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, Vie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '../components/Avatar';
 import { LogoMark } from '../components/LogoMark';
-import type { PixelArtName } from '../components/pixelDrawings';
-import { BlockMeter, DoubleRule, Kicker, PixelArt, PrintSection, ShopSunrise } from '../components/print';
+import { BlockMeter, DoubleRule, IconChip, Kicker, PrintSection, ShopSunrise } from '../components/print';
 import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
@@ -192,21 +195,21 @@ export function HomeScreen() {
           <View style={styles.jobs}>
             <JobTile
               colors={colors}
-              art="clipboard"
+              icon={ClipboardText}
               title={t.home.stockCount}
               detail={openCounts > 0 ? t.home.countsOpen(openCounts) : t.home.startCount}
               onPress={() => navigation.navigate('Counts')}
             />
             <JobTile
               colors={colors}
-              art="coins"
+              icon={Coins}
               title={t.home.closeDrawer}
               detail={cash.data?.find((entry) => entry.place === 'shop')?.countedAt ? t.home.drawerCounted : t.home.drawerToCount}
               onPress={() => navigation.navigate('CashCount')}
             />
             <JobTile
               colors={colors}
-              art="notebook"
+              icon={Notebook}
               title={t.home.tabs}
               detail={
                 owing.length > 0
@@ -217,7 +220,7 @@ export function HomeScreen() {
             />
             <JobTile
               colors={colors}
-              art="drop"
+              icon={Drop}
               title={t.home.carwash}
               detail={carwash.data?.takings ? t.home.carwashDone : t.home.carwashToDo}
               onPress={() => navigation.navigate('Carwash')}
@@ -336,14 +339,14 @@ function saleTime(iso: string, now: Date): string {
 
 interface JobTileProps {
   colors: ThemeColors;
-  art: PixelArtName;
+  icon: Parameters<typeof IconChip>[0]['icon'];
   title: string;
   detail: string;
   onPress: () => void;
 }
 
-/** A job the bottom tabs don't cover, as a printed tile with its pictogram. */
-function JobTile({ colors, art, title, detail, onPress }: JobTileProps) {
+/** A job the bottom tabs don't cover, as an oat tile with its icon. */
+function JobTile({ colors, icon, title, detail, onPress }: JobTileProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -355,7 +358,7 @@ function JobTile({ colors, art, title, detail, onPress }: JobTileProps) {
         pressed && styles.pressed,
       ]}
     >
-      <PixelArt name={art} size={32} />
+      <IconChip icon={icon} background={colors.surface} />
       <Text style={[styles.tileTitle, { color: colors.ink }]}>{title}</Text>
       <Text style={[styles.tileDetail, { color: colors.steel }]} numberOfLines={2}>
         {detail}

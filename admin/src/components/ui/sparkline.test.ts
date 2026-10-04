@@ -1,30 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { changeDirection, sparkBlocks } from './sparkline';
+import { changeDirection, sparklinePaths } from './sparkline';
 
-describe('sparkBlocks', () => {
+describe('sparklinePaths', () => {
   it('should have nothing to draw for no data or all zeros', () => {
-    expect(sparkBlocks([])).toBeNull();
-    expect(sparkBlocks([0, 0, 0])).toBeNull();
+    expect(sparklinePaths([])).toBeNull();
+    expect(sparklinePaths([0, 0, 0])).toBeNull();
   });
 
-  it('should light blocks in proportion to the biggest day', () => {
-    expect(sparkBlocks([0, 10, 5], 10, 3)).toEqual([0, 10, 5]);
+  it('should curve through the midpoints across the full width and close the area at the bottom', () => {
+    const paths = sparklinePaths([0, 10, 5], 100, 50)!;
+    expect(paths.line).toBe('M0,50 L25,26.5 Q50,3 75,14.8 L100,26.5');
+    expect(paths.area).toBe('M0,50 L25,26.5 Q50,3 75,14.8 L100,26.5 L100,50 L0,50 Z');
   });
 
-  it('should light at least one block for a small but real day', () => {
-    expect(sparkBlocks([1, 1000], 10, 2)).toEqual([1, 10]);
+  it('should draw a single point as a flat line', () => {
+    expect(sparklinePaths([7], 100, 50)!.line).toBe('M0,3 L50,3 L100,3');
   });
 
-  it('should average long series into fewer columns', () => {
-    expect(sparkBlocks([2, 4, 6, 8], 4, 2)).toEqual([2, 4]);
-  });
-
-  it('should repeat short series across the columns', () => {
-    expect(sparkBlocks([5, 10], 10, 4)).toEqual([5, 5, 10, 10]);
-  });
-
-  it('should keep negative days (refunds) at the bottom', () => {
-    expect(sparkBlocks([-10, 10], 10, 2)).toEqual([1, 10]);
+  it('should keep negative days (refunds) below the zero line', () => {
+    expect(sparklinePaths([-10, 10], 100, 50)!.line).toBe('M0,50 L50,26.5 L100,3');
   });
 });
 

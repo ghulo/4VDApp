@@ -1,28 +1,27 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors } from '../theme';
+import type { Receipt } from 'phosphor-react-native/src/icons/Receipt';
 import { shopSunrise } from './dither';
-import { PIXEL_GRID, pixelCells, type PixelArtName } from './pixelDrawings';
 
 /**
- * The team app's printed look (DESIGN.md, "Printed paper"): blocky pictograms,
- * the dithered shop, a meter made of blocks, kickers and newspaper rules. All drawing is
+ * The team app's printed touches (DESIGN.md, "Printed paper"): the dithered
+ * shop, an icon chip, a meter made of blocks, kickers and rules. All drawing is
  * decoration, hidden from screen readers; the words beside it say the same.
  */
 
 const hidden = { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const };
 
-/** A job's pictogram drawn in square blocks. */
-export function PixelArt({ name, size = 36, color }: { name: PixelArtName; size?: number; color?: string }) {
+type IconComponent = typeof Receipt;
+
+/** A job's line icon in a soft rounded chip. Decoration: the words beside it say the job. */
+export function IconChip({ icon: Icon, background }: { icon: IconComponent; background?: string }) {
   const colors = useThemeColors();
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${PIXEL_GRID} ${PIXEL_GRID}`} style={styles.inert} {...hidden}>
-      {pixelCells(name).map(({ x, y }) => (
-        // A hair of overlap so the blocks print as one solid shape.
-        <Rect key={`${x}-${y}`} x={x} y={y} width={1.04} height={1.04} fill={color ?? colors.ink} />
-      ))}
-    </Svg>
+    <View style={[styles.chip, { backgroundColor: background ?? colors.fill }]} {...hidden}>
+      <Icon size={22} color={colors.ink} />
+    </View>
   );
 }
 
@@ -88,7 +87,7 @@ export function DoubleRule() {
 export function PrintSection({ title, aside, children }: { title: string; aside?: string; children: ReactNode }) {
   const colors = useThemeColors();
   return (
-    <View style={[styles.section, { borderTopColor: colors.ink }]}>
+    <View style={[styles.section, { borderTopColor: colors.lineStrong }]}>
       <View style={styles.sectionHead}>
         <Text style={[styles.sectionTitle, { color: colors.ink }]} accessibilityRole="header">
           {title}
@@ -104,10 +103,11 @@ const styles = StyleSheet.create({
   inert: { pointerEvents: 'none' },
   meter: { flexDirection: 'row', gap: 3 },
   block: { flex: 1, height: 10 },
+  chip: { width: 44, height: 44, borderRadius: radius.small + 4, alignItems: 'center', justifyContent: 'center' },
   kicker: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.8 },
   ruleHeavy: { height: 3 },
   ruleThin: { height: 1, marginTop: 2 },
-  section: { borderTopWidth: 2, paddingTop: spacing.sm },
+  section: { borderTopWidth: 1, paddingTop: spacing.md },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm, marginBottom: spacing.xs },
   sectionTitle: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 28 },
   sectionAside: { fontFamily: fonts.body, fontSize: 14, fontVariant: ['tabular-nums'] },

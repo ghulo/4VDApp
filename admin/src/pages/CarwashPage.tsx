@@ -1,3 +1,4 @@
+import { Drop } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -185,7 +186,7 @@ function DaysTable({ days, onEdit }: { days: CarwashDay[]; onEdit: (day: Carwash
         caption={t.carwash.caption}
         rows={days}
         rowKey={(row) => row.day}
-        empty={<EmptyState pictogram="drop" title={t.carwash.none}>{t.carwash.noneHint}</EmptyState>}
+        empty={<EmptyState icon={Drop} title={t.carwash.none}>{t.carwash.noneHint}</EmptyState>}
         columns={[
           { header: t.carwash.day, cell: (row) => formatDay(row.day), title: true },
           { header: t.carwash.carwash, cell: (row) => formatMoney(row.carwash), align: 'end' },

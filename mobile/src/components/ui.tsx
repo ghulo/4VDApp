@@ -11,8 +11,7 @@ import {
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage } from '../utils/format';
 import { useT } from '../i18n/useT';
-import type { PixelArtName } from './pixelDrawings';
-import { PixelArt } from './print';
+import { IconChip } from './print';
 
 interface ButtonProps {
   label: string;
@@ -93,12 +92,12 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   );
 }
 
-/** An empty screen: what would be here, with the job's pictogram when it has one. */
-export function EmptyState({ title, art, children }: { title: string; art?: PixelArtName; children?: ReactNode }) {
+/** An empty screen: what would be here, with the job's icon when it has one. */
+export function EmptyState({ title, icon, children }: { title: string; icon?: Parameters<typeof IconChip>[0]['icon']; children?: ReactNode }) {
   const colors = useThemeColors();
   return (
     <View style={styles.centered}>
-      {art && <PixelArt name={art} size={48} color={colors.inkMuted} />}
+      {icon && <IconChip icon={icon} />}
       <Text style={[styles.emptyTitle, { color: colors.ink }]}>{title}</Text>
       {typeof children === 'string' ? (
         <Text style={[styles.stateText, { color: colors.steel }]}>{children}</Text>

@@ -1,3 +1,5 @@
+import { Package } from 'phosphor-react-native/src/icons/Package';
+import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -32,10 +34,10 @@ export function CountScreen({ route, navigation }: Props) {
 
   if (count.isPending) return <Loading />;
   if (count.isError) return <ErrorState error={count.error} onRetry={() => count.refetch()} />;
-  if (count.data.lines.length === 0) return <EmptyState art="crate" title={t.counts.noProducts} />;
+  if (count.data.lines.length === 0) return <EmptyState icon={Package} title={t.counts.noProducts} />;
   if (count.data.status !== 'open') {
     return (
-      <EmptyState art="clipboard" title={t.counts.finished}>
+      <EmptyState icon={ClipboardText} title={t.counts.finished}>
         {count.data.status === 'submitted' ? t.counts.waitingForOwner : t.counts.startNew}
       </EmptyState>
     );

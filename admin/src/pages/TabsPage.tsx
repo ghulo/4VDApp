@@ -1,3 +1,4 @@
+import { Notebook } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -58,7 +59,7 @@ function AllTabs() {
             caption={t.tabs.caption}
             rows={customers.data}
             rowKey={(row) => row.id}
-            empty={<EmptyState pictogram="notebook" title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>}
+            empty={<EmptyState icon={Notebook} title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>}
             columns={[
               {
                 header: t.tabs.name,

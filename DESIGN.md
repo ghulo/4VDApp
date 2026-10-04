@@ -253,12 +253,14 @@ and counts are never clay.
 bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would
 read as a button.
 
-**The Dots Rule.** Dots are 4VD's identity, used at low volume rather than removed:
-the 8px halftone field in the margins either side of the page column (desktop; the
-column itself is plain canvas, max 1120px), data drawn in dots (the sales chart as
-block columns, metric graphs as columns of printed blocks, the Today card's
-30-day strip of square blocks with faint unlit blocks), and the dithered shop at
-sunrise. Never in tables, forms or behind text.
+**The Modern Frame Rule.** Structure, data and interaction are modern: clean
+cards, crisp charts (solid bars with softly rounded tops, smooth line graphs over a
+flat fill, slim day bars), line icons in soft chips, single hairlines. The vintage
+is the finish only: ivory paper and grain, the serif, monospace spec labels, ink
+stamps, block meters for stock and targets, and the dithered shop as a recurring
+mascot (sign-in, the team app's Home, the dashboard's Today card, big empty pages).
+The faint 8px dot field in the desktop margins stays. Never dither data, icons or
+anything in tables and forms.
 
 **The Contrast Rule.** Every text and colour pair is checked by
 `admin/src/theme/contrast.test.ts` (WCAG AA): clay reaches 3:1 on paper as a UI
@@ -425,16 +427,17 @@ the day ("No sales yet today."), a muted comparison line under it ("Last Saturda
 had €140.00 by this time."), and two quiet ink links with tabular counts
 ("0 waiting for you", "3 to restock"). Something waiting gets a small Warn dot; the
 words still carry the meaning. Links grow to 44px on phones. On the right (below on
-phones) a dot-matrix strip of the last 30 days in Ink, unlit dots in Strong
-Hairline, captioned "Last 30 days" (`DotMatrix` in the kit).
+phones) the shop at sunrise over slim bars for the last 30 days (Muted Ink, the
+latest in Ink, a faint tick for days with nothing), captioned "Last 30 days"
+(`ShopSunrise` and `DayBars` in the kit). The card is oat.
 
 ### Metric card (signature, Reports)
-A hairline card with a muted label, an overflow button, a tabular figure, a change
-said in words in the status colour ("Much more"), and a block graph: columns of 10
-printed blocks laid out by CSS grid (never a stretched SVG), 36 columns (72 on a
-large card), lit blocks in Muted Ink, the latest column in Ink, the rest in Hairline.
-Short series repeat across columns, long ones are averaged. No data shows the empty
-block grid and a small pill.
+A frameless paper card with a monospace label, an overflow button, a tabular
+figure, a change said in words in the status colour ("Much more"), and an
+edge-to-edge mini graph along the bottom: a smooth 1.75px Ink line (curving through
+the midpoints between days, so it never overshoots) over a flat Muted Ink fill at
+12%. Only flat fills and non-scaling strokes go in the stretched SVG. No data shows
+a dashed baseline and a small pill.
 
 ### Sales chart
 Each day a column of dots (6px apart, as many columns as fit the day's width) in
@@ -448,27 +451,21 @@ sunrise (see Printed paper): on sign-in (over the 8px dot field, with floating "
 moment" cards), as big empty-state art (240px) and on the Today cards.
 
 ### Printed paper (both apps)
-The vintage, editorial-print finish, after anthropic.com's textured stock:
+The vintage finish, after anthropic.com's textured stock, used sparingly:
 - **Paper grain:** a faint fractal-noise layer over the whole dashboard
   (`body::after`, `--grain-*` tokens; 7% multiply on light, 5% screen on dark),
   never taking clicks, off under `prefers-contrast: more` and in print.
-- **Double rule:** a 3px double strong hairline under every page title on the
-  dashboard; a heavy ink line over a hairline under the team app's masthead.
-- **Pixel pictograms** (`pixelDrawings.ts`, identical in both apps and guarded by
-  a test): each job drawn in square blocks on a 12 × 12 grid (receipt, clipboard,
-  coins, notebook, drop, crate), in ink. Used on the team app's job tiles and on
-  empty states for that job (Muted Ink, 40–48px). Decoration only, always beside words.
-- **Dithered drawings** (`mobile/src/components/dither.ts`): scenes printed as
-  square blocks with 4 × 4 ordered (Bayer) dithering, the grainy look of
-  anthropic.com's illustrations. "Shop at sunrise" (the four-pillar shop in Ink
-  against a Clay sun, the ground running the width) heads the team app's Today
-  panel and sign-in, and sits above the 30-day chart on the dashboard's Today card
-  (`ShopSunrise`; the dashboard's `dither.ts` is a copy kept equal by a test).
-  Decoration only, hidden from screen readers.
-- **Block meter:** progress as a row of 20 printed blocks (Ink, OK once reached),
-  with the sentence beside it carrying the meaning.
-- **Ruled sections:** on the team app's Home, lists sit under a 2px ink rule and a
-  serif heading instead of in boxed cards.
+- **Rules:** a single hairline under dashboard page titles and over team-app Home
+  sections; one newspaper double rule, under the team app's masthead only.
+- **Icon chips:** jobs (counts, cash, tabs, carwash, stock, sales) use the regular
+  line icons in a 44px soft chip: Paper on oat tiles, Oat in empty states.
+- **The shop at sunrise** (`dither.ts` in both apps, kept equal by a test): the
+  four-pillar shop in Ink against a Clay sun with the ground running the width,
+  printed as square blocks with 4 × 4 ordered (Bayer) dithering. 4VD's mascot: it
+  turns up on sign-in, the team app's Today panel, the dashboard's Today card and
+  big empty pages, and nowhere else. Hidden from screen readers.
+- **Block meters:** progress as a row of printed blocks, only for the monthly
+  target (20 blocks) and stock tags (10, a wider gap at the reorder point).
 
 ## Do's and Don'ts
 

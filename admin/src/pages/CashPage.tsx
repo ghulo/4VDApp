@@ -1,3 +1,4 @@
+import { Coins } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -53,7 +54,7 @@ export function CashPage() {
             caption={t.cash.caption}
             rows={counts.data}
             rowKey={(row) => row.id}
-            empty={<EmptyState pictogram="coins" title={t.cash.none}>{t.cash.noneHint}</EmptyState>}
+            empty={<EmptyState icon={Coins} title={t.cash.none}>{t.cash.noneHint}</EmptyState>}
             columns={[
               { header: t.cash.day, cell: (row) => formatDay(row.day), title: true },
               { header: t.cash.drawer, cell: (row) => t.cash.places[row.place] },

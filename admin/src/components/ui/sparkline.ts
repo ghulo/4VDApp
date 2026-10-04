@@ -1,30 +1,33 @@
-/** Rows of blocks in a metric card's mini graph. */
-export const SPARK_ROWS = 10;
-/** Columns in a metric card's mini graph (twice as many on a large card), so blocks stay near square. */
-export const SPARK_COLUMNS = 36;
+/** Size of the mini graph's drawing area. The SVG is stretched to the card, so
+ * only flat fills and non-scaling strokes are drawn in it, nothing round. */
+export const SPARK_WIDTH = 300;
+export const SPARK_HEIGHT = 56;
+/** Keeps the line's stroke from being clipped at the top. */
+const PAD = 3;
+
+const round = (n: number) => Math.round(n * 10) / 10;
 
 /**
- * A metric card's mini graph as printed blocks: for each of `columns` columns
- * (oldest first), how many of the `rows` blocks are lit. Long series are
- * averaged down and short ones repeated across columns, so the graph always
- * fills the card; any non-zero value lights at least one block. Null when there's nothing to draw (no points, or every point is
- * zero), so the card can say "No data".
+ * SVG paths for a mini graph of `values`, oldest first: a smooth line, and
+ * the area under it down to the bottom edge. The curve bends through the
+ * midpoints between days, so it never overshoots a real value. Null when there's nothing to draw
+ * (no points, or every point is zero), so the card can say "No data".
  */
-export function sparkBlocks(values: number[], rows = SPARK_ROWS, columns = SPARK_COLUMNS): number[] | null {
+export function sparklinePaths(values: number[], width = SPARK_WIDTH, height = SPARK_HEIGHT): { line: string; area: string } | null {
   if (values.length === 0 || values.every((value) => value === 0)) return null;
-  const averaged = Array.from({ length: columns }, (_, column) => {
-    const start = Math.floor((column * values.length) / columns);
-    const end = Math.max(start + 1, Math.floor(((column + 1) * values.length) / columns));
-    const bucket = values.slice(start, end);
-    return bucket.reduce((sum, value) => sum + value, 0) / bucket.length;
-  });
-  // Refunds can make a day negative: blocks count up from the lowest day, or from zero.
-  const min = Math.min(0, ...averaged);
-  const span = Math.max(...averaged) - min || 1;
-  return averaged.map((value) => {
-    const lit = Math.round(((value - min) / span) * rows);
-    return value !== 0 && lit === 0 ? 1 : lit;
-  });
+  // One point is drawn as a flat line across the card.
+  const series = values.length === 1 ? [values[0]!, values[0]!] : values;
+  const max = Math.max(...series);
+  const min = Math.min(0, ...series);
+  const span = max - min || 1;
+  const step = width / (series.length - 1);
+  const points = series.map((value, index) => [round(index * step), round(PAD + (height - PAD) * (1 - (value - min) / span))] as const);
+  const mid = (a: readonly [number, number], b: readonly [number, number]) => `${round((a[0] + b[0]) / 2)},${round((a[1] + b[1]) / 2)}`;
+  const curves = points.slice(1, -1).map((point, index) => `Q${point[0]},${point[1]} ${mid(point, points[index + 2]!)}`);
+  const [first, second, last] = [points[0]!, points[1]!, points.at(-1)!];
+  const line = [`M${first[0]},${first[1]}`, `L${mid(first, second)}`, ...curves, `L${last[0]},${last[1]}`].join(' ');
+  const area = `${line} L${points.at(-1)![0]},${height} L${points[0]![0]},${height} Z`;
+  return { line, area };
 }
 
 /** Which way a change points; null when there's nothing to compare with. */

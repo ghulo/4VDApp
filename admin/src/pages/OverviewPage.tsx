@@ -8,7 +8,7 @@ import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
-import { Card, DotMatrix, PageHeader, ShopSunrise } from '../components/ui';
+import { Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -172,7 +172,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
         <ShopSunrise />
         {lastDays.data && (
           <figure className="today__dots">
-            <DotMatrix values={lastDays.data.points.map((point) => point.revenue)} label={t.overview.salesLast30Days} />
+            <DayBars values={lastDays.data.points.map((point) => point.revenue)} label={t.overview.salesLast30Days} />
             <figcaption>{t.overview.last30Days}</figcaption>
           </figure>
         )}

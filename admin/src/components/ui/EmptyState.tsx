@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
-import { PixelArt } from './PixelArt';
+import type { Icon } from '@phosphor-icons/react';
 import { ShopSunrise } from './ShopSunrise';
-import type { PixelArtName } from './pixelDrawings';
 
 interface EmptyStateProps {
   title: string;
@@ -10,12 +9,12 @@ interface EmptyStateProps {
   action?: ReactNode;
   /** Draws the dithered shop above the words, for big empty pages. */
   art?: boolean;
-  /** The job's blocky pictogram above the words, for lists of that job. */
-  pictogram?: PixelArtName;
+  /** The job's icon above the words, in a soft chip, for lists of that job. */
+  icon?: Icon;
 }
 
 /** An empty list says what would be here and how to get it there. */
-export function EmptyState({ title, children, action, art, pictogram }: EmptyStateProps) {
+export function EmptyState({ title, children, action, art, icon: JobIcon }: EmptyStateProps) {
   return (
     <div className={art ? 'empty-state empty-state--art' : 'empty-state'}>
       {art && (
@@ -23,7 +22,11 @@ export function EmptyState({ title, children, action, art, pictogram }: EmptySta
           <ShopSunrise />
         </div>
       )}
-      {pictogram && !art && <PixelArt name={pictogram} className="empty-state__pictogram" />}
+      {JobIcon && !art && (
+        <span className="empty-state__icon" aria-hidden="true">
+          <JobIcon size={22} />
+        </span>
+      )}
       <p className="empty-state__title">{title}</p>
       {children && <div className="empty-state__body">{children}</div>}
       {action && <div className="empty-state__action">{action}</div>}

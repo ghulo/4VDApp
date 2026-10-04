@@ -148,9 +148,8 @@
   display: grid;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
-  /* A printed double rule under the title, like the head of a newspaper page. */
   padding-bottom: var(--space-4);
-  border-bottom: 3px double var(--line-strong);
+  border-bottom: 1px solid var(--line);
 }
 
 .crumbs ol {
@@ -751,11 +750,15 @@
   margin-bottom: var(--space-2);
 }
 
-.empty-state__pictogram {
-  width: 40px;
-  height: 40px;
+.empty-state__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
   margin-bottom: var(--space-1);
-  color: var(--ink-muted);
+  border-radius: 12px;
+  background: var(--fill);
+  color: var(--ink);
 }
 
 /* ---------- Switch (a checkbox with role="switch") ---------- */
@@ -853,17 +856,21 @@ input.switch:focus-visible {
   fill: var(--ink);
 }
 
-.dot-matrix {
+.day-bars {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.dot-matrix__lit {
+.day-bars__bar {
+  fill: var(--chart-series);
+}
+
+.day-bars__bar--latest {
   fill: var(--ink);
 }
 
-.dot-matrix__unlit {
+.day-bars__empty {
   fill: var(--line-strong);
 }
 
@@ -882,7 +889,8 @@ input.switch:focus-visible {
   gap: var(--space-1);
   min-width: 0;
   padding: var(--space-4) var(--space-4) 0;
-  border: 1px solid var(--line);
+  /* Paper on ivory, no frame, like the other cards. */
+  border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: var(--surface);
   overflow: hidden;
@@ -979,31 +987,34 @@ input.switch:focus-visible {
 }
 
 .metric__graph {
-  /* Printed blocks, one column per day (or week), never stretched. */
-  display: grid;
-  gap: 2px;
+  display: block;
   align-self: end;
-  height: 60px;
-  margin-top: var(--space-3);
+  /* Edge to edge along the bottom of the card. */
+  width: calc(100% + 2 * var(--space-4));
+  height: 56px;
+  margin: var(--space-3) calc(-1 * var(--space-4)) 0;
+  overflow: visible;
 }
 
-.metric__column {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 2px;
+/* A flat, faint fill under the line: nothing in it can stretch out of shape. */
+.metric__area {
+  fill: var(--chart-series);
+  opacity: 0.12;
 }
 
-.metric__block {
-  flex: 1;
-  background: var(--line);
+.metric__line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.metric__block--lit {
-  background: var(--chart-series);
-}
-
-.metric__column--latest .metric__block--lit {
-  background: var(--ink);
+.metric__baseline {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
 }
 
 .metric__empty {

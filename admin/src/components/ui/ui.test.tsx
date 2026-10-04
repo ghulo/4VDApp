@@ -9,7 +9,7 @@ import {
   ButtonLink,
   Card,
   DataTable,
-  DotMatrix,
+  DayBars,
   EmptyState,
   Field,
   ShopSunrise,
@@ -249,14 +249,15 @@ describe('Badge, StatTile and EmptyState', () => {
   });
 });
 
-describe('DotMatrix', () => {
-  it('should light dots in proportion and keep quiet days visible', () => {
-    const html = render(<DotMatrix values={[0, 1, 10]} rows={5} label="Sales per day" />);
+describe('DayBars', () => {
+  it('should draw one bar per day and keep quiet days visible', () => {
+    const html = render(<DayBars values={[0, 1, 10]} label="Sales per day" />);
 
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Sales per day"');
-    expect(html.match(/<rect/g)).toHaveLength(15);
-    // Nothing for the empty day, one block for the small one, a full column for the best.
-    expect(html.match(/dot-matrix__lit/g)).toHaveLength(6);
+    expect(html.match(/<rect/g)).toHaveLength(3);
+    // A faint tick for the empty day, real bars for the others, the latest in ink.
+    expect(html.match(/day-bars__empty/g)).toHaveLength(1);
+    expect(html).toContain('day-bars__bar--latest');
   });
 });

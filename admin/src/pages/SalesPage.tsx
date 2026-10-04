@@ -1,3 +1,4 @@
+import { Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -108,7 +109,7 @@ function SalesHistory() {
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
       {sales.data && sales.data.items.length === 0 && (
-        <EmptyState pictogram="receipt" title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
+        <EmptyState icon={Receipt} title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
       )}
       {sales.data && sales.data.items.length > 0 && (
         <>

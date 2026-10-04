@@ -1,3 +1,4 @@
+import { Package } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -99,7 +100,7 @@ export function InventoryPage() {
           }
           empty={
             search || lowStock ? (
-              <EmptyState pictogram="crate" title={t.inventory.noMatch}>{t.inventory.noMatchHint}</EmptyState>
+              <EmptyState icon={Package} title={t.inventory.noMatch}>{t.inventory.noMatchHint}</EmptyState>
             ) : (
               <EmptyState
                 art

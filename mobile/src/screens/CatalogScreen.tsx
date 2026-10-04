@@ -1,3 +1,4 @@
+import { Package } from 'phosphor-react-native/src/icons/Package';
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
@@ -103,7 +104,7 @@ export function CatalogScreen() {
           refreshing={products.isRefetching && !products.isFetchingNextPage}
           onRefresh={() => products.refetch()}
           ListEmptyComponent={
-            <EmptyState art="crate" title={isFiltered ? t.catalog.nothingMatches : t.catalog.noneYet}>
+            <EmptyState icon={Package} title={isFiltered ? t.catalog.nothingMatches : t.catalog.noneYet}>
               {isFiltered ? t.catalog.tryAnother : t.catalog.addedInDashboard}
             </EmptyState>
           }

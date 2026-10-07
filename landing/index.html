@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4VD — The shop that runs itself</title>
+<meta name="description" content="4VD is the AI business assistant from 4VD SH.P.K. Track revenue, stock and profit in one place, and let AI tell you what to reorder and what to fix.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --clay:#d4704f;--clay-hover:#df8667;--clay-text:#a8482a;--clay-tint:rgb(217 119 87 / .14);
+  --pillar-ink:#1c0f08;
+  --canvas:#f0eee6;--paper:#faf9f5;--sunk:#e8e4da;--oat:#e3dacc;
+  --ink:#141413;--muted:#5e5d59;--hair:#e0dbcf;--hair-strong:#cbc3b3;
+  --ok:#047857;--ok-soft:#e6f5ee;--warn:#b45309;--warn-soft:#fef3e2;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;
+  --r-seg:6px;--r-ctl:8px;--r-card:16px;--r-pill:999px;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"Hanken Grotesk",system-ui,sans-serif;
+  --raise:0 1px 0 rgb(255 255 255 / .7) inset,0 1px 2px rgb(20 20 19 / .06),0 8px 24px -12px rgb(20 20 19 / .18);
+  --key:0 1px 0 rgb(255 255 255 / .35) inset,0 2px 0 #a8482a,0 4px 10px -4px rgb(168 72 42 / .5);
+  --inset:inset 0 1px 2px rgb(20 20 19 / .08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --canvas:#191817;--paper:#262624;--sunk:#151413;--oat:#30302e;
+  --ink:#faf9f5;--muted:#a6a39b;--hair:#2f2e2b;--hair-strong:#3e3d39;
+  --clay-text:#e08a6c;--clay-tint:rgb(217 119 87 / .18);--ok-soft:#10261d;--warn-soft:#2b1f0f;--ok:#34d399;--warn:#f59e0b;
+  --raise:0 1px 0 rgb(255 255 255 / .04) inset,0 8px 24px -12px rgb(0 0 0 / .6);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--canvas);color:var(--ink);font:400 1rem/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.01em;line-height:1.15;margin:0;font-feature-settings:"lnum"}
+h1{font-size:clamp(2.25rem,6vw,4rem);text-wrap:balance}
+h2{font-size:clamp(1.75rem,3.2vw,2.25rem);text-wrap:balance}
+h3{font-family:var(--sans);font-weight:600;font-size:1.0625rem;letter-spacing:0}
+p{margin:0}
+.eyebrow{font:600 .75rem/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--clay-text)}
+.lead{font-size:1.1875rem;color:var(--muted);max-width:38rem}
+:focus-visible{outline:2px solid var(--clay);outline-offset:3px;border-radius:var(--r-ctl)}
+
+/* header */
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--canvas) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--hair)}
+.bar{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{display:flex;align-items:center;gap:var(--s2);text-decoration:none;font-weight:600}
+.brand img{width:28px;height:28px;border-radius:var(--r-seg)}
+.brand small{font-weight:400;color:var(--muted);font-size:.8125rem}
+nav ul{display:none;list-style:none;margin:0;padding:0;gap:var(--s5)}
+@media (min-width:768px){nav ul{display:flex}}
+nav ul a{text-decoration:none;color:var(--muted);font-weight:600;font-size:.9375rem}
+nav ul a:hover{color:var(--ink)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);height:44px;padding:0 var(--s5);border-radius:var(--r-ctl);font:600 .9375rem/1 var(--sans);text-decoration:none;border:0;cursor:pointer;transition:transform .12s,box-shadow .12s,background-color .12s}
+.btn-primary{background:var(--clay);color:var(--pillar-ink);box-shadow:var(--key)}
+.btn-primary:hover{background:var(--clay-hover)}
+.btn-primary:active{transform:translateY(2px);box-shadow:0 0 0 #a8482a}
+.btn-secondary{background:var(--paper);color:var(--ink);box-shadow:var(--raise);border:1px solid var(--hair)}
+.btn-secondary:hover{background:var(--sunk)}
+.btn-secondary:active{transform:translateY(1px)}
+.btn-sm{height:36px;padding:0 var(--s3)}
+
+/* hero */
+.hero{padding-block:var(--s7)}
+@media (min-width:960px){.hero{padding-block:96px var(--s7)}}
+.hero-grid{display:grid;gap:var(--s7);align-items:center}
+@media (min-width:960px){.hero-grid{grid-template-columns:1.05fr .95fr}}
+.hero h1{margin:var(--s4) 0 var(--s5)}
+.hero h1 em{font-style:italic;color:var(--clay-text)}
+.ctas{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s6)}
+
+/* mock panel */
+.panel{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r-card);box-shadow:var(--raise);padding:var(--s5)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s4)}
+.panel-head span{font-size:.8125rem;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+.kpi{background:var(--sunk);box-shadow:var(--inset);border-radius:var(--r-ctl);padding:var(--s3)}
+.kpi b{display:block;font-size:1.25rem;font-feature-settings:"tnum"}
+.kpi small{color:var(--muted);font-size:.75rem;font-weight:600}
+.ai{margin-top:var(--s4);display:grid;gap:var(--s2)}
+.ai-row{display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3);border-radius:var(--r-ctl);border:1px solid var(--hair);background:var(--canvas)}
+.dot{flex:none;width:28px;height:28px;border-radius:var(--r-pill);display:grid;place-items:center;font-size:.8125rem;font-weight:600}
+.dot.warn{background:var(--warn-soft);color:var(--warn)}
+.dot.ok{background:var(--ok-soft);color:var(--ok)}
+.dot.clay{background:var(--clay-tint);color:var(--clay-text)}
+.ai-row p{font-size:.875rem;line-height:1.45}
+.ai-row p span{color:var(--muted)}
+
+/* sections */
+section{padding:var(--s7) 0}
+@media (min-width:960px){section{padding:96px 0}}
+.sec-head{max-width:40rem;margin-bottom:var(--s6)}
+.sec-head h2{margin:var(--s3) 0 var(--s4)}
+.grid{display:grid;gap:var(--s4)}
+@media (min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:960px){.grid.three{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r-card);box-shadow:var(--raise);padding:var(--s5)}
+.card h3{margin:var(--s3) 0 var(--s2)}
+.card p{color:var(--muted);font-size:.9375rem}
+.tag{display:inline-block;font:600 .6875rem/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:var(--s1) var(--s2);border-radius:var(--r-pill)}
+.tag.live{background:var(--ok-soft);color:var(--ok)}
+.tag.soon{background:var(--clay-tint);color:var(--clay-text)}
+
+.band{background:var(--oat)}
+.steps{counter-reset:s;display:grid;gap:var(--s4)}
+@media (min-width:960px){.steps{grid-template-columns:repeat(3,1fr)}}
+.steps li{list-style:none;counter-increment:s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:36px;height:36px;border-radius:var(--r-ctl);background:var(--clay);color:var(--pillar-ink);font-weight:600;box-shadow:var(--key);margin-bottom:var(--s3)}
+.steps{padding:0;margin:0}
+
+.story{display:grid;gap:var(--s6)}
+@media (min-width:960px){.story{grid-template-columns:1fr 1fr;align-items:start}}
+.story p+p{margin-top:var(--s4)}
+.story .lead{max-width:none}
+dl.facts{margin:0;display:grid;gap:var(--s3)}
+.facts div{display:flex;justify-content:space-between;gap:var(--s4);padding:var(--s3) 0;border-bottom:1px solid var(--hair-strong)}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;font-weight:600;text-align:right}
+
+.contact{text-align:center}
+.contact .lead{margin:var(--s4) auto var(--s6)}
+.mail{font-family:var(--serif);font-size:clamp(1.5rem,4vw,2.25rem);color:var(--clay-text);text-decoration-thickness:1px;text-underline-offset:6px}
+
+footer{border-top:1px solid var(--hair);padding:var(--s6) 0;color:var(--muted);font-size:.875rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:var(--s3);justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<a href="#main" class="btn btn-secondary btn-sm" style="position:absolute;left:-9999px" onfocus="this.style.left='16px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top"><img src="favicon.svg" alt="" width="28" height="28">4VD <small>by 4VD SH.P.K</small></a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#what">What it does</a></li>
+        <li><a href="#ai">AI</a></li>
+        <li><a href="#story">Company</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="mailto:hello@4vd.app">Get in touch</a>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap hero" id="top">
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">AI for small businesses</p>
+      <h1>Know how your business is doing. <em>Every day.</em></h1>
+      <p class="lead">4VD keeps your sales, stock, revenue and profit in one simple place. Then an AI assistant looks at the numbers for you and tells you, in plain words, what to reorder, what to fix and where you are losing money.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="mailto:hello@4vd.app?subject=Early%20access%20to%204VD">Ask for early access</a>
+        <a class="btn btn-secondary" href="#what">See what it does</a>
+      </div>
+    </div>
+    <div class="panel" role="img" aria-label="Example 4VD dashboard: today's revenue, profit and stock alerts with three AI suggestions">
+      <div class="panel-head"><h3>Today</h3><span>Example shop</span></div>
+      <div class="kpis">
+        <div class="kpi"><small>Revenue</small><b>€1,284</b></div>
+        <div class="kpi"><small>Profit</small><b>€312</b></div>
+        <div class="kpi"><small>Low stock</small><b>6</b></div>
+      </div>
+      <div class="ai">
+        <div class="ai-row"><div class="dot warn">!</div><p>Reorder 24 × olive oil 1L. <span>At this pace you run out on Thursday.</span></p></div>
+        <div class="ai-row"><div class="dot ok">↑</div><p>Coffee sells 30% more on weekends. <span>Stock up on Friday.</span></p></div>
+        <div class="ai-row"><div class="dot clay">€</div><p>3 products sell below cost after the supplier price change. <span>Review prices.</span></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="what" aria-labelledby="what-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">What it does</p>
+      <h2 id="what-h">Everything a shop owner checks, in one place</h2>
+      <p class="lead">No spreadsheets, no notebooks behind the counter. Your team records sales on their phones and you see the whole picture from anywhere.</p>
+    </div>
+    <div class="grid three">
+      <article class="card"><span class="tag live">Live</span><h3>Sales and revenue</h3><p>Every sale and return, recorded at the counter from a phone. Daily, weekly and monthly totals without adding anything up.</p></article>
+      <article class="card"><span class="tag live">Live</span><h3>Stock and reorder levels</h3><p>Know exactly what is on the shelf. Get alerted before a product runs out, not after a customer asks for it.</p></article>
+      <article class="card"><span class="tag live">Live</span><h3>Profit, not just sales</h3><p>Cost and selling price side by side, so you see what you actually earn on every product.</p></article>
+      <article class="card"><span class="tag live">Live</span><h3>Team and approvals</h3><p>Give staff the right access. Returns, damage and stock counts wait for the owner's OK.</p></article>
+      <article class="card"><span class="tag live">Live</span><h3>Promotions and reports</h3><p>Run discounts, then see if they worked. A weekly email sums up the shop so nothing slips.</p></article>
+      <article class="card"><span class="tag live">Live</span><h3>Safe to make mistakes</h3><p>Every change can be undone. A full history shows who did what and when.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="ai" class="band" aria-labelledby="ai-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Coming next · built with Claude</p>
+      <h2 id="ai-h">An assistant that reads your numbers for you</h2>
+      <p class="lead">Most small businesses have the data but no time to study it. 4VD's AI turns it into short, clear actions you can take today.</p>
+    </div>
+    <div class="grid three">
+      <article class="card"><span class="tag soon">In development</span><h3>AI scan</h3><p>Photograph an invoice, a delivery note or a shelf. 4VD reads it and updates products, prices and stock for you.</p></article>
+      <article class="card"><span class="tag soon">In development</span><h3>Smart reorder and restock</h3><p>Predicts when each product runs out from your real sales, and drafts the order with the right quantities.</p></article>
+      <article class="card"><span class="tag soon">In development</span><h3>Suggestions and improvements</h3><p>Spots slow sellers, items priced too low, and stock tying up cash, then explains what to change and why.</p></article>
+      <article class="card"><span class="tag soon">In development</span><h3>Ask in plain words</h3><p>"What was my best week this year?" "Which supplier costs me most?" Get the answer, not a report to dig through.</p></article>
+      <article class="card"><span class="tag soon">In development</span><h3>Profit watch</h3><p>Warns you when a supplier price change quietly eats your margin, or when sales drop off their normal pattern.</p></article>
+      <article class="card"><span class="tag soon">In development</span><h3>Weekly AI briefing</h3><p>A short summary every Monday: what went well, what needs attention, and the three things worth doing this week.</p></article>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="how-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">How it works</p>
+      <h2 id="how-h">Three steps, no training needed</h2>
+    </div>
+    <ol class="steps">
+      <li class="card"><h3>Add your products</h3><p>Type them in, import a list, or soon, just scan your invoices.</p></li>
+      <li class="card"><h3>Your team sells as usual</h3><p>Staff record sales and returns on their phones. Stock updates on its own.</p></li>
+      <li class="card"><h3>4VD tells you what matters</h3><p>Alerts, reports and AI suggestions arrive before problems do.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="story" class="band" aria-labelledby="story-h">
+  <div class="wrap story">
+    <div>
+      <p class="eyebrow">The company</p>
+      <h2 id="story-h" style="margin:var(--s3) 0 var(--s4)">Built inside a real business first</h2>
+      <p class="lead">4VD SH.P.K is a family trading company run by the four Dacaj brothers. That is where the name comes from: 4VD, four brothers.</p>
+      <p>We built 4VD to run our own shop: our stock, our staff, our sales. It is used every day at our counter. Now we are turning it into the first AI SaaS made for small businesses like ours, so any shop can have the same clarity without hiring an analyst.</p>
+    </div>
+    <dl class="facts">
+      <div><dt>Company</dt><dd>4VD SH.P.K</dd></div>
+      <div><dt>Main business</dt><dd>Trade</dd></div>
+      <div><dt>Product</dt><dd>4VD, AI business assistant</dd></div>
+      <div><dt>Status</dt><dd>In daily use at our own shop</dd></div>
+      <div><dt>Next</dt><dd>AI features, then open to other businesses</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:hello@4vd.app">hello@4vd.app</a></dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="contact" aria-labelledby="contact-h">
+  <div class="wrap">
+    <p class="eyebrow">Talk to us</p>
+    <h2 id="contact-h" style="margin-top:var(--s3)">Want 4VD for your business?</h2>
+    <p class="lead">We are opening to a small group of shops first. Write to us and tell us what you sell.</p>
+    <a class="mail" href="mailto:hello@4vd.app">hello@4vd.app</a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 4VD SH.P.K. All rights reserved.</span>
+    <a href="mailto:hello@4vd.app">hello@4vd.app</a>
+  </div>
+</footer>
+</body>
+</html>

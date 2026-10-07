@@ -1,0 +1,7 @@
+// The public website at 4vd.app (static, no build step). The landing page lives at /landpage.
+{
+  "name": "4vd-site",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./public", "not_found_handling": "404-page" },
+  "routes": [{ "pattern": "4vd.app", "custom_domain": true }]
+}

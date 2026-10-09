@@ -17,7 +17,8 @@ export const en = {
     cashCount: 'Close the drawer',
     customerTabs: 'Tabs',
     carwash: 'Carwash takings',
-    counting: (what: string) => `Counting ${what.toLowerCase()}`,
+    deliveries: 'Deliveries',
+    counting:(what: string) => `Counting ${what.toLowerCase()}`,
   },
   tour: {
     staff: [
@@ -114,6 +115,8 @@ export const en = {
     tabs: 'Tabs',
     tabsOwed: (amount: string, people: number) => `${amount} owed by ${people} ${people === 1 ? 'person' : 'people'}`,
     tabsNone: 'Who owes what',
+    deliveries: 'Deliveries',
+    deliveriesWaiting: (n: number) => `${n} ${n === 1 ? 'order' : 'orders'} to tick off`,
     carwash: 'Carwash takings',
     carwashDone: 'Entered today',
     carwashToDo: "Enter today's takings",
@@ -356,6 +359,19 @@ export const en = {
     save: 'Note expiry date',
     doneTitle: 'Noted',
     doneMessage: (what: string, day: string) => `${what} expire on ${day}. It will show up in the dashboard a week before.`,
+  },
+  deliveries: {
+    none: 'Nothing on its way',
+    noneDetail: 'Orders the owner places with suppliers show up here, so you can tick them off when they arrive.',
+    which: 'Which order',
+    from: (supplier: string, day: string) => `From ${supplier}, ordered ${day}`,
+    intro: 'Check what came against the order. Change the number when less came, and add the expiry date for things that go off.',
+    ordered: (n: number) => `Ordered ${n}`,
+    came: 'How many came',
+    expiresOn: 'Expires on (optional)',
+    save: 'Put into stock',
+    doneTitle: 'In stock',
+    doneMessage: (units: number, supplier: string) => `${units} ${units === 1 ? 'unit' : 'units'} from ${supplier} are now in stock.`,
   },
   counts: {
     wholeShop: 'Whole shop',

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { PurchaseOrderService } from '../services/PurchaseOrderService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
+import { canManage, canOversee } from '../utils/roles.js';
 import { newOrderSchema, receiveOrderSchema, supplierSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
@@ -37,9 +38,16 @@ export function createOrderController(orderService: PurchaseOrderService) {
       sendSuccess(res, await orderService.create(parseInput(newOrderSchema, req.body), req.user!.id), { statusCode: 201, message: 'Order created' });
     },
 
+    async deliveries(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await orderService.deliveries());
+    },
+
     async receive(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      sendSuccess(res, await orderService.receive(id, parseInput(receiveOrderSchema, req.body), req.user!.id), { message: 'Delivery received' });
+      const actor = { id: req.user!.id, canSetCosts: canManage(req.user!.role) };
+      const order = await orderService.receive(id, parseInput(receiveOrderSchema, req.body), actor);
+      // The counter gets a plain answer; costs stay with the people who run the shop.
+      sendSuccess(res, canOversee(req.user!.role) ? order : { id: order.id, status: order.status }, { message: 'Delivery received' });
     },
 
     async cancel(req: Request, res: Response): Promise<void> {

@@ -37,11 +37,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # Both front ends (on Cloudflare), comma-separated. The two onrender.com
-      # addresses keep the old front ends working during the move; remove them
-      # once dashboard.4vd.app and app.4vd.app are live.
+      # Both front ends (on Cloudflare), comma-separated.
       - key: CORS_ORIGINS
-        value: https://dashboard.4vd.app,https://app.4vd.app,https://fourvd-dashboard.onrender.com,https://fourvd-app.onrender.com
+        value: https://dashboard.4vd.app,https://app.4vd.app
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
       - key: ANTHROPIC_API_KEY
         sync: false

@@ -63,9 +63,7 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 Same as the dashboard, with: project name `4vd-app`, path `mobile`, build command `npm ci && npx expo export --platform web --output-dir dist`, `NODE_VERSION` = `22`, custom domain `app.4vd.app`.
 
 **4. Check everything**
-Open `https://dashboard.4vd.app`, log in, switch a page or two. Open `https://app.4vd.app` on a phone and log in. Then:
-- Render → delete the old services `4vd-dashboard` and `4vd-app` (Settings → Delete Service). Cloudflare serves them now.
-- Remove the two `onrender.com` addresses from `CORS_ORIGINS` in `render.yaml` (ask Claude).
+Open `https://dashboard.4vd.app`, log in, switch a page or two. Open `https://app.4vd.app` on a phone and log in.
 
 **5. Optional: `4vd.app` itself** redirects to the team app for now: Cloudflare → **DNS → Add record** `A`, Name `@`, IPv4 `192.0.2.1`, **Proxied (orange)**; then **Rules → Redirect Rules → Create**: when hostname equals `4vd.app`, redirect to `https://app.4vd.app` (301, keep path off).
 

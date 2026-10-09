@@ -30,6 +30,14 @@ const RECENT_SALES_SHOWN = 3;
 const DECIDED_SHOWN_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/** What the carwash tile says: done, to do, or how many of several carwashes are in. */
+function carwashDetail(carwashes: Array<{ takings: unknown }> | undefined, t: Catalogue): string {
+  const done = carwashes?.filter((carwash) => carwash.takings).length ?? 0;
+  const total = carwashes?.length ?? 0;
+  if (total > 1 && done > 0 && done < total) return t.home.carwashSome(done, total);
+  return done > 0 && done === total ? t.home.carwashDone : t.home.carwashToDo;
+}
+
 function greeting(t: Catalogue, now: Date): string {
   const hour = now.getHours();
   if (hour < 12) return t.home.morning;
@@ -225,7 +233,7 @@ export function HomeScreen() {
               colors={colors}
               icon={Drop}
               title={t.home.carwash}
-              detail={carwash.data?.takings ? t.home.carwashDone : t.home.carwashToDo}
+              detail={carwashDetail(carwash.data?.carwashes, t)}
               onPress={() => navigation.navigate('Carwash')}
             />
           </View>

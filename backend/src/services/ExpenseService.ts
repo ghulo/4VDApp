@@ -4,6 +4,7 @@ import type { ExpenseRecord, ExpenseRepository, RecurringExpenseRecord } from '.
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
+import type { CarwashService } from './CarwashService.js';
 import type { DateRange } from './reports/calculations.js';
 
 /** A monthly rule's day is capped here so every month has it. */
@@ -15,6 +16,9 @@ export interface ExpenseDto {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  /** Which carwash, for a carwash expense. */
+  carwashId: number | null;
+  carwashName: string | null;
   note: string | null;
   /** Set when a monthly rule added it. */
   recurringId: number | null;
@@ -24,6 +28,8 @@ export interface ExpenseDto {
 export interface ExpenseTotals {
   total: number;
   byPlace: Record<ExpensePlace, number>;
+  /** The carwash part of `byPlace`, split by carwash. */
+  byCarwash: Array<{ carwashId: number; name: string; total: number }>;
   byCategory: Record<ExpenseCategory, number>;
 }
 
@@ -32,6 +38,8 @@ export interface RecurringExpenseDto {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwashId: number | null;
+  carwashName: string | null;
   note: string | null;
   dayOfMonth: number;
   addedBy: string | null;
@@ -42,6 +50,8 @@ export interface NewExpenseInput {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  /** For a carwash expense; left out means the only open carwash. */
+  carwashId?: number;
   note: string | null;
   repeatMonthly: boolean;
 }
@@ -52,6 +62,8 @@ const toDto = (row: ExpenseRecord): ExpenseDto => ({
   amount: Number(row.amount),
   category: row.category,
   place: row.place,
+  carwashId: row.carwash_id,
+  carwashName: row.carwash_name,
   note: row.note,
   recurringId: row.recurring_id,
   addedBy: row.created_by_name,
@@ -62,6 +74,8 @@ const toRecurringDto = (row: RecurringExpenseRecord): RecurringExpenseDto => ({
   amount: Number(row.amount),
   category: row.category,
   place: row.place,
+  carwashId: row.carwash_id,
+  carwashName: row.carwash_name,
   note: row.note,
   dayOfMonth: row.day_of_month,
   addedBy: row.created_by_name,
@@ -82,6 +96,7 @@ export class ExpenseService {
   constructor(
     private readonly expenseRepository: ExpenseRepository,
     private readonly transactions: TransactionManager,
+    private readonly carwashService: CarwashService,
     private readonly timeZone: string,
   ) {}
 
@@ -89,13 +104,19 @@ export class ExpenseService {
     const { from, to } = zonedDays(range, this.timeZone);
     const expenses = (await this.expenseRepository.findBetween(from, to)).map(toDto);
     const byPlace: Record<ExpensePlace, number> = { shop: 0, carwash: 0, both: 0 };
+    const byCarwash = new Map<number, { carwashId: number; name: string; total: number }>();
     const byCategory = Object.fromEntries(EXPENSE_CATEGORIES.map((category) => [category, 0])) as Record<ExpenseCategory, number>;
     for (const expense of expenses) {
       byPlace[expense.place] = roundMoney(byPlace[expense.place] + expense.amount);
+      if (expense.carwashId !== null) {
+        const entry = byCarwash.get(expense.carwashId) ?? { carwashId: expense.carwashId, name: expense.carwashName!, total: 0 };
+        entry.total = roundMoney(entry.total + expense.amount);
+        byCarwash.set(expense.carwashId, entry);
+      }
       byCategory[expense.category] = roundMoney(byCategory[expense.category] + expense.amount);
     }
     const total = roundMoney(expenses.reduce((sum, expense) => sum + expense.amount, 0));
-    return { expenses, totals: { total, byPlace, byCategory } };
+    return { expenses, totals: { total, byPlace, byCarwash: [...byCarwash.values()], byCategory } };
   }
 
   async total(range: DateRange): Promise<number> {
@@ -111,19 +132,22 @@ export class ExpenseService {
     const today = zonedDay(now, this.timeZone);
     if (input.day > today) throw new ValidationError("An expense can't be for a day that hasn't happened yet");
     const dayOfMonth = Math.min(Number(input.day.slice(8, 10)), LAST_REPEAT_DAY);
+    const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
+    const carwashId = carwash?.id ?? null;
+    const placeName = carwash ? `${carwash.name} carwash` : input.place;
 
     const id = await this.transactions.run(async (repos) => {
       const recurringId = input.repeatMonthly
-        ? await repos.expenses.addRecurring({ ...input, dayOfMonth, lastFilledOn: input.day, createdBy: actorId })
+        ? await repos.expenses.addRecurring({ ...input, carwashId, dayOfMonth, lastFilledOn: input.day, createdBy: actorId })
         : null;
-      const expenseId = (await repos.expenses.add({ ...input, recurringId, createdBy: actorId }))!;
+      const expenseId = (await repos.expenses.add({ ...input, carwashId, recurringId, createdBy: actorId }))!;
       await repos.activityLog.create({
         userId: actorId,
         action: 'expense.added',
         entityType: 'expense',
         entityId: expenseId,
-        summary: `Added an expense: ${formatEuro(input.amount)} for ${input.category} (${input.place}) on ${input.day}${input.repeatMonthly ? ', repeating every month' : ''}`,
-        details: { ...input },
+        summary: `Added an expense: ${formatEuro(input.amount)} for ${input.category} (${placeName}) on ${input.day}${input.repeatMonthly ? ', repeating every month' : ''}`,
+        details: { ...input, carwashId },
       });
       return expenseId;
     });
@@ -182,6 +206,7 @@ export class ExpenseService {
             amount: Number(rule.amount),
             category: rule.category,
             place: rule.place,
+            carwashId: rule.carwash_id,
             note: rule.note,
             recurringId: rule.id,
             createdBy: null,

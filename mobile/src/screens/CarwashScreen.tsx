@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Confirmation } from '../components/Confirmation';
+import { ChoiceRow } from '../components/inputs';
 import { Button, ErrorState, Loading, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { carwashApi } from '../services/api';
@@ -19,24 +20,58 @@ const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 export function CarwashScreen({ navigation }: Props) {
   const t = useT();
   const today = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today });
+  // Which carwash, when there are several; the first until someone picks.
+  const [pickedId, setPickedId] = useState<number | null>(null);
   if (today.isPending) return <Loading />;
   if (today.isError) return <ErrorState error={today.error} onRetry={() => today.refetch()} />;
-  return <CarwashForm key={today.data.day} day={today.data.day} start={today.data.takings} onDone={() => navigation.goBack()} t={t} />;
+
+  const { carwashes, day } = today.data;
+  const several = carwashes.length > 1;
+  const carwash = carwashes.find((entry) => entry.id === pickedId) ?? carwashes[0];
+  if (!carwash) return <ErrorState error={new Error(t.common.somethingWrong)} onRetry={() => today.refetch()} />;
+
+  return (
+    <>
+      {several && (
+        <View style={styles.picker}>
+          <ChoiceRow
+            label={t.carwash.which}
+            options={carwashes.map((entry) => ({ value: String(entry.id), label: entry.name }))}
+            value={String(carwash.id)}
+            onChange={(value) => setPickedId(Number(value))}
+          />
+        </View>
+      )}
+      <CarwashForm
+        // A fresh form for each carwash, so its own figures show.
+        key={`${carwash.id}-${day}`}
+        carwashId={carwash.id}
+        name={several ? carwash.name : null}
+        day={day}
+        start={carwash.takings}
+        onDone={() => navigation.goBack()}
+        t={t}
+      />
+    </>
+  );
 }
 
 function CarwashForm(props: {
+  carwashId: number;
+  /** Shown only when the business has several carwashes. */
+  name: string | null;
   day: string;
   start: { carwash: number; change: number } | null;
   onDone: () => void;
   t: ReturnType<typeof useT>;
 }) {
-  const { day, start, onDone, t } = props;
+  const { carwashId, name, day, start, onDone, t } = props;
   const colors = useThemeColors();
   const queryClient = useQueryClient();
   const [carwash, setCarwash] = useState(start ? String(start.carwash) : '');
   const [change, setChange] = useState(start ? String(start.change) : '');
   const save = useMutation({
-    mutationFn: () => carwashApi.save(day, { carwash: toNumber(carwash), change: toNumber(change) }),
+    mutationFn: () => carwashApi.save(carwashId, day, { carwash: toNumber(carwash), change: toNumber(change) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['carwash'] });
       queryClient.invalidateQueries({ queryKey: ['cash'] });
@@ -50,7 +85,7 @@ function CarwashForm(props: {
     return (
       <Confirmation
         title={t.carwash.doneTitle}
-        message={t.carwash.doneMessage(formatMoney(roundMoney(toNumber(carwash) + toNumber(change))))}
+        message={t.carwash.doneMessage(formatMoney(roundMoney(toNumber(carwash) + toNumber(change))), name)}
         onDone={onDone}
       />
     );
@@ -71,6 +106,7 @@ function CarwashForm(props: {
 }
 
 const styles = StyleSheet.create({
+  picker: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.sm },
   hint: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, marginBottom: spacing.sm },
   total: { fontFamily: fonts.bodyBold, fontSize: 18, fontVariant: ['tabular-nums'], marginBottom: spacing.sm },

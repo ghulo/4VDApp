@@ -116,6 +116,7 @@ export const en = {
     carwash: 'Carwash takings',
     carwashDone: 'Entered today',
     carwashToDo: "Enter today's takings",
+    carwashSome: (done: number, total: number) => `Entered for ${done} of ${total} carwashes`,
     yourRequests: 'Your requests',
     runningLow: 'Running low',
     checkingStock: 'Checking stock…',
@@ -266,13 +267,15 @@ export const en = {
   },
   carwash: {
     intro: "Enter what the carwash and the change machine made today.",
+    which: 'Which carwash',
     alreadyEntered: "Today's takings are already in. Saving replaces them.",
     carwash: 'Carwash (€)',
     change: 'Change machine (€)',
     total: (amount: string) => `Total today: ${amount}`,
     save: 'Save takings',
     doneTitle: 'Takings saved',
-    doneMessage: (amount: string) => `${amount} for today. It shows up in the owner's daily summary.`,
+    doneMessage: (amount: string, name: string | null) =>
+      `${name ? `${name}: ` : ''}${amount} for today. It shows up in the owner's daily summary.`,
   },
   tabs: {
     putOnTab: 'Put on a tab',

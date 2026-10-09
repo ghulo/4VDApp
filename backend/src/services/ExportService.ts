@@ -79,7 +79,7 @@ const MONEY_COLUMNS: CsvColumn<MoneyDay & { label?: string }>[] = [
 const EXPENSE_COLUMNS: CsvColumn<ExpenseRecord>[] = [
   { header: 'Date', value: (row) => row.day },
   { header: 'What for', value: (row) => row.category },
-  { header: 'For', value: (row) => row.place },
+  { header: 'For', value: (row) => (row.carwash_name ? `carwash: ${row.carwash_name}` : row.place) },
   { header: 'Amount', value: (row) => Number(row.amount) },
   { header: 'Note', value: (row) => row.note },
   { header: 'Repeats monthly', value: (row) => (row.recurring_id === null ? 'no' : 'yes') },
@@ -116,15 +116,23 @@ export class ExportService {
       this.carwashRepository.findBetween(from, to),
       this.expenseRepository.findBetween(from, to),
     ]);
-    const carwashByDay = new Map(carwash.map((row) => [row.day, row]));
+    // Several carwashes can have takings on one day; the sheet shows them added together.
+    const carwashByDay = new Map<string, { carwash: number; change: number }>();
+    for (const row of carwash) {
+      const day = carwashByDay.get(row.day) ?? { carwash: 0, change: 0 };
+      carwashByDay.set(row.day, {
+        carwash: roundMoney(day.carwash + Number(row.carwash_amount)),
+        change: roundMoney(day.change + Number(row.change_amount)),
+      });
+    }
     const spentByDay = new Map<string, number>();
     for (const expense of expenses) spentByDay.set(expense.day, roundMoney((spentByDay.get(expense.day) ?? 0) + Number(expense.amount)));
 
     const rows: Array<MoneyDay & { label?: string }> = eachDay(from, to).map((day) => ({
       day,
       shop: roundMoney(shop.get(day) ?? 0),
-      carwash: Number(carwashByDay.get(day)?.carwash_amount ?? 0),
-      change: Number(carwashByDay.get(day)?.change_amount ?? 0),
+      carwash: carwashByDay.get(day)?.carwash ?? 0,
+      change: carwashByDay.get(day)?.change ?? 0,
       expenses: spentByDay.get(day) ?? 0,
     }));
     const sum = (pick: (row: MoneyDay) => number) => roundMoney(rows.reduce((total, row) => total + pick(row), 0));

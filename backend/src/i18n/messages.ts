@@ -52,12 +52,13 @@ export interface ServerMessages {
   dailyUrgent: (p: { titles: string[]; more: number }) => string;
   dailyOthers: (n: number) => string;
   dailyNothing: string;
-  dailyCarwash: (p: { carwash: number; change: number; total: number }) => string;
-  dailyCarwashMissing: string;
+  /** `name` is set only when the business has several carwashes. */
+  dailyCarwash: (p: { name: string | null; carwash: number; change: number; total: number }) => string;
+  dailyCarwashMissing: (name: string | null) => string;
   /** `difference` is 0 when it matched; `compared` false when the carwash had no takings to compare with. */
-  dailyCash: (p: { place: 'shop' | 'carwash'; difference: number; compared: boolean }) => string;
-  dailyCashMissing: (place: 'shop' | 'carwash') => string;
-  cashDifferenceTitle: (p: { place: 'shop' | 'carwash'; difference: number }) => string;
+  dailyCash: (p: { place: 'shop' | 'carwash'; carwash: string | null; difference: number; compared: boolean }) => string;
+  dailyCashMissing: (place: 'shop' | 'carwash', carwash: string | null) => string;
+  cashDifferenceTitle: (p: { place: 'shop' | 'carwash'; carwash: string | null; difference: number }) => string;
   cashDifferenceMessage: (p: { name: string; counted: number; float: number; expected: number }) => string;
 
   testAlertTitle: string;
@@ -113,6 +114,8 @@ export interface ServerMessages {
     weeklyProduct: (p: { rank: number; name: string; revenue: string; units: number }) => string;
     weeklyNoSales: string;
     weeklyCarwash: (p: { carwash: string; change: string; total: string; together: string }) => string;
+    /** Added when there are several carwashes: what each made. */
+    weeklyCarwashEach: (rows: Array<{ name: string; total: string }>) => string;
     errorSubject: (count: number) => string;
     errorIntro: (p: { name: string; count: number }) => string;
     errorItem: (p: { what: string; count: number }) => string;
@@ -177,18 +180,18 @@ export const en: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgent: ${titles.join('; ')}${more > 0 ? ` and ${more} more` : ''}.`,
   dailyOthers: (n) => `${count(n, 'other thing', 'other things')} to look at on the Overview page.`,
   dailyNothing: 'Nothing needs your attention.',
-  dailyCarwash: ({ carwash, change, total }) =>
-    `Carwash: ${money(carwash, 'en')} + ${money(change, 'en')} change = ${money(total, 'en')}.`,
-  dailyCarwashMissing: "Today's carwash takings aren't entered yet.",
-  dailyCash: ({ place, difference, compared }) => {
-    const drawer = place === 'shop' ? 'Shop cash' : 'Carwash cash';
+  dailyCarwash: ({ name, carwash, change, total }) =>
+    `Carwash${name ? ` (${name})` : ''}: ${money(carwash, 'en')} + ${money(change, 'en')} change = ${money(total, 'en')}.`,
+  dailyCarwashMissing: (name) => `Today's carwash${name ? ` (${name})` : ''} takings aren't entered yet.`,
+  dailyCash: ({ place, carwash, difference, compared }) => {
+    const drawer = place === 'shop' ? 'Shop cash' : `Carwash cash${carwash ? ` (${carwash})` : ''}`;
     if (!compared) return `${drawer} counted; no carwash takings entered to compare with.`;
     if (difference === 0) return `${drawer} matched.`;
     return `${drawer}: ${money(Math.abs(difference), 'en')} ${difference < 0 ? 'short' : 'over'}.`;
   },
-  dailyCashMissing: (place) => `${place === 'shop' ? 'Shop' : 'Carwash'} cash not counted yet.`,
-  cashDifferenceTitle: ({ place, difference }) =>
-    `${place === 'shop' ? 'Shop' : 'Carwash'} cash ${difference < 0 ? 'short' : 'over'} by ${money(Math.abs(difference), 'en')}`,
+  dailyCashMissing: (place, carwash) => `${place === 'shop' ? 'Shop' : `Carwash${carwash ? ` (${carwash})` : ''}`} cash not counted yet.`,
+  cashDifferenceTitle: ({ place, carwash, difference }) =>
+    `${place === 'shop' ? 'Shop' : `Carwash${carwash ? ` (${carwash})` : ''}`} cash ${difference < 0 ? 'short' : 'over'} by ${money(Math.abs(difference), 'en')}`,
   cashDifferenceMessage: ({ name, counted, float, expected }) =>
     `${name} counted ${money(counted, 'en')} with a ${money(float, 'en')} float. The app expected ${money(expected, 'en')} on top of the float.`,
 
@@ -258,6 +261,7 @@ export const en: ServerMessages = {
     weeklyNoSales: 'No sales last week.',
     weeklyCarwash: ({ carwash, change, total, together }) =>
       `Carwash: ${total} (${carwash} carwash + ${change} change). Shop and carwash together: ${together}.`,
+    weeklyCarwashEach: (rows) => `By carwash: ${rows.map((row) => `${row.name} ${row.total}`).join(', ')}.`,
     weeklyNoCarwash: 'No carwash takings were entered last week.',
     errorSubject: (count) => `4VD ran into ${count === 1 ? 'an error' : `${count} errors`}`,
     errorIntro: ({ name, count }) =>
@@ -326,18 +330,18 @@ export const sq: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgjente: ${titles.join('; ')}${more > 0 ? ` dhe ${more} të tjera` : ''}.`,
   dailyOthers: (n) => `${count(n, 'gjë tjetër', 'gjëra të tjera')} për të parë te Përmbledhja.`,
   dailyNothing: 'Asgjë nuk kërkon vëmendjen tënde.',
-  dailyCarwash: ({ carwash, change, total }) =>
-    `Lavazhi: ${money(carwash, 'sq')} + ${money(change, 'sq')} këmbim = ${money(total, 'sq')}.`,
-  dailyCarwashMissing: 'Të ardhurat e lavazhit për sot nuk janë futur ende.',
-  dailyCash: ({ place, difference, compared }) => {
-    const drawer = place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit';
+  dailyCarwash: ({ name, carwash, change, total }) =>
+    `Lavazhi${name ? ` (${name})` : ''}: ${money(carwash, 'sq')} + ${money(change, 'sq')} këmbim = ${money(total, 'sq')}.`,
+  dailyCarwashMissing: (name) => `Të ardhurat e lavazhit${name ? ` (${name})` : ''} për sot nuk janë futur ende.`,
+  dailyCash: ({ place, carwash, difference, compared }) => {
+    const drawer = place === 'shop' ? 'Arka e dyqanit' : `Arka e lavazhit${carwash ? ` (${carwash})` : ''}`;
     if (!compared) return `${drawer} u numërua; s’ka të ardhura lavazhi për krahasim.`;
     if (difference === 0) return `${drawer} përputhet.`;
     return `${drawer}: ${money(Math.abs(difference), 'sq')} ${difference < 0 ? 'mungesë' : 'tepricë'}.`;
   },
-  dailyCashMissing: (place) => `${place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit'} nuk është numëruar ende.`,
-  cashDifferenceTitle: ({ place, difference }) =>
-    `${place === 'shop' ? 'Arka e dyqanit' : 'Arka e lavazhit'}: ${difference < 0 ? 'mungesë' : 'tepricë'} ${money(Math.abs(difference), 'sq')}`,
+  dailyCashMissing: (place, carwash) => `${place === 'shop' ? 'Arka e dyqanit' : `Arka e lavazhit${carwash ? ` (${carwash})` : ''}`} nuk është numëruar ende.`,
+  cashDifferenceTitle: ({ place, carwash, difference }) =>
+    `${place === 'shop' ? 'Arka e dyqanit' : `Arka e lavazhit${carwash ? ` (${carwash})` : ''}`}: ${difference < 0 ? 'mungesë' : 'tepricë'} ${money(Math.abs(difference), 'sq')}`,
   cashDifferenceMessage: ({ name, counted, float, expected }) =>
     `${name} numëroi ${money(counted, 'sq')} me ${money(float, 'sq')} kusur fillestar. Aplikacioni priste ${money(expected, 'sq')} mbi kusurin.`,
 
@@ -407,6 +411,7 @@ export const sq: ServerMessages = {
     weeklyNoSales: 'Nuk pati shitje javën e kaluar.',
     weeklyCarwash: ({ carwash, change, total, together }) =>
       `Lavazhi: ${total} (${carwash} lavazh + ${change} këmbim). Dyqani dhe lavazhi bashkë: ${together}.`,
+    weeklyCarwashEach: (rows) => `Sipas lavazheve: ${rows.map((row) => `${row.name} ${row.total}`).join(', ')}.`,
     weeklyNoCarwash: 'Nuk u futën të ardhura të lavazhit javën e kaluar.',
     errorSubject: (count) => `4VD hasi ${count === 1 ? 'një gabim' : `${count} gabime`}`,
     errorIntro: ({ name, count }) =>

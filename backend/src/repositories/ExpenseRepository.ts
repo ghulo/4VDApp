@@ -9,6 +9,8 @@ export interface ExpenseRecord {
   amount: string;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwash_id: number | null;
+  carwash_name: string | null;
   note: string | null;
   recurring_id: number | null;
   created_by_name: string | null;
@@ -19,6 +21,8 @@ export interface RecurringExpenseRecord {
   amount: string;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwash_id: number | null;
+  carwash_name: string | null;
   note: string | null;
   day_of_month: number;
   /** The last day it added an expense for. */
@@ -31,6 +35,7 @@ export interface NewExpense {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwashId: number | null;
   note: string | null;
   recurringId: number | null;
   createdBy: number | null;
@@ -45,12 +50,15 @@ export class ExpenseRepository {
     return this.db
       .selectFrom('expenses as e')
       .leftJoin('users as u', 'u.id', 'e.created_by')
+      .leftJoin('carwashes as w', 'w.id', 'e.carwash_id')
       .select([
         'e.id',
         sql<string>`to_char(e.day, 'YYYY-MM-DD')`.as('day'),
         'e.amount',
         'e.category',
         'e.place',
+        'e.carwash_id',
+        'w.name as carwash_name',
         'e.note',
         'e.recurring_id',
         'u.name as created_by_name',
@@ -66,12 +74,15 @@ export class ExpenseRepository {
     return this.db
       .selectFrom('expenses as e')
       .leftJoin('users as u', 'u.id', 'e.created_by')
+      .leftJoin('carwashes as w', 'w.id', 'e.carwash_id')
       .select([
         'e.id',
         sql<string>`to_char(e.day, 'YYYY-MM-DD')`.as('day'),
         'e.amount',
         'e.category',
         'e.place',
+        'e.carwash_id',
+        'w.name as carwash_name',
         'e.note',
         'e.recurring_id',
         'u.name as created_by_name',
@@ -100,6 +111,7 @@ export class ExpenseRepository {
         amount: expense.amount,
         category: expense.category,
         place: expense.place,
+        carwash_id: expense.carwashId,
         note: expense.note,
         recurring_id: expense.recurringId,
         created_by: expense.createdBy,
@@ -118,11 +130,14 @@ export class ExpenseRepository {
     return this.db
       .selectFrom('recurring_expenses as r')
       .leftJoin('users as u', 'u.id', 'r.created_by')
+      .leftJoin('carwashes as w', 'w.id', 'r.carwash_id')
       .select([
         'r.id',
         'r.amount',
         'r.category',
         'r.place',
+        'r.carwash_id',
+        'w.name as carwash_name',
         'r.note',
         'r.day_of_month',
         sql<string>`to_char(r.last_filled_on, 'YYYY-MM-DD')`.as('last_filled_on'),
@@ -142,6 +157,7 @@ export class ExpenseRepository {
     amount: number;
     category: ExpenseCategory;
     place: ExpensePlace;
+    carwashId: number | null;
     note: string | null;
     dayOfMonth: number;
     lastFilledOn: string;
@@ -153,6 +169,7 @@ export class ExpenseRepository {
         amount: rule.amount,
         category: rule.category,
         place: rule.place,
+        carwash_id: rule.carwashId,
         note: rule.note,
         day_of_month: rule.dayOfMonth,
         last_filled_on: rule.lastFilledOn,
@@ -169,5 +186,16 @@ export class ExpenseRepository {
 
   async stopRecurring(id: number, at: Date): Promise<void> {
     await this.db.updateTable('recurring_expenses').set({ stopped_at: at }).where('id', '=', id).execute();
+  }
+
+  /** A carwash that closes stops its monthly expenses. Returns how many stopped. */
+  async stopRecurringForCarwash(carwashId: number, at: Date): Promise<number> {
+    const result = await this.db
+      .updateTable('recurring_expenses')
+      .set({ stopped_at: at })
+      .where('carwash_id', '=', carwashId)
+      .where('stopped_at', 'is', null)
+      .executeTakeFirst();
+    return Number(result.numUpdatedRows);
   }
 }

@@ -97,13 +97,14 @@ export class ReportsService {
 
   /** `compareWith` defaults to the same length of time immediately before `range`. */
   async summary(range: DateRange, compareWith: DateRange = previousRange(range)) {
-    const [currentRow, previousRow, currentLosses, previousLosses, carwash, previousCarwash, expenses, previousExpenses] = await Promise.all([
+    const [currentRow, previousRow, currentLosses, previousLosses, carwash, previousCarwash, byCarwash, expenses, previousExpenses] = await Promise.all([
       this.reportsRepository.totals(range),
       this.reportsRepository.totals(compareWith),
       this.reportsRepository.stockLosses(range),
       this.reportsRepository.stockLosses(compareWith),
       this.carwashService.totals(range),
       this.carwashService.totals(compareWith),
+      this.carwashService.totalsByCarwash(range),
       this.expenseService.total(range),
       this.expenseService.total(compareWith),
     ]);
@@ -119,7 +120,8 @@ export class ReportsService {
         salesCount: relativeChange(current.salesCount, previous.salesCount),
       },
       // The carwash sits beside the shop, never inside its revenue or profit.
-      carwash: { current: carwash, previous: previousCarwash, change: relativeChange(carwash.total, previousCarwash.total) },
+      // `byCarwash` splits the current period by carwash (only carwashes with takings in it).
+      carwash: { current: carwash, previous: previousCarwash, change: relativeChange(carwash.total, previousCarwash.total), byCarwash },
       // What's left for 4VD SH.P.K: shop profit plus the carwash (it has no product costs), minus what was spent.
       expenses: { current: expenses, previous: previousExpenses },
       netProfit: {

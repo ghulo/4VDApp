@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BusinessPanel } from '../components/BusinessPanel';
+import { CarwashesPanel } from '../components/CarwashesPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -31,6 +32,7 @@ export function SettingsPage() {
         {settings.isPending && <Loading />}
         {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
         {settings.data && <SettingsForm initial={settings.data} />}
+        <CarwashesPanel />
       </ManagersOnly>
     </>
   );
@@ -44,7 +46,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
   const [summaryHour, setSummaryHour] = useState(initial.dailySummaryHour);
   const [floatShop, setFloatShop] = useState(String(initial.cashFloatShop));
-  const [floatCarwash, setFloatCarwash] = useState(String(initial.cashFloatCarwash));
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -55,7 +56,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         minimumMarginPercent: Number(minimumMargin),
         dailySummaryHour: summaryHour,
         cashFloatShop: Number(floatShop),
-        cashFloatCarwash: Number(floatCarwash),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['settings'], updated);
@@ -79,17 +79,14 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     minimumMargin !== '' &&
     Number(minimumMargin) >= 0 &&
     floatShop !== '' &&
-    Number(floatShop) >= 0 &&
-    floatCarwash !== '' &&
-    Number(floatCarwash) >= 0;
+    Number(floatShop) >= 0;
   // Save only turns orange once there's something to save, so one card at a time asks for action.
   const hasChanges =
     Number(limit) !== initial.refundApprovalLimit ||
     Number(windowDays) !== initial.returnWindowDays ||
     Number(minimumMargin) !== initial.minimumMarginPercent ||
     summaryHour !== initial.dailySummaryHour ||
-    Number(floatShop) !== initial.cashFloatShop ||
-    Number(floatCarwash) !== initial.cashFloatCarwash;
+    Number(floatShop) !== initial.cashFloatShop;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -176,20 +173,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               aria-label={t.settings.floatShopLabel}
               value={floatShop}
               onChange={(event) => setFloatShop(event.target.value)}
-            />
-          </span>
-        </SettingRow>
-        <SettingRow title={t.settings.floatCarwash} description={t.settings.floatCarwashHint}>
-          <span className="unit-input">
-            <span aria-hidden="true">€</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={0.01}
-              aria-label={t.settings.floatCarwashLabel}
-              value={floatCarwash}
-              onChange={(event) => setFloatCarwash(event.target.value)}
             />
           </span>
         </SettingRow>

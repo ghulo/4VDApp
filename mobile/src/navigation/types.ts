@@ -17,6 +17,7 @@ export type RootStackParamList = {
   MySales: undefined;
   Return: { saleId: number; productName: string; quantity: number; pricePerUnit: number; returnedQuantity: number; saleDate: string };
   WriteOff: { productId: number; productName: string; inStock: number };
+  Expiry: { productId: number; productName: string };
   Counts: undefined;
   Count: { countId: number; title: string };
   CashCount: undefined;

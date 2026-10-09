@@ -146,6 +146,19 @@ export interface ReturnResult {
   needsApprovalBecause: string[];
 }
 
+export interface ExpiryDate {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  /** "2026-10-12" */
+  expiresOn: string;
+  /** Negative once it has passed. */
+  daysLeft: number;
+  note: string | null;
+  addedBy: string | null;
+}
+
 export interface WriteOffResult {
   id: number;
   status: ApprovalStatus;

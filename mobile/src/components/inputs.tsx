@@ -113,6 +113,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   input: {
     flex: 1,
+    // Without this a web input keeps its default width and pushes the + button off a narrow screen.
+    minWidth: 0,
     minHeight: 48,
     borderWidth: 1,
     borderRadius: radius.small,

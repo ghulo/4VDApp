@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { mediaSrc } from '../services/apiClient';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ExpiryPanel } from '../components/ExpiryPanel';
 import { StockTag } from '../components/StockTag';
 import { Button, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
@@ -83,6 +84,10 @@ export function ProductDetailScreen({ route, navigation }: Props) {
             <TierRow key={tier.quantity} quantityLabel={t.product.orMore(tier.quantity)} price={tier.price} />
           ))}
         </View>
+      )}
+
+      {canRecordSales(user) && (
+        <ExpiryPanel productId={productId} onAdd={() => navigation.navigate('Expiry', { productId, productName: item.name })} />
       )}
 
       <View style={styles.actions}>

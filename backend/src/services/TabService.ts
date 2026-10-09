@@ -16,7 +16,7 @@ export interface CustomerDto {
   nui: string | null;
   phone: string | null;
   note: string | null;
-  /** What they owe now. */
+  /** What they owe now; below zero when they have credit. */
   balance: number;
   /** When the oldest charge still unpaid was made (payments pay off the oldest first); null when nothing is owed. */
   owingSince: string | null;
@@ -39,15 +39,22 @@ export interface TabEntryDto {
 
 export type CustomerInput = CustomerFields;
 
-/** Balance, oldest unpaid charge and last payment from a customer's entries (oldest first). */
+/**
+ * Balance, oldest unpaid charge and last payment from a customer's entries
+ * (oldest first). Money paid for a sale that was later undone stays theirs as
+ * credit, which pays for their next charges.
+ */
 function summarise(entries: TabEntryRecord[]) {
   const unpaid: Array<{ at: Date; left: number }> = [];
+  let credit = 0;
   let lastPaymentAt: Date | null = null;
   for (const entry of entries) {
     if (entry.sale_undone) continue;
     const amount = Number(entry.amount);
     if (entry.kind === 'charge') {
-      unpaid.push({ at: entry.occurred_at, left: amount });
+      const used = Math.min(credit, amount);
+      credit = roundMoney(credit - used);
+      if (amount > used) unpaid.push({ at: entry.occurred_at, left: roundMoney(amount - used) });
       continue;
     }
     if (entry.kind === 'payment') lastPaymentAt = entry.occurred_at;
@@ -59,8 +66,9 @@ function summarise(entries: TabEntryRecord[]) {
       rest = roundMoney(rest - paid);
       if (oldest.left <= 0) unpaid.shift();
     }
+    credit = roundMoney(credit + rest);
   }
-  const balance = roundMoney(unpaid.reduce((sum, charge) => sum + charge.left, 0));
+  const balance = roundMoney(unpaid.reduce((sum, charge) => sum + charge.left, 0) - credit);
   return { balance, owingSince: unpaid[0]?.at ?? null, lastPaymentAt };
 }
 
@@ -150,13 +158,16 @@ export class TabService {
     return this.detail(id);
   }
 
-  /** Closes a settled tab; one with money still owed stays open. */
+  /** Closes a settled tab; one with money still owed, or credit left, stays open. */
   async archive(id: number, actorId: number, now = new Date()): Promise<void> {
     const customer = await this.tabRepository.findCustomer(id);
     if (!customer) throw new NotFoundError(`Customer ${id} does not exist`);
     if (customer.archived_at) throw new ConflictError('This tab is already closed');
     const balance = await this.tabRepository.balance(id);
     if (balance > 0) throw new ConflictError(`${customer.name} still owes ${formatEuro(balance)}. Take the payment first.`);
+    if (balance < 0) {
+      throw new ConflictError(`${customer.name} has ${formatEuro(-balance)} credit left. It pays for their next purchase on the tab.`);
+    }
     await this.transactions.run(async (repos) => {
       await repos.tabs.archiveCustomer(id, now);
       await repos.activityLog.create({
@@ -170,7 +181,7 @@ export class TabService {
     });
   }
 
-  /** Money in against the tab. Never more than they owe, so a tab can't go into credit. */
+  /** Money in against the tab. Never more than they owe; credit only comes from undone sales. */
   async pay(customerId: number, input: { amount: number; note: string | null }, actorId: number): Promise<CustomerDto> {
     await this.transactions.run(async (repos) => {
       const customer = await repos.tabs.findCustomer(customerId);
@@ -178,7 +189,7 @@ export class TabService {
       const balance = await repos.tabs.balance(customerId);
       if (input.amount > balance) {
         throw new ValidationError(
-          balance === 0 ? `${customer.name} doesn't owe anything` : `${customer.name} only owes ${formatEuro(balance)}`,
+          balance <= 0 ? `${customer.name} doesn't owe anything` : `${customer.name} only owes ${formatEuro(balance)}`,
         );
       }
       await repos.tabs.addEntry({ customerId, kind: 'payment', amount: input.amount, note: input.note, saleId: null, createdBy: actorId });

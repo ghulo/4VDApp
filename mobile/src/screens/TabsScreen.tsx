@@ -12,6 +12,10 @@ import { useT } from '../i18n/useT';
 
 const day = (iso: string) => formatDateWith(new Date(iso), { day: 'numeric', month: 'short' });
 
+/** What they owe, their credit (from an undone sale they'd paid for), or settled. */
+const owedText = (balance: number, t: ReturnType<typeof useT>) =>
+  balance > 0 ? formatMoney(balance) : balance < 0 ? t.tabs.credit(formatMoney(-balance)) : t.tabs.settled;
+
 /** Everyone with a tab, most owed first. */
 export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Tabs'>) {
   const colors = useThemeColors();
@@ -40,7 +44,7 @@ export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParam
               {customer.owingSince && <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.since(day(customer.owingSince))}</Text>}
             </View>
             <Text style={[styles.amount, { color: customer.balance > 0 ? colors.ink : colors.inkMuted }]}>
-              {customer.balance > 0 ? formatMoney(customer.balance) : t.tabs.settled}
+              {owedText(customer.balance, t)}
             </Text>
           </Pressable>
         ))}
@@ -76,7 +80,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.owesLabel}</Text>
-        <Text style={[styles.big, { color: colors.ink }]}>{data.balance > 0 ? formatMoney(data.balance) : t.tabs.settled}</Text>
+        <Text style={[styles.big, { color: colors.ink }]}>{owedText(data.balance, t)}</Text>
         {data.owingSince && <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.since(day(data.owingSince))}</Text>}
         {data.phone && <Text style={[styles.muted, { color: colors.inkMuted }]}>{data.phone}</Text>}
       </View>

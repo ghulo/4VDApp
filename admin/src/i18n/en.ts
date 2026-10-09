@@ -1136,6 +1136,7 @@ export const en = {
     owingSince: 'Owing since',
     lastPayment: 'Last payment',
     settled: 'Settled',
+    credit: (amount: string) => `${amount} credit`,
     none: 'No tabs yet',
     noneHint: 'Open a tab above, or put a sale on one when you record it.',
     see: (name: string) => `See ${name}'s tab`,

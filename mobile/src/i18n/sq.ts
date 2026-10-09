@@ -295,6 +295,8 @@ export const sq: Catalogue = {
     owesLabel: 'Ka borxh',
     since: (day) => `që nga ${day}`,
     settled: 'I larë',
+    credit: (amount) => `${amount} kredi`,
+    hasCredit: (amount) => `ka ${amount} kredi`,
     none: 'Ende asnjë borxh',
     noneHint: 'Vendose një shitje në borxh kur e regjistron, dhe klienti shfaqet këtu.',
     paying: 'Shuma e paguar (€)',

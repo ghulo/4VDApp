@@ -1127,6 +1127,7 @@ export const sq: Catalogue = {
     owingSince: 'Borxh që nga',
     lastPayment: 'Pagesa e fundit',
     settled: 'I larë',
+    credit: (amount) => `${amount} kredi`,
     none: 'Ende asnjë borxh',
     noneHint: 'Hap një borxh më lart, ose vendose një shitje në borxh kur e regjistron.',
     see: (name: string) => `Shiko borxhin e ${name}`,

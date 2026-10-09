@@ -26,6 +26,7 @@ import type {
   CarwashTotals,
   CarwashTotalsByCarwash,
   LaunchStep,
+  WipeReport,
   CashCount,
   CashPlace,
   CashPlaceToday,
@@ -470,6 +471,9 @@ export const settingsApi = {
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
+  wipePreview: async () => (await apiRequest<WipeReport>('/settings/wipe-preview')).data,
+  /** Deletes all test data; `confirm` has to be the typed phrase. */
+  wipe: async (confirm: string) => (await apiRequest<WipeReport>('/settings/wipe', { method: 'POST', body: { confirm } })).data,
 };
 
 export const returnsApi = {

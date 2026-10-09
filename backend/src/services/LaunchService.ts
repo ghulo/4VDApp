@@ -1,4 +1,6 @@
+import type { DatabaseClient } from '../database/connection.js';
 import type { LaunchRepository } from '../repositories/LaunchRepository.js';
+import { type WipeReport, wipeShopData } from '../scripts/wipeShopData.js';
 
 export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'weeklyEmail' | 'emails' | 'phoneAlerts' | 'backups';
 
@@ -17,8 +19,19 @@ export interface LaunchStep {
 export class LaunchService {
   constructor(
     private readonly launchRepository: LaunchRepository,
+    private readonly db: DatabaseClient,
     private readonly setup: { realEmails: boolean; phoneAlerts: boolean },
   ) {}
+
+  /** What the wipe would delete, without deleting anything. */
+  wipePreview(): Promise<WipeReport> {
+    return wipeShopData(this.db, { apply: false });
+  }
+
+  /** Clears the test data for real; everything or nothing. Keeps developer accounts, the shop and its settings. */
+  wipe(actorId: number): Promise<WipeReport> {
+    return wipeShopData(this.db, { apply: true, actorId });
+  }
 
   async checklist(): Promise<LaunchStep[]> {
     const facts = await this.launchRepository.facts();

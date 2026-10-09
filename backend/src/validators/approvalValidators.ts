@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { APPROVAL_STATUSES, RETURN_CONDITIONS, WRITE_OFF_REASONS } from '../constants/approvals.js';
+import { WIPE_PHRASE } from '../scripts/wipeShopData.js';
 import { idSchema, optionalText, trimmedString } from './validate.js';
 
 const MAX_UNITS = 1_000_000;
@@ -24,6 +25,11 @@ export const updateSettingsSchema = z
   .refine((input) => Object.values(input).some((value) => value !== undefined), {
     message: 'send at least one of: refundApprovalLimit, returnWindowDays, minimumMarginPercent, dailySummaryHour, cashFloatShop',
   });
+
+/** Wiping everything has to be typed out, so it can't happen by a stray click. */
+export const wipeSchema = z.object({
+  confirm: z.literal(WIPE_PHRASE, { error: `type "${WIPE_PHRASE}" to confirm` }),
+});
 
 /** Rejecting always needs a reason the employee can read. */
 export const decisionNoteSchema = z.object({ note: trimmedString(500) });

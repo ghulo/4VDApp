@@ -67,3 +67,53 @@ describe('wipeShopData', () => {
     expect(WIPE_PHRASE).toBe('wipe 4vd.app');
   });
 });
+
+describe('wipe from the dashboard', () => {
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+  it('should be for the developer only', async () => {
+    const adminToken = await loginAs(context, 'admin');
+    const ownerToken = await loginAs(context, 'owner');
+
+    for (const token of [adminToken, ownerToken]) {
+      expect((await request(context.app).get('/api/settings/wipe-preview').set(auth(token))).status).toBe(403);
+      expect((await request(context.app).post('/api/settings/wipe').set(auth(token)).send({ confirm: WIPE_PHRASE })).status).toBe(403);
+    }
+  });
+
+  it('should show what would go, without deleting anything', async () => {
+    const { developerToken } = await shopWithTestData();
+
+    const preview = await request(context.app).get('/api/settings/wipe-preview').set(auth(developerToken));
+
+    expect(preview.status).toBe(200);
+    expect(preview.body.data).toMatchObject({ applied: false, keptDevelopers: ['developer@test.local'], deleted: { users: 1, sales: 1 } });
+    expect(await count('sales')).toBe(1);
+  });
+
+  it('should delete nothing unless the phrase is typed exactly', async () => {
+    const { developerToken } = await shopWithTestData();
+
+    for (const body of [{}, { confirm: 'wipe' }, { confirm: 'WIPE 4VD.APP' }]) {
+      expect((await request(context.app).post('/api/settings/wipe').set(auth(developerToken)).send(body)).status).toBe(400);
+    }
+    expect(await count('sales')).toBe(1);
+  });
+
+  it('should wipe everything, tick the launch step, keep the carwashes and log it', async () => {
+    const { developerToken } = await shopWithTestData();
+    await request(context.app).put('/api/carwash/2026-10-01').set(auth(developerToken)).send({ carwash: 10, change: 0 });
+
+    const wiped = await request(context.app).post('/api/settings/wipe').set(auth(developerToken)).send({ confirm: WIPE_PHRASE });
+
+    expect(wiped.status).toBe(200);
+    expect(await count('sales')).toBe(0);
+    expect(await count('users')).toBe(1);
+    expect(await context.db.selectFrom('carwash_days').select('day').execute()).toHaveLength(0);
+    expect(await context.db.selectFrom('carwashes').select('id').execute()).toHaveLength(1);
+    const checklist = await request(context.app).get('/api/settings/launch-checklist').set(auth(developerToken));
+    expect(checklist.body.data.find((step: { key: string }) => step.key === 'wiped').done).toBe(true);
+    const log = await context.db.selectFrom('activity_log').select('action').execute();
+    expect(log.map((entry) => entry.action)).toEqual(['shop.wiped']);
+  });
+});

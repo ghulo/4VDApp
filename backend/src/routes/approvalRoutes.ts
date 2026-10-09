@@ -15,6 +15,9 @@ export function createSettingsRoutes({ settingsService, launchService, guards }:
   router.put('/', ...guards.manage, controller.update);
   // What's left before the real shop starts using the app.
   router.get('/launch-checklist', ...guards.developer, controller.launchChecklist);
+  // Clears the test data before launch (developer only; the phrase must be typed).
+  router.get('/wipe-preview', ...guards.developer, controller.wipePreview);
+  router.post('/wipe', ...guards.developer, controller.wipe);
 
   return router;
 }

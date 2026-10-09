@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
+import { WipeDataPanel } from '../components/WipeDataPanel';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Button, Card, PageHeader, SettingRow } from '../components/ui';
@@ -34,6 +35,7 @@ export function SettingsPage() {
         {settings.data && <SettingsForm initial={settings.data} />}
         <CarwashesPanel />
       </ManagersOnly>
+      {role === 'developer' && <WipeDataPanel />}
     </>
   );
 }

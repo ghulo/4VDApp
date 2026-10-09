@@ -98,14 +98,16 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
         {data.entries.map((entry, index) => (
           <View key={entry.id} style={[styles.row, { borderTopColor: colors.line, borderTopWidth: index === 0 ? 0 : 1, opacity: entry.undone ? 0.5 : 1 }]}>
             <View style={styles.rowText}>
-              <Text style={[styles.name, { color: colors.ink }]}>{entry.kind === 'payment' ? t.tabs.payment : (entry.note ?? t.tabs.charge)}</Text>
+              <Text style={[styles.name, { color: colors.ink }]}>
+                {entry.kind === 'payment' ? t.tabs.payment : entry.kind === 'refund' ? t.tabs.refund(entry.note ?? '') : (entry.note ?? t.tabs.charge)}
+              </Text>
               <Text style={[styles.muted, { color: colors.inkMuted }]}>
                 {day(entry.at)}
                 {entry.undone ? ` · ${t.tabs.undone}` : ''}
               </Text>
             </View>
-            <Text style={[styles.amount, { color: entry.kind === 'payment' ? colors.stockOk : colors.ink }]}>
-              {entry.kind === 'payment' ? `−${formatMoney(entry.amount)}` : formatMoney(entry.amount)}
+            <Text style={[styles.amount, { color: entry.kind === 'charge' ? colors.ink : colors.stockOk }]}>
+              {entry.kind === 'charge' ? formatMoney(entry.amount) : `−${formatMoney(entry.amount)}`}
             </Text>
           </View>
         ))}

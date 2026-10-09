@@ -218,7 +218,7 @@ function CustomerTab({ id }: { id: number }) {
             {
               header: t.tabs.amount,
               align: 'end',
-              cell: (row) => (row.kind === 'payment' ? `−${formatMoney(row.amount)}` : formatMoney(row.amount)),
+              cell: (row) => (row.kind === 'charge' ? formatMoney(row.amount) : `−${formatMoney(row.amount)}`),
             },
             { header: t.tabs.by, cell: (row) => row.by ?? '–' },
           ]}
@@ -253,7 +253,13 @@ function EntryWhat({ entry }: { entry: TabEntry }) {
   const t = useT();
   return (
     <>
-      {entry.kind === 'payment' ? <Badge tone="ok">{t.tabs.payment}</Badge> : <Badge tone="neutral">{t.tabs.charge}</Badge>}
+      {entry.kind === 'payment' ? (
+        <Badge tone="ok">{t.tabs.payment}</Badge>
+      ) : entry.kind === 'refund' ? (
+        <Badge tone="ok">{t.tabs.refund}</Badge>
+      ) : (
+        <Badge tone="neutral">{t.tabs.charge}</Badge>
+      )}
       {entry.note && <span className="table__secondary">{entry.note}</span>}
       {entry.undone && <span className="table__secondary">{t.tabs.undone}</span>}
     </>

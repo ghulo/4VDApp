@@ -356,13 +356,18 @@ export interface CustomersTable {
   created_at: CreatedAt;
 }
 
+/** A charge adds to what's owed; a payment (money in) or a refund (a return) takes it off. */
+export type TabEntryKind = 'charge' | 'payment' | 'refund';
+
 export interface TabEntriesTable {
   id: Generated<number>;
   customer_id: number;
-  kind: 'charge' | 'payment';
+  kind: TabEntryKind;
   amount: Decimal;
   note: string | null;
   sale_id: number | null;
+  /** Set on a refund: the return it came from. */
+  return_id: number | null;
   occurred_at: ColumnType<Date, Date | undefined, Date>;
   created_by: number | null;
 }

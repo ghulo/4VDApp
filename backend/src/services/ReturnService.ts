@@ -219,6 +219,22 @@ async function approveReturn(repos: TransactionalRepositories, id: number, decid
     await approveWriteOff(repos, writeOff.id, decidedBy, { removeStock: false });
   }
   await repos.returns.decide(id, { status: 'approved', decidedBy, note: null });
+  // Bought on a tab: the refund comes off what they owe, and only what's left over is paid out in cash.
+  const customerId = await repos.tabs.customerOfSale(item.sale_id);
+  if (customerId !== undefined) {
+    const offTab = Math.min(toMoney(item.refund_amount), await repos.tabs.balance(customerId));
+    if (offTab > 0) {
+      await repos.tabs.addEntry({
+        customerId,
+        kind: 'refund',
+        amount: offTab,
+        note: `${item.quantity} × ${item.product_name}`,
+        saleId: null,
+        returnId: id,
+        createdBy: decidedBy,
+      });
+    }
+  }
   await documents.followUp(repos, 'credit_note', {
     saleId: item.sale_id,
     returnId: id,

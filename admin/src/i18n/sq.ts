@@ -1140,6 +1140,7 @@ export const sq: Catalogue = {
     historyCaption: 'Shitjet dhe pagesat në këtë borxh',
     charge: 'Në borxh',
     payment: 'U pagua',
+    refund: 'U kthye',
     undone: 'Shitja u anulua, nuk llogaritet më',
     when: 'Kur',
     what: 'Çfarë',

@@ -20,6 +20,7 @@ export interface ProductData {
   imageUrl: string | null;
   sku: string | null;
   isActive: boolean;
+  vatRate: number;
 }
 
 /** A product joined with its category name and stock, as the API needs it. */
@@ -35,6 +36,7 @@ export interface ProductRecord {
   sku: string | null;
   barcode: string | null;
   is_active: boolean;
+  vat_rate: number;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -66,6 +68,7 @@ export class ProductRepository {
     'p.sku',
     'p.barcode',
     'p.is_active',
+    'p.vat_rate',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -126,6 +129,7 @@ export class ProductRepository {
         image_url: data.imageUrl,
         sku: data.sku,
         is_active: data.isActive,
+        vat_rate: data.vatRate,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -144,6 +148,7 @@ export class ProductRepository {
         image_url: data.imageUrl,
         sku: data.sku,
         is_active: data.isActive,
+        vat_rate: data.vatRate,
         updated_at: new Date(),
       })
       .where('id', '=', id)

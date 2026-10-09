@@ -58,7 +58,7 @@ export class UndoRepository {
     return this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select(['s.id', 's.product_id', 'p.name as product_name', 's.quantity_sold', 's.sold_by', 's.undone_at', 's.undone_by'])
+      .select(['s.id', 's.product_id', 'p.name as product_name', 's.quantity_sold', 's.total_amount', 's.sold_by', 's.undone_at', 's.undone_by'])
       .where('s.id', '=', id)
       .forUpdate('s')
       .executeTakeFirst();
@@ -87,6 +87,7 @@ export class UndoRepository {
         's.product_id',
         'p.name as product_name',
         'r.quantity',
+        'r.refund_amount',
         'r.condition',
         'r.status',
         'r.requested_by',

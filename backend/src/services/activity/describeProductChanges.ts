@@ -10,6 +10,7 @@ export interface ProductSnapshot {
   imageUrl: string | null;
   sku: string | null;
   isActive: boolean;
+  vatRate: number;
   /** Undefined means "not part of this change". */
   bulkPricingTiers?: PricingTier[];
 }
@@ -23,6 +24,7 @@ const FIELD_LABELS: Record<keyof ProductSnapshot, string> = {
   imageUrl: 'image',
   sku: 'SKU',
   isActive: 'visibility',
+  vatRate: 'VAT rate',
   bulkPricingTiers: 'bulk prices',
 };
 

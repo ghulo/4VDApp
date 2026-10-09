@@ -96,6 +96,7 @@ export class EditReverts {
           imageUrl: product.imageUrl,
           sku: product.sku,
           isActive: product.isActive,
+          vatRate: product.vatRate,
         };
         for (const field of changedFields(entry)) (input as unknown as Record<string, unknown>)[field] = valueOf(field);
         const saved = await this.productService.update(product.id, input, actor.id, logExtra);

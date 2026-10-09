@@ -1,5 +1,6 @@
-import { apiRequest, tokenStore } from './apiClient';
+import { apiRequest, apiText, tokenStore } from './apiClient';
 import type {
+  DocumentRef,
   AppSettings,
   CarwashToday,
   CashPlace,
@@ -88,9 +89,14 @@ export const favoritesApi = {
   },
 };
 
+export const documentsApi = {
+  /** The invoice as a printable A4 page, in the reader's language. */
+  printPage: (id: number) => apiText(`/documents/${id}/print`),
+};
+
 export const salesApi = {
   recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
-    (await apiRequest<{ sales: Sale[]; total: number }>('/sales/basket', { method: 'POST', body: input })).data,
+    (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };

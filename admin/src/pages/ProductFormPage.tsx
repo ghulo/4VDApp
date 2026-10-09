@@ -7,7 +7,7 @@ import { shrinkPhoto } from '../utils/shrinkPhoto';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
-import type { Category, PriceChange, Product, ProductInput } from '../services/types';
+import { type Category, type PriceChange, type Product, type ProductInput, VAT_RATES, type VatRate } from '../services/types';
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
 import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
 import { Camera, Package } from '@phosphor-icons/react';
@@ -28,6 +28,7 @@ interface ProductDraft {
   categoryId: string;
   price: string;
   costPrice: string;
+  vatRate: VatRate;
   sku: string;
   imageUrl: string;
   isActive: boolean;
@@ -54,6 +55,7 @@ function toDraft(product?: Product): ProductDraft {
     categoryId: product ? String(product.category.id) : '',
     price: product ? String(product.price) : '',
     costPrice: product?.costPrice != null ? String(product.costPrice) : '',
+    vatRate: product?.vatRate ?? 18,
     sku: product?.sku ?? '',
     imageUrl: product?.imageUrl ?? '',
     isActive: product?.isActive ?? true,
@@ -74,6 +76,7 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
     categoryId: Number(draft.categoryId),
     price: Number(draft.price),
     costPrice: draft.costPrice === '' ? null : Number(draft.costPrice),
+    vatRate: draft.vatRate,
     sku: draft.sku.trim() || null,
     imageUrl: draft.imageUrl.trim() || null,
     isActive: draft.isActive,
@@ -339,6 +342,17 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     value={draft.costPrice}
                     onChange={(event) => update('costPrice', event.target.value)}
                   />
+                </label>
+                <label className="field">
+                  <span className="field__label">{t.productForm.vatRate}</span>
+                  <select value={draft.vatRate} onChange={(event) => update('vatRate', Number(event.target.value) as VatRate)}>
+                    {VAT_RATES.map((rate) => (
+                      <option key={rate} value={rate}>
+                        {t.productForm.vatOption(rate)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="field__hint">{t.productForm.vatHint}</span>
                 </label>
               </div>
               {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}

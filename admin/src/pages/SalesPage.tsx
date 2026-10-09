@@ -1,7 +1,7 @@
 import { Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { BasketForm } from '../components/BasketForm';
 import { ReturnForm } from '../components/ReturnForm';
@@ -129,6 +129,7 @@ function SalesHistory() {
                     {t.sales.total}
                   </th>
                   <th scope="col">{t.sales.soldBy}</th>
+                  <th scope="col">{t.documents.invoice}</th>
                   <th scope="col">
                     <span className="visually-hidden">{t.sales.actions}</span>
                   </th>
@@ -152,6 +153,9 @@ function SalesHistory() {
                       <td className="table__numeric" data-label={t.sales.each}>{formatMoney(sale.pricePerUnit)}</td>
                       <td className="table__numeric" data-label={t.sales.total}>{formatMoney(sale.totalAmount)}</td>
                       <td data-label={t.sales.soldBy}>{sale.soldBy ?? t.sales.unknown}</td>
+                      <td data-label={t.documents.invoice}>
+                        {sale.invoice ? <Link to={`/documents/${sale.invoice.id}`}>{sale.invoice.number}</Link> : '–'}
+                      </td>
                       <td>
                         {sale.returnedQuantity < sale.quantity && (
                           <button
@@ -170,7 +174,7 @@ function SalesHistory() {
                     </tr>
                     {returningId === sale.id && (
                       <tr className="table__expanded">
-                        <td colSpan={7}>
+                        <td colSpan={8}>
                           <ReturnForm
                             sale={sale}
                             onDone={(message) => {

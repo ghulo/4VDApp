@@ -10,11 +10,12 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, Vibration, View } f
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { TabPicker } from '../components/TabPicker';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
-import { favoritesApi, productsApi, salesApi } from '../services/api';
-import type { Customer, Product } from '../services/types';
+import { documentsApi, favoritesApi, productsApi, salesApi } from '../services/api';
+import type { Customer, DocumentRef, Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
+import { canPrint, printDocument } from '../utils/printDocument';
 import { useT } from '../i18n/useT';
 import { useTabBarSpace } from '../components/TabBarSpace';
 
@@ -62,6 +63,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   const [paid, setPaid] = useState('');
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState<Customer | null>(null);
+  const [invoice, setInvoice] = useState<DocumentRef | null>(null);
 
   const query = search.trim().toLowerCase();
   const matches = query
@@ -72,6 +74,8 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
 
   function add(product: Product) {
     setNotice(null);
+    setInvoice(null);
+    print.reset();
     setLines((current) => {
       const existing = current.find((line) => line.product.id === product.id);
       if (!existing) return [...current, { product, quantity: 1 }];
@@ -117,12 +121,20 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     onSuccess: (result) => {
       for (const key of [['products'], ['reports', 'my-sales'], ['inventory'], ['customers'], ['cash']]) queryClient.invalidateQueries({ queryKey: key });
       Vibration.vibrate(60);
-      setNotice({ text: t.sell.soldBasket(result.sales.length, formatMoney(result.total)) + (tab ? t.tabs.soldOnTab(tab.name) : ''), ok: true });
+      setNotice({
+        text: t.sell.soldBasket(result.sales.length, formatMoney(result.total)) + (tab ? t.tabs.soldOnTab(tab.name) : '') + t.sell.invoiceReady(result.invoice.number),
+        ok: true,
+      });
+      setInvoice(result.invoice);
       setLines([]);
       setPaid('');
       setNotes('');
       setTab(null);
     },
+  });
+
+  const print = useMutation({
+    mutationFn: (document: DocumentRef) => printDocument(() => documentsApi.printPage(document.id), document.number),
   });
 
   const productRow = (product: Product) => (
@@ -251,6 +263,14 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
         {notice && (
           <Text style={[styles.message, { color: notice.ok ? colors.stockOk : colors.signalOut }]} accessibilityLiveRegion="polite">
             {notice.text}
+          </Text>
+        )}
+        {notice?.ok && invoice && canPrint && (
+          <Button label={t.sell.printInvoice} variant="quiet" onPress={() => print.mutate(invoice)} loading={print.isPending} />
+        )}
+        {print.isError && (
+          <Text style={[styles.message, { color: colors.signalOut }]} accessibilityLiveRegion="polite">
+            {print.error.message === 'blocked' ? t.sell.printBlocked : errorMessage(print.error)}
           </Text>
         )}
       </ScrollView>

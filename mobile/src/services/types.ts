@@ -56,6 +56,12 @@ export interface Sale {
   totalAmount: number;
 }
 
+/** An invoice or credit note, by its number. */
+export interface DocumentRef {
+  id: number;
+  number: string;
+}
+
 export interface SalesTotals {
   salesCount: number;
   unitsSold: number;

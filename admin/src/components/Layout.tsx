@@ -17,6 +17,7 @@ import {
   MagnifyingGlass,
   Package,
   Percent,
+  FileText,
   Receipt,
   SealCheck,
   SignOut,
@@ -82,6 +83,7 @@ const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: NavItem[
     key: 'business',
     items: [
       { to: '/sales', key: 'sales', icon: Receipt },
+      { to: '/documents', key: 'documents', icon: FileText },
       { to: '/carwash', key: 'carwash', icon: Drop },
       { to: '/cash', key: 'cash', icon: Coins },
       { to: '/expenses', key: 'expenses', icon: Wallet },

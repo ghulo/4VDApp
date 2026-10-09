@@ -301,6 +301,8 @@ export const en = {
     owesLabel: 'Owes',
     since: (day: string) => `since ${day}`,
     settled: 'Settled',
+    credit: (amount: string) => `${amount} credit`,
+    hasCredit: (amount: string) => `has ${amount} credit`,
     none: 'No tabs yet',
     noneHint: 'Put a sale on a tab when you record it, and the customer shows up here.',
     paying: 'Amount paid (€)',

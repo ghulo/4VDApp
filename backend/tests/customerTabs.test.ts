@@ -74,6 +74,25 @@ describe('customer tabs', () => {
     expect((await detail(arben)).balance).toBe(20);
   });
 
+  it('should keep what they paid for an undone sale as credit for their next purchase', async () => {
+    const arben = await openTab();
+    const sale = (await sellOnTab(arben, 2)).body.data; // €20
+    await request(context.app).post(`/api/customers/${arben}/payments`).set(auth(employeeToken)).send({ amount: 20 });
+    const entry = await context.db
+      .selectFrom('activity_log')
+      .select('id')
+      .where('entity_type', '=', 'sale')
+      .where('entity_id', '=', sale.id)
+      .executeTakeFirstOrThrow();
+
+    await request(context.app).post(`/api/activity/${entry.id}/undo`).set(auth(adminToken)).send({});
+    expect((await detail(arben)).balance).toBe(-20);
+    // Credit can't be closed away; it pays for the next sale first.
+    expect((await request(context.app).post(`/api/customers/${arben}/archive`).set(auth(adminToken))).status).toBe(409);
+    await sellOnTab(arben, 3); // €30
+    expect(await detail(arben)).toMatchObject({ balance: 10 });
+  });
+
   it('should keep tab sales out of the cash check, and count tab payments in', async () => {
     const arben = await openTab();
     await sellOnTab(undefined, 3); // €30 paid in cash

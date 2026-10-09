@@ -92,7 +92,11 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
           style={({ pressed }) => [styles.row, { borderTopColor: colors.line, backgroundColor: pressed ? colors.fill : 'transparent' }]}
         >
           <Text style={[styles.name, { color: colors.ink }]}>{customer.name}</Text>
-          {customer.balance > 0 && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.owes(formatMoney(customer.balance))}</Text>}
+          {customer.balance !== 0 && (
+            <Text style={[styles.hint, { color: colors.inkMuted }]}>
+              {customer.balance > 0 ? t.tabs.owes(formatMoney(customer.balance)) : t.tabs.hasCredit(formatMoney(-customer.balance))}
+            </Text>
+          )}
         </Pressable>
       ))}
       {query !== '' && !exact && !asBusiness && (

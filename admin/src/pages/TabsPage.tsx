@@ -79,7 +79,12 @@ function AllTabs() {
               {
                 header: t.tabs.owes,
                 align: 'end',
-                cell: (row) => (row.balance > 0 ? formatMoney(row.balance) : <Badge tone="ok">{t.tabs.settled}</Badge>),
+                cell: (row) =>
+                  row.balance > 0 ? (
+                    formatMoney(row.balance)
+                  ) : (
+                    <Badge tone="ok">{row.balance < 0 ? t.tabs.credit(formatMoney(-row.balance)) : t.tabs.settled}</Badge>
+                  ),
               },
               {
                 header: t.tabs.owingSince,
@@ -195,7 +200,7 @@ function CustomerTab({ id }: { id: number }) {
         crumbs={[{ label: t.tabs.back, to: '/tabs' }]}
       />
       <StatGrid>
-        <StatTile label={t.tabs.owes} value={data.balance > 0 ? formatMoney(data.balance) : t.tabs.settled} tone={isOverdue(data) ? 'warn' : 'default'} />
+        <StatTile label={t.tabs.owes} value={data.balance > 0 ? formatMoney(data.balance) : data.balance < 0 ? t.tabs.credit(formatMoney(-data.balance)) : t.tabs.settled} tone={isOverdue(data) ? 'warn' : 'default'} />
         <StatTile label={t.tabs.owingSince} value={data.owingSince ? formatDate(data.owingSince) : '–'} />
         <StatTile label={t.tabs.lastPayment} value={data.lastPaymentAt ? formatDate(data.lastPaymentAt) : '–'} />
       </StatGrid>

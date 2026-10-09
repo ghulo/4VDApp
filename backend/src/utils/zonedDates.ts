@@ -65,3 +65,19 @@ function zonedMidnight(year: number, month: number, day: number, timeZone: strin
   const zonedAsUtc = Date.UTC(Number(zoned.year), Number(zoned.month) - 1, Number(zoned.day), Number(zoned.hour), Number(zoned.minute));
   return new Date(midnightAsUtc - (zonedAsUtc - midnightAsUtc));
 }
+
+/** Midnight at the start of a calendar day ("2026-10-09") in `timeZone`. */
+export function startOfDay(day: string, timeZone: string): Date {
+  const [year, month, date] = day.split('-').map(Number);
+  return zonedMidnight(year!, month!, date!, timeZone);
+}
+
+/** The calendar day `days` after (or before, when negative) `day`. */
+export function addDays(day: string, days: number): string {
+  return new Date(Date.parse(`${day}T00:00:00Z`) + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** 1 = Monday … 7 = Sunday, for a calendar day. */
+export function isoWeekday(day: string): number {
+  return new Date(`${day}T00:00:00Z`).getUTCDay() || 7;
+}

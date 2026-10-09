@@ -15,6 +15,8 @@ const EMPTIED = [
   'document_numbers',
   'stock_count_lines',
   'expiry_dates',
+  'supplier_payments',
+  'supplier_bills',
   'purchase_order_lines',
   'purchase_orders',
   'suppliers',

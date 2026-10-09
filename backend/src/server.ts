@@ -21,15 +21,12 @@ logger.onError((message, context) => container.errorAlertService.record(message,
 /** How often new notifications are pushed to phones and browsers, and queued emails sent. */
 const PUSH_INTERVAL_MS = 5_000;
 let isPushing = false;
-/** The daily summary checks once a minute whether its hour has come. */
+/** The reports check once a minute whether someone's hour has come. */
 const SUMMARY_CHECK_MS = 60_000;
 const summaryTimer = setInterval(() => {
-  container.dailySummaryService
-    .sendIfDue()
-    .catch((error) => logger.error('Sending the daily summary failed', { error: String(error) }));
-  container.weeklyReportService
-    .sendIfDue()
-    .catch((error) => logger.error('Sending the weekly report failed', { error: String(error) }));
+  container.reportDeliveryService
+    .sendDue()
+    .catch((error) => logger.error('Sending the reports failed', { error: String(error) }));
   container.expenseService
     .fillDue()
     .catch((error) => logger.error('Adding the monthly expenses failed', { error: String(error) }));

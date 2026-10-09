@@ -15,7 +15,7 @@ export interface LaunchFacts {
   has_nui: boolean;
   has_phone: boolean;
   owners: string;
-  owners_with_weekly_email: string;
+  owners_with_reports: string;
   employees: string;
 }
 
@@ -33,7 +33,8 @@ export class LaunchRepository {
         coalesce((select nui is not null from businesses order by id limit 1), false) as has_nui,
         coalesce((select phone is not null and phone <> '' from businesses order by id limit 1), false) as has_phone,
         (select count(*) from users where role = 'owner' and is_active and deleted_at is null) as owners,
-        (select count(*) from users where role = 'owner' and is_active and deleted_at is null and email_weekly_report) as owners_with_weekly_email,
+        (select count(*) from users u left join report_subscriptions r on r.user_id = u.id
+          where u.role = 'owner' and u.is_active and u.deleted_at is null and coalesce(r.daily_enabled or r.weekly_enabled, true)) as owners_with_reports,
         (select count(*) from users where role = 'employee' and is_active and deleted_at is null) as employees
     `.execute(this.db);
     return result.rows[0]!;

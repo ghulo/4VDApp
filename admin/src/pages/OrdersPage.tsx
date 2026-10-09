@@ -10,6 +10,9 @@ import type { PurchaseOrder, Supplier } from '../services/types';
 import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
+import { Link } from 'react-router';
+import { BillFields } from '../components/BillParts';
+import { emptyBill, isBillValid, toBillInput } from '../utils/bills';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
 
 const STATUS_TONE = { open: 'info', received: 'ok', cancelled: 'neutral' } as const;
@@ -54,12 +57,33 @@ export function OrdersPage() {
             rows={closed}
             rowKey={(row) => row.id}
             columns={[
-              { header: t.orders.order, title: true, cell: (row) => t.orders.orderNumber(row.id, row.supplier.name) },
+              {
+                header: t.orders.order,
+                title: true,
+                cell: (row) => (
+                  <Link to={`/orders/${row.id}`} className="table__primary-link">
+                    {t.orders.orderNumber(row.id, row.supplier.name)}
+                  </Link>
+                ),
+              },
               {
                 header: t.orders.whatCame,
                 cell: (row) => (row.status === 'cancelled' ? '–' : row.lines.map((line) => `${line.receivedQuantity ?? 0} × ${line.productName}`).join(', ')),
               },
               { header: t.orders.statusColumn, cell: (row) => <Badge tone={STATUS_TONE[row.status]}>{t.orders.status[row.status]}</Badge> },
+              {
+                header: t.orderDetail.bill,
+                cell: (row) =>
+                  row.status !== 'received' ? (
+                    '–'
+                  ) : row.bill ? (
+                    <Link to={`/bills/${row.bill.id}`}>
+                      <Badge tone={row.bill.left > 0 ? 'warn' : 'ok'}>{row.bill.left > 0 ? t.orderDetail.leftToPay(formatMoney(row.bill.left)) : t.bills.statuses.paid}</Badge>
+                    </Link>
+                  ) : (
+                    <Link to={`/orders/${row.id}`}>{t.orderDetail.addBill}</Link>
+                  ),
+              },
               { header: t.orders.closedOn, align: 'end', cell: (row) => (row.closedAt ? formatDate(row.closedAt) : '–') },
             ]}
           />
@@ -369,14 +393,17 @@ function OrderCard({ order }: { order: PurchaseOrder }) {
   );
   const [updateCosts, setUpdateCosts] = useState(false);
   const [expires, setExpires] = useState<Record<number, string>>({});
+  const [withBill, setWithBill] = useState(false);
+  const [bill, setBill] = useState(emptyBill());
 
   const invalidate = () => {
-    for (const key of ['orders', 'inventory', 'products', 'reports', 'activity', 'notifications']) queryClient.invalidateQueries({ queryKey: [key] });
+    for (const key of ['orders', 'inventory', 'products', 'reports', 'activity', 'notifications', 'bills']) queryClient.invalidateQueries({ queryKey: [key] });
   };
   const receive = useMutation({
     mutationFn: () =>
       ordersApi.receive(order.id, {
         updateCostPrices: updateCosts,
+        ...(withBill && { bill: toBillInput(bill) }),
         lines: order.lines.map((line) => ({
           lineId: line.id,
           receivedQuantity: Number(came[line.id] || 0),
@@ -387,6 +414,12 @@ function OrderCard({ order }: { order: PurchaseOrder }) {
     onSuccess: invalidate,
   });
   const cancel = useMutation({ mutationFn: () => ordersApi.cancel(order.id), onSuccess: invalidate });
+
+  /** What the delivery cost at the prices typed in, to start the bill from. */
+  function deliveredCost() {
+    const sum = order.lines.reduce((total, line) => total + Number(came[line.id] || 0) * Number(costs[line.id] || 0), 0);
+    return Math.round(sum * 100) / 100 || '';
+  }
 
   async function copyText() {
     const text = t.orders.orderText({
@@ -406,7 +439,7 @@ function OrderCard({ order }: { order: PurchaseOrder }) {
 
   return (
     <Card
-      title={t.orders.orderNumber(order.id, order.supplier.name)}
+      title={<Link to={`/orders/${order.id}`}>{t.orders.orderNumber(order.id, order.supplier.name)}</Link>}
       description={[t.orders.madeOn(formatDate(order.createdAt), order.createdBy), contact, order.total > 0 ? t.orders.total(formatMoney(order.total)) : null]
         .filter(Boolean)
         .join(' · ')}
@@ -504,13 +537,25 @@ function OrderCard({ order }: { order: PurchaseOrder }) {
             <input type="checkbox" checked={updateCosts} onChange={(event) => setUpdateCosts(event.target.checked)} />
             {t.orders.updateCosts}
           </label>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={withBill}
+              onChange={(event) => {
+                setWithBill(event.target.checked);
+                if (event.target.checked && !bill.amount) setBill({ ...bill, amount: String(deliveredCost()) });
+              }}
+            />
+            {t.orderDetail.billCame}
+          </label>
+          {withBill && <BillFields draft={bill} onChange={setBill} />}
           {receive.isError && (
             <p className="form-error" role="alert">
               {errorMessage(receive.error)}
             </p>
           )}
           <div className="form-actions">
-            <Button variant="primary" disabled={receive.isPending} onClick={() => receive.mutate()}>
+            <Button variant="primary" disabled={receive.isPending || (withBill && !isBillValid(bill))} onClick={() => receive.mutate()}>
               {receive.isPending ? t.orders.receiving : t.orders.confirmReceive}
             </Button>
             <Button variant="ghost" onClick={() => setReceiving(false)}>

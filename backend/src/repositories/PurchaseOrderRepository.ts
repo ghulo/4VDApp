@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
 export type OrderStatus = 'open' | 'received' | 'cancelled';
@@ -23,7 +24,18 @@ export interface OrderRecord {
   note: string | null;
   created_by_name: string | null;
   created_at: Date;
+  closed_by_name: string | null;
   closed_at: Date | null;
+}
+
+/** The supplier's bill for an order, with what is still owed on it. */
+export interface OrderBillRecord {
+  id: number;
+  order_id: number;
+  number: string | null;
+  amount: string;
+  paid: string;
+  due_on: string | null;
 }
 
 export interface OrderLineRecord {
@@ -76,6 +88,7 @@ export class PurchaseOrderRepository {
       .selectFrom('purchase_orders as o')
       .innerJoin('suppliers as s', 's.id', 'o.supplier_id')
       .leftJoin('users as u', 'u.id', 'o.created_by')
+      .leftJoin('users as c', 'c.id', 'o.closed_by')
       .select([
         'o.id',
         'o.supplier_id',
@@ -86,6 +99,7 @@ export class PurchaseOrderRepository {
         'o.note',
         'u.name as created_by_name',
         'o.created_at',
+        'c.name as closed_by_name',
         'o.closed_at',
       ]);
   }
@@ -101,6 +115,24 @@ export class PurchaseOrderRepository {
 
   async findOrder(id: number): Promise<OrderRecord | undefined> {
     return this.ordersQuery().where('o.id', '=', id).executeTakeFirst();
+  }
+
+  /** Bills for these orders; voided ones left out. */
+  async findBills(orderIds: number[]): Promise<OrderBillRecord[]> {
+    if (orderIds.length === 0) return [];
+    return this.db
+      .selectFrom('supplier_bills as b')
+      .select([
+        'b.id',
+        'b.order_id',
+        'b.number',
+        'b.amount',
+        sql<string>`coalesce((select sum(p.amount) from supplier_payments p where p.bill_id = b.id and p.voided_at is null), 0)`.as('paid'),
+        sql<string | null>`to_char(b.due_on, 'YYYY-MM-DD')`.as('due_on'),
+      ])
+      .where('b.order_id', 'in', orderIds)
+      .where('b.voided_at', 'is', null)
+      .execute() as Promise<OrderBillRecord[]>;
   }
 
   async findLines(orderIds: number[]): Promise<OrderLineRecord[]> {

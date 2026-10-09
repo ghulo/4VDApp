@@ -5,6 +5,7 @@ import { en, type ServerMessages } from '../i18n/messages.js';
 import type { ReportsService } from './ReportsService.js';
 import { OVERDUE_DAYS, type TabService } from './TabService.js';
 import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
+import { BILL_DUE_SOON_DAYS, type SupplierBillService } from './SupplierBillService.js';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** A product selling out within this many days is worth a warning. */
@@ -17,7 +18,7 @@ const RECENT_SALES_DAYS = 7;
 const MISSING_STOCK_DAYS = 30;
 const UNUSUAL_SALE = { minQuantity: 5, factor: 4, minHistory: 5, baselineDays: 90 };
 
-export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue' | 'expiring';
+export type InsightKind = 'sold_out' | 'running_out' | 'missing_stock' | 'unusual_sale' | 'below_cost' | 'dead_stock' | 'tab_overdue' | 'expiring' | 'bill_overdue' | 'bill_due_soon';
 export type InsightSeverity = 'urgent' | 'warning' | 'info';
 
 export interface Insight {
@@ -29,6 +30,8 @@ export interface Insight {
   productId: number | null;
   /** Set for tab insights. */
   customerId?: number;
+  /** Set for supplier bill insights. */
+  billId?: number;
 }
 
 const SEVERITY_ORDER: Record<InsightSeverity, number> = { urgent: 0, warning: 1, info: 2 };
@@ -41,6 +44,7 @@ export class InsightsService {
     private readonly reportsService: ReportsService,
     private readonly tabService: TabService,
     private readonly expiryService: ExpiryService,
+    private readonly billService: SupplierBillService,
   ) {}
 
   /** Written in the reader's language (`t`), English by default. */
@@ -61,6 +65,7 @@ export class InsightsService {
       this.tabService.overdue(now),
       this.expiryService.upcoming(undefined, now),
     ]);
+    const bills = await this.billService.list({ status: 'open' }, now);
     const insights: Insight[] = [];
 
     for (const row of forecasts) {
@@ -157,6 +162,21 @@ export class InsightsService {
         detail: t.insight.tabOverdueDetail({ days: Math.floor((now.getTime() - Date.parse(customer.owingSince!)) / MS_PER_DAY), minimum: OVERDUE_DAYS }),
         productId: null,
         customerId: customer.id,
+      });
+    }
+
+    for (const bill of bills) {
+      if (bill.daysLeft === null || bill.daysLeft > BILL_DUE_SOON_DAYS) continue;
+      const overdue = bill.daysLeft < 0;
+      insights.push({
+        kind: overdue ? 'bill_overdue' : 'bill_due_soon',
+        severity: overdue ? 'urgent' : bill.daysLeft <= URGENT_DAYS ? 'warning' : 'info',
+        title: overdue
+          ? t.insight.billOverdueTitle({ supplier: bill.supplier.name, amount: bill.left, days: -bill.daysLeft })
+          : t.insight.billDueSoonTitle({ supplier: bill.supplier.name, amount: bill.left, days: bill.daysLeft }),
+        detail: t.insight.billDetail({ number: bill.number, dueOn: bill.dueOn! }),
+        productId: null,
+        billId: bill.id,
       });
     }
 

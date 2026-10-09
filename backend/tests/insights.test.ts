@@ -80,21 +80,6 @@ describe('daily summary', () => {
   // 21:30 in Budapest (summer time, UTC+2).
   const EVENING = new Date('2026-10-02T19:30:00Z');
 
-  it('should go to admins once a day after the set hour', async () => {
-    const service = context.container.dailySummaryService;
-
-    const early = await service.sendIfDue(new Date('2026-10-02T15:00:00Z'));
-    const first = await service.sendIfDue(EVENING);
-    const again = await service.sendIfDue(new Date(EVENING.getTime() + 60_000));
-    const nextDay = await service.sendIfDue(new Date(EVENING.getTime() + DAY));
-    const sent = await context.db.selectFrom('notifications').selectAll().where('type', '=', 'daily_summary').execute();
-
-    expect([early, first, again, nextDay]).toEqual([false, true, false, true]);
-    // One admin, two days.
-    expect(sent).toHaveLength(2);
-    expect(sent[0]!.title).toMatch(/^Today: €/);
-  });
-
   it('should sum today’s sales and say when nothing needs attention', async () => {
     const chair = await createTestProduct(context, adminToken, { name: 'Chair', price: 100, costPrice: 60, stock: 1000, reorderLevel: 0 });
     await sell(chair, 2);
@@ -105,11 +90,6 @@ describe('daily summary', () => {
     expect(summary.message).toContain('1 sale, €80.00 profit');
   });
 
-  it('should honour the hour the owner sets', async () => {
-    await request(context.app).put('/api/settings').set(auth(adminToken)).send({ dailySummaryHour: 23 });
-
-    expect(await context.container.dailySummaryService.sendIfDue(EVENING)).toBe(false);
-  });
 });
 
 describe('startOfZonedDay', () => {

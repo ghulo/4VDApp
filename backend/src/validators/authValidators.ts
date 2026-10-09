@@ -56,7 +56,6 @@ export const profileSchema = z
     phone: optionalText(50),
     theme: z.enum(['light', 'dark', 'system']).optional(),
     language: z.enum(LANGUAGES).optional(),
-    emailWeeklyReport: z.boolean().optional(),
   })
   .strict();
 

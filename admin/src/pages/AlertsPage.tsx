@@ -1,6 +1,7 @@
 import { Checks } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { Button, PageHeader } from '../components/ui';
@@ -52,7 +53,13 @@ export function AlertsPage() {
                 <div>
                   <p className="category-list__name">
                     <span className={`alert-row__dot alert-row__dot--${alert.type ?? 'info'}`} aria-hidden="true" />
-                    {alert.title}
+                    {alert.link ? (
+                      <Link to={alert.link} onClick={() => !alert.isRead && markRead.mutate(alert.id)}>
+                        {alert.title}
+                      </Link>
+                    ) : (
+                      alert.title
+                    )}
                   </p>
                   <p className="category-list__description">{alert.message}</p>
                 </div>

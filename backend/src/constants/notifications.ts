@@ -17,7 +17,13 @@ export const NOTIFICATION_TYPES = {
   UNDONE: 'undone',
   /** Sent on request from the alert settings; always pushed. */
   TEST: 'test',
+  /** Each person's daily and weekly report; their report settings decide if they come, so always pushed. */
+  DAILY_REPORT: 'daily_report',
+  WEEKLY_REPORT: 'weekly_report',
 } as const;
+
+/** Pushed whatever the topic switches say. */
+export const ALWAYS_PUSHED: ReadonlySet<string> = new Set([NOTIFICATION_TYPES.TEST, NOTIFICATION_TYPES.DAILY_REPORT, NOTIFICATION_TYPES.WEEKLY_REPORT]);
 
 const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.LOW_STOCK]: 'stock',

@@ -27,6 +27,10 @@ import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
 import { DocumentDetailPage } from './pages/DocumentDetailPage';
 import { DocumentsPage } from './pages/DocumentsPage';
+import { BillDetailPage } from './pages/BillDetailPage';
+import { BillsPage } from './pages/BillsPage';
+import { OrderDetailPage } from './pages/OrderDetailPage';
+import { ReportPage } from './pages/ReportPage';
 import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
 import { ExpensesPage } from './pages/ExpensesPage';
@@ -100,6 +104,10 @@ function App() {
                 <Route path="expenses" element={<ExpensesPage />} />
                 <Route path="tabs" element={<TabsPage />} />
                 <Route path="orders" element={<OrdersPage />} />
+                <Route path="orders/:id" element={<OrderDetailPage />} />
+                <Route path="bills" element={<BillsPage />} />
+                <Route path="bills/:id" element={<BillDetailPage />} />
+                <Route path="report" element={<ReportPage />} />
                 <Route path="labels" element={<LabelsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="people" element={<UsersPage />} />

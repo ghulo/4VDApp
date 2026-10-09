@@ -25,7 +25,6 @@ export function toPublicUser(user: UserRow): PublicUser {
     avatarUrl: mediaUrl(user.avatar_media_id),
     theme: user.theme,
     language: user.language,
-    emailWeeklyReport: user.email_weekly_report,
     monthlyTarget: toMoneyOrNull(user.monthly_target),
     commissionPercent: user.commission_percent === null ? null : Number(user.commission_percent),
     createdAt: user.created_at.toISOString(),

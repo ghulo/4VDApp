@@ -230,6 +230,8 @@ export interface NotificationsTable {
   /** The request it's about, e.g. a write-off waiting for approval; deciding it marks the alert read. */
   subject_type: string | null;
   subject_id: number | null;
+  /** The page a tap opens; null opens the alerts. */
+  link: ColumnType<string | null, string | null | undefined, string | null>;
   created_at: CreatedAt;
 }
 
@@ -504,6 +506,57 @@ export interface SalesLedgerView {
   cost: string | null;
 }
 
+export interface SupplierBillsTable {
+  id: Generated<number>;
+  supplier_id: number;
+  /** The purchase order it bills, if it came from one. */
+  order_id: number | null;
+  /** The supplier's own invoice number. */
+  number: string | null;
+  issued_on: ColumnType<string, string, string>;
+  due_on: ColumnType<string | null, string | null, string | null>;
+  amount: Decimal;
+  note: string | null;
+  photo_media_id: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: Date | null;
+  voided_by: number | null;
+  void_note: string | null;
+}
+
+export const SUPPLIER_PAYMENT_METHODS = ['drawer', 'cash', 'bank'] as const;
+export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number];
+
+export interface SupplierPaymentsTable {
+  id: Generated<number>;
+  bill_id: number;
+  amount: Decimal;
+  paid_on: ColumnType<string, string, string>;
+  /** drawer: cash out of the shop's till (the cash check expects less); cash: other cash; bank: a transfer. */
+  method: SupplierPaymentMethod;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: Date | null;
+  voided_by: number | null;
+}
+
+export interface ReportSubscriptionsTable {
+  user_id: number;
+  daily_enabled: Generated<boolean>;
+  daily_hour: Generated<number>;
+  weekly_enabled: Generated<boolean>;
+  /** 1 = Monday … 7 = Sunday. */
+  weekly_day: Generated<number>;
+  weekly_hour: Generated<number>;
+  /** Null means every section. */
+  sections: string[] | null;
+  email: Generated<boolean>;
+  last_daily: ColumnType<string | null, string | null | undefined, string | null>;
+  last_weekly: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
 export type DocumentKind = 'invoice' | 'credit_note';
 
 /** Who a document is from or to, copied when it is issued. */
@@ -595,6 +648,9 @@ export interface Database {
   document_numbers: DocumentNumbersTable;
   documents: DocumentsTable;
   document_lines: DocumentLinesTable;
+  supplier_bills: SupplierBillsTable;
+  supplier_payments: SupplierPaymentsTable;
+  report_subscriptions: ReportSubscriptionsTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

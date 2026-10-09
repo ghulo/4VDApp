@@ -46,7 +46,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const [limit, setLimit] = useState(String(initial.refundApprovalLimit));
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
-  const [summaryHour, setSummaryHour] = useState(initial.dailySummaryHour);
   const [floatShop, setFloatShop] = useState(String(initial.cashFloatShop));
   const [saved, setSaved] = useState(false);
 
@@ -56,7 +55,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         refundApprovalLimit: Number(limit),
         returnWindowDays: Number(windowDays),
         minimumMarginPercent: Number(minimumMargin),
-        dailySummaryHour: summaryHour,
         cashFloatShop: Number(floatShop),
       }),
     onSuccess: (updated) => {
@@ -87,7 +85,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     Number(limit) !== initial.refundApprovalLimit ||
     Number(windowDays) !== initial.returnWindowDays ||
     Number(minimumMargin) !== initial.minimumMarginPercent ||
-    summaryHour !== initial.dailySummaryHour ||
     Number(floatShop) !== initial.cashFloatShop;
 
   return (
@@ -177,23 +174,6 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               onChange={(event) => setFloatShop(event.target.value)}
             />
           </span>
-        </SettingRow>
-        <SettingRow
-          title={t.settings.summary}
-          description={t.settings.summaryHint}
-        >
-          <select
-            aria-label={t.settings.summaryLabel}
-            className="setting-select"
-            value={summaryHour}
-            onChange={(event) => setSummaryHour(Number(event.target.value))}
-          >
-            {Array.from({ length: 24 }, (_, hour) => (
-              <option key={hour} value={hour}>
-                {String(hour).padStart(2, '0')}:00
-              </option>
-            ))}
-          </select>
         </SettingRow>
       </Card>
     </form>

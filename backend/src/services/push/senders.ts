@@ -8,7 +8,7 @@ export interface PushMessage {
   title: string;
   body: string;
   /** Lets the app open the right screen when the alert is tapped. */
-  data: { type: string | null; notificationId: number };
+  data: { type: string | null; notificationId: number; link: string | null };
 }
 
 export interface PushSender {

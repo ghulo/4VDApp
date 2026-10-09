@@ -1,4 +1,4 @@
-import { NOTIFICATION_TYPES, PUSH_TOPICS, type PushTopic, pushTopicFor } from '../constants/notifications.js';
+import { ALWAYS_PUSHED, NOTIFICATION_TYPES, PUSH_TOPICS, type PushTopic, pushTopicFor } from '../constants/notifications.js';
 import type { UserRole } from '../database/types.js';
 import type { NewDevice, PushRepository } from '../repositories/PushRepository.js';
 import type { PushMessage, PushSender } from './push/senders.js';
@@ -86,7 +86,7 @@ export class PushService {
   async sendPending(): Promise<number> {
     const claimed = await this.pushRepository.claimUnpushed(new Date(Date.now() - MAX_PUSH_DELAY_MS), CLAIM_BATCH_SIZE);
     const wanted = claimed.filter((notification) => {
-      if (notification.type === NOTIFICATION_TYPES.TEST) return true;
+      if (notification.type !== null && ALWAYS_PUSHED.has(notification.type)) return true;
       const topic = pushTopicFor(notification.type);
       return topic !== null && notification.push_preferences[topic] !== false;
     });
@@ -102,7 +102,7 @@ export class PushService {
           keys: device.keys,
           title: notification.title,
           body: notification.message,
-          data: { type: notification.type, notificationId: notification.id },
+          data: { type: notification.type, notificationId: notification.id, link: notification.link },
         };
         (device.kind === 'expo' ? expoMessages : webMessages).push(message);
       }

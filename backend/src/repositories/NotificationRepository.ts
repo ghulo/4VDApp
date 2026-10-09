@@ -12,6 +12,8 @@ export interface NewNotification {
   write: (t: ServerMessages) => { title: string; message: string };
   /** The request it's about, so deciding the request can close it. */
   subject?: NotificationSubject;
+  /** The page a tap opens, e.g. "/report?kind=daily&from=2026-10-09". */
+  link?: string;
 }
 
 export interface NotificationSubject {
@@ -33,6 +35,7 @@ export class NotificationRepository {
         type: notification.type,
         subject_type: notification.subject?.type ?? null,
         subject_id: notification.subject?.id ?? null,
+        link: notification.link ?? null,
         ...text,
       })
       .execute();

@@ -10,7 +10,6 @@ export interface AppSettings {
   /** No promotion may bring a price below cost plus this percentage. */
   minimumMarginPercent: number;
   /** Hour (0–23, shop time) the owner's daily summary goes out. */
-  dailySummaryHour: number;
   /** Change left in the shop drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
 }
@@ -19,7 +18,6 @@ const KEYS: Record<keyof AppSettings, string> = {
   refundApprovalLimit: 'refund_approval_limit',
   returnWindowDays: 'return_window_days',
   minimumMarginPercent: 'minimum_margin_percent',
-  dailySummaryHour: 'daily_summary_hour',
   cashFloatShop: 'cash_float_shop',
 };
 
@@ -39,7 +37,6 @@ export class SettingsService {
       refundApprovalLimit: read('refundApprovalLimit'),
       returnWindowDays: read('returnWindowDays'),
       minimumMarginPercent: read('minimumMarginPercent'),
-      dailySummaryHour: read('dailySummaryHour'),
       cashFloatShop: read('cashFloatShop'),
     };
   }
@@ -74,8 +71,6 @@ function describe(name: keyof AppSettings, from: number, to: number): string {
       return `the return window from ${from} to ${to} days`;
     case 'minimumMarginPercent':
       return `the minimum margin from ${from}% to ${to}%`;
-    case 'dailySummaryHour':
-      return `the daily summary time from ${from}:00 to ${to}:00`;
     case 'cashFloatShop':
       return `the shop's cash float from €${from} to €${to}`;
   }

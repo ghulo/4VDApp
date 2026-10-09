@@ -1,9 +1,10 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
+import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
+import { type BillInput, createBill } from './SupplierBillService.js';
 
 /** Received and cancelled orders kept on the page for reference. */
 const CLOSED_SHOWN = 20;
@@ -29,7 +30,11 @@ export interface OrderDto {
   note: string | null;
   createdBy: string | null;
   createdAt: string;
+  /** Who ticked off the delivery or cancelled it. */
+  closedBy: string | null;
   closedAt: string | null;
+  /** The supplier's bill for it, if one was added: what is left to pay. */
+  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null } | null;
   lines: OrderLineDto[];
   /** Sum of quantity × cost over lines with a known cost. */
   total: number;
@@ -46,6 +51,8 @@ export interface ReceiveInput {
   lines: Array<{ lineId: number; receivedQuantity: number; unitCost?: number | null; expiresOn?: string | null }>;
   /** Copy the delivered prices onto the products' cost prices. */
   updateCostPrices: boolean;
+  /** The supplier's bill for this delivery, saved with it. */
+  bill?: BillInput;
 }
 
 /** An open order for the team app, which ticks deliveries off at the counter and never sees costs. */
@@ -67,8 +74,9 @@ const toLineDto = (line: OrderLineRecord): OrderLineDto => ({
   receivedQuantity: line.received_quantity,
 });
 
-function toOrderDto(order: OrderRecord, lines: OrderLineRecord[]): OrderDto {
+function toOrderDto(order: OrderRecord, lines: OrderLineRecord[], bills: OrderBillRecord[]): OrderDto {
   const dtoLines = lines.filter((line) => line.order_id === order.id).map(toLineDto);
+  const bill = bills.find((row) => row.order_id === order.id);
   return {
     id: order.id,
     supplier: { id: order.supplier_id, name: order.supplier_name, phone: order.supplier_phone, email: order.supplier_email },
@@ -76,7 +84,17 @@ function toOrderDto(order: OrderRecord, lines: OrderLineRecord[]): OrderDto {
     note: order.note,
     createdBy: order.created_by_name,
     createdAt: order.created_at.toISOString(),
+    closedBy: order.closed_by_name,
     closedAt: order.closed_at?.toISOString() ?? null,
+    bill: bill
+      ? {
+          id: bill.id,
+          number: bill.number,
+          amount: Number(bill.amount),
+          left: roundMoney(Math.max(0, Number(bill.amount) - Number(bill.paid))),
+          dueOn: bill.due_on,
+        }
+      : null,
     lines: dtoLines,
     total: roundMoney(
       dtoLines.reduce((sum, line) => sum + (line.unitCost === null ? 0 : line.unitCost * (line.receivedQuantity ?? line.quantity)), 0),
@@ -149,14 +167,16 @@ export class PurchaseOrderService {
 
   async list(): Promise<OrderDto[]> {
     const orders = await this.orderRepository.findOrders(CLOSED_SHOWN);
-    const lines = await this.orderRepository.findLines(orders.map((order) => order.id));
-    return orders.map((order) => toOrderDto(order, lines));
+    const ids = orders.map((order) => order.id);
+    const [lines, bills] = await Promise.all([this.orderRepository.findLines(ids), this.orderRepository.findBills(ids)]);
+    return orders.map((order) => toOrderDto(order, lines, bills));
   }
 
   async get(id: number): Promise<OrderDto> {
     const order = await this.orderRepository.findOrder(id);
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
-    return toOrderDto(order, await this.orderRepository.findLines([id]));
+    const [lines, bills] = await Promise.all([this.orderRepository.findLines([id]), this.orderRepository.findBills([id])]);
+    return toOrderDto(order, lines, bills);
   }
 
   /** Open orders as the counter sees them: what is coming, without what it costs. */
@@ -254,6 +274,7 @@ export class PurchaseOrderService {
         units += quantity;
       }
       await repos.orders.close(id, 'received', actorId, now);
+      if (input.bill) await createBill(repos, { ...input.bill, supplierId: order.supplier_id, orderId: id }, actorId);
       await repos.activityLog.create({
         userId: actorId,
         action: 'order.received',

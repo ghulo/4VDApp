@@ -16,8 +16,6 @@ export interface User {
   theme: 'light' | 'dark' | 'system';
   /** The language they read 4VD in. */
   language: Language;
-  /** Gets the Monday report email (admins). */
-  emailWeeklyReport: boolean;
   /** Euros of sales (after refunds) hoped for each month; null when not set. */
   monthlyTarget: number | null;
   commissionPercent: number | null;
@@ -210,6 +208,8 @@ export interface AppNotification {
   title: string;
   message: string;
   type: string | null;
+  /** The page a tap opens, e.g. a report; null opens nothing more. */
+  link: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -289,7 +289,7 @@ export interface WipeReport {
   deleted: Record<string, number>;
 }
 
-export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'weeklyEmail' | 'emails' | 'phoneAlerts' | 'backups';
+export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';
 
 export interface LaunchStep {
   key: LaunchStepKey;
@@ -406,9 +406,106 @@ export interface PurchaseOrder {
   note: string | null;
   createdBy: string | null;
   createdAt: string;
+  closedBy: string | null;
   closedAt: string | null;
   lines: OrderLine[];
   total: number;
+  /** The supplier's bill for it, if one was added. */
+  bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null } | null;
+}
+
+export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void';
+export type SupplierPaymentMethod = 'drawer' | 'cash' | 'bank';
+
+export interface SupplierBill {
+  id: number;
+  supplier: { id: number; name: string };
+  orderId: number | null;
+  /** The supplier's own invoice number. */
+  number: string | null;
+  issuedOn: string;
+  dueOn: string | null;
+  amount: number;
+  paid: number;
+  left: number;
+  status: BillStatus;
+  overdue: boolean;
+  /** Days until due (negative once late); null without a due date or once settled. */
+  daysLeft: number | null;
+  note: string | null;
+  photoUrl: string | null;
+  recordedBy: string | null;
+  voidNote: string | null;
+  payments: Array<{ id: number; amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null; recordedBy: string | null; voided: boolean }>;
+}
+
+export interface BillInput {
+  number: string | null;
+  issuedOn: string;
+  dueOn: string | null;
+  amount: number;
+  note: string | null;
+}
+
+export interface PayablesSummary {
+  owed: number;
+  overdue: { count: number; amount: number };
+  dueSoon: { count: number; amount: number };
+  bySupplier: Array<{ supplierId: number; name: string; owed: number; overdue: number; bills: number }>;
+}
+
+export type ReportKind = 'daily' | 'weekly';
+export const REPORT_SECTIONS = ['sales', 'products', 'team', 'losses', 'carwash', 'cash', 'expenses', 'tabs', 'bills', 'stock', 'approvals'] as const;
+export type ReportSection = (typeof REPORT_SECTIONS)[number];
+
+export interface FullReport {
+  kind: ReportKind;
+  from: string;
+  to: string;
+  previousFrom: string;
+  previousTo: string;
+  /** Still running: today's report before the day is over. */
+  partial: boolean;
+  generatedAt: string;
+  chosenSections: ReportSection[];
+  sections: Partial<{
+    sales: {
+      revenue: number;
+      previousRevenue: number;
+      change: number | null;
+      profit: number;
+      margin: number | null;
+      salesCount: number;
+      unitsSold: number;
+      averageSale: number;
+      netProfit: number;
+      byDay: Array<{ day: string; revenue: number }>;
+    };
+    products: Array<{ name: string; unitsSold: number; revenue: number; profit: number }>;
+    team: Array<{ name: string; salesCount: number; revenue: number; profit: number }>;
+    losses: { refunds: number; stockLosses: number };
+    carwash: { total: number; each: Array<{ name: string; carwash: number; change: number; total: number }> };
+    cash: Array<{ day: string; place: string; counted: number; expected: number | null; difference: number | null }>;
+    expenses: { total: number; byCategory: Array<{ category: string; amount: number }> };
+    tabs: { owed: number; customers: number; overdue: Array<{ name: string; balance: number }> };
+    bills: {
+      owed: number;
+      overdue: { count: number; amount: number };
+      dueSoon: { count: number; amount: number };
+      paid: { count: number; total: number };
+      next: Array<{ supplier: string; number: string | null; left: number; dueOn: string | null; overdue: boolean }>;
+    };
+    stock: { soldOut: string[]; runningOut: string[]; expiring: string[]; other: number };
+    approvals: { total: number; returns: number; writeOffs: number; countLines: number };
+  }>;
+}
+
+export interface ReportSettings {
+  daily: { enabled: boolean; hour: number };
+  /** day: 1 = Monday ... 7 = Sunday. */
+  weekly: { enabled: boolean; day: number; hour: number };
+  sections: ReportSection[];
+  email: boolean;
 }
 
 export interface ReorderSuggestion {
@@ -527,7 +624,6 @@ export interface AppSettings {
   returnWindowDays: number;
   minimumMarginPercent: number;
   /** Hour (0–23, shop time) the daily summary goes out. */
-  dailySummaryHour: number;
   /** Change left in each drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
 }

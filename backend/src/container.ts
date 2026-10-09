@@ -8,6 +8,7 @@ import { ActivityLogService } from './services/ActivityLogService.js';
 import { FavoriteRepository } from './repositories/FavoriteRepository.js';
 import { NotificationRepository } from './repositories/NotificationRepository.js';
 import { DocumentRepository } from './repositories/DocumentRepository.js';
+import { SupplierBillRepository } from './repositories/SupplierBillRepository.js';
 import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
@@ -23,6 +24,7 @@ import { AnalyticsService } from './services/AnalyticsService.js';
 import { FavoriteService } from './services/FavoriteService.js';
 import { NotificationService } from './services/NotificationService.js';
 import { DocumentService } from './services/DocumentService.js';
+import { SupplierBillService } from './services/SupplierBillService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
 import { InventoryRepository } from './repositories/InventoryRepository.js';
@@ -65,7 +67,9 @@ import { BusinessService } from './services/BusinessService.js';
 import { SessionService } from './services/SessionService.js';
 import { GoogleAuthService } from './services/GoogleAuthService.js';
 import { SignupService } from './services/SignupService.js';
-import { WeeklyReportService } from './services/WeeklyReportService.js';
+import { ReportBuilder } from './services/reports/ReportBuilder.js';
+import { ReportDeliveryService } from './services/reports/ReportDeliveryService.js';
+import { ReportSubscriptionRepository } from './repositories/ReportSubscriptionRepository.js';
 import { UndoService } from './services/undo/UndoService.js';
 import { EditReverts } from './services/undo/editReverts.js';
 import { UndoRepository } from './repositories/UndoRepository.js';
@@ -174,12 +178,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const tabRepository = new TabRepository(db);
   const tabService = new TabService(tabRepository, transactions);
   const purchaseOrderService = new PurchaseOrderService(new PurchaseOrderRepository(db), transactions);
+  const supplierBillRepository = new SupplierBillRepository(db);
+  const supplierBillService = new SupplierBillService(supplierBillRepository, mediaService, transactions, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
-  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService);
+  const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
   const cashCountService = new CashCountService(
     new CashCountRepository(db),
     reportsRepository,
     tabRepository,
+    supplierBillRepository,
     settingsService,
     carwashService,
     transactions,
@@ -190,9 +197,6 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     carwashService,
     cashCountService,
     insightsService,
-    settingsService,
-    settingsRepository,
-    notificationRepository,
     config.shopTimeZone,
   );
   const aiProvider =
@@ -252,14 +256,25 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     inviteService,
   );
   const signupService = new SignupService(config.allowSignup, userRepository, accountService, transactions);
-  const weeklyReportService = new WeeklyReportService(
-    reportsRepository,
-    reportsService,
-    carwashService,
-    insightsService,
-    settingsService,
-    settingsRepository,
-    userRepository,
+  const reportBuilder = new ReportBuilder(
+    {
+      reportsService,
+      reportsRepository,
+      carwashService,
+      cashCountService,
+      expenseService,
+      tabService,
+      billService: supplierBillService,
+      billRepository: supplierBillRepository,
+      insightsService,
+      approvalService,
+    },
+    config.shopTimeZone,
+  );
+  const reportDeliveryService = new ReportDeliveryService(
+    reportBuilder,
+    new ReportSubscriptionRepository(db),
+    notificationRepository,
     emailService,
     config.shopTimeZone,
     config.dashboardUrl,
@@ -323,6 +338,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     expenseService,
     tabService,
     purchaseOrderService,
+    supplierBillService,
     expiryService,
     pushService,
     insightsService,
@@ -338,7 +354,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     sessionService,
     googleAuthService,
     signupService,
-    weeklyReportService,
+    reportDeliveryService,
     errorAlertService,
     launchService,
     guards,

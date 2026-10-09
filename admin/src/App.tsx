@@ -35,7 +35,9 @@ import { ReportPage } from './pages/ReportPage';
 import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
 import { ExpensesPage } from './pages/ExpensesPage';
-import { TabsPage } from './pages/TabsPage';
+import { CustomerDetailPage, CustomersPage, TabsRedirect } from './pages/CustomersPage';
+import { SupplierDetailPage } from './pages/SupplierDetailPage';
+import { SuppliersPage } from './pages/SuppliersPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { LabelsPage } from './pages/LabelsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -117,7 +119,11 @@ function App() {
                   <Route path="report" element={<ReportPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                 </Route>
-                <Route path="tabs" element={<TabsPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomerDetailPage />} />
+                <Route path="tabs" element={<TabsRedirect />} />
+                <Route path="suppliers" element={<SuppliersPage />} />
+                <Route path="suppliers/:id" element={<SupplierDetailPage />} />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="orders/:id" element={<OrderDetailPage />} />
                 <Route path="bills" element={<BillsPage />} />

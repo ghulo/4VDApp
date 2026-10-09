@@ -7,10 +7,9 @@ import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { businessApi, ordersApi, productsApi, reportsApi, suppliersApi } from '../services/api';
 import type { PurchaseOrder, Supplier } from '../services/types';
-import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { BillFields } from '../components/BillParts';
 import { emptyBill, isBillValid, toBillInput } from '../utils/bills';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
@@ -42,13 +41,11 @@ export function OrdersPage() {
 
       <ManagersOnly note={t.orders.managersOnly}>
         {suppliers.data && suppliers.data.length > 0 && (
-          <Card title={t.orders.newOrder}>
+          <Card title={t.orders.newOrder} id="new-order">
             <NewOrderForm suppliers={suppliers.data} onOrder={new Set(open.flatMap((order) => order.lines.map((line) => line.productId)))} />
           </Card>
         )}
       </ManagersOnly>
-
-      <SuppliersCard suppliers={suppliers.data} isPending={suppliers.isPending} />
 
       {closed.length > 0 && (
         <Card title={t.orders.closed} flush>
@@ -61,9 +58,14 @@ export function OrdersPage() {
                 header: t.orders.order,
                 title: true,
                 cell: (row) => (
-                  <Link to={`/orders/${row.id}`} className="table__primary-link">
-                    {t.orders.orderNumber(row.id, row.supplier.name)}
-                  </Link>
+                  <>
+                    <Link to={`/orders/${row.id}`} className="table__primary-link">
+                      {t.orders.orderNumber(row.id, row.supplier.name)}
+                    </Link>
+                    <Link to={`/suppliers/${row.supplier.id}`} className="table__secondary">
+                      {t.suppliers.see}
+                    </Link>
+                  </>
                 ),
               },
               {
@@ -93,128 +95,6 @@ export function OrdersPage() {
   );
 }
 
-function SuppliersCard({ suppliers, isPending }: { suppliers: Supplier[] | undefined; isPending: boolean }) {
-  const t = useT();
-  const { role } = useCurrentUser();
-  const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<Supplier | null>(null);
-  const remove = useMutation({
-    mutationFn: suppliersApi.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suppliers'] }),
-  });
-
-  return (
-    <Card title={t.orders.suppliers}>
-      {isPending && <Loading />}
-      {suppliers && (
-        <DataTable
-          caption={t.orders.suppliersCaption}
-          rows={suppliers}
-          rowKey={(row) => row.id}
-          empty={<EmptyState title={t.orders.noSuppliers}>{t.orders.noSuppliersHint}</EmptyState>}
-          columns={[
-            { header: t.orders.supplierName, title: true, cell: (row) => row.name },
-            { header: t.nui.label, cell: (row) => row.nui ?? <Badge tone="warn">{t.nui.missing}</Badge> },
-            { header: t.orders.phoneColumn, cell: (row) => row.phone ?? '–' },
-            { header: t.orders.emailColumn, cell: (row) => row.email ?? '–' },
-            ...(canManage(role)
-              ? [
-                  {
-                    header: <span className="visually-hidden">{t.orders.actions}</span>,
-                    cell: (row: Supplier) => (
-                      <div className="form-actions">
-                        <Button variant="ghost" aria-label={t.orders.editLabel(row.name)} onClick={() => setEditing(row)}>
-                          {t.orders.edit}
-                        </Button>
-                        <Button variant="danger-text" disabled={remove.isPending} aria-label={t.orders.removeLabel(row.name)} onClick={() => remove.mutate(row.id)}>
-                          {t.orders.remove}
-                        </Button>
-                      </div>
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-        />
-      )}
-      <ManagersOnly>
-        {/* Keyed so picking another supplier refills the form. */}
-        <SupplierForm key={editing?.id ?? 'new'} supplier={editing} onDone={() => setEditing(null)} />
-      </ManagersOnly>
-    </Card>
-  );
-}
-
-/** Adds a supplier, or with `supplier` changes one. The NUI is required either way. */
-function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; onDone: () => void }) {
-  const t = useT();
-  const queryClient = useQueryClient();
-  const [name, setName] = useState(supplier?.name ?? '');
-  const [nui, setNui] = useState(supplier?.nui ?? '');
-  const [phone, setPhone] = useState(supplier?.phone ?? '');
-  const [email, setEmail] = useState(supplier?.email ?? '');
-  const save = useMutation({
-    mutationFn: () => {
-      const input = { name: name.trim(), nui: cleanNui(nui), phone: phone.trim() || null, email: email.trim() || null };
-      return supplier ? suppliersApi.update(supplier.id, input) : suppliersApi.add(input);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      setName('');
-      setNui('');
-      setPhone('');
-      setEmail('');
-      onDone();
-    },
-  });
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    save.mutate();
-  }
-
-  return (
-    <form
-      className="settings-form form-actions--spaced"
-      onSubmit={handleSubmit}
-      aria-label={supplier ? t.orders.editLabel(supplier.name) : t.orders.addSupplier}
-    >
-      <div className="field-row">
-        <Field label={t.orders.supplierName}>
-          <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
-        </Field>
-        <Field label={t.nui.label} hint={t.nui.hint}>
-          <NuiInput required value={nui} onChange={(event) => setNui(event.target.value)} />
-        </Field>
-      </div>
-      <div className="field-row">
-        <Field label={t.orders.phone}>
-          <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
-        </Field>
-        <Field label={t.orders.email}>
-          <input type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
-        </Field>
-      </div>
-      {save.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(save.error)}
-        </p>
-      )}
-      <div className="form-actions">
-        <Button type="submit" disabled={name.trim() === '' || !isNui(nui) || save.isPending}>
-          {supplier ? t.orders.saveSupplier : t.orders.add}
-        </Button>
-        {supplier && (
-          <Button variant="ghost" onClick={onDone}>
-            {t.orders.cancelEdit}
-          </Button>
-        )}
-      </div>
-    </form>
-  );
-}
-
 interface DraftLine {
   productId: number;
   productName: string;
@@ -230,7 +110,9 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
   const suggestions = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
   const products = useQuery({ queryKey: ['products', 'all-for-orders'], queryFn: () => productsApi.list({ page: 1, limit: 100 }) });
   const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
-  const [supplierId, setSupplierId] = useState('');
+  const [params] = useSearchParams();
+  // Opened from a supplier's page, the order starts with that supplier chosen.
+  const [supplierId, setSupplierId] = useState(() => (suppliers.some((row) => String(row.id) === params.get('supplier')) ? params.get('supplier')! : ''));
   const [extra, setExtra] = useState<DraftLine[]>([]);
   const [edits, setEdits] = useState<Record<number, Partial<DraftLine>>>({});
   const [note, setNote] = useState('');

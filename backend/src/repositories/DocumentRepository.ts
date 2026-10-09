@@ -66,6 +66,7 @@ export interface DocumentFilters {
   kind?: DocumentKind;
   /** Part of a number or the buyer's name. */
   search?: string;
+  customerId?: number;
   startDate?: Date;
   endDate?: Date;
   limit: number;
@@ -174,6 +175,7 @@ export class DocumentRepository {
   async findMany(filters: DocumentFilters): Promise<{ documents: DocumentRecord[]; total: number }> {
     let query = this.baseQuery();
     if (filters.kind) query = query.where('d.kind', '=', filters.kind);
+    if (filters.customerId) query = query.where('d.customer_id', '=', filters.customerId);
     if (filters.startDate) query = query.where('d.issued_at', '>=', filters.startDate);
     if (filters.endDate) query = query.where('d.issued_at', '<', filters.endDate);
     if (filters.search) {

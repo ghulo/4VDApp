@@ -220,7 +220,7 @@ function AttentionPanel() {
           {insights.data.map((insight) => (
             <li key={`${insight.kind}-${insight.productId}-${insight.title}`}>
               <Link
-                to={insight.customerId ? `/tabs?customer=${insight.customerId}` : `/inventory/${insight.productId}`}
+                to={insight.customerId ? `/customers/${insight.customerId}` : `/inventory/${insight.productId}`}
                 className={`attention__row attention__row--${insight.severity}`}
               >
                 <span className="attention__severity">{t.overview.severity[insight.severity]}</span>

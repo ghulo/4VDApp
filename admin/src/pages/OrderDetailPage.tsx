@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, ordersApi } from '../services/api';
 import type { OrderLine, PurchaseOrder } from '../services/types';
@@ -34,6 +34,11 @@ export function OrderDetailPage() {
         crumbs={[{ label: t.orders.title, to: '/orders' }]}
         meta={<Badge tone={STATUS_TONE[o.status]}>{t.orders.status[o.status]}</Badge>}
         description={[o.supplier.phone, o.supplier.email].filter(Boolean).join(' · ') || undefined}
+        actions={
+          <ButtonLink to={`/suppliers/${o.supplier.id}`} variant="ghost">
+            {t.suppliers.see}
+          </ButtonLink>
+        }
       />
 
       <StatGrid>

@@ -316,7 +316,7 @@ function ReportSections({ report }: { report: FullReport }) {
                 )}
               </>
             ),
-            <Link to="/tabs">{t.fullReport.openTabs}</Link>,
+            <Link to="/customers">{t.fullReport.openTabs}</Link>,
           )}
         {s.approvals &&
           card(

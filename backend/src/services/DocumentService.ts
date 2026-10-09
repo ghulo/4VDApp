@@ -32,6 +32,8 @@ export interface DocumentDto {
   issuedBy: string | null;
   seller: DocumentParty;
   buyer: DocumentParty | null;
+  /** The customer record the buyer came from, when there is one. */
+  customerId: number | null;
   /** The invoice a credit note reverses. */
   corrects: { id: number; number: string } | null;
   reason: string | null;
@@ -56,6 +58,7 @@ export interface DocumentRef {
 export interface DocumentQuery extends PageRequest {
   kind?: DocumentKind;
   search?: string;
+  customerId?: number;
   startDate?: Date;
   endDate?: Date;
 }
@@ -159,6 +162,7 @@ export class DocumentService {
     const { documents, total } = await this.documentRepository.findMany({
       kind: query.kind,
       search: query.search,
+      customerId: query.customerId,
       startDate: query.startDate,
       endDate: query.endDate,
       limit: query.limit,
@@ -240,6 +244,7 @@ function toDto(record: DocumentRecord): DocumentDto {
     issuedBy: record.issued_by_name,
     seller: record.seller,
     buyer: record.buyer,
+    customerId: record.customer_id,
     corrects: record.corrects_id === null ? null : { id: record.corrects_id, number: record.corrects_number! },
     reason: record.reason,
     netTotal: toMoney(record.net_total),

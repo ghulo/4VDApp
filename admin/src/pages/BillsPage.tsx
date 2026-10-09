@@ -20,7 +20,7 @@ export function BillsPage() {
   const [params, setParams] = useSearchParams();
   const status = (params.get('status') ?? 'open') as StatusFilter;
   const supplierId = params.get('supplier') ?? '';
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(params.get('add') === '1');
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const bills = useQuery({
@@ -51,7 +51,7 @@ export function BillsPage() {
 
       {adding && (
         <Card title={t.bills.newBill}>
-          <NewBillForm onDone={() => setAdding(false)} />
+          <NewBillForm initialSupplier={supplierId} onDone={() => setAdding(false)} />
         </Card>
       )}
 
@@ -79,9 +79,9 @@ export function BillsPage() {
                 header: t.bills.supplier,
                 title: true,
                 cell: (row) => (
-                  <button type="button" className="text-button" onClick={() => setFilter({ supplier: String(row.supplierId), status: 'open' })}>
+                  <Link to={`/suppliers/${row.supplierId}`} className="table__primary-link">
                     {row.name}
-                  </button>
+                  </Link>
                 ),
               },
               { header: t.bills.openBills, align: 'end', cell: (row) => row.bills },
@@ -153,12 +153,12 @@ export function BillsPage() {
   );
 }
 
-function NewBillForm({ onDone }: { onDone: () => void }) {
+function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onDone: () => void }) {
   const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
-  const [supplierId, setSupplierId] = useState('');
+  const [supplierId, setSupplierId] = useState(initialSupplier);
   const [draft, setDraft] = useState(emptyBill());
   const create = useMutation({
     mutationFn: () => billsApi.create({ supplierId: Number(supplierId), ...toBillInput(draft) }),

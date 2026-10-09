@@ -6,7 +6,8 @@ import {
   Gear,
   House,
   Invoice,
-  Notebook,
+  AddressBook,
+  Storefront,
   Package,
   Percent,
   Receipt,
@@ -78,7 +79,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     key: 'sell',
     items: [
       { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents'] },
-      { to: '/tabs', key: 'tabs', icon: Notebook },
+      { to: '/customers', key: 'customers', icon: AddressBook },
       { to: '/promotions', key: 'promotions', icon: Percent },
     ],
   },
@@ -92,6 +93,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'buy',
     items: [
+      { to: '/suppliers', key: 'suppliers', icon: Storefront },
       { to: '/orders', key: 'orders', icon: Truck },
       { to: '/bills', key: 'bills', icon: Invoice },
     ],

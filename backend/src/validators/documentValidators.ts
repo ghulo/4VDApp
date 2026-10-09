@@ -6,6 +6,7 @@ import { paginationSchema } from './validate.js';
 export const documentQuerySchema = paginationSchema.extend({
   kind: z.enum(['invoice', 'credit_note']).optional(),
   search: z.string().trim().min(1).max(100).optional(),
+  customerId: z.coerce.number().int().positive().optional(),
   startDate: startDateQuery.optional(),
   endDate: endDateQuery.optional(),
 });

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -33,6 +33,11 @@ export function BillDetailPage() {
         crumbs={[{ label: t.bills.title, to: '/bills' }]}
         meta={<Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>}
         description={[b.number ? t.bills.numbered(b.number) : t.bills.noNumber, t.bills.recordedBy(b.recordedBy ?? t.sales.unknown)].join(' · ')}
+        actions={
+          <ButtonLink to={`/suppliers/${b.supplier.id}`} variant="ghost">
+            {t.suppliers.see}
+          </ButtonLink>
+        }
       />
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
 

@@ -1,12 +1,12 @@
 import { Notebook } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
-import { customersApi } from '../services/api';
+import { customersApi, documentsApi } from '../services/api';
 import type { Customer, CustomerKind, TabEntry } from '../services/types';
 import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
@@ -20,21 +20,22 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const isOverdue = (customer: Customer) =>
   customer.owingSince !== null && Date.now() - Date.parse(customer.owingSince) >= OVERDUE_DAYS * MS_PER_DAY;
 
-/** Who owes what. One customer's tab opens on the same page (?customer=). */
-export function TabsPage() {
+/** Old tab links (/tabs?customer=7) open the customer's own page. */
+export function TabsRedirect() {
   const [params] = useSearchParams();
   const customerId = Number(params.get('customer')) || null;
-  return customerId ? <CustomerTab id={customerId} /> : <AllTabs />;
+  return <Navigate to={customerId ? `/customers/${customerId}` : '/customers'} replace />;
 }
 
-function AllTabs() {
+/** Everyone the shop sells to by name: who owes what, and their details. */
+export function CustomersPage() {
   const t = useT();
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const owing = customers.data?.filter((customer) => customer.balance > 0) ?? [];
 
   return (
     <>
-      <PageHeader title={t.tabs.title} description={t.tabs.description} />
+      <PageHeader title={t.customers.title} description={t.customers.description} />
 
       {customers.data && (
         <StatGrid>
@@ -48,7 +49,7 @@ function AllTabs() {
         </StatGrid>
       )}
 
-      <Card title={t.tabs.open}>
+      <Card title={t.customers.add}>
         <CustomerForm />
       </Card>
 
@@ -67,7 +68,7 @@ function AllTabs() {
                 title: true,
                 cell: (row) => (
                   <>
-                    <Link to={`/tabs?customer=${row.id}`} className="table__primary-link" aria-label={t.tabs.see(row.name)}>
+                    <Link to={`/customers/${row.id}`} className="table__primary-link" aria-label={t.tabs.see(row.name)}>
                       {row.name}
                     </Link>
                     {(row.nui || row.phone) && (
@@ -106,7 +107,7 @@ const KINDS: CustomerKind[] = ['person', 'business'];
 function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: () => void }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const [, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const [kind, setKind] = useState<CustomerKind>(customer?.kind ?? 'person');
   const [name, setName] = useState(customer?.name ?? '');
   const [nui, setNui] = useState(customer?.nui ?? '');
@@ -127,7 +128,7 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
       if (customer) onSaved?.();
-      else setParams({ customer: String(saved.id) });
+      else navigate(`/customers/${saved.id}`);
     },
   });
   const isValid = name.trim() !== '' && (kind === 'person' || isNui(nui));
@@ -183,8 +184,9 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
   );
 }
 
-function CustomerTab({ id }: { id: number }) {
+export function CustomerDetailPage() {
   const t = useT();
+  const id = Number(useParams().id);
   const { role } = useCurrentUser();
   const customer = useQuery({ queryKey: ['customers', id], queryFn: () => customersApi.detail(id) });
 
@@ -197,7 +199,7 @@ function CustomerTab({ id }: { id: number }) {
       <PageHeader
         title={data.name}
         description={[data.nui && t.nui.short(data.nui), data.phone, data.note].filter(Boolean).join(' · ') || undefined}
-        crumbs={[{ label: t.tabs.back, to: '/tabs' }]}
+        crumbs={[{ label: t.nav.items.customers, to: '/customers' }]}
       />
       <StatGrid>
         <StatTile label={t.tabs.owes} value={data.balance > 0 ? formatMoney(data.balance) : data.balance < 0 ? t.tabs.credit(formatMoney(-data.balance)) : t.tabs.settled} tone={isOverdue(data) ? 'warn' : 'default'} />
@@ -229,6 +231,8 @@ function CustomerTab({ id }: { id: number }) {
           ]}
         />
       </Card>
+
+      <InvoicesCard customerId={data.id} />
 
       {canManage(role) && <EditDetails customer={data} />}
 
@@ -332,13 +336,13 @@ function PaymentForm({ customer }: { customer: Customer }) {
 function CloseTab({ customer }: { customer: Customer }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const [, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const close = useMutation({
     mutationFn: () => customersApi.archive(customer.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
-      setParams({});
+      navigate('/customers');
     },
   });
   return (
@@ -351,6 +355,40 @@ function CloseTab({ customer }: { customer: Customer }) {
       <Button variant="danger" disabled={close.isPending} onClick={() => close.mutate()}>
         {close.isPending ? t.tabs.closing : t.tabs.close}
       </Button>
+    </Card>
+  );
+}
+
+/** The invoices and credit notes made out to this customer, newest first. */
+function InvoicesCard({ customerId }: { customerId: number }) {
+  const t = useT();
+  const documents = useQuery({
+    queryKey: ['documents', { customerId }],
+    queryFn: () => documentsApi.list({ page: 1, customerId }),
+  });
+  return (
+    <Card title={t.customers.invoices} flush actions={<Link to="/documents">{t.customers.allInvoices}</Link>}>
+      {documents.isError && <ErrorNotice error={documents.error} onRetry={() => documents.refetch()} />}
+      <DataTable
+        caption={t.customers.invoices}
+        rows={documents.data?.items ?? []}
+        rowKey={(row) => row.id}
+        empty={<EmptyState title={documents.isPending ? t.common.loading : t.customers.noInvoices} />}
+        columns={[
+          {
+            header: t.documents.number,
+            title: true,
+            cell: (row) => (
+              <Link to={`/documents/${row.id}`} className="table__primary-link">
+                {row.number}
+                <span className="table__secondary">{t.documents.kinds[row.kind]}</span>
+              </Link>
+            ),
+          },
+          { header: t.documents.issued, cell: (row) => formatDate(row.issuedAt) },
+          { header: t.documents.total, align: 'end', cell: (row) => formatMoney(row.total) },
+        ]}
+      />
     </Card>
   );
 }

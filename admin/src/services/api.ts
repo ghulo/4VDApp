@@ -252,6 +252,7 @@ export interface DocumentListQuery {
   page: number;
   kind?: DocumentKind;
   search?: string;
+  customerId?: number;
   startDate?: string;
   endDate?: string;
 }

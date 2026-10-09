@@ -95,6 +95,17 @@ describe('invoices', () => {
     expect((await getDocument(invoice.id)).buyer).toMatchObject({ name: 'Ndërtimi SH.P.K.', nui: '811234568' });
   });
 
+  it("should list only one customer's invoices when asked, and say whose they are", async () => {
+    const customer = await api().post('/api/customers').set(auth(adminToken)).send({ name: 'Arta', kind: 'person' });
+    const customerId = customer.body.data.id;
+    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }], { customerId });
+    await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
+
+    const list = await api().get(`/api/documents?customerId=${customerId}`).set(auth(adminToken));
+    expect(list.body.data.map((document: { id: number }) => document.id)).toEqual([invoice.id]);
+    expect(list.body.data[0].customerId).toBe(customerId);
+  });
+
   it('should invoice a single sale too', async () => {
     const response = await api().post('/api/sales').set(auth(employeeToken)).send({ productId: chair, quantity: 1 });
     expect(response.body.data.invoice.number).toBe(`F-${year}-000001`);

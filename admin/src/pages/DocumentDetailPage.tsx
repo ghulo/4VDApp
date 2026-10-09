@@ -45,7 +45,7 @@ export function DocumentDetailPage() {
 
       <div className="document-parties">
         <Party title={t.documents.seller} party={doc.seller} />
-        <Party title={t.documents.buyer} party={doc.buyer} />
+        <Party title={t.documents.buyer} party={doc.buyer} customerId={doc.customerId} />
       </div>
 
       <Card title={t.documents.lines} flush>
@@ -90,10 +90,10 @@ export function DocumentDetailPage() {
   );
 }
 
-function Party({ title, party }: { title: string; party: DocumentParty | null }) {
+function Party({ title, party, customerId }: { title: string; party: DocumentParty | null; customerId?: number | null }) {
   const t = useT();
   return (
-    <Card title={title}>
+    <Card title={title} actions={customerId ? <Link to={"/customers/" + customerId}>{t.customers.see}</Link> : undefined}>
       {party ? (
         <address className="document-party">
           <strong>{party.name}</strong>

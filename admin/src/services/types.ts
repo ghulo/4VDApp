@@ -153,6 +153,8 @@ export interface SalesDocument extends DocumentRef {
   issuedBy: string | null;
   seller: DocumentParty;
   buyer: DocumentParty | null;
+  /** The customer the buyer came from, when there is one. */
+  customerId: number | null;
   /** The invoice a credit note reverses. */
   corrects: DocumentRef | null;
   reason: string | null;

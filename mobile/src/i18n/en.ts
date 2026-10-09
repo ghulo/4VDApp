@@ -306,6 +306,7 @@ export const en = {
     paid: 'Payment saved.',
     history: 'History',
     payment: 'Paid',
+    refund: (what: string) => `Returned: ${what}`,
     charge: 'On the tab',
     undone: 'sale undone',
     soldOnTab: (name: string) => ` On ${name}'s tab.`,

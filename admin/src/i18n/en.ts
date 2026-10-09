@@ -1149,6 +1149,7 @@ export const en = {
     historyCaption: 'Charges and payments on this tab',
     charge: 'On the tab',
     payment: 'Paid',
+    refund: 'Returned',
     undone: 'Sale undone, no longer counts',
     when: 'When',
     what: 'What',

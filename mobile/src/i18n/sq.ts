@@ -300,6 +300,7 @@ export const sq: Catalogue = {
     paid: 'Pagesa u ruajt.',
     history: 'Historiku',
     payment: 'U pagua',
+    refund: (what) => `U kthye: ${what}`,
     charge: 'Në borxh',
     undone: 'shitja u anulua',
     soldOnTab: (name) => ` Në borxhin e ${name}.`,

@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import type { TabEntryKind } from '../database/types.js';
 
 /** What staff type in for a customer. */
 export interface CustomerFields {
@@ -24,18 +25,18 @@ export interface CustomerRecord {
 export interface TabEntryRecord {
   id: number;
   customer_id: number;
-  kind: 'charge' | 'payment';
+  kind: TabEntryKind;
   amount: string;
   note: string | null;
   sale_id: number | null;
-  /** True when the charge's sale was undone, so it no longer counts. */
+  /** True when the charge's sale (or the refund's return) was undone, so it no longer counts. */
   sale_undone: boolean;
   occurred_at: Date;
   created_by_name: string | null;
 }
 
-/** Charges on undone sales don't count; everything else does. */
-const counts = sql<boolean>`(e.sale_id is null or s.undone_at is null)`;
+/** Charges on undone sales and refunds of undone returns don't count; everything else does. */
+const counts = sql<boolean>`((e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null))`;
 
 export class TabRepository {
   constructor(private readonly db: DatabaseClient) {}
@@ -60,6 +61,7 @@ export class TabRepository {
     let query = this.db
       .selectFrom('tab_entries as e')
       .leftJoin('sales as s', 's.id', 'e.sale_id')
+      .leftJoin('returns as r', 'r.id', 'e.return_id')
       .leftJoin('users as u', 'u.id', 'e.created_by')
       .select([
         'e.id',
@@ -80,21 +82,33 @@ export class TabRepository {
   async balance(customerId: number): Promise<number> {
     const row = await sql<{ balance: string }>`
       select coalesce(sum(case when e.kind = 'charge' then e.amount else -e.amount end) filter (where ${counts}), 0) as balance
-      from tab_entries e left join sales s on s.id = e.sale_id
+      from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
       where e.customer_id = ${customerId}
     `.execute(this.db);
     return Number(row.rows[0]!.balance);
   }
 
+  /** The customer whose tab a sale was put on, if it was. */
+  async customerOfSale(saleId: number): Promise<number | undefined> {
+    const row = await this.db
+      .selectFrom('tab_entries')
+      .select('customer_id')
+      .where('sale_id', '=', saleId)
+      .where('kind', '=', 'charge')
+      .executeTakeFirst();
+    return row?.customer_id;
+  }
+
   /**
    * How tabs changed the cash in the drawer each day (shop clock): payments
-   * came in, tab sales didn't. Days without tab activity are left out.
+   * came in, tab sales didn't, and refunds taken off a tab weren't paid out.
+   * Days without tab activity are left out.
    */
   async drawerEffectByDay(from: string, to: string, timeZone: string): Promise<Map<string, number>> {
     const result = await sql<{ day: string; effect: string }>`
       select to_char((e.occurred_at at time zone ${timeZone})::date, 'YYYY-MM-DD') as day,
-             sum(case when e.kind = 'payment' then e.amount else -e.amount end) as effect
-      from tab_entries e left join sales s on s.id = e.sale_id
+             sum(case when e.kind = 'charge' then -e.amount else e.amount end) as effect
+      from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
       where ${counts} and (e.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
       group by 1
     `.execute(this.db);
@@ -120,10 +134,11 @@ export class TabRepository {
 
   async addEntry(entry: {
     customerId: number;
-    kind: 'charge' | 'payment';
+    kind: TabEntryKind;
     amount: number;
     note: string | null;
     saleId: number | null;
+    returnId?: number;
     createdBy: number;
     occurredAt?: Date;
   }): Promise<number> {
@@ -135,6 +150,7 @@ export class TabRepository {
         amount: entry.amount,
         note: entry.note,
         sale_id: entry.saleId,
+        return_id: entry.returnId ?? null,
         created_by: entry.createdBy,
         ...(entry.occurredAt && { occurred_at: entry.occurredAt }),
       })

@@ -1,3 +1,4 @@
+import type { TabEntryKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CustomerFields, CustomerRecord, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
@@ -25,11 +26,12 @@ export interface CustomerDto {
 
 export interface TabEntryDto {
   id: number;
-  kind: 'charge' | 'payment';
+  /** A refund is a return taken off the tab. */
+  kind: TabEntryKind;
   amount: number;
   note: string | null;
   saleId: number | null;
-  /** The sale was undone, so this charge no longer counts. */
+  /** The sale (or the refund's return) was undone, so this entry no longer counts. */
   undone: boolean;
   at: string;
   by: string | null;
@@ -48,7 +50,7 @@ function summarise(entries: TabEntryRecord[]) {
       unpaid.push({ at: entry.occurred_at, left: amount });
       continue;
     }
-    lastPaymentAt = entry.occurred_at;
+    if (entry.kind === 'payment') lastPaymentAt = entry.occurred_at;
     let rest = amount;
     while (rest > 0 && unpaid.length > 0) {
       const oldest = unpaid[0]!;

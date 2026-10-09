@@ -86,6 +86,39 @@ describe('customer tabs', () => {
     expect(today()).toBe(count.body.data.day);
   });
 
+  it('should take a return of a tab sale off the tab instead of paying out cash, until the return is undone', async () => {
+    const arben = await openTab();
+    const sale = (await sellOnTab(arben, 3)).body.data; // €30 on the tab
+    await request(context.app).post(`/api/sales/${sale.id}/returns`).set(auth(adminToken)).send({ quantity: 1, condition: 'resellable' });
+
+    const after = await detail(arben);
+    expect(after.balance).toBe(20);
+    expect(after.entries[0]).toMatchObject({ kind: 'refund', amount: 10, undone: false });
+    // No cash came in for the sale and none went out for the return.
+    const count = await request(context.app).post('/api/cash-counts').set(auth(adminToken)).send({ place: 'shop', counted: 50 });
+    expect(count.body.data).toMatchObject({ expected: 0, difference: 0 });
+
+    const entry = await context.db
+      .selectFrom('activity_log')
+      .select('id')
+      .where('action', '=', 'return.requested')
+      .executeTakeFirstOrThrow();
+    await request(context.app).post(`/api/activity/${entry.id}/undo`).set(auth(adminToken)).send({});
+    expect((await detail(arben)).balance).toBe(30);
+  });
+
+  it('should pay out in cash only the part of a refund the tab no longer owes', async () => {
+    const arben = await openTab();
+    const sale = (await sellOnTab(arben, 2)).body.data; // €20 on the tab
+    await request(context.app).post(`/api/customers/${arben}/payments`).set(auth(employeeToken)).send({ amount: 15 });
+    await request(context.app).post(`/api/sales/${sale.id}/returns`).set(auth(adminToken)).send({ quantity: 2, condition: 'resellable' });
+
+    // €5 comes off the tab, the other €15 goes back in cash: €15 paid in, €15 out.
+    expect((await detail(arben)).balance).toBe(0);
+    const count = await request(context.app).post('/api/cash-counts').set(auth(adminToken)).send({ place: 'shop', counted: 50 });
+    expect(count.body.data).toMatchObject({ expected: 0, difference: 0 });
+  });
+
   it('should flag tabs unpaid for 30 days in "Needs your attention"', async () => {
     const arben = await openTab('Arben');
     const besa = await openTab('Besa');

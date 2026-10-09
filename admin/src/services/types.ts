@@ -455,7 +455,8 @@ export interface Customer {
 
 export interface TabEntry {
   id: number;
-  kind: 'charge' | 'payment';
+  /** A refund is a return taken off the tab. */
+  kind: 'charge' | 'payment' | 'refund';
   amount: number;
   note: string | null;
   saleId: number | null;

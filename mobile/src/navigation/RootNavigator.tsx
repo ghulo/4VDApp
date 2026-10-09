@@ -28,6 +28,7 @@ import { ScanResultScreen } from '../screens/ScanResultScreen';
 import { takePendingScan } from '../utils/scanLinks';
 import { TabScreen, TabsScreen } from '../screens/TabsScreen';
 import { ReturnScreen } from '../screens/ReturnScreen';
+import { ExpiryScreen } from '../screens/ExpiryScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
 import { fonts, keyShadow, useTheme, useThemeColors } from '../theme';
@@ -201,6 +202,7 @@ export function RootNavigator() {
               component={WriteOffScreen}
               options={{ title: t.nav.writeOff, presentation: 'modal' }}
             />
+            <Stack.Screen name="Expiry" component={ExpiryScreen} options={{ title: t.nav.expiry, presentation: 'modal' }} />
             <Stack.Screen name="Counts" component={CountsScreen} options={{ title: t.nav.counts, headerBackTitle: t.nav.back }} />
             <Stack.Screen
               name="Count"

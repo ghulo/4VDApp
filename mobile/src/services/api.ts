@@ -4,6 +4,7 @@ import type {
   CashPlace,
   CashPlaceToday,
   Customer,
+  ExpiryDate,
   TabEntry,
   Category,
   InventoryItem,
@@ -137,6 +138,15 @@ export const returnsApi = {
 export const writeOffsApi = {
   request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
     (await apiRequest<WriteOffResult>('/write-offs', { method: 'POST', body: input })).data,
+};
+
+export const expiryApi = {
+  forProduct: async (productId: number) => (await apiRequest<ExpiryDate[]>('/expiry', { query: { productId } })).data,
+  add: async (input: { productId: number; quantity: number; expiresOn: string; note: string | null }) =>
+    (await apiRequest<ExpiryDate>('/expiry', { method: 'POST', body: input })).data,
+  clear: async (id: number) => {
+    await apiRequest(`/expiry/${id}/clear`, { method: 'POST' });
+  },
 };
 
 export const carwashApi = {

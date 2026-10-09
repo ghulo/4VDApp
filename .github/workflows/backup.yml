@@ -7,6 +7,8 @@
 #   BACKUP_DATABASE_URL   Render's *external* connection string for 4vd-db
 #   BACKUP_PASSPHRASE     a long random phrase; without it a backup can't be opened
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+# Optional: BACKUP_PING_TOKEN (the same value as on 4vd-api in Render). When it is set,
+# the job tells the app each backup worked, and the launch checklist ticks the backup step.
 name: Database backup
 
 on:
@@ -33,6 +35,7 @@ jobs:
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
       KEEP_DAYS: 90
+      BACKUP_PING_TOKEN: ${{ secrets.BACKUP_PING_TOKEN }}
     steps:
       - name: Check the secrets are set
         run: |
@@ -71,3 +74,9 @@ jobs:
               aws s3 rm "s3://$R2_BUCKET/database/$name" --endpoint-url "$R2_ENDPOINT"
             fi
           done
+
+      - name: Tell 4VD the backup worked
+        if: env.BACKUP_PING_TOKEN != ''
+        run: |
+          curl --fail --silent --show-error --retry 3 -X POST https://api.4vd.app/api/internal/backup-ok \
+            -H "x-backup-token: $BACKUP_PING_TOKEN"

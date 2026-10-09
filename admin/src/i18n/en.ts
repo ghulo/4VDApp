@@ -894,15 +894,27 @@ export const en = {
     wipedAt: (when: string) => `Wiped on ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
       `${p.products} products and ${p.sales} sales are still test data. Use Wipe all data at the bottom of this page. Developer accounts stay.`,
-    shopDetailsHow: 'In Your shop, below.',
-    ownerHow: 'Invite him from People with the Owner role. He sees everything and decides requests.',
-    teamHow: 'Invite them from People with the Employee role. They use the team app at app.4vd.app.',
+    shopDetailsHow: 'The address, phone and NUI go in Your shop, just below.',
+    ownerHow: 'The button opens the invite form with the Owner role chosen. He sees everything and decides requests.',
+    teamHow: 'The button opens the invite form with the Employee role chosen. They use the team app at app.4vd.app.',
     teamCount: (count: number) => `${count} ${count === 1 ? 'employee' : 'employees'} so far.`,
     weeklyEmailHow: "It's on unless the owner switched it off on his Profile page.",
-    emailsHow: 'Set RESEND_API_KEY and EMAIL_FROM (an address at 4vd.app) on Render. Until then invites and password resets only reach the log.',
-    phoneAlertsHow: 'Set the VAPID keys on Render so alerts reach browsers and phones.',
+    emailsHow:
+      'Until RESEND_API_KEY and EMAIL_FROM are set on Render, invites and password resets only reach the log. The steps are in docs/DEPLOYMENT.md under "Launch setup". Then press the button to get a real test email.',
+    phoneAlertsHow:
+      'On your computer, in the backend folder, run: npm run vapid -- your@email. Paste the three lines it prints into 4vd-api on Render (Environment). Then turn alerts on under your Profile. Details in docs/DEPLOYMENT.md.',
     backupsHow:
-      'Add the R2 and backup secrets on GitHub, then run "Database backup" once from the Actions tab and see it go green. The steps are in docs/DEPLOYMENT.md.',
+      'Add the R2 and backup secrets on GitHub, run "Database backup" once from the Actions tab, and add BACKUP_PING_TOKEN on both GitHub and Render so this ticks by itself. Exact fields in docs/DEPLOYMENT.md, "Launch setup".',
+    backupLast: (when: string) => `The last backup finished on ${when}. It ticks off again each week the backup runs.`,
+    actions: {
+      wipe: 'Go to Wipe all data',
+      shop: 'Fill in my shop',
+      inviteOwner: 'Invite the owner',
+      inviteTeam: 'Invite an employee',
+      testEmail: 'Send me a test email',
+      sending: 'Sending…',
+      testEmailSent: (to: string) => `Sent to ${to}. Check your inbox (and spam).`,
+    },
   },
   wipe: {
     title: 'Wipe all data',

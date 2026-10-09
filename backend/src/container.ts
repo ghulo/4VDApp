@@ -260,10 +260,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
     config.dashboardUrl,
   );
-  const launchService = new LaunchService(new LaunchRepository(db), db, {
+  const launchService = new LaunchService(new LaunchRepository(db), db, settingsRepository, emailService, {
     // Resend's shared test sender only reaches the account owner, so it doesn't count as real.
     realEmails: Boolean(config.email.resendApiKey) && !config.email.from.includes('resend.dev'),
     phoneAlerts: Boolean(config.webPush),
+    backupReports: Boolean(config.backupPingToken),
   });
   const errorAlertService = new ErrorAlertService(userRepository, settingsRepository, emailService);
   const pushService = new PushService(

@@ -51,6 +51,9 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      # The weekly backup job tells the API it worked with this secret (same value as the GitHub secret).
+      - key: BACKUP_PING_TOKEN
+        sync: false
 
 databases:
   - name: 4vd-db

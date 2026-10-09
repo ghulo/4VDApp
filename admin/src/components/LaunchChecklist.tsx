@@ -1,10 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { useT } from '../i18n/useT';
 import { settingsApi } from '../services/api';
 import type { LaunchStep } from '../services/types';
+import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { Badge, Card, SettingRow } from './ui';
+import { Badge, Button, ButtonLink, Card, SettingRow } from './ui';
+
+/** Scrolls to a card further down Settings. */
+const goTo = (id: string) => () => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
 
 /** What's left before the real shop starts. Worked out on the server, so it ticks off by itself. */
 export function LaunchChecklist() {
@@ -26,9 +31,64 @@ export function LaunchChecklist() {
           ) : (
             <Badge tone="warn">{t.launch.toDo}</Badge>
           )}
+          {!step.done && action(step, t)}
         </SettingRow>
       ))}
     </Card>
+  );
+}
+
+/** The one click that moves a step forward, when there is one. */
+function action(step: LaunchStep, t: ReturnType<typeof useT>): ReactNode {
+  switch (step.key) {
+    case 'wiped':
+      return <Button onClick={goTo('wipe-data')}>{t.launch.actions.wipe}</Button>;
+    case 'shopDetails':
+      return <Button onClick={goTo('shop')}>{t.launch.actions.shop}</Button>;
+    case 'owner':
+      return (
+        <ButtonLink to="/users?invite=owner" variant="secondary">
+          {t.launch.actions.inviteOwner}
+        </ButtonLink>
+      );
+    case 'team':
+      return (
+        <ButtonLink to="/users?invite=employee" variant="secondary">
+          {t.launch.actions.inviteTeam}
+        </ButtonLink>
+      );
+    case 'emails':
+      return <TestEmail />;
+    default:
+      return null;
+  }
+}
+
+/** Sends the developer a real email, so Resend's answer (or complaint) is on screen. */
+function TestEmail() {
+  const t = useT();
+  const test = useMutation({ mutationFn: settingsApi.testEmail });
+  return (
+    <>
+      <Button disabled={test.isPending} onClick={() => test.mutate()}>
+        {test.isPending ? t.launch.actions.sending : t.launch.actions.testEmail}
+      </Button>
+      {test.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(test.error)}
+        </p>
+      )}
+      {test.data &&
+        (test.data.sent ? (
+          <p className="form-success" role="status">
+            {t.launch.actions.testEmailSent(test.data.to)}
+          </p>
+        ) : (
+          <p className="form-error" role="alert">
+            {test.data.reason}
+          </p>
+        ))}
+    </>
   );
 }
 
@@ -50,6 +110,6 @@ function how(step: LaunchStep, t: ReturnType<typeof useT>): string {
     case 'phoneAlerts':
       return t.launch.phoneAlertsHow;
     case 'backups':
-      return t.launch.backupsHow;
+      return facts.lastBackupAt ? t.launch.backupLast(formatDate(facts.lastBackupAt)) : t.launch.backupsHow;
   }
 }

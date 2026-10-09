@@ -64,7 +64,7 @@ export function ExpiryCard({ productId }: { productId: number }) {
           {expiry.data!.map((row) => (
             <li key={row.id} className="expiry-row">
               <span>
-                {t.expiry.units(row.quantity)} · {formatDay(row.expiresOn)}{' '}
+                {t.expiry.units(row.remaining)} · {formatDay(row.expiresOn)}{' '}
                 {row.daysLeft <= URGENT_DAYS ? (
                   <Badge tone="danger">{t.expiry.left(row.daysLeft)}</Badge>
                 ) : row.daysLeft <= WARNING_DAYS ? (

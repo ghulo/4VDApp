@@ -36,7 +36,7 @@ export function ExpiryPanel({ productId, onAdd }: { productId: number; onAdd: ()
           <View key={row.id} style={[styles.row, { borderTopColor: colors.line }]}>
             <View style={styles.rowText}>
               <Text style={[styles.rowMain, { color: colors.ink }]}>
-                {t.expiry.units(row.quantity)} · {toTypedDay(row.expiresOn)}
+                {t.expiry.units(row.remaining)} · {toTypedDay(row.expiresOn)}
               </Text>
               <Text style={[styles.rowLeft, { color: tone }]}>{t.expiry.left(row.daysLeft)}</Text>
               {row.note && <Text style={[styles.muted, { color: colors.steel }]}>{row.note}</Text>}

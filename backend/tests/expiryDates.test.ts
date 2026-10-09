@@ -69,3 +69,44 @@ describe('expiry dates', () => {
     expect((await request(context.app).post('/api/expiry').set(auth()).send({ productId: milk, quantity: 1, expiresOn: '2026-02-30' })).status).toBe(400);
   });
 });
+
+describe('expiry dates and units that left the shelf', () => {
+  const sell = (productId: number, quantity: number) =>
+    request(context.app).post('/api/sales').set(auth()).send({ productId, quantity });
+  const note = (productId: number, quantity: number, expiresOn: string) =>
+    request(context.app).post('/api/expiry').set(auth()).send({ productId, quantity, expiresOn });
+  const warnings = async () => (await context.container.insightsService.list(OCT_1)).filter((insight) => insight.kind === 'expiring');
+
+  it('should only count the units still on the shelf, taking the sold ones off the soonest date first', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 20 });
+    await note(milk, 10, '2026-10-03');
+    await note(milk, 10, '2026-10-05');
+
+    await sell(milk, 14); // 6 left: the first date is gone and 6 of the second remain
+
+    const dates = (await request(context.app).get('/api/expiry').set(auth()).query({ productId: milk })).body.data;
+    expect(dates.map((date: { expiresOn: string; quantity: number; remaining: number }) => [date.expiresOn, date.quantity, date.remaining])).toEqual([
+      ['2026-10-05', 10, 6],
+    ]);
+    expect((await warnings()).map((insight) => insight.title)).toEqual(['6 × Milk expire in 4 days']);
+  });
+
+  it('should stop warning about a product that sold out or was written off', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 5 });
+    await note(milk, 5, '2026-10-02');
+    expect(await warnings()).toHaveLength(1);
+
+    await sell(milk, 5);
+
+    expect(await warnings()).toHaveLength(0);
+  });
+
+  it('should be cautious about units that were never noted', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 30 });
+    await note(milk, 10, '2026-10-02');
+
+    await sell(milk, 12); // 18 left, more than the 10 noted: all 10 may still be there
+
+    expect((await warnings()).map((insight) => insight.title)).toEqual(['10 × Milk expire in 1 day']);
+  });
+});

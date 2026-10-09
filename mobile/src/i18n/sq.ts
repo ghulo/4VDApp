@@ -106,6 +106,7 @@ export const sq: Catalogue = {
     closeDrawer: 'Mbyll arkën',
     drawerCounted: 'U numërua sot',
     drawerToCount: 'Numëro paratë në mbyllje',
+    drawersSome: (done, total) => `U numëruan ${done} nga ${total} arka`,
     tabs: 'Borxhet',
     tabsOwed: (amount, people) => `${amount} borxh nga ${people} ${people === 1 ? 'person' : 'persona'}`,
     tabsNone: 'Kush sa ka borxh',

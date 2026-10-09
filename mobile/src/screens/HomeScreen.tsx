@@ -30,6 +30,18 @@ const RECENT_SALES_SHOWN = 3;
 const DECIDED_SHOWN_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * What the drawer tile says. With a shop and one carwash it follows the shop
+ * drawer, as it always did; with several carwashes it counts every drawer, so
+ * a carwash nobody closed up doesn't slip by.
+ */
+function drawerDetail(drawers: Array<{ place: string; countedAt: string | null }> | undefined, t: Catalogue): string {
+  const counted = drawers?.filter((drawer) => drawer.countedAt).length ?? 0;
+  const total = drawers?.length ?? 0;
+  if (total > 2) return counted === total ? t.home.drawerCounted : t.home.drawersSome(counted, total);
+  return drawers?.find((drawer) => drawer.place === 'shop')?.countedAt ? t.home.drawerCounted : t.home.drawerToCount;
+}
+
 /** What the carwash tile says: done, to do, or how many of several carwashes are in. */
 function carwashDetail(carwashes: Array<{ takings: unknown }> | undefined, t: Catalogue): string {
   const done = carwashes?.filter((carwash) => carwash.takings).length ?? 0;
@@ -215,7 +227,7 @@ export function HomeScreen() {
               colors={colors}
               icon={Coins}
               title={t.home.closeDrawer}
-              detail={cash.data?.find((entry) => entry.place === 'shop')?.countedAt ? t.home.drawerCounted : t.home.drawerToCount}
+              detail={drawerDetail(cash.data, t)}
               onPress={() => navigation.navigate('CashCount')}
             />
             <JobTile

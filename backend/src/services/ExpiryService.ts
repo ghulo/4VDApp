@@ -13,7 +13,10 @@ export interface ExpiryDto {
   id: number;
   productId: number;
   productName: string;
+  /** Units noted when the date was added. */
   quantity: number;
+  /** How many of them are probably still on the shelf (see `stillOnShelf`). */
+  remaining: number;
   expiresOn: string;
   /** Days from today in shop time; negative once it has passed. */
   daysLeft: number;
@@ -32,12 +35,13 @@ export class ExpiryService {
     private readonly timeZone: string,
   ) {}
 
-  private toDto(row: ExpiryRecord, today: string): ExpiryDto {
+  private toDto(row: ExpiryRecord, today: string, remaining = row.quantity): ExpiryDto {
     return {
       id: row.id,
       productId: row.product_id,
       productName: row.product_name,
       quantity: row.quantity,
+      remaining,
       expiresOn: row.expires_on,
       daysLeft: daysBetween(today, row.expires_on),
       note: row.note,
@@ -45,16 +49,45 @@ export class ExpiryService {
     };
   }
 
+  /** Open dates for one product that still have units on the shelf, soonest first. */
   async forProduct(productId: number, now = new Date()): Promise<ExpiryDto[]> {
     const today = zonedDay(now, this.timeZone);
-    return (await this.expiryRepository.findOpen({ productId })).map((row) => this.toDto(row, today));
+    return this.stillOnShelf(await this.expiryRepository.findOpen({ productId })).map(({ row, remaining }) => this.toDto(row, today, remaining));
   }
 
-  /** Everything expiring within `days` (or already expired), soonest first. */
+  /** Everything with units left that expires within `days` (or already has), soonest first. */
   async upcoming(days = EXPIRY_WARNING_DAYS, now = new Date()): Promise<ExpiryDto[]> {
     const today = zonedDay(now, this.timeZone);
     const until = new Date(Date.parse(`${today}T00:00:00Z`) + days * MS_PER_DAY).toISOString().slice(0, 10);
-    return (await this.expiryRepository.findOpen({ until })).map((row) => this.toDto(row, today));
+    return this.stillOnShelf(await this.expiryRepository.findOpen({}))
+      .filter(({ row }) => row.expires_on <= until)
+      .map(({ row, remaining }) => this.toDto(row, today, remaining));
+  }
+
+  /**
+   * Sales, write-offs and counts take units off the shelf without touching the
+   * dates, so a date can outlive its stock. Stock sells oldest first, so what
+   * is missing from the noted total comes off the soonest dates first; a date
+   * with nothing left is dropped, and one partly sold shows what is left.
+   * Units that were never noted only ever make this cautious: it never hides
+   * units that may still be there.
+   */
+  private stillOnShelf(rows: ExpiryRecord[]): Array<{ row: ExpiryRecord; remaining: number }> {
+    const noted = new Map<number, { total: number; stock: number }>();
+    for (const row of rows) {
+      const entry = noted.get(row.product_id) ?? { total: 0, stock: row.stock };
+      entry.total += row.quantity;
+      noted.set(row.product_id, entry);
+    }
+    // Units that must already be gone per product: noted minus what is on the shelf.
+    const gone = new Map([...noted].map(([productId, { total, stock }]) => [productId, Math.max(0, total - stock)]));
+    const result: Array<{ row: ExpiryRecord; remaining: number }> = [];
+    for (const row of rows) {
+      const take = Math.min(gone.get(row.product_id) ?? 0, row.quantity);
+      gone.set(row.product_id, (gone.get(row.product_id) ?? 0) - take);
+      if (row.quantity - take > 0) result.push({ row, remaining: row.quantity - take });
+    }
+    return result;
   }
 
   async add(input: { productId: number; quantity: number; expiresOn: string; note: string | null }, actorId: number): Promise<ExpiryDto> {

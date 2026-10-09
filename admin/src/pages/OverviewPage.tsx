@@ -11,6 +11,7 @@ import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../service
 import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
 import { ButtonLink, Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
+import { useCarwashes } from '../utils/useCarwashes';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Days in the Today card's dot strip. */
@@ -116,7 +117,13 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
   const t = useT();
   // Fixed once per visit so the query key doesn't change on every render.
   const [range] = useState(() => todayRange());
-  const today = useQuery({ queryKey: ['reports', 'summary', 'today', range.startDate], queryFn: () => reportsApi.summary(range) });
+  const { places: openCarwashes } = useCarwashes();
+  // The team keeps selling while this page is open, so today's figures check again every minute.
+  const today = useQuery({
+    queryKey: ['reports', 'summary', 'today', range.startDate],
+    queryFn: () => reportsApi.summary(range),
+    refetchInterval: 60_000,
+  });
   const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
   const weekday = formatDateWith(new Date(range.endDate), { weekday: 'long' });
   const current = today.data?.current;
@@ -170,6 +177,10 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
               {today.data.carwash.current.days > 0 ? (
                 <>
                   <strong>{formatMoney(today.data.carwash.current.total)}</strong> {t.overview.carwashToday}
+                  {/* With several carwashes, say when some haven't entered their takings yet. */}
+                  {openCarwashes.length > 1 && today.data.carwash.byCarwash.length < openCarwashes.length && (
+                    <> · {t.overview.carwashSome(today.data.carwash.byCarwash.length, openCarwashes.length)}</>
+                  )}
                 </>
               ) : (
                 t.overview.carwashMissing
@@ -195,7 +206,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
 /** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
 function AttentionPanel() {
   const t = useT();
-  const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights });
+  const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights, refetchInterval: 60_000 });
 
   return (
     <Card title={t.overview.attention}>

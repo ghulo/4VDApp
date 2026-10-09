@@ -313,7 +313,10 @@ export interface ExpiryDate {
   id: number;
   productId: number;
   productName: string;
+  /** Units noted when the date was added. */
   quantity: number;
+  /** How many of them are probably still on the shelf. */
+  remaining: number;
   /** "2026-10-12" */
   expiresOn: string;
   /** Negative once it has passed. */

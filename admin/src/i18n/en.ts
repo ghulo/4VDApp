@@ -339,6 +339,7 @@ export const en = {
     toRestock: 'to restock',
     carwashToday: 'at the carwash',
     carwashMissing: 'Carwash not entered yet',
+    carwashSome: (done: number, total: number) => `entered for ${done} of ${total}`,
     severity: { urgent: 'Urgent', warning: 'Check', info: 'Idea' },
     attention: 'Needs your attention',
     allClear: 'All clear',

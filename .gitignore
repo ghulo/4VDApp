@@ -70,3 +70,6 @@ Thumbs.db
 
 # Wrangler (Cloudflare) local state
 .wrangler
+
+# Playwright screenshots and console logs (local scratch)
+.playwright-mcp/

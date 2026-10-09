@@ -42,6 +42,7 @@ export function DataTable<Row>({
   const cellClass = (column: Column<Row>) =>
     [column.align === 'end' && 'table__numeric', column.title && 'table__title', column.className].filter(Boolean).join(' ') ||
     undefined;
+  // Explicit roles: older Safari drops table semantics once rows stack with display: grid.
   // Stacked rows on phones name each value with its column; hidden headers (like actions) get none.
   const cellLabel = (column: Column<Row>) => (typeof column.header === 'string' ? column.header : undefined);
 
@@ -52,23 +53,23 @@ export function DataTable<Row>({
         <div className="data-table__empty">{empty}</div>
       ) : (
         <div className="data-table__scroll">
-          <table className="table table--stack">
+          <table className="table table--stack" role="table">
             <caption className="visually-hidden">{caption}</caption>
-            <thead>
-              <tr>
+            <thead role="rowgroup">
+              <tr role="row">
                 {columns.map((column, index) => (
-                  <th key={index} scope="col" className={cellClass(column)}>
+                  <th key={index} role="columnheader" scope="col" className={cellClass(column)}>
                     {column.header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {rows.map((row) => (
                 <Fragment key={rowKey(row)}>
-                  <tr className={rowClassName?.(row)}>
+                  <tr role="row" className={rowClassName?.(row)}>
                     {columns.map((column, index) => (
-                      <td key={index} className={cellClass(column)} data-label={cellLabel(column)}>
+                      <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)}>
                         {column.cell(row)}
                       </td>
                     ))}

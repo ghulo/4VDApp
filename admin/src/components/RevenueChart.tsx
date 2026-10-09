@@ -1,9 +1,10 @@
-import { type KeyboardEvent, useId, useState } from 'react';
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import type { RevenuePoint } from '../services/types';
 import { formatCompactMoney, formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
-const WIDTH = 720;
+/** Drawn at the plot's real width so labels keep their size on phones; this is the first guess. */
+const DEFAULT_WIDTH = 720;
 const HEIGHT = 220;
 const MARGIN = { top: 12, right: 8, bottom: 28, left: 56 };
 const MAX_BAR_WIDTH = 14;
@@ -39,16 +40,28 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
   const hintId = useId();
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
 
-  const plotWidth = WIDTH - MARGIN.left - MARGIN.right;
+  useEffect(() => {
+    const plot = plotRef.current;
+    if (!plot) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width > 0) setWidth(Math.round(entry.contentRect.width));
+    });
+    observer.observe(plot);
+    return () => observer.disconnect();
+  }, [showTable]);
+
+  const plotWidth = width - MARGIN.left - MARGIN.right;
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
   const maxValue = niceMax(Math.max(...points.map((point) => point.revenue), 0));
   const band = plotWidth / Math.max(points.length, 1);
   const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, band * (1 - BAR_GAP)));
   const yFor = (value: number) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
   const ticks = Array.from({ length: TICK_COUNT + 1 }, (_, index) => (maxValue / TICK_COUNT) * index);
-  // Label roughly every week so dates never collide.
-  const labelEvery = Math.max(1, Math.ceil(points.length / 5));
+  // About one date per 90px, so dates never collide on a narrow screen.
+  const labelEvery = Math.max(1, Math.ceil(points.length / Math.max(2, Math.floor(plotWidth / 90))));
 
   const active = activeIndex === null ? null : points[activeIndex];
 
@@ -104,6 +117,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
         </div>
       ) : (
         <div
+          ref={plotRef}
           className="chart__plot"
           tabIndex={0}
           role="group"
@@ -116,13 +130,13 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
           onBlur={() => setActiveIndex(null)}
           onPointerLeave={() => setActiveIndex(null)}
         >
-          <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true">
+          <svg viewBox={`0 0 ${width} ${HEIGHT}`} aria-hidden="true">
             {ticks.map((tick) => (
               <g key={tick}>
                 <line
                   className="chart__grid"
                   x1={MARGIN.left}
-                  x2={WIDTH - MARGIN.right}
+                  x2={width - MARGIN.right}
                   y1={yFor(tick)}
                   y2={yFor(tick)}
                 />
@@ -158,7 +172,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
             <line
               className="chart__baseline"
               x1={MARGIN.left}
-              x2={WIDTH - MARGIN.right}
+              x2={width - MARGIN.right}
               y1={MARGIN.top + plotHeight}
               y2={MARGIN.top + plotHeight}
             />
@@ -169,7 +183,7 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
               className="chart__tooltip"
               role="status"
               style={{
-                left: `${((MARGIN.left + (activeIndex + 0.5) * band) / WIDTH) * 100}%`,
+                left: `${((MARGIN.left + (activeIndex + 0.5) * band) / width) * 100}%`,
                 top: `${(yFor(active.revenue) / HEIGHT) * 100}%`,
               }}
             >

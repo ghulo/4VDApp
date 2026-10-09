@@ -170,7 +170,15 @@ describe('DataTable', () => {
     expect(html).toContain('class="table table--stack"');
     expect(html).toContain('data-label="Price"');
     // A hidden header gives no name, so the cell shows as a plain block.
-    expect(html).toMatch(/<td>Edit<\/td>/);
+    expect(html).toMatch(/<td role="cell">Edit<\/td>/);
+  });
+
+  it('should keep table roles so older Safari still reads stacked rows as a table', () => {
+    const html = renderToStaticMarkup(
+      <DataTable caption='Products' columns={[{ header: 'Name', cell: (r: { n: string }) => r.n }]} rows={[{ n: 'Oak Chair' }]} rowKey={(r) => r.n} />,
+    );
+    expect(html).toContain('role="table"');
+    expect(html).toContain('<td role="cell"');
   });
 
   it('should mark the cell that heads the row on phones', () => {

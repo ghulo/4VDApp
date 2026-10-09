@@ -781,7 +781,7 @@
 /* Sized in drawing units: the SVG scales with the card, so this lands near 12px on desktop. */
 .chart__tick {
   fill: var(--steel);
-  font-size: 9.5px;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
 }
 

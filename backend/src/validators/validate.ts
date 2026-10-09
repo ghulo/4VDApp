@@ -42,6 +42,12 @@ export const booleanQuerySchema = z.enum(['true', 'false']).transform((value) =>
 
 export const trimmedString = (maxLength: number) => z.string().trim().min(1).max(maxLength);
 
+/** NUI (Numri Unik Identifikues): Kosovo's 9-digit business number. Spaces are dropped. */
+export const nuiSchema = z
+  .string()
+  .transform((value) => value.replace(/\s+/g, ''))
+  .pipe(z.string().regex(/^\d{9}$/, 'NUI must be 9 digits'));
+
 /** Optional text field: empty strings and null both mean "no value". */
 export const optionalText = (maxLength: number) =>
   z

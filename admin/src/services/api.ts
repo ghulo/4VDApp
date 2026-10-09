@@ -33,6 +33,7 @@ import type {
   ExpenseTotals,
   RecurringExpense,
   Customer,
+  CustomerKind,
   TabEntry,
   Supplier,
   PurchaseOrder,
@@ -365,11 +366,27 @@ export const expensesApi = {
   },
 };
 
+export interface CustomerInput {
+  name: string;
+  kind: CustomerKind;
+  nui: string | null;
+  phone: string | null;
+  note: string | null;
+}
+
+export interface SupplierInput {
+  name: string;
+  nui: string;
+  phone: string | null;
+  email: string | null;
+}
+
 export const customersApi = {
   list: async () => (await apiRequest<Customer[]>('/customers')).data,
   detail: async (id: number) => (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}`)).data,
-  create: async (input: { name: string; phone: string | null; note: string | null }) =>
-    (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
+  create: async (input: CustomerInput) => (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
+  update: async (id: number, input: CustomerInput) =>
+    (await apiRequest<Customer>(`/customers/${id}`, { method: 'PUT', body: input })).data,
   pay: async (id: number, input: { amount: number; note: string | null }) =>
     (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
   archive: async (id: number) => {
@@ -379,8 +396,9 @@ export const customersApi = {
 
 export const suppliersApi = {
   list: async () => (await apiRequest<Supplier[]>('/suppliers')).data,
-  add: async (input: { name: string; phone: string | null; email: string | null }) =>
-    (await apiRequest<Supplier>('/suppliers', { method: 'POST', body: input })).data,
+  add: async (input: SupplierInput) => (await apiRequest<Supplier>('/suppliers', { method: 'POST', body: input })).data,
+  update: async (id: number, input: SupplierInput) =>
+    (await apiRequest<Supplier>(`/suppliers/${id}`, { method: 'PUT', body: input })).data,
   remove: async (id: number) => {
     await apiRequest(`/suppliers/${id}`, { method: 'DELETE' });
   },

@@ -28,7 +28,7 @@ export class LaunchService {
         done: facts.wiped_at !== null,
         facts: facts.wiped_at ? { wipedAt: facts.wiped_at } : { products: Number(facts.products), sales: Number(facts.sales) },
       },
-      { key: 'shopDetails', done: facts.has_address && facts.has_phone },
+      { key: 'shopDetails', done: facts.has_address && facts.has_phone && facts.has_nui },
       { key: 'owner', done: Number(facts.owners) > 0 },
       { key: 'team', done: Number(facts.employees) > 0, facts: { employees: Number(facts.employees) } },
       { key: 'weeklyEmail', done: Number(facts.owners_with_weekly_email) > 0 },

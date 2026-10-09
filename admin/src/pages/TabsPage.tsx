@@ -7,7 +7,8 @@ import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { customersApi } from '../services/api';
-import type { Customer, TabEntry } from '../services/types';
+import type { Customer, CustomerKind, TabEntry } from '../services/types';
+import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
@@ -48,7 +49,7 @@ function AllTabs() {
       )}
 
       <Card title={t.tabs.open}>
-        <OpenTabForm />
+        <CustomerForm />
       </Card>
 
       {customers.isPending && <Loading />}
@@ -69,7 +70,9 @@ function AllTabs() {
                     <Link to={`/tabs?customer=${row.id}`} className="table__primary-link" aria-label={t.tabs.see(row.name)}>
                       {row.name}
                     </Link>
-                    {row.phone && <span className="table__secondary">{row.phone}</span>}
+                    {(row.nui || row.phone) && (
+                      <span className="table__secondary">{[row.nui && t.nui.short(row.nui), row.phone].filter(Boolean).join(' · ')}</span>
+                    )}
                   </>
                 ),
               },
@@ -92,47 +95,84 @@ function AllTabs() {
   );
 }
 
-function OpenTabForm() {
+const KINDS: CustomerKind[] = ['person', 'business'];
+
+/** Opens a tab, or with `customer` changes its details. A business has to give its NUI. */
+function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: () => void }) {
   const t = useT();
   const queryClient = useQueryClient();
   const [, setParams] = useSearchParams();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [note, setNote] = useState('');
-  const create = useMutation({
-    mutationFn: () => customersApi.create({ name: name.trim(), phone: phone.trim() || null, note: note.trim() || null }),
-    onSuccess: (customer) => {
+  const [kind, setKind] = useState<CustomerKind>(customer?.kind ?? 'person');
+  const [name, setName] = useState(customer?.name ?? '');
+  const [nui, setNui] = useState(customer?.nui ?? '');
+  const [phone, setPhone] = useState(customer?.phone ?? '');
+  const [note, setNote] = useState(customer?.note ?? '');
+  const save = useMutation({
+    mutationFn: () => {
+      const input = {
+        name: name.trim(),
+        kind,
+        nui: kind === 'business' ? cleanNui(nui) : null,
+        phone: phone.trim() || null,
+        note: note.trim() || null,
+      };
+      return customer ? customersApi.update(customer.id, input) : customersApi.create(input);
+    },
+    onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
-      setParams({ customer: String(customer.id) });
+      if (customer) onSaved?.();
+      else setParams({ customer: String(saved.id) });
     },
   });
+  const isValid = name.trim() !== '' && (kind === 'person' || isNui(nui));
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    create.mutate();
+    save.mutate();
   }
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
+      <div className="segmented" role="radiogroup" aria-label={t.tabs.kind}>
+        {KINDS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={kind === option}
+            className="segmented__option"
+            onClick={() => setKind(option)}
+          >
+            {t.tabs.kinds[option]}
+          </button>
+        ))}
+      </div>
       <div className="field-row">
-        <Field label={t.tabs.name}>
+        <Field label={kind === 'business' ? t.tabs.businessName : t.tabs.name}>
           <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
+        {kind === 'business' && (
+          <Field label={t.nui.label} hint={t.nui.hint}>
+            <NuiInput required value={nui} onChange={(event) => setNui(event.target.value)} />
+          </Field>
+        )}
+      </div>
+      <div className="field-row">
         <Field label={t.tabs.phone}>
           <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
         </Field>
+        <Field label={t.tabs.note}>
+          <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
+        </Field>
       </div>
-      <Field label={t.tabs.note}>
-        <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
-      </Field>
-      {create.isError && (
+      {save.isError && (
         <p className="form-error" role="alert">
-          {errorMessage(create.error)}
+          {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={name.trim() === '' || create.isPending}>
-        {create.isPending ? t.tabs.opening : t.tabs.openButton}
+      <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
+        {save.isPending ? t.tabs.saving : customer ? t.tabs.saveDetails : t.tabs.openButton}
       </Button>
     </form>
   );
@@ -151,7 +191,7 @@ function CustomerTab({ id }: { id: number }) {
     <>
       <PageHeader
         title={data.name}
-        description={[data.phone, data.note].filter(Boolean).join(' · ') || undefined}
+        description={[data.nui && t.nui.short(data.nui), data.phone, data.note].filter(Boolean).join(' · ') || undefined}
         crumbs={[{ label: t.tabs.back, to: '/tabs' }]}
       />
       <StatGrid>
@@ -185,8 +225,27 @@ function CustomerTab({ id }: { id: number }) {
         />
       </Card>
 
+      {canManage(role) && <EditDetails customer={data} />}
+
       {canManage(role) && data.balance === 0 && !data.archived && <CloseTab customer={data} />}
     </>
+  );
+}
+
+/** Managers fix a name or phone, or turn a person's tab into a business's. Folded away until needed. */
+function EditDetails({ customer }: { customer: Customer }) {
+  const t = useT();
+  const [editing, setEditing] = useState(false);
+  return (
+    <Card title={t.tabs.details}>
+      {editing ? (
+        <CustomerForm key={customer.id} customer={customer} onSaved={() => setEditing(false)} />
+      ) : (
+        <Button variant="ghost" onClick={() => setEditing(true)}>
+          {t.tabs.editDetails}
+        </Button>
+      )}
+    </Card>
   );
 }
 

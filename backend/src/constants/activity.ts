@@ -40,6 +40,7 @@ export const ACTIVITY_ACTIONS = [
   'customer.archived',
   'tab.paid',
   'supplier.created',
+  'supplier.updated',
   'supplier.removed',
   'order.created',
   'order.received',

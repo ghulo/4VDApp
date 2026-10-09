@@ -1,5 +1,5 @@
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { CustomerRecord, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
+import type { CustomerFields, CustomerRecord, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 
@@ -10,6 +10,9 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export interface CustomerDto {
   id: number;
   name: string;
+  kind: 'person' | 'business';
+  /** The business's NUI; null for a person. */
+  nui: string | null;
   phone: string | null;
   note: string | null;
   /** What they owe now. */
@@ -32,11 +35,7 @@ export interface TabEntryDto {
   by: string | null;
 }
 
-export interface CustomerInput {
-  name: string;
-  phone: string | null;
-  note: string | null;
-}
+export type CustomerInput = CustomerFields;
 
 /** Balance, oldest unpaid charge and last payment from a customer's entries (oldest first). */
 function summarise(entries: TabEntryRecord[]) {
@@ -68,6 +67,8 @@ function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[]): Cus
   return {
     id: customer.id,
     name: customer.name,
+    kind: customer.kind,
+    nui: customer.nui,
     phone: customer.phone,
     note: customer.note,
     balance,
@@ -141,7 +142,7 @@ export class TabService {
         entityType: 'customer',
         entityId: id,
         summary: `Changed ${before.name}'s details`,
-        details: { before: { name: before.name, phone: before.phone, note: before.note }, after: input },
+        details: { before: { name: before.name, kind: before.kind, nui: before.nui, phone: before.phone, note: before.note }, after: input },
       });
     });
     return this.detail(id);

@@ -149,7 +149,7 @@ export const carwashApi = {
 export const customersApi = {
   list: async () => (await apiRequest<Customer[]>('/customers')).data,
   detail: async (id: number) => (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}`)).data,
-  create: async (input: { name: string; phone: string | null; note: string | null }) =>
+  create: async (input: { name: string; kind: Customer['kind']; nui: string | null; phone: string | null; note: string | null }) =>
     (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
   pay: async (id: number, input: { amount: number; note: string | null }) =>
     (await apiRequest<Customer>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,

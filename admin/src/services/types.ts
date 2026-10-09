@@ -295,6 +295,8 @@ export interface ExpiryDate {
 export interface Supplier {
   id: number;
   name: string;
+  /** Older suppliers may not have one yet. */
+  nui: string | null;
   phone: string | null;
   email: string | null;
   note: string | null;
@@ -347,9 +349,14 @@ export interface Insight {
   customerId?: number;
 }
 
+export type CustomerKind = 'person' | 'business';
+
 export interface Customer {
   id: number;
   name: string;
+  kind: CustomerKind;
+  /** A business's NUI; null for a person. */
+  nui: string | null;
   phone: string | null;
   note: string | null;
   balance: number;
@@ -515,6 +522,7 @@ export interface Business {
   name: string;
   address: string | null;
   phone: string | null;
+  nui: string | null;
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;

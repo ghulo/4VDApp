@@ -6,6 +6,8 @@ import type { Customer } from '../services/types';
 import { fonts, radius, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
+import { Button } from './ui';
+import { cleanNui, isNui } from '../utils/nui';
 
 const SHOWN = 6;
 
@@ -19,9 +21,19 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  // A business tab needs its NUI before it can be opened.
+  const [asBusiness, setAsBusiness] = useState(false);
+  const [nui, setNui] = useState('');
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list, enabled: open });
   const create = useMutation({
-    mutationFn: () => customersApi.create({ name: search.trim(), phone: null, note: null }),
+    mutationFn: () =>
+      customersApi.create({
+        name: search.trim(),
+        kind: asBusiness ? 'business' : 'person',
+        nui: asBusiness ? cleanNui(nui) : null,
+        phone: null,
+        note: null,
+      }),
     onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       pick(customer);
@@ -32,6 +44,8 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
     onChange(customer);
     setOpen(false);
     setSearch('');
+    setAsBusiness(false);
+    setNui('');
   }
 
   if (value) {
@@ -81,15 +95,44 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
           {customer.balance > 0 && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.owes(formatMoney(customer.balance))}</Text>}
         </Pressable>
       ))}
-      {query !== '' && !exact && (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => create.mutate()}
-          disabled={create.isPending}
-          style={({ pressed }) => [styles.row, { borderTopColor: colors.line, backgroundColor: pressed ? colors.fill : 'transparent' }]}
-        >
-          <Text style={[styles.name, { color: colors.ink }]}>{t.tabs.newTab(search.trim())}</Text>
-        </Pressable>
+      {query !== '' && !exact && !asBusiness && (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => create.mutate()}
+            disabled={create.isPending}
+            style={({ pressed }) => [styles.row, { borderTopColor: colors.line, backgroundColor: pressed ? colors.fill : 'transparent' }]}
+          >
+            <Text style={[styles.name, { color: colors.ink }]}>{t.tabs.newTab(search.trim())}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setAsBusiness(true)}
+            style={({ pressed }) => [styles.row, { borderTopColor: colors.line, backgroundColor: pressed ? colors.fill : 'transparent' }]}
+          >
+            <Text style={[styles.name, { color: colors.ink }]}>{t.tabs.newBusinessTab(search.trim())}</Text>
+          </Pressable>
+        </>
+      )}
+      {query !== '' && !exact && asBusiness && (
+        <View style={[styles.business, { borderTopColor: colors.line }]}>
+          <Text style={[styles.label, { color: colors.ink }]}>{t.tabs.nuiFor(search.trim())}</Text>
+          <TextInput
+            value={nui}
+            onChangeText={setNui}
+            placeholder="811234567"
+            placeholderTextColor={colors.steel}
+            accessibilityLabel={t.tabs.nuiFor(search.trim())}
+            keyboardType="number-pad"
+            maxLength={13}
+            style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.background }]}
+          />
+          <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.nuiHint}</Text>
+          <Button label={t.tabs.openBusinessTab} disabled={!isNui(nui) || create.isPending} loading={create.isPending} onPress={() => create.mutate()} />
+          <Pressable accessibilityRole="button" onPress={() => setAsBusiness(false)} hitSlop={8}>
+            <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.notBusiness}</Text>
+          </Pressable>
+        </View>
       )}
       {create.isError && <Text style={[styles.hint, { color: colors.signalOut }]}>{errorMessage(create.error)}</Text>}
       <Pressable accessibilityRole="button" onPress={() => pick(null)} hitSlop={8}>
@@ -108,4 +151,5 @@ const styles = StyleSheet.create({
   search: { borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.md, minHeight: 44, fontFamily: fonts.body, fontSize: 16 },
   row: { minHeight: 48, justifyContent: 'center', borderTopWidth: 1, paddingVertical: spacing.xs },
   name: { fontFamily: fonts.bodyBold, fontSize: 16 },
+  business: { borderTopWidth: 1, paddingTop: spacing.sm, gap: spacing.sm },
 });

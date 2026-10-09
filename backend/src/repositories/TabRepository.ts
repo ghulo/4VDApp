@@ -1,9 +1,20 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
+/** What staff type in for a customer. */
+export interface CustomerFields {
+  name: string;
+  kind: 'person' | 'business';
+  nui: string | null;
+  phone: string | null;
+  note: string | null;
+}
+
 export interface CustomerRecord {
   id: number;
   name: string;
+  kind: 'person' | 'business';
+  nui: string | null;
   phone: string | null;
   note: string | null;
   archived_at: Date | null;
@@ -30,7 +41,7 @@ export class TabRepository {
   constructor(private readonly db: DatabaseClient) {}
 
   async findCustomers(includeArchived = false): Promise<CustomerRecord[]> {
-    let query = this.db.selectFrom('customers').select(['id', 'name', 'phone', 'note', 'archived_at', 'created_at']);
+    let query = this.db.selectFrom('customers').select(['id', 'name', 'kind', 'nui', 'phone', 'note', 'archived_at', 'created_at']);
     if (!includeArchived) query = query.where('archived_at', 'is', null);
     return query.orderBy('name').execute();
   }
@@ -38,7 +49,7 @@ export class TabRepository {
   async findCustomer(id: number): Promise<CustomerRecord | undefined> {
     return this.db
       .selectFrom('customers')
-      .select(['id', 'name', 'phone', 'note', 'archived_at', 'created_at'])
+      .select(['id', 'name', 'kind', 'nui', 'phone', 'note', 'archived_at', 'created_at'])
       .where('id', '=', id)
       .executeTakeFirst();
   }
@@ -90,16 +101,16 @@ export class TabRepository {
     return new Map(result.rows.map((row) => [row.day, Number(row.effect)]));
   }
 
-  async createCustomer(input: { name: string; phone: string | null; note: string | null; createdBy: number }): Promise<number> {
+  async createCustomer(input: CustomerFields & { createdBy: number }): Promise<number> {
     const row = await this.db
       .insertInto('customers')
-      .values({ name: input.name, phone: input.phone, note: input.note, created_by: input.createdBy })
+      .values({ name: input.name, kind: input.kind, nui: input.nui, phone: input.phone, note: input.note, created_by: input.createdBy })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;
   }
 
-  async updateCustomer(id: number, changes: { name: string; phone: string | null; note: string | null }): Promise<void> {
+  async updateCustomer(id: number, changes: CustomerFields): Promise<void> {
     await this.db.updateTable('customers').set(changes).where('id', '=', id).execute();
   }
 

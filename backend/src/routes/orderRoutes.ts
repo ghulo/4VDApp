@@ -8,6 +8,7 @@ export function createSupplierRoutes({ purchaseOrderService, guards }: Container
 
   router.get('/', ...guards.oversee, controller.suppliers);
   router.post('/', ...guards.manage, controller.addSupplier);
+  router.put('/:id', ...guards.manage, controller.updateSupplier);
   router.delete('/:id', ...guards.manage, controller.removeSupplier);
 
   return router;

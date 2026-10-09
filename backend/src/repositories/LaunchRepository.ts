@@ -9,6 +9,7 @@ export interface LaunchFacts {
   products: string;
   sales: string;
   has_address: boolean;
+  has_nui: boolean;
   has_phone: boolean;
   owners: string;
   owners_with_weekly_email: string;
@@ -25,6 +26,7 @@ export class LaunchRepository {
         (select count(*) from products) as products,
         (select count(*) from sales) as sales,
         coalesce((select address is not null and address <> '' from businesses order by id limit 1), false) as has_address,
+        coalesce((select nui is not null from businesses order by id limit 1), false) as has_nui,
         coalesce((select phone is not null and phone <> '' from businesses order by id limit 1), false) as has_phone,
         (select count(*) from users where role = 'owner' and is_active and deleted_at is null) as owners,
         (select count(*) from users where role = 'owner' and is_active and deleted_at is null and email_weekly_report) as owners_with_weekly_email,

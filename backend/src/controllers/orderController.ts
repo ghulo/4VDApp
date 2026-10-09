@@ -14,6 +14,11 @@ export function createOrderController(orderService: PurchaseOrderService) {
       sendSuccess(res, await orderService.addSupplier(parseInput(supplierSchema, req.body), req.user!.id), { statusCode: 201 });
     },
 
+    async updateSupplier(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await orderService.updateSupplier(id, parseInput(supplierSchema, req.body), req.user!.id));
+    },
+
     async removeSupplier(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       await orderService.removeSupplier(id, req.user!.id);

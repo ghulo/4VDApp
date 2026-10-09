@@ -7,6 +7,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { businessApi, ordersApi, productsApi, reportsApi, suppliersApi } from '../services/api';
 import type { PurchaseOrder, Supplier } from '../services/types';
+import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
@@ -72,27 +73,11 @@ function SuppliersCard({ suppliers, isPending }: { suppliers: Supplier[] | undef
   const t = useT();
   const { role } = useCurrentUser();
   const queryClient = useQueryClient();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const add = useMutation({
-    mutationFn: () => suppliersApi.add({ name: name.trim(), phone: phone.trim() || null, email: email.trim() || null }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      setName('');
-      setPhone('');
-      setEmail('');
-    },
-  });
+  const [editing, setEditing] = useState<Supplier | null>(null);
   const remove = useMutation({
     mutationFn: suppliersApi.remove,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suppliers'] }),
   });
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    add.mutate();
-  }
 
   return (
     <Card title={t.orders.suppliers}>
@@ -105,16 +90,22 @@ function SuppliersCard({ suppliers, isPending }: { suppliers: Supplier[] | undef
           empty={<EmptyState title={t.orders.noSuppliers}>{t.orders.noSuppliersHint}</EmptyState>}
           columns={[
             { header: t.orders.supplierName, title: true, cell: (row) => row.name },
+            { header: t.nui.label, cell: (row) => row.nui ?? <Badge tone="warn">{t.nui.missing}</Badge> },
             { header: t.orders.phoneColumn, cell: (row) => row.phone ?? '–' },
             { header: t.orders.emailColumn, cell: (row) => row.email ?? '–' },
             ...(canManage(role)
               ? [
                   {
-                    header: <span className="visually-hidden">{t.orders.remove}</span>,
+                    header: <span className="visually-hidden">{t.orders.actions}</span>,
                     cell: (row: Supplier) => (
-                      <Button variant="danger-text" disabled={remove.isPending} aria-label={t.orders.removeLabel(row.name)} onClick={() => remove.mutate(row.id)}>
-                        {t.orders.remove}
-                      </Button>
+                      <div className="form-actions">
+                        <Button variant="ghost" aria-label={t.orders.editLabel(row.name)} onClick={() => setEditing(row)}>
+                          {t.orders.edit}
+                        </Button>
+                        <Button variant="danger-text" disabled={remove.isPending} aria-label={t.orders.removeLabel(row.name)} onClick={() => remove.mutate(row.id)}>
+                          {t.orders.remove}
+                        </Button>
+                      </div>
                     ),
                   },
                 ]
@@ -123,29 +114,80 @@ function SuppliersCard({ suppliers, isPending }: { suppliers: Supplier[] | undef
         />
       )}
       <ManagersOnly>
-        <form className="settings-form form-actions--spaced" onSubmit={handleSubmit} aria-label={t.orders.addSupplier}>
-          <div className="field-row">
-            <Field label={t.orders.supplierName}>
-              <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
-            </Field>
-            <Field label={t.orders.phone}>
-              <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
-            </Field>
-          </div>
-          <Field label={t.orders.email}>
-            <input type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
-          </Field>
-          {add.isError && (
-            <p className="form-error" role="alert">
-              {errorMessage(add.error)}
-            </p>
-          )}
-          <Button type="submit" disabled={name.trim() === '' || add.isPending}>
-            {t.orders.add}
-          </Button>
-        </form>
+        {/* Keyed so picking another supplier refills the form. */}
+        <SupplierForm key={editing?.id ?? 'new'} supplier={editing} onDone={() => setEditing(null)} />
       </ManagersOnly>
     </Card>
+  );
+}
+
+/** Adds a supplier, or with `supplier` changes one. The NUI is required either way. */
+function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; onDone: () => void }) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState(supplier?.name ?? '');
+  const [nui, setNui] = useState(supplier?.nui ?? '');
+  const [phone, setPhone] = useState(supplier?.phone ?? '');
+  const [email, setEmail] = useState(supplier?.email ?? '');
+  const save = useMutation({
+    mutationFn: () => {
+      const input = { name: name.trim(), nui: cleanNui(nui), phone: phone.trim() || null, email: email.trim() || null };
+      return supplier ? suppliersApi.update(supplier.id, input) : suppliersApi.add(input);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      setName('');
+      setNui('');
+      setPhone('');
+      setEmail('');
+      onDone();
+    },
+  });
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    save.mutate();
+  }
+
+  return (
+    <form
+      className="settings-form form-actions--spaced"
+      onSubmit={handleSubmit}
+      aria-label={supplier ? t.orders.editLabel(supplier.name) : t.orders.addSupplier}
+    >
+      <div className="field-row">
+        <Field label={t.orders.supplierName}>
+          <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
+        </Field>
+        <Field label={t.nui.label} hint={t.nui.hint}>
+          <NuiInput required value={nui} onChange={(event) => setNui(event.target.value)} />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label={t.orders.phone}>
+          <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
+        </Field>
+        <Field label={t.orders.email}>
+          <input type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
+        </Field>
+      </div>
+      {save.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(save.error)}
+        </p>
+      )}
+      <div className="form-actions">
+        <Button type="submit" disabled={name.trim() === '' || !isNui(nui) || save.isPending}>
+          {supplier ? t.orders.saveSupplier : t.orders.add}
+        </Button>
+        {supplier && (
+          <Button variant="ghost" onClick={onDone}>
+            {t.orders.cancelEdit}
+          </Button>
+        )}
+      </div>
+    </form>
   );
 }
 

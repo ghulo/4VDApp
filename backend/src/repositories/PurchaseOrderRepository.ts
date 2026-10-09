@@ -2,9 +2,12 @@ import type { DatabaseClient } from '../database/connection.js';
 
 export type OrderStatus = 'open' | 'received' | 'cancelled';
 
+export type SupplierFields = Omit<SupplierRecord, 'id'>;
+
 export interface SupplierRecord {
   id: number;
   name: string;
+  nui: string | null;
   phone: string | null;
   email: string | null;
   note: string | null;
@@ -40,7 +43,7 @@ export class PurchaseOrderRepository {
   async findSuppliers(): Promise<SupplierRecord[]> {
     return this.db
       .selectFrom('suppliers')
-      .select(['id', 'name', 'phone', 'email', 'note'])
+      .select(['id', 'name', 'nui', 'phone', 'email', 'note'])
       .where('archived_at', 'is', null)
       .orderBy('name')
       .execute();
@@ -49,15 +52,19 @@ export class PurchaseOrderRepository {
   async findSupplier(id: number): Promise<SupplierRecord | undefined> {
     return this.db
       .selectFrom('suppliers')
-      .select(['id', 'name', 'phone', 'email', 'note'])
+      .select(['id', 'name', 'nui', 'phone', 'email', 'note'])
       .where('id', '=', id)
       .where('archived_at', 'is', null)
       .executeTakeFirst();
   }
 
-  async createSupplier(input: { name: string; phone: string | null; email: string | null; note: string | null }): Promise<number> {
+  async createSupplier(input: SupplierFields): Promise<number> {
     const row = await this.db.insertInto('suppliers').values(input).returning('id').executeTakeFirstOrThrow();
     return row.id;
+  }
+
+  async updateSupplier(id: number, changes: SupplierFields): Promise<void> {
+    await this.db.updateTable('suppliers').set(changes).where('id', '=', id).execute();
   }
 
   async archiveSupplier(id: number, at: Date): Promise<void> {

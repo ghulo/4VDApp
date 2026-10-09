@@ -52,7 +52,7 @@ describe('expiry dates', () => {
 
   it('should note expiry dates from a delivery', async () => {
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 0 });
-    const supplier = (await request(context.app).post('/api/suppliers').set(auth()).send({ name: 'Fresh Foods' })).body.data.id;
+    const supplier = (await request(context.app).post('/api/suppliers').set(auth()).send({ name: 'Fresh Foods', nui: '811234567' })).body.data.id;
     const order = (await request(context.app).post('/api/orders').set(auth()).send({ supplierId: supplier, lines: [{ productId: milk, quantity: 24 }] })).body.data;
 
     await request(context.app)

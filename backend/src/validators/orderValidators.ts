@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { money } from './catalogValidators.js';
-import { calendarDaySchema, idSchema } from './validate.js';
+import { calendarDaySchema, idSchema, nuiSchema } from './validate.js';
 
 const optional = (max: number) =>
   z
@@ -12,6 +12,7 @@ const optional = (max: number) =>
 
 export const supplierSchema = z.object({
   name: z.string().trim().min(1, 'give the supplier a name').max(120),
+  nui: nuiSchema,
   phone: optional(40),
   email: z
     .string()

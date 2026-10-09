@@ -100,6 +100,9 @@ export interface AppSettings {
 export interface Customer {
   id: number;
   name: string;
+  kind: 'person' | 'business';
+  /** A business's NUI; null for a person. */
+  nui: string | null;
   phone: string | null;
   note: string | null;
   balance: number;

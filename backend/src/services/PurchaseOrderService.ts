@@ -1,6 +1,6 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
+import type { OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
@@ -88,7 +88,7 @@ export class PurchaseOrderService {
     return this.orderRepository.findSuppliers();
   }
 
-  async addSupplier(input: { name: string; phone: string | null; email: string | null; note: string | null }, actorId: number): Promise<SupplierDto> {
+  async addSupplier(input: SupplierFields, actorId: number): Promise<SupplierDto> {
     const id = await this.transactions.run(async (repos) => {
       const supplierId = await repos.orders.createSupplier(input);
       await repos.activityLog.create({
@@ -100,6 +100,23 @@ export class PurchaseOrderService {
         details: { ...input },
       });
       return supplierId;
+    });
+    return (await this.orderRepository.findSupplier(id))!;
+  }
+
+  async updateSupplier(id: number, input: SupplierFields, actorId: number): Promise<SupplierDto> {
+    const before = await this.orderRepository.findSupplier(id);
+    if (!before) throw new NotFoundError(`Supplier ${id} does not exist`);
+    await this.transactions.run(async (repos) => {
+      await repos.orders.updateSupplier(id, input);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'supplier.updated',
+        entityType: 'supplier',
+        entityId: id,
+        summary: `Changed the supplier ${before.name}'s details`,
+        details: { before, after: input },
+      });
     });
     return (await this.orderRepository.findSupplier(id))!;
   }

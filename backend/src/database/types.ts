@@ -67,6 +67,7 @@ export interface BusinessesTable {
   name: string;
   address: string | null;
   phone: string | null;
+  nui: string | null;
   currency: Generated<string>;
   time_zone: string | null;
   logo_media_id: string | null;
@@ -328,6 +329,8 @@ export interface ExpensesTable {
 export interface CustomersTable {
   id: Generated<number>;
   name: string;
+  kind: Generated<'person' | 'business'>;
+  nui: string | null;
   phone: string | null;
   note: string | null;
   archived_at: Date | null;
@@ -349,6 +352,7 @@ export interface TabEntriesTable {
 export interface SuppliersTable {
   id: Generated<number>;
   name: string;
+  nui: string | null;
   phone: string | null;
   email: string | null;
   note: string | null;

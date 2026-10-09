@@ -8,6 +8,7 @@ import { ErrorNotice, Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
 import { Button, Card, Field, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
+import { cleanNui, isNui, NuiInput } from './NuiInput';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 // The time zones people in and around the shop's region are most likely to need, then everything else.
@@ -32,6 +33,7 @@ function BusinessForm({ initial }: { initial: Business }) {
   const [name, setName] = useState(initial.name);
   const [address, setAddress] = useState(initial.address ?? '');
   const [phone, setPhone] = useState(initial.phone ?? '');
+  const [nui, setNui] = useState(initial.nui ?? '');
   const [timeZone, setTimeZone] = useState(initial.timeZone ?? '');
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -39,7 +41,13 @@ function BusinessForm({ initial }: { initial: Business }) {
 
   const save = useMutation({
     mutationFn: () =>
-      businessApi.update({ name: name.trim(), address: address.trim() || null, phone: phone.trim() || null, timeZone: timeZone || null }),
+      businessApi.update({
+        name: name.trim(),
+        address: address.trim() || null,
+        phone: phone.trim() || null,
+        nui: cleanNui(nui),
+        timeZone: timeZone || null,
+      }),
     onSuccess: keep,
   });
   const upload = useMutation({ mutationFn: businessApi.uploadLogo, onSuccess: keep });
@@ -68,6 +76,7 @@ function BusinessForm({ initial }: { initial: Business }) {
     name.trim() !== initial.name ||
     address.trim() !== (initial.address ?? '') ||
     phone.trim() !== (initial.phone ?? '') ||
+    cleanNui(nui) !== (initial.nui ?? '') ||
     timeZone !== (initial.timeZone ?? '');
 
   return (
@@ -87,7 +96,7 @@ function BusinessForm({ initial }: { initial: Business }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || save.isPending}>
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || save.isPending}>
               {save.isPending ? t.settings.saving : t.business.save}
             </Button>
           </>
@@ -119,6 +128,9 @@ function BusinessForm({ initial }: { initial: Business }) {
         <div className="setting-row setting-row--fields">
           <Field label={t.business.shopName}>
             <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
+          </Field>
+          <Field label={t.nui.label} hint={t.business.nuiHint}>
+            <NuiInput required value={nui} onChange={(event) => setNui(event.target.value)} />
           </Field>
           <Field label={t.business.address}>
             <input maxLength={500} autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />

@@ -17,7 +17,7 @@ afterAll(() => context.db.destroy());
 const auth = (token = adminToken) => ({ Authorization: `Bearer ${token}` });
 
 async function supplier(name = 'Fresh Foods') {
-  return (await request(context.app).post('/api/suppliers').set(auth()).send({ name, phone: '044 000 111', email: '' })).body.data.id as number;
+  return (await request(context.app).post('/api/suppliers').set(auth()).send({ name, nui: '811234567', phone: '044 000 111', email: '' })).body.data.id as number;
 }
 
 const stockOf = async (productId: number) =>

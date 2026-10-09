@@ -7,9 +7,10 @@ import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { expensesApi } from '../services/api';
-import { EXPENSE_CATEGORIES, EXPENSE_PLACES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
+import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
+import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
 
@@ -70,6 +71,7 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
       <StatTile
         label={`${t.expenses.places.shop} · ${t.expenses.places.carwash} · ${t.expenses.places.both}`}
         value={`${formatMoney(totals.byPlace.shop)} · ${formatMoney(totals.byPlace.carwash)} · ${formatMoney(totals.byPlace.both)}`}
+        hint={totals.byCarwash.length > 1 ? totals.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ') : undefined}
       />
       <StatTile
         label={t.expenses.biggest}
@@ -86,12 +88,19 @@ function ExpenseForm() {
   const [day, setDay] = useState(today);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('rent');
-  const [place, setPlace] = useState<ExpensePlace>('shop');
+  // "shop", "both" or "carwash:<id>", so each carwash has its own choice.
+  const [place, setPlace] = useState('shop');
+  const { places: carwashes, several } = useCarwashes();
   const [note, setNote] = useState('');
   const [repeatMonthly, setRepeatMonthly] = useState(false);
 
   const add = useMutation({
-    mutationFn: () => expensesApi.add({ day, amount: Number(amount), category, place, note: note.trim() || null, repeatMonthly }),
+    mutationFn: () => {
+      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly };
+      return place.startsWith('carwash:')
+        ? expensesApi.add({ ...input, place: 'carwash', carwashId: Number(place.split(':')[1]) })
+        : expensesApi.add({ ...input, place: place as ExpensePlace });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
@@ -142,12 +151,14 @@ function ExpenseForm() {
           </select>
         </Field>
         <Field label={t.expenses.place}>
-          <select value={place} onChange={(event) => setPlace(event.target.value as ExpensePlace)}>
-            {EXPENSE_PLACES.map((option) => (
-              <option key={option} value={option}>
-                {t.expenses.places[option]}
+          <select value={place} onChange={(event) => setPlace(event.target.value)}>
+            <option value="shop">{t.expenses.places.shop}</option>
+            {carwashes.map((carwash) => (
+              <option key={carwash.id} value={`carwash:${carwash.id}`}>
+                {carwashLabel(t.expenses.places.carwash, carwash.name, several)}
               </option>
             ))}
+            <option value="both">{t.expenses.places.both}</option>
           </select>
         </Field>
       </div>
@@ -179,6 +190,7 @@ function ExpenseForm() {
 function ExpenseTable({ expenses }: { expenses: Expense[] }) {
   const t = useT();
   const { role } = useCurrentUser();
+  const { several } = useCarwashes();
   return (
     <Card title={t.expenses.list} flush>
       <DataTable
@@ -198,7 +210,7 @@ function ExpenseTable({ expenses }: { expenses: Expense[] }) {
             ),
           },
           { header: t.expenses.day, cell: (row) => formatDay(row.day) },
-          { header: t.expenses.place, cell: (row) => t.expenses.places[row.place] },
+          { header: t.expenses.place, cell: (row) => carwashLabel(t.expenses.places[row.place], row.carwashName, several) },
           { header: t.expenses.amount, cell: (row) => formatMoney(row.amount), align: 'end' },
           {
             header: t.expenses.addedBy,
@@ -255,6 +267,7 @@ function RemoveExpense({ expense }: { expense: Expense }) {
 function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
   const t = useT();
   const { role } = useCurrentUser();
+  const { several } = useCarwashes();
   const queryClient = useQueryClient();
   const stop = useMutation({
     mutationFn: (id: number) => expensesApi.stopRepeating(id),
@@ -282,7 +295,7 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
             ),
           },
           { header: t.expenses.monthly, cell: (row) => t.expenses.onDay(row.dayOfMonth) },
-          { header: t.expenses.place, cell: (row) => t.expenses.places[row.place] },
+          { header: t.expenses.place, cell: (row) => carwashLabel(t.expenses.places[row.place], row.carwashName, several) },
           { header: t.expenses.amount, cell: (row) => formatMoney(row.amount), align: 'end' },
           ...(canManage(role)
             ? [

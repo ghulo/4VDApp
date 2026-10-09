@@ -11,6 +11,7 @@ import { carwashApi } from '../services/api';
 import type { CarwashDay } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
+import { useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
 
@@ -29,9 +30,13 @@ const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 export function CarwashPage() {
   const t = useT();
   const { period, from, to, range, rangeKey, changePeriod } = usePeriodParams('this-month');
+  const { places, several } = useCarwashes();
+  // "" = all carwashes together.
+  const [which, setWhich] = useState('');
+  const carwashId = several && which !== '' ? Number(which) : undefined;
   const takings = useQuery({
-    queryKey: ['carwash', rangeKey],
-    queryFn: () => carwashApi.list(rangeKey),
+    queryKey: ['carwash', rangeKey, carwashId ?? 'all'],
+    queryFn: () => carwashApi.list(rangeKey, carwashId),
     placeholderData: keepPreviousData,
   });
   const [editing, setEditing] = useState<CarwashDay | null>(null);
@@ -41,7 +46,21 @@ export function CarwashPage() {
       <PageHeader
         title={t.carwash.title}
         description={t.carwash.description(range.label)}
-        actions={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}
+        actions={
+          <>
+            {several && (
+              <select aria-label={t.carwash.which} value={which} onChange={(event) => setWhich(event.target.value)}>
+                <option value="">{t.carwash.allCarwashes}</option>
+                {places.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
+          </>
+        }
       />
 
       {takings.data && (
@@ -60,7 +79,7 @@ export function CarwashPage() {
         <Card id={FORM_ID} title={t.carwash.enterDay}>
           {/* Keyed so picking "Edit" on a row starts the form afresh with that day. */}
           {/* Waits for the days, so a day that already has takings opens filled in. */}
-          {takings.data && <TakingsForm key={editing?.day ?? 'new'} start={editing} days={takings.data.days} />}
+          {takings.data && <TakingsForm key={`${editing?.carwashId ?? 'new'}-${editing?.day ?? 'new'}`} start={editing} days={takings.data.days} />}
         </Card>
       </ManagersOnly>
 
@@ -69,6 +88,7 @@ export function CarwashPage() {
       {takings.data && (
         <DaysTable
           days={takings.data.days}
+          several={several}
           onEdit={(day) => {
             setEditing(day);
             document.getElementById(FORM_ID)?.scrollIntoView({ block: 'start' });
@@ -82,14 +102,19 @@ export function CarwashPage() {
 function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashDay[] }) {
   const t = useT();
   const queryClient = useQueryClient();
-  const initial = start ?? days.find((entry) => entry.day === today());
+  const { places, several } = useCarwashes();
+  // Which carwash this entry is for; only asked when there are several.
+  const [carwashId, setCarwashId] = useState<number | null>(start?.carwashId ?? null);
+  const chosen = carwashId ?? places[0]?.id ?? null;
+  const forThisCarwash = days.filter((entry) => entry.carwashId === chosen);
+  const initial = start ?? forThisCarwash.find((entry) => entry.day === today());
   const [day, setDay] = useState(initial?.day ?? today());
   const [carwash, setCarwash] = useState(initial ? String(initial.carwash) : '');
   const [change, setChange] = useState(initial ? String(initial.change) : '');
   const [savedDay, setSavedDay] = useState<string | null>(null);
 
   const save = useMutation({
-    mutationFn: () => carwashApi.save(day, { carwash: Number(carwash), change: Number(change) }),
+    mutationFn: () => carwashApi.save(chosen!, day, { carwash: Number(carwash), change: Number(change) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['carwash'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });
@@ -100,14 +125,21 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
   });
 
   /** A day that already has takings fills the form with them, so saving is an edit. */
-  function pickDay(next: string) {
-    setDay(next);
+  function fillFrom(nextDay: string, nextCarwashId: number | null) {
     setSavedDay(null);
-    const existing = days.find((entry) => entry.day === next);
+    const existing = days.find((entry) => entry.day === nextDay && entry.carwashId === nextCarwashId);
     if (existing) {
       setCarwash(String(existing.carwash));
       setChange(String(existing.change));
     }
+  }
+  function pickDay(next: string) {
+    setDay(next);
+    fillFrom(next, chosen);
+  }
+  function pickCarwash(next: number) {
+    setCarwashId(next);
+    fillFrom(day, next);
   }
 
   function handleSubmit(event: FormEvent) {
@@ -116,14 +148,27 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
   }
 
   const isAmount = (value: string) => value.trim() !== '' && Number(value) >= 0;
-  const isValid = day !== '' && day <= today() && isAmount(carwash) && isAmount(change);
-  const alreadyEntered = days.some((entry) => entry.day === day);
+  const isValid = chosen !== null && day !== '' && day <= today() && isAmount(carwash) && isAmount(change);
+  const alreadyEntered = forThisCarwash.some((entry) => entry.day === day);
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
-      <Field label={t.carwash.day} narrow>
-        <input type="date" required max={today()} value={day} onChange={(event) => pickDay(event.target.value)} />
-      </Field>
+      <div className="field-row">
+        {several && (
+          <Field label={t.carwash.which}>
+            <select value={chosen ?? ''} onChange={(event) => pickCarwash(Number(event.target.value))}>
+              {places.map((place) => (
+                <option key={place.id} value={place.id}>
+                  {place.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label={t.carwash.day} narrow>
+          <input type="date" required max={today()} value={day} onChange={(event) => pickDay(event.target.value)} />
+        </Field>
+      </div>
       <div className="field-row">
         <Field label={t.carwash.carwash} narrow>
           <input
@@ -175,7 +220,7 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
   );
 }
 
-function DaysTable({ days, onEdit }: { days: CarwashDay[]; onEdit: (day: CarwashDay) => void }) {
+function DaysTable({ days, several, onEdit }: { days: CarwashDay[]; several: boolean; onEdit: (day: CarwashDay) => void }) {
   const t = useT();
   const { role } = useCurrentUser();
   const manager = canManage(role);
@@ -185,10 +230,11 @@ function DaysTable({ days, onEdit }: { days: CarwashDay[]; onEdit: (day: Carwash
       <DataTable
         caption={t.carwash.caption}
         rows={days}
-        rowKey={(row) => row.day}
+        rowKey={(row) => `${row.carwashId}-${row.day}`}
         empty={<EmptyState icon={Drop} title={t.carwash.none}>{t.carwash.noneHint}</EmptyState>}
         columns={[
           { header: t.carwash.day, cell: (row) => formatDay(row.day), title: true },
+          ...(several ? [{ header: t.carwash.place, cell: (row: CarwashDay) => row.carwashName }] : []),
           { header: t.carwash.carwash, cell: (row) => formatMoney(row.carwash), align: 'end' },
           { header: t.carwash.change, cell: (row) => formatMoney(row.change), align: 'end' },
           { header: t.carwash.total, cell: (row) => formatMoney(row.total), align: 'end' },
@@ -212,7 +258,7 @@ function RowActions({ row, onEdit }: { row: CarwashDay; onEdit: (day: CarwashDay
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const remove = useMutation({
-    mutationFn: () => carwashApi.remove(row.day),
+    mutationFn: () => carwashApi.remove(row.carwashId, row.day),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['carwash'] });
       queryClient.invalidateQueries({ queryKey: ['reports'] });

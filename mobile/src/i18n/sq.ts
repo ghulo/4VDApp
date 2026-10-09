@@ -112,6 +112,7 @@ export const sq: Catalogue = {
     carwash: 'Të ardhurat e lavazhit',
     carwashDone: 'U futën sot',
     carwashToDo: 'Fut të ardhurat e sotme',
+    carwashSome: (done, total) => `U futën për ${done} nga ${total} lavazhe`,
     yourRequests: 'Kërkesat e tua',
     runningLow: 'Po mbarojnë',
     checkingStock: 'Po kontrollohet stoku…',
@@ -261,13 +262,14 @@ export const sq: Catalogue = {
   },
   carwash: {
     intro: 'Fut sa bënë sot lavazhi dhe makina e këmbimit.',
+    which: 'Cili lavazh',
     alreadyEntered: 'Të ardhurat e sotme janë futur. Ruajtja i zëvendëson.',
     carwash: 'Lavazhi (€)',
     change: 'Makina e këmbimit (€)',
     total: (amount) => `Gjithsej sot: ${amount}`,
     save: 'Ruaj të ardhurat',
     doneTitle: 'Të ardhurat u ruajtën',
-    doneMessage: (amount) => `${amount} për sot. Shfaqet në përmbledhjen ditore të pronarit.`,
+    doneMessage: (amount, name) => `${name ? `${name}: ` : ''}${amount} për sot. Shfaqet në përmbledhjen ditore të pronarit.`,
   },
   tabs: {
     putOnTab: 'Vendose në borxh',

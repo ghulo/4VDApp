@@ -8,15 +8,18 @@ import { formatEuro, roundMoney } from '../utils/money.js';
 import { OVERSEER_ROLES } from '../utils/roles.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
+import type { CarwashService } from './CarwashService.js';
 import type { SettingsService } from './SettingsService.js';
 
-export const CASH_PLACES: CashPlace[] = ['shop', 'carwash'];
 /** Differences smaller than this (a few coins) count as a match. */
 export const CASH_TOLERANCE = 0.5;
 
 export interface CashCountDto {
   id: number;
   place: CashPlace;
+  /** Which carwash; null for the shop. */
+  carwashId: number | null;
+  carwashName: string | null;
   day: string;
   float: number;
   counted: number;
@@ -32,6 +35,9 @@ export interface CashCountDto {
 /** What staff see: whether today's count is done, never what the app expects (the count stays blind). */
 export interface CashPlaceToday {
   place: CashPlace;
+  carwashId: number | null;
+  /** The carwash's name; null for the shop. */
+  name: string | null;
   float: number;
   countedBy: string | null;
   countedAt: string | null;
@@ -51,6 +57,7 @@ export class CashCountService {
     private readonly reportsRepository: ReportsRepository,
     private readonly tabRepository: TabRepository,
     private readonly settingsService: SettingsService,
+    private readonly carwashService: CarwashService,
     private readonly transactions: TransactionManager,
     private readonly timeZone: string,
   ) {}
@@ -72,10 +79,12 @@ export class CashCountService {
       const float = Number(row.float_amount);
       const counted = Number(row.counted_amount);
       const expected =
-        row.place === 'shop' ? roundMoney((shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0)) : (carwash.get(row.day) ?? null);
+        row.place === 'shop' ? roundMoney((shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0)) : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
       return {
         id: row.id,
         place: row.place,
+        carwashId: row.carwash_id,
+        carwashName: row.carwash_name,
         day: row.day,
         float,
         counted,
@@ -90,36 +99,49 @@ export class CashCountService {
 
   async today(now = new Date()): Promise<CashPlaceToday[]> {
     const day = zonedDay(now, this.timeZone);
-    const [rows, settings] = await Promise.all([this.cashCountRepository.findBetween(day, day), this.settingsService.get()]);
-    return CASH_PLACES.map((place) => {
-      const row = rows.find((count) => count.place === place);
-      return {
-        place,
-        float: place === 'shop' ? settings.cashFloatShop : settings.cashFloatCarwash,
-        countedBy: row?.counted_by_name ?? null,
-        countedAt: row?.counted_at.toISOString() ?? null,
-      };
+    const [rows, settings, carwashes] = await Promise.all([
+      this.cashCountRepository.findBetween(day, day),
+      this.settingsService.get(),
+      this.carwashService.carwashes(),
+    ]);
+    const drawers: Array<{ place: CashPlace; carwashId: number | null; name: string | null; float: number }> = [
+      { place: 'shop', carwashId: null, name: null, float: settings.cashFloatShop },
+      ...carwashes.map((carwash) => ({ place: 'carwash' as const, carwashId: carwash.id, name: carwash.name, float: carwash.cashFloat })),
+    ];
+    return drawers.map((drawer) => {
+      const row = rows.find((count) => count.place === drawer.place && count.carwash_id === drawer.carwashId);
+      return { ...drawer, countedBy: row?.counted_by_name ?? null, countedAt: row?.counted_at.toISOString() ?? null };
     });
   }
 
-  /** Today's count for one place, replacing an earlier one. Tells the overseers when it's off. */
+  /** Today's count for one drawer, replacing an earlier one. Tells the overseers when it's off. */
   async count(
-    input: { place: CashPlace; counted: number; note: string | null },
+    input: { place: CashPlace; carwashId?: number; counted: number; note: string | null },
     actor: { id: number; name: string },
     now = new Date(),
   ): Promise<CashCountDto> {
     const day = zonedDay(now, this.timeZone);
-    const settings = await this.settingsService.get();
-    const float = input.place === 'shop' ? settings.cashFloatShop : settings.cashFloatCarwash;
+    const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
+    const float = carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop;
+    const carwashName = carwash ? ((await this.carwashService.displayNames()).get(carwash.id) ?? null) : null;
+    const drawerName = carwash ? `${carwash.name} carwash` : 'shop';
     const id = await this.transactions.run(async (repos) => {
-      const countId = await repos.cashCounts.save({ ...input, day, float, countedBy: actor.id });
+      const countId = await repos.cashCounts.save({
+        place: input.place,
+        carwashId: carwash?.id ?? null,
+        day,
+        float,
+        counted: input.counted,
+        note: input.note,
+        countedBy: actor.id,
+      });
       await repos.activityLog.create({
         userId: actor.id,
         action: 'cash.counted',
         entityType: 'cash_count',
         entityId: countId,
-        summary: `Counted ${formatEuro(input.counted)} in the ${input.place} drawer (float ${formatEuro(float)})`,
-        details: { place: input.place, day, counted: input.counted, float },
+        summary: `Counted ${formatEuro(input.counted)} in the ${drawerName} drawer (float ${formatEuro(float)})`,
+        details: { place: input.place, carwashId: carwash?.id ?? null, day, counted: input.counted, float },
       });
       return countId;
     });
@@ -131,7 +153,7 @@ export class CashCountService {
         repos.notifications.createForRoles(OVERSEER_ROLES, {
           type: NOTIFICATION_TYPES.CASH_DIFFERENCE,
           write: (t) => ({
-            title: t.cashDifferenceTitle({ place: input.place, difference }),
+            title: t.cashDifferenceTitle({ place: input.place, carwash: carwashName, difference }),
             message: t.cashDifferenceMessage({ name: actor.name, counted, float, expected: expected! }),
           }),
         }),
@@ -144,14 +166,16 @@ export class CashCountService {
   async summaryLines(now: Date, t: ServerMessages): Promise<string[]> {
     const day = zonedDay(now, this.timeZone);
     const counts = await this.between(day, day);
+    const names = await this.carwashService.displayNames();
     const shop = counts.find((count) => count.place === 'shop');
-    const carwash = counts.find((count) => count.place === 'carwash');
-    const line = (place: CashPlace, difference: number | null) =>
-      t.dailyCash({ place, difference: difference === null || isMatch(difference) ? 0 : difference, compared: difference !== null });
+    const line = (place: CashPlace, carwash: string | null, difference: number | null) =>
+      t.dailyCash({ place, carwash, difference: difference === null || isMatch(difference) ? 0 : difference, compared: difference !== null });
     return [
-      shop ? line('shop', shop.difference) : t.dailyCashMissing('shop'),
-      // The carwash line only once someone counts there, so a shop without one isn't nagged.
-      ...(carwash ? [line('carwash', carwash.difference)] : []),
+      shop ? line('shop', null, shop.difference) : t.dailyCashMissing('shop', null),
+      // A carwash's line only once someone counts there, so a shop without one isn't nagged.
+      ...counts
+        .filter((count) => count.place === 'carwash')
+        .map((count) => line('carwash', names.get(count.carwashId!) ?? null, count.difference)),
     ];
   }
 }

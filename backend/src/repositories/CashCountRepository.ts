@@ -6,6 +6,9 @@ export type CashPlace = 'shop' | 'carwash';
 export interface CashCountRecord {
   id: number;
   place: CashPlace;
+  /** Which carwash; null for the shop. */
+  carwash_id: number | null;
+  carwash_name: string | null;
   /** "2026-10-04" */
   day: string;
   float_amount: string;
@@ -24,9 +27,12 @@ export class CashCountRepository {
     return this.db
       .selectFrom('cash_counts as c')
       .leftJoin('users as u', 'u.id', 'c.counted_by')
+      .leftJoin('carwashes as w', 'w.id', 'c.carwash_id')
       .select([
         'c.id',
         'c.place',
+        'c.carwash_id',
+        'w.name as carwash_name',
         sql<string>`to_char(c.day, 'YYYY-MM-DD')`.as('day'),
         'c.float_amount',
         'c.counted_amount',
@@ -38,15 +44,17 @@ export class CashCountRepository {
       .where('c.day', '<=', to)
       .orderBy('c.day', 'desc')
       .orderBy('c.place', 'desc')
+      .orderBy('c.carwash_id')
       .execute();
   }
 
-  /** Counting the same place twice on one day replaces the first count. Returns the row's id. */
-  async save(entry: { place: CashPlace; day: string; float: number; counted: number; note: string | null; countedBy: number }): Promise<number> {
+  /** Counting the same drawer twice on one day replaces the first count. Returns the row's id. */
+  async save(entry: { place: CashPlace; carwashId: number | null; day: string; float: number; counted: number; note: string | null; countedBy: number }): Promise<number> {
     const row = await this.db
       .insertInto('cash_counts')
       .values({
         place: entry.place,
+        carwash_id: entry.carwashId,
         day: entry.day,
         float_amount: entry.float,
         counted_amount: entry.counted,
@@ -54,7 +62,7 @@ export class CashCountRepository {
         counted_by: entry.countedBy,
       })
       .onConflict((conflict) =>
-        conflict.columns(['place', 'day']).doUpdateSet({
+        conflict.columns(['place', 'carwash_id', 'day']).doUpdateSet({
           float_amount: entry.float,
           counted_amount: entry.counted,
           note: entry.note,
@@ -67,14 +75,18 @@ export class CashCountRepository {
     return row.id;
   }
 
-  /** Carwash takings (carwash + change) for each day that has them. */
+  /** Carwash takings (carwash + change) for each carwash and day that has them, keyed "carwashId|day". */
   async carwashTakingsByDay(from: string, to: string): Promise<Map<string, number>> {
     const rows = await this.db
       .selectFrom('carwash_days')
-      .select([sql<string>`to_char(day, 'YYYY-MM-DD')`.as('day'), sql<string>`carwash_amount + change_amount`.as('total')])
+      .select([
+        'carwash_id',
+        sql<string>`to_char(day, 'YYYY-MM-DD')`.as('day'),
+        sql<string>`carwash_amount + change_amount`.as('total'),
+      ])
       .where('day', '>=', from)
       .where('day', '<=', to)
       .execute();
-    return new Map(rows.map((row) => [row.day, Number(row.total)]));
+    return new Map(rows.map((row) => [`${row.carwash_id}|${row.day}`, Number(row.total)]));
   }
 }

@@ -124,9 +124,19 @@ export interface TabEntry {
 
 export type CashPlace = 'shop' | 'carwash';
 
+/** An open carwash and what was entered for it today (null when nothing yet). */
+export interface CarwashToday {
+  id: number;
+  name: string;
+  takings: { carwash: number; change: number } | null;
+}
+
 /** Whether a drawer was counted today; never what the app expects (staff count blind). */
 export interface CashPlaceToday {
   place: CashPlace;
+  carwashId: number | null;
+  /** The carwash's name; null for the shop. */
+  name: string | null;
   float: number;
   countedBy: string | null;
   countedAt: string | null;

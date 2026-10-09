@@ -42,8 +42,8 @@ describe('end-of-day cash check', () => {
 
     const before = await request(context.app).get('/api/cash-counts/today').set(auth(employeeToken));
     expect(before.body.data).toEqual([
-      { place: 'shop', float: 50, countedBy: null, countedAt: null },
-      { place: 'carwash', float: 0, countedBy: null, countedAt: null },
+      { place: 'shop', carwashId: null, name: null, float: 50, countedBy: null, countedAt: null },
+      { place: 'carwash', carwashId: 1, name: 'Carwash', float: 0, countedBy: null, countedAt: null },
     ]);
     const response = await request(context.app).post('/api/cash-counts').set(auth(employeeToken)).send({ place: 'shop', counted: 70.2 });
 

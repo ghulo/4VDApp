@@ -107,9 +107,12 @@ describe('basket checkout', () => {
 
 describe('carwash from the team app', () => {
   it("should let staff enter today's takings, but not other days", async () => {
-    expect((await request(context.app).get('/api/carwash/today').set(auth(employeeToken))).body.data).toEqual({ day: today(), takings: null });
+    expect((await request(context.app).get('/api/carwash/today').set(auth(employeeToken))).body.data).toEqual({
+      day: today(),
+      carwashes: [{ id: 1, name: 'Carwash', cashFloat: 0, archived: false, takings: null }],
+    });
     expect((await request(context.app).put(`/api/carwash/${today()}`).set(auth(employeeToken)).send({ carwash: 50, change: 10 })).status).toBe(200);
-    expect((await request(context.app).get('/api/carwash/today').set(auth(employeeToken))).body.data.takings).toEqual({ carwash: 50, change: 10 });
+    expect((await request(context.app).get('/api/carwash/today').set(auth(employeeToken))).body.data.carwashes[0].takings).toEqual({ carwash: 50, change: 10 });
     expect((await request(context.app).put('/api/carwash/2026-09-01').set(auth(employeeToken)).send({ carwash: 50, change: 10 })).status).toBe(403);
     expect((await request(context.app).delete(`/api/carwash/${today()}`).set(auth(employeeToken))).status).toBe(403);
   });

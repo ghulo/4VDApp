@@ -21,8 +21,10 @@ import type {
   PriceSuggestion,
   PricingTier,
   Promotion,
+  Carwash,
   CarwashDay,
   CarwashTotals,
+  CarwashTotalsByCarwash,
   LaunchStep,
   CashCount,
   CashPlace,
@@ -333,29 +335,49 @@ export const reportsApi = {
 };
 
 export const carwashApi = {
-  list: async (range: ReportRange) =>
-    (await apiRequest<{ days: CarwashDay[]; totals: CarwashTotals }>('/carwash', { query: { ...range } })).data,
+  /** One carwash, or all of them when `carwashId` is left out; `byCarwash` always covers every carwash. */
+  list: async (range: ReportRange, carwashId?: number) =>
+    (
+      await apiRequest<{ days: CarwashDay[]; totals: CarwashTotals; byCarwash: CarwashTotalsByCarwash[] }>('/carwash', {
+        query: { ...range, carwashId },
+      })
+    ).data,
   /** `day` like "2026-10-04"; entering a day again replaces it. */
-  save: async (day: string, takings: { carwash: number; change: number }) => {
-    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: takings });
+  save: async (carwashId: number, day: string, takings: { carwash: number; change: number }) => {
+    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: { carwashId, ...takings } });
   },
-  remove: async (day: string) => {
-    await apiRequest(`/carwash/${day}`, { method: 'DELETE' });
+  remove: async (carwashId: number, day: string) => {
+    await apiRequest(`/carwash/${day}`, { method: 'DELETE', query: { carwashId } });
   },
+  /** The open carwashes, plus the archived ones when asked (managers only). */
+  places: async (includeArchived = false) =>
+    (await apiRequest<Carwash[]>('/carwash/places', { query: { includeArchived } })).data,
+  addPlace: async (input: { name: string; cashFloat: number }) =>
+    (await apiRequest<Carwash>('/carwash/places', { method: 'POST', body: input })).data,
+  updatePlace: async (id: number, changes: { name?: string; cashFloat?: number; archived?: boolean }) =>
+    (await apiRequest<Carwash>(`/carwash/places/${id}`, { method: 'PATCH', body: changes })).data,
 };
 
 export const cashApi = {
   list: async (range: ReportRange) => (await apiRequest<CashCount[]>('/cash-counts', { query: { ...range } })).data,
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
   /** Overseers get the result back; staff get null (they count blind). */
-  count: async (input: { place: CashPlace; counted: number; note: string | null }) =>
+  count: async (input: { place: CashPlace; carwashId?: number; counted: number; note: string | null }) =>
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
 };
 
 export const expensesApi = {
   list: async (range: ReportRange) =>
     (await apiRequest<{ expenses: Expense[]; totals: ExpenseTotals }>('/expenses', { query: { ...range } })).data,
-  add: async (input: { day: string; amount: number; category: ExpenseCategory; place: ExpensePlace; note: string | null; repeatMonthly: boolean }) =>
+  add: async (input: {
+    day: string;
+    amount: number;
+    category: ExpenseCategory;
+    place: ExpensePlace;
+    carwashId?: number;
+    note: string | null;
+    repeatMonthly: boolean;
+  }) =>
     (await apiRequest<Expense>('/expenses', { method: 'POST', body: input })).data,
   remove: async (id: number) => {
     await apiRequest(`/expenses/${id}`, { method: 'DELETE' });

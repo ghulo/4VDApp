@@ -181,7 +181,7 @@ export interface ReportSummary {
   previous: PeriodTotals;
   change: { revenue: number | null; profit: number | null; unitsSold: number | null; salesCount: number | null };
   /** Beside the shop, never inside its revenue or profit. */
-  carwash: { current: CarwashTotals; previous: CarwashTotals; change: number | null };
+  carwash: { current: CarwashTotals; previous: CarwashTotals; change: number | null; byCarwash: CarwashTotalsByCarwash[] };
   expenses: { current: number; previous: number };
   /** Shop profit + carwash takings − expenses. */
   netProfit: { current: number; previous: number; change: number | null };
@@ -199,6 +199,9 @@ export interface Expense {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  /** Which carwash, for a carwash expense. */
+  carwashId: number | null;
+  carwashName: string | null;
   note: string | null;
   /** Set when a monthly rule added it. */
   recurringId: number | null;
@@ -208,6 +211,8 @@ export interface Expense {
 export interface ExpenseTotals {
   total: number;
   byPlace: Record<ExpensePlace, number>;
+  /** The carwash part of `byPlace`, split by carwash. */
+  byCarwash: Array<{ carwashId: number; name: string; total: number }>;
   byCategory: Record<ExpenseCategory, number>;
 }
 
@@ -216,6 +221,8 @@ export interface RecurringExpense {
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwashId: number | null;
+  carwashName: string | null;
   note: string | null;
   dayOfMonth: number;
   addedBy: string | null;
@@ -240,7 +247,23 @@ export interface CarwashTotals {
   days: number;
 }
 
+export interface CarwashTotalsByCarwash extends CarwashTotals {
+  carwashId: number;
+  name: string;
+}
+
+/** A carwash the business runs; archived ones keep their history. */
+export interface Carwash {
+  id: number;
+  name: string;
+  /** Change left in its drawer every night. */
+  cashFloat: number;
+  archived: boolean;
+}
+
 export interface CarwashDay {
+  carwashId: number;
+  carwashName: string;
   /** "2026-10-04" */
   day: string;
   carwash: number;
@@ -442,7 +465,6 @@ export interface AppSettings {
   dailySummaryHour: number;
   /** Change left in each drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
-  cashFloatCarwash: number;
 }
 
 export type CashPlace = 'shop' | 'carwash';
@@ -450,6 +472,9 @@ export type CashPlace = 'shop' | 'carwash';
 export interface CashCount {
   id: number;
   place: CashPlace;
+  /** Which carwash; null for the shop. */
+  carwashId: number | null;
+  carwashName: string | null;
   /** "2026-10-04" */
   day: string;
   float: number;
@@ -465,6 +490,9 @@ export interface CashCount {
 
 export interface CashPlaceToday {
   place: CashPlace;
+  carwashId: number | null;
+  /** The carwash's name; null for the shop. */
+  name: string | null;
   float: number;
   countedBy: string | null;
   countedAt: string | null;

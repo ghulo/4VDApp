@@ -5,13 +5,13 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { useT } from '../i18n/useT';
 import { cashApi } from '../services/api';
-import type { CashCount, CashPlace } from '../services/types';
+import type { CashCount } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
+import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
 
-const PLACES: CashPlace[] = ['shop', 'carwash'];
 /** Same as the server: a few coins either way still matches. */
 const TOLERANCE = 0.5;
 
@@ -25,6 +25,7 @@ const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 export function CashPage() {
   const t = useT();
   const { period, from, to, range, rangeKey, changePeriod } = usePeriodParams('this-month');
+  const { several } = useCarwashes();
   const counts = useQuery({
     queryKey: ['cash', rangeKey],
     queryFn: () => cashApi.list(rangeKey),
@@ -57,7 +58,10 @@ export function CashPage() {
             empty={<EmptyState icon={Coins} title={t.cash.none}>{t.cash.noneHint}</EmptyState>}
             columns={[
               { header: t.cash.day, cell: (row) => formatDay(row.day), title: true },
-              { header: t.cash.drawer, cell: (row) => t.cash.places[row.place] },
+              {
+                header: t.cash.drawer,
+                cell: (row) => (row.place === 'shop' ? t.cash.places.shop : carwashLabel(t.cash.places.carwash, row.carwashName, several)),
+              },
               { header: t.cash.counted, cell: (row) => formatMoney(row.counted), align: 'end' },
               { header: t.cash.float, cell: (row) => formatMoney(row.float), align: 'end' },
               { header: t.cash.expected, cell: (row) => (row.expected === null ? '–' : formatMoney(row.expected)), align: 'end' },
@@ -115,12 +119,19 @@ function CountForm() {
   const t = useT();
   const queryClient = useQueryClient();
   const today = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
-  const [place, setPlace] = useState<CashPlace>('shop');
+  const { several } = useCarwashes();
+  // Which drawer: "shop" or "carwash:<id>".
+  const [drawer, setDrawer] = useState('shop');
   const [counted, setCounted] = useState('');
   const [note, setNote] = useState('');
 
   const save = useMutation({
-    mutationFn: () => cashApi.count({ place, counted: Number(counted), note: note.trim() || null }),
+    mutationFn: () => {
+      const input = { counted: Number(counted), note: note.trim() || null };
+      return drawer === 'shop'
+        ? cashApi.count({ place: 'shop', ...input })
+        : cashApi.count({ place: 'carwash', carwashId: Number(drawer.split(':')[1]), ...input });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
@@ -135,25 +146,30 @@ function CountForm() {
     save.mutate();
   }
 
-  const status = today.data?.find((entry) => entry.place === place);
+  const drawers = (today.data ?? []).map((entry) => ({
+    key: entry.place === 'shop' ? 'shop' : `carwash:${entry.carwashId}`,
+    label: entry.place === 'shop' ? t.cash.places.shop : carwashLabel(t.cash.places.carwash, entry.name, several),
+    entry,
+  }));
+  const status = drawers.find((option) => option.key === drawer)?.entry;
   const isValid = counted.trim() !== '' && Number(counted) >= 0;
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
       <div className="segmented" role="radiogroup" aria-label={t.cash.drawer}>
-        {PLACES.map((option) => (
+        {drawers.map((option) => (
           <button
-            key={option}
+            key={option.key}
             type="button"
             role="radio"
-            aria-checked={place === option}
+            aria-checked={drawer === option.key}
             className="segmented__option"
             onClick={() => {
-              setPlace(option);
+              setDrawer(option.key);
               save.reset();
             }}
           >
-            {t.cash.places[option]}
+            {option.label}
           </button>
         ))}
       </div>
@@ -183,7 +199,8 @@ function CountForm() {
       )}
       {save.data && (
         <p className="form-success" role="status">
-          {t.cash.places[save.data.place]}: <DifferenceBadge difference={save.data.difference} />
+          {save.data.place === 'shop' ? t.cash.places.shop : carwashLabel(t.cash.places.carwash, save.data.carwashName, several)}:{' '}
+          <DifferenceBadge difference={save.data.difference} />
         </p>
       )}
       <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>

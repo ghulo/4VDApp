@@ -153,7 +153,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const carwashRepository = new CarwashRepository(db);
   const carwashService = new CarwashService(carwashRepository, transactions, config.shopTimeZone);
   const expenseRepository = new ExpenseRepository(db);
-  const expenseService = new ExpenseService(expenseRepository, transactions, config.shopTimeZone);
+  const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
   const settingsService = new SettingsService(settingsRepository, transactions);
@@ -177,6 +177,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     reportsRepository,
     tabRepository,
     settingsService,
+    carwashService,
     transactions,
     config.shopTimeZone,
   );

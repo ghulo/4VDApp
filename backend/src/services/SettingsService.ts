@@ -13,8 +13,6 @@ export interface AppSettings {
   dailySummaryHour: number;
   /** Change left in the shop drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
-  /** The same for the carwash. */
-  cashFloatCarwash: number;
 }
 
 const KEYS: Record<keyof AppSettings, string> = {
@@ -23,7 +21,6 @@ const KEYS: Record<keyof AppSettings, string> = {
   minimumMarginPercent: 'minimum_margin_percent',
   dailySummaryHour: 'daily_summary_hour',
   cashFloatShop: 'cash_float_shop',
-  cashFloatCarwash: 'cash_float_carwash',
 };
 
 export class SettingsService {
@@ -44,7 +41,6 @@ export class SettingsService {
       minimumMarginPercent: read('minimumMarginPercent'),
       dailySummaryHour: read('dailySummaryHour'),
       cashFloatShop: read('cashFloatShop'),
-      cashFloatCarwash: read('cashFloatCarwash'),
     };
   }
 
@@ -82,7 +78,5 @@ function describe(name: keyof AppSettings, from: number, to: number): string {
       return `the daily summary time from ${from}:00 to ${to}:00`;
     case 'cashFloatShop':
       return `the shop's cash float from €${from} to €${to}`;
-    case 'cashFloatCarwash':
-      return `the carwash's cash float from €${from} to €${to}`;
   }
 }

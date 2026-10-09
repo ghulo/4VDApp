@@ -279,8 +279,19 @@ export interface PromotionsTable {
   ended_early_at: Date | null;
 }
 
-/** One day's carwash takings. `day` is a calendar date in shop time. */
+/** A carwash the business runs. Archived ones keep their history but are no longer offered. */
+export interface CarwashesTable {
+  id: Generated<number>;
+  name: string;
+  /** Change left in its drawer every night; the cash check takes it off the count. */
+  cash_float: ColumnType<string, number | string | undefined, number | string>;
+  archived_at: Date | null;
+  created_at: CreatedAt;
+}
+
+/** One carwash's takings for one day. `day` is a calendar date in shop time. */
 export interface CarwashDaysTable {
+  carwash_id: number;
   day: ColumnType<string, string, string>;
   carwash_amount: Decimal;
   change_amount: Decimal;
@@ -292,6 +303,8 @@ export interface CarwashDaysTable {
 export interface CashCountsTable {
   id: Generated<number>;
   place: 'shop' | 'carwash';
+  /** Which carwash; null for the shop. */
+  carwash_id: number | null;
   day: ColumnType<string, string, string>;
   float_amount: Decimal;
   counted_amount: Decimal;
@@ -305,6 +318,8 @@ export interface RecurringExpensesTable {
   amount: Decimal;
   category: ExpenseCategory;
   place: ExpensePlace;
+  /** Which carwash, when `place` is 'carwash'. */
+  carwash_id: number | null;
   note: string | null;
   day_of_month: number;
   last_filled_on: ColumnType<string, string, string>;
@@ -320,6 +335,7 @@ export interface ExpensesTable {
   amount: Decimal;
   category: ExpenseCategory;
   place: ExpensePlace;
+  carwash_id: number | null;
   note: string | null;
   recurring_id: number | null;
   created_by: number | null;
@@ -507,6 +523,7 @@ export interface Database {
   write_offs: WriteOffsTable;
   stock_counts: StockCountsTable;
   stock_count_lines: StockCountLinesTable;
+  carwashes: CarwashesTable;
   carwash_days: CarwashDaysTable;
   cash_counts: CashCountsTable;
   recurring_expenses: RecurringExpensesTable;

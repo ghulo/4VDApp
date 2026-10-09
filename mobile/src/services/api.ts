@@ -1,6 +1,7 @@
 import { apiRequest, tokenStore } from './apiClient';
 import type {
   AppSettings,
+  CarwashToday,
   CashPlace,
   CashPlaceToday,
   Customer,
@@ -150,9 +151,9 @@ export const expiryApi = {
 };
 
 export const carwashApi = {
-  today: async () => (await apiRequest<{ day: string; takings: { carwash: number; change: number } | null }>('/carwash/today')).data,
-  save: async (day: string, takings: { carwash: number; change: number }) => {
-    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: takings });
+  today: async () => (await apiRequest<{ day: string; carwashes: CarwashToday[] }>('/carwash/today')).data,
+  save: async (carwashId: number, day: string, takings: { carwash: number; change: number }) => {
+    await apiRequest(`/carwash/${day}`, { method: 'PUT', body: { carwashId, ...takings } });
   },
 };
 
@@ -167,7 +168,7 @@ export const customersApi = {
 
 export const cashApi = {
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
-  count: async (input: { place: CashPlace; counted: number; note: string | null }) => {
+  count: async (input: { place: CashPlace; carwashId?: number; counted: number; note: string | null }) => {
     await apiRequest('/cash-counts', { method: 'POST', body: input });
   },
 };

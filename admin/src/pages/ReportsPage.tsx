@@ -41,7 +41,11 @@ export function ReportsPage() {
               label={t.reports.carwash}
               value={formatMoney(carwash.current.total)}
               change={carwash.change}
-              hint={t.reports.carwashSplit(formatMoney(carwash.current.carwash), formatMoney(carwash.current.change))}
+              hint={
+                carwash.byCarwash.length > 1
+                  ? carwash.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ')
+                  : t.reports.carwashSplit(formatMoney(carwash.current.carwash), formatMoney(carwash.current.change))
+              }
               to="/carwash"
             />
             <MetricCard

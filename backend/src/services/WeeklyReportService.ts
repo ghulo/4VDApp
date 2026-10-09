@@ -59,12 +59,13 @@ export class WeeklyReportService {
     const weekBefore = startOfZonedDay(new Date(weekStart.getTime() - 7 * MS_PER_DAY + MS_PER_DAY / 2), this.timeZone);
     const lastWeek = { startDate: weekStart, endDate: thisMonday };
 
-    const [totals, previous, products, insights, carwash] = await Promise.all([
+    const [totals, previous, products, insights, carwash, carwashEach] = await Promise.all([
       this.reportsRepository.totals(lastWeek),
       this.reportsRepository.totals({ startDate: weekBefore, endDate: weekStart }),
       this.reportsService.profit(lastWeek, 'product'),
       this.insightsService.list(now),
       this.carwashService.totals(lastWeek),
+      this.carwashService.totalsByCarwash(lastWeek),
     ]);
     const revenue = Number(totals.revenue);
     const change = relativeChange(revenue, Number(previous.revenue));
@@ -78,6 +79,7 @@ export class WeeklyReportService {
       topProducts: [...products].sort((a, b) => b.revenue - a.revenue).slice(0, TOP_PRODUCTS),
       warnings: insights.length,
       carwash,
+      carwashEach,
     };
   }
 
@@ -104,7 +106,11 @@ export class WeeklyReportService {
               change: money(week.carwash.change, t.language),
               total: money(week.carwash.total, t.language),
               together: money(roundMoney(week.revenue + week.carwash.total), t.language),
-            }),
+            }) +
+            // With several carwashes, say what each one made.
+            (week.carwashEach.length > 1
+              ? ` ${t.email.weeklyCarwashEach(week.carwashEach.map((row) => ({ name: row.name, total: money(row.total, t.language) })))}`
+              : ''),
       link: this.dashboardUrl,
     };
   }

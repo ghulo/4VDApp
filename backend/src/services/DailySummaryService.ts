@@ -63,9 +63,10 @@ export class DailySummaryService {
       this.reportsRepository.totals({ startDate: startOfToday, endDate: now }),
       this.reportsRepository.totals({ startDate: weekAgo(startOfToday), endDate: weekAgo(now) }),
       this.insightsService.list(now, t),
-      this.carwashService.findDay(zonedDay(now, this.timeZone)),
+      this.carwashService.today(now),
       this.cashCountService.summaryLines(now, t),
     ]);
+    const names = await this.carwashService.displayNames();
     const salesLine = t.dailySales({
       sales: Number(today.sales_count),
       profit: Number(today.profit),
@@ -73,7 +74,10 @@ export class DailySummaryService {
     });
     const lines = [
       salesLine,
-      carwash ? t.dailyCarwash({ ...carwash, total: roundMoney(carwash.carwash + carwash.change) }) : t.dailyCarwashMissing,
+      ...carwash.carwashes.map(({ id, takings }) => {
+        const name = names.get(id) ?? null;
+        return takings ? t.dailyCarwash({ name, ...takings, total: roundMoney(takings.carwash + takings.change) }) : t.dailyCarwashMissing(name);
+      }),
       ...cash,
     ];
     const urgent = insights.filter((insight) => insight.severity === 'urgent');

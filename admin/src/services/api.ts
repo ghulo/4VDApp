@@ -1,5 +1,12 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
+  BillInput,
+  FullReport,
+  PayablesSummary,
+  ReportKind,
+  ReportSettings,
+  SupplierBill,
+  SupplierPaymentMethod,
   DocumentKind,
   DocumentRef,
   SalesDocument,
@@ -151,7 +158,6 @@ export const meApi = {
     phone?: string | null;
     theme?: User['theme'];
     language?: User['language'];
-    emailWeeklyReport?: boolean;
   }) =>
     (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,
   uploadAvatar: async (file: Blob) => (await apiRequest<User>('/me/avatar', { method: 'PUT', file })).data,
@@ -349,6 +355,30 @@ export interface ComparedRange extends ReportRange {
   previousEndDate?: string;
 }
 
+export const billsApi = {
+  list: async (query: { status?: 'open' | 'paid' | 'void'; supplierId?: number } = {}) =>
+    (await apiRequest<SupplierBill[]>('/bills', { query })).data,
+  summary: async () => (await apiRequest<PayablesSummary>('/bills/summary')).data,
+  get: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}`)).data,
+  create: async (input: BillInput & { supplierId: number; orderId?: number | null }) =>
+    (await apiRequest<SupplierBill>('/bills', { method: 'POST', body: input })).data,
+  update: async (id: number, input: BillInput) => (await apiRequest<SupplierBill>(`/bills/${id}`, { method: 'PUT', body: input })).data,
+  pay: async (id: number, input: { amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null }) =>
+    (await apiRequest<SupplierBill>(`/bills/${id}/payments`, { method: 'POST', body: input })).data,
+  voidPayment: async (id: number, paymentId: number) =>
+    (await apiRequest<SupplierBill>(`/bills/${id}/payments/${paymentId}/void`, { method: 'POST' })).data,
+  void: async (id: number, note: string) => (await apiRequest<SupplierBill>(`/bills/${id}/void`, { method: 'POST', body: { note } })).data,
+  setPhoto: async (id: number, photo: Blob) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'PUT', file: photo })).data,
+  removePhoto: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'DELETE' })).data,
+};
+
+export const fullReportsApi = {
+  get: async (kind: ReportKind, from?: string) => (await apiRequest<FullReport>('/reports/full', { query: { kind, from } })).data,
+  settings: async () => (await apiRequest<ReportSettings>('/reports/settings')).data,
+  saveSettings: async (settings: ReportSettings) => (await apiRequest<ReportSettings>('/reports/settings', { method: 'PUT', body: settings })).data,
+  sendTest: async (kind: ReportKind) => apiRequest<null>('/reports/send-test', { method: 'POST', body: { kind } }),
+};
+
 export const reportsApi = {
   summary: async (range: ComparedRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
   team: async (range: ReportRange) => (await apiRequest<TeamRow[]>('/reports/team', { query: { ...range } })).data,
@@ -453,12 +483,17 @@ export const suppliersApi = {
 
 export const ordersApi = {
   list: async () => (await apiRequest<PurchaseOrder[]>('/orders')).data,
+  get: async (id: number) => (await apiRequest<PurchaseOrder>(`/orders/${id}`)).data,
   usualSuppliers: async () => (await apiRequest<Record<number, number>>('/orders/usual-suppliers')).data,
   create: async (input: { supplierId: number; note: string | null; lines: Array<{ productId: number; quantity: number; unitCost: number | null }> }) =>
     (await apiRequest<PurchaseOrder>('/orders', { method: 'POST', body: input })).data,
   receive: async (
     id: number,
-    input: { lines: Array<{ lineId: number; receivedQuantity: number; unitCost: number | null; expiresOn: string | null }>; updateCostPrices: boolean },
+    input: {
+      lines: Array<{ lineId: number; receivedQuantity: number; unitCost: number | null; expiresOn: string | null }>;
+      updateCostPrices: boolean;
+      bill?: BillInput;
+    },
   ) =>
     (await apiRequest<PurchaseOrder>(`/orders/${id}/receive`, { method: 'POST', body: input })).data,
   cancel: async (id: number) => (await apiRequest<PurchaseOrder>(`/orders/${id}/cancel`, { method: 'POST' })).data,

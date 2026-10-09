@@ -22,6 +22,7 @@ export interface ClaimedNotification {
   title: string;
   message: string;
   type: string | null;
+  link: string | null;
   push_preferences: Record<string, boolean>;
 }
 
@@ -110,7 +111,7 @@ export class PushRepository {
           limit ${limit}
           for update skip locked
         )
-        returning id, user_id, title, message, type
+        returning id, user_id, title, message, type, link
       )
       select claimed.*, u.push_preferences
       from claimed join users u on u.id = claimed.user_id

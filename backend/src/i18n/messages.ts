@@ -79,6 +79,9 @@ export interface ServerMessages {
     deadStockDetail: (p: { inStock: number; tiedUp: number | null }) => string;
     tabOverdueTitle: (p: { name: string; amount: number }) => string;
     tabOverdueDetail: (p: { days: number; minimum: number }) => string;
+    billOverdueTitle: (p: { supplier: string; amount: number; days: number }) => string;
+    billDueSoonTitle: (p: { supplier: string; amount: number; days: number }) => string;
+    billDetail: (p: { number: string | null; dueOn: string }) => string;
     expiringTitle: (p: { product: string; quantity: number; daysLeft: number }) => string;
     expiringDetail: string;
   };
@@ -106,27 +109,49 @@ export interface ServerMessages {
     confirmBody: string;
     confirmButton: string;
     confirmNote: string;
-    weeklySubject: (revenue: string) => string;
-    weeklyIntro: (p: { name: string; week: string }) => string;
-    weeklySummary: (p: { revenue: string; sales: number; profit: string; change: string | null }) => string;
-    weeklyChange: (percent: number) => string;
-    weeklyBestSellers: string;
-    weeklyProduct: (p: { rank: number; name: string; revenue: string; units: number }) => string;
-    weeklyNoSales: string;
-    weeklyCarwash: (p: { carwash: string; change: string; total: string; together: string }) => string;
-    /** Added when there are several carwashes: what each made. */
-    weeklyCarwashEach: (rows: Array<{ name: string; total: string }>) => string;
     errorSubject: (count: number) => string;
     errorIntro: (p: { name: string; count: number }) => string;
     errorItem: (p: { what: string; count: number }) => string;
     errorNote: string;
-    weeklyNoCarwash: string;
-    weeklyWarnings: (n: number) => string;
-    weeklyButton: string;
-    weeklyNote: string;
     changedSubject: string;
     changedBody: (email: string) => string;
     changedWarning: string;
+  };
+  /** The daily and weekly report: alert, email and section names. */
+  report: {
+    shop: string;
+    carwash: string;
+    title: (p: { kind: 'daily' | 'weekly'; period: string; revenue: number | null }) => string;
+    salesLine: (p: { sales: number; profit: number; change: number | null }) => string;
+    billsLine: (p: { count: number; amount: number }) => string;
+    stockLine: (count: number) => string;
+    approvalsLine: (count: number) => string;
+    nothing: string;
+    testPrefix: string;
+    sections: Record<string, string>;
+    emailIntro: (p: { name: string; kind: 'daily' | 'weekly'; period: string }) => string;
+    emailButton: string;
+    emailNote: string;
+    lines: {
+      revenue: (p: { revenue: number; change: number | null }) => string;
+      profit: (p: { profit: number; margin: number | null; net: number }) => string;
+      count: (p: { sales: number; units: number; average: number }) => string;
+      product: (p: { name: string; units: number; revenue: number }) => string;
+      person: (p: { name: string; sales: number; revenue: number }) => string;
+      losses: (p: { refunds: number; stockLosses: number }) => string;
+      carwash: (p: { name: string; total: number }) => string;
+      cash: (p: { day: string; place: string; difference: number | null }) => string;
+      expense: (p: { category: string; amount: number }) => string;
+      expensesTotal: (amount: number) => string;
+      tabs: (p: { owed: number; customers: number }) => string;
+      tabOverdue: (p: { name: string; balance: number }) => string;
+      billsOwed: (p: { owed: number; overdue: number; overdueCount: number; dueSoon: number }) => string;
+      billsPaid: (p: { count: number; total: number }) => string;
+      bill: (p: { supplier: string; left: number; dueOn: string | null; overdue: boolean }) => string;
+      stockList: (p: { label: 'soldOut' | 'runningOut' | 'expiring'; names: string[] }) => string;
+      approvals: (total: number) => string;
+      none: string;
+    };
   };
   /** The printed A4 invoice and credit note. */
   document: {
@@ -248,6 +273,10 @@ export const en: ServerMessages = {
       `${inStock} in stock${tiedUp === null ? '' : `, ${money(tiedUp, 'en')} tied up at cost`}. A promotion could move it.`,
     tabOverdueTitle: ({ name, amount }) => `${name} owes ${money(amount, 'en')} on their tab`,
     tabOverdueDetail: ({ days }) => `The oldest unpaid part is ${days} days old. A friendly reminder might help.`,
+    billOverdueTitle: ({ supplier, amount, days }) => `${money(amount, 'en')} to ${supplier} is ${days} ${days === 1 ? 'day' : 'days'} late`,
+    billDueSoonTitle: ({ supplier, amount, days }) =>
+      `${money(amount, 'en')} to ${supplier} is due ${days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`}`,
+    billDetail: ({ number, dueOn }) => `${number ? `Bill no. ${number}, d` : 'D'}ue on ${dueOn}. Record the payment once it's paid.`,
     expiringTitle: ({ product, quantity, daysLeft }) =>
       daysLeft < 0
         ? `${quantity} × ${product} expired ${count(-daysLeft, 'day', 'days')} ago`
@@ -280,30 +309,68 @@ export const en: ServerMessages = {
     confirmBody: 'Confirm this address to start using it to log in to 4VD.',
     confirmButton: 'Use this email',
     confirmNote: 'This link expires in 24 hours. Until then you keep logging in with your old email.',
-    weeklySubject: (revenue) => `Your week at 4VD: ${revenue} in sales`,
-    weeklyIntro: ({ name, week }) => `Hi ${name}, here is last week (${week}).`,
-    weeklySummary: ({ revenue, sales, profit, change }) =>
-      `${revenue} from ${count(sales, 'sale', 'sales')}, ${profit} profit${change ? `, ${change}` : ''}.`,
-    weeklyChange: (percent) => `${percent >= 0 ? 'up' : 'down'} ${Math.abs(percent)}% on the week before`,
-    weeklyBestSellers: 'Best sellers:',
-    weeklyProduct: ({ rank, name, revenue, units }) => `${rank}. ${name}: ${revenue} (${units} sold)`,
-    weeklyNoSales: 'No sales last week.',
-    weeklyCarwash: ({ carwash, change, total, together }) =>
-      `Carwash: ${total} (${carwash} carwash + ${change} change). Shop and carwash together: ${together}.`,
-    weeklyCarwashEach: (rows) => `By carwash: ${rows.map((row) => `${row.name} ${row.total}`).join(', ')}.`,
-    weeklyNoCarwash: 'No carwash takings were entered last week.',
     errorSubject: (count) => `4VD ran into ${count === 1 ? 'an error' : `${count} errors`}`,
     errorIntro: ({ name, count }) =>
       `Hi ${name}, the server logged ${count === 1 ? 'an error' : `${count} errors`} since the last email. The app may still be working; this is so you hear about it first.`,
     errorItem: ({ what, count }) => `${count > 1 ? `${count}× ` : ''}${what}`,
     errorNote: 'The full details are in the Render logs for 4vd-api. You get at most one of these an hour.',
-    weeklyWarnings: (n) =>
-      n === 0 ? 'Nothing needs your attention right now.' : `${n} ${n === 1 ? 'thing needs' : 'things need'} your attention on the Overview page.`,
-    weeklyButton: 'Open the dashboard',
-    weeklyNote: 'You can switch this email off on your Profile page.',
     changedSubject: 'Your 4VD email was changed',
     changedBody: (email) => `Your 4VD account now logs in with ${email}, and this address won't be used any more.`,
     changedWarning: 'If you didn’t do this, tell the shop owner straight away.',
+  },
+  report: {
+    shop: 'Shop',
+    carwash: 'Carwash',
+    title: ({ kind, period, revenue }) =>
+      `${kind === 'daily' ? 'Daily' : 'Weekly'} report · ${period}${revenue === null ? '' : `: ${money(revenue, 'en')}`}`,
+    salesLine: ({ sales, profit, change }) =>
+      `${sales} ${sales === 1 ? 'sale' : 'sales'}, ${money(profit, 'en')} profit${change === null ? '' : ` (${change >= 0 ? '+' : ''}${change}%)`}`,
+    billsLine: ({ count, amount }) => `${count} ${count === 1 ? 'bill' : 'bills'} overdue (${money(amount, 'en')})`,
+    stockLine: (count) => `${count} ${count === 1 ? 'product' : 'products'} to restock`,
+    approvalsLine: (count) => `${count} waiting for approval`,
+    nothing: 'Nothing needs your attention.',
+    testPrefix: 'Test: ',
+    sections: {
+      sales: 'Sales',
+      products: 'Best sellers',
+      team: 'Team',
+      losses: 'Refunds and losses',
+      carwash: 'Carwash',
+      cash: 'Cash check',
+      expenses: 'Expenses',
+      tabs: 'Customer tabs',
+      bills: 'Supplier bills',
+      stock: 'Stock',
+      approvals: 'Approvals',
+    },
+    emailIntro: ({ name, kind, period }) => `Hi ${name}, here is your ${kind === 'daily' ? 'daily' : 'weekly'} report for ${period}.`,
+    emailButton: 'Open the full report',
+    emailNote: 'Choose what is in this report, when it comes and whether it is emailed on your Profile page.',
+    lines: {
+      revenue: ({ revenue, change }) =>
+        `${money(revenue, 'en')} in sales${change === null ? '' : `, ${change >= 0 ? 'up' : 'down'} ${Math.abs(change)}% on the period before`}`,
+      profit: ({ profit, margin, net }) =>
+        `${money(profit, 'en')} profit${margin === null ? '' : ` (${Math.round(margin * 100)}% margin)`}; ${money(net, 'en')} after the carwash and expenses`,
+      count: ({ sales, units, average }) =>
+        `${sales} ${sales === 1 ? 'sale' : 'sales'}, ${units} ${units === 1 ? 'unit' : 'units'}, ${money(average, 'en')} on average`,
+      product: ({ name, units, revenue }) => `${name}: ${units} sold, ${money(revenue, 'en')}`,
+      person: ({ name, sales, revenue }) => `${name}: ${sales} ${sales === 1 ? 'sale' : 'sales'}, ${money(revenue, 'en')}`,
+      losses: ({ refunds, stockLosses }) => `${money(refunds, 'en')} refunded, ${money(stockLosses, 'en')} of stock lost`,
+      carwash: ({ name, total }) => `${name}: ${money(total, 'en')}`,
+      cash: ({ day, place, difference }) =>
+        `${day} ${place}: ${difference === null ? 'counted' : difference === 0 ? 'matched' : difference < 0 ? `short ${money(-difference, 'en')}` : `over ${money(difference, 'en')}`}`,
+      expense: ({ category, amount }) => `${category}: ${money(amount, 'en')}`,
+      expensesTotal: (amount) => `${money(amount, 'en')} spent`,
+      tabs: ({ owed, customers }) => `${money(owed, 'en')} owed by ${customers} ${customers === 1 ? 'customer' : 'customers'}`,
+      tabOverdue: ({ name, balance }) => `${name} owes ${money(balance, 'en')} (overdue)`,
+      billsOwed: ({ owed, overdue, overdueCount, dueSoon }) =>
+        `${money(owed, 'en')} owed to suppliers; ${overdueCount > 0 ? `${money(overdue, 'en')} overdue` : 'nothing overdue'}, ${money(dueSoon, 'en')} due this week`,
+      billsPaid: ({ count, total }) => `${money(total, 'en')} paid in ${count} ${count === 1 ? 'payment' : 'payments'}`,
+      bill: ({ supplier, left, dueOn, overdue }) => `${supplier}: ${money(left, 'en')}${dueOn ? `, ${overdue ? 'was due' : 'due'} ${dueOn}` : ''}`,
+      stockList: ({ label, names }) => `${{ soldOut: 'Sold out', runningOut: 'Running out', expiring: 'Expiring' }[label]}: ${names.join(', ')}`,
+      approvals: (total) => `${total} ${total === 1 ? 'request' : 'requests'} waiting for you`,
+      none: 'Nothing here.',
+    },
   },
   document: {
     invoice: 'Invoice',
@@ -426,6 +493,10 @@ export const sq: ServerMessages = {
       `${inStock} në stok${tiedUp === null ? '' : `, ${money(tiedUp, 'sq')} të bllokuara me koston`}. Një ofertë mund ta lëvizë.`,
     tabOverdueTitle: ({ name, amount }) => `${name} ka borxh ${money(amount, 'sq')}`,
     tabOverdueDetail: ({ days }) => `Pjesa më e vjetër e papaguar është ${days} ditë e vjetër. Një kujtesë miqësore mund të ndihmojë.`,
+    billOverdueTitle: ({ supplier, amount, days }) => `${money(amount, 'sq')} për ${supplier} është vonuar ${days} ditë`,
+    billDueSoonTitle: ({ supplier, amount, days }) =>
+      `${money(amount, 'sq')} për ${supplier} ${days === 0 ? 'duhet paguar sot' : days === 1 ? 'duhet paguar nesër' : `duhet paguar pas ${days} ditësh`}`,
+    billDetail: ({ number, dueOn }) => `${number ? `Fatura nr. ${number}. ` : ''}Afati: ${dueOn}. Shëno pagesën sapo të paguhet.`,
     expiringTitle: ({ product, quantity, daysLeft }) =>
       daysLeft < 0
         ? `${quantity} × ${product} skaduan para ${count(-daysLeft, 'ditë', 'ditësh')}`
@@ -458,30 +529,67 @@ export const sq: ServerMessages = {
     confirmBody: 'Konfirmo këtë adresë që ta përdorësh për të hyrë në 4VD.',
     confirmButton: 'Përdor këtë email',
     confirmNote: 'Kjo lidhje skadon pas 24 orësh. Deri atëherë vazhdon të hysh me emailin e vjetër.',
-    weeklySubject: (revenue) => `Java jote në 4VD: ${revenue} në shitje`,
-    weeklyIntro: ({ name, week }) => `Përshëndetje ${name}, ja java e kaluar (${week}).`,
-    weeklySummary: ({ revenue, sales, profit, change }) =>
-      `${revenue} nga ${count(sales, 'shitje', 'shitje')}, ${profit} fitim${change ? `, ${change}` : ''}.`,
-    weeklyChange: (percent) => `${percent >= 0 ? 'rritje' : 'rënie'} ${Math.abs(percent)}% krahasuar me javën më parë`,
-    weeklyBestSellers: 'Më të shiturat:',
-    weeklyProduct: ({ rank, name, revenue, units }) => `${rank}. ${name}: ${revenue} (${units} të shitura)`,
-    weeklyNoSales: 'Nuk pati shitje javën e kaluar.',
-    weeklyCarwash: ({ carwash, change, total, together }) =>
-      `Lavazhi: ${total} (${carwash} lavazh + ${change} këmbim). Dyqani dhe lavazhi bashkë: ${together}.`,
-    weeklyCarwashEach: (rows) => `Sipas lavazheve: ${rows.map((row) => `${row.name} ${row.total}`).join(', ')}.`,
-    weeklyNoCarwash: 'Nuk u futën të ardhura të lavazhit javën e kaluar.',
     errorSubject: (count) => `4VD hasi ${count === 1 ? 'një gabim' : `${count} gabime`}`,
     errorIntro: ({ name, count }) =>
       `Përshëndetje ${name}, serveri regjistroi ${count === 1 ? 'një gabim' : `${count} gabime`} që nga emaili i fundit. Aplikacioni mund të punojë ende; kjo është që ta mësosh i pari.`,
     errorItem: ({ what, count }) => `${count > 1 ? `${count}× ` : ''}${what}`,
     errorNote: 'Detajet e plota janë te regjistrat e Render për 4vd-api. Merr më së shumti një të tillë në orë.',
-    weeklyWarnings: (n) =>
-      n === 0 ? 'Asgjë nuk kërkon vëmendjen tënde tani.' : `${n} ${n === 1 ? 'gjë kërkon' : 'gjëra kërkojnë'} vëmendjen tënde te Përmbledhja.`,
-    weeklyButton: 'Hap panelin',
-    weeklyNote: 'Mund ta çaktivizosh këtë email te faqja e Profilit.',
     changedSubject: 'Emaili yt në 4VD u ndryshua',
     changedBody: (email) => `Llogaria jote në 4VD tani hyn me ${email}, dhe kjo adresë nuk do të përdoret më.`,
     changedWarning: 'Nëse nuk e bëre ti këtë, njofto menjëherë pronarin e dyqanit.',
+  },
+  report: {
+    shop: 'Dyqani',
+    carwash: 'Lavazhi',
+    title: ({ kind, period, revenue }) =>
+      `Raporti ${kind === 'daily' ? 'ditor' : 'javor'} · ${period}${revenue === null ? '' : `: ${money(revenue, 'sq')}`}`,
+    salesLine: ({ sales, profit, change }) =>
+      `${sales} shitje, ${money(profit, 'sq')} fitim${change === null ? '' : ` (${change >= 0 ? '+' : ''}${change}%)`}`,
+    billsLine: ({ count, amount }) => `${count} ${count === 1 ? 'faturë e vonuar' : 'fatura të vonuara'} (${money(amount, 'sq')})`,
+    stockLine: (count) => `${count} ${count === 1 ? 'produkt' : 'produkte'} për t’u furnizuar`,
+    approvalsLine: (count) => `${count} në pritje të miratimit`,
+    nothing: 'Asgjë nuk kërkon vëmendjen tënde.',
+    testPrefix: 'Provë: ',
+    sections: {
+      sales: 'Shitjet',
+      products: 'Më të shiturat',
+      team: 'Ekipi',
+      losses: 'Rimbursime dhe humbje',
+      carwash: 'Lavazhi',
+      cash: 'Kontrolli i arkës',
+      expenses: 'Shpenzimet',
+      tabs: 'Borxhet e klientëve',
+      bills: 'Faturat e furnitorëve',
+      stock: 'Stoku',
+      approvals: 'Miratimet',
+    },
+    emailIntro: ({ name, kind, period }) => `Përshëndetje ${name}, ja raporti yt ${kind === 'daily' ? 'ditor' : 'javor'} për ${period}.`,
+    emailButton: 'Hap raportin e plotë',
+    emailNote: 'Zgjidh çfarë ka ky raport, kur vjen dhe nëse vjen me email te faqja e Profilit.',
+    lines: {
+      revenue: ({ revenue, change }) =>
+        `${money(revenue, 'sq')} shitje${change === null ? '' : `, ${change >= 0 ? 'rritje' : 'rënie'} ${Math.abs(change)}% nga periudha e mëparshme`}`,
+      profit: ({ profit, margin, net }) =>
+        `${money(profit, 'sq')} fitim${margin === null ? '' : ` (marzhë ${Math.round(margin * 100)}%)`}; ${money(net, 'sq')} pas lavazhit dhe shpenzimeve`,
+      count: ({ sales, units, average }) => `${sales} shitje, ${units} copë, mesatarisht ${money(average, 'sq')}`,
+      product: ({ name, units, revenue }) => `${name}: ${units} të shitura, ${money(revenue, 'sq')}`,
+      person: ({ name, sales, revenue }) => `${name}: ${sales} shitje, ${money(revenue, 'sq')}`,
+      losses: ({ refunds, stockLosses }) => `${money(refunds, 'sq')} të rimbursuara, ${money(stockLosses, 'sq')} stok i humbur`,
+      carwash: ({ name, total }) => `${name}: ${money(total, 'sq')}`,
+      cash: ({ day, place, difference }) =>
+        `${day} ${place}: ${difference === null ? 'u numërua' : difference === 0 ? 'përputhet' : difference < 0 ? `mungojnë ${money(-difference, 'sq')}` : `tepricë ${money(difference, 'sq')}`}`,
+      expense: ({ category, amount }) => `${category}: ${money(amount, 'sq')}`,
+      expensesTotal: (amount) => `${money(amount, 'sq')} të shpenzuara`,
+      tabs: ({ owed, customers }) => `${money(owed, 'sq')} borxh nga ${customers} ${customers === 1 ? 'klient' : 'klientë'}`,
+      tabOverdue: ({ name, balance }) => `${name} ka borxh ${money(balance, 'sq')} (i vonuar)`,
+      billsOwed: ({ owed, overdue, overdueCount, dueSoon }) =>
+        `${money(owed, 'sq')} borxh te furnitorët; ${overdueCount > 0 ? `${money(overdue, 'sq')} të vonuara` : 'asgjë e vonuar'}, ${money(dueSoon, 'sq')} për t’u paguar këtë javë`,
+      billsPaid: ({ count, total }) => `${money(total, 'sq')} të paguara me ${count} ${count === 1 ? 'pagesë' : 'pagesa'}`,
+      bill: ({ supplier, left, dueOn, overdue }) => `${supplier}: ${money(left, 'sq')}${dueOn ? `, ${overdue ? 'afati ishte' : 'afati'} ${dueOn}` : ''}`,
+      stockList: ({ label, names }) => `${{ soldOut: 'Mbaruan', runningOut: 'Po mbarojnë', expiring: 'Po skadojnë' }[label]}: ${names.join(', ')}`,
+      approvals: (total) => `${total} ${total === 1 ? 'kërkesë' : 'kërkesa'} të presin`,
+      none: 'Asgjë këtu.',
+    },
   },
   document: {
     invoice: 'Faturë',

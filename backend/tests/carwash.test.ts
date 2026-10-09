@@ -95,7 +95,7 @@ describe('carwash takings', () => {
     expect(after.message).toContain('Carwash: €40.00 + €10.00 change = €50.00.');
   });
 
-  it('should be in the Monday email, with the shop and carwash together', async () => {
+  it('should be in the weekly report email', async () => {
     const chair = await createTestProduct(context, adminToken, { name: 'Oak Chair', price: 100, costPrice: 60, stock: 5 });
     await request(context.app)
       .post('/api/sales')
@@ -104,9 +104,13 @@ describe('carwash takings', () => {
     await save('2026-09-29', { carwash: 40, change: 10 });
     await save('2026-10-04', { carwash: 60, change: 0 });
 
-    await context.container.weeklyReportService.sendIfDue(new Date('2026-10-05T19:30:00Z'));
-    const [email] = await context.db.selectFrom('email_outbox').select(['text']).execute();
+    await context.db.insertInto('report_subscriptions').values({ user_id: 1, email: true }).onConflict((oc) => oc.column('user_id').doUpdateSet({ email: true })).execute();
+    // Monday 21:30 in Budapest: the weekly report covers Monday 28 Sept to Sunday 4 Oct.
+    await context.container.reportDeliveryService.sendDue(new Date('2026-10-05T19:30:00Z'));
+    const emails = await context.db.selectFrom('email_outbox').select(['subject', 'text']).execute();
+    const weekly = emails.find((email) => email.subject.startsWith('Weekly report'))!;
 
-    expect(email!.text).toContain('Carwash: €110.00 (€100.00 carwash + €10.00 change). Shop and carwash together: €210.00.');
+    expect(weekly.text).toContain('Carwash: €110.00');
+    expect(weekly.text).toContain('€100.00 in sales');
   });
 });

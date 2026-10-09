@@ -6,7 +6,7 @@ const message = (token: string): PushMessage => ({
   keys: null,
   title: 'Low stock: Oak Chair',
   body: '2 left',
-  data: { type: 'low_stock', notificationId: 1 },
+  data: { type: 'low_stock', notificationId: 1, link: null },
 });
 
 describe('Expo push sender', () => {

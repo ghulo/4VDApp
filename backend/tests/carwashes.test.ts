@@ -251,14 +251,16 @@ describe('expenses, reports and the Monday email with several carwashes', () => 
     ]);
   });
 
-  it("should say what each carwash made in Monday's email, and add them in the money sheet", async () => {
+  it('should say what each carwash made in the weekly report, and add them in the money sheet', async () => {
     const second = await openSecond();
     await takings('2026-09-30', { carwashId: 1, carwash: 40, change: 10 });
     await takings('2026-09-30', { carwashId: second, carwash: 30, change: 0 });
 
-    await context.container.weeklyReportService.sendIfDue(new Date('2026-10-05T19:30:00Z'));
-    const [email] = await context.db.selectFrom('email_outbox').select('text').where('to_address', '=', 'admin@test.local').execute();
-    expect(email!.text).toContain('By carwash: Carwash €50.00, Prishtina €30.00.');
+    const report = await context.container.reportDeliveryService.view(1, 'en', 'weekly', '2026-09-28', new Date('2026-10-05T19:30:00Z'));
+    expect(report.sections.carwash!.each.map((row) => [row.name, row.total])).toEqual([
+      ['Carwash', 50],
+      ['Prishtina', 30],
+    ]);
 
     const csv = await request(context.app).get('/api/exports/money.csv').set(auth()).query({ startDate: '2026-09-30', endDate: '2026-09-30' });
     expect(csv.text).toContain('2026-09-30,0,70,10,0,80');

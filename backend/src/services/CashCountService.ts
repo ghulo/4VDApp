@@ -2,6 +2,7 @@ import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import type { ServerMessages } from '../i18n/messages.js';
 import type { CashCountRepository, CashPlace } from '../repositories/CashCountRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
+import type { SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
@@ -23,7 +24,7 @@ export interface CashCountDto {
   day: string;
   float: number;
   counted: number;
-  /** That day's shop sales (less tab sales, plus tab payments), or the carwash takings; null when the carwash has none to compare with. */
+  /** That day's shop sales (less tab sales, plus tab payments, less suppliers paid from the drawer), or the carwash takings; null when the carwash has none to compare with. */
   expected: number | null;
   /** counted − float − expected: below 0 is short, above 0 is over. Null when there is nothing to compare with. */
   difference: number | null;
@@ -56,6 +57,7 @@ export class CashCountService {
     private readonly cashCountRepository: CashCountRepository,
     private readonly reportsRepository: ReportsRepository,
     private readonly tabRepository: TabRepository,
+    private readonly billRepository: SupplierBillRepository,
     private readonly settingsService: SettingsService,
     private readonly carwashService: CarwashService,
     private readonly transactions: TransactionManager,
@@ -68,18 +70,22 @@ export class CashCountService {
   }
 
   private async between(from: string, to: string): Promise<CashCountDto[]> {
-    const [rows, shop, tabs, carwash] = await Promise.all([
+    const [rows, shop, tabs, supplierPayments, carwash] = await Promise.all([
       this.cashCountRepository.findBetween(from, to),
       this.reportsRepository.shopRevenueByDay(from, to, this.timeZone),
       // Tab sales never reach the drawer; tab payments do.
       this.tabRepository.drawerEffectByDay(from, to, this.timeZone),
+      // Suppliers paid with cash from the till.
+      this.billRepository.drawerPaymentsByDay(from, to),
       this.cashCountRepository.carwashTakingsByDay(from, to),
     ]);
     return rows.map((row) => {
       const float = Number(row.float_amount);
       const counted = Number(row.counted_amount);
       const expected =
-        row.place === 'shop' ? roundMoney((shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0)) : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
+        row.place === 'shop'
+          ? roundMoney((shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0) - (supplierPayments.get(row.day) ?? 0))
+          : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
       return {
         id: row.id,
         place: row.place,

@@ -1,3 +1,5 @@
+import { calendarDaySchema } from './validate.js';
+import { REPORT_SECTIONS } from '../services/reports/ReportBuilder.js';
 import { z } from 'zod';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
 
@@ -61,4 +63,22 @@ export const exportTimeZoneSchema = z.object({
 
 export const askAssistantSchema = z.object({
   question: z.string().trim().min(3, 'ask a question').max(500, 'keep the question under 500 characters'),
+});
+
+const reportKind = z.enum(['daily', 'weekly']);
+const hour = z.number().int().min(0).max(23);
+
+export const fullReportQuerySchema = z.object({
+  kind: reportKind.default('daily'),
+  /** The first day it covers; defaults to today (daily) or the last 7 days (weekly). */
+  from: calendarDaySchema.optional(),
+});
+
+export const sendTestReportSchema = z.object({ kind: reportKind });
+
+export const reportSettingsSchema = z.object({
+  daily: z.object({ enabled: z.boolean(), hour }),
+  weekly: z.object({ enabled: z.boolean(), day: z.number().int().min(1).max(7), hour }),
+  sections: z.array(z.enum(REPORT_SECTIONS)).max(REPORT_SECTIONS.length),
+  email: z.boolean(),
 });

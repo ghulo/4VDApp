@@ -17,6 +17,7 @@ export class NotificationService {
         title: notification.title,
         message: notification.message,
         type: notification.type,
+        link: notification.link,
         isRead: notification.is_read,
         createdAt: notification.created_at.toISOString(),
       })),

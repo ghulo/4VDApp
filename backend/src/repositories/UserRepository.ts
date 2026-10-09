@@ -67,17 +67,6 @@ export class UserRepository {
       .execute();
   }
 
-  weeklyReportRecipients(): Promise<Array<{ email: string; name: string; language: Language }>> {
-    return this.db
-      .selectFrom('users')
-      .select(['email', 'name', 'language'])
-      .where('role', 'in', OVERSEER_ROLES)
-      .where('is_active', '=', true)
-      .where('deleted_at', 'is', null)
-      .where('email_weekly_report', '=', true)
-      .execute();
-  }
-
   async createBusiness(name: string): Promise<number> {
     const row = await this.db.insertInto('businesses').values({ name }).returning('id').executeTakeFirstOrThrow();
     return row.id;

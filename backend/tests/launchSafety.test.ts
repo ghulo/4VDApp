@@ -72,6 +72,6 @@ describe('launch checklist', () => {
     expect(step(after, 'wiped')).toBe(true);
     expect(step(after, 'owner')).toBe(true);
     expect(step(after, 'team')).toBe(true);
-    expect(step(after, 'weeklyEmail')).toBe(true);
+    expect(step(after, 'reports')).toBe(true);
   });
 });

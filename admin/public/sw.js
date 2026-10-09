@@ -22,7 +22,8 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const path = PAGE_BY_TYPE[event.notification.data.type] || '/';
+  const data = event.notification.data || {};
+  const path = data.link || PAGE_BY_TYPE[data.type] || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
       const open = windows.find((client) => new URL(client.url).origin === self.location.origin);

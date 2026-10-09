@@ -52,18 +52,21 @@ describe('the owner', () => {
     for (const response of await Promise.all(attempts)) expect(response.status).toBe(403);
   });
 
-  it('should get stock alerts and the weekly report like the people who run the shop', async () => {
+  it('should get stock alerts and the reports like the people who run the shop', async () => {
     const productId = await createTestProduct(context, developerToken, { stock: 3, reorderLevel: 2 });
     await request(context.app).post('/api/sales').set(auth(developerToken)).send({ productId, quantity: 2 });
 
     const alerts = await request(context.app).get('/api/notifications').set(auth(ownerToken));
     expect(alerts.body.data.notifications[0].title).toBe('Low stock: Oak Chair');
 
-    await context.container.weeklyReportService.sendIfDue(new Date('2026-10-05T19:30:00Z'));
-    const emails = await context.db.selectFrom('email_outbox').select('to_address').execute();
-    expect(emails.map((email) => email.to_address)).toEqual(
-      expect.arrayContaining(['owner@test.local', 'developer@test.local', 'admin@test.local']),
-    );
+    await context.container.reportDeliveryService.sendDue(new Date('2026-10-05T19:30:00Z'));
+    const reports = await context.db
+      .selectFrom('notifications as n')
+      .innerJoin('users as u', 'u.id', 'n.user_id')
+      .select('u.email')
+      .where('n.type', '=', 'weekly_report')
+      .execute();
+    expect(reports.map((row) => row.email).sort()).toEqual(['admin@test.local', 'developer@test.local', 'owner@test.local']);
   });
 });
 

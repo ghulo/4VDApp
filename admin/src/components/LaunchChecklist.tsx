@@ -103,8 +103,8 @@ function how(step: LaunchStep, t: ReturnType<typeof useT>): string {
       return t.launch.ownerHow;
     case 'team':
       return facts.employees ? t.launch.teamCount(facts.employees) : t.launch.teamHow;
-    case 'weeklyEmail':
-      return t.launch.weeklyEmailHow;
+    case 'reports':
+      return t.launch.reportsHow;
     case 'emails':
       return t.launch.emailsHow;
     case 'phoneAlerts':

@@ -61,21 +61,6 @@ function plain(lines: Array<string | undefined>): string {
   return `${lines.filter((line) => line !== undefined).join('\n\n')}\n\n-- \n4VD`;
 }
 
-export interface WeeklyReportData {
-  /** e.g. "28 Sept – 4 Oct" */
-  weekLabel: string;
-  revenue: string;
-  /** e.g. "up 12% on the week before"; null when there's nothing to compare. */
-  change: string | null;
-  profit: string;
-  salesCount: number;
-  topProducts: Array<{ name: string; revenue: string; units: number }>;
-  warnings: number;
-  /** The carwash's week in one sentence. */
-  carwash: string;
-  link: string;
-}
-
 export const emailTemplates = {
   invite(input: { shopName: string; inviterName: string; role: string; link: string }, t: ServerMessages = en): EmailContent {
     const subject = t.email.inviteSubject({ inviter: input.inviterName, shop: input.shopName });
@@ -149,44 +134,28 @@ export const emailTemplates = {
     };
   },
 
-  weeklyReport(input: { name: string } & WeeklyReportData, t: ServerMessages = en): EmailContent {
-    const subject = t.email.weeklySubject(input.revenue);
-    const summary = t.email.weeklySummary({
-      revenue: input.revenue,
-      sales: input.salesCount,
-      profit: input.profit,
-      change: input.change,
-    });
-    const best = input.topProducts.length
-      ? input.topProducts.map((product, index) =>
-          t.email.weeklyProduct({ rank: index + 1, name: product.name, revenue: product.revenue, units: product.units }),
-        )
-      : [t.email.weeklyNoSales];
-    const warnings = t.email.weeklyWarnings(input.warnings);
-    const intro = t.email.weeklyIntro({ name: input.name, week: input.weekLabel });
+  /** The daily or weekly report: every chosen section as a short list, and a link to the full page. */
+  report(
+    input: { name: string; subject: string; intro: string; sections: Array<{ heading: string; lines: string[] }>; link: string },
+    t: ServerMessages = en,
+  ): EmailContent {
     return {
-      subject,
+      subject: input.subject,
       html: render({
         t,
-        subject,
+        subject: input.subject,
         paragraphs: [
-          escapeHtml(intro),
-          `<strong>${escapeHtml(summary)}</strong>`,
-          `${escapeHtml(t.email.weeklyBestSellers)}<br>${best.map(escapeHtml).join('<br>')}`,
-          escapeHtml(input.carwash),
-          escapeHtml(warnings),
+          escapeHtml(input.intro),
+          ...input.sections.map((section) => `<strong>${escapeHtml(section.heading)}</strong><br>${section.lines.map(escapeHtml).join('<br>')}`),
         ],
-        button: { label: t.email.weeklyButton, link: input.link },
-        note: escapeHtml(t.email.weeklyNote),
+        button: { label: t.report.emailButton, link: input.link },
+        note: escapeHtml(t.report.emailNote),
       }),
       text: plain([
-        intro,
-        summary,
-        `${t.email.weeklyBestSellers}\n${best.join('\n')}`,
-        input.carwash,
-        warnings,
-        `${t.email.weeklyButton}: ${input.link}`,
-        t.email.weeklyNote,
+        input.intro,
+        ...input.sections.map((section) => `${section.heading}\n${section.lines.join('\n')}`),
+        `${t.report.emailButton}: ${input.link}`,
+        t.report.emailNote,
       ]),
     };
   },

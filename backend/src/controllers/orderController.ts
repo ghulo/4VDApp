@@ -30,6 +30,11 @@ export function createOrderController(orderService: PurchaseOrderService) {
       sendSuccess(res, await orderService.list());
     },
 
+    async get(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await orderService.get(id));
+    },
+
     async usualSuppliers(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await orderService.usualSuppliers());
     },

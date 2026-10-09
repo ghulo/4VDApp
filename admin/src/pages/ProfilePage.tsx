@@ -4,6 +4,7 @@ import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
+import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
 import { Badge, Button, Card, Field, PageHeader, SettingRow } from '../components/ui';
 import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
@@ -53,7 +54,7 @@ export function ProfilePage() {
         </SettingRow>
       </Card>
       <PushSettingsPanel />
-      {canOversee(user.role) && <EmailsPanel user={user} />}
+      {canOversee(user.role) && <ReportSettingsPanel />}
       <SecurityPanel user={user} />
       <DevicesPanel />
     </>
@@ -143,39 +144,6 @@ function DetailsPanel({ user }: { user: User }) {
         </div>
       </Card>
     </form>
-  );
-}
-
-function EmailsPanel({ user }: { user: User }) {
-  const t = useT();
-  const { updateUser } = useAuth();
-  const toggle = useMutation({
-    mutationFn: (on: boolean) => meApi.updateProfile({ emailWeeklyReport: on }),
-    onSuccess: updateUser,
-  });
-  return (
-    <Card title={t.profile.emails}>
-      <SettingRow
-        title={t.profile.weeklyReport}
-        description={
-          toggle.isError ? (
-            <Result error={toggle.error} success={null} />
-          ) : (
-            t.profile.weeklyReportHint
-          )
-        }
-      >
-        <input
-          type="checkbox"
-          role="switch"
-          className="switch"
-          aria-label={t.profile.weeklyReportEmail}
-          checked={user.emailWeeklyReport}
-          disabled={toggle.isPending}
-          onChange={(event) => toggle.mutate(event.target.checked)}
-        />
-      </SettingRow>
-    </Card>
   );
 }
 

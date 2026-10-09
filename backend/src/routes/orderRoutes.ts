@@ -21,6 +21,7 @@ export function createOrderRoutes({ purchaseOrderService, guards }: Container): 
   router.get('/', ...guards.oversee, controller.list);
   router.get('/deliveries', ...guards.staff, controller.deliveries);
   router.get('/usual-suppliers', ...guards.oversee, controller.usualSuppliers);
+  router.get('/:id', ...guards.oversee, controller.get);
   router.post('/', ...guards.manage, controller.create);
   // Anyone at the counter can tick off a delivery; only managers can change costs while doing it.
   router.post('/:id/receive', ...guards.staff, controller.receive);

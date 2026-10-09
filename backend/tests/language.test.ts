@@ -124,15 +124,19 @@ describe('emails in each person’s language', () => {
     expect(preview.body.data.language).toBe('sq');
   });
 
-  it('should send the weekly report in each recipient’s language', async () => {
-    await createTestUser(context.db, 'owner');
+  it('should send the reports in each recipient’s language', async () => {
+    const owner = await createTestUser(context.db, 'owner');
     await context.db.updateTable('users').set({ language: 'sq' }).where('email', '=', 'owner@test.local').execute();
+    await context.db.updateTable('report_subscriptions').set({ email: true }).execute();
+    await context.db.insertInto('report_subscriptions').values({ user_id: owner.id, email: true }).onConflict((oc) => oc.doNothing()).execute();
+    const admin = await context.db.selectFrom('users').select('id').where('email', '=', 'admin@test.local').executeTakeFirstOrThrow();
+    await context.db.insertInto('report_subscriptions').values({ user_id: admin.id, email: true }).onConflict((oc) => oc.column('user_id').doUpdateSet({ email: true })).execute();
 
-    await context.container.weeklyReportService.sendIfDue(new Date('2026-10-05T20:00:00Z'));
+    await context.container.reportDeliveryService.sendDue(new Date('2026-10-05T20:00:00Z'));
     const toOwner = await newestEmailTo('owner@test.local');
     const toAdmin = await newestEmailTo('admin@test.local');
 
-    expect(toOwner.text).toContain(sq.email.weeklyButton);
-    expect(toAdmin.text).toContain(en.email.weeklyButton);
+    expect(toOwner.text).toContain(sq.report.emailButton);
+    expect(toAdmin.text).toContain(en.report.emailButton);
   });
 });

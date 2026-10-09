@@ -260,7 +260,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
     config.dashboardUrl,
   );
-  const launchService = new LaunchService(new LaunchRepository(db), {
+  const launchService = new LaunchService(new LaunchRepository(db), db, {
     // Resend's shared test sender only reaches the account owner, so it doesn't count as real.
     realEmails: Boolean(config.email.resendApiKey) && !config.email.from.includes('resend.dev'),
     phoneAlerts: Boolean(config.webPush),

@@ -228,6 +228,13 @@ export interface RecurringExpense {
   addedBy: string | null;
 }
 
+/** What a wipe deleted (or would delete, when `applied` is false), by table. */
+export interface WipeReport {
+  applied: boolean;
+  keptDevelopers: string[];
+  deleted: Record<string, number>;
+}
+
 export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'weeklyEmail' | 'emails' | 'phoneAlerts' | 'backups';
 
 export interface LaunchStep {

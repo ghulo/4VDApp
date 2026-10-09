@@ -54,7 +54,7 @@ export interface WipeReport {
  * and its settings. On a dry run nothing changes. Everything happens in one
  * transaction: all of it or none of it.
  */
-export async function wipeShopData(db: DatabaseClient, options: { apply: boolean }): Promise<WipeReport> {
+export async function wipeShopData(db: DatabaseClient, options: { apply: boolean; actorId?: number }): Promise<WipeReport> {
   return db.transaction().execute(async (trx) => {
     const developers = await trx.selectFrom('users').select(['id', 'email']).where('role', '=', 'developer').execute();
     if (developers.length === 0) {
@@ -89,6 +89,14 @@ export async function wipeShopData(db: DatabaseClient, options: { apply: boolean
         INSERT INTO settings (key, value, updated_at) VALUES (${WIPED_AT_KEY}, to_jsonb(now()::text), now())
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
       `.execute(trx);
+      // The wipe empties the Activity page, so its own entry is the first thing on it afterwards.
+      if (options.actorId !== undefined) {
+        const rows = Object.values(deleted).reduce((sum, n) => sum + n, 0);
+        await sql`
+          INSERT INTO activity_log (user_id, action, entity_type, summary, details)
+          VALUES (${options.actorId}, 'shop.wiped', 'settings', ${`Wiped all test data (${rows} rows); developer accounts, the shop details and settings were kept`}, ${JSON.stringify({ deleted })}::jsonb)
+        `.execute(trx);
+      }
     }
 
     return { applied: options.apply, keptDevelopers: developers.map((developer) => developer.email), deleted };

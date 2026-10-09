@@ -56,6 +56,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   const favoriteIds = useQuery({ queryKey: ['favorites', 'ids'], queryFn: favoritesApi.ids });
   const [lines, setLines] = useState<Line[]>(initial);
   const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const [paid, setPaid] = useState('');
@@ -143,7 +144,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.searchRow}>
-          <View style={[styles.searchField, { borderColor: colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}>
+          <View style={[styles.searchField, { borderColor: searchFocused ? colors.ink : colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}>
             <MagnifyingGlass size={20} color={colors.inkMuted} />
             <TextInput
               value={search}
@@ -154,6 +155,8 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
               accessibilityLabel={t.sell.searchLabel}
               autoCorrect={false}
               returnKeyType="search"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               style={[styles.searchInput, { color: colors.ink }]}
             />
           </View>
@@ -285,7 +288,8 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md },
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.md },
-  searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: 16 },
+  // The whole field shows focus (see searchFocused), so the browser's ring on the bare input is off.
+  searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: 16, outlineStyle: 'solid', outlineWidth: 0 },
   scanButton: { width: 48, height: 48, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
   groupTitle: { fontFamily: fonts.bodyBold, fontSize: 15, marginTop: spacing.sm },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

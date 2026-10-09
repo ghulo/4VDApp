@@ -165,6 +165,7 @@ export const en = {
   favorites: {
     none: 'No favorites yet',
     noneHint: 'Open a product and tap "Save to favorites" to keep it here.',
+    browse: 'Browse products',
   },
   stockTag: {
     out: 'Sold out',

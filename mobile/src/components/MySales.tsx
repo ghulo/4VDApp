@@ -60,16 +60,19 @@ export function MySales() {
             <View style={styles.list}>
               {mySales.data.recentSales.map((sale) => (
                 <View key={sale.id} style={[styles.row, { borderTopColor: colors.line }]}>
-                  <Text style={[styles.rowText, { color: colors.ink }]} numberOfLines={1}>
-                    {sale.quantity} × {sale.productName}
-                  </Text>
+                  {/* Name and date stack so the full product name fits on a phone. */}
+                  <View style={styles.rowInfo}>
+                    <Text style={[styles.rowText, { color: colors.ink }]} numberOfLines={2}>
+                      {sale.quantity} × {sale.productName}
+                    </Text>
+                    <Text style={[styles.rowDate, { color: colors.steel }]}>{shortDate.format(new Date(sale.saleDate))}</Text>
+                  </View>
                   <Text style={[styles.rowAmount, { color: colors.ink }]}>{formatMoney(sale.totalAmount)}</Text>
-                  <Text style={[styles.rowDate, { color: colors.steel }]}>{shortDate.format(new Date(sale.saleDate))}</Text>
                   {sale.returnedQuantity < sale.quantity ? (
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={t.mySales.returnLabel(sale.productName)}
-                      hitSlop={8}
+                      style={styles.rowButton}
                       onPress={() =>
                         navigation.navigate('Return', {
                           saleId: sale.id,
@@ -84,7 +87,9 @@ export function MySales() {
                       <Text style={[styles.rowAction, { color: colors.ink }]}>{t.mySales.return}</Text>
                     </Pressable>
                   ) : (
-                    <Text style={[styles.rowAction, { color: colors.steel }]}>{t.mySales.returned}</Text>
+                    <View style={styles.rowButton}>
+                      <Text style={[styles.rowAction, { color: colors.steel }]}>{t.mySales.returned}</Text>
+                    </View>
                   )}
                 </View>
               ))}
@@ -105,8 +110,11 @@ const styles = StyleSheet.create({
   muted: { fontFamily: fonts.body, fontSize: 15 },
   list: { marginTop: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1 },
-  rowText: { flex: 1, fontFamily: fonts.body, fontSize: 15 },
+  rowInfo: { flex: 1, gap: 2 },
+  rowText: { fontFamily: fonts.body, fontSize: 15 },
   rowAmount: { fontFamily: fonts.bodyBold, fontSize: 15, fontVariant: ['tabular-nums'] },
-  rowDate: { fontFamily: fonts.body, fontSize: 13, minWidth: 48, textAlign: 'right' },
+  rowDate: { fontFamily: fonts.body, fontSize: 13 },
+  // A full 44pt target for the thumb, lined up whether it's a button or the "returned" note.
+  rowButton: { minHeight: 44, minWidth: 64, alignItems: 'flex-end', justifyContent: 'center' },
   rowAction: { fontFamily: fonts.bodyBold, fontSize: 14, textDecorationLine: 'underline' },
 });

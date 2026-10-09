@@ -94,7 +94,18 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 }
 
 /** An empty screen: what would be here, with the job's icon when it has one. */
-export function EmptyState({ title, icon, children }: { title: string; icon?: Parameters<typeof IconChip>[0]['icon']; children?: ReactNode }) {
+export function EmptyState({
+  title,
+  icon,
+  action,
+  children,
+}: {
+  title: string;
+  icon?: Parameters<typeof IconChip>[0]['icon'];
+  /** A way forward, usually a Button, so an empty screen isn't a dead end. */
+  action?: ReactNode;
+  children?: ReactNode;
+}) {
   const colors = useThemeColors();
   return (
     <View style={styles.centered}>
@@ -105,6 +116,7 @@ export function EmptyState({ title, icon, children }: { title: string; icon?: Pa
       ) : (
         children
       )}
+      {action}
     </View>
   );
 }

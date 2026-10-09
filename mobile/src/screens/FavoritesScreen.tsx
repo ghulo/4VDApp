@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Star } from 'phosphor-react-native/src/icons/Star';
 import { useQuery } from '@tanstack/react-query';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ProductCard } from '../components/ProductCard';
-import { EmptyState, ErrorState, Loading } from '../components/ui';
+import { Button, EmptyState, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi } from '../services/api';
 import { spacing, useThemeColors } from '../theme';
@@ -36,7 +37,13 @@ export function FavoritesScreen() {
         refreshing={favorites.isRefetching}
         onRefresh={() => favorites.refetch()}
         ListEmptyComponent={
-          <EmptyState title={t.favorites.none}>{t.favorites.noneHint}</EmptyState>
+          <EmptyState
+            title={t.favorites.none}
+            icon={Star}
+            action={<Button variant="quiet" label={t.favorites.browse} onPress={() => navigation.navigate('Main', { screen: 'Catalog' })} />}
+          >
+            {t.favorites.noneHint}
+          </EmptyState>
         }
       />
     </View>

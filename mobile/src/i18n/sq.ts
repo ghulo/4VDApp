@@ -161,6 +161,7 @@ export const sq: Catalogue = {
   favorites: {
     none: 'Ende pa favorite',
     noneHint: 'Hap një produkt dhe prek "Ruaje te favoritet" për ta mbajtur këtu.',
+    browse: 'Shfleto produktet',
   },
   stockTag: {
     out: 'Mbaroi',

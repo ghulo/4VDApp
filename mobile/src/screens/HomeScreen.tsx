@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.xl },
   // The day on an oat panel under the shop at sunrise; the sale button is clay.
   today: { borderRadius: radius.panel, overflow: 'hidden', padding: spacing.xl, paddingBottom: 0 },
-  todayArt: { width: '100%', maxWidth: 280, alignSelf: 'center' },
+  todayArt: { width: '100%', maxWidth: 168, alignSelf: 'center' },
   todayText: { paddingTop: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
   todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
   todayDetail: { fontFamily: fonts.body, fontSize: 15 },

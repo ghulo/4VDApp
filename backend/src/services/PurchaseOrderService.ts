@@ -42,9 +42,19 @@ export interface NewOrderInput {
 }
 
 export interface ReceiveInput {
-  lines: Array<{ lineId: number; receivedQuantity: number; unitCost: number | null; expiresOn?: string | null }>;
+  /** `unitCost` left out keeps the ordered cost. */
+  lines: Array<{ lineId: number; receivedQuantity: number; unitCost?: number | null; expiresOn?: string | null }>;
   /** Copy the delivered prices onto the products' cost prices. */
   updateCostPrices: boolean;
+}
+
+/** An open order for the team app, which ticks deliveries off at the counter and never sees costs. */
+export interface DeliveryDto {
+  id: number;
+  supplierName: string;
+  note: string | null;
+  createdAt: string;
+  lines: Array<Pick<OrderLineDto, 'id' | 'productId' | 'productName' | 'sku' | 'quantity'>>;
 }
 
 const toLineDto = (line: OrderLineRecord): OrderLineDto => ({
@@ -149,6 +159,19 @@ export class PurchaseOrderService {
     return toOrderDto(order, await this.orderRepository.findLines([id]));
   }
 
+  /** Open orders as the counter sees them: what is coming, without what it costs. */
+  async deliveries(): Promise<DeliveryDto[]> {
+    return (await this.list())
+      .filter((order) => order.status === 'open')
+      .map((order) => ({
+        id: order.id,
+        supplierName: order.supplier.name,
+        note: order.note,
+        createdAt: order.createdAt,
+        lines: order.lines.map(({ id, productId, productName, sku, quantity }) => ({ id, productId, productName, sku, quantity })),
+      }));
+  }
+
   /** Product id → the supplier it was last ordered from. */
   async usualSuppliers(): Promise<Record<number, number>> {
     return Object.fromEntries(await this.orderRepository.lastSupplierByProduct());
@@ -177,8 +200,16 @@ export class PurchaseOrderService {
     return this.get(id);
   }
 
-  /** Ticks off the delivery: what came goes into stock, and the order closes. */
-  async receive(id: number, input: ReceiveInput, actorId: number, now = new Date()): Promise<OrderDto> {
+  /**
+   * Ticks off the delivery: what came goes into stock, and the order closes.
+   * Anyone at the counter can; only managers can change what things cost, so
+   * for everyone else the ordered costs stand and cost prices stay as they are.
+   */
+  async receive(id: number, input: ReceiveInput, actor: { id: number; canSetCosts: boolean }, now = new Date()): Promise<OrderDto> {
+    const actorId = actor.id;
+    if (!actor.canSetCosts) {
+      input = { lines: input.lines.map((line) => ({ ...line, unitCost: undefined })), updateCostPrices: false };
+    }
     await this.transactions.run(async (repos) => {
       const order = await repos.orders.findOrder(id);
       if (!order) throw new NotFoundError(`Order ${id} does not exist`);
@@ -193,7 +224,8 @@ export class PurchaseOrderService {
       for (const line of lines) {
         const delivered = received.get(line.id);
         const quantity = delivered?.receivedQuantity ?? 0;
-        const unitCost = delivered ? delivered.unitCost : line.unit_cost === null ? null : Number(line.unit_cost);
+        const ordered = line.unit_cost === null ? null : Number(line.unit_cost);
+        const unitCost = delivered?.unitCost === undefined ? ordered : delivered.unitCost;
         await repos.orders.setReceived(line.id, quantity, unitCost);
         if (quantity === 0) continue;
         const product = (await repos.products.findById(line.product_id, true))!;

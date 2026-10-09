@@ -24,6 +24,7 @@ export type RootStackParamList = {
   Tabs: undefined;
   Tab: { customerId: number; name: string };
   Carwash: undefined;
+  Deliveries: undefined;
   /** Opened from a product QR code. */
   ScanResult: { code: string };
 };

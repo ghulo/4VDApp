@@ -77,6 +77,39 @@ describe('supplier orders', () => {
     expect(usual[milk]).toBe(freshFoods);
   });
 
+  it('should let anyone at the counter tick off a delivery, without seeing or changing costs', async () => {
+    const freshFoods = await supplier();
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, costPrice: 0.8, stock: 2 });
+    const order = (await request(context.app).post('/api/orders').set(auth()).send({ supplierId: freshFoods, lines: [{ productId: milk, quantity: 12, unitCost: 0.9 }] })).body.data;
+    const employeeToken = await loginAs(context, 'employee');
+
+    expect((await request(context.app).get('/api/orders').set(auth(employeeToken))).status).toBe(403);
+    const deliveries = (await request(context.app).get('/api/orders/deliveries').set(auth(employeeToken))).body.data;
+    expect(deliveries).toEqual([
+      {
+        id: order.id,
+        supplierName: 'Fresh Foods',
+        note: null,
+        createdAt: order.createdAt,
+        lines: [{ id: order.lines[0].id, productId: milk, productName: 'Milk', sku: order.lines[0].sku, quantity: 12 }],
+      },
+    ]);
+
+    // Costs sent from the counter are ignored: the ordered cost stands and the product's cost price stays.
+    const received = await request(context.app)
+      .post(`/api/orders/${order.id}/receive`)
+      .set(auth(employeeToken))
+      .send({ updateCostPrices: true, lines: [{ lineId: order.lines[0].id, receivedQuantity: 10, unitCost: 0.01, expiresOn: '2027-01-15' }] });
+
+    expect(received.body.data).toEqual({ id: order.id, status: 'received' });
+    expect(await stockOf(milk)).toBe(12);
+    expect((await request(context.app).get(`/api/products/${milk}`).set(auth())).body.data.costPrice).toBe(0.8);
+    expect((await request(context.app).get('/api/orders').set(auth())).body.data[0]).toMatchObject({ total: 9 });
+    const dates = (await request(context.app).get('/api/expiry').set(auth(employeeToken)).query({ productId: milk })).body.data;
+    expect(dates).toMatchObject([{ expiresOn: '2027-01-15', quantity: 10 }]);
+    expect((await request(context.app).get('/api/orders/deliveries').set(auth(employeeToken))).body.data).toEqual([]);
+  });
+
   it('should let the owner look but only managers order', async () => {
     const freshFoods = await supplier();
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 0 });

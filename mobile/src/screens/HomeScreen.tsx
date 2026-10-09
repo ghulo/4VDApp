@@ -2,6 +2,7 @@ import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
 import { Coins } from 'phosphor-react-native/src/icons/Coins';
 import { Drop } from 'phosphor-react-native/src/icons/Drop';
 import { Notebook } from 'phosphor-react-native/src/icons/Notebook';
+import { Truck } from 'phosphor-react-native/src/icons/Truck';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,7 +16,8 @@ import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
 import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
-import { approvalsApi, carwashApi, cashApi, countsApi, customersApi, inventoryApi, reportsApi } from '../services/api';
+import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
+import { approvalsApi, carwashApi, cashApi, countsApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
@@ -99,12 +101,13 @@ export function HomeScreen() {
   const owing = tabs.data?.filter((customer) => customer.balance > 0) ?? [];
   const carwash = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today, enabled: sells });
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
+  const deliveries = useQuery({ queryKey: DELIVERIES_QUERY_KEY, queryFn: deliveriesApi.list, enabled: sells });
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
   async function refresh() {
     setIsRefreshing(true);
     await Promise.all(
-      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers'], ['carwash']].map((queryKey) =>
+      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers'], ['carwash'], ['orders']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -248,6 +251,16 @@ export function HomeScreen() {
               detail={carwashDetail(carwash.data?.carwashes, t)}
               onPress={() => navigation.navigate('Carwash')}
             />
+            {/* Only while something is on its way, so Home stays calm the rest of the time. */}
+            {(deliveries.data?.length ?? 0) > 0 && (
+              <JobTile
+                colors={colors}
+                icon={Truck}
+                title={t.home.deliveries}
+                detail={t.home.deliveriesWaiting(deliveries.data!.length)}
+                onPress={() => navigation.navigate('Deliveries')}
+              />
+            )}
           </View>
         )}
 

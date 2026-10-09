@@ -6,6 +6,7 @@ import type {
   CashPlace,
   CashPlaceToday,
   Customer,
+  Delivery,
   ExpiryDate,
   TabEntry,
   Category,
@@ -153,6 +154,13 @@ export const expiryApi = {
     (await apiRequest<ExpiryDate>('/expiry', { method: 'POST', body: input })).data,
   clear: async (id: number) => {
     await apiRequest(`/expiry/${id}/clear`, { method: 'POST' });
+  },
+};
+
+export const deliveriesApi = {
+  list: async () => (await apiRequest<Delivery[]>('/orders/deliveries')).data,
+  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => {
+    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines } });
   },
 };
 

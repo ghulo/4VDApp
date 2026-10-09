@@ -129,6 +129,15 @@ export interface TabEntry {
   by: string | null;
 }
 
+/** A supplier order on its way, as the counter sees it (no costs). */
+export interface Delivery {
+  id: number;
+  supplierName: string;
+  note: string | null;
+  createdAt: string;
+  lines: Array<{ id: number; productId: number; productName: string; sku: string | null; quantity: number }>;
+}
+
 export type CashPlace = 'shop' | 'carwash';
 
 /** An open carwash and what was entered for it today (null when nothing yet). */

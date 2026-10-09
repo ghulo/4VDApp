@@ -15,7 +15,8 @@ export const sq: Catalogue = {
     cashCount: 'Mbyll arkën',
     customerTabs: 'Borxhet',
     carwash: 'Të ardhurat e lavazhit',
-    counting: (what) => `Duke numëruar: ${what.toLowerCase()}`,
+    deliveries: 'Furnizimet',
+    counting:(what) => `Duke numëruar: ${what.toLowerCase()}`,
   },
   tour: {
     staff: [
@@ -110,6 +111,8 @@ export const sq: Catalogue = {
     tabs: 'Borxhet',
     tabsOwed: (amount, people) => `${amount} borxh nga ${people} ${people === 1 ? 'person' : 'persona'}`,
     tabsNone: 'Kush sa ka borxh',
+    deliveries: 'Furnizimet',
+    deliveriesWaiting: (n) => `${n} porosi për t'u pranuar`,
     carwash: 'Të ardhurat e lavazhit',
     carwashDone: 'U futën sot',
     carwashToDo: 'Fut të ardhurat e sotme',
@@ -350,6 +353,19 @@ export const sq: Catalogue = {
     save: 'Shëno datën e skadimit',
     doneTitle: 'U shënua',
     doneMessage: (what, day) => `${what} skadojnë më ${day}. Do të shfaqet në panel një javë më parë.`,
+  },
+  deliveries: {
+    none: 'Asgjë në rrugë',
+    noneDetail: 'Porositë që pronari bën te furnitorët shfaqen këtu, që t’i pranosh kur të vijnë.',
+    which: 'Cila porosi',
+    from: (supplier, day) => `Nga ${supplier}, porositur më ${day}`,
+    intro: 'Krahaso çfarë erdhi me porosinë. Ndrysho numrin kur erdhi më pak dhe shto datën e skadimit për ato që prishen.',
+    ordered: (n) => `Porositur ${n}`,
+    came: 'Sa erdhën',
+    expiresOn: 'Skadon më (opsionale)',
+    save: 'Fute në stok',
+    doneTitle: 'Në stok',
+    doneMessage: (units, supplier) => `${units} copë nga ${supplier} tani janë në stok.`,
   },
   counts: {
     wholeShop: 'I gjithë dyqani',

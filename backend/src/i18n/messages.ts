@@ -128,6 +128,35 @@ export interface ServerMessages {
     changedBody: (email: string) => string;
     changedWarning: string;
   };
+  /** The printed A4 invoice and credit note. */
+  document: {
+    invoice: string;
+    creditNote: string;
+    number: string;
+    issued: string;
+    issuedBy: string;
+    seller: string;
+    buyer: string;
+    nui: string;
+    phone: string;
+    corrects: (number: string) => string;
+    reason: string;
+    fiscalReceipt: string;
+    product: string;
+    quantity: string;
+    unitPrice: string;
+    vatRate: string;
+    net: string;
+    vat: string;
+    total: string;
+    vatAt: (rate: number) => string;
+    netTotal: string;
+    vatTotal: string;
+    grandTotal: string;
+    pricesIncludeVat: string;
+    signedSeller: string;
+    signedBuyer: string;
+  };
 }
 
 const enUndoneKind: Record<UndoneKind, string> = {
@@ -275,6 +304,34 @@ export const en: ServerMessages = {
     changedSubject: 'Your 4VD email was changed',
     changedBody: (email) => `Your 4VD account now logs in with ${email}, and this address won't be used any more.`,
     changedWarning: 'If you didn’t do this, tell the shop owner straight away.',
+  },
+  document: {
+    invoice: 'Invoice',
+    creditNote: 'Credit note',
+    number: 'No.',
+    issued: 'Date',
+    issuedBy: 'Issued by',
+    seller: 'Seller',
+    buyer: 'Buyer',
+    nui: 'NUI',
+    phone: 'Phone',
+    corrects: (number) => `Reverses invoice ${number}`,
+    reason: 'Reason',
+    fiscalReceipt: 'Fiscal receipt',
+    product: 'Product',
+    quantity: 'Qty',
+    unitPrice: 'Unit price',
+    vatRate: 'VAT',
+    net: 'Net',
+    vat: 'VAT',
+    total: 'Total',
+    vatAt: (rate) => `VAT ${rate}%`,
+    netTotal: 'Total without VAT',
+    vatTotal: 'Total VAT',
+    grandTotal: 'Total to pay',
+    pricesIncludeVat: 'Prices include VAT.',
+    signedSeller: 'Issued by (signature)',
+    signedBuyer: 'Received by (signature)',
   },
 };
 
@@ -425,6 +482,34 @@ export const sq: ServerMessages = {
     changedSubject: 'Emaili yt në 4VD u ndryshua',
     changedBody: (email) => `Llogaria jote në 4VD tani hyn me ${email}, dhe kjo adresë nuk do të përdoret më.`,
     changedWarning: 'Nëse nuk e bëre ti këtë, njofto menjëherë pronarin e dyqanit.',
+  },
+  document: {
+    invoice: 'Faturë',
+    creditNote: 'Notë krediti',
+    number: 'Nr.',
+    issued: 'Data',
+    issuedBy: 'Lëshuar nga',
+    seller: 'Shitësi',
+    buyer: 'Blerësi',
+    nui: 'NUI',
+    phone: 'Tel.',
+    corrects: (number) => `Kthen faturën ${number}`,
+    reason: 'Arsyeja',
+    fiscalReceipt: 'Kuponi fiskal',
+    product: 'Produkti',
+    quantity: 'Sasia',
+    unitPrice: 'Çmimi për njësi',
+    vatRate: 'TVSH',
+    net: 'Pa TVSH',
+    vat: 'TVSH',
+    total: 'Gjithsej',
+    vatAt: (rate) => `TVSH ${rate}%`,
+    netTotal: 'Gjithsej pa TVSH',
+    vatTotal: 'Gjithsej TVSH',
+    grandTotal: 'Për pagesë',
+    pricesIncludeVat: 'Çmimet përfshijnë TVSH-në.',
+    signedSeller: 'Lëshoi (nënshkrimi)',
+    signedBuyer: 'Pranoi (nënshkrimi)',
   },
 };
 

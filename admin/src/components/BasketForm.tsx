@@ -3,12 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { customersApi, productsApi, salesApi } from '../services/api';
-import type { Product } from '../services/types';
+import type { DocumentRef, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { codeFromScan } from '../utils/scanLinks';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
-import { Button, Field } from './ui';
+import { PrintDocumentButton } from './PrintDocumentButton';
+import { Button, ButtonLink, Field } from './ui';
 
 const SUGGESTIONS = 6;
 
@@ -40,6 +41,7 @@ export function BasketForm() {
   const [customerId, setCustomerId] = useState('');
   const [notes, setNotes] = useState('');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [invoice, setInvoice] = useState<DocumentRef | null>(null);
 
   const sellable = products.data?.items.filter((product) => product.isActive) ?? [];
   const query = scan.trim().toLowerCase();
@@ -49,6 +51,7 @@ export function BasketForm() {
 
   function add(product: Product) {
     setSavedMessage(null);
+    setInvoice(null);
     setScanError(null);
     setLines((current) => {
       const existing = current.find((line) => line.product.id === product.id);
@@ -100,6 +103,8 @@ export function BasketForm() {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       setSavedMessage(t.basket.saved(result.sales.length, formatMoney(result.total)));
+      setInvoice(result.invoice);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
       setLines([]);
       setPaid('');
       setCustomerId('');
@@ -239,9 +244,19 @@ export function BasketForm() {
         </p>
       )}
       {savedMessage && (
-        <p className="form-success" role="status">
-          {savedMessage}
-        </p>
+        <div className="basket__invoice">
+          <p className="form-success" role="status">
+            {savedMessage} {invoice && t.documents.invoiceReady(invoice.number)}
+          </p>
+          {invoice && (
+            <>
+              <PrintDocumentButton document={invoice} size="sm" />
+              <ButtonLink to={`/documents/${invoice.id}`} variant="ghost" size="sm">
+                {t.documents.open}
+              </ButtonLink>
+            </>
+          )}
+        </div>
       )}
       <Button type="submit" variant="primary" disabled={lines.length === 0 || record.isPending}>
         {record.isPending ? t.sales.recording : t.basket.record(formatMoney(total))}

@@ -2,6 +2,7 @@ import type { DatabaseClient } from '../database/connection.js';
 import { ActivityLogRepository } from './ActivityLogRepository.js';
 import { CarwashRepository } from './CarwashRepository.js';
 import { CashCountRepository } from './CashCountRepository.js';
+import { DocumentRepository } from './DocumentRepository.js';
 import { ExpenseRepository } from './ExpenseRepository.js';
 import { TabRepository } from './TabRepository.js';
 import { PurchaseOrderRepository } from './PurchaseOrderRepository.js';
@@ -46,6 +47,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     tabs: new TabRepository(db),
     orders: new PurchaseOrderRepository(db),
     expiry: new ExpiryRepository(db),
+    documents: new DocumentRepository(db),
   };
 }
 

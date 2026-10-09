@@ -153,6 +153,8 @@ export interface ProductsTable {
   sku: string | null;
   /** Scanned at the counter; set through its own endpoints, not the product form. */
   barcode: ColumnType<string | null, string | null | undefined, string | null>;
+  /** VAT percent included in the price: 18, 8 or 0. */
+  vat_rate: Generated<number>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -497,6 +499,56 @@ export interface SalesLedgerView {
   cost: string | null;
 }
 
+export type DocumentKind = 'invoice' | 'credit_note';
+
+/** Who a document is from or to, copied when it is issued. */
+export interface DocumentParty {
+  name: string;
+  nui: string | null;
+  address: string | null;
+  phone: string | null;
+}
+
+export interface DocumentNumbersTable {
+  kind: DocumentKind;
+  year: number;
+  last_number: number;
+}
+
+export interface DocumentsTable {
+  id: Generated<number>;
+  kind: DocumentKind;
+  number: string;
+  issued_at: ColumnType<Date, Date | undefined, never>;
+  issued_by: number | null;
+  seller: ColumnType<DocumentParty, string, never>;
+  customer_id: number | null;
+  buyer: ColumnType<DocumentParty | null, string | null, never>;
+  /** The invoice a credit note reverses. */
+  corrects_id: number | null;
+  reason: string | null;
+  net_total: Decimal;
+  vat_total: Decimal;
+  total: Decimal;
+  /** The only field that changes after issuing. */
+  fiscal_receipt_no: string | null;
+}
+
+export interface DocumentLinesTable {
+  id: Generated<number>;
+  document_id: number;
+  sale_id: number;
+  return_id: number | null;
+  product_name: string;
+  quantity: number;
+  /** VAT-inclusive. */
+  unit_price: Decimal;
+  vat_rate: number;
+  net_amount: Decimal;
+  vat_amount: Decimal;
+  total: Decimal;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -535,6 +587,9 @@ export interface Database {
   purchase_order_lines: PurchaseOrderLinesTable;
   expiry_dates: ExpiryDatesTable;
   sales_ledger: SalesLedgerView;
+  document_numbers: DocumentNumbersTable;
+  documents: DocumentsTable;
+  document_lines: DocumentLinesTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

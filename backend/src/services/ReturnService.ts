@@ -6,6 +6,7 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import type { PublicUser } from '../types/auth.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { assertPending, closePendingAlerts, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
+import type { DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 import type { AppSettings, SettingsService } from './SettingsService.js';
@@ -68,6 +69,7 @@ export class ReturnService {
     private readonly returnRepository: ReturnRepository,
     private readonly settingsService: SettingsService,
     private readonly transactions: TransactionManager,
+    private readonly documents: DocumentService,
   ) {}
 
   async request(saleId: number, input: ReturnInput, user: PublicUser): Promise<ReturnDto> {
@@ -103,7 +105,7 @@ export class ReturnService {
       });
 
       if (reasons.length === 0) {
-        await approveReturn(repos, id, user.id);
+        await approveReturn(repos, id, user.id, this.documents);
       } else {
         await notifyAdminsOfPending(repos, 'return', { type: 'return', id }, (t) =>
           t.returnPending({ name: user.name, what, reasons: approvalReasons(reasonInput, settings, t) }),
@@ -118,7 +120,7 @@ export class ReturnService {
     await this.transactions.run(async (repos) => {
       assertPending(await this.lock(repos, id), 'return');
       await closePendingAlerts(repos, { type: 'return', id });
-      await approveReturn(repos, id, admin.id);
+      await approveReturn(repos, id, admin.id, this.documents);
       const item = (await repos.returns.findById(id))!;
       const what = `${item.quantity} × ${item.product_name}`;
       await repos.activityLog.create({
@@ -187,9 +189,10 @@ function validate(sale: LockedSale, input: ReturnInput): number {
 
 /**
  * Apply an approved return: resellable units go back on the shelf; damaged
- * ones become an approved write-off so the loss is valued. Must run in a transaction.
+ * ones become an approved write-off so the loss is valued; the refund gets a
+ * credit note against the sale's invoice. Must run in a transaction.
  */
-async function approveReturn(repos: TransactionalRepositories, id: number, decidedBy: number): Promise<void> {
+async function approveReturn(repos: TransactionalRepositories, id: number, decidedBy: number, documents: DocumentService): Promise<void> {
   const item = await repos.returns.findById(id);
   if (!item) throw new NotFoundError(`Return ${id} does not exist`);
 
@@ -216,6 +219,14 @@ async function approveReturn(repos: TransactionalRepositories, id: number, decid
     await approveWriteOff(repos, writeOff.id, decidedBy, { removeStock: false });
   }
   await repos.returns.decide(id, { status: 'approved', decidedBy, note: null });
+  await documents.followUp(repos, 'credit_note', {
+    saleId: item.sale_id,
+    returnId: id,
+    quantity: item.quantity,
+    total: toMoney(item.refund_amount),
+    reason: item.notes,
+    issuedBy: decidedBy,
+  });
 }
 
 export function toReturnDto(row: ReturnRecord): ReturnDto {

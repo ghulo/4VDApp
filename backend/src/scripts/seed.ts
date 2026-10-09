@@ -3,8 +3,10 @@ import 'dotenv/config';
 import { sql } from 'kysely';
 import { loadConfig } from '../config/env.js';
 import { createDatabase, type DatabaseClient } from '../database/connection.js';
+import { DocumentRepository } from '../repositories/DocumentRepository.js';
 import { SalesRepository } from '../repositories/SalesRepository.js';
 import { TransactionManager } from '../repositories/TransactionManager.js';
+import { DocumentService } from '../services/DocumentService.js';
 import { SalesService } from '../services/SalesService.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
@@ -122,14 +124,16 @@ async function seedDemoProducts(db: DatabaseClient): Promise<void> {
  * A month of believable sales, recorded through the real SalesService so
  * stock, history and alerts stay consistent. Skipped if any sales exist.
  */
-async function seedDemoSales(db: DatabaseClient): Promise<void> {
+async function seedDemoSales(db: DatabaseClient, timeZone: string): Promise<void> {
   const existing = await db.selectFrom('sales').select('id').limit(1).executeTakeFirst();
   if (existing) return;
 
   const admin = await db.selectFrom('users').select('id').where('role', '=', 'admin').orderBy('id').executeTakeFirst();
   if (!admin) return;
 
-  const salesService = new SalesService(new SalesRepository(db), new TransactionManager(db));
+  const transactions = new TransactionManager(db);
+  const documents = new DocumentService(new DocumentRepository(db), transactions, timeZone);
+  const salesService = new SalesService(new SalesRepository(db), transactions, documents);
   const products = await db
     .selectFrom('products as p')
     .innerJoin('inventory as i', 'i.product_id', 'p.id')
@@ -174,7 +178,7 @@ async function main(): Promise<void> {
     if (process.argv.includes('--demo')) {
       await seedDemoAccounts(db, config.nodeEnv);
       await seedDemoProducts(db);
-      await seedDemoSales(db);
+      await seedDemoSales(db, config.shopTimeZone);
     }
   } finally {
     await db.destroy();

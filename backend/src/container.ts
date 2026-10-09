@@ -7,6 +7,7 @@ import { CategoryRepository } from './repositories/CategoryRepository.js';
 import { ActivityLogService } from './services/ActivityLogService.js';
 import { FavoriteRepository } from './repositories/FavoriteRepository.js';
 import { NotificationRepository } from './repositories/NotificationRepository.js';
+import { DocumentRepository } from './repositories/DocumentRepository.js';
 import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
@@ -21,6 +22,7 @@ import { ApprovalService } from './services/ApprovalService.js';
 import { AnalyticsService } from './services/AnalyticsService.js';
 import { FavoriteService } from './services/FavoriteService.js';
 import { NotificationService } from './services/NotificationService.js';
+import { DocumentService } from './services/DocumentService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
 import { InventoryRepository } from './repositories/InventoryRepository.js';
@@ -138,7 +140,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
-  const salesService = new SalesService(salesRepository, transactions);
+  const documentService = new DocumentService(new DocumentRepository(db), transactions, config.shopTimeZone);
+  const salesService = new SalesService(salesRepository, transactions, documentService);
   const analyticsService = new AnalyticsService(
     salesRepository,
     inventoryRepository,
@@ -158,7 +161,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
   const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
-  const returnService = new ReturnService(returnRepository, settingsService, transactions);
+  const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
@@ -166,6 +169,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     transactions,
     undoRepository,
     new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
+    documentService,
   );
   const tabRepository = new TabRepository(db);
   const tabService = new TabService(tabRepository, transactions);
@@ -297,6 +301,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     inventoryService,
     pricingService,
     salesService,
+    documentService,
     analyticsService,
     userService,
     notificationService,

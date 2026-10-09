@@ -58,6 +58,8 @@ export interface Product {
   isActive: boolean;
   category: { id: number; name: string };
   price: number;
+  /** Percent of VAT included in the price: 18, 8 or 0. */
+  vatRate: VatRate;
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
@@ -76,6 +78,7 @@ export interface ProductInput {
   imageUrl: string | null;
   sku: string | null;
   isActive: boolean;
+  vatRate: VatRate;
   bulkPricingTiers: PricingTier[];
   stock?: number;
   reorderLevel?: number;
@@ -123,6 +126,57 @@ export interface Sale {
   notes: string | null;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
+  /** The newest invoice the sale is on; null for sales from before invoices. */
+  invoice: DocumentRef | null;
+}
+
+/** Kosovo's VAT rates, in percent. */
+export const VAT_RATES = [18, 8, 0] as const;
+export type VatRate = (typeof VAT_RATES)[number];
+
+export type DocumentKind = 'invoice' | 'credit_note';
+
+export interface DocumentRef {
+  id: number;
+  number: string;
+}
+
+export interface DocumentParty {
+  name: string;
+  nui: string | null;
+  address: string | null;
+  phone: string | null;
+}
+
+/** An invoice or credit note. Never changes once issued, except the fiscal receipt number. */
+export interface SalesDocument extends DocumentRef {
+  kind: DocumentKind;
+  issuedAt: string;
+  issuedBy: string | null;
+  seller: DocumentParty;
+  buyer: DocumentParty | null;
+  /** The invoice a credit note reverses. */
+  corrects: DocumentRef | null;
+  reason: string | null;
+  netTotal: number;
+  vatTotal: number;
+  total: number;
+  fiscalReceiptNo: string | null;
+}
+
+export interface SalesDocumentDetail extends SalesDocument {
+  lines: Array<{
+    saleId: number;
+    returnId: number | null;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    vatRate: number;
+    netAmount: number;
+    vatAmount: number;
+    total: number;
+  }>;
+  vatByRate: Array<{ rate: number; net: number; vat: number }>;
 }
 
 export interface Dashboard {

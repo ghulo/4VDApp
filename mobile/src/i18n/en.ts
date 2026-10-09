@@ -241,6 +241,9 @@ export const en = {
     giveBack: (amount: string) => `Give back ${amount}`,
     short: (amount: string) => `${amount} short`,
     soldBasket: (products: number, amount: string) => `Sold ${products} ${products === 1 ? 'product' : 'products'} for ${amount}.`,
+    invoiceReady: (number: string) => ` Invoice ${number}.`,
+    printInvoice: 'Print or save invoice as PDF',
+    printBlocked: 'The browser blocked the new tab. Allow pop-ups for 4VD and try again.',
   },
   returns: {
     resellable: 'Back on the shelf',

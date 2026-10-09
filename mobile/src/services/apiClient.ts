@@ -117,20 +117,31 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   }
 }
 
+/** Send a request, refreshing the session once if the access token expired. */
+async function sendWithRefresh(path: string, options: RequestOptions): Promise<Response> {
+  const response = await send(path, options);
+  if (response.status !== 401 || !refreshToken || path.startsWith('/auth/')) return response;
+  if (await refreshSession()) return send(path, options);
+  await tokenStore.clear();
+  onSessionExpired();
+  return response;
+}
+
+/** A page the API sends as text (e.g. a printable invoice), not JSON. */
+export async function apiText(path: string): Promise<string> {
+  const response = await sendWithRefresh(path, {});
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiResponse<unknown> | null;
+    throw new ApiError(body?.message ?? `The server answered with status ${response.status}`, response.status);
+  }
+  return response.text();
+}
+
 export async function apiRequest<TData>(
   path: string,
   options: RequestOptions = {},
 ): Promise<{ data: TData; meta?: PaginationMeta }> {
-  let response = await send(path, options);
-
-  if (response.status === 401 && refreshToken && !path.startsWith('/auth/')) {
-    if (await refreshSession()) {
-      response = await send(path, options);
-    } else {
-      await tokenStore.clear();
-      onSessionExpired();
-    }
-  }
+  const response = await sendWithRefresh(path, options);
 
   const body = (await response.json().catch(() => null)) as ApiResponse<TData> | null;
   if (!response.ok || !body?.success) {

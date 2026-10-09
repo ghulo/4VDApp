@@ -237,6 +237,9 @@ export const sq: Catalogue = {
     giveBack: (amount) => `Kthe kusur ${amount}`,
     short: (amount) => `Mungojnë ${amount}`,
     soldBasket: (products, amount) => `U shitën ${products} ${products === 1 ? 'produkt' : 'produkte'} për ${amount}.`,
+    invoiceReady: (number) => ` Fatura ${number}.`,
+    printInvoice: 'Printo ose ruaj faturën si PDF',
+    printBlocked: 'Shfletuesi e bllokoi skedën e re. Lejo dritaret për 4VD dhe provo sërish.',
   },
   returns: {
     resellable: 'Kthehet në raft',

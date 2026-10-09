@@ -5,7 +5,9 @@ import type { UndoneKind } from '../../i18n/messages.js';
 import type { TransactionalRepositories, TransactionManager } from '../../repositories/TransactionManager.js';
 import type { UndoRepository, UndoRow, UndoState } from '../../repositories/UndoRepository.js';
 import type { PublicUser } from '../../types/auth.js';
+import type { DocumentService } from '../DocumentService.js';
 import { applyStockChange } from '../InventoryService.js';
+import { toMoney } from '../mappers.js';
 import type { EditReverts } from './editReverts.js';
 import { canUndo, type UndoTarget, undoTargetOf } from './undoRules.js';
 
@@ -27,6 +29,11 @@ interface UndoPlan {
   stock: { productId: number; delta: number } | null;
   /** Kind-specific refusals, checked after the hierarchy and the undone state. */
   check?: (mode: Mode) => Promise<void>;
+  /**
+   * Money that was on a document: undoing the money side issues a credit note,
+   * putting it back issues an invoice again. Issued documents are never edited.
+   */
+  document?: { saleId: number; returnId: number | null; quantity: number; total: number; undoIssues: 'credit_note' | 'invoice' };
 }
 
 /** Kinds whose undo puts old values back through the edit services (see editReverts). */
@@ -43,6 +50,7 @@ export class UndoService {
     private readonly transactions: TransactionManager,
     private readonly undoRepository: UndoRepository,
     private readonly edits: EditReverts,
+    private readonly documents: DocumentService,
   ) {}
 
   undo(entryId: number, actor: PublicUser, note: string | null): Promise<void> {
@@ -67,6 +75,11 @@ export class UndoService {
 
       const effect = plan.stock ? await moveStock(repos, plan, mode, actor.id) : null;
       for (const row of plan.rows) await repos.undo.mark(row, mode === 'undo' ? { by: actor.id, note } : null);
+      if (plan.document) {
+        const { undoIssues, ...lines } = plan.document;
+        const kind = mode === 'undo' ? undoIssues : undoIssues === 'credit_note' ? 'invoice' : 'credit_note';
+        await this.documents.followUp(repos, kind, { ...lines, reason: note, issuedBy: actor.id });
+      }
       await logAndTell(repos, { entry, target, actor, mode, note, effect, ownerId: plan.ownerId, kind: plan.kind, what: plan.what });
     });
   }
@@ -182,6 +195,13 @@ async function planFor(
         what: `${sale.quantity_sold} × ${sale.product_name}`,
         label: `sale #${sale.id}`,
         stock: { productId: sale.product_id, delta: sale.quantity_sold },
+        document: {
+          saleId: sale.id,
+          returnId: null,
+          quantity: sale.quantity_sold,
+          total: toMoney(sale.total_amount),
+          undoIssues: 'credit_note',
+        },
         check: async (mode) => {
           if (mode === 'undo' && (await repos.undo.standingReturns(sale.id)) > 0) {
             throw new ConflictError('This sale has a return waiting or approved. Undo the return first.');
@@ -203,6 +223,14 @@ async function planFor(
         what: `${item.quantity} × ${item.product_name}`,
         label: `return #${item.id}`,
         stock: item.condition === 'resellable' ? { productId: item.product_id, delta: -item.quantity } : null,
+        // Undoing a refund charges the customer again.
+        document: {
+          saleId: item.sale_id,
+          returnId: item.id,
+          quantity: item.quantity,
+          total: toMoney(item.refund_amount),
+          undoIssues: 'invoice',
+        },
         check: async (mode) => {
           if (mode !== 'restore') return;
           const sale = await repos.returns.lockSale(item.sale_id);

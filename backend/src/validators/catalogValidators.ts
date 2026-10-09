@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MANUAL_STOCK_REASONS } from '../constants/stock.js';
+import { VAT_RATES } from '../services/documents/vat.js';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
 import { booleanQuerySchema, idSchema, optionalText, paginationSchema, trimmedString } from './validate.js';
 
@@ -46,6 +47,11 @@ const productFields = {
   sku: optionalText(100),
   isActive: z.boolean().default(true),
   bulkPricingTiers: pricingTiersSchema.optional(),
+  /** Percent of VAT in the price; left out keeps the current one (18% for a new product). */
+  vatRate: z
+    .number()
+    .refine((rate) => (VAT_RATES as readonly number[]).includes(rate), `VAT must be one of ${VAT_RATES.join(', ')}%`)
+    .optional(),
 };
 
 /** What a scanner or a person types: digits and letters, no spaces at the ends. */

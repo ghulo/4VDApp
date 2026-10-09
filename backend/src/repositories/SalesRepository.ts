@@ -22,11 +22,23 @@ export interface SaleRecord {
   notes: string | null;
   /** Units returned or waiting for a return decision. */
   returned_quantity: string;
+  invoice_id: number | null;
+  invoice_number: string | null;
 }
 
 const returnedQuantity = sql<string>`(
   select coalesce(sum(r.quantity), 0) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null
 )`.as('returned_quantity');
+
+/** The newest invoice the sale is on (a restored sale is invoiced again). */
+const lastInvoice = sql<{ id: number; number: string } | null>`(
+  select json_build_object('id', d.id, 'number', d.number) from document_lines dl
+  join documents d on d.id = dl.document_id
+  where dl.sale_id = s.id and d.kind = 'invoice'
+  order by d.id desc limit 1
+)`;
+const invoiceId = sql<number | null>`(${lastInvoice} ->> 'id')::int`.as('invoice_id');
+const invoiceNumber = sql<string | null>`${lastInvoice} ->> 'number'`.as('invoice_number');
 
 function ledgerRange(range?: DateRange) {
   return range ? sql`l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}` : sql`true`;
@@ -69,6 +81,8 @@ export class SalesRepository {
           's.sale_date',
           's.notes',
           returnedQuantity,
+          invoiceId,
+          invoiceNumber,
         ])
         .orderBy('s.sale_date', 'desc')
         .orderBy('s.id', 'desc')
@@ -125,6 +139,8 @@ export class SalesRepository {
         's.sale_date',
         's.notes',
         returnedQuantity,
+        invoiceId,
+        invoiceNumber,
       ])
       .where('s.id', '=', id)
       .executeTakeFirst();

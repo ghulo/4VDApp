@@ -4,6 +4,7 @@ import type { SaleRecord, SalesRepository } from '../repositories/SalesRepositor
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
+import type { DocumentRef, DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
@@ -21,6 +22,8 @@ export interface SaleDto {
   notes: string | null;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
+  /** The newest invoice the sale is on; null for sales from before documents. */
+  invoice: DocumentRef | null;
 }
 
 export interface RecordSaleInput {
@@ -51,6 +54,7 @@ export class SalesService {
   constructor(
     private readonly salesRepository: SalesRepository,
     private readonly transactions: TransactionManager,
+    private readonly documents: DocumentService,
   ) {}
 
   async list(query: SaleQuery) {
@@ -75,7 +79,11 @@ export class SalesService {
       throw new ValidationError('saleDate cannot be in the future');
     }
 
-    const saleId = await this.transactions.run((repos) => this.recordInTransaction(repos, input, soldBy));
+    const saleId = await this.transactions.run(async (repos) => {
+      const id = await this.recordInTransaction(repos, input, soldBy);
+      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, issuedBy: soldBy });
+      return id;
+    });
 
     const sale = await this.salesRepository.findById(saleId);
     return toSaleDto(sale!);
@@ -83,18 +91,20 @@ export class SalesService {
 
   /**
    * Several products sold together, as one checkout: each becomes its own sale
-   * (so returns, undo and reports work per product), all saved or none.
+   * (so returns, undo and reports work per product), all on one invoice, all
+   * saved or none.
    */
-  async recordBasket(input: BasketInput, soldBy: number): Promise<{ sales: SaleDto[]; total: number }> {
-    const ids = await this.transactions.run(async (repos) => {
+  async recordBasket(input: BasketInput, soldBy: number): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
+    const { saleIds, invoice } = await this.transactions.run(async (repos) => {
       const saleIds: number[] = [];
       for (const item of input.items) {
         saleIds.push(await this.recordInTransaction(repos, { ...item, notes: input.notes, customerId: input.customerId }, soldBy));
       }
-      return saleIds;
+      const invoice = await this.documents.invoiceSales(repos, { saleIds, customerId: input.customerId ?? null, issuedBy: soldBy });
+      return { saleIds, invoice };
     });
-    const sales = (await Promise.all(ids.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));
-    return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)) };
+    const sales = (await Promise.all(saleIds.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));
+    return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice };
   }
 
   private async recordInTransaction(repos: TransactionalRepositories, input: RecordSaleInput, soldBy: number): Promise<number> {
@@ -170,5 +180,6 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     saleDate: sale.sale_date.toISOString(),
     notes: sale.notes,
     returnedQuantity: Number(sale.returned_quantity),
+    invoice: sale.invoice_id === null ? null : { id: sale.invoice_id, number: sale.invoice_number! },
   };
 }

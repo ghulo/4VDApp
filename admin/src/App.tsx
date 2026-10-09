@@ -25,6 +25,8 @@ import { ProductFormPage } from './pages/ProductFormPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SalesPage } from './pages/SalesPage';
+import { DocumentDetailPage } from './pages/DocumentDetailPage';
+import { DocumentsPage } from './pages/DocumentsPage';
 import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
 import { ExpensesPage } from './pages/ExpensesPage';
@@ -91,6 +93,8 @@ function App() {
                 <Route path="products/:id" element={<ProductFormPage />} />
                 <Route path="categories" element={<CategoriesPage />} />
                 <Route path="sales" element={<SalesPage />} />
+                <Route path="documents" element={<DocumentsPage />} />
+                <Route path="documents/:id" element={<DocumentDetailPage />} />
                 <Route path="carwash" element={<CarwashPage />} />
                 <Route path="cash" element={<CashPage />} />
                 <Route path="expenses" element={<ExpensesPage />} />

@@ -1,5 +1,9 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type {
+  DocumentKind,
+  DocumentRef,
+  SalesDocument,
+  SalesDocumentDetail,
   ActivityEntry,
   ApprovalStatus,
   ApprovalSummary,
@@ -238,6 +242,26 @@ export interface SaleListQuery {
   soldBy?: number;
 }
 
+export interface DocumentListQuery {
+  page: number;
+  kind?: DocumentKind;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export const documentsApi = {
+  async list(query: DocumentListQuery) {
+    const { data, meta } = await apiRequest<SalesDocument[]>('/documents', { query: { limit: 20, ...query } });
+    return { items: data, meta: meta! };
+  },
+  get: async (id: number) => (await apiRequest<SalesDocumentDetail>(`/documents/${id}`)).data,
+  /** The printable A4 page, in the reader's language unless another is asked for. */
+  printPage: async (id: number) => (await apiDownload(`/documents/${id}/print`)).blob.text(),
+  setFiscalReceipt: async (id: number, fiscalReceiptNo: string | null) =>
+    (await apiRequest<SalesDocumentDetail>(`/documents/${id}/fiscal-receipt`, { method: 'PUT', body: { fiscalReceiptNo } })).data,
+};
+
 export const salesApi = {
   async list(query: SaleListQuery) {
     const { data, meta } = await apiRequest<{ sales: Sale[]; totalRevenue: number }>('/sales', {
@@ -246,7 +270,7 @@ export const salesApi = {
     return { items: data.sales, totalRevenue: data.totalRevenue, meta: meta! };
   },
   recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
-    (await apiRequest<{ sales: Sale[]; total: number }>('/sales/basket', { method: 'POST', body: input })).data,
+    (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };

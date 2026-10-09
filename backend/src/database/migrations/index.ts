@@ -19,6 +19,7 @@ import * as expiryDates from './017_expiry_dates.js';
 import * as barcodes from './018_barcodes.js';
 import * as nui from './019_nui.js';
 import * as carwashes from './020_carwashes.js';
+import * as documents from './021_documents.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -47,4 +48,5 @@ export const migrations: Record<string, Migration> = {
   '018_barcodes': barcodes,
   '019_nui': nui,
   '020_carwashes': carwashes,
+  '021_documents': documents,
 };

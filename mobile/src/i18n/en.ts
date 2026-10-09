@@ -110,6 +110,7 @@ export const en = {
     closeDrawer: 'Close the drawer',
     drawerCounted: 'Counted today',
     drawerToCount: 'Count the cash at closing',
+    drawersSome: (done: number, total: number) => `${done} of ${total} drawers counted`,
     tabs: 'Tabs',
     tabsOwed: (amount: string, people: number) => `${amount} owed by ${people} ${people === 1 ? 'person' : 'people'}`,
     tabsNone: 'Who owes what',

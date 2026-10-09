@@ -335,6 +335,7 @@ export const sq: Catalogue = {
     waitingForYou: 'presin për ty',
     carwashToday: 'në lavazh',
     carwashMissing: 'Lavazhi nuk është futur ende',
+    carwashSome: (done: number, total: number) => `u futën për ${done} nga ${total}`,
     toRestock: 'për të furnizuar',
     severity: { urgent: 'Urgjente', warning: 'Kontrollo', info: 'Ide' },
     attention: 'Kërkon vëmendjen tënde',

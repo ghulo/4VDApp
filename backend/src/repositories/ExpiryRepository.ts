@@ -11,6 +11,8 @@ export interface ExpiryRecord {
   note: string | null;
   created_by_name: string | null;
   cleared_at: Date | null;
+  /** Units of the product on the shelf right now. */
+  stock: number;
 }
 
 export class ExpiryRepository {
@@ -21,6 +23,7 @@ export class ExpiryRepository {
       .selectFrom('expiry_dates as x')
       .innerJoin('products as p', 'p.id', 'x.product_id')
       .leftJoin('users as u', 'u.id', 'x.created_by')
+      .leftJoin('inventory as i', 'i.product_id', 'x.product_id')
       .select([
         'x.id',
         'x.product_id',
@@ -30,14 +33,14 @@ export class ExpiryRepository {
         'x.note',
         'u.name as created_by_name',
         'x.cleared_at',
+        sql<number>`coalesce(i.quantity_on_hand, 0)`.as('stock'),
       ]);
   }
 
-  /** Not yet dealt with, soonest first; for one product or every product expiring by `until`. */
-  async findOpen(filter: { productId?: number; until?: string }): Promise<ExpiryRecord[]> {
+  /** Not yet dealt with, soonest first; for one product or all of them. */
+  async findOpen(filter: { productId?: number }): Promise<ExpiryRecord[]> {
     let query = this.baseQuery().where('x.cleared_at', 'is', null);
     if (filter.productId !== undefined) query = query.where('x.product_id', '=', filter.productId);
-    if (filter.until !== undefined) query = query.where('x.expires_on', '<=', filter.until);
     return query.orderBy('x.expires_on').orderBy('x.id').execute();
   }
 

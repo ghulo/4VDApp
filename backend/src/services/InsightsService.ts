@@ -143,7 +143,7 @@ export class InsightsService {
       insights.push({
         kind: 'expiring',
         severity: expiry.daysLeft <= EXPIRY_URGENT_DAYS ? 'urgent' : 'warning',
-        title: t.insight.expiringTitle({ product: expiry.productName, quantity: expiry.quantity, daysLeft: expiry.daysLeft }),
+        title: t.insight.expiringTitle({ product: expiry.productName, quantity: expiry.remaining, daysLeft: expiry.daysLeft }),
         detail: t.insight.expiringDetail,
         productId: expiry.productId,
       });

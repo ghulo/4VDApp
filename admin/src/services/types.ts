@@ -241,7 +241,7 @@ export interface LaunchStep {
   key: LaunchStepKey;
   /** Null when the app can't see it (backups live on GitHub and R2). */
   done: boolean | null;
-  facts?: { wipedAt?: string; products?: number; sales?: number; employees?: number };
+  facts?: { wipedAt?: string; products?: number; sales?: number; employees?: number; lastBackupAt?: string };
 }
 
 export interface CarwashTotals {

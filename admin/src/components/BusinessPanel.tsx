@@ -82,6 +82,7 @@ function BusinessForm({ initial }: { initial: Business }) {
   return (
     <form onSubmit={handleSubmit}>
       <Card
+        id="shop"
         title={t.business.title}
         description={t.business.description}
         footer={

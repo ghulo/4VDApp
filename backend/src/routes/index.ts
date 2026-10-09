@@ -26,6 +26,7 @@ import {
   createApprovalRoutes,
   createReturnRoutes, createSettingsRoutes, createStockCountRoutes, createWriteOffRoutes } from './approvalRoutes.js';
 import { createAssistantRoutes } from './assistantRoutes.js';
+import { createInternalRoutes } from './internalRoutes.js';
 import { createInviteRoutes } from './inviteRoutes.js';
 import { createMeRoutes } from './meRoutes.js';
 import { createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
@@ -57,6 +58,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/orders', createOrderRoutes(container));
   router.use('/expiry', createExpiryRoutes(container));
   router.use('/exports', createExportsRoutes(container));
+  router.use('/internal', createInternalRoutes(container));
   router.use('/settings', createSettingsRoutes(container));
   router.use('/write-offs', createWriteOffRoutes(container));
   router.use('/returns', createReturnRoutes(container));

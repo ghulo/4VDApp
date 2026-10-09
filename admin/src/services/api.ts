@@ -471,6 +471,8 @@ export const settingsApi = {
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
+  /** Emails the signed-in developer; `sent` is false (with a `reason`) when real emails don't work yet. */
+  testEmail: async () => (await apiRequest<{ to: string; sent: boolean; reason: string | null }>('/settings/test-email', { method: 'POST' })).data,
   wipePreview: async () => (await apiRequest<WipeReport>('/settings/wipe-preview')).data,
   /** Deletes all test data; `confirm` has to be the typed phrase. */
   wipe: async (confirm: string) => (await apiRequest<WipeReport>('/settings/wipe', { method: 'POST', body: { confirm } })).data,

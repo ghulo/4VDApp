@@ -20,6 +20,11 @@ export function createSettingsController(settingsService: SettingsService, launc
       sendSuccess(res, await launchService.checklist());
     },
 
+    /** Emails the signed-in developer, so they can see real email work. */
+    async testEmail(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await launchService.testEmail(req.user!.email));
+    },
+
     async wipePreview(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await launchService.wipePreview());
     },

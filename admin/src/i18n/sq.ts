@@ -886,15 +886,27 @@ export const sq: Catalogue = {
     wipedAt: (when: string) => `U fshinë më ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
       `${p.products} produkte dhe ${p.sales} shitje janë ende të dhëna prove. Përdor Fshi të gjitha të dhënat në fund të kësaj faqeje. Llogaritë e zhvilluesve mbeten.`,
-    shopDetailsHow: 'Te Dyqani yt, më poshtë.',
-    ownerHow: 'Ftoje nga Njerëzit me rolin Pronar. Ai sheh gjithçka dhe vendos për kërkesat.',
-    teamHow: 'Ftoji nga Njerëzit me rolin Punonjës. Ata përdorin aplikacionin e ekipit te app.4vd.app.',
+    shopDetailsHow: 'Adresa, telefoni dhe NUI futen te Dyqani yt, pak më poshtë.',
+    ownerHow: 'Butoni hap formën e ftesës me rolin Pronar të zgjedhur. Ai sheh gjithçka dhe vendos për kërkesat.',
+    teamHow: 'Butoni hap formën e ftesës me rolin Punonjës të zgjedhur. Ata përdorin aplikacionin e ekipit te app.4vd.app.',
     teamCount: (count: number) => `${count} punonjës deri tani.`,
     weeklyEmailHow: 'Është aktiv, përveç nëse pronari e ka çaktivizuar te faqja e Profilit.',
-    emailsHow: 'Vendos RESEND_API_KEY dhe EMAIL_FROM (një adresë te 4vd.app) te Render. Deri atëherë ftesat dhe rivendosjet e fjalëkalimit shkojnë vetëm te regjistri.',
-    phoneAlertsHow: 'Vendos çelësat VAPID te Render që njoftimet të arrijnë te shfletuesit dhe telefonat.',
+    emailsHow:
+      'Deri sa RESEND_API_KEY dhe EMAIL_FROM të vendosen te Render, ftesat dhe rivendosjet e fjalëkalimit shkojnë vetëm te regjistri. Hapat janë te docs/DEPLOYMENT.md, "Launch setup". Pastaj shtyp butonin për një email prove të vërtetë.',
+    phoneAlertsHow:
+      'Në kompjuterin tënd, te dosja backend, ekzekuto: npm run vapid -- email@tendin. Ngjit tri rreshtat që shfaq te 4vd-api në Render (Environment). Pastaj aktivizo njoftimet te Profili yt. Detaje te docs/DEPLOYMENT.md.',
     backupsHow:
-      'Shto sekretet e R2 dhe të kopjes rezervë te GitHub, pastaj ekzekuto një herë "Database backup" nga skeda Actions dhe shiko që del jeshile. Hapat janë te docs/DEPLOYMENT.md.',
+      'Shto sekretet e R2 dhe të kopjes rezervë te GitHub, ekzekuto një herë "Database backup" nga skeda Actions, dhe shto BACKUP_PING_TOKEN si te GitHub ashtu edhe te Render që ky hap të shënohet vetë. Fushat e sakta janë te docs/DEPLOYMENT.md, "Launch setup".',
+    backupLast: (when: string) => `Kopja e fundit përfundoi më ${when}. Shënohet përsëri çdo javë që kopja ekzekutohet.`,
+    actions: {
+      wipe: 'Shko te Fshi të gjitha të dhënat',
+      shop: 'Plotëso dyqanin tim',
+      inviteOwner: 'Fto pronarin',
+      inviteTeam: 'Fto një punonjës',
+      testEmail: 'Dërgo një email prove',
+      sending: 'Duke dërguar…',
+      testEmailSent: (to: string) => `U dërgua te ${to}. Kontrollo kutinë (dhe spam).`,
+    },
   },
   wipe: {
     title: 'Fshi të gjitha të dhënat',

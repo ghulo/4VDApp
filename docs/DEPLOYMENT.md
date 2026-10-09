@@ -79,8 +79,36 @@ Google Cloud Console → **APIs & Services → Credentials → Create credential
 
 **8. Before real use**
 - Render → `4vd-api` → **Upgrade** to Starter (always on, so alerts and the daily summary go out), and upgrade `4vd-db` to a paid plan. Then change `plan:` in `render.yaml` to match (ask Claude), or the Blueprint may put them back.
-- Wipe the test data (ask Claude; it is deliberate and can't be undone).
+- Wipe the test data: dashboard → **Settings → Wipe all data** (developer only; you type `wipe 4vd.app` to confirm; it can't be undone).
 - First admin on a fresh database: in `4vd-api` → **Environment**, add `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (12+ characters) and `SEED_ADMIN_NAME`; it is created on start-up. Log in, then delete those three settings. Demo data and demo logins are refused in production.
+
+**9. Launch setup, step by step** (the things only you can do; Settings → Before launch ticks each one off)
+
+*Real emails.* Do step 6 above, then in the dashboard press **Send me a test email** on the "Send real emails" step. If Resend refuses, its message shows right there (usually the `4vd.app` domain is not verified yet).
+
+*Browser and phone alerts.* On your computer, in `backend/`, run `npm run vapid -- you@example.com` (use your own email). It prints three lines. In Render:
+
+| Where | Field | Value |
+|---|---|---|
+| Render → `4vd-api` → **Environment** → **Add Environment Variable** | Key `VAPID_PUBLIC_KEY` | the first line's value (after `=`) |
+| same | Key `VAPID_PRIVATE_KEY` | the second line's value (keep it secret) |
+| same | Key `VAPID_SUBJECT` | the third line's value (`mailto:you@example.com`) |
+
+Click **Save, rebuild and deploy**. Never run `npm run vapid` again afterwards: new keys would make everyone turn alerts on again. Then in the dashboard open your **Profile** and switch alerts on for this browser.
+
+*Weekly backup.* In GitHub → the 4VD repo → **Settings → Secrets and variables → Actions → New repository secret**, add each of these (Name, then Secret):
+
+| Name | Secret |
+|---|---|
+| `BACKUP_DATABASE_URL` | Render → `4vd-db` → **Connections** → **External Database URL** |
+| `BACKUP_PASSPHRASE` | a long random phrase you save in your password manager (without it a backup can't be opened) |
+| `R2_ACCOUNT_ID` | Cloudflare dashboard → **R2 Object Storage** → the **Account ID** on the right (also in the dashboard URL) |
+| `R2_ACCESS_KEY_ID` | Cloudflare → R2 → **Manage API tokens** → **Create Account API token** (permission **Object Read & Write**, bucket = your backup bucket) → **Access Key ID** |
+| `R2_SECRET_ACCESS_KEY` | the same screen → **Secret Access Key** (shown once) |
+| `R2_BUCKET` | the bucket's name |
+| `BACKUP_PING_TOKEN` | any random 20+ character string (e.g. run `openssl rand -hex 24`) |
+
+Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Environment** → Key `BACKUP_PING_TOKEN`, Value = that string → **Save, rebuild and deploy**. Finally GitHub → **Actions → Database backup → Run workflow**. When it goes green, the "Check the weekly backup" step in the dashboard ticks by itself and stays ticked while a backup finishes every week.
 
 After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`); Cloudflare rebuilds the front ends on every push.
 

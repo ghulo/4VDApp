@@ -1,7 +1,7 @@
 import { CaretDown } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useId, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
@@ -57,7 +57,10 @@ function InviteForm() {
   const currentUser = useCurrentUser();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('employee');
+  // The launch checklist links here with ?invite=owner or ?invite=employee.
+  const [params] = useSearchParams();
+  const asked = params.get('invite');
+  const [role, setRole] = useState<UserRole>(asked === 'owner' || asked === 'employee' ? asked : 'employee');
   const [language, setLanguage] = useState<Language>(currentUser.language);
 
   const invite = useMutation({

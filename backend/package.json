@@ -21,7 +21,8 @@
     "seed:demo": "tsx src/scripts/seed.ts --demo",
     "db:setup": "npm run migrate && npm run seed",
     "migrate:prod": "node dist/scripts/migrate.js",
-    "wipe": "tsx src/scripts/wipe.ts"
+    "wipe": "tsx src/scripts/wipe.ts",
+    "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

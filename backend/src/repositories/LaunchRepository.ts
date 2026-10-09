@@ -3,9 +3,12 @@ import type { DatabaseClient } from '../database/connection.js';
 
 /** Settings key the launch wipe writes, so the checklist knows it happened. */
 export const WIPED_AT_KEY = 'shop_data_wiped_at';
+/** Settings key the weekly backup job's "I finished" call writes. */
+export const LAST_BACKUP_KEY = 'last_backup_at';
 
 export interface LaunchFacts {
   wiped_at: string | null;
+  last_backup_at: string | null;
   products: string;
   sales: string;
   has_address: boolean;
@@ -23,6 +26,7 @@ export class LaunchRepository {
     const result = await sql<LaunchFacts>`
       select
         (select value #>> '{}' from settings where key = ${WIPED_AT_KEY}) as wiped_at,
+        (select value #>> '{}' from settings where key = ${LAST_BACKUP_KEY}) as last_backup_at,
         (select count(*) from products) as products,
         (select count(*) from sales) as sales,
         coalesce((select address is not null and address <> '' from businesses order by id limit 1), false) as has_address,

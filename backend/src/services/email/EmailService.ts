@@ -22,6 +22,11 @@ export class EmailService {
     await this.outbox.add({ to, ...content });
   }
 
+  /** Sends straight away, skipping the outbox. Throws when it could not be handed over. */
+  async sendNow(to: string, content: EmailContent): Promise<void> {
+    await this.sender.send({ to, subject: content.subject, html: content.html, text: content.text });
+  }
+
   /** Called every few seconds by the server. Returns how many were sent. */
   async sendPending(): Promise<number> {
     const batch = await this.outbox.claim(BATCH_SIZE, MAX_ATTEMPTS);

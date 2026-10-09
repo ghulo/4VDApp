@@ -1,4 +1,4 @@
-import { Package, Plus } from '@phosphor-icons/react';
+import { Barcode, Package, Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -97,11 +97,16 @@ export function ProductsPage() {
         title={t.products.title}
         description={t.products.description}
         actions={
-          canManage(role) && (
-            <ButtonLink to="/products/new" variant="primary" icon={Plus}>
-              {t.products.add}
+          <>
+            <ButtonLink to="/labels" icon={Barcode}>
+              {t.barcodes.printLabel}
             </ButtonLink>
-          )
+            {canManage(role) && (
+              <ButtonLink to="/products/new" variant="primary" icon={Plus}>
+                {t.products.add}
+              </ButtonLink>
+            )}
+          </>
         }
       />
 

@@ -164,7 +164,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           </>
         )}
         <div className="today__links">
-          <Link to="/approvals" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
+          <Link to="/inbox" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
             <strong>{waiting}</strong> {t.overview.waitingForYou}
             <CaretRight size={14} aria-hidden="true" />
           </Link>

@@ -1,4 +1,4 @@
-import { Package } from '@phosphor-icons/react';
+import { Barcode, Package } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -46,6 +46,11 @@ export function InventoryPage() {
       <PageHeader
         title={t.inventory.title}
         description={t.inventory.description}
+        actions={
+          <ButtonLink to="/labels" icon={Barcode}>
+            {t.barcodes.printLabel}
+          </ButtonLink>
+        }
       />
 
       {query.isPending && <Loading />}

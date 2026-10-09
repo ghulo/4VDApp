@@ -322,7 +322,7 @@ function ReportSections({ report }: { report: FullReport }) {
           card(
             'approvals',
             s.approvals.total === 0 ? none(t.fullReport.noApprovals) : <p>{t.fullReport.waiting(s.approvals.total)}</p>,
-            s.approvals.total > 0 ? <Link to="/approvals">{t.fullReport.openApprovals}</Link> : undefined,
+            s.approvals.total > 0 ? <Link to="/inbox">{t.fullReport.openApprovals}</Link> : undefined,
           )}
       </div>
       {Object.keys(s).length === 0 && <EmptyState title={t.fullReport.nothingChosen} />}

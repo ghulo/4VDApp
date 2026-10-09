@@ -32,8 +32,7 @@ const ACTIONS: Array<{ key: ActionKey; to: string; managersOnly?: boolean }> = [
 
 const PAGES: Array<[PageKey, string]> = [
   ['overview', '/'],
-  ['approvals', '/approvals'],
-  ['alerts', '/alerts'],
+  ['inbox', '/inbox'],
   ['report', '/report'],
   ['stock', '/inventory'],
   ['counts', '/counts'],

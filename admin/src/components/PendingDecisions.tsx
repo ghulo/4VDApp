@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { DecisionControls } from '../components/Decision';
-import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { DecisionControls } from './Decision';
+import { SealCheck } from '@phosphor-icons/react';
+import { ErrorNotice, Loading } from './Feedback';
 import { returnsApi, stockCountsApi, writeOffsApi } from '../services/api';
 import type { ReturnItem, WriteOff } from '../services/types';
 import { formatDateTime, formatMoney } from '../utils/format';
-import { ButtonLink, Card, PageHeader } from '../components/ui';
+import { ButtonLink, Card, EmptyState } from './ui';
 import { useT } from '../i18n/useT';
 import { describeReason } from '../utils/approvalReasons';
 
@@ -19,38 +20,65 @@ function useInvalidateAll() {
   };
 }
 
-
-export function ApprovalsPage() {
-  const t = useT();
-  return (
-    <>
-      <PageHeader
-        title={t.approvals.title}
-        description={t.approvals.description}
-      />
-      <PendingReturns />
-      <PendingWriteOffs />
-      <PendingCounts />
-    </>
-  );
-}
-
-function PendingReturns() {
+/** Everything waiting for a decision. Only kinds with something waiting are shown. */
+export function PendingDecisions() {
   const t = useT();
   const returns = useQuery({ queryKey: ['returns', 'pending'], queryFn: () => returnsApi.list('pending') });
+  const writeOffs = useQuery({ queryKey: ['write-offs', 'pending'], queryFn: () => writeOffsApi.list('pending') });
+  const counts = useQuery({ queryKey: ['stock-counts'], queryFn: stockCountsApi.list });
+  const submitted = counts.data?.filter((count) => count.status === 'submitted') ?? [];
+  const queries = [returns, writeOffs, counts];
+
+  if (queries.some((query) => query.isPending)) return <Loading />;
+  const failed = queries.find((query) => query.isError);
+  if (failed) return <ErrorNotice error={failed.error} onRetry={() => queries.forEach((query) => query.refetch())} />;
+  if (!returns.data?.length && !writeOffs.data?.length && submitted.length === 0) {
+    return <EmptyState icon={SealCheck} title={t.inbox.noDecisions}>{t.inbox.noDecisionsHint}</EmptyState>;
+  }
+
   return (
-    <Card title={t.approvals.returns}>
-      {returns.isPending && <Loading />}
-      {returns.isError && <ErrorNotice error={returns.error} onRetry={() => returns.refetch()} />}
-      {returns.data?.length === 0 && <EmptyState title={t.approvals.noReturns} />}
+    <>
       {returns.data && returns.data.length > 0 && (
-        <ul className="approval-list">
-          {returns.data.map((item) => (
-            <ReturnRow key={item.id} item={item} />
-          ))}
-        </ul>
+        <Card title={t.approvals.returns}>
+          <ul className="approval-list">
+            {returns.data.map((item) => (
+              <ReturnRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </Card>
       )}
-    </Card>
+      {writeOffs.data && writeOffs.data.length > 0 && (
+        <Card title={t.approvals.writeOffs}>
+          <ul className="approval-list">
+            {writeOffs.data.map((item) => (
+              <WriteOffRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </Card>
+      )}
+      {submitted.length > 0 && (
+        <Card title={t.approvals.counts}>
+          <ul className="approval-list">
+            {submitted.map((count) => (
+              <li key={count.id} className="approval-row">
+                <div className="approval-row__what">
+                  <span className="approval-row__title">{t.approvals.countOf(count.category?.name ?? t.approvals.wholeShop)}</span>
+                  <span className="approval-row__meta">
+                    {t.approvals.submittedBy({
+                      by: count.startedBy?.name ?? null,
+                      when: count.submittedAt ? formatDateTime(count.submittedAt) : '',
+                    })}
+                  </span>
+                </div>
+                <ButtonLink to={`/counts/${count.id}`} variant="primary">
+                  {t.approvals.review}
+                </ButtonLink>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </>
   );
 }
 
@@ -95,25 +123,6 @@ function ReturnRow({ item }: { item: ReturnItem }) {
   );
 }
 
-function PendingWriteOffs() {
-  const t = useT();
-  const writeOffs = useQuery({ queryKey: ['write-offs', 'pending'], queryFn: () => writeOffsApi.list('pending') });
-  return (
-    <Card title={t.approvals.writeOffs}>
-      {writeOffs.isPending && <Loading />}
-      {writeOffs.isError && <ErrorNotice error={writeOffs.error} onRetry={() => writeOffs.refetch()} />}
-      {writeOffs.data?.length === 0 && <EmptyState title={t.approvals.noWriteOffs} />}
-      {writeOffs.data && writeOffs.data.length > 0 && (
-        <ul className="approval-list">
-          {writeOffs.data.map((item) => (
-            <WriteOffRow key={item.id} item={item} />
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
-
 function WriteOffRow({ item }: { item: WriteOff }) {
   const t = useT();
   const invalidate = useInvalidateAll();
@@ -144,38 +153,5 @@ function WriteOffRow({ item }: { item: WriteOff }) {
         onReject={(note) => decide.mutate({ approve: false, note })}
       />
     </li>
-  );
-}
-
-function PendingCounts() {
-  const t = useT();
-  const counts = useQuery({ queryKey: ['stock-counts'], queryFn: stockCountsApi.list });
-  const submitted = counts.data?.filter((count) => count.status === 'submitted') ?? [];
-  return (
-    <Card title={t.approvals.counts}>
-      {counts.isPending && <Loading />}
-      {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
-      {counts.data && submitted.length === 0 && <EmptyState title={t.approvals.noCounts} />}
-      {submitted.length > 0 && (
-        <ul className="approval-list">
-          {submitted.map((count) => (
-            <li key={count.id} className="approval-row">
-              <div className="approval-row__what">
-                <span className="approval-row__title">{t.approvals.countOf(count.category?.name ?? t.approvals.wholeShop)}</span>
-                <span className="approval-row__meta">
-                  {t.approvals.submittedBy({
-                    by: count.startedBy?.name ?? null,
-                    when: count.submittedAt ? formatDateTime(count.submittedAt) : '',
-                  })}
-                </span>
-              </div>
-              <ButtonLink to={`/counts/${count.id}`} variant="primary">
-                {t.approvals.review}
-              </ButtonLink>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
   );
 }

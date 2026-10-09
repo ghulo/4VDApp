@@ -1,35 +1,4 @@
-import {
-  Bell,
-  Barcode,
-  Truck,
-  Notebook,
-  Wallet,
-  Coins,
-  Drop,
-  CaretDoubleLeft,
-  CaretDoubleRight,
-  ChartLine,
-  ClipboardText,
-  ClockCounterClockwise,
-  Gear,
-  House,
-  List,
-  MagnifyingGlass,
-  Package,
-  Percent,
-  FileText,
-  Invoice,
-  Newspaper,
-  Receipt,
-  SealCheck,
-  SignOut,
-  Sparkle,
-  SquaresFour,
-  Tag,
-  Users,
-  X,
-  type Icon,
-} from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, List, MagnifyingGlass, SignOut, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
@@ -42,63 +11,8 @@ import { Avatar } from './Avatar';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { canManage } from '../auth/roles';
-import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
-
-type NavKey = keyof Catalogue['nav']['items'];
-
-interface NavItem {
-  to: string;
-  key: NavKey;
-  icon: Icon;
-  end?: boolean;
-  /** Which waiting count to show next to it, if any. */
-  badge?: 'approvals' | 'alerts';
-  /** Hidden from the owner, who sees the business but doesn't change its setup. */
-  managersOnly?: boolean;
-}
-
-/** Grouped the way the owner works: what needs doing now, the shelves, then the business. */
-const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: NavItem[] }> = [
-  {
-    key: 'today',
-    items: [
-      { to: '/', key: 'overview', icon: House, end: true },
-      { to: '/approvals', key: 'approvals', icon: SealCheck, badge: 'approvals' },
-      { to: '/alerts', key: 'alerts', icon: Bell, badge: 'alerts' },
-      { to: '/report', key: 'report', icon: Newspaper },
-      { to: '/ask', key: 'ask', icon: Sparkle },
-    ],
-  },
-  {
-    key: 'shelves',
-    items: [
-      { to: '/inventory', key: 'stock', icon: Package },
-      { to: '/counts', key: 'counts', icon: ClipboardText },
-      { to: '/products', key: 'products', icon: Tag },
-      { to: '/promotions', key: 'promotions', icon: Percent },
-      { to: '/orders', key: 'orders', icon: Truck },
-      { to: '/labels', key: 'labels', icon: Barcode },
-      { to: '/categories', key: 'categories', icon: SquaresFour },
-    ],
-  },
-  {
-    key: 'business',
-    items: [
-      { to: '/sales', key: 'sales', icon: Receipt },
-      { to: '/documents', key: 'documents', icon: FileText },
-      { to: '/carwash', key: 'carwash', icon: Drop },
-      { to: '/cash', key: 'cash', icon: Coins },
-      { to: '/expenses', key: 'expenses', icon: Wallet },
-      { to: '/tabs', key: 'tabs', icon: Notebook },
-      { to: '/bills', key: 'bills', icon: Invoice },
-      { to: '/reports', key: 'reports', icon: ChartLine },
-      { to: '/people', key: 'people', icon: Users },
-      { to: '/activity', key: 'activity', icon: ClockCounterClockwise },
-      { to: '/settings', key: 'settings', icon: Gear, managersOnly: true },
-    ],
-  },
-];
+import { isCurrent, NAV_GROUPS } from '../navigation/sections';
 
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -171,7 +85,7 @@ export function Layout() {
     queryFn: approvalsApi.summary,
     refetchInterval: ALERT_POLL_MS,
   });
-  const waitingCount = approvals.data?.total ?? 0;
+  const inboxCount = (approvals.data?.total ?? 0) + unreadCount;
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
 
   return (
@@ -231,15 +145,15 @@ export function Layout() {
             <div key={group.key} className="sidebar__group">
               <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
               {group.items.filter((item) => !item.managersOnly || canManage(user.role)).map((item) => {
-                const count = item.badge === 'approvals' ? waitingCount : item.badge === 'alerts' ? unreadCount : 0;
+                const count = item.badge === 'inbox' ? inboxCount : 0;
                 const ItemIcon = item.icon;
                 const label = t.nav.items[item.key];
                 return (
-                  <NavLink
+                  <Link
                     key={item.to}
                     to={item.to}
-                    end={item.end}
-                    className="sidebar__link"
+                    className={isCurrent(item, location.pathname) ? 'sidebar__link active' : 'sidebar__link'}
+                    aria-current={isCurrent(item, location.pathname) ? 'page' : undefined}
                     title={collapsed ? label : undefined}
                   >
                     <ItemIcon size={18} className="sidebar__icon" aria-hidden="true" />
@@ -247,12 +161,12 @@ export function Layout() {
                     {count > 0 && (
                       <span
                         className="sidebar__badge"
-                        aria-label={item.badge === 'approvals' ? t.nav.waiting(count) : t.nav.unread(count)}
+                        aria-label={t.nav.waiting(count)}
                       >
                         {count}
                       </span>
                     )}
-                  </NavLink>
+                  </Link>
                 );
               })}
             </div>

@@ -2,9 +2,11 @@
 // dashboard is closed, and opens the right page when one is clicked.
 
 const PAGE_BY_TYPE = {
-  low_stock: '/alerts',
-  out_of_stock: '/alerts',
-  approval: '/approvals',
+  low_stock: '/inventory?lowStock=true',
+  out_of_stock: '/inventory?lowStock=true',
+  approval: '/inbox',
+  cash_difference: '/cash',
+  daily_summary: '/report',
 };
 
 self.addEventListener('push', (event) => {

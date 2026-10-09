@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
 import { I18nProvider } from './i18n/I18nProvider';
 import { EmptyState } from './components/Feedback';
@@ -7,8 +7,9 @@ import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
 import { ActivityPage } from './pages/ActivityPage';
-import { AlertsPage } from './pages/AlertsPage';
-import { ApprovalsPage } from './pages/ApprovalsPage';
+import { InboxPage } from './pages/InboxPage';
+import { SectionTabs } from './components/SectionTabs';
+import { SECTIONS } from './navigation/sections';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { InventoryDetailPage } from './pages/InventoryDetailPage';
 import { InventoryPage } from './pages/InventoryPage';
@@ -90,29 +91,38 @@ function App() {
                 }
               >
                 <Route index element={<OverviewPage />} />
-                <Route path="inventory" element={<InventoryPage />} />
+                <Route path="inbox" element={<InboxPage />} />
+                <Route path="approvals" element={<Navigate to="/inbox" replace />} />
+                <Route path="alerts" element={<Navigate to="/inbox#inbox-alerts" replace />} />
+                <Route element={<SectionTabs tabs={SECTIONS.products} labelKey="products" />}>
+                  <Route path="inventory" element={<InventoryPage />} />
+                  <Route path="products" element={<ProductsPage />} />
+                  <Route path="categories" element={<CategoriesPage />} />
+                </Route>
                 <Route path="inventory/:productId" element={<InventoryDetailPage />} />
-                <Route path="products" element={<ProductsPage />} />
                 <Route path="products/new" element={<ProductFormPage />} />
                 <Route path="products/:id" element={<ProductFormPage />} />
-                <Route path="categories" element={<CategoriesPage />} />
-                <Route path="sales" element={<SalesPage />} />
-                <Route path="documents" element={<DocumentsPage />} />
+                <Route path="labels" element={<LabelsPage />} />
+                <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
+                  <Route path="sales" element={<SalesPage />} />
+                  <Route path="documents" element={<DocumentsPage />} />
+                </Route>
                 <Route path="documents/:id" element={<DocumentDetailPage />} />
-                <Route path="carwash" element={<CarwashPage />} />
-                <Route path="cash" element={<CashPage />} />
+                <Route element={<SectionTabs tabs={SECTIONS.money} labelKey="day" />}>
+                  <Route path="cash" element={<CashPage />} />
+                  <Route path="carwash" element={<CarwashPage />} />
+                </Route>
                 <Route path="expenses" element={<ExpensesPage />} />
+                <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
+                  <Route path="report" element={<ReportPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                </Route>
                 <Route path="tabs" element={<TabsPage />} />
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="orders/:id" element={<OrderDetailPage />} />
                 <Route path="bills" element={<BillsPage />} />
                 <Route path="bills/:id" element={<BillDetailPage />} />
-                <Route path="report" element={<ReportPage />} />
-                <Route path="labels" element={<LabelsPage />} />
-                <Route path="reports" element={<ReportsPage />} />
                 <Route path="people" element={<UsersPage />} />
-                <Route path="alerts" element={<AlertsPage />} />
-                <Route path="approvals" element={<ApprovalsPage />} />
                 <Route path="counts" element={<StockCountsPage />} />
                 <Route path="counts/:id" element={<StockCountDetailPage />} />
                 <Route path="promotions" element={<PromotionsPage />} />

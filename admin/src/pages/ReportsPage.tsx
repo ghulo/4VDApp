@@ -64,12 +64,12 @@ export function ReportsPage() {
               label={t.analytics.margin}
               value={current.margin === null ? t.reports.unknown : formatPercent(current.margin)}
             />
-            <MetricCard label={t.analytics.refunds} value={formatMoney(current.refunds)} to="/approvals" />
+            <MetricCard label={t.analytics.refunds} value={formatMoney(current.refunds)} to="/inbox" />
             <MetricCard
               label={t.analytics.stockLosses}
               value={formatMoney(current.stockLosses)}
               hint={current.lossUnitsWithoutCost > 0 ? t.reports.unitsWithoutCost(current.lossUnitsWithoutCost) : undefined}
-              to="/approvals"
+              to="/inbox"
             />
             <StockWorthCard />
           </>

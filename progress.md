@@ -53,7 +53,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] End your shift: steps show done / to do and each open one opens its step
 - [x] Sales history lists checkouts; a sale opens to show its lines
 - [x] Team app tabs Home, Products, Sell, Account; Favourites is a filter on Products; Home has "Something happened"
-- [ ] Checks, screenshots at 375 and 1440, then you look it over before merge
+- [x] Checks, screenshots at 375 and 1440, then you look it over before merge
 
 ## Ask, made better (branch ask-better, on top of logic-gaps)
 
@@ -61,7 +61,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Knows the whole business: day-by-day sales, expenses, open supplier bills, customer tabs, carwash takings, drawer counts
 - [x] Answers can carry a table, a bar chart and links to the products, suppliers, customers, bills or pages they mention
 - [x] New page look: chat list beside the conversation, starter questions, bubbles, pinned question box
-- [ ] You look it over locally, then merge (after logic-gaps) and push
+- [x] You look it over locally, then merge (after logic-gaps) and push
 
 ## Optional
 

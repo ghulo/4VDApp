@@ -46,7 +46,7 @@ export function OverviewPage() {
       <Card
         title={t.overview.needsRestocking}
         actions={
-          <Link to="/inventory?lowStock=true" className="text-link">
+          <Link to="/inventory" className="text-link">
             {t.overview.seeAllStock}
           </Link>
         }
@@ -196,7 +196,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
             </Link>
           )}
           {lowCount !== undefined && lowCount > 0 && (
-            <Link to="/inventory?lowStock=true" className="today__link">
+            <Link to="/inventory" className="today__link">
               <strong>{lowCount}</strong> {t.overview.toRestock}
               <CaretRight size={14} aria-hidden="true" />
             </Link>

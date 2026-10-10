@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useState, useEffect } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { canManage } from '../auth/roles';
@@ -113,8 +113,14 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
   const [params] = useSearchParams();
   // Opened from a supplier's page, the order starts with that supplier chosen.
   const [supplierId, setSupplierId] = useState(() => (suppliers.some((row) => String(row.id) === params.get('supplier')) ? params.get('supplier')! : ''));
+  // Opened from a product's Order button on Stock, only that product starts ticked.
+  const [focus, setFocus] = useState(() => Number(params.get('product')) || null);
   const [extra, setExtra] = useState<DraftLine[]>([]);
   const [edits, setEdits] = useState<Record<number, Partial<DraftLine>>>({});
+
+  useEffect(() => {
+    if (focus !== null) document.getElementById('new-order')?.scrollIntoView({ block: 'start' });
+  }, [focus]);
   const [note, setNote] = useState('');
 
   const costOf = (productId: number) => products.data?.items.find((product) => product.id === productId)?.costPrice ?? null;
@@ -125,7 +131,7 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
     .map((row) => ({
       productId: row.productId,
       productName: row.productName,
-      include: true,
+      include: focus === null || row.productId === focus,
       quantity: String(row.suggestedOrder),
       unitCost: costOf(row.productId) === null ? '' : String(costOf(row.productId)),
     }));
@@ -148,6 +154,7 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
       }),
     onSuccess: () => {
       for (const key of ['orders', 'activity']) queryClient.invalidateQueries({ queryKey: [key] });
+      setFocus(null);
       setExtra([]);
       setEdits({});
       setNote('');

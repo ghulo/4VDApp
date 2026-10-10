@@ -14,8 +14,8 @@ import { useAttention } from '../utils/useAttention';
 
 /** Where an alert without its own link should take you. */
 const PAGE_BY_TYPE: Record<string, string> = {
-  low_stock: '/inventory?lowStock=true',
-  out_of_stock: '/inventory?lowStock=true',
+  low_stock: '/inventory?status=low',
+  out_of_stock: '/inventory?status=out',
   cash_difference: '/cash',
   daily_summary: '/report',
 };

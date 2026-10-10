@@ -48,6 +48,10 @@ export interface NavItem {
  * its own address, so old links and bookmarks still open the right tab.
  */
 export const SECTIONS = {
+  inbox: [
+    { to: '/inbox', key: 'todo' },
+    { to: '/inbox/updates', key: 'updates' },
+  ],
   stock: [
     { to: '/inventory', key: 'shelf' },
     { to: '/products', key: 'products' },

@@ -72,6 +72,7 @@ import type {
   User,
   UserRole,
   ShopDay,
+  Attention,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -310,6 +311,10 @@ export const usersApi = {
   },
 };
 
+export const attentionApi = {
+  get: async () => (await apiRequest<Attention>('/attention')).data,
+};
+
 export const notificationsApi = {
   async list(page: number, unreadOnly = false) {
     const { data, meta } = await apiRequest<{ notifications: AppNotification[]; unreadCount: number }>(
@@ -418,6 +423,10 @@ export const carwashApi = {
 export const cashApi = {
   list: async (range: ReportRange) => (await apiRequest<CashCount[]>('/cash-counts', { query: { ...range } })).data,
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
+  /** Someone looked at a count's difference, so it leaves the To do list. */
+  check: async (id: number) => {
+    await apiRequest(`/cash-counts/${id}/check`, { method: 'POST' });
+  },
   /** Overseers get the result back; staff get null (they count blind). */
   count: async (input: { place: CashPlace; carwashId?: number; counted: number; float?: number; note: string | null }) =>
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,

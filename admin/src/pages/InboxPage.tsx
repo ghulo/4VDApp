@@ -1,14 +1,16 @@
-import { Checks } from '@phosphor-icons/react';
+import { Checks, SealCheck } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PendingDecisions } from '../components/PendingDecisions';
+import { TodoList } from '../components/TodoList';
 import { Button, EmptyState, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { notificationsApi } from '../services/api';
 import { formatDateTime } from '../utils/format';
+import { useAttention } from '../utils/useAttention';
 
 /** Where an alert without its own link should take you. */
 const PAGE_BY_TYPE: Record<string, string> = {
@@ -18,24 +20,53 @@ const PAGE_BY_TYPE: Record<string, string> = {
   daily_summary: '/report',
 };
 
-/** One place to look: what waits for a decision first, then everything the shop told you. */
+/**
+ * To do (DESIGN.md 3.3): requests to decide first, then everything else the
+ * shop needs from you. Worked out from the shop as it is now, so items leave
+ * by themselves once they are dealt with.
+ */
 export function InboxPage() {
   const t = useT();
+  const attention = useAttention();
+  const others = attention.data?.todo.filter((item) => item.kind !== 'requests') ?? [];
+  const hasRequests = attention.data?.todo.some((item) => item.kind === 'requests') ?? false;
   return (
     <>
       <PageHeader title={t.inbox.title} description={t.inbox.description} />
-      <section aria-labelledby="inbox-decisions" className="inbox__section">
-        <h2 id="inbox-decisions" className="inbox__heading">
-          {t.inbox.decisions}
-        </h2>
-        <PendingDecisions />
-      </section>
-      <section aria-labelledby="inbox-alerts" className="inbox__section">
-        <h2 id="inbox-alerts" className="inbox__heading">
-          {t.inbox.alerts}
-        </h2>
-        <AlertList />
-      </section>
+      {attention.isPending && <Loading />}
+      {attention.isError && <ErrorNotice error={attention.error} onRetry={() => attention.refetch()} />}
+      {attention.data && attention.data.todo.length === 0 && (
+        <EmptyState icon={SealCheck} title={t.todo.none}>
+          {t.todo.noneHint}
+        </EmptyState>
+      )}
+      {hasRequests && (
+        <section aria-labelledby="inbox-decisions" className="inbox__section">
+          <h2 id="inbox-decisions" className="inbox__heading">
+            {t.inbox.decisions}
+          </h2>
+          <PendingDecisions />
+        </section>
+      )}
+      {others.length > 0 && (
+        <section aria-labelledby="inbox-todo" className="inbox__section">
+          <h2 id="inbox-todo" className="inbox__heading">
+            {hasRequests ? t.todo.others : t.todo.title}
+          </h2>
+          <TodoList items={others} />
+        </section>
+      )}
+    </>
+  );
+}
+
+/** Updates: things that happened, for information only. They never count toward a badge. */
+export function UpdatesPage() {
+  const t = useT();
+  return (
+    <>
+      <PageHeader title={t.inbox.title} description={t.inbox.updatesDescription} />
+      <AlertList />
     </>
   );
 }

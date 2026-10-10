@@ -26,7 +26,6 @@ const TRANSLATED = [
   'src/screens/CountsScreen.tsx',
   'src/screens/DeliveriesScreen.tsx',
   'src/screens/ExpiryScreen.tsx',
-  'src/screens/FavoritesScreen.tsx',
   'src/screens/HomeScreen.tsx',
   'src/screens/LoginScreen.tsx',
   'src/screens/MySalesScreen.tsx',

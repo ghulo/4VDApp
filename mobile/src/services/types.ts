@@ -147,6 +147,22 @@ export interface CarwashToday {
   takings: { carwash: number; change: number } | null;
 }
 
+/** Something someone must act on, worked out by the server from the shop's state (DESIGN.md 3.3). */
+export interface TodoItem {
+  key: string;
+  kind: string;
+  severity: 'urgent' | 'check' | 'idea';
+  title: string;
+  detail: string;
+  verb: string;
+}
+
+/** The same list the dashboard's Inbox shows; `count` is the one "waiting" number. */
+export interface Attention {
+  todo: TodoItem[];
+  count: number;
+}
+
 /** One thing that closes the day, as the server defines it for both apps. */
 export type DayStep =
   | { kind: 'drawer'; key: string; place: CashPlace; carwashId: number | null; name: string | null; done: boolean; countedBy: string | null }

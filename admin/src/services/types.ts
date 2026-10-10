@@ -535,6 +535,31 @@ export interface Insight {
   customerId?: number;
 }
 
+export type TodoSeverity = 'urgent' | 'check' | 'idea';
+/** What a To do item's one button does. */
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift';
+
+/** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
+export interface TodoItem {
+  key: string;
+  kind: string;
+  severity: TodoSeverity;
+  title: string;
+  detail: string;
+  verb: TodoVerb;
+  /** The page that fixes it. */
+  to: string;
+  productId?: number;
+  customerId?: number;
+  cashCountId?: number;
+}
+
+export interface Attention {
+  todo: TodoItem[];
+  /** The one "waiting" number: Urgent and Check items. */
+  count: number;
+}
+
 export type CustomerKind = 'person' | 'business';
 
 export interface Customer {
@@ -649,6 +674,9 @@ export interface CashCount {
   note: string | null;
   countedBy: string | null;
   countedAt: string;
+  /** Who looked at the difference; null until someone does. */
+  checkedBy: string | null;
+  checkedAt: string | null;
 }
 
 export interface CashPlaceToday {

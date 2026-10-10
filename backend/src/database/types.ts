@@ -315,6 +315,9 @@ export interface CashCountsTable {
   note: string | null;
   counted_by: number | null;
   counted_at: ColumnType<Date, Date | undefined, Date>;
+  /** Who said they looked at this count's difference; cleared when the drawer is counted again. */
+  checked_by: number | null;
+  checked_at: Date | null;
 }
 
 export interface RecurringExpensesTable {

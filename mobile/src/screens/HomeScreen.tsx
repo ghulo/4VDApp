@@ -16,15 +16,16 @@ import { WelcomeTour } from '../components/WelcomeTour';
 import { dayRanges, monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
-import { approvalsApi, countsApi, dayApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
-import type { MyRequest } from '../services/types';
+import { approvalsApi, attentionApi, countsApi, dayApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
+import type { MyRequest, TodoItem } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors, type } from '../theme';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { TabBarSpacer } from '../components/TabBarSpace';
-import { CLOSING_HOUR, DAY_QUERY_KEY, shiftSteps } from '../utils/shift';
+import { DAY_QUERY_KEY, shiftSteps } from '../utils/shift';
+import { CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
@@ -73,13 +74,17 @@ export function HomeScreen() {
   const shift = shiftSteps(closing.data);
   // Only once the steps are in, so a slow network never says "closed up" by mistake.
   const shiftClosed = Boolean(closing.data) && shift.done === shift.total;
-  const closingTime = now.getHours() >= CLOSING_HOUR;
+  // What needs this person, from the same list the dashboard's Inbox shows (DESIGN.md 3.3).
+  const attention = useQuery({ queryKey: ['attention'], queryFn: attentionApi.get, refetchInterval: 60_000 });
+  const todo = attention.data?.todo ?? [];
+  const closingDue = todo.some((item) => item.verb === 'endShift' || item.verb === 'closeDay');
+  const hasCarwash = shift.steps.some((step) => step.kind === 'carwash');
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
   async function refresh() {
     setIsRefreshing(true);
     await Promise.all(
-      [MY_SALES_QUERY_KEY, ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers'], ['carwash'], ['orders']].map((queryKey) =>
+      [MY_SALES_QUERY_KEY, ['attention'], ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers'], ['carwash'], ['orders']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -164,7 +169,7 @@ export function HomeScreen() {
               {shiftClosed && <Text style={[styles.todayDetail, { color: colors.stockOk }]}>{t.home.closedUp}</Text>}
               <View style={styles.todayActions}>
                 {/* What's next: selling all day; from closing time, ending the shift until it's done. */}
-                {closingTime && !shiftClosed ? (
+                {closingDue && !shiftClosed ? (
                   <>
                     <Button label={t.home.endShift} onPress={() => navigation.navigate('EndShift')} />
                     <Button variant="quiet" label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
@@ -186,6 +191,21 @@ export function HomeScreen() {
           </View>
         )}
 
+        {todo.length > 0 && (
+          <PrintSection title={t.home.todo}>
+            {todo.map((item, index) => (
+              <TodoRow
+                key={item.key}
+                item={item}
+                colors={colors}
+                first={index === 0}
+                onPress={item.verb === 'endShift' || item.verb === 'closeDay' ? () => navigation.navigate('EndShift') : undefined}
+              />
+            ))}
+            {todo.some((item) => item.verb !== 'endShift' && item.verb !== 'closeDay') && <Muted colors={colors}>{t.home.onDashboard}</Muted>}
+          </PrintSection>
+        )}
+
         <TextInput
           value={search}
           onChangeText={setSearch}
@@ -199,17 +219,29 @@ export function HomeScreen() {
         />
 
         {sells && (
-          <View style={styles.jobs}>
-            {/* Only while something is on its way, so Home stays calm the rest of the time. */}
-            {(deliveries.data?.length ?? 0) > 0 && (
-              <JobTile
-                colors={colors}
-                icon={Truck}
-                title={t.home.deliveries}
-                detail={t.home.deliveriesWaiting(deliveries.data!.length)}
-                onPress={() => navigation.navigate('Deliveries')}
-              />
+          <PrintSection title={t.home.somethingHappened}>
+            {/* Things that happen at the counter any time, so they never hide inside other screens. */}
+            <HappenedRow first colors={colors} title={t.home.happened.returnSale} hint={t.home.happened.returnSaleHint} onPress={() => navigation.navigate('MySales')} />
+            <HappenedRow
+              colors={colors}
+              title={t.home.happened.damage}
+              hint={t.home.happened.damageHint}
+              onPress={() => navigation.navigate('Main', { screen: 'Catalog', params: { then: 'writeOff' } })}
+            />
+            <HappenedRow
+              colors={colors}
+              title={t.home.happened.expiry}
+              hint={t.home.happened.expiryHint}
+              onPress={() => navigation.navigate('Main', { screen: 'Catalog', params: { then: 'expiry' } })}
+            />
+            {hasCarwash && (
+              <HappenedRow colors={colors} title={t.home.happened.carwash} hint={t.home.happened.carwashHint} onPress={() => navigation.navigate('Carwash')} />
             )}
+          </PrintSection>
+        )}
+
+        {sells && (
+          <View style={styles.jobs}>
             <JobTile
               colors={colors}
               icon={Coins}
@@ -235,6 +267,16 @@ export function HomeScreen() {
               }
               onPress={() => navigation.navigate('Tabs')}
             />
+            {/* Only while something is on its way, so Home stays calm the rest of the time. */}
+            {(deliveries.data?.length ?? 0) > 0 && (
+              <JobTile
+                colors={colors}
+                icon={Truck}
+                title={t.home.deliveries}
+                detail={t.home.deliveriesWaiting(deliveries.data!.length)}
+                onPress={() => navigation.navigate('Deliveries')}
+              />
+            )}
           </View>
         )}
 
@@ -321,6 +363,54 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
       <BlockMeter share={share} done={reached} track={colors.surface} />
       <Text style={[styles.todayDetail, { color: colors.inkMuted }]}>{label}</Text>
     </View>
+  );
+}
+
+/** One To do item: its stamp, what it is and what to do; tappable when the team app can do it. */
+function TodoRow({ item, colors, first, onPress }: { item: TodoItem; colors: ThemeColors; first: boolean; onPress?: () => void }) {
+  const t = useT();
+  const stamp = item.severity === 'urgent' ? colors.signalOut : item.severity === 'check' ? colors.signalLowInk : colors.inkMuted;
+  return (
+    <Pressable
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${t.home.severity[item.severity]}. ${item.title}. ${item.detail}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.happenedRow,
+        !first && { borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth },
+        pressed && { backgroundColor: colors.surfaceSunk },
+      ]}
+    >
+      <View style={styles.happenedText}>
+        <Text style={[styles.stamp, { color: stamp, borderColor: stamp }]}>{t.home.severity[item.severity]}</Text>
+        <Text style={[styles.rowName, { color: colors.ink }]}>{item.title}</Text>
+        <Text style={[styles.tileDetail, { color: colors.steel }]}>{item.detail}</Text>
+      </View>
+      {onPress && <CaretRight size={18} color={colors.inkMuted} />}
+    </Pressable>
+  );
+}
+
+/** One of the four things that can happen at the counter, opening where it gets reported. */
+function HappenedRow({ colors, title, hint, onPress, first }: { colors: ThemeColors; title: string; hint: string; onPress: () => void; first?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${hint}`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.happenedRow,
+        !first && { borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth },
+        pressed && { backgroundColor: colors.surfaceSunk },
+      ]}
+    >
+      <View style={styles.happenedText}>
+        <Text style={[styles.rowName, { color: colors.ink }]}>{title}</Text>
+        <Text style={[styles.tileDetail, { color: colors.steel }]}>{hint}</Text>
+      </View>
+      <CaretRight size={18} color={colors.inkMuted} />
+    </Pressable>
   );
 }
 
@@ -425,5 +515,19 @@ const styles = StyleSheet.create({
   rowTime: { width: 52, textAlign: 'right', fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
   muted: { fontFamily: fonts.body, fontSize: type.body, paddingVertical: spacing.sm },
   requestRow: { paddingVertical: spacing.sm, gap: 2 },
+  happenedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
+  happenedText: { flex: 1, gap: 2 },
+  // The severity reads like a printed stamp, as on the dashboard.
+  stamp: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.xs,
+    borderWidth: 1,
+    borderRadius: radius.small,
+    fontFamily: fonts.bodyBold,
+    fontSize: type.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
   requestStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

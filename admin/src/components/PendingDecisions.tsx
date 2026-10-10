@@ -11,7 +11,7 @@ import { useT } from '../i18n/useT';
 import { describeReason } from '../utils/approvalReasons';
 
 /** Everything that changes stock or money changes the reports and activity too. */
-const AFFECTED_QUERIES = ['returns', 'write-offs', 'approvals', 'sales', 'inventory', 'products', 'reports', 'activity'];
+const AFFECTED_QUERIES = ['returns', 'write-offs', 'approvals', 'attention', 'sales', 'inventory', 'products', 'reports', 'activity'];
 
 function useInvalidateAll() {
   const queryClient = useQueryClient();

@@ -5,7 +5,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
-import { approvalsApi, businessApi, notificationsApi } from '../services/api';
+import { businessApi } from '../services/api';
+import { useAttention } from '../utils/useAttention';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -18,7 +19,6 @@ import { isCurrent, NAV_GROUPS } from '../navigation/sections';
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-const ALERT_POLL_MS = 60_000;
 const COLLAPSED_KEY = '4vd.sidebar.collapsed';
 
 function readCollapsed(): boolean {
@@ -74,19 +74,8 @@ export function Layout() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [drawerOpen, closeDrawer]);
 
-  // Poll so a low-stock alert from an employee's sale shows up without a reload.
-  const unread = useQuery({
-    queryKey: ['notifications', 'unread-count'],
-    queryFn: async () => (await notificationsApi.list(1, true)).unreadCount,
-    refetchInterval: ALERT_POLL_MS,
-  });
-  const unreadCount = unread.data ?? 0;
-  const approvals = useQuery({
-    queryKey: ['approvals', 'summary'],
-    queryFn: approvalsApi.summary,
-    refetchInterval: ALERT_POLL_MS,
-  });
-  const inboxCount = (approvals.data?.total ?? 0) + unreadCount;
+  // The badge counts To do items only (DESIGN.md 3.3); Updates never add to it.
+  const inboxCount = useAttention().data?.count ?? 0;
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
 
   // The top bar is plain canvas at the top of the page and turns to glass once

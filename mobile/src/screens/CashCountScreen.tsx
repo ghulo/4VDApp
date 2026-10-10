@@ -43,7 +43,10 @@ export function CashCountScreen({ navigation, route }: Props) {
         ? cashApi.count({ place: 'shop', ...input })
         : cashApi.count({ place: 'carwash', carwashId: Number(drawer.split(':')[1]), ...input });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cash'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash'] });
+      queryClient.invalidateQueries({ queryKey: ['attention'] });
+    },
   });
 
   if (today.isPending) return <Loading />;

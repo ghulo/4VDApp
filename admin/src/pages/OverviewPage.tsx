@@ -8,7 +8,9 @@ import { useDayChecklist } from '../utils/useDayChecklist';
 import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
-import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
+import { analyticsApi, inventoryApi, reportsApi } from '../services/api';
+import { TodoList } from '../components/TodoList';
+import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MORE } from '../utils/format';
 import { ButtonLink, Card, DayBars, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
@@ -147,12 +149,11 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
     queryFn: () => reportsApi.summary(range),
     refetchInterval: 60_000,
   });
-  const approvals = useQuery({ queryKey: ['approvals', 'summary'], queryFn: approvalsApi.summary });
   const weekday = formatDateWith(new Date(range.endDate), { weekday: 'long' });
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
-  const waiting = approvals.data?.total ?? 0;
+  const waiting = useAttention().data?.count ?? 0;
   const lastDays = useQuery({
     queryKey: ['analytics', 'revenue', 'daily', DOT_DAYS],
     // Start of the day 29 days ago, so the strip shows exactly 30 whole days.
@@ -190,7 +191,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           {/* Zero is not news: a count only shows when there is something behind it. */}
           {waiting > 0 && (
             <Link to="/inbox" className="today__link today__link--due">
-              <strong>{waiting}</strong> {t.overview.waitingForYou}
+              {t.todo.waiting(waiting)}
               <CaretRight size={14} aria-hidden="true" />
             </Link>
           )}
@@ -248,36 +249,17 @@ function DayCloseLink() {
   );
 }
 
-/** Warnings worked out from sales, stock, counts and write-offs, most urgent first. */
+/** What needs you, first and largest (DESIGN.md 3.3): the same list as the Inbox and the menu badge. */
 function AttentionPanel() {
   const t = useT();
-  const insights = useQuery({ queryKey: ['reports', 'insights'], queryFn: reportsApi.insights, refetchInterval: 60_000 });
+  const attention = useAttention();
 
   return (
-    <Card title={t.overview.attention}>
-      {insights.isPending && <Loading />}
-      {insights.isError && <ErrorNotice error={insights.error} onRetry={() => insights.refetch()} />}
-      {insights.data && insights.data.length === 0 && (
-        <EmptyState title={t.overview.allClear}>{t.overview.allClearHint}</EmptyState>
-      )}
-      {insights.data && insights.data.length > 0 && (
-        <ul className="restock-list">
-          {insights.data.map((insight) => (
-            <li key={`${insight.kind}-${insight.productId}-${insight.title}`}>
-              <Link
-                to={insight.customerId ? `/customers/${insight.customerId}` : `/inventory/${insight.productId}`}
-                className={`attention__row attention__row--${insight.severity}`}
-              >
-                <span className="attention__severity">{t.overview.severity[insight.severity]}</span>
-                <span>
-                  <span className="restock-list__name">{insight.title}</span>
-                  <span className="attention__detail">{insight.detail}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <Card title={t.todo.title}>
+      {attention.isPending && <Loading />}
+      {attention.isError && <ErrorNotice error={attention.error} onRetry={() => attention.refetch()} />}
+      {attention.data && attention.data.todo.length === 0 && <EmptyState title={t.todo.none}>{t.todo.noneHint}</EmptyState>}
+      {attention.data && attention.data.todo.length > 0 && <TodoList items={attention.data.todo} />}
     </Card>
   );
 }

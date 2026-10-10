@@ -61,6 +61,17 @@ export interface ServerMessages {
   cashDifferenceTitle: (p: { place: 'shop' | 'carwash'; carwash: string | null; difference: number }) => string;
   cashDifferenceMessage: (p: { name: string; counted: number; float: number; expected: number }) => string;
 
+  /** The To do list (DESIGN.md 3.3): one line that names the thing, one on what to do. */
+  todo: {
+    requestsTitle: (count: number) => string;
+    requestsDetail: string;
+    cashDetail: (p: { name: string | null; day: string }) => string;
+    closeDayTitle: (left: number) => string;
+    closeDayDetail: string;
+    shiftTitle: (left: number) => string;
+    shiftDetail: string;
+  };
+
   testAlertTitle: string;
   testAlertMessage: string;
 
@@ -248,6 +259,16 @@ export const en: ServerMessages = {
     `${place === 'shop' ? 'Shop' : `Carwash${carwash ? ` (${carwash})` : ''}`} cash ${difference < 0 ? 'short' : 'over'} by ${money(Math.abs(difference), 'en')}`,
   cashDifferenceMessage: ({ name, counted, float, expected }) =>
     `${name} counted ${money(counted, 'en')} with a ${money(float, 'en')} float. The app expected ${money(expected, 'en')} on top of the float.`,
+
+  todo: {
+    requestsTitle: (count) => `${count} ${count === 1 ? 'request is' : 'requests are'} waiting for a decision`,
+    requestsDetail: 'Approve or reject them so the team knows where they stand.',
+    cashDetail: ({ name, day }) => `${name ? `Counted by ${name}` : 'Counted'} on ${day}. Look into it, then mark it as checked.`,
+    closeDayTitle: (left) => `Close the day: ${left} ${left === 1 ? 'step' : 'steps'} left`,
+    closeDayDetail: 'Count the drawers, enter the carwash and add the expenses before you go.',
+    shiftTitle: (left) => `End your shift: ${left} ${left === 1 ? 'step' : 'steps'} left`,
+    shiftDetail: 'Count your drawer and enter the takings before you go.',
+  },
 
   testAlertTitle: 'Test alert from 4VD',
   testAlertMessage: 'Alerts are working on this device.',
@@ -468,6 +489,16 @@ export const sq: ServerMessages = {
     `${place === 'shop' ? 'Arka e dyqanit' : `Arka e lavazhit${carwash ? ` (${carwash})` : ''}`}: ${difference < 0 ? 'mungesë' : 'tepricë'} ${money(Math.abs(difference), 'sq')}`,
   cashDifferenceMessage: ({ name, counted, float, expected }) =>
     `${name} numëroi ${money(counted, 'sq')} me ${money(float, 'sq')} kusur fillestar. Aplikacioni priste ${money(expected, 'sq')} mbi kusurin.`,
+
+  todo: {
+    requestsTitle: (count) => `${count} ${count === 1 ? 'kërkesë pret' : 'kërkesa presin'} vendim`,
+    requestsDetail: 'Prano ose refuzo, që ekipi ta dijë si qëndrojnë.',
+    cashDetail: ({ name, day }) => `${name ? `E numëroi ${name}` : 'E numëruar'} më ${day}. Shiko çfarë ndodhi, pastaj shëno si të kontrolluar.`,
+    closeDayTitle: (left) => `Mbyll ditën: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
+    closeDayDetail: 'Numëro arkat, fut lavazhin dhe shto shpenzimet para se të ikësh.',
+    shiftTitle: (left) => `Mbyll turnin: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
+    shiftDetail: 'Numëro arkën dhe fut të ardhurat para se të ikësh.',
+  },
 
   testAlertTitle: 'Njoftim provë nga 4VD',
   testAlertMessage: 'Njoftimet po funksionojnë në këtë pajisje.',

@@ -1,3 +1,5 @@
+import type { TodoVerb } from '../services/types';
+
 /**
  * Every word the dashboard shows, in English. Albanian (sq.ts) is typed
  * against this, so a text missing there is a compile error. Texts with
@@ -60,6 +62,8 @@ export const en = {
       profile: 'Profile',
     },
     tabs: {
+      todo: 'To do',
+      updates: 'Updates',
       close: 'Close the day',
       shelf: 'On the shelf',
       products: 'Products',
@@ -485,13 +489,34 @@ export const en = {
   },
   inbox: {
     title: 'Inbox',
-    description: 'What waits for your decision first, then everything the shop has told you.',
+    description: 'What needs you, worked out from the shop as it is now. Items leave by themselves once they are dealt with.',
+    updatesDescription: 'Things that happened, for your information. They never count as waiting.',
     decisions: 'Waiting for your decision',
     alerts: 'Alerts',
     noDecisions: 'Nothing is waiting for you',
     noDecisionsHint: 'Returns, damaged stock and counts your team sends show up here.',
     unread: (count: number) => `${count} unread`,
     allRead: 'All read',
+  },
+  todo: {
+    title: 'To do',
+    severity: { urgent: 'Urgent', check: 'Check', idea: 'Idea' } as Record<'urgent' | 'check' | 'idea', string>,
+    verbs: {
+      decide: 'Decide',
+      restock: 'See stock',
+      checkExpiry: 'Check the dates',
+      look: 'Have a look',
+      openTab: 'Open the tab',
+      payBill: 'Open the bill',
+      markChecked: 'Mark as checked',
+      closeDay: 'Close the day',
+      endShift: 'End your shift',
+    } as Record<TodoVerb, string>,
+    openDay: 'Open the day',
+    none: 'Nothing needs you right now',
+    noneHint: 'Requests, stock running out, bills due and cash differences show up here, and leave by themselves once they are dealt with.',
+    waiting: (count: number) => `${count} ${count === 1 ? 'thing needs' : 'things need'} you`,
+    others: 'Also to do',
   },
   alerts: {
     title: 'Alerts',
@@ -1501,6 +1526,7 @@ export const en = {
     allMatched: 'Every count matched',
     countsInPeriod: 'Counts',
     netDifference: 'Net difference',
+    checkedBy: (name: string) => `Checked by ${name}`,
   },
   dayClose: {
     title: 'Close the day',

@@ -6,7 +6,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { House } from 'phosphor-react-native/src/icons/House';
 import { Package } from 'phosphor-react-native/src/icons/Package';
 import { Plus } from 'phosphor-react-native/src/icons/Plus';
-import { Star } from 'phosphor-react-native/src/icons/Star';
 import { User } from 'phosphor-react-native/src/icons/User';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -21,7 +20,6 @@ import { CountScreen } from '../screens/CountScreen';
 import { CountsScreen } from '../screens/CountsScreen';
 import { DeliveriesScreen } from '../screens/DeliveriesScreen';
 import { EndShiftScreen } from '../screens/EndShiftScreen';
-import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MySalesScreen } from '../screens/MySalesScreen';
@@ -132,11 +130,6 @@ function MainTabs() {
         name="Catalog"
         component={CatalogScreen}
         options={{ title: t.nav.tabs.products, tabBarLabel: t.nav.tabs.products, tabBarIcon: tabIcon(Package) }}
-      />
-      <Tab.Screen
-        name="Favorites"
-        component={FavoritesScreen}
-        options={{ title: t.nav.tabs.favorites, tabBarLabel: t.nav.tabs.favorites, tabBarIcon: tabIcon(Star) }}
       />
       {showSell && (
         <Tab.Screen

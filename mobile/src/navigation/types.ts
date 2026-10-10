@@ -2,9 +2,11 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type MainTabParamList = {
   Home: undefined;
-  /** `search` pre-fills the search box, e.g. from the search on Home. */
-  Catalog: { search?: string } | undefined;
-  Favorites: undefined;
+  /**
+   * `search` pre-fills the search box, e.g. from the search on Home. `then`
+   * turns the list into a picker for reporting damage or an expiry date.
+   */
+  Catalog: { search?: string; then?: 'writeOff' | 'expiry' } | undefined;
   Sell: undefined;
   Account: undefined;
 };

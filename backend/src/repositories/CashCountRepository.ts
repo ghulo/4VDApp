@@ -16,6 +16,8 @@ export interface CashCountRecord {
   note: string | null;
   counted_by_name: string | null;
   counted_at: Date;
+  checked_by_name: string | null;
+  checked_at: Date | null;
 }
 
 /** Days are "YYYY-MM-DD" strings both ways, so no time zone ever shifts them. */
@@ -28,6 +30,7 @@ export class CashCountRepository {
       .selectFrom('cash_counts as c')
       .leftJoin('users as u', 'u.id', 'c.counted_by')
       .leftJoin('carwashes as w', 'w.id', 'c.carwash_id')
+      .leftJoin('users as k', 'k.id', 'c.checked_by')
       .select([
         'c.id',
         'c.place',
@@ -39,6 +42,8 @@ export class CashCountRepository {
         'c.note',
         'u.name as counted_by_name',
         'c.counted_at',
+        'k.name as checked_by_name',
+        'c.checked_at',
       ])
       .where('c.day', '>=', from)
       .where('c.day', '<=', to)
@@ -68,11 +73,24 @@ export class CashCountRepository {
           note: entry.note,
           counted_by: entry.countedBy,
           counted_at: new Date(),
+          // A new count is a new answer: any earlier "checked" no longer applies.
+          checked_by: null,
+          checked_at: null,
         }),
       )
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;
+  }
+
+  /** Someone looked at this count's difference. False when there is no such count. */
+  async markChecked(id: number, userId: number): Promise<boolean> {
+    const result = await this.db
+      .updateTable('cash_counts')
+      .set({ checked_by: userId, checked_at: new Date() })
+      .where('id', '=', id)
+      .executeTakeFirst();
+    return Number(result.numUpdatedRows) > 0;
   }
 
   /** Carwash takings (carwash + change) for each carwash and day that has them, keyed "carwashId|day". */

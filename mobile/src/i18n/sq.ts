@@ -4,7 +4,7 @@ import type { Catalogue } from './en';
 export const sq: Catalogue = {
   language: { label: 'Gjuha', english: 'English', albanian: 'Shqip' },
   nav: {
-    tabs: { home: 'Kreu', products: 'Produkte', favorites: 'Favoritet', sell: 'Shit', account: 'Llogaria' },
+    tabs: { home: 'Kreu', products: 'Produkte', sell: 'Shit', account: 'Llogaria' },
     recordSale: 'Regjistro një shitje',
     back: 'Mbrapa',
     mySales: 'Shitjet e mia',
@@ -36,7 +36,7 @@ export const sq: Catalogue = {
     ],
     family: [
       { title: 'Gjithçka në dyqan', body: 'Shfleto çdo produkt me çmimin dhe sa kanë mbetur, sipas kategorisë ose duke kërkuar.' },
-      { title: 'Mbaj të preferuarat', body: 'Prek yllin te një produkt për ta gjetur shpejt te Favoritet.' },
+      { title: 'Mbaj të preferuarat', body: 'Prek yllin te një produkt për ta gjetur shpejt: Produkte, pastaj Favoritet.' },
     ],
     welcome: (name) => `Mirë se erdhe në 4VD, ${name}`,
     step: (step, total) => `Hapi ${step} nga ${total}`,
@@ -126,6 +126,20 @@ export const sq: Catalogue = {
     noSalesYet: 'Ende pa shitje këtë muaj.',
     targetReached: (amount, month) => `Objektivi prej ${amount} u arrit për ${month}`,
     targetToGo: (p) => `Mungojnë ${p.left} për objektivin e ${p.month} prej ${p.target}`,
+    todo: 'Për t’u bërë',
+    severity: { urgent: 'Urgjente', check: 'Kontrollo', idea: 'Ide' },
+    onDashboard: 'Pjesën tjetër zgjidhe te paneli i 4VD.',
+    somethingHappened: 'Ndodhi diçka',
+    happened: {
+      returnSale: 'Kthe një shitje',
+      returnSaleHint: 'Zgjidhe nga shitjet e tua',
+      damage: 'Dëm ose humbje',
+      damageHint: 'E thyer, e prishur ose që mungon',
+      expiry: 'Data e skadimit',
+      expiryHint: 'Shëno kur skadon diçka',
+      carwash: 'Të ardhurat e lavazhit',
+      carwashHint: 'Fut të ardhurat e sotme',
+    },
   },
   account: {
     roles: {
@@ -161,11 +175,6 @@ export const sq: Catalogue = {
     logIn: 'Hyr',
     forgot: 'Harrove fjalëkalimin?',
   },
-  favorites: {
-    none: 'Ende pa favorite',
-    noneHint: 'Hap një produkt dhe prek "Ruaje te favoritet" për ta mbajtur këtu.',
-    browse: 'Shfleto produktet',
-  },
   stockTag: {
     out: 'Mbaroi',
     low: 'Stok i ulët',
@@ -181,6 +190,11 @@ export const sq: Catalogue = {
     noneYet: 'Ende pa produkte',
     tryAnother: 'Provo një kërkim ose kategori tjetër.',
     addedInDashboard: 'Produktet e shtuara te paneli shfaqen këtu.',
+    favourites: 'Favoritet',
+    noFavourites: 'Ende pa favorite',
+    noFavouritesHint: 'Hap një produkt dhe prek "Ruaje te favoritet" për ta gjetur këtu.',
+    pickFor: { writeOff: 'Cili produkt u dëmtua ose humbi?', expiry: 'Cili produkt ka datë skadimi?' },
+    cancelPick: 'Anulo',
   },
   product: {
     sku: (sku) => `, SKU ${sku}`,

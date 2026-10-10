@@ -10,6 +10,8 @@ export function createCashCountRoutes({ cashCountService, guards }: Container): 
   // Whoever closes up counts the drawer: staff, admins and the developer.
   router.get('/today', ...guards.staff, controller.today);
   router.post('/', ...guards.staff, controller.count);
+  // Whoever oversees the money says they looked at a difference.
+  router.post('/:id/check', ...guards.oversee, controller.check);
 
   return router;
 }

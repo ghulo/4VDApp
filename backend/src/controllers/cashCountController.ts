@@ -4,7 +4,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { canOversee } from '../utils/roles.js';
 import { cashCountSchema } from '../validators/cashCountValidators.js';
 import { reportRangeSchema } from '../validators/reportValidators.js';
-import { parseInput } from '../validators/validate.js';
+import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createCashCountController(cashCountService: CashCountService) {
   return {
@@ -15,6 +15,12 @@ export function createCashCountController(cashCountService: CashCountService) {
 
     async today(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await cashCountService.today());
+    },
+
+    async check(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await cashCountService.markChecked(id, req.user!.id);
+      sendSuccess(res, null, { message: 'Marked as checked' });
     },
 
     async count(req: Request, res: Response): Promise<void> {

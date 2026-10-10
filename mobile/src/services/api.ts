@@ -6,6 +6,7 @@ import type {
   CashPlace,
   CashPlaceToday,
   ShopDay,
+  Attention,
   Customer,
   Delivery,
   ExpiryDate,
@@ -115,6 +116,11 @@ export const pushApi = {
   },
   removeDevice: async (token: string) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
+};
+
+export const attentionApi = {
+  /** What needs this person, worked out by the server; the dashboard shows the same list. */
+  get: async () => (await apiRequest<Attention>('/attention')).data,
 };
 
 export const reportsApi = {

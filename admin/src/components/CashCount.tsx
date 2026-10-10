@@ -36,7 +36,15 @@ export function CashCountsTable({ counts, showDay = true, empty }: { counts: Cas
         { header: t.cash.counted, cell: (row: CashCount) => formatMoney(row.counted), align: 'end' as const },
         { header: t.cash.float, cell: (row: CashCount) => formatMoney(row.float), align: 'end' as const },
         { header: t.cash.expected, cell: (row: CashCount) => (row.expected === null ? '–' : formatMoney(row.expected)), align: 'end' as const },
-        { header: t.cash.difference, cell: (row: CashCount) => <DifferenceBadge difference={row.difference} /> },
+        {
+          header: t.cash.difference,
+          cell: (row: CashCount) => (
+            <>
+              <DifferenceBadge difference={row.difference} />
+              {row.checkedBy && <span className="table__secondary">{t.cash.checkedBy(row.checkedBy)}</span>}
+            </>
+          ),
+        },
         {
           header: t.cash.countedBy,
           cell: (row: CashCount) => (

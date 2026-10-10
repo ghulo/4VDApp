@@ -1,4 +1,5 @@
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
+import { NotFoundError } from '../errors/httpErrors.js';
 import type { ServerMessages } from '../i18n/messages.js';
 import type { CashCountRepository, CashPlace } from '../repositories/CashCountRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
@@ -31,6 +32,9 @@ export interface CashCountDto {
   note: string | null;
   countedBy: string | null;
   countedAt: string;
+  /** Who looked at the difference and when; null until someone does. */
+  checkedBy: string | null;
+  checkedAt: string | null;
 }
 
 /** What staff see: whether today's count is done, never what the app expects (the count stays blind). */
@@ -104,6 +108,8 @@ export class CashCountService {
         note: row.note,
         countedBy: row.counted_by_name,
         countedAt: row.counted_at.toISOString(),
+        checkedBy: row.checked_by_name,
+        checkedAt: row.checked_at?.toISOString() ?? null,
       };
     });
   }
@@ -132,6 +138,29 @@ export class CashCountService {
         countedBy: row?.counted_by_name ?? null,
         countedAt: row?.counted_at.toISOString() ?? null,
       };
+    });
+  }
+
+  /** Counts from the last `days` days whose difference nobody has looked at yet, newest first. */
+  async unchecked(days: number, now = new Date()): Promise<CashCountDto[]> {
+    const to = zonedDay(now, this.timeZone);
+    const from = zonedDay(new Date(now.getTime() - days * 24 * 60 * 60 * 1000), this.timeZone);
+    const counts = await this.between(from, to);
+    return counts.filter((count) => count.difference !== null && !isMatch(count.difference) && count.checkedAt === null);
+  }
+
+  /** Someone who oversees the money has looked at a count's difference, so it leaves the To do list. */
+  async markChecked(id: number, actorId: number): Promise<void> {
+    await this.transactions.run(async (repos) => {
+      if (!(await repos.cashCounts.markChecked(id, actorId))) throw new NotFoundError(`Cash count ${id} does not exist`);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'cash.checked',
+        entityType: 'cash_count',
+        entityId: id,
+        summary: 'Checked a cash difference',
+        details: {},
+      });
     });
   }
 

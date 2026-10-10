@@ -6,7 +6,7 @@
 export const en = {
   language: { label: 'Language', english: 'English', albanian: 'Shqip' },
   nav: {
-    tabs: { home: 'Home', products: 'Products', favorites: 'Favorites', sell: 'Sell', account: 'Account' },
+    tabs: { home: 'Home', products: 'Products', sell: 'Sell', account: 'Account' },
     recordSale: 'Record a sale',
     back: 'Back',
     mySales: 'My sales',
@@ -38,7 +38,7 @@ export const en = {
     ],
     family: [
       { title: 'Everything in the shop', body: 'Browse every product with its price and how many are left, by category or by searching.' },
-      { title: 'Keep your favourites', body: 'Tap the star on a product to find it again quickly under Favorites.' },
+      { title: 'Keep your favourites', body: 'Tap the star on a product to find it again quickly: Products, then the Favorites chip.' },
     ],
     welcome: (name: string) => `Welcome to 4VD, ${name}`,
     step: (step: number, total: number) => `Step ${step} of ${total}`,
@@ -130,6 +130,20 @@ export const en = {
     noSalesYet: 'No sales yet this month.',
     targetReached: (amount: string, month: string) => `Target of ${amount} reached for ${month}`,
     targetToGo: (p: { left: string; month: string; target: string }) => `${p.left} to go to your ${p.month} target of ${p.target}`,
+    todo: 'To do',
+    severity: { urgent: 'Urgent', check: 'Check', idea: 'Idea' } as Record<string, string>,
+    onDashboard: 'Act on the rest on the 4VD dashboard.',
+    somethingHappened: 'Something happened',
+    happened: {
+      returnSale: 'Return a sale',
+      returnSaleHint: 'Pick it from your sales',
+      damage: 'Damage or loss',
+      damageHint: 'Broken, spoiled or missing',
+      expiry: 'Expiry date',
+      expiryHint: 'Note when something runs out',
+      carwash: 'Carwash takings',
+      carwashHint: "Enter today's takings",
+    },
   },
   account: {
     roles: {
@@ -165,11 +179,6 @@ export const en = {
     logIn: 'Log in',
     forgot: 'Forgot your password?',
   },
-  favorites: {
-    none: 'No favorites yet',
-    noneHint: 'Open a product and tap "Save to favorites" to keep it here.',
-    browse: 'Browse products',
-  },
   stockTag: {
     out: 'Sold out',
     low: 'Low stock',
@@ -185,6 +194,11 @@ export const en = {
     noneYet: 'No products yet',
     tryAnother: 'Try another search or category.',
     addedInDashboard: 'Products added in the admin dashboard show up here.',
+    favourites: 'Favorites',
+    noFavourites: 'No favorites yet',
+    noFavouritesHint: 'Open a product and tap "Save to favorites" to find it here.',
+    pickFor: { writeOff: 'Which product was damaged or lost?', expiry: 'Which product has an expiry date?' } as Record<'writeOff' | 'expiry', string>,
+    cancelPick: 'Cancel',
   },
   product: {
     sku: (sku: string) => `, SKU ${sku}`,

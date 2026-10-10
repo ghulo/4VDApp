@@ -75,6 +75,7 @@ function CarwashForm(props: {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['carwash'] });
       queryClient.invalidateQueries({ queryKey: ['cash'] });
+      queryClient.invalidateQueries({ queryKey: ['attention'] });
     },
   });
 

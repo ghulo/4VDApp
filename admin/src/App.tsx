@@ -8,7 +8,7 @@ import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
 import { ActivityPage } from './pages/ActivityPage';
-import { InboxPage } from './pages/InboxPage';
+import { InboxPage, UpdatesPage } from './pages/InboxPage';
 import { SectionTabs } from './components/SectionTabs';
 import { SECTIONS } from './navigation/sections';
 import { CategoriesPage } from './pages/CategoriesPage';
@@ -96,9 +96,12 @@ function App() {
                   }
                 >
                   <Route index element={<OverviewPage />} />
-                  <Route path="inbox" element={<InboxPage />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>
+                    <Route path="inbox" element={<InboxPage />} />
+                    <Route path="inbox/updates" element={<UpdatesPage />} />
+                  </Route>
                   <Route path="approvals" element={<Navigate to="/inbox" replace />} />
-                  <Route path="alerts" element={<Navigate to="/inbox#inbox-alerts" replace />} />
+                  <Route path="alerts" element={<Navigate to="/inbox/updates" replace />} />
                   <Route element={<SectionTabs tabs={SECTIONS.stock} labelKey="stock" />}>
                     <Route path="inventory" element={<InventoryPage />} />
                     <Route path="products" element={<ProductsPage />} />

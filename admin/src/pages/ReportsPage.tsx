@@ -8,7 +8,7 @@ import { RevenueChart } from '../components/RevenueChart';
 import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { errorMessage } from '../utils/errors';
-import { formatMoney, formatPercent } from '../utils/format';
+import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Button, Card, MetricCard, PageHeader } from '../components/ui';
 
@@ -39,7 +39,7 @@ export function ReportsPage() {
           <>
             <MetricCard
               label={t.reports.carwash}
-              value={formatMoney(carwash.current.total)}
+              value={formatHeadlineMoney(carwash.current.total)}
               change={carwash.change}
               hint={
                 carwash.byCarwash.length > 1
@@ -50,13 +50,13 @@ export function ReportsPage() {
             />
             <MetricCard
               label={t.reports.together}
-              value={formatMoney(current.revenue + carwash.current.total)}
+              value={formatHeadlineMoney(current.revenue + carwash.current.total)}
               hint={t.reports.togetherHint}
             />
-            <MetricCard label={t.reports.expenses} value={formatMoney(expenses.current)} to="/expenses" />
+            <MetricCard label={t.reports.expenses} value={formatHeadlineMoney(expenses.current)} to="/expenses" />
             <MetricCard
               label={t.reports.netProfit}
-              value={formatMoney(netProfit.current)}
+              value={formatHeadlineMoney(netProfit.current)}
               change={netProfit.change}
               hint={t.reports.netProfitHint}
             />
@@ -64,10 +64,10 @@ export function ReportsPage() {
               label={t.analytics.margin}
               value={current.margin === null ? t.reports.unknown : formatPercent(current.margin)}
             />
-            <MetricCard label={t.analytics.refunds} value={formatMoney(current.refunds)} to="/inbox" />
+            <MetricCard label={t.analytics.refunds} value={formatHeadlineMoney(current.refunds)} to="/inbox" />
             <MetricCard
               label={t.analytics.stockLosses}
-              value={formatMoney(current.stockLosses)}
+              value={formatHeadlineMoney(current.stockLosses)}
               hint={current.lossUnitsWithoutCost > 0 ? t.reports.unitsWithoutCost(current.lossUnitsWithoutCost) : undefined}
               to="/inbox"
             />
@@ -91,7 +91,7 @@ function StockWorthCard() {
   return (
     <MetricCard
       label={t.analytics.stockWorth}
-      value={dashboard.data ? formatMoney(dashboard.data.inventoryValue) : '–'}
+      value={dashboard.data ? formatHeadlineMoney(dashboard.data.inventoryValue) : '–'}
       to="/inventory"
     />
   );

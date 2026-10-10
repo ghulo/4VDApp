@@ -7,6 +7,32 @@ const PAD = 3;
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
+/** A top value more than this many times the next highest counts as an outlier. */
+export const OUTLIER_RATIO = 4;
+
+/**
+ * What a graph should scale to (DESIGN.md 10.7): the highest value, unless one
+ * value is more than four times the next highest. Then the graph scales to
+ * the rest (with a little headroom) and `outlier` says which value runs off
+ * the top, so one huge day doesn't flatten every other.
+ */
+export function scaleTop(values: number[]): { top: number; outlier: number | null } {
+  let first = 0;
+  let second = 0;
+  let firstIndex = -1;
+  values.forEach((value, index) => {
+    if (value > first) {
+      second = first;
+      first = value;
+      firstIndex = index;
+    } else if (value > second) {
+      second = value;
+    }
+  });
+  if (second > 0 && first > OUTLIER_RATIO * second) return { top: second * 1.25, outlier: firstIndex };
+  return { top: first, outlier: null };
+}
+
 /**
  * SVG paths for a mini graph of `values`, oldest first: a smooth line, and
  * the area under it down to the bottom edge. The curve bends through the
@@ -16,7 +42,10 @@ const round = (n: number) => Math.round(n * 10) / 10;
 export function sparklinePaths(values: number[], width = SPARK_WIDTH, height = SPARK_HEIGHT): { line: string; area: string } | null {
   if (values.length === 0 || values.every((value) => value === 0)) return null;
   // One point is drawn as a flat line across the card.
-  const series = values.length === 1 ? [values[0]!, values[0]!] : values;
+  const raw = values.length === 1 ? [values[0]!, values[0]!] : values;
+  // An outlier is drawn at the top edge, so the other days keep their shape.
+  const { top } = scaleTop(raw);
+  const series = raw.map((value) => Math.min(value, top));
   const max = Math.max(...series);
   const min = Math.min(0, ...series);
   const span = max - min || 1;

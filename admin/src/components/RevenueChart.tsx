@@ -1,12 +1,13 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import type { RevenuePoint } from '../services/types';
-import { formatCompactMoney, formatDateWith, formatMoney } from '../utils/format';
+import { formatCompactMoney, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
+import { scaleTop } from './ui/sparkline';
 
 /** Drawn at the plot's real width so labels keep their size on phones; this is the first guess. */
 const DEFAULT_WIDTH = 720;
 const HEIGHT = 220;
-const MARGIN = { top: 12, right: 8, bottom: 28, left: 56 };
+const MARGIN = { top: 20, right: 8, bottom: 28, left: 56 };
 const MAX_BAR_WIDTH = 14;
 /** Room between bars, as a share of each day's slot. */
 const BAR_GAP = 0.35;
@@ -55,10 +56,13 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
 
   const plotWidth = width - MARGIN.left - MARGIN.right;
   const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
-  const maxValue = niceMax(Math.max(...points.map((point) => point.revenue), 0));
+  // One huge day must not flatten the rest: the axis is capped and that bar
+  // runs to the top with a break mark and its real value beside it.
+  const { top, outlier } = scaleTop(points.map((point) => point.revenue));
+  const maxValue = niceMax(top);
   const band = plotWidth / Math.max(points.length, 1);
   const barWidth = Math.max(1, Math.min(MAX_BAR_WIDTH, band * (1 - BAR_GAP)));
-  const yFor = (value: number) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
+  const yFor = (value: number) => MARGIN.top + plotHeight - (Math.min(value, maxValue) / maxValue) * plotHeight;
   const ticks = Array.from({ length: TICK_COUNT + 1 }, (_, index) => (maxValue / TICK_COUNT) * index);
   // About one date per 90px, so dates never collide on a narrow screen.
   const labelEvery = Math.max(1, Math.ceil(points.length / Math.max(2, Math.floor(plotWidth / 90))));
@@ -149,6 +153,10 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
             {points.map((point, index) => {
               const bandX = MARGIN.left + index * band;
               const y = yFor(point.revenue);
+              const barX = bandX + (band - barWidth) / 2;
+              const capped = index === outlier;
+              // The real value sits beside the capped bar, on whichever side has room.
+              const labelLeft = index > points.length / 2;
               return (
                 <g key={point.periodStart} className="chart__column" onPointerEnter={() => setActiveIndex(index)}>
                   {/* The whole column is the hit target, not just the painted bar. */}
@@ -157,8 +165,25 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
                     <path
                       className={index === activeIndex ? 'chart__bar chart__bar--active' : 'chart__bar'}
                       // Any sale at all shows at least a sliver, so quiet days still register.
-                      d={barPath(bandX + (band - barWidth) / 2, barWidth, Math.min(y, MARGIN.top + plotHeight - 2), MARGIN.top + plotHeight)}
+                      d={barPath(barX, barWidth, Math.min(y, MARGIN.top + plotHeight - 2), MARGIN.top + plotHeight)}
                     />
+                  )}
+                  {capped && (
+                    <>
+                      <path
+                        className="chart__break"
+                        d={`M${barX - 2},${MARGIN.top + 14} L${barX + barWidth + 2},${MARGIN.top + 9} M${barX - 2},${MARGIN.top + 19} L${barX + barWidth + 2},${MARGIN.top + 14}`}
+                      />
+                      <text
+                        className="chart__tick chart__tick--value"
+                        x={labelLeft ? barX - 6 : barX + barWidth + 6}
+                        y={MARGIN.top + 4}
+                        textAnchor={labelLeft ? 'end' : 'start'}
+                        dominantBaseline="middle"
+                      >
+                        {formatHeadlineMoney(point.revenue)}
+                      </text>
+                    </>
                   )}
                   {index % labelEvery === 0 && (
                     <text className="chart__tick" x={bandX + band / 2} y={HEIGHT - 8} textAnchor="middle">

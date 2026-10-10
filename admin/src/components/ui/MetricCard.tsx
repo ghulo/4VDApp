@@ -2,7 +2,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, DotsThree } from '@phosphor-i
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
-import { formatPercent, MUCH_MORE } from '../../utils/format';
+import { formatPercent, formatTimes, MUCH_MORE } from '../../utils/format';
 import { changeDirection, SPARK_HEIGHT, SPARK_WIDTH, sparklinePaths } from './sparkline';
 
 const ARROWS = { up: ArrowUpRight, down: ArrowDownRight, flat: ArrowRight } as const;
@@ -52,18 +52,26 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
           <span className={`metric__change metric__change--${direction}`}>
             <span className="metric__change-shown" aria-hidden="true">
               <ChangeArrow direction={direction} />
-              {muchMore ? t.analytics.muchMore : formatPercent(Math.abs(change))}
+              {muchMore ? formatTimes(change) : formatPercent(Math.abs(change))}
             </span>
             <span className="visually-hidden">
               {muchMore
-                ? t.analytics.muchMoreThanBefore
+                ? t.analytics.timesBefore(formatTimes(change))
                 : direction === 'flat'
                   ? t.reports.sameAsBefore
                   : t.reports.change({ up: direction === 'up', percent: formatPercent(Math.abs(change)) })}
             </span>
           </span>
         )}
-        {direction === null && <span className="visually-hidden">{t.reports.nothingToCompare}</span>}
+        {/* Nothing the period before: say so, rather than a percent of zero. */}
+        {direction === null && (
+          <span className="metric__change metric__change--flat">
+            <span className="metric__change-shown" aria-hidden="true">
+              {t.analytics.noneBefore}
+            </span>
+            <span className="visually-hidden">{t.analytics.noneBeforeLong}</span>
+          </span>
+        )}
       </p>
       {hint && <p className="metric__hint">{hint}</p>}
       {series &&

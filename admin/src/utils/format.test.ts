@@ -1,7 +1,23 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatMoney, setFormatLanguage } from './format';
+import { formatMoney, setFormatLanguage, formatHeadlineMoney, formatTimes } from './format';
 
 afterEach(() => setFormatLanguage('en'));
+
+describe('formatHeadlineMoney', () => {
+  it('should drop the cents from €1,000 up and keep them below', () => {
+    expect(formatHeadlineMoney(240769.4)).toBe('€240,769');
+    expect(formatHeadlineMoney(999.5)).toBe('€999.50');
+    expect(formatHeadlineMoney(-1200.2)).toBe('-€1,200');
+  });
+});
+
+describe('formatTimes', () => {
+  it('should say a rise as a multiple', () => {
+    expect(formatTimes(4)).toBe('5×');
+    expect(formatTimes(3.25)).toBe('4.3×');
+    expect(formatTimes(62.4)).toBe('63×');
+  });
+});
 
 describe('formatMoney', () => {
   it('should write euros the English way', () => expect(formatMoney(1204.5)).toBe('€1,204.50'));

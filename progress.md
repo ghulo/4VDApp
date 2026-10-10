@@ -33,6 +33,8 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Warm status colours and an ink focus ring in both apps
 - [x] Buttons: thinner 2px edge, no jump on hover, disabled buttons sit flat instead of half see-through
 - [x] Glass: one clean recipe; the top bar only turns to glass once the page scrolls under it
+- [x] Overview: what needs you comes first and largest; the Today panel is a slim strip with a small sunrise; zero counts hidden; title is "Overview"
+- [x] Reports: big figures drop the cents, rises say a number ("12×") instead of "Much more", one huge day no longer flattens the graphs, cards line up in even rows
 - [ ] You look it over locally and say yes, then merge and push
 
 ## Optional

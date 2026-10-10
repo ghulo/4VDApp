@@ -669,19 +669,15 @@ that area; remove it from this list when done.
 
 **Look**
 
-9. **Overview hierarchy**: Today panel ~1/3 of the screen, zero counts shown,
-    stamps in a side column on phones, "Hi Admin" title. → 3.8, 10.5
-10. **Reports**: cents on headline figures, "Much more", sparklines flattened by
-    one outlier, ragged metric grid (`ReportsPage.tsx`, `MetricCard.tsx`). → 10.6–10.7
-11. **Tables not on DataTable** (miss the ARIA fix): SalesPage, PromotionsPage,
+9. **Tables not on DataTable** (miss the ARIA fix): SalesPage, PromotionsPage,
     OrdersPage (2), StockCountDetailPage, ProductFormPage, ReportsPage (2). → 10.4
-12. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
+10. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
     raw px spacings, radii 2/4/6/10/12/14px, weights 300/700. → 7, 8
-13. **Team app type**: no type tokens (19 raw `fontSize` values);
+11. **Team app type**: no type tokens (19 raw `fontSize` values);
     `fonts.display` is the sans. → 7
-14. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-15. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+12. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+13. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
     theme / language controls (chips vs segmented). → 10.9, 10.10
-16. **Box in a box**: tables inside cards (Sales history, Cash counts, others). → 8
-17. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-18. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+14. **Box in a box**: tables inside cards (Sales history, Cash counts, others). → 8
+15. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+16. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

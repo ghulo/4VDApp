@@ -327,11 +327,7 @@ export const en = {
     netProfitHint: 'Shop profit + carwash − expenses',
   },
   overview: {
-    hi: (name: string) => `Hi ${name}`,
-    checkingStock: 'Checking stock levels…',
-    allAbove: 'Every product is above its reorder level.',
-    needRestock: (count: number) => `${count} ${count === 1 ? 'product needs' : 'products need'} restocking`,
-    soldOut: (count: number) => `, ${count} already sold out`,
+    description: 'What needs you first, then how the day is going.',
     needsRestocking: 'Needs restocking',
     seeAllStock: 'See all stock',
     nothingToRestock: 'Nothing to restock',
@@ -348,8 +344,8 @@ export const en = {
     comparedLastWeek: (p: { up: boolean; percent: number; weekday: string; amount: string }) =>
       `${p.up ? 'Up' : 'Down'} ${p.percent}% on last ${p.weekday}, which had ${p.amount} by this time.`,
     lastWeekHad: (p: { weekday: string; amount: string }) => `Last ${p.weekday} had ${p.amount} by this time.`,
-    muchMoreThanLastWeek: (p: { weekday: string; amount: string }) =>
-      `Much more than last ${p.weekday}, which had ${p.amount} by this time.`,
+    timesLastWeek: (p: { times: string; weekday: string; amount: string }) =>
+      `${p.times} as much as last ${p.weekday}, which had ${p.amount} by this time.`,
     todayFacts: (p: { items: number; profit: string }) => `${p.items} ${p.items === 1 ? 'item' : 'items'} sold, ${p.profit} profit.`,
     waitingForYou: 'waiting for you',
     toRestock: 'to restock',
@@ -593,8 +589,9 @@ export const en = {
     refresh: 'Refresh the figures',
     refreshing: 'Refreshing the figures…',
     noData: 'No data',
-    muchMore: 'Much more',
-    muchMoreThanBefore: 'much more than the period before',
+    timesBefore: (times: string) => `${times} as much as the period before`,
+    noneBefore: 'None before',
+    noneBeforeLong: 'nothing in the period before, so this is the first',
     open: (label: string) => `Open ${label}`,
     revenue: 'Revenue',
     profit: 'Profit',

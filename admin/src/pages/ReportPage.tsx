@@ -8,7 +8,7 @@ import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
 import type { FullReport, ReportKind } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatMoney, formatPercent } from '../utils/format';
+import { formatDate, formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const shift = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
@@ -111,9 +111,9 @@ function ReportSections({ report }: { report: FullReport }) {
       {s.sales && (
         <section aria-label={t.report.sections.sales}>
           <MetricGrid>
-            <MetricCard label={t.fullReport.revenue} value={formatMoney(s.sales.revenue)} change={s.sales.change} hint={t.fullReport.before(formatMoney(s.sales.previousRevenue))} />
-            <MetricCard label={t.fullReport.profit} value={formatMoney(s.sales.profit)} hint={s.sales.margin === null ? undefined : t.fullReport.margin(formatPercent(s.sales.margin))} />
-            <MetricCard label={t.fullReport.net} value={formatMoney(s.sales.netProfit)} hint={t.fullReport.netHint} />
+            <MetricCard label={t.fullReport.revenue} value={formatHeadlineMoney(s.sales.revenue)} change={s.sales.change} hint={t.fullReport.before(formatMoney(s.sales.previousRevenue))} />
+            <MetricCard label={t.fullReport.profit} value={formatHeadlineMoney(s.sales.profit)} hint={s.sales.margin === null ? undefined : t.fullReport.margin(formatPercent(s.sales.margin))} />
+            <MetricCard label={t.fullReport.net} value={formatHeadlineMoney(s.sales.netProfit)} hint={t.fullReport.netHint} />
             <MetricCard label={t.fullReport.salesCount} value={s.sales.salesCount} hint={t.fullReport.units(s.sales.unitsSold, formatMoney(s.sales.averageSale))} />
           </MetricGrid>
           {s.sales.byDay.length > 0 && (

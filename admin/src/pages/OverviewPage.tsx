@@ -9,7 +9,7 @@ import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
-import { formatDateWith, formatMoney, MUCH_MORE } from '../utils/format';
+import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MORE } from '../utils/format';
 import { ButtonLink, Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
@@ -28,21 +28,15 @@ export function OverviewPage() {
     queryFn: () => inventoryApi.list({ page: 1, lowStock: true, limit: 50 }),
   });
 
-  const firstName = user.name.split(' ')[0];
   const lowCount = lowStock.data?.meta.total;
-  const outCount = lowStock.data?.items.filter((item) => item.quantity === 0).length;
 
+  // The morning page (DESIGN.md 3.8): what needs you first and largest, then
+  // the day in a slim strip, setup while unfinished, restocking, Reports.
   return (
     <>
       <PageHeader
-        title={t.overview.hi(firstName ?? user.name)}
-        description={
-          lowCount === undefined
-            ? t.overview.checkingStock
-            : lowCount === 0
-              ? t.overview.allAbove
-              : `${t.overview.needRestock(lowCount)}${outCount ? t.overview.soldOut(outCount) : ''}.`
-        }
+        title={t.nav.items.overview}
+        description={t.overview.description}
         actions={
           user.role !== 'owner' && (
             <ButtonLink to="/sales" variant="primary" icon={Receipt}>
@@ -52,44 +46,42 @@ export function OverviewPage() {
         }
       />
 
+      <AttentionPanel />
+
       <TodayCard lowCount={lowCount} />
 
       <SetupGuide />
 
-      <div className="split">
-        <AttentionPanel />
-
-        <Card
-          title={t.overview.needsRestocking}
-          actions={
-            <Link to="/inventory?lowStock=true" className="text-link">
-              {t.overview.seeAllStock}
-            </Link>
-          }
-        >
-          {lowStock.isPending && <Loading />}
-          {lowStock.isError && <ErrorNotice error={lowStock.error} onRetry={() => lowStock.refetch()} />}
-          {lowStock.data && lowStock.data.items.length === 0 && (
-            <EmptyState title={t.overview.nothingToRestock}>{t.overview.nothingToRestockHint}</EmptyState>
-          )}
-          {lowStock.data && lowStock.data.items.length > 0 && (
-            <ul className="restock-list">
-              {lowStock.data.items.map((item) => (
-                <li key={item.productId}>
-                  <Link to={`/inventory/${item.productId}`} className="restock-list__row">
-                    <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
-                    <span className="restock-list__name product-cell">
-                      <ProductPhoto src={item.imageUrl} />
-                      {item.productName}
-                    </span>
-                    <span className="restock-list__meta">{t.overview.reorderAt(item.reorderLevel)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
+      <Card
+        title={t.overview.needsRestocking}
+        actions={
+          <Link to="/inventory?lowStock=true" className="text-link">
+            {t.overview.seeAllStock}
+          </Link>
+        }
+      >
+        {lowStock.isPending && <Loading />}
+        {lowStock.isError && <ErrorNotice error={lowStock.error} onRetry={() => lowStock.refetch()} />}
+        {lowStock.data && lowStock.data.items.length === 0 && (
+          <EmptyState title={t.overview.nothingToRestock}>{t.overview.nothingToRestockHint}</EmptyState>
+        )}
+        {lowStock.data && lowStock.data.items.length > 0 && (
+          <ul className="restock-list">
+            {lowStock.data.items.map((item) => (
+              <li key={item.productId}>
+                <Link to={`/inventory/${item.productId}`} className="restock-list__row">
+                  <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
+                  <span className="restock-list__name product-cell">
+                    <ProductPhoto src={item.imageUrl} />
+                    {item.productName}
+                  </span>
+                  <span className="restock-list__meta">{t.overview.reorderAt(item.reorderLevel)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <p className="overview__more">
         <Link to="/reports" className="text-link">
@@ -144,7 +136,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
     if (change === null) return t.overview.nothingLastWeek(weekday);
     const amount = formatMoney(previous.revenue);
     if (current.revenue === 0) return t.overview.lastWeekHad({ weekday, amount });
-    if (change > MUCH_MORE) return t.overview.muchMoreThanLastWeek({ weekday, amount });
+    if (change > MUCH_MORE) return t.overview.timesLastWeek({ times: formatTimes(change), weekday, amount });
     return t.overview.comparedLastWeek({ up: change >= 0, percent: Math.abs(Math.round(change * 100)), weekday, amount });
   }
 
@@ -157,7 +149,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           <>
             <p className="today__headline">
               {current.salesCount > 0
-                ? t.overview.takenToday({ amount: formatMoney(current.revenue), count: current.salesCount })
+                ? t.overview.takenToday({ amount: formatHeadlineMoney(current.revenue), count: current.salesCount })
                 : t.overview.noSalesToday}
             </p>
             <p className="today__compare">
@@ -167,14 +159,19 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           </>
         )}
         <div className="today__links">
-          <Link to="/inbox" className={waiting > 0 ? 'today__link today__link--due' : 'today__link'}>
-            <strong>{waiting}</strong> {t.overview.waitingForYou}
-            <CaretRight size={14} aria-hidden="true" />
-          </Link>
-          <Link to="/inventory?lowStock=true" className="today__link">
-            <strong>{lowCount ?? '–'}</strong> {t.overview.toRestock}
-            <CaretRight size={14} aria-hidden="true" />
-          </Link>
+          {/* Zero is not news: a count only shows when there is something behind it. */}
+          {waiting > 0 && (
+            <Link to="/inbox" className="today__link today__link--due">
+              <strong>{waiting}</strong> {t.overview.waitingForYou}
+              <CaretRight size={14} aria-hidden="true" />
+            </Link>
+          )}
+          {lowCount !== undefined && lowCount > 0 && (
+            <Link to="/inventory?lowStock=true" className="today__link">
+              <strong>{lowCount}</strong> {t.overview.toRestock}
+              <CaretRight size={14} aria-hidden="true" />
+            </Link>
+          )}
           {today.data && (
             <Link to="/carwash" className="today__link">
               {today.data.carwash.current.days > 0 ? (
@@ -194,14 +191,14 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           <DayCloseLink />
         </div>
       </div>
-      <div className="today__side">
+      {lastDays.data && (
+        <figure className="today__dots">
+          <DayBars values={lastDays.data.points.map((point) => point.revenue)} label={t.overview.salesLast30Days} />
+          <figcaption>{t.overview.last30Days}</figcaption>
+        </figure>
+      )}
+      <div className="today__sunrise">
         <ShopSunrise />
-        {lastDays.data && (
-          <figure className="today__dots">
-            <DayBars values={lastDays.data.points.map((point) => point.revenue)} label={t.overview.salesLast30Days} />
-            <figcaption>{t.overview.last30Days}</figcaption>
-          </figure>
-        )}
       </div>
     </section>
   );

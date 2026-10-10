@@ -198,11 +198,18 @@ describe('MetricCard', () => {
     expect(html).toContain('up 25% on the period before');
   });
 
-  it('should say "Much more" instead of a huge percent', () => {
+  it('should say a huge rise as a multiple, never just "much more"', () => {
     const html = render(<MetricCard label="Revenue" value="€100" change={770.9} />);
 
-    expect(html).toContain('Much more');
-    expect(html).toContain('much more than the period before');
+    expect(html).toContain('772×');
+    expect(html).toContain('772× as much as the period before');
+    expect(html).not.toContain('%');
+  });
+
+  it('should say when there was nothing the period before', () => {
+    const html = render(<MetricCard label="Revenue" value="€100" change={null} />);
+
+    expect(html).toContain('None before');
     expect(html).not.toContain('%');
   });
 });

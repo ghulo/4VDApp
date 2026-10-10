@@ -20,6 +20,20 @@ export const formatMoney = (amount: number) =>
     ? albanianMoney(amount)
     : cached('money', () => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })).format(amount);
 
+/**
+ * Money as a headline figure (metric cards, the day's sentence): from €1,000
+ * up the cents are dropped ("€240,769"), smaller amounts keep them.
+ */
+export const formatHeadlineMoney = (amount: number) => {
+  if (Math.abs(amount) < 1000) return formatMoney(amount);
+  return current === 'sq'
+    ? `${albanianNumber(Math.round(amount), 0)}${String.fromCharCode(160)}€`
+    : cached(
+        'money-whole',
+        () => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, minimumFractionDigits: 0 }),
+      ).format(amount);
+};
+
 /** Whole euros for chart axes: "€1.2K" in English, "1200 €" in Albanian. */
 export const formatCompactMoney = (amount: number) =>
   current === 'sq'
@@ -30,8 +44,19 @@ export const formatCompactMoney = (amount: number) =>
       ).format(amount);
 
 /** 0.125 → "12.5%" ("12,5%" in Albanian). */
-/** A rise above this (+300%, four times as much) reads as noise in percent, so it's said in words. */
+/** A rise above this (+300%, four times as much) reads as noise in percent, so it's said as "5×". */
 export const MUCH_MORE = 3;
+
+/** A rise as a multiple: 0.5 → "1.5×", 4 → "5×", 62.4 → "63×" ("1,5×" in Albanian). */
+export const formatTimes = (change: number) => {
+  const times = 1 + change;
+  const digits = times < 10 ? 1 : 0;
+  const text =
+    current === 'sq'
+      ? albanianNumber(times, digits).replace(/,0$/, '')
+      : cached(`times-${digits}`, () => new Intl.NumberFormat('en-IE', { maximumFractionDigits: digits })).format(times);
+  return `${text}×`;
+};
 
 export const formatPercent = (fraction: number) =>
   current === 'sq'

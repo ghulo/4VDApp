@@ -487,7 +487,7 @@ export interface FullReport {
     team: Array<{ name: string; salesCount: number; revenue: number; profit: number }>;
     losses: { refunds: number; stockLosses: number };
     carwash: { total: number; each: Array<{ name: string; carwash: number; change: number; total: number }> };
-    cash: Array<{ day: string; place: string; counted: number; expected: number | null; difference: number | null }>;
+    cash: Array<{ day: string; place: string; counted: number; float: number; expected: number | null; difference: number | null }>;
     expenses: { total: number; byCategory: Array<{ category: string; amount: number }> };
     tabs: { owed: number; customers: number; overdue: Array<{ name: string; balance: number }> };
     bills: {

@@ -258,6 +258,7 @@ function ReportSections({ report }: { report: FullReport }) {
                     <span>
                       {row.place}
                       {report.kind === 'weekly' && <span className="table__secondary"> {formatDate(row.day)}</span>}
+                      <span className="table__secondary"> {t.fullReport.float(formatMoney(row.float))}</span>
                     </span>
                     <span>
                       {row.difference === null ? (

@@ -137,11 +137,13 @@ function CountForm() {
   // Which drawer: "shop" or "carwash:<id>".
   const [drawer, setDrawer] = useState('shop');
   const [counted, setCounted] = useState('');
+  // Null until someone changes it: then the drawer's usual float (or the one already counted today).
+  const [floatInput, setFloatInput] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
   const save = useMutation({
     mutationFn: () => {
-      const input = { counted: Number(counted), note: note.trim() || null };
+      const input = { counted: Number(counted), float: Number(floatValue), note: note.trim() || null };
       return drawer === 'shop'
         ? cashApi.count({ place: 'shop', ...input })
         : cashApi.count({ place: 'carwash', carwashId: Number(drawer.split(':')[1]), ...input });
@@ -151,6 +153,7 @@ function CountForm() {
       queryClient.invalidateQueries({ queryKey: ['activity'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setCounted('');
+      setFloatInput(null);
       setNote('');
     },
   });
@@ -166,7 +169,8 @@ function CountForm() {
     entry,
   }));
   const status = drawers.find((option) => option.key === drawer)?.entry;
-  const isValid = counted.trim() !== '' && Number(counted) >= 0;
+  const floatValue = floatInput ?? String(status?.float ?? 0);
+  const isValid = counted.trim() !== '' && Number(counted) >= 0 && floatValue.trim() !== '' && Number(floatValue) >= 0;
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
@@ -180,6 +184,7 @@ function CountForm() {
             className="segmented__option"
             onClick={() => {
               setDrawer(option.key);
+              setFloatInput(null);
               save.reset();
             }}
           >
@@ -187,11 +192,18 @@ function CountForm() {
           </button>
         ))}
       </div>
-      <Field
-        label={t.cash.counted}
-        hint={status ? t.cash.countedHint(formatMoney(status.float)) : undefined}
-        narrow
-      >
+      <Field label={t.cash.float} hint={t.cash.floatHint} narrow>
+        <input
+          type="number"
+          inputMode="decimal"
+          required
+          min={0}
+          step={0.01}
+          value={floatValue}
+          onChange={(event) => setFloatInput(event.target.value)}
+        />
+      </Field>
+      <Field label={t.cash.counted} hint={t.cash.countedHint(formatMoney(Number(floatValue) || 0))} narrow>
         <input
           type="number"
           inputMode="decimal"

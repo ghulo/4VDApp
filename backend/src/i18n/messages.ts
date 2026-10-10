@@ -140,7 +140,7 @@ export interface ServerMessages {
       person: (p: { name: string; sales: number; revenue: number }) => string;
       losses: (p: { refunds: number; stockLosses: number }) => string;
       carwash: (p: { name: string; total: number }) => string;
-      cash: (p: { day: string; place: string; difference: number | null }) => string;
+      cash: (p: { day: string; place: string; float: number; difference: number | null }) => string;
       expense: (p: { category: string; amount: number }) => string;
       expensesTotal: (amount: number) => string;
       tabs: (p: { owed: number; customers: number }) => string;
@@ -357,8 +357,8 @@ export const en: ServerMessages = {
       person: ({ name, sales, revenue }) => `${name}: ${sales} ${sales === 1 ? 'sale' : 'sales'}, ${money(revenue, 'en')}`,
       losses: ({ refunds, stockLosses }) => `${money(refunds, 'en')} refunded, ${money(stockLosses, 'en')} of stock lost`,
       carwash: ({ name, total }) => `${name}: ${money(total, 'en')}`,
-      cash: ({ day, place, difference }) =>
-        `${day} ${place}: ${difference === null ? 'counted' : difference === 0 ? 'matched' : difference < 0 ? `short ${money(-difference, 'en')}` : `over ${money(difference, 'en')}`}`,
+      cash: ({ day, place, float, difference }) =>
+        `${day} ${place}: ${difference === null ? 'counted' : difference === 0 ? 'matched' : difference < 0 ? `short ${money(-difference, 'en')}` : `over ${money(difference, 'en')}`} (float ${money(float, 'en')})`,
       expense: ({ category, amount }) => `${category}: ${money(amount, 'en')}`,
       expensesTotal: (amount) => `${money(amount, 'en')} spent`,
       tabs: ({ owed, customers }) => `${money(owed, 'en')} owed by ${customers} ${customers === 1 ? 'customer' : 'customers'}`,
@@ -576,8 +576,8 @@ export const sq: ServerMessages = {
       person: ({ name, sales, revenue }) => `${name}: ${sales} shitje, ${money(revenue, 'sq')}`,
       losses: ({ refunds, stockLosses }) => `${money(refunds, 'sq')} të rimbursuara, ${money(stockLosses, 'sq')} stok i humbur`,
       carwash: ({ name, total }) => `${name}: ${money(total, 'sq')}`,
-      cash: ({ day, place, difference }) =>
-        `${day} ${place}: ${difference === null ? 'u numërua' : difference === 0 ? 'përputhet' : difference < 0 ? `mungojnë ${money(-difference, 'sq')}` : `tepricë ${money(difference, 'sq')}`}`,
+      cash: ({ day, place, float, difference }) =>
+        `${day} ${place}: ${difference === null ? 'u numërua' : difference === 0 ? 'përputhet' : difference < 0 ? `mungojnë ${money(-difference, 'sq')}` : `tepricë ${money(difference, 'sq')}`} (kusuri fillestar ${money(float, 'sq')})`,
       expense: ({ category, amount }) => `${category}: ${money(amount, 'sq')}`,
       expensesTotal: (amount) => `${money(amount, 'sq')} të shpenzuara`,
       tabs: ({ owed, customers }) => `${money(owed, 'sq')} borxh nga ${customers} ${customers === 1 ? 'klient' : 'klientë'}`,

@@ -182,7 +182,7 @@ export const customersApi = {
 
 export const cashApi = {
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
-  count: async (input: { place: CashPlace; carwashId?: number; counted: number; note: string | null }) => {
+  count: async (input: { place: CashPlace; carwashId?: number; counted: number; float?: number; note: string | null }) => {
     await apiRequest('/cash-counts', { method: 'POST', body: input });
   },
 };

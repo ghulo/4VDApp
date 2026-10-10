@@ -8,6 +8,8 @@ export const cashCountSchema = z.object({
   carwashId: idSchema.optional(),
   /** Everything in the drawer, float included. */
   counted: money,
+  /** What the drawer started with today, when it wasn't the usual float from Settings. */
+  float: money.optional(),
   note: z
     .string()
     .trim()

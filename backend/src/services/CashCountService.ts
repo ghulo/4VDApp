@@ -116,19 +116,26 @@ export class CashCountService {
     ];
     return drawers.map((drawer) => {
       const row = rows.find((count) => count.place === drawer.place && count.carwash_id === drawer.carwashId);
-      return { ...drawer, countedBy: row?.counted_by_name ?? null, countedAt: row?.counted_at.toISOString() ?? null };
+      return {
+        ...drawer,
+        // Once counted, the float that drawer really started with today.
+        float: row ? Number(row.float_amount) : drawer.float,
+        countedBy: row?.counted_by_name ?? null,
+        countedAt: row?.counted_at.toISOString() ?? null,
+      };
     });
   }
 
   /** Today's count for one drawer, replacing an earlier one. Tells the overseers when it's off. */
   async count(
-    input: { place: CashPlace; carwashId?: number; counted: number; note: string | null },
+    input: { place: CashPlace; carwashId?: number; counted: number; float?: number; note: string | null },
     actor: { id: number; name: string },
     now = new Date(),
   ): Promise<CashCountDto> {
     const day = zonedDay(now, this.timeZone);
     const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
-    const float = carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop;
+    // Usually the float from Settings; whoever counts can say the drawer started with something else today.
+    const float = input.float ?? (carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop);
     const carwashName = carwash ? ((await this.carwashService.displayNames()).get(carwash.id) ?? null) : null;
     const drawerName = carwash ? `${carwash.name} carwash` : 'shop';
     const id = await this.transactions.run(async (repos) => {

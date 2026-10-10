@@ -72,6 +72,16 @@ describe('end-of-day cash check', () => {
     expect(response.body.data).toMatchObject({ float: 100, expected: 0, difference: 0 });
   });
 
+  it('should take a different float for the day when the counter gives one', async () => {
+    await sell(20, 3); // €60 of sales.
+    const response = await request(context.app).post('/api/cash-counts').set(auth(adminToken)).send({ place: 'shop', counted: 210, float: 150 });
+
+    expect(response.body.data).toMatchObject({ float: 150, expected: 60, difference: 0 });
+    // Today's drawer remembers it; Settings keep the usual float for the next day.
+    expect((await request(context.app).get('/api/cash-counts/today').set(auth(adminToken))).body.data[0]).toMatchObject({ float: 150 });
+    expect((await request(context.app).get('/api/settings').set(auth(adminToken))).body.data).toMatchObject({ cashFloatShop: 50 });
+  });
+
   it("should be in the owner's daily summary", async () => {
     const before = await context.container.dailySummaryService.compose(new Date());
     await sell(20, 1);

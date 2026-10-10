@@ -14,6 +14,9 @@ import { carwashLabel } from '../utils/shift';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CashCount'>;
 
+const toAmount = (text: string) => Number(text.replace(',', '.'));
+const isAmount = (text: string) => text.trim() !== '' && Number.isFinite(toAmount(text)) && toAmount(text) >= 0;
+
 /**
  * Closing up: count everything in the drawer. Blind on purpose: the screen
  * never shows what the app expects, so the count is what's really there.
@@ -26,15 +29,16 @@ export function CashCountScreen({ navigation, route }: Props) {
   // Which drawer: "shop" or "carwash:<id>". Until someone picks: the one asked for, else the first not counted yet.
   const [picked, setDrawer] = useState<string | null>(route.params?.drawer ?? null);
   const [counted, setCounted] = useState('');
+  // Null until someone changes it: then the drawer's usual float (or the one already counted today).
+  const [floatInput, setFloatInput] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
   // Commas are how many people here type decimals: "120,50".
-  const amount = Number(counted.replace(',', '.'));
-  const isValid = counted.trim() !== '' && Number.isFinite(amount) && amount >= 0;
+  const amount = toAmount(counted);
 
   const submit = useMutation({
-    mutationFn: (drawer: string) => {
-      const input = { counted: amount, note: note.trim() || null };
+    mutationFn: ({ drawer, float }: { drawer: string; float: number }) => {
+      const input = { counted: amount, float, note: note.trim() || null };
       return drawer === 'shop'
         ? cashApi.count({ place: 'shop', ...input })
         : cashApi.count({ place: 'carwash', carwashId: Number(drawer.split(':')[1]), ...input });
@@ -55,12 +59,15 @@ export function CashCountScreen({ navigation, route }: Props) {
   const chosen =
     drawers.find((option) => option.key === picked) ?? drawers.find((option) => !option.entry.countedAt) ?? drawers[0]!;
   const status = chosen.entry;
+  const floatText = floatInput ?? String(status.float).replace('.', ',');
+  const float = toAmount(floatText);
+  const isValid = isAmount(counted) && isAmount(floatText);
 
   if (submit.isSuccess) {
     return (
       <Confirmation
         title={t.cash.doneTitle}
-        message={t.cash.doneMessage(drawers.find((option) => option.key === submit.variables)?.label ?? chosen.label, formatMoney(amount))}
+        message={t.cash.doneMessage(drawers.find((option) => option.key === submit.variables?.drawer)?.label ?? chosen.label, formatMoney(amount))}
         onDone={() => navigation.goBack()}
       />
     );
@@ -72,10 +79,14 @@ export function CashCountScreen({ navigation, route }: Props) {
         label={t.cash.whichDrawer}
         options={drawers.map((option) => ({ value: option.key, label: option.label }))}
         value={chosen.key}
-        onChange={setDrawer}
+        onChange={(key) => {
+          setDrawer(key);
+          setFloatInput(null);
+        }}
       />
+      <TextField label={t.cash.float} value={floatText} onChangeText={setFloatInput} keyboardType="decimal-pad" placeholder="0,00" />
       <Text style={[styles.hint, { color: colors.inkMuted }]}>
-        {status.float > 0 ? t.cash.includeFloat(formatMoney(status.float)) : t.cash.countAll}
+        {float > 0 ? t.cash.includeFloat(formatMoney(float)) : t.cash.countAll}
       </Text>
       <TextField
         label={t.cash.counted}
@@ -87,7 +98,7 @@ export function CashCountScreen({ navigation, route }: Props) {
       <TextField label={t.cash.note} value={note} onChangeText={setNote} maxLength={500} placeholder={t.cash.notePlaceholder} />
       {status.countedAt && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.cash.alreadyCounted(status.countedBy)}</Text>}
       {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
-      <Button label={t.cash.save} onPress={() => submit.mutate(chosen.key)} disabled={!isValid} loading={submit.isPending} />
+      <Button label={t.cash.save} onPress={() => submit.mutate({ drawer: chosen.key, float })} disabled={!isValid} loading={submit.isPending} />
     </ScrollView>
   );
 }

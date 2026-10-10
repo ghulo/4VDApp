@@ -419,7 +419,7 @@ export const cashApi = {
   list: async (range: ReportRange) => (await apiRequest<CashCount[]>('/cash-counts', { query: { ...range } })).data,
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
   /** Overseers get the result back; staff get null (they count blind). */
-  count: async (input: { place: CashPlace; carwashId?: number; counted: number; note: string | null }) =>
+  count: async (input: { place: CashPlace; carwashId?: number; counted: number; float?: number; note: string | null }) =>
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
 };
 

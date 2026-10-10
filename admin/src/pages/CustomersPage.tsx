@@ -227,7 +227,17 @@ export function CustomerDetailPage() {
               align: 'end',
               cell: (row) => (row.kind === 'charge' ? formatMoney(row.amount) : `−${formatMoney(row.amount)}`),
             },
-            { header: t.tabs.by, cell: (row) => row.by ?? '–' },
+            {
+              header: t.tabs.by,
+              cell: (row) =>
+                row.by === null
+                  ? '–'
+                  : row.kind === 'payment'
+                    ? t.tabs.takenBy(row.by)
+                    : row.kind === 'refund'
+                      ? t.tabs.refundedBy(row.by)
+                      : t.tabs.addedBy(row.by),
+            },
           ]}
         />
       </Card>

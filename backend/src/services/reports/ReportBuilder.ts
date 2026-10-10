@@ -56,7 +56,7 @@ export interface ReportSections {
   team: Array<{ name: string; salesCount: number; revenue: number; profit: number }>;
   losses: { refunds: number; stockLosses: number };
   carwash: { total: number; each: Array<{ name: string; carwash: number; change: number; total: number }> };
-  cash: Array<{ day: string; place: string; counted: number; expected: number | null; difference: number | null }>;
+  cash: Array<{ day: string; place: string; counted: number; float: number; expected: number | null; difference: number | null }>;
   expenses: { total: number; byCategory: Array<{ category: string; amount: number }> };
   tabs: { owed: number; customers: number; overdue: Array<{ name: string; balance: number }> };
   bills: {
@@ -160,6 +160,7 @@ export class ReportBuilder {
         day: count.day,
         place: count.place === 'shop' ? t.report.shop : (count.carwashName ?? t.report.carwash),
         counted: count.counted,
+        float: count.float,
         expected: count.expected,
         // Off by less than 50 cents counts as a match.
         difference: count.difference !== null && Math.abs(count.difference) < CASH_MATCH ? 0 : count.difference,

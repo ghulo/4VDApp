@@ -16,6 +16,11 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [ ] Phase 4: full visual polish of every screen in both apps (light and dark, EN and SQ)
 - [ ] Phase 5: hardening, and update the out-of-date PRODUCT.md
 
+## Requests 2026-10-10
+
+- [x] Shop float editable right where the drawer is counted (usually €150, sometimes not), and the float used shows in reports
+- [x] Tabs show more detail: who added each charge, who took each payment, and the time (hour:minute)
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

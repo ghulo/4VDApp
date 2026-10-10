@@ -11,6 +11,7 @@ import { errorMessage, formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
 const day = (iso: string) => formatDateWith(new Date(iso), { day: 'numeric', month: 'short' });
+const dayAndTime = (iso: string) => formatDateWith(new Date(iso), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** What they owe, their credit (from an undone sale they'd paid for), or settled. */
 const owedText = (balance: number, t: ReturnType<typeof useT>) =>
@@ -61,12 +62,14 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
   const { customerId } = route.params;
   const customer = useQuery({ queryKey: ['customers', customerId], queryFn: () => customersApi.detail(customerId) });
   const [amount, setAmount] = useState('');
+  const [payNote, setPayNote] = useState('');
   const pay = useMutation({
-    mutationFn: () => customersApi.pay(customerId, { amount: Number(amount.replace(',', '.')), note: null }),
+    mutationFn: () => customersApi.pay(customerId, { amount: Number(amount.replace(',', '.')), note: payNote.trim() || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['cash'] });
       setAmount('');
+      setPayNote('');
     },
   });
 
@@ -91,6 +94,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
           <Pressable accessibilityRole="button" onPress={() => setAmount(String(data.balance))} hitSlop={8}>
             <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.payAll(formatMoney(data.balance))}</Text>
           </Pressable>
+          <TextField label={t.tabs.payNote} value={payNote} onChangeText={setPayNote} maxLength={500} placeholder={t.tabs.payNotePlaceholder} />
           {pay.isError && <Text style={[styles.muted, { color: colors.signalOut }]}>{errorMessage(pay.error)}</Text>}
           {pay.isSuccess && <Text style={[styles.muted, { color: colors.stockOk }]}>{t.tabs.paid}</Text>}
           <Button label={t.tabs.takePayment} onPress={() => pay.mutate()} disabled={!isValid} loading={pay.isPending} />
@@ -103,10 +107,13 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
           <View key={entry.id} style={[styles.row, { borderTopColor: colors.line, borderTopWidth: index === 0 ? 0 : 1, opacity: entry.undone ? 0.5 : 1 }]}>
             <View style={styles.rowText}>
               <Text style={[styles.name, { color: colors.ink }]}>
-                {entry.kind === 'payment' ? t.tabs.payment : entry.kind === 'refund' ? t.tabs.refund(entry.note ?? '') : (entry.note ?? t.tabs.charge)}
+                {entry.kind === 'payment' ? (entry.note ? `${t.tabs.payment}: ${entry.note}` : t.tabs.payment) : entry.kind === 'refund' ? t.tabs.refund(entry.note ?? '') : (entry.note ?? t.tabs.charge)}
               </Text>
               <Text style={[styles.muted, { color: colors.inkMuted }]}>
-                {day(entry.at)}
+                {dayAndTime(entry.at)}
+                {entry.by
+                  ? ` · ${entry.kind === 'payment' ? t.tabs.takenBy(entry.by) : entry.kind === 'refund' ? t.tabs.refundedBy(entry.by) : t.tabs.addedBy(entry.by)}`
+                  : ''}
                 {entry.undone ? ` · ${t.tabs.undone}` : ''}
               </Text>
             </View>

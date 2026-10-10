@@ -31,7 +31,7 @@ export function InventoryDetailPage() {
       <PageHeader
         title={item.productName}
         description={item.sku ? t.inventory.sku(item.sku) : undefined}
-        crumbs={[{ label: t.inventory.title, to: '/inventory' }]}
+        crumbs={[{ label: t.nav.items.stock, to: '/inventory' }]}
         actions={
           <ButtonLink to={`/products/${item.productId}`} icon={PencilSimple}>
             {t.inventory.editProduct}

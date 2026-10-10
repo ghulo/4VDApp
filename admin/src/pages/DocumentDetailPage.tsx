@@ -24,7 +24,7 @@ export function DocumentDetailPage() {
     <>
       <PageHeader
         title={doc.number}
-        crumbs={[{ label: t.documents.title, to: '/documents' }]}
+        crumbs={[{ label: t.nav.items.sales, to: '/documents' }]}
         meta={<Badge tone={doc.kind === 'invoice' ? 'neutral' : 'warn'}>{t.documents.kinds[doc.kind]}</Badge>}
         description={t.documents.issuedOn({ when: formatDateTime(doc.issuedAt), by: doc.issuedBy ?? t.sales.unknown })}
         actions={<PrintDocumentButton document={doc} variant="primary" />}

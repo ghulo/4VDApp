@@ -15,7 +15,7 @@ export function CategoriesPage() {
   return (
     <>
       <PageHeader
-        title={t.categories.title}
+        title={t.nav.items.stock}
         description={t.categories.description}
       />
 

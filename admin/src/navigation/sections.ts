@@ -48,16 +48,16 @@ export interface NavItem {
  * its own address, so old links and bookmarks still open the right tab.
  */
 export const SECTIONS = {
-  products: [
-    { to: '/inventory', key: 'stock' },
+  stock: [
+    { to: '/inventory', key: 'shelf' },
     { to: '/products', key: 'products' },
     { to: '/categories', key: 'categories' },
   ],
   sales: [
-    { to: '/sales', key: 'sales' },
+    { to: '/sales', key: 'history' },
     { to: '/documents', key: 'invoices' },
   ],
-  money: [
+  day: [
     { to: '/cash', key: 'cash' },
     { to: '/carwash', key: 'carwash' },
   ],
@@ -91,7 +91,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'stock',
     items: [
-      { to: '/inventory', key: 'products', icon: Package, also: ['/products', '/categories', '/labels'] },
+      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/categories', '/labels'] },
       { to: '/counts', key: 'counts', icon: ClipboardText },
     ],
   },

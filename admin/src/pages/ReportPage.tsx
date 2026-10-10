@@ -31,7 +31,7 @@ export function ReportPage() {
   return (
     <>
       <PageHeader
-        title={t.fullReport.title[kind]}
+        title={t.nav.items.reports}
         description={report.data ? period(report.data, t.fullReport.through) : t.fullReport.description}
         meta={report.data?.partial ? <Badge tone="info">{t.fullReport.soFar}</Badge> : undefined}
         actions={

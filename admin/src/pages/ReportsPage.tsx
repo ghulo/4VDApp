@@ -24,7 +24,7 @@ export function ReportsPage({ view }: { view: ReportsView }) {
     return (
       <>
         <PageHeader
-          title={t.nav.tabs[view]}
+          title={t.nav.items.reports}
           description={t.reports.description(range.label)}
           actions={picker}
         />
@@ -37,7 +37,7 @@ export function ReportsPage({ view }: { view: ReportsView }) {
 
   return (
     <>
-      <PageHeader title={t.reports.title} description={t.reports.description(range.label)} />
+      <PageHeader title={t.nav.items.reports} description={t.reports.description(range.label)} />
 
       <AnalyticsBoard
         range={comparedRange}

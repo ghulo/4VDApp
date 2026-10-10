@@ -44,7 +44,7 @@ export function CarwashPage() {
   return (
     <>
       <PageHeader
-        title={t.carwash.title}
+        title={t.nav.items.day}
         description={t.carwash.description(range.label)}
         actions={
           <>

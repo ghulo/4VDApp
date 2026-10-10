@@ -98,7 +98,7 @@ function App() {
                   <Route path="inbox" element={<InboxPage />} />
                   <Route path="approvals" element={<Navigate to="/inbox" replace />} />
                   <Route path="alerts" element={<Navigate to="/inbox#inbox-alerts" replace />} />
-                  <Route element={<SectionTabs tabs={SECTIONS.products} labelKey="products" />}>
+                  <Route element={<SectionTabs tabs={SECTIONS.stock} labelKey="stock" />}>
                     <Route path="inventory" element={<InventoryPage />} />
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="categories" element={<CategoriesPage />} />
@@ -112,7 +112,7 @@ function App() {
                     <Route path="documents" element={<DocumentsPage />} />
                   </Route>
                   <Route path="documents/:id" element={<DocumentDetailPage />} />
-                  <Route element={<SectionTabs tabs={SECTIONS.money} labelKey="day" />}>
+                  <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
                     <Route path="cash" element={<CashPage />} />
                     <Route path="carwash" element={<CarwashPage />} />
                   </Route>

@@ -210,7 +210,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
     <>
       <PageHeader
         title={isNew ? t.productForm.addProduct : product.name}
-        crumbs={[{ label: t.nav.items.products, to: '/products' }]}
+        crumbs={[{ label: t.nav.items.stock, to: '/products' }]}
         meta={product?.promotion && <Badge tone="brand">{t.productForm.promotionNow(product.promotion.percentOff)}</Badge>}
         description={
           product?.promotion && (

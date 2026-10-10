@@ -81,7 +81,7 @@ export function LabelsPage() {
   return (
     <>
       <style>{PAGE_CSS[layout]}</style>
-      <PageHeader title={t.labels.title} description={t.labels.description} crumbs={[{ label: t.nav.items.products, to: '/inventory' }]} />
+      <PageHeader title={t.labels.title} description={t.labels.description} crumbs={[{ label: t.nav.items.stock, to: '/inventory' }]} />
 
       <Card title={t.labels.choose}>
         <Field label={t.labels.search}>

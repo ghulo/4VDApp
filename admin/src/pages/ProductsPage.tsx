@@ -94,7 +94,7 @@ export function ProductsPage() {
   return (
     <>
       <PageHeader
-        title={t.products.title}
+        title={t.nav.items.stock}
         description={t.products.description}
         actions={
           <>

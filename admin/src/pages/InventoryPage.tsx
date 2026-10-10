@@ -44,7 +44,7 @@ export function InventoryPage() {
   return (
     <>
       <PageHeader
-        title={t.inventory.title}
+        title={t.nav.items.stock}
         description={t.inventory.description}
         actions={
           <ButtonLink to="/labels" icon={Barcode}>

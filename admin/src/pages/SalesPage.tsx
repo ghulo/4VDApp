@@ -19,7 +19,7 @@ export function SalesPage() {
   return (
     <>
       <PageHeader
-        title={t.sales.title}
+        title={t.nav.items.sales}
         description={t.sales.description}
         actions={
           user.role !== 'owner' && (

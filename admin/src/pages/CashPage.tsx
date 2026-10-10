@@ -41,7 +41,7 @@ export function CashPage() {
         <CountForm />
       </Sheet>
       <PageHeader
-        title={t.cash.title}
+        title={t.nav.items.day}
         description={t.cash.description(range.label)}
         actions={
           <>

@@ -27,6 +27,8 @@ type TabKey = keyof Catalogue['nav']['tabs'];
 export interface SectionTab {
   to: string;
   key: TabKey;
+  /** Keep the address's filters (like the chosen period) when switching to this tab. */
+  keepSearch?: boolean;
 }
 
 export interface NavItem {
@@ -61,7 +63,10 @@ export const SECTIONS = {
   ],
   reports: [
     { to: '/report', key: 'report' },
-    { to: '/reports', key: 'analytics' },
+    { to: '/reports', key: 'analytics', keepSearch: true },
+    { to: '/reports/team', key: 'team', keepSearch: true },
+    { to: '/reports/profit', key: 'profit', keepSearch: true },
+    { to: '/reports/downloads', key: 'downloads', keepSearch: true },
   ],
 } satisfies Record<string, SectionTab[]>;
 

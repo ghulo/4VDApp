@@ -42,6 +42,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Settings and Profile list their sections beside the page (chips on a phone)
 - [x] Product page: form left, barcode and price history right, sticky Save bar
 - [x] Record a sale, Count a drawer and Add an expense open in a side panel instead of sitting in the middle of the list pages
+- [x] Reports split into tabs (Daily & weekly, Analytics, Team, Profit, Downloads); the period carries across
 - [ ] You look it over locally and say yes, then merge and push
 
 ## Optional

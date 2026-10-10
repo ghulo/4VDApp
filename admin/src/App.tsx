@@ -119,7 +119,10 @@ function App() {
                   <Route path="expenses" element={<ExpensesPage />} />
                   <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
                     <Route path="report" element={<ReportPage />} />
-                    <Route path="reports" element={<ReportsPage />} />
+                    <Route path="reports" element={<ReportsPage view="figures" />} />
+                    <Route path="reports/team" element={<ReportsPage view="team" />} />
+                    <Route path="reports/profit" element={<ReportsPage view="profit" />} />
+                    <Route path="reports/downloads" element={<ReportsPage view="downloads" />} />
                   </Route>
                   <Route path="customers" element={<CustomersPage />} />
                   <Route path="customers/:id" element={<CustomerDetailPage />} />

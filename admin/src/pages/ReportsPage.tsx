@@ -12,9 +12,28 @@ import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Button, Card, DataTable, MetricCard, PageHeader } from '../components/ui';
 
-export function ReportsPage() {
+/** Each tab of Reports is its own address; the period stays the same across them. */
+export type ReportsView = 'figures' | 'team' | 'profit' | 'downloads';
+
+export function ReportsPage({ view }: { view: ReportsView }) {
   const t = useT();
   const { period, from, to, range, rangeKey, comparedRange, changePeriod, compare, changeCompare } = usePeriodParams('this-month');
+  const picker = <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />;
+
+  if (view !== 'figures') {
+    return (
+      <>
+        <PageHeader
+          title={t.nav.tabs[view]}
+          description={t.reports.description(range.label)}
+          actions={picker}
+        />
+        {view === 'team' && <TeamTable range={rangeKey} />}
+        {view === 'profit' && <ProfitTable range={rangeKey} />}
+        {view === 'downloads' && <Exports range={rangeKey} />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -77,9 +96,6 @@ export function ReportsPage() {
       </AnalyticsBoard>
 
       <SalesChart range={rangeKey} />
-      <TeamTable range={rangeKey} />
-      <ProfitTable range={rangeKey} />
-      <Exports range={rangeKey} />
     </>
   );
 }

@@ -446,7 +446,10 @@ looked cold and generic on ivory.
   metric labels, sidebar group names, stamps and the team-app date kicker. Never
   a sentence, never a button. These are the only capitals allowed.
 - **Figures**: Hanken 600, 28px (36px on a large metric card), tabular.
-- **The scale is closed**: 12 / 13 / 15 / 17 / 28 / 32 px plus the display clamp.
+- **The scale is closed**: 12 / 13 / 15 / 17 / 28 / 32 px (36px large figure)
+  plus the display clamp and the one stock hero number on a product page
+  (`--text-hero`, 72px). Dashboard tokens: `--text-xs` … `--text-lg`,
+  `--text-figure`, `--text-figure-lg`, `--text-headline`, `--text-hero`.
   No 14px, no 20px one-offs. The team app has the same scale as named tokens in
   `theme.ts` (`type.caption`, `type.label`, `type.body`, `type.title`,
   `type.figure`, `type.headline`), never raw `fontSize` numbers.
@@ -669,12 +672,10 @@ that area; remove it from this list when done.
 
 **Look**
 
-9. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
-    raw px spacings, radii 2/4/6/10/12/14px, weights 300/700. → 7, 8
-10. **Team app type**: no type tokens (19 raw `fontSize` values);
+9. **Team app type**: no type tokens (19 raw `fontSize` values);
     `fonts.display` is the sans. → 7
-11. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-12. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+10. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+11. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
     theme / language controls (chips vs segmented). → 10.9, 10.10
-13. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-14. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+12. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+13. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

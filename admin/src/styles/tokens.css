@@ -125,11 +125,16 @@
   /* Small capital labels over figures (DATE, IN STOCK), as on anthropic.com's spec rows. */
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
 
-  /* Type: 12 / 13 / 15 (base) / 17. Base is 15px so the owner reads it comfortably. */
+  /* Type: 12 / 13 / 15 (base) / 17, figures 28 / 36, headline 32, and the one
+     stock hero number. Base is 15px so the owner reads it comfortably. */
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.9375rem;
   --text-lg: 1.0625rem;
+  --text-figure: 1.75rem;
+  --text-figure-lg: 2.25rem;
+  --text-headline: 2rem;
+  --text-hero: 4.5rem;
 
   /* 4px grid. */
   --space-1: 4px;
@@ -144,6 +149,10 @@
   --control-h-sm: 30px;
   --radius-small: 8px;
   --radius-panel: 16px;
+  /* Stamps and keycaps; segments and rows inside an 8px frame; pills. */
+  --radius-stamp: 3px;
+  --radius-segment: 6px;
+  --radius-pill: 999px;
 
   /* Motion: quick and soft, never bouncy. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);

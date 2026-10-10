@@ -251,7 +251,7 @@
 /* The serif voice: page titles read like a calm editorial heading. */
 .page-header__title {
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: var(--text-headline);
   font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -692,7 +692,7 @@
 }
 
 .stat__value {
-  font-size: 1.75rem;
+  font-size: var(--text-figure);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -723,9 +723,9 @@
   height: 22px;
   padding: 0 6px;
   border: 1px solid currentColor;
-  border-radius: 3px;
+  border-radius: var(--radius-stamp);
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   line-height: 1;
@@ -834,7 +834,7 @@
   width: 44px;
   height: 44px;
   margin-bottom: var(--space-1);
-  border-radius: 12px;
+  border-radius: var(--radius-small);
   background: var(--fill);
   color: var(--ink);
 }
@@ -848,7 +848,7 @@ input.switch {
   width: 36px;
   height: 20px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--line-strong);
   cursor: pointer;
   transition: background-color 0.12s;
@@ -1060,7 +1060,7 @@ input.switch:focus-visible {
 }
 
 .metric__value {
-  font-size: 1.75rem;
+  font-size: var(--text-figure);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -1068,7 +1068,7 @@ input.switch:focus-visible {
 }
 
 .metric--large .metric__value {
-  font-size: 2.25rem;
+  font-size: var(--text-figure-lg);
 }
 
 .metric__change {
@@ -1146,7 +1146,7 @@ input.switch:focus-visible {
   translate: -50% -25%;
   padding: 2px var(--space-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--ink-muted);
   font-size: var(--text-xs);

@@ -36,6 +36,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Overview: what needs you comes first and largest; the Today panel is a slim strip with a small sunrise; zero counts hidden; title is "Overview"
 - [x] Reports: big figures drop the cents, rises say a number ("12×") instead of "Much more", one huge day no longer flattens the graphs, cards line up in even rows
 - [x] Every table is the shared table component (Sales, Promotions, Orders, stock count, price history, Reports, chart "Show as table"), so none sits as a box inside a card
+- [x] Dashboard styles use only the rulebook sizes: no 14px or 20px text, spacing on the 4px grid, named corner sizes
 - [ ] You look it over locally and say yes, then merge and push
 
 ## Optional

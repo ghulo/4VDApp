@@ -44,14 +44,14 @@
 }
 
 .topbar__name {
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   letter-spacing: -0.03em;
 }
 
 .topbar__slash {
   color: var(--line-strong);
-  font-size: 1.25rem;
+  font-size: var(--text-lg);
   font-weight: 300;
 }
 
@@ -204,7 +204,7 @@
 .sidebar__badge {
   min-width: 20px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--ink);
   color: var(--surface);
   font-size: var(--text-xs);
@@ -276,7 +276,7 @@
   right: 3px;
   min-width: 16px;
   padding: 0 4px;
-  font-size: 0.625rem;
+  font-size: var(--text-xs);
   line-height: 16px;
 }
 
@@ -433,7 +433,7 @@
   padding: 0 12px;
   white-space: nowrap;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-segment);
   background: transparent;
   color: var(--ink-muted);
   font: inherit;
@@ -605,7 +605,7 @@
   min-height: 38px;
   padding: 6px 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-segment);
   background: transparent;
   color: var(--ink);
   font: inherit;

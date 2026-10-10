@@ -237,6 +237,7 @@ export const en = {
     thisDevice: 'This device',
     lastUsed: (when: string) => `Last used ${when}`,
     untracked: 'Logged in before 4VD tracked devices',
+    showAllDevices: (count: number) => `Show all ${count} devices`,
     logOut: 'Log out',
   },
   setup: {

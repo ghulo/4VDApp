@@ -428,6 +428,8 @@
 
 .product-form {
   max-width: 760px;
+  /* The Save row ends the form: barcode and price history are separate cards below. */
+  margin-bottom: var(--space-6);
 }
 
 .tier-list {
@@ -904,6 +906,19 @@
   }
 }
 
+/* One set of columns for every alert, so the times line up whether or not a row has a button. */
+@media (min-width: 761px) {
+  .alert-list {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .alert-list > .alert-row {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+}
+
 .alert-row--unread .category-list__name {
   font-weight: 600;
 }
@@ -1038,7 +1053,8 @@
 }
 
 /* Buttons keep their own width, like every other form's submit button. */
-.settings-form > .button {
+.settings-form > .button,
+.settings-form > .segmented {
   justify-self: start;
 }
 

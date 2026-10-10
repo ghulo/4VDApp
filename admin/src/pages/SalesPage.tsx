@@ -139,9 +139,13 @@ function SalesHistory() {
                 {sales.data.items.map((sale) => (
                   <Fragment key={sale.id}>
                     <tr>
-                      <td data-label={t.sales.when}>{formatDateTime(sale.saleDate)}</td>
+                      <td className="table__phone-hide" data-label={t.sales.when}>{formatDateTime(sale.saleDate)}</td>
                       <td className="table__title">
                         {sale.productName}
+                        <span className="table__secondary table__phone-only">
+                          {formatDateTime(sale.saleDate)} · {sale.quantity} × {formatMoney(sale.pricePerUnit)} ·{' '}
+                          {sale.soldBy ?? t.sales.unknown}
+                        </span>
                         {sale.notes && <span className="table__secondary">{sale.notes}</span>}
                         {sale.returnedQuantity > 0 && (
                           <span className="table__secondary">
@@ -149,10 +153,10 @@ function SalesHistory() {
                           </span>
                         )}
                       </td>
-                      <td className="table__numeric" data-label={t.sales.qty}>{sale.quantity}</td>
-                      <td className="table__numeric" data-label={t.sales.each}>{formatMoney(sale.pricePerUnit)}</td>
+                      <td className="table__numeric table__phone-hide" data-label={t.sales.qty}>{sale.quantity}</td>
+                      <td className="table__numeric table__phone-hide" data-label={t.sales.each}>{formatMoney(sale.pricePerUnit)}</td>
                       <td className="table__numeric" data-label={t.sales.total}>{formatMoney(sale.totalAmount)}</td>
-                      <td data-label={t.sales.soldBy}>{sale.soldBy ?? t.sales.unknown}</td>
+                      <td className="table__phone-hide" data-label={t.sales.soldBy}>{sale.soldBy ?? t.sales.unknown}</td>
                       <td data-label={t.documents.invoice}>
                         {sale.invoice ? <Link to={`/documents/${sale.invoice.id}`}>{sale.invoice.number}</Link> : '–'}
                       </td>

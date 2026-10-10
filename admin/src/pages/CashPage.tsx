@@ -192,28 +192,30 @@ function CountForm() {
           </button>
         ))}
       </div>
-      <Field label={t.cash.float} hint={t.cash.floatHint} narrow>
-        <input
-          type="number"
-          inputMode="decimal"
-          required
-          min={0}
-          step={0.01}
-          value={floatValue}
-          onChange={(event) => setFloatInput(event.target.value)}
-        />
-      </Field>
-      <Field label={t.cash.counted} hint={t.cash.countedHint(formatMoney(Number(floatValue) || 0))} narrow>
-        <input
-          type="number"
-          inputMode="decimal"
-          required
-          min={0}
-          step={0.01}
-          value={counted}
-          onChange={(event) => setCounted(event.target.value)}
-        />
-      </Field>
+      <div className="field-row">
+        <Field label={t.cash.float} hint={t.cash.floatHint}>
+          <input
+            type="number"
+            inputMode="decimal"
+            required
+            min={0}
+            step={0.01}
+            value={floatValue}
+            onChange={(event) => setFloatInput(event.target.value)}
+          />
+        </Field>
+        <Field label={t.cash.counted} hint={t.cash.countedHint(formatMoney(Number(floatValue) || 0))}>
+          <input
+            type="number"
+            inputMode="decimal"
+            required
+            min={0}
+            step={0.01}
+            value={counted}
+            onChange={(event) => setCounted(event.target.value)}
+          />
+        </Field>
+      </div>
       <Field label={t.cash.note}>
         <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>

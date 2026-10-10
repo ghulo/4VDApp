@@ -234,6 +234,7 @@ export const sq: Catalogue = {
     thisDevice: 'Kjo pajisje',
     lastUsed: (when) => `Përdorur së fundi ${when}`,
     untracked: 'Hyrë para se 4VD të ndiqte pajisjet',
+    showAllDevices: (count: number) => `Shfaq të ${count} pajisjet`,
     logOut: 'Dil',
   },
   setup: {

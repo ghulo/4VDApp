@@ -293,6 +293,8 @@ function SecurityPanel({ user }: { user: User }) {
   );
 }
 
+const DEVICES_SHOWN = 5;
+
 function DevicesPanel() {
   const t = useT();
   const queryClient = useQueryClient();
@@ -300,7 +302,11 @@ function DevicesPanel() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me', 'sessions'] });
   const endOne = useMutation({ mutationFn: meApi.endSession, onSuccess: refresh });
   const endOthers = useMutation({ mutationFn: meApi.endOtherSessions, onSuccess: refresh });
+  const [showAll, setShowAll] = useState(false);
   const others = sessions.data?.filter((session) => !session.current).length ?? 0;
+  // This device first; long lists (every browser ever used) stay short until asked.
+  const ordered = sessions.data ? [...sessions.data].sort((a, b) => Number(b.current) - Number(a.current)) : [];
+  const shown = showAll ? ordered : ordered.slice(0, DEVICES_SHOWN);
 
   return (
     <Card
@@ -322,10 +328,17 @@ function DevicesPanel() {
       )}
       {sessions.data && (
         <ul className="device-list">
-          {sessions.data.map((session) => (
+          {shown.map((session) => (
             <DeviceRow key={session.id} session={session} onEnd={() => endOne.mutate(session.id)} busy={endOne.isPending} />
           ))}
         </ul>
+      )}
+      {shown.length < ordered.length && (
+        <p className="form-actions--spaced">
+          <Button size="sm" variant="ghost" onClick={() => setShowAll(true)}>
+            {t.profile.showAllDevices(ordered.length)}
+          </Button>
+        </p>
       )}
     </Card>
   );

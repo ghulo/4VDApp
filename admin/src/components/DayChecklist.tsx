@@ -136,8 +136,15 @@ function Item({ title, done, description, children, showAction }: ItemProps) {
   const t = useT();
   const actionShown = showAction ?? !done;
   return (
-    <SettingRow title={title} description={description}>
-      {done ? <Badge tone="ok">{t.dayClose.done}</Badge> : <Badge tone="warn">{t.dayClose.toDo}</Badge>}
+    <SettingRow
+      title={
+        <span className="setting-row__title-line">
+          {title}
+          {done ? <Badge tone="ok">{t.dayClose.done}</Badge> : <Badge tone="warn">{t.dayClose.toDo}</Badge>}
+        </span>
+      }
+      description={description}
+    >
       {actionShown && children}
     </SettingRow>
   );

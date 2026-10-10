@@ -124,9 +124,23 @@ export function ActivityPage() {
           rows={activity.data.items}
           rowKey={(entry) => entry.id}
           columns={[
-            { header: t.activity.whatChanged, cell: summaryCell },
-            { header: t.activity.who, cell: (entry) => entry.user?.name ?? t.activity.system },
-            { header: t.activity.when, cell: (entry) => formatDateTime(entry.createdAt), className: 'table__nowrap' },
+            {
+              header: t.activity.whatChanged,
+              cell: (entry) => (
+                <>
+                  {summaryCell(entry)}
+                  <span className="table__secondary table__phone-only">
+                    {entry.user?.name ?? t.activity.system} · {formatDateTime(entry.createdAt)}
+                  </span>
+                </>
+              ),
+            },
+            { header: t.activity.who, cell: (entry) => entry.user?.name ?? t.activity.system, className: 'table__phone-hide' },
+            {
+              header: t.activity.when,
+              cell: (entry) => formatDateTime(entry.createdAt),
+              className: 'table__nowrap table__phone-hide',
+            },
             { header: <span className="visually-hidden">{t.undo.undo}</span>, cell: undoCell, align: 'end', className: 'table__nowrap' },
           ]}
           afterRow={(entry) =>

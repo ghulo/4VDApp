@@ -74,7 +74,7 @@ function AlertList() {
           </Button>
         )}
       </div>
-      <ul className="category-list">
+      <ul className="category-list alert-list">
         {alerts.data.items.map((alert) => {
           const link = alert.link ?? (alert.type ? PAGE_BY_TYPE[alert.type] : undefined);
           return (

@@ -378,6 +378,14 @@
   font-weight: 600;
 }
 
+/* A title with its status badge right after it. */
+.setting-row__title-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .setting-row__description {
   margin-top: 2px;
   color: var(--ink-muted);
@@ -411,10 +419,12 @@
   overflow: hidden;
 }
 
+/* The card is the paper: a table inside it paints nothing, so it can't square off the card's corners. */
 .card .data-table {
   margin: 0;
   border: 0;
   border-radius: 0;
+  background: transparent;
 }
 
 .data-table__toolbar {
@@ -523,6 +533,13 @@
   background: var(--surface-sunk);
 }
 
+/* The phone summary line; on wider screens the columns show the same thing. */
+@media (min-width: 600px) {
+  .table__phone-only {
+    display: none;
+  }
+}
+
 .table td a:has(.stock-tag) {
   text-decoration: none;
 }
@@ -620,6 +637,11 @@
 
   .table--stack .table__secondary {
     font-weight: 400;
+  }
+
+  /* Busy lists fold minor columns into one summary line under the title. */
+  .table--stack td.table__phone-hide {
+    display: none;
   }
 
   .table--stack .table__row--muted td,

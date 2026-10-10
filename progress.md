@@ -14,6 +14,8 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
   - [x] Playwright screenshots at 375 and 1440, fix what shows up
   - [x] Squash-merge into main, push, delete branch, check GitHub checks, update work-queue.md
 - [ ] Phase 4: full visual polish of every screen in both apps (light and dark, EN and SQ)
+  - [x] Pass 1: screenshot every dashboard screen (1440 + 375) and the team app's main screens, fix what shows up (cash check layout, close-the-day badges, card corners, product page spacing, Inbox columns, shorter phone lists for sales and activity, device list capped)
+  - [ ] You look it over locally and say yes, then merge and push
 - [ ] Phase 5: hardening, and update the out-of-date PRODUCT.md
 
 ## Requests 2026-10-10

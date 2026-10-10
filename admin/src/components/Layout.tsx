@@ -8,6 +8,7 @@ import { useShortcuts } from '../command/useShortcuts';
 import { approvalsApi, businessApi, notificationsApi } from '../services/api';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
+import { ErrorBoundary } from './ErrorBoundary';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { canManage } from '../auth/roles';
@@ -186,7 +187,9 @@ export function Layout() {
 
       <main className="main">
         <div className="main__frame">
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}

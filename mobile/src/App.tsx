@@ -1,3 +1,4 @@
+import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   HankenGrotesk_400Regular,
   HankenGrotesk_500Medium,
@@ -43,7 +44,9 @@ export default function App() {
   return (
     <I18nProvider>
       <ThemeProvider>
-        <Shell />
+        <ErrorBoundary>
+          <Shell />
+        </ErrorBoundary>
       </ThemeProvider>
     </I18nProvider>
   );

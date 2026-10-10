@@ -1648,6 +1648,8 @@ export const sq: Catalogue = {
     cancel: 'Anulo',
     loading: 'Po ngarkohet…',
     tryAgain: 'Provo përsëri',
+    crashed: 'Kjo faqe pati një problem dhe nuk u shfaq. Ringarkoje për të provuar përsëri; nëse ndodh sërish, njofto zhvilluesin.',
+    reload: 'Ringarko',
     somethingWrong: 'Diçka shkoi keq',
     or: 'ose',
     previous: 'Mbrapa',

@@ -1,45 +1,46 @@
 /* Loaded last, so it sits over the shell and page styles. */
 
-/* ---------- Glass ----------
-   Frosted glass for the layers that float over the page, never for cards,
-   tables or forms: a bright blur of what's behind, a thin light edge, a
-   highlight along the top and a faint sheen, like a pane catching the light. */
-.topbar,
+/* ---------- Glass (DESIGN.md 8.1) ----------
+   Only for chrome that floats over moving content, so the page shows through
+   as it passes underneath. One recipe: paper tint, a plain blur (no
+   brightness boost, no sheen), a hairline on the side that meets the content
+   and a faint highlight along the top. Never cards, tables or forms. */
+.topbar--glass,
 .palette,
 .login__moment {
-  background: var(--glass-sheen), var(--glass-bg);
+  background: var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
 }
 
-.topbar {
-  border-bottom-color: var(--glass-border);
+/* Bars carry no shadow: the hairline under them is enough. */
+.topbar--glass {
   box-shadow: var(--glass-highlight);
 }
 
 /* Dense lists read better on a thicker pane. */
 .palette {
-  background: var(--glass-sheen), var(--glass-bg-strong);
-  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  border: 0;
   box-shadow: var(--glass-highlight), var(--glass-shadow);
 }
 
 .palette-backdrop {
-  background: rgb(20 20 19 / 0.18);
+  background: rgb(20 20 19 / 0.3);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
 .login__moment {
-  border: 1px solid var(--glass-border);
+  border: 0;
   box-shadow: var(--glass-highlight), var(--glass-shadow);
 }
 
 /* On phones the menu slides over the page as a pane of glass. */
 @media (max-width: 900px) {
   .sidebar {
-    border-right: 1px solid var(--glass-border);
-    background: var(--glass-sheen), var(--glass-bg-strong);
+    border-right: 1px solid var(--line);
+    background: var(--glass-bg-strong);
     -webkit-backdrop-filter: var(--glass-filter);
     backdrop-filter: var(--glass-filter);
     box-shadow: var(--glass-highlight), var(--glass-shadow);
@@ -49,7 +50,7 @@
 /* Solid paper where glass would hurt: no blur support, or the computer asks
    for less transparency or more contrast. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .topbar,
+  .topbar--glass,
   .palette,
   .login__moment,
   .sidebar {
@@ -58,7 +59,7 @@
 }
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .topbar,
+  .topbar--glass,
   .palette,
   .login__moment,
   .sidebar {

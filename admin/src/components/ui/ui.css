@@ -30,89 +30,78 @@
   transform: translateY(1px);
 }
 
-/* Keys: raised buttons stand on a darker edge (--edge, --edge-h tall), lift a
-   pixel on hover and press down into the edge, like a keyboard key. */
+/* Keys (DESIGN.md 10.1): raised buttons stand on a 2px edge (--edge), with a
+   light line inside the top and a soft drop. Hover only brightens the face;
+   pressing moves the face down into the edge. */
 .button--primary,
 .button--secondary,
 .button--quiet,
 .button--danger {
-  --edge-h: 3px;
+  --edge-h: 2px;
+  padding: 0 14px;
   box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge), var(--key-drop);
-}
-
-.button--primary:not(:disabled):hover,
-.button--secondary:not(:disabled):hover,
-.button--quiet:not(:disabled):hover,
-.button--danger:not(:disabled):hover {
-  --edge-h: 4px;
-  transform: translateY(-1px);
 }
 
 .button--primary:not(:disabled):active,
 .button--secondary:not(:disabled):active,
 .button--quiet:not(:disabled):active,
 .button--danger:not(:disabled):active {
-  --edge-h: 1px;
+  --edge-h: 0px;
   transform: translateY(2px);
   box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge), var(--key-drop-pressed);
 }
 
+/* Disabled keys sit flat on sunk paper with a hairline ring, so they still
+   read as buttons without the washed-out look of half opacity. */
 .button:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.button--primary:disabled,
+.button--secondary:disabled,
+.button--quiet:disabled,
+.button--danger:disabled {
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.button--ghost:disabled,
+.button--danger-text:disabled {
+  color: var(--ink-muted);
 }
 
 /* The one clay thing on a screen, lit from the top, with near-black text so it stays readable. */
 .button--primary {
   --edge: var(--cta-edge);
   --shine: var(--key-shine);
-  background: radial-gradient(130% 160% at 50% 0%, var(--cta-hover) 0%, var(--cta) 55%);
+  background: linear-gradient(180deg, var(--cta-hover), var(--cta) 60%);
   color: var(--cta-ink);
   font-weight: 600;
 }
 
 .button--primary:not(:disabled):hover {
-  background: radial-gradient(130% 160% at 50% 0%, var(--cta-hover) 15%, var(--cta) 80%);
+  background: linear-gradient(180deg, var(--cta-hover), var(--cta-hover) 20%, var(--cta) 85%);
 }
 
-/* Disabled buttons sit flat: nothing to press. Main ones go neutral instead of a washed-out orange. */
-.button--primary:disabled {
-  background: var(--fill);
-  color: var(--ink-muted);
-  opacity: 1;
-}
-
-.button--primary:disabled,
-.button--danger:disabled {
-  box-shadow: none;
-}
-
-/* Secondary: paper with a hairline ring on a shallow edge. "quiet" is the old name. */
+/* Secondary: paper with a hairline ring on a hairline edge. "quiet" is the old name. */
 .button--secondary,
 .button--quiet {
-  --edge-h: 2px;
   --edge: var(--line-strong);
-  --shine: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper);
+  --ring: var(--line-strong);
+  --shine: inset 0 0 0 1px var(--ring), var(--key-shine-paper);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge);
 }
 
 .button--secondary:not(:disabled):hover,
 .button--quiet:not(:disabled):hover {
-  --edge-h: 3px;
+  --ring: color-mix(in srgb, var(--line-strong) 55%, var(--ink-muted));
 }
 
 .button--secondary:not(:disabled):active,
 .button--quiet:not(:disabled):active {
-  --edge-h: 0px;
   background: var(--surface-sunk);
-  box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge);
-}
-
-.button--secondary:disabled,
-.button--quiet:disabled {
-  box-shadow: inset 0 0 0 1px var(--line-strong);
 }
 
 /* Ghost: flat until touched, then pressed into the page. */
@@ -127,7 +116,6 @@
 
 .button--ghost:not(:disabled):active {
   box-shadow: var(--shadow-inset);
-  transform: translateY(1px);
 }
 
 .button--danger {
@@ -138,7 +126,7 @@
 }
 
 .button--danger:not(:disabled):hover {
-  background: color-mix(in srgb, var(--danger) 88%, var(--ink));
+  background: color-mix(in srgb, var(--danger) 90%, var(--surface));
 }
 
 /* Text-only destructive action, for "Delete" next to the main buttons. */

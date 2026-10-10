@@ -17,21 +17,27 @@ const light = {
   brandInk: '#ffffff',
   brandSoft: '#f5e6dc',
   accent: '#d4704f',
-  warn: '#b45309',
-  warnSoft: '#fef3e2',
-  danger: '#b91c1c',
-  dangerSoft: '#fdecec',
-  ok: '#047857',
-  okSoft: '#e6f5ee',
+  warn: '#86500c',
+  warnSoft: '#f6ecd9',
+  danger: '#b0302a',
+  dangerSoft: '#f8e5e1',
+  ok: '#2f6b3f',
+  okSoft: '#e7efe3',
+  info: '#3d5670',
+  infoSoft: '#e6ebf0',
+  focus: '#141413',
   // Depth: panels rest above the canvas, fields sit into it, buttons stand on
   // a darker edge like a key and press down into it.
   raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 0 0 1px rgba(20, 20, 19, 0.04), 0 1px 2px rgba(20, 20, 19, 0.06), 0 4px 14px rgba(20, 20, 19, 0.06)',
   inset: 'inset 0 1px 2px rgba(20, 20, 19, 0.08)',
-  keyDrop: '0 4px 10px rgba(20, 20, 19, 0.14)',
+  keyDrop: '0 2px 6px rgba(20, 20, 19, 0.1)',
   keyDropPressed: '0 1px 2px rgba(20, 20, 19, 0.12)',
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
   ctaEdge: '#a8482a',
+  // Glass (DESIGN.md 8.1): paper at 72% over a blur, a faint top highlight.
+  glassBg: 'rgba(250, 249, 245, 0.72)',
+  glassHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.6)',
 };
 
 const dark: typeof light = {
@@ -47,19 +53,24 @@ const dark: typeof light = {
   brandInk: '#1a120e',
   brandSoft: '#3a2219',
   accent: '#d4704f',
-  warn: '#fbbf24',
-  warnSoft: '#3a2c0d',
-  danger: '#f87171',
-  dangerSoft: '#3b1717',
-  ok: '#34d399',
-  okSoft: '#0f3326',
+  warn: '#e0a85a',
+  warnSoft: '#3a2e19',
+  danger: '#f39a8f',
+  dangerSoft: '#3d201c',
+  ok: '#86c08f',
+  okSoft: '#1f3022',
+  info: '#9fb4cc',
+  infoSoft: '#222b35',
+  focus: '#faf9f5',
   raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.28)',
   inset: 'inset 0 1px 3px rgba(0, 0, 0, 0.45)',
-  keyDrop: '0 4px 12px rgba(0, 0, 0, 0.45)',
+  keyDrop: '0 2px 6px rgba(0, 0, 0, 0.35)',
   keyDropPressed: '0 1px 2px rgba(0, 0, 0, 0.4)',
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.3)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.07)',
   ctaEdge: '#9a4024',
+  glassBg: 'rgba(38, 38, 36, 0.72)',
+  glassHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
 };
 
 /** Roles the screens ask for, plus older names they still use. */
@@ -85,14 +96,13 @@ export const palettes = { light: withAliases(light), dark: withAliases(dark) };
 export type ThemeColors = (typeof palettes)['light'];
 
 /**
- * A raised button: clay (or paper) on a darker edge that it presses into.
- * Pair with keyTravel so the face moves down as the edge shrinks.
+ * A raised button (DESIGN.md 10.1): clay (or paper) on a 2px edge with a soft
+ * drop. Pressing sinks the face into the edge; pair with keyTravel.
  */
 export function keyShadow(colors: ThemeColors, look: 'clay' | 'paper', pressed: boolean): string {
-  if (look === 'paper') {
-    return `${colors.keyShinePaper}, 0 ${pressed ? 0 : 2}px 0 ${colors.lineStrong}`;
-  }
-  return `${colors.keyShine}, 0 ${pressed ? 1 : 3}px 0 ${colors.ctaEdge}, ${pressed ? colors.keyDropPressed : colors.keyDrop}`;
+  const shine = look === 'paper' ? colors.keyShinePaper : colors.keyShine;
+  const edge = look === 'paper' ? colors.lineStrong : colors.ctaEdge;
+  return `${shine}, 0 ${pressed ? 0 : 2}px 0 ${edge}, ${pressed ? colors.keyDropPressed : colors.keyDrop}`;
 }
 
 /** How far a key's face moves down when pressed. */

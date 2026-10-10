@@ -28,9 +28,7 @@
   gap: var(--space-3);
   padding: 0 var(--space-4);
   border-bottom: 1px solid var(--line);
-  background: var(--topbar);
-  backdrop-filter: saturate(1.4) blur(12px);
-  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  background: var(--bg);
 }
 
 .topbar__menu {
@@ -405,8 +403,8 @@
     position: fixed;
     inset: 0;
     z-index: 30;
-    background: rgb(0 0 0 / 0.35);
-    backdrop-filter: blur(3px);
+    background: rgb(20 20 19 / 0.3);
+    backdrop-filter: blur(2px);
   }
 
   .main__frame {
@@ -543,8 +541,8 @@
   justify-items: center;
   align-items: start;
   padding: 12vh 16px 16px;
-  background: rgb(0 0 0 / 0.35);
-  backdrop-filter: blur(4px);
+  background: rgb(20 20 19 / 0.3);
+  backdrop-filter: blur(2px);
 }
 
 .palette {

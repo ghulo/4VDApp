@@ -34,18 +34,18 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
       style={({ pressed }) => [
         styles.button,
         isPrimary
-          ? { backgroundColor: disabled ? colors.fill : colors.cta }
+          ? { backgroundColor: colors.cta }
           : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
-        // Raised like a key, pressing down into its edge. Disabled ones sit flat;
-        // a disabled main button goes neutral rather than a washed-out orange.
+        // Raised like a key, pressing down into its edge. Disabled ones sit flat
+        // on sunk paper with a hairline ring, never half see-through.
         !(disabled || loading) && { boxShadow: keyShadow(colors, isPrimary ? 'clay' : 'paper', pressed), ...keyTravel(pressed) },
-        disabled && !isPrimary && styles.disabled,
+        disabled && { backgroundColor: colors.surfaceSunk, borderColor: colors.line, borderWidth: 1 },
       ]}
     >
       {loading ? (
         <ActivityIndicator color={isPrimary ? colors.ctaInk : colors.ink} />
       ) : (
-        <Text style={[styles.buttonLabel, { color: isPrimary ? (disabled ? colors.inkMuted : colors.ctaInk) : colors.ink }]}>
+        <Text style={[styles.buttonLabel, { color: disabled ? colors.inkMuted : isPrimary ? colors.ctaInk : colors.ink }]}>
           {label}
         </Text>
       )}
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  disabled: { opacity: 0.5 },
   field: { gap: spacing.xs, marginBottom: spacing.lg },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 14 },
   input: {

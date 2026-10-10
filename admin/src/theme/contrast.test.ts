@@ -39,7 +39,20 @@ const PAIRS: Array<[string, string, number]> = [
   ['warn', 'surface', 4.5],
   ['ok', 'surface', 4.5],
   ['info', 'surface', 4.5],
+  // Status words also sit on the canvas and on oat panels.
+  ['ok', 'bg', 4.5],
+  ['warn', 'bg', 4.5],
+  ['danger', 'bg', 4.5],
+  ['info', 'bg', 4.5],
+  ['ok', 'fill', 4.5],
+  ['warn', 'fill', 4.5],
+  ['danger', 'fill', 4.5],
+  ['info', 'fill', 4.5],
+  // The danger key: paper words on danger.
+  ['surface', 'danger', 4.5],
   ['focus', 'surface', 3],
+  ['focus', 'bg', 3],
+  ['focus', 'cta', 3],
   // Count badges and the chart tooltip: paper-coloured text on ink.
   ['surface', 'ink', 4.5],
   // The disabled main button: muted words on the fill.

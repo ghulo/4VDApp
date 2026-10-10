@@ -28,6 +28,13 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Shop float editable right where the drawer is counted (usually €150, sometimes not), and the float used shows in reports
 - [x] Tabs show more detail: who added each charge, who took each payment, and the time (hour:minute)
 
+## Look (DESIGN.md gap list)
+
+- [x] Warm status colours and an ink focus ring in both apps
+- [x] Buttons: thinner 2px edge, no jump on hover, disabled buttons sit flat instead of half see-through
+- [x] Glass: one clean recipe; the top bar only turns to glass once the page scrolls under it
+- [ ] You look it over locally and say yes, then merge and push
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

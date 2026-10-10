@@ -89,9 +89,19 @@ export function Layout() {
   const inboxCount = (approvals.data?.total ?? 0) + unreadCount;
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
 
+  // The top bar is plain canvas at the top of the page and turns to glass once
+  // there is something underneath it to see through.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 0);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <div className={collapsed ? 'app app--collapsed' : 'app'}>
-      <header className="topbar">
+      <header className={scrolled ? 'topbar topbar--glass' : 'topbar'}>
         <button
           ref={menuButton}
           type="button"

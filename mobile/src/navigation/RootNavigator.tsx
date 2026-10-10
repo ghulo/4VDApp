@@ -82,8 +82,13 @@ function GlassBar() {
           style={StyleSheet.absoluteFill}
         />
       )}
-      {/* Paper over the blur, about 62% opaque, keeps the labels readable on any content. */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: Platform.OS === 'android' ? colors.surface : `${colors.surface}9e` }]} />
+      {/* Paper over the blur at 72% keeps the labels readable on any content. */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          Platform.OS === 'android' ? { backgroundColor: colors.surface } : { backgroundColor: colors.glassBg, boxShadow: colors.glassHighlight },
+        ]}
+      />
     </View>
   );
 }

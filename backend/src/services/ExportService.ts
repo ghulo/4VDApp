@@ -1,8 +1,8 @@
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
-import { type CsvColumn, toCsv } from '../utils/csv.js';
 import { roundMoney } from '../utils/money.js';
+import type { ExportColumn, Sheet } from '../utils/spreadsheet.js';
 import { zonedDateTime, zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 import type { ReportsService, TeamRow } from './ReportsService.js';
@@ -11,16 +11,18 @@ import type { ReportsService, TeamRow } from './ReportsService.js';
 const dayRangeLabel = (range: DateRange, timeZone: string) =>
   `${zonedDay(range.startDate, timeZone)}-to-${zonedDay(new Date(range.endDate.getTime() - 1), timeZone)}`;
 
-const salesColumns = (timeZone: string): CsvColumn<SaleExportRow>[] => [
-  { header: 'Date', value: (row) => zonedDateTime(row.occurred_at, timeZone) },
+const salesColumns = (timeZone: string): ExportColumn<SaleExportRow>[] => [
+  { header: 'Date', kind: 'datetime', value: (row) => zonedDateTime(row.occurred_at, timeZone) },
   { header: 'Product', value: (row) => row.product_name },
   { header: 'SKU', value: (row) => row.sku },
-  { header: 'Quantity', value: (row) => row.quantity },
-  { header: 'Unit price', value: (row) => Number(row.unit_price) },
-  { header: 'Total', value: (row) => Number(row.total) },
-  { header: 'Unit cost', value: (row) => (row.unit_cost === null ? null : Number(row.unit_cost)) },
+  { header: 'Quantity', kind: 'number', total: true, value: (row) => row.quantity },
+  { header: 'Unit price', kind: 'money', value: (row) => Number(row.unit_price) },
+  { header: 'Total', kind: 'money', total: true, value: (row) => Number(row.total) },
+  { header: 'Unit cost', kind: 'money', value: (row) => (row.unit_cost === null ? null : Number(row.unit_cost)) },
   {
     header: 'Profit',
+    kind: 'money',
+    total: true,
     value: (row) => (row.unit_cost === null ? null : roundMoney(Number(row.total) - row.quantity * Number(row.unit_cost))),
   },
   { header: 'Sold by', value: (row) => row.sold_by_name },
@@ -31,31 +33,31 @@ const salesColumns = (timeZone: string): CsvColumn<SaleExportRow>[] => [
 
 type StockExportRow = VelocityRow & { daysLeft: number | null };
 
-const STOCK_COLUMNS: CsvColumn<StockExportRow>[] = [
+const STOCK_COLUMNS: ExportColumn<StockExportRow>[] = [
   { header: 'Product', value: (row) => row.product_name },
   { header: 'SKU', value: (row) => row.sku },
   { header: 'Category', value: (row) => row.category_name },
-  { header: 'In stock', value: (row) => row.quantity_on_hand },
-  { header: 'Reorder level', value: (row) => row.reorder_level },
-  { header: 'Price', value: (row) => Number(row.base_price) },
-  { header: 'Cost', value: (row) => (row.cost_price === null ? null : Number(row.cost_price)) },
+  { header: 'In stock', kind: 'number', total: true, value: (row) => row.quantity_on_hand },
+  { header: 'Reorder level', kind: 'number', value: (row) => row.reorder_level },
+  { header: 'Price', kind: 'money', value: (row) => Number(row.base_price) },
+  { header: 'Cost', kind: 'money', value: (row) => (row.cost_price === null ? null : Number(row.cost_price)) },
   // Valued at cost, falling back to the sale price when cost is unknown (same as the dashboard).
-  { header: 'Stock value', value: (row) => roundMoney(row.quantity_on_hand * Number(row.cost_price ?? row.base_price)) },
-  { header: 'Days left', value: (row) => row.daysLeft },
+  { header: 'Stock value', kind: 'money', total: true, value: (row) => roundMoney(row.quantity_on_hand * Number(row.cost_price ?? row.base_price)) },
+  { header: 'Days left', kind: 'number', value: (row) => row.daysLeft },
 ];
 
-const TEAM_COLUMNS: CsvColumn<TeamRow>[] = [
+const TEAM_COLUMNS: ExportColumn<TeamRow>[] = [
   { header: 'Name', value: (row) => row.name },
   { header: 'Role', value: (row) => row.role },
-  { header: 'Sales', value: (row) => row.salesCount },
-  { header: 'Units sold', value: (row) => row.unitsSold },
-  { header: 'Revenue', value: (row) => row.revenue },
-  { header: 'Refunds', value: (row) => row.refunds },
-  { header: 'Profit', value: (row) => row.profit },
-  { header: 'Average sale', value: (row) => row.averageSale },
-  { header: 'Monthly target', value: (row) => row.monthlyTarget },
-  { header: 'Commission %', value: (row) => row.commissionPercent },
-  { header: 'Commission', value: (row) => row.commission },
+  { header: 'Sales', kind: 'number', total: true, value: (row) => row.salesCount },
+  { header: 'Units sold', kind: 'number', total: true, value: (row) => row.unitsSold },
+  { header: 'Revenue', kind: 'money', total: true, value: (row) => row.revenue },
+  { header: 'Refunds', kind: 'money', total: true, value: (row) => row.refunds },
+  { header: 'Profit', kind: 'money', total: true, value: (row) => row.profit },
+  { header: 'Average sale', kind: 'money', value: (row) => row.averageSale },
+  { header: 'Monthly target', kind: 'money', value: (row) => row.monthlyTarget },
+  { header: 'Commission %', kind: 'number', value: (row) => row.commissionPercent },
+  { header: 'Commission', kind: 'money', total: true, value: (row) => row.commission },
 ];
 
 /** One day of money in and out, for the accountant. */
@@ -67,20 +69,20 @@ interface MoneyDay {
   expenses: number;
 }
 
-const MONEY_COLUMNS: CsvColumn<MoneyDay & { label?: string }>[] = [
-  { header: 'Date', value: (row) => row.label ?? row.day },
-  { header: 'Shop sales (after refunds)', value: (row) => row.shop },
-  { header: 'Carwash', value: (row) => row.carwash },
-  { header: 'Change machine', value: (row) => row.change },
-  { header: 'Expenses', value: (row) => row.expenses },
-  { header: 'In minus out', value: (row) => roundMoney(row.shop + row.carwash + row.change - row.expenses) },
+const MONEY_COLUMNS: ExportColumn<MoneyDay>[] = [
+  { header: 'Date', kind: 'date', value: (row) => row.day },
+  { header: 'Shop sales (after refunds)', kind: 'money', total: true, value: (row) => row.shop },
+  { header: 'Carwash', kind: 'money', total: true, value: (row) => row.carwash },
+  { header: 'Change machine', kind: 'money', total: true, value: (row) => row.change },
+  { header: 'Expenses', kind: 'money', total: true, value: (row) => row.expenses },
+  { header: 'In minus out', kind: 'money', total: true, value: (row) => roundMoney(row.shop + row.carwash + row.change - row.expenses) },
 ];
 
-const EXPENSE_COLUMNS: CsvColumn<ExpenseRecord>[] = [
-  { header: 'Date', value: (row) => row.day },
+const EXPENSE_COLUMNS: ExportColumn<ExpenseRecord>[] = [
+  { header: 'Date', kind: 'date', value: (row) => row.day },
   { header: 'What for', value: (row) => row.category },
   { header: 'For', value: (row) => (row.carwash_name ? `carwash: ${row.carwash_name}` : row.place) },
-  { header: 'Amount', value: (row) => Number(row.amount) },
+  { header: 'Amount', kind: 'money', total: true, value: (row) => Number(row.amount) },
   { header: 'Note', value: (row) => row.note },
   { header: 'Repeats monthly', value: (row) => (row.recurring_id === null ? 'no' : 'yes') },
   { header: 'Added by', value: (row) => row.created_by_name ?? (row.recurring_id === null ? null : 'automatic') },
@@ -95,9 +97,19 @@ function eachDay(from: string, to: string): string[] {
   return days;
 }
 
-export interface CsvFile {
-  filename: string;
-  content: string;
+/** A download: its file name without the extension, and the sheet to write as CSV or Excel. */
+export interface ExportFile {
+  basename: string;
+  // Each export has its own row type; the writers only read rows through the columns.
+  // oxlint-disable-next-line typescript/no-explicit-any
+  sheet: Sheet<any>;
+}
+
+/** "1 Mar 2026 to 31 Mar 2026", for the line under a sheet's title. */
+function readableRange(from: string, to: string): string {
+  const day = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  return from === to ? day(from) : `${day(from)} to ${day(to)}`;
 }
 
 export class ExportService {
@@ -109,7 +121,7 @@ export class ExportService {
   ) {}
 
   /** Money in and out per day, shop and carwash together, with a total: what the accountant asks for. */
-  async money(range: DateRange, timeZone: string): Promise<CsvFile> {
+  async money(range: DateRange, timeZone: string): Promise<ExportFile> {
     const { from, to } = zonedDays(range, timeZone);
     const [shop, carwash, expenses] = await Promise.all([
       this.reportsRepository.shopRevenueByDay(from, to, timeZone),
@@ -128,54 +140,57 @@ export class ExportService {
     const spentByDay = new Map<string, number>();
     for (const expense of expenses) spentByDay.set(expense.day, roundMoney((spentByDay.get(expense.day) ?? 0) + Number(expense.amount)));
 
-    const rows: Array<MoneyDay & { label?: string }> = eachDay(from, to).map((day) => ({
+    const rows: MoneyDay[] = eachDay(from, to).map((day) => ({
       day,
       shop: roundMoney(shop.get(day) ?? 0),
       carwash: carwashByDay.get(day)?.carwash ?? 0,
       change: carwashByDay.get(day)?.change ?? 0,
       expenses: spentByDay.get(day) ?? 0,
     }));
-    const sum = (pick: (row: MoneyDay) => number) => roundMoney(rows.reduce((total, row) => total + pick(row), 0));
-    rows.push({
-      day: '',
-      label: 'Total',
-      shop: sum((row) => row.shop),
-      carwash: sum((row) => row.carwash),
-      change: sum((row) => row.change),
-      expenses: sum((row) => row.expenses),
-    });
-    return { filename: `4vd-money-${from}-to-${to}.csv`, content: toCsv(MONEY_COLUMNS, rows) };
-  }
-
-  async expenses(range: DateRange, timeZone: string): Promise<CsvFile> {
-    const { from, to } = zonedDays(range, timeZone);
-    const rows = (await this.expenseRepository.findBetween(from, to)).reverse();
-    return { filename: `4vd-expenses-${from}-to-${to}.csv`, content: toCsv(EXPENSE_COLUMNS, rows) };
-  }
-
-  async sales(range: DateRange, timeZone: string): Promise<CsvFile> {
-    const rows = await this.reportsRepository.salesForExport(range);
     return {
-      filename: `4vd-sales-${dayRangeLabel(range, timeZone)}.csv`,
-      content: toCsv(salesColumns(timeZone), rows),
+      basename: `4vd-money-${from}-to-${to}`,
+      sheet: { name: 'Money', subtitle: `Money in and out per day, ${readableRange(from, to)}`, columns: MONEY_COLUMNS, rows, totals: { inCsv: true } },
     };
   }
 
-  async stock(timeZone: string): Promise<CsvFile> {
+  async expenses(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = (await this.expenseRepository.findBetween(from, to)).reverse();
+    return {
+      basename: `4vd-expenses-${from}-to-${to}`,
+      sheet: { name: 'Expenses', subtitle: readableRange(from, to), columns: EXPENSE_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
+
+  async sales(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const rows = await this.reportsRepository.salesForExport(range);
+    const { from, to } = zonedDays(range, timeZone);
+    return {
+      basename: `4vd-sales-${dayRangeLabel(range, timeZone)}`,
+      sheet: { name: 'Sales', subtitle: readableRange(from, to), columns: salesColumns(timeZone), rows, totals: { inCsv: false } },
+    };
+  }
+
+  async stock(timeZone: string): Promise<ExportFile> {
     const [products, suggestions] = await Promise.all([
       this.reportsRepository.activeProducts(),
       this.reportsService.reorderSuggestions(),
     ]);
     const daysLeftById = new Map(suggestions.map((row) => [row.productId, row.daysLeft]));
     const rows = products.map((product) => ({ ...product, daysLeft: daysLeftById.get(product.product_id) ?? null }));
-    return { filename: `4vd-stock-${zonedDay(new Date(), timeZone)}.csv`, content: toCsv(STOCK_COLUMNS, rows) };
+    const today = zonedDay(new Date(), timeZone);
+    return {
+      basename: `4vd-stock-${today}`,
+      sheet: { name: 'Stock', subtitle: `On the shelf on ${readableRange(today, today)}`, columns: STOCK_COLUMNS, rows, totals: { inCsv: false } },
+    };
   }
 
-  async team(range: DateRange, timeZone: string): Promise<CsvFile> {
+  async team(range: DateRange, timeZone: string): Promise<ExportFile> {
     const rows = await this.reportsService.team(range);
+    const { from, to } = zonedDays(range, timeZone);
     return {
-      filename: `4vd-team-${dayRangeLabel(range, timeZone)}.csv`,
-      content: toCsv(TEAM_COLUMNS, rows),
+      basename: `4vd-team-${dayRangeLabel(range, timeZone)}`,
+      sheet: { name: 'Team', subtitle: readableRange(from, to), columns: TEAM_COLUMNS, rows, totals: { inCsv: false } },
     };
   }
 }

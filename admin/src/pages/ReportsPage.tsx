@@ -1,16 +1,21 @@
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { CaretLeft, Coins, FileCsv, FileXls, type Icon, Package, Receipt, UsersThree, Wallet } from '@phosphor-icons/react';
+import type { Catalogue } from '../i18n/en';
 import { AnalyticsBoard } from '../components/AnalyticsBoard';
 import { useSalesSeries } from '../components/useSalesSeries';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { RevenueChart } from '../components/RevenueChart';
+import { CategoriesCard, PatternCards, TopProductsCard, usePatterns } from '../components/SalesPatterns';
 import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { errorMessage } from '../utils/errors';
 import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Button, Card, DataTable, MetricCard, PageHeader } from '../components/ui';
+import { BarList, Button, Card, DataTable, MetricCard, MetricGrid, PageHeader } from '../components/ui';
+import type { TeamRow } from '../services/types';
 
 /** Each tab of Reports is its own address; the period stays the same across them. */
 export type ReportsView = 'figures' | 'team' | 'profit' | 'downloads';
@@ -28,9 +33,9 @@ export function ReportsPage({ view }: { view: ReportsView }) {
           description={t.reports.description(range.label)}
           actions={picker}
         />
-        {view === 'team' && <TeamTable range={rangeKey} />}
+        {view === 'team' && <TeamView range={rangeKey} previous={previousOf(comparedRange)} />}
         {view === 'profit' && <ProfitTable range={rangeKey} />}
-        {view === 'downloads' && <Exports range={rangeKey} />}
+        {view === 'downloads' && <Exports range={rangeKey} label={range.label} />}
       </>
     );
   }
@@ -96,7 +101,185 @@ export function ReportsPage({ view }: { view: ReportsView }) {
       </AnalyticsBoard>
 
       <SalesChart range={rangeKey} />
+      <div className="analysis-grid">
+        <PatternCards range={rangeKey} />
+        <CategoriesCard range={rangeKey} />
+        <TopProductsCard range={rangeKey} />
+      </div>
+      <Leaderboard range={rangeKey} />
     </>
+  );
+}
+
+type Range = { startDate: string; endDate: string };
+
+/** The period compared against: the one given, or the same length just before. */
+function previousOf(range: Range & { previousStartDate?: string; previousEndDate?: string }): Range {
+  if (range.previousStartDate && range.previousEndDate) return { startDate: range.previousStartDate, endDate: range.previousEndDate };
+  const start = new Date(range.startDate).getTime();
+  const length = new Date(range.endDate).getTime() - start;
+  return { startDate: new Date(start - length).toISOString(), endDate: range.startDate };
+}
+
+function useTeam(range: Range) {
+  return useQuery({ queryKey: ['reports', 'team', range], queryFn: () => reportsApi.team(range), placeholderData: keepPreviousData });
+}
+
+/** A link to one person's figures that keeps the picked period. */
+function usePersonLink() {
+  const [params] = useSearchParams();
+  return (userId: number | null) => {
+    const next = new URLSearchParams(params);
+    if (userId === null) next.delete('person');
+    else next.set('person', String(userId));
+    return `/reports/team?${next}`;
+  };
+}
+
+/** Revenue per person as ranked bars; each name opens that person's figures. */
+function Leaderboard({ range, compact = true }: { range: Range; compact?: boolean }) {
+  const t = useT();
+  const team = useTeam(range);
+  const personLink = usePersonLink();
+  const sellers = (team.data ?? []).filter((person) => person.salesCount > 0 || person.revenue !== 0);
+  return (
+    <Card
+      title={t.analysis.leaderboard}
+      description={t.analysis.leaderboardHint}
+      actions={
+        compact && (
+          <Link to={personLink(null)} className="text-link">
+            {t.analysis.openTeam}
+          </Link>
+        )
+      }
+    >
+      {team.isPending && <Loading />}
+      {team.isError && <ErrorNotice error={team.error} onRetry={() => team.refetch()} />}
+      {team.data &&
+        (sellers.length === 0 ? (
+          <EmptyState title={t.analysis.nothingYet} />
+        ) : (
+          <BarList
+            label={t.analysis.leaderboard}
+            items={sellers.map((person) => ({
+              key: person.userId,
+              label: person.name,
+              to: personLink(person.userId),
+              value: person.revenue,
+              display: formatHeadlineMoney(person.revenue),
+              detail: t.analysis.personDetail(person.salesCount, formatMoney(person.averageSale)),
+            }))}
+          />
+        ))}
+    </Card>
+  );
+}
+
+function TeamView({ range, previous }: { range: Range; previous: Range }) {
+  const [params] = useSearchParams();
+  const person = Number(params.get('person')) || null;
+  if (person !== null) return <PersonReport userId={person} range={range} previous={previous} />;
+  return (
+    <>
+      <Leaderboard range={range} compact={false} />
+      <TeamTable range={range} />
+    </>
+  );
+}
+
+const changeOf = (now: number, before: number | undefined) => (before === undefined || before === 0 ? null : now / before - 1);
+
+/** One person's period: their figures against the period before, when they sell, and what. */
+function PersonReport({ userId, range, previous }: { userId: number; range: Range; previous: Range }) {
+  const t = useT();
+  const personLink = usePersonLink();
+  const team = useTeam(range);
+  const before = useTeam(previous);
+  const patterns = usePatterns(range, userId);
+  const person = team.data?.find((row) => row.userId === userId);
+  const earlier: TeamRow | undefined = before.data?.find((row) => row.userId === userId);
+
+  return (
+    <>
+      <p className="person-report__back">
+        <Link to={personLink(null)} className="text-link">
+          <CaretLeft size={14} weight="bold" aria-hidden="true" /> {t.analysis.wholeTeam}
+        </Link>
+      </p>
+      {team.isPending && <Loading />}
+      {team.isError && <ErrorNotice error={team.error} onRetry={() => team.refetch()} />}
+      {team.data && !person && <EmptyState title={t.analysis.notFound} />}
+      {person && (
+        <>
+          <h2 className="person-report__name">
+            {person.name}
+            <span className="person-report__role">
+              {person.hasLeft ? t.reports.hasLeft(t.common.roles[person.role]) : t.common.roles[person.role]}
+            </span>
+          </h2>
+          <MetricGrid>
+            <MetricCard
+              large
+              label={t.analysis.revenue}
+              value={formatHeadlineMoney(person.revenue)}
+              change={changeOf(person.revenue, earlier?.revenue)}
+              series={patterns.data?.days.map((day) => day.revenue)}
+            />
+            <MetricCard
+              large
+              label={t.analysis.sales}
+              value={person.salesCount}
+              change={changeOf(person.salesCount, earlier?.salesCount)}
+              series={patterns.data?.days.map((day) => day.salesCount)}
+            />
+            <MetricCard label={t.analysis.averageSale} value={formatMoney(person.averageSale)} change={changeOf(person.averageSale, earlier?.averageSale)} />
+            <MetricCard label={t.analysis.profit} value={formatHeadlineMoney(person.profit)} change={changeOf(person.profit, earlier?.profit)} />
+            <MetricCard
+              label={t.analysis.commission}
+              value={person.commission === null ? '–' : formatMoney(person.commission)}
+              hint={person.commissionPercent === null ? undefined : t.reports.ofRevenue(person.commissionPercent)}
+            />
+            <MetricCard
+              label={t.analysis.target}
+              value={person.monthlyTarget === null ? '–' : formatPercent(person.revenue / person.monthlyTarget)}
+              hint={
+                person.monthlyTarget === null ? (
+                  t.analysis.noTarget
+                ) : (
+                  <TargetBar
+                    share={person.revenue / person.monthlyTarget}
+                    label={t.analysis.targetProgress(formatPercent(person.revenue / person.monthlyTarget), formatMoney(person.monthlyTarget))}
+                  />
+                )
+              }
+            />
+          </MetricGrid>
+          <Card>
+            {patterns.isPending && <Loading />}
+            {patterns.isError && <ErrorNotice error={patterns.error} onRetry={() => patterns.refetch()} />}
+            {patterns.data && <RevenueChart points={patterns.data.days} title={t.analysis.theirDays} />}
+          </Card>
+          <div className="analysis-grid">
+            <PatternCards range={range} userId={userId} />
+            <TopProductsCard range={range} userId={userId} title={t.analysis.theirProducts} />
+            <CategoriesCard range={range} userId={userId} title={t.analysis.theirCategories} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+/** How far into the monthly target, as a slim bar with the words beside it. */
+function TargetBar({ share, label }: { share: number; label: string }) {
+  return (
+    <span className="target-bar">
+      <span className="target-bar__track" aria-hidden="true">
+        <span className="target-bar__fill" style={{ inlineSize: `${Math.min(Math.max(share, 0), 1) * 100}%` }} />
+      </span>
+      {label}
+    </span>
   );
 }
 
@@ -127,6 +310,7 @@ function SalesChart({ range }: { range: { startDate: string; endDate: string } }
 
 function TeamTable({ range }: { range: { startDate: string; endDate: string } }) {
   const t = useT();
+  const personLink = usePersonLink();
   const team = useQuery({
     queryKey: ['reports', 'team', range],
     queryFn: () => reportsApi.team(range),
@@ -150,7 +334,9 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
               title: true,
               cell: (person) => (
                 <>
-                  <span className="table__primary-link">{person.name}</span>
+                  <Link to={personLink(person.userId)} className="table__primary-link" aria-label={t.analysis.open(person.name)}>
+                    {person.name}
+                  </Link>
                   <span className="table__secondary">
                     {person.hasLeft ? t.reports.hasLeft(t.common.roles[person.role]) : t.common.roles[person.role]}
                   </span>
@@ -262,31 +448,67 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
   );
 }
 
-function Exports({ range }: { range: { startDate: string; endDate: string } }) {
+type ExportKind = 'money' | 'expenses' | 'sales' | 'team' | 'stock';
+
+const EXPORTS: Array<{ kind: ExportKind; icon: Icon; title: (t: Catalogue) => string }> = [
+  { kind: 'money', icon: Coins, title: (t) => t.reports.moneyPerDay },
+  { kind: 'expenses', icon: Wallet, title: (t) => t.reports.expensesList },
+  { kind: 'sales', icon: Receipt, title: (t) => t.reports.salesInPeriod },
+  { kind: 'team', icon: UsersThree, title: (t) => t.reports.teamReport },
+  { kind: 'stock', icon: Package, title: (t) => t.reports.currentStock },
+];
+
+/** Each download as a card: what's in it, for when, and the two formats. */
+function Exports({ range, label }: { range: { startDate: string; endDate: string }; label: string }) {
   const t = useT();
   const download = useMutation({
-    mutationFn: (kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses') => exportsApi.download(kind, kind === 'stock' ? undefined : range),
+    mutationFn: ({ kind, format }: { kind: ExportKind; format: 'xlsx' | 'csv' }) =>
+      exportsApi.download(kind, format, kind === 'stock' ? undefined : range),
   });
+  const busy = (kind: ExportKind, format: 'xlsx' | 'csv') =>
+    download.isPending && download.variables.kind === kind && download.variables.format === format;
 
   return (
     <Card title={t.reports.download} description={t.reports.forAccountantHint}>
-      <div className="form-actions">
-        <Button onClick={() => download.mutate('money')} disabled={download.isPending}>
-          {t.reports.moneyPerDay}
-        </Button>
-        <Button onClick={() => download.mutate('expenses')} disabled={download.isPending}>
-          {t.reports.expensesList}
-        </Button>
-        <Button onClick={() => download.mutate('sales')} disabled={download.isPending}>
-          {t.reports.salesInPeriod}
-        </Button>
-        <Button onClick={() => download.mutate('team')} disabled={download.isPending}>
-          {t.reports.teamReport}
-        </Button>
-        <Button onClick={() => download.mutate('stock')} disabled={download.isPending}>
-          {t.reports.currentStock}
-        </Button>
-      </div>
+      <ul className="download-grid">
+        {EXPORTS.map(({ kind, icon: IconComponent, title }) => (
+          <li key={kind} className="download-card">
+            <span className="download-card__icon" aria-hidden="true">
+              <IconComponent size={20} />
+            </span>
+            <span className="download-card__text">
+              <span className="download-card__title">{title(t)}</span>
+              <span className="download-card__what">{t.reports.downloads[kind]}</span>
+              <span className="download-card__when">{kind === 'stock' ? t.reports.downloads.rightNow : t.reports.downloads.forPeriod(label)}</span>
+            </span>
+            <span className="download-card__actions">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={FileXls}
+                disabled={download.isPending}
+                aria-label={t.reports.downloads.excelLabel(title(t))}
+                aria-busy={busy(kind, 'xlsx')}
+                onClick={() => download.mutate({ kind, format: 'xlsx' })}
+              >
+                {t.reports.downloads.excel}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={FileCsv}
+                disabled={download.isPending}
+                aria-label={t.reports.downloads.csvLabel(title(t))}
+                aria-busy={busy(kind, 'csv')}
+                onClick={() => download.mutate({ kind, format: 'csv' })}
+              >
+                {t.reports.downloads.csv}
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="field-hint">{t.reports.downloads.formatsHint}</p>
       {download.isError && (
         <p className="form-error" role="alert">
           {errorMessage(download.error)}

@@ -1,17 +1,16 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
-import { createExportsController } from '../controllers/exportsController.js';
+import { createExportsController, type ExportFormat } from '../controllers/exportsController.js';
 
 export function createExportsRoutes({ exportService, guards }: Container): Router {
-  const controller = createExportsController(exportService);
+  const { exports, handle } = createExportsController(exportService);
   const router = Router();
 
   router.use(...guards.oversee);
-  router.get('/sales.csv', controller.sales);
-  router.get('/stock.csv', controller.stock);
-  router.get('/team.csv', controller.team);
-  router.get('/money.csv', controller.money);
-  router.get('/expenses.csv', controller.expenses);
+  // Each export as a styled Excel workbook, or as plain CSV for other software.
+  for (const [name, make] of Object.entries(exports)) {
+    for (const format of ['csv', 'xlsx'] as ExportFormat[]) router.get(`/${name}.${format}`, handle(make, format));
+  }
 
   return router;
 }

@@ -73,6 +73,8 @@ import type {
   UserRole,
   ShopDay,
   Checkout,
+  CheckoutDayTotal,
+  SalesPatterns,
   Attention,
   AssistantChat,
   AssistantThread,
@@ -251,6 +253,8 @@ export interface SaleListQuery {
   endDate?: string;
   productId?: number;
   soldBy?: number;
+  /** Checkouts only: a product name or invoice number. */
+  search?: string;
 }
 
 export interface DocumentListQuery {
@@ -283,10 +287,10 @@ export const salesApi = {
   },
   /** Sales history by checkout: one row per invoice, with its lines. */
   async checkouts(query: SaleListQuery) {
-    const { data, meta } = await apiRequest<{ checkouts: Checkout[]; totalRevenue: number }>('/sales/checkouts', {
+    const { data, meta } = await apiRequest<{ checkouts: Checkout[]; totalRevenue: number; days: CheckoutDayTotal[] }>('/sales/checkouts', {
       query: { limit: 20, ...query },
     });
-    return { items: data.checkouts, totalRevenue: data.totalRevenue, meta: meta! };
+    return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
   recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
@@ -405,8 +409,12 @@ export const fullReportsApi = {
 export const reportsApi = {
   summary: async (range: ComparedRange) => (await apiRequest<ReportSummary>('/reports/summary', { query: { ...range } })).data,
   team: async (range: ReportRange) => (await apiRequest<TeamRow[]>('/reports/team', { query: { ...range } })).data,
-  profit: async (range: ReportRange, groupBy: 'product' | 'category') =>
-    (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy } })).data,
+  /** By product or category; one seller's sales only with `userId`. */
+  profit: async (range: ReportRange, groupBy: 'product' | 'category', userId?: number) =>
+    (await apiRequest<ProfitRow[]>('/reports/profit', { query: { ...range, groupBy, userId } })).data,
+  /** Sales per day, hour and weekday; one seller's only with `userId`. */
+  patterns: async (range: ReportRange, userId?: number) =>
+    (await apiRequest<SalesPatterns>('/reports/patterns', { query: { ...range, userId } })).data,
   reorderSuggestions: async () => (await apiRequest<ReorderSuggestion[]>('/reports/reorder-suggestions')).data,
   insights: async () => (await apiRequest<Insight[]>('/reports/insights')).data,
   dailySummary: async () => (await apiRequest<{ title: string; message: string; salesLine: string }>('/reports/daily-summary')).data,
@@ -544,11 +552,12 @@ export const expiryApi = {
 };
 
 export const exportsApi = {
-  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', range?: ReportRange): Promise<void> {
+  /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
+  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', format: 'xlsx' | 'csv', range?: ReportRange): Promise<void> {
     // The server names files and writes dates in the admin's own timezone.
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const { blob, filename } = await apiDownload(`/exports/${kind}.csv`, { ...range, tz });
-    saveDownload(blob, filename ?? `4vd-${kind}.csv`);
+    const { blob, filename } = await apiDownload(`/exports/${kind}.${format}`, { ...range, tz });
+    saveDownload(blob, filename ?? `4vd-${kind}.${format}`);
   },
 };
 

@@ -1,4 +1,5 @@
 import request from 'supertest';
+import ExcelJS from 'exceljs';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTestCategory, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
@@ -117,5 +118,59 @@ describe('CSV exports', () => {
     expect(forbidden.status).toBe(403);
     expect(invalid.status).toBe(400);
     expect(invalid.body.success).toBe(false);
+  });
+});
+
+describe('Excel exports', () => {
+  const workbook = async (path: string) => {
+    const response = await request(context.app)
+      .get(path)
+      .set(auth(adminToken))
+      .buffer(true)
+      .parse((res, done) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => done(null, Buffer.concat(chunks)));
+      });
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(new Uint8Array(response.body as Buffer).buffer as ArrayBuffer);
+    return { response, sheet: book.worksheets[0]! };
+  };
+
+  it('should write a titled sheet with typed cells, filters and a totals row', async () => {
+    await createAndSell('Oak Chair', 2);
+    await createAndSell('=HYPERLINK("http://evil")', 1);
+
+    const { response, sheet } = await workbook('/api/exports/sales.xlsx?startDate=2026-03-01&endDate=2026-03-31');
+
+    expect(response.headers['content-type']).toContain('spreadsheetml');
+    expect(response.headers['content-disposition']).toBe('attachment; filename="4vd-sales-2026-03-01-to-2026-03-31.xlsx"');
+    expect(sheet.name).toBe('Sales');
+    expect(sheet.getCell('A1').value).toBe('4VD  ·  Sales');
+    expect(String(sheet.getCell('A2').value)).toContain('1 Mar 2026 to 31 Mar 2026');
+    expect(sheet.getRow(4).getCell(1).value).toBe('Date');
+    expect(sheet.views[0]).toMatchObject({ state: 'frozen', ySplit: 4 });
+    expect(sheet.autoFilter).toBeTruthy();
+
+    const rows = [5, 6].map((index) => sheet.getRow(index));
+    expect(rows.some((row) => row.getCell(2).value === 'Oak Chair')).toBe(true);
+    // A real date and real money, not text.
+    expect(rows[0]!.getCell(1).value).toBeInstanceOf(Date);
+    expect(rows.find((row) => row.getCell(2).value === 'Oak Chair')!.getCell(6).value).toBe(200);
+    expect(rows[0]!.getCell(6).numFmt).toContain('€');
+    // Formula-looking names stay text.
+    expect(rows.some((row) => row.getCell(2).value === `'=HYPERLINK("http://evil")`)).toBe(true);
+
+    const totals = sheet.getRow(7);
+    expect(totals.getCell(1).value).toBe('Total');
+    expect(totals.getCell(6).value).toMatchObject({ formula: 'SUM(F5:F6)', result: 300 });
+  });
+
+  it('should keep the CSV money sheet with its total row', async () => {
+    await createAndSell('Oak Chair', 2);
+
+    const response = await download('/api/exports/money.csv?startDate=2026-03-10&endDate=2026-03-10');
+
+    expect(response.text).toContain('2026-03-10,200,0,0,0,200\r\nTotal,200,0,0,0,200\r\n');
   });
 });

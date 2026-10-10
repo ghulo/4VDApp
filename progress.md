@@ -63,6 +63,19 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] New page look: chat list beside the conversation, starter questions, bubbles, pinned question box
 - [x] You look it over locally, then merge (after logic-gaps) and push
 
+## Stock and Sales pages, made better (branch better-stock-sales)
+
+- [x] Stock: tiles for stock value, low, out and runs out this week; each filters the list
+- [x] Stock: filter chips, category picker, sorting (emptiest, runs out soonest, name, value)
+- [x] Stock: status tag and value on each row; Order button opens a new order with that product and its usual supplier
+- [x] Sales: Today / Yesterday / This week / This month / Custom
+- [x] Sales: revenue, profit, sales and average sale against the period before, with a revenue graph
+- [x] Sales: checkouts grouped under each day with the day's total; search by product or invoice; click a row to open it; Returned badge
+- [x] Analytics: best days of the week, busiest hours, revenue by category, top 10 products, team leaderboard
+- [x] Team: leaderboard chart; each person opens their own page (figures against the period before, target progress, daily graph, hours, weekdays, top products, categories)
+- [x] Downloads: each file as a card; Excel workbooks with a 4VD title band, euro and date formats, filters and a totals row; CSV kept plain for imports
+- [x] Merged and pushed
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

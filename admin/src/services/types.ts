@@ -134,9 +134,18 @@ export interface Checkout {
   key: string;
   invoice: DocumentRef | null;
   saleDate: string;
+  /** The shop day it falls on (YYYY-MM-DD), for grouping. */
+  day: string;
   soldBy: string | null;
   total: number;
   lines: Sale[];
+}
+
+/** One shop day's checkouts and revenue, with the list's filters applied. */
+export interface CheckoutDayTotal {
+  day: string;
+  checkouts: number;
+  revenue: number;
 }
 
 /** Kosovo's VAT rates, in percent. */
@@ -524,6 +533,13 @@ export interface ReportSettings {
 export interface ReorderSuggestion {
   productId: number;
   productName: string;
+  sku: string | null;
+  imageUrl: string | null;
+  categoryId: number;
+  categoryName: string;
+  /** Null when no cost price is set, so its stock has no known value. */
+  costPrice: number | null;
+  lastRestockedAt: string | null;
   quantity: number;
   reorderLevel: number;
   averageDailySales: number;
@@ -918,4 +934,21 @@ export interface AssistantMessage {
 export interface AssistantThread {
   chat: AssistantChat;
   messages: AssistantMessage[];
+}
+
+export interface PatternFigures {
+  revenue: number;
+  profit: number;
+  unitsSold: number;
+  salesCount: number;
+}
+
+/** When sales happen, in the shop's time zone. */
+export interface SalesPatterns {
+  /** Every shop day in the range, oldest first, quiet days as zero. */
+  days: Array<{ periodStart: string } & PatternFigures>;
+  /** 0–23. */
+  hours: Array<{ hour: number } & PatternFigures>;
+  /** Monday (1) to Sunday (7); `days` is how many of that weekday the range holds. */
+  weekdays: Array<{ weekday: number; days: number; averageRevenue: number } & PatternFigures>;
 }

@@ -19,9 +19,8 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* The canvas: the 4VD mark as one faint watermark in the bottom-right corner,
-     staying put while the page scrolls. */
-  background: var(--watermark-image) right var(--space-7) bottom 0 / min(520px, 60vw) auto no-repeat fixed, var(--bg);
+  /* The canvas: the 4VD mark's four pillars, woven very faintly across the page. */
+  background: var(--weave-image) 0 0 / 72px 72px, var(--bg);
   font-size: var(--text-base);
 }
 

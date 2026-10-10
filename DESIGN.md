@@ -618,19 +618,18 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 - **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`,
   `mobile/src/components/print.tsx`): the mascot. Sign-in, team-app Home's Today
-  panel, the dashboard's Today strip, big empty pages, nowhere else. It is
-  **never larger than the information beside it**: up to 160px on the Today
-  strip, 240px in empty states, 560px on sign-in. Hidden from screen readers;
+  panel, the dashboard's Overview hero, big empty pages, nowhere else. It is
+  **never larger than the information beside it**: up to 360px in the Overview
+  hero (standing on the page rule), 240px in empty states, 560px on sign-in. Hidden from screen readers;
   the sun rises once, off under reduced motion.
 - **Paper grain** over the dashboard (7% light, 5% dark), off under more contrast
   and in print.
-- **The canvas** (both apps, behind every page): one faint **watermark** of the
-  mark (striped sun, roof, four pillars, ground) in the bottom-right corner,
-  up to 520px wide; sun at 8% / 7%, ink at 4.5% / 3.5%; fixed while the page
-  scrolls. No repeating pattern (tried: too distracting). Only on the bare
-  canvas; cards, tables, headers and the top bar stay plain. Token
-  `--watermark-image` on the dashboard; `CanvasTexture` / `texture` in the team
-  app. On the dashboard, off under more contrast and in print.
+- **The canvas** (both apps, behind every page): the mark's **four pillars**
+  woven very faintly across it (two staggered groups of four strokes per 72px
+  tile; Ink at 3.5% light, 2.5% dark). No corner watermark (tried: one more
+  thing to look at). Tokens `--weave-image` on the dashboard;
+  `CanvasTexture` / `texture` in the team app. On the dashboard, off under more
+  contrast and in print.
 - **Rules**: a hairline under page titles; one double rule under the team app's
   masthead only.
 - **Icon chips**: line icons in a 44px soft chip (Paper on Oat, Oat on Paper).

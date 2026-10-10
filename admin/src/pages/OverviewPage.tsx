@@ -10,7 +10,7 @@ import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, approvalsApi, inventoryApi, reportsApi } from '../services/api';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MORE } from '../utils/format';
-import { ButtonLink, Card, DayBars, PageHeader, ShopSunrise } from '../components/ui';
+import { ButtonLink, Card, DayBars, ShopSunrise } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
 
@@ -22,7 +22,6 @@ const CLOSING_HOUR = 18;
 
 export function OverviewPage() {
   const t = useT();
-  const user = useCurrentUser();
   const lowStock = useQuery({
     queryKey: ['inventory', { lowStock: true, page: 1, limit: 50 }],
     queryFn: () => inventoryApi.list({ page: 1, lowStock: true, limit: 50 }),
@@ -34,17 +33,7 @@ export function OverviewPage() {
   // the day in a slim strip, setup while unfinished, restocking, Reports.
   return (
     <>
-      <PageHeader
-        title={t.nav.items.overview}
-        description={t.overview.description}
-        actions={
-          user.role !== 'owner' && (
-            <ButtonLink to="/sales" variant="primary" icon={Receipt}>
-              {t.sales.record}
-            </ButtonLink>
-          )
-        }
-      />
+      <OverviewHero />
 
       <AttentionPanel />
 
@@ -89,6 +78,45 @@ export function OverviewPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+/** The greeting for the hour: morning until noon, afternoon until six. */
+function greeting(t: ReturnType<typeof useT>, hour: number): string {
+  if (hour < 12) return t.overview.morning;
+  if (hour < 18) return t.overview.afternoon;
+  return t.overview.evening;
+}
+
+/**
+ * The top of the morning page: the date, a greeting and the day's main action,
+ * with the shop at sunrise (the 4VD mark's scene) standing on the page's rule.
+ */
+function OverviewHero() {
+  const t = useT();
+  const user = useCurrentUser();
+  const [now] = useState(() => new Date());
+  const firstName = user.name.split(' ')[0] || user.name;
+  return (
+    <header className="overview-hero">
+      <div className="overview-hero__text">
+        <p className="overview-hero__kicker">
+          {t.nav.items.overview} · {formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+        <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
+        <p className="overview-hero__description">{t.overview.description}</p>
+        {user.role !== 'owner' && (
+          <div className="overview-hero__actions">
+            <ButtonLink to="/sales" variant="primary" icon={Receipt}>
+              {t.sales.record}
+            </ButtonLink>
+          </div>
+        )}
+      </div>
+      <div className="overview-hero__art">
+        <ShopSunrise />
+      </div>
+    </header>
   );
 }
 
@@ -197,9 +225,6 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
           <figcaption>{t.overview.last30Days}</figcaption>
         </figure>
       )}
-      <div className="today__sunrise">
-        <ShopSunrise />
-      </div>
     </section>
   );
 }

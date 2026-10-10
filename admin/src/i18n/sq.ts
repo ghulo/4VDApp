@@ -324,6 +324,10 @@ export const sq: Catalogue = {
     netProfitHint: 'Fitimi i dyqanit + lavazhi − shpenzimet',
   },
   overview: {
+    morning: 'Mirëmëngjes',
+    afternoon: 'Mirëdita',
+    evening: 'Mirëmbrëma',
+    greeting: (hello: string, name: string) => `${hello}, ${name}`,
     description: 'Çfarë ju pret së pari, pastaj si po shkon dita.',
     needsRestocking: 'Duhen furnizuar',
     seeAllStock: 'Shiko gjithë stokun',

@@ -327,6 +327,10 @@ export const en = {
     netProfitHint: 'Shop profit + carwash − expenses',
   },
   overview: {
+    morning: 'Good morning',
+    afternoon: 'Good afternoon',
+    evening: 'Good evening',
+    greeting: (hello: string, name: string) => `${hello}, ${name}`,
     description: 'What needs you first, then how the day is going.',
     needsRestocking: 'Needs restocking',
     seeAllStock: 'See all stock',

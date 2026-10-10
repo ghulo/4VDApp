@@ -38,7 +38,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Every table is the shared table component (Sales, Promotions, Orders, stock count, price history, Reports, chart "Show as table"), so none sits as a box inside a card
 - [x] Dashboard styles use only the rulebook sizes: no 14px or 20px text, spacing on the 4px grid, named corner sizes
 - [x] Team app text uses named sizes (no typed-in numbers); screen titles in the serif, 700 weight only in the wordmark
-- [x] Branded canvas in both apps: the four pillars woven across the background and the logo's sunrise rising from the corner
+- [x] Branded canvas in both apps: the 4VD mark as one faint watermark in the bottom corner (the woven pattern was too busy)
 - [ ] You look it over locally and say yes, then merge and push
 
 ## Optional

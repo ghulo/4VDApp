@@ -19,12 +19,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  /* The canvas: the mark's four pillars woven across the page, and its sunrise
-     rising faintly from the bottom corner, staying put while the page scrolls. */
-  background:
-    var(--sunrise-image) right -48px bottom 0 / min(720px, 70vw) auto no-repeat fixed,
-    var(--weave-image) 0 0 / 56px 56px,
-    var(--bg);
+  /* The canvas: the 4VD mark as one faint watermark in the bottom-right corner,
+     staying put while the page scrolls. */
+  background: var(--watermark-image) right var(--space-7) bottom 0 / min(520px, 60vw) auto no-repeat fixed, var(--bg);
   font-size: var(--text-base);
 }
 

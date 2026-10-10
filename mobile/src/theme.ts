@@ -139,8 +139,8 @@ export const type = {
   hero: 64,
 };
 
-// How strongly the canvas texture shows: the woven pillars, then the sunrise.
-export const texture = { light: { weave: 0.05, sun: 0.1 }, dark: { weave: 0.035, sun: 0.08 } };
+// How strongly the watermark shows: the clay sun, then the ink roof and pillars.
+export const texture = { light: { sun: 0.08, ink: 0.045 }, dark: { sun: 0.07, ink: 0.035 } };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 export const radius = { small: 8, panel: 16, board: 20 };

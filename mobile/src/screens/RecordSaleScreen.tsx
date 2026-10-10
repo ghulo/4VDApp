@@ -316,8 +316,9 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: 16, outlineStyle: 'solid', outlineWidth: 0 },
   scanButton: { width: 48, height: 48, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
   groupTitle: { fontFamily: fonts.bodyBold, fontSize: 15, marginTop: spacing.sm },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  tile: { flexBasis: '48%', flexGrow: 1, minHeight: 72, padding: spacing.md, borderWidth: 1, borderRadius: radius.panel, justifyContent: 'space-between' },
+  // Two columns; an odd last tile keeps its size instead of stretching across.
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
+  tile: { width: '48.5%', minHeight: 72, padding: spacing.md, borderWidth: 1, borderRadius: radius.panel, justifyContent: 'space-between' },
   tileName: { fontFamily: fonts.bodyBold, fontSize: 16 },
   actionBar: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
   hint: { fontFamily: fonts.body, fontSize: 15 },

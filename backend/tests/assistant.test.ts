@@ -49,8 +49,9 @@ beforeEach(async () => {
 afterAll(() => context.db.destroy());
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-const ask = (question: string, token = adminToken) =>
-  request(context.app).post('/api/assistant/ask').set(auth(token)).send({ question });
+const ask = (question: string, token = adminToken, chatId?: number) =>
+  request(context.app).post('/api/assistant/chats/messages').set(auth(token)).send({ question, chatId });
+const answer = (text: string, extras: Record<string, unknown> = {}) => ({ text, ...extras });
 
 describe('assistant', () => {
   it('should answer from the shop’s data without sending staff names', async () => {
@@ -59,6 +60,9 @@ describe('assistant', () => {
     await context.db.updateTable('users').set({ name: 'Ana Kovač' }).where('id', '=', seller.id).execute();
     const sellerLogin = await request(context.app).post('/api/auth/login').send({ email: 'ana@test.local', password: 'correct-horse-battery' });
     await request(context.app).post('/api/sales').set(auth(sellerLogin.body.data.token)).send({ productId, quantity: 3 });
+    fakeAi.jsonReply = answer('Person 1 sold the most.', {
+      tables: [{ title: 'Sellers', columns: ['Seller', 'Sales'], rows: [['Person 1', 3]] }],
+    });
 
     const response = await ask('Who sold the most this month?');
 
@@ -66,7 +70,69 @@ describe('assistant', () => {
     expect(fakeAi.lastRequest).toContain('Oak Chair');
     expect(fakeAi.lastRequest).toContain('Who sold the most this month?');
     expect(fakeAi.lastRequest).not.toContain('Ana');
-    expect(response.body.data.answer).toBe('Ana Kovač sold the most.');
+    const reply = response.body.data.messages[1];
+    expect(reply.text).toBe('Ana Kovač sold the most.');
+    expect(reply.extras.tables[0].rows[0]).toEqual(['Ana Kovač', 3]);
+    expect(response.body.data.chat.title).toBe('Who sold the most this month?');
+  });
+
+  it('should keep a conversation: follow-ups carry the chat so far, and chats can be reopened and deleted', async () => {
+    fakeAi.jsonReply = answer('Sales are up.');
+    const first = (await ask('How are sales?')).body.data;
+
+    fakeAi.jsonReply = answer('Last month was lower.');
+    const second = await ask('And last month?', adminToken, first.chat.id);
+    expect(second.status).toBe(200);
+    expect(fakeAi.lastRequest).toContain('Owner: How are sales?');
+    expect(fakeAi.lastRequest).toContain('You: Sales are up.');
+    expect(second.body.data.chat.id).toBe(first.chat.id);
+
+    const list = (await request(context.app).get('/api/assistant/chats').set(auth(adminToken))).body.data;
+    expect(list).toHaveLength(1);
+    const opened = (await request(context.app).get(`/api/assistant/chats/${first.chat.id}`).set(auth(adminToken))).body.data;
+    expect(opened.messages.map((message: { text: string }) => message.text)).toEqual([
+      'How are sales?',
+      'Sales are up.',
+      'And last month?',
+      'Last month was lower.',
+    ]);
+
+    expect((await request(context.app).delete(`/api/assistant/chats/${first.chat.id}`).set(auth(adminToken))).status).toBe(200);
+    expect((await request(context.app).get(`/api/assistant/chats/${first.chat.id}`).set(auth(adminToken))).status).toBe(404);
+  });
+
+  it("should keep each person's chats to themselves", async () => {
+    fakeAi.jsonReply = answer('Fine.');
+    const mine = (await ask('How are sales?')).body.data;
+    const ownerToken = await loginAs(context, 'owner');
+
+    expect((await request(context.app).get(`/api/assistant/chats/${mine.chat.id}`).set(auth(ownerToken))).status).toBe(404);
+    expect((await ask('And today?', ownerToken, mine.chat.id)).status).toBe(404);
+    expect((await request(context.app).delete(`/api/assistant/chats/${mine.chat.id}`).set(auth(ownerToken))).status).toBe(404);
+    expect((await request(context.app).get('/api/assistant/chats').set(auth(ownerToken))).body.data).toEqual([]);
+  });
+
+  it('should keep only links to pages inside the app', async () => {
+    fakeAi.jsonReply = answer('See these.', {
+      links: [
+        { label: 'Chair', to: '/inventory/12' },
+        { label: 'Reports', to: '/reports' },
+        { label: 'Evil', to: 'https://evil.example' },
+        { label: 'Sneaky', to: '//evil.example' },
+        { label: 'Settings', to: '/settings' },
+      ],
+    });
+
+    const reply = (await ask('Where do I look?')).body.data.messages[1];
+
+    expect(reply.extras.links.map((link: { to: string }) => link.to)).toEqual(['/inventory/12', '/reports']);
+  });
+
+  it('should save nothing when the AI fails', async () => {
+    fakeAi.failWith = new AiUnavailableError('Down.');
+    await ask('How are sales?');
+
+    expect((await request(context.app).get('/api/assistant/chats').set(auth(adminToken))).body.data).toEqual([]);
   });
 
   it('should explain when the AI service is unavailable', async () => {

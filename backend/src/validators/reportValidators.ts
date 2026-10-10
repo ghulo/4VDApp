@@ -63,6 +63,8 @@ export const exportTimeZoneSchema = z.object({
 
 export const askAssistantSchema = z.object({
   question: z.string().trim().min(3, 'ask a question').max(500, 'keep the question under 500 characters'),
+  /** Left out to start a new chat. */
+  chatId: z.number().int().positive().optional(),
 });
 
 const reportKind = z.enum(['daily', 'weekly']);

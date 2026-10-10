@@ -18,7 +18,10 @@ export function createAssistantRoutes({ assistantService, priceSuggestionService
 
   router.use(...guards.oversee);
   router.get('/', controller.status);
-  router.post('/ask', questionLimit, controller.ask);
+  router.get('/chats', controller.chats);
+  router.get('/chats/:id', controller.chat);
+  router.post('/chats/messages', questionLimit, controller.ask);
+  router.delete('/chats/:id', controller.deleteChat);
   router.post('/price-suggestions/:productId', questionLimit, controller.suggestPrice);
 
   return router;

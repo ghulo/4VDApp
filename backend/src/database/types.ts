@@ -320,6 +320,23 @@ export interface CashCountsTable {
   checked_at: Date | null;
 }
 
+export interface AssistantChatsTable {
+  id: Generated<number>;
+  user_id: number;
+  title: string;
+  created_at: ColumnType<Date, Date | undefined, never>;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+export interface AssistantMessagesTable {
+  id: Generated<number>;
+  chat_id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  extras: ColumnType<unknown | null, string | null, string | null>;
+  created_at: ColumnType<Date, Date | undefined, never>;
+}
+
 export interface RecurringExpensesTable {
   id: Generated<number>;
   amount: Decimal;
@@ -646,6 +663,8 @@ export interface Database {
   carwashes: CarwashesTable;
   carwash_days: CarwashDaysTable;
   cash_counts: CashCountsTable;
+  assistant_chats: AssistantChatsTable;
+  assistant_messages: AssistantMessagesTable;
   recurring_expenses: RecurringExpensesTable;
   expenses: ExpensesTable;
   no_expense_days: NoExpenseDaysTable;

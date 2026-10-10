@@ -52,6 +52,7 @@ import { PromotionService } from './services/PromotionService.js';
 import { PushRepository } from './repositories/PushRepository.js';
 import { InsightsRepository } from './repositories/InsightsRepository.js';
 import { InsightsService } from './services/InsightsService.js';
+import { AssistantChatRepository } from './repositories/AssistantChatRepository.js';
 import { AssistantService } from './services/AssistantService.js';
 import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
@@ -213,6 +214,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
           : null;
   const assistantService = new AssistantService(
     aiProvider,
+    new AssistantChatRepository(db),
+    {
+      analytics: analyticsService,
+      expenses: expenseService,
+      bills: supplierBillService,
+      tabs: tabService,
+      carwash: carwashService,
+      cash: cashCountService,
+    },
     reportsRepository,
     reportsService,
     insightsService,

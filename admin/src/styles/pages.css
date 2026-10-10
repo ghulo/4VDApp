@@ -494,10 +494,39 @@
 
 /* ---------- Product form ---------- */
 
-.product-form {
-  max-width: 760px;
-  /* The Save row ends the form: barcode and price history are separate cards below. */
-  margin-bottom: var(--space-6);
+/* Editing a product: the form, with the barcode and price history beside it.
+   A new product has only the form, at a comfortable reading width. */
+.product-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.product-layout--single {
+  grid-template-columns: minmax(0, 760px);
+}
+
+@media (max-width: 1100px) {
+  .product-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* The Save row stays in reach at the bottom of the window while a long form
+   scrolls: a sticky glass bar (DESIGN.md 8.1). */
+form.product-form > .form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: var(--space-3) var(--space-2);
+  border-top: 1px solid var(--line);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-highlight);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
 }
 
 .tier-list {

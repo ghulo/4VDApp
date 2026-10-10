@@ -244,243 +244,250 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
           </ButtonLink>
         </div>
       ) : (
-        <>
-        <ManagersOnly note={t.productForm.managersOnly}>
-          <form className="product-form" onSubmit={handleSubmit}>
-            <Card title={t.productForm.details}>
-              <div className="photo-field">
-                <ProductPhoto src={shownPhoto} size="lg" />
-                <div className="photo-field__text">
-                  <span className="field__label" id="photo-label">
-                    {t.productForm.photo}
-                  </span>
-                  {photoError ? (
-                    <p className="form-error" role="alert" id="photo-note">
-                      {photoError}
-                    </p>
-                  ) : (
-                    <p className="field-hint" id="photo-note">
-                      {t.productForm.photoHint}
-                    </p>
+        // Editing: the form on the left; the barcode and price history beside it.
+        <div className={isNew ? 'product-layout product-layout--single' : 'product-layout'}>
+          <div className="product-layout__main">
+            <ManagersOnly note={t.productForm.managersOnly}>
+              <form className="product-form" onSubmit={handleSubmit}>
+                <Card title={t.productForm.details}>
+                  <div className="photo-field">
+                    <ProductPhoto src={shownPhoto} size="lg" />
+                    <div className="photo-field__text">
+                      <span className="field__label" id="photo-label">
+                        {t.productForm.photo}
+                      </span>
+                      {photoError ? (
+                        <p className="form-error" role="alert" id="photo-note">
+                          {photoError}
+                        </p>
+                      ) : (
+                        <p className="field-hint" id="photo-note">
+                          {t.productForm.photoHint}
+                        </p>
+                      )}
+                      {/* image/* lets a phone offer its camera as well as its gallery. */}
+                      <input ref={photoInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
+                      <Button
+                        ref={photoButton}
+                        icon={Camera}
+                        aria-describedby="photo-label photo-note"
+                        disabled={preparingPhoto || save.isPending}
+                        onClick={() => photoInput.current?.click()}
+                      >
+                        {preparingPhoto ? t.productForm.preparingPhoto : shownPhoto ? t.productForm.changePhoto : t.productForm.addPhoto}
+                      </Button>
+                    </div>
+                  </div>
+                  <label className="field">
+                    <span className="field__label">{t.productForm.name}</span>
+                    <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
+                  </label>
+                  <div className="field-row">
+                    <label className="field">
+                      <span className="field__label">{t.productForm.category}</span>
+                      <select required value={draft.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
+                        <option value="" disabled>
+                          {t.productForm.chooseCategory}
+                        </option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span className="field__label">{t.productForm.sku}</span>
+                      <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
+                    </label>
+                  </div>
+                  <label className="field">
+                    <span className="field__label">{t.productForm.description}</span>
+                    <textarea
+                      rows={3}
+                      maxLength={5000}
+                      value={draft.description}
+                      onChange={(event) => update('description', event.target.value)}
+                    />
+                  </label>
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.isActive}
+                      onChange={(event) => update('isActive', event.target.checked)}
+                    />
+                    {t.productForm.showInApp}
+                  </label>
+                </Card>
+
+                <Card title={t.productForm.price}>
+                  <div className="field-row">
+                    <label className="field">
+                      <span className="field__label">{t.productForm.pricePerUnit}</span>
+                      <input
+                        required
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        inputMode="decimal"
+                        value={draft.price}
+                        onChange={(event) => update('price', event.target.value)}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field__label">{t.productForm.costPrice}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        inputMode="decimal"
+                        value={draft.costPrice}
+                        onChange={(event) => update('costPrice', event.target.value)}
+                      />
+                    </label>
+                    <label className="field">
+                      <span className="field__label">{t.productForm.vatRate}</span>
+                      <select value={draft.vatRate} onChange={(event) => update('vatRate', Number(event.target.value) as VatRate)}>
+                        {VAT_RATES.map((rate) => (
+                          <option key={rate} value={rate}>
+                            {t.productForm.vatOption(rate)}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="field__hint">{t.productForm.vatHint}</span>
+                    </label>
+                  </div>
+                  {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
+                  {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
+
+                  <h3 className="subheading">{t.productForm.bulkPrices}</h3>
+                  <p className="field-hint">{t.productForm.bulkHint}</p>
+                  {draft.tiers.length > 0 && (
+                    <ul className="tier-list">
+                      {draft.tiers.map((tier) => (
+                        <li key={tier.key} className="tier-list__row">
+                          <label className="field">
+                            <span className="field__label">{t.productForm.fromQuantity}</span>
+                            <input
+                              type="number"
+                              min={2}
+                              step={1}
+                              inputMode="numeric"
+                              value={tier.quantity}
+                              onChange={(event) => updateTier(tier.key, 'quantity', event.target.value)}
+                            />
+                          </label>
+                          <label className="field">
+                            <span className="field__label">{t.productForm.pricePerUnit}</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              inputMode="decimal"
+                              value={tier.price}
+                              onChange={(event) => updateTier(tier.key, 'price', event.target.value)}
+                            />
+                          </label>
+                          <Button
+                            aria-label={t.productForm.removeTier(tier.quantity || t.productForm.blank)}
+                            onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
+                          >
+                            {t.productForm.remove}
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                  {/* image/* lets a phone offer its camera as well as its gallery. */}
-                  <input ref={photoInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
-                  <Button
-                    ref={photoButton}
-                    icon={Camera}
-                    aria-describedby="photo-label photo-note"
-                    disabled={preparingPhoto || save.isPending}
-                    onClick={() => photoInput.current?.click()}
-                  >
-                    {preparingPhoto ? t.productForm.preparingPhoto : shownPhoto ? t.productForm.changePhoto : t.productForm.addPhoto}
+                  <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
+                    {t.productForm.addBulk}
                   </Button>
-                </div>
-              </div>
-              <label className="field">
-                <span className="field__label">{t.productForm.name}</span>
-                <input required maxLength={255} value={draft.name} onChange={(event) => update('name', event.target.value)} />
-              </label>
-              <div className="field-row">
-                <label className="field">
-                  <span className="field__label">{t.productForm.category}</span>
-                  <select required value={draft.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
-                    <option value="" disabled>
-                      {t.productForm.chooseCategory}
-                    </option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="field__label">{t.productForm.sku}</span>
-                  <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
-                </label>
-              </div>
-              <label className="field">
-                <span className="field__label">{t.productForm.description}</span>
-                <textarea
-                  rows={3}
-                  maxLength={5000}
-                  value={draft.description}
-                  onChange={(event) => update('description', event.target.value)}
-                />
-              </label>
-              <label className="toggle">
-                <input
-                  type="checkbox"
-                  checked={draft.isActive}
-                  onChange={(event) => update('isActive', event.target.checked)}
-                />
-                {t.productForm.showInApp}
-              </label>
-            </Card>
+                </Card>
 
-            <Card title={t.productForm.price}>
-              <div className="field-row">
-                <label className="field">
-                  <span className="field__label">{t.productForm.pricePerUnit}</span>
-                  <input
-                    required
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    inputMode="decimal"
-                    value={draft.price}
-                    onChange={(event) => update('price', event.target.value)}
-                  />
-                </label>
-                <label className="field">
-                  <span className="field__label">{t.productForm.costPrice}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    inputMode="decimal"
-                    value={draft.costPrice}
-                    onChange={(event) => update('costPrice', event.target.value)}
-                  />
-                </label>
-                <label className="field">
-                  <span className="field__label">{t.productForm.vatRate}</span>
-                  <select value={draft.vatRate} onChange={(event) => update('vatRate', Number(event.target.value) as VatRate)}>
-                    {VAT_RATES.map((rate) => (
-                      <option key={rate} value={rate}>
-                        {t.productForm.vatOption(rate)}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="field__hint">{t.productForm.vatHint}</span>
-                </label>
-              </div>
-              {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
-              {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
-
-              <h3 className="subheading">{t.productForm.bulkPrices}</h3>
-              <p className="field-hint">{t.productForm.bulkHint}</p>
-              {draft.tiers.length > 0 && (
-                <ul className="tier-list">
-                  {draft.tiers.map((tier) => (
-                    <li key={tier.key} className="tier-list__row">
+                <Card title={t.productForm.stock}>
+                  {isNew ? (
+                    <div className="field-row">
                       <label className="field">
-                        <span className="field__label">{t.productForm.fromQuantity}</span>
-                        <input
-                          type="number"
-                          min={2}
-                          step={1}
-                          inputMode="numeric"
-                          value={tier.quantity}
-                          onChange={(event) => updateTier(tier.key, 'quantity', event.target.value)}
-                        />
-                      </label>
-                      <label className="field">
-                        <span className="field__label">{t.productForm.pricePerUnit}</span>
+                        <span className="field__label">{t.productForm.startingStock}</span>
                         <input
                           type="number"
                           min={0}
-                          step="0.01"
-                          inputMode="decimal"
-                          value={tier.price}
-                          onChange={(event) => updateTier(tier.key, 'price', event.target.value)}
+                          step={1}
+                          inputMode="numeric"
+                          value={draft.stock}
+                          onChange={(event) => update('stock', event.target.value)}
                         />
                       </label>
-                      <Button
-                        aria-label={t.productForm.removeTier(tier.quantity || t.productForm.blank)}
-                        onClick={() => update('tiers', draft.tiers.filter((other) => other.key !== tier.key))}
-                      >
-                        {t.productForm.remove}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <Button onClick={() => update('tiers', [...draft.tiers, { key: nextTierKey++, quantity: '', price: '' }])}>
-                {t.productForm.addBulk}
-              </Button>
-            </Card>
-
-            <Card title={t.productForm.stock}>
-              {isNew ? (
-                <div className="field-row">
-                  <label className="field">
-                    <span className="field__label">{t.productForm.startingStock}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      inputMode="numeric"
-                      value={draft.stock}
-                      onChange={(event) => update('stock', event.target.value)}
-                    />
-                  </label>
-                  <label className="field">
-                    <span className="field__label">{t.productForm.warnAt}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      inputMode="numeric"
-                      value={draft.reorderLevel}
-                      onChange={(event) => update('reorderLevel', event.target.value)}
-                    />
-                  </label>
-                </div>
-              ) : (
-                <p className="field-hint">
-                  {t.productForm.stockElsewhereBefore(product.stock.quantity)}{' '}
-                  <Link to={`/inventory/${product.id}`} className="text-link">
-                    {t.productForm.stockPage}
-                  </Link>
-                  .
-                </p>
-              )}
-            </Card>
-
-            {save.isError && (
-              <p className="form-error" role="alert">
-                {errorMessage(save.error)}
-              </p>
-            )}
-
-            <div className="form-actions">
-              <Button type="submit" disabled={save.isPending} variant="primary">
-                {save.isPending ? t.productForm.saving : isNew ? t.productForm.addProduct : t.productForm.saveChanges}
-              </Button>
-              <ButtonLink to="/products">
-                {t.common.cancel}
-              </ButtonLink>
-              {!isNew && (
-                <span className="form-actions__danger">
-                  {confirmingDelete ? (
-                    <>
-                      <span>{t.productForm.deleteConfirm(product.name)}</span>
-                      <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
-                        {remove.isPending ? t.productForm.deleting : t.productForm.deleteProduct}
-                      </Button>
-                      <Button onClick={() => setConfirmingDelete(false)}>
-                        {t.productForm.keepIt}
-                      </Button>
-                    </>
+                      <label className="field">
+                        <span className="field__label">{t.productForm.warnAt}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          inputMode="numeric"
+                          value={draft.reorderLevel}
+                          onChange={(event) => update('reorderLevel', event.target.value)}
+                        />
+                      </label>
+                    </div>
                   ) : (
-                    <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
-                      {t.productForm.deleteProduct}
-                    </Button>
+                    <p className="field-hint">
+                      {t.productForm.stockElsewhereBefore(product.stock.quantity)}{' '}
+                      <Link to={`/inventory/${product.id}`} className="text-link">
+                        {t.productForm.stockPage}
+                      </Link>
+                      .
+                    </p>
                   )}
-                </span>
-              )}
+                </Card>
+
+                {save.isError && (
+                  <p className="form-error" role="alert">
+                    {errorMessage(save.error)}
+                  </p>
+                )}
+
+                <div className="form-actions">
+                  <Button type="submit" disabled={save.isPending} variant="primary">
+                    {save.isPending ? t.productForm.saving : isNew ? t.productForm.addProduct : t.productForm.saveChanges}
+                  </Button>
+                  <ButtonLink to="/products">
+                    {t.common.cancel}
+                  </ButtonLink>
+                  {!isNew && (
+                    <span className="form-actions__danger">
+                      {confirmingDelete ? (
+                        <>
+                          <span>{t.productForm.deleteConfirm(product.name)}</span>
+                          <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
+                            {remove.isPending ? t.productForm.deleting : t.productForm.deleteProduct}
+                          </Button>
+                          <Button onClick={() => setConfirmingDelete(false)}>
+                            {t.productForm.keepIt}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="danger-text" onClick={() => setConfirmingDelete(true)}>
+                          {t.productForm.deleteProduct}
+                        </Button>
+                      )}
+                    </span>
+                  )}
+                </div>
+                {remove.isError && (
+                  <p className="form-error" role="alert">
+                    {errorMessage(remove.error)}
+                  </p>
+                )}
+              </form>
+            </ManagersOnly>
+          </div>
+          {!isNew && (
+            <div className="product-layout__side">
+              <BarcodeCard product={product} />
+              <PriceHistory productId={product.id} />
             </div>
-            {remove.isError && (
-              <p className="form-error" role="alert">
-                {errorMessage(remove.error)}
-              </p>
-            )}
-          </form>
-        </ManagersOnly>
-        {!isNew && <BarcodeCard product={product} />}
-        {!isNew && <PriceHistory productId={product.id} />}
-        </>
+          )}
+        </div>
       )}
     </>
   );

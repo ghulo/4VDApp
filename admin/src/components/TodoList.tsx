@@ -46,15 +46,15 @@ function TodoRow({ item }: { item: TodoItem }) {
       <span className="attention__actions">
         {item.verb === 'markChecked' ? (
           <>
-            <ButtonLink to={item.to} variant="ghost" size="sm">
+            <ButtonLink to={item.to} variant="ghost" size="sm" aria-label={`${t.todo.openDay}: ${item.title}`}>
               {t.todo.openDay}
             </ButtonLink>
-            <Button size="sm" disabled={check.isPending} onClick={() => check.mutate()}>
+            <Button size="sm" disabled={check.isPending} aria-label={`${t.todo.verbs.markChecked}: ${item.title}`} onClick={() => check.mutate()}>
               {t.todo.verbs.markChecked}
             </Button>
           </>
         ) : (
-          <ButtonLink to={item.to} variant="secondary" size="sm">
+          <ButtonLink to={item.to} variant="secondary" size="sm" aria-label={`${t.todo.verbs[item.verb]}: ${item.title}`}>
             {t.todo.verbs[item.verb]}
           </ButtonLink>
         )}

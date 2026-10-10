@@ -41,8 +41,12 @@ export function SalesPage() {
 /** "Milk", or "Milk and 2 more" for a checkout with several lines. */
 function useDescribe() {
   const t = useT();
-  return (checkout: Checkout) =>
-    checkout.lines.length > 1 ? t.sales.andMore(checkout.lines[0]!.productName, checkout.lines.length - 1) : (checkout.lines[0]?.productName ?? '–');
+  return (checkout: Checkout) => {
+    const first = checkout.lines[0];
+    if (!first) return '–';
+    if (checkout.lines.length > 1) return t.sales.andMore(first.productName, checkout.lines.length - 1);
+    return first.quantity > 1 ? `${first.quantity} × ${first.productName}` : first.productName;
+  };
 }
 
 function SalesHistory() {

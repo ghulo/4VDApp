@@ -45,7 +45,11 @@ export function DayChecklist({ day, onCountDrawer }: { day: ShopDay; onCountDraw
                 description={step.done ? t.dayClose.countedBy(step.countedBy) : t.dayClose.notCounted}
               >
                 {/* Drawers are counted on the day itself. */}
-                {isToday && <Button onClick={() => onCountDrawer(step.key)}>{t.dayClose.countDrawer}</Button>}
+                {isToday && (
+                  <Button aria-label={`${t.dayClose.countDrawer}: ${t.dayClose.drawer(placeName(step))}`} onClick={() => onCountDrawer(step.key)}>
+                    {t.dayClose.countDrawer}
+                  </Button>
+                )}
               </Item>
             );
           case 'carwash':
@@ -57,7 +61,11 @@ export function DayChecklist({ day, onCountDrawer }: { day: ShopDay; onCountDraw
                 description={step.done ? t.dayClose.carwashEntered : t.dayClose.carwashMissing}
               >
                 {canManage(role) && (
-                  <ButtonLink to={`/carwash?carwash=${step.carwashId}&day=${day.day}`} variant="secondary">
+                  <ButtonLink
+                    to={`/carwash?carwash=${step.carwashId}&day=${day.day}`}
+                    variant="secondary"
+                    aria-label={`${t.dayClose.enterCarwash}: ${t.dayClose.carwash(placeName(step))}`}
+                  >
                     {t.dayClose.enterCarwash}
                   </ButtonLink>
                 )}

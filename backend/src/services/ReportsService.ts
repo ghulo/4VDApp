@@ -1,5 +1,6 @@
-import type { ReportsRepository, StockLossRow, TotalsRow } from '../repositories/ReportsRepository.js';
+import type { ReportsRepository, StockLossRow, TotalsRow, PatternRow } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
+import { zonedDays } from '../utils/zonedDates.js';
 import type { CarwashService } from './CarwashService.js';
 import type { ExpenseService } from './ExpenseService.js';
 import { type DateRange, margin, previousRange, relativeChange } from './reports/calculations.js';
@@ -54,9 +55,32 @@ export interface ProfitRow {
   hasUnknownCost: boolean;
 }
 
+export interface PatternFigures {
+  revenue: number;
+  profit: number;
+  unitsSold: number;
+  salesCount: number;
+}
+
+export interface SalesPatterns {
+  /** Every shop day in the range, oldest first, shaped like the revenue graph's points. */
+  days: Array<{ periodStart: string } & PatternFigures>;
+  /** 0–23, every hour. */
+  hours: Array<{ hour: number } & PatternFigures>;
+  /** Monday (1) to Sunday (7); `days` is how many of that weekday the range holds. */
+  weekdays: Array<{ weekday: number; days: number; averageRevenue: number } & PatternFigures>;
+}
+
 export interface ReorderRow {
   productId: number;
   productName: string;
+  sku: string | null;
+  imageUrl: string | null;
+  categoryId: number;
+  categoryName: string;
+  /** Null when no cost price is set, so its stock has no known value. */
+  costPrice: number | null;
+  lastRestockedAt: string | null;
   quantity: number;
   reorderLevel: number;
   averageDailySales: number;
@@ -156,8 +180,8 @@ export class ReportsService {
     });
   }
 
-  async profit(range: DateRange, groupBy: 'product' | 'category'): Promise<ProfitRow[]> {
-    const rows = await this.reportsRepository.profitBy(range, groupBy);
+  async profit(range: DateRange, groupBy: 'product' | 'category', soldBy?: number): Promise<ProfitRow[]> {
+    const rows = await this.reportsRepository.profitBy(range, groupBy, soldBy);
     return rows.map((row) => {
       const revenue = Number(row.revenue);
       const cost = Number(row.cost);
@@ -174,6 +198,38 @@ export class ReportsService {
         hasUnknownCost: row.has_unknown_cost,
       };
     });
+  }
+
+  /**
+   * When sales happen: every shop day in the range (quiet ones as zero), each
+   * hour of the day, and each day of the week with how many of that weekday the
+   * range holds, so busy days can be compared fairly. For one seller with `soldBy`.
+   */
+  async patterns(range: DateRange, soldBy?: number): Promise<SalesPatterns> {
+    const rows = await this.reportsRepository.patterns(range, this.timeZone, soldBy);
+    const figures = (row?: PatternRow): PatternFigures => ({
+      revenue: row ? Number(row.revenue) : 0,
+      profit: row ? Number(row.profit) : 0,
+      unitsSold: row ? Number(row.units_sold) : 0,
+      salesCount: row ? Number(row.sales_count) : 0,
+    });
+    const { from, to } = zonedDays(range, this.timeZone);
+    const dayList: string[] = [];
+    for (let day = new Date(`${from}T00:00:00Z`); day <= new Date(`${to}T00:00:00Z`); day = new Date(day.getTime() + MS_PER_DAY)) {
+      dayList.push(day.toISOString().slice(0, 10));
+    }
+    const byDay = new Map(rows.days.map((row) => [row.day, row]));
+    const weekdayCount = (weekday: number) => dayList.filter((day) => ((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7) + 1 === weekday).length;
+    return {
+      days: dayList.map((day) => ({ periodStart: day, ...figures(byDay.get(day)) })),
+      hours: Array.from({ length: 24 }, (_, hour) => ({ hour, ...figures(rows.hours.find((row) => row.hour === hour)) })),
+      weekdays: Array.from({ length: 7 }, (_, index) => {
+        const weekday = index + 1;
+        const totals = figures(rows.weekdays.find((row) => row.weekday === weekday));
+        const days = weekdayCount(weekday);
+        return { weekday, days, ...totals, averageRevenue: days === 0 ? 0 : roundMoney(totals.revenue / days) };
+      }),
+    };
   }
 
   /** Every active product: when it runs out at the current pace, and how many to order. Soonest first. */
@@ -193,6 +249,12 @@ export class ReportsService {
       .map((row) => ({
         productId: row.product_id,
         productName: row.product_name,
+        sku: row.sku,
+        imageUrl: row.image_url,
+        categoryId: row.category_id,
+        categoryName: row.category_name,
+        costPrice: row.cost_price === null ? null : Number(row.cost_price),
+        lastRestockedAt: row.last_restocked_at?.toISOString() ?? null,
         quantity: row.quantity_on_hand,
         reorderLevel: row.reorder_level,
         ...forecast({

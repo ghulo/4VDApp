@@ -4,7 +4,7 @@ import type { InsightsService } from '../services/InsightsService.js';
 import type { ReportsService } from '../services/ReportsService.js';
 import { messages } from '../i18n/messages.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { profitQuerySchema, reportRangeSchema } from '../validators/reportValidators.js';
+import { patternsQuerySchema, profitQuerySchema, reportRangeSchema } from '../validators/reportValidators.js';
 import { parseInput } from '../validators/validate.js';
 
 export function createReportsController(
@@ -24,8 +24,14 @@ export function createReportsController(
 
     async profit(req: Request, res: Response): Promise<void> {
       const range = parseInput(reportRangeSchema, req.query);
-      const { groupBy } = parseInput(profitQuerySchema, req.query);
-      sendSuccess(res, await reportsService.profit(range, groupBy));
+      const { groupBy, userId } = parseInput(profitQuerySchema, req.query);
+      sendSuccess(res, await reportsService.profit(range, groupBy, userId));
+    },
+
+    async patterns(req: Request, res: Response): Promise<void> {
+      const range = parseInput(reportRangeSchema, req.query);
+      const { userId } = parseInput(patternsQuerySchema, req.query);
+      sendSuccess(res, await reportsService.patterns(range, userId));
     },
 
     async reorderSuggestions(_req: Request, res: Response): Promise<void> {

@@ -178,6 +178,39 @@ describe('GET /api/reports/summary', () => {
   });
 });
 
+describe('GET /api/reports/patterns', () => {
+  it('should split sales by shop day, hour and weekday, for everyone or one seller', async () => {
+    const productId = await createProduct();
+    const employeeToken = await loginAs(context, 'employee');
+    // 13:00 in Budapest on Tuesday 10 March, and 15:00 on Wednesday 11 March.
+    await sell(employeeToken, productId, 2, '2026-03-10T12:00:00Z');
+    await sell(adminToken, productId, 1, '2026-03-11T14:00:00Z');
+    const patterns = async (query = '') =>
+      (await request(context.app).get(`/api/reports/patterns?${MARCH}${query}`).set(auth(adminToken))).body.data;
+
+    const all = await patterns();
+    expect(all.days[0].periodStart).toBe('2026-03-01');
+    expect(all.days.find((day: { periodStart: string }) => day.periodStart === '2026-03-10')).toMatchObject({ revenue: 200, profit: 80, salesCount: 1 });
+    expect(all.days.find((day: { periodStart: string }) => day.periodStart === '2026-03-09')).toMatchObject({ revenue: 0, salesCount: 0 });
+    expect(all.hours).toHaveLength(24);
+    expect(all.hours[13]).toMatchObject({ revenue: 200 });
+    expect(all.hours[15]).toMatchObject({ revenue: 100 });
+    expect(all.weekdays.map((row: { weekday: number }) => row.weekday)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    // March 2026 has five Tuesdays.
+    expect(all.weekdays[1]).toMatchObject({ revenue: 200, days: 5, averageRevenue: 40 });
+    expect(all.weekdays.reduce((sum: number, row: { days: number }) => sum + row.days, 0)).toBe(all.days.length);
+
+    const employee = (await request(context.app).get(`/api/reports/team?${MARCH}`).set(auth(adminToken))).body.data[0].userId as number;
+    const theirs = await patterns(`&userId=${employee}`);
+    expect(theirs.hours[15].revenue).toBe(0);
+    expect(theirs.hours[13].revenue).toBe(200);
+
+    const products = await request(context.app).get(`/api/reports/profit?${MARCH}&groupBy=product&userId=${employee}`).set(auth(adminToken));
+    expect(products.body.data).toEqual([expect.objectContaining({ unitsSold: 2, revenue: 200 })]);
+    expect((await request(context.app).get(`/api/reports/patterns?${MARCH}`).set(auth(employeeToken))).status).toBe(403);
+  });
+});
+
 describe('GET /api/reports/team', () => {
   it('should total each seller, include people with no sales, and sort by revenue', async () => {
     const productId = await createProduct();
@@ -319,6 +352,10 @@ describe('GET /api/reports/reorder-suggestions', () => {
       expect.objectContaining({ productId: fast, productName: 'Fast seller', quantity: 15, averageDailySales: 2.14, daysLeft: 7, suggestedOrder: 60 }),
       expect.objectContaining({ productName: 'Never sold', daysLeft: null, suggestedOrder: 6, lastSoldAt: null }),
     ]);
+    // The Stock page lists products from these rows, so they carry what it shows.
+    expect(response.body.data[0]).toMatchObject({ categoryName: expect.any(String), categoryId: expect.any(Number), imageUrl: null });
+    expect(response.body.data[0]).toHaveProperty('costPrice');
+    expect(response.body.data[0]).toHaveProperty('lastRestockedAt');
   });
 });
 

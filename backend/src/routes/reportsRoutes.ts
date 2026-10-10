@@ -11,6 +11,7 @@ export function createReportsRoutes({ reportsService, insightsService, dailySumm
   router.get('/summary', ...guards.oversee, controller.summary);
   router.get('/team', ...guards.oversee, controller.team);
   router.get('/profit', ...guards.oversee, controller.profit);
+  router.get('/patterns', ...guards.oversee, controller.patterns);
   router.get('/reorder-suggestions', ...guards.oversee, controller.reorderSuggestions);
   router.get('/insights', ...guards.oversee, controller.insights);
   // What tonight's summary would say right now, for the Overview page.

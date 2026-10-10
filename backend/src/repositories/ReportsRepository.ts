@@ -42,6 +42,19 @@ export interface ProfitQueryRow {
   has_unknown_cost: boolean;
 }
 
+export interface PatternRow {
+  revenue: string;
+  profit: string;
+  units_sold: string;
+  sales_count: string;
+}
+
+export interface PatternRows {
+  days: Array<PatternRow & { day: string }>;
+  hours: Array<PatternRow & { hour: number }>;
+  weekdays: Array<PatternRow & { weekday: number }>;
+}
+
 export interface VelocityRow {
   product_id: number;
   product_name: string;
@@ -53,6 +66,8 @@ export interface VelocityRow {
   base_price: string;
   cost_price: string | null;
   created_at: Date;
+  image_url: string | null;
+  last_restocked_at: Date | null;
   /** Null when it has never sold. */
   last_sold_at: Date | null;
 }
@@ -185,13 +200,45 @@ export class ReportsRepository {
     return result.rows;
   }
 
+  /**
+   * Sales per shop day, and per hour of the day and day of the week (Monday
+   * is 1), in `timeZone`; for one seller when `soldBy` is given.
+   */
+  async patterns(range: DateRange, timeZone: string, soldBy?: number): Promise<PatternRows> {
+    const sellerFilter = soldBy === undefined ? sql`` : sql`and l.sold_by = ${soldBy}`;
+    const ledger = sql`
+      select l.*, l.occurred_at at time zone ${timeZone} as local_at
+      from sales_ledger l
+      where l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate} ${sellerFilter}
+    `;
+    const figures = sql`
+      coalesce(sum(revenue), 0) as revenue,
+      coalesce(sum(revenue - cost) filter (where unit_cost is not null), 0) as profit,
+      coalesce(sum(units), 0) as units_sold,
+      count(*) filter (where return_id is null) as sales_count
+    `;
+    const [days, hours, weekdays] = await Promise.all([
+      sql<PatternRow & { day: string }>`
+        with l as (${ledger}) select to_char(local_at::date, 'YYYY-MM-DD') as day, ${figures} from l group by 1
+      `.execute(this.db),
+      sql<PatternRow & { hour: number }>`
+        with l as (${ledger}) select extract(hour from local_at)::int as hour, ${figures} from l group by 1
+      `.execute(this.db),
+      sql<PatternRow & { weekday: number }>`
+        with l as (${ledger}) select extract(isodow from local_at)::int as weekday, ${figures} from l group by 1
+      `.execute(this.db),
+    ]);
+    return { days: days.rows, hours: hours.rows, weekdays: weekdays.rows };
+  }
+
   async monthlyTarget(userId: number): Promise<number | null> {
     const row = await this.db.selectFrom('users').select('monthly_target').where('id', '=', userId).executeTakeFirst();
     return row?.monthly_target == null ? null : Number(row.monthly_target);
   }
 
-  async profitBy(range: DateRange, groupBy: 'product' | 'category'): Promise<ProfitQueryRow[]> {
+  async profitBy(range: DateRange, groupBy: 'product' | 'category', soldBy?: number): Promise<ProfitQueryRow[]> {
     const group = groupBy === 'product' ? sql`p.id, p.name` : sql`c.id, c.name`;
+    const sellerFilter = soldBy === undefined ? sql`` : sql`and l.sold_by = ${soldBy}`;
     const result = await sql<ProfitQueryRow>`
       select
         ${group},
@@ -204,7 +251,7 @@ export class ReportsRepository {
       from sales_ledger l
       join products p on p.id = l.product_id
       join categories c on c.id = p.category_id
-      where l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
+      where l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate} ${sellerFilter}
       group by ${group}
       order by profit desc, revenue desc
     `.execute(this.db);
@@ -225,6 +272,8 @@ export class ReportsRepository {
         p.base_price,
         p.cost_price,
         p.created_at,
+        p.image_url,
+        i.last_restocked_at,
         (select max(s.sale_date) from sales s where s.product_id = p.id and s.undone_at is null) as last_sold_at
       from products p
       join inventory i on i.product_id = p.id

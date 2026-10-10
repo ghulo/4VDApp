@@ -1,4 +1,4 @@
-import { calendarDaySchema } from './validate.js';
+import { calendarDaySchema, idSchema } from './validate.js';
 import { REPORT_SECTIONS } from '../services/reports/ReportBuilder.js';
 import { z } from 'zod';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
@@ -45,6 +45,13 @@ export const reportRangeSchema = z
 
 export const profitQuerySchema = z.object({
   groupBy: z.enum(['product', 'category']).default('product'),
+  /** One seller's sales only. */
+  userId: idSchema.optional(),
+});
+
+export const patternsQuerySchema = z.object({
+  /** One seller's sales only. */
+  userId: idSchema.optional(),
 });
 
 function isKnownTimeZone(timeZone: string): boolean {

@@ -99,6 +99,62 @@ export class SalesRepository {
     return { sales, total: Number(summary.total), revenue: Number(summary.revenue) };
   }
 
+  /**
+   * Sales grouped by checkout: everything on one invoice is one checkout; an
+   * older sale without an invoice stands alone. Paged by checkout, newest
+   * first, with the lines of each checkout on the page.
+   */
+  async findCheckouts(filters: SaleFilters): Promise<{ sales: SaleRecord[]; keys: string[]; total: number; revenue: number }> {
+    const conditions = [
+      filters.startDate ? sql`s.sale_date >= ${filters.startDate}` : sql`true`,
+      filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
+      filters.productId ? sql`s.product_id = ${filters.productId}` : sql`true`,
+      filters.soldBy ? sql`s.sold_by = ${filters.soldBy}` : sql`true`,
+    ];
+    const keyed = sql`
+      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 's' || s.id) as key
+      from sales s where ${sql.join(conditions, sql` and `)}
+    `;
+    const [page, summary] = await Promise.all([
+      sql<{ key: string }>`
+        with k as (${keyed})
+        select key from k group by key order by max(sale_date) desc, max(id) desc
+        limit ${filters.limit} offset ${filters.offset}
+      `.execute(this.db),
+      sql<{ total: string; revenue: string }>`
+        with k as (${keyed})
+        select count(distinct key) as total, coalesce(sum(total_amount), 0) as revenue from k
+      `.execute(this.db),
+    ]);
+    const keys = page.rows.map((row) => row.key);
+    const ids =
+      keys.length === 0
+        ? []
+        : (await sql<{ id: number }>`with k as (${keyed}) select id from k where key in (${sql.join(keys)})`.execute(this.db)).rows.map((row) => row.id);
+    const sales =
+      ids.length === 0
+        ? []
+        : await this.filteredQuery({})
+            .select([
+              's.id',
+              's.product_id',
+              'p.name as product_name',
+              's.quantity_sold',
+              's.price_per_unit',
+              's.total_amount',
+              'u.name as sold_by_name',
+              's.sale_date',
+              's.notes',
+              returnedQuantity,
+              invoiceId,
+              invoiceNumber,
+            ])
+            .where('s.id', 'in', ids)
+            .orderBy('s.id')
+            .execute();
+    return { sales, keys, total: Number(summary.rows[0]!.total), revenue: Number(summary.rows[0]!.revenue) };
+  }
+
   async create(sale: {
     productId: number;
     quantity: number;

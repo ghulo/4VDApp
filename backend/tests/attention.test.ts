@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { TodoItem } from '../src/services/AttentionService.js';
 import { loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
@@ -16,14 +17,14 @@ afterAll(() => context.db.destroy());
 
 const auth = (token = adminToken) => ({ Authorization: `Bearer ${token}` });
 const attention = async (token = adminToken) => (await request(context.app).get('/api/attention').set(auth(token))).body.data;
-const cashItems = (data: { todo: Array<{ kind: string }> }) => data.todo.filter((item) => item.kind === 'cash_difference');
+const cashItems = (data: { todo: TodoItem[] }) => data.todo.filter((item) => item.kind === 'cash_difference');
 
 describe('what needs attention', () => {
   it('should list a cash difference until someone checks it, and again after a recount', async () => {
     // Nothing was sold, so anything above the float is a difference.
     await request(context.app).post('/api/cash-counts').set(auth()).send({ place: 'shop', counted: 500, float: 150 });
     const before = await attention();
-    const [item] = cashItems(before);
+    const item = cashItems(before)[0]!;
     expect(item).toMatchObject({ severity: 'check', verb: 'markChecked' });
     expect(item.to).toMatch(/^\/day\?date=\d{4}-\d{2}-\d{2}$/);
     expect(before.count).toBeGreaterThanOrEqual(1);

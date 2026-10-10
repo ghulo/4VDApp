@@ -10,6 +10,7 @@ import { productsApi, salesApi, usersApi } from '../services/api';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { Button, Card, DataTable, PageHeader, Sheet, useNewSheet } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
+import type { Checkout } from '../services/types';
 import { useT } from '../i18n/useT';
 
 export function SalesPage() {
@@ -37,7 +38,15 @@ export function SalesPage() {
   );
 }
 
+/** "Milk", or "Milk and 2 more" for a checkout with several lines. */
+function useDescribe() {
+  const t = useT();
+  return (checkout: Checkout) =>
+    checkout.lines.length > 1 ? t.sales.andMore(checkout.lines[0]!.productName, checkout.lines.length - 1) : (checkout.lines[0]?.productName ?? '–');
+}
+
 function SalesHistory() {
+  const describe = useDescribe();
   const t = useT();
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
@@ -52,12 +61,14 @@ function SalesHistory() {
   });
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
 
+  // The checkout that is open to show its lines, and the line being returned.
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [returningId, setReturningId] = useState<number | null>(null);
   const [returnMessage, setReturnMessage] = useState<string | null>(null);
   const sales = useQuery({
-    queryKey: ['sales', { page, startDate, endDate, productId, soldBy }],
+    queryKey: ['sales', 'checkouts', { page, startDate, endDate, productId, soldBy }],
     queryFn: () =>
-      salesApi.list({
+      salesApi.checkouts({
         page,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
@@ -92,7 +103,7 @@ function SalesHistory() {
         <DataTable
           caption={t.sales.history}
           rows={sales.data.items}
-          rowKey={(sale) => sale.id}
+          rowKey={(checkout) => checkout.key}
           toolbar={
             <>
               <label className="inline-field">
@@ -131,59 +142,102 @@ function SalesHistory() {
             )
           }
           columns={[
-            { header: t.sales.when, className: 'table__phone-hide', cell: (sale) => formatDateTime(sale.saleDate) },
+            { header: t.sales.when, className: 'table__phone-hide', cell: (checkout) => formatDateTime(checkout.saleDate) },
             {
-              header: t.sales.product,
+              header: t.sales.whatSold,
               title: true,
-              cell: (sale) => (
+              cell: (checkout) => (
                 <>
-                  {sale.productName}
+                  {describe(checkout)}
                   <span className="table__secondary table__phone-only">
-                    {formatDateTime(sale.saleDate)} · {sale.quantity} × {formatMoney(sale.pricePerUnit)} · {sale.soldBy ?? t.sales.unknown}
+                    {formatDateTime(checkout.saleDate)} · {checkout.soldBy ?? t.sales.unknown}
                   </span>
-                  {sale.notes && <span className="table__secondary">{sale.notes}</span>}
-                  {sale.returnedQuantity > 0 && (
-                    <span className="table__secondary">{t.sales.returned(sale.returnedQuantity, sale.quantity)}</span>
-                  )}
                 </>
               ),
             },
-            { header: t.sales.qty, align: 'end', className: 'table__phone-hide', cell: (sale) => sale.quantity },
-            { header: t.sales.each, align: 'end', className: 'table__phone-hide', cell: (sale) => formatMoney(sale.pricePerUnit) },
-            { header: t.sales.total, align: 'end', cell: (sale) => formatMoney(sale.totalAmount) },
-            { header: t.sales.soldBy, className: 'table__phone-hide', cell: (sale) => sale.soldBy ?? t.sales.unknown },
+            { header: t.sales.total, align: 'end', cell: (checkout) => formatMoney(checkout.total) },
+            { header: t.sales.soldBy, className: 'table__phone-hide', cell: (checkout) => checkout.soldBy ?? t.sales.unknown },
             {
               header: t.documents.invoice,
-              cell: (sale) => (sale.invoice ? <Link to={`/documents/${sale.invoice.id}`}>{sale.invoice.number}</Link> : '–'),
+              cell: (checkout) => (checkout.invoice ? <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link> : '–'),
             },
             {
               header: <span className="visually-hidden">{t.sales.actions}</span>,
-              cell: (sale) =>
-                sale.returnedQuantity < sale.quantity && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    aria-expanded={returningId === sale.id}
-                    onClick={() => {
-                      setReturnMessage(null);
-                      setReturningId(returningId === sale.id ? null : sale.id);
-                    }}
-                  >
-                    {returningId === sale.id ? t.sales.close : t.sales.return}
-                  </button>
-                ),
+              cell: (checkout) => (
+                <button
+                  type="button"
+                  className="text-button"
+                  aria-expanded={openKey === checkout.key}
+                  aria-label={openKey === checkout.key ? undefined : t.sales.openLabel(describe(checkout))}
+                  onClick={() => {
+                    setReturnMessage(null);
+                    setReturningId(null);
+                    setOpenKey(openKey === checkout.key ? null : checkout.key);
+                  }}
+                >
+                  {openKey === checkout.key ? t.sales.close : t.sales.open}
+                </button>
+              ),
             },
           ]}
-          afterRow={(sale) =>
-            returningId === sale.id && (
+          afterRow={(checkout) =>
+            openKey === checkout.key && (
               <tr className="table__expanded">
-                <td colSpan={8}>
-                  <ReturnForm
-                    sale={sale}
-                    onDone={(message) => {
-                      setReturningId(null);
-                      setReturnMessage(message);
-                    }}
+                <td colSpan={6}>
+                  <DataTable
+                    caption={t.sales.lines}
+                    rows={checkout.lines}
+                    rowKey={(sale) => sale.id}
+                    columns={[
+                      {
+                        header: t.sales.product,
+                        title: true,
+                        cell: (sale) => (
+                          <>
+                            {sale.productName}
+                            {sale.notes && <span className="table__secondary">{sale.notes}</span>}
+                            {sale.returnedQuantity > 0 && (
+                              <span className="table__secondary">{t.sales.returned(sale.returnedQuantity, sale.quantity)}</span>
+                            )}
+                          </>
+                        ),
+                      },
+                      { header: t.sales.qty, align: 'end', cell: (sale) => sale.quantity },
+                      { header: t.sales.each, align: 'end', cell: (sale) => formatMoney(sale.pricePerUnit) },
+                      { header: t.sales.total, align: 'end', cell: (sale) => formatMoney(sale.totalAmount) },
+                      {
+                        header: <span className="visually-hidden">{t.sales.actions}</span>,
+                        cell: (sale) =>
+                          sale.returnedQuantity < sale.quantity && (
+                            <button
+                              type="button"
+                              className="text-button"
+                              aria-expanded={returningId === sale.id}
+                              onClick={() => {
+                                setReturnMessage(null);
+                                setReturningId(returningId === sale.id ? null : sale.id);
+                              }}
+                            >
+                              {returningId === sale.id ? t.sales.close : t.sales.return}
+                            </button>
+                          ),
+                      },
+                    ]}
+                    afterRow={(sale) =>
+                      returningId === sale.id && (
+                        <tr className="table__expanded">
+                          <td colSpan={5}>
+                            <ReturnForm
+                              sale={sale}
+                              onDone={(message) => {
+                                setReturningId(null);
+                                setReturnMessage(message);
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    }
                   />
                 </td>
               </tr>

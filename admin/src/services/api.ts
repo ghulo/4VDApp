@@ -72,6 +72,7 @@ import type {
   User,
   UserRole,
   ShopDay,
+  Checkout,
   Attention,
 } from './types';
 
@@ -277,6 +278,13 @@ export const salesApi = {
       query: { limit: 20, ...query },
     });
     return { items: data.sales, totalRevenue: data.totalRevenue, meta: meta! };
+  },
+  /** Sales history by checkout: one row per invoice, with its lines. */
+  async checkouts(query: SaleListQuery) {
+    const { data, meta } = await apiRequest<{ checkouts: Checkout[]; totalRevenue: number }>('/sales/checkouts', {
+      query: { limit: 20, ...query },
+    });
+    return { items: data.checkouts, totalRevenue: data.totalRevenue, meta: meta! };
   },
   recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,

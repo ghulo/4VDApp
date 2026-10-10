@@ -117,3 +117,32 @@ describe('carwash from the team app', () => {
     expect((await request(context.app).delete(`/api/carwash/${today()}`).set(auth(employeeToken))).status).toBe(403);
   });
 });
+
+describe('sales history by checkout', () => {
+  it('should list each checkout once, with its lines, newest first', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
+    const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 10 });
+    await request(context.app).post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: milk, quantity: 1 }] });
+    await request(context.app)
+      .post('/api/sales/basket')
+      .set(auth(employeeToken))
+      .send({ items: [{ productId: milk, quantity: 3 }, { productId: bread, quantity: 2 }] });
+
+    const response = await request(context.app).get('/api/sales/checkouts').set(auth());
+
+    expect(response.status).toBe(200);
+    const { checkouts, totalRevenue } = response.body.data;
+    expect(checkouts).toHaveLength(2);
+    expect(checkouts[0].lines.map((line: { productName: string }) => line.productName)).toEqual(['Milk', 'Bread']);
+    expect(checkouts[0]).toMatchObject({ total: 5.6, invoice: { number: expect.any(String) } });
+    expect(checkouts[1].lines).toHaveLength(1);
+    expect(totalRevenue).toBe(6.8);
+    expect(response.body.meta.total).toBe(2);
+
+    // A product filter keeps the checkouts that have it, showing only those lines.
+    const breadOnly = (await request(context.app).get('/api/sales/checkouts').query({ productId: bread }).set(auth())).body.data;
+    expect(breadOnly.checkouts).toHaveLength(1);
+    expect(breadOnly.checkouts[0].lines).toHaveLength(1);
+    expect((await request(context.app).get('/api/sales/checkouts').set(auth(employeeToken))).status).toBe(403);
+  });
+});

@@ -31,6 +31,11 @@ export function createSalesController(salesService: SalesService) {
       sendSuccess(res, { sales: items, totalRevenue: revenue }, { meta });
     },
 
+    async checkouts(req: Request, res: Response): Promise<void> {
+      const { items, meta, revenue } = await salesService.checkouts(parseInput(saleQuerySchema, req.query));
+      sendSuccess(res, { checkouts: items, totalRevenue: revenue }, { meta });
+    },
+
     async record(req: Request, res: Response): Promise<void> {
       const input = parseInput(recordSaleSchema, req.body);
       const sale = await salesService.record(input, req.user!.id);

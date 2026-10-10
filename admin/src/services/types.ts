@@ -128,6 +128,17 @@ export interface Sale {
   invoice: DocumentRef | null;
 }
 
+/** Everything one customer bought at once: one invoice, one or more lines (DESIGN.md 3.5). */
+export interface Checkout {
+  /** "i<invoice id>", or "s<sale id>" for an older sale without an invoice. */
+  key: string;
+  invoice: DocumentRef | null;
+  saleDate: string;
+  soldBy: string | null;
+  total: number;
+  lines: Sale[];
+}
+
 /** Kosovo's VAT rates, in percent. */
 export const VAT_RATES = [18, 8, 0] as const;
 export type VatRate = (typeof VAT_RATES)[number];

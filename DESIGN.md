@@ -264,7 +264,8 @@ request you made was decided, a count was recorded. They have an unread dot
 inside the list and **never count toward any badge**.
 
 Rules:
-- **The badge counts To do items only**, and every place that shows a "waiting"
+- **The badge counts To do items only** (Urgent and Check; Ideas wait in the
+  list without adding to any number), and every place that shows a "waiting"
   number shows that same number for that person.
 - Zero is shown as calm words ("Nothing needs you right now"), never as "0
   waiting". Summary links with a zero count are hidden.
@@ -653,34 +654,16 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 Each item is a rule above that the code doesn't follow yet. Fix it when touching
 that area; remove it from this list when done.
 
-**Logic and structure**
-1. **One attention source.** Badge = approvals + unread alerts
-   (`admin/src/components/Layout.tsx`); stock and info alerts never clear
-   themselves (only decided requests do, `NotificationRepository.markSubjectRead`).
-   Overview attention, Today card and team Home each compute their own. → 3.3
-2. **Menu names.** "Products" opens a page titled "Stock"; "Cash & carwash"
-   opens "Cash check"; tab "Sales" under "Sales". → 3.1 (`sections.ts`, i18n).
-3. **Day page.** The close-the-day checklist lives on the Cash check page
-   (`CashPage.tsx`, `DayChecklist.tsx`); no Day page yet. Steps are defined
-   separately in each app (`mobile/src/utils/shift.ts`). → 3.4
-4. **Sales by checkout.** Sales history lists lines, not checkouts
-   (`SalesPage.tsx`). → 3.5
-5. **Team tabs.** Favourites is its own tab (`RootNavigator.tsx`); no
-   "Something happened" on Home; return / damage / expiry / carwash only reachable
-   from My sales, product pages or End your shift. → 3.2
-6. **End your shift** shows empty checkboxes that aren't tappable
-   (`EndShiftScreen.tsx`); long place names wrap badly. → 3.4
-
 **Words** (→ section 5)
 
-7. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
+1. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
    the Sell title; "Close the drawer"; "Cash check"; "mobile app"; "4VD website"
    in the role description; "write-off" in staff-facing text.
 
 **Look**
 
-8. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-9. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+2. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+3. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
    theme / language controls (chips vs segmented). → 10.9, 10.10
-10. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-11. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+4. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+5. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

@@ -15,6 +15,7 @@ export function createSalesRoutes({ salesService, returnService, guards }: Conta
   const router = Router();
 
   router.get('/', ...guards.oversee, controller.list);
+  router.get('/checkouts', ...guards.oversee, controller.checkouts);
   // Employees record sales too; only the people who run the shop see the full history.
   router.post('/', ...guards.staff, controller.record);
   router.post('/basket', ...guards.staff, controller.recordBasket);

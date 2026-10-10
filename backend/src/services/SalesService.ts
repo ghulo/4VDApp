@@ -26,6 +26,17 @@ export interface SaleDto {
   invoice: DocumentRef | null;
 }
 
+/** Everything one customer bought at once: one invoice, one or more lines. */
+export interface CheckoutDto {
+  /** "i<invoice id>", or "s<sale id>" for an older sale without an invoice. */
+  key: string;
+  invoice: { id: number; number: string } | null;
+  saleDate: string;
+  soldBy: string | null;
+  total: number;
+  lines: SaleDto[];
+}
+
 export interface RecordSaleInput {
   productId: number;
   quantity: number;
@@ -67,6 +78,31 @@ export class SalesService {
       offset: toOffset(query),
     });
     return { items: sales.map(toSaleDto), meta: toPaginationMeta(query, total), revenue };
+  }
+
+  /** Sales history by checkout (DESIGN.md 3.5): one row per invoice, opening to its lines. */
+  async checkouts(query: SaleQuery): Promise<{ items: CheckoutDto[]; meta: ReturnType<typeof toPaginationMeta>; revenue: number }> {
+    const { sales, keys, total, revenue } = await this.salesRepository.findCheckouts({
+      startDate: query.startDate,
+      endDate: query.endDate,
+      productId: query.productId,
+      soldBy: query.soldBy,
+      limit: query.limit,
+      offset: toOffset(query),
+    });
+    const lines = sales.map(toSaleDto);
+    const items = keys.map((key) => {
+      const own = lines.filter((sale) => (sale.invoice ? `i${sale.invoice.id}` : `s${sale.id}`) === key);
+      return {
+        key,
+        invoice: own[0]?.invoice ?? null,
+        saleDate: own.reduce((latest, sale) => (sale.saleDate > latest ? sale.saleDate : latest), own[0]?.saleDate ?? ''),
+        soldBy: own[0]?.soldBy ?? null,
+        total: roundMoney(own.reduce((sum, sale) => sum + sale.totalAmount, 0)),
+        lines: own,
+      };
+    });
+    return { items, meta: toPaginationMeta(query, total), revenue };
   }
 
   /**

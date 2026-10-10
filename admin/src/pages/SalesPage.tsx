@@ -8,21 +8,31 @@ import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
 import { productsApi, salesApi, usersApi } from '../services/api';
 import { formatDateTime, formatMoney } from '../utils/format';
-import { Card, DataTable, PageHeader } from '../components/ui';
+import { Button, Card, DataTable, PageHeader, Sheet, useNewSheet } from '../components/ui';
+import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 
 export function SalesPage() {
   const t = useT();
+  const user = useCurrentUser();
+  const [recording, setRecording] = useNewSheet();
   return (
     <>
       <PageHeader
         title={t.sales.title}
         description={t.sales.description}
+        actions={
+          user.role !== 'owner' && (
+            <Button variant="primary" icon={Receipt} onClick={() => setRecording(true)}>
+              {t.sales.record}
+            </Button>
+          )
+        }
       />
-      <Card title={t.sales.record}>
-        <BasketForm />
-      </Card>
       <SalesHistory />
+      <Sheet open={recording} onClose={() => setRecording(false)} title={t.sales.record}>
+        <BasketForm />
+      </Sheet>
     </>
   );
 }

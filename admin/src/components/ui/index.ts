@@ -12,3 +12,4 @@ export { PageHeader, type Crumb } from './PageHeader';
 export { ShopSunrise } from './ShopSunrise';
 export { StatGrid, StatTile } from './Stat';
 export { SettingsLayout, type SettingsSection } from './SettingsLayout';
+export { Sheet, useNewSheet } from './Sheet';

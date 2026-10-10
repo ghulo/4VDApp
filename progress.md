@@ -39,6 +39,9 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Dashboard styles use only the rulebook sizes: no 14px or 20px text, spacing on the 4px grid, named corner sizes
 - [x] Team app text uses named sizes (no typed-in numbers); screen titles in the serif, 700 weight only in the wordmark
 - [x] Branded canvas in both apps: the four pillars woven very faintly; Overview opens with a hero (date, greeting, the shop at sunrise on the page rule)
+- [x] Settings and Profile list their sections beside the page (chips on a phone)
+- [x] Product page: form left, barcode and price history right, sticky Save bar
+- [x] Record a sale, Count a drawer and Add an expense open in a side panel instead of sitting in the middle of the list pages
 - [ ] You look it over locally and say yes, then merge and push
 
 ## Optional

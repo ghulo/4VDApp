@@ -663,25 +663,24 @@ that area; remove it from this list when done.
 3. **Day page.** The close-the-day checklist lives on the Cash check page
    (`CashPage.tsx`, `DayChecklist.tsx`); no Day page yet. Steps are defined
    separately in each app (`mobile/src/utils/shift.ts`). → 3.4
-4. **Sales by checkout.** Sales history lists lines; the Sell form sits on top of
-   the Sales list (`SalesPage.tsx`). → 3.5, 3.8
+4. **Sales by checkout.** Sales history lists lines, not checkouts
+   (`SalesPage.tsx`). → 3.5
 5. **Team tabs.** Favourites is its own tab (`RootNavigator.tsx`); no
    "Something happened" on Home; return / damage / expiry / carwash only reachable
    from My sales, product pages or End your shift. → 3.2
 6. **End your shift** shows empty checkboxes that aren't tappable
    (`EndShiftScreen.tsx`); long place names wrap badly. → 3.4
-7. **Create forms on list pages** (Cash check, Expenses, Sales). → 3.8
 
 **Words** (→ section 5)
 
-8. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
+7. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
    the Sell title; "Close the drawer"; "Cash check"; "mobile app"; "4VD website"
    in the role description; "write-off" in staff-facing text.
 
 **Look**
 
-9. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-10. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
-    theme / language controls (chips vs segmented). → 10.9, 10.10
-11. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-12. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+8. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+9. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+   theme / language controls (chips vs segmented). → 10.9, 10.10
+10. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+11. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

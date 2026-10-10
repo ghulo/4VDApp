@@ -1,7 +1,7 @@
+import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { ManagersOnly } from '../components/ManagersOnly';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -12,7 +12,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 
 /** Same cap as the server: every month has a 28th. */
 const LAST_REPEAT_DAY = 28;
@@ -34,27 +34,37 @@ export function ExpensesPage() {
     placeholderData: keepPreviousData,
   });
   const recurring = useQuery({ queryKey: ['expenses', 'recurring'], queryFn: expensesApi.recurring });
+  const { role } = useCurrentUser();
+  const [adding, setAdding] = useNewSheet();
 
   return (
     <>
       <PageHeader
         title={t.expenses.title}
         description={t.expenses.description(range.label)}
-        actions={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}
+        actions={
+          <>
+            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
+            {canManage(role) && (
+              <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
+                {t.expenses.add}
+              </Button>
+            )}
+          </>
+        }
       />
 
       {expenses.data && <Totals totals={expenses.data.totals} />}
-
-      <ManagersOnly note={t.expenses.managersOnly}>
-        <Card title={t.expenses.add}>
-          <ExpenseForm />
-        </Card>
-      </ManagersOnly>
+      {!canManage(role) && <p className="field-hint">{t.expenses.managersOnly}</p>}
+      {!canManage(role) && <p className="field-hint">{t.expenses.managersOnly}</p>}
 
       {expenses.isPending && <Loading />}
       {expenses.isError && <ErrorNotice error={expenses.error} onRetry={() => expenses.refetch()} />}
       {expenses.data && <ExpenseTable expenses={expenses.data.expenses} />}
       {recurring.data && recurring.data.length > 0 && <RecurringTable rules={recurring.data} />}
+      <Sheet open={adding} onClose={() => setAdding(false)} title={t.expenses.add}>
+        <ExpenseForm />
+      </Sheet>
     </>
   );
 }

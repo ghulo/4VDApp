@@ -1303,3 +1303,103 @@ input.switch:focus-visible {
     scroll-margin-top: calc(56px + 64px);
   }
 }
+
+/* ---------- Sheet ---------- */
+
+/* An "add new" form in a panel from the right, over the dimmed page (Float
+   depth, the same backdrop as Ctrl K). Full width on a phone. */
+.sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(480px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.sheet::backdrop {
+  background: rgb(20 20 19 / 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.sheet__panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.sheet__description {
+  margin-top: var(--space-1);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.sheet__close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.sheet__close:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.sheet__close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] .sheet__panel {
+    animation: sheet-in 240ms var(--ease);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .sheet__head,
+  .sheet__body {
+    padding-inline: var(--space-4);
+  }
+}

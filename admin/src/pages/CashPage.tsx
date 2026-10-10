@@ -11,7 +11,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 
 /** Same as the server: a few coins either way still matches. */
 const TOLERANCE = 0.5;
@@ -21,15 +21,6 @@ const formatDay = (day: string) =>
   formatDateWith(new Date(`${day}T00:00:00Z`), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
-
-const COUNT_FORM_ID = 'count-drawer';
-
-/** From the checklist: bring the count form into view and put the cursor in the amount. */
-function focusCountForm() {
-  const form = document.getElementById(COUNT_FORM_ID);
-  form?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  form?.querySelector<HTMLInputElement>('input[type="number"]')?.focus({ preventScroll: true });
-}
 
 /** How each drawer's count compared with what was sold, and a way to count one from here. */
 export function CashPage() {
@@ -42,24 +33,30 @@ export function CashPage() {
     placeholderData: keepPreviousData,
   });
 
+  const [counting, setCounting] = useNewSheet();
+
   return (
     <>
+      <Sheet open={counting} onClose={() => setCounting(false)} title={t.cash.countTitle}>
+        <CountForm />
+      </Sheet>
       <PageHeader
         title={t.cash.title}
         description={t.cash.description(range.label)}
-        actions={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}
+        actions={
+          <>
+            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
+            {/* Everyone on the dashboard may count a drawer (the owner too). */}
+            <Button variant="primary" icon={Coins} onClick={() => setCounting(true)}>
+              {t.cash.countTitle}
+            </Button>
+          </>
+        }
       />
 
-      <DayChecklist onCountDrawer={() => focusCountForm()} />
+      <DayChecklist onCountDrawer={() => setCounting(true)} />
 
       {counts.data && <Totals counts={counts.data} />}
-
-      {/* Everyone on the dashboard may count a drawer (the owner too). */}
-      <section id={COUNT_FORM_ID} aria-label={t.cash.countTitle}>
-        <Card title={t.cash.countTitle}>
-          <CountForm />
-        </Card>
-      </section>
 
       {counts.isPending && <Loading />}
       {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}

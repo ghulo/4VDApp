@@ -24,7 +24,7 @@ interface Command extends Searchable {
 const ACTIONS: Array<{ key: ActionKey; to: string; managersOnly?: boolean }> = [
   { key: 'addProduct', to: '/products/new', managersOnly: true },
   { key: 'invite', to: '/people', managersOnly: true },
-  { key: 'sale', to: '/sales' },
+  { key: 'sale', to: '/sales?new=1' },
   { key: 'promotion', to: '/promotions', managersOnly: true },
   { key: 'count', to: '/counts' },
   { key: 'ask', to: '/ask' },

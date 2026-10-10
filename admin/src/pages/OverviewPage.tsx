@@ -107,7 +107,7 @@ function OverviewHero() {
         <p className="overview-hero__description">{t.overview.description}</p>
         {user.role !== 'owner' && (
           <div className="overview-hero__actions">
-            <ButtonLink to="/sales" variant="primary" icon={Receipt}>
+            <ButtonLink to="/sales?new=1" variant="primary" icon={Receipt}>
               {t.sales.record}
             </ButtonLink>
           </div>

@@ -1648,6 +1648,7 @@ export const sq: Catalogue = {
     remove: 'Hiq',
   },
   common: {
+    close: 'Mbyll',
     onThisPage: 'Në këtë faqe',
     save: 'Ruaj',
     cancel: 'Anulo',

@@ -104,7 +104,7 @@ export function DayChecklist({ onCountDrawer }: { onCountDrawer: () => void }) {
             </Button>
           ))}
         {!expenses.noneMarked && (
-          <ButtonLink to="/expenses" variant="secondary">
+          <ButtonLink to="/expenses?new=1" variant="secondary">
             {t.dayClose.addExpense}
           </ButtonLink>
         )}

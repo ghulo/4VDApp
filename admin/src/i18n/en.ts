@@ -1658,6 +1658,7 @@ export const en = {
     remove: 'Remove',
   },
   common: {
+    close: 'Close',
     onThisPage: 'On this page',
     save: 'Save',
     cancel: 'Cancel',

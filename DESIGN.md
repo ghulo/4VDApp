@@ -1,13 +1,12 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales and team in one calm, precise interface; ink on ivory paper with oat panels, a clay brand colour and one clean shop drawing.
+description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on ivory paper with oat panels, one clay brand colour, tactile keys and the shop at sunrise.
 colors:
   clay: "#d4704f"
+  clay-hover: "#df8667"
+  clay-edge: "#a8482a"
   clay-text: "#a8482a"
   clay-tint: "rgb(217 119 87 / 0.14)"
-  clay-tint-dark: "rgb(217 119 87 / 0.18)"
-  ember-text: "#c2410c"
-  ember-text-dark: "#ff7038"
   pillar-ink: "#1c0f08"
   ivory-canvas: "#f0eee6"
   paper: "#faf9f5"
@@ -17,6 +16,15 @@ colors:
   ink-muted: "#5e5d59"
   hairline: "#e0dbcf"
   hairline-strong: "#cbc3b3"
+  ok: "#2f6b3f"
+  ok-soft: "#e7efe3"
+  warn: "#86500c"
+  warn-soft: "#f6ecd9"
+  danger: "#b0302a"
+  danger-soft: "#f8e5e1"
+  info: "#3d5670"
+  info-soft: "#e6ebf0"
+  focus: "#141413"
   night-canvas: "#191817"
   night-paper: "#262624"
   night-sunk: "#151413"
@@ -25,25 +33,27 @@ colors:
   night-muted: "#a6a39b"
   night-hairline: "#2f2e2b"
   night-hairline-strong: "#3e3d39"
-  ok: "#047857"
-  ok-soft: "#e6f5ee"
-  warn: "#b45309"
-  warn-soft: "#fef3e2"
-  danger: "#b91c1c"
-  danger-soft: "#fdecec"
-  info: "#1d4ed8"
-  info-soft: "#e8efff"
+  night-clay-text: "#e08a6b"
+  night-clay-edge: "#9a4024"
+  night-ok: "#86c08f"
+  night-ok-soft: "#1f3022"
+  night-warn: "#e0a85a"
+  night-warn-soft: "#3a2e19"
+  night-danger: "#f39a8f"
+  night-danger-soft: "#3d201c"
+  night-info: "#9fb4cc"
+  night-info-soft: "#222b35"
+  night-focus: "#faf9f5"
 typography:
-  display:
-    fontFamily: "Source Serif 4, Georgia, Times New Roman, serif"
-    fontSize: "clamp(1.75rem, 3.2vw, 2.25rem)"
-    fontWeight: 500
-    lineHeight: 1.15
-    letterSpacing: "-0.01em"
-    fontFeature: "lnum"
   headline:
     fontFamily: "Source Serif 4, Georgia, Times New Roman, serif"
     fontSize: "2rem"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.01em"
+  display:
+    fontFamily: "Source Serif 4, Georgia, Times New Roman, serif"
+    fontSize: "clamp(1.75rem, 3.2vw, 2.25rem)"
     fontWeight: 500
     lineHeight: 1.15
     letterSpacing: "-0.01em"
@@ -59,12 +69,6 @@ typography:
     fontSize: "1.0625rem"
     fontWeight: 600
     lineHeight: 1.4
-    letterSpacing: "-0.01em"
-  body-large:
-    fontFamily: "Hanken Grotesk, system-ui, sans-serif"
-    fontSize: "1.0625rem"
-    fontWeight: 400
-    lineHeight: 1.5
   body:
     fontFamily: "Hanken Grotesk, system-ui, sans-serif"
     fontSize: "0.9375rem"
@@ -80,7 +84,13 @@ typography:
     fontSize: "0.75rem"
     fontWeight: 600
     lineHeight: 1.4
+  spec:
+    fontFamily: "ui-monospace, SF Mono, Cascadia Mono, Consolas, monospace"
+    fontSize: "0.75rem"
+    fontWeight: 500
+    letterSpacing: "0.06em"
 rounded:
+  stamp: "3px"
   segment: "6px"
   control: "8px"
   card: "16px"
@@ -98,440 +108,587 @@ components:
     backgroundColor: "{colors.clay}"
     textColor: "{colors.pillar-ink}"
     rounded: "{rounded.control}"
-    padding: "0 12px"
     height: "36px"
-  button-primary-hover:
-    backgroundColor: "#df8667"
-  button-primary-disabled:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink-muted}"
   button-secondary:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
-    padding: "0 12px"
     height: "36px"
-  button-secondary-hover:
-    backgroundColor: "{colors.sunk-paper}"
-  button-ghost:
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    height: "36px"
-  button-ghost-hover:
-    backgroundColor: "{colors.fill}"
   input:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
-    padding: "6px 10px"
     height: "36px"
   card:
     backgroundColor: "{colors.paper}"
     rounded: "{rounded.card}"
     padding: "16px 24px 24px"
-  card-foot:
-    backgroundColor: "{colors.sunk-paper}"
-    textColor: "{colors.ink-muted}"
-    padding: "12px 24px"
-  nav-item:
-    textColor: "{colors.ink-muted}"
-    rounded: "{rounded.control}"
-    padding: "0 10px"
-    height: "34px"
-  nav-item-hover:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink}"
   nav-item-current:
-    backgroundColor: "{colors.orange-tint}"
-    textColor: "{colors.ember-text}"
+    backgroundColor: "{colors.clay-tint}"
+    textColor: "{colors.clay-text}"
   count-badge:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.paper}"
     rounded: "{rounded.pill}"
-    typography: "{typography.caption}"
-    height: "20px"
-  badge:
-    rounded: "{rounded.pill}"
-    typography: "{typography.caption}"
-    padding: "0 8px"
-    height: "22px"
-  today-card:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.display}"
-    rounded: "{rounded.card}"
-    padding: "24px 32px"
-  metric-card:
-    backgroundColor: "{colors.paper}"
-    typography: "{typography.figure}"
-    rounded: "{rounded.card}"
-    padding: "16px 16px 0"
-  callout:
-    backgroundColor: "{colors.sunk-paper}"
-    rounded: "{rounded.control}"
-  chart-tooltip:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.paper}"
-    rounded: "{rounded.control}"
-    padding: "6px 10px"
 ---
 
-# Design System: 4VD
+# 4VD Rulebook
 
-## Overview
+This is the single rulebook for how 4VD works, reads and looks, in **both apps**.
+It covers the product logic (what goes where and why), the words, and the visual
+design. `PRODUCT.md` says who the users are; `brand/README.md` covers the logo
+files. Where anything else disagrees with this file, this file wins.
 
-**Creative North Star: "Calm Shop"**
+## 0. How to use this rulebook (read first)
 
-Four equal pillars hold up one roof: the four Dacaj brothers holding up the family
-shop. The interface carries that idea as structure and fairness rather than
-ornament: hairline frames, equal columns, nothing bigger or louder than its job.
-The structure is Cloudflare's dashboard (a grouped sidebar, warm neutrals, hairline
-tables, Ctrl K to jump anywhere, dense analytics cards); the rigour is the SBB design
-system's (reduced content, plain words, responsive spacing, 44px touch targets);
-the finish is anthropic.com's calm (a serif voice for headings, ink-coloured
-underlined links, generous quiet around the few things that matter).
+- **It describes the target.** Some rules are not built yet. Section 13, "Built
+  vs target", lists every known gap with the files involved. Before building on
+  a rule, check it there. Never copy an existing screen as the pattern if that
+  screen is listed as a gap.
+- **Words in bold in the glossary (section 5) are fixed.** Use them exactly, in
+  English and Albanian, in both apps. Don't invent synonyms.
+- **Tokens live in code:** dashboard `admin/src/styles/tokens.css`, team app
+  `mobile/src/theme.ts`. Change both together, and keep the frontmatter of this
+  file in step. No hard-coded colours, sizes, radii or shadows in screens.
+- **Build from the kits:** dashboard `admin/src/components/ui` (section 10),
+  team app `mobile/src/components/ui.tsx`, `print.tsx`, `inputs.tsx`.
+- **Every UI change** keeps both themes, both languages (EN and SQ catalogues in
+  `admin/src/i18n` and `mobile/src/i18n`), and all states (section 9).
+- **After a big feature:** screenshot at 375px and 1440px, light and dark, then
+  run the accessibility and web-guidelines passes (see `CLAUDE.md`).
+- **Changing a rule:** agree it with the owner in chat, then edit this file in
+  the same change as the code. Remove a gap from section 13 when it is closed.
 
-It is a working tool for a shop counter, read in the morning and used all day.
-Working screens are plain paper on a warm canvas. The Overview is a calm morning
-page that says the day in one serif sentence; the dense figures live on Reports.
-Data is drawn in ink; clay marks the brand, the one main action on a screen and
-where you are, so the eye always finds what to do next. Dots are the brand's
-signature (Cloudflare's and Anthropic's language too): the four-pillar mark and the
-shop drawing are made of them. They stay out of the page margins, tables and forms,
-where they'd be noise.
+## 1. What 4VD is
 
-**Key Characteristics:**
-- Ink on ivory paper with oat panels; paper rests just above the canvas, buttons stand up like keys.
-- One clay brand colour (`#d4704f`) for the logo, the drawings, the main action and where you are.
-- A serif (Source Serif 4, 500) for page titles, the day's headline and sign-in headings; a grotesk (Hanken Grotesk) for everything else, every figure tabular.
-- Charts and counts in ink and muted ink, never clay.
-- 15px body for comfortable reading; 44px controls on phones.
-- Quick, soft motion (150ms, gentle ease-out); off when the computer asks for less.
-- Both themes first-class; dark is warm (`#191817`), not blue-black.
+Two apps for one family shop and its carwashes (4VD = "4 Vëllezërit Dacaj", the
+four Dacaj brothers):
 
-## Colors
+| | **Dashboard** (`dashboard.4vd.app`) | **Team app** (`app.4vd.app`, phones) |
+|---|---|---|
+| Who | the operator, the owner, admins | employees and family at the counter |
+| Job | run the shop: stock, buying, money, people, decisions, reports | sell, look up, report what happened, close the shift |
+| Scene | shop computer in the morning, phone when away | phone in one hand, a customer waiting |
+| Tech | React + plain CSS on tokens | Expo React Native, also runs as a website |
 
-Warm, slightly beige neutrals carry almost everything; one orange marks action and
-place; status colours stay quiet and come with faint tints.
+They are one product with one language and one look. A person who uses both must
+never wonder whether two words, colours or buttons mean the same thing.
 
-### Primary
-- **Clay** (#d4704f): the brand colour, after Anthropic's book-cloth orange: the logo
-  tile, the shop drawing, the 3px marker on the current menu item. Softer than
-  the old Signal Orange (#ff5e1f), which looked loud on ivory.
-- **Clay Tint** (14% light, 18% dark): the fill behind the current menu item.
-- **Clay Text** (#a8482a light / #e08a6b dark): the label of the current menu item.
-- **The main button is solid Clay** with Pillar Ink (#1c0f08) text in both themes,
-  as Cloudflare's orange action. Hover lightens to #df8667 (#e08a6b dark). One per
-  screen, so it always answers "what do I do here?".
+## 2. Principles
 
-### Neutral
-- **Ivory Canvas** (#f0eee6) / **Night Canvas** (#191817): the page.
-- **Paper** (#faf9f5) / **Night Paper** (#262624): cards, tables, sidebar, top bar.
-  Dashboard cards have no frame; paper on ivory is enough.
-- **Sunk Paper** (#e8e4da) / **Night Sunk** (#1a1918): card footer strips, row hover,
-  callouts, the search field, the sign-in story panel.
-- **Oat** (#e3dacc) / **Night Oat** (#30302e), token `fill`: the feature panels (the
-  Today panel in both apps, the team app's job tiles), ghost and menu hover, the
-  segmented control track, the disabled main button.
-- **Ink** (#141413) / **Night Ink** (#faf9f5): text, links, the main button, the
-  active chart bar, count badges, checked switches and checkboxes, the tooltip.
-- **Muted Ink** (#5e5d59) / **Night Muted** (#a6a39b): descriptions, labels, table
-  headers, and every chart series.
-- **Hairline** (#e0dbcf) and **Strong Hairline** (#cbc3b3) (night #2f2e2b / #3e3d39):
-  every border, grid line and unlit halftone dot; strong for control strokes.
+1. **The counter comes first.** The commonest jobs (sell, check stock, answer a
+   request) take the fewest taps on any device.
+2. **Show what needs doing, then get out of the way.** One honest list of what
+   needs attention; everything else is quiet.
+3. **Think in moments, not database rows.** People think in a sale, a delivery, a
+   day, a shift. Screens group by those moments.
+4. **One word, one meaning.** Every thing has one name in each language, used
+   everywhere (section 5).
+5. **Nothing touches stock or money without a record**, and where it matters,
+   the owner's decision. Everything can be undone or corrected; nothing locks.
+6. **Calm at rest, clear when touched.** Emphasis goes to what matters most on
+   the screen, never to decoration, zeros or disabled things.
+7. **Modern frame, vintage finish.** Structure, data and interaction are crisp
+   and modern; paper, serif, stamps and the sunrise are the finish.
 
-### Status
-- **OK** (#047857), **Warn** (#b45309), **Danger** (#b91c1c), **Info** (#1d4ed8),
-  each with a faint tint for badges, notices and banners; brighter variants in dark
-  mode (#34d399, #fbbf24, #f87171, #60a5fa). Info doubles as the focus ring colour.
-  Metric changes use OK for up, Danger for down, Muted Ink for flat.
+## 3. How the product is organised
 
-### Named Rules
-**The Clay Rule.** Clay means brand and "act here": the logo, the shop drawing,
-the one main button per screen, progress toward a goal (setup bar and ticks) and
-where you are (current menu item). Badges, links, charts and counts are never clay.
-If two things on one screen are clay buttons, one of them is wrong.
+### 3.1 Dashboard menu
 
-**The Ink Data Rule.** Data is drawn in ink: chart series in Muted Ink, the active
-bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would
-read as a button.
+Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 
-**The Modern Frame Rule.** Structure, data and interaction are modern: clean
-cards, crisp charts (solid bars with softly rounded tops, smooth line graphs over a
-flat fill, slim day bars), line icons in soft chips, single hairlines. The vintage
-is the finish only: ivory paper and grain, the serif, monospace spec labels, ink
-stamps, block meters for stock and targets, and the shop at sunrise as a recurring
-mascot (sign-in, the team app's Home, the dashboard's Today card, big empty pages).
-The page margins are plain canvas (the old dot field competed with the data). Never
-dither data, icons or anything in tables and forms.
+| Group | Menu item | Opens | Tabs on that page |
+|---|---|---|---|
+| Today | **Overview** | `/` | – |
+| | **Inbox** (badge) | `/inbox` | To do · Updates |
+| | **Ask** | `/ask` | – |
+| Sell | **Sales** | `/sales` | History · Invoices |
+| | **Customers** | `/customers` | – |
+| | **Promotions** | `/promotions` | – |
+| Shelves | **Stock** | `/inventory` | On the shelf · Products · Categories |
+| | **Counts** | `/counts` | – |
+| Buy | **Suppliers** · **Orders** · **Supplier bills** | | – |
+| Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
+| | **Expenses** | `/expenses` | – |
+| | **Reports** | `/report` | Daily & weekly · Analytics |
+| Team | **People** · **Activity** · **Settings** | | – |
 
-**The Contrast Rule.** Every text and colour pair is checked by
-`admin/src/theme/contrast.test.ts` (WCAG AA): clay reaches 3:1 on paper as a UI
-colour, clay text reaches 4.5:1 on paper and on its tint.
+Rules:
+- **Menu label = page title.** The page a menu item opens is titled exactly like
+  the item. Tabs name the views inside it and never repeat the page title.
+- **Section tabs** sit above the page title. Each tab keeps its own address, so
+  old links keep working. Old URLs always redirect, never 404.
+- **Ctrl K** ("Search or jump to") reaches every page, tab and record.
+- Settings is hidden from the owner (they see everything but change no setup).
 
-## Typography
+### 3.2 Team app tabs
 
-**Display Font:** Source Serif 4, weight 500 (with Georgia, Times New Roman)
-**Body Font:** Hanken Grotesk (with system-ui)
+Target: **Home · Products · Sell · Account** (bottom bar, Sell in the middle as
+the one clay key).
 
-**Character:** A quiet editorial serif sets the tone at the top of a page; an
-engineered grotesk does all the work underneath. The serif never carries a number in
-a column, a control or a label.
+- **Home**: the day in one sentence, then *what's next* (section 3.3), then jobs.
+- **Products**: browse and search; a **Favourites** filter chip shows the
+  starred ones. There is no separate Favourites tab.
+- **Sell**: the basket. Favourites first, then in-stock products as tiles.
+- **Account**: profile, theme, language, alerts.
 
-### Hierarchy
-- **Display** (serif 500, clamp(1.75rem, 3.2vw, 2.25rem), 1.15, lining figures): the
-  day's headline on the Overview, one sentence, max 28ch. Sign-in headlines use the
-  same voice at up to 2.75rem, and the sign-in card title at 1.75rem.
-- **Headline** (serif 500, 2rem, 1.15, balanced wrap): page titles, one per page.
-- **Figure** (grotesk 600, 1.75rem, tabular, -0.02em): metric and stat values;
-  2.25rem on a large metric card.
-- **Title** (grotesk 600, 1.0625rem): card, board and empty-state titles.
-- **Body large** (400, 1.0625rem, muted): the description under a page title (max
-  68ch) and the day's comparison line.
-- **Body** (400, 0.9375rem, 1.5): everything else, tables included.
-- **Label** (0.8125rem): field labels (600), table headers and metric labels (500,
-  muted), breadcrumbs.
-- **Caption** (600, 0.75rem): badges, sidebar group names, palette group names.
+Home's jobs, in this order:
+1. **Something happened**, one list of four actions: Return a sale · Damage or
+   loss · Expiry date · Carwash takings. These are things that happen at the
+   counter at any time, so they never hide inside other screens.
+2. **End your shift** (with steps done / total).
+3. **Stock count**, **Tabs**, and **Deliveries** (only while one is open).
 
-### Named Rules
-**The Serif Ration Rule.** The serif is for page titles, the Overview day headline
-and sign-in headings only. Card titles, figures, tables and controls stay in Hanken
-Grotesk.
+### 3.3 What needs attention: To do vs Updates
 
-**The Tabular Rule.** Every number that can sit in a column or change in place uses
-tabular figures.
+There is **one source** of "what needs attention", shared by the Inbox badge, the
+Inbox page, the Overview, the Today card and team-app Home. Two kinds of item,
+never mixed:
 
-**The No Shouting Rule.** No weight above 600 outside the wordmark and count badges;
-sentence case everywhere except spec labels.
+**To do**: something someone must act on. It is *worked out from the current
+state*, so it **clears itself** when the cause is gone. Nobody marks a To do as
+read.
+- Requests waiting for a decision (returns, damage or loss, count differences).
+- Out of stock / low stock (clears when restocked).
+- Expired or expiring within 7 days on the shelf.
+- Supplier bills due within 7 days or overdue; tabs overdue 30 days.
+- A cash difference nobody has checked yet (cleared by "Mark as checked").
+- Close-the-day steps still open after 18:00.
 
-**The Spec Label Rule.** Short labels over figures and columns (table headers, stat
-and metric labels, sidebar group names, the team app's date kicker) are set in
-monospace capitals, 12px, 0.06em tracking, like anthropic.com's DATE / CATEGORY rows.
-Never a sentence, never a button.
+Each To do has a severity stamp (**Urgent**, **Check**, **Idea**), a one-line
+title that names the thing, one line on what to do, and **one action button**
+that goes straight to fixing it.
 
-## Layout
+**Updates**: things that happened, for information only: the daily summary, a
+request you made was decided, a count was recorded. They have an unread dot
+inside the list and **never count toward any badge**.
 
-A 56px top bar (see-through with blur) spans the page: logo and shop name, a search
-field labelled "Search or jump to" with a Ctrl K hint, theme switch and account on
-the right. Under it a 232px sidebar sits on the left in named groups (Today,
-Shelves, Business) and collapses to 60px icons; under 900px it becomes a drawer
-opened from the top bar. The page lives in a plain column of at most 1120px on the
-warm canvas; the margins either side stay plain.
+Rules:
+- **The badge counts To do items only**, and every place that shows a "waiting"
+  number shows that same number for that person.
+- Zero is shown as calm words ("Nothing needs you right now"), never as "0
+  waiting". Summary links with a zero count are hidden.
+- Staff see the To do items that are theirs (their open shift steps, their
+  requests that came back); deciders see requests.
+- **Get 4VD ready** (setup steps) is separate: a slim strip on Overview, never in
+  the badge.
 
-Spacing runs on a 4px grid (4, 8, 12, 16, 24, 32, 48). Page padding steps down with
-the screen, after SBB's responsive spacing: 32/48px on desktop, 32/24px under
-1100px, 24/16px under 900px. Every page opens with the same header (breadcrumb,
-serif title, one-line description, actions on the right), then cards stacked 16px
-apart. Two related cards may sit side by side and stack on narrow screens.
+### 3.4 The shop day and the shift
 
-Density is earned per page. The Overview is sparse and its first screen is the day:
-the header with "Record a sale", the day card, then a one-line setup strip (progress,
-the next step, "All steps" to open the list), then what needs attention (urgent rows
-on a faint red wash), what needs restocking, and a link to Reports. Reports is the
-dense page: a four-column grid of metric cards (two columns under 960px, one under
-560px) with large cards spanning two.
+- **The day** is the shop's unit of money: one date in the shop's time zone. The
+  dashboard's **Day** page shows one date: the close-the-day checklist, each
+  drawer's cash count, carwash takings and expenses, with a date picker. History
+  across dates lives in the Cash counts and Carwash tabs and in Reports.
+- **The shift** is one person's part of the day. **End your shift** in the team
+  app walks through the same steps for the places that person closes.
+- The steps are defined **once** and both apps read them: cash counted per
+  drawer, carwash takings per place, expenses added or "No expenses today",
+  requests answered. Nothing gets locked; anything can be corrected later.
+- Steps show as status (done / to do), not as checkboxes, unless tapping the row
+  really ticks it. Each row that is to do is tappable and opens that step.
 
-**The Same Header Rule.** Every page starts with the shared page header. No page
-invents its own title block.
+### 3.5 Record moments, not rows
 
-**The Stacking Table Rule.** Under 600px a table marked to stack shows each row as a
-block: the title cell heads it in 600 weight, every other cell is a line with its
-column name on the left and the value on the right. Header cells stay for screen
-readers only.
+- **A sale is one checkout**: everything a customer bought at once, with its
+  invoice number. Sales history lists sales; a sale opens to show its **lines**.
+  Returns start from the sale.
+- **A delivery** is one order received; a **day** is one date (3.4).
+- People report **what happened** (a return, damage, an expiry, takings), not
+  "edit stock". Stock changes are the result, recorded with who and why.
 
-## Elevation & Depth
+### 3.6 Requests, decisions and undo
 
-Tactile, three heights: things you press stand up, paper rests on the canvas, and
-things you type into sit down into it. Tonal layering (canvas, paper, sunk paper)
-still does most of the work; the shadows are soft and warm, never glows.
+- Staff send **requests** (returns, damage or loss, counts that differ). The
+  owner or an admin **approves** or **rejects**; the request's To do clears for
+  everyone the moment it is decided.
+- Most actions offer **Undo** for a short time, then stay correctable from
+  their record. Destructive actions say exactly what will happen.
 
-### Shadow Vocabulary
-- **Float** (`box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)`;
-  dark `0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5)`): the command
-  palette and the phone drawer, over a 35% black, lightly blurred backdrop.
-- **Raise** (`--shadow-raise`): cards, metric cards, stat grids, notices, panels and
-  the active sidebar link. A light lip along the top edge, a faint ring and a short,
-  soft drop.
-- **Sheen** (`--sheen`): the day's headline panel only; oat lit softly from the
-  top left.
-- **Inset** (`--shadow-inset`): fields, the segmented track, a card's footer strip,
-  a pressed ghost button. A 1px shadow along the top inside edge.
-- **Key** (`--cta-edge`, `--danger-edge`, `--key-shine`, `--key-drop`): raised
-  buttons stand on a solid darker edge (3px; 2px on secondary) with a light line
-  along the top and a soft drop under it.
+### 3.7 Connected records
 
-**The Key Rule.** Buttons behave like keys: hover lifts the face 1px onto a taller
-edge, press pushes it down into the edge, disabled sits flat. Ghost and text buttons
-stay flat until pressed. Nothing glows. The team app uses the same values (theme.ts).
+- Supplier and customer pages are **hubs**: everything about them on one page
+  (orders, deliveries, bills, owed / purchases, tab, invoices, returns).
+- Every record links to its neighbours (bill → order → supplier; invoice → sale →
+  customer). Work moves forward: receive a delivery → add its bill → due date.
+- Pre-fill from context (`?supplier=`) so a link from a hub starts the next step.
 
-## Shapes
+### 3.8 Page anatomy (dashboard)
 
-Soft, generous corners, as on anthropic.com: 8px on controls, callouts, notices and
-tooltips (6px on segmented options and palette rows); 16px on cards, tables, metric
-cards, panels and the palette; pills only for count badges; squared stamps for status. Borders are single 1px hairlines.
-Secondary buttons and the selected segment use a 1px inset ring rather than a
-border. Callouts (AI answers, price suggestions) sit on sunk paper with no border.
-A dashed hairline marks something you can see but not change (the read-only note)
-and the sign-in story panel's edge and moment cards; working screens have no dashed
-rails.
+Every page starts with the shared **PageHeader**: breadcrumb (detail pages) or
+section tabs (tab groups), serif title, one-line description (max 68ch),
+actions on the right with **at most one primary**. No page invents its own title
+block. Then one of these shapes:
 
-## Components
+- **List page**: header (primary "Add …" / "New …") → toolbar (search,
+  filters) → table → pagination. **No create form on top of a list.** Adding
+  opens a form page (or a panel for a few fields).
+- **Detail / hub page**: header with breadcrumb and status stamp → a stat row →
+  sections of related records, each a heading plus a table.
+- **Form page**: grouped cards up to 720px wide; a **footer bar** with the
+  primary action on the right and Cancel to its left; the save result on the
+  left. Same placement on every form.
+- **Settings**: setting rows (what it is on the left, control on the right).
+- **Report page**: the only dense page: metric grid, charts, tables.
+- **Overview**: the morning page. Order: header → **To do** list (largest,
+  first) → the Today strip (the day in one serif sentence, the 30-day bars, a
+  small sunrise) → Get 4VD ready (while unfinished) → Needs restocking → link
+  to Reports.
 
-Calm at rest, a plain answer when touched.
+The team app follows the same ideas on a phone: a serif title, one primary
+action, a full-width primary key at the bottom of forms.
 
-### Buttons
-- **Shape:** gently rounded (8px), 36px tall (30px small); 44px (36px small) under 900px.
-- **Primary:** Clay lit from the top (a radial wash from #df8667 into Clay) on a
-  darker clay edge, Pillar Ink text, weight 600; one per view. Hover brightens the
-  wash; disabled goes flat oat with muted text.
-- **Secondary:** paper with a strong-hairline ring on a 2px hairline edge, weight
-  500; press sinks it to sunk paper.
-  **Ghost:** no fill until hover. **Danger:** red fill for destroying; **Danger
-  text:** red words for "Delete" next to other actions.
-- **Press / Focus:** raised buttons press down into their edge (The Key Rule); focus is a 2px Info ring offset 3px.
-- **Labels:** 1-4 words, starting with a verb or naming the destination.
+## 4. Voice
 
-### Links
-Ink-coloured and underlined, the underline at 40% until hover, offset 3px. Text
-buttons look the same. Breadcrumbs and table title links drop the underline until
-hover.
+- Plain, friendly, short. Sentence case. The owner is not a computer person.
+- Buttons are 1–4 words, start with a verb or name the destination.
+- Errors say what happened and how to fix it. Empty states say what will show
+  up here and how to make it happen.
+- Don't tell the four-brothers story in the interface.
+- English is **British English** (favourite, colour, catalogue). Every string
+  exists in English and Albanian; no hard-coded text (tests enforce it).
 
-### Cards / Containers
-- **Corner Style:** 8px.
-- **Background:** Paper on the canvas.
-- **Shadow Strategy:** Raise.
-- **Border:** one hairline.
-- **Internal Padding:** 16px top, 24px sides and bottom; a sunk footer strip holds
-  actions on the right and the save result on the left.
+## 5. Glossary (fixed words)
 
-### Setting rows
-What a setting is on the left (title, one muted sentence, max 60ch), the control on
-the right; rows separated by hairlines; stacked under 640px.
+New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 
-### Inputs / Fields
-- **Style:** strong-hairline stroke, paper fill, Inset shadow, 6px corners, 36px tall, 15px text.
-- **Focus:** Info border plus a 3px soft Info ring. **Disabled:** sunk paper, muted text.
-- **Labels:** always visible above the field; placeholders only show an example.
-- **Error:** red text under the field saying how to fix it.
-- **Switch / checkbox:** checked state is Ink, not orange.
+| Thing | English | Albanian | Never say |
+|---|---|---|---|
+| The web app for running the shop | **dashboard** | **paneli** | website, admin, back office |
+| The phone app for staff | **team app** | **aplikacioni i ekipit** | mobile app |
+| Something the shop sells | **product** | **produkt** | item, article |
+| How many are on the shelf | **stock** | **stoku** | inventory |
+| The page of stock levels | **On the shelf** | **Në raft** | |
+| A product you starred | **favourite** (star icon); action **Add to favourites** | **favorit**; **Shto te favoritet** *(confirm)* | pin, save to favourites, favorite |
+| The place where you sell | **Sell** (tab, title, opening button) | **Shit** | Record a sale (as a title) |
+| Finishing a sale | **Record sale · €X** | **Regjistro shitjen · €X** *(confirm)* | Checkout |
+| One customer's purchase | **sale** | **shitje** | transaction |
+| One product within a sale | **line** | **rresht** | |
+| What is being built before recording | **basket** | **shporta** *(confirm)* | cart |
+| Numbered A4 document for a sale | **invoice** | **faturë** | receipt (the fiscal printer does receipts) |
+| A supplier's invoice to the shop | **supplier bill** | **fatura e furnitorit** | |
+| What a customer owes | **tab** | **borxh** | credit, debt |
+| Someone you sell to | **customer** | **klient** | client |
+| Counting a drawer's money | **cash count**; action **Count the drawer** | **numërimi i arkës**; **Numëro arkën** *(confirm)* | cash check, close the drawer |
+| Money a drawer starts with | **float** | (keep current SQ) | |
+| The shop's end-of-day steps | **Close the day** | **Mbyll ditën** *(confirm)* | Z report |
+| One person's end-of-day steps | **End your shift** | **Mbyll turnin** | |
+| Broken, lost or stolen stock | **damage or loss** | **dëmtim ose humbje** | write-off (except in accountant exports) |
+| Counting the shelves | **stock count** | **numërim stoku** | inventory check |
+| Goods arriving from a supplier | **delivery** | **furnizim** | |
+| What the shop asks a supplier for | **order** | **porosi** | purchase order |
+| Something staff ask the owner | **request**; **Approve** / **Reject** | **kërkesë**; **Mirato** / **Refuzo** | |
+| Needs someone to act | **To do** | **Për t'u bërë** *(confirm)* | alert, waiting |
+| Happened, for information | **Updates** | **Njoftimet** | alerts |
+| Who did what, when | **Activity** | **Aktiviteti** | log |
+| Carwash takings | **carwash** (Lavazhi) + **change** (Këmbimi) | **Lavazhi** + **Këmbimi** | car wash |
+| The person account screen | **Account** | **Llogaria** | Me, Profile (team app) |
 
-### Navigation
-Sidebar rows are 34px (44px in the phone drawer) with a line icon and a 500 label in
-muted ink; hover fills and turns ink; the current page gets the orange tint, ember
-text and a 3px orange marker on the sidebar edge, with no glow. Count badges are ink
-pills with paper text; collapsed, they shrink onto the icon. The command palette
-(Ctrl K) is a 620px floating panel with grouped results.
+## 6. Colour
 
-### Badges
-Stamps, like a rubber stamp on a stock ticket: 22px, monospace capitals (11px,
-0.06em), a 1px outline in the status colour (ok, warn, danger, info, neutral, ink),
-3px corners, no tinted fill. The Overview's severity tags and the stock warning use
-the same stamp. The words always carry the meaning, never the colour alone.
+Warm neutrals carry everything; one clay marks brand, action and place; status
+colours are earthy and quiet, always with words.
 
-### Stock tag
-The shelf-tag count over a row of 10 printed blocks (both apps): full at twice the
-reorder level, a wider gap after the fifth block marking the reorder point, lit
-blocks in the stock colour and the rest in Strong Hairline. No rounded bars.
+### Neutrals
+- **Ivory Canvas** `#f0eee6` / night `#191817`: the page.
+- **Paper** `#faf9f5` / `#262624`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e8e4da` / `#151413`: footer strips, row hover, callouts, search.
+- **Oat** `#e3dacc` / `#30302e` (token `fill`): feature panels (Today, team-app
+  job tiles), ghost hover, segmented track.
+- **Ink** `#141413` / `#faf9f5`: text, data, checked switches, count badges.
+- **Muted Ink** `#5e5d59` / `#a6a39b`: descriptions, labels, chart series.
+- **Hairline** `#e0dbcf` / `#2f2e2b` and **Strong Hairline** `#cbc3b3` / `#3e3d39`.
 
-### Data tables
-Framed like a card; an optional toolbar strip (search, filters) and footer strip
-(pagination); 12px cells (16px at the outer edges), muted 500 headers, hairline
-rows, a soft sunk row hover; numbers right-aligned in tabular figures; an empty
-table shows an empty state instead of headers; stacks on phones (Layout).
+### Clay (brand)
+- **Clay** `#d4704f` (both themes): the logo, the sunrise, **the one primary key
+  per screen**, progress toward a goal, and the current menu item's marker.
+- **Clay Text** `#a8482a` / `#e08a6b` on **Clay Tint** (14% / 18%): the current
+  menu item's label and fill.
+- Text on clay is **Pillar Ink** `#1c0f08` (white fails contrast).
 
-### Product photo
-Every product has one: a square photo, 40px with 8px corners beside its name in
-lists (Products, Stock, Overview restocking), 112px with 16px corners in the product
-form, where "Add photo" opens the phone camera or a file picker. Sunk paper with a
-hairline ring and a line box icon while there is none or it fails to load. The
-name always sits next to it, so the picture carries no alt text.
+### Status (earthy, quiet)
+Each has a strong colour for text and outlines, and a soft tint for washes.
 
-### Stock runway
-"Runs out in" says "Sold out" in Danger for an empty shelf and turns Warn at a
-week or less; the words always carry the meaning.
+| | Light | Light soft | Dark | Dark soft |
+|---|---|---|---|---|
+| **OK** (sage green) | `#2f6b3f` | `#e7efe3` | `#86c08f` | `#1f3022` |
+| **Warn** (ochre) | `#86500c` | `#f6ecd9` | `#e0a85a` | `#3a2e19` |
+| **Danger** (brick) | `#b0302a` | `#f8e5e1` | `#f39a8f` | `#3d201c` |
+| **Info** (slate) | `#3d5670` | `#e6ebf0` | `#9fb4cc` | `#222b35` |
 
-### Today card (signature, Overview)
-A plain paper card with generous padding (24px by 32px): one serif sentence about
-the day ("No sales yet today."), a muted comparison line under it ("Last Saturday
-had €140.00 by this time."), and two quiet ink links with tabular counts
-("0 waiting for you", "3 to restock"). Something waiting gets a small Warn dot; the
-words still carry the meaning. Links grow to 44px on phones. On the right (below on
-phones) the shop at sunrise over slim bars for the last 30 days (Muted Ink, the
-latest in Ink, a faint tick for days with nothing), captioned "Last 30 days"
-(`ShopSunrise` and `DayBars` in the kit). The card is oat.
+All four pass 4.5:1 on paper, canvas and oat in both themes and on their own
+soft tint (checked 2026-10-10; `admin/src/theme/contrast.test.ts` must keep
+passing). They replace the old bright Tailwind-style status colours, which
+looked cold and generic on ivory.
 
-### Metric card (signature, Reports)
-A frameless paper card with a monospace label, an overflow button, a tabular
-figure, a change said in words in the status colour ("Much more"), and an
-edge-to-edge mini graph along the bottom: a smooth 1.75px Ink line (curving through
-the midpoints between days, so it never overshoots) over a flat Muted Ink fill at
-12%. Only flat fills and non-scaling strokes go in the stretched SVG. No data shows
-a dashed baseline and a small pill.
+### Focus
+- **Focus ring = Ink** (`#141413` light, `#faf9f5` dark), 2px, offset 2px. It
+  reaches 15:1 on canvas and stays visible on a clay key. There are no cool blue
+  accents anywhere in the interface.
 
-### Sales chart
-Each day a column of dots (6px apart, as many columns as fit the day's width) in
-Muted Ink, the active day in Ink; no unlit dots, so values read cleanly; hairline
-grid, an ink tooltip with paper text. One keyboard stop, arrow keys walk the days,
-and "Show as table" offers the same data as a table.
+### Colour rules
+- **The Clay Rule.** Clay means brand and "act here". **One clay key per
+  screen** (a phone screen's bottom bar counts: if the Sell tab key is visible,
+  the screen's own main action is a secondary key unless it *is* selling).
+  Links, badges, charts and counts are never clay.
+- **The Ink Data Rule.** Data is drawn in ink: series in Muted Ink, the active
+  bar or point in Ink. Up/down changes use OK/Danger words, not just colour.
+- **No second accent.** Status colours are for status only.
+- **Colour never carries meaning alone**; words always do.
 
-### Halftone drawing
-Retired, with every dot field: the drawing is now the vector shop at sunrise (see
-Printed paper): big on sign-in (up to 560px, with floating "shop moment" cards;
-300px on phones, without the cards), as empty-state art (240px) and on the Today
-card (up to 300px, 240px centred on phones).
+## 7. Type
 
-### Printed paper (both apps)
-The vintage finish, after anthropic.com's textured stock, used sparingly:
-- **Paper grain:** a faint fractal-noise layer over the whole dashboard
-  (`body::after`, `--grain-*` tokens; 7% multiply on light, 5% screen on dark),
-  never taking clicks, off under `prefers-contrast: more` and in print.
-- **Rules:** a single hairline under dashboard page titles and over team-app Home
-  sections; one newspaper double rule, under the team app's masthead only.
-- **Icon chips:** jobs (counts, cash, tabs, carwash, stock, sales) use the regular
-  line icons in a 44px soft chip: Paper on oat tiles, Oat in empty states.
-- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`): the logo's
-  shapes, drawn crisp: an Ink roof stroke (7 units, round caps), four equal Ink
-  pillars and a base on an Ink ground line running the width, two fading Muted Ink
-  horizon lines under it, and a Clay sun behind with a 16% Clay glow, cut by four
-  printed-sunset stripes that widen toward the ground. Ink follows the theme (dark
-  on paper, ivory at night). The sun rises 18px into view once (1.2s, the house
-  ease), off under reduced motion. 4VD's mascot: sign-in, the dashboard's Today
-  card, the team app's sign-in and Today panel (`mobile/src/components/print.tsx`,
-  the same shapes), and big empty pages, nowhere else. Hidden from screen readers.
-- **Glass** (`admin/src/styles/glass.css`, `--glass-*` tokens): frosted panes only
-  on layers that float over the page: the top bar, the Ctrl K palette, the phone
-  menu drawer and the sign-in moment cards. In the team app: the bottom tab bar
-  (expo-blur on iPhone and the web, paper at 62% over it; solid paper on Android),
-  with each tab screen ending in `TabBarSpacer` so its last row clears the bar. A bright blur (20px, saturate 1.6,
-  brightness 1.06), a thin light edge, a 1px top highlight and a faint top sheen;
-  the palette and drawer use a thicker pane (88%) for dense text. Never on cards,
-  tables or forms. Solid paper when blur isn't supported, or under
-  `prefers-reduced-transparency` or `prefers-contrast: more`.
-- **Block meters:** progress as a row of printed blocks, only for the monthly
-  target (20 blocks) and stock tags (10, a wider gap at the reorder point).
+- **Source Serif 4, 500**: page titles (Headline, 2rem), the day's sentence
+  (Display), sign-in headings, empty-state titles on big pages. Never numbers,
+  tables, controls or card titles.
+- **Hanken Grotesk**: everything else. Body 15px (0.9375rem); Title 17px/600
+  for card titles; Label 13px/600 for field labels; Caption 12px/600.
+- **Spec labels**: monospace capitals, 12px, 0.06em tracking, for table headers,
+  metric labels, sidebar group names, stamps and the team-app date kicker. Never
+  a sentence, never a button. These are the only capitals allowed.
+- **Figures**: Hanken 600, 28px (36px on a large metric card), tabular.
+- **The scale is closed**: 12 / 13 / 15 / 17 / 28 / 32 px plus the display clamp.
+  No 14px, no 20px one-offs. The team app has the same scale as named tokens in
+  `theme.ts` (`type.caption`, `type.label`, `type.body`, `type.title`,
+  `type.figure`, `type.headline`), never raw `fontSize` numbers.
+- Weights: 400, 500, 600 only (700 only in the wordmark and count badges).
+- In `theme.ts`, `fonts.display` means **the serif**, as on the dashboard.
 
-## Do's and Don'ts
+## 8. Layout, surfaces and depth
 
-### Do:
-- **Do** build every page from the kit in `admin/src/components/ui/` (PageHeader,
-  Card, SettingRow, DataTable, StatGrid, MetricCard, Badge, Button, Field, EmptyState).
-- **Do** use tokens from `admin/src/styles/tokens.css`; mirror changes in
-  `mobile/src/theme.ts`.
-- **Do** keep Clay for the logo, the drawings and the current menu item; actions are Ink.
-- **Do** draw data in ink: series in Muted Ink, the active value in Ink.
-- **Do** set page titles in the serif and every figure in tabular Hanken Grotesk.
-- **Do** put callouts on sunk paper (`.callout`) instead of framing them.
-- **Do** mark phone tables to stack and give every cell its column name.
-- **Do** keep touch targets at least 44px on phones.
-- **Do** write sentence case, verb-first buttons and errors that say how to fix.
-- **Do** wrap motion in `prefers-reduced-motion: no-preference`.
+### Layout
+- 4px grid: 4, 8, 12, 16, 24, 32, 48.
+- Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
+  content column max 1120px; page padding 32/48 desktop, 32/24 under 1100px,
+  24/16 under 900px. Sections stack 16px apart.
+- Controls 36px (30px small) on desktop, **44px (36px small) under 900px** and
+  always in the team app.
 
-### Don't:
-- **Don't** make buttons clay or bright orange.
-- **Don't** add glows, corner nodes or dashed rails; keep dots, pictograms and grain-heavy textures out of tables, forms and from behind text.
-- **Don't** colour charts, counts, links or badges orange.
-- **Don't** invent shadows: use Raise, Inset, Key or Float, nothing else, and never a glow.
-- **Don't** use the serif for figures, tables, card titles or controls.
-- **Don't** use weights above 600 outside the wordmark and count badges, or all-caps labels.
-- **Don't** add a second accent colour; status colours are for status only.
-- **Don't** let colour alone carry meaning: badges and changes always have words.
+### Two kinds of surface
+- **Raised card** (Paper + Raise shadow, 16px corners): things you work in:
+  forms, the To do list, the Today strip, setting groups, metric cards.
+- **Table surface**: a DataTable is itself a framed surface. **Never put a
+  table inside a card** (no box in a box): a section is a heading plus a table.
+- **Flat**: page header, toolbar, history headings sit on the canvas.
+- **Feature panel** (Oat + Sheen): the Today strip and team-app job tiles only.
+
+### Depth vocabulary (the only shadows allowed)
+- **Raise**: cards and panels rest just above the canvas.
+- **Inset**: fields, segmented tracks, card footer strips sit into it.
+- **Key**: buttons stand on a solid edge (section 10.1).
+- **Float**: palette, drawer, menus and dialogs over a dimmed backdrop.
+- **Glass**: floating chrome only (section 8.1).
+The user dislikes flat UI: surfaces keep this depth. Never invent a shadow,
+never a glow.
+
+### 8.1 Glass (clean and purposeful)
+Glass is for **chrome that floats over moving content**, so you can see the page
+pass underneath. Allowed only on: the dashboard top bar, the Ctrl K palette, the
+phone menu drawer, the team-app tab bar, sticky phone action bars, and the
+sign-in moment cards. Never on cards, tables, forms or anything that holds
+reading text at rest.
+
+One recipe, everywhere:
+- **Tint**: Paper at 72% (thin pane) or 90% (dense pane: palette, drawer).
+- **Blur**: 16px with saturate 1.4. No brightness boost, no sheen gradient (they
+  muddy text and make ivory look grey).
+- **Edge**: one 1px Hairline on the side that meets the content (the top bar's
+  bottom edge, the tab bar's top edge) and a 1px inner top highlight (white 60% /
+  6% dark). No white borders on ivory, where they disappear.
+- **Shadow**: none on bars; Float on panes.
+- **Only when there is something behind it**: the top bar is solid canvas at
+  the top of the page and turns to glass once the page scrolls under it.
+- **Backdrop** behind panes: Ink at 30%, 2px blur.
+- **Fallback**: solid Paper when blur is unsupported, under
+  `prefers-reduced-transparency`, `prefers-contrast: more`, and on Android.
+- Tokens: `--glass-bg`, `--glass-bg-strong`, `--glass-edge`, `--glass-highlight`,
+  `--glass-filter`; the team app mirrors them (expo-blur on iOS and web).
+
+## 9. States (required everywhere)
+
+Every interactive thing has **hover, focus, pressed, disabled, loading**; every
+data view has **loading, empty, error**.
+- **Loading**: skeleton rows for tables and lists; a spinner inside the button
+  for actions (the label stays, the button keeps its width).
+- **Empty**: icon chip, a title saying what will be here, one sentence on how to
+  get it, and one action. Big empty pages may show the sunrise.
+- **Error**: what went wrong in plain words and a **Try again** action. Field
+  errors sit under the field and say how to fix it.
+- **Disabled**: explain why next to it ("Add a product to sell"). A disabled
+  button is never the largest thing on a screen.
+
+## 10. Components
+
+### 10.1 Buttons (tactile keys, refined)
+Buttons behave like keyboard keys: they stand on a solid edge and press down into
+it. Refinements over the first version: thinner edge, softer drop, no lift on
+hover (less jumpy in dense rows), the same recipe in both apps.
+
+| Variant | Face | Edge | Use |
+|---|---|---|---|
+| **Primary** | Clay, lit from the top (linear: Clay Hover at the top to Clay at 60%) | 2px Clay Edge | the one main action per screen |
+| **Secondary** | Paper with a 1px Strong Hairline ring | 2px Strong Hairline | every other action, form Cancel |
+| **Ghost** | none until hover (Oat) | none | toolbars, icon buttons, menu rows |
+| **Danger** | Danger with Paper text | 2px darker danger | destroying something, inside a confirm |
+| **Danger text** | red words only | none | "Delete" beside other actions |
+
+- **Rest**: face + edge + a 1px light line inside the top + a soft drop (0 2px
+  6px, 10% ink).
+- **Hover**: the face brightens slightly; no movement.
+- **Pressed**: the face moves down 2px, the edge shrinks to 0, the drop tightens.
+- **Focus**: Ink ring 2px, offset 2px (section 6).
+- **Disabled**: flat (no edge, no drop), Sunk Paper face with a 1px Hairline ring
+  and Muted Ink text, so it still reads as a button. Never 50% opacity.
+- **Loading**: spinner replaces the icon, label stays.
+- Sizes: 36px (30px small) desktop; 44px (36px small) phones. Padding 14px; icon
+  16px with 6px gap; label 15px/500 (primary 600).
+- **A row of actions shares one style**, apart from one primary. Never mix a
+  raised key with bare text buttons in the same row.
+- Width: buttons hug their label on desktop. Full width only at the bottom of a
+  phone form or the team-app basket.
+
+### 10.2 Links
+Ink, underlined at 40% with a 3px offset, full underline on hover. Table title
+links and breadcrumbs drop the underline until hover.
+
+### 10.3 Fields
+Paper, Strong Hairline stroke, Inset, 8px corners, 36px (44px phones), 15px text.
+Label always visible above; placeholder only for an example. Focus: Ink ring as
+buttons. Checked switches and checkboxes are Ink. **Dates always read
+day / month / year** (a custom field, not the browser's native date input).
+
+### 10.4 Tables (DataTable)
+Every table is a `DataTable`: framed surface, optional toolbar and footer strips,
+12px cells (16px at the edges), spec-label headers, hairline rows, sunk hover,
+numbers right-aligned and tabular, ARIA table roles. Under 600px rows stack:
+title cell first in 600 weight, then "column name: value" lines. An empty table
+shows an empty state instead of headers.
+
+### 10.5 Stamps (badges)
+Like a rubber stamp: 22px, monospace capitals 11px, 0.06em, 1px outline in the
+status colour, 3px corners, no fill. Tones: ok, warn, danger, info, neutral, ink.
+Severity stamps: **Urgent** (danger), **Check** (warn), **Idea** (info). On
+phones a stamp sits **above** its text, not in a side column.
+
+### 10.6 Numbers, money and dates
+- **Money in tables and forms**: always cents (`€1,200.00`).
+- **Headline figures** (metric cards, the Today sentence) of €1,000 or more drop
+  the cents (`€240,769`).
+- **Changes are said in words with a number**: "38% more than September", "€120
+  less than last Saturday". "Much more" alone is not allowed. If the comparison
+  base is zero, say "First sales this period".
+- Dates: `9 Oct 2026`; with time `9 Oct, 12:21`; weekday where it helps
+  (`Sat 4 Oct`). Never month-first.
+- Every number that can change in place or sit in a column is tabular.
+
+### 10.7 Charts
+- Ink rule (section 6). Bars with softly rounded tops, smooth lines over a 12%
+  flat fill, hairline grid, an ink tooltip with paper text, "Show as table".
+- **One outlier must not flatten the rest**: when the top value is more than 4×
+  the next highest, cap the axis, draw the capped bar to the top with a break
+  mark and label its real value.
+- Metric cards sit on an even grid: every card in a row has the same parts (all
+  with a mini graph or none). No half-empty last rows: let the last card span.
+
+### 10.8 Stock tag
+The shelf count over 10 printed blocks (both apps): full at twice the reorder
+level, a wider gap after the fifth block (the reorder point), lit blocks in the
+stock colour, the rest Strong Hairline.
+
+### 10.9 Product photo
+Square, 40px with 8px corners in lists, 112px with 16px in forms. With no photo,
+**both apps** show the same placeholder: Sunk Paper with a Hairline ring and the
+line box icon (not a letter).
+
+### 10.10 Segmented controls
+Joined options on an Oat inset track, the selected one raised on Paper. Used for
+theme (Light / Dark / Auto, with icons) and language (English / Shqip) **in both
+apps**, and for small view switches. Not for more than 4 options.
+
+### 10.11 Navigation
+Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
+hover Oat; current = Clay Tint fill, Clay Text label, 3px Clay marker on the edge.
+Count badge: Ink pill with Paper text, To do count only (3.3).
+
+## 11. The printed finish (vintage, used sparingly)
+
+- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`,
+  `mobile/src/components/print.tsx`): the mascot. Sign-in, team-app Home's Today
+  panel, the dashboard's Today strip, big empty pages, nowhere else. It is
+  **never larger than the information beside it**: up to 160px on the Today
+  strip, 240px in empty states, 560px on sign-in. Hidden from screen readers;
+  the sun rises once, off under reduced motion.
+- **Paper grain** over the dashboard (7% light, 5% dark), off under more contrast
+  and in print.
+- **Rules**: a hairline under page titles; one double rule under the team app's
+  masthead only.
+- **Icon chips**: line icons in a 44px soft chip (Paper on Oat, Oat on Paper).
+- **Block meters**: only the monthly target (20 blocks) and stock tags (10).
+- **Receipt feel for the basket** (team app Sell, dashboard Sell): lines in
+  tabular figures, a dashed tear line above the total, the total in Figure type.
+- Never dither or texture data, icons, tables or forms.
+
+## 12. Motion and accessibility
+
+- Motion: 150ms, `cubic-bezier(0.16, 1, 0.3, 1)`, never bouncy; all inside
+  `prefers-reduced-motion: no-preference`.
+- WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
+- Keyboard: every action reachable, visible focus, one tab stop per chart
+  (arrows walk the data), dialogs trap focus and return it.
+- Screen readers: ARIA labels match the visible words; a badge's label says what
+  it counts ("3 to do").
+
+## 13. Built vs target (known gaps, 2026-10-10)
+
+Each item is a rule above that the code doesn't follow yet. Fix it when touching
+that area; remove it from this list when done.
+
+**Logic and structure**
+1. **One attention source.** Badge = approvals + unread alerts
+   (`admin/src/components/Layout.tsx`); stock and info alerts never clear
+   themselves (only decided requests do, `NotificationRepository.markSubjectRead`).
+   Overview attention, Today card and team Home each compute their own. → 3.3
+2. **Menu names.** "Products" opens a page titled "Stock"; "Cash & carwash"
+   opens "Cash check"; tab "Sales" under "Sales". → 3.1 (`sections.ts`, i18n).
+3. **Day page.** The close-the-day checklist lives on the Cash check page
+   (`CashPage.tsx`, `DayChecklist.tsx`); no Day page yet. Steps are defined
+   separately in each app (`mobile/src/utils/shift.ts`). → 3.4
+4. **Sales by checkout.** Sales history lists lines; the Sell form sits on top of
+   the Sales list (`SalesPage.tsx`). → 3.5, 3.8
+5. **Team tabs.** Favourites is its own tab (`RootNavigator.tsx`); no
+   "Something happened" on Home; return / damage / expiry / carwash only reachable
+   from My sales, product pages or End your shift. → 3.2
+6. **End your shift** shows empty checkboxes that aren't tappable
+   (`EndShiftScreen.tsx`); long place names wrap badly. → 3.4
+7. **Create forms on list pages** (Cash check, Expenses, Sales). → 3.8
+
+**Words** (→ section 5)
+
+8. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
+   the Sell title; "Close the drawer"; "Cash check"; "mobile app"; "4VD website"
+   in the role description; "write-off" in staff-facing text.
+
+**Look**
+
+9. **Status and focus colours** are still the old bright set (`#047857`,
+   `#b45309`, `#b91c1c`, `#1d4ed8`) and focus is blue in `tokens.css` and
+   `theme.ts`. → 6
+10. **Buttons** use a 3px edge, lift on hover and 50% opacity when disabled
+    (`admin/src/components/ui/ui.css`, `mobile/src/components/ui.tsx`). → 10.1
+11. **Glass** uses brightness boost, sheen gradient and white edges; the top bar
+    is glass even with nothing behind it (`admin/src/styles/glass.css`). → 8.1
+12. **Overview hierarchy**: Today panel ~1/3 of the screen, zero counts shown,
+    stamps in a side column on phones, "Hi Admin" title. → 3.8, 10.5
+13. **Reports**: cents on headline figures, "Much more", sparklines flattened by
+    one outlier, ragged metric grid (`ReportsPage.tsx`, `MetricCard.tsx`). → 10.6–10.7
+14. **Tables not on DataTable** (miss the ARIA fix): SalesPage, PromotionsPage,
+    OrdersPage (2), StockCountDetailPage, ProductFormPage, ReportsPage (2). → 10.4
+15. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
+    raw px spacings, radii 2/4/6/10/12/14px, weights 300/700. → 7, 8
+16. **Team app type**: no type tokens (19 raw `fontSize` values);
+    `fonts.display` is the sans. → 7
+17. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+18. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+    theme / language controls (chips vs segmented). → 10.9, 10.10
+19. **Box in a box**: tables inside cards (Sales history, Cash counts, others). → 8
+20. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+21. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

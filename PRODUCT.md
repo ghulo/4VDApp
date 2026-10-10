@@ -70,10 +70,10 @@ general enough for that, but the shop comes first whenever the two conflict.
 - Name: **4VD**, "4 Vëllezërit Dacaj", the four Dacaj brothers, named by their
   father. The mark is four equal pillars under one roof. The story is there for
   people who ask, not told in the interface.
-- Visual references the operator made binding: **Cloudflare's** interface
-  language (rich orange on warm neutrals, halftones, dotted drawings, hairline
-  frames, subtle glow and transitions) and the **SBB design system's** rigour
-  (UX principles, writing rules, responsive spacing, touch sizes).
+- Visual direction: a calm, tactile "printed paper" look (ivory paper, one clay
+  orange, serif page titles, buttons that press like keys, the shop at sunrise),
+  learned from Cloudflare's structure, the SBB design system's rigour and
+  anthropic.com's finish. All rules live in `DESIGN.md`, the single rulebook.
 - Voice: plain, friendly, short. Sentence case. Buttons say what they do.
 
 ## Evidence on Hand

@@ -23,35 +23,12 @@ bigger. It uses the same shapes as the sign-in drawing.
   `admin/index.html`, `mobile/public/index.html` and both `manifest.json` files,
   or browsers keep showing the old icon.
 
-## Look and feel
+## Look, colours and type
 
-The visual language follows Cloudflare's (notes in
-`docs/superpowers/specs/2026-10-02-cloudflare-structure-design.md`): one loud
-orange on warm neutrals, hairline frames with small corner squares, halftone
-dots, drawings made of dots, dashed rails, and a soft orange glow on what
-matters. Motion is quick and quiet, and off when the computer asks for less.
-
-## Colours
-
-| Name | Light | Dark | Meaning |
-|---|---|---|---|
-| Clay (brand) | `#D4704F` | `#D4704F` | the brand colour: the logo, illustrations and where you are (main buttons are solid ink) |
-| Orange text (brand) | `#C2410C` | `#FF7038` | links and orange words (darker in light mode so it reads) |
-| Ink | `#1F1B19` | `#F2EBE7` | text, and the text on orange |
-| Warn | `#B45309` | `#FBBF24` | low stock, waiting for you |
-| Danger | `#B91C1C` | `#F87171` | sold out, urgent, delete |
-| OK | `#047857` | `#34D399` | in stock, approved |
-| Info | `#1D4ED8` | `#60A5FA` | ideas, focus rings |
-
-Text on orange is always near-black (`#1C0F08`): white on this orange is too
-faint to read. Neutrals are warm greys; the full set is in
-`admin/src/styles/tokens.css` and `mobile/src/theme.ts`.
-
-## Type
-
-Hanken Grotesk: 400 for reading, 500 for controls, 600 for headings and big
-figures, with tight letter spacing on large sizes. Numbers use tabular figures
-so columns line up.
+Everything about how 4VD looks, reads and works (colours, type, buttons, glass,
+the printed finish, wording) lives in one rulebook: [`DESIGN.md`](../DESIGN.md)
+in the project root. The values are in `admin/src/styles/tokens.css` and
+`mobile/src/theme.ts`. This file only covers the logo and icon files.
 
 ## Icons
 

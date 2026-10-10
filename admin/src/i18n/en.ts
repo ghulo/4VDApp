@@ -1660,6 +1660,8 @@ export const en = {
     cancel: 'Cancel',
     loading: 'Loading…',
     tryAgain: 'Try again',
+    crashed: 'This page hit a problem and couldn’t show. Reload to try again; if it keeps happening, tell the developer.',
+    reload: 'Reload',
     somethingWrong: 'Something went wrong',
     or: 'or',
     previous: 'Previous',

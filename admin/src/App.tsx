@@ -1,3 +1,4 @@
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
@@ -75,73 +76,75 @@ function NotFoundPage() {
 function App() {
   return (
     <I18nProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-              <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
-              <Route path="/invite/:token" element={<AcceptInvitePage />} />
-              <Route
-                element={
-                  <RequireAuth>
-                    <Layout />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<OverviewPage />} />
-                <Route path="inbox" element={<InboxPage />} />
-                <Route path="approvals" element={<Navigate to="/inbox" replace />} />
-                <Route path="alerts" element={<Navigate to="/inbox#inbox-alerts" replace />} />
-                <Route element={<SectionTabs tabs={SECTIONS.products} labelKey="products" />}>
-                  <Route path="inventory" element={<InventoryPage />} />
-                  <Route path="products" element={<ProductsPage />} />
-                  <Route path="categories" element={<CategoriesPage />} />
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+                <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
+                <Route path="/invite/:token" element={<AcceptInvitePage />} />
+                <Route
+                  element={
+                    <RequireAuth>
+                      <Layout />
+                    </RequireAuth>
+                  }
+                >
+                  <Route index element={<OverviewPage />} />
+                  <Route path="inbox" element={<InboxPage />} />
+                  <Route path="approvals" element={<Navigate to="/inbox" replace />} />
+                  <Route path="alerts" element={<Navigate to="/inbox#inbox-alerts" replace />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.products} labelKey="products" />}>
+                    <Route path="inventory" element={<InventoryPage />} />
+                    <Route path="products" element={<ProductsPage />} />
+                    <Route path="categories" element={<CategoriesPage />} />
+                  </Route>
+                  <Route path="inventory/:productId" element={<InventoryDetailPage />} />
+                  <Route path="products/new" element={<ProductFormPage />} />
+                  <Route path="products/:id" element={<ProductFormPage />} />
+                  <Route path="labels" element={<LabelsPage />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
+                    <Route path="sales" element={<SalesPage />} />
+                    <Route path="documents" element={<DocumentsPage />} />
+                  </Route>
+                  <Route path="documents/:id" element={<DocumentDetailPage />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.money} labelKey="day" />}>
+                    <Route path="cash" element={<CashPage />} />
+                    <Route path="carwash" element={<CarwashPage />} />
+                  </Route>
+                  <Route path="expenses" element={<ExpensesPage />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
+                    <Route path="report" element={<ReportPage />} />
+                    <Route path="reports" element={<ReportsPage />} />
+                  </Route>
+                  <Route path="customers" element={<CustomersPage />} />
+                  <Route path="customers/:id" element={<CustomerDetailPage />} />
+                  <Route path="tabs" element={<TabsRedirect />} />
+                  <Route path="suppliers" element={<SuppliersPage />} />
+                  <Route path="suppliers/:id" element={<SupplierDetailPage />} />
+                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="orders/:id" element={<OrderDetailPage />} />
+                  <Route path="bills" element={<BillsPage />} />
+                  <Route path="bills/:id" element={<BillDetailPage />} />
+                  <Route path="people" element={<UsersPage />} />
+                  <Route path="counts" element={<StockCountsPage />} />
+                  <Route path="counts/:id" element={<StockCountDetailPage />} />
+                  <Route path="promotions" element={<PromotionsPage />} />
+                  <Route path="ask" element={<AskPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="activity" element={<ActivityPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Route>
-                <Route path="inventory/:productId" element={<InventoryDetailPage />} />
-                <Route path="products/new" element={<ProductFormPage />} />
-                <Route path="products/:id" element={<ProductFormPage />} />
-                <Route path="labels" element={<LabelsPage />} />
-                <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
-                  <Route path="sales" element={<SalesPage />} />
-                  <Route path="documents" element={<DocumentsPage />} />
-                </Route>
-                <Route path="documents/:id" element={<DocumentDetailPage />} />
-                <Route element={<SectionTabs tabs={SECTIONS.money} labelKey="day" />}>
-                  <Route path="cash" element={<CashPage />} />
-                  <Route path="carwash" element={<CarwashPage />} />
-                </Route>
-                <Route path="expenses" element={<ExpensesPage />} />
-                <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
-                  <Route path="report" element={<ReportPage />} />
-                  <Route path="reports" element={<ReportsPage />} />
-                </Route>
-                <Route path="customers" element={<CustomersPage />} />
-                <Route path="customers/:id" element={<CustomerDetailPage />} />
-                <Route path="tabs" element={<TabsRedirect />} />
-                <Route path="suppliers" element={<SuppliersPage />} />
-                <Route path="suppliers/:id" element={<SupplierDetailPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route path="orders/:id" element={<OrderDetailPage />} />
-                <Route path="bills" element={<BillsPage />} />
-                <Route path="bills/:id" element={<BillDetailPage />} />
-                <Route path="people" element={<UsersPage />} />
-                <Route path="counts" element={<StockCountsPage />} />
-                <Route path="counts/:id" element={<StockCountDetailPage />} />
-                <Route path="promotions" element={<PromotionsPage />} />
-                <Route path="ask" element={<AskPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="activity" element={<ActivityPage />} />
-                <Route path="*" element={<NotFoundPage />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </QueryClientProvider>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </I18nProvider>
   );
 }

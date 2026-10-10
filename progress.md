@@ -17,7 +17,11 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
   - [x] Pass 1: screenshot every dashboard screen (1440 + 375) and the team app's main screens, fix what shows up (cash check layout, close-the-day badges, card corners, product page spacing, Inbox columns, shorter phone lists for sales and activity, device list capped)
   - [x] Pass 2: team app sub-screens checked; sale screen shows products on the shelf when there are no favourites, Tabs intro, phone filters tidied, accessibility and design-guideline review done
   - [ ] You look it over locally and say yes, then merge and push
-- [ ] Phase 5: hardening, and update the out-of-date PRODUCT.md
+- [x] Phase 5: hardening, and update the out-of-date PRODUCT.md
+  - [x] Security audit of all three apps (backend and dashboard clean; team app findings are only in Expo's build tools, patched to Expo's latest)
+  - [x] Server: crashes are logged and alerted, then it restarts clean; shutdown can't hang; the minute-by-minute report job never overlaps itself
+  - [x] Both apps show a calm "something went wrong" with a way back instead of a blank screen
+  - [x] PRODUCT.md brought up to date (Albanian built, domains, everything the app does now)
 
 ## Requests 2026-10-10
 

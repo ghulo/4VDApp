@@ -25,9 +25,11 @@ its design follows the dashboard's tokens rather than iOS or Android conventions
 
 ## Product Purpose
 
-4VD runs the Dacaj family shop: products and prices, stock and reorder levels,
-sales and returns, stock counts, approvals, promotions, people, and reports, with
-alerts and a weekly email so nothing slips. Success is the family spending less
+4VD runs the Dacaj family shop and its carwashes: products, prices and barcodes,
+stock, counts and expiry dates, sales, returns and numbered invoices (with VAT),
+customer tabs, suppliers with orders and bills, the daily cash check, carwash
+takings and expenses, a close-the-day checklist, approvals, promotions, people,
+and reports, with alerts, daily and weekly emails so nothing slips. Success is the family spending less
 time on paperwork and never being surprised by empty shelves or missing stock.
 
 ## Positioning
@@ -42,6 +44,8 @@ general enough for that, but the shop comes first whenever the two conflict.
 - The shop counter and back office: a shop computer for the dashboard, phones for
   staff and for the operator when away.
 - Staff record sales between customers, so speed and big touch targets matter.
+- The day ends with a checklist: drawers counted, carwash takings entered,
+  expenses added (or marked as none), requests answered. Nothing gets locked.
 - Approvals flow from employees (phone) to the operator or owner (dashboard).
 - A daily summary alert and a Monday weekly report email keep the owner informed.
 
@@ -50,11 +54,15 @@ general enough for that, but the shop comes first whenever the two conflict.
 - Roles: **developer** (the operator: everything, and the only one who hands
   out the top roles), **owner** (sees everything and decides requests, changes
   nothing else), **admin** (runs the shop), **employee**, **family**.
-- Languages: **English and Albanian** are both required (not built yet; the
-  interface is English only today).
+- Languages: **English and Albanian**, in both apps and in the emails. Each
+  person's choice is saved on their account.
 - Money in euros; shop time zone is configurable (Europe/Budapest by default).
 - AI helpers (Ask, price suggestions) use Claude; staff names are masked first.
-- Deployed on Render (API, dashboard, team app); a custom domain is pending.
+- Deployed on Render (API at api.4vd.app, with weekly backups to Cloudflare R2)
+  and Cloudflare (dashboard at dashboard.4vd.app, team app at app.4vd.app;
+  4vd.app sends people to the dashboard).
+- The shop is VAT-registered and its own fiscal printers print the legal
+  receipts; 4VD prints A4 invoices and labels only.
 - Currently holds test data only; it is wiped at launch on the real domain.
 
 ## Brand Commitments

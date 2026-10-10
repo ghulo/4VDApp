@@ -624,6 +624,14 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   the sun rises once, off under reduced motion.
 - **Paper grain** over the dashboard (7% light, 5% dark), off under more contrast
   and in print.
+- **The canvas** (both apps, behind every page): the mark's **four pillars**
+  woven across it (two staggered groups of four strokes per 56px tile; Ink at
+  5% light, 3.5% dark), and the mark's **sunrise** (the clay sun cut by its two
+  stripes, on a horizon that fades in from the left) rising from the bottom-right
+  corner at 10% / 8%, fixed while the page scrolls. Only on the bare canvas:
+  cards, tables, headers and the top bar stay plain. Tokens `--weave-image`,
+  `--sunrise-image` on the dashboard; `CanvasTexture` / `texture` in the team
+  app. On the dashboard, off under more contrast and in print.
 - **Rules**: a hairline under page titles; one double rule under the team app's
   masthead only.
 - **Icon chips**: line icons in a 44px soft chip (Paper on Oat, Oat on Paper).

@@ -62,7 +62,7 @@ export function AccountScreen() {
   const changed = name.trim() !== user.name || phone.trim() !== (user.phone ?? '');
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={panel}>
         <View style={styles.identity}>
           <Pressable accessibilityRole="button" accessibilityLabel={t.account.changePhotoLabel} onPress={pickPhoto} disabled={upload.isPending}>

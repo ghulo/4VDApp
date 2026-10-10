@@ -21,7 +21,7 @@ export function FavoritesScreen() {
   if (favorites.isError) return <ErrorState error={favorites.error} onRetry={() => favorites.refetch()} />;
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={styles.screen}>
       <FlatList
         data={favorites.data}
         keyExtractor={(product) => String(product.id)}

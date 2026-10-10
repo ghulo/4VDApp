@@ -11,6 +11,7 @@ import { User } from 'phosphor-react-native/src/icons/User';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CanvasPage } from '../components/CanvasTexture';
 import { Loading } from '../components/ui';
 import { AccountScreen } from '../screens/AccountScreen';
 import { CarwashScreen } from '../screens/CarwashScreen';
@@ -102,6 +103,7 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
+      screenLayout={CanvasPage}
       screenOptions={{
         // Headers sit on the page's own paper, so a screen reads as one printed sheet.
         headerStyle: { backgroundColor: colors.background },
@@ -180,6 +182,7 @@ export function RootNavigator() {
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => signedIn && openPendingScan()}>
       <Stack.Navigator
+        screenLayout={CanvasPage}
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
           headerTitleStyle: { fontFamily: fonts.display, fontSize: type.title, color: colors.ink },
@@ -191,7 +194,8 @@ export function RootNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         ) : (
           <>
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+            {/* The tabs paint their own canvas per screen. */}
+            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} layout={({ children }) => children} />
             <Stack.Screen
               name="ProductDetail"
               component={ProductDetailScreen}

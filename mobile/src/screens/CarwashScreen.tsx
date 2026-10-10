@@ -92,7 +92,7 @@ function CarwashForm(props: {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.hint, { color: colors.inkMuted }]}>{start ? t.carwash.alreadyEntered : t.carwash.intro}</Text>
       <TextField label={t.carwash.carwash} value={carwash} onChangeText={setCarwash} keyboardType="decimal-pad" placeholder="0,00" />
       <TextField label={t.carwash.change} value={change} onChangeText={setChange} keyboardType="decimal-pad" placeholder="0,00" />

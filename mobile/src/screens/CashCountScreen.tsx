@@ -74,7 +74,7 @@ export function CashCountScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <ChoiceRow
         label={t.cash.whichDrawer}
         options={drawers.map((option) => ({ value: option.key, label: option.label }))}

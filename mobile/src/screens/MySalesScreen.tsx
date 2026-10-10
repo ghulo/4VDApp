@@ -17,7 +17,7 @@ export function MySalesScreen() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: colors.background }}
+     
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
     >

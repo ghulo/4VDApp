@@ -52,7 +52,7 @@ export function EndShiftScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.title, { color: colors.ink }]} accessibilityRole="header" accessibilityLiveRegion="polite">
         {next ? t.shift.stepsLeft(total - done) : t.shift.allDone(firstName)}
       </Text>

@@ -49,7 +49,7 @@ export function CatalogScreen() {
   const isFiltered = Boolean(search || categoryId || inStockOnly);
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={styles.screen}>
       <View style={[styles.filters, { backgroundColor: colors.surface, borderBottomColor: colors.line }]}>
         <TextInput
           value={searchDraft}

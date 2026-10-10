@@ -156,7 +156,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   );
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={styles.screen}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.searchRow}>
           <View style={[styles.searchField, { borderColor: searchFocused ? colors.ink : colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}>

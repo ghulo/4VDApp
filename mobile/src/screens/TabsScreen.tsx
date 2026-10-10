@@ -28,7 +28,7 @@ export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParam
   if (customers.data.length === 0) return <EmptyState icon={Notebook} title={t.tabs.none}>{t.tabs.noneHint}</EmptyState>;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.intro, { color: colors.steel }]}>{t.tabs.intro}</Text>
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         {customers.data.map((customer, index) => (
@@ -81,7 +81,7 @@ export function TabScreen({ route }: NativeStackScreenProps<RootStackParamList, 
   const isValid = value > 0 && value <= data.balance;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.panel, styles.padded, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.muted, { color: colors.inkMuted }]}>{t.tabs.owesLabel}</Text>
         <Text style={[styles.big, { color: colors.ink }]}>{owedText(data.balance, t)}</Text>

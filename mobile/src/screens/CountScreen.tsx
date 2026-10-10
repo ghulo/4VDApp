@@ -97,7 +97,7 @@ function Counter({
 
   if (showList) {
     return (
-      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         {count.lines.map((item, itemIndex) => (
           <Pressable
             key={item.productId}
@@ -118,7 +118,7 @@ function Counter({
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.progressRow}>
         <Text style={[styles.progress, { color: colors.steel }]}>
           {t.counts.progress(count.totals.counted, count.totals.products)}

@@ -46,7 +46,7 @@ export function ProductDetailScreen({ route, navigation }: Props) {
 
   const item = product.data;
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}>
       {item.imageUrl && (
         <Image source={mediaSrc(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
       )}

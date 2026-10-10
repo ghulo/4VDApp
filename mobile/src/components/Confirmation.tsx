@@ -8,7 +8,7 @@ export function Confirmation({ title, message, onDone }: { title: string; messag
   const colors = useThemeColors();
   const t = useT();
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.title, { color: colors.ink }]} accessibilityRole="header">
         {title}
       </Text>

@@ -59,7 +59,7 @@ export function ExpiryScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: colors.ink }]}>{productName}</Text>
       <Text style={[styles.muted, { color: colors.steel }]}>{t.expiry.optional}</Text>
 

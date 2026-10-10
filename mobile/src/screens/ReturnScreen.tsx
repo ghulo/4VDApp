@@ -76,7 +76,7 @@ export function ReturnScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         <Text style={[styles.title, { color: colors.ink }]}>{sale.productName}</Text>
         <Text style={[styles.muted, { color: colors.steel }]}>

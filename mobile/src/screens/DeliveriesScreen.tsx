@@ -93,7 +93,7 @@ function ReceiveForm({ order, onDone }: { order: Delivery; onDone: () => void })
   }
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: colors.ink }]}>{t.deliveries.from(order.supplierName, toTypedDay(dayAfter(new Date(order.createdAt), 0)))}</Text>
       {order.note && <Text style={[styles.hint, { color: colors.ink }]}>{order.note}</Text>}
       <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.deliveries.intro}</Text>

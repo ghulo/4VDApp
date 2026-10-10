@@ -45,7 +45,7 @@ export function CountsScreen({ navigation }: Props) {
   ];
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}>
       <Text style={[styles.intro, { color: colors.steel }]}>
         {t.counts.intro}
       </Text>

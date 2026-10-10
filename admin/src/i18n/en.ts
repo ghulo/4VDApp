@@ -196,6 +196,7 @@ export const en = {
     joinButton: 'Join',
   },
   profile: {
+    security: 'Sign-in and security',
     title: 'Your profile',
     description: (role: string) => `${role} at the shop. What you change here is only about you.`,
     look: 'Look',
@@ -1202,7 +1203,7 @@ export const en = {
     wipedAt: (when: string) => `Wiped on ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
       `${p.products} products and ${p.sales} sales are still test data. Use Wipe all data at the bottom of this page. Developer accounts stay.`,
-    shopDetailsHow: 'The address, phone and NUI go in Your shop, just below.',
+    shopDetailsHow: 'The address, phone and NUI go in Your shop, at the top of this page.',
     ownerHow: 'The button opens the invite form with the Owner role chosen. He sees everything and decides requests.',
     teamHow: 'The button opens the invite form with the Employee role chosen. They use the team app at app.4vd.app.',
     teamCount: (count: number) => `${count} ${count === 1 ? 'employee' : 'employees'} so far.`,
@@ -1657,6 +1658,7 @@ export const en = {
     remove: 'Remove',
   },
   common: {
+    onThisPage: 'On this page',
     save: 'Save',
     cancel: 'Cancel',
     loading: 'Loading…',

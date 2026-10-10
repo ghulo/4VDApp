@@ -193,6 +193,7 @@ export const sq: Catalogue = {
     joinButton: 'Bashkohu',
   },
   profile: {
+    security: 'Hyrja dhe siguria',
     title: 'Profili yt',
     description: (role) => `${role} në dyqan. Çfarë ndryshon këtu të prek vetëm ty.`,
     look: 'Paraqitja',
@@ -1194,7 +1195,7 @@ export const sq: Catalogue = {
     wipedAt: (when: string) => `U fshinë më ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
       `${p.products} produkte dhe ${p.sales} shitje janë ende të dhëna prove. Përdor Fshi të gjitha të dhënat në fund të kësaj faqeje. Llogaritë e zhvilluesve mbeten.`,
-    shopDetailsHow: 'Adresa, telefoni dhe NUI futen te Dyqani yt, pak më poshtë.',
+    shopDetailsHow: 'Adresa, telefoni dhe NUI futen te Dyqani yt, në krye të kësaj faqeje.',
     ownerHow: 'Butoni hap formën e ftesës me rolin Pronar të zgjedhur. Ai sheh gjithçka dhe vendos për kërkesat.',
     teamHow: 'Butoni hap formën e ftesës me rolin Punonjës të zgjedhur. Ata përdorin aplikacionin e ekipit te app.4vd.app.',
     teamCount: (count: number) => `${count} punonjës deri tani.`,
@@ -1647,6 +1648,7 @@ export const sq: Catalogue = {
     remove: 'Hiq',
   },
   common: {
+    onThisPage: 'Në këtë faqe',
     save: 'Ruaj',
     cancel: 'Anulo',
     loading: 'Po ngarkohet…',

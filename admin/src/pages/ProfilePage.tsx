@@ -5,7 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
-import { Badge, Button, Card, Field, PageHeader, SettingRow } from '../components/ui';
+import { Badge, Button, Card, Field, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
 import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { Session, User } from '../services/types';
@@ -44,19 +44,29 @@ export function ProfilePage() {
         title={t.profile.title}
         description={t.profile.description(t.common.roles[user.role])}
       />
-      <DetailsPanel user={user} />
-      <Card title={t.profile.look}>
-        <SettingRow title={t.theme.label} description={t.profile.themeHint}>
-          <ThemeSwitch persist />
-        </SettingRow>
-        <SettingRow title={t.language.label} description={t.language.description}>
-          <LanguageSwitch persist />
-        </SettingRow>
-      </Card>
-      <PushSettingsPanel />
-      {canOversee(user.role) && <ReportSettingsPanel />}
-      <SecurityPanel user={user} />
-      <DevicesPanel />
+      <SettingsLayout
+        sections={[
+          { id: 'you', label: t.profile.you, content: <DetailsPanel user={user} /> },
+          {
+            id: 'look',
+            label: t.profile.look,
+            content: (
+              <Card title={t.profile.look}>
+                <SettingRow title={t.theme.label} description={t.profile.themeHint}>
+                  <ThemeSwitch persist />
+                </SettingRow>
+                <SettingRow title={t.language.label} description={t.language.description}>
+                  <LanguageSwitch persist />
+                </SettingRow>
+              </Card>
+            ),
+          },
+          { id: 'alerts', label: t.push.title, content: <PushSettingsPanel /> },
+          ...(canOversee(user.role) ? [{ id: 'reports', label: t.reportSettings.title, content: <ReportSettingsPanel /> }] : []),
+          { id: 'security', label: t.profile.security, content: <SecurityPanel user={user} /> },
+          { id: 'devices', label: t.profile.devices, content: <DevicesPanel /> },
+        ]}
+      />
     </>
   );
 }

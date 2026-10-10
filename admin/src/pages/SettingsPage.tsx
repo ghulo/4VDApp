@@ -6,7 +6,7 @@ import { LaunchChecklist } from '../components/LaunchChecklist';
 import { WipeDataPanel } from '../components/WipeDataPanel';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Button, Card, PageHeader, SettingRow } from '../components/ui';
+import { Button, Card, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
 import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -27,15 +27,46 @@ export function SettingsPage() {
         title={t.settings.title}
         description={t.settings.description}
       />
-      {role === 'developer' && <LaunchChecklist />}
-      <ManagersOnly note={t.settings.managersOnly}>
-        <BusinessPanel />
-        {settings.isPending && <Loading />}
-        {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
-        {settings.data && <SettingsForm initial={settings.data} />}
-        <CarwashesPanel />
-      </ManagersOnly>
-      {role === 'developer' && <WipeDataPanel />}
+      <SettingsLayout
+        sections={[
+          {
+            id: 'shop',
+            label: t.business.title,
+            content: (
+              <ManagersOnly note={t.settings.managersOnly}>
+                <BusinessPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'approvals',
+            label: t.settings.approvals,
+            content: (
+              <ManagersOnly>
+                {settings.isPending && <Loading />}
+                {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
+                {settings.data && <SettingsForm initial={settings.data} />}
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'carwashes',
+            label: t.carwashes.title,
+            content: (
+              <ManagersOnly>
+                <CarwashesPanel />
+              </ManagersOnly>
+            ),
+          },
+          // The developer's own tools come last: the shop's settings are what the owner opens this page for.
+          ...(role === 'developer'
+            ? [
+                { id: 'launch', label: t.launch.title, content: <LaunchChecklist /> },
+                { id: 'wipe', label: t.wipe.title, content: <WipeDataPanel /> },
+              ]
+            : []),
+        ]}
+      />
     </>
   );
 }

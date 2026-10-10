@@ -53,6 +53,7 @@ export const saleQuerySchema = paginationSchema.extend({
   productId: idSchema.optional(),
   // The person who recorded the sale.
   soldBy: idSchema.optional(),
+  search: z.string().trim().max(100).optional(),
 });
 
 // ---------- Analytics ----------

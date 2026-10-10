@@ -1,7 +1,7 @@
 import { type Catalogue, en } from '../i18n/en';
 import { formatDateWith } from './format';
 
-export type PeriodKey = 'this-month' | 'last-month' | 'last-30-days' | 'this-year' | 'custom';
+export type PeriodKey = 'today' | 'yesterday' | 'this-week' | 'this-month' | 'last-month' | 'last-30-days' | 'this-year' | 'custom';
 
 export const PERIOD_KEYS: PeriodKey[] = ['this-month', 'last-month', 'last-30-days', 'this-year', 'custom'];
 
@@ -91,6 +91,44 @@ export function resolvePeriod(
   }
 
   switch (key) {
+    case 'today': {
+      const start = new Date(year, month, now.getDate());
+      const end = nowToTheMinute(now);
+      const previousStart = new Date(year, month, now.getDate() - 1);
+      return {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        previousStartDate: previousStart.toISOString(),
+        // Yesterday up to the same time of day.
+        previousEndDate: new Date(year, month, now.getDate() - 1, end.getHours(), end.getMinutes()).toISOString(),
+        label: t.periods.options.today,
+      };
+    }
+    case 'yesterday': {
+      const start = new Date(year, month, now.getDate() - 1);
+      return {
+        startDate: start.toISOString(),
+        endDate: new Date(year, month, now.getDate()).toISOString(),
+        previousStartDate: new Date(year, month, now.getDate() - 2).toISOString(),
+        previousEndDate: start.toISOString(),
+        label: t.periods.options.yesterday,
+      };
+    }
+    case 'this-week': {
+      // Weeks start on Monday.
+      const monday = now.getDate() - ((now.getDay() + 6) % 7);
+      const start = new Date(year, month, monday);
+      const end = nowToTheMinute(now);
+      const previousStart = new Date(year, month, monday - 7);
+      const sameTimeLastWeek = new Date(year, month, end.getDate() - 7, end.getHours(), end.getMinutes());
+      return {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        previousStartDate: previousStart.toISOString(),
+        previousEndDate: (sameTimeLastWeek > start ? start : sameTimeLastWeek).toISOString(),
+        label: t.periods.options['this-week'],
+      };
+    }
     case 'last-month': {
       const start = new Date(year, month - 1, 1);
       return {

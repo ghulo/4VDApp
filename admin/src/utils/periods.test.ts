@@ -69,4 +69,23 @@ describe('resolvePeriod', () => {
     expect(range.waitingForDates).toBe(true);
     expect(resolvePeriod('custom', { from: '2026-03-01', to: '2026-03-02' }, at(2026, 10, 3)).waitingForDates).toBeUndefined();
   });
+
+  it('should compare today and this week with the same stretch the day or week before', () => {
+    // Wednesday 7 October 2026, 15:20.
+    const now = at(2026, 10, 7, 15, 20, 10);
+    const today = resolvePeriod('today', undefined, now);
+    expect(today.startDate).toBe(iso(at(2026, 10, 7)));
+    expect(today.previousStartDate).toBe(iso(at(2026, 10, 6)));
+    expect(today.previousEndDate).toBe(iso(at(2026, 10, 6, 15, 21)));
+
+    const yesterday = resolvePeriod('yesterday', undefined, now);
+    expect([yesterday.startDate, yesterday.endDate]).toEqual([iso(at(2026, 10, 6)), iso(at(2026, 10, 7))]);
+
+    const week = resolvePeriod('this-week', undefined, now);
+    expect(week.startDate).toBe(iso(at(2026, 10, 5)));
+    expect(week.previousStartDate).toBe(iso(at(2026, 9, 28)));
+    expect(week.previousEndDate).toBe(iso(at(2026, 9, 30, 15, 21)));
+    // A Sunday still belongs to the week that began on Monday.
+    expect(resolvePeriod('this-week', undefined, at(2026, 10, 11, 9)).startDate).toBe(iso(at(2026, 10, 5)));
+  });
 });

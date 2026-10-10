@@ -145,4 +145,26 @@ describe('sales history by checkout', () => {
     expect(breadOnly.checkouts[0].lines).toHaveLength(1);
     expect((await request(context.app).get('/api/sales/checkouts').set(auth(employeeToken))).status).toBe(403);
   });
+
+  it('should find checkouts by product or invoice number, and total each day shown', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
+    const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 10 });
+    await request(context.app).post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: milk, quantity: 1 }] });
+    await request(context.app).post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: bread, quantity: 2 }] });
+    const checkouts = (search?: string) =>
+      request(context.app).get('/api/sales/checkouts').query(search ? { search } : {}).set(auth());
+
+    const all = (await checkouts()).body.data;
+    expect(all.checkouts[0].day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(all.days).toEqual([{ day: all.checkouts[0].day, checkouts: 2, revenue: 3.2 }]);
+
+    const bySearch = (await checkouts('brea')).body.data;
+    expect(bySearch.checkouts).toHaveLength(1);
+    expect(bySearch.checkouts[0].lines[0].productName).toBe('Bread');
+
+    const invoice = all.checkouts[1].invoice.number as string;
+    const byInvoice = (await checkouts(invoice)).body.data;
+    expect(byInvoice.checkouts.map((row: { key: string }) => row.key)).toEqual([all.checkouts[1].key]);
+    expect((await checkouts('100%_')).body.data.checkouts).toEqual([]);
+  });
 });

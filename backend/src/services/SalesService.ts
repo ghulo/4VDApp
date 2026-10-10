@@ -1,8 +1,9 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
+import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
+import { zonedDay } from '../utils/zonedDates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import type { DocumentRef, DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
@@ -32,6 +33,8 @@ export interface CheckoutDto {
   key: string;
   invoice: { id: number; number: string } | null;
   saleDate: string;
+  /** The shop day it falls on, for grouping. */
+  day: string;
   soldBy: string | null;
   total: number;
   lines: SaleDto[];
@@ -59,6 +62,7 @@ export interface SaleQuery extends PageRequest {
   endDate?: Date;
   productId?: number;
   soldBy?: number;
+  search?: string;
 }
 
 export class SalesService {
@@ -66,6 +70,7 @@ export class SalesService {
     private readonly salesRepository: SalesRepository,
     private readonly transactions: TransactionManager,
     private readonly documents: DocumentService,
+    private readonly timeZone: string,
   ) {}
 
   async list(query: SaleQuery) {
@@ -81,28 +86,36 @@ export class SalesService {
   }
 
   /** Sales history by checkout (DESIGN.md 3.5): one row per invoice, opening to its lines. */
-  async checkouts(query: SaleQuery): Promise<{ items: CheckoutDto[]; meta: ReturnType<typeof toPaginationMeta>; revenue: number }> {
-    const { sales, keys, total, revenue } = await this.salesRepository.findCheckouts({
-      startDate: query.startDate,
-      endDate: query.endDate,
-      productId: query.productId,
-      soldBy: query.soldBy,
-      limit: query.limit,
-      offset: toOffset(query),
-    });
+  async checkouts(
+    query: SaleQuery,
+  ): Promise<{ items: CheckoutDto[]; meta: ReturnType<typeof toPaginationMeta>; revenue: number; days: CheckoutDayTotal[] }> {
+    const { sales, keys, total, revenue, days } = await this.salesRepository.findCheckouts(
+      {
+        startDate: query.startDate,
+        endDate: query.endDate,
+        productId: query.productId,
+        soldBy: query.soldBy,
+        search: query.search,
+        limit: query.limit,
+        offset: toOffset(query),
+      },
+      this.timeZone,
+    );
     const lines = sales.map(toSaleDto);
     const items = keys.map((key) => {
       const own = lines.filter((sale) => (sale.invoice ? `i${sale.invoice.id}` : `s${sale.id}`) === key);
+      const saleDate = own.reduce((latest, sale) => (sale.saleDate > latest ? sale.saleDate : latest), own[0]?.saleDate ?? '');
       return {
         key,
         invoice: own[0]?.invoice ?? null,
-        saleDate: own.reduce((latest, sale) => (sale.saleDate > latest ? sale.saleDate : latest), own[0]?.saleDate ?? ''),
+        saleDate,
+        day: zonedDay(new Date(saleDate), this.timeZone),
         soldBy: own[0]?.soldBy ?? null,
         total: roundMoney(own.reduce((sum, sale) => sum + sale.totalAmount, 0)),
         lines: own,
       };
     });
-    return { items, meta: toPaginationMeta(query, total), revenue };
+    return { items, meta: toPaginationMeta(query, total), revenue, days };
   }
 
   /**

@@ -133,7 +133,7 @@ async function seedDemoSales(db: DatabaseClient, timeZone: string): Promise<void
 
   const transactions = new TransactionManager(db);
   const documents = new DocumentService(new DocumentRepository(db), transactions, timeZone);
-  const salesService = new SalesService(new SalesRepository(db), transactions, documents);
+  const salesService = new SalesService(new SalesRepository(db), transactions, documents, timeZone);
   const products = await db
     .selectFrom('products as p')
     .innerJoin('inventory as i', 'i.product_id', 'p.id')

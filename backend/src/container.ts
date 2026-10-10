@@ -148,7 +148,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
   const documentService = new DocumentService(new DocumentRepository(db), transactions, config.shopTimeZone);
-  const salesService = new SalesService(salesRepository, transactions, documentService);
+  const salesService = new SalesService(salesRepository, transactions, documentService, config.shopTimeZone);
   const analyticsService = new AnalyticsService(
     salesRepository,
     inventoryRepository,

@@ -1,13 +1,22 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { escapeLikePattern } from '../utils/databaseErrors.js';
 
 export interface SaleFilters {
   startDate?: Date;
   endDate?: Date;
   productId?: number;
   soldBy?: number;
+  /** Checkouts only: a product name or invoice number. */
+  search?: string;
   limit: number;
   offset: number;
+}
+
+export interface CheckoutDayTotal {
+  day: string;
+  checkouts: number;
+  revenue: number;
 }
 
 export interface SaleRecord {
@@ -104,15 +113,27 @@ export class SalesRepository {
    * older sale without an invoice stands alone. Paged by checkout, newest
    * first, with the lines of each checkout on the page.
    */
-  async findCheckouts(filters: SaleFilters): Promise<{ sales: SaleRecord[]; keys: string[]; total: number; revenue: number }> {
+  /**
+   * One page of checkouts, newest first, plus the whole filtered range's count
+   * and revenue, and the totals of each shop day (in `timeZone`) the page shows.
+   */
+  async findCheckouts(
+    filters: SaleFilters,
+    timeZone: string,
+  ): Promise<{ sales: SaleRecord[]; keys: string[]; total: number; revenue: number; days: CheckoutDayTotal[] }> {
+    const pattern = filters.search ? `%${escapeLikePattern(filters.search)}%` : null;
     const conditions = [
+      pattern
+        ? sql`(exists (select 1 from products p where p.id = s.product_id and p.name ilike ${pattern}) or (${lastInvoice} ->> 'number') ilike ${pattern})`
+        : sql`true`,
       filters.startDate ? sql`s.sale_date >= ${filters.startDate}` : sql`true`,
       filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
       filters.productId ? sql`s.product_id = ${filters.productId}` : sql`true`,
       filters.soldBy ? sql`s.sold_by = ${filters.soldBy}` : sql`true`,
     ];
     const keyed = sql`
-      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 's' || s.id) as key
+      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 's' || s.id) as key,
+        (s.sale_date at time zone ${timeZone})::date::text as day
       from sales s where ${sql.join(conditions, sql` and `)}
     `;
     const [page, summary] = await Promise.all([
@@ -127,6 +148,17 @@ export class SalesRepository {
       `.execute(this.db),
     ]);
     const keys = page.rows.map((row) => row.key);
+    const days =
+      keys.length === 0
+        ? []
+        : (
+            await sql<{ day: string; checkouts: string; revenue: string }>`
+              with k as (${keyed})
+              select day, count(distinct key) as checkouts, sum(total_amount) as revenue from k
+              where day in (select day from k where key in (${sql.join(keys)}))
+              group by day
+            `.execute(this.db)
+          ).rows.map((row) => ({ day: row.day, checkouts: Number(row.checkouts), revenue: Number(row.revenue) }));
     const ids =
       keys.length === 0
         ? []
@@ -152,7 +184,7 @@ export class SalesRepository {
             .where('s.id', 'in', ids)
             .orderBy('s.id')
             .execute();
-    return { sales, keys, total: Number(summary.rows[0]!.total), revenue: Number(summary.rows[0]!.revenue) };
+    return { sales, keys, total: Number(summary.rows[0]!.total), revenue: Number(summary.rows[0]!.revenue), days };
   }
 
   async create(sale: {

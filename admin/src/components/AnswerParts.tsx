@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useT } from '../i18n/useT';
 import type { AnswerExtras } from '../services/types';
 import { formatMoney } from '../utils/format';
-import { DataTable } from './ui';
+import { BarList, DataTable } from './ui';
 
 const formatNumber = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
@@ -64,31 +64,17 @@ export function AnswerTable({ table }: { table: AnswerExtras['tables'][number] }
   );
 }
 
-/**
- * One series as labelled horizontal bars: reads at phone width, and each value
- * is printed at its bar's end, so nothing depends on colour or hover.
- */
+/** An answer's chart: one series as labelled bars, with the title over it. */
 export function AnswerChart({ chart }: { chart: AnswerExtras['charts'][number] }) {
   const t = useT();
   const format = chart.unit === 'eur' ? formatMoney : formatNumber;
-  const max = Math.max(...chart.bars.map((bar) => Math.abs(bar.value)), 0);
   return (
     <figure className="answer-part answer-chart">
       <figcaption className="answer-part__title">{chart.title}</figcaption>
-      <ul className="answer-chart__bars" aria-label={t.ask.chartLabel(chart.title)}>
-        {chart.bars.map((bar, index) => (
-          <li key={index} className="answer-chart__row">
-            <span className="answer-chart__label">{bar.label}</span>
-            <span className="answer-chart__track" aria-hidden="true">
-              <span
-                className={`answer-chart__bar${bar.value < 0 ? ' answer-chart__bar--negative' : ''}`}
-                style={{ inlineSize: max > 0 && bar.value !== 0 ? `${Math.max(1, (Math.abs(bar.value) / max) * 100)}%` : '0%' }}
-              />
-            </span>
-            <span className="answer-chart__value">{format(bar.value)}</span>
-          </li>
-        ))}
-      </ul>
+      <BarList
+        label={t.ask.chartLabel(chart.title)}
+        items={chart.bars.map((bar, index) => ({ key: index, label: bar.label, value: bar.value, display: format(bar.value) }))}
+      />
     </figure>
   );
 }

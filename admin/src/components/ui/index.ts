@@ -1,8 +1,10 @@
 // The 4VD component kit. Pages build from these; their styles live in ui.css.
 export { Badge, type Tone } from './Badge';
+export { BarList, type BarItem } from './BarList';
 export { Button, ButtonLink } from './Button';
 export { buttonClass, type ButtonVariant } from './buttonClass';
 export { Card, SettingRow } from './Card';
+export { ColumnChart, type ChartColumn } from './ColumnChart';
 export { DataTable, type Column } from './DataTable';
 export { DayBars } from './DayBars';
 export { EmptyState } from './EmptyState';

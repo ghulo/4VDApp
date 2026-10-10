@@ -19,6 +19,13 @@ interface DataTableProps<Row> {
   rowClassName?: (row: Row) => string | undefined;
   /** Extra rows under a row, like an expanded detail. */
   afterRow?: (row: Row) => ReactNode;
+  /** Splits the rows into runs under a heading row, e.g. one per day. Rows must already be in order. */
+  group?: (row: Row) => { key: string; heading: ReactNode };
+  /**
+   * A click anywhere on the row (outside its links, buttons and fields) does
+   * this. A mouse shortcut only: the row must still hold a button that does the same.
+   */
+  onRowClick?: (row: Row) => void;
   /** Search and filters above the table. */
   toolbar?: ReactNode;
   /** Shown instead of the table when there are no rows. */
@@ -35,6 +42,8 @@ export function DataTable<Row>({
   rowKey,
   rowClassName,
   afterRow,
+  group,
+  onRowClick,
   toolbar,
   empty,
   footer,
@@ -64,24 +73,55 @@ export function DataTable<Row>({
                 ))}
               </tr>
             </thead>
-            <tbody role="rowgroup">
-              {rows.map((row) => (
-                <Fragment key={rowKey(row)}>
-                  <tr role="row" className={rowClassName?.(row)}>
-                    {columns.map((column, index) => (
-                      <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)}>
-                        {column.cell(row)}
-                      </td>
-                    ))}
+            {runs(rows, group).map((run) => (
+              <tbody key={run.key} role="rowgroup">
+                {run.heading !== undefined && (
+                  <tr role="row" className="table__group">
+                    <th role="rowheader" scope="rowgroup" colSpan={columns.length}>
+                      {run.heading}
+                    </th>
                   </tr>
-                  {afterRow?.(row)}
-                </Fragment>
-              ))}
-            </tbody>
+                )}
+                {run.rows.map((row) => (
+                  <Fragment key={rowKey(row)}>
+                    <tr
+                      role="row"
+                      className={[rowClassName?.(row), onRowClick && 'table__row--clickable'].filter(Boolean).join(' ') || undefined}
+                      onClick={
+                        onRowClick &&
+                        ((event) => {
+                          if (!(event.target as HTMLElement).closest('a, button, input, select, textarea, label')) onRowClick(row);
+                        })
+                      }
+                    >
+                      {columns.map((column, index) => (
+                        <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)}>
+                          {column.cell(row)}
+                        </td>
+                      ))}
+                    </tr>
+                    {afterRow?.(row)}
+                  </Fragment>
+                ))}
+              </tbody>
+            ))}
           </table>
         </div>
       )}
       {footer && <div className="data-table__footer">{footer}</div>}
     </div>
   );
+}
+
+/** Consecutive rows that share a group key; one run without a heading when there's no grouping. */
+function runs<Row>(rows: Row[], group?: (row: Row) => { key: string; heading: ReactNode }) {
+  if (!group) return [{ key: 'all', heading: undefined as ReactNode, rows }];
+  const result: Array<{ key: string; heading: ReactNode; rows: Row[] }> = [];
+  for (const row of rows) {
+    const { key, heading } = group(row);
+    const last = result.at(-1);
+    if (last?.key === key) last.rows.push(row);
+    else result.push({ key, heading, rows: [row] });
+  }
+  return result;
 }

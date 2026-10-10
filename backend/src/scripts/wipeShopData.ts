@@ -33,6 +33,7 @@ const EMPTIED = [
   'cash_counts',
   'expenses',
   'recurring_expenses',
+  'no_expense_days',
   'tab_entries',
   'customers',
   'inventory',

@@ -37,6 +37,7 @@ import { CashCountRepository } from './repositories/CashCountRepository.js';
 import { CashCountService } from './services/CashCountService.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
+import { DayService } from './services/DayService.js';
 import { TabRepository } from './repositories/TabRepository.js';
 import { TabService } from './services/TabService.js';
 import { PurchaseOrderRepository } from './repositories/PurchaseOrderRepository.js';
@@ -192,6 +193,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     transactions,
     config.shopTimeZone,
   );
+  const dayService = new DayService(cashCountService, carwashService, expenseRepository, approvalService, transactions, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
@@ -335,6 +337,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     promotionService,
     carwashService,
     cashCountService,
+    dayService,
     expenseService,
     tabService,
     purchaseOrderService,

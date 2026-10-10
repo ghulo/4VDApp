@@ -198,4 +198,26 @@ export class ExpenseRepository {
       .executeTakeFirst();
     return Number(result.numUpdatedRows);
   }
+
+  /** Who said `day` had no expenses, if anyone did. */
+  async findNoExpenseMark(day: string): Promise<{ marked_by_name: string | null } | undefined> {
+    return this.db
+      .selectFrom('no_expense_days as n')
+      .leftJoin('users as u', 'u.id', 'n.marked_by')
+      .select(['u.name as marked_by_name'])
+      .where('n.day', '=', day)
+      .executeTakeFirst();
+  }
+
+  async markNoExpenses(day: string, userId: number): Promise<void> {
+    await this.db
+      .insertInto('no_expense_days')
+      .values({ day, marked_by: userId })
+      .onConflict((conflict) => conflict.column('day').doUpdateSet({ marked_by: userId }))
+      .execute();
+  }
+
+  async unmarkNoExpenses(day: string): Promise<void> {
+    await this.db.deleteFrom('no_expense_days').where('day', '=', day).execute();
+  }
 }

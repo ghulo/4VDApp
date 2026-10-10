@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { checklistProgress, useDayChecklist } from '../utils/useDayChecklist';
 import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
@@ -16,6 +17,8 @@ import { useCarwashes } from '../utils/useCarwashes';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Days in the Today card's dot strip. */
 const DOT_DAYS = 30;
+/** From this hour an unfinished end-of-day checklist stands out on Today. */
+const CLOSING_HOUR = 18;
 
 export function OverviewPage() {
   const t = useT();
@@ -188,6 +191,7 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
               <CaretRight size={14} aria-hidden="true" />
             </Link>
           )}
+          <DayCloseLink />
         </div>
       </div>
       <div className="today__side">
@@ -200,6 +204,25 @@ function TodayCard({ lowCount }: { lowCount: number | undefined }) {
         )}
       </div>
     </section>
+  );
+}
+
+/** "2 / 4 end-of-day checks done", standing out once it's closing time and some are still open. */
+function DayCloseLink() {
+  const t = useT();
+  const day = useDayChecklist();
+  // Checked on each refetch (every minute), not on every render.
+  const due = Boolean(day.data && !day.data.done) && new Date(day.dataUpdatedAt).getHours() >= CLOSING_HOUR;
+  if (!day.data) return null;
+  const { done, total } = checklistProgress(day.data);
+  return (
+    <Link to="/cash" className={due ? 'today__link today__link--due' : 'today__link'}>
+      <strong>
+        {done} / {total}
+      </strong>{' '}
+      {t.dayClose.overviewLink}
+      <CaretRight size={14} aria-hidden="true" />
+    </Link>
   );
 }
 

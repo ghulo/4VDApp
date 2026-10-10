@@ -118,3 +118,14 @@ const styles = StyleSheet.create({
   rowButton: { minHeight: 44, minWidth: 64, alignItems: 'flex-end', justifyContent: 'center' },
   rowAction: { fontFamily: fonts.bodyBold, fontSize: 14, textDecorationLine: 'underline' },
 });
+
+/** Today and yesterday in the phone's own timezone. */
+export function dayRanges(now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return {
+    startDate: today.toISOString(),
+    endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString(),
+    previousStartDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString(),
+    previousEndDate: today.toISOString(),
+  };
+}

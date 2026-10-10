@@ -17,11 +17,11 @@ const toNumber = (value: string) => Number(value.replace(',', '.'));
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
 /** Today's carwash takings: the wash and the change machine. Entering again replaces them. */
-export function CarwashScreen({ navigation }: Props) {
+export function CarwashScreen({ navigation, route }: Props) {
   const t = useT();
   const today = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today });
   // Which carwash, when there are several; the first until someone picks.
-  const [pickedId, setPickedId] = useState<number | null>(null);
+  const [pickedId, setPickedId] = useState<number | null>(route.params?.carwashId ?? null);
   if (today.isPending) return <Loading />;
   if (today.isError) return <ErrorState error={today.error} onRetry={() => today.refetch()} />;
 

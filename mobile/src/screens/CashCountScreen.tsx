@@ -10,6 +10,7 @@ import { cashApi } from '../services/api';
 import { fonts, spacing, useThemeColors } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
+import { carwashLabel } from '../utils/shift';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CashCount'>;
 
@@ -17,13 +18,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'CashCount'>;
  * Closing up: count everything in the drawer. Blind on purpose: the screen
  * never shows what the app expects, so the count is what's really there.
  */
-export function CashCountScreen({ navigation }: Props) {
+export function CashCountScreen({ navigation, route }: Props) {
   const colors = useThemeColors();
   const t = useT();
   const queryClient = useQueryClient();
   const today = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
-  // Which drawer: "shop" or "carwash:<id>".
-  const [drawer, setDrawer] = useState('shop');
+  // Which drawer: "shop" or "carwash:<id>". Until someone picks: the one asked for, else the first not counted yet.
+  const [picked, setDrawer] = useState<string | null>(route.params?.drawer ?? null);
   const [counted, setCounted] = useState('');
   const [note, setNote] = useState('');
 
@@ -32,7 +33,7 @@ export function CashCountScreen({ navigation }: Props) {
   const isValid = counted.trim() !== '' && Number.isFinite(amount) && amount >= 0;
 
   const submit = useMutation({
-    mutationFn: () => {
+    mutationFn: (drawer: string) => {
       const input = { counted: amount, note: note.trim() || null };
       return drawer === 'shop'
         ? cashApi.count({ place: 'shop', ...input })
@@ -48,17 +49,18 @@ export function CashCountScreen({ navigation }: Props) {
   const several = today.data.filter((entry) => entry.place === 'carwash').length > 1;
   const drawers = today.data.map((entry) => ({
     key: entry.place === 'shop' ? 'shop' : `carwash:${entry.carwashId}`,
-    label: entry.place === 'shop' ? t.cash.places.shop : several ? `${t.cash.places.carwash} (${entry.name})` : t.cash.places.carwash,
+    label: entry.place === 'shop' ? t.cash.places.shop : carwashLabel(t.cash.places.carwash, entry.name, several),
     entry,
   }));
-  const chosen = drawers.find((option) => option.key === drawer) ?? drawers[0]!;
+  const chosen =
+    drawers.find((option) => option.key === picked) ?? drawers.find((option) => !option.entry.countedAt) ?? drawers[0]!;
   const status = chosen.entry;
 
   if (submit.isSuccess) {
     return (
       <Confirmation
         title={t.cash.doneTitle}
-        message={t.cash.doneMessage(chosen.label, formatMoney(amount))}
+        message={t.cash.doneMessage(drawers.find((option) => option.key === submit.variables)?.label ?? chosen.label, formatMoney(amount))}
         onDone={() => navigation.goBack()}
       />
     );
@@ -85,7 +87,7 @@ export function CashCountScreen({ navigation }: Props) {
       <TextField label={t.cash.note} value={note} onChangeText={setNote} maxLength={500} placeholder={t.cash.notePlaceholder} />
       {status.countedAt && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.cash.alreadyCounted(status.countedBy)}</Text>}
       {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
-      <Button label={t.cash.save} onPress={() => submit.mutate()} disabled={!isValid} loading={submit.isPending} />
+      <Button label={t.cash.save} onPress={() => submit.mutate(chosen.key)} disabled={!isValid} loading={submit.isPending} />
     </ScrollView>
   );
 }

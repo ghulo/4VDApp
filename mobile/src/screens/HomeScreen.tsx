@@ -1,6 +1,5 @@
 import { ClipboardText } from 'phosphor-react-native/src/icons/ClipboardText';
 import { Coins } from 'phosphor-react-native/src/icons/Coins';
-import { Drop } from 'phosphor-react-native/src/icons/Drop';
 import { Notebook } from 'phosphor-react-native/src/icons/Notebook';
 import { Truck } from 'phosphor-react-native/src/icons/Truck';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +13,7 @@ import { LogoMark } from '../components/LogoMark';
 import { BlockMeter, DoubleRule, IconChip, Kicker, PrintSection, ShopSunrise } from '../components/print';
 import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
-import { monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
+import { dayRanges, monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
 import { approvalsApi, carwashApi, cashApi, countsApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
@@ -25,6 +24,7 @@ import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { TabBarSpacer } from '../components/TabBarSpace';
+import { CLOSING_HOUR, shiftSteps } from '../utils/shift';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
@@ -32,42 +32,11 @@ const RECENT_SALES_SHOWN = 3;
 const DECIDED_SHOWN_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * What the drawer tile says. With a shop and one carwash it follows the shop
- * drawer, as it always did; with several carwashes it counts every drawer, so
- * a carwash nobody closed up doesn't slip by.
- */
-function drawerDetail(drawers: Array<{ place: string; countedAt: string | null }> | undefined, t: Catalogue): string {
-  const counted = drawers?.filter((drawer) => drawer.countedAt).length ?? 0;
-  const total = drawers?.length ?? 0;
-  if (total > 2) return counted === total ? t.home.drawerCounted : t.home.drawersSome(counted, total);
-  return drawers?.find((drawer) => drawer.place === 'shop')?.countedAt ? t.home.drawerCounted : t.home.drawerToCount;
-}
-
-/** What the carwash tile says: done, to do, or how many of several carwashes are in. */
-function carwashDetail(carwashes: Array<{ takings: unknown }> | undefined, t: Catalogue): string {
-  const done = carwashes?.filter((carwash) => carwash.takings).length ?? 0;
-  const total = carwashes?.length ?? 0;
-  if (total > 1 && done > 0 && done < total) return t.home.carwashSome(done, total);
-  return done > 0 && done === total ? t.home.carwashDone : t.home.carwashToDo;
-}
-
 function greeting(t: Catalogue, now: Date): string {
   const hour = now.getHours();
   if (hour < 12) return t.home.morning;
   if (hour < 18) return t.home.afternoon;
   return t.home.evening;
-}
-
-/** Today and yesterday in the phone's own timezone. */
-function dayRanges(now = new Date()) {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return {
-    startDate: today.toISOString(),
-    endDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString(),
-    previousStartDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toISOString(),
-    previousEndDate: today.toISOString(),
-  };
 }
 
 export function HomeScreen() {
@@ -102,6 +71,10 @@ export function HomeScreen() {
   const carwash = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today, enabled: sells });
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
   const deliveries = useQuery({ queryKey: DELIVERIES_QUERY_KEY, queryFn: deliveriesApi.list, enabled: sells });
+  const shift = shiftSteps(cash.data, carwash.data?.carwashes);
+  // Only once both lists are in, so a slow network never says "closed up" by mistake.
+  const shiftClosed = Boolean(cash.data && carwash.data) && shift.done === shift.total;
+  const closingTime = now.getHours() >= CLOSING_HOUR;
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
   async function refresh() {
@@ -189,8 +162,17 @@ export function HomeScreen() {
                   monthName={month.name}
                 />
               ) : null}
+              {shiftClosed && <Text style={[styles.todayDetail, { color: colors.stockOk }]}>{t.home.closedUp}</Text>}
               <View style={styles.todayActions}>
-                <Button label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
+                {/* What's next: selling all day; from closing time, ending the shift until it's done. */}
+                {closingTime && !shiftClosed ? (
+                  <>
+                    <Button label={t.home.endShift} onPress={() => navigation.navigate('EndShift')} />
+                    <Button variant="quiet" label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
+                  </>
+                ) : (
+                  <Button label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
+                )}
                 <Button
                   variant="quiet"
                   label={
@@ -219,19 +201,29 @@ export function HomeScreen() {
 
         {sells && (
           <View style={styles.jobs}>
+            {/* Only while something is on its way, so Home stays calm the rest of the time. */}
+            {(deliveries.data?.length ?? 0) > 0 && (
+              <JobTile
+                colors={colors}
+                icon={Truck}
+                title={t.home.deliveries}
+                detail={t.home.deliveriesWaiting(deliveries.data!.length)}
+                onPress={() => navigation.navigate('Deliveries')}
+              />
+            )}
+            <JobTile
+              colors={colors}
+              icon={Coins}
+              title={t.home.endShift}
+              detail={shift.total > 0 && shift.done === shift.total ? t.home.shiftDone : t.home.shiftSteps(shift.done, shift.total)}
+              onPress={() => navigation.navigate('EndShift')}
+            />
             <JobTile
               colors={colors}
               icon={ClipboardText}
               title={t.home.stockCount}
               detail={openCounts > 0 ? t.home.countsOpen(openCounts) : t.home.startCount}
               onPress={() => navigation.navigate('Counts')}
-            />
-            <JobTile
-              colors={colors}
-              icon={Coins}
-              title={t.home.closeDrawer}
-              detail={drawerDetail(cash.data, t)}
-              onPress={() => navigation.navigate('CashCount')}
             />
             <JobTile
               colors={colors}
@@ -244,23 +236,6 @@ export function HomeScreen() {
               }
               onPress={() => navigation.navigate('Tabs')}
             />
-            <JobTile
-              colors={colors}
-              icon={Drop}
-              title={t.home.carwash}
-              detail={carwashDetail(carwash.data?.carwashes, t)}
-              onPress={() => navigation.navigate('Carwash')}
-            />
-            {/* Only while something is on its way, so Home stays calm the rest of the time. */}
-            {(deliveries.data?.length ?? 0) > 0 && (
-              <JobTile
-                colors={colors}
-                icon={Truck}
-                title={t.home.deliveries}
-                detail={t.home.deliveriesWaiting(deliveries.data!.length)}
-                onPress={() => navigation.navigate('Deliveries')}
-              />
-            )}
           </View>
         )}
 

@@ -19,6 +19,7 @@ import { CatalogScreen } from '../screens/CatalogScreen';
 import { CountScreen } from '../screens/CountScreen';
 import { CountsScreen } from '../screens/CountsScreen';
 import { DeliveriesScreen } from '../screens/DeliveriesScreen';
+import { EndShiftScreen } from '../screens/EndShiftScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -211,6 +212,7 @@ export function RootNavigator() {
               options={({ route }) => ({ title: t.nav.counting(route.params.title), headerBackTitle: t.nav.back })}
             />
             <Stack.Screen name="CashCount" component={CashCountScreen} options={{ title: t.nav.cashCount, presentation: 'modal' }} />
+            <Stack.Screen name="EndShift" component={EndShiftScreen} options={{ title: t.nav.endShift, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="ScanResult" component={ScanResultScreen} options={{ title: t.scan.title, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Carwash" component={CarwashScreen} options={{ title: t.nav.carwash, presentation: 'modal' }} />
             <Stack.Screen name="Deliveries" component={DeliveriesScreen} options={{ title: t.nav.deliveries, presentation: 'modal' }} />

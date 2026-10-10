@@ -71,6 +71,7 @@ import type {
   TeamRow,
   User,
   UserRole,
+  DayChecklist,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -420,6 +421,13 @@ export const cashApi = {
   /** Overseers get the result back; staff get null (they count blind). */
   count: async (input: { place: CashPlace; carwashId?: number; counted: number; note: string | null }) =>
     (await apiRequest<CashCount | null>('/cash-counts', { method: 'POST', body: input })).data,
+};
+
+export const dayApi = {
+  today: async () => (await apiRequest<DayChecklist>('/day/today')).data,
+  /** Managers say today had no expenses (or take it back). */
+  setNoExpenses: async (none: boolean) =>
+    (await apiRequest<DayChecklist>('/day/today/no-expenses', { method: 'PUT', body: { none } })).data,
 };
 
 export const expensesApi = {

@@ -12,4 +12,8 @@ export function useCarwashes() {
 }
 
 /** "Carwash" with one carwash, "Carwash (Prishtina)" with several. */
-export const carwashLabel = (word: string, name: string | null, several: boolean) => (several && name ? `${word} (${name})` : word);
+export const carwashLabel = (word: string, name: string | null, several: boolean) => {
+  if (!several || !name) return word;
+  // "Carwash Prishtina" already says what it is; "Carwash (Carwash Prishtina)" would repeat it.
+  return name.toLowerCase().includes(word.toLowerCase()) ? name : `${word} (${name})`;
+};

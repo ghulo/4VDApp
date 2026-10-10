@@ -661,6 +661,17 @@ export interface CashPlaceToday {
   countedAt: string | null;
 }
 
+/** The end-of-day checklist. It only reports: nothing is locked. */
+export interface DayChecklist {
+  day: string;
+  cash: { done: boolean; drawers: CashPlaceToday[] };
+  /** Null when there is no open carwash. */
+  carwash: { done: boolean; carwashes: Array<{ id: number; name: string; entered: boolean }> } | null;
+  expenses: { done: boolean; count: number; total: number; noneMarked: boolean; noneMarkedBy: string | null };
+  approvals: { done: boolean; waiting: number };
+  done: boolean;
+}
+
 export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';
 
 export interface PushSettings {

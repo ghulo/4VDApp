@@ -20,10 +20,13 @@ export type RootStackParamList = {
   Expiry: { productId: number; productName: string };
   Counts: undefined;
   Count: { countId: number; title: string };
-  CashCount: undefined;
+  /** `drawer` ("shop" or "carwash:<id>") picks the drawer, e.g. from End shift. */
+  CashCount: { drawer?: string } | undefined;
+  /** The closing-up steps: count the drawers, enter the carwash takings. */
+  EndShift: undefined;
   Tabs: undefined;
   Tab: { customerId: number; name: string };
-  Carwash: undefined;
+  Carwash: { carwashId?: number } | undefined;
   Deliveries: undefined;
   /** Opened from a product QR code. */
   ScanResult: { code: string };

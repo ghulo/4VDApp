@@ -346,6 +346,13 @@ export interface ExpensesTable {
   created_at: CreatedAt;
 }
 
+/** A day a manager said had no expenses, so the end-of-day list can close. */
+export interface NoExpenseDaysTable {
+  day: ColumnType<string, string, string>;
+  marked_by: number | null;
+  marked_at: CreatedAt;
+}
+
 export interface CustomersTable {
   id: Generated<number>;
   name: string;
@@ -638,6 +645,7 @@ export interface Database {
   cash_counts: CashCountsTable;
   recurring_expenses: RecurringExpensesTable;
   expenses: ExpensesTable;
+  no_expense_days: NoExpenseDaysTable;
   customers: CustomersTable;
   tab_entries: TabEntriesTable;
   suppliers: SuppliersTable;

@@ -46,6 +46,8 @@ export const ACTIVITY_ACTIONS = [
   'expense.added',
   'expense.removed',
   'expense.repeat_stopped',
+  'expense.none_marked',
+  'expense.none_cleared',
   'customer.created',
   'customer.updated',
   'customer.archived',

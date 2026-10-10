@@ -1,6 +1,7 @@
 import { Coins } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { DayChecklist } from '../components/DayChecklist';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { useT } from '../i18n/useT';
@@ -21,6 +22,15 @@ const formatDay = (day: string) =>
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
+const COUNT_FORM_ID = 'count-drawer';
+
+/** From the checklist: bring the count form into view and put the cursor in the amount. */
+function focusCountForm() {
+  const form = document.getElementById(COUNT_FORM_ID);
+  form?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  form?.querySelector<HTMLInputElement>('input[type="number"]')?.focus({ preventScroll: true });
+}
+
 /** How each drawer's count compared with what was sold, and a way to count one from here. */
 export function CashPage() {
   const t = useT();
@@ -40,12 +50,16 @@ export function CashPage() {
         actions={<PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />}
       />
 
+      <DayChecklist onCountDrawer={() => focusCountForm()} />
+
       {counts.data && <Totals counts={counts.data} />}
 
       {/* Everyone on the dashboard may count a drawer (the owner too). */}
-      <Card title={t.cash.countTitle}>
-        <CountForm />
-      </Card>
+      <section id={COUNT_FORM_ID} aria-label={t.cash.countTitle}>
+        <Card title={t.cash.countTitle}>
+          <CountForm />
+        </Card>
+      </section>
 
       {counts.isPending && <Loading />}
       {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}

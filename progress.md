@@ -55,6 +55,14 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Team app tabs Home, Products, Sell, Account; Favourites is a filter on Products; Home has "Something happened"
 - [ ] Checks, screenshots at 375 and 1440, then you look it over before merge
 
+## Ask, made better (branch ask-better, on top of logic-gaps)
+
+- [x] Real conversations: follow-ups remember the chat; chats are saved per person, reopen and delete
+- [x] Knows the whole business: day-by-day sales, expenses, open supplier bills, customer tabs, carwash takings, drawer counts
+- [x] Answers can carry a table, a bar chart and links to the products, suppliers, customers, bills or pages they mention
+- [x] New page look: chat list beside the conversation, starter questions, bubbles, pinned question box
+- [ ] You look it over locally, then merge (after logic-gaps) and push
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

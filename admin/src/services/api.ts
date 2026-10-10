@@ -74,6 +74,8 @@ import type {
   ShopDay,
   Checkout,
   Attention,
+  AssistantChat,
+  AssistantThread,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -341,8 +343,14 @@ export const notificationsApi = {
 
 export const assistantApi = {
   status: async () => (await apiRequest<{ enabled: boolean; provider: string | null }>('/assistant')).data,
-  ask: async (question: string) =>
-    (await apiRequest<{ answer: string }>('/assistant/ask', { method: 'POST', body: { question } })).data,
+  chats: async () => (await apiRequest<AssistantChat[]>('/assistant/chats')).data,
+  chat: async (id: number) => (await apiRequest<AssistantThread>(`/assistant/chats/${id}`)).data,
+  /** Asks in a chat, or starts a new one without `chatId`. Returns the chat and the new question and answer. */
+  ask: async (question: string, chatId?: number) =>
+    (await apiRequest<AssistantThread>('/assistant/chats/messages', { method: 'POST', body: { question, chatId } })).data,
+  deleteChat: async (id: number) => {
+    await apiRequest(`/assistant/chats/${id}`, { method: 'DELETE' });
+  },
   suggestPrice: async (productId: number) =>
     (await apiRequest<PriceSuggestion>(`/assistant/price-suggestions/${productId}`, { method: 'POST' })).data,
 };

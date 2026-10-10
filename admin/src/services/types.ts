@@ -892,3 +892,30 @@ export interface ApprovalSummary {
   countLines: number;
   total: number;
 }
+
+/** What an answer shows besides its text. */
+export interface AnswerExtras {
+  tables: Array<{ title: string; columns: string[]; rows: Array<Array<string | number>> }>;
+  charts: Array<{ title: string; unit: 'eur' | 'count'; bars: Array<{ label: string; value: number }> }>;
+  /** Pages inside the app the answer mentions. */
+  links: Array<{ label: string; to: string }>;
+}
+
+export interface AssistantChat {
+  id: number;
+  title: string;
+  updatedAt: string;
+}
+
+export interface AssistantMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  text: string;
+  extras: AnswerExtras | null;
+  createdAt: string;
+}
+
+export interface AssistantThread {
+  chat: AssistantChat;
+  messages: AssistantMessage[];
+}

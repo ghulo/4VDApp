@@ -70,7 +70,10 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     ? products.filter((product) => product.name.toLowerCase().includes(query) || product.sku?.toLowerCase().includes(query) || product.barcode === search.trim()).slice(0, SEARCH_RESULTS)
     : [];
   const favorites = new Set(favoriteIds.data ?? []);
-  const quickPicks = products.filter((product) => favorites.has(product.id)).slice(0, QUICK_PICKS);
+  const favoritePicks = products.filter((product) => favorites.has(product.id));
+  // No favourites yet: offer what's on the shelf, so the screen is useful from day one.
+  const showingFavorites = favoritePicks.length > 0;
+  const quickPicks = (showingFavorites ? favoritePicks : products).slice(0, QUICK_PICKS);
 
   function add(product: Product) {
     setNotice(null);
@@ -191,8 +194,9 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
         {query === '' && quickPicks.length > 0 && (
           <>
             <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
-              {t.sell.favorites}
+              {showingFavorites ? t.sell.favorites : t.sell.onShelf}
             </Text>
+            {!showingFavorites && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.pinFavorites}</Text>}
             <View style={styles.tiles}>
               {quickPicks.map((product) => (
                 <Pressable

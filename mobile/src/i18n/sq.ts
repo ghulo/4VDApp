@@ -215,6 +215,8 @@ export const sq: Catalogue = {
     searchLabel: 'Kërko produkte',
     searchPlaceholder: 'Kërko me emër ose SKU',
     favorites: 'Favoritet e tua',
+    onShelf: 'Në raft',
+    pinFavorites: 'Shëno me yll produktet te Produktet që të dalin këtu.',
     allProducts: 'Të gjitha produktet',
     noMatch: (search) => `Asnjë produkt në stok nuk përputhet me "${search}".`,
     priceAndStock: (price, quantity) => `${price}, ${quantity} në stok`,
@@ -276,6 +278,7 @@ export const sq: Catalogue = {
     doneMessage: (amount, name) => `${name ? `${name}: ` : ''}${amount} për sot. Shfaqet në përmbledhjen ditore të pronarit.`,
   },
   tabs: {
+    intro: 'Kush i detyrohet dyqanit, më i madhi i pari. Vendose shitjen në borxh kur e regjistron; prek një emër për të marrë pagesën.',
     putOnTab: 'Vendose në borxh',
     whose: 'Borxhi i kujt?',
     searchPlaceholder: 'Shkruaj një emër',

@@ -852,6 +852,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Phones: dates take a full row each, dropdowns pair up, the total sits under them. */
+@media (max-width: 599px) {
+  .toolbar > select {
+    flex: 1 1 calc(50% - var(--space-3));
+    min-width: 0;
+  }
+
+  .toolbar > .inline-field {
+    flex: 1 1 100%;
+  }
+
+  .toolbar > .inline-field input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toolbar__summary {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
 /* ---------- People & alerts ---------- */
 
 .user-row {

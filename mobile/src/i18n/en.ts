@@ -219,6 +219,8 @@ export const en = {
     searchLabel: 'Search products',
     searchPlaceholder: 'Search by name or SKU',
     favorites: 'Your favorites',
+    onShelf: 'On the shelf',
+    pinFavorites: 'Star products in Products to pin them here.',
     allProducts: 'All products',
     noMatch: (search: string) => `No product in stock matches "${search}".`,
     priceAndStock: (price: string, quantity: number) => `${price}, ${quantity} in stock`,
@@ -282,6 +284,7 @@ export const en = {
       `${name ? `${name}: ` : ''}${amount} for today. It shows up in the owner's daily summary.`,
   },
   tabs: {
+    intro: 'Who owes the shop, most first. Put a sale on a tab when you record it; tap a name to take a payment.',
     putOnTab: 'Put on a tab',
     whose: "Whose tab?",
     searchPlaceholder: 'Type a name',

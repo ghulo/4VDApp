@@ -29,6 +29,7 @@ export function TabsScreen({ navigation }: NativeStackScreenProps<RootStackParam
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+      <Text style={[styles.intro, { color: colors.steel }]}>{t.tabs.intro}</Text>
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         {customers.data.map((customer, index) => (
           <Pressable
@@ -135,6 +136,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.bodyBold, fontSize: 16 },
   muted: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  intro: { fontFamily: fonts.body, fontSize: 15 },
   amount: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
   big: { fontFamily: fonts.bodyBold, fontSize: 32, fontVariant: ['tabular-nums'] },
   link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },

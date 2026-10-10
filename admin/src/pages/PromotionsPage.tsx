@@ -5,7 +5,7 @@ import { categoriesApi, productsApi, promotionsApi } from '../services/api';
 import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatPromotionDay } from '../utils/format';
-import { Badge, Button, Card, PageHeader, type Tone } from '../components/ui';
+import { Badge, Button, Card, DataTable, PageHeader, type Tone } from '../components/ui';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 
@@ -38,32 +38,45 @@ export function PromotionsPage() {
 
         {promotions.isPending && <Loading />}
         {promotions.isError && <ErrorNotice error={promotions.error} onRetry={() => promotions.refetch()} />}
-        {promotions.data && promotions.data.length === 0 && (
-          <EmptyState title={t.promotions.none}>{t.promotions.noneHint}</EmptyState>
-        )}
-        {promotions.data && promotions.data.length > 0 && (
+        {promotions.data && (
           <Card title={t.promotions.all} flush>
-            <div className="table-wrap">
-              <table className="table table--stack">
-                <thead>
-                  <tr>
-                    <th scope="col">{t.promotions.promotion}</th>
-                    <th scope="col">{t.promotions.appliesTo}</th>
-                    <th scope="col" className="table__numeric">{t.promotions.discount}</th>
-                    <th scope="col">{t.promotions.dates}</th>
-                    <th scope="col">{t.promotions.status_}</th>
-                    <th scope="col">
-                      <span className="visually-hidden">{t.promotions.actions}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {promotions.data.map((promotion) => (
-                    <PromotionRow key={promotion.id} promotion={promotion} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              caption={t.promotions.all}
+              rows={promotions.data}
+              rowKey={(promotion) => promotion.id}
+              rowClassName={(promotion) => (isLive(promotion) ? undefined : 'table__row--muted')}
+              empty={<EmptyState title={t.promotions.none}>{t.promotions.noneHint}</EmptyState>}
+              columns={[
+                {
+                  header: t.promotions.promotion,
+                  title: true,
+                  cell: (promotion) => (
+                    <>
+                      <span className="table__primary-link">{promotion.name}</span>
+                      {promotion.createdBy && <span className="table__secondary">{t.promotions.by(promotion.createdBy)}</span>}
+                    </>
+                  ),
+                },
+                {
+                  header: t.promotions.appliesTo,
+                  cell: (promotion) =>
+                    promotion.product ? promotion.product.name : t.promotions.allOf(promotion.category?.name ?? t.promotions.aCategory),
+                },
+                { header: t.promotions.discount, align: 'end', cell: (promotion) => `−${promotion.percentOff}%` },
+                {
+                  header: t.promotions.dates,
+                  cell: (promotion) => `${formatPromotionDay(promotion.startsAt)} – ${formatPromotionDay(promotion.endsAt, true)}`,
+                },
+                {
+                  header: t.promotions.status_,
+                  cell: (promotion) => <Badge tone={STATUS_TONE[promotion.status]}>{t.promotions.status[promotion.status]}</Badge>,
+                },
+                {
+                  header: <span className="visually-hidden">{t.promotions.actions}</span>,
+                  cell: (promotion) => <EndPromotion promotion={promotion} />,
+                },
+              ]}
+            />
           </Card>
         )}
       </ManagersOnly>
@@ -71,7 +84,10 @@ export function PromotionsPage() {
   );
 }
 
-function PromotionRow({ promotion }: { promotion: Promotion }) {
+const isLive = (promotion: Promotion) => promotion.status === 'running' || promotion.status === 'scheduled';
+
+/** Cancel a scheduled promotion or end a running one early. */
+function EndPromotion({ promotion }: { promotion: Promotion }) {
   const t = useT();
   const queryClient = useQueryClient();
   const end = useMutation({
@@ -81,35 +97,19 @@ function PromotionRow({ promotion }: { promotion: Promotion }) {
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
   });
-  const isLive = promotion.status === 'running' || promotion.status === 'scheduled';
+  if (!isLive(promotion)) return null;
 
   return (
-    <tr className={isLive ? undefined : 'table__row--muted'}>
-      <td>
-        <span className="table__primary-link">{promotion.name}</span>
-        {promotion.createdBy && <span className="table__secondary">{t.promotions.by(promotion.createdBy)}</span>}
-      </td>
-      <td data-label={t.promotions.appliesTo}>{promotion.product ? promotion.product.name : t.promotions.allOf(promotion.category?.name ?? t.promotions.aCategory)}</td>
-      <td className="table__numeric" data-label={t.promotions.discount}>−{promotion.percentOff}%</td>
-      <td data-label={t.promotions.dates}>
-        {formatPromotionDay(promotion.startsAt)} – {formatPromotionDay(promotion.endsAt, true)}
-      </td>
-      <td data-label={t.promotions.status_}>
-        <Badge tone={STATUS_TONE[promotion.status]}>{t.promotions.status[promotion.status]}</Badge>
-      </td>
-      <td>
-        {isLive && (
-          <Button variant="danger-text" disabled={end.isPending} onClick={() => end.mutate()}>
-            {promotion.status === 'scheduled' ? t.promotions.cancel : t.promotions.endNow}
-          </Button>
-        )}
-        {end.isError && (
-          <p className="form-error" role="alert">
-            {errorMessage(end.error)}
-          </p>
-        )}
-      </td>
-    </tr>
+    <>
+      <Button variant="danger-text" disabled={end.isPending} onClick={() => end.mutate()}>
+        {promotion.status === 'scheduled' ? t.promotions.cancel : t.promotions.endNow}
+      </Button>
+      {end.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(end.error)}
+        </p>
+      )}
+    </>
   );
 }
 

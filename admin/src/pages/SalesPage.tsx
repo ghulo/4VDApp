@@ -1,6 +1,6 @@
 import { Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { BasketForm } from '../components/BasketForm';
@@ -8,7 +8,7 @@ import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
 import { productsApi, salesApi, usersApi } from '../services/api';
 import { formatDateTime, formatMoney } from '../utils/format';
-import { Card, PageHeader } from '../components/ui';
+import { Card, DataTable, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 export function SalesPage() {
@@ -67,40 +67,10 @@ function SalesHistory() {
     setParams(next);
   }
 
-  return (
-    <Card title={t.sales.history}>
-      <div className="toolbar">
-        <label className="inline-field">
-          {t.sales.from}
-          <input type="date" value={startDate} max={endDate || undefined} onChange={(event) => updateParams({ from: event.target.value })} />
-        </label>
-        <label className="inline-field">
-          {t.sales.to}
-          <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateParams({ to: event.target.value })} />
-        </label>
-        <select aria-label={t.sales.product} value={productId} onChange={(event) => updateParams({ product: event.target.value })}>
-          <option value="">{t.sales.anyProduct}</option>
-          {products.data?.items.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </select>
-        <select aria-label={t.sales.soldBy} value={soldBy} onChange={(event) => updateParams({ seller: event.target.value })}>
-          <option value="">{t.sales.anyone}</option>
-          {people.data?.items.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
-        {sales.data && (
-          <span className="toolbar__summary">
-            {t.sales.totalFrom({ amount: formatMoney(sales.data.totalRevenue), count: sales.data.meta.total })}
-          </span>
-        )}
-      </div>
+  const filtered = Boolean(startDate || endDate || productId || soldBy);
 
+  return (
+    <Card title={t.sales.history} flush>
       {returnMessage && (
         <p className="form-success" role="status">
           {returnMessage}
@@ -108,94 +78,108 @@ function SalesHistory() {
       )}
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}
-      {sales.data && sales.data.items.length === 0 && (
-        <EmptyState icon={Receipt} title={startDate || endDate || productId || soldBy ? t.sales.noSalesInDates : t.sales.noSalesYet} />
-      )}
-      {sales.data && sales.data.items.length > 0 && (
-        <>
-          <div className="table-wrap">
-            <table className="table table--stack">
-              <thead>
-                <tr>
-                  <th scope="col">{t.sales.when}</th>
-                  <th scope="col">{t.sales.product}</th>
-                  <th scope="col" className="table__numeric">
-                    {t.sales.qty}
-                  </th>
-                  <th scope="col" className="table__numeric">
-                    {t.sales.each}
-                  </th>
-                  <th scope="col" className="table__numeric">
-                    {t.sales.total}
-                  </th>
-                  <th scope="col">{t.sales.soldBy}</th>
-                  <th scope="col">{t.documents.invoice}</th>
-                  <th scope="col">
-                    <span className="visually-hidden">{t.sales.actions}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.data.items.map((sale) => (
-                  <Fragment key={sale.id}>
-                    <tr>
-                      <td className="table__phone-hide" data-label={t.sales.when}>{formatDateTime(sale.saleDate)}</td>
-                      <td className="table__title">
-                        {sale.productName}
-                        <span className="table__secondary table__phone-only">
-                          {formatDateTime(sale.saleDate)} · {sale.quantity} × {formatMoney(sale.pricePerUnit)} ·{' '}
-                          {sale.soldBy ?? t.sales.unknown}
-                        </span>
-                        {sale.notes && <span className="table__secondary">{sale.notes}</span>}
-                        {sale.returnedQuantity > 0 && (
-                          <span className="table__secondary">
-                            {t.sales.returned(sale.returnedQuantity, sale.quantity)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="table__numeric table__phone-hide" data-label={t.sales.qty}>{sale.quantity}</td>
-                      <td className="table__numeric table__phone-hide" data-label={t.sales.each}>{formatMoney(sale.pricePerUnit)}</td>
-                      <td className="table__numeric" data-label={t.sales.total}>{formatMoney(sale.totalAmount)}</td>
-                      <td className="table__phone-hide" data-label={t.sales.soldBy}>{sale.soldBy ?? t.sales.unknown}</td>
-                      <td data-label={t.documents.invoice}>
-                        {sale.invoice ? <Link to={`/documents/${sale.invoice.id}`}>{sale.invoice.number}</Link> : '–'}
-                      </td>
-                      <td>
-                        {sale.returnedQuantity < sale.quantity && (
-                          <button
-                            type="button"
-                            className="text-button"
-                            aria-expanded={returningId === sale.id}
-                            onClick={() => {
-                              setReturnMessage(null);
-                              setReturningId(returningId === sale.id ? null : sale.id);
-                            }}
-                          >
-                            {returningId === sale.id ? t.sales.close : t.sales.return}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                    {returningId === sale.id && (
-                      <tr className="table__expanded">
-                        <td colSpan={8}>
-                          <ReturnForm
-                            sale={sale}
-                            onDone={(message) => {
-                              setReturningId(null);
-                              setReturnMessage(message);
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+      {sales.data && (
+        <DataTable
+          caption={t.sales.history}
+          rows={sales.data.items}
+          rowKey={(sale) => sale.id}
+          toolbar={
+            <>
+              <label className="inline-field">
+                {t.sales.from}
+                <input type="date" value={startDate} max={endDate || undefined} onChange={(event) => updateParams({ from: event.target.value })} />
+              </label>
+              <label className="inline-field">
+                {t.sales.to}
+                <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateParams({ to: event.target.value })} />
+              </label>
+              <select aria-label={t.sales.product} value={productId} onChange={(event) => updateParams({ product: event.target.value })}>
+                <option value="">{t.sales.anyProduct}</option>
+                {products.data?.items.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <Pagination meta={sales.data.meta} itemLabel={t.sales.items} onPageChange={(next) => updateParams({ page: String(next) })} />
-        </>
+              </select>
+              <select aria-label={t.sales.soldBy} value={soldBy} onChange={(event) => updateParams({ seller: event.target.value })}>
+                <option value="">{t.sales.anyone}</option>
+                {people.data?.items.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </select>
+              <span className="toolbar__summary">
+                {t.sales.totalFrom({ amount: formatMoney(sales.data.totalRevenue), count: sales.data.meta.total })}
+              </span>
+            </>
+          }
+          empty={<EmptyState icon={Receipt} title={filtered ? t.sales.noSalesInDates : t.sales.noSalesYet} />}
+          footer={
+            sales.data.items.length > 0 && (
+              <Pagination meta={sales.data.meta} itemLabel={t.sales.items} onPageChange={(next) => updateParams({ page: String(next) })} />
+            )
+          }
+          columns={[
+            { header: t.sales.when, className: 'table__phone-hide', cell: (sale) => formatDateTime(sale.saleDate) },
+            {
+              header: t.sales.product,
+              title: true,
+              cell: (sale) => (
+                <>
+                  {sale.productName}
+                  <span className="table__secondary table__phone-only">
+                    {formatDateTime(sale.saleDate)} · {sale.quantity} × {formatMoney(sale.pricePerUnit)} · {sale.soldBy ?? t.sales.unknown}
+                  </span>
+                  {sale.notes && <span className="table__secondary">{sale.notes}</span>}
+                  {sale.returnedQuantity > 0 && (
+                    <span className="table__secondary">{t.sales.returned(sale.returnedQuantity, sale.quantity)}</span>
+                  )}
+                </>
+              ),
+            },
+            { header: t.sales.qty, align: 'end', className: 'table__phone-hide', cell: (sale) => sale.quantity },
+            { header: t.sales.each, align: 'end', className: 'table__phone-hide', cell: (sale) => formatMoney(sale.pricePerUnit) },
+            { header: t.sales.total, align: 'end', cell: (sale) => formatMoney(sale.totalAmount) },
+            { header: t.sales.soldBy, className: 'table__phone-hide', cell: (sale) => sale.soldBy ?? t.sales.unknown },
+            {
+              header: t.documents.invoice,
+              cell: (sale) => (sale.invoice ? <Link to={`/documents/${sale.invoice.id}`}>{sale.invoice.number}</Link> : '–'),
+            },
+            {
+              header: <span className="visually-hidden">{t.sales.actions}</span>,
+              cell: (sale) =>
+                sale.returnedQuantity < sale.quantity && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    aria-expanded={returningId === sale.id}
+                    onClick={() => {
+                      setReturnMessage(null);
+                      setReturningId(returningId === sale.id ? null : sale.id);
+                    }}
+                  >
+                    {returningId === sale.id ? t.sales.close : t.sales.return}
+                  </button>
+                ),
+            },
+          ]}
+          afterRow={(sale) =>
+            returningId === sale.id && (
+              <tr className="table__expanded">
+                <td colSpan={8}>
+                  <ReturnForm
+                    sale={sale}
+                    onDone={(message) => {
+                      setReturningId(null);
+                      setReturnMessage(message);
+                    }}
+                  />
+                </td>
+              </tr>
+            )
+          }
+        />
       )}
     </Card>
   );

@@ -320,6 +320,14 @@
   padding: 0;
 }
 
+/* Loading words and error notices still sit inside the card's margins when
+   the body runs edge to edge for a table. */
+.card--flush > .card__body > .loading,
+.card--flush > .card__body > .notice,
+.card--flush > .card__body > .form-success {
+  margin: var(--space-4) var(--space-5);
+}
+
 .card--flush > .card__head {
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--line);

@@ -9,7 +9,7 @@ import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
 import { type Category, type PriceChange, type Product, type ProductInput, VAT_RATES, type VatRate } from '../services/types';
 import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
-import { Badge, Button, ButtonLink, Card, PageHeader } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
 import { Camera, Package } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
@@ -550,33 +550,22 @@ function PriceHistory({ productId }: { productId: number }) {
   });
 
   return (
-    <Card title={t.productForm.priceHistory} className="product-form">
+    <Card title={t.productForm.priceHistory} className="product-form" flush>
       {history.isPending && <Loading />}
       {history.isError && <ErrorNotice error={history.error} onRetry={() => history.refetch()} />}
-      {history.data && history.data.length === 0 && <p className="field-hint">{t.productForm.noChanges}</p>}
-      {history.data && history.data.length > 0 && (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">{t.productForm.when}</th>
-                <th scope="col">{t.productForm.price}</th>
-                <th scope="col">{t.productForm.cost}</th>
-                <th scope="col">{t.productForm.who}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.data.map((change: PriceChange) => (
-                <tr key={change.changedAt}>
-                  <td>{formatDateTime(change.changedAt)}</td>
-                  <td>{change.price ? describePriceChange(t, change.price) : '–'}</td>
-                  <td>{change.costPrice ? describePriceChange(t, change.costPrice) : '–'}</td>
-                  <td>{change.changedBy ?? t.productForm.removedUser}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {history.data && (
+        <DataTable
+          caption={t.productForm.priceHistory}
+          rows={history.data}
+          rowKey={(change: PriceChange) => change.changedAt}
+          empty={<p className="field-hint">{t.productForm.noChanges}</p>}
+          columns={[
+            { header: t.productForm.when, title: true, cell: (change) => formatDateTime(change.changedAt) },
+            { header: t.productForm.price, cell: (change) => (change.price ? describePriceChange(t, change.price) : '–') },
+            { header: t.productForm.cost, cell: (change) => (change.costPrice ? describePriceChange(t, change.costPrice) : '–') },
+            { header: t.productForm.who, cell: (change) => change.changedBy ?? t.productForm.removedUser },
+          ]}
+        />
       )}
     </Card>
   );

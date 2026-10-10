@@ -2,6 +2,7 @@ import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import type { RevenuePoint } from '../services/types';
 import { formatCompactMoney, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
+import { DataTable } from './ui';
 import { scaleTop } from './ui/sparkline';
 
 /** Drawn at the plot's real width so labels keep their size on phones; this is the first guess. */
@@ -95,30 +96,16 @@ export function RevenueChart({ points, title }: RevenueChartProps) {
       </figcaption>
 
       {showTable ? (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">{t.chart.day}</th>
-                <th scope="col" className="table__numeric">
-                  {t.chart.revenue}
-                </th>
-                <th scope="col" className="table__numeric">
-                  {t.chart.sales}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {points.map((point) => (
-                <tr key={point.periodStart}>
-                  <td>{dayLabel.format(new Date(point.periodStart))}</td>
-                  <td className="table__numeric">{formatMoney(point.revenue)}</td>
-                  <td className="table__numeric">{point.salesCount}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          caption={title}
+          rows={points}
+          rowKey={(point) => point.periodStart}
+          columns={[
+            { header: t.chart.day, title: true, cell: (point) => dayLabel.format(new Date(point.periodStart)) },
+            { header: t.chart.revenue, align: 'end', cell: (point) => formatMoney(point.revenue) },
+            { header: t.chart.sales, align: 'end', cell: (point) => point.salesCount },
+          ]}
+        />
       ) : (
         <div
           ref={plotRef}

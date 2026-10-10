@@ -7,7 +7,7 @@ import { stockCountsApi } from '../services/api';
 import type { StockCount, StockCountLine } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney, formatSignedQuantity } from '../utils/format';
-import { Button, Card, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Button, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const AFFECTED_QUERIES = ['stock-counts', 'approvals', 'inventory', 'products', 'reports', 'activity'];
@@ -113,35 +113,46 @@ export function StockCountDetailPage() {
           </label>
         }
       >
-        {shown.length === 0 ? (
-          <EmptyState title={onlyDifferences ? t.counts.noDifferences : t.counts.nothingToCount} />
-        ) : (
-          <div className="table-wrap">
-            <table className="table table--stack">
-              <thead>
-                <tr>
-                  <th scope="col">{t.counts.product}</th>
-                  <th scope="col" className="table__numeric">{t.counts.expected}</th>
-                  <th scope="col" className="table__numeric">{t.counts.counted}</th>
-                  <th scope="col" className="table__numeric">{t.counts.difference}</th>
-                  <th scope="col" className="table__numeric">{t.counts.value}</th>
-                  <th scope="col">{t.counts.status}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((line) => (
-                  <LineRow key={line.productId} countId={countId} line={line} onChange={refresh} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DataTable
+          caption={t.counts.products}
+          rows={shown}
+          rowKey={(line) => line.productId}
+          empty={<EmptyState title={onlyDifferences ? t.counts.noDifferences : t.counts.nothingToCount} />}
+          columns={[
+            {
+              header: t.counts.product,
+              title: true,
+              cell: (line) => (
+                <>
+                  <Link to={`/inventory/${line.productId}`} className="table__primary-link">
+                    {line.productName}
+                  </Link>
+                  <span className="table__secondary">{line.sku ?? line.categoryName}</span>
+                </>
+              ),
+            },
+            { header: t.counts.expected, align: 'end', cell: (line) => line.expectedQuantity ?? '–' },
+            { header: t.counts.counted, align: 'end', cell: (line) => line.countedQuantity ?? t.counts.notCounted },
+            {
+              header: t.counts.difference,
+              align: 'end',
+              cell: (line) => (line.difference === undefined ? '–' : formatSignedQuantity(line.difference)),
+            },
+            {
+              header: t.counts.value,
+              align: 'end',
+              cell: (line) => (line.value === undefined || line.value === null ? '–' : formatMoney(line.value)),
+            },
+            { header: t.counts.status, cell: (line) => <LineDecision countId={countId} line={line} onChange={refresh} /> },
+          ]}
+        />
       </Card>
     </>
   );
 }
 
-function LineRow({ countId, line, onChange }: { countId: number; line: StockCountLine; onChange: (updated?: StockCount) => void }) {
+/** A counted line's outcome, or approve / reject while it waits for a decision. */
+function LineDecision({ countId, line, onChange }: { countId: number; line: StockCountLine; onChange: (updated?: StockCount) => void }) {
   const t = useT();
   const decide = useMutation({
     mutationFn: (decision: { approve: true } | { approve: false; note: string }) =>
@@ -151,36 +162,22 @@ function LineRow({ countId, line, onChange }: { countId: number; line: StockCoun
     onSuccess: onChange,
   });
 
+  if (line.status === 'pending') {
+    return (
+      <DecisionControls
+        subject={t.counts.subject(line.productName)}
+        isBusy={decide.isPending}
+        error={decide.error}
+        onApprove={() => decide.mutate({ approve: true })}
+        onReject={(note) => decide.mutate({ approve: false, note })}
+      />
+    );
+  }
+  if (!line.status) return null;
   return (
-    <tr>
-      <td>
-        <Link to={`/inventory/${line.productId}`} className="table__primary-link">
-          {line.productName}
-        </Link>
-        <span className="table__secondary">{line.sku ?? line.categoryName}</span>
-      </td>
-      <td className="table__numeric" data-label={t.counts.expected}>{line.expectedQuantity ?? '–'}</td>
-      <td className="table__numeric" data-label={t.counts.counted}>{line.countedQuantity ?? t.counts.notCounted}</td>
-      <td className="table__numeric" data-label={t.counts.difference}>{line.difference === undefined ? '–' : formatSignedQuantity(line.difference)}</td>
-      <td className="table__numeric" data-label={t.counts.value}>{line.value === undefined || line.value === null ? '–' : formatMoney(line.value)}</td>
-      <td>
-        {line.status === 'pending' ? (
-          <DecisionControls
-            subject={t.counts.subject(line.productName)}
-            isBusy={decide.isPending}
-            error={decide.error}
-            onApprove={() => decide.mutate({ approve: true })}
-            onReject={(note) => decide.mutate({ approve: false, note })}
-          />
-        ) : (
-          line.status && (
-            <>
-              <StatusPill status={line.status} />
-              {line.decisionNote && <span className="table__secondary">{line.decisionNote}</span>}
-            </>
-          )
-        )}
-      </td>
-    </tr>
+    <>
+      <StatusPill status={line.status} />
+      {line.decisionNote && <span className="table__secondary">{line.decisionNote}</span>}
+    </>
   );
 }

@@ -10,7 +10,7 @@ import { useT } from '../i18n/useT';
 import { errorMessage } from '../utils/errors';
 import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Button, Card, MetricCard, PageHeader } from '../components/ui';
+import { Button, Card, DataTable, MetricCard, PageHeader } from '../components/ui';
 
 export function ReportsPage() {
   const t = useT();
@@ -118,56 +118,64 @@ function TeamTable({ range }: { range: { startDate: string; endDate: string } })
   });
 
   return (
-    <Card title={t.reports.team}>
+    <Card title={t.reports.team} flush>
       {team.isPending && <Loading />}
       {team.isError && <ErrorNotice error={team.error} onRetry={() => team.refetch()} />}
-      {team.data && team.data.length === 0 && <EmptyState title={t.reports.noTeam} />}
-      {team.data && team.data.length > 0 && (
-        <div className="table-wrap">
-          <table className="table table--stack">
-            <thead>
-              <tr>
-                <th scope="col">{t.reports.person}</th>
-                <th scope="col" className="table__numeric">{t.reports.sales}</th>
-                <th scope="col" className="table__numeric">{t.reports.units}</th>
-                <th scope="col" className="table__numeric">{t.reports.revenue}</th>
-                <th scope="col" className="table__numeric">{t.reports.refunds}</th>
-                <th scope="col" className="table__numeric">{t.reports.profit}</th>
-                <th scope="col" className="table__numeric">{t.reports.averageSale}</th>
-                <th scope="col" className="table__numeric">{t.reports.commission}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.data.map((person) => (
-                <tr key={person.userId} className={person.salesCount === 0 ? 'table__row--muted' : undefined}>
-                  <td>
-                    <span className="table__primary-link">{person.name}</span>
-                    <span className="table__secondary">
-                      {person.hasLeft ? t.reports.hasLeft(t.common.roles[person.role]) : t.common.roles[person.role]}
-                    </span>
-                  </td>
-                  <td className="table__numeric" data-label={t.reports.sales}>{person.salesCount}</td>
-                  <td className="table__numeric" data-label={t.reports.units}>{person.unitsSold}</td>
-                  <td className="table__numeric" data-label={t.reports.revenue}>
-                    {formatMoney(person.revenue)}
-                    {person.monthlyTarget !== null && (
-                      <span className="table__secondary">{t.reports.target(formatMoney(person.monthlyTarget))}</span>
-                    )}
-                  </td>
-                  <td className="table__numeric" data-label={t.reports.refunds}>{formatMoney(person.refunds)}</td>
-                  <td className="table__numeric" data-label={t.reports.profit}>{formatMoney(person.profit)}</td>
-                  <td className="table__numeric" data-label={t.reports.averageSale}>{person.salesCount === 0 ? '–' : formatMoney(person.averageSale)}</td>
-                  <td className="table__numeric" data-label={t.reports.commission}>
-                    {person.commission === null ? '–' : formatMoney(person.commission)}
-                    {person.commissionPercent !== null && (
-                      <span className="table__secondary">{t.reports.ofRevenue(person.commissionPercent)}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {team.data && (
+        <DataTable
+          caption={t.reports.team}
+          rows={team.data}
+          rowKey={(person) => person.userId}
+          rowClassName={(person) => (person.salesCount === 0 ? 'table__row--muted' : undefined)}
+          empty={<EmptyState title={t.reports.noTeam} />}
+          columns={[
+            {
+              header: t.reports.person,
+              title: true,
+              cell: (person) => (
+                <>
+                  <span className="table__primary-link">{person.name}</span>
+                  <span className="table__secondary">
+                    {person.hasLeft ? t.reports.hasLeft(t.common.roles[person.role]) : t.common.roles[person.role]}
+                  </span>
+                </>
+              ),
+            },
+            { header: t.reports.sales, align: 'end', cell: (person) => person.salesCount },
+            { header: t.reports.units, align: 'end', cell: (person) => person.unitsSold },
+            {
+              header: t.reports.revenue,
+              align: 'end',
+              cell: (person) => (
+                <>
+                  {formatMoney(person.revenue)}
+                  {person.monthlyTarget !== null && (
+                    <span className="table__secondary">{t.reports.target(formatMoney(person.monthlyTarget))}</span>
+                  )}
+                </>
+              ),
+            },
+            { header: t.reports.refunds, align: 'end', cell: (person) => formatMoney(person.refunds) },
+            { header: t.reports.profit, align: 'end', cell: (person) => formatMoney(person.profit) },
+            {
+              header: t.reports.averageSale,
+              align: 'end',
+              cell: (person) => (person.salesCount === 0 ? '–' : formatMoney(person.averageSale)),
+            },
+            {
+              header: t.reports.commission,
+              align: 'end',
+              cell: (person) => (
+                <>
+                  {person.commission === null ? '–' : formatMoney(person.commission)}
+                  {person.commissionPercent !== null && (
+                    <span className="table__secondary">{t.reports.ofRevenue(person.commissionPercent)}</span>
+                  )}
+                </>
+              ),
+            },
+          ]}
+        />
       )}
     </Card>
   );
@@ -201,40 +209,38 @@ function ProfitTable({ range }: { range: { startDate: string; endDate: string } 
           ))}
         </div>
       }
+      flush
     >
       {profit.isPending && <Loading />}
       {profit.isError && <ErrorNotice error={profit.error} onRetry={() => profit.refetch()} />}
-      {profit.data && profit.data.length === 0 && <EmptyState title={t.reports.noSales} />}
-      {profit.data && profit.data.length > 0 && (
-        <div className="table-wrap">
-          <table className="table table--stack">
-            <thead>
-              <tr>
-                <th scope="col">{groupBy === 'product' ? t.reports.product : t.reports.category}</th>
-                <th scope="col" className="table__numeric">{t.reports.units}</th>
-                <th scope="col" className="table__numeric">{t.reports.revenue}</th>
-                <th scope="col" className="table__numeric">{t.reports.cost}</th>
-                <th scope="col" className="table__numeric">{t.reports.profit}</th>
-                <th scope="col" className="table__numeric">{t.reports.margin}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profit.data.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    {row.name}
-                    {row.hasUnknownCost && <span className="table__secondary">{t.reports.noCostPrice}</span>}
-                  </td>
-                  <td className="table__numeric" data-label={t.reports.units}>{row.unitsSold}</td>
-                  <td className="table__numeric" data-label={t.reports.revenue}>{formatMoney(row.revenue)}</td>
-                  <td className="table__numeric" data-label={t.reports.cost}>{formatMoney(row.cost)}</td>
-                  <td className="table__numeric" data-label={t.reports.profit}>{formatMoney(row.profit)}</td>
-                  <td className="table__numeric" data-label={t.reports.margin}>{row.margin === null ? t.reports.unknown : formatPercent(row.margin)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {profit.data && (
+        <DataTable
+          caption={t.reports.profitBy[groupBy]}
+          rows={profit.data}
+          rowKey={(row) => row.id}
+          empty={<EmptyState title={t.reports.noSales} />}
+          columns={[
+            {
+              header: groupBy === 'product' ? t.reports.product : t.reports.category,
+              title: true,
+              cell: (row) => (
+                <>
+                  {row.name}
+                  {row.hasUnknownCost && <span className="table__secondary">{t.reports.noCostPrice}</span>}
+                </>
+              ),
+            },
+            { header: t.reports.units, align: 'end', cell: (row) => row.unitsSold },
+            { header: t.reports.revenue, align: 'end', cell: (row) => formatMoney(row.revenue) },
+            { header: t.reports.cost, align: 'end', cell: (row) => formatMoney(row.cost) },
+            { header: t.reports.profit, align: 'end', cell: (row) => formatMoney(row.profit) },
+            {
+              header: t.reports.margin,
+              align: 'end',
+              cell: (row) => (row.margin === null ? t.reports.unknown : formatPercent(row.margin)),
+            },
+          ]}
+        />
       )}
     </Card>
   );

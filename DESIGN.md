@@ -669,15 +669,12 @@ that area; remove it from this list when done.
 
 **Look**
 
-9. **Tables not on DataTable** (miss the ARIA fix): SalesPage, PromotionsPage,
-    OrdersPage (2), StockCountDetailPage, ProductFormPage, ReportsPage (2). → 10.4
-10. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
+9. **Off-scale values** in `admin/src/styles/pages.css`: 13 × 14px text, ~108
     raw px spacings, radii 2/4/6/10/12/14px, weights 300/700. → 7, 8
-11. **Team app type**: no type tokens (19 raw `fontSize` values);
+10. **Team app type**: no type tokens (19 raw `fontSize` values);
     `fonts.display` is the sans. → 7
-12. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-13. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+11. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+12. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
     theme / language controls (chips vs segmented). → 10.9, 10.10
-14. **Box in a box**: tables inside cards (Sales history, Cash counts, others). → 8
-15. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-16. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+13. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+14. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

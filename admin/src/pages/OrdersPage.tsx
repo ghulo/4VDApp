@@ -186,54 +186,61 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
       </Field>
       <p className="field-hint">{suggested.length > 0 ? t.orders.suggested : t.orders.nothingToOrder}</p>
       {lines.length > 0 && (
-        <div className="table-wrap">
-          <table className="table table--stack">
-            <caption className="visually-hidden">{t.orders.newOrder}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t.orders.product}</th>
-                <th scope="col" className="table__numeric">{t.orders.quantity}</th>
-                <th scope="col" className="table__numeric">{t.orders.unitCost}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line) => (
-                <tr key={line.productId} className={line.include ? undefined : 'table__row--muted'}>
-                  <td>
-                    <label className="toggle">
-                      <input type="checkbox" checked={line.include} aria-label={t.orders.include(line.productName)} onChange={(event) => change(line.productId, { include: event.target.checked })} />
-                      {line.productName}
-                    </label>
-                  </td>
-                  <td className="table__numeric" data-label={t.orders.quantity}>
-                    <input
-                      className="input--compact"
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      step={1}
-                      aria-label={`${t.orders.quantity}: ${line.productName}`}
-                      value={line.quantity}
-                      onChange={(event) => change(line.productId, { quantity: event.target.value })}
-                    />
-                  </td>
-                  <td className="table__numeric" data-label={t.orders.unitCost}>
-                    <input
-                      className="input--compact"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step={0.01}
-                      aria-label={`${t.orders.unitCost}: ${line.productName}`}
-                      value={line.unitCost}
-                      onChange={(event) => change(line.productId, { unitCost: event.target.value })}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          caption={t.orders.newOrder}
+          rows={lines}
+          rowKey={(line) => line.productId}
+          rowClassName={(line) => (line.include ? undefined : 'table__row--muted')}
+          columns={[
+            {
+              header: t.orders.product,
+              title: true,
+              cell: (line) => (
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={line.include}
+                    aria-label={t.orders.include(line.productName)}
+                    onChange={(event) => change(line.productId, { include: event.target.checked })}
+                  />
+                  {line.productName}
+                </label>
+              ),
+            },
+            {
+              header: t.orders.quantity,
+              align: 'end',
+              cell: (line) => (
+                <input
+                  className="input--compact"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={1}
+                  aria-label={`${t.orders.quantity}: ${line.productName}`}
+                  value={line.quantity}
+                  onChange={(event) => change(line.productId, { quantity: event.target.value })}
+                />
+              ),
+            },
+            {
+              header: t.orders.unitCost,
+              align: 'end',
+              cell: (line) => (
+                <input
+                  className="input--compact"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={0.01}
+                  aria-label={`${t.orders.unitCost}: ${line.productName}`}
+                  value={line.unitCost}
+                  onChange={(event) => change(line.productId, { unitCost: event.target.value })}
+                />
+              ),
+            },
+          ]}
+        />
       )}
       <Field label={t.orders.addProduct}>
         <select value="" onChange={(event) => addProduct(event.target.value)}>
@@ -360,61 +367,66 @@ function OrderCard({ order }: { order: PurchaseOrder }) {
       ) : (
         <div className="settings-form">
           <p className="field-hint">{t.orders.receiveHint}</p>
-          <div className="table-wrap">
-            <table className="table table--stack">
-              <caption className="visually-hidden">{t.orders.receive}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t.orders.product}</th>
-                  <th scope="col" className="table__numeric">{t.orders.received}</th>
-                  <th scope="col" className="table__numeric">{t.orders.unitCost}</th>
-                  <th scope="col">{t.orders.expiresOn}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.lines.map((line) => (
-                  <tr key={line.id}>
-                    <td>
-                      {line.productName}
-                      <span className="table__secondary">{t.orders.ofOrdered(Number(came[line.id] || 0), line.quantity)}</span>
-                    </td>
-                    <td className="table__numeric" data-label={t.orders.received}>
-                      <input
-                        className="input--compact"
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        step={1}
-                        aria-label={`${t.orders.received}: ${line.productName}`}
-                        value={came[line.id]}
-                        onChange={(event) => setCame((current) => ({ ...current, [line.id]: event.target.value }))}
-                      />
-                    </td>
-                    <td className="table__numeric" data-label={t.orders.unitCost}>
-                      <input
-                        className="input--compact"
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step={0.01}
-                        aria-label={`${t.orders.unitCost}: ${line.productName}`}
-                        value={costs[line.id]}
-                        onChange={(event) => setCosts((current) => ({ ...current, [line.id]: event.target.value }))}
-                      />
-                    </td>
-                    <td data-label={t.orders.expiresOn}>
-                      <input
-                        type="date"
-                        aria-label={`${t.orders.expiresOn}: ${line.productName}`}
-                        value={expires[line.id] ?? ''}
-                        onChange={(event) => setExpires((current) => ({ ...current, [line.id]: event.target.value }))}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            caption={t.orders.receive}
+            rows={order.lines}
+            rowKey={(line) => line.id}
+            columns={[
+              {
+                header: t.orders.product,
+                title: true,
+                cell: (line) => (
+                  <>
+                    {line.productName}
+                    <span className="table__secondary">{t.orders.ofOrdered(Number(came[line.id] || 0), line.quantity)}</span>
+                  </>
+                ),
+              },
+              {
+                header: t.orders.received,
+                align: 'end',
+                cell: (line) => (
+                  <input
+                    className="input--compact"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={1}
+                    aria-label={`${t.orders.received}: ${line.productName}`}
+                    value={came[line.id]}
+                    onChange={(event) => setCame((current) => ({ ...current, [line.id]: event.target.value }))}
+                  />
+                ),
+              },
+              {
+                header: t.orders.unitCost,
+                align: 'end',
+                cell: (line) => (
+                  <input
+                    className="input--compact"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={0.01}
+                    aria-label={`${t.orders.unitCost}: ${line.productName}`}
+                    value={costs[line.id]}
+                    onChange={(event) => setCosts((current) => ({ ...current, [line.id]: event.target.value }))}
+                  />
+                ),
+              },
+              {
+                header: t.orders.expiresOn,
+                cell: (line) => (
+                  <input
+                    type="date"
+                    aria-label={`${t.orders.expiresOn}: ${line.productName}`}
+                    value={expires[line.id] ?? ''}
+                    onChange={(event) => setExpires((current) => ({ ...current, [line.id]: event.target.value }))}
+                  />
+                ),
+              },
+            ]}
+          />
           <label className="toggle">
             <input type="checkbox" checked={updateCosts} onChange={(event) => setUpdateCosts(event.target.checked)} />
             {t.orders.updateCosts}

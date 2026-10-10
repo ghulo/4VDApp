@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { secureStorage } from '../services/secureStorage';
 import type { User } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
@@ -69,11 +69,11 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', padding: spacing.md, backgroundColor: 'rgba(8, 19, 14, 0.55)' },
   card: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: spacing.xl, borderRadius: radius.board, gap: spacing.md },
   welcome: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  hello: { fontFamily: fonts.bodyBold, fontSize: 15 },
-  title: { fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
-  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
+  hello: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  title: { fontFamily: fonts.display, fontSize: type.headline, letterSpacing: -0.5 },
+  body: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 23 },
   dots: { flexDirection: 'row', gap: 6, marginVertical: spacing.xs },
   dot: { width: 8, height: 8, borderRadius: 4 },
   skip: { alignSelf: 'center', paddingVertical: spacing.xs },
-  skipText: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  skipText: { fontFamily: fonts.bodyBold, fontSize: type.body },
 });

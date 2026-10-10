@@ -9,7 +9,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { returnsApi, settingsApi } from '../services/api';
 import type { ReturnCondition } from '../services/types';
 import { decidesRequests, useCurrentUser } from '../state/useAuth';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
@@ -123,9 +123,9 @@ export function ReturnScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.sm },
   panel: { padding: spacing.lg, borderWidth: 1, borderRadius: radius.panel, gap: spacing.xs, marginBottom: spacing.md },
-  title: { fontFamily: fonts.displayBold, fontSize: 24 },
-  muted: { fontFamily: fonts.body, fontSize: 15 },
+  title: { fontFamily: fonts.display, fontSize: type.headline },
+  muted: { fontFamily: fonts.body, fontSize: type.body },
   notice: { padding: spacing.md, borderWidth: 1, borderLeftWidth: 4, borderRadius: radius.small, marginBottom: spacing.md },
-  noticeText: { fontFamily: fonts.body, fontSize: 15 },
-  error: { fontFamily: fonts.body, fontSize: 15 },
+  noticeText: { fontFamily: fonts.body, fontSize: type.body },
+  error: { fontFamily: fonts.body, fontSize: type.body },
 });

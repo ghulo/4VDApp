@@ -33,7 +33,7 @@ import { ReturnScreen } from '../screens/ReturnScreen';
 import { ExpiryScreen } from '../screens/ExpiryScreen';
 import { WriteOffScreen } from '../screens/WriteOffScreen';
 import { canRecordSales, useAuth } from '../state/useAuth';
-import { fonts, keyShadow, useTheme, useThemeColors } from '../theme';
+import { fonts, keyShadow, useTheme, useThemeColors, type } from '../theme';
 import type { MainTabParamList, RootStackParamList } from './types';
 import { useT } from '../i18n/useT';
 
@@ -105,7 +105,7 @@ function MainTabs() {
       screenOptions={{
         // Headers sit on the page's own paper, so a screen reads as one printed sheet.
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { fontFamily: fonts.serif, fontSize: 26, color: colors.ink },
+        headerTitleStyle: { fontFamily: fonts.display, fontSize: type.headline, color: colors.ink },
         headerShadowVisible: false,
         // Tall enough for a thumb (icon over label), plus the phone's home-bar area.
         // Frosted glass over the page, like the dashboard's top bar: the screen
@@ -120,7 +120,7 @@ function MainTabs() {
           paddingBottom: insets.bottom + 6,
         },
         tabBarBackground: () => <GlassBar />,
-        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: type.caption },
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.inkMuted,
       }}
@@ -182,7 +182,7 @@ export function RootNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
-          headerTitleStyle: { fontFamily: fonts.serif, fontSize: 20, color: colors.ink },
+          headerTitleStyle: { fontFamily: fonts.display, fontSize: type.title, color: colors.ink },
           headerTintColor: colors.ink,
           headerShadowVisible: false,
         }}

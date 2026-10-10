@@ -19,7 +19,7 @@ import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
 import { approvalsApi, carwashApi, cashApi, countsApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
-import { fonts, radius, spacing, type ThemeColors, useThemeColors } from '../theme';
+import { fonts, radius, spacing, type ThemeColors, useThemeColors, type } from '../theme';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
@@ -389,14 +389,14 @@ const styles = StyleSheet.create({
   mastheadRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   date: { flex: 1 },
   pressed: { opacity: 0.75 },
-  greeting: { fontFamily: fonts.serif, fontSize: 32, lineHeight: 38, marginTop: spacing.sm },
+  greeting: { fontFamily: fonts.display, fontSize: type.display, lineHeight: 38, marginTop: spacing.sm },
   body: { padding: spacing.lg, gap: spacing.xl },
   // The day on an oat panel under the shop at sunrise; the sale button is clay.
   today: { borderRadius: radius.panel, overflow: 'hidden', padding: spacing.xl, paddingBottom: 0 },
   todayArt: { width: '100%', maxWidth: 168, alignSelf: 'center' },
   todayText: { paddingTop: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
-  todayHeadline: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
-  todayDetail: { fontFamily: fonts.body, fontSize: 15 },
+  todayHeadline: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
+  todayDetail: { fontFamily: fonts.body, fontSize: type.body },
   todayActions: { marginTop: spacing.lg, gap: spacing.sm },
   target: { marginTop: spacing.md, gap: spacing.sm },
   search: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.small,
     paddingHorizontal: spacing.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: type.input,
   },
   jobs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tile: {
@@ -416,15 +416,15 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     borderRadius: radius.panel,
   },
-  tileTitle: { fontFamily: fonts.bodyBold, fontSize: 17, marginTop: spacing.sm },
-  tileDetail: { fontFamily: fonts.body, fontSize: 14 },
+  tileTitle: { fontFamily: fonts.bodyBold, fontSize: type.title, marginTop: spacing.sm },
+  tileDetail: { fontFamily: fonts.body, fontSize: type.label },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48 },
   // Stock state as a small printed square; the words beside it carry the meaning.
   signal: { width: 8, height: 8 },
-  rowName: { flex: 1, fontFamily: fonts.body, fontSize: 16 },
-  rowValue: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
-  rowTime: { width: 52, textAlign: 'right', fontFamily: fonts.body, fontSize: 14, fontVariant: ['tabular-nums'] },
-  muted: { fontFamily: fonts.body, fontSize: 15, paddingVertical: spacing.sm },
+  rowName: { flex: 1, fontFamily: fonts.body, fontSize: type.body },
+  rowValue: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
+  rowTime: { width: 52, textAlign: 'right', fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
+  muted: { fontFamily: fonts.body, fontSize: type.body, paddingVertical: spacing.sm },
   requestRow: { paddingVertical: spacing.sm, gap: 2 },
-  requestStatus: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  requestStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

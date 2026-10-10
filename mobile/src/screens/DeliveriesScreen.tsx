@@ -9,7 +9,7 @@ import { Button, EmptyState, ErrorState, Loading, TextField } from '../component
 import type { RootStackParamList } from '../navigation/types';
 import { deliveriesApi } from '../services/api';
 import type { Delivery } from '../services/types';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { dayAfter, parseTypedDay, toTypedDay, typedDayHint } from '../utils/expiryDay';
 import { errorMessage } from '../utils/format';
 import { useT } from '../i18n/useT';
@@ -130,8 +130,8 @@ function ReceiveForm({ order, onDone }: { order: Delivery; onDone: () => void })
 const styles = StyleSheet.create({
   picker: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.sm },
-  title: { fontFamily: fonts.displayBold, fontSize: 22 },
-  hint: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  title: { fontFamily: fonts.bodyBold, fontSize: type.title },
+  hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
   line: { borderTopWidth: 1, paddingTop: spacing.md, marginTop: spacing.sm, gap: spacing.xs },
-  product: { fontFamily: fonts.bodyBold, fontSize: 17 },
+  product: { fontFamily: fonts.bodyBold, fontSize: type.title },
 });

@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { customersApi } from '../services/api';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
@@ -134,11 +134,11 @@ const styles = StyleSheet.create({
   padded: { padding: spacing.lg, gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, minHeight: 56 },
   rowText: { flex: 1, gap: 2 },
-  name: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  muted: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
-  intro: { fontFamily: fonts.body, fontSize: 15 },
-  amount: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
-  big: { fontFamily: fonts.bodyBold, fontSize: 32, fontVariant: ['tabular-nums'] },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
-  section: { fontFamily: fonts.bodyBold, fontSize: 17, marginTop: spacing.sm },
+  name: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  muted: { fontFamily: fonts.body, fontSize: type.label, lineHeight: 20 },
+  intro: { fontFamily: fonts.body, fontSize: type.body },
+  amount: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
+  big: { fontFamily: fonts.bodyBold, fontSize: type.figure, fontVariant: ['tabular-nums'] },
+  link: { fontFamily: fonts.bodyBold, fontSize: type.body, textDecorationLine: 'underline' },
+  section: { fontFamily: fonts.bodyBold, fontSize: type.title, marginTop: spacing.sm },
 });

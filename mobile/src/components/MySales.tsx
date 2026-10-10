@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../navigation/types';
 import { reportsApi } from '../services/api';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
@@ -105,18 +105,18 @@ export function MySales() {
 
 const styles = StyleSheet.create({
   panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.xs },
-  title: { fontFamily: fonts.display, fontSize: 20 },
-  hero: { fontFamily: fonts.bodyBold, fontSize: 36, marginTop: spacing.xs },
-  muted: { fontFamily: fonts.body, fontSize: 15 },
+  title: { fontFamily: fonts.bodyBold, fontSize: type.title },
+  hero: { fontFamily: fonts.bodyBold, fontSize: type.figureLarge, marginTop: spacing.xs },
+  muted: { fontFamily: fonts.body, fontSize: type.body },
   list: { marginTop: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, borderTopWidth: 1 },
   rowInfo: { flex: 1, gap: 2 },
-  rowText: { fontFamily: fonts.body, fontSize: 15 },
-  rowAmount: { fontFamily: fonts.bodyBold, fontSize: 15, fontVariant: ['tabular-nums'] },
-  rowDate: { fontFamily: fonts.body, fontSize: 13 },
+  rowText: { fontFamily: fonts.body, fontSize: type.body },
+  rowAmount: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
+  rowDate: { fontFamily: fonts.body, fontSize: type.label },
   // A full 44pt target for the thumb, lined up whether it's a button or the "returned" note.
   rowButton: { minHeight: 44, minWidth: 64, alignItems: 'flex-end', justifyContent: 'center' },
-  rowAction: { fontFamily: fonts.bodyBold, fontSize: 14, textDecorationLine: 'underline' },
+  rowAction: { fontFamily: fonts.bodyBold, fontSize: type.label, textDecorationLine: 'underline' },
 });
 
 /** Today and yesterday in the phone's own timezone. */

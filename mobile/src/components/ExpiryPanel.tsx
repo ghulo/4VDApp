@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 import { useT } from '../i18n/useT';
 import { expiryApi } from '../services/api';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { toTypedDay } from '../utils/expiryDay';
 import { errorMessage } from '../utils/format';
 import { Button, Loading } from './ui';
@@ -53,11 +53,11 @@ export function ExpiryPanel({ productId, onAdd }: { productId: number; onAdd: ()
 
 const styles = StyleSheet.create({
   panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.sm },
-  title: { fontFamily: fonts.display, fontSize: 20, marginBottom: spacing.xs },
-  muted: { fontFamily: fonts.body, fontSize: 14 },
-  error: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  title: { fontFamily: fonts.bodyBold, fontSize: type.title, marginBottom: spacing.xs },
+  muted: { fontFamily: fonts.body, fontSize: type.label },
+  error: { fontFamily: fonts.bodyBold, fontSize: type.label },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1 },
   rowText: { flex: 1, gap: 2 },
-  rowMain: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  rowLeft: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  rowMain: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  rowLeft: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
 import { codeFromScan } from '../utils/scanLinks';
 
@@ -121,5 +121,5 @@ const videoStyle = { display: 'block', width: '100%', height: 220, objectFit: 'c
 
 const styles = StyleSheet.create({
   cameraBox: { borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },
-  hint: { fontFamily: fonts.body, fontSize: 14, padding: spacing.sm, textAlign: 'center' },
+  hint: { fontFamily: fonts.body, fontSize: type.label, padding: spacing.sm, textAlign: 'center' },
 });

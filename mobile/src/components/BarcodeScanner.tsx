@@ -1,7 +1,7 @@
 import { type BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
 import { codeFromScan } from '../utils/scanLinks';
 import { Button } from './ui';
@@ -57,8 +57,8 @@ export function BarcodeScanner({ onScan }: { onScan: (code: string) => void }) {
 
 const styles = StyleSheet.create({
   panel: { padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderRadius: radius.panel },
-  text: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  text: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
   cameraBox: { borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },
   camera: { height: 220 },
-  hint: { fontFamily: fonts.body, fontSize: 14, padding: spacing.sm, textAlign: 'center' },
+  hint: { fontFamily: fonts.body, fontSize: type.label, padding: spacing.sm, textAlign: 'center' },
 });

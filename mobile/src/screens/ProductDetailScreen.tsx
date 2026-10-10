@@ -9,7 +9,7 @@ import { Button, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi, productsApi } from '../services/api';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
 import { useT } from '../i18n/useT';
 
@@ -132,17 +132,17 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md },
   image: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.panel },
   panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.xs },
-  panelTitle: { fontFamily: fonts.display, fontSize: 20, marginBottom: spacing.sm },
-  category: { fontFamily: fonts.body, fontSize: 14 },
-  name: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 32 },
-  price: { fontFamily: fonts.bodyBold, fontSize: 22, marginTop: spacing.xs },
-  wasPrice: { fontFamily: fonts.body, fontSize: 16, textDecorationLine: 'line-through' },
-  promotion: { fontFamily: fonts.bodyBold, fontSize: 15 },
-  unit: { fontFamily: fonts.body, fontSize: 16 },
-  description: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, marginTop: spacing.sm },
+  panelTitle: { fontFamily: fonts.bodyBold, fontSize: type.title, marginBottom: spacing.sm },
+  category: { fontFamily: fonts.body, fontSize: type.label },
+  name: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 32 },
+  price: { fontFamily: fonts.bodyBold, fontSize: type.figure, marginTop: spacing.xs },
+  wasPrice: { fontFamily: fonts.body, fontSize: type.body, textDecorationLine: 'line-through' },
+  promotion: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  unit: { fontFamily: fonts.body, fontSize: type.body },
+  description: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 24, marginTop: spacing.sm },
   tierRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderTopWidth: 1 },
-  tierQuantity: { fontFamily: fonts.body, fontSize: 16 },
-  tierPrice: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
+  tierQuantity: { fontFamily: fonts.body, fontSize: type.body },
+  tierPrice: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
-  error: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  error: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

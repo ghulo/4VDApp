@@ -9,7 +9,7 @@ import { Button, TextField } from '../components/ui';
 import { meApi } from '../services/api';
 import { API_URL, DASHBOARD_URL } from '../services/apiClient';
 import { useAuth, useCurrentUser } from '../state/useAuth';
-import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors } from '../theme';
+import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useT } from '../i18n/useT';
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
   panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.sm },
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   identityText: { flex: 1, gap: 2 },
-  name: { fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
-  detail: { fontFamily: fonts.body, fontSize: 15 },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
-  footnote: { fontFamily: fonts.body, fontSize: 13, textAlign: 'center' },
+  name: { fontFamily: fonts.display, fontSize: type.headline, letterSpacing: -0.5 },
+  detail: { fontFamily: fonts.body, fontSize: type.body },
+  link: { fontFamily: fonts.bodyBold, fontSize: type.body, textDecorationLine: 'underline' },
+  footnote: { fontFamily: fonts.body, fontSize: type.label, textAlign: 'center' },
 });

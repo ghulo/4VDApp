@@ -8,7 +8,7 @@ import { Button, TextField } from '../components/ui';
 import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
 import { expiryApi } from '../services/api';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { dayAfter, parseTypedDay, toTypedDay, typedDayHint } from '../utils/expiryDay';
 import { errorMessage } from '../utils/format';
 
@@ -92,7 +92,7 @@ export function ExpiryScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.sm },
-  title: { fontFamily: fonts.displayBold, fontSize: 26 },
-  muted: { fontFamily: fonts.body, fontSize: 15, marginBottom: spacing.md },
-  error: { fontFamily: fonts.body, fontSize: 15 },
+  title: { fontFamily: fonts.display, fontSize: type.headline },
+  muted: { fontFamily: fonts.body, fontSize: type.body, marginBottom: spacing.md },
+  error: { fontFamily: fonts.body, fontSize: type.body },
 });

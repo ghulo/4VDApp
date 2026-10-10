@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { fonts, useThemeColors } from '../theme';
+import { fonts, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
 
 type StockLevel = 'out' | 'low' | 'ok';
@@ -65,12 +65,12 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
 const styles = StyleSheet.create({
   container: { minWidth: 64, gap: 3 },
   containerLarge: { minWidth: 160, gap: 6 },
-  count: { fontFamily: fonts.displayBold, fontSize: 24, lineHeight: 26, fontVariant: ['tabular-nums'] },
-  countLarge: { fontSize: 64, lineHeight: 66 },
+  count: { fontFamily: fonts.bodyBold, fontSize: type.title, lineHeight: 20, fontVariant: ['tabular-nums'] },
+  countLarge: { fontSize: type.hero, lineHeight: 66 },
   gauge: { flexDirection: 'row', gap: 2, height: 6 },
   gaugeLarge: { gap: 3, height: 10 },
   block: { flex: 1 },
   // The reorder point: a wider gap after the fifth block.
   reorderGap: { marginLeft: 2 },
-  label: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6 },
+  label: { fontFamily: fonts.mono, fontSize: type.caption, letterSpacing: 0.6 },
 });

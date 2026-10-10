@@ -7,7 +7,7 @@ import { ChoiceRow } from '../components/inputs';
 import { Button, ErrorState, Loading, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { carwashApi } from '../services/api';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 
@@ -108,6 +108,6 @@ function CarwashForm(props: {
 const styles = StyleSheet.create({
   picker: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   content: { padding: spacing.lg, gap: spacing.sm },
-  hint: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, marginBottom: spacing.sm },
-  total: { fontFamily: fonts.bodyBold, fontSize: 18, fontVariant: ['tabular-nums'], marginBottom: spacing.sm },
+  hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21, marginBottom: spacing.sm },
+  total: { fontFamily: fonts.bodyBold, fontSize: type.title, fontVariant: ['tabular-nums'], marginBottom: spacing.sm },
 });

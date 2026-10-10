@@ -9,7 +9,7 @@ import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
 import { carwashApi, cashApi, reportsApi } from '../services/api';
 import { useCurrentUser } from '../state/useAuth';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { formatMoney } from '../utils/format';
 import { type ShiftStep, shiftSteps } from '../utils/shift';
 
@@ -107,12 +107,12 @@ export function EndShiftScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
-  title: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
-  lead: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, marginTop: -spacing.sm },
+  title: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
+  lead: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 22, marginTop: -spacing.sm },
   list: { borderTopWidth: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56 },
   box: { width: 14, height: 14, borderWidth: 2 },
-  rowName: { flex: 1, fontFamily: fonts.body, fontSize: 16 },
-  rowStatus: { fontFamily: fonts.bodyBold, fontSize: 14 },
-  hint: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21 },
+  rowName: { flex: 1, fontFamily: fonts.body, fontSize: type.body },
+  rowStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
+  hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
 });

@@ -110,20 +110,36 @@ export function keyTravel(pressed: boolean) {
   return { transform: [{ translateY: pressed ? 2 : 0 }] };
 }
 
-// Hanken Grotesk for everything, figures included; the serif (Source Serif 4)
-// only for screen titles and the day's headline on Home, as on the dashboard.
+// Hanken Grotesk for everything, figures included; the serif (`display`, Source
+// Serif 4) only for screen titles and the day's headline on Home, as on the dashboard.
 export const fonts = {
   body: 'HankenGrotesk_400Regular',
   bodyMedium: 'HankenGrotesk_500Medium',
   bodyBold: 'HankenGrotesk_600SemiBold',
-  display: 'HankenGrotesk_600SemiBold',
-  displayBold: 'HankenGrotesk_700Bold',
-  serif: 'SourceSerif4_500Medium',
+  display: 'SourceSerif4_500Medium',
+  // 700 is only for the 4VD wordmark.
+  wordmark: 'HankenGrotesk_700Bold',
   // Small capital labels (dates, kickers), like anthropic.com's spec rows.
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: "ui-monospace, 'SF Mono', Consolas, monospace" }),
 };
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
+// The type scale from DESIGN.md section 7: never a raw fontSize number.
+// Headline is the display clamp's phone size; inputs stay at 16 so iPhone
+// Safari doesn't zoom into a field when it's tapped.
+export const type = {
+  caption: 12,
+  label: 13,
+  body: 15,
+  input: 16,
+  title: 17,
+  figure: 28,
+  headline: 28,
+  display: 32,
+  figureLarge: 36,
+  hero: 64,
+};
+
+export const spacing ={ xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 export const radius = { small: 8, panel: 16, board: 20 };
 
 export type ThemePreference = 'light' | 'dark' | 'system';

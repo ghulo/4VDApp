@@ -452,7 +452,9 @@ looked cold and generic on ivory.
   `--text-figure`, `--text-figure-lg`, `--text-headline`, `--text-hero`.
   No 14px, no 20px one-offs. The team app has the same scale as named tokens in
   `theme.ts` (`type.caption`, `type.label`, `type.body`, `type.title`,
-  `type.figure`, `type.headline`), never raw `fontSize` numbers.
+  `type.figure`, `type.headline`), never raw `fontSize` numbers. On the phone the
+  Headline is 28px (the display clamp's floor), and text fields stay at 16px
+  (`type.input`) so iPhone Safari doesn't zoom in when one is tapped.
 - Weights: 400, 500, 600 only (700 only in the wordmark and count badges).
 - In `theme.ts`, `fonts.display` means **the serif**, as on the dashboard.
 
@@ -672,10 +674,8 @@ that area; remove it from this list when done.
 
 **Look**
 
-9. **Team app type**: no type tokens (19 raw `fontSize` values);
-    `fonts.display` is the sans. → 7
-10. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-11. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
+9. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
+10. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
     theme / language controls (chips vs segmented). → 10.9, 10.10
-12. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-13. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+11. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
+12. **Sell screens** look plain: little product grid, no receipt-style basket. → 11

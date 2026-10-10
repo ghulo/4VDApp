@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { mediaSrc } from '../services/apiClient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { formatMoney, promotionLabel } from '../utils/format';
 import { StockTag } from './StockTag';
 import { useT } from '../i18n/useT';
@@ -73,12 +73,12 @@ const styles = StyleSheet.create({
   },
   image: { width: 64, height: 64, borderRadius: radius.small },
   imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  placeholderInitial: { fontFamily: fonts.displayBold, fontSize: 28 },
+  placeholderInitial: { fontFamily: fonts.bodyBold, fontSize: type.figure },
   details: { flex: 1, gap: 2 },
-  name: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  category: { fontFamily: fonts.body, fontSize: 13 },
-  price: { fontFamily: fonts.bodyBold, fontSize: 16, marginTop: 2 },
-  bulk: { fontFamily: fonts.body, fontSize: 13 },
-  wasPrice: { fontFamily: fonts.body, fontSize: 14, textDecorationLine: 'line-through' },
-  promotion: { fontFamily: fonts.bodyBold, fontSize: 13 },
+  name: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  category: { fontFamily: fonts.body, fontSize: type.label },
+  price: { fontFamily: fonts.bodyBold, fontSize: type.body, marginTop: 2 },
+  bulk: { fontFamily: fonts.body, fontSize: type.label },
+  wasPrice: { fontFamily: fonts.body, fontSize: type.label, textDecorationLine: 'line-through' },
+  promotion: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

@@ -6,7 +6,7 @@ import { useAuth } from '../state/useAuth';
 import { LogoMark } from '../components/LogoMark';
 import { ShopSunrise } from '../components/print';
 import { DASHBOARD_URL } from '../services/apiClient';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useT } from '../i18n/useT';
@@ -97,12 +97,12 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
   art: { marginBottom: spacing.lg },
-  brand: { fontFamily: fonts.displayBold, fontSize: 40, letterSpacing: -1.5 },
+  brand: { fontFamily: fonts.wordmark, fontSize: type.figureLarge, letterSpacing: -1.5 },
   card: { padding: spacing.xl, borderRadius: radius.board },
-  title: { fontFamily: fonts.serif, fontSize: 30 },
-  subtitle: { fontFamily: fonts.body, fontSize: 15, marginTop: spacing.xs, marginBottom: spacing.xl },
+  title: { fontFamily: fonts.display, fontSize: type.headline },
+  subtitle: { fontFamily: fonts.body, fontSize: type.body, marginTop: spacing.xs, marginBottom: spacing.xl },
   forgot: { marginTop: spacing.lg, alignSelf: 'center' },
   language: { marginTop: spacing.xl },
-  forgotText: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
-  error: { fontFamily: fonts.bodyBold, fontSize: 15, marginBottom: spacing.md },
+  forgotText: { fontFamily: fonts.bodyBold, fontSize: type.body, textDecorationLine: 'underline' },
+  error: { fontFamily: fonts.bodyBold, fontSize: type.body, marginBottom: spacing.md },
 });

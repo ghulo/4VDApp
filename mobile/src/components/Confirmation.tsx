@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
 
@@ -20,6 +20,6 @@ export function Confirmation({ title, message, onDone }: { title: string; messag
 
 const styles = StyleSheet.create({
   content: { padding: spacing.xl, gap: spacing.lg },
-  title: { fontFamily: fonts.displayBold, fontSize: 28 },
-  message: { fontFamily: fonts.body, fontSize: 17, lineHeight: 24 },
+  title: { fontFamily: fonts.display, fontSize: type.headline },
+  message: { fontFamily: fonts.body, fontSize: type.title, lineHeight: 24 },
 });

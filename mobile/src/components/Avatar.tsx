@@ -32,5 +32,5 @@ export function Avatar({ name, url, size = 40 }: { name: string; url: string | n
 
 const styles = StyleSheet.create({
   initials: { alignItems: 'center', justifyContent: 'center' },
-  text: { fontFamily: fonts.display, color: '#ffffff' },
+  text: { fontFamily: fonts.bodyBold, color: '#ffffff' },
 });

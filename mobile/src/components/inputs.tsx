@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors } from '../theme';
+import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors, type } from '../theme';
 
 interface StepperProps {
   label: string;
@@ -109,7 +109,7 @@ export function ChoiceRow<TValue extends string>({ label, options, value, onChan
 
 const styles = StyleSheet.create({
   stepper: { gap: spacing.xs, marginBottom: spacing.lg },
-  label: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  label: { fontFamily: fonts.bodyBold, fontSize: type.label },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   input: {
     flex: 1,
@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.small,
     textAlign: 'center',
-    fontFamily: fonts.displayBold,
-    fontSize: 24,
+    fontFamily: fonts.bodyBold,
+    fontSize: type.figure,
     fontVariant: ['tabular-nums'],
   },
-  inputLarge: { minHeight: 96, fontSize: 56 },
+  inputLarge: { minHeight: 96, fontSize: type.hero },
   stepButton: {
     minWidth: 56,
     minHeight: 48,
@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepButtonLarge: { minWidth: 72, minHeight: 96 },
-  stepLabel: { fontFamily: fonts.displayBold, fontSize: 22 },
+  stepLabel: { fontFamily: fonts.bodyBold, fontSize: type.figure },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   choice: { minHeight: 44, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small, justifyContent: 'center' },
-  choiceLabel: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  choiceLabel: { fontFamily: fonts.bodyBold, fontSize: type.body },
 });

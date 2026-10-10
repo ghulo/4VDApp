@@ -8,7 +8,7 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
-import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors } from '../theme';
+import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { IconChip } from './print';
@@ -129,18 +129,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
+  buttonLabel: { fontFamily: fonts.bodyBold, fontSize: type.body },
   field: { gap: spacing.xs, marginBottom: spacing.lg },
-  fieldLabel: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  fieldLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   input: {
     minHeight: 48,
     borderWidth: 1,
     borderRadius: radius.small,
     paddingHorizontal: spacing.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: type.input,
   },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
-  stateText: { fontFamily: fonts.body, fontSize: 16, textAlign: 'center' },
-  emptyTitle: { fontFamily: fonts.serif, fontSize: 24 },
+  stateText: { fontFamily: fonts.body, fontSize: type.body, textAlign: 'center' },
+  emptyTitle: { fontFamily: fonts.display, fontSize: type.headline },
 });

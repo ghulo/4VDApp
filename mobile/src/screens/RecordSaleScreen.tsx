@@ -12,7 +12,7 @@ import { TabPicker } from '../components/TabPicker';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
 import { documentsApi, favoritesApi, productsApi, salesApi } from '../services/api';
 import type { Customer, DocumentRef, Product } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
 import { canPrint, printDocument } from '../utils/printDocument';
@@ -313,23 +313,23 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 48, borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.md },
   // The whole field shows focus (see searchFocused), so the browser's ring on the bare input is off.
-  searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: 16, outlineStyle: 'solid', outlineWidth: 0 },
+  searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: type.input, outlineStyle: 'solid', outlineWidth: 0 },
   scanButton: { width: 48, height: 48, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
-  groupTitle: { fontFamily: fonts.bodyBold, fontSize: 15, marginTop: spacing.sm },
+  groupTitle: { fontFamily: fonts.bodyBold, fontSize: type.body, marginTop: spacing.sm },
   // Two columns; an odd last tile keeps its size instead of stretching across.
   tiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
   tile: { width: '48.5%', minHeight: 72, padding: spacing.md, borderWidth: 1, borderRadius: radius.panel, justifyContent: 'space-between' },
-  tileName: { fontFamily: fonts.bodyBold, fontSize: 16 },
+  tileName: { fontFamily: fonts.bodyBold, fontSize: type.body },
   actionBar: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
-  hint: { fontFamily: fonts.body, fontSize: 15 },
+  hint: { fontFamily: fonts.body, fontSize: type.body },
   pickerRow: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1 },
-  pickerName: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  pickerMeta: { fontFamily: fonts.body, fontSize: 14 },
+  pickerName: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  pickerMeta: { fontFamily: fonts.body, fontSize: type.label },
   panel: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.panel, borderWidth: 1 },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   lineText: { flex: 1, gap: 2 },
   stepButton: { width: 44, height: 44, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
-  quantity: { fontFamily: fonts.bodyBold, fontSize: 20, minWidth: 32, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  change: { fontFamily: fonts.bodyBold, fontSize: 20, fontVariant: ['tabular-nums'] },
-  message: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  quantity: { fontFamily: fonts.bodyBold, fontSize: type.title, minWidth: 32, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  change: { fontFamily: fonts.bodyBold, fontSize: type.figure, fontVariant: ['tabular-nums'] },
+  message: { fontFamily: fonts.bodyBold, fontSize: type.body },
 });

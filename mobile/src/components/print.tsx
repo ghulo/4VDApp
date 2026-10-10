@@ -16,7 +16,7 @@ import Svg, {
   Path,
   Rect,
 } from "react-native-svg";
-import { fonts, radius, spacing, useThemeColors } from "../theme";
+import { fonts, radius, spacing, useThemeColors, type } from "../theme";
 import type { Receipt } from "phosphor-react-native/src/icons/Receipt";
 
 /**
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  kicker: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.8 },
+  kicker: { fontFamily: fonts.mono, fontSize: type.caption, letterSpacing: 0.8 },
   ruleHeavy: { height: 3 },
   ruleThin: { height: 1, marginTop: 2 },
   section: { borderTopWidth: 1, paddingTop: spacing.md },
@@ -299,10 +299,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
-  sectionTitle: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 28 },
+  sectionTitle: { fontFamily: fonts.bodyBold, fontSize: type.title, lineHeight: 24 },
   sectionAside: {
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: type.label,
     fontVariant: ["tabular-nums"],
   },
 });

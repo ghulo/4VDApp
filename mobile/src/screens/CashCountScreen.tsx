@@ -7,7 +7,7 @@ import { ChoiceRow } from '../components/inputs';
 import { Button, ErrorState, Loading, TextField } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { cashApi } from '../services/api';
-import { fonts, spacing, useThemeColors } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { carwashLabel } from '../utils/shift';
@@ -105,6 +105,6 @@ export function CashCountScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.sm },
-  hint: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, marginBottom: spacing.sm },
-  error: { fontFamily: fonts.body, fontSize: 15 },
+  hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21, marginBottom: spacing.sm },
+  error: { fontFamily: fonts.body, fontSize: type.body },
 });

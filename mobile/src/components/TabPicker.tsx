@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { customersApi } from '../services/api';
 import type { Customer } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { Button } from './ui';
@@ -149,11 +149,11 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
 const styles = StyleSheet.create({
   panel: { borderWidth: 1, borderRadius: radius.panel, padding: spacing.md, gap: spacing.sm },
   opener: { paddingVertical: spacing.sm, minHeight: 44, justifyContent: 'center' },
-  label: { fontFamily: fonts.bodyBold, fontSize: 15 },
-  hint: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
-  search: { borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.md, minHeight: 44, fontFamily: fonts.body, fontSize: 16 },
+  label: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  hint: { fontFamily: fonts.body, fontSize: type.label, lineHeight: 20 },
+  link: { fontFamily: fonts.bodyBold, fontSize: type.body, textDecorationLine: 'underline' },
+  search: { borderWidth: 1, borderRadius: radius.small, paddingHorizontal: spacing.md, minHeight: 44, fontFamily: fonts.body, fontSize: type.input },
   row: { minHeight: 48, justifyContent: 'center', borderTopWidth: 1, paddingVertical: spacing.xs },
-  name: { fontFamily: fonts.bodyBold, fontSize: 16 },
+  name: { fontFamily: fonts.bodyBold, fontSize: type.body },
   business: { borderTopWidth: 1, paddingTop: spacing.sm, gap: spacing.sm },
 });

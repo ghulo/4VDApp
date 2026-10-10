@@ -3,7 +3,7 @@ import { StyleSheet, Switch, Text, View } from 'react-native';
 import { currentPushToken, disablePush, enablePush, pushUnavailableReason } from '../push/devicePush';
 import { pushApi } from '../services/api';
 import type { PushSettings, PushTopic } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
@@ -77,8 +77,8 @@ export function PushSettingsPanel() {
 
 const styles = StyleSheet.create({
   panel: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1, gap: spacing.sm },
-  title: { fontFamily: fonts.displayBold, fontSize: 22 },
-  detail: { fontFamily: fonts.body, fontSize: 15 },
+  title: { fontFamily: fonts.bodyBold, fontSize: type.title },
+  detail: { fontFamily: fonts.body, fontSize: type.body },
   topic: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -86,5 +86,5 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  topicLabel: { flex: 1, fontFamily: fonts.body, fontSize: 16 },
+  topicLabel: { flex: 1, fontFamily: fonts.body, fontSize: type.body },
 });

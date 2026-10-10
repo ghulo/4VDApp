@@ -7,7 +7,7 @@ import { Button, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { categoriesApi, countsApi } from '../services/api';
 import type { StockCountSummary } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
@@ -96,12 +96,12 @@ export function CountsScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
-  intro: { fontFamily: fonts.body, fontSize: 15 },
+  intro: { fontFamily: fonts.body, fontSize: type.body },
   panel: { borderWidth: 1, borderRadius: radius.panel, padding: spacing.lg, gap: spacing.sm },
-  panelTitle: { fontFamily: fonts.displayBold, fontSize: 20 },
+  panelTitle: { fontFamily: fonts.bodyBold, fontSize: type.title },
   row: { minHeight: 52, justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth },
-  rowName: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  rowMeta: { fontFamily: fonts.body, fontSize: 14 },
+  rowName: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  rowMeta: { fontFamily: fonts.body, fontSize: type.label },
   pressed: { opacity: 0.7 },
-  error: { fontFamily: fonts.body, fontSize: 15 },
+  error: { fontFamily: fonts.body, fontSize: type.body },
 });

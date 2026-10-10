@@ -8,7 +8,7 @@ import { ProductCard } from '../components/ProductCard';
 import { EmptyState, ErrorState, Loading } from '../components/ui';
 import type { MainTabParamList, RootStackParamList } from '../navigation/types';
 import { categoriesApi, productsApi } from '../services/api';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
 import { TabBarSpacer } from '../components/TabBarSpace';
 
@@ -147,13 +147,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.small,
     paddingHorizontal: spacing.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: type.input,
   },
   chips: { gap: spacing.sm, paddingVertical: spacing.md },
   chip: { paddingHorizontal: spacing.md, minHeight: 36, justifyContent: 'center', borderRadius: 18, borderWidth: 1 },
-  chipLabel: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  chipLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.xs },
-  toggleLabel: { fontFamily: fonts.body, fontSize: 15 },
+  toggleLabel: { fontFamily: fonts.body, fontSize: type.body },
   list: { padding: spacing.lg },
   emptyList: { flexGrow: 1 },
 });

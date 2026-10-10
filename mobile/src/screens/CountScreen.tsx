@@ -9,7 +9,7 @@ import { Button, EmptyState, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { countsApi } from '../services/api';
 import type { StockCount } from '../services/types';
-import { fonts, radius, spacing, useThemeColors } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage } from '../utils/format';
 import { COUNTS_QUERY_KEY } from './CountsScreen';
 import { useT } from '../i18n/useT';
@@ -168,19 +168,19 @@ function Counter({
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progress: { fontFamily: fonts.bodyBold, fontSize: 15 },
-  link: { fontFamily: fonts.bodyBold, fontSize: 15, textDecorationLine: 'underline' },
+  progress: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  link: { fontFamily: fonts.bodyBold, fontSize: type.body, textDecorationLine: 'underline' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   fill: { height: 6 },
   product: { padding: spacing.lg, borderWidth: 1, borderRadius: radius.panel, gap: spacing.xs },
-  category: { fontFamily: fonts.body, fontSize: 14 },
-  name: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 34 },
-  sku: { fontFamily: fonts.body, fontSize: 15 },
-  error: { fontFamily: fonts.body, fontSize: 15 },
+  category: { fontFamily: fonts.body, fontSize: type.label },
+  name: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
+  sku: { fontFamily: fonts.body, fontSize: type.body },
+  error: { fontFamily: fonts.body, fontSize: type.body },
   submitBox: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, gap: spacing.sm },
-  submitText: { fontFamily: fonts.body, fontSize: 16 },
+  submitText: { fontFamily: fonts.body, fontSize: type.body },
   listRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, gap: spacing.sm },
-  listName: { flex: 1, fontFamily: fonts.body, fontSize: 16 },
-  listValue: { fontFamily: fonts.bodyBold, fontSize: 16, fontVariant: ['tabular-nums'] },
+  listName: { flex: 1, fontFamily: fonts.body, fontSize: type.body },
+  listValue: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
   pressed: { opacity: 0.7 },
 });

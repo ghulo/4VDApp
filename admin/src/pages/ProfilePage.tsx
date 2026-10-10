@@ -327,16 +327,16 @@ function DevicesPanel() {
         </p>
       )}
       {sessions.data && (
-        <ul className="device-list">
+        <ul id="device-list" className="device-list">
           {shown.map((session) => (
             <DeviceRow key={session.id} session={session} onEnd={() => endOne.mutate(session.id)} busy={endOne.isPending} />
           ))}
         </ul>
       )}
-      {shown.length < ordered.length && (
+      {ordered.length > DEVICES_SHOWN && (
         <p className="form-actions--spaced">
-          <Button size="sm" variant="ghost" onClick={() => setShowAll(true)}>
-            {t.profile.showAllDevices(ordered.length)}
+          <Button size="sm" variant="ghost" aria-expanded={showAll} aria-controls="device-list" onClick={() => setShowAll(!showAll)}>
+            {showAll ? t.profile.showFewerDevices : t.profile.showAllDevices(ordered.length)}
           </Button>
         </p>
       )}

@@ -662,14 +662,27 @@ export interface CashPlaceToday {
 }
 
 /** The end-of-day checklist. It only reports: nothing is locked. */
-export interface DayChecklist {
+/** One thing that closes the day; the server defines them for both apps. */
+export type DayStep =
+  | { kind: 'drawer'; key: string; place: CashPlace; carwashId: number | null; name: string | null; done: boolean; countedBy: string | null }
+  | { kind: 'carwash'; key: string; carwashId: number; name: string; done: boolean }
+  | { kind: 'expenses'; key: 'expenses'; done: boolean; count: number; total: number; noneMarked: boolean; noneMarkedBy: string | null }
+  | { kind: 'requests'; key: 'requests'; done: boolean; waiting: number };
+
+/** One shop day: its close-the-day steps and what happened. */
+export interface ShopDay {
+  /** "2026-10-10", in shop time. */
   day: string;
-  cash: { done: boolean; drawers: CashPlaceToday[] };
-  /** Null when there is no open carwash. */
-  carwash: { done: boolean; carwashes: Array<{ id: number; name: string; entered: boolean }> } | null;
-  expenses: { done: boolean; count: number; total: number; noneMarked: boolean; noneMarkedBy: string | null };
-  approvals: { done: boolean; waiting: number };
-  done: boolean;
+  today: string;
+  steps: DayStep[];
+  done: number;
+  total: number;
+  allDone: boolean;
+  details: {
+    counts: CashCount[];
+    carwash: Array<{ id: number; name: string; takings: { carwash: number; change: number } | null }>;
+    expenses: Expense[];
+  } | null;
 }
 
 export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';

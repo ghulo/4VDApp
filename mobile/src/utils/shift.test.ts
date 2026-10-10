@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import type { DayStep, ShopDay } from '../services/types';
 import { carwashLabel, shiftSteps } from './shift';
 
 describe('shiftSteps', () => {
-  const drawers = [
-    { place: 'shop' as const, carwashId: null, name: null, countedAt: '2026-10-10T17:00:00Z' },
-    { place: 'carwash' as const, carwashId: 2, name: 'Fushë', countedAt: null },
+  const day = (steps: DayStep[]): ShopDay => ({ day: '2026-10-10', today: '2026-10-10', steps, done: 0, total: steps.length, allDone: false });
+  const steps: DayStep[] = [
+    { kind: 'drawer', key: 'shop', place: 'shop', carwashId: null, name: null, done: true, countedBy: 'Arta' },
+    { kind: 'drawer', key: 'carwash:2', place: 'carwash', carwashId: 2, name: 'Fushë', done: false, countedBy: null },
+    { kind: 'carwash', key: 'takings:2', carwashId: 2, name: 'Fushë', done: false },
+    { kind: 'expenses', key: 'expenses', done: false, count: 0, total: 0, noneMarked: false, noneMarkedBy: null },
   ];
-  const carwashes = [{ id: 2, name: 'Fushë', takings: null }];
 
-  it('lists every drawer, then each carwash, and points at the first not done', () => {
-    const shift = shiftSteps(drawers, carwashes);
+  it("keeps the counter steps in the server's order and points at the first not done", () => {
+    const shift = shiftSteps(day(steps));
     expect(shift.steps.map((step) => step.key)).toEqual(['shop', 'carwash:2', 'takings:2']);
     expect(shift.done).toBe(1);
     expect(shift.total).toBe(3);
@@ -17,16 +20,13 @@ describe('shiftSteps', () => {
   });
 
   it('has nothing next once everything is in', () => {
-    const shift = shiftSteps(
-      drawers.map((drawer) => ({ ...drawer, countedAt: '2026-10-10T17:00:00Z' })),
-      [{ id: 2, name: 'Fushë', takings: { carwash: 10 } }],
-    );
+    const shift = shiftSteps(day(steps.map((step) => ({ ...step, done: true }))));
     expect(shift.done).toBe(3);
     expect(shift.next).toBeUndefined();
   });
 
   it('is empty while nothing has loaded', () => {
-    expect(shiftSteps(undefined, undefined)).toEqual({ steps: [], done: 0, total: 0, next: undefined });
+    expect(shiftSteps(undefined)).toEqual({ steps: [], done: 0, total: 0, next: undefined });
   });
 });
 

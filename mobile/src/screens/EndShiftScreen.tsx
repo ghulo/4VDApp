@@ -1,3 +1,5 @@
+import { CaretRight } from 'phosphor-react-native/src/icons/CaretRight';
+import { Check } from 'phosphor-react-native/src/icons/Check';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -7,11 +9,11 @@ import { Button, ErrorState, Loading } from '../components/ui';
 import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
-import { carwashApi, cashApi, reportsApi } from '../services/api';
+import { dayApi, reportsApi } from '../services/api';
 import { useCurrentUser } from '../state/useAuth';
 import { fonts, spacing, useThemeColors, type } from '../theme';
 import { formatMoney } from '../utils/format';
-import { type ShiftStep, shiftSteps } from '../utils/shift';
+import { DAY_QUERY_KEY, type ShiftStep, shiftSteps } from '../utils/shift';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EndShift'>;
 
@@ -25,8 +27,9 @@ function stepLabel(step: ShiftStep, several: boolean, t: Catalogue): string {
 
 /**
  * Closing up, one step at a time: count each drawer (blind, as always), enter
- * the carwash takings, then you're done. Each step opens its own screen and
- * comes back here, so the list ticks itself off.
+ * the carwash takings, then you're done. The steps come from the server, the
+ * same ones the dashboard's Day page shows. Each step still to do opens its
+ * own screen and comes back here, so the list ticks itself off.
  */
 export function EndShiftScreen({ navigation }: Props) {
   const colors = useThemeColors();
@@ -34,16 +37,14 @@ export function EndShiftScreen({ navigation }: Props) {
   const user = useCurrentUser();
   // Fixed once per visit so the query key doesn't change on every render.
   const [day] = useState(() => dayRanges());
-  const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
-  const carwash = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today });
+  const today = useQuery({ queryKey: DAY_QUERY_KEY, queryFn: dayApi.today });
   const sales = useQuery({ queryKey: [...MY_SALES_QUERY_KEY, day.startDate], queryFn: () => reportsApi.mySales(day) });
 
-  if (cash.isPending || carwash.isPending) return <Loading />;
-  if (cash.isError) return <ErrorState error={cash.error} onRetry={() => cash.refetch()} />;
-  if (carwash.isError) return <ErrorState error={carwash.error} onRetry={() => carwash.refetch()} />;
+  if (today.isPending) return <Loading />;
+  if (today.isError) return <ErrorState error={today.error} onRetry={() => today.refetch()} />;
 
-  const { steps, done, total, next } = shiftSteps(cash.data, carwash.data.carwashes);
-  const several = carwash.data.carwashes.length > 1;
+  const { steps, done, total, next } = shiftSteps(today.data);
+  const several = steps.filter((step) => step.kind === 'carwash').length > 1;
   const firstName = user.name.split(' ')[0] ?? user.name;
 
   function open(step: ShiftStep) {
@@ -70,7 +71,10 @@ export function EndShiftScreen({ navigation }: Props) {
           return (
             <Pressable
               key={step.key}
+              // Status, not a checkbox: a step that is done stays done; one to do opens its screen.
+              disabled={step.done}
               accessibilityRole="button"
+              accessibilityState={{ disabled: step.done }}
               accessibilityLabel={`${label}. ${step.done ? t.shift.done : t.shift.toDo}`}
               onPress={() => open(step)}
               style={({ pressed }) => [
@@ -79,17 +83,16 @@ export function EndShiftScreen({ navigation }: Props) {
                 pressed && { backgroundColor: colors.surfaceSunk },
               ]}
             >
-              {/* A printed square: filled green when done, an open box while it's still to do. */}
-              <View
-                style={[
-                  styles.box,
-                  step.done ? { backgroundColor: colors.stockOk, borderColor: colors.stockOk } : { borderColor: colors.inkMuted },
-                ]}
-              />
-              <Text style={[styles.rowName, { color: colors.ink }, step.done && { color: colors.inkMuted }]}>{label}</Text>
-              <Text style={[styles.rowStatus, { color: step.done ? colors.stockOk : colors.signalLowInk }]}>
-                {step.done ? t.shift.done : t.shift.toDo}
-              </Text>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowName, { color: step.done ? colors.inkMuted : colors.ink }]}>{label}</Text>
+                <View style={styles.status}>
+                  {step.done && <Check size={14} weight="bold" color={colors.stockOk} />}
+                  <Text style={[styles.rowStatus, { color: step.done ? colors.stockOk : colors.signalLowInk }]}>
+                    {step.done ? t.shift.done : t.shift.toDo}
+                  </Text>
+                </View>
+              </View>
+              {!step.done && <CaretRight size={18} color={colors.inkMuted} />}
             </Pressable>
           );
         })}
@@ -110,9 +113,11 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
   lead: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 22, marginTop: -spacing.sm },
   list: { borderTopWidth: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56 },
-  box: { width: 14, height: 14, borderWidth: 2 },
-  rowName: { flex: 1, fontFamily: fonts.body, fontSize: type.body },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
+  // Long place names wrap onto their own lines; the status sits under the name.
+  rowText: { flex: 1, gap: spacing.xs },
+  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  rowName: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 22 },
   rowStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
   hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
 });

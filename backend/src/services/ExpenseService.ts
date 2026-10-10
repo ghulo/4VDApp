@@ -119,6 +119,11 @@ export class ExpenseService {
     return { expenses, totals: { total, byPlace, byCarwash: [...byCarwash.values()], byCategory } };
   }
 
+  /** What was spent on one shop day. */
+  async onDay(day: string): Promise<ExpenseDto[]> {
+    return (await this.expenseRepository.findBetween(day, day)).map(toDto);
+  }
+
   async total(range: DateRange): Promise<number> {
     const { from, to } = zonedDays(range, this.timeZone);
     return roundMoney(await this.expenseRepository.total(from, to));

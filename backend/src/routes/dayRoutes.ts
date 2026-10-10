@@ -6,9 +6,10 @@ export function createDayRoutes({ dayService, guards }: Container): Router {
   const controller = createDayController(dayService);
   const router = Router();
 
-  // The end-of-day checklist; only managers add expenses, so only they may say there were none.
-  router.get('/today', ...guards.oversee, controller.today);
-  router.put('/today/no-expenses', ...guards.manage, controller.setNoExpenses);
+  // The shop day's steps: everyone at the counter sees the ones they close,
+  // overseers see the whole day. Only managers add expenses, so only they say there were none.
+  router.get('/', ...guards.staff, controller.get);
+  router.put('/no-expenses', ...guards.manage, controller.setNoExpenses);
 
   return router;
 }

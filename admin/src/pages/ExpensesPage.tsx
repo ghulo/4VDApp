@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router';
 import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -95,7 +96,9 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
 function ExpenseForm() {
   const t = useT();
   const queryClient = useQueryClient();
-  const [day, setDay] = useState(today);
+  // The Day page asks for its own date (?day=2026-10-09).
+  const [params] = useSearchParams();
+  const [day, setDay] = useState(() => params.get('day') ?? today());
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('rent');
   // "shop", "both" or "carwash:<id>", so each carwash has its own choice.

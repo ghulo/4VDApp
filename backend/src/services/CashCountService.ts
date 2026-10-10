@@ -69,6 +69,11 @@ export class CashCountService {
     return this.between(from, to);
   }
 
+  /** Every count made on one shop day, with how it compared. */
+  onDay(day: string): Promise<CashCountDto[]> {
+    return this.between(day, day);
+  }
+
   private async between(from: string, to: string): Promise<CashCountDto[]> {
     const [rows, shop, tabs, supplierPayments, carwash] = await Promise.all([
       this.cashCountRepository.findBetween(from, to),
@@ -103,8 +108,12 @@ export class CashCountService {
     });
   }
 
-  async today(now = new Date()): Promise<CashPlaceToday[]> {
-    const day = zonedDay(now, this.timeZone);
+  today(now = new Date()): Promise<CashPlaceToday[]> {
+    return this.drawersOn(zonedDay(now, this.timeZone));
+  }
+
+  /** Each drawer and whether it was counted on `day` (blind: no expected amount). */
+  async drawersOn(day: string): Promise<CashPlaceToday[]> {
     const [rows, settings, carwashes] = await Promise.all([
       this.cashCountRepository.findBetween(day, day),
       this.settingsService.get(),

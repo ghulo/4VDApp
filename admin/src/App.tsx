@@ -35,6 +35,7 @@ import { OrderDetailPage } from './pages/OrderDetailPage';
 import { ReportPage } from './pages/ReportPage';
 import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
+import { DayPage } from './pages/DayPage';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { CustomerDetailPage, CustomersPage, TabsRedirect } from './pages/CustomersPage';
 import { SupplierDetailPage } from './pages/SupplierDetailPage';
@@ -113,6 +114,7 @@ function App() {
                   </Route>
                   <Route path="documents/:id" element={<DocumentDetailPage />} />
                   <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
+                    <Route path="day" element={<DayPage />} />
                     <Route path="cash" element={<CashPage />} />
                     <Route path="carwash" element={<CarwashPage />} />
                   </Route>

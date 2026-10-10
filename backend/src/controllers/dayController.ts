@@ -4,17 +4,19 @@ import type { DayService } from '../services/DayService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { parseInput } from '../validators/validate.js';
 
-const noExpensesSchema = z.object({ none: z.boolean() });
+const daySchema = z.object({ date: z.string().optional() });
+const noExpensesSchema = z.object({ none: z.boolean(), date: z.string().optional() });
 
 export function createDayController(dayService: DayService) {
   return {
-    async today(_req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await dayService.today());
+    async get(req: Request, res: Response): Promise<void> {
+      const { date } = parseInput(daySchema, req.query);
+      sendSuccess(res, await dayService.forDay(req.user!.role, date));
     },
 
     async setNoExpenses(req: Request, res: Response): Promise<void> {
-      const { none } = parseInput(noExpensesSchema, req.body);
-      sendSuccess(res, await dayService.setNoExpenses(none, req.user!.id));
+      const { none, date } = parseInput(noExpensesSchema, req.body);
+      sendSuccess(res, await dayService.setNoExpenses(none, req.user!.id, req.user!.role, date));
     },
   };
 }

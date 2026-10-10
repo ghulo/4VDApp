@@ -193,7 +193,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     transactions,
     config.shopTimeZone,
   );
-  const dayService = new DayService(cashCountService, carwashService, expenseRepository, approvalService, transactions, config.shopTimeZone);
+  const dayService = new DayService(cashCountService, carwashService, expenseService, expenseRepository, approvalService, transactions, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,

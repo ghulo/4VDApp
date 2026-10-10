@@ -5,6 +5,7 @@ import type {
   CarwashToday,
   CashPlace,
   CashPlaceToday,
+  ShopDay,
   Customer,
   Delivery,
   ExpiryDate,
@@ -178,6 +179,11 @@ export const customersApi = {
     (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
   pay: async (id: number, input: { amount: number; note: string | null }) =>
     (await apiRequest<Customer>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
+};
+
+export const dayApi = {
+  /** Today's steps for closing up, defined by the server. */
+  today: async () => (await apiRequest<ShopDay>('/day')).data,
 };
 
 export const cashApi = {

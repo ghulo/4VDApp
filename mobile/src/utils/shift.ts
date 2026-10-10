@@ -1,36 +1,23 @@
-/** One thing to do before going home: count a drawer, or enter a carwash's takings. */
-export type ShiftStep =
-  | { kind: 'drawer'; key: string; place: 'shop' | 'carwash'; name: string | null; done: boolean }
-  | { kind: 'carwash'; key: string; carwashId: number; name: string; done: boolean };
+import type { DayStep, ShopDay } from '../services/types';
+
+/** A step closed at the counter: count a drawer, or enter a carwash's takings. */
+export type ShiftStep = Extract<DayStep, { kind: 'drawer' | 'carwash' }>;
+
+/** Under ['cash'], so counting a drawer or entering takings ticks its step off. */
+export const DAY_QUERY_KEY = ['cash', 'day'] as const;
 
 /** From this hour Home suggests ending the shift. */
 export const CLOSING_HOUR = 18;
 
+const atTheCounter = (step: DayStep): step is ShiftStep => step.kind === 'drawer' || step.kind === 'carwash';
+
 /**
- * What ending the shift takes: every drawer counted (the shop, then each
- * carwash), then each carwash's takings entered. Worked out from what the
- * team app already loads, so Home and End shift always agree.
+ * What ending the shift takes, from the server's close-the-day steps (the
+ * dashboard's Day page reads the same list). Expenses and requests are done
+ * on the dashboard, so the shift covers the drawers and the carwash takings.
  */
-export function shiftSteps(
-  drawers: Array<{ place: 'shop' | 'carwash'; carwashId: number | null; name: string | null; countedAt: string | null }> | undefined,
-  carwashes: Array<{ id: number; name: string; takings: unknown }> | undefined,
-): { steps: ShiftStep[]; done: number; total: number; next: ShiftStep | undefined } {
-  const steps: ShiftStep[] = [
-    ...(drawers ?? []).map((drawer) => ({
-      kind: 'drawer' as const,
-      key: drawer.place === 'shop' ? 'shop' : `carwash:${drawer.carwashId}`,
-      place: drawer.place,
-      name: drawer.name,
-      done: drawer.countedAt !== null,
-    })),
-    ...(carwashes ?? []).map((carwash) => ({
-      kind: 'carwash' as const,
-      key: `takings:${carwash.id}`,
-      carwashId: carwash.id,
-      name: carwash.name,
-      done: Boolean(carwash.takings),
-    })),
-  ];
+export function shiftSteps(day: ShopDay | undefined): { steps: ShiftStep[]; done: number; total: number; next: ShiftStep | undefined } {
+  const steps = (day?.steps ?? []).filter(atTheCounter);
   const done = steps.filter((step) => step.done).length;
   return { steps, done, total: steps.length, next: steps.find((step) => !step.done) };
 }

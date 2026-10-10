@@ -216,9 +216,13 @@ export class CarwashService {
   /** Today in shop time, and for each open carwash what was entered (null when nothing yet). */
   async today(now = new Date()): Promise<{ day: string; carwashes: Array<CarwashDto & { takings: CarwashTakings | null }> }> {
     const day = zonedDay(now, this.timeZone);
+    return { day, carwashes: await this.onDay(day) };
+  }
+
+  /** Each open carwash and what was entered for `day` (null when nothing yet). */
+  async onDay(day: string): Promise<Array<CarwashDto & { takings: CarwashTakings | null }>> {
     const open = await this.carwashes();
-    const carwashes = await Promise.all(open.map(async (carwash) => ({ ...carwash, takings: await this.findDay(carwash.id, day) })));
-    return { day, carwashes };
+    return Promise.all(open.map(async (carwash) => ({ ...carwash, takings: await this.findDay(carwash.id, day) })));
   }
 
   /** What was entered for one carwash and day, or null when nothing was. */

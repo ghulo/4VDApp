@@ -49,8 +49,8 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 
 - [x] Menu names match page titles (Stock, Sales, Day, Reports), tabs name the views
 - [ ] One list of what needs you (To do), worked out from the shop's state, clears itself; badge, Inbox, Overview and team Home all use it; alerts become Updates that never count
-- [ ] Day page: one date with the close-the-day checklist, drawer counts, carwash and expenses; steps defined once on the server and read by both apps
-- [ ] End your shift: steps show done / to do and each open one opens its step
+- [x] Day page: one date with the close-the-day checklist, drawer counts, carwash and expenses; steps defined once on the server and read by both apps
+- [x] End your shift: steps show done / to do and each open one opens its step
 - [ ] Sales history lists checkouts; a sale opens to show its lines
 - [ ] Team app tabs Home, Products, Sell, Account; Favourites is a filter on Products; Home has "Something happened"
 - [ ] Checks, screenshots at 375 and 1440, then you look it over before merge

@@ -71,7 +71,7 @@ import type {
   TeamRow,
   User,
   UserRole,
-  DayChecklist,
+  ShopDay,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -424,10 +424,11 @@ export const cashApi = {
 };
 
 export const dayApi = {
-  today: async () => (await apiRequest<DayChecklist>('/day/today')).data,
-  /** Managers say today had no expenses (or take it back). */
-  setNoExpenses: async (none: boolean) =>
-    (await apiRequest<DayChecklist>('/day/today/no-expenses', { method: 'PUT', body: { none } })).data,
+  /** One shop day ("2026-10-10"); today when left out. */
+  get: async (date?: string) => (await apiRequest<ShopDay>('/day', { query: { date } })).data,
+  /** Managers say a day had no expenses (or take it back). */
+  setNoExpenses: async (none: boolean, date?: string) =>
+    (await apiRequest<ShopDay>('/day/no-expenses', { method: 'PUT', body: { none, date } })).data,
 };
 
 export const expensesApi = {

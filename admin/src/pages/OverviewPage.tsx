@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
-import { checklistProgress, useDayChecklist } from '../utils/useDayChecklist';
+import { useDayChecklist } from '../utils/useDayChecklist';
 import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
@@ -234,11 +234,11 @@ function DayCloseLink() {
   const t = useT();
   const day = useDayChecklist();
   // Checked on each refetch (every minute), not on every render.
-  const due = Boolean(day.data && !day.data.done) && new Date(day.dataUpdatedAt).getHours() >= CLOSING_HOUR;
+  const due = Boolean(day.data && !day.data.allDone) && new Date(day.dataUpdatedAt).getHours() >= CLOSING_HOUR;
   if (!day.data) return null;
-  const { done, total } = checklistProgress(day.data);
+  const { done, total } = day.data;
   return (
-    <Link to="/cash" className={due ? 'today__link today__link--due' : 'today__link'}>
+    <Link to="/day" className={due ? 'today__link today__link--due' : 'today__link'}>
       <strong>
         {done} / {total}
       </strong>{' '}

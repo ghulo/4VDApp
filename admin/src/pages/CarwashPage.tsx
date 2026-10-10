@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router';
 import { Drop } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -103,12 +104,15 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
   const t = useT();
   const queryClient = useQueryClient();
   const { places, several } = useCarwashes();
+  // A link from the Day page names the carwash and day to enter (?carwash=2&day=2026-10-09).
+  const [params] = useSearchParams();
+  const askedDay = params.get('day') ?? today();
   // Which carwash this entry is for; only asked when there are several.
-  const [carwashId, setCarwashId] = useState<number | null>(start?.carwashId ?? null);
+  const [carwashId, setCarwashId] = useState<number | null>(start?.carwashId ?? (Number(params.get('carwash')) || null));
   const chosen = carwashId ?? places[0]?.id ?? null;
   const forThisCarwash = days.filter((entry) => entry.carwashId === chosen);
-  const initial = start ?? forThisCarwash.find((entry) => entry.day === today());
-  const [day, setDay] = useState(initial?.day ?? today());
+  const initial = start ?? forThisCarwash.find((entry) => entry.day === askedDay);
+  const [day, setDay] = useState(initial?.day ?? askedDay);
   const [carwash, setCarwash] = useState(initial ? String(initial.carwash) : '');
   const [change, setChange] = useState(initial ? String(initial.change) : '');
   const [savedDay, setSavedDay] = useState<string | null>(null);

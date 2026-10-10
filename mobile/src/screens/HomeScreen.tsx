@@ -16,7 +16,7 @@ import { WelcomeTour } from '../components/WelcomeTour';
 import { dayRanges, monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
-import { approvalsApi, carwashApi, cashApi, countsApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
+import { approvalsApi, countsApi, dayApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest } from '../services/types';
 import { canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors, type } from '../theme';
@@ -24,7 +24,7 @@ import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { TabBarSpacer } from '../components/TabBarSpace';
-import { CLOSING_HOUR, shiftSteps } from '../utils/shift';
+import { CLOSING_HOUR, DAY_QUERY_KEY, shiftSteps } from '../utils/shift';
 
 const LOW_STOCK_SHOWN = 5;
 const RECENT_SALES_SHOWN = 3;
@@ -65,15 +65,14 @@ export function HomeScreen() {
     enabled: sells,
   });
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: countsApi.list, enabled: sells });
-  const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today, enabled: sells });
+  const closing = useQuery({ queryKey: DAY_QUERY_KEY, queryFn: dayApi.today, enabled: sells });
   const tabs = useQuery({ queryKey: ['customers'], queryFn: customersApi.list, enabled: sells });
   const owing = tabs.data?.filter((customer) => customer.balance > 0) ?? [];
-  const carwash = useQuery({ queryKey: ['carwash', 'today'], queryFn: carwashApi.today, enabled: sells });
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: approvalsApi.mine, enabled: sells });
   const deliveries = useQuery({ queryKey: DELIVERIES_QUERY_KEY, queryFn: deliveriesApi.list, enabled: sells });
-  const shift = shiftSteps(cash.data, carwash.data?.carwashes);
-  // Only once both lists are in, so a slow network never says "closed up" by mistake.
-  const shiftClosed = Boolean(cash.data && carwash.data) && shift.done === shift.total;
+  const shift = shiftSteps(closing.data);
+  // Only once the steps are in, so a slow network never says "closed up" by mistake.
+  const shiftClosed = Boolean(closing.data) && shift.done === shift.total;
   const closingTime = now.getHours() >= CLOSING_HOUR;
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 

@@ -147,6 +147,23 @@ export interface CarwashToday {
   takings: { carwash: number; change: number } | null;
 }
 
+/** One thing that closes the day, as the server defines it for both apps. */
+export type DayStep =
+  | { kind: 'drawer'; key: string; place: CashPlace; carwashId: number | null; name: string | null; done: boolean; countedBy: string | null }
+  | { kind: 'carwash'; key: string; carwashId: number; name: string; done: boolean }
+  | { kind: 'expenses'; key: 'expenses'; done: boolean; count: number; total: number; noneMarked: boolean; noneMarkedBy: string | null }
+  | { kind: 'requests'; key: 'requests'; done: boolean; waiting: number };
+
+/** Today's close-the-day steps (staff get only the ones they close at the counter). */
+export interface ShopDay {
+  day: string;
+  today: string;
+  steps: DayStep[];
+  done: number;
+  total: number;
+  allDone: boolean;
+}
+
 /** Whether a drawer was counted today; never what the app expects (staff count blind). */
 export interface CashPlaceToday {
   place: CashPlace;

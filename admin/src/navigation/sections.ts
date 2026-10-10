@@ -58,6 +58,7 @@ export const SECTIONS = {
     { to: '/documents', key: 'invoices' },
   ],
   day: [
+    { to: '/day', key: 'close' },
     { to: '/cash', key: 'cash' },
     { to: '/carwash', key: 'carwash' },
   ],
@@ -106,7 +107,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'money',
     items: [
-      { to: '/cash', key: 'day', icon: Coins, also: ['/carwash'] },
+      { to: '/day', key: 'day', icon: Coins, also: ['/cash', '/carwash'] },
       { to: '/expenses', key: 'expenses', icon: Wallet },
       { to: '/report', key: 'reports', icon: ChartLine, also: ['/reports'] },
     ],

@@ -34,6 +34,7 @@ export interface DocumentLineRecord {
   sale_id: number;
   return_id: number | null;
   product_name: string;
+  product_code: string | null;
   quantity: number;
   unit_price: string;
   vat_rate: number;
@@ -46,6 +47,7 @@ export interface NewDocumentLine {
   saleId: number;
   returnId: number | null;
   productName: string;
+  productCode: string | null;
   quantity: number;
   unitPrice: number;
   vatRate: number;
@@ -84,6 +86,7 @@ export interface DocumentFilters {
 export interface SaleForDocument {
   id: number;
   product_name: string;
+  product_code: string | null;
   quantity_sold: number;
   price_per_unit: string;
   vat_rate: number;
@@ -157,6 +160,7 @@ export class DocumentRepository {
           sale_id: line.saleId,
           return_id: line.returnId,
           product_name: line.productName,
+          product_code: line.productCode,
           quantity: line.quantity,
           unit_price: line.unitPrice,
           vat_rate: line.vatRate,
@@ -218,7 +222,7 @@ export class DocumentRepository {
   findLines(documentId: number): Promise<DocumentLineRecord[]> {
     return this.db
       .selectFrom('document_lines')
-      .select(['id', 'sale_id', 'return_id', 'product_name', 'quantity', 'unit_price', 'vat_rate', 'net_amount', 'vat_amount', 'total'])
+      .select(['id', 'sale_id', 'return_id', 'product_name', 'product_code', 'quantity', 'unit_price', 'vat_rate', 'net_amount', 'vat_amount', 'total'])
       .where('document_id', '=', documentId)
       .orderBy('id')
       .execute();
@@ -228,7 +232,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select(['s.id', 'p.name as product_name', 's.quantity_sold', 's.price_per_unit', 'p.vat_rate'])
+      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 'p.vat_rate'])
       .where('s.id', 'in', saleIds)
       .orderBy('s.id')
       .execute();
@@ -239,7 +243,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('document_lines as l')
       .innerJoin('documents as d', 'd.id', 'l.document_id')
-      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'l.product_name', 'l.vat_rate'])
+      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'l.product_name', 'l.product_code', 'l.vat_rate'])
       .where('l.sale_id', '=', saleId)
       .where('d.kind', '=', 'invoice')
       .orderBy('d.id', 'desc')

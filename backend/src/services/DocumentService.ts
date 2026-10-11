@@ -16,6 +16,8 @@ export interface DocumentLineDto {
   saleId: number;
   returnId: number | null;
   productName: string;
+  /** The product's barcode, else its SKU, as it was when issued. */
+  productCode: string | null;
   quantity: number;
   unitPrice: number;
   vatRate: number;
@@ -97,7 +99,7 @@ export class DocumentService {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
       const unitPrice = toMoney(sale.price_per_unit);
-      return lineFor({ saleId: sale.id, returnId: null, productName: sale.product_name, quantity: sale.quantity_sold, unitPrice, vatRate: sale.vat_rate });
+      return lineFor({ saleId: sale.id, returnId: null, productName: sale.product_name, productCode: sale.product_code, quantity: sale.quantity_sold, unitPrice, vatRate: sale.vat_rate });
     });
     const buyer = p.customerId === null ? null : ((await repos.documents.customerParty(p.customerId)) ?? null);
     return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy });
@@ -115,6 +117,7 @@ export class DocumentService {
       saleId: p.saleId,
       returnId: p.returnId,
       productName: invoiced.product_name,
+      productCode: invoiced.product_code,
       quantity: p.quantity,
       unitPrice: roundMoney(p.total / p.quantity),
       vatRate: invoiced.vat_rate,
@@ -217,6 +220,7 @@ function lineFor(p: {
   saleId: number;
   returnId: number | null;
   productName: string;
+  productCode: string | null;
   quantity: number;
   unitPrice: number;
   vatRate: number;
@@ -260,6 +264,7 @@ function toLineDto(line: DocumentLineRecord): DocumentLineDto {
     saleId: line.sale_id,
     returnId: line.return_id,
     productName: line.product_name,
+    productCode: line.product_code,
     quantity: line.quantity,
     unitPrice: toMoney(line.unit_price),
     vatRate: line.vat_rate,

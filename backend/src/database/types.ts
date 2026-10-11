@@ -627,6 +627,8 @@ export interface DocumentLinesTable {
   sale_id: number;
   return_id: number | null;
   product_name: string;
+  /** The product's barcode, else its SKU, when the line was issued. */
+  product_code: string | null;
   quantity: number;
   /** VAT-inclusive. */
   unit_price: Decimal;

@@ -189,6 +189,8 @@ export interface SalesDocumentDetail extends SalesDocument {
     saleId: number;
     returnId: number | null;
     productName: string;
+    /** The product's barcode, else its SKU, as it was when issued. */
+    productCode: string | null;
     quantity: number;
     unitPrice: number;
     vatRate: number;

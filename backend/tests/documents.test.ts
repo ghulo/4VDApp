@@ -194,6 +194,28 @@ describe('access, printing and the fiscal receipt', () => {
     expect(creditPage).not.toContain('XK05');
   });
 
+  it("should print each product's code, and keep it on the credit note after the product changes", async () => {
+    await context.db.updateTable('products').set({ barcode: '5449000000996', sku: 'CH-1' }).where('id', '=', chair).execute();
+    await context.db.updateTable('products').set({ barcode: null, sku: 'BR-1' }).where('id', '=', bread).execute();
+    const { invoice } = await checkout(adminToken, [
+      { productId: chair, quantity: 1 },
+      { productId: bread, quantity: 1 },
+    ]);
+
+    // The barcode first, the SKU when there's no barcode.
+    expect((await getDocument(invoice.id)).lines.map((line: { productCode: string | null }) => line.productCode)).toEqual(['5449000000996', 'BR-1']);
+    expect((await api().get(`/api/documents/${invoice.id}/print`).set(auth(adminToken))).text).toContain('<span class="code">5449000000996</span>');
+
+    await context.db.updateTable('products').set({ barcode: '2000000000015' }).where('id', '=', chair).execute();
+    await context.db.updateTable('products').set({ sku: 'BR-2' }).where('id', '=', bread).execute();
+    await api().post(`/api/activity/${await entryOf('sale.recorded')}/undo`).set(auth(adminToken)).send({ note: 'wrong product' });
+    const credit = (await api().get('/api/documents?kind=credit_note').set(auth(adminToken))).body.data[0];
+    const creditLines = (await getDocument(credit.id)).lines.map((line: { productCode: string | null }) => line.productCode);
+    // The last sale in the basket, the bread, is the one undone.
+    expect(creditLines).toEqual(['BR-1']);
+    expect((await getDocument(invoice.id)).lines[0].productCode).toBe('5449000000996');
+  });
+
   it('should refuse an IBAN with a typo, and clear it when emptied', async () => {
     const typo = await api().put('/api/business').set(auth(adminToken)).send({ iban: 'XK05 1212 0123 4567 8907' });
     expect(typo.status).toBe(400);

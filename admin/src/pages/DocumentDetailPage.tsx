@@ -54,7 +54,16 @@ export function DocumentDetailPage() {
           rows={doc.lines}
           rowKey={(line) => `${line.saleId}-${line.returnId ?? ''}`}
           columns={[
-            { header: t.sales.product, title: true, cell: (line) => line.productName },
+            {
+              header: t.sales.product,
+              title: true,
+              cell: (line) => (
+                <span className="product-cell__text">
+                  {line.productName}
+                  {line.productCode && <span className="table__secondary">{line.productCode}</span>}
+                </span>
+              ),
+            },
             { header: t.sales.qty, align: 'end', cell: (line) => line.quantity },
             { header: t.sales.each, align: 'end', cell: (line) => formatMoney(line.unitPrice) },
             { header: t.documents.vat, align: 'end', cell: (line) => `${line.vatRate}%` },

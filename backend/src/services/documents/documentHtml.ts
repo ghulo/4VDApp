@@ -62,7 +62,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     .map(
       (line, index) => `<tr>
         <td class="num muted">${index + 1}</td>
-        <td class="product">${escape(line.productName)}</td>
+        <td class="product">${escape(line.productName)}${line.productCode ? `<span class="code">${escape(line.productCode)}</span>` : ''}</td>
         <td class="num">${line.quantity}</td>
         <td class="num">${eur(line.unitPrice)}</td>
         <td class="num">${line.vatRate}%</td>
@@ -147,6 +147,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
   .lines th { text-align: left; padding: 0 2mm 2mm; border-bottom: 1px solid var(--ink); }
   .lines td { padding: 2.4mm 2mm; border-bottom: 1px solid var(--hairline); vertical-align: top; }
   .lines .product { width: 100%; }
+  .code { display: block; font: 400 7.5pt/1.3 var(--mono); color: var(--ink-muted); letter-spacing: .02em; margin-top: .3mm; }
   .lines tr { break-inside: avoid; }
   .num { text-align: right !important; white-space: nowrap; }
 

@@ -111,8 +111,8 @@ export function createNotificationController(notificationService: NotificationSe
       await pushService.addDevice(
         req.user!.id,
         device.kind === 'expo'
-          ? { kind: 'expo', token: device.token, keys: null }
-          : { kind: 'web', token: device.endpoint, keys: device.keys },
+          ? { kind: 'expo', app: device.app, token: device.token, keys: null }
+          : { kind: 'web', app: device.app, token: device.endpoint, keys: device.keys },
       );
       sendSuccess(res, await pushService.settings(req.user!.id, req.user!.role), { statusCode: 201, message: 'Alerts switched on' });
     },

@@ -62,6 +62,7 @@ export const en = {
     },
     on: 'On for this phone, even when the app is closed.',
     off: 'Off for this phone.',
+    dashboardOnly: 'Your alerts come from the dashboard, so this app stays quiet and nothing reaches you twice.',
     turnOff: 'Turn off on this phone',
     turnOn: 'Turn on for this phone',
     deliveredTo: (service: string) => `${service}: accepted. It should pop up within a few seconds.`,

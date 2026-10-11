@@ -372,7 +372,7 @@ export const pushApi = {
   updatePreferences: async (changes: Partial<Record<PushTopic, boolean>>) =>
     (await apiRequest<PushSettings>('/notifications/push/preferences', { method: 'PUT', body: changes })).data,
   addWebDevice: async (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
-    (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: { kind: 'web', ...subscription } })).data,
+    (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: { kind: 'web', app: 'dashboard', ...subscription } })).data,
   /** Sends a test alert now and says, per device, whether it got through. */
   sendTest: async () => (await apiRequest<TestDelivery[]>('/notifications/push/test', { method: 'POST' })).data,
   removeDevice: async (token: string) =>

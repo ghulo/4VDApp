@@ -23,6 +23,8 @@ export interface PushSettingsDto {
   topics: Array<{ topic: PushTopic; enabled: boolean }>;
   /** How many phones and browsers will get their alerts. */
   deviceCount: number;
+  /** Alerts are on in the dashboard, so the team app stays quiet for this person. */
+  dashboardOnly: boolean;
   /** Null when the server has no Web Push keys, so browsers can't subscribe. */
   webPushPublicKey: string | null;
 }
@@ -56,6 +58,16 @@ function serviceOf(device: DeviceRecord): string {
   return host || 'Unknown';
 }
 
+/**
+ * The devices that get a person's alerts: only their dashboard ones when they
+ * have any, so someone with both the dashboard and the team app on their
+ * phone hears about each thing once. The test alert still tries every device.
+ */
+function alertedDevices(devices: DeviceRecord[]): DeviceRecord[] {
+  const withDashboard = new Set(devices.filter((device) => device.app === 'dashboard').map((device) => device.user_id));
+  return devices.filter((device) => device.app === 'dashboard' || !withDashboard.has(device.user_id));
+}
+
 export interface PushSenders {
   expo: PushSender;
   web: PushSender | null;
@@ -69,13 +81,15 @@ export class PushService {
   ) {}
 
   async settings(userId: number, role: UserRole): Promise<PushSettingsDto> {
-    const [preferences, deviceCount] = await Promise.all([
+    const [preferences, devices] = await Promise.all([
       this.pushRepository.preferences(userId),
       this.pushRepository.countDevices(userId),
     ]);
+    const dashboardOnly = devices.dashboard > 0;
     return {
       topics: TOPICS_BY_ROLE[role].map((topic) => ({ topic, enabled: preferences[topic] !== false })),
-      deviceCount,
+      deviceCount: dashboardOnly ? devices.dashboard : devices.total,
+      dashboardOnly,
       webPushPublicKey: this.webPushPublicKey,
     };
   }
@@ -139,7 +153,7 @@ export class PushService {
     if (wanted.length === 0) return 0;
 
     const devices = await this.pushRepository.devicesFor([...new Set(wanted.map((notification) => notification.user_id))]);
-    const { sent } = await this.deliver(wanted, devices);
+    const { sent } = await this.deliver(wanted, alertedDevices(devices));
     return sent;
   }
 

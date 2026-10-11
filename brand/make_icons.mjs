@@ -55,6 +55,8 @@ for (const [app, tile] of [['mobile', (svg) => svg], ['admin', invert]]) {
     .toFile(fileIn(app, 'public/icon-maskable-512.png'));
 }
 writeFileSync(fileIn('admin', 'public/favicon.svg'), invert(mark));
+// The emails show the mark at 48px; drawn at 3x for sharp phone screens. Served from the dashboard.
+await (await render(mark, 144)).png().toFile(fileIn('admin', 'public/email-logo.png'));
 await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));
 await (await render(square, 1024)).png().toFile(out('assets/icon.png'));
 await (await render(bare, 1024, 0.1)).png().toFile(out('assets/android-icon-foreground.png'));

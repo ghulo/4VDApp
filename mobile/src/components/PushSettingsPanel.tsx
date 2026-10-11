@@ -51,6 +51,7 @@ export function PushSettingsPanel() {
           <Text style={[styles.detail, { color: colors.ink }]}>
             {isOn ? t.push.on : t.push.off}
           </Text>
+          {settings.data.dashboardOnly && <Text style={[styles.detail, { color: colors.steel }]}>{t.push.dashboardOnly}</Text>}
           <Button
             label={isOn ? t.push.turnOff : t.push.turnOn}
             variant={isOn ? 'quiet' : 'primary'}

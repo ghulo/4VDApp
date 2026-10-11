@@ -366,6 +366,8 @@ export interface PushSettings {
   topics: Array<{ topic: PushTopic; enabled: boolean }>;
   /** Phones and browsers getting this person's alerts. */
   deviceCount: number;
+  /** Alerts are on in the dashboard, so the team app stays quiet for this person. */
+  dashboardOnly: boolean;
   /** Null when the server has no Web Push keys. */
   webPushPublicKey: string | null;
 }

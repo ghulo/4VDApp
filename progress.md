@@ -76,6 +76,17 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Downloads: each file as a card; Excel workbooks with a 4VD title band, euro and date formats, filters and a totals row; CSV kept plain for imports
 - [x] Merged and pushed
 
+## Buying, made better (branch buy-section)
+
+- [x] One Suppliers menu item with tabs: All suppliers · Orders · Bills (old links still work)
+- [x] All suppliers: what you owe, overdue, on the way, running low; search; last delivery; Order button per supplier; add a supplier in a side panel
+- [x] Orders: one list with On the way / Needs a bill / Cancelled and a supplier filter; each row shows its next step (Receive, Add the bill, bill to pay)
+- [x] New order is its own page: supplier, what is running low, price per line, a summary with the estimated cost
+- [x] Order page: copy the order text, receive the delivery right there, cancel only after a confirm
+- [x] Bills: every bill in one list, most urgent first; Unpaid / Overdue / Due this week / Paid / All; one supplier only via the filter or their page; Pay button; total left to pay; add a bill in a side panel
+- [x] Bill page: paying sits beside the payments, photo and details
+- [x] Merged and pushed together with the invoice work
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

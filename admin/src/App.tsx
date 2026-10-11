@@ -40,6 +40,7 @@ import { ExpensesPage } from './pages/ExpensesPage';
 import { CustomerDetailPage, CustomersPage, TabsRedirect } from './pages/CustomersPage';
 import { SupplierDetailPage } from './pages/SupplierDetailPage';
 import { SuppliersPage } from './pages/SuppliersPage';
+import { NewOrderPage } from './pages/NewOrderPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { LabelsPage } from './pages/LabelsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -132,11 +133,14 @@ function App() {
                   <Route path="customers" element={<CustomersPage />} />
                   <Route path="customers/:id" element={<CustomerDetailPage />} />
                   <Route path="tabs" element={<TabsRedirect />} />
-                  <Route path="suppliers" element={<SuppliersPage />} />
+                  <Route element={<SectionTabs tabs={SECTIONS.buy} labelKey="suppliers" />}>
+                    <Route path="suppliers" element={<SuppliersPage />} />
+                    <Route path="orders" element={<OrdersPage />} />
+                    <Route path="bills" element={<BillsPage />} />
+                  </Route>
                   <Route path="suppliers/:id" element={<SupplierDetailPage />} />
-                  <Route path="orders" element={<OrdersPage />} />
+                  <Route path="orders/new" element={<NewOrderPage />} />
                   <Route path="orders/:id" element={<OrderDetailPage />} />
-                  <Route path="bills" element={<BillsPage />} />
                   <Route path="bills/:id" element={<BillDetailPage />} />
                   <Route path="people" element={<UsersPage />} />
                   <Route path="counts" element={<StockCountsPage />} />

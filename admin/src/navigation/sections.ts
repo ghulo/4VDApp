@@ -5,7 +5,6 @@ import {
   Coins,
   Gear,
   House,
-  Invoice,
   AddressBook,
   Storefront,
   Package,
@@ -13,7 +12,6 @@ import {
   Receipt,
   Sparkle,
   Tray,
-  Truck,
   Users,
   Wallet,
   type Icon,
@@ -66,6 +64,11 @@ export const SECTIONS = {
     { to: '/cash', key: 'cash' },
     { to: '/carwash', key: 'carwash' },
   ],
+  buy: [
+    { to: '/suppliers', key: 'suppliers' },
+    { to: '/orders', key: 'orders' },
+    { to: '/bills', key: 'bills' },
+  ],
   reports: [
     { to: '/report', key: 'report' },
     { to: '/reports', key: 'analytics', keepSearch: true },
@@ -103,9 +106,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'buy',
     items: [
-      { to: '/suppliers', key: 'suppliers', icon: Storefront },
-      { to: '/orders', key: 'orders', icon: Truck },
-      { to: '/bills', key: 'bills', icon: Invoice },
+      { to: '/suppliers', key: 'suppliers', icon: Storefront, also: ['/orders', '/bills'] },
     ],
   },
   {

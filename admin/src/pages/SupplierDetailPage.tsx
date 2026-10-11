@@ -9,13 +9,12 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { SupplierForm } from '../components/SupplierForm';
 import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { billsApi, ordersApi, suppliersApi } from '../services/api';
+import { billsApi, ordersApi, reportsApi, suppliersApi } from '../services/api';
 import type { PurchaseOrder, Supplier } from '../services/types';
 import { BILL_STATUS_TONE } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
-
-const ORDER_TONE = { open: 'info', received: 'ok', cancelled: 'neutral' } as const;
+import { ORDER_STATUS_TONE, orderSummary } from '../utils/orders';
 
 /** One supplier on one page: what is on the way, what is owed, and every order and bill. */
 export function SupplierDetailPage() {
@@ -25,6 +24,8 @@ export function SupplierDetailPage() {
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const orders = useQuery({ queryKey: ['orders'], queryFn: ordersApi.list });
   const bills = useQuery({ queryKey: ['bills', { supplierId: id }], queryFn: () => billsApi.list({ supplierId: id }) });
+  const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
+  const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
 
   if (suppliers.isPending) return <Loading />;
   if (suppliers.isError) return <ErrorNotice error={suppliers.error} onRetry={() => suppliers.refetch()} />;
@@ -36,6 +37,7 @@ export function SupplierDetailPage() {
   const unpaid = bills.data?.filter((bill) => bill.status !== 'void' && bill.left > 0) ?? [];
   const owed = unpaid.reduce((sum, bill) => sum + bill.left, 0);
   const overdue = unpaid.filter((bill) => bill.overdue).reduce((sum, bill) => sum + bill.left, 0);
+  const lowFromThem = (reorder.data ?? []).filter((row) => row.suggestedOrder > 0 && usual.data?.[row.productId] === id).length;
 
   return (
     <>
@@ -46,10 +48,10 @@ export function SupplierDetailPage() {
         actions={
           canManage(role) && (
             <>
-              <ButtonLink to={`/bills?supplier=${id}&add=1`} icon={Invoice}>
+              <ButtonLink to={`/bills?supplier=${id}&new=1`} icon={Invoice}>
                 {t.suppliers.addBill}
               </ButtonLink>
-              <ButtonLink to={`/orders?supplier=${id}#new-order`} variant="primary" icon={Truck}>
+              <ButtonLink to={`/orders/new?supplier=${id}`} variant="primary" icon={Truck}>
                 {t.suppliers.newOrder}
               </ButtonLink>
             </>
@@ -58,9 +60,16 @@ export function SupplierDetailPage() {
       />
 
       <StatGrid>
-        <StatTile label={t.bills.owed} value={formatMoney(owed)} hint={t.bills.billsCount(unpaid.length)} />
-        <StatTile label={t.bills.overdue} value={formatMoney(overdue)} tone={overdue > 0 ? 'danger' : 'default'} />
-        <StatTile label={t.suppliers.onTheWay} value={onTheWay.length} hint={onTheWay.length > 0 ? t.suppliers.ordersWaiting : undefined} />
+        <StatTile label={t.bills.owed} value={formatMoney(owed)} hint={t.bills.billsCount(unpaid.length)} to={`/bills?supplier=${id}`} />
+        <StatTile label={t.bills.overdue} value={formatMoney(overdue)} tone={overdue > 0 ? 'danger' : 'default'} to={`/bills?supplier=${id}&status=overdue`} />
+        <StatTile label={t.orders.onTheWay} value={onTheWay.length} hint={onTheWay.length > 0 ? t.suppliers.ordersWaiting : undefined} to={`/orders?supplier=${id}&show=open`} />
+        <StatTile
+          label={t.suppliers.runningLow}
+          value={lowFromThem}
+          hint={lowFromThem > 0 ? t.suppliers.toReorder(lowFromThem) : t.suppliers.nothingLow}
+          tone={lowFromThem > 0 ? 'warn' : 'default'}
+          to={canManage(role) && lowFromThem > 0 ? `/orders/new?supplier=${id}` : undefined}
+        />
       </StatGrid>
 
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
@@ -90,17 +99,17 @@ export function SupplierDetailPage() {
       </Card>
 
       {orders.isError && <ErrorNotice error={orders.error} onRetry={() => orders.refetch()} />}
-      <OrdersCard orders={theirOrders} isPending={orders.isPending} />
+      <OrdersCard supplierId={id} orders={theirOrders} isPending={orders.isPending} />
 
       {canManage(role) && <DetailsCard supplier={supplier} />}
     </>
   );
 }
 
-function OrdersCard({ orders, isPending }: { orders: PurchaseOrder[]; isPending: boolean }) {
+function OrdersCard({ supplierId, orders, isPending }: { supplierId: number; orders: PurchaseOrder[]; isPending: boolean }) {
   const t = useT();
   return (
-    <Card title={t.suppliers.orders} flush>
+    <Card title={t.suppliers.orders} flush actions={<Link to={`/orders?supplier=${supplierId}`}>{t.suppliers.allOrders}</Link>}>
       <DataTable
         caption={t.suppliers.orders}
         rows={orders}
@@ -117,8 +126,8 @@ function OrdersCard({ orders, isPending }: { orders: PurchaseOrder[]; isPending:
               </Link>
             ),
           },
-          { header: t.suppliers.items, cell: (order) => order.lines.map((line) => `${line.quantity} × ${line.productName}`).join(', ') },
-          { header: t.orders.statusColumn, cell: (order) => <Badge tone={ORDER_TONE[order.status]}>{t.orders.status[order.status]}</Badge> },
+          { header: t.suppliers.items, cell: (order) => orderSummary(order, t.orders.andMore) },
+          { header: t.orders.statusColumn, cell: (order) => <Badge tone={ORDER_STATUS_TONE[order.status]}>{t.orders.status[order.status]}</Badge> },
           {
             header: t.orderDetail.bill,
             cell: (order) =>

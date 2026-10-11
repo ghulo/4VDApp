@@ -1,14 +1,17 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
+import type { UserRole } from '../database/types.js';
+import { canOversee } from '../utils/roles.js';
 import type { DocumentRef, DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
+import type { SettingsService } from './SettingsService.js';
 import { bestPromotionFor, priceWithPromotion } from './pricing/promotions.js';
 
 export interface SaleDto {
@@ -17,6 +20,8 @@ export interface SaleDto {
   productName: string;
   quantity: number;
   pricePerUnit: number;
+  /** Rabat given at the counter, in percent; null when none. */
+  discountPercent: number | null;
   totalAmount: number;
   soldBy: string | null;
   saleDate: string;
@@ -48,10 +53,13 @@ export interface RecordSaleInput {
   saleDate?: Date;
   /** Puts the sale on this customer's tab instead of taking the money now. */
   customerId?: number;
+  /** Rabat off the price for this quantity, in percent. */
+  discountPercent?: number;
 }
 
 export interface BasketInput {
-  items: Array<{ productId: number; quantity: number }>;
+  /** `discountPercent`: rabat on that line; employees may give up to the shop's limit. */
+  items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
   notes: string | null;
   /** Puts the whole basket on this customer's tab. */
   customerId?: number;
@@ -71,6 +79,7 @@ export class SalesService {
     private readonly transactions: TransactionManager,
     private readonly documents: DocumentService,
     private readonly timeZone: string,
+    private readonly settings: SettingsService,
   ) {}
 
   async list(query: SaleQuery) {
@@ -143,7 +152,13 @@ export class SalesService {
    * (so returns, undo and reports work per product), all on one invoice, all
    * saved or none.
    */
-  async recordBasket(input: BasketInput, soldBy: number): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
+  async recordBasket(input: BasketInput, seller: { id: number; role: UserRole }): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
+    const soldBy = seller.id;
+    const largest = Math.max(0, ...input.items.map((item) => item.discountPercent ?? 0));
+    if (largest > 0 && !canOversee(seller.role)) {
+      const limit = (await this.settings.get()).employeeDiscountLimit;
+      if (largest > limit) throw new ForbiddenError(`You can give at most ${limit}% rabat. Ask the owner or an admin for more.`);
+    }
     const { saleIds, invoice } = await this.transactions.run(async (repos) => {
       const saleIds: number[] = [];
       for (const item of input.items) {
@@ -163,11 +178,14 @@ export class SalesService {
     const basePrice = toMoney(product.base_price);
     const tiers = await repos.pricingTiers.findByProductId(product.id);
     const promotions = await repos.promotions.findRunning(input.saleDate ?? new Date());
-    const { pricePerUnit, promotionId } = priceWithPromotion(
+    const { pricePerUnit: listedPrice, promotionId } = priceWithPromotion(
       basePrice,
       calculateUnitPrice(basePrice, tiers, input.quantity),
       bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
     );
+    // Rabat comes off the price the customer would otherwise pay (bulk price or promotion included).
+    const discountPercent = input.discountPercent ? input.discountPercent : null;
+    const pricePerUnit = discountPercent === null ? listedPrice : roundMoney(listedPrice * (1 - discountPercent / 100));
 
     const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
     if (input.customerId !== undefined && (!customer || customer.archived_at)) {
@@ -181,6 +199,8 @@ export class SalesService {
       unitCost: toMoneyOrNull(product.cost_price),
       soldBy,
       promotionId,
+      discountPercent,
+      priceBeforeDiscount: discountPercent === null ? null : listedPrice,
       notes: input.notes,
       saleDate: input.saleDate,
     });
@@ -210,8 +230,8 @@ export class SalesService {
       action: 'sale.recorded',
       entityType: 'sale',
       entityId: id,
-      summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${customer ? ` on ${customer.name}'s tab` : ''}`,
-      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, customerId: customer?.id ?? null },
+      summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${discountPercent ? ` with ${discountPercent}% rabat` : ''}${customer ? ` on ${customer.name}'s tab` : ''}`,
+      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, customerId: customer?.id ?? null },
     });
     return id;
   }
@@ -224,6 +244,7 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     productName: sale.product_name,
     quantity: sale.quantity_sold,
     pricePerUnit: toMoney(sale.price_per_unit),
+    discountPercent: toMoneyOrNull(sale.discount_percent),
     totalAmount: toMoney(sale.total_amount),
     soldBy: sale.sold_by_name,
     saleDate: sale.sale_date.toISOString(),

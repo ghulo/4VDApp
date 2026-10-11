@@ -20,9 +20,11 @@ export const updateSettingsSchema = z
     returnWindowDays: z.number().int().min(0).max(3650).optional(),
     minimumMarginPercent: z.number().min(0).max(1000).optional(),
     cashFloatShop: z.number().min(0).max(100_000).optional(),
+    paymentTermsDays: z.number().int().min(0).max(365).optional(),
+    employeeDiscountLimit: z.number().min(0).max(100).optional(),
   })
   .refine((input) => Object.values(input).some((value) => value !== undefined), {
-    message: 'send at least one of: refundApprovalLimit, returnWindowDays, minimumMarginPercent, cashFloatShop',
+    message: 'send at least one of: refundApprovalLimit, returnWindowDays, minimumMarginPercent, cashFloatShop, paymentTermsDays, employeeDiscountLimit',
   });
 
 /** Wiping everything has to be typed out, so it can't happen by a stray click. */

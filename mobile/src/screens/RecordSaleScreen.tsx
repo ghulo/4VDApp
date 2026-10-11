@@ -10,7 +10,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, Vibration, View } f
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { TabPicker } from '../components/TabPicker';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
-import { documentsApi, favoritesApi, productsApi, salesApi } from '../services/api';
+import { documentsApi, favoritesApi, productsApi, salesApi, settingsApi } from '../services/api';
+import { decidesRequests, useCurrentUser } from '../state/useAuth';
 import type { Customer, DocumentRef, Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
@@ -22,6 +23,9 @@ import { useTabBarSpace } from '../components/TabBarSpace';
 const SEARCH_RESULTS = 8;
 const QUICK_PICKS = 6;
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
+
+/** The unit price after a rabat, rounded like the server rounds it. */
+const afterDiscount = (price: number, percent: number) => (percent > 0 ? roundMoney(price * (1 - percent / 100)) : price);
 
 interface Line {
   product: Product;
@@ -64,6 +68,14 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState<Customer | null>(null);
   const [invoice, setInvoice] = useState<DocumentRef | null>(null);
+  const [discount, setDiscount] = useState('');
+  const user = useCurrentUser();
+  const settings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  // Owners and admins give any rabat; everyone else up to the shop's limit.
+  const discountLimit = decidesRequests(user) ? 100 : (settings.data?.employeeDiscountLimit ?? 0);
+  const discountText = discount.trim().replace(',', '.');
+  const discountPercent = discountText === '' || !Number.isFinite(Number(discountText)) ? 0 : roundMoney(Number(discountText));
+  const discountTooHigh = discountPercent > discountLimit || discountPercent < 0;
 
   const query = search.trim().toLowerCase();
   const matches = query
@@ -110,14 +122,16 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     );
   }
 
-  const total = roundMoney(lines.reduce((sum, line) => sum + salePriceFor(line.product, line.quantity).unitPrice * line.quantity, 0));
+  const total = roundMoney(
+    lines.reduce((sum, line) => sum + afterDiscount(salePriceFor(line.product, line.quantity).unitPrice, discountPercent) * line.quantity, 0),
+  );
   const paidAmount = Number(paid.replace(',', '.'));
   const giveBack = !tab && paid.trim() !== '' && paidAmount >= total ? roundMoney(paidAmount - total) : null;
 
   const record = useMutation({
     mutationFn: () =>
       salesApi.recordBasket({
-        items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+        items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity, ...(discountPercent > 0 && { discountPercent }) })),
         notes: notes.trim() || null,
         ...(tab && { customerId: tab.id }),
       }),
@@ -132,6 +146,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
       setLines([]);
       setPaid('');
       setNotes('');
+      setDiscount('');
       setTab(null);
     },
   });
@@ -228,8 +243,9 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
                 <View style={styles.lineText}>
                   <Text style={[styles.pickerName, { color: colors.ink }]}>{line.product.name}</Text>
                   <Text style={[styles.pickerMeta, { color: unitPrice < line.product.price ? colors.stockOk : colors.steel }]}>
-                    {line.quantity} × {formatMoney(unitPrice)}
+                    {line.quantity} × {formatMoney(afterDiscount(unitPrice, discountPercent))}
                     {unitPrice < line.product.price ? ` · ${isPromotion ? t.sell.promotionApplied : t.sell.bulkApplied}` : ''}
+                    {discountPercent > 0 ? ` · ${t.sell.discountOff(discountText)}` : ''}
                   </Text>
                 </View>
                 <StepButton icon={Minus} accessibilityLabel={t.sell.oneLessOf(line.product.name)} onPress={() => change(line.product.id, -1)} disabled={false} />
@@ -249,6 +265,15 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
 
         {lines.length > 0 && (
           <>
+            <TextField
+              label={t.sell.discount}
+              value={discount}
+              onChangeText={setDiscount}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              hint={discountLimit < 100 ? t.sell.discountUpTo(discountLimit) : undefined}
+              error={discountTooHigh ? t.sell.discountTooHigh(discountLimit) : undefined}
+            />
             {!tab && <TextField label={t.sell.paid} value={paid} onChangeText={setPaid} keyboardType="decimal-pad" placeholder="0,00" />}
             {giveBack !== null && <Text style={[styles.change, { color: colors.ink }]}>{t.sell.giveBack(formatMoney(giveBack))}</Text>}
             {!tab && paid.trim() !== '' && paidAmount < total && (
@@ -282,7 +307,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
         <Button
           label={`${t.sell.record} · ${formatMoney(total)}`}
           onPress={() => record.mutate()}
-          disabled={lines.length === 0}
+          disabled={lines.length === 0 || discountTooHigh}
           loading={record.isPending}
         />
       </View>

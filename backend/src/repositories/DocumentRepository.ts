@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
-import type { DocumentKind, DocumentParty } from '../database/types.js';
+import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../database/types.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 
 /** Printed around a document from the shop's current settings; the document itself never changes. */
@@ -8,6 +8,8 @@ export interface Letterhead {
   logo: { mime: string; bytes: Buffer } | null;
   bankName: string | null;
   iban: string | null;
+  /** The shop's own words at the bottom of every invoice. */
+  note: string | null;
 }
 
 export interface DocumentRecord {
@@ -27,6 +29,9 @@ export interface DocumentRecord {
   vat_total: string;
   total: string;
   fiscal_receipt_no: string | null;
+  payment_method: DocumentPaymentMethod;
+  /** "YYYY-MM-DD", for invoices paid on account. */
+  due_date: string | null;
 }
 
 export interface DocumentLineRecord {
@@ -37,6 +42,8 @@ export interface DocumentLineRecord {
   product_code: string | null;
   quantity: number;
   unit_price: string;
+  discount_percent: string | null;
+  price_before_discount: string | null;
   vat_rate: number;
   net_amount: string;
   vat_amount: string;
@@ -50,6 +57,8 @@ export interface NewDocumentLine {
   productCode: string | null;
   quantity: number;
   unitPrice: number;
+  discountPercent: number | null;
+  priceBeforeDiscount: number | null;
   vatRate: number;
   netAmount: number;
   vatAmount: number;
@@ -68,6 +77,8 @@ export interface NewDocument {
   netTotal: number;
   vatTotal: number;
   total: number;
+  paymentMethod: DocumentPaymentMethod;
+  dueDate: string | null;
   lines: NewDocumentLine[];
 }
 
@@ -89,6 +100,8 @@ export interface SaleForDocument {
   product_code: string | null;
   quantity_sold: number;
   price_per_unit: string;
+  discount_percent: string | null;
+  price_before_discount: string | null;
   vat_rate: number;
 }
 
@@ -124,13 +137,14 @@ export class DocumentRepository {
     const row = await this.db
       .selectFrom('businesses as b')
       .leftJoin('media as m', 'm.id', 'b.logo_media_id')
-      .select(['b.bank_name', 'b.iban', 'm.mime', 'm.bytes'])
+      .select(['b.bank_name', 'b.iban', 'b.invoice_note', 'm.mime', 'm.bytes'])
       .orderBy('b.id')
       .executeTakeFirstOrThrow();
     return {
       logo: row.mime && row.bytes ? { mime: row.mime, bytes: row.bytes } : null,
       bankName: row.bank_name,
       iban: row.iban,
+      note: row.invoice_note,
     };
   }
 
@@ -149,6 +163,8 @@ export class DocumentRepository {
         net_total: document.netTotal,
         vat_total: document.vatTotal,
         total: document.total,
+        payment_method: document.paymentMethod,
+        due_date: document.dueDate,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -163,6 +179,8 @@ export class DocumentRepository {
           product_code: line.productCode,
           quantity: line.quantity,
           unit_price: line.unitPrice,
+          discount_percent: line.discountPercent,
+          price_before_discount: line.priceBeforeDiscount,
           vat_rate: line.vatRate,
           net_amount: line.netAmount,
           vat_amount: line.vatAmount,
@@ -195,6 +213,8 @@ export class DocumentRepository {
         'd.vat_total',
         'd.total',
         'd.fiscal_receipt_no',
+        'd.payment_method',
+        sql<string | null>`to_char(d.due_date, 'YYYY-MM-DD')`.as('due_date'),
       ]);
   }
 
@@ -222,7 +242,7 @@ export class DocumentRepository {
   findLines(documentId: number): Promise<DocumentLineRecord[]> {
     return this.db
       .selectFrom('document_lines')
-      .select(['id', 'sale_id', 'return_id', 'product_name', 'product_code', 'quantity', 'unit_price', 'vat_rate', 'net_amount', 'vat_amount', 'total'])
+      .select(['id', 'sale_id', 'return_id', 'product_name', 'product_code', 'quantity', 'unit_price', 'discount_percent', 'price_before_discount', 'vat_rate', 'net_amount', 'vat_amount', 'total'])
       .where('document_id', '=', documentId)
       .orderBy('id')
       .execute();
@@ -232,7 +252,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 'p.vat_rate'])
+      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 's.discount_percent', 's.price_before_discount', 'p.vat_rate'])
       .where('s.id', 'in', saleIds)
       .orderBy('s.id')
       .execute();
@@ -243,7 +263,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('document_lines as l')
       .innerJoin('documents as d', 'd.id', 'l.document_id')
-      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'l.product_name', 'l.product_code', 'l.vat_rate'])
+      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'd.payment_method', 'l.product_name', 'l.product_code', 'l.discount_percent', 'l.price_before_discount', 'l.vat_rate'])
       .where('l.sale_id', '=', saleId)
       .where('d.kind', '=', 'invoice')
       .orderBy('d.id', 'desc')

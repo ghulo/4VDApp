@@ -1,12 +1,15 @@
 import { Minus, Plus, X } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useCurrentUser } from '../auth/useAuth';
+import { canOversee } from '../auth/roles';
 import { useT } from '../i18n/useT';
-import { customersApi, productsApi, salesApi } from '../services/api';
+import { customersApi, documentsApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { DocumentRef, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney } from '../utils/format';
-import { codeFromScan } from '../utils/scanLinks';
+import { formatMoney, formatPercent } from '../utils/format';
+import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
 import { PrintDocumentButton } from './PrintDocumentButton';
 import { Button, ButtonLink, Field } from './ui';
@@ -21,6 +24,15 @@ export function unitPriceFor(product: Product, quantity: number): number {
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
+/** The unit price after a rabat, rounded like the server rounds it. */
+const afterDiscount = (price: number, percent: number) => (percent > 0 ? roundMoney(price * (1 - percent / 100)) : price);
+
+/** "7,5" or "7.5" typed into a box, as a number; blank means no rabat. */
+const parsePercent = (text: string) => {
+  const value = Number(text.replace(',', '.'));
+  return text.trim() === '' || !Number.isFinite(value) ? 0 : value;
+};
+
 /**
  * The counter's checkout: scan or type products into a basket, see the total
  * and the change to give back, then record it all at once.
@@ -28,13 +40,20 @@ const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 export function BasketForm() {
   const t = useT();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const scanRef = useRef<HTMLInputElement>(null);
   const products = useQuery({
     queryKey: ['products', { page: 1, limit: 100, inStock: true }],
     queryFn: () => productsApi.list({ page: 1, limit: 100, inStock: true }),
   });
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
-  const [lines, setLines] = useState<Array<{ product: Product; quantity: number }>>([]);
+  const settings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  const { role } = useCurrentUser();
+  // Owners and admins give any rabat; everyone else up to the shop's limit.
+  const discountLimit = canOversee(role) ? 100 : (settings.data?.employeeDiscountLimit ?? 0);
+  // `discount` is the box's text, so a half-typed "7," stays as typed.
+  const [lines, setLines] = useState<Array<{ product: Product; quantity: number; discount: string }>>([]);
+  const [discountAll, setDiscountAll] = useState('');
   const [scan, setScan] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
   const [paid, setPaid] = useState('');
@@ -56,7 +75,7 @@ export function BasketForm() {
     setLines((current) => {
       const existing = current.find((line) => line.product.id === product.id);
       if (existing) return current.map((line) => (line === existing ? { ...line, quantity: Math.min(line.quantity + 1, product.stock.quantity) } : line));
-      return [...current, { product, quantity: 1 }];
+      return [...current, { product, quantity: 1, discount: discountAll }];
     });
     setScan('');
     scanRef.current?.focus();
@@ -69,6 +88,17 @@ export function BasketForm() {
     // A QR-capable scanner reads a product's QR code as its link; the code is inside.
     const code = codeFromScan(scan);
     if (!code) return;
+    // An invoice's own barcode (a customer bringing something back): open that invoice.
+    const documentNumber = documentNumberFromScan(code);
+    if (documentNumber && canOversee(role)) {
+      try {
+        const found = (await documentsApi.list({ page: 1, search: documentNumber })).items.find((document) => document.number === documentNumber);
+        if (found) return navigate(`/documents/${found.id}`);
+        return setScanError(t.basket.notFound(code));
+      } catch (error) {
+        return setScanError(errorMessage(error));
+      }
+    }
     const byBarcode = sellable.find((product) => product.barcode === code);
     if (byBarcode) return add(byBarcode);
     if (suggestions.length === 1) return add(suggestions[0]!);
@@ -87,14 +117,29 @@ export function BasketForm() {
     );
   }
 
-  const total = roundMoney(lines.reduce((sum, line) => sum + unitPriceFor(line.product, line.quantity) * line.quantity, 0));
+  function setDiscount(productId: number, discount: string) {
+    setLines((current) => current.map((line) => (line.product.id === productId ? { ...line, discount } : line)));
+  }
+
+  function setDiscountForAll(discount: string) {
+    setDiscountAll(discount);
+    setLines((current) => current.map((line) => ({ ...line, discount })));
+  }
+
+  const priceOf = (line: { product: Product; quantity: number; discount: string }) =>
+    afterDiscount(unitPriceFor(line.product, line.quantity), parsePercent(line.discount));
+  const tooMuchDiscount = lines.some((line) => parsePercent(line.discount) > discountLimit || parsePercent(line.discount) < 0);
+  const total = roundMoney(lines.reduce((sum, line) => sum + priceOf(line) * line.quantity, 0));
   const paidAmount = Number(paid);
   const change = paid.trim() !== '' && paidAmount >= total ? roundMoney(paidAmount - total) : null;
 
   const record = useMutation({
     mutationFn: () =>
       salesApi.recordBasket({
-        items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+        items: lines.map((line) => {
+          const discount = roundMoney(parsePercent(line.discount));
+          return { productId: line.product.id, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
+        }),
         notes: notes.trim() || null,
         ...(customerId && { customerId: Number(customerId) }),
       }),
@@ -106,6 +151,7 @@ export function BasketForm() {
       setInvoice(result.invoice);
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       setLines([]);
+      setDiscountAll('');
       setPaid('');
       setCustomerId('');
       setNotes('');
@@ -169,7 +215,7 @@ export function BasketForm() {
               <tr>
                 <th scope="col">{t.sales.product}</th>
                 <th scope="col">{t.sales.quantity}</th>
-                <th scope="col" className="table__numeric">{t.sales.each}</th>
+                <th scope="col" className="table__numeric">{t.basket.discount}</th>
                 <th scope="col" className="table__numeric">{t.sales.total}</th>
                 <th scope="col">
                   <span className="visually-hidden">{t.basket.remove}</span>
@@ -178,12 +224,14 @@ export function BasketForm() {
             </thead>
             <tbody>
               {lines.map((line) => {
-                const each = unitPriceFor(line.product, line.quantity);
+                const listed = unitPriceFor(line.product, line.quantity);
+                const percent = parsePercent(line.discount);
+                const each = afterDiscount(listed, percent);
                 return (
                   <tr key={line.product.id}>
                     <td>
                       {line.product.name}
-                      {each < line.product.price && <span className="table__secondary">{t.basket.cheaper}</span>}
+                      {listed < line.product.price && <span className="table__secondary">{t.basket.cheaper}</span>}
                     </td>
                     <td data-label={t.sales.quantity}>
                       <span className="basket__stepper">
@@ -200,8 +248,24 @@ export function BasketForm() {
                         />
                       </span>
                     </td>
-                    <td className="table__numeric" data-label={t.sales.each}>{formatMoney(each)}</td>
-                    <td className="table__numeric" data-label={t.sales.total}>{formatMoney(roundMoney(each * line.quantity))}</td>
+                    <td className="table__numeric" data-label={t.basket.discount}>
+                      <input
+                        className="input--compact basket__discount"
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        placeholder="0"
+                        aria-label={t.basket.discountFor(line.product.name)}
+                        aria-invalid={percent > discountLimit || percent < 0}
+                        value={line.discount}
+                        onChange={(event) => setDiscount(line.product.id, event.target.value)}
+                      />
+                    </td>
+                    <td className="table__numeric" data-label={t.sales.total}>
+                      {formatMoney(roundMoney(each * line.quantity))}
+                      <span className="table__secondary">{t.basket.each(formatMoney(each))}</span>
+                      {percent > 0 && <span className="table__secondary">{t.basket.discountOff(formatPercent(percent / 100))}</span>}
+                    </td>
                     <td>
                       <Button variant="ghost" aria-label={t.basket.removeLabel(line.product.name)} onClick={() => setQuantity(line.product.id, 0)} icon={X} />
                     </td>
@@ -214,6 +278,25 @@ export function BasketForm() {
       )}
 
       <p className="basket__total">{t.basket.total(formatMoney(total))}</p>
+
+      {lines.length > 0 && (
+        <Field
+          label={t.basket.discountAll}
+          narrow
+          hint={discountLimit < 100 ? t.basket.discountUpTo(discountLimit) : undefined}
+          error={tooMuchDiscount ? t.basket.discountTooHigh(discountLimit) : undefined}
+        >
+          <input
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0"
+            aria-invalid={tooMuchDiscount}
+            value={discountAll}
+            onChange={(event) => setDiscountForAll(event.target.value)}
+          />
+        </Field>
+      )}
 
       <div className="field-row">
         <Field label={t.basket.paid} narrow>
@@ -258,7 +341,7 @@ export function BasketForm() {
           )}
         </div>
       )}
-      <Button type="submit" variant="primary" disabled={lines.length === 0 || record.isPending}>
+      <Button type="submit" variant="primary" disabled={lines.length === 0 || tooMuchDiscount || record.isPending}>
         {record.isPending ? t.sales.recording : t.basket.record(formatMoney(total))}
       </Button>
     </form>

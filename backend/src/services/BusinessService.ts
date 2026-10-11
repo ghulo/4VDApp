@@ -14,6 +14,7 @@ export interface BusinessDto {
   logoUrl: string | null;
   bankName: string | null;
   iban: string | null;
+  invoiceNote: string | null;
 }
 
 export interface BusinessChanges {
@@ -24,6 +25,7 @@ export interface BusinessChanges {
   timeZone?: string | null;
   bankName?: string | null;
   iban?: string | null;
+  invoiceNote?: string | null;
 }
 
 const toDto = (business: BusinessRow): BusinessDto => ({
@@ -36,6 +38,7 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   logoUrl: mediaUrl(business.logo_media_id),
   bankName: business.bank_name,
   iban: business.iban,
+  invoiceNote: business.invoice_note,
 });
 
 /** The shop's own details: name, address, phone, NUI, time zone, logo and bank account. */
@@ -60,6 +63,7 @@ export class BusinessService {
       ...(changes.timeZone !== undefined && { time_zone: changes.timeZone }),
       ...(changes.bankName !== undefined && { bank_name: changes.bankName }),
       ...(changes.iban !== undefined && { iban: changes.iban }),
+      ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
     });
     return toDto(updated);
   }

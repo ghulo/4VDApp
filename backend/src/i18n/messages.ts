@@ -199,6 +199,16 @@ export interface ServerMessages {
     payReference: string;
     page: string;
     pageOf: string;
+    discount: string;
+    discountTotal: string;
+    inWords: string;
+    paymentMethod: string;
+    paidAtTill: string;
+    onAccount: string;
+    refundedAtTill: string;
+    creditedToAccount: string;
+    dueDate: string;
+    stamp: string;
   };
 }
 
@@ -434,6 +444,16 @@ export const en: ServerMessages = {
     payReference: 'Reference',
     page: 'Page',
     pageOf: 'of',
+    discount: 'Rabat',
+    discountTotal: 'Total rabat',
+    inWords: 'In words',
+    paymentMethod: 'Payment',
+    paidAtTill: 'Paid at the till',
+    onAccount: 'On account',
+    refundedAtTill: 'Refunded at the till',
+    creditedToAccount: 'Credited to the account',
+    dueDate: 'Due by',
+    stamp: 'Stamp',
   },
 };
 
@@ -670,6 +690,16 @@ export const sq: ServerMessages = {
     payReference: 'Referenca',
     page: 'Faqe',
     pageOf: 'nga',
+    discount: 'Rabati',
+    discountTotal: 'Rabati gjithsej',
+    inWords: 'Me fjalë',
+    paymentMethod: 'Pagesa',
+    paidAtTill: 'Paguar në arkë',
+    onAccount: 'Në llogari',
+    refundedAtTill: 'Kthyer në arkë',
+    creditedToAccount: 'Kreditohet në llogari',
+    dueDate: 'Afati i pagesës',
+    stamp: 'V.V.',
   },
 };
 

@@ -68,6 +68,7 @@ export const businessSchema = z
     timeZone: z.string().refine(isTimeZone, 'not a time zone, e.g. Europe/Belgrade').nullable().optional(),
     bankName: optionalText(100),
     iban: ibanSchema.optional(),
+    invoiceNote: optionalText(500),
   })
   .strict();
 

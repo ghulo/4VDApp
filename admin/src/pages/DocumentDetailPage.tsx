@@ -8,7 +8,7 @@ import { useT } from '../i18n/useT';
 import { documentsApi } from '../services/api';
 import type { DocumentParty, SalesDocumentDetail } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, formatMoney } from '../utils/format';
+import { formatDate, formatDateTime, formatMoney, formatPercent } from '../utils/format';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
@@ -65,7 +65,8 @@ export function DocumentDetailPage() {
               ),
             },
             { header: t.sales.qty, align: 'end', cell: (line) => line.quantity },
-            { header: t.sales.each, align: 'end', cell: (line) => formatMoney(line.unitPrice) },
+            { header: t.sales.each, align: 'end', cell: (line) => formatMoney(line.priceBeforeDiscount ?? line.unitPrice) },
+            { header: t.documents.discount, align: 'end', cell: (line) => (line.discountPercent ? formatPercent(line.discountPercent / 100) : '') },
             { header: t.documents.vat, align: 'end', cell: (line) => `${line.vatRate}%` },
             { header: t.documents.net, align: 'end', cell: (line) => formatMoney(line.netAmount) },
             { header: t.documents.vatAmount, align: 'end', cell: (line) => formatMoney(line.vatAmount) },
@@ -79,6 +80,10 @@ export function DocumentDetailPage() {
               <dd>{t.documents.netAndVat({ net: formatMoney(row.net), vat: formatMoney(row.vat) })}</dd>
             </div>
           ))}
+          <div>
+            <dt>{t.documents.payment}</dt>
+            <dd>{paymentText(doc, t)}</dd>
+          </div>
           <div>
             <dt>{t.documents.netTotal}</dt>
             <dd>{formatMoney(doc.netTotal)}</dd>
@@ -97,6 +102,13 @@ export function DocumentDetailPage() {
       <FiscalReceiptCard document={doc} />
     </>
   );
+}
+
+function paymentText(doc: SalesDocumentDetail, t: ReturnType<typeof useT>): string {
+  if (doc.kind === 'credit_note') return doc.paymentMethod === 'account' ? t.documents.creditedToAccount : t.documents.refundedAtTill;
+  if (doc.paymentMethod === 'till') return t.documents.paidAtTill;
+  // Noon, so the day never slips across midnight in any time zone nearby.
+  return doc.dueDate ? t.documents.onAccount(formatDate(`${doc.dueDate}T12:00:00`)) : t.documents.onAccountNoDue;
 }
 
 function Party({ title, party, customerId }: { title: string; party: DocumentParty | null; customerId?: number | null }) {

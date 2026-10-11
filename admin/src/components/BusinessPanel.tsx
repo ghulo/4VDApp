@@ -52,6 +52,7 @@ function BusinessForm({ initial }: { initial: Business }) {
   const [timeZone, setTimeZone] = useState(initial.timeZone ?? '');
   const [bankName, setBankName] = useState(initial.bankName ?? '');
   const [iban, setIban] = useState(initial.iban ?? '');
+  const [invoiceNote, setInvoiceNote] = useState(initial.invoiceNote ?? '');
   // Checked once the person leaves the box, so half-typed numbers aren't flagged.
   const [ibanLeft, setIbanLeft] = useState(false);
   const ibanOk = isIbanOrEmpty(iban);
@@ -69,6 +70,7 @@ function BusinessForm({ initial }: { initial: Business }) {
         timeZone: timeZone || null,
         bankName: bankName.trim() || null,
         iban: iban.trim() || null,
+        invoiceNote: invoiceNote.trim() || null,
       }),
     onSuccess: keep,
   });
@@ -101,7 +103,8 @@ function BusinessForm({ initial }: { initial: Business }) {
     cleanNui(nui) !== (initial.nui ?? '') ||
     timeZone !== (initial.timeZone ?? '') ||
     bankName.trim() !== (initial.bankName ?? '') ||
-    cleanIban(iban) !== (initial.iban ?? '');
+    cleanIban(iban) !== (initial.iban ?? '') ||
+    invoiceNote.trim() !== (initial.invoiceNote ?? '');
 
   return (
     <form onSubmit={handleSubmit}>
@@ -193,6 +196,9 @@ function BusinessForm({ initial }: { initial: Business }) {
               />
             </Field>
           </div>
+          <Field label={t.business.invoiceNote} hint={t.business.invoiceNoteHint}>
+            <textarea rows={2} maxLength={500} value={invoiceNote} onChange={(event) => setInvoiceNote(event.target.value)} />
+          </Field>
         </div>
       </Card>
     </form>

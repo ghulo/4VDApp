@@ -73,6 +73,8 @@ export interface BusinessesTable {
   logo_media_id: string | null;
   bank_name: string | null;
   iban: string | null;
+  /** Printed at the bottom of every invoice: thanks, return rules. */
+  invoice_note: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -192,6 +194,10 @@ export interface SalesTable {
   sold_by: number | null;
   /** The promotion that set the price, if any. */
   promotion_id: number | null;
+  /** Rabat given at the counter, in percent; null when none. */
+  discount_percent: Decimal | null;
+  /** The unit price before that rabat (after bulk prices and promotions). */
+  price_before_discount: Decimal | null;
   sale_date: ColumnType<Date, Date | undefined, Date>;
   notes: string | null;
   created_at: CreatedAt;
@@ -587,6 +593,7 @@ export interface ReportSubscriptionsTable {
 }
 
 export type DocumentKind = 'invoice' | 'credit_note';
+export type DocumentPaymentMethod = 'till' | 'account';
 
 /** Who a document is from or to, copied when it is issued. */
 export interface DocumentParty {
@@ -619,6 +626,9 @@ export interface DocumentsTable {
   total: Decimal;
   /** The only field that changes after issuing. */
   fiscal_receipt_no: string | null;
+  /** Paid at the till, or on the customer's account (their tab), then due by `due_date`. */
+  payment_method: ColumnType<DocumentPaymentMethod, DocumentPaymentMethod | undefined, never>;
+  due_date: ColumnType<string | null, string | null | undefined, never>;
 }
 
 export interface DocumentLinesTable {
@@ -633,6 +643,8 @@ export interface DocumentLinesTable {
   /** VAT-inclusive. */
   unit_price: Decimal;
   vat_rate: number;
+  discount_percent: Decimal | null;
+  price_before_discount: Decimal | null;
   net_amount: Decimal;
   vat_amount: Decimal;
   total: Decimal;

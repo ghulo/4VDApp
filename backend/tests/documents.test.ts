@@ -26,7 +26,7 @@ const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 const api = () => request(context.app);
 const year = new Date().getFullYear();
 
-async function checkout(token: string, items: Array<{ productId: number; quantity: number }>, extra: Record<string, unknown> = {}) {
+async function checkout(token: string, items: Array<{ productId: number; quantity: number; discountPercent?: number }>, extra: Record<string, unknown> = {}) {
   const response = await api().post('/api/sales/basket').set(auth(token)).send({ items, ...extra });
   if (response.status !== 201) throw new Error(JSON.stringify(response.body));
   return response.body.data as { sales: Array<{ id: number; invoice: { id: number; number: string } }>; invoice: { id: number; number: string } };
@@ -178,10 +178,13 @@ describe('access, printing and the fiscal receipt', () => {
     expect(page.text).not.toContain('IBAN');
   });
 
-  it('should print the bank account on invoices for paying by transfer, but not on credit notes', async () => {
+  it('should print the bank account on invoices left on account, but not on paid ones or credit notes', async () => {
     const saved = await api().put('/api/business').set(auth(adminToken)).send({ bankName: 'ProCredit Bank', iban: 'xk05 1212 0123 4567 8906' });
     expect(saved.body.data).toMatchObject({ bankName: 'ProCredit Bank', iban: 'XK051212012345678906' });
-    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
+    const paid = await checkout(adminToken, [{ productId: bread, quantity: 1 }]);
+    expect((await api().get(`/api/documents/${paid.invoice.id}/print`).set(auth(adminToken))).text).not.toContain('XK05');
+    const customer = await api().post('/api/customers').set(auth(adminToken)).send({ name: 'Arta', kind: 'person' });
+    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }], { customerId: customer.body.data.id });
 
     const page = (await api().get(`/api/documents/${invoice.id}/print?language=en`).set(auth(adminToken))).text;
     expect(page).toContain('ProCredit Bank');
@@ -238,5 +241,63 @@ describe('access, printing and the fiscal receipt', () => {
     const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
     const found = await api().get(`/api/documents?search=${encodeURIComponent('000002')}`).set(auth(adminToken));
     expect(found.body.data.map((row: { id: number }) => row.id)).toEqual([invoice.id]);
+  });
+});
+
+describe('rabat, payment and what a full invoice prints', () => {
+  it('should take rabat off the price for that quantity and print it, empty where none was given', async () => {
+    const { invoice } = await checkout(adminToken, [
+      { productId: chair, quantity: 2, discountPercent: 10 },
+      { productId: bread, quantity: 1 },
+    ]);
+
+    const lines = (await getDocument(invoice.id)).lines;
+    // 118 less 10% is 106.20 a chair.
+    expect(lines[0]).toMatchObject({ unitPrice: 106.2, discountPercent: 10, priceBeforeDiscount: 118, total: 212.4 });
+    expect(lines[1]).toMatchObject({ unitPrice: 1.08, discountPercent: null, priceBeforeDiscount: null });
+    const sales = (await api().get('/api/sales').set(auth(adminToken))).body.data.sales;
+    expect(sales.find((sale: { productId: number }) => sale.productId === chair)).toMatchObject({ pricePerUnit: 106.2, discountPercent: 10 });
+
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=sq`).set(auth(adminToken))).text;
+    expect(page).toContain('Rabati gjithsej');
+    expect(page).toContain('10%');
+  });
+
+  it('should let employees give rabat only up to the shop limit; owners and admins any', async () => {
+    const tooMuch = await api().post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: chair, quantity: 1, discountPercent: 15 }] });
+    expect(tooMuch.status).toBe(403);
+    expect((await api().post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: chair, quantity: 1, discountPercent: 10 }] })).status).toBe(201);
+    await api().put('/api/settings').set(auth(adminToken)).send({ employeeDiscountLimit: 20 });
+    expect((await api().post('/api/sales/basket').set(auth(employeeToken)).send({ items: [{ productId: chair, quantity: 1, discountPercent: 15 }] })).status).toBe(201);
+    expect((await api().post('/api/sales/basket').set(auth(adminToken)).send({ items: [{ productId: chair, quantity: 1, discountPercent: 50 }] })).status).toBe(201);
+  });
+
+  it('should say how each invoice is paid, with a due date after the payment terms for tab sales', async () => {
+    const atTill = await checkout(adminToken, [{ productId: bread, quantity: 1 }]);
+    expect(await getDocument(atTill.invoice.id)).toMatchObject({ paymentMethod: 'till', dueDate: null });
+
+    await api().put('/api/settings').set(auth(adminToken)).send({ paymentTermsDays: 15 });
+    const customer = await api().post('/api/customers').set(auth(adminToken)).send({ name: 'Arta', kind: 'person' });
+    const onTab = await checkout(adminToken, [{ productId: bread, quantity: 1 }], { customerId: customer.body.data.id });
+    const document = await getDocument(onTab.invoice.id);
+    const expected = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    expect(document.paymentMethod).toBe('account');
+    // Within a day of 15 days from now (the shop's day can differ from UTC near midnight).
+    expect(Math.abs(new Date(document.dueDate).getTime() - new Date(expected).getTime())).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+
+    const page = (await api().get(`/api/documents/${onTab.invoice.id}/print?language=en`).set(auth(adminToken))).text;
+    expect(page).toContain('On account');
+    expect(page).toContain('Due by');
+  });
+
+  it('should print the number as a barcode, the total in words, the stamp place and the shop note', async () => {
+    await api().put('/api/business').set(auth(adminToken)).send({ invoiceNote: 'Thanks for shopping with us!' });
+    const { invoice } = await checkout(adminToken, [{ productId: bread, quantity: 1 }]);
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=en`).set(auth(adminToken))).text;
+    expect(page).toContain('class="doc__barcode"');
+    expect(page).toContain('one euro and eight cents');
+    expect(page).toContain('class="stamp"');
+    expect(page).toContain('Thanks for shopping with us!');
+    expect(page).toContain('Paid at the till');
   });
 });

@@ -5,9 +5,11 @@ import { loadConfig } from '../config/env.js';
 import { createDatabase, type DatabaseClient } from '../database/connection.js';
 import { DocumentRepository } from '../repositories/DocumentRepository.js';
 import { SalesRepository } from '../repositories/SalesRepository.js';
+import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { TransactionManager } from '../repositories/TransactionManager.js';
 import { DocumentService } from '../services/DocumentService.js';
 import { SalesService } from '../services/SalesService.js';
+import { SettingsService } from '../services/SettingsService.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
 import { seedDemoAccounts } from './demoAccounts.js';
@@ -132,8 +134,9 @@ async function seedDemoSales(db: DatabaseClient, timeZone: string): Promise<void
   if (!admin) return;
 
   const transactions = new TransactionManager(db);
-  const documents = new DocumentService(new DocumentRepository(db), transactions, timeZone);
-  const salesService = new SalesService(new SalesRepository(db), transactions, documents, timeZone);
+  const settings = new SettingsService(new SettingsRepository(db), transactions);
+  const documents = new DocumentService(new DocumentRepository(db), transactions, timeZone, settings);
+  const salesService = new SalesService(new SalesRepository(db), transactions, documents, timeZone, settings);
   const products = await db
     .selectFrom('products as p')
     .innerJoin('inventory as i', 'i.product_id', 'p.id')

@@ -12,6 +12,10 @@ export interface AppSettings {
   /** Hour (0–23, shop time) the owner's daily summary goes out. */
   /** Change left in the shop drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
+  /** Days a customer has to pay an invoice put on their account. */
+  paymentTermsDays: number;
+  /** The most rabat, in percent, an employee may give at the counter; owners and admins may give any. */
+  employeeDiscountLimit: number;
 }
 
 const KEYS: Record<keyof AppSettings, string> = {
@@ -19,6 +23,8 @@ const KEYS: Record<keyof AppSettings, string> = {
   returnWindowDays: 'return_window_days',
   minimumMarginPercent: 'minimum_margin_percent',
   cashFloatShop: 'cash_float_shop',
+  paymentTermsDays: 'payment_terms_days',
+  employeeDiscountLimit: 'employee_discount_limit',
 };
 
 export class SettingsService {
@@ -38,6 +44,8 @@ export class SettingsService {
       returnWindowDays: read('returnWindowDays'),
       minimumMarginPercent: read('minimumMarginPercent'),
       cashFloatShop: read('cashFloatShop'),
+      paymentTermsDays: read('paymentTermsDays'),
+      employeeDiscountLimit: read('employeeDiscountLimit'),
     };
   }
 
@@ -73,5 +81,9 @@ function describe(name: keyof AppSettings, from: number, to: number): string {
       return `the minimum margin from ${from}% to ${to}%`;
     case 'cashFloatShop':
       return `the shop's cash float from €${from} to €${to}`;
+    case 'paymentTermsDays':
+      return `the payment terms from ${from} to ${to} days`;
+    case 'employeeDiscountLimit':
+      return `the most rabat employees can give from ${from}% to ${to}%`;
   }
 }

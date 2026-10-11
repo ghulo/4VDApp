@@ -78,6 +78,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
   const [windowDays, setWindowDays] = useState(String(initial.returnWindowDays));
   const [minimumMargin, setMinimumMargin] = useState(String(initial.minimumMarginPercent));
   const [floatShop, setFloatShop] = useState(String(initial.cashFloatShop));
+  const [discountLimit, setDiscountLimit] = useState(String(initial.employeeDiscountLimit));
+  const [paymentTerms, setPaymentTerms] = useState(String(initial.paymentTermsDays));
   const [saved, setSaved] = useState(false);
 
   const save = useMutation({
@@ -87,6 +89,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
         returnWindowDays: Number(windowDays),
         minimumMarginPercent: Number(minimumMargin),
         cashFloatShop: Number(floatShop),
+        employeeDiscountLimit: Number(discountLimit),
+        paymentTermsDays: Number(paymentTerms),
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(['settings'], updated);
@@ -110,13 +114,22 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
     minimumMargin !== '' &&
     Number(minimumMargin) >= 0 &&
     floatShop !== '' &&
-    Number(floatShop) >= 0;
+    Number(floatShop) >= 0 &&
+    discountLimit !== '' &&
+    Number(discountLimit) >= 0 &&
+    Number(discountLimit) <= 100 &&
+    paymentTerms !== '' &&
+    Number.isInteger(Number(paymentTerms)) &&
+    Number(paymentTerms) >= 0 &&
+    Number(paymentTerms) <= 365;
   // Save only turns orange once there's something to save, so one card at a time asks for action.
   const hasChanges =
     Number(limit) !== initial.refundApprovalLimit ||
     Number(windowDays) !== initial.returnWindowDays ||
     Number(minimumMargin) !== initial.minimumMarginPercent ||
-    Number(floatShop) !== initial.cashFloatShop;
+    Number(floatShop) !== initial.cashFloatShop ||
+    Number(discountLimit) !== initial.employeeDiscountLimit ||
+    Number(paymentTerms) !== initial.paymentTermsDays;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -204,6 +217,36 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               value={floatShop}
               onChange={(event) => setFloatShop(event.target.value)}
             />
+          </span>
+        </SettingRow>
+        <SettingRow title={t.settings.discountLimit} description={t.settings.discountLimitHint}>
+          <span className="unit-input">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              step={0.5}
+              aria-label={t.settings.discountLimitLabel}
+              value={discountLimit}
+              onChange={(event) => setDiscountLimit(event.target.value)}
+            />
+            <span aria-hidden="true">%</span>
+          </span>
+        </SettingRow>
+        <SettingRow title={t.settings.paymentTerms} description={t.settings.paymentTermsHint}>
+          <span className="unit-input">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={365}
+              step={1}
+              aria-label={t.settings.paymentTermsLabel}
+              value={paymentTerms}
+              onChange={(event) => setPaymentTerms(event.target.value)}
+            />
+            <span aria-hidden="true">{t.settings.days}</span>
           </span>
         </SettingRow>
       </Card>

@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { productsApi, usersApi } from '../services/api';
+import { documentsApi, productsApi, usersApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
-import { canManage } from '../auth/roles';
+import { canManage, canOversee } from '../auth/roles';
+import { formatMoney } from '../utils/format';
+import { documentNumberFromScan } from '../utils/scanLinks';
 import { type Catalogue, en } from '../i18n/en';
 
 type Group = keyof Catalogue['palette']['groups'];
@@ -83,7 +85,7 @@ function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command
   };
 }
 
-const GROUP_ORDER: Group[] = ['actions', 'pages', 'products', 'people'];
+const GROUP_ORDER: Group[] = ['documents', 'actions', 'pages', 'products', 'people'];
 const MAX_PER_GROUP = 6;
 
 /** Jump anywhere or start something, by typing. Ctrl/Cmd+K opens it. */
@@ -105,6 +107,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     staleTime: 30_000,
   });
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), staleTime: 60_000 });
+  // A scanned or typed invoice number (its barcode) jumps straight to that document.
+  const documentNumber = documentNumberFromScan(trimmed);
+  const documents = useQuery({
+    queryKey: ['command', 'documents', documentNumber],
+    queryFn: () => documentsApi.list({ page: 1, search: documentNumber! }),
+    enabled: documentNumber !== null && canOversee(role),
+  });
 
   const results = useMemo(() => {
     const productCommands: Command[] = (trimmed.length >= 2 ? (products.data?.items ?? []) : []).map((product) => ({
@@ -123,7 +132,17 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       hint: t.common.roles[user.role],
       to: '/people',
     }));
+    const documentCommands: Command[] = (documentNumber ? (documents.data?.items ?? []) : [])
+      .filter((document) => document.number === documentNumber)
+      .map((document) => ({
+        id: `document-${document.id}`,
+        group: 'documents',
+        label: document.number,
+        hint: [document.buyer?.name, formatMoney(document.total)].filter(Boolean).join(' · '),
+        to: `/documents/${document.id}`,
+      }));
     const ranked = [
+      ...documentCommands,
       ...rankMatches(trimmed, commands.actions.filter((action) => !action.managersOnly || canManage(role))),
       ...rankMatches(trimmed, commands.pages),
       // Products already come back filtered by the server's search.
@@ -131,7 +150,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),
     ];
     return GROUP_ORDER.flatMap((group) => ranked.filter((command) => command.group === group).slice(0, MAX_PER_GROUP));
-  }, [trimmed, products.data, people.data, role, t, commands]);
+  }, [trimmed, products.data, people.data, documents.data, documentNumber, role, t, commands]);
 
   useEffect(() => {
     input.current?.focus();
@@ -186,7 +205,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         />
         <ul id="palette-results" className="palette__results" role="listbox">
           {results.length === 0 && (
-            <li className="palette__empty">{products.isFetching ? t.palette.searching : t.palette.nothing(trimmed)}</li>
+            <li className="palette__empty">{products.isFetching || documents.isFetching ? t.palette.searching : t.palette.nothing(trimmed)}</li>
           )}
           {results.map((command, index) => {
             const startsGroup = index === 0 || results[index - 1]!.group !== command.group;

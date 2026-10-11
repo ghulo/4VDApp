@@ -43,7 +43,7 @@ export function createSalesController(salesService: SalesService) {
     },
 
     async recordBasket(req: Request, res: Response): Promise<void> {
-      const result = await salesService.recordBasket(parseInput(basketSchema, req.body), req.user!.id);
+      const result = await salesService.recordBasket(parseInput(basketSchema, req.body), req.user!);
       sendSuccess(res, result, { statusCode: 201, message: 'Sale recorded' });
     },
   };

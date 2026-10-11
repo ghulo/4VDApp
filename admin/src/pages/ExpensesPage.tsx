@@ -57,7 +57,6 @@ export function ExpensesPage() {
 
       {expenses.data && <Totals totals={expenses.data.totals} />}
       {!canManage(role) && <p className="field-hint">{t.expenses.managersOnly}</p>}
-      {!canManage(role) && <p className="field-hint">{t.expenses.managersOnly}</p>}
 
       {expenses.isPending && <Loading />}
       {expenses.isError && <ErrorNotice error={expenses.error} onRetry={() => expenses.refetch()} />}

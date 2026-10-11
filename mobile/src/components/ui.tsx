@@ -53,7 +53,8 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
   );
 }
 
-export function TextField({ label, ...inputProps }: TextInputProps & { label: string }) {
+/** A labelled text box; `hint` under it explains, `error` (read out at once) says what's wrong. */
+export function TextField({ label, hint, error, ...inputProps }: TextInputProps & { label: string; hint?: string; error?: string }) {
   const colors = useThemeColors();
   return (
     <View style={styles.field}>
@@ -65,9 +66,16 @@ export function TextField({ label, ...inputProps }: TextInputProps & { label: st
         style={[
           styles.input,
           { color: colors.ink, backgroundColor: colors.surface, borderColor: colors.lineStrong, boxShadow: colors.inset },
+          error ? { borderColor: colors.signalOut } : null,
           inputProps.style,
         ]}
       />
+      {hint && !error && <Text style={[styles.fieldNote, { color: colors.steel }]}>{hint}</Text>}
+      {error && (
+        <Text style={[styles.fieldNote, { color: colors.signalOut }]} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      )}
     </View>
   );
 }
@@ -132,6 +140,7 @@ const styles = StyleSheet.create({
   buttonLabel: { fontFamily: fonts.bodyBold, fontSize: type.body },
   field: { gap: spacing.xs, marginBottom: spacing.lg },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
+  fieldNote: { fontFamily: fonts.body, fontSize: type.label },
   input: {
     minHeight: 48,
     borderWidth: 1,

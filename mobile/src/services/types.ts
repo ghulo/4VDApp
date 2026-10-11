@@ -101,6 +101,8 @@ export interface InventoryItem {
 export interface AppSettings {
   refundApprovalLimit: number;
   returnWindowDays: number;
+  /** The most rabat, in percent, an employee may give; owners and admins may give any. */
+  employeeDiscountLimit: number;
 }
 
 export interface Customer {

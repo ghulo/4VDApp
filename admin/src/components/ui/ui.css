@@ -910,7 +910,7 @@ input.switch:focus-visible {
   display: block;
 }
 
-.setting-row--fields .field:last-child,
+.setting-row--fields > .field:last-child,
 .setting-row--fields .field-row:last-child .field {
   margin-bottom: 0;
 }

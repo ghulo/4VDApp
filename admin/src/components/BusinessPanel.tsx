@@ -11,6 +11,21 @@ import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
+
+/** An IBAN the way the server keeps it: no spaces, capitals. */
+const cleanIban = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
+/** Empty, or an IBAN whose check digits match (ISO 13616 mod 97), the same check the server makes. */
+function isIbanOrEmpty(value: string): boolean {
+  const iban = cleanIban(value);
+  if (!iban) return true;
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return false;
+  const digits = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (letter) => String(letter.charCodeAt(0) - 55));
+  let remainder = 0;
+  for (const digit of digits) remainder = (remainder * 10 + Number(digit)) % 97;
+  return remainder === 1;
+}
+
 // The time zones people in and around the shop's region are most likely to need, then everything else.
 const COMMON_ZONES = ['Europe/Belgrade', 'Europe/Budapest', 'Europe/Tirane', 'Europe/Skopje', 'Europe/Berlin', 'Europe/London'];
 
@@ -35,6 +50,12 @@ function BusinessForm({ initial }: { initial: Business }) {
   const [phone, setPhone] = useState(initial.phone ?? '');
   const [nui, setNui] = useState(initial.nui ?? '');
   const [timeZone, setTimeZone] = useState(initial.timeZone ?? '');
+  const [bankName, setBankName] = useState(initial.bankName ?? '');
+  const [iban, setIban] = useState(initial.iban ?? '');
+  const [invoiceNote, setInvoiceNote] = useState(initial.invoiceNote ?? '');
+  // Checked once the person leaves the box, so half-typed numbers aren't flagged.
+  const [ibanLeft, setIbanLeft] = useState(false);
+  const ibanOk = isIbanOrEmpty(iban);
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const keep = (updated: Business) => queryClient.setQueryData(['business'], updated);
@@ -47,6 +68,9 @@ function BusinessForm({ initial }: { initial: Business }) {
         phone: phone.trim() || null,
         nui: cleanNui(nui),
         timeZone: timeZone || null,
+        bankName: bankName.trim() || null,
+        iban: iban.trim() || null,
+        invoiceNote: invoiceNote.trim() || null,
       }),
     onSuccess: keep,
   });
@@ -77,7 +101,10 @@ function BusinessForm({ initial }: { initial: Business }) {
     address.trim() !== (initial.address ?? '') ||
     phone.trim() !== (initial.phone ?? '') ||
     cleanNui(nui) !== (initial.nui ?? '') ||
-    timeZone !== (initial.timeZone ?? '');
+    timeZone !== (initial.timeZone ?? '') ||
+    bankName.trim() !== (initial.bankName ?? '') ||
+    cleanIban(iban) !== (initial.iban ?? '') ||
+    invoiceNote.trim() !== (initial.invoiceNote ?? '');
 
   return (
     <form onSubmit={handleSubmit}>
@@ -97,7 +124,7 @@ function BusinessForm({ initial }: { initial: Business }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || save.isPending}>
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || !ibanOk || save.isPending}>
               {save.isPending ? t.settings.saving : t.business.save}
             </Button>
           </>
@@ -151,6 +178,27 @@ function BusinessForm({ initial }: { initial: Business }) {
               </select>
             </Field>
           </div>
+          <div className="field-row">
+            <Field label={t.business.bankName}>
+              <input maxLength={100} autoComplete="off" value={bankName} onChange={(event) => setBankName(event.target.value)} />
+            </Field>
+            <Field label={t.business.iban} hint={t.business.ibanHint} error={ibanLeft && !ibanOk ? t.business.ibanInvalid : undefined}>
+              <input
+                maxLength={42}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                placeholder={t.business.ibanExample}
+                value={iban}
+                onChange={(event) => setIban(event.target.value)}
+                onBlur={() => setIbanLeft(true)}
+                aria-invalid={ibanLeft && !ibanOk}
+              />
+            </Field>
+          </div>
+          <Field label={t.business.invoiceNote} hint={t.business.invoiceNoteHint}>
+            <textarea rows={2} maxLength={500} value={invoiceNote} onChange={(event) => setInvoiceNote(event.target.value)} />
+          </Field>
         </div>
       </Card>
     </form>

@@ -182,6 +182,10 @@ export interface SalesDocument extends DocumentRef {
   vatTotal: number;
   total: number;
   fiscalReceiptNo: string | null;
+  /** Paid at the till, or on the customer's account (their tab). */
+  paymentMethod: 'till' | 'account';
+  /** "YYYY-MM-DD": when an invoice on account is due. */
+  dueDate: string | null;
 }
 
 export interface SalesDocumentDetail extends SalesDocument {
@@ -189,8 +193,14 @@ export interface SalesDocumentDetail extends SalesDocument {
     saleId: number;
     returnId: number | null;
     productName: string;
+    /** The product's barcode, else its SKU, as it was when issued. */
+    productCode: string | null;
     quantity: number;
+    /** After any rabat. */
     unitPrice: number;
+    /** Rabat in percent; null when none. */
+    discountPercent: number | null;
+    priceBeforeDiscount: number | null;
     vatRate: number;
     netAmount: number;
     vatAmount: number;
@@ -680,6 +690,10 @@ export interface AppSettings {
   /** Hour (0–23, shop time) the daily summary goes out. */
   /** Change left in each drawer every night; the cash check takes it off the count. */
   cashFloatShop: number;
+  /** Days a customer has to pay an invoice put on their account. */
+  paymentTermsDays: number;
+  /** The most rabat, in percent, an employee may give; owners and admins may give any. */
+  employeeDiscountLimit: number;
 }
 
 export type CashPlace = 'shop' | 'carwash';
@@ -796,6 +810,9 @@ export interface Business {
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;
+  bankName: string | null;
+  iban: string | null;
+  invoiceNote: string | null;
 }
 
 export interface Security {

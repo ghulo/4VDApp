@@ -36,7 +36,14 @@ export const recordSaleSchema = z.object({
 export const basketSchema = z
   .object({
     items: z
-      .array(z.object({ productId: idSchema, quantity: z.number().int().min(1).max(1_000_000) }))
+      .array(
+        z.object({
+          productId: idSchema,
+          quantity: z.number().int().min(1).max(1_000_000),
+          // 0 means no rabat; two decimals at most, like the stored percent.
+          discountPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
+        }),
+      )
       .min(1, 'add at least one product')
       .max(100),
     notes: optionalText(1000),

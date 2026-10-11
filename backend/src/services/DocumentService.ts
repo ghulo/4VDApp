@@ -1,5 +1,5 @@
 import { ForbiddenError, NotFoundError } from '../errors/httpErrors.js';
-import type { DocumentKind, DocumentParty } from '../database/types.js';
+import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../database/types.js';
 import type { Language } from '../i18n/language.js';
 import type { DocumentLineRecord, DocumentRecord, DocumentRepository, NewDocumentLine } from '../repositories/DocumentRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
@@ -10,14 +10,22 @@ import { canOversee } from '../utils/roles.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import { renderDocumentHtml } from './documents/documentHtml.js';
 import { splitVat } from './documents/vat.js';
-import { toMoney } from './mappers.js';
+import { toMoney, toMoneyOrNull } from './mappers.js';
+import type { SettingsService } from './SettingsService.js';
 
 export interface DocumentLineDto {
   saleId: number;
   returnId: number | null;
   productName: string;
+  /** The product's barcode, else its SKU, as it was when issued. */
+  productCode: string | null;
   quantity: number;
+  /** VAT-inclusive, after any rabat. */
   unitPrice: number;
+  /** Rabat given at the counter, in percent; null when none. */
+  discountPercent: number | null;
+  /** The unit price before that rabat. */
+  priceBeforeDiscount: number | null;
   vatRate: number;
   netAmount: number;
   vatAmount: number;
@@ -41,6 +49,10 @@ export interface DocumentDto {
   vatTotal: number;
   total: number;
   fiscalReceiptNo: string | null;
+  /** Paid at the till, or on the customer's account (their tab). */
+  paymentMethod: DocumentPaymentMethod;
+  /** "YYYY-MM-DD": when an invoice on account is due. */
+  dueDate: string | null;
 }
 
 export interface DocumentDetailDto extends DocumentDto {
@@ -87,6 +99,7 @@ export class DocumentService {
     private readonly documentRepository: DocumentRepository,
     private readonly transactions: TransactionManager,
     private readonly timeZone: string,
+    private readonly settings: SettingsService,
   ) {}
 
   /** The invoice for a checkout: one line per sale. */
@@ -97,10 +110,18 @@ export class DocumentService {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
       const unitPrice = toMoney(sale.price_per_unit);
-      return lineFor({ saleId: sale.id, returnId: null, productName: sale.product_name, quantity: sale.quantity_sold, unitPrice, vatRate: sale.vat_rate });
+      return lineFor({ saleId: sale.id, returnId: null, productName: sale.product_name,
+        productCode: sale.product_code,
+        quantity: sale.quantity_sold,
+        unitPrice,
+        discountPercent: toMoneyOrNull(sale.discount_percent),
+        priceBeforeDiscount: toMoneyOrNull(sale.price_before_discount),
+        vatRate: sale.vat_rate,
+      });
     });
     const buyer = p.customerId === null ? null : ((await repos.documents.customerParty(p.customerId)) ?? null);
-    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy });
+    const paymentMethod = p.customerId === null ? 'till' : 'account';
+    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod });
   }
 
   /**
@@ -115,6 +136,9 @@ export class DocumentService {
       saleId: p.saleId,
       returnId: p.returnId,
       productName: invoiced.product_name,
+      productCode: invoiced.product_code,
+      discountPercent: toMoneyOrNull(invoiced.discount_percent),
+      priceBeforeDiscount: toMoneyOrNull(invoiced.price_before_discount),
       quantity: p.quantity,
       unitPrice: roundMoney(p.total / p.quantity),
       vatRate: invoiced.vat_rate,
@@ -128,6 +152,7 @@ export class DocumentService {
       correctsId: kind === 'credit_note' ? invoiced.document_id : null,
       reason: p.reason,
       issuedBy: p.issuedBy,
+      paymentMethod: invoiced.payment_method,
     });
   }
 
@@ -141,9 +166,14 @@ export class DocumentService {
       correctsId: number | null;
       reason: string | null;
       issuedBy: number;
+      paymentMethod: DocumentPaymentMethod;
     },
   ): Promise<DocumentRef> {
-    const year = Number(zonedDay(new Date(), this.timeZone).slice(0, 4));
+    const today = zonedDay(new Date(), this.timeZone);
+    const year = Number(today.slice(0, 4));
+    // An invoice on account is due after the shop's payment terms; anything paid at the till is settled already.
+    const dueDate =
+      p.kind === 'invoice' && p.paymentMethod === 'account' ? addDays(today, (await this.settings.get()).paymentTermsDays) : null;
     const sequence = await repos.documents.nextNumber(p.kind, year);
     const number = `${PREFIX[p.kind]}-${year}-${String(sequence).padStart(6, '0')}`;
     const sum = (pick: (line: NewDocumentLine) => number) => roundMoney(p.lines.reduce((total, line) => total + pick(line), 0));
@@ -154,6 +184,7 @@ export class DocumentService {
       netTotal: sum((line) => line.netAmount),
       vatTotal: sum((line) => line.vatAmount),
       total: sum((line) => line.total),
+      dueDate,
     });
     return { id, number };
   }
@@ -179,7 +210,8 @@ export class DocumentService {
 
   /** The A4 page, ready for a browser or the phone to print or save as PDF. */
   async html(id: number, viewer: PublicUser, language: Language): Promise<string> {
-    return renderDocumentHtml(await this.get(id, viewer), language, this.timeZone);
+    const [document, letterhead] = await Promise.all([this.get(id, viewer), this.documentRepository.letterhead()]);
+    return renderDocumentHtml(document, letterhead, language, this.timeZone);
   }
 
   /** Link the document to the receipt the fiscal printer gave. The only change an issued document allows. */
@@ -216,8 +248,11 @@ function lineFor(p: {
   saleId: number;
   returnId: number | null;
   productName: string;
+  productCode: string | null;
   quantity: number;
   unitPrice: number;
+  discountPercent: number | null;
+  priceBeforeDiscount: number | null;
   vatRate: number;
   total?: number;
 }): NewDocumentLine {
@@ -251,6 +286,8 @@ function toDto(record: DocumentRecord): DocumentDto {
     vatTotal: toMoney(record.vat_total),
     total: toMoney(record.total),
     fiscalReceiptNo: record.fiscal_receipt_no,
+    paymentMethod: record.payment_method,
+    dueDate: record.due_date,
   };
 }
 
@@ -259,11 +296,21 @@ function toLineDto(line: DocumentLineRecord): DocumentLineDto {
     saleId: line.sale_id,
     returnId: line.return_id,
     productName: line.product_name,
+    productCode: line.product_code,
     quantity: line.quantity,
     unitPrice: toMoney(line.unit_price),
+    discountPercent: toMoneyOrNull(line.discount_percent),
+    priceBeforeDiscount: toMoneyOrNull(line.price_before_discount),
     vatRate: line.vat_rate,
     netAmount: toMoney(line.net_amount),
     vatAmount: toMoney(line.vat_amount),
     total: toMoney(line.total),
   };
+}
+
+/** "2026-10-11" plus some days, as a day again. */
+function addDays(day: string, days: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }

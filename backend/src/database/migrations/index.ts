@@ -25,6 +25,9 @@ import * as billsAndReports from './023_bills_and_reports.js';
 import * as noExpenseDays from './024_no_expense_days.js';
 import * as cashChecked from './025_cash_checked.js';
 import * as assistantChats from './026_assistant_chats.js';
+import * as businessBank from './027_business_bank.js';
+import * as documentLineCodes from './028_document_line_codes.js';
+import * as invoiceDetails from './029_invoice_details.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -59,4 +62,7 @@ export const migrations: Record<string, Migration> = {
   '024_no_expense_days': noExpenseDays,
   '025_cash_checked': cashChecked,
   '026_assistant_chats': assistantChats,
+  '027_business_bank': businessBank,
+  '028_document_line_codes': documentLineCodes,
+  '029_invoice_details': invoiceDetails,
 };

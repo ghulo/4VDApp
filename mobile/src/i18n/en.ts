@@ -220,6 +220,10 @@ export const en = {
     notFoundHint: (code: string) => `Nothing in the shop has the code ${code}. The label may be old.`,
   },
   sell: {
+    discount: 'Rabat (%)',
+    discountUpTo: (limit: number) => `You can give up to ${limit}%. Ask the owner for more.`,
+    discountTooHigh: (limit: number) => `Rabat can be at most ${limit}%.`,
+    discountOff: (percent: string) => `${percent}% rabat`,
     nothingInStock: 'Nothing in stock to sell',
     whichProduct: 'Which product did you sell?',
     sold: (p: { quantity: number; product: string; amount: string }) => `Sold ${p.quantity} × ${p.product} for ${p.amount}.`,

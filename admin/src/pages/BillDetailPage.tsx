@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
@@ -30,7 +30,7 @@ export function BillDetailPage() {
     <>
       <PageHeader
         title={b.supplier.name}
-        crumbs={[{ label: t.bills.title, to: '/bills' }]}
+        crumbs={[{ label: t.nav.tabs.bills, to: '/bills' }]}
         meta={<Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>}
         description={[b.number ? t.bills.numbered(b.number) : t.bills.noNumber, t.bills.recordedBy(b.recordedBy ?? t.sales.unknown)].join(' · ')}
         actions={
@@ -53,10 +53,18 @@ export function BillDetailPage() {
         </p>
       )}
 
-      {b.left > 0 && <PayCard bill={b} />}
-      <PaymentsCard bill={b} />
-      <PhotoCard bill={b} />
-      {open && <EditCard bill={b} />}
+      <div className={open && b.left > 0 ? 'product-layout' : undefined}>
+        <div className="product-layout__main">
+          <PaymentsCard bill={b} />
+          <PhotoCard bill={b} />
+          {open && <EditCard bill={b} />}
+        </div>
+        {open && b.left > 0 && (
+          <div className="product-layout__side buy-side buy-side--first">
+            <PayCard bill={b} />
+          </div>
+        )}
+      </div>
     </>
   );
 }
@@ -84,6 +92,13 @@ function PayCard({ bill }: { bill: SupplierBill }) {
       setNote('');
     },
   });
+  // Opened from a list's Pay button: go straight to the amount.
+  useEffect(() => {
+    if (window.location.hash !== '#pay') return;
+    const card = document.getElementById('pay');
+    card?.scrollIntoView({ block: 'start' });
+    card?.querySelector('input')?.focus({ preventScroll: true });
+  }, []);
   const value = Number(amount);
   const valid = value > 0 && value <= bill.left && paidOn !== '';
 
@@ -93,7 +108,7 @@ function PayCard({ bill }: { bill: SupplierBill }) {
   }
 
   return (
-    <Card title={t.bills.recordPayment} description={t.bills.recordPaymentHint}>
+    <Card title={t.bills.recordPayment} description={t.bills.recordPaymentHint} id="pay">
       <form className="settings-form" onSubmit={handleSubmit}>
         <div className="field-row">
           <Field label={t.bills.amountEuro} hint={value > bill.left ? t.bills.atMost(formatMoney(bill.left)) : undefined}>

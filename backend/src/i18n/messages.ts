@@ -171,8 +171,9 @@ export interface ServerMessages {
     number: string;
     issued: string;
     issuedBy: string;
-    seller: string;
     buyer: string;
+    buyerName: string;
+    address: string;
     nui: string;
     phone: string;
     corrects: (number: string) => string;
@@ -192,6 +193,22 @@ export interface ServerMessages {
     pricesIncludeVat: string;
     signedSeller: string;
     signedBuyer: string;
+    refundTotal: string;
+    vatSummary: string;
+    payment: string;
+    bank: string;
+    iban: string;
+    payReference: string;
+    discount: string;
+    discountTotal: string;
+    inWords: string;
+    paymentMethod: string;
+    paidAtTill: string;
+    onAccount: string;
+    refundedAtTill: string;
+    creditedToAccount: string;
+    dueDate: string;
+    stamp: string;
   };
 }
 
@@ -399,8 +416,9 @@ export const en: ServerMessages = {
     number: 'No.',
     issued: 'Date',
     issuedBy: 'Issued by',
-    seller: 'Seller',
     buyer: 'Buyer',
+    buyerName: 'Name',
+    address: 'Address',
     nui: 'NUI',
     phone: 'Phone',
     corrects: (number) => `Reverses invoice ${number}`,
@@ -420,6 +438,22 @@ export const en: ServerMessages = {
     pricesIncludeVat: 'Prices include VAT.',
     signedSeller: 'Issued by (signature)',
     signedBuyer: 'Received by (signature)',
+    refundTotal: 'Total to refund',
+    vatSummary: 'VAT by rate',
+    payment: 'Payment by bank transfer',
+    bank: 'Bank',
+    iban: 'IBAN',
+    payReference: 'Reference',
+    discount: 'Rabat',
+    discountTotal: 'Total rabat',
+    inWords: 'In words',
+    paymentMethod: 'Payment',
+    paidAtTill: 'Paid at the till',
+    onAccount: 'On account',
+    refundedAtTill: 'Refunded at the till',
+    creditedToAccount: 'Credited to the account',
+    dueDate: 'Due by',
+    stamp: 'Stamp',
   },
 };
 
@@ -628,8 +662,9 @@ export const sq: ServerMessages = {
     number: 'Nr.',
     issued: 'Data',
     issuedBy: 'Lëshuar nga',
-    seller: 'Shitësi',
     buyer: 'Blerësi',
+    buyerName: 'Emri',
+    address: 'Adresa',
     nui: 'NUI',
     phone: 'Tel.',
     corrects: (number) => `Kthen faturën ${number}`,
@@ -649,6 +684,22 @@ export const sq: ServerMessages = {
     pricesIncludeVat: 'Çmimet përfshijnë TVSH-në.',
     signedSeller: 'Lëshoi (nënshkrimi)',
     signedBuyer: 'Pranoi (nënshkrimi)',
+    refundTotal: 'Për kthim',
+    vatSummary: 'TVSH sipas normës',
+    payment: 'Pagesa me transfer bankar',
+    bank: 'Banka',
+    iban: 'IBAN',
+    payReference: 'Referenca',
+    discount: 'Rabati',
+    discountTotal: 'Rabati gjithsej',
+    inWords: 'Me fjalë',
+    paymentMethod: 'Pagesa',
+    paidAtTill: 'Paguar në arkë',
+    onAccount: 'Në llogari',
+    refundedAtTill: 'Kthyer në arkë',
+    creditedToAccount: 'Kreditohet në llogari',
+    dueDate: 'Afati i pagesës',
+    stamp: 'V.V.',
   },
 };
 

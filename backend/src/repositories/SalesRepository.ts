@@ -25,6 +25,7 @@ export interface SaleRecord {
   product_name: string;
   quantity_sold: number;
   price_per_unit: string;
+  discount_percent: string | null;
   total_amount: string;
   sold_by_name: string | null;
   sale_date: Date;
@@ -85,6 +86,7 @@ export class SalesRepository {
           'p.name as product_name',
           's.quantity_sold',
           's.price_per_unit',
+          's.discount_percent',
           's.total_amount',
           'u.name as sold_by_name',
           's.sale_date',
@@ -173,6 +175,7 @@ export class SalesRepository {
               'p.name as product_name',
               's.quantity_sold',
               's.price_per_unit',
+              's.discount_percent',
               's.total_amount',
               'u.name as sold_by_name',
               's.sale_date',
@@ -194,6 +197,8 @@ export class SalesRepository {
     unitCost: number | null;
     soldBy: number;
     promotionId: number | null;
+    discountPercent?: number | null;
+    priceBeforeDiscount?: number | null;
     notes: string | null;
     saleDate?: Date;
   }): Promise<number> {
@@ -206,6 +211,8 @@ export class SalesRepository {
         unit_cost: sale.unitCost,
         sold_by: sale.soldBy,
         promotion_id: sale.promotionId,
+        discount_percent: sale.discountPercent ?? null,
+        price_before_discount: sale.priceBeforeDiscount ?? null,
         notes: sale.notes,
         ...(sale.saleDate && { sale_date: sale.saleDate }),
       })
@@ -222,6 +229,7 @@ export class SalesRepository {
         'p.name as product_name',
         's.quantity_sold',
         's.price_per_unit',
+        's.discount_percent',
         's.total_amount',
         'u.name as sold_by_name',
         's.sale_date',

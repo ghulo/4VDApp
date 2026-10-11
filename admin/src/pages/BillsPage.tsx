@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, DataTable, EmptyState, Field, PageHeader, Sheet, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
@@ -12,21 +12,38 @@ import { BILL_STATUS_TONE, emptyBill, isBillValid, toBillInput } from '../utils/
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 
-type StatusFilter = 'open' | 'paid' | 'void' | 'all';
+/** Matches the server's "due this week" (BILL_DUE_SOON_DAYS). */
+const DUE_SOON_DAYS = 7;
+const FILTERS = ['open', 'overdue', 'soon', 'paid', 'all'] as const;
+type StatusFilter = (typeof FILTERS)[number];
 
-/** What the shop owes its suppliers: every bill, paid or not, and who is waiting longest. */
+const isOpen = (bill: SupplierBill) => bill.status !== 'void' && bill.left > 0;
+const NARROW: Partial<Record<StatusFilter, (bill: SupplierBill) => boolean>> = {
+  overdue: (bill) => bill.overdue,
+  soon: (bill) => !bill.overdue && bill.daysLeft !== null && bill.daysLeft <= DUE_SOON_DAYS,
+};
+
+/** Every bill from every supplier, most urgent first; narrowed to one supplier with ?supplier=. */
 export function BillsPage() {
   const t = useT();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const status = (params.get('status') ?? 'open') as StatusFilter;
+  const status: StatusFilter = (FILTERS as readonly string[]).includes(params.get('status') ?? '') ? (params.get('status') as StatusFilter) : 'open';
   const supplierId = params.get('supplier') ?? '';
-  const [adding, setAdding] = useState(params.get('add') === '1');
+  const [adding, setAdding] = useNewSheet();
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
+  // Overdue and due-this-week are the unpaid list narrowed down here, so they share its request.
+  const asked = status === 'all' ? undefined : status === 'paid' ? 'paid' : 'open';
   const bills = useQuery({
-    queryKey: ['bills', { status, supplierId }],
-    queryFn: () => billsApi.list({ status: status === 'all' ? undefined : status, supplierId: supplierId ? Number(supplierId) : undefined }),
+    queryKey: ['bills', { status: asked, supplierId }],
+    queryFn: () => billsApi.list({ status: asked, supplierId: supplierId ? Number(supplierId) : undefined }),
   });
+  const narrow = NARROW[status];
+  const rows = (bills.data ?? []).filter((bill) => !narrow || narrow(bill));
+  const leftInList = rows.filter(isOpen).reduce((sum, bill) => sum + bill.left, 0);
+  const counts: Partial<Record<StatusFilter, number>> = supplierId ? {} : { overdue: summary.data?.overdue.count, soon: summary.data?.dueSoon.count };
+  const supplierName = suppliers.data?.find((row) => String(row.id) === supplierId)?.name;
 
   const setFilter = (changes: Record<string, string>) => {
     const next = new URLSearchParams(params);
@@ -34,121 +51,98 @@ export function BillsPage() {
       if (value) next.set(key, value);
       else next.delete(key);
     }
-    setParams(next);
+    setParams(next, { replace: true });
   };
 
   return (
     <>
       <PageHeader
-        title={t.bills.title}
+        title={t.nav.items.suppliers}
         description={t.bills.description}
         actions={
-          <Button variant="primary" icon={Plus} aria-expanded={adding} onClick={() => setAdding((open) => !open)}>
+          <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
             {t.bills.add}
           </Button>
         }
       />
 
-      {adding && (
-        <Card title={t.bills.newBill}>
-          <NewBillForm initialSupplier={supplierId} onDone={() => setAdding(false)} />
-        </Card>
-      )}
+      <Sheet open={adding} onClose={() => setAdding(false)} title={t.bills.newBill} description={t.bills.addHint}>
+        <NewBillForm initialSupplier={supplierId} onDone={() => setAdding(false)} />
+      </Sheet>
 
-      {summary.data && (
-        <StatGrid>
-          <StatTile label={t.bills.owed} value={formatMoney(summary.data.owed)} hint={t.bills.suppliersCount(summary.data.bySupplier.length)} />
-          <StatTile
-            label={t.bills.overdue}
-            value={formatMoney(summary.data.overdue.amount)}
-            hint={t.bills.billsCount(summary.data.overdue.count)}
-            tone={summary.data.overdue.count > 0 ? 'danger' : 'default'}
-          />
-          <StatTile label={t.bills.dueSoon} value={formatMoney(summary.data.dueSoon.amount)} hint={t.bills.billsCount(summary.data.dueSoon.count)} />
-        </StatGrid>
-      )}
-
-      {summary.data && summary.data.bySupplier.length > 0 && (
-        <Card title={t.bills.bySupplier} flush>
-          <DataTable
-            caption={t.bills.bySupplier}
-            rows={summary.data.bySupplier}
-            rowKey={(row) => row.supplierId}
-            columns={[
-              {
-                header: t.bills.supplier,
-                title: true,
-                cell: (row) => (
-                  <Link to={`/suppliers/${row.supplierId}`} className="table__primary-link">
-                    {row.name}
-                  </Link>
-                ),
-              },
-              { header: t.bills.openBills, align: 'end', cell: (row) => row.bills },
-              { header: t.bills.overdue, align: 'end', cell: (row) => (row.overdue > 0 ? <Badge tone="danger">{formatMoney(row.overdue)}</Badge> : '–') },
-              { header: t.bills.owed, align: 'end', cell: (row) => formatMoney(row.owed) },
-            ]}
-          />
-        </Card>
-      )}
-
-      {bills.isPending && <Loading />}
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
-      {bills.data && (
-        <DataTable<SupplierBill>
-          caption={t.bills.title}
-          rows={bills.data}
-          rowKey={(bill) => bill.id}
-          toolbar={
-            <div className="toolbar">
-              <div className="segmented" role="radiogroup" aria-label={t.bills.show}>
-                {(['open', 'paid', 'void', 'all'] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    role="radio"
-                    aria-checked={status === option}
-                    className="segmented__option"
-                    onClick={() => setFilter({ status: option })}
-                  >
-                    {t.bills.filters[option]}
-                  </button>
-                ))}
-              </div>
-              <select aria-label={t.bills.supplier} value={supplierId} onChange={(event) => setFilter({ supplier: event.target.value })}>
-                <option value="">{t.bills.anySupplier}</option>
-                {suppliers.data?.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
+      <DataTable<SupplierBill>
+        caption={t.bills.title}
+        rows={rows}
+        rowKey={(bill) => bill.id}
+        rowClassName={(bill) => (bill.status === 'void' ? 'is-undone' : undefined)}
+        onRowClick={(bill) => navigate(`/bills/${bill.id}`)}
+        toolbar={
+          <div className="toolbar">
+            <div className="segmented" role="radiogroup" aria-label={t.bills.show}>
+              {FILTERS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={status === option}
+                  className="segmented__option"
+                  onClick={() => setFilter({ status: option === 'open' ? '' : option })}
+                >
+                  {t.bills.filters[option]}
+                  {(counts[option] ?? 0) > 0 && <span className="segmented__count">{counts[option]}</span>}
+                </button>
+              ))}
             </div>
-          }
-          columns={[
-            {
-              header: t.bills.bill,
-              title: true,
-              cell: (bill) => (
-                <Link to={`/bills/${bill.id}`} className="table__primary-link">
-                  {bill.supplier.name}
-                  <span className="table__secondary">{bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber}</span>
-                </Link>
-              ),
-            },
-            { header: t.bills.issuedOn, cell: (bill) => formatDate(bill.issuedOn) },
-            { header: t.bills.due, cell: (bill) => <DueBadge bill={bill} /> },
-            { header: t.bills.amount, align: 'end', cell: (bill) => formatMoney(bill.amount) },
-            { header: t.bills.left, align: 'end', cell: (bill) => (bill.left > 0 ? <strong>{formatMoney(bill.left)}</strong> : '–') },
-            { header: t.bills.status, cell: (bill) => <Badge tone={BILL_STATUS_TONE[bill.status]}>{t.bills.statuses[bill.status]}</Badge> },
-          ]}
-          empty={
+            <select aria-label={t.bills.supplier} value={supplierId} onChange={(event) => setFilter({ supplier: event.target.value })}>
+              <option value="">{t.bills.anySupplier}</option>
+              {suppliers.data?.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
+            {supplierName && <Link to={`/suppliers/${supplierId}`}>{t.suppliers.see}</Link>}
+          </div>
+        }
+        columns={[
+          {
+            header: t.bills.bill,
+            title: true,
+            cell: (bill) => (
+              <Link to={`/bills/${bill.id}`} className="table__primary-link">
+                {bill.supplier.name}
+                <span className="table__secondary">{bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber}</span>
+              </Link>
+            ),
+          },
+          { header: t.bills.issuedOn, cell: (bill) => formatDate(bill.issuedOn) },
+          { header: t.bills.due, cell: (bill) => (isOpen(bill) ? <DueBadge bill={bill} /> : '–') },
+          { header: t.bills.amount, align: 'end', cell: (bill) => formatMoney(bill.amount) },
+          { header: t.bills.left, align: 'end', cell: (bill) => (isOpen(bill) ? <strong>{formatMoney(bill.left)}</strong> : '–') },
+          { header: t.bills.status, cell: (bill) => <Badge tone={BILL_STATUS_TONE[bill.status]}>{t.bills.statuses[bill.status]}</Badge> },
+          {
+            header: <span className="visually-hidden">{t.bills.actions}</span>,
+            align: 'end',
+            cell: (bill) =>
+              isOpen(bill) ? (
+                <ButtonLink to={`/bills/${bill.id}#pay`} size="sm" aria-label={t.bills.payLabel(bill.supplier.name)}>
+                  {t.bills.payShort}
+                </ButtonLink>
+              ) : null,
+          },
+        ]}
+        footer={leftInList > 0 ? <p className="data-table__total">{t.bills.listTotal(rows.filter(isOpen).length, formatMoney(leftInList))}</p> : undefined}
+        empty={
+          bills.isPending ? (
+            <Loading />
+          ) : (
             <EmptyState icon={Receipt} title={status === 'open' && !supplierId ? t.bills.allPaid : t.bills.noneMatch}>
               {status === 'open' && !supplierId ? t.bills.allPaidHint : undefined}
             </EmptyState>
-          }
-        />
-      )}
+          )
+        }
+      />
     </>
   );
 }
@@ -163,7 +157,7 @@ function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onD
   const create = useMutation({
     mutationFn: () => billsApi.create({ supplierId: Number(supplierId), ...toBillInput(draft) }),
     onSuccess: (bill) => {
-      queryClient.invalidateQueries({ queryKey: ['bills'] });
+      for (const key of ['bills', 'attention']) queryClient.invalidateQueries({ queryKey: [key] });
       onDone();
       navigate(`/bills/${bill.id}`);
     },
@@ -175,11 +169,7 @@ function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onD
   }
 
   if (suppliers.data?.length === 0) {
-    return (
-      <EmptyState title={t.bills.noSuppliers}>
-        <Link to="/orders">{t.bills.addSupplier}</Link>
-      </EmptyState>
-    );
+    return <EmptyState title={t.bills.noSuppliers} action={<ButtonLink to="/suppliers?new=1">{t.bills.addSupplier}</ButtonLink>} />;
   }
 
   return (
@@ -201,11 +191,11 @@ function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onD
         </p>
       )}
       <div className="form-actions">
-        <Button type="submit" variant="primary" disabled={!supplierId || !isBillValid(draft) || create.isPending}>
-          {create.isPending ? t.bills.saving : t.bills.save}
-        </Button>
         <Button variant="ghost" onClick={onDone}>
           {t.common.cancel}
+        </Button>
+        <Button type="submit" variant="primary" disabled={!supplierId || !isBillValid(draft) || create.isPending}>
+          {create.isPending ? t.bills.saving : t.bills.save}
         </Button>
       </div>
     </form>

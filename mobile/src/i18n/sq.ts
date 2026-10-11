@@ -216,6 +216,10 @@ export const sq: Catalogue = {
     notFoundHint: (code) => `Asgjë në dyqan nuk ka kodin ${code}. Etiketa mund të jetë e vjetër.`,
   },
   sell: {
+    discount: 'Rabati (%)',
+    discountUpTo: (limit) => `Mund të japësh deri në ${limit}%. Për më shumë pyet pronarin.`,
+    discountTooHigh: (limit) => `Rabati mund të jetë më së shumti ${limit}%.`,
+    discountOff: (percent) => `${percent}% rabat`,
     nothingInStock: 'Asgjë në stok për të shitur',
     whichProduct: 'Cilin produkt shite?',
     sold: (p) => `U shitën ${p.quantity} × ${p.product} për ${p.amount}.`,

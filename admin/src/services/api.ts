@@ -1,4 +1,5 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
+import type { Language } from '../i18n/language';
 import type {
   BillInput,
   FullReport,
@@ -273,7 +274,7 @@ export const documentsApi = {
   },
   get: async (id: number) => (await apiRequest<SalesDocumentDetail>(`/documents/${id}`)).data,
   /** The printable A4 page, in the reader's language unless another is asked for. */
-  printPage: async (id: number) => (await apiDownload(`/documents/${id}/print`)).blob.text(),
+  printPage: async (id: number, language?: Language) => (await apiDownload(`/documents/${id}/print`, { language })).blob.text(),
   setFiscalReceipt: async (id: number, fiscalReceiptNo: string | null) =>
     (await apiRequest<SalesDocumentDetail>(`/documents/${id}/fiscal-receipt`, { method: 'PUT', body: { fiscalReceiptNo } })).data,
 };

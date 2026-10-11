@@ -290,7 +290,7 @@ function LevelBadge({ level }: { level: Level }) {
 function orderLink(row: ReorderSuggestion, supplierId: number | undefined): string {
   const query = new URLSearchParams({ product: String(row.productId), qty: String(row.suggestedOrder) });
   if (supplierId) query.set('supplier', String(supplierId));
-  return `/orders?${query}#new-order`;
+  return `/orders/new?${query}`;
 }
 
 /** Empty shelves read in red and a week or less of stock in amber; the words still say it. */

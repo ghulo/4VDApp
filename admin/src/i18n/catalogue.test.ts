@@ -3,7 +3,7 @@ import { en } from './en';
 import { sq } from './sq';
 
 /** Same in both languages on purpose. */
-const SAME_IN_BOTH = new Set(['4VD', 'English', 'Shqip', 'Email', 'OK', 'Auto', 'Logo', 'SKU', 'NUI', 'Excel', 'CSV']);
+const SAME_IN_BOTH = new Set(['4VD', 'English', 'Shqip', 'Email', 'OK', 'Auto', 'Logo', 'SKU', 'NUI', 'Excel', 'CSV', 'XK05 1212 0123 4567 8906']);
 
 function strings(value: unknown, path = ''): Array<[string, string]> {
   if (typeof value === 'string') return [[path, value]];

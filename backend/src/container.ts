@@ -147,8 +147,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
-  const documentService = new DocumentService(new DocumentRepository(db), transactions, config.shopTimeZone);
-  const salesService = new SalesService(salesRepository, transactions, documentService, config.shopTimeZone);
+  const settingsService = new SettingsService(settingsRepository, transactions);
+  const documentService = new DocumentService(new DocumentRepository(db), transactions, config.shopTimeZone, settingsService);
+  const salesService = new SalesService(salesRepository, transactions, documentService, config.shopTimeZone, settingsService);
   const analyticsService = new AnalyticsService(
     salesRepository,
     inventoryRepository,
@@ -167,7 +168,6 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
-  const settingsService = new SettingsService(settingsRepository, transactions);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);

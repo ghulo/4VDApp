@@ -167,12 +167,26 @@ export class PurchaseOrderRepository {
   }
 
   /** Products that came with a delivery although they weren't ordered. */
-  async addLines(orderId: number, lines: Array<{ productId: number; quantity: number; unitCost: number | null }>): Promise<void> {
-    if (lines.length === 0) return;
-    await this.db
+  async addLines(orderId: number, lines: Array<{ productId: number; quantity: number; unitCost: number | null }>): Promise<number[]> {
+    if (lines.length === 0) return [];
+    const rows = await this.db
       .insertInto('purchase_order_lines')
       .values(lines.map((line) => ({ order_id: orderId, product_id: line.productId, quantity: line.quantity, unit_cost: line.unitCost })))
+      .returning('id')
       .execute();
+    return rows.map((row) => row.id);
+  }
+
+  async removeLines(lineIds: number[]): Promise<void> {
+    if (lineIds.length > 0) await this.db.deleteFrom('purchase_order_lines').where('id', 'in', lineIds).execute();
+  }
+
+  /** Open again as before its delivery: nothing received, each line back to its ordered cost. */
+  async reopen(id: number, lines: Array<{ id: number; unitCost: number | null }>): Promise<void> {
+    await this.db.updateTable('purchase_orders').set({ status: 'open', closed_by: null, closed_at: null }).where('id', '=', id).execute();
+    for (const line of lines) {
+      await this.db.updateTable('purchase_order_lines').set({ received_quantity: null, unit_cost: line.unitCost }).where('id', '=', line.id).execute();
+    }
   }
 
   async setReceived(lineId: number, receivedQuantity: number, unitCost: number | null): Promise<void> {
@@ -187,7 +201,7 @@ export class PurchaseOrderRepository {
     await this.db.updateTable('purchase_orders').set({ status, closed_by: by, closed_at: at }).where('id', '=', id).execute();
   }
 
-  async setCostPrice(productId: number, cost: number): Promise<void> {
+  async setCostPrice(productId: number, cost: number | null): Promise<void> {
     await this.db.updateTable('products').set({ cost_price: cost, updated_at: new Date() }).where('id', '=', productId).execute();
   }
 

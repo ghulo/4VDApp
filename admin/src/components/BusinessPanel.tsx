@@ -9,6 +9,7 @@ import { LogoMark } from './LogoMark';
 import { Button, Card, Field, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
+import { HistoryCard } from './HistoryCard';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
@@ -39,7 +40,12 @@ export function BusinessPanel() {
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
   if (business.isPending) return <Loading />;
   if (business.isError) return <ErrorNotice error={business.error} onRetry={() => business.refetch()} />;
-  return <BusinessForm initial={business.data} />;
+  return (
+    <>
+      <BusinessForm initial={business.data} />
+      <HistoryCard entityType="business" entityId={business.data.id} />
+    </>
+  );
 }
 
 function BusinessForm({ initial }: { initial: Business }) {

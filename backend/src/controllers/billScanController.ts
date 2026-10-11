@@ -26,6 +26,12 @@ export function createBillScanController(scanService: BillScanService) {
       sendSuccess(res, await scanService.confirm(id, parseInput(confirmScanSchema, req.body), req.user!.id), { message: 'Bill confirmed' });
     },
 
+    async reopen(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await scanService.reopen(id, req.user!.id);
+      sendSuccess(res, null, { message: 'Scan reopened' });
+    },
+
     async discard(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       await scanService.discard(id, req.user!.id);

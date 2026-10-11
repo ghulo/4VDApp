@@ -20,6 +20,8 @@ export interface BillRecord {
   created_at: Date;
   voided_at: Date | null;
   void_note: string | null;
+  /** The scan it was confirmed from, if any. */
+  scan_id: number | null;
 }
 
 export interface PaymentRecord {
@@ -79,6 +81,7 @@ export class SupplierBillRepository {
         'b.created_at',
         'b.voided_at',
         'b.void_note',
+        sql<number | null>`(select bs.id from bill_scans bs where bs.bill_id = b.id limit 1)`.as('scan_id'),
       ]);
   }
 
@@ -164,6 +167,11 @@ export class SupplierBillRepository {
 
   async setPhoto(id: number, mediaId: string | null): Promise<void> {
     await this.db.updateTable('supplier_bills').set({ photo_media_id: mediaId }).where('id', '=', id).execute();
+  }
+
+  /** Frees the order for a new bill (an order has one bill at most). */
+  async detachOrder(id: number): Promise<void> {
+    await this.db.updateTable('supplier_bills').set({ order_id: null }).where('id', '=', id).execute();
   }
 
   async void(id: number, by: number, note: string, at: Date): Promise<void> {

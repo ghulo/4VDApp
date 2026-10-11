@@ -29,6 +29,7 @@ import * as businessBank from './027_business_bank.js';
 import * as documentLineCodes from './028_document_line_codes.js';
 import * as invoiceDetails from './029_invoice_details.js';
 import * as billScans from './030_bill_scans.js';
+import * as billScanReopen from './031_bill_scan_reopen.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -67,4 +68,5 @@ export const migrations: Record<string, Migration> = {
   '028_document_line_codes': documentLineCodes,
   '029_invoice_details': invoiceDetails,
   '030_bill_scans': billScans,
+  '031_bill_scan_reopen': billScanReopen,
 };

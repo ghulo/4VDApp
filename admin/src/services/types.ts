@@ -466,6 +466,8 @@ export interface SupplierBill {
   daysLeft: number | null;
   note: string | null;
   photoUrl: string | null;
+  /** Confirmed from this scanned bill. */
+  scanId: number | null;
   recordedBy: string | null;
   voidNote: string | null;
   payments: Array<{ id: number; amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null; recordedBy: string | null; voided: boolean }>;
@@ -803,6 +805,7 @@ export interface InvitePreview {
 }
 
 export interface Business {
+  id: number;
   name: string;
   address: string | null;
   phone: string | null;
@@ -1025,6 +1028,8 @@ export interface BillScan {
   duplicateBillId: number | null;
   billId: number | null;
   orderId: number | null;
+  /** The last confirm's choices, after a reopen. */
+  previous: ConfirmScanInput | null;
 }
 
 export interface WaitingScan {
@@ -1042,6 +1047,7 @@ export interface ConfirmScanInput {
   bill: BillInput;
   categoryId: number | null;
   lines: Array<{
+    readIndex?: number;
     productId: number | null;
     newProduct: { name: string; barcode: string | null; price: number; vatRate: number } | null;
     code: string | null;
@@ -1053,3 +1059,6 @@ export interface ConfirmScanInput {
     updateBarcode: boolean;
   }>;
 }
+
+/** Records that have a History card (the server's activity entity types). */
+export type HistoryEntity = 'product' | 'category' | 'user' | 'sale' | 'customer' | 'supplier' | 'order' | 'document' | 'bill' | 'bill_scan' | 'business' | 'promotion' | 'expense' | 'stock_count';

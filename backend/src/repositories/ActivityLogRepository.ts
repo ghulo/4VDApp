@@ -99,4 +99,40 @@ export class ActivityLogRepository {
     ]);
     return { entries, total: Number(count.total) };
   }
+
+  /**
+   * Everything that happened to some records, oldest first: entries about any
+   * of them, plus the undos and restores of those entries.
+   */
+  async findHistory(records: Array<{ entityType: string; ids: number[] }>, limit: number): Promise<ActivityRecord[]> {
+    const wanted = records.filter((record) => record.ids.length > 0);
+    if (wanted.length === 0) return [];
+    const select = [
+      'a.id',
+      'a.action',
+      'a.entity_type',
+      'a.entity_id',
+      'a.summary',
+      'a.details',
+      'a.created_at',
+      'a.user_id',
+      'u.name as user_name',
+      'a.undone_at',
+      'a.undone_by',
+      'a.undo_note',
+    ] as const;
+    const base = () => this.db.selectFrom('activity_log as a').leftJoin('users as u', 'u.id', 'a.user_id').select(select);
+    const entries = await base()
+      .where((eb) => eb.or(wanted.map((record) => eb.and([eb('a.entity_type', '=', record.entityType), eb('a.entity_id', 'in', record.ids)]))))
+      .orderBy('a.created_at', 'desc')
+      .orderBy('a.id', 'desc')
+      .limit(limit)
+      .execute();
+    if (entries.length === 0) return [];
+    const undos = await base()
+      .where('a.entity_type', '=', 'activity')
+      .where('a.entity_id', 'in', entries.map((entry) => entry.id))
+      .execute();
+    return [...entries, ...undos].sort((a, b) => a.created_at.getTime() - b.created_at.getTime() || a.id - b.id);
+  }
 }

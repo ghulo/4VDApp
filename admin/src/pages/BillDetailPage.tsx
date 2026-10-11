@@ -12,6 +12,7 @@ import { formatDate, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
 import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
+import { HistoryCard } from '../components/HistoryCard';
 
 const METHODS: SupplierPaymentMethod[] = ['bank', 'drawer', 'cash'];
 
@@ -47,9 +48,15 @@ export function BillDetailPage() {
         <StatTile label={t.bills.left} value={formatMoney(b.left)} tone={b.overdue ? 'danger' : 'default'} hint={<DueBadge bill={b} />} />
       </StatGrid>
 
-      {b.orderId && (
+      {(b.orderId || b.scanId) && (
         <p className="field-hint">
-          {t.bills.fromOrder} <Link to={`/orders/${b.orderId}`}>{t.bills.orderNo(b.orderId)}</Link>
+          {b.orderId && (
+            <>
+              {t.bills.fromOrder} <Link to={`/orders/${b.orderId}`}>{t.bills.orderNo(b.orderId)}</Link>
+            </>
+          )}
+          {b.orderId && b.scanId && ' · '}
+          {b.scanId && <Link to={`/bills/scans/${b.scanId}`}>{t.scans.fromScan}</Link>}
         </p>
       )}
 
@@ -58,6 +65,7 @@ export function BillDetailPage() {
           <PaymentsCard bill={b} />
           <PhotoCard bill={b} />
           {open && <EditCard bill={b} />}
+          <HistoryCard entityType="bill" entityId={b.id} />
         </div>
         {open && b.left > 0 && (
           <div className="product-layout__side buy-side buy-side--first">

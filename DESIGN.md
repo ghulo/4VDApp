@@ -304,6 +304,15 @@ Rules:
   everyone the moment it is decided.
 - Most actions offer **Undo** for a short time, then stay correctable from
   their record. Destructive actions say exactly what will happen.
+- **Every record keeps a history.** Each detail page (product, bill, order,
+  supplier, customer, invoice, scanned bill, the shop in Settings) ends with a
+  **History** card: who changed what and when, read from the activity log,
+  undos included and nothing editable. An invoice's history includes its
+  sales, their returns and its credit notes. Any new edit must write a log
+  entry, with `{ field: { from, to } }` or `fields: [{ field, from, to }]` details.
+- The **developer** can take back what others can't: a confirmed scanned bill
+  is reopened (stock, bill, order, costs, barcodes and codes put back) and
+  checked again.
 
 ### 3.7 Connected records
 

@@ -42,6 +42,64 @@ export const billReadingSchema = z.object({
 });
 export type BillReading = z.infer<typeof billReadingSchema>;
 
+/**
+ * What Claude actually fills in. Structured outputs allow only a few nullable
+ * (union) fields per schema, so text it can't find comes back as "", a missing
+ * rabat as 0 and an unstated box size as 1; only numbers where 0 would be a
+ * real value stay nullable. toReading turns the blanks back into nulls.
+ */
+export const wireSchema = z.object({
+  supplier: z.object({ name: z.string(), nui: z.string() }),
+  number: z.string(),
+  issuedOn: z.string(),
+  dueOn: z.string(),
+  pricesIncludeVat: z.boolean(),
+  lines: z.array(
+    z.object({
+      code: z.string(),
+      barcode: z.string(),
+      name: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      unitsPerPack: z.number(),
+      unitPrice: z.number().nullable(),
+      discountPercent: z.number(),
+      vatRate: z.number().nullable(),
+      lineTotal: z.number().nullable(),
+    }),
+  ),
+  totals: z.object({ net: z.number().nullable(), vat: z.number().nullable(), gross: z.number().nullable() }),
+  remarks: z.string(),
+});
+type WireReading = z.infer<typeof wireSchema>;
+
+const text = (value: string) => value.trim() || null;
+
+/** The reply with blanks turned back into nulls: the shape the rest of 4VD works with. */
+export function toReading(wire: WireReading): BillReading {
+  return {
+    supplier: { name: text(wire.supplier.name), nui: text(wire.supplier.nui) },
+    number: text(wire.number),
+    issuedOn: text(wire.issuedOn),
+    dueOn: text(wire.dueOn),
+    pricesIncludeVat: wire.pricesIncludeVat,
+    lines: wire.lines.map((line) => ({
+      code: text(line.code),
+      barcode: text(line.barcode),
+      name: line.name,
+      quantity: line.quantity,
+      unit: text(line.unit),
+      unitsPerPack: line.unitsPerPack > 1 ? line.unitsPerPack : null,
+      unitPrice: line.unitPrice,
+      discountPercent: line.discountPercent > 0 ? line.discountPercent : null,
+      vatRate: line.vatRate,
+      lineTotal: line.lineTotal,
+    })),
+    totals: wire.totals,
+    remarks: text(wire.remarks),
+  };
+}
+
 export interface BillPage {
   mime: string;
   bytes: Buffer;
@@ -62,15 +120,15 @@ const MAX_TOKENS = 16_000;
 const TIMEOUT_MS = 120_000;
 
 const INSTRUCTIONS = `You read supplier invoices (fatura) for a shop in Kosovo. They are usually in Albanian, sometimes English or Serbian.
-Copy what is printed; never invent or correct values. Use null for anything missing or unreadable.
+Copy what is printed; never invent or correct values. For anything missing or unreadable: text fields are "" (empty), unitPrice, vatRate, lineTotal and totals are null.
 - supplier: the seller (shitësi/furnitori), not the buyer. NUI is the seller's business number; digits only.
 - number: the invoice number. Dates as YYYY-MM-DD; the due date only if printed (afati i pagesës).
 - One entry per product line, in order. quantity and unitPrice exactly as printed for that line, in the line's own unit.
-- unitsPerPack only when the line states how many pieces a unit holds (e.g. "pako 12 copë").
-- discountPercent is the line's rabat. vatRate is the line's TVSH percent (18, 8 or 0).
+- unitsPerPack: how many pieces a unit holds when the line states it (e.g. "pako 12 copë" is 12), else 1.
+- discountPercent is the line's rabat, 0 if none. vatRate is the line's TVSH percent (18, 8 or 0).
 - pricesIncludeVat: true only if the unit prices already include TVSH.
 - totals: net (pa TVSH), vat (TVSH) and gross (gjithsej për pagesë) as printed.
-- remarks: one short sentence on anything unclear (a smudged line, a handwritten change), else null.`;
+- remarks: one short sentence on anything unclear (a smudged line, a handwritten change), else "".`;
 
 export class ClaudeBillReader implements BillReader {
   private readonly client: Anthropic;
@@ -100,7 +158,7 @@ export class ClaudeBillReader implements BillReader {
         max_tokens: MAX_TOKENS,
         system: INSTRUCTIONS,
         messages: [{ role: 'user', content }],
-        output_config: { format: zodOutputFormat(billReadingSchema), effort: 'medium' },
+        output_config: { format: zodOutputFormat(wireSchema), effort: 'medium' },
       });
     } catch (error) {
       throw toUnavailable(error);
@@ -115,6 +173,6 @@ export class ClaudeBillReader implements BillReader {
     if (response.stop_reason === 'refusal' || response.parsed_output == null) {
       throw new AiUnavailableError("The bill couldn't be read. Try a sharper photo, or add the bill by hand.");
     }
-    return response.parsed_output;
+    return toReading(response.parsed_output);
   }
 }

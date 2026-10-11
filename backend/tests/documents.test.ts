@@ -310,3 +310,31 @@ describe('rabat, payment and what a full invoice prints', () => {
     expect(page).toContain('Paid at the till');
   });
 });
+
+describe('history', () => {
+  it("should show an invoice's whole history: issued, its sales, an undo and the credit note", async () => {
+    const sold = await checkout(employeeToken, [{ productId: chair, quantity: 2 }]);
+    const undone = await api().post(`/api/activity/${await entryOf('sale.recorded')}/undo`).set(auth(adminToken)).send({ note: 'wrong product' });
+    expect(undone.status).toBe(200);
+
+    const history = (await api().get(`/api/activity/history?entityType=document&entityId=${sold.invoice.id}`).set(auth(adminToken))).body.data as Array<{
+      action: string;
+      summary: string;
+    }>;
+    const actions = history.map((entry) => entry.action);
+    expect(actions).toContain('sale.recorded');
+    expect(actions).toContain('undo.applied');
+    expect(actions.filter((action) => action === 'document.issued')).toHaveLength(2);
+    expect(history[0]!.action).not.toBe('undo.applied');
+    expect((await api().get(`/api/activity/history?entityType=document&entityId=${sold.invoice.id}`).set(auth(employeeToken))).status).toBe(403);
+  });
+
+  it("should keep a history of the shop's own details, field by field", async () => {
+    await api().put('/api/business').set(auth(adminToken)).send({ iban: 'XK051212012345678906' });
+    await api().put('/api/business').set(auth(adminToken)).send({ iban: 'XK051212012345678906' });
+    const business = await context.db.selectFrom('businesses').select('id').executeTakeFirstOrThrow();
+    const history = (await api().get(`/api/activity/history?entityType=business&entityId=${business.id}`).set(auth(adminToken))).body.data;
+    expect(history).toHaveLength(1);
+    expect(history[0].details.fields).toEqual([{ field: 'iban', from: null, to: 'XK051212012345678906' }]);
+  });
+});

@@ -12,6 +12,7 @@ export interface BillScanRecord {
   decided_at: Date | null;
   bill_id: number | null;
   order_id: number | null;
+  confirmation: unknown;
 }
 
 export interface SupplierCodeRecord {
@@ -49,6 +50,7 @@ export class BillScanRepository {
         's.decided_at',
         's.bill_id',
         's.order_id',
+        's.confirmation',
       ]);
   }
 
@@ -66,12 +68,44 @@ export class BillScanRepository {
     return this.scans().where('s.status', '=', 'waiting').orderBy('s.scanned_at').execute();
   }
 
-  async decide(id: number, input: { status: 'confirmed' | 'discarded'; by: number; at: Date; billId?: number; orderId?: number }): Promise<void> {
+  async decide(
+    id: number,
+    input: { status: 'confirmed' | 'discarded'; by: number; at: Date; billId?: number; orderId?: number; confirmation?: unknown },
+  ): Promise<void> {
     await this.db
       .updateTable('bill_scans')
-      .set({ status: input.status, decided_by: input.by, decided_at: input.at, bill_id: input.billId ?? null, order_id: input.orderId ?? null })
+      .set({
+        status: input.status,
+        decided_by: input.by,
+        decided_at: input.at,
+        bill_id: input.billId ?? null,
+        order_id: input.orderId ?? null,
+        ...(input.confirmation !== undefined && { confirmation: JSON.stringify(input.confirmation) }),
+      })
       .where('id', '=', id)
       .execute();
+  }
+
+  /** Back to waiting; the last confirmation stays so the check page can start from it. */
+  async reopen(id: number): Promise<void> {
+    await this.db
+      .updateTable('bill_scans')
+      .set({ status: 'waiting', decided_by: null, decided_at: null, bill_id: null, order_id: null })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  async findCode(supplierId: number, code: string): Promise<SupplierCodeRecord | undefined> {
+    return this.db
+      .selectFrom('supplier_product_codes')
+      .select(['code', 'product_id', 'units_per_pack'])
+      .where('supplier_id', '=', supplierId)
+      .where('code', '=', code.trim().toLowerCase())
+      .executeTakeFirst();
+  }
+
+  async forgetCode(supplierId: number, code: string): Promise<void> {
+    await this.db.deleteFrom('supplier_product_codes').where('supplier_id', '=', supplierId).where('code', '=', code.trim().toLowerCase()).execute();
   }
 
   async codesFor(supplierId: number): Promise<SupplierCodeRecord[]> {

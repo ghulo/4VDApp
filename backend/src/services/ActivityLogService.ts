@@ -2,6 +2,8 @@ import type { UserRole } from '../database/types.js';
 import { NotFoundError } from '../errors/httpErrors.js';
 import type { ActivityFilters, ActivityLogRepository, ActivityRecord } from '../repositories/ActivityLogRepository.js';
 import type { UndoRepository } from '../repositories/UndoRepository.js';
+import type { DocumentRepository } from '../repositories/DocumentRepository.js';
+import type { ActivityEntityType } from '../constants/activity.js';
 import { undoStatesFor } from './undo/undoStates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 
@@ -25,11 +27,30 @@ type Viewer = { id: number; role: UserRole };
 
 export interface ActivityQuery extends PageRequest, Omit<ActivityFilters, 'limit' | 'offset'> {}
 
+/** Plenty for one record; a product with years of stock changes shows its newest. */
+const HISTORY_LIMIT = 300;
+
 export class ActivityLogService {
   constructor(
     private readonly activityLogRepository: ActivityLogRepository,
     private readonly undoRepository: UndoRepository,
+    private readonly documentRepository: DocumentRepository,
   ) {}
+
+  /**
+   * One record's whole history, oldest first: its own entries and the undos of
+   * them. An invoice also takes in its sales, their returns and its credit notes,
+   * so a sale's changes show where the sale is looked at.
+   */
+  async history(entityType: ActivityEntityType, entityId: number, viewer: Viewer) {
+    const records: Array<{ entityType: string; ids: number[] }> = [{ entityType, ids: [entityId] }];
+    if (entityType === 'document') {
+      const related = await this.documentRepository.related(entityId);
+      records[0] = { entityType: 'document', ids: related.documentIds };
+      records.push({ entityType: 'sale', ids: related.saleIds }, { entityType: 'return', ids: related.returnIds });
+    }
+    return this.toDtos(await this.activityLogRepository.findHistory(records, HISTORY_LIMIT), viewer);
+  }
 
   /** A page of entries, each with its undo state as `viewer` sees it. */
   async list(query: ActivityQuery, viewer: Viewer) {

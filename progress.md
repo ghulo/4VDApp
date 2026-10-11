@@ -97,6 +97,13 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Remembers each supplier code and box size, so the next bill matches by itself
 - [x] Team app: Home > Something happened > A supplier brought goods; photos go to the owner, no costs shown
 - [x] Waiting scans show on the Bills tab and in To do
+- [x] Developer can reopen a confirmed scan: stock, bill (and payments), order, costs, barcodes, codes and new products are put back; the check page starts from the earlier choices
+
+## History on every record
+
+- [x] History card on product, bill, order, supplier, customer, invoice, scanned bill and Settings > Your shop
+- [x] An invoice's history includes its sales, their undos and returns, and its credit notes
+- [x] Now logged too: invoices and credit notes issued, shop details (field by field), cost changes from deliveries and scans, scan confirmed / reopened
 
 ## Optional
 

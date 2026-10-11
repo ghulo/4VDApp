@@ -7,6 +7,7 @@ export function createActivityRoutes({ activityLogService, undoService, guards }
   const router = Router();
 
   router.get('/', ...guards.oversee, controller.list);
+  router.get('/history', ...guards.oversee, controller.history);
   // Who may undo whose entries is checked per entry (undoRules.canUndo).
   router.post('/:id/undo', ...guards.oversee, controller.undo);
   router.post('/:id/restore', ...guards.oversee, controller.restore);

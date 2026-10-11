@@ -2,6 +2,7 @@ import { FilePdf } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, Button, ButtonLink, Card, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
@@ -13,6 +14,7 @@ import { type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bil
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { orderSummary } from '../utils/orders';
+import { HistoryCard } from '../components/HistoryCard';
 
 const STAMP_TONE: Record<ScanStamp, Tone> = { new: 'brand', unsure: 'warn', barcode: 'warn', price: 'info', match: 'ok' };
 const VAT_RATES = [18, 8, 0] as const;
@@ -37,7 +39,32 @@ const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 const filled = (value: string) => value.trim() !== '' && Number(value) > 0;
 
 function firstDecisions(scan: BillScan): Decision[] {
-  return scan.lines.map(({ read, match }) => ({
+  return scan.lines.map(({ read, match }, index) => {
+    const fresh = freshDecision(read, match);
+    if (!scan.previous) return fresh;
+    // Reopened: start from what was chosen last time; a line not sent then was skipped.
+    const before = scan.previous.lines.find((line) => line.readIndex === index);
+    if (!before) return { ...fresh, choice: SKIP };
+    return {
+      ...fresh,
+      choice: before.productId ? String(before.productId) : NEW,
+      pieces: String(before.pieces),
+      perPack: String(before.unitsPerPack),
+      unitCost: before.unitCost === null ? '' : String(before.unitCost),
+      updateCost: before.updateCost,
+      updateBarcode: before.updateBarcode,
+      ...(before.newProduct && {
+        name: before.newProduct.name,
+        barcode: before.newProduct.barcode ?? '',
+        price: String(before.newProduct.price),
+        vatRate: String(before.newProduct.vatRate),
+      }),
+    };
+  });
+}
+
+function freshDecision(read: BillScan['lines'][number]['read'], match: BillScan['lines'][number]['match']): Decision {
+  return {
     choice: match.productId ? String(match.productId) : NEW,
     pieces: String(match.pieces),
     perPack: String(match.unitsPerPack),
@@ -49,10 +76,14 @@ function firstDecisions(scan: BillScan): Decision[] {
     barcode: read.barcode ?? '',
     price: '',
     vatRate: String(VAT_RATES.find((rate) => rate === read.vatRate) ?? 18),
-  }));
+  };
 }
 
 function firstBill(scan: BillScan): BillDraft {
+  const previous = scan.previous?.bill;
+  if (previous) {
+    return { number: previous.number ?? '', issuedOn: previous.issuedOn, dueOn: previous.dueOn ?? '', amount: String(previous.amount), note: previous.note ?? '' };
+  }
   const { reading, totals } = scan;
   const issued = reading.issuedOn && reading.issuedOn <= todayIso() ? reading.issuedOn : todayIso();
   const amount = reading.totals.gross ?? (reading.totals.net !== null ? reading.totals.net + (reading.totals.vat ?? 0) : totals.linesTotal);
@@ -100,7 +131,9 @@ export function ScanCheckPage() {
           }
         />
         <div className="scan-done-pages">
+          <ReopenCard scan={data} />
           <Pages scan={data} />
+          <HistoryCard entityType="bill_scan" entityId={data.id} />
         </div>
       </>
     );
@@ -130,8 +163,12 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
   const [decisions, setDecisions] = useState(() => firstDecisions(scan));
   const [bill, setBill] = useState(() => firstBill(scan));
-  const [orderId, setOrderId] = useState(() => (scan.openOrders[0] ? String(scan.openOrders[0].id) : ''));
-  const [categoryId, setCategoryId] = useState('');
+  const [orderId, setOrderId] = useState(() => {
+    const previous = scan.previous?.orderId;
+    if (previous && scan.openOrders.some((order) => order.id === previous)) return String(previous);
+    return scan.openOrders[0] ? String(scan.openOrders[0].id) : '';
+  });
+  const [categoryId, setCategoryId] = useState(() => (scan.previous?.categoryId ? String(scan.previous.categoryId) : ''));
   const [discarding, setDiscarding] = useState(false);
 
   const kept = decisions.filter((decision) => decision.choice !== SKIP);
@@ -168,6 +205,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
           const isNew = decision.choice === NEW;
           return [
             {
+              readIndex: index,
               productId: isNew ? null : Number(decision.choice),
               newProduct: isNew
                 ? { name: decision.name.trim(), barcode: decision.barcode.trim() || null, price: Number(decision.price), vatRate: Number(decision.vatRate) }
@@ -233,6 +271,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
             {t.scans.totalsOff({ lines: formatMoney(totals.linesTotal), printed: formatMoney(totals.printedTotal) })}
           </p>
         )}
+        {scan.previous && <p className="notice">{t.scans.previousChoices}</p>}
         {reading.remarks && <p className="notice">{t.scans.remarks(reading.remarks)}</p>}
 
         <Card>
@@ -531,6 +570,47 @@ function Pages({ scan }: { scan: BillScan }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/** The developer can take back a decided scan: everything it did is put back and it waits to be checked again. */
+function ReopenCard({ scan }: { scan: BillScan }) {
+  const t = useT();
+  const { role } = useCurrentUser();
+  const queryClient = useQueryClient();
+  const [asking, setAsking] = useState(false);
+  const reopen = useMutation({
+    mutationFn: () => billScansApi.reopen(scan.id),
+    onSuccess: () => {
+      for (const key of ['bill-scans', 'bills', 'orders', 'products', 'inventory', 'attention', 'activity']) queryClient.invalidateQueries({ queryKey: [key] });
+    },
+  });
+  if (role !== 'developer') return null;
+  return (
+    <Card title={t.scans.reopen} description={scan.status === 'confirmed' ? t.scans.reopenHint : t.scans.reopenDiscarded}>
+      {reopen.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(reopen.error)}
+        </p>
+      )}
+      {asking ? (
+        <>
+          <p className="field-hint">{t.scans.reopenSure}</p>
+          <div className="form-actions">
+            <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>
+              {t.scans.keep}
+            </Button>
+            <Button size="sm" variant="danger" disabled={reopen.isPending} onClick={() => reopen.mutate()}>
+              {t.scans.yesReopen}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <Button size="sm" onClick={() => setAsking(true)}>
+          {t.scans.reopen}
+        </Button>
+      )}
     </Card>
   );
 }

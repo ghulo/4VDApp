@@ -48,7 +48,8 @@ export function ActivityPage() {
         page,
         userId,
         action: action && action !== EVERYTHING ? action : undefined,
-        exclude: action === '' ? 'auth' : undefined,
+        // Logins and issued invoices (one per checkout) would crowd the timeline; each has its own place.
+        exclude: action === '' ? 'auth,document.issued' : undefined,
       }),
     placeholderData: keepPreviousData,
   });

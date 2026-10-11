@@ -2,7 +2,7 @@ import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
-import { roundMoney } from '../utils/money.js';
+import { formatEuro, roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
 import { type BillInput, createBill } from './SupplierBillService.js';
 
@@ -258,6 +258,24 @@ export class PurchaseOrderService {
  * expiry dates are kept, costs are noted and the order closes. A scanned bill
  * receives its delivery through this too, so both ways record the same things.
  */
+/** Sets a product's cost and writes it to its history (and Price history), like an edit on the product page. */
+export async function changeCost(
+  repos: TransactionalRepositories,
+  p: { productId: number; productName: string; from: number | null; to: number | null; actorId: number; because: string },
+): Promise<void> {
+  if (p.from === p.to) return;
+  await repos.orders.setCostPrice(p.productId, p.to);
+  const money = (value: number | null) => (value === null ? 'none' : formatEuro(value));
+  await repos.activityLog.create({
+    userId: p.actorId,
+    action: 'product.updated',
+    entityType: 'product',
+    entityId: p.productId,
+    summary: `Changed cost of ${p.productName} from ${money(p.from)} to ${money(p.to)} (${p.because})`,
+    details: { costPrice: { from: p.from, to: p.to } },
+  });
+}
+
 export async function receiveOrder(repos: TransactionalRepositories, id: number, input: ReceiveInput, actorId: number, now: Date): Promise<void> {
     const order = await repos.orders.findOrder(id);
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
@@ -297,7 +315,14 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
         });
       }
       if (input.updateCostPrices && unitCost !== null && unitCost !== (product.cost_price === null ? null : Number(product.cost_price))) {
-        await repos.orders.setCostPrice(product.id, unitCost);
+        await changeCost(repos, {
+          productId: product.id,
+          productName: product.name,
+          from: product.cost_price === null ? null : Number(product.cost_price),
+          to: unitCost,
+          actorId,
+          because: `order #${id} from ${order.supplier_name}`,
+        });
       }
       units += quantity;
     }

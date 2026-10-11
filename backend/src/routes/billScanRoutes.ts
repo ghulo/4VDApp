@@ -8,6 +8,8 @@ export function createBillScanRoutes({ billScanService, guards }: Container): Ro
   const router = Router();
 
   router.post('/', ...guards.staff, controller.scan);
+  // Only the developer can take a decided scan back: it reverses stock, the bill and the order.
+  router.post('/:id/reopen', ...guards.developer, controller.reopen);
   router.use(...guards.oversee);
   router.get('/', controller.waiting);
   router.get('/:id', controller.get);

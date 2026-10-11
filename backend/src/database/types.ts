@@ -575,6 +575,8 @@ export interface BillScansTable {
   decided_at: Date | null;
   bill_id: number | null;
   order_id: number | null;
+  /** What confirming changed, so a reopen can put it back (ScanConfirmation). */
+  confirmation: ColumnType<unknown, string | null | undefined, string | null>;
 }
 
 export interface SupplierProductCodesTable {

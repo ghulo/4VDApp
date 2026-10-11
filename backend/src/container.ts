@@ -153,7 +153,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
   const settingsService = new SettingsService(settingsRepository, transactions);
-  const documentService = new DocumentService(new DocumentRepository(db), transactions, config.shopTimeZone, settingsService);
+  const documentRepository = new DocumentRepository(db);
+  const documentService = new DocumentService(documentRepository, transactions, config.shopTimeZone, settingsService);
   const salesService = new SalesService(salesRepository, transactions, documentService, config.shopTimeZone, settingsService);
   const analyticsService = new AnalyticsService(
     salesRepository,
@@ -166,7 +167,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const undoRepository = new UndoRepository(db);
-  const activityLogService = new ActivityLogService(activityLogRepository, undoRepository);
+  const activityLogService = new ActivityLogService(activityLogRepository, undoRepository, documentRepository);
   const carwashRepository = new CarwashRepository(db);
   const carwashService = new CarwashService(carwashRepository, transactions, config.shopTimeZone);
   const expenseRepository = new ExpenseRepository(db);
@@ -281,7 +282,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.dashboardUrl,
   );
   const profileService = new ProfileService(userRepository, mediaService);
-  const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService);
+  const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService, activityLogRepository);
   const sessionService = new SessionService(refreshTokenRepository);
   const googleAuthService = new GoogleAuthService(
     options.google?.verifier ?? (config.googleClientId ? new GoogleIdTokenVerifier(config.googleClientId) : null),

@@ -80,6 +80,7 @@ import type {
   AssistantChat,
   AssistantThread,
   BillScan,
+  HistoryEntity,
   ConfirmScanInput,
   WaitingScan,
 } from './types';
@@ -412,6 +413,8 @@ export const billScansApi = {
   confirm: async (id: number, input: ConfirmScanInput) =>
     (await apiRequest<{ billId: number; orderId: number }>(`/bill-scans/${id}/confirm`, { method: 'POST', body: input })).data,
   discard: async (id: number) => apiRequest<null>(`/bill-scans/${id}/discard`, { method: 'POST' }),
+  /** Developer only: puts back everything the confirm did and makes the scan wait again. */
+  reopen: async (id: number) => apiRequest<null>(`/bill-scans/${id}/reopen`, { method: 'POST' }),
 };
 
 export const fullReportsApi = {
@@ -582,6 +585,9 @@ export const activityApi = {
   undo: async (id: number, note: string) =>
     (await apiRequest<ActivityEntry>(`/activity/${id}/undo`, { method: 'POST', body: note ? { note } : {} })).data,
   restore: async (id: number) => (await apiRequest<ActivityEntry>(`/activity/${id}/restore`, { method: 'POST' })).data,
+  /** Everything that happened to one record, oldest first (an invoice includes its sales, returns and credit notes). */
+  history: async (entityType: HistoryEntity, entityId: number) =>
+    (await apiRequest<ActivityEntry[]>('/activity/history', { query: { entityType, entityId } })).data,
 };
 
 export const settingsApi = {

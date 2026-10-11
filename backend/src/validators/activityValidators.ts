@@ -21,3 +21,9 @@ export const activityQuerySchema = paginationSchema.extend({
   // Same format, left out: "auth" hides logins so the log shows what changed.
   exclude: actionList.optional(),
 });
+
+/** One record whose history to show. */
+export const historyQuerySchema = z.object({
+  entityType: z.enum(ACTIVITY_ENTITY_TYPES),
+  entityId: idSchema,
+});

@@ -116,6 +116,8 @@ export const confirmScanSchema = z.object({
   lines: z
     .array(
       z.object({
+        /** Which line of the reading this is, so a reopened scan can show the same choices. */
+        readIndex: z.number().int().nonnegative().optional(),
         productId: idSchema.nullable(),
         newProduct: z
           .object({

@@ -248,6 +248,20 @@ export class DocumentRepository {
       .execute();
   }
 
+  /** What a document's history takes in: its sales, their returns, and the credit notes tied to it. */
+  async related(documentId: number): Promise<{ saleIds: number[]; returnIds: number[]; documentIds: number[] }> {
+    const lines = await this.findLines(documentId);
+    const saleIds = [...new Set(lines.flatMap((line) => (line.sale_id === null ? [] : [line.sale_id])))];
+    const returns = saleIds.length > 0 ? await this.db.selectFrom('returns').select('id').where('sale_id', 'in', saleIds).execute() : [];
+    const documents = await this.db
+      .selectFrom('documents')
+      .select('id')
+      .where((eb) => eb.or([eb('corrects_id', '=', documentId), eb('id', '=', eb.selectFrom('documents').select('corrects_id').where('id', '=', documentId))]))
+      .execute();
+    const returnIds = new Set([...returns.map((row) => row.id), ...lines.flatMap((line) => (line.return_id === null ? [] : [line.return_id]))]);
+    return { saleIds, returnIds: [...returnIds], documentIds: [documentId, ...documents.map((row) => row.id)] };
+  }
+
   salesForDocument(saleIds: number[]): Promise<SaleForDocument[]> {
     return this.db
       .selectFrom('sales as s')

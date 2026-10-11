@@ -247,4 +247,50 @@ describe('scanned supplier bills', () => {
     expect(await stockOf(chairId)).toBe(10);
     expect((await api().get('/api/bill-scans').set(auth())).body.data).toHaveLength(1);
   });
+
+  it('should let only the developer reopen a confirmed scan, putting stock, bill, order, cost, barcode and codes back', async () => {
+    const developerToken = await loginAs(context, 'developer');
+    const order = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 5, unitCost: 60 }] })).body.data;
+    reader.reading = reading([{ barcode: '3800000000099' }, { code: 'ART-4', barcode: null, name: 'Mango juice', unitPrice: 1.2, quantity: 12 }]);
+    const { id } = await scan();
+    const lines = [
+      { readIndex: 0, barcode: '3800000000099', updateBarcode: true, unitCost: 55, updateCost: true },
+      { readIndex: 1, productId: null, newProduct: { name: 'Mango juice', barcode: null, price: 2, vatRate: 18 }, code: 'ART-4', pieces: 12, unitCost: 1.2 },
+    ];
+    const confirmed = (await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody(lines, { categoryId, orderId: order.id }))).body.data;
+    await api().post(`/api/bills/${confirmed.billId}/payments`).set(auth()).send({ paidOn: today(), method: 'bank', amount: 20 });
+    expect(await stockOf(chairId)).toBe(12);
+
+    expect((await api().post(`/api/bill-scans/${id}/reopen`).set(auth())).status).toBe(403);
+    const reopened = await api().post(`/api/bill-scans/${id}/reopen`).set(auth(developerToken));
+    expect(reopened.status).toBe(200);
+
+    const chair = (await api().get(`/api/products/${chairId}`).set(auth())).body.data;
+    expect(chair.stock.quantity).toBe(10);
+    expect(chair).toMatchObject({ barcode: '3800000000011', costPrice: 60 });
+    expect(await context.db.selectFrom('products').select('id').where('name', '=', 'Mango juice').where('deleted_at', 'is', null).executeTakeFirst()).toBeUndefined();
+    expect((await api().get(`/api/bills/${confirmed.billId}`).set(auth())).body.data).toMatchObject({ status: 'void', paid: 0 });
+    const back = (await api().get(`/api/orders/${order.id}`).set(auth())).body.data;
+    expect(back.status).toBe('open');
+    expect(back.lines).toHaveLength(1);
+    expect(await context.db.selectFrom('supplier_product_codes').selectAll().execute()).toEqual([]);
+
+    // Waiting again, with the earlier choices to start from; confirming again works.
+    const history = (await api().get(`/api/activity/history?entityType=bill_scan&entityId=${id}`).set(auth())).body.data.map((entry: { action: string }) => entry.action);
+    expect(history).toEqual(['bill.scanned', 'bill.scan_confirmed', 'bill.scan_reopened']);
+    const again = await check(id);
+    expect(again.status).toBe('waiting');
+    expect(again.previous.lines[0]).toMatchObject({ readIndex: 0, unitCost: 55 });
+    expect((await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody([{ pieces: 2 }], { orderId: order.id }))).status).toBe(200);
+    expect(await stockOf(chairId)).toBe(12);
+  });
+
+  it('should refuse to reopen when part of the delivery was already sold', async () => {
+    const developerToken = await loginAs(context, 'developer');
+    const { id } = await scan();
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody([{}]));
+    await context.db.updateTable('inventory').set({ quantity_on_hand: 1 }).where('product_id', '=', chairId).execute();
+    expect((await api().post(`/api/bill-scans/${id}/reopen`).set(auth(developerToken))).status).toBe(409);
+    expect((await check(id)).status).toBe('confirmed');
+  });
 });

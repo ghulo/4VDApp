@@ -3340,3 +3340,57 @@ fieldset.report-sections {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ---------- History of one record ---------- */
+
+.record-history {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.record-history__entry {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) 0 var(--space-3) var(--space-4);
+  border-left: 2px solid var(--line);
+  position: relative;
+}
+
+/* A dot on the line for each change, like stops on a timetable. */
+.record-history__entry::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--space-3) + 5px);
+  left: -5px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--ink-muted);
+}
+
+.record-history__when {
+  color: var(--steel);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-history__what {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.record-history__change {
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.record-history__entry.is-undone .record-history__text {
+  color: var(--steel);
+  text-decoration: line-through;
+}

@@ -14,6 +14,7 @@ import { Camera, Package } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
+import { HistoryCard } from '../components/HistoryCard';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -485,6 +486,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
             <div className="product-layout__side">
               <BarcodeCard product={product} />
               <PriceHistory productId={product.id} />
+              <HistoryCard entityType="product" entityId={product.id} />
             </div>
           )}
         </div>

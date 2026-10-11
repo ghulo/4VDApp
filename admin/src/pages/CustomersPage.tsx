@@ -12,6 +12,7 @@ import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { HistoryCard } from '../components/HistoryCard';
 
 /** Same as the server: tabs unpaid this long need a reminder. */
 const OVERDUE_DAYS = 30;
@@ -247,6 +248,7 @@ export function CustomerDetailPage() {
       {canManage(role) && <EditDetails customer={data} />}
 
       {canManage(role) && data.balance === 0 && !data.archived && <CloseTab customer={data} />}
+      <HistoryCard entityType="customer" entityId={data.id} />
     </>
   );
 }

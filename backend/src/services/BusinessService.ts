@@ -1,10 +1,12 @@
 import { NotFoundError } from '../errors/httpErrors.js';
+import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { mediaUrl } from './mappers.js';
 import type { MediaService } from './MediaService.js';
 
 export interface BusinessDto {
+  id: number;
   name: string;
   address: string | null;
   phone: string | null;
@@ -28,7 +30,19 @@ export interface BusinessChanges {
   invoiceNote?: string | null;
 }
 
+const FIELD_NAMES: Record<string, string> = {
+  name: 'name',
+  address: 'address',
+  phone: 'phone',
+  nui: 'NUI',
+  timeZone: 'time zone',
+  bankName: 'bank',
+  iban: 'IBAN',
+  invoiceNote: 'invoice note',
+};
+
 const toDto = (business: BusinessRow): BusinessDto => ({
+  id: business.id,
   name: business.name,
   address: business.address,
   phone: business.phone,
@@ -47,6 +61,7 @@ export class BusinessService {
     private readonly businessRepository: BusinessRepository,
     private readonly userRepository: UserRepository,
     private readonly mediaService: MediaService,
+    private readonly activityLog: ActivityLogRepository,
   ) {}
 
   async get(userId: number): Promise<BusinessDto> {
@@ -65,6 +80,20 @@ export class BusinessService {
       ...(changes.iban !== undefined && { iban: changes.iban }),
       ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
     });
+    // Every field that really changed, before and after, for the shop's history.
+    const before = toDto(business) as unknown as Record<string, unknown>;
+    const after = toDto(updated) as unknown as Record<string, unknown>;
+    const fields = Object.keys(changes).filter((field) => (before[field] ?? null) !== (after[field] ?? null));
+    if (fields.length > 0) {
+      await this.activityLog.create({
+        userId,
+        action: 'business.updated',
+        entityType: 'business',
+        entityId: business.id,
+        summary: `Changed the shop's ${fields.map((field) => FIELD_NAMES[field] ?? field).join(', ')}`,
+        details: { fields: fields.map((field) => ({ field, from: before[field] ?? null, to: after[field] ?? null })) },
+      });
+    }
     return toDto(updated);
   }
 

@@ -186,6 +186,11 @@ export class ProductRepository {
     await this.db.updateTable('products').set({ barcode, updated_at: new Date() }).where('id', '=', id).execute();
   }
 
+  /** Whether the product was ever sold; a sold product is kept, not removed. */
+  async hasSales(id: number): Promise<boolean> {
+    return Boolean(await this.db.selectFrom('sales').select('id').where('product_id', '=', id).limit(1).executeTakeFirst());
+  }
+
   async softDelete(id: number): Promise<boolean> {
     const result = await this.db
       .updateTable('products')

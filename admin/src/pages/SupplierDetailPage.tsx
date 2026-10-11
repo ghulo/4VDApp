@@ -15,6 +15,7 @@ import { BILL_STATUS_TONE } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { ORDER_STATUS_TONE, orderSummary } from '../utils/orders';
+import { HistoryCard } from '../components/HistoryCard';
 
 /** One supplier on one page: what is on the way, what is owed, and every order and bill. */
 export function SupplierDetailPage() {
@@ -102,6 +103,7 @@ export function SupplierDetailPage() {
       <OrdersCard supplierId={id} orders={theirOrders} isPending={orders.isPending} />
 
       {canManage(role) && <DetailsCard supplier={supplier} />}
+      <HistoryCard entityType="supplier" entityId={id} />
     </>
   );
 }

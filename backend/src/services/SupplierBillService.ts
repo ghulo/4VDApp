@@ -43,6 +43,8 @@ export interface SupplierBillDto {
   daysLeft: number | null;
   note: string | null;
   photoUrl: string | null;
+  /** Confirmed from this scanned bill. */
+  scanId: number | null;
   recordedBy: string | null;
   voidNote: string | null;
   payments: SupplierPaymentDto[];
@@ -299,6 +301,7 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], today: string): Supp
     photoUrl: mediaUrl(bill.photo_media_id),
     recordedBy: bill.created_by_name,
     voidNote: bill.void_note,
+    scanId: bill.scan_id,
     payments: payments
       .filter((payment) => payment.bill_id === bill.id)
       .map((payment) => ({

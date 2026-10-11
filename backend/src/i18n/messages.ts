@@ -197,8 +197,6 @@ export interface ServerMessages {
     bank: string;
     iban: string;
     payReference: string;
-    page: string;
-    pageOf: string;
     discount: string;
     discountTotal: string;
     inWords: string;
@@ -442,8 +440,6 @@ export const en: ServerMessages = {
     bank: 'Bank',
     iban: 'IBAN',
     payReference: 'Reference',
-    page: 'Page',
-    pageOf: 'of',
     discount: 'Rabat',
     discountTotal: 'Total rabat',
     inWords: 'In words',
@@ -688,8 +684,6 @@ export const sq: ServerMessages = {
     bank: 'Banka',
     iban: 'IBAN',
     payReference: 'Referenca',
-    page: 'Faqe',
-    pageOf: 'nga',
     discount: 'Rabati',
     discountTotal: 'Rabati gjithsej',
     inWords: 'Me fjalë',

@@ -10,10 +10,6 @@ import { SHOP_MARK_SVG } from './shopMark.js';
 const escape = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
-/** Text inside a CSS string, for the page footer printed in the margin; `<` is escaped so a name can't close the style tag. */
-const cssString = (value: string) =>
-  `"${value.replace(/[\\"]/g, (char) => `\\${char}`).replace(/</g, '\\3c ').replace(/[\r\n]+/g, ' ')}"`;
-
 /** "10%" or "7,5%", the way the language writes a percent. */
 const formatPercent = (percent: number, language: Language) =>
   `${new Intl.NumberFormat(language === 'en' ? 'en-GB' : LOCALE[language], { maximumFractionDigits: 2 }).format(percent)}%`;
@@ -107,7 +103,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
         </dl></section>`
       : '';
 
-  const footer = [seller.name, seller.nui ? `${t.nui} ${seller.nui}` : ''].filter(Boolean).join('  ·  ');
+  const footer = [seller.name, seller.nui ? `${t.nui} ${seller.nui}` : '', document.number].filter(Boolean).join('  ·  ');
 
   return `<!doctype html>
 <html lang="${language}">
@@ -123,14 +119,12 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     --clay: #d4704f; --clay-text: #a8482a; --sunk: #f0eee6; --warn: #86500c; --warn-soft: #f6ecd9;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
   }
-  @page {
-    size: A4;
-    margin: 14mm 14mm 18mm;
-    @bottom-left { content: ${cssString(footer)}; font: 400 8pt 'Hanken Grotesk', system-ui, sans-serif; color: #5e5d59; vertical-align: top; padding-top: 4mm; }
-    @bottom-right {
-      content: ${cssString(`${t.page} `)} counter(page) ${cssString(` ${t.pageOf} `)} counter(pages);
-      font: 400 8pt 'Hanken Grotesk', system-ui, sans-serif; color: #5e5d59; vertical-align: top; padding-top: 4mm;
-    }
+  /*
+   * No top or bottom margin on the paper: the browser prints its own date,
+   * title and address only into those margins, so with none it has nowhere to
+   * put them. The sheet table below gives every page its space instead.
+   */
+  @page { size: A4; margin: 0 14mm; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -138,6 +132,12 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
   p, h1, h2, dl, dd { margin: 0; }
   .page { max-width: 182mm; margin: 0 auto; padding: 10mm 0; }
   @media print { .page { padding: 0; } }
+  /* A header and footer row that the browser repeats on every printed page: the top and bottom space, and the shop's line. */
+  .sheet { width: 100%; border-collapse: collapse; }
+  .sheet > thead > tr > td, .sheet > tfoot > tr > td, .sheet > tbody > tr > td { padding: 0; }
+  .sheet__top { height: 12mm; }
+  .sheet__bottom { height: 14mm; padding-top: 4mm; display: flex; justify-content: space-between; color: var(--ink-muted); font-size: 8pt; }
+  @media screen { .sheet__top, .sheet__bottom { display: none; } }
   /* Spec labels: DESIGN.md's only capitals. */
   .spec { font: 600 7.5pt/1.3 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
   .muted { color: var(--ink-muted); }
@@ -197,15 +197,19 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
   .words .spec { margin-right: 1.5mm; }
   .fine { color: var(--ink-muted); font-size: 8.5pt; margin-top: 2mm; text-align: right; }
 
-  .signatures { display: grid; grid-template-columns: 1fr 26mm 1fr; gap: 10mm; align-items: end; margin-top: 16mm; break-inside: avoid; }
+  .signatures { display: grid; grid-template-columns: 1fr 22mm 1fr; gap: 10mm; align-items: end; margin-top: 10mm; break-inside: avoid; }
   .signature { border-top: 1px solid var(--hairline-strong); padding-top: 2mm; color: var(--ink-muted); font-size: 8.5pt; }
   /* Where the shop's stamp goes. */
-  .stamp { width: 26mm; height: 26mm; border: 1px dashed var(--hairline-strong); border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted); font: 600 7.5pt var(--mono); letter-spacing: .06em; }
-  .note-shop { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid var(--hairline); color: var(--ink-muted); font-size: 8.5pt; text-align: center; white-space: pre-line; break-inside: avoid; }
+  .stamp { width: 22mm; height: 22mm; border: 1px dashed var(--hairline-strong); border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted); font: 600 7.5pt var(--mono); letter-spacing: .06em; }
+  .note-shop { margin-top: 6mm; padding-top: 3mm; border-top: 1px solid var(--hairline); color: var(--ink-muted); font-size: 8.5pt; text-align: center; white-space: pre-line; break-inside: avoid; }
 </style>
 </head>
 <body>
 <main class="page">
+<table class="sheet" role="presentation">
+<thead><tr><td><div class="sheet__top"></div></td></tr></thead>
+<tfoot><tr><td><div class="sheet__bottom">${escape(footer)}</div></td></tr></tfoot>
+<tbody><tr><td>
   <header class="masthead">
     ${logo}
     <div class="shop">
@@ -265,6 +269,8 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     <div class="signature">${escape(t.signedBuyer)}</div>
   </div>
   ${letterhead.note ? `<p class="note-shop">${escape(letterhead.note)}</p>` : ''}
+</td></tr></tbody>
+</table>
 </main>
 </body>
 </html>`;

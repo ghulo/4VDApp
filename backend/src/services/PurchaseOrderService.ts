@@ -132,7 +132,7 @@ export class PurchaseOrderService {
     return (await this.orderRepository.findSupplier(id))!;
   }
 
-  async updateSupplier(id: number, input: SupplierFields, actorId: number): Promise<SupplierDto> {
+  async updateSupplier(id: number, input: SupplierFields, actorId: number, logExtra?: Record<string, unknown>): Promise<SupplierDto> {
     const before = await this.orderRepository.findSupplier(id);
     if (!before) throw new NotFoundError(`Supplier ${id} does not exist`);
     await this.transactions.run(async (repos) => {
@@ -143,7 +143,7 @@ export class PurchaseOrderService {
         entityType: 'supplier',
         entityId: id,
         summary: `Changed the supplier ${before.name}'s details`,
-        details: { before, after: input },
+        details: { before, after: input, ...logExtra },
       });
     });
     return (await this.orderRepository.findSupplier(id))!;

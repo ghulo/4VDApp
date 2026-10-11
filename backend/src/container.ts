@@ -76,6 +76,7 @@ import { SignupService } from './services/SignupService.js';
 import { ReportBuilder } from './services/reports/ReportBuilder.js';
 import { ReportDeliveryService } from './services/reports/ReportDeliveryService.js';
 import { ReportSubscriptionRepository } from './repositories/ReportSubscriptionRepository.js';
+import { RecordRestoreService } from './services/undo/RecordRestoreService.js';
 import { UndoService } from './services/undo/UndoService.js';
 import { EditReverts } from './services/undo/editReverts.js';
 import { UndoRepository } from './repositories/UndoRepository.js';
@@ -283,6 +284,16 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const profileService = new ProfileService(userRepository, mediaService);
   const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService, activityLogRepository);
+  const recordRestoreService = new RecordRestoreService(
+    activityLogRepository,
+    productService,
+    userService,
+    userRepository,
+    purchaseOrderService,
+    purchaseOrderRepository,
+    tabService,
+    businessService,
+  );
   const sessionService = new SessionService(refreshTokenRepository);
   const googleAuthService = new GoogleAuthService(
     options.google?.verifier ?? (config.googleClientId ? new GoogleIdTokenVerifier(config.googleClientId) : null),
@@ -369,6 +380,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     stockCountService,
     approvalService,
     undoService,
+    recordRestoreService,
     promotionService,
     carwashService,
     cashCountService,

@@ -52,6 +52,14 @@ const productFields = {
     .number()
     .refine((rate) => (VAT_RATES as readonly number[]).includes(rate), `VAT must be one of ${VAT_RATES.join(', ')}%`)
     .optional(),
+  /** ISO code of the country it comes from; null clears it, left out keeps it. */
+  originCountry: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/, 'a country is its two-letter code, like AL')
+    .nullable()
+    .optional(),
 };
 
 /** What a scanner or a person types: digits and letters, no spaces at the ends. */

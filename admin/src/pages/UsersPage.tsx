@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Avatar } from '../components/Avatar';
+import { HistoryCard } from '../components/HistoryCard';
 import { invitesApi, usersApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { type User, type UserRole } from '../services/types';
@@ -438,6 +439,7 @@ function UserRow({ user }: { user: User }) {
               </>
             )}
           </span>
+          <HistoryCard entityType="user" entityId={user.id} />
         </div>
       )}
       {error && (

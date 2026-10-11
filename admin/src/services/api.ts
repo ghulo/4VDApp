@@ -81,6 +81,7 @@ import type {
   AssistantThread,
   BillScan,
   HistoryEntity,
+  RestorePlan,
   ConfirmScanInput,
   WaitingScan,
 } from './types';
@@ -588,6 +589,11 @@ export const activityApi = {
   /** Everything that happened to one record, oldest first (an invoice includes its sales, returns and credit notes). */
   history: async (entityType: HistoryEntity, entityId: number) =>
     (await apiRequest<ActivityEntry[]>('/activity/history', { query: { entityType, entityId } })).data,
+  /** Developer only: what putting the record back to this entry would change. */
+  restorePlan: async (id: number) => (await apiRequest<RestorePlan>(`/activity/${id}/restore-point`)).data,
+  /** Developer only: put the record back; refused when it changed after `latestEntryId`. */
+  restoreTo: async (id: number, latestEntryId: number) =>
+    (await apiRequest<RestorePlan>(`/activity/${id}/restore-point`, { method: 'POST', body: { latestEntryId } })).data,
 };
 
 export const settingsApi = {

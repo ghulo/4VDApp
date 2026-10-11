@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import { BarcodeImage } from '../components/BarcodeImage';
+import { CountryFlag } from '../components/CountryFlag';
 import { QrImage } from '../components/QrImage';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { canManage } from '../auth/roles';
@@ -40,6 +41,7 @@ export function LabelsPage() {
   );
   const [layout, setLayout] = useState<Layout>('sheet');
   const [symbols, setSymbols] = useState<Symbols>('barcode');
+  const [showCountry, setShowCountry] = useState(true);
   const [search, setSearch] = useState('');
 
   const chosen = (products.data?.items ?? []).filter((product) => (copies[product.id] ?? 0) > 0);
@@ -62,7 +64,10 @@ export function LabelsPage() {
       {symbols !== 'barcode' && <QrImage code={product.barcode!} size={layout === 'roll' ? 72 : 80} label={t.barcodes.qrLabel(product.name)} />}
       <div className="label__text">
         <p className="label__name">{product.name}</p>
-        <p className="label__price">{formatMoney(product.price)}</p>
+        <p className="label__price">
+          {showCountry && product.originCountry && <CountryFlag code={product.originCountry} className="label__flag" />}
+          {formatMoney(product.price)}
+        </p>
         {symbols !== 'qr' && (
           <BarcodeImage
             value={product.barcode!}
@@ -133,6 +138,10 @@ export function LabelsPage() {
           ))}
         </div>
         <p className="field-hint">{t.labels.symbolHints[symbols]}</p>
+        <label className="toggle">
+          <input type="checkbox" checked={showCountry} onChange={(event) => setShowCountry(event.target.checked)} />
+          {t.labels.showCountry}
+        </label>
         {missing.length > 0 && (
           <div className="callout">
             <p>{t.labels.missing(missing.length)}</p>

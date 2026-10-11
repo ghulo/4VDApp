@@ -105,6 +105,16 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] An invoice's history includes its sales, their undos and returns, and its credit notes
 - [x] Now logged too: invoices and credit notes issued, shop details (field by field), cost changes from deliveries and scans, scan confirmed / reopened
 
+## Fuller history, restore and country flags (branch record-history)
+
+- [x] Every History card shows what changed, before → after, in plain words (prices as money, countries by name, roles by title)
+- [x] Team: a person's History (role changes, blocked/allowed, renames) inside Manage
+- [x] Product: "Barcodes it has had", with when and by whom; scanned bills and reopening log their barcode changes too
+- [x] Developer only: "Restore to this point" on products, people, suppliers, customers and the shop; shows what goes back, then "Are you sure?"; refused if it changed meanwhile; logged and restorable again
+- [x] Product Country field with flag, filled in from the barcode prefix (where the brand registered it), editable; existing products filled in
+- [x] Labels: "Show the country's flag next to the price" switch
+- [x] Merged and pushed
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

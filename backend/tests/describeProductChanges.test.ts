@@ -11,6 +11,7 @@ const base: ProductSnapshot = {
   sku: 'CHAIR-1',
   isActive: true,
   vatRate: 18,
+  originCountry: null,
   bulkPricingTiers: [{ quantity: 10, price: 80 }],
 };
 

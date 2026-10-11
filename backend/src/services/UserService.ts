@@ -80,7 +80,8 @@ export class UserService {
     }
   }
 
-  async update(id: number, input: UpdateUserInput, actingUserId: number): Promise<PublicUser> {
+  /** `logExtra` is added to the logged details (a restore marks its own change with it). */
+  async update(id: number, input: UpdateUserInput, actingUserId: number, logExtra?: Record<string, unknown>): Promise<PublicUser> {
     const user = await this.userRepository.findById(id);
     if (!user) throw new NotFoundError(`User ${id} does not exist`);
 
@@ -121,6 +122,7 @@ export class UserService {
           ...(input.commissionPercent !== undefined && {
             commissionPercent: { from: user.commission_percent === null ? null : Number(user.commission_percent), to: input.commissionPercent },
           }),
+          ...logExtra,
         },
       });
       return result;

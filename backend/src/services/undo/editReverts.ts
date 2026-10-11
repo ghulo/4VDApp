@@ -1,6 +1,7 @@
 import { ConflictError, NotFoundError } from '../../errors/httpErrors.js';
 import type { UndoRepository } from '../../repositories/UndoRepository.js';
 import type { PublicUser } from '../../types/auth.js';
+import { fieldChangesOf } from '../activity/fieldChanges.js';
 import type { InventoryService } from '../InventoryService.js';
 import type { PricingTier } from '../pricing/bulkPricing.js';
 import type { PricingService } from '../PricingService.js';
@@ -29,7 +30,7 @@ export function changedFields(entry: { action: string; details: Record<string, u
       return 'reorderLevel' in details ? ['reorderLevel'] : [];
     case 'product.updated':
     case 'settings.updated':
-      return Object.keys(details).filter((key) => key !== 'undoOf');
+      return fieldChangesOf(entry).map((change) => change.field);
     default:
       return [];
   }
@@ -97,6 +98,7 @@ export class EditReverts {
           sku: product.sku,
           isActive: product.isActive,
           vatRate: product.vatRate,
+          originCountry: product.originCountry,
         };
         for (const field of changedFields(entry)) (input as unknown as Record<string, unknown>)[field] = valueOf(field);
         const saved = await this.productService.update(product.id, input, actor.id, logExtra);

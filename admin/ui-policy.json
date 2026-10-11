@@ -1,0 +1,66 @@
+{
+  "fonts": [
+    "Hanken Grotesk",
+    "Source Serif 4",
+    "ui-monospace",
+    "SF Mono",
+    "Cascadia Mono",
+    "Consolas"
+  ],
+  "fontSizes": [
+    12,
+    13,
+    15,
+    17,
+    28,
+    32,
+    36,
+    72
+  ],
+  "typeRules": [
+    {
+      "selector": "h1",
+      "sizes": [
+        28,
+        32,
+        36
+      ]
+    },
+    {
+      "selector": "button, [role=button]",
+      "sizes": [
+        12,
+        13,
+        15
+      ]
+    }
+  ],
+  "minControlSize": 30,
+  "controlSizeRules": [],
+  "minControlGap": 8,
+  "minControlInset": 8,
+  "controlContainers": [
+    "[data-ui-container]"
+  ],
+  "minLayoutGap": 8,
+  "bannedCopy": [
+    "unlock your potential",
+    "seamlessly",
+    "game-changing"
+  ],
+  "viewports": [
+    {
+      "width": 375,
+      "height": 812
+    },
+    {
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "colorSchemes": [
+    "light",
+    "dark"
+  ],
+  "exceptions": []
+}

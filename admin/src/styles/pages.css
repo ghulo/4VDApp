@@ -3103,3 +3103,240 @@ fieldset.report-sections {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* ---------- Scanned supplier bills ---------- */
+
+.notice--warn {
+  border-color: color-mix(in srgb, var(--warn) 35%, transparent);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.scan-files {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.scan-files li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.scan-files__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-waiting {
+  margin-bottom: var(--space-4);
+}
+
+.scan-waiting__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scan-waiting__row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.scan-waiting__row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.scan-waiting__meta {
+  display: block;
+  color: var(--steel);
+  font-size: var(--text-sm);
+}
+
+.scan-waiting__amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.scan-add-supplier {
+  display: inline-block;
+  margin-top: var(--space-1);
+}
+
+.scan-vat-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  color: var(--steel);
+  font-size: var(--text-sm);
+}
+
+.scan-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scan-line {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.scan-line:first-child {
+  border-top: 0;
+}
+
+.scan-line__head {
+  display: grid;
+  /* Wide enough for the longest stamp, BARKOD TJETËR. */
+  grid-template-columns: 8.5rem 1fr auto;
+  align-items: start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.scan-line__head .badge {
+  justify-self: start;
+}
+
+.scan-line__number {
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}
+
+.scan-line__meta {
+  display: block;
+  color: var(--steel);
+  font-size: var(--text-sm);
+}
+
+.scan-line__total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.scan-line__body {
+  padding-left: calc(8.5rem + var(--space-3));
+}
+
+.scan-line__numbers {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scan-line__ticks {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.scan-line--skipped .scan-line__read {
+  color: var(--steel);
+  text-decoration: line-through;
+}
+
+.scan-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scan-pages a {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.scan-pages a:hover,
+.scan-pages a:focus-visible {
+  border-color: var(--ink-muted);
+}
+
+.scan-pages img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.scan-pages__pdf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 100%;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.scan-pages__pdf svg {
+  width: 28px;
+  height: 28px;
+}
+
+.scan-done-pages {
+  max-width: 360px;
+  margin-top: var(--space-5);
+}
+
+.scan-discard {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.scan-discard p {
+  margin: 0 0 var(--space-2);
+}
+
+@media (max-width: 600px) {
+  .scan-waiting__row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .scan-waiting__row .button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .scan-line {
+    padding: var(--space-4);
+  }
+
+  .scan-line__head {
+    grid-template-columns: 1fr auto;
+  }
+
+  .scan-line__head .badge {
+    grid-column: 1 / -1;
+  }
+
+  .scan-line__body {
+    padding-left: 0;
+  }
+
+  .scan-line__numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

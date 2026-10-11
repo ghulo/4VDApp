@@ -65,6 +65,8 @@ export interface ServerMessages {
   todo: {
     requestsTitle: (count: number) => string;
     requestsDetail: string;
+    billScanTitle: (supplier: string | null) => string;
+    billScanDetail: (input: { name: string | null; number: string | null }) => string;
     cashDetail: (p: { name: string | null; day: string }) => string;
     closeDayTitle: (left: number) => string;
     closeDayDetail: string;
@@ -280,6 +282,9 @@ export const en: ServerMessages = {
   todo: {
     requestsTitle: (count) => `${count} ${count === 1 ? 'request is' : 'requests are'} waiting for a decision`,
     requestsDetail: 'Approve or reject them so the team knows where they stand.',
+    billScanTitle: (supplier) => (supplier ? `Check the scanned bill from ${supplier}` : 'Check a scanned bill'),
+    billScanDetail: ({ name, number }) =>
+      `${number ? `Bill ${number}, scanned` : 'Scanned'}${name ? ` by ${name}` : ''}. Confirm it to put the stock in.`,
     cashDetail: ({ name, day }) => `${name ? `Counted by ${name}` : 'Counted'} on ${day}. Look into it, then mark it as checked.`,
     closeDayTitle: (left) => `Close the day: ${left} ${left === 1 ? 'step' : 'steps'} left`,
     closeDayDetail: 'Count the drawers, enter the carwash and add the expenses before you go.',
@@ -527,6 +532,9 @@ export const sq: ServerMessages = {
   todo: {
     requestsTitle: (count) => `${count} ${count === 1 ? 'kërkesë pret' : 'kërkesa presin'} vendim`,
     requestsDetail: 'Prano ose refuzo, që ekipi ta dijë si qëndrojnë.',
+    billScanTitle: (supplier) => (supplier ? `Kontrollo faturën e skanuar nga ${supplier}` : 'Kontrollo një faturë të skanuar'),
+    billScanDetail: ({ name, number }) =>
+      `${number ? `Fatura ${number}, skanuar` : 'Skanuar'}${name ? ` nga ${name}` : ''}. Konfirmoje që malli të hyjë në stok.`,
     cashDetail: ({ name, day }) => `${name ? `E numëroi ${name}` : 'E numëruar'} më ${day}. Shiko çfarë ndodhi, pastaj shëno si të kontrolluar.`,
     closeDayTitle: (left) => `Mbyll ditën: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
     closeDayDetail: 'Numëro arkat, fut lavazhin dhe shto shpenzimet para se të ikësh.',

@@ -29,10 +29,20 @@ export class MediaService {
     return this.mediaRepository.create({ businessId, mime: 'image/webp', bytes });
   }
 
+  /** A supplier's bill sent as a PDF, kept as it is so every page stays readable. */
+  async storePdf(businessId: number | null, upload: Buffer): Promise<string> {
+    if (upload.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError("That file isn't a PDF we can read.");
+    return this.mediaRepository.create({ businessId, mime: 'application/pdf', bytes: upload });
+  }
+
   async read(id: string): Promise<{ mime: string; bytes: Buffer }> {
     const media = await this.mediaRepository.findById(id);
     if (!media) throw new NotFoundError('That picture does not exist');
     return media;
+  }
+
+  async mimes(ids: string[]): Promise<Map<string, string>> {
+    return this.mediaRepository.findMimes(ids);
   }
 
   async remove(id: string | null): Promise<void> {

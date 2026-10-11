@@ -79,6 +79,9 @@ import type {
   Attention,
   AssistantChat,
   AssistantThread,
+  BillScan,
+  ConfirmScanInput,
+  WaitingScan,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -398,6 +401,17 @@ export const billsApi = {
   void: async (id: number, note: string) => (await apiRequest<SupplierBill>(`/bills/${id}/void`, { method: 'POST', body: { note } })).data,
   setPhoto: async (id: number, photo: Blob) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'PUT', file: photo })).data,
   removePhoto: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'DELETE' })).data,
+};
+
+export const billScansApi = {
+  /** Pages as base64; photos are shrunk first, PDFs go whole. */
+  scan: async (pages: Array<{ mime: string; data: string }>) =>
+    (await apiRequest<{ id: number; supplierName: string | null; number: string | null; lines: number }>('/bill-scans', { method: 'POST', body: { pages } })).data,
+  waiting: async () => (await apiRequest<WaitingScan[]>('/bill-scans')).data,
+  get: async (id: number, supplierId?: number) => (await apiRequest<BillScan>(`/bill-scans/${id}`, { query: { supplierId } })).data,
+  confirm: async (id: number, input: ConfirmScanInput) =>
+    (await apiRequest<{ billId: number; orderId: number }>(`/bill-scans/${id}/confirm`, { method: 'POST', body: input })).data,
+  discard: async (id: number) => apiRequest<null>(`/bill-scans/${id}/discard`, { method: 'POST' }),
 };
 
 export const fullReportsApi = {

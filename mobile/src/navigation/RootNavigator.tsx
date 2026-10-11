@@ -19,6 +19,7 @@ import { CatalogScreen } from '../screens/CatalogScreen';
 import { CountScreen } from '../screens/CountScreen';
 import { CountsScreen } from '../screens/CountsScreen';
 import { DeliveriesScreen } from '../screens/DeliveriesScreen';
+import { ScanBillScreen } from '../screens/ScanBillScreen';
 import { EndShiftScreen } from '../screens/EndShiftScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -218,6 +219,7 @@ export function RootNavigator() {
             <Stack.Screen name="ScanResult" component={ScanResultScreen} options={{ title: t.scan.title, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Carwash" component={CarwashScreen} options={{ title: t.nav.carwash, presentation: 'modal' }} />
             <Stack.Screen name="Deliveries" component={DeliveriesScreen} options={{ title: t.nav.deliveries, presentation: 'modal' }} />
+            <Stack.Screen name="ScanBill" component={ScanBillScreen} options={{ title: t.nav.scanBill, presentation: 'modal' }} />
             <Stack.Screen name="Tabs" component={TabsScreen} options={{ title: t.nav.customerTabs, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Tab" component={TabScreen} options={({ route }) => ({ title: route.params.name, headerBackTitle: t.nav.back })} />
           </>

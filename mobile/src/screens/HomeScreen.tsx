@@ -234,6 +234,7 @@ export function HomeScreen() {
               hint={t.home.happened.expiryHint}
               onPress={() => navigation.navigate('Main', { screen: 'Catalog', params: { then: 'expiry' } })}
             />
+            <HappenedRow colors={colors} title={t.home.happened.supplierBill} hint={t.home.happened.supplierBillHint} onPress={() => navigation.navigate('ScanBill')} />
             {hasCarwash && (
               <HappenedRow colors={colors} title={t.home.happened.carwash} hint={t.home.happened.carwashHint} onPress={() => navigation.navigate('Carwash')} />
             )}

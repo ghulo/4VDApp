@@ -207,7 +207,7 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | | **Promotions** | `/promotions` | – |
 | Shelves | **Stock** | `/inventory` | On the shelf · Products · Categories |
 | | **Counts** | `/counts` | – |
-| Buy | **Suppliers** | `/suppliers` | All suppliers · Orders · Bills |
+| Buy | **Suppliers** | `/suppliers` | All suppliers · Orders · Bills (Bills holds Scan a bill and the scan check page, `/bills/scans/:id`) |
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
 | | **Expenses** | `/expenses` | – |
 | | **Reports** | `/report` | Daily & weekly · Analytics |

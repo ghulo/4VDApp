@@ -574,7 +574,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -968,4 +968,88 @@ export interface SalesPatterns {
   hours: Array<{ hour: number } & PatternFigures>;
   /** Monday (1) to Sunday (7); `days` is how many of that weekday the range holds. */
   weekdays: Array<{ weekday: number; days: number; averageRevenue: number } & PatternFigures>;
+}
+
+/** What the AI read off a supplier's bill; anything it couldn't read is null. */
+export interface BillReading {
+  supplier: { name: string | null; nui: string | null };
+  number: string | null;
+  issuedOn: string | null;
+  dueOn: string | null;
+  pricesIncludeVat: boolean;
+  lines: Array<{
+    code: string | null;
+    barcode: string | null;
+    name: string;
+    quantity: number;
+    unit: string | null;
+    unitsPerPack: number | null;
+    unitPrice: number | null;
+    discountPercent: number | null;
+    vatRate: number | null;
+    lineTotal: number | null;
+  }>;
+  totals: { net: number | null; vat: number | null; gross: number | null };
+  remarks: string | null;
+}
+
+/** The one thing to look at on a scanned line, most important first. */
+export type ScanStamp = 'new' | 'unsure' | 'barcode' | 'price' | 'match';
+
+export interface ScanLineMatch {
+  productId: number | null;
+  matchedBy: 'code' | 'barcode' | 'sku' | 'name' | null;
+  unitsPerPack: number;
+  pieces: number;
+  /** One piece, without VAT, after rabat. */
+  unitCost: number | null;
+  oldCost: number | null;
+  oldBarcode: string | null;
+  stamp: ScanStamp;
+}
+
+export interface BillScan {
+  id: number;
+  status: 'waiting' | 'confirmed' | 'discarded';
+  scannedBy: string | null;
+  scannedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  pages: Array<{ url: string; isPdf: boolean }>;
+  reading: BillReading;
+  supplier: { id: number; name: string; matchedBy: 'nui' | 'name' | 'chosen' } | null;
+  openOrders: PurchaseOrder[];
+  lines: Array<{ read: BillReading['lines'][number]; match: ScanLineMatch }>;
+  products: Array<{ id: number; name: string }>;
+  totals: { linesTotal: number; printedTotal: number | null; adds: boolean };
+  duplicateBillId: number | null;
+  billId: number | null;
+  orderId: number | null;
+}
+
+export interface WaitingScan {
+  id: number;
+  supplierName: string | null;
+  number: string | null;
+  amount: number | null;
+  scannedBy: string | null;
+  scannedAt: string;
+}
+
+export interface ConfirmScanInput {
+  supplierId: number;
+  orderId: number | null;
+  bill: BillInput;
+  categoryId: number | null;
+  lines: Array<{
+    productId: number | null;
+    newProduct: { name: string; barcode: string | null; price: number; vatRate: number } | null;
+    code: string | null;
+    pieces: number;
+    unitsPerPack: number;
+    unitCost: number | null;
+    updateCost: boolean;
+    barcode: string | null;
+    updateBarcode: boolean;
+  }>;
 }

@@ -560,6 +560,31 @@ export interface SupplierBillsTable {
   void_note: string | null;
 }
 
+export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
+export type BillScanStatus = (typeof BILL_SCAN_STATUSES)[number];
+
+export interface BillScansTable {
+  id: Generated<number>;
+  status: ColumnType<BillScanStatus, BillScanStatus | undefined, BillScanStatus>;
+  media_ids: string[];
+  /** What the AI read off the bill (BillReading). */
+  reading: ColumnType<unknown, string, string>;
+  scanned_by: number | null;
+  scanned_at: CreatedAt;
+  decided_by: number | null;
+  decided_at: Date | null;
+  bill_id: number | null;
+  order_id: number | null;
+}
+
+export interface SupplierProductCodesTable {
+  supplier_id: number;
+  code: string;
+  product_id: number;
+  units_per_pack: ColumnType<number, number | undefined, number>;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
 export const SUPPLIER_PAYMENT_METHODS = ['drawer', 'cash', 'bank'] as const;
 export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number];
 
@@ -696,6 +721,8 @@ export interface Database {
   document_lines: DocumentLinesTable;
   supplier_bills: SupplierBillsTable;
   supplier_payments: SupplierPaymentsTable;
+  bill_scans: BillScansTable;
+  supplier_product_codes: SupplierProductCodesTable;
   report_subscriptions: ReportSubscriptionsTable;
 }
 

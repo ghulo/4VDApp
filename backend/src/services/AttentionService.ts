@@ -2,6 +2,7 @@ import type { UserRole } from '../database/types.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
 import { canOversee, canSell } from '../utils/roles.js';
 import { zonedHour } from '../utils/zonedDates.js';
+import type { BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
 import type { CashCountService } from './CashCountService.js';
 import type { DayService } from './DayService.js';
@@ -14,8 +15,8 @@ const CASH_CHECK_DAYS = 30;
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -85,6 +86,7 @@ export class AttentionService {
     private readonly approvalService: ApprovalService,
     private readonly cashCountService: CashCountService,
     private readonly dayService: DayService,
+    private readonly billScans: BillScanRepository,
     private readonly timeZone: string,
   ) {}
 
@@ -96,11 +98,12 @@ export class AttentionService {
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
   private async overseer(role: UserRole, t: ServerMessages, now: Date): Promise<TodoItem[]> {
-    const [approvals, insights, cash, day] = await Promise.all([
+    const [approvals, insights, cash, day, scans] = await Promise.all([
       this.approvalService.summary(),
       this.insightsService.list(now, t),
       this.cashCountService.unchecked(CASH_CHECK_DAYS, now),
       this.closingDay(role, now),
+      this.billScans.findWaiting(),
     ]);
     const items: TodoItem[] = [];
     if (approvals.total > 0) {
@@ -112,6 +115,18 @@ export class AttentionService {
         detail: t.todo.requestsDetail,
         verb: 'decide',
         to: '/inbox',
+      });
+    }
+    for (const scan of scans) {
+      const reading = scan.reading as { supplier?: { name?: string | null }; number?: string | null };
+      items.push({
+        key: `bill_scan:${scan.id}`,
+        kind: 'bill_scan',
+        severity: 'check',
+        title: t.todo.billScanTitle(reading.supplier?.name ?? null),
+        detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null }),
+        verb: 'checkBill',
+        to: `/bills/scans/${scan.id}`,
       });
     }
     for (const count of cash) {

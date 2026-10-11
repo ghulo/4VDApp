@@ -212,3 +212,9 @@ export const countsApi = {
 export const approvalsApi = {
   mine: async () => (await apiRequest<MyRequest[]>('/approvals/mine')).data,
 };
+
+export const billScansApi = {
+  /** Pages as base64 JPEG; the server reads them and keeps the scan for the owner to check. No costs come back. */
+  scan: async (pages: Array<{ mime: string; data: string }>) =>
+    (await apiRequest<{ id: number; supplierName: string | null; number: string | null; lines: number }>('/bill-scans', { method: 'POST', body: { pages } })).data,
+};

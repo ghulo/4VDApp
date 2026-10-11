@@ -19,6 +19,7 @@ export const en = {
     customerTabs: 'Tabs',
     carwash: 'Carwash takings',
     deliveries: 'Deliveries',
+    scanBill: 'Scan a bill',
     counting:(what: string) => `Counting ${what.toLowerCase()}`,
   },
   tour: {
@@ -143,6 +144,8 @@ export const en = {
       expiryHint: 'Note when something runs out',
       carwash: 'Carwash takings',
       carwashHint: "Enter today's takings",
+      supplierBill: 'A supplier brought goods',
+      supplierBillHint: 'Photograph their bill',
     },
   },
   account: {
@@ -352,6 +355,21 @@ export const en = {
     save: 'Save the count',
     doneTitle: 'Count saved',
     doneMessage: (drawer: string, amount: string) => `${drawer}: ${amount}. The owner checks it against the day's sales. Thanks for closing up.`,
+  },
+  scanBill: {
+    intro: 'Photograph the supplier\'s bill, every page. 4VD reads it, and the owner checks it before the stock goes in.',
+    takePhoto: 'Take a photo',
+    fromLibrary: 'Pick from photos',
+    page: (n: number) => `Page ${n}`,
+    removePage: (n: number) => `Remove page ${n}`,
+    pages: (n: number, max: number) => `${n} of ${max} pages`,
+    tip: 'Hold the phone straight over the bill, in good light, so the small print is sharp.',
+    noCamera: 'Allow the camera in your phone settings to photograph bills.',
+    send: 'Send to be checked',
+    sending: 'Reading the bill… this takes up to a minute.',
+    sentTitle: 'Sent to be checked',
+    sentMessage: (p: { supplier: string | null; lines: number }) =>
+      `${p.supplier ? `The bill from ${p.supplier}` : 'The bill'} was read: ${p.lines} ${p.lines === 1 ? 'line' : 'lines'}. The owner checks it on the dashboard and puts the stock in.`,
   },
   writeOff: {
     reasons: { damaged: 'Damaged', lost: 'Lost', expired: 'Expired', theft: 'Stolen', other: 'Other' },

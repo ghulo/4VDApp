@@ -85,3 +85,54 @@ export const paymentSchema = z.object({
 export const voidBillSchema = z.object({ note: z.string().trim().min(1, 'say why').max(500) });
 
 export const paymentParamsSchema = z.object({ id: idSchema, paymentId: idSchema });
+
+/** A scanned bill's pages, read in the browser or on the phone as base64. */
+export const scanUploadSchema = z.object({
+  pages: z
+    .array(
+      z.object({
+        mime: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf']),
+        data: z.string().min(1),
+      }),
+    )
+    .min(1, 'add a photo or PDF of the bill')
+    .max(6, 'at most 6 pages'),
+});
+
+export const scanQuerySchema = z.object({ supplierId: z.coerce.number().int().positive().optional() });
+
+const barcodeSchema = z
+  .string()
+  .trim()
+  .max(64)
+  .nullish()
+  .transform((value) => value || null);
+
+export const confirmScanSchema = z.object({
+  supplierId: idSchema,
+  orderId: idSchema.nullable(),
+  bill: billSchema,
+  categoryId: idSchema.nullable(),
+  lines: z
+    .array(
+      z.object({
+        productId: idSchema.nullable(),
+        newProduct: z
+          .object({
+            name: z.string().trim().min(1, 'give the new product a name').max(255),
+            barcode: barcodeSchema,
+            price: positiveMoney,
+            vatRate: z.union([z.literal(0), z.literal(8), z.literal(18)]),
+          })
+          .nullable(),
+        code: optional(64),
+        pieces: z.number().int().positive(),
+        unitsPerPack: z.number().int().positive().max(10_000),
+        unitCost: money.nullable(),
+        updateCost: z.boolean(),
+        barcode: barcodeSchema,
+        updateBarcode: z.boolean(),
+      }),
+    )
+    .max(500),
+});

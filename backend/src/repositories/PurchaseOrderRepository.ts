@@ -166,6 +166,15 @@ export class PurchaseOrderRepository {
     return order.id;
   }
 
+  /** Products that came with a delivery although they weren't ordered. */
+  async addLines(orderId: number, lines: Array<{ productId: number; quantity: number; unitCost: number | null }>): Promise<void> {
+    if (lines.length === 0) return;
+    await this.db
+      .insertInto('purchase_order_lines')
+      .values(lines.map((line) => ({ order_id: orderId, product_id: line.productId, quantity: line.quantity, unit_cost: line.unitCost })))
+      .execute();
+  }
+
   async setReceived(lineId: number, receivedQuantity: number, unitCost: number | null): Promise<void> {
     await this.db
       .updateTable('purchase_order_lines')

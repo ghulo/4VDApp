@@ -129,6 +129,14 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] "Send it to me now" (reports) turns alerts on in that browser first, so the browser asks to allow them; says clearly when they are blocked and how to unblock
 - [x] Merged and pushed
 
+## Alerts that actually arrive
+
+- [x] Live server has its own Web Push keys (set on Render)
+- [x] Turning alerts on (or sending a test or a report to yourself) registers the device again, and starts over if it was made with old keys
+- [x] "Send a test alert" sends at once and lists every device: accepted, or refused with the reason Apple, Google or Microsoft gave
+- [x] Merged and pushed
+- [ ] iPhone alerts confirmed working
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

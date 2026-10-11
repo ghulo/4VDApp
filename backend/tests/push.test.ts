@@ -135,8 +135,22 @@ describe('push alerts', () => {
     const response = await request(context.app).post('/api/notifications/push/test').set(auth(adminToken));
     await context.container.pushService.sendPending();
 
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual([{ kind: 'expo', service: 'Expo', delivered: true, problem: null, removed: false }]);
+    // Sent straight away, and not again with the next batch.
     expect(expo.sent).toEqual([expect.objectContaining({ title: 'Test alert from 4VD' })]);
+  });
+
+  it('should say which device the test alert could not reach, and why', async () => {
+    await addDevice(adminToken, { ...BROWSER, endpoint: 'https://web.push.apple.com/abc' });
+    const refusing = web.send;
+    web.send = async (messages: PushMessage[]) => ({ deadTokens: [], failures: messages.map((message) => ({ token: message.token, problem: '403 BadJwtToken' })) });
+    try {
+      const response = await request(context.app).post('/api/notifications/push/test').set(auth(adminToken));
+      expect(response.body.data).toEqual([{ kind: 'web', service: 'Apple', delivered: false, problem: '403 BadJwtToken', removed: false }]);
+    } finally {
+      web.send = refusing;
+    }
   });
 
   it('should reject a token that is not a push token, and let people remove a device', async () => {

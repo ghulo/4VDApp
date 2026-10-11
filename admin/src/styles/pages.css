@@ -3505,3 +3505,8 @@ fieldset.report-sections {
   color: var(--steel);
   text-decoration: line-through;
 }
+
+/* One line per device under the test alert. */
+.push-result {
+  display: block;
+}

@@ -1,5 +1,6 @@
 import { apiRequest, apiText, tokenStore } from './apiClient';
 import type {
+  TestDelivery,
   NewProductInput,
   NewProductOutcome,
   PendingReturn,
@@ -118,9 +119,8 @@ export const pushApi = {
   addDevice: async (
     device: { kind: 'expo'; token: string } | { kind: 'web'; endpoint: string; keys: { p256dh: string; auth: string } },
   ) => (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: device })).data,
-  sendTest: async () => {
-    await apiRequest('/notifications/push/test', { method: 'POST' });
-  },
+  /** Sends a test alert now and says, per device, whether it got through. */
+  sendTest: async () => (await apiRequest<TestDelivery[]>('/notifications/push/test', { method: 'POST' })).data,
   removeDevice: async (token: string) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
 };

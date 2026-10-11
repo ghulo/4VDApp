@@ -1,6 +1,7 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Language } from '../i18n/language';
 import type {
+  TestDelivery,
   BillInput,
   FullReport,
   PayablesSummary,
@@ -372,9 +373,8 @@ export const pushApi = {
     (await apiRequest<PushSettings>('/notifications/push/preferences', { method: 'PUT', body: changes })).data,
   addWebDevice: async (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'POST', body: { kind: 'web', ...subscription } })).data,
-  sendTest: async () => {
-    await apiRequest('/notifications/push/test', { method: 'POST' });
-  },
+  /** Sends a test alert now and says, per device, whether it got through. */
+  sendTest: async () => (await apiRequest<TestDelivery[]>('/notifications/push/test', { method: 'POST' })).data,
   removeDevice: async (token: string) =>
     (await apiRequest<PushSettings>('/notifications/push/devices', { method: 'DELETE', body: { token } })).data,
 };

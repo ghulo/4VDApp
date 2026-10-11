@@ -36,6 +36,9 @@ describe('Expo push sender', () => {
       throw new Error('offline');
     }) as typeof fetch;
 
-    await expect(new ExpoPushSender(failingFetch).send([message('ExponentPushToken[a]')])).resolves.toEqual({ deadTokens: [] });
+    await expect(new ExpoPushSender(failingFetch).send([message('ExponentPushToken[a]')])).resolves.toEqual({
+      deadTokens: [],
+      failures: [{ token: 'ExponentPushToken[a]', problem: 'Error: offline' }],
+    });
   });
 });

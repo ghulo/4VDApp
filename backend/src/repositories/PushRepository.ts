@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
-import { type NewNotification, NotificationRepository } from './NotificationRepository.js';
+import { messages } from '../i18n/messages.js';
+import type { NewNotification } from './NotificationRepository.js';
 
 export interface DeviceRecord {
   user_id: number;
@@ -74,8 +75,15 @@ export class PushRepository {
     return Number(row.total);
   }
 
-  async createTestNotification(userId: number, notification: NewNotification): Promise<void> {
-    await new NotificationRepository(this.db).createForUser(userId, notification);
+  /** A notification already marked as pushed, for sending straight away instead of with the next batch. */
+  async createPushedTestNotification(userId: number, notification: NewNotification) {
+    const user = await this.db.selectFrom('users').select('language').where('id', '=', userId).executeTakeFirst();
+    if (!user) return null;
+    return this.db
+      .insertInto('notifications')
+      .values({ user_id: userId, type: notification.type, link: notification.link ?? null, pushed_at: new Date(), ...notification.write(messages[user.language]) })
+      .returning(['id', 'title', 'message', 'type', 'link'])
+      .executeTakeFirstOrThrow();
   }
 
   async preferences(userId: number): Promise<Record<string, boolean>> {

@@ -258,6 +258,18 @@ export interface StockCount extends StockCountSummary {
 }
 
 /** A product someone asked to add; approving it creates the product. */
+/** How one device fared with the test alert. */
+export interface TestDelivery {
+  kind: 'expo' | 'web';
+  /** Apple, Google, Microsoft, Mozilla or Expo. */
+  service: string;
+  delivered: boolean;
+  problem: string | null;
+  /** The push service no longer knew it, so it was removed. */
+  removed: boolean;
+}
+
+/** A product someone asked to add; approving it creates the product. */
 export interface ProductRequest {
   id: number;
   status: 'pending' | 'approved' | 'rejected';

@@ -118,8 +118,7 @@ export function createNotificationController(notificationService: NotificationSe
     },
 
     async sendTestPush(req: Request, res: Response): Promise<void> {
-      await pushService.sendTest(req.user!.id);
-      sendSuccess(res, null, { statusCode: 202, message: 'Test alert on its way' });
+      sendSuccess(res, await pushService.sendTest(req.user!.id), { message: 'Test alert sent' });
     },
 
     async removePushDevice(req: Request, res: Response): Promise<void> {

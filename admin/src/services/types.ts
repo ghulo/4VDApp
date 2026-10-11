@@ -779,6 +779,17 @@ export interface ShopDay {
 
 export type PushTopic = 'stock' | 'approvals' | 'decisions' | 'summary';
 
+/** How one device fared with the test alert. */
+export interface TestDelivery {
+  kind: 'expo' | 'web';
+  /** Apple, Google, Microsoft, Mozilla or Expo. */
+  service: string;
+  delivered: boolean;
+  problem: string | null;
+  /** The push service no longer knew it, so it was removed. */
+  removed: boolean;
+}
+
 export interface PushSettings {
   topics: Array<{ topic: PushTopic; enabled: boolean }>;
   /** Phones and browsers getting this person's alerts. */

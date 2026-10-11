@@ -22,6 +22,9 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
 }
 
+const sameKey = (current: ArrayBuffer | null, wanted: Uint8Array) =>
+  current !== null && current.byteLength === wanted.byteLength && new Uint8Array(current).every((byte, index) => byte === wanted[index]);
+
 /** Ask the browser for permission, subscribe, and tell the server where to send alerts. */
 export async function enablePush(publicKey: string): Promise<void> {
   const permission = await Notification.requestPermission();
@@ -30,9 +33,14 @@ export async function enablePush(publicKey: string): Promise<void> {
   }
   const worker = await registration();
   await navigator.serviceWorker.ready;
-  const subscription =
-    (await worker.pushManager.getSubscription()) ??
-    (await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
+  const key = keyBytes(publicKey);
+  let subscription = await worker.pushManager.getSubscription();
+  // Made with keys the server no longer has: alerts would be refused, so start over.
+  if (subscription && !sameKey(subscription.options.applicationServerKey, key)) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
+  subscription ??= await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   const json = subscription.toJSON();
   await pushApi.addWebDevice({ endpoint: subscription.endpoint, keys: { p256dh: json.keys!.p256dh!, auth: json.keys!.auth! } });
 }
@@ -59,7 +67,7 @@ export async function turnOnHere(): Promise<PushHere> {
   const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
   if (permission === 'denied') return 'blocked';
   if (permission !== 'granted') return 'declined';
-  if (await currentSubscription()) return 'on';
+  // Registers again even when it looks on: the server may have new keys or have forgotten this browser.
   const { webPushPublicKey } = await pushApi.settings();
   if (!webPushPublicKey) return 'noKeys';
   await enablePush(webPushPublicKey);

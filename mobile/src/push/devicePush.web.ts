@@ -34,6 +34,9 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
 }
 
+const sameKey = (current: ArrayBuffer | null, wanted: Uint8Array) =>
+  current !== null && current.byteLength === wanted.byteLength && new Uint8Array(current).every((byte, index) => byte === wanted[index]);
+
 export async function enablePush(webPushPublicKey: string | null): Promise<void> {
   if (!webPushPublicKey) throw new Error(activeCatalogue().push.browserNoKeys);
   const permission = await Notification.requestPermission();
@@ -42,9 +45,14 @@ export async function enablePush(webPushPublicKey: string | null): Promise<void>
   }
   const worker = (await existingRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
   await navigator.serviceWorker.ready;
-  const subscription =
-    (await worker.pushManager.getSubscription()) ??
-    (await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(webPushPublicKey) }));
+  const key = keyBytes(webPushPublicKey);
+  let subscription = await worker.pushManager.getSubscription();
+  // Made with keys the server no longer has: alerts would be refused, so start over.
+  if (subscription && !sameKey(subscription.options.applicationServerKey, key)) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
+  subscription ??= await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
   const json = subscription.toJSON();
   await pushApi.addDevice({
     kind: 'web',

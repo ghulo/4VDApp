@@ -64,7 +64,11 @@ export const en = {
     off: 'Off for this phone.',
     turnOff: 'Turn off on this phone',
     turnOn: 'Turn on for this phone',
-    testSent: 'Test alert sent',
+    deliveredTo: (service: string) => `${service}: accepted. It should pop up within a few seconds.`,
+    refusedBy: (service: string, problem: string, removed: boolean) =>
+      removed
+        ? `${service}: this device no longer takes alerts, so it was removed. Turn alerts on again.`
+        : `${service}: refused it (${problem}). Turn alerts off and on again; if it stays, send this message to the developer.`,
     sendTest: 'Send a test alert',
     simulator: 'Alerts only work on a real phone, not a simulator.',
     expoGo: 'Phone alerts work in the installed app (APK), not in Expo Go.',

@@ -1,17 +1,29 @@
 import type { DocumentParty } from '../../database/types.js';
 import { type Language, LOCALE, money } from '../../i18n/language.js';
 import { messages } from '../../i18n/messages.js';
+import type { Letterhead } from '../../repositories/DocumentRepository.js';
 import type { DocumentDetailDto } from '../DocumentService.js';
+import { SHOP_MARK_SVG } from './shopMark.js';
 
 const escape = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
+/** Text inside a CSS string, for the page footer printed in the margin; `<` is escaped so a name can't close the style tag. */
+const cssString = (value: string) =>
+  `"${value.replace(/[\\"]/g, (char) => `\\${char}`).replace(/</g, '\\3c ').replace(/[\r\n]+/g, ' ')}"`;
+
+/** "XK051212012345678906" as people read it: "XK05 1212 0123 4567 8906". */
+const groupIban = (iban: string) => iban.replace(/(.{4})(?=.)/g, '$1 ');
+
 /**
  * One A4 page for an invoice or credit note. The dashboard prints it (or saves
  * it as PDF) through the browser; the phone turns the same page into a PDF.
- * Colors and type follow DESIGN.md, on white paper so it prints cleanly.
+ * Colors and type follow DESIGN.md's printed finish, on white paper so it
+ * prints cleanly: a masthead with the shop's logo over a double rule, the
+ * buyer and the document's facts, the lines, then the totals with the amount
+ * due in a clay-edged box, and the shop and page number in the bottom margin.
  */
-export function renderDocumentHtml(document: DocumentDetailDto, language: Language, timeZone: string): string {
+export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Letterhead, language: Language, timeZone: string): string {
   const t = messages[language].document;
   const eur = (amount: number) => escape(money(amount, language));
   const issued = new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : LOCALE[language], {
@@ -20,21 +32,37 @@ export function renderDocumentHtml(document: DocumentDetailDto, language: Langua
     hourCycle: 'h23',
     timeZone,
   }).format(new Date(document.issuedAt));
-  const title = document.kind === 'invoice' ? t.invoice : t.creditNote;
+  const isInvoice = document.kind === 'invoice';
+  const title = isInvoice ? t.invoice : t.creditNote;
+  const seller = document.seller;
 
-  const party = (label: string, p: DocumentParty | null) =>
-    p
-      ? `<section class="party"><h2>${escape(label)}</h2><p class="name">${escape(p.name)}</p>
-        ${p.nui ? `<p>${escape(t.nui)}: ${escape(p.nui)}</p>` : ''}
-        ${p.address ? `<p>${escape(p.address)}</p>` : ''}
-        ${p.phone ? `<p>${escape(t.phone)}: ${escape(p.phone)}</p>` : ''}</section>`
-      : '<section class="party"></section>';
+  const logo = letterhead.logo
+    ? `<img class="logo" src="data:${escape(letterhead.logo.mime)};base64,${letterhead.logo.bytes.toString('base64')}" alt="">`
+    : `<span class="logo" aria-hidden="true">${SHOP_MARK_SVG}</span>`;
+
+  const contact = (p: DocumentParty) =>
+    [p.nui ? `${escape(t.nui)} ${escape(p.nui)}` : '', p.address ? escape(p.address) : '', p.phone ? `${escape(t.phone)} ${escape(p.phone)}` : '']
+      .filter(Boolean)
+      .map((line) => `<p>${line}</p>`)
+      .join('');
+
+  const buyer = document.buyer
+    ? `<section class="buyer"><h2 class="spec">${escape(t.buyer)}</h2><p class="buyer__name">${escape(document.buyer.name)}</p>${contact(document.buyer)}</section>`
+    : '';
+
+  const facts = [
+    [t.issued, issued],
+    ...(document.issuedBy ? [[t.issuedBy, document.issuedBy]] : []),
+    ...(document.fiscalReceiptNo ? [[t.fiscalReceipt, document.fiscalReceiptNo]] : []),
+  ]
+    .map(([label, value]) => `<div><dt class="spec">${escape(label!)}</dt><dd>${escape(value!)}</dd></div>`)
+    .join('');
 
   const rows = document.lines
     .map(
       (line, index) => `<tr>
-        <td class="num">${index + 1}</td>
-        <td>${escape(line.productName)}</td>
+        <td class="num muted">${index + 1}</td>
+        <td class="product">${escape(line.productName)}</td>
         <td class="num">${line.quantity}</td>
         <td class="num">${eur(line.unitPrice)}</td>
         <td class="num">${line.vatRate}%</td>
@@ -49,14 +77,17 @@ export function renderDocumentHtml(document: DocumentDetailDto, language: Langua
     .map((row) => `<tr><th>${escape(t.vatAt(row.rate))}</th><td>${eur(row.net)}</td><td>${eur(row.vat)}</td></tr>`)
     .join('');
 
-  const meta = [
-    [t.number, document.number],
-    [t.issued, issued],
-    ...(document.issuedBy ? [[t.issuedBy, document.issuedBy]] : []),
-    ...(document.fiscalReceiptNo ? [[t.fiscalReceipt, document.fiscalReceiptNo]] : []),
-  ]
-    .map(([label, value]) => `<div><dt>${escape(label!)}</dt><dd>${escape(value!)}</dd></div>`)
-    .join('');
+  // Only an invoice asks to be paid; a credit note's money goes the other way.
+  const payment =
+    isInvoice && letterhead.iban
+      ? `<section class="payment"><h2 class="spec">${escape(t.payment)}</h2><dl>
+          ${letterhead.bankName ? `<div><dt>${escape(t.bank)}</dt><dd>${escape(letterhead.bankName)}</dd></div>` : ''}
+          <div><dt>${escape(t.iban)}</dt><dd class="iban">${escape(groupIban(letterhead.iban))}</dd></div>
+          <div><dt>${escape(t.payReference)}</dt><dd>${escape(document.number)}</dd></div>
+        </dl></section>`
+      : '';
+
+  const footer = [seller.name, seller.nui ? `${t.nui} ${seller.nui}` : ''].filter(Boolean).join('  ·  ');
 
   return `<!doctype html>
 <html lang="${language}">
@@ -67,54 +98,100 @@ export function renderDocumentHtml(document: DocumentDetailDto, language: Langua
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,500&display=swap" rel="stylesheet">
 <style>
-  :root { --ink: #141413; --ink-muted: #5e5d59; --hairline: #e0dbcf; --hairline-strong: #cbc3b3; --clay-text: #a8482a; --sunk: #f0eee6; }
-  @page { size: A4; margin: 16mm 14mm; }
+  :root {
+    --ink: #141413; --ink-muted: #5e5d59; --hairline: #e0dbcf; --hairline-strong: #cbc3b3;
+    --clay: #d4704f; --clay-text: #a8482a; --sunk: #f0eee6; --warn: #86500c; --warn-soft: #f6ecd9;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+  }
+  @page {
+    size: A4;
+    margin: 14mm 14mm 18mm;
+    @bottom-left { content: ${cssString(footer)}; font: 400 8pt 'Hanken Grotesk', system-ui, sans-serif; color: #5e5d59; vertical-align: top; padding-top: 4mm; }
+    @bottom-right {
+      content: ${cssString(`${t.page} `)} counter(page) ${cssString(` ${t.pageOf} `)} counter(pages);
+      font: 400 8pt 'Hanken Grotesk', system-ui, sans-serif; color: #5e5d59; vertical-align: top; padding-top: 4mm;
+    }
+  }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: #fff; color: var(--ink); }
-  body { font: 400 10.5pt/1.45 'Hanken Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
-  .page { max-width: 182mm; margin: 0 auto; padding: 8mm 0; }
+  html, body { margin: 0; background: #fff; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font: 400 10pt/1.45 'Hanken Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  p, h1, h2, dl, dd { margin: 0; }
+  .page { max-width: 182mm; margin: 0 auto; padding: 10mm 0; }
   @media print { .page { padding: 0; } }
-  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12mm; padding-bottom: 6mm; border-bottom: 2px solid var(--ink); }
-  h1 { font: 500 24pt/1.1 'Source Serif 4', Georgia, serif; margin: 0; }
-  .kind { color: var(--clay-text); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 8.5pt; margin: 0 0 2mm; }
-  dl { margin: 0; display: grid; gap: 1mm; text-align: right; }
-  dl div { display: flex; gap: 4mm; justify-content: flex-end; }
-  dt { color: var(--ink-muted); }
-  dd { margin: 0; font-weight: 600; }
-  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; padding: 6mm 0; }
-  .party h2 { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-muted); margin: 0 0 1.5mm; font-weight: 600; }
-  .party p { margin: 0; }
-  .party .name { font-weight: 600; font-size: 12pt; }
-  .note { background: var(--sunk); border-radius: 2mm; padding: 3mm 4mm; margin: 0 0 6mm; }
+  /* Spec labels: DESIGN.md's only capitals. */
+  .spec { font: 600 7.5pt/1.3 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+  .muted { color: var(--ink-muted); }
+  .strong { font-weight: 600; }
+
+  .masthead { display: grid; grid-template-columns: auto 1fr auto; gap: 5mm; align-items: start; padding-bottom: 5mm; border-bottom: 3px double var(--ink); }
+  .logo { display: block; width: 17mm; height: 17mm; object-fit: contain; }
+  .logo svg { display: block; width: 100%; height: 100%; }
+  .shop h1 { font: 500 19pt/1.15 'Source Serif 4', Georgia, serif; margin-bottom: 1.5mm; }
+  .shop p { color: var(--ink-muted); font-size: 9pt; line-height: 1.4; }
+  .doc { text-align: right; }
+  .doc .spec { color: var(--clay-text); font-size: 9pt; }
+  .doc__number { font-size: 17pt; font-weight: 600; line-height: 1.2; margin-top: 1mm; white-space: nowrap; }
+
+  .head { display: grid; grid-template-columns: 1fr auto; gap: 10mm; align-items: start; padding: 6mm 0; }
+  .buyer { background: var(--sunk); border-radius: 2mm; padding: 3.5mm 4.5mm; max-width: 95mm; }
+  .buyer .spec { margin-bottom: 1.5mm; }
+  .buyer__name { font-size: 11.5pt; font-weight: 600; margin-bottom: .5mm; }
+  .buyer p:not(.buyer__name) { font-size: 9pt; color: var(--ink-muted); }
+  .facts { display: grid; gap: 2mm; grid-column: 2; }
+  .facts div { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; gap: 4mm; text-align: right; }
+  .facts dd { font-weight: 600; }
+
+  .note { background: var(--warn-soft); color: var(--warn); border-left: 2px solid var(--warn); border-radius: 0 1.5mm 1.5mm 0; padding: 3mm 4mm; margin: 0 0 6mm; }
+
   table { width: 100%; border-collapse: collapse; }
-  .lines th { text-align: left; font-size: 8.5pt; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; padding: 2mm 1.5mm; border-bottom: 1px solid var(--hairline-strong); }
-  .lines td { padding: 2.5mm 1.5mm; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  .lines th { text-align: left; padding: 0 2mm 2mm; border-bottom: 1px solid var(--ink); }
+  .lines td { padding: 2.4mm 2mm; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  .lines .product { width: 100%; }
   .lines tr { break-inside: avoid; }
   .num { text-align: right !important; white-space: nowrap; }
-  .strong { font-weight: 600; }
-  .summary { display: flex; justify-content: flex-end; margin-top: 6mm; }
-  .totals { width: 90mm; }
+
+  .bottom { display: grid; grid-template-columns: 1fr 80mm; gap: 10mm; align-items: start; margin-top: 7mm; break-inside: avoid; }
+  .aside { display: grid; gap: 5mm; }
+  .aside .spec { margin-bottom: 1.5mm; }
+  .vat { width: auto; }
+  .vat th, .vat td { padding: .8mm 0; font-size: 9pt; }
+  .vat th { text-align: left; font-weight: 400; color: var(--ink-muted); }
+  .vat td { text-align: right; padding-left: 8mm; }
+  .vat thead th { text-align: right; }
+  .vat thead th:first-child { text-align: left; }
+  .payment dl { display: grid; gap: .8mm; font-size: 9pt; }
+  .payment div { display: grid; grid-template-columns: 22mm 1fr; }
+  .payment dt { color: var(--ink-muted); }
+  .payment dd { font-weight: 600; }
+  .iban { letter-spacing: .02em; }
+
   .totals th { text-align: left; font-weight: 400; color: var(--ink-muted); padding: 1mm 0; }
-  .totals td { text-align: right; padding: 1mm 0 1mm 4mm; }
-  .totals .grand th, .totals .grand td { border-top: 2px solid var(--ink); padding-top: 2.5mm; font-size: 13pt; font-weight: 600; color: var(--ink); }
-  .vat-head th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; }
-  .fine { color: var(--ink-muted); font-size: 9pt; margin-top: 3mm; text-align: right; }
-  .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 20mm; margin-top: 22mm; break-inside: avoid; }
-  .signatures div { border-top: 1px solid var(--hairline-strong); padding-top: 2mm; color: var(--ink-muted); font-size: 9pt; }
+  .totals td { text-align: right; padding: 1mm 0; }
+  .due { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; margin-top: 3mm; padding: 3.5mm 4mm; border: 1px solid var(--ink); border-left: 2mm solid var(--clay); border-radius: 1.5mm; }
+  .due .spec { color: var(--ink); font-size: 8.5pt; }
+  .due__amount { font-size: 18pt; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+  .fine { color: var(--ink-muted); font-size: 8.5pt; margin-top: 2mm; text-align: right; }
+
+  .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 20mm; margin-top: 20mm; break-inside: avoid; }
+  .signatures div { border-top: 1px solid var(--hairline-strong); padding-top: 2mm; color: var(--ink-muted); font-size: 8.5pt; }
 </style>
 </head>
 <body>
 <main class="page">
-  <header>
-    <div>
-      <p class="kind">${escape(title)}</p>
-      <h1>${escape(document.seller.name)}</h1>
+  <header class="masthead">
+    ${logo}
+    <div class="shop">
+      <h1>${escape(seller.name)}</h1>
+      ${contact(seller)}
     </div>
-    <dl>${meta}</dl>
+    <div class="doc">
+      <p class="spec">${escape(title)}</p>
+      <p class="doc__number">${escape(document.number)}</p>
+    </div>
   </header>
-  <div class="parties">
-    ${party(t.seller, document.seller)}
-    ${party(t.buyer, document.buyer)}
+  <div class="head">
+    ${buyer}
+    <dl class="facts">${facts}</dl>
   </div>
   ${
     document.corrects || document.reason
@@ -124,23 +201,33 @@ export function renderDocumentHtml(document: DocumentDetailDto, language: Langua
       : ''
   }
   <table class="lines">
-    <thead><tr>
+    <thead><tr class="spec">
       <th class="num">#</th><th>${escape(t.product)}</th><th class="num">${escape(t.quantity)}</th>
       <th class="num">${escape(t.unitPrice)}</th><th class="num">${escape(t.vatRate)}</th>
       <th class="num">${escape(t.net)}</th><th class="num">${escape(t.vat)}</th><th class="num">${escape(t.total)}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  <div class="summary">
-    <table class="totals">
-      <tr class="vat-head"><th></th><td>${escape(t.net)}</td><td>${escape(t.vat)}</td></tr>
-      ${vatRows}
-      <tr><th>${escape(t.netTotal)}</th><td colspan="2">${eur(document.netTotal)}</td></tr>
-      <tr><th>${escape(t.vatTotal)}</th><td colspan="2">${eur(document.vatTotal)}</td></tr>
-      <tr class="grand"><th>${escape(t.grandTotal)}</th><td colspan="2">${eur(document.total)}</td></tr>
-    </table>
+  <div class="bottom">
+    <div class="aside">
+      <section>
+        <h2 class="spec">${escape(t.vatSummary)}</h2>
+        <table class="vat">
+          <thead><tr><th></th><th>${escape(t.net)}</th><th>${escape(t.vat)}</th></tr></thead>
+          <tbody>${vatRows}</tbody>
+        </table>
+      </section>
+      ${payment}
+    </div>
+    <div>
+      <table class="totals">
+        <tr><th>${escape(t.netTotal)}</th><td>${eur(document.netTotal)}</td></tr>
+        <tr><th>${escape(t.vatTotal)}</th><td>${eur(document.vatTotal)}</td></tr>
+      </table>
+      <div class="due"><span class="spec">${escape(isInvoice ? t.grandTotal : t.refundTotal)}</span><span class="due__amount">${eur(document.total)}</span></div>
+      <p class="fine">${escape(t.pricesIncludeVat)}</p>
+    </div>
   </div>
-  <p class="fine">${escape(t.pricesIncludeVat)}</p>
   <div class="signatures"><div>${escape(t.signedSeller)}</div><div>${escape(t.signedBuyer)}</div></div>
 </main>
 </body>

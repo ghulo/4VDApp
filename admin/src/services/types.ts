@@ -796,6 +796,8 @@ export interface Business {
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;
+  bankName: string | null;
+  iban: string | null;
 }
 
 export interface Security {

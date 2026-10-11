@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { LANGUAGES } from '../i18n/language.js';
-import { nuiSchema } from './validate.js';
+import { ibanSchema, nuiSchema } from './validate.js';
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -66,6 +66,8 @@ export const businessSchema = z
     phone: optionalText(50),
     nui: nuiSchema.optional(),
     timeZone: z.string().refine(isTimeZone, 'not a time zone, e.g. Europe/Belgrade').nullable().optional(),
+    bankName: optionalText(100),
+    iban: ibanSchema.optional(),
   })
   .strict();
 

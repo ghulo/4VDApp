@@ -1407,7 +1407,7 @@ export const en = {
   business: {
     tooBig: 'That file is too big. Use one under 5 MB.',
     title: 'Your shop',
-    description: 'Shown to your team, in invites and in emails.',
+    description: 'Shown to your team, in invites and emails, and printed on invoices.',
     save: 'Save shop details',
     logo: 'Logo',
     logoHint: 'A square JPG, PNG or WebP under 5 MB.',
@@ -1417,6 +1417,11 @@ export const en = {
     address: 'Address (optional)',
     timeZone: 'Time zone',
     serverDefault: 'Server default',
+    bankName: 'Bank (optional)',
+    iban: 'IBAN (optional)',
+    ibanHint: 'Printed on invoices so business customers can pay by bank transfer.',
+    ibanExample: 'XK05 1212 0123 4567 8906',
+    ibanInvalid: 'This IBAN looks wrong. Check it against your bank statement.',
   },
   counts: {
     title: 'Stock counts',

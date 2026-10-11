@@ -48,6 +48,28 @@ export const nuiSchema = z
   .transform((value) => value.replace(/\s+/g, ''))
   .pipe(z.string().regex(/^\d{9}$/, 'NUI must be 9 digits'));
 
+/** True when the IBAN's two check digits match (ISO 13616 mod 97), which catches almost every typo. */
+function hasValidIbanCheck(iban: string): boolean {
+  const digits = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (letter) => String(letter.charCodeAt(0) - 55));
+  let remainder = 0;
+  for (const digit of digits) remainder = (remainder * 10 + Number(digit)) % 97;
+  return remainder === 1;
+}
+
+/** An IBAN as people type it ("XK05 1212 ..."), stored without spaces in capitals; empty means none. */
+export const ibanSchema = z
+  .union([z.string(), z.null()])
+  .transform((value) => (value === null ? '' : value.replace(/\s+/g, '').toUpperCase()))
+  .pipe(
+    z.union([
+      z.literal('').transform(() => null),
+      z
+        .string()
+        .regex(/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/, 'IBAN must start with a country code, like XK05 1212 0123 4567 8906')
+        .refine(hasValidIbanCheck, 'That IBAN has a typo: its check digits do not match'),
+    ]),
+  );
+
 /** Optional text field: empty strings and null both mean "no value". */
 export const optionalText = (maxLength: number) =>
   z

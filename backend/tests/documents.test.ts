@@ -171,7 +171,35 @@ describe('access, printing and the fiscal receipt', () => {
     expect(page.text).toContain('Faturë');
     expect(page.text).toContain(invoice.number);
     expect(page.text).toContain('Dacaj &lt;Bros&gt;');
+    expect(page.text).not.toContain('<Bros>');
     expect(page.text).toContain('size: A4');
+    // No logo uploaded: the 4VD mark stands in. No bank account: no payment details.
+    expect(page.text).toContain('<span class="logo" aria-hidden="true"><svg');
+    expect(page.text).not.toContain('IBAN');
+  });
+
+  it('should print the bank account on invoices for paying by transfer, but not on credit notes', async () => {
+    const saved = await api().put('/api/business').set(auth(adminToken)).send({ bankName: 'ProCredit Bank', iban: 'xk05 1212 0123 4567 8906' });
+    expect(saved.body.data).toMatchObject({ bankName: 'ProCredit Bank', iban: 'XK051212012345678906' });
+    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
+
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=en`).set(auth(adminToken))).text;
+    expect(page).toContain('ProCredit Bank');
+    expect(page).toContain('XK05 1212 0123 4567 8906');
+
+    await api().post(`/api/activity/${await entryOf('sale.recorded')}/undo`).set(auth(adminToken)).send({ note: 'wrong product' });
+    const credit = (await api().get('/api/documents?kind=credit_note').set(auth(adminToken))).body.data[0];
+    const creditPage = (await api().get(`/api/documents/${credit.id}/print?language=en`).set(auth(adminToken))).text;
+    expect(creditPage).toContain('Total to refund');
+    expect(creditPage).not.toContain('XK05');
+  });
+
+  it('should refuse an IBAN with a typo, and clear it when emptied', async () => {
+    const typo = await api().put('/api/business').set(auth(adminToken)).send({ iban: 'XK05 1212 0123 4567 8907' });
+    expect(typo.status).toBe(400);
+    await api().put('/api/business').set(auth(adminToken)).send({ iban: 'XK051212012345678906' });
+    const cleared = await api().put('/api/business').set(auth(adminToken)).send({ iban: '' });
+    expect(cleared.body.data.iban).toBeNull();
   });
 
   it('should link and unlink the fiscal printer receipt, and nothing else changes', async () => {

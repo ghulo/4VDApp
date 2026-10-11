@@ -3,6 +3,13 @@ import type { DatabaseClient } from '../database/connection.js';
 import type { DocumentKind, DocumentParty } from '../database/types.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 
+/** Printed around a document from the shop's current settings; the document itself never changes. */
+export interface Letterhead {
+  logo: { mime: string; bytes: Buffer } | null;
+  bankName: string | null;
+  iban: string | null;
+}
+
 export interface DocumentRecord {
   id: number;
   kind: DocumentKind;
@@ -107,6 +114,21 @@ export class DocumentRepository {
       .orderBy('id')
       .executeTakeFirstOrThrow();
     return business;
+  }
+
+  /** What the page prints around a document today: the shop's logo and bank account. */
+  async letterhead(): Promise<Letterhead> {
+    const row = await this.db
+      .selectFrom('businesses as b')
+      .leftJoin('media as m', 'm.id', 'b.logo_media_id')
+      .select(['b.bank_name', 'b.iban', 'm.mime', 'm.bytes'])
+      .orderBy('b.id')
+      .executeTakeFirstOrThrow();
+    return {
+      logo: row.mime && row.bytes ? { mime: row.mime, bytes: row.bytes } : null,
+      bankName: row.bank_name,
+      iban: row.iban,
+    };
   }
 
   async create(document: NewDocument): Promise<number> {

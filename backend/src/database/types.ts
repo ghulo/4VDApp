@@ -71,6 +71,8 @@ export interface BusinessesTable {
   currency: Generated<string>;
   time_zone: string | null;
   logo_media_id: string | null;
+  bank_name: string | null;
+  iban: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

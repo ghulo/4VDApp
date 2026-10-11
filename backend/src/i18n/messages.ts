@@ -171,7 +171,6 @@ export interface ServerMessages {
     number: string;
     issued: string;
     issuedBy: string;
-    seller: string;
     buyer: string;
     nui: string;
     phone: string;
@@ -192,6 +191,14 @@ export interface ServerMessages {
     pricesIncludeVat: string;
     signedSeller: string;
     signedBuyer: string;
+    refundTotal: string;
+    vatSummary: string;
+    payment: string;
+    bank: string;
+    iban: string;
+    payReference: string;
+    page: string;
+    pageOf: string;
   };
 }
 
@@ -399,7 +406,6 @@ export const en: ServerMessages = {
     number: 'No.',
     issued: 'Date',
     issuedBy: 'Issued by',
-    seller: 'Seller',
     buyer: 'Buyer',
     nui: 'NUI',
     phone: 'Phone',
@@ -420,6 +426,14 @@ export const en: ServerMessages = {
     pricesIncludeVat: 'Prices include VAT.',
     signedSeller: 'Issued by (signature)',
     signedBuyer: 'Received by (signature)',
+    refundTotal: 'Total to refund',
+    vatSummary: 'VAT by rate',
+    payment: 'Payment by bank transfer',
+    bank: 'Bank',
+    iban: 'IBAN',
+    payReference: 'Reference',
+    page: 'Page',
+    pageOf: 'of',
   },
 };
 
@@ -628,7 +642,6 @@ export const sq: ServerMessages = {
     number: 'Nr.',
     issued: 'Data',
     issuedBy: 'Lëshuar nga',
-    seller: 'Shitësi',
     buyer: 'Blerësi',
     nui: 'NUI',
     phone: 'Tel.',
@@ -649,6 +662,14 @@ export const sq: ServerMessages = {
     pricesIncludeVat: 'Çmimet përfshijnë TVSH-në.',
     signedSeller: 'Lëshoi (nënshkrimi)',
     signedBuyer: 'Pranoi (nënshkrimi)',
+    refundTotal: 'Për kthim',
+    vatSummary: 'TVSH sipas normës',
+    payment: 'Pagesa me transfer bankar',
+    bank: 'Banka',
+    iban: 'IBAN',
+    payReference: 'Referenca',
+    page: 'Faqe',
+    pageOf: 'nga',
   },
 };
 

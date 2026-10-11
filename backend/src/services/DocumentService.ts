@@ -179,7 +179,8 @@ export class DocumentService {
 
   /** The A4 page, ready for a browser or the phone to print or save as PDF. */
   async html(id: number, viewer: PublicUser, language: Language): Promise<string> {
-    return renderDocumentHtml(await this.get(id, viewer), language, this.timeZone);
+    const [document, letterhead] = await Promise.all([this.get(id, viewer), this.documentRepository.letterhead()]);
+    return renderDocumentHtml(document, letterhead, language, this.timeZone);
   }
 
   /** Link the document to the receipt the fiscal printer gave. The only change an issued document allows. */

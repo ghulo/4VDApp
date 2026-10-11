@@ -12,6 +12,8 @@ export interface BusinessDto {
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;
+  bankName: string | null;
+  iban: string | null;
 }
 
 export interface BusinessChanges {
@@ -20,6 +22,8 @@ export interface BusinessChanges {
   phone?: string | null;
   nui?: string;
   timeZone?: string | null;
+  bankName?: string | null;
+  iban?: string | null;
 }
 
 const toDto = (business: BusinessRow): BusinessDto => ({
@@ -30,9 +34,11 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   currency: business.currency,
   timeZone: business.time_zone,
   logoUrl: mediaUrl(business.logo_media_id),
+  bankName: business.bank_name,
+  iban: business.iban,
 });
 
-/** The shop's own details: name, address, phone, NUI, time zone and logo. */
+/** The shop's own details: name, address, phone, NUI, time zone, logo and bank account. */
 export class BusinessService {
   constructor(
     private readonly businessRepository: BusinessRepository,
@@ -52,6 +58,8 @@ export class BusinessService {
       ...(changes.phone !== undefined && { phone: changes.phone }),
       ...(changes.nui !== undefined && { nui: changes.nui }),
       ...(changes.timeZone !== undefined && { time_zone: changes.timeZone }),
+      ...(changes.bankName !== undefined && { bank_name: changes.bankName }),
+      ...(changes.iban !== undefined && { iban: changes.iban }),
     });
     return toDto(updated);
   }

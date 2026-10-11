@@ -1396,7 +1396,7 @@ export const sq: Catalogue = {
   business: {
     tooBig: 'Ky skedar është shumë i madh. Përdor një nën 5 MB.',
     title: 'Dyqani yt',
-    description: 'Shfaqet për ekipin, në ftesa dhe në emaile.',
+    description: 'Shfaqet për ekipin, në ftesa e emaile dhe shtypet në fatura.',
     save: 'Ruaj të dhënat e dyqanit',
     logo: 'Logo',
     logoHint: 'Një JPG, PNG ose WebP katror nën 5 MB.',
@@ -1406,6 +1406,11 @@ export const sq: Catalogue = {
     address: 'Adresa (opsionale)',
     timeZone: 'Zona kohore',
     serverDefault: 'Sipas serverit',
+    bankName: 'Banka (opsionale)',
+    iban: 'IBAN (opsionale)',
+    ibanHint: 'Shtypet në fatura që klientët biznes të paguajnë me transfer bankar.',
+    ibanExample: 'XK05 1212 0123 4567 8906',
+    ibanInvalid: 'Ky IBAN duket gabim. Krahasoje me pasqyrën e bankës.',
   },
   counts: {
     title: 'Numërime stoku',

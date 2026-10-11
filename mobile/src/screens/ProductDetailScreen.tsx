@@ -8,9 +8,9 @@ import { StockTag } from '../components/StockTag';
 import { Button, ErrorState, Loading } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { favoritesApi, productsApi } from '../services/api';
-import { canRecordSales, useCurrentUser } from '../state/useAuth';
+import { canEditProducts, canRecordSales, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, useThemeColors, type } from '../theme';
-import { errorMessage, formatMoney, promotionLabel } from '../utils/format';
+import { countryName, errorMessage, flagEmoji, formatMoney, promotionLabel } from '../utils/format';
 import { useT } from '../i18n/useT';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
@@ -68,6 +68,11 @@ export function ProductDetailScreen({ route, navigation }: Props) {
             {item.promotion.name}: {promotionLabel(item.promotion)}
           </Text>
         )}
+        {item.originCountry && (
+          <Text style={[styles.category, { color: colors.steel }]}>
+            {flagEmoji(item.originCountry)} {t.product.from(countryName(item.originCountry))}
+          </Text>
+        )}
         {item.description && <Text style={[styles.description, { color: colors.ink }]}>{item.description}</Text>}
       </View>
 
@@ -102,6 +107,9 @@ export function ProductDetailScreen({ route, navigation }: Props) {
               navigation.navigate('WriteOff', { productId, productName: item.name, inStock: item.stock.quantity })
             }
           />
+        )}
+        {canEditProducts(user) && (
+          <Button label={t.product.edit} variant="quiet" onPress={() => navigation.navigate('NewProduct', { productId })} />
         )}
         <Button
           label={isFavorite ? t.product.removeFavorite : t.product.saveFavorite}

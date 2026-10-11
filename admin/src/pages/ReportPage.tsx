@@ -1,3 +1,4 @@
+import { SendReportResult, useSendReport } from '../push/SendReport';
 import { CaretLeft, CaretRight, PaperPlaneTilt } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -24,7 +25,7 @@ export function ReportPage() {
     queryFn: () => fullReportsApi.get(kind, from),
     placeholderData: keepPreviousData,
   });
-  const sendTest = useMutation({ mutationFn: () => fullReportsApi.sendTest(kind) });
+  const sendTest = useSendReport();
   const step = kind === 'daily' ? 1 : 7;
   const go = (next: Record<string, string>) => setParams({ kind, ...(from ? { from } : {}), ...next });
 
@@ -36,7 +37,7 @@ export function ReportPage() {
         meta={report.data?.partial ? <Badge tone="info">{t.fullReport.soFar}</Badge> : undefined}
         actions={
           <>
-            <Button icon={PaperPlaneTilt} disabled={sendTest.isPending} onClick={() => sendTest.mutate()}>
+            <Button icon={PaperPlaneTilt} disabled={sendTest.isPending} onClick={() => sendTest.mutate(kind)}>
               {sendTest.isPending ? t.fullReport.sending : t.fullReport.sendMe}
             </Button>
             <ButtonLink to="/profile" variant="ghost">
@@ -46,8 +47,8 @@ export function ReportPage() {
         }
       />
       {(sendTest.isSuccess || sendTest.isError) && (
-        <p className={sendTest.isError ? 'form-error' : 'form-success'} role={sendTest.isError ? 'alert' : 'status'}>
-          {sendTest.isError ? errorMessage(sendTest.error) : t.fullReport.sent}
+        <p>
+          <SendReportResult send={sendTest} />
         </p>
       )}
 

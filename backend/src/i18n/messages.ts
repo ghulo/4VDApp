@@ -8,7 +8,7 @@ import { type Language, money, wholeMoney } from './language.js';
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export type ApprovalKind = 'return' | 'write-off' | 'stock count';
+export type ApprovalKind = 'return' | 'write-off' | 'stock count' | 'product' | 'bill';
 
 /** What kind of entry was undone or restored (see services/undo). */
 export type UndoneKind = 'sale' | 'return' | 'write_off' | 'count_line' | 'stock' | 'edit' | 'settings';
@@ -27,6 +27,11 @@ export interface ServerMessages {
   pendingTitle: (kind: ApprovalKind) => string;
   returnPending: (p: { name: string; what: string; reasons: string[] }) => string;
   writeOffPending: (p: { name: string; what: string }) => string;
+  productPending: (p: { name: string; product: string; price: string }) => string;
+  billPending: (p: { name: string; supplier: string | null; lines: number }) => string;
+  productApproved: (product: string) => string;
+  productApprovedMessage: string;
+  productRejected: (product: string) => string;
   countPending: (p: { name: string; scope: string; differences: number }) => string;
   reasonRefundOver: (amount: number) => string;
   reasonSoldDaysAgo: (days: number) => string;
@@ -52,6 +57,7 @@ export interface ServerMessages {
   dailyUrgent: (p: { titles: string[]; more: number }) => string;
   dailyOthers: (n: number) => string;
   dailyNothing: string;
+  dayClosedTitle: string;
   /** `name` is set only when the business has several carwashes. */
   dailyCarwash: (p: { name: string | null; carwash: number; change: number; total: number }) => string;
   dailyCarwashMissing: (name: string | null) => string;
@@ -235,7 +241,12 @@ export const en: ServerMessages = {
   lowStockTitle: (product) => `Low stock: ${product}`,
   lowStockMessage: ({ product, left, reorderLevel }) => `Only ${left} left of ${product} (reorder level is ${reorderLevel}).`,
 
-  pendingTitle: (kind) => `New ${kind} waiting for approval`,
+  pendingTitle: (kind) => (kind === 'bill' ? 'New bill waiting to be checked' : `New ${kind} waiting for approval`),
+  productPending: ({ name, product, price }) => `${name} wants to add ${product} at ${price}.`,
+  billPending: ({ name, supplier, lines }) => `${name} scanned a bill${supplier ? ` from ${supplier}` : ''} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
+  productApproved: (product) => `${product} was added to the shop`,
+  productApprovedMessage: 'It can be sold now.',
+  productRejected: (product) => `${product} was not added`,
   returnPending: ({ name, what, reasons }) => `${name} returned ${what} (${reasons.join(', ')}).`,
   writeOffPending: ({ name, what }) => `${name} reported ${what}.`,
   countPending: ({ name, scope, differences }) =>
@@ -264,6 +275,7 @@ export const en: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgent: ${titles.join('; ')}${more > 0 ? ` and ${more} more` : ''}.`,
   dailyOthers: (n) => `${count(n, 'other thing', 'other things')} to look at on the Overview page.`,
   dailyNothing: 'Nothing needs your attention.',
+  dayClosedTitle: 'The day is closed',
   dailyCarwash: ({ name, carwash, change, total }) =>
     `Carwash${name ? ` (${name})` : ''}: ${money(carwash, 'en')} + ${money(change, 'en')} change = ${money(total, 'en')}.`,
   dailyCarwashMissing: (name) => `Today's carwash${name ? ` (${name})` : ''} takings aren't entered yet.`,
@@ -485,7 +497,15 @@ export const sq: ServerMessages = {
     `Kanë mbetur vetëm ${left} nga ${product} (niveli i porosisë është ${reorderLevel}).`,
 
   pendingTitle: (kind) =>
-    ({ return: 'Kthim i ri', 'write-off': 'Heqje e re nga stoku', 'stock count': 'Numërim i ri i stokut' })[kind] + ' në pritje të miratimit',
+    kind === 'bill'
+      ? 'Faturë e re për t’u kontrolluar'
+      : ({ return: 'Kthim i ri', 'write-off': 'Heqje e re nga stoku', 'stock count': 'Numërim i ri i stokut', product: 'Produkt i ri', bill: '' })[kind] +
+        ' në pritje të miratimit',
+  productPending: ({ name, product, price }) => `${name} do të shtojë ${product} me ${price}.`,
+  billPending: ({ name, supplier, lines }) => `${name} skanoi një faturë${supplier ? ` nga ${supplier}` : ''} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
+  productApproved: (product) => `${product} u shtua në dyqan`,
+  productApprovedMessage: 'Tani mund të shitet.',
+  productRejected: (product) => `${product} nuk u shtua`,
   returnPending: ({ name, what, reasons }) => `${name} ktheu ${what} (${reasons.join(', ')}).`,
   writeOffPending: ({ name, what }) => `${name} raportoi ${what}.`,
   countPending: ({ name, scope, differences }) =>
@@ -514,6 +534,7 @@ export const sq: ServerMessages = {
   dailyUrgent: ({ titles, more }) => `Urgjente: ${titles.join('; ')}${more > 0 ? ` dhe ${more} të tjera` : ''}.`,
   dailyOthers: (n) => `${count(n, 'gjë tjetër', 'gjëra të tjera')} për të parë te Përmbledhja.`,
   dailyNothing: 'Asgjë nuk kërkon vëmendjen tënde.',
+  dayClosedTitle: 'Dita u mbyll',
   dailyCarwash: ({ name, carwash, change, total }) =>
     `Lavazhi${name ? ` (${name})` : ''}: ${money(carwash, 'sq')} + ${money(change, 'sq')} këmbim = ${money(total, 'sq')}.`,
   dailyCarwashMissing: (name) => `Të ardhurat e lavazhit${name ? ` (${name})` : ''} për sot nuk janë futur ende.`,

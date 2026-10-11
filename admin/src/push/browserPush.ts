@@ -44,3 +44,24 @@ export async function disablePush(): Promise<void> {
   await pushApi.removeDevice(subscription.endpoint).catch(() => undefined);
   await subscription.unsubscribe();
 }
+
+/** Where alerts stand in this browser after `turnOnHere`. */
+export type PushHere = 'on' | 'declined' | 'blocked' | 'unsupported' | 'noKeys';
+
+/**
+ * Turns alerts on in this browser if they aren't yet, so sending something to
+ * yourself is also how the browser first asks. Asks before anything else is
+ * awaited: Safari only shows the question straight from the click.
+ */
+export async function turnOnHere(): Promise<PushHere> {
+  if (!isPushSupported()) return 'unsupported';
+  if (Notification.permission === 'denied') return 'blocked';
+  const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
+  if (permission === 'denied') return 'blocked';
+  if (permission !== 'granted') return 'declined';
+  if (await currentSubscription()) return 'on';
+  const { webPushPublicKey } = await pushApi.settings();
+  if (!webPushPublicKey) return 'noKeys';
+  await enablePush(webPushPublicKey);
+  return 'on';
+}

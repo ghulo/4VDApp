@@ -13,6 +13,8 @@ import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format
 import { Badge, Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
 import { Camera, Package } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
+import { canEditProducts, canManage } from '../auth/roles';
+import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { HistoryCard } from '../components/HistoryCard';
@@ -125,6 +127,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<ProductDraft>(() => toDraft(product));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const { role } = useCurrentUser();
   const location = useLocation();
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [preparingPhoto, setPreparingPhoto] = useState(false);
@@ -253,7 +256,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
         // Editing: the form on the left; the barcode and price history beside it.
         <div className={isNew ? 'product-layout product-layout--single' : 'product-layout'}>
           <div className="product-layout__main">
-            <ManagersOnly note={t.productForm.managersOnly}>
+            <ManagersOnly note={t.productForm.managersOnly} can={canEditProducts}>
               <form className="product-form" onSubmit={handleSubmit}>
                 <Card title={t.productForm.details}>
                   <div className="photo-field">
@@ -460,7 +463,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   <ButtonLink to="/products">
                     {t.common.cancel}
                   </ButtonLink>
-                  {!isNew && (
+                  {!isNew && canManage(role) && (
                     <span className="form-actions__danger">
                       {confirmingDelete ? (
                         <>

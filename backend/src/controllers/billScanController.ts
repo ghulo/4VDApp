@@ -8,7 +8,7 @@ export function createBillScanController(scanService: BillScanService) {
   return {
     async scan(req: Request, res: Response): Promise<void> {
       const { pages } = parseInput(scanUploadSchema, req.body);
-      sendSuccess(res, await scanService.scan(pages, req.user!.id), { statusCode: 201, message: 'Bill read' });
+      sendSuccess(res, await scanService.scan(pages, req.user!), { statusCode: 201, message: 'Bill read' });
     },
 
     async waiting(_req: Request, res: Response): Promise<void> {
@@ -24,6 +24,16 @@ export function createBillScanController(scanService: BillScanService) {
     async confirm(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await scanService.confirm(id, parseInput(confirmScanSchema, req.body), req.user!.id), { message: 'Bill confirmed' });
+    },
+
+    async quickCheck(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await scanService.quickCheck(id));
+    },
+
+    async quickConfirm(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await scanService.quickConfirm(id, req.user!.id), { message: 'Bill confirmed' });
     },
 
     async reopen(req: Request, res: Response): Promise<void> {

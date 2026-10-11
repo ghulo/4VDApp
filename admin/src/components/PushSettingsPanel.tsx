@@ -106,6 +106,7 @@ function BrowserStatus({ settings, isOn }: { settings: PushSettings; isOn: boole
   if (!isPushSupported()) text = t.push.unsupported;
   else if (!settings.webPushPublicKey) text = t.push.noKeys;
   else if (isOn) text = t.push.on;
+  else if (Notification.permission === 'denied') text = t.push.blocked;
   else text = t.push.off;
   return (
     <>

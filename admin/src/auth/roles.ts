@@ -7,6 +7,8 @@ import { USER_ROLES, type UserRole } from '../services/types';
 export const canManage = (role: UserRole): boolean => role === 'developer' || role === 'admin';
 /** Use the dashboard: see the whole business and decide requests. */
 export const canOversee = (role: UserRole): boolean => canManage(role) || role === 'owner';
+/** Add products and change their details, price, barcode and photo; deleting stays with managers. */
+export const canEditProducts = canOversee;
 
 const TOP_ROLES: UserRole[] = ['developer', 'admin', 'owner'];
 

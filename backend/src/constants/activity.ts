@@ -5,6 +5,9 @@ export const ACTIVITY_ACTIONS = [
   'product.deleted',
   'product.barcode_set',
   'product.image_set',
+  'product.requested',
+  'product.request_approved',
+  'product.request_rejected',
   'pricing.updated',
   'stock.adjusted',
   'sale.recorded',
@@ -73,5 +76,5 @@ export const ACTIVITY_ACTIONS = [
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'activity'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

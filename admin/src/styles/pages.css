@@ -1112,6 +1112,28 @@ form.product-form > .form-actions {
   border-top: 1px solid var(--line);
 }
 
+/* A new product: its photo, what was asked, then the decision. */
+.approval-row--product {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.approval-row__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .approval-row--product {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .approval-row--product .decision {
+    grid-column: 1 / -1;
+  }
+}
+
 .approval-row:first-child {
   border-top: 0;
   padding-top: 0;

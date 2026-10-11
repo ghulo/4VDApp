@@ -41,7 +41,7 @@ describe('approvals', () => {
 
     const response = await api().get('/api/approvals/summary').set(auth(adminToken));
 
-    expect(response.body.data).toEqual({ returns: 1, writeOffs: 1, countLines: 1, total: 3 });
+    expect(response.body.data).toEqual({ returns: 1, writeOffs: 1, countLines: 1, productRequests: 0, total: 3 });
   });
 
   it('should keep the summary for admins only', async () => {

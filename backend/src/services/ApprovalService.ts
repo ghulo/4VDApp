@@ -3,7 +3,7 @@ import { formatEuro } from '../utils/money.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 
 export interface MyRequestDto {
-  type: 'return' | 'write_off' | 'count' | 'sale';
+  type: 'return' | 'write_off' | 'count' | 'sale' | 'product' | 'bill';
   id: number;
   /** A sentence the employee recognises, e.g. "Return of 2 × Paint, refund €38.00". */
   summary: string;
@@ -23,7 +23,7 @@ export class ApprovalService {
 
   async summary() {
     const counts = await this.approvalRepository.pendingCounts();
-    return { ...counts, total: counts.returns + counts.writeOffs + counts.countLines };
+    return { ...counts, total: counts.returns + counts.writeOffs + counts.countLines + counts.productRequests };
   }
 
   async mine(userId: number): Promise<MyRequestDto[]> {
@@ -51,5 +51,9 @@ function describe(row: MyRequestRow): string {
       return `Stock count of ${row.category_name ?? 'the whole shop'}`;
     case 'sale':
       return `Sale of ${row.quantity} × ${row.product_name}, ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
+    case 'product':
+      return `New product ${row.product_name} at ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
+    case 'bill':
+      return `Bill${row.product_name ? ` from ${row.product_name}` : ''} (${row.quantity} ${row.quantity === 1 ? 'line' : 'lines'})`;
   }
 }

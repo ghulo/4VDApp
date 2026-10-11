@@ -18,7 +18,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
 import { approvalsApi, attentionApi, countsApi, dayApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest, TodoItem } from '../services/types';
-import { canRecordSales, useCurrentUser } from '../state/useAuth';
+import { canRecordSales, decidesRequests, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors, type } from '../theme';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
@@ -77,6 +77,14 @@ export function HomeScreen() {
   // What needs this person, from the same list the dashboard's Inbox shows (DESIGN.md 3.3).
   const attention = useQuery({ queryKey: ['attention'], queryFn: attentionApi.get, refetchInterval: 60_000 });
   const todo = attention.data?.todo ?? [];
+  /** The To do items the phone can do something about; the rest are for the computer. */
+  const todoTarget = (item: (typeof todo)[number]): (() => void) | undefined => {
+    if (item.verb === 'endShift' || item.verb === 'closeDay') return () => navigation.navigate('EndShift');
+    if (item.verb === 'decide' && decidesRequests(user)) return () => navigation.navigate('Requests');
+    const bill = /^bill_scan:(d+)$/.exec(item.key);
+    if (item.verb === 'checkBill' && bill && decidesRequests(user)) return () => navigation.navigate('BillCheck', { id: Number(bill[1]) });
+    return undefined;
+  };
   const closingDue = todo.some((item) => item.verb === 'endShift' || item.verb === 'closeDay');
   const hasCarwash = shift.steps.some((step) => step.kind === 'carwash');
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
@@ -84,7 +92,7 @@ export function HomeScreen() {
   async function refresh() {
     setIsRefreshing(true);
     await Promise.all(
-      [MY_SALES_QUERY_KEY, ['attention'], ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['cash'], ['customers'], ['carwash'], ['orders']].map((queryKey) =>
+      [MY_SALES_QUERY_KEY, ['attention'], ['products'], ['favorites'], ['inventory'], ['stock-counts'], ['approvals'], ['product-requests'], ['bill-scans'], ['cash'], ['customers'], ['carwash'], ['orders']].map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
     );
@@ -199,10 +207,10 @@ export function HomeScreen() {
                 item={item}
                 colors={colors}
                 first={index === 0}
-                onPress={item.verb === 'endShift' || item.verb === 'closeDay' ? () => navigation.navigate('EndShift') : undefined}
+                onPress={todoTarget(item)}
               />
             ))}
-            {todo.some((item) => item.verb !== 'endShift' && item.verb !== 'closeDay') && <Muted colors={colors}>{t.home.onDashboard}</Muted>}
+            {todo.some((item) => !todoTarget(item)) && <Muted colors={colors}>{t.home.onDashboard}</Muted>}
           </PrintSection>
         )}
 
@@ -234,6 +242,7 @@ export function HomeScreen() {
               hint={t.home.happened.expiryHint}
               onPress={() => navigation.navigate('Main', { screen: 'Catalog', params: { then: 'expiry' } })}
             />
+            <HappenedRow colors={colors} title={t.home.happened.newProduct} hint={t.home.happened.newProductHint} onPress={() => navigation.navigate('NewProduct')} />
             <HappenedRow colors={colors} title={t.home.happened.supplierBill} hint={t.home.happened.supplierBillHint} onPress={() => navigation.navigate('ScanBill')} />
             {hasCarwash && (
               <HappenedRow colors={colors} title={t.home.happened.carwash} hint={t.home.happened.carwashHint} onPress={() => navigation.navigate('Carwash')} />

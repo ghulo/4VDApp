@@ -581,6 +581,35 @@ export interface BillScansTable {
   confirmation: ColumnType<unknown, string | null | undefined, string | null>;
 }
 
+export type ProductRequestStatus = 'pending' | 'approved' | 'rejected';
+
+/** A product someone at the counter wants added; approving it creates the product. */
+/** One row per shop day whose closing alert went out. */
+export interface DayClosingsTable {
+  day: string;
+  announced_at: Generated<Date>;
+}
+
+export interface ProductRequestsTable {
+  id: Generated<number>;
+  status: ColumnType<ProductRequestStatus, ProductRequestStatus | undefined, ProductRequestStatus>;
+  name: string;
+  category_id: number | null;
+  price: Decimal;
+  vat_rate: ColumnType<number, number | undefined, number>;
+  barcode: string | null;
+  origin_country: string | null;
+  photo_media_id: string | null;
+  stock: ColumnType<number, number | undefined, number>;
+  note: string | null;
+  requested_by: number | null;
+  requested_at: CreatedAt;
+  decided_by: number | null;
+  decided_at: Date | null;
+  decision_note: string | null;
+  product_id: number | null;
+}
+
 export interface SupplierProductCodesTable {
   supplier_id: number;
   code: string;
@@ -726,6 +755,8 @@ export interface Database {
   supplier_bills: SupplierBillsTable;
   supplier_payments: SupplierPaymentsTable;
   bill_scans: BillScansTable;
+  product_requests: ProductRequestsTable;
+  day_closings: DayClosingsTable;
   supplier_product_codes: SupplierProductCodesTable;
   report_subscriptions: ReportSubscriptionsTable;
 }

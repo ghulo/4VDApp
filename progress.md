@@ -115,6 +115,20 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Labels: "Show the country's flag next to the price" switch
 - [x] Merged and pushed
 
+## Team app: requests and decisions (branch team-app-requests)
+
+- [x] Owner can add and change products (dashboard and phone); deleting stays with admins and the developer
+- [x] Team app: Home > Something happened > We got something new: scan, name, price, category, photo, how many on the shelf
+- [x] An employee's new product waits as a request; the owner, admins and developer get an alert; approving (price/category can be fixed) puts it in the shop, rejecting needs a reason; the employee is told and sees it under Your requests
+- [x] Dashboard Inbox: "New products" card with photo, flag, price and category to fix
+- [x] An employee's scanned bill alerts the owner, admins and developer
+- [x] Phone, for whoever runs the shop: Requests screen (new products, scanned bills, returns, damage and loss, stock counts), opened from To do or by tapping the alert
+- [x] Phone: a simple scanned bill (known supplier, all lines matched, totals add up) is confirmed on the phone; anything else says to finish it on the computer
+- [x] Phone: product page shows the country flag; whoever runs the shop can change name, price, category, barcode and photo
+- [x] "The day is closed" alert to the owner, admins and developer, once a day, when the last step is done (from 18:00), with the day's numbers; opens that day; under the "Cash and closing" alert switch
+- [x] "Send it to me now" (reports) turns alerts on in that browser first, so the browser asks to allow them; says clearly when they are blocked and how to unblock
+- [x] Merged and pushed
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

@@ -199,7 +199,8 @@ export class ProductService {
    * Creates the product, its stock record and its pricing tiers together, and
    * logs the starting stock in the audit trail. All or nothing.
    */
-  async create(input: NewProductInput, createdBy: number): Promise<ProductDto> {
+  /** `logExtra` is added to the logged details (an approved request names who asked). */
+  async create(input: NewProductInput, createdBy: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     await this.ensureCategoryExists(input.categoryId);
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? []);
 
@@ -223,7 +224,7 @@ export class ProductService {
           entityType: 'product',
           entityId: id,
           summary: `Added product ${input.name}`,
-          details: { price: input.price, costPrice: input.costPrice, stock: input.stock },
+          details: { price: input.price, costPrice: input.costPrice, stock: input.stock, ...logExtra },
         });
         return id;
       });

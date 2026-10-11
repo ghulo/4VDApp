@@ -138,12 +138,28 @@ describe('analytics', () => {
     expect(response.body.data.topProducts[0]).toMatchObject({ productName: 'Oak Chair', unitsSold: 25 });
   });
 
+  it('should put each sale on the shop day it happened, like the reports do', async () => {
+    // 00:30 on 2 March in Budapest is still 1 March in UTC.
+    await sell(adminToken, 1, { saleDate: '2026-03-01T23:30:00Z' });
+
+    // Local midnights, as the dashboard sends them: 1 March to the end of 3 March in Budapest.
+    const response = await request(context.app)
+      .get('/api/analytics/revenue?period=daily&startDate=2026-02-28T23:00:00Z&endDate=2026-03-03T23:00:00Z')
+      .set(auth(adminToken));
+
+    expect(response.body.data.points.map((point: { periodStart: string; revenue: number }) => [point.periodStart, point.revenue])).toEqual([
+      ['2026-03-01', 0],
+      ['2026-03-02', 100],
+      ['2026-03-03', 0],
+    ]);
+  });
+
   it('should return revenue and profit per day including days with no sales', async () => {
     await sell(adminToken, 1, { saleDate: '2026-03-01T10:00:00Z' });
     await sell(adminToken, 1, { saleDate: '2026-03-03T10:00:00Z' });
 
     const response = await request(context.app)
-      .get('/api/analytics/revenue?period=daily&startDate=2026-03-01&endDate=2026-03-03')
+      .get('/api/analytics/revenue?period=daily&startDate=2026-02-28T23:00:00Z&endDate=2026-03-03T23:00:00Z')
       .set(auth(adminToken));
 
     expect(response.body.data.points).toEqual([

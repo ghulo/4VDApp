@@ -154,6 +154,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     inventoryRepository,
     productRepository,
     stockAdjustmentRepository,
+    config.shopTimeZone,
   );
   const userService = new UserService(userRepository, refreshTokenRepository, transactions);
   const notificationService = new NotificationService(notificationRepository);

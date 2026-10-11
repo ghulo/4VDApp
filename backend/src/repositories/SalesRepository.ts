@@ -276,9 +276,10 @@ export class SalesRepository {
 
   /**
    * Revenue per day/week/month, including periods with no sales (as zero), so
-   * charts don't silently skip quiet days. Buckets are in UTC.
+   * charts don't silently skip quiet days. Buckets are the shop's own days,
+   * weeks or months in `timeZone`, like the reports.
    */
-  async revenueByPeriod(period: RevenuePeriod, range: DateRange, productId?: number) {
+  async revenueByPeriod(period: RevenuePeriod, range: DateRange, timeZone: string, productId?: number) {
     const unit = { daily: 'day', weekly: 'week', monthly: 'month' }[period];
     const step = { daily: '1 day', weekly: '1 week', monthly: '1 month' }[period];
     const productFilter = productId ? sql`and l.product_id = ${productId}` : sql``;
@@ -286,8 +287,8 @@ export class SalesRepository {
     const result = await sql<{ period_start: string; revenue: string; profit: string; units_sold: string; sales_count: string }>`
       with buckets as (
         select generate_series(
-          date_trunc(${unit}, ${range.startDate}::timestamptz at time zone 'UTC'),
-          date_trunc(${unit}, (${range.endDate}::timestamptz - interval '1 microsecond') at time zone 'UTC'),
+          date_trunc(${unit}, ${range.startDate}::timestamptz at time zone ${timeZone}),
+          date_trunc(${unit}, (${range.endDate}::timestamptz - interval '1 microsecond') at time zone ${timeZone}),
           ${step}::interval
         ) as period_start
       )
@@ -300,7 +301,7 @@ export class SalesRepository {
         count(l.sale_id) filter (where l.return_id is null) as sales_count
       from buckets b
       left join sales_ledger l
-        on date_trunc(${unit}, l.occurred_at at time zone 'UTC') = b.period_start
+        on date_trunc(${unit}, l.occurred_at at time zone ${timeZone}) = b.period_start
         and l.occurred_at >= ${range.startDate}
         and l.occurred_at < ${range.endDate}
         ${productFilter}

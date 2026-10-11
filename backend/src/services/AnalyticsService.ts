@@ -21,6 +21,8 @@ export class AnalyticsService {
     private readonly inventoryRepository: InventoryRepository,
     private readonly productRepository: ProductRepository,
     private readonly stockAdjustmentRepository: StockAdjustmentRepository,
+    /** The shop's time zone: graph days are shop days. */
+    private readonly timeZone: string,
   ) {}
 
   /** Everything the admin overview needs, for the last `days` days. */
@@ -61,7 +63,7 @@ export class AnalyticsService {
 
   async revenue(period: RevenuePeriod, startDate?: Date, endDate?: Date, productId?: number) {
     const range = this.resolveRange(period, startDate, endDate);
-    const points = await this.salesRepository.revenueByPeriod(period, range, productId);
+    const points = await this.salesRepository.revenueByPeriod(period, range, this.timeZone, productId);
     return {
       period,
       startDate: range.startDate.toISOString(),
@@ -79,7 +81,7 @@ export class AnalyticsService {
     const [allTime, lastYear, monthlyTrend, stockHistory] = await Promise.all([
       this.salesRepository.findMany({ productId, limit: 1, offset: 0 }),
       this.salesRepository.findMany({ productId, ...yearRange, limit: 1, offset: 0 }),
-      this.salesRepository.revenueByPeriod('monthly', yearRange, productId),
+      this.salesRepository.revenueByPeriod('monthly', yearRange, this.timeZone, productId),
       this.stockAdjustmentRepository.findRecentForProduct(productId, STOCK_HISTORY_LIMIT),
     ]);
 

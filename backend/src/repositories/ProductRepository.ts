@@ -157,6 +157,16 @@ export class ProductRepository {
     return result.numUpdatedRows > 0n;
   }
 
+  /** Every live product, with just what matching a supplier's bill needs. */
+  async findAllForMatching(): Promise<Array<{ id: number; name: string; sku: string | null; barcode: string | null; cost_price: string | null; vat_rate: number }>> {
+    return this.db
+      .selectFrom('products')
+      .select(['id', 'name', 'sku', 'barcode', 'cost_price', 'vat_rate'])
+      .where('deleted_at', 'is', null)
+      .orderBy('name')
+      .execute();
+  }
+
   /** The live product with this barcode, if any. */
   async findIdByBarcode(barcode: string): Promise<number | undefined> {
     const row = await this.db

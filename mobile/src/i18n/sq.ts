@@ -17,6 +17,7 @@ export const sq: Catalogue = {
     customerTabs: 'Borxhet',
     carwash: 'Të ardhurat e lavazhit',
     deliveries: 'Furnizimet',
+    scanBill: 'Skano faturë',
     counting:(what) => `Duke numëruar: ${what.toLowerCase()}`,
   },
   tour: {
@@ -131,6 +132,8 @@ export const sq: Catalogue = {
     onDashboard: 'Pjesën tjetër zgjidhe te paneli i 4VD.',
     somethingHappened: 'Ndodhi diçka',
     happened: {
+      supplierBill: 'Erdhi një furnitor me mall',
+      supplierBillHint: 'Bëj foto faturën e tij',
       returnSale: 'Kthe një shitje',
       returnSaleHint: 'Zgjidhe nga shitjet e tua',
       damage: 'Dëm ose humbje',
@@ -346,6 +349,21 @@ export const sq: Catalogue = {
     save: 'Ruaj numërimin',
     doneTitle: 'Numërimi u ruajt',
     doneMessage: (drawer, amount) => `${drawer}: ${amount}. Pronari e krahason me shitjet e ditës. Faleminderit që mbylle.`,
+  },
+  scanBill: {
+    intro: 'Bëj foto faturën e furnitorit, çdo faqe. 4VD e lexon, dhe pronari e kontrollon para se malli të hyjë në stok.',
+    takePhoto: 'Bëj foto',
+    fromLibrary: 'Zgjidh nga fotot',
+    page: (n) => `Faqja ${n}`,
+    removePage: (n) => `Hiq faqen ${n}`,
+    pages: (n, max) => `${n} nga ${max} faqe`,
+    tip: 'Mbaje telefonin drejt mbi faturë, në dritë të mirë, që shkronjat e vogla të duken qartë.',
+    noCamera: 'Lejo kamerën te cilësimet e telefonit për të bërë foto faturave.',
+    send: 'Dërgoje për kontroll',
+    sending: 'Duke lexuar faturën… zgjat deri në një minutë.',
+    sentTitle: 'U dërgua për kontroll',
+    sentMessage: (p) =>
+      `${p.supplier ? `Fatura nga ${p.supplier}` : 'Fatura'} u lexua: ${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'}. Pronari e kontrollon në panel dhe e fut mallin në stok.`,
   },
   writeOff: {
     reasons: { damaged: 'I dëmtuar', lost: 'I humbur', expired: 'I skaduar', theft: 'I vjedhur', other: 'Tjetër' },

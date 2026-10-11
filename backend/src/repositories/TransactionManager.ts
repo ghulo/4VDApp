@@ -4,6 +4,7 @@ import { CarwashRepository } from './CarwashRepository.js';
 import { CashCountRepository } from './CashCountRepository.js';
 import { DocumentRepository } from './DocumentRepository.js';
 import { SupplierBillRepository } from './SupplierBillRepository.js';
+import { BillScanRepository } from './BillScanRepository.js';
 import { ExpenseRepository } from './ExpenseRepository.js';
 import { TabRepository } from './TabRepository.js';
 import { PurchaseOrderRepository } from './PurchaseOrderRepository.js';
@@ -50,6 +51,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     expiry: new ExpiryRepository(db),
     documents: new DocumentRepository(db),
     bills: new SupplierBillRepository(db),
+    billScans: new BillScanRepository(db),
   };
 }
 

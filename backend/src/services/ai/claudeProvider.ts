@@ -101,7 +101,7 @@ export class ClaudeProvider implements AiProvider {
 }
 
 /** Most specific first: what went wrong decides what the owner should do about it. */
-function toUnavailable(error: unknown): AiUnavailableError {
+export function toUnavailable(error: unknown): AiUnavailableError {
   if (error instanceof Anthropic.AuthenticationError) {
     return new AiUnavailableError('The AI service rejected the key. Check ANTHROPIC_API_KEY in the server settings.');
   }

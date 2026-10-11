@@ -87,6 +87,17 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Bill page: paying sits beside the payments, photo and details
 - [x] Merged and pushed together with the invoice work
 
+## Scanning supplier bills (branch bill-scanning)
+
+- [x] Scan a bill on the Bills tab (photos or a PDF, up to 6 pages); Claude reads it (about 5-10 cents a bill)
+- [x] Check page with a stamp per line: Matches / New price / New product / Barcode differs / Not sure
+- [x] Per line: link to a product, add it as new, or skip; pieces per box; cost of one piece; update cost; update barcode
+- [x] Warns on a bill number already saved and on lines that do not add up to the printed total
+- [x] Confirm adds new products, receives the stock (into the open order from that supplier, if any) and saves the bill with its photo
+- [x] Remembers each supplier code and box size, so the next bill matches by itself
+- [x] Team app: Home > Something happened > A supplier brought goods; photos go to the owner, no costs shown
+- [x] Waiting scans show on the Bills tab and in To do
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

@@ -16,6 +16,13 @@ export class MediaRepository {
     return this.db.selectFrom('media').select(['mime', 'bytes']).where('id', '=', id).executeTakeFirst();
   }
 
+  /** Just the file types, without loading the files. */
+  async findMimes(ids: string[]): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    const rows = await this.db.selectFrom('media').select(['id', 'mime']).where('id', 'in', ids).execute();
+    return new Map(rows.map((row) => [row.id, row.mime]));
+  }
+
   async delete(id: string): Promise<void> {
     await this.db.deleteFrom('media').where('id', '=', id).execute();
   }

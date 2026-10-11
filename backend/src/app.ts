@@ -35,6 +35,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   // and the admin dashboard needs it to name downloaded CSV files.
   app.use(cors({ origin: config.corsOrigins, exposedHeaders: ['Content-Disposition'] }));
   app.use(compression());
+  // Scanned bills arrive as base64 photos or PDFs: several pages, a few MB each.
+  app.use('/api/bill-scans', express.json({ limit: '40mb' }));
   app.use(express.json({ limit: '1mb' }));
 
   // Health check stays outside /api and the rate limiter so uptime monitors

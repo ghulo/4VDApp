@@ -30,6 +30,8 @@ export type RootStackParamList = {
   Tab: { customerId: number; name: string };
   Carwash: { carwashId?: number } | undefined;
   Deliveries: undefined;
+  /** Photograph a supplier's bill for the owner to check. */
+  ScanBill: undefined;
   /** Opened from a product QR code. */
   ScanResult: { code: string };
 };

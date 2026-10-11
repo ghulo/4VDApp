@@ -1,4 +1,4 @@
-import { Plus, Receipt } from '@phosphor-icons/react';
+import { Plus, Receipt, Scan } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -8,6 +8,7 @@ import { useT } from '../i18n/useT';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
 import { BillFields, DueBadge } from '../components/BillParts';
+import { ScanBillForm, WaitingScans } from '../components/BillScanParts';
 import { BILL_STATUS_TONE, emptyBill, isBillValid, toBillInput } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
@@ -31,6 +32,7 @@ export function BillsPage() {
   const status: StatusFilter = (FILTERS as readonly string[]).includes(params.get('status') ?? '') ? (params.get('status') as StatusFilter) : 'open';
   const supplierId = params.get('supplier') ?? '';
   const [adding, setAdding] = useNewSheet();
+  const [scanning, setScanning] = useNewSheet('scan');
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   // Overdue and due-this-week are the unpaid list narrowed down here, so they share its request.
@@ -60,15 +62,26 @@ export function BillsPage() {
         title={t.nav.items.suppliers}
         description={t.bills.description}
         actions={
-          <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
-            {t.bills.add}
-          </Button>
+          <>
+            <Button icon={Plus} onClick={() => setAdding(true)}>
+              {t.bills.add}
+            </Button>
+            <Button variant="primary" icon={Scan} onClick={() => setScanning(true)}>
+              {t.scans.scan}
+            </Button>
+          </>
         }
       />
 
       <Sheet open={adding} onClose={() => setAdding(false)} title={t.bills.newBill} description={t.bills.addHint}>
         <NewBillForm initialSupplier={supplierId} onDone={() => setAdding(false)} />
       </Sheet>
+
+      <Sheet open={scanning} onClose={() => setScanning(false)} title={t.scans.scanTitle} description={t.scans.scanHint}>
+        <ScanBillForm onDone={() => setScanning(false)} />
+      </Sheet>
+
+      <WaitingScans />
 
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
       <DataTable<SupplierBill>

@@ -1,7 +1,7 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
-import type { TransactionManager } from '../repositories/TransactionManager.js';
+import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
 import { type BillInput, createBill } from './SupplierBillService.js';
@@ -230,60 +230,7 @@ export class PurchaseOrderService {
     if (!actor.canSetCosts) {
       input = { lines: input.lines.map((line) => ({ ...line, unitCost: undefined })), updateCostPrices: false };
     }
-    await this.transactions.run(async (repos) => {
-      const order = await repos.orders.findOrder(id);
-      if (!order) throw new NotFoundError(`Order ${id} does not exist`);
-      if (order.status !== 'open') throw new ConflictError('This order is already closed');
-      const lines = await repos.orders.findLines([id]);
-      const received = new Map(input.lines.map((line) => [line.lineId, line]));
-      if ([...received.keys()].some((lineId) => !lines.some((line) => line.id === lineId))) {
-        throw new ValidationError('One of the lines is not on this order');
-      }
-
-      let units = 0;
-      for (const line of lines) {
-        const delivered = received.get(line.id);
-        const quantity = delivered?.receivedQuantity ?? 0;
-        const ordered = line.unit_cost === null ? null : Number(line.unit_cost);
-        const unitCost = delivered?.unitCost === undefined ? ordered : delivered.unitCost;
-        await repos.orders.setReceived(line.id, quantity, unitCost);
-        if (quantity === 0) continue;
-        const product = (await repos.products.findById(line.product_id, true))!;
-        await applyStockChange(repos, {
-          productId: product.id,
-          productName: product.name,
-          delta: quantity,
-          reason: SYSTEM_STOCK_REASONS.DELIVERY,
-          notes: `Order #${id} from ${order.supplier_name}`,
-          adjustedBy: actorId,
-          reorderLevel: product.reorder_level ?? 0,
-        });
-        if (delivered?.expiresOn) {
-          await repos.expiry.add({
-            productId: product.id,
-            quantity,
-            expiresOn: delivered.expiresOn,
-            note: `Order #${id} from ${order.supplier_name}`,
-            orderLineId: line.id,
-            createdBy: actorId,
-          });
-        }
-        if (input.updateCostPrices && unitCost !== null && unitCost !== (product.cost_price === null ? null : Number(product.cost_price))) {
-          await repos.orders.setCostPrice(product.id, unitCost);
-        }
-        units += quantity;
-      }
-      await repos.orders.close(id, 'received', actorId, now);
-      if (input.bill) await createBill(repos, { ...input.bill, supplierId: order.supplier_id, orderId: id }, actorId);
-      await repos.activityLog.create({
-        userId: actorId,
-        action: 'order.received',
-        entityType: 'order',
-        entityId: id,
-        summary: `Received order #${id} from ${order.supplier_name}: ${units} ${units === 1 ? 'unit' : 'units'} into stock`,
-        details: { ...input },
-      });
-    });
+    await this.transactions.run((repos) => receiveOrder(repos, id, input, actorId, now));
     return this.get(id);
   }
 
@@ -304,4 +251,64 @@ export class PurchaseOrderService {
     });
     return this.get(id);
   }
+}
+
+/**
+ * Receiving inside a transaction the caller runs: what came goes into stock,
+ * expiry dates are kept, costs are noted and the order closes. A scanned bill
+ * receives its delivery through this too, so both ways record the same things.
+ */
+export async function receiveOrder(repos: TransactionalRepositories, id: number, input: ReceiveInput, actorId: number, now: Date): Promise<void> {
+    const order = await repos.orders.findOrder(id);
+    if (!order) throw new NotFoundError(`Order ${id} does not exist`);
+    if (order.status !== 'open') throw new ConflictError('This order is already closed');
+    const lines = await repos.orders.findLines([id]);
+    const received = new Map(input.lines.map((line) => [line.lineId, line]));
+    if ([...received.keys()].some((lineId) => !lines.some((line) => line.id === lineId))) {
+      throw new ValidationError('One of the lines is not on this order');
+    }
+
+    let units = 0;
+    for (const line of lines) {
+      const delivered = received.get(line.id);
+      const quantity = delivered?.receivedQuantity ?? 0;
+      const ordered = line.unit_cost === null ? null : Number(line.unit_cost);
+      const unitCost = delivered?.unitCost === undefined ? ordered : delivered.unitCost;
+      await repos.orders.setReceived(line.id, quantity, unitCost);
+      if (quantity === 0) continue;
+      const product = (await repos.products.findById(line.product_id, true))!;
+      await applyStockChange(repos, {
+        productId: product.id,
+        productName: product.name,
+        delta: quantity,
+        reason: SYSTEM_STOCK_REASONS.DELIVERY,
+        notes: `Order #${id} from ${order.supplier_name}`,
+        adjustedBy: actorId,
+        reorderLevel: product.reorder_level ?? 0,
+      });
+      if (delivered?.expiresOn) {
+        await repos.expiry.add({
+          productId: product.id,
+          quantity,
+          expiresOn: delivered.expiresOn,
+          note: `Order #${id} from ${order.supplier_name}`,
+          orderLineId: line.id,
+          createdBy: actorId,
+        });
+      }
+      if (input.updateCostPrices && unitCost !== null && unitCost !== (product.cost_price === null ? null : Number(product.cost_price))) {
+        await repos.orders.setCostPrice(product.id, unitCost);
+      }
+      units += quantity;
+    }
+    await repos.orders.close(id, 'received', actorId, now);
+    if (input.bill) await createBill(repos, { ...input.bill, supplierId: order.supplier_id, orderId: id }, actorId);
+    await repos.activityLog.create({
+      userId: actorId,
+      action: 'order.received',
+      entityType: 'order',
+      entityId: id,
+      summary: `Received order #${id} from ${order.supplier_name}: ${units} ${units === 1 ? 'unit' : 'units'} into stock`,
+      details: { ...input },
+    });
 }

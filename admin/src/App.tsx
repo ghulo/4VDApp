@@ -30,6 +30,7 @@ import { SalesPage } from './pages/SalesPage';
 import { DocumentDetailPage } from './pages/DocumentDetailPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { BillDetailPage } from './pages/BillDetailPage';
+import { ScanCheckPage } from './pages/ScanCheckPage';
 import { BillsPage } from './pages/BillsPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { ReportPage } from './pages/ReportPage';
@@ -141,6 +142,7 @@ function App() {
                   <Route path="suppliers/:id" element={<SupplierDetailPage />} />
                   <Route path="orders/new" element={<NewOrderPage />} />
                   <Route path="orders/:id" element={<OrderDetailPage />} />
+                  <Route path="bills/scans/:id" element={<ScanCheckPage />} />
                   <Route path="bills/:id" element={<BillDetailPage />} />
                   <Route path="people" element={<UsersPage />} />
                   <Route path="counts" element={<StockCountsPage />} />

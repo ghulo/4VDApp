@@ -56,6 +56,9 @@ import { AssistantChatRepository } from './repositories/AssistantChatRepository.
 import { AssistantService } from './services/AssistantService.js';
 import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
+import { type BillReader, ClaudeBillReader } from './services/ai/billReader.js';
+import { BillScanRepository } from './repositories/BillScanRepository.js';
+import { BillScanService } from './services/BillScanService.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
 import { InviteRepository } from './repositories/InviteRepository.js';
@@ -111,6 +114,8 @@ export interface ContainerOptions {
   emailSender?: EmailSender;
   /** Tests pass a fake so nothing is sent to an AI service. Null switches the AI helpers off. */
   aiProvider?: AiProvider | null;
+  /** Tests pass a fake bill reader. Null switches bill scanning off. */
+  billReader?: BillReader | null;
 }
 
 export function createContainer(config: AppConfig, db: DatabaseClient, options: ContainerOptions = {}) {
@@ -181,7 +186,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const tabRepository = new TabRepository(db);
   const tabService = new TabService(tabRepository, transactions);
-  const purchaseOrderService = new PurchaseOrderService(new PurchaseOrderRepository(db), transactions);
+  const purchaseOrderRepository = new PurchaseOrderRepository(db);
+  const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
   const supplierBillRepository = new SupplierBillRepository(db);
   const supplierBillService = new SupplierBillService(supplierBillRepository, mediaService, transactions, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
@@ -197,7 +203,22 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
   );
   const dayService = new DayService(cashCountService, carwashService, expenseService, expenseRepository, approvalService, transactions, config.shopTimeZone);
-  const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, config.shopTimeZone);
+  const billScanRepository = new BillScanRepository(db);
+  const billScanService = new BillScanService(
+    billScanRepository,
+    productRepository,
+    purchaseOrderRepository,
+    purchaseOrderService,
+    supplierBillService,
+    mediaService,
+    transactions,
+    options.billReader !== undefined
+      ? options.billReader
+      : config.ai?.provider === 'anthropic'
+        ? new ClaudeBillReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
+        : null,
+  );
+  const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, billScanRepository, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
@@ -356,6 +377,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     tabService,
     purchaseOrderService,
     supplierBillService,
+    billScanService,
     expiryService,
     pushService,
     insightsService,

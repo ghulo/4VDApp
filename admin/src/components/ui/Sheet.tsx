@@ -64,13 +64,13 @@ export function Sheet({ open, onClose, title, description, children }: SheetProp
  * A page's "add new" panel, open while the address has ?new=1, so a link from
  * elsewhere (Overview, Ctrl K, the day checklist) can open it straight away.
  */
-export function useNewSheet(): [boolean, (open: boolean) => void] {
+export function useNewSheet(value = '1'): [boolean, (open: boolean) => void] {
   const [params, setParams] = useSearchParams();
-  const open = params.get('new') === '1';
+  const open = params.get('new') === value;
   const setOpen = (next: boolean) =>
     setParams((current) => {
       const updated = new URLSearchParams(current);
-      if (next) updated.set('new', '1');
+      if (next) updated.set('new', value);
       else updated.delete('new');
       return updated;
     });

@@ -5,7 +5,8 @@ import type { CategoryRepository } from '../repositories/CategoryRepository.js';
 import type { PricingTierRepository } from '../repositories/PricingTierRepository.js';
 import type { ProductData, ProductRecord, ProductRepository } from '../repositories/ProductRepository.js';
 import type { PromotionRepository } from '../repositories/PromotionRepository.js';
-import type { TransactionManager } from '../repositories/TransactionManager.js';
+import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
+import { countryFromBarcode } from '../utils/barcodeCountry.js';
 import { hasValidCheckDigit, inStoreBarcode } from '../utils/barcodes.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
@@ -28,6 +29,8 @@ export interface ProductDto {
   isActive: boolean;
   /** Percent of VAT included in the price. */
   vatRate: number;
+  /** ISO code of the country it comes from, or null when unknown. */
+  originCountry: string | null;
   category: { id: number; name: string };
   price: number;
   /** Only included for admins. */
@@ -51,6 +54,8 @@ export interface ProductInput {
   isActive: boolean;
   /** Left out keeps the current rate (the default for a new product). */
   vatRate?: number;
+  /** Left out keeps the current country (none for a new product). */
+  originCountry?: string | null;
   /** Replaces every tier when given; leaves them unchanged when undefined (updates only). */
   bulkPricingTiers?: PricingTier[];
 }
@@ -118,7 +123,7 @@ export class ProductService {
   }
 
   /** Sets (or clears, with null) a product's barcode, usually the manufacturer's. */
-  async setBarcode(id: number, barcode: string | null, actorId: number): Promise<ProductDto> {
+  async setBarcode(id: number, barcode: string | null, actorId: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     if (barcode !== null && !hasValidCheckDigit(barcode)) {
       throw new ValidationError(`${barcode} isn't a valid barcode: its last digit doesn't match. Scan it again or check for a typo.`);
     }
@@ -128,17 +133,15 @@ export class ProductService {
       const owner = await this.productRepository.findIdByBarcode(barcode);
       if (owner !== undefined && owner !== id) throw new ConflictError(`Another product already has the barcode ${barcode}`);
     }
-    await this.transactions.run(async (repos) => {
-      await repos.products.setBarcode(id, barcode);
-      await repos.activityLog.create({
-        userId: actorId,
-        action: 'product.barcode_set',
-        entityType: 'product',
-        entityId: id,
+    await this.transactions.run((repos) =>
+      setProductBarcode(repos, {
+        product,
+        to: barcode,
+        actorId,
         summary: barcode === null ? `Removed the barcode of ${product.name}` : `Set the barcode of ${product.name} to ${barcode}`,
-        details: { from: product.barcode, to: barcode },
-      });
-    });
+        logExtra,
+      }),
+    );
     return this.getById(id, 'admin');
   }
 
@@ -202,7 +205,7 @@ export class ProductService {
 
     try {
       const productId = await this.transactions.run(async (repos) => {
-        const id = await repos.products.create(this.toProductData(input, input.vatRate ?? DEFAULT_VAT_RATE));
+        const id = await repos.products.create(this.toProductData(input, input.vatRate ?? DEFAULT_VAT_RATE, input.originCountry ?? null));
         await repos.inventory.create(id, input.stock, input.reorderLevel ?? DEFAULT_REORDER_LEVEL);
         await repos.pricingTiers.replaceForProduct(id, tiers);
         if (input.stock > 0) {
@@ -245,6 +248,7 @@ export class ProductService {
     // still be valid against the new price.
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? existingTiers);
     const vatRate = input.vatRate ?? existing.vat_rate;
+    const originCountry = input.originCountry === undefined ? existing.origin_country : input.originCountry;
     const change = describeProductChanges(toSnapshot(existing, existingTiers), {
       name: input.name,
       description: input.description,
@@ -255,12 +259,13 @@ export class ProductService {
       sku: input.sku,
       isActive: input.isActive,
       vatRate,
+      originCountry,
       bulkPricingTiers: input.bulkPricingTiers ? tiers : undefined,
     });
 
     try {
       await this.transactions.run(async (repos) => {
-        await repos.products.update(id, this.toProductData(input, vatRate));
+        await repos.products.update(id, this.toProductData(input, vatRate, originCountry));
         if (input.bulkPricingTiers) await repos.pricingTiers.replaceForProduct(id, tiers);
         if (change) {
           await repos.activityLog.create({
@@ -302,7 +307,7 @@ export class ProductService {
     if (!category) throw new ValidationError(`categoryId: category ${categoryId} does not exist`);
   }
 
-  private toProductData(input: ProductInput, vatRate: number): ProductData {
+  private toProductData(input: ProductInput, vatRate: number, originCountry: string | null): ProductData {
     return {
       name: input.name,
       description: input.description,
@@ -313,6 +318,7 @@ export class ProductService {
       sku: input.sku,
       isActive: input.isActive,
       vatRate,
+      originCountry,
     };
   }
 
@@ -335,6 +341,7 @@ export class ProductService {
       imageUrl: product.image_url,
       isActive: product.is_active,
       vatRate: product.vat_rate,
+      originCountry: product.origin_country,
       category: { id: product.category_id, name: product.category_name },
       price,
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
@@ -369,6 +376,37 @@ function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapsh
     sku: product.sku,
     isActive: product.is_active,
     vatRate: product.vat_rate,
+    originCountry: product.origin_country,
     bulkPricingTiers: tiers,
   };
+}
+
+/**
+ * Every barcode change goes through here (the product page, scanned bills and
+ * their reopening), so each one is in the product's history. A product with no
+ * country yet takes the one the new barcode was registered in. Run inside a
+ * transaction; the caller checks the barcode is free.
+ */
+export async function setProductBarcode(
+  repos: TransactionalRepositories,
+  p: {
+    product: { id: number; barcode: string | null; origin_country: string | null };
+    to: string | null;
+    actorId: number;
+    summary: string;
+    logExtra?: Record<string, unknown>;
+  },
+): Promise<void> {
+  const { product } = p;
+  await repos.products.setBarcode(product.id, p.to);
+  const country = product.origin_country ? null : countryFromBarcode(p.to);
+  if (country) await repos.products.setOriginCountry(product.id, country);
+  await repos.activityLog.create({
+    userId: p.actorId,
+    action: 'product.barcode_set',
+    entityType: 'product',
+    entityId: product.id,
+    summary: p.summary,
+    details: { barcode: { from: product.barcode, to: p.to }, ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
+  });
 }

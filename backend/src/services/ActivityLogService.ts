@@ -4,6 +4,7 @@ import type { ActivityFilters, ActivityLogRepository, ActivityRecord } from '../
 import type { UndoRepository } from '../repositories/UndoRepository.js';
 import type { DocumentRepository } from '../repositories/DocumentRepository.js';
 import type { ActivityEntityType } from '../constants/activity.js';
+import { fieldChangesOf } from './activity/fieldChanges.js';
 import { undoStatesFor } from './undo/undoStates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 
@@ -81,6 +82,8 @@ export class ActivityLogService {
       entityId: entry.entity_id,
       summary: entry.summary,
       details: entry.details,
+      /** The fields it changed, before and after, the same shape whichever way it was logged. */
+      changes: fieldChangesOf(entry),
       createdAt: entry.created_at.toISOString(),
       user: entry.user_id === null ? null : { id: entry.user_id, name: entry.user_name ?? 'Removed user' },
       undo: undo.get(entry.id) ?? null,

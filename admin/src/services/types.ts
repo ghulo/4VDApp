@@ -58,6 +58,8 @@ export interface Product {
   price: number;
   /** Percent of VAT included in the price: 18, 8 or 0. */
   vatRate: VatRate;
+  /** Two-letter code of the country it comes from; starts from the barcode, can be corrected. */
+  originCountry: string | null;
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
@@ -77,6 +79,7 @@ export interface ProductInput {
   sku: string | null;
   isActive: boolean;
   vatRate: VatRate;
+  originCountry: string | null;
   bulkPricingTiers: PricingTier[];
   stock?: number;
   reorderLevel?: number;
@@ -629,6 +632,22 @@ export interface TabEntry {
   by: string | null;
 }
 
+export interface FieldChange {
+  field: string;
+  from: unknown;
+  to: unknown;
+}
+
+/** What putting a record back to one of its history entries would change. */
+export interface RestorePlan {
+  entityType: HistoryEntity;
+  entityId: number;
+  /** The newest entry this was worked out from; the restore is refused if a newer one appears. */
+  latestEntryId: number;
+  /** `from` is what it is now, `to` what it goes back to. */
+  changes: FieldChange[];
+}
+
 export interface ActivityEntry {
   id: number;
   action: string;
@@ -636,6 +655,8 @@ export interface ActivityEntry {
   entityId: number | null;
   summary: string;
   details: Record<string, unknown> | null;
+  /** The fields it changed, before and after. */
+  changes: FieldChange[];
   createdAt: string;
   user: { id: number; name: string } | null;
   /** Null for entries that can't be undone. */

@@ -4,12 +4,14 @@ import type { BillScanRecord, BillScanRepository } from '../repositories/BillSca
 import type { ProductRepository } from '../repositories/ProductRepository.js';
 import type { PurchaseOrderRepository } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
+import { countryFromBarcode } from '../utils/barcodeCountry.js';
 import { checkTotals, type KnownCode, type LineMatch, matchLine, nameSimilarity } from '../utils/billMatching.js';
 import { roundMoney } from '../utils/money.js';
 import { type BillPage, type BillReader, type BillReading, billReadingSchema } from './ai/billReader.js';
 import { mediaUrl } from './mappers.js';
 import { applyStockChange } from './InventoryService.js';
 import type { MediaService } from './MediaService.js';
+import { setProductBarcode } from './ProductService.js';
 import { changeCost, type OrderDto, type PurchaseOrderService, receiveOrder } from './PurchaseOrderService.js';
 import { type BillInput, createBill, type SupplierBillService } from './SupplierBillService.js';
 
@@ -267,7 +269,7 @@ export class BillScanService {
         const product = await repos.products.findById(productId, true);
         if (!product) throw new NotFoundError(`Product ${productId} does not exist`);
         if (line.productId && line.updateBarcode && line.barcode && line.barcode !== product.barcode) {
-          await this.setBarcode(repos, product.id, product.name, product.barcode, line.barcode, supplier.name, actorId);
+          await this.setBarcode(repos, product, line.barcode, supplier.name, actorId);
           confirmation.barcodes.push({ productId: product.id, from: product.barcode, to: line.barcode });
         }
         if (line.productId && line.updateCost && line.unitCost !== null) {
@@ -445,7 +447,14 @@ export class BillScanService {
         }
         for (const change of done.barcodes) {
           const product = await repos.products.findById(change.productId, true);
-          if (product?.barcode === change.to) await repos.products.setBarcode(change.productId, change.from);
+          if (product?.barcode === change.to) {
+            await setProductBarcode(repos, {
+              product,
+              to: change.from,
+              actorId,
+              summary: `Put the barcode of ${product.name} back${change.from ? ` to ${change.from}` : ''} (scanned bill reopened)`,
+            });
+          }
         }
         for (const row of done.codes) {
           if (row.before) await repos.billScans.rememberCode({ supplierId, code: row.code, productId: row.before.productId, unitsPerPack: row.before.unitsPerPack, at: now });
@@ -493,6 +502,7 @@ export class BillScanService {
       sku: null,
       isActive: true,
       vatRate: product.vatRate,
+      originCountry: countryFromBarcode(product.barcode),
     });
     await repos.inventory.create(id, 0, DEFAULT_REORDER_LEVEL);
     if (product.barcode) await repos.products.setBarcode(id, product.barcode);
@@ -509,23 +519,18 @@ export class BillScanService {
 
   private async setBarcode(
     repos: TransactionalRepositories,
-    productId: number,
-    name: string,
-    from: string | null,
+    product: { id: number; name: string; barcode: string | null; origin_country: string | null },
     to: string,
     supplierName: string,
     actorId: number,
   ): Promise<void> {
     const holder = await repos.products.findIdByBarcode(to);
-    if (holder && holder !== productId) throw new ConflictError(`Another product already has the barcode ${to}`);
-    await repos.products.setBarcode(productId, to);
-    await repos.activityLog.create({
-      userId: actorId,
-      action: 'product.updated',
-      entityType: 'product',
-      entityId: productId,
-      summary: `Changed the barcode of ${name}${from ? ` from ${from}` : ''} to ${to}, as on ${supplierName}'s bill`,
-      details: { barcode: { from, to } },
+    if (holder && holder !== product.id) throw new ConflictError(`Another product already has the barcode ${to}`);
+    await setProductBarcode(repos, {
+      product,
+      to,
+      actorId,
+      summary: `Changed the barcode of ${product.name}${product.barcode ? ` from ${product.barcode}` : ''} to ${to}, as on ${supplierName}'s bill`,
     });
   }
 

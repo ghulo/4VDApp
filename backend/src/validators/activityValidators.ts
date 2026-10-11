@@ -22,6 +22,9 @@ export const activityQuerySchema = paginationSchema.extend({
   exclude: actionList.optional(),
 });
 
+/** The newest entry the developer was shown, so a restore never acts on a changed record. */
+export const restorePointBodySchema = z.object({ latestEntryId: idSchema });
+
 /** One record whose history to show. */
 export const historyQuerySchema = z.object({
   entityType: z.enum(ACTIVITY_ENTITY_TYPES),

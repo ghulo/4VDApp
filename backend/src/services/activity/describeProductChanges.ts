@@ -11,6 +11,7 @@ export interface ProductSnapshot {
   sku: string | null;
   isActive: boolean;
   vatRate: number;
+  originCountry: string | null;
   /** Undefined means "not part of this change". */
   bulkPricingTiers?: PricingTier[];
 }
@@ -25,6 +26,7 @@ const FIELD_LABELS: Record<keyof ProductSnapshot, string> = {
   sku: 'SKU',
   isActive: 'visibility',
   vatRate: 'VAT rate',
+  originCountry: 'country',
   bulkPricingTiers: 'bulk prices',
 };
 

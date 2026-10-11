@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarcodeCard } from '../components/BarcodeCard';
+import { CountryFlag, useCountries } from '../components/CountryFlag';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { ProductPhoto } from '../components/ProductPhoto';
@@ -30,6 +31,8 @@ interface ProductDraft {
   price: string;
   costPrice: string;
   vatRate: VatRate;
+  /** Two-letter code, or '' for unknown. */
+  originCountry: string;
   sku: string;
   imageUrl: string;
   isActive: boolean;
@@ -57,6 +60,7 @@ function toDraft(product?: Product): ProductDraft {
     price: product ? String(product.price) : '',
     costPrice: product?.costPrice != null ? String(product.costPrice) : '',
     vatRate: product?.vatRate ?? 18,
+    originCountry: product?.originCountry ?? '',
     sku: product?.sku ?? '',
     imageUrl: product?.imageUrl ?? '',
     isActive: product?.isActive ?? true,
@@ -78,6 +82,7 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
     price: Number(draft.price),
     costPrice: draft.costPrice === '' ? null : Number(draft.costPrice),
     vatRate: draft.vatRate,
+    originCountry: draft.originCountry || null,
     sku: draft.sku.trim() || null,
     imageUrl: draft.imageUrl.trim() || null,
     isActive: draft.isActive,
@@ -302,6 +307,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       <input maxLength={100} value={draft.sku} onChange={(event) => update('sku', event.target.value)} />
                     </label>
                   </div>
+                  <CountryField value={draft.originCountry} onChange={(code) => update('originCountry', code)} />
                   <label className="field">
                     <span className="field__label">{t.productForm.description}</span>
                     <textarea
@@ -551,6 +557,29 @@ const describePriceChange = (t: Catalogue, change: { from: number | null; to: nu
     : `${formatMoney(change.from)} → ${change.to === null ? t.productForm.none : formatMoney(change.to)}`;
 
 /** Every price and cost change, from the activity log. */
+/** Where it comes from, with its flag; filled in from the barcode until someone corrects it. */
+function CountryField({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+  const t = useT();
+  const countries = useCountries();
+  return (
+    <label className="field">
+      <span className="field__label">{t.productForm.country}</span>
+      <span className="country-select">
+        {value && <CountryFlag code={value} decorative />}
+        <select value={value} onChange={(event) => onChange(event.target.value)}>
+          <option value="">{t.productForm.noCountry}</option>
+          {countries.all.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.name}
+            </option>
+          ))}
+        </select>
+      </span>
+      <span className="field__hint">{t.productForm.countryHint}</span>
+    </label>
+  );
+}
+
 function PriceHistory({ productId }: { productId: number }) {
   const t = useT();
   const history = useQuery({

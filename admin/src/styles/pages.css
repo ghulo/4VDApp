@@ -1004,6 +1004,8 @@ form.product-form > .form-actions {
 /* Everything you can do to a person sits behind one "Manage" button, in a
    panel under their row, so the list stays a list. */
 .user-row__manage {
+  display: grid;
+  gap: var(--space-3);
   grid-column: 1 / -1;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-small);
@@ -2391,8 +2393,17 @@ form.product-form > .form-actions {
 }
 
 .label__price {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.label__flag {
+  width: 4mm;
+  height: 3mm;
+  box-shadow: 0 0 0 0.2mm #9a9a9a; /* printed on white paper whatever the theme */
 }
 
 /* The print copy (see LabelsPage) is hidden on screen and is all that prints. */
@@ -2465,6 +2476,57 @@ form.product-form > .form-actions {
   gap: var(--space-1);
   min-width: 0;
   justify-items: inherit;
+}
+
+/* Every barcode a product has had, newest first. */
+.barcode-history {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barcode-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.barcode-history code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.barcode-history__when {
+  color: var(--steel);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Country flags ---------- */
+
+/* A hairline, so white flags (Japan, Cyprus) still read on white paper and surfaces. */
+.country-flag {
+  display: inline-block;
+  flex: none;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--line);
+  vertical-align: middle;
+}
+
+.country-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.country-select select {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---------- Product photos ---------- */
@@ -3384,10 +3446,37 @@ fieldset.report-sections {
 }
 
 .record-history__change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   color: var(--steel);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
+}
+
+.record-history__change .country-flag {
+  width: 16px;
+  height: 12px;
+}
+
+/* The developer's restore panel sits on sunk paper under its entry. */
+.record-restore {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.record-restore p {
+  margin: 0;
+}
+
+.record-restore__warning {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-small);
+  background: var(--danger-soft);
 }
 
 .record-history__entry.is-undone .record-history__text {

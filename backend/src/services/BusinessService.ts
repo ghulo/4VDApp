@@ -68,7 +68,7 @@ export class BusinessService {
     return toDto(await this.businessOf(userId));
   }
 
-  async update(userId: number, changes: BusinessChanges): Promise<BusinessDto> {
+  async update(userId: number, changes: BusinessChanges, logExtra?: Record<string, unknown>): Promise<BusinessDto> {
     const business = await this.businessOf(userId);
     const updated = await this.businessRepository.update(business.id, {
       ...(changes.name !== undefined && { name: changes.name }),
@@ -91,7 +91,7 @@ export class BusinessService {
         entityType: 'business',
         entityId: business.id,
         summary: `Changed the shop's ${fields.map((field) => FIELD_NAMES[field] ?? field).join(', ')}`,
-        details: { fields: fields.map((field) => ({ field, from: before[field] ?? null, to: after[field] ?? null })) },
+        details: { fields: fields.map((field) => ({ field, from: before[field] ?? null, to: after[field] ?? null })), ...logExtra },
       });
     }
     return toDto(updated);

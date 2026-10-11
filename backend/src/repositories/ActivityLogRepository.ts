@@ -104,6 +104,21 @@ export class ActivityLogRepository {
    * Everything that happened to some records, oldest first: entries about any
    * of them, plus the undos and restores of those entries.
    */
+  /**
+   * Every entry about one record after `afterId`, oldest first: undone ones
+   * and undos' own changes included, since each really changed a value.
+   */
+  findAfter(entityType: string, entityId: number, afterId: number) {
+    return this.db
+      .selectFrom('activity_log')
+      .select(['id', 'action', 'details'])
+      .where('entity_type', '=', entityType)
+      .where('entity_id', '=', entityId)
+      .where('id', '>', afterId)
+      .orderBy('id', 'asc')
+      .execute();
+  }
+
   async findHistory(records: Array<{ entityType: string; ids: number[] }>, limit: number): Promise<ActivityRecord[]> {
     const wanted = records.filter((record) => record.ids.length > 0);
     if (wanted.length === 0) return [];

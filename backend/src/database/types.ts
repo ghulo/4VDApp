@@ -159,6 +159,8 @@ export interface ProductsTable {
   barcode: ColumnType<string | null, string | null | undefined, string | null>;
   /** VAT percent included in the price: 18, 8 or 0. */
   vat_rate: Generated<number>;
+  /** Where it comes from (ISO code); starts from the barcode's prefix. */
+  origin_country: string | null;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;

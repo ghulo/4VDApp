@@ -1,9 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { canOversee } from '../auth/roles';
+import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
-import { productsApi } from '../services/api';
+import { activityApi, productsApi } from '../services/api';
 import type { Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
+import { formatDateTime } from '../utils/format';
 import { BarcodeImage } from './BarcodeImage';
 import { QrImage } from './QrImage';
 import { ManagersOnly } from './ManagersOnly';
@@ -71,6 +74,41 @@ export function BarcodeCard({ product }: { product: Product }) {
           </div>
         </form>
       </ManagersOnly>
+      <BarcodeHistory productId={product.id} />
     </Card>
+  );
+}
+
+/**
+ * Every barcode the product has had, newest first, with when and by whom.
+ * Read from the same history as the History card, so it costs no extra request.
+ */
+function BarcodeHistory({ productId }: { productId: number }) {
+  const t = useT();
+  const { role } = useCurrentUser();
+  const history = useQuery({
+    queryKey: ['activity', 'history', 'product', productId],
+    queryFn: () => activityApi.history('product', productId),
+    enabled: canOversee(role),
+  });
+  const changes = (history.data ?? [])
+    .flatMap((entry) => (entry.changes ?? []).filter((change) => change.field === 'barcode').map((change) => ({ entry, to: change.to as string | null })))
+    .reverse();
+  if (changes.length === 0) return null;
+  return (
+    <>
+      <h3 className="subheading">{t.barcodes.history}</h3>
+      <ol className="barcode-history">
+        {changes.map(({ entry, to }) => (
+          <li key={entry.id}>
+            {to ? <code>{to}</code> : <span>{t.barcodes.removedCode}</span>}
+            <span className="barcode-history__when">
+              <time dateTime={entry.createdAt}>{formatDateTime(entry.createdAt)}</time>
+              {entry.user && ` · ${t.history.by(entry.user.name)}`}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }

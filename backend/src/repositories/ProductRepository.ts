@@ -21,6 +21,7 @@ export interface ProductData {
   sku: string | null;
   isActive: boolean;
   vatRate: number;
+  originCountry: string | null;
 }
 
 /** A product joined with its category name and stock, as the API needs it. */
@@ -37,6 +38,7 @@ export interface ProductRecord {
   barcode: string | null;
   is_active: boolean;
   vat_rate: number;
+  origin_country: string | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -69,6 +71,7 @@ export class ProductRepository {
     'p.barcode',
     'p.is_active',
     'p.vat_rate',
+    'p.origin_country',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -130,6 +133,7 @@ export class ProductRepository {
         sku: data.sku,
         is_active: data.isActive,
         vat_rate: data.vatRate,
+        origin_country: data.originCountry,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -149,6 +153,7 @@ export class ProductRepository {
         sku: data.sku,
         is_active: data.isActive,
         vat_rate: data.vatRate,
+        origin_country: data.originCountry,
         updated_at: new Date(),
       })
       .where('id', '=', id)
@@ -184,6 +189,10 @@ export class ProductRepository {
 
   async setBarcode(id: number, barcode: string | null): Promise<void> {
     await this.db.updateTable('products').set({ barcode, updated_at: new Date() }).where('id', '=', id).execute();
+  }
+
+  async setOriginCountry(id: number, country: string | null): Promise<void> {
+    await this.db.updateTable('products').set({ origin_country: country, updated_at: new Date() }).where('id', '=', id).execute();
   }
 
   /** Whether the product was ever sold; a sold product is kept, not removed. */

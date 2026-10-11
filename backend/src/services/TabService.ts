@@ -141,7 +141,7 @@ export class TabService {
     return this.detail(id);
   }
 
-  async update(id: number, input: CustomerInput, actorId: number): Promise<CustomerDto> {
+  async update(id: number, input: CustomerInput, actorId: number, logExtra?: Record<string, unknown>): Promise<CustomerDto> {
     const before = await this.tabRepository.findCustomer(id);
     if (!before) throw new NotFoundError(`Customer ${id} does not exist`);
     await this.transactions.run(async (repos) => {
@@ -152,7 +152,7 @@ export class TabService {
         entityType: 'customer',
         entityId: id,
         summary: `Changed ${before.name}'s details`,
-        details: { before: { name: before.name, kind: before.kind, nui: before.nui, phone: before.phone, note: before.note }, after: input },
+        details: { before: { name: before.name, kind: before.kind, nui: before.nui, phone: before.phone, note: before.note }, after: input, ...logExtra },
       });
     });
     return this.detail(id);

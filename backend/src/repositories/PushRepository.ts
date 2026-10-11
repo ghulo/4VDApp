@@ -3,15 +3,19 @@ import type { DatabaseClient } from '../database/connection.js';
 import { messages } from '../i18n/messages.js';
 import type { NewNotification } from './NotificationRepository.js';
 
+export type DeviceApp = 'dashboard' | 'team';
+
 export interface DeviceRecord {
   user_id: number;
   kind: 'expo' | 'web';
+  app: DeviceApp;
   token: string;
   keys: { p256dh: string; auth: string } | null;
 }
 
 export interface NewDevice {
   kind: 'expo' | 'web';
+  app: DeviceApp;
   token: string;
   keys: { p256dh: string; auth: string } | null;
 }
@@ -38,8 +42,8 @@ export class PushRepository {
   async saveDevice(userId: number, device: NewDevice): Promise<void> {
     await this.db
       .insertInto('push_subscriptions')
-      .values({ user_id: userId, kind: device.kind, token: device.token, keys: device.keys })
-      .onConflict((oc) => oc.column('token').doUpdateSet({ user_id: userId, kind: device.kind, keys: device.keys }))
+      .values({ user_id: userId, kind: device.kind, app: device.app, token: device.token, keys: device.keys })
+      .onConflict((oc) => oc.column('token').doUpdateSet({ user_id: userId, kind: device.kind, app: device.app, keys: device.keys }))
       .execute();
   }
 
@@ -56,7 +60,7 @@ export class PushRepository {
     if (userIds.length === 0) return [];
     return this.db
       .selectFrom('push_subscriptions')
-      .select(['user_id', 'kind', 'token', 'keys'])
+      .select(['user_id', 'kind', 'app', 'token', 'keys'])
       .where('user_id', 'in', userIds)
       .execute();
   }
@@ -66,13 +70,16 @@ export class PushRepository {
     await this.db.updateTable('push_subscriptions').set({ last_used_at: new Date() }).where('token', 'in', tokens).execute();
   }
 
-  async countDevices(userId: number): Promise<number> {
+  async countDevices(userId: number): Promise<{ total: number; dashboard: number }> {
     const row = await this.db
       .selectFrom('push_subscriptions')
-      .select((eb) => eb.fn.countAll<string>().as('total'))
+      .select((eb) => [
+        eb.fn.countAll<string>().as('total'),
+        eb.fn.count<string>('id').filterWhere('app', '=', 'dashboard').as('dashboard'),
+      ])
       .where('user_id', '=', userId)
       .executeTakeFirstOrThrow();
-    return Number(row.total);
+    return { total: Number(row.total), dashboard: Number(row.dashboard) };
   }
 
   /** A notification already marked as pushed, for sending straight away instead of with the next batch. */

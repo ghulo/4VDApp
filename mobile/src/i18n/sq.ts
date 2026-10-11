@@ -60,6 +60,7 @@ export const sq: Catalogue = {
     },
     on: 'Aktive në këtë telefon, edhe kur aplikacioni është i mbyllur.',
     off: 'Joaktive në këtë telefon.',
+    dashboardOnly: 'Njoftimet ju vijnë nga paneli, prandaj ky aplikacion hesht dhe asgjë nuk ju vjen dy herë.',
     turnOff: 'Çaktivizo në këtë telefon',
     turnOn: 'Aktivizo në këtë telefon',
     deliveredTo: (service) => `${service}: u pranua. Duhet të shfaqet brenda pak sekondash.`,

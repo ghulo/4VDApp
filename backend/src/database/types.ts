@@ -252,6 +252,8 @@ export interface PushSubscriptionsTable {
   /** Expo push token, or Web Push endpoint URL. */
   token: string;
   keys: ColumnType<{ p256dh: string; auth: string } | null, { p256dh: string; auth: string } | null | undefined, { p256dh: string; auth: string } | null>;
+  /** Which app turned alerts on here; someone with a dashboard device gets alerts only there. */
+  app: ColumnType<'dashboard' | 'team', 'dashboard' | 'team' | undefined, 'dashboard' | 'team'>;
   created_at: CreatedAt;
   last_used_at: Date | null;
 }

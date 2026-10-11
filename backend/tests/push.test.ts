@@ -68,6 +68,20 @@ describe('push alerts', () => {
     expect(web.sent).toEqual([expect.objectContaining({ token: BROWSER.endpoint, keys: BROWSER.keys })]);
   });
 
+  it('should alert only on the dashboard when alerts are on there, so nothing comes twice', async () => {
+    await addDevice(adminToken, { kind: 'expo', token: PHONE });
+    await addDevice(adminToken, { ...BROWSER, app: 'team' });
+    const dashboard = { ...BROWSER, app: 'dashboard', endpoint: 'https://push.example.com/send/dashboard' };
+    const settings = await addDevice(adminToken, dashboard);
+    await causeLowStockAlert();
+
+    await context.container.pushService.sendPending();
+
+    expect(settings.body.data).toMatchObject({ deviceCount: 1, dashboardOnly: true });
+    expect(expo.sent).toEqual([]);
+    expect(web.sent).toEqual([expect.objectContaining({ token: dashboard.endpoint })]);
+  });
+
   it('should respect a topic switched off', async () => {
     await addDevice(adminToken, { kind: 'expo', token: PHONE });
     const saved = await request(context.app)

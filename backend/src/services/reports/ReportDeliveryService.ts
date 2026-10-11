@@ -127,6 +127,7 @@ export class ReportDeliveryService {
             name: person.name.split(' ')[0]!,
             subject: title,
             intro: t.report.emailIntro({ name: person.name.split(' ')[0]!, kind: report.kind, period: reportPeriod(report, t) }),
+            summary: headline.message,
             sections: reportText(report, t),
             link: `${this.dashboardUrl}${link}`,
           },

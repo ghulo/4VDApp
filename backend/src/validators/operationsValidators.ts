@@ -120,11 +120,15 @@ export const pushPreferencesSchema = z
     message: `send at least one of: ${PUSH_TOPICS.join(', ')}`,
   });
 
+/** Which app is asking; team apps installed before this don't say, so it defaults to the team app. */
+const deviceApp = z.enum(['dashboard', 'team']).default('team');
+
 /** An Expo push token from the phone app, or a browser's Web Push subscription. */
 export const pushDeviceSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('expo'), token: z.string().regex(/^Expo(nent)?PushToken\[[^\]]+\]$/, 'not an Expo push token') }),
+  z.object({ kind: z.literal('expo'), app: deviceApp, token: z.string().regex(/^Expo(nent)?PushToken\[[^\]]+\]$/, 'not an Expo push token') }),
   z.object({
     kind: z.literal('web'),
+    app: deviceApp,
     endpoint: z.url({ protocol: /^https$/ }).max(2000),
     keys: z.object({ p256dh: z.string().min(1).max(500), auth: z.string().min(1).max(500) }),
   }),

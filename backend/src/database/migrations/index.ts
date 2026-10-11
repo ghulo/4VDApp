@@ -33,6 +33,7 @@ import * as billScanReopen from './031_bill_scan_reopen.js';
 import * as productCountry from './032_product_country.js';
 import * as productRequests from './033_product_requests.js';
 import * as dayClosings from './034_day_closings.js';
+import * as pushDeviceApp from './035_push_device_app.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -75,4 +76,5 @@ export const migrations: Record<string, Migration> = {
   '032_product_country': productCountry,
   '033_product_requests': productRequests,
   '034_day_closings': dayClosings,
+  '035_push_device_app': pushDeviceApp,
 };

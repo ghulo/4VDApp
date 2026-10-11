@@ -73,3 +73,16 @@ export async function turnOnHere(): Promise<PushHere> {
   await enablePush(webPushPublicKey);
   return 'on';
 }
+
+/**
+ * Tells the server again about this browser when alerts are already on here,
+ * so it knows the alerts belong to the dashboard (and keeps the team app on
+ * the same phone quiet). Runs once per sign-in; never asks for anything.
+ */
+export async function reregisterPush(): Promise<void> {
+  if (!isPushSupported() || Notification.permission !== 'granted') return;
+  const subscription = await currentSubscription();
+  if (!subscription) return;
+  const json = subscription.toJSON();
+  await pushApi.addWebDevice({ endpoint: subscription.endpoint, keys: { p256dh: json.keys!.p256dh!, auth: json.keys!.auth! } });
+}

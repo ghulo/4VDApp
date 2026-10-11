@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi, meApi } from '../services/api';
 import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
-import { disablePush } from '../push/browserPush';
+import { disablePush, reregisterPush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
 import { activeCatalogue, useLanguage } from '../i18n/useT';
@@ -32,6 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: 'signedOut' });
       });
   }, [setLanguage]);
+
+  const signedInId = state.status === 'signedIn' ? state.user.id : null;
+  useEffect(() => {
+    if (signedInId !== null) reregisterPush().catch(() => undefined);
+  }, [signedInId]);
 
   /**
    * Just signed in: the account's language applies, unless one was picked on

@@ -4,7 +4,7 @@ import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
-import { REPORT_SECTIONS, type ReportKind, type ReportSettings } from '../services/types';
+import { REPORT_SECTIONS, type ReportSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading } from './Feedback';
 import { Button, Card, SettingRow } from './ui';

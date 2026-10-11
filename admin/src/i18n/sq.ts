@@ -115,6 +115,12 @@ export const sq: Catalogue = {
     on: 'Aktive për këtë kompjuter, edhe kur paneli është i mbyllur.',
     off: 'Joaktive për këtë kompjuter.',
     blocked: 'Shfletuesi po bllokon njoftimet për këtë faqe, ndaj nuk pyet më. Kliko ikonën majtas adresës, vendos Njoftimet te Lejo, pastaj provo përsëri.',
+    noDevicesYet: 'Asnjë pajisje nuk ka njoftimet ndezur ende, ndaj duket vetëm te lista e njoftimeve.',
+    deliveredTo: (service) => `${service}: u pranua. Duhet të shfaqet brenda pak sekondash.`,
+    refusedBy: (service, problem, removed) =>
+      removed
+        ? `${service}: kjo pajisje nuk merr më njoftime, ndaj u hoq. Ndizi njoftimet sërish atje.`
+        : `${service}: e refuzoi (${problem}). Fiki dhe ndizi njoftimet në atë pajisje; nëse vazhdon, dërgoja këtë mesazh zhvilluesit.`,
     declined: 'Njoftimet nuk janë ndezur për këtë kompjuter, ndaj nuk shfaqet këtu. Shtype përsëri dhe zgjidh Lejo kur pyet shfletuesi.',
   },
   palette: {

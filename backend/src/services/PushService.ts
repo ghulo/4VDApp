@@ -1,6 +1,6 @@
 import { ALWAYS_PUSHED, NOTIFICATION_TYPES, PUSH_TOPICS, type PushTopic, pushTopicFor } from '../constants/notifications.js';
 import type { UserRole } from '../database/types.js';
-import type { NewDevice, PushRepository } from '../repositories/PushRepository.js';
+import type { DeviceRecord, NewDevice, PushRepository } from '../repositories/PushRepository.js';
 import type { PushMessage, PushSender } from './push/senders.js';
 
 /** Alerts not pushed within this long are dropped rather than sent late. */
@@ -25,6 +25,35 @@ export interface PushSettingsDto {
   deviceCount: number;
   /** Null when the server has no Web Push keys, so browsers can't subscribe. */
   webPushPublicKey: string | null;
+}
+
+/** How one device fared with the test alert. */
+export interface TestDelivery {
+  kind: 'expo' | 'web';
+  /** Who carries alerts to it: Apple, Google, Microsoft, Mozilla or Expo. */
+  service: string;
+  delivered: boolean;
+  /** What the push service said when it refused. */
+  problem: string | null;
+  /** The push service no longer knows it, so it was removed; turning alerts on there again fixes it. */
+  removed: boolean;
+}
+
+/** The push service behind a device, from where its alerts are sent. */
+function serviceOf(device: DeviceRecord): string {
+  if (device.kind === 'expo') return 'Expo';
+  const host = (() => {
+    try {
+      return new URL(device.token).hostname;
+    } catch {
+      return '';
+    }
+  })();
+  if (host.endsWith('push.apple.com')) return 'Apple';
+  if (host.endsWith('googleapis.com')) return 'Google';
+  if (host.endsWith('notify.windows.com')) return 'Microsoft';
+  if (host.endsWith('mozilla.com')) return 'Mozilla';
+  return host || 'Unknown';
 }
 
 export interface PushSenders {
@@ -61,11 +90,28 @@ export class PushService {
     return this.settings(userId, role);
   }
 
-  /** A test alert to every device of this person, sent with the next batch. */
-  async sendTest(userId: number): Promise<void> {
-    await this.pushRepository.createTestNotification(userId, {
+  /**
+   * A test alert to every device of this person, sent right now so the
+   * answer says, device by device, whether it got through and if not why.
+   */
+  async sendTest(userId: number): Promise<TestDelivery[]> {
+    const notification = await this.pushRepository.createPushedTestNotification(userId, {
       type: NOTIFICATION_TYPES.TEST,
       write: (t) => ({ title: t.testAlertTitle, message: t.testAlertMessage }),
+    });
+    if (!notification) return [];
+    const devices = await this.pushRepository.devicesFor([userId]);
+    const { failures, deadTokens } = await this.deliver([{ ...notification, user_id: userId }], devices);
+    return devices.map((device) => {
+      const failure = failures.find((candidate) => candidate.token === device.token);
+      const noKeys = device.kind === 'web' && !this.senders.web;
+      return {
+        kind: device.kind,
+        service: serviceOf(device),
+        delivered: !failure && !noKeys,
+        problem: noKeys ? 'The server has no Web Push keys' : (failure?.problem ?? null),
+        removed: deadTokens.includes(device.token),
+      };
     });
   }
 
@@ -93,9 +139,18 @@ export class PushService {
     if (wanted.length === 0) return 0;
 
     const devices = await this.pushRepository.devicesFor([...new Set(wanted.map((notification) => notification.user_id))]);
+    const { sent } = await this.deliver(wanted, devices);
+    return sent;
+  }
+
+  /** Pushes each notification to its owner's devices, forgets devices that are gone, and says what failed. */
+  private async deliver(
+    notifications: Array<{ id: number; user_id: number; title: string; message: string; type: string | null; link: string | null }>,
+    devices: DeviceRecord[],
+  ): Promise<{ sent: number; deadTokens: string[]; failures: Array<{ token: string; problem: string }> }> {
     const expoMessages: PushMessage[] = [];
     const webMessages: PushMessage[] = [];
-    for (const notification of wanted) {
+    for (const notification of notifications) {
       for (const device of devices.filter((candidate) => candidate.user_id === notification.user_id)) {
         const message: PushMessage = {
           token: device.token,
@@ -113,11 +168,12 @@ export class PushService {
       webMessages.length > 0 && this.senders.web ? this.senders.web.send(webMessages) : { deadTokens: [] },
     ]);
     const deadTokens = results.flatMap((result) => result.deadTokens);
+    const failures = results.flatMap((result) => ('failures' in result ? (result.failures ?? []) : []));
     const usedTokens = [...expoMessages, ...webMessages].map((message) => message.token).filter((token) => !deadTokens.includes(token));
     await Promise.all([
       this.pushRepository.removeDevicesByToken(deadTokens),
       this.pushRepository.markDevicesUsed([...new Set(usedTokens)]),
     ]);
-    return expoMessages.length + (this.senders.web ? webMessages.length : 0);
+    return { sent: expoMessages.length + (this.senders.web ? webMessages.length : 0), deadTokens, failures };
   }
 }

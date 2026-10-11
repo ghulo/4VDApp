@@ -119,6 +119,12 @@ export const en = {
     on: 'On for this computer, even when the dashboard is closed.',
     off: 'Off for this computer.',
     blocked: 'The browser is blocking notifications for this site, so it won’t ask again. Click the icon left of the address, set Notifications to Allow, then try again.',
+    noDevicesYet: 'No device has alerts on yet, so it only shows in your alerts list.',
+    deliveredTo: (service: string) => `${service}: accepted. It should pop up within a few seconds.`,
+    refusedBy: (service: string, problem: string, removed: boolean) =>
+      removed
+        ? `${service}: this device no longer takes alerts, so it was removed. Turn alerts on there again.`
+        : `${service}: refused it (${problem}). Turn alerts off and on again on that device; if it stays, send this message to the developer.`,
     declined: 'Alerts are not on for this computer, so it won’t pop up here. Press it again and choose Allow when the browser asks.',
   },
   palette: {

@@ -22,7 +22,14 @@ export function PushSettingsPanel() {
     mutationFn: (on: boolean) => (on ? enablePush(settings.data?.webPushPublicKey ?? null) : disablePush()),
     onSettled: () => queryClient.invalidateQueries({ queryKey: SETTINGS_KEY }),
   });
-  const sendTest = useMutation({ mutationFn: pushApi.sendTest });
+  // Registers this phone again first, in case the server has new keys or forgot it.
+  const sendTest = useMutation({
+    mutationFn: async () => {
+      await enablePush(settings.data?.webPushPublicKey ?? null);
+      return pushApi.sendTest();
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SETTINGS_KEY }),
+  });
   const saveTopic = useMutation({
     mutationFn: (change: { topic: PushTopic; enabled: boolean }) => pushApi.updatePreferences({ [change.topic]: change.enabled }),
     onSuccess: (updated: PushSettings) => queryClient.setQueryData(SETTINGS_KEY, updated),
@@ -57,9 +64,17 @@ export function PushSettingsPanel() {
           {errorMessage(toggleDevice.error)}
         </Text>
       )}
-      {isOn && (
-        <Button label={sendTest.isSuccess ? t.push.testSent : t.push.sendTest} variant="quiet" loading={sendTest.isPending} onPress={() => sendTest.mutate()} />
+      {isOn && <Button label={t.push.sendTest} variant="quiet" loading={sendTest.isPending} onPress={() => sendTest.mutate()} />}
+      {sendTest.isError && (
+        <Text style={[styles.detail, { color: colors.signalOut }]} accessibilityRole="alert">
+          {errorMessage(sendTest.error)}
+        </Text>
       )}
+      {sendTest.data?.map((delivery, index) => (
+        <Text key={index} style={[styles.detail, { color: delivery.delivered ? colors.ink : colors.signalOut }]} accessibilityLiveRegion="polite">
+          {delivery.delivered ? t.push.deliveredTo(delivery.service) : t.push.refusedBy(delivery.service, delivery.problem ?? '', delivery.removed)}
+        </Text>
+      ))}
       {settings.data.topics.map(({ topic, enabled }) => (
         <View key={topic} style={[styles.topic, { borderTopColor: colors.line }]}>
           <Text style={[styles.topicLabel, { color: colors.ink }]}>{t.push.topics[topic]}</Text>

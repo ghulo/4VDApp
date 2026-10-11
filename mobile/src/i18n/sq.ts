@@ -62,7 +62,11 @@ export const sq: Catalogue = {
     off: 'Joaktive në këtë telefon.',
     turnOff: 'Çaktivizo në këtë telefon',
     turnOn: 'Aktivizo në këtë telefon',
-    testSent: 'Njoftimi provë u dërgua',
+    deliveredTo: (service) => `${service}: u pranua. Duhet të shfaqet brenda pak sekondash.`,
+    refusedBy: (service, problem, removed) =>
+      removed
+        ? `${service}: kjo pajisje nuk merr më njoftime, ndaj u hoq. Ndizi njoftimet sërish.`
+        : `${service}: e refuzoi (${problem}). Fiki dhe ndizi njoftimet; nëse vazhdon, dërgoja këtë mesazh zhvilluesit.`,
     sendTest: 'Dërgo një njoftim provë',
     simulator: 'Njoftimet punojnë vetëm në telefon të vërtetë, jo në simulator.',
     expoGo: 'Njoftimet në telefon punojnë në aplikacionin e instaluar (APK), jo në Expo Go.',

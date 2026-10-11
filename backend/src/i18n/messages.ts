@@ -172,6 +172,8 @@ export interface ServerMessages {
     issued: string;
     issuedBy: string;
     buyer: string;
+    buyerName: string;
+    address: string;
     nui: string;
     phone: string;
     corrects: (number: string) => string;
@@ -415,6 +417,8 @@ export const en: ServerMessages = {
     issued: 'Date',
     issuedBy: 'Issued by',
     buyer: 'Buyer',
+    buyerName: 'Name',
+    address: 'Address',
     nui: 'NUI',
     phone: 'Phone',
     corrects: (number) => `Reverses invoice ${number}`,
@@ -659,6 +663,8 @@ export const sq: ServerMessages = {
     issued: 'Data',
     issuedBy: 'Lëshuar nga',
     buyer: 'Blerësi',
+    buyerName: 'Emri',
+    address: 'Adresa',
     nui: 'NUI',
     phone: 'Tel.',
     corrects: (number) => `Kthen faturën ${number}`,

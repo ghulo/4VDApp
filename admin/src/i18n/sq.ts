@@ -457,6 +457,7 @@ export const sq: Catalogue = {
     items: 'dokumente',
     print: 'Printo ose ruaj PDF',
     printLabel: (number) => `Printo ose ruaj ${number} si PDF`,
+    printLanguage: 'Gjuha e faqes së printuar',
     preparing: 'Duke përgatitur…',
     reverses: 'Kthen faturën',
     reason: 'Arsyeja',

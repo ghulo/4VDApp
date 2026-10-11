@@ -464,6 +464,7 @@ export const en = {
     items: 'documents',
     print: 'Print or save PDF',
     printLabel: (number: string) => `Print or save ${number} as PDF`,
+    printLanguage: 'Language of the printed page',
     preparing: 'Preparing…',
     reverses: 'Reverses invoice',
     reason: 'Reason',

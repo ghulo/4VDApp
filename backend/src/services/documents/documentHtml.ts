@@ -55,7 +55,10 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
 
   const buyer = document.buyer
     ? `<section class="buyer"><h2 class="spec">${escape(t.buyer)}</h2><p class="buyer__name">${escape(document.buyer.name)}</p>${contact(document.buyer)}</section>`
-    : '';
+    : // No customer on the sale: blank lines the buyer's details can be written on by hand.
+      `<section class="buyer buyer--blank"><h2 class="spec">${escape(t.buyer)}</h2>${[t.buyerName, t.nui, t.address]
+        .map((label) => `<p><span>${escape(label)}</span></p>`)
+        .join('')}</section>`;
 
   const facts = [
     [t.issued, issued],
@@ -159,6 +162,9 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
   .buyer .spec { margin-bottom: 1.5mm; }
   .buyer__name { font-size: 11.5pt; font-weight: 600; margin-bottom: .5mm; }
   .buyer p:not(.buyer__name) { font-size: 9pt; color: var(--ink-muted); }
+  .buyer--blank { width: 95mm; }
+  .buyer--blank p { display: flex; align-items: flex-end; gap: 2mm; height: 7mm; }
+  .buyer--blank p::after { content: ''; flex: 1; border-bottom: 1px solid var(--hairline); }
   .facts { display: grid; gap: 2mm; grid-column: 2; }
   .facts div { display: grid; grid-template-columns: auto auto; justify-content: end; align-items: baseline; gap: 4mm; text-align: right; }
   .facts dd { font-weight: 600; }

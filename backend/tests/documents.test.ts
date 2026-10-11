@@ -93,6 +93,15 @@ describe('invoices', () => {
       .send({ name: 'Ndërtimi SH.P.K.', kind: 'business', nui: '811 234 568' });
     const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }], { customerId: customer.body.data.id });
     expect((await getDocument(invoice.id)).buyer).toMatchObject({ name: 'Ndërtimi SH.P.K.', nui: '811234568' });
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=sq`).set(auth(adminToken))).text;
+    expect(page).toContain('Ndërtimi SH.P.K.');
+    expect(page).not.toContain('class="buyer buyer--blank"');
+  });
+
+  it('should leave lines for the buyer to be written in by hand when the sale had no customer', async () => {
+    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=sq`).set(auth(adminToken))).text;
+    expect(page).toContain('<section class="buyer buyer--blank"><h2 class="spec">Blerësi</h2><p><span>Emri</span></p><p><span>NUI</span></p><p><span>Adresa</span></p></section>');
   });
 
   it("should list only one customer's invoices when asked, and say whose they are", async () => {

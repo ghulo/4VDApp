@@ -139,3 +139,32 @@ export const createPromotionSchema = z.object({
   startsAt: startDateQuery,
   endsAt: endDateQuery,
 });
+
+// ---------- Product requests ----------
+
+// No defaults here: an approval's corrections leave out what stays as asked.
+const requestFields = {
+  name: trimmedString(255),
+  categoryId: idSchema.nullable(),
+  price: money,
+  vatRate: z.number().refine((rate) => (VAT_RATES as readonly number[]).includes(rate), `VAT must be one of ${VAT_RATES.join(', ')}%`),
+  barcode: barcodeSchema.nullable(),
+  originCountry: productFields.originCountry,
+  stock: z.number().int().min(0).max(MAX_STOCK_CHANGE),
+};
+
+/** A new product from the phone: added at once by whoever runs the shop, otherwise a request. */
+export const productRequestSchema = z.object({
+  ...requestFields,
+  vatRate: requestFields.vatRate.default(18),
+  barcode: requestFields.barcode.default(null),
+  stock: requestFields.stock.default(0),
+  note: optionalText(500),
+  photo: z
+    .object({ mime: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic']), data: z.string().min(1) })
+    .nullable()
+    .default(null),
+});
+
+/** Corrections made while approving; anything left out stays as asked. */
+export const approveProductRequestSchema = z.object(requestFields).partial();

@@ -897,6 +897,27 @@ export interface ReturnItem {
   decisionNote: string | null;
 }
 
+/** A product someone at the counter asked to add; approving it creates the product. */
+export interface ProductRequest {
+  id: number;
+  status: ApprovalStatus;
+  name: string;
+  category: { id: number; name: string } | null;
+  price: number;
+  vatRate: number;
+  barcode: string | null;
+  originCountry: string | null;
+  photoUrl: string | null;
+  stock: number;
+  note: string | null;
+  requestedBy: { id: number; name: string } | null;
+  requestedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  productId: number | null;
+}
+
 export interface WriteOff {
   id: number;
   productId: number;

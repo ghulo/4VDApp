@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES = {
   APPROVAL_DECISION: 'approval_decision',
   /** The owner's end-of-day summary. */
   DAILY_SUMMARY: 'daily_summary',
+  /** Every step of the day is done: drawers counted, takings entered, spending added, requests answered. */
+  DAY_CLOSED: 'day_closed',
   /** A drawer count didn't match what the app expected. */
   CASH_DIFFERENCE: 'cash_difference',
   /** Someone undid or restored one of this person's entries. */
@@ -32,6 +34,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.APPROVAL_DECISION]: 'decisions',
   [NOTIFICATION_TYPES.DAILY_SUMMARY]: 'summary',
   [NOTIFICATION_TYPES.CASH_DIFFERENCE]: 'summary',
+  [NOTIFICATION_TYPES.DAY_CLOSED]: 'summary',
   [NOTIFICATION_TYPES.UNDONE]: 'decisions',
 };
 

@@ -294,3 +294,36 @@ describe('scanned supplier bills', () => {
     expect((await check(id)).status).toBe('confirmed');
   });
 });
+
+describe('checking a scanned bill on the phone', () => {
+  it("should tell the people who run the shop when someone else scans a bill, and clear it once it's confirmed", async () => {
+    const { id } = await scan(staffToken);
+    const alerts = () =>
+      context.db.selectFrom('notifications').select(['is_read']).where('subject_type', '=', 'bill_scan').where('subject_id', '=', id).execute();
+    expect((await alerts()).length).toBeGreaterThan(0);
+
+    const quick = (await api().get(`/api/bill-scans/${id}/quick`).set(auth())).body.data;
+    expect(quick.blockers).toEqual([]);
+    expect(quick.lines[0]).toMatchObject({ product: 'Oak Chair', pieces: 2, stamp: 'match' });
+    await api().post(`/api/bill-scans/${id}/quick-confirm`).set(auth()).expect(200);
+
+    expect((await alerts()).every((alert) => alert.is_read)).toBe(true);
+    const stock = await context.db.selectFrom('inventory').select('quantity_on_hand').where('product_id', '=', chairId).executeTakeFirstOrThrow();
+    expect(stock.quantity_on_hand).toBe(12);
+  });
+
+  it('should send a bill with a new product to the dashboard', async () => {
+    reader.reading = reading([{}, { name: 'Pine Shelf', barcode: null, code: 'ART-9' }]);
+    const { id } = await scan();
+    const quick = (await api().get(`/api/bill-scans/${id}/quick`).set(auth())).body.data;
+    expect(quick.blockers).toContain('new_product');
+    expect(quick.input).toBeNull();
+    await api().post(`/api/bill-scans/${id}/quick-confirm`).set(auth()).expect(409);
+  });
+
+  it('should not alert anyone when the scanner runs the shop', async () => {
+    const { id } = await scan();
+    const rows = await context.db.selectFrom('notifications').select('id').where('subject_type', '=', 'bill_scan').where('subject_id', '=', id).execute();
+    expect(rows).toHaveLength(0);
+  });
+});

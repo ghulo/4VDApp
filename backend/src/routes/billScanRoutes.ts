@@ -13,6 +13,9 @@ export function createBillScanRoutes({ billScanService, guards }: Container): Ro
   router.use(...guards.oversee);
   router.get('/', controller.waiting);
   router.get('/:id', controller.get);
+  // The phone's check: confirm as it stands, or finish on the dashboard.
+  router.get('/:id/quick', controller.quickCheck);
+  router.post('/:id/quick-confirm', controller.quickConfirm);
   router.post('/:id/confirm', controller.confirm);
   router.post('/:id/discard', controller.discard);
 

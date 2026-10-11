@@ -77,6 +77,8 @@ import { ReportBuilder } from './services/reports/ReportBuilder.js';
 import { ReportDeliveryService } from './services/reports/ReportDeliveryService.js';
 import { ReportSubscriptionRepository } from './repositories/ReportSubscriptionRepository.js';
 import { RecordRestoreService } from './services/undo/RecordRestoreService.js';
+import { ProductRequestService } from './services/ProductRequestService.js';
+import { ProductRequestRepository } from './repositories/ProductRequestRepository.js';
 import { UndoService } from './services/undo/UndoService.js';
 import { EditReverts } from './services/undo/editReverts.js';
 import { UndoRepository } from './repositories/UndoRepository.js';
@@ -85,6 +87,7 @@ import { UserIdentityRepository } from './repositories/UserIdentityRepository.js
 import { EmailService } from './services/email/EmailService.js';
 import { type EmailSender, LogSender, ResendSender } from './services/email/senders.js';
 import { DailySummaryService } from './services/DailySummaryService.js';
+import { DayClosedAlert } from './services/DayClosedAlert.js';
 import { type PushSenders, PushService } from './services/PushService.js';
 import { ExpoPushSender, WebPushSender } from './services/push/senders.js';
 import { RefreshTokenRepository } from './repositories/RefreshTokenRepository.js';
@@ -99,7 +102,7 @@ import { CategoryService } from './services/CategoryService.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
 import { ProductService } from './services/ProductService.js';
-import { MANAGER_ROLES, OVERSEER_ROLES, SELLER_ROLES } from './utils/roles.js';
+import { MANAGER_ROLES, OVERSEER_ROLES, PRODUCT_EDITOR_ROLES, SELLER_ROLES } from './utils/roles.js';
 
 /**
  * The one place where repositories and services are created and wired
@@ -219,6 +222,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
       : config.ai?.provider === 'anthropic'
         ? new ClaudeBillReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
         : null,
+    config.shopTimeZone,
   );
   const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, billScanRepository, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
@@ -228,6 +232,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     insightsService,
     config.shopTimeZone,
   );
+  const dayClosedAlert = new DayClosedAlert(dayService, dailySummaryService, notificationRepository, config.shopTimeZone);
   const aiProvider =
     options.aiProvider !== undefined
       ? options.aiProvider
@@ -284,6 +289,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const profileService = new ProfileService(userRepository, mediaService);
   const businessService = new BusinessService(new BusinessRepository(db), userRepository, mediaService, activityLogRepository);
+  const productRequestService = new ProductRequestService(new ProductRequestRepository(db), productService, mediaService, transactions);
   const recordRestoreService = new RecordRestoreService(
     activityLogRepository,
     productService,
@@ -350,6 +356,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     // Who is in each group: utils/roles.ts.
     manage: [authenticated, requireRole(...MANAGER_ROLES)] as RequestHandler[],
     oversee: [authenticated, requireRole(...OVERSEER_ROLES)] as RequestHandler[],
+    products: [authenticated, requireRole(...PRODUCT_EDITOR_ROLES)] as RequestHandler[],
     staff: [authenticated, requireRole(...SELLER_ROLES)] as RequestHandler[],
     developer: [authenticated, requireRole('developer')] as RequestHandler[],
   };
@@ -381,6 +388,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     approvalService,
     undoService,
     recordRestoreService,
+    productRequestService,
     promotionService,
     carwashService,
     cashCountService,
@@ -395,6 +403,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     pushService,
     insightsService,
     dailySummaryService,
+    dayClosedAlert,
     assistantService,
     priceSuggestionService,
     emailService,

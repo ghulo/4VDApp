@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
 export interface MyRequestRow {
-  type: 'return' | 'write_off' | 'count' | 'sale';
+  type: 'return' | 'write_off' | 'count' | 'sale' | 'product' | 'bill';
   id: number;
   product_name: string | null;
   quantity: number | null;
@@ -20,16 +20,22 @@ export interface MyRequestRow {
 export class ApprovalRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  async pendingCounts(): Promise<{ returns: number; writeOffs: number; countLines: number }> {
-    const result = await sql<{ returns: string; write_offs: string; count_lines: string }>`
+  async pendingCounts(): Promise<{ returns: number; writeOffs: number; countLines: number; productRequests: number }> {
+    const result = await sql<{ returns: string; write_offs: string; count_lines: string; product_requests: string }>`
       select
         (select count(*) from returns where status = 'pending') as returns,
         (select count(*) from write_offs where status = 'pending') as write_offs,
         (select count(*) from stock_count_lines l join stock_counts c on c.id = l.count_id
-          where l.status = 'pending' and c.status = 'submitted') as count_lines
+          where l.status = 'pending' and c.status = 'submitted') as count_lines,
+        (select count(*) from product_requests where status = 'pending') as product_requests
     `.execute(this.db);
     const row = result.rows[0]!;
-    return { returns: Number(row.returns), writeOffs: Number(row.write_offs), countLines: Number(row.count_lines) };
+    return {
+      returns: Number(row.returns),
+      writeOffs: Number(row.write_offs),
+      countLines: Number(row.count_lines),
+      productRequests: Number(row.product_requests),
+    };
   }
 
   /**
@@ -62,6 +68,17 @@ export class ApprovalRepository {
         select 'count', c.id, null, null, null, null, cat.name, c.status, null, c.submitted_at, c.closed_at
         from stock_counts c left join categories cat on cat.id = c.category_id
         where c.submitted_by = ${userId} and c.submitted_at >= ${since}
+        union all
+        select 'product', pr.id, pr.name, pr.stock, pr.price, null, null, pr.status, pr.decision_note, pr.requested_at, pr.decided_at
+        from product_requests pr
+        where pr.requested_by = ${userId} and pr.requested_at >= ${since}
+        union all
+        -- A scanned bill reads as a request too: waiting until someone checks it.
+        select 'bill', b.id, b.reading -> 'supplier' ->> 'name', jsonb_array_length(b.reading -> 'lines'), null, null, null,
+               case b.status when 'waiting' then 'pending' when 'confirmed' then 'approved' else 'rejected' end,
+               null, b.scanned_at, b.decided_at
+        from bill_scans b
+        where b.scanned_by = ${userId} and b.scanned_at >= ${since}
       ) requests
       order by requested_at desc, id desc
       limit ${limit}

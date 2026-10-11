@@ -6,7 +6,7 @@ import { BarcodeImage } from '../components/BarcodeImage';
 import { CountryFlag } from '../components/CountryFlag';
 import { QrImage } from '../components/QrImage';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { canManage } from '../auth/roles';
+import { canEditProducts } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { productsApi } from '../services/api';
@@ -145,7 +145,7 @@ export function LabelsPage() {
         {missing.length > 0 && (
           <div className="callout">
             <p>{t.labels.missing(missing.length)}</p>
-            {canManage(role) && (
+            {canEditProducts(role) && (
               <Button disabled={createMissing.isPending} onClick={() => createMissing.mutate()}>
                 {t.labels.createMissing(missing.length)}
               </Button>

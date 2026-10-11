@@ -1,5 +1,12 @@
 import { apiRequest, apiText, tokenStore } from './apiClient';
 import type {
+  NewProductInput,
+  NewProductOutcome,
+  PendingReturn,
+  PendingWriteOff,
+  ProductRequest,
+  QuickBillCheck,
+  WaitingBill,
   DocumentRef,
   AppSettings,
   CarwashToday,
@@ -213,8 +220,71 @@ export const approvalsApi = {
   mine: async () => (await apiRequest<MyRequest[]>('/approvals/mine')).data,
 };
 
+/** Returns, write-offs and count differences waiting for the people who run the shop. */
+export const decisionsApi = {
+  returns: async () => (await apiRequest<PendingReturn[]>('/returns', { query: { status: 'pending' } })).data,
+  approveReturn: async (id: number) => {
+    await apiRequest(`/returns/${id}/approve`, { method: 'POST' });
+  },
+  rejectReturn: async (id: number, note: string) => {
+    await apiRequest(`/returns/${id}/reject`, { method: 'POST', body: { note } });
+  },
+  writeOffs: async () => (await apiRequest<PendingWriteOff[]>('/write-offs', { query: { status: 'pending' } })).data,
+  approveWriteOff: async (id: number) => {
+    await apiRequest(`/write-offs/${id}/approve`, { method: 'POST' });
+  },
+  rejectWriteOff: async (id: number, note: string) => {
+    await apiRequest(`/write-offs/${id}/reject`, { method: 'POST', body: { note } });
+  },
+  approveCount: async (id: number) => {
+    await apiRequest(`/stock-counts/${id}/approve-all`, { method: 'POST' });
+  },
+};
+
+/** New products: whoever runs the shop adds at once; anyone else's waits for a decision. */
+export const productRequestsApi = {
+  submit: async (input: NewProductInput) => (await apiRequest<NewProductOutcome>('/product-requests', { method: 'POST', body: input })).data,
+  pending: async () => (await apiRequest<ProductRequest[]>('/product-requests')).data,
+  get: async (id: number) => (await apiRequest<ProductRequest>(`/product-requests/${id}`)).data,
+  approve: async (id: number, edits: { name?: string; price?: number; categoryId?: number; stock?: number }) =>
+    (await apiRequest<ProductRequest>(`/product-requests/${id}/approve`, { method: 'POST', body: edits })).data,
+  reject: async (id: number, note: string) =>
+    (await apiRequest<ProductRequest>(`/product-requests/${id}/reject`, { method: 'POST', body: { note } })).data,
+};
+
+/** Changing a product, for whoever runs the shop. */
+export const productEditApi = {
+  update: async (product: Product, changes: { name: string; price: number; categoryId: number }) =>
+    (
+      await apiRequest<Product>(`/products/${product.id}`, {
+        method: 'PUT',
+        body: {
+          name: changes.name,
+          description: product.description,
+          categoryId: changes.categoryId,
+          price: changes.price,
+          costPrice: product.costPrice ?? null,
+          imageUrl: product.imageUrl,
+          sku: product.sku,
+          isActive: product.isActive,
+          vatRate: product.vatRate,
+        },
+      })
+    ).data,
+  setBarcode: async (id: number, barcode: string | null) =>
+    (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
+  setPhoto: async (id: number, file: Blob) => (await apiRequest<Product>(`/products/${id}/image`, { method: 'PUT', file })).data,
+};
+
 export const billScansApi = {
   /** Pages as base64 JPEG; the server reads them and keeps the scan for the owner to check. No costs come back. */
   scan: async (pages: Array<{ mime: string; data: string }>) =>
     (await apiRequest<{ id: number; supplierName: string | null; number: string | null; lines: number }>('/bill-scans', { method: 'POST', body: { pages } })).data,
+  /** For whoever runs the shop: the bills waiting to be checked. */
+  waiting: async () => (await apiRequest<WaitingBill[]>('/bill-scans')).data,
+  quick: async (id: number) => (await apiRequest<QuickBillCheck>(`/bill-scans/${id}/quick`)).data,
+  /** Confirms with the choices the quick check showed; refused if it needs the dashboard. */
+  quickConfirm: async (id: number) => {
+    await apiRequest(`/bill-scans/${id}/quick-confirm`, { method: 'POST' });
+  },
 };

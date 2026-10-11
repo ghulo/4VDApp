@@ -82,6 +82,7 @@ import type {
   BillScan,
   HistoryEntity,
   RestorePlan,
+  ProductRequest,
   ConfirmScanInput,
   WaitingScan,
 } from './types';
@@ -617,6 +618,15 @@ export const returnsApi = {
   approve: async (id: number) => (await apiRequest<ReturnItem>(`/returns/${id}/approve`, { method: 'POST' })).data,
   reject: async (id: number, note: string) =>
     (await apiRequest<ReturnItem>(`/returns/${id}/reject`, { method: 'POST', body: { note } })).data,
+};
+
+export const productRequestsApi = {
+  pending: async () => (await apiRequest<ProductRequest[]>('/product-requests')).data,
+  /** Corrections left out stay as asked. */
+  approve: async (id: number, edits: { categoryId?: number; price?: number }) =>
+    (await apiRequest<ProductRequest>(`/product-requests/${id}/approve`, { method: 'POST', body: edits })).data,
+  reject: async (id: number, note: string) =>
+    (await apiRequest<ProductRequest>(`/product-requests/${id}/reject`, { method: 'POST', body: { note } })).data,
 };
 
 export const writeOffsApi = {

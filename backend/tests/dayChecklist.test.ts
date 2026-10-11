@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { startOfZonedDay } from '../src/utils/zonedDates.js';
 import { loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
@@ -71,5 +72,32 @@ describe('end-of-day checklist', () => {
     expect(shift.details).toBeNull();
     expect((await checklist(ownerToken)).status).toBe(200);
     expect((await request(context.app).put('/api/day/no-expenses').set(auth(ownerToken)).send({ none: true })).status).toBe(403);
+  });
+});
+
+describe('the day is closed alert', () => {
+  // 20:00 shop time today: after closing time, still the same shop day.
+  const evening = () => new Date(startOfZonedDay(new Date(), 'Europe/Budapest').getTime() + 20 * 60 * 60 * 1000);
+  const closedAlerts = () => context.db.selectFrom('notifications').selectAll().where('type', '=', 'day_closed').execute();
+
+  it('should tell whoever runs the shop once, when the last step is done', async () => {
+    const alert = context.container.dayClosedAlert;
+    await loginAs(context, 'owner');
+    await loginAs(context, 'employee');
+    expect(await alert.sendIfClosed(evening())).toBe(false);
+
+    await request(context.app).post('/api/cash-counts').set(auth()).send({ place: 'shop', counted: 0 });
+    await request(context.app).post('/api/cash-counts').set(auth()).send({ place: 'carwash', counted: 0 });
+    await request(context.app).put(`/api/carwash/${today()}`).set(auth()).send({ carwash: 40, change: 0 });
+    // Before closing time it waits, even with everything done.
+    await request(context.app).put('/api/day/no-expenses').set(auth()).send({ none: true });
+    expect(await alert.sendIfClosed(startOfZonedDay(new Date(), 'Europe/Budapest'))).toBe(false);
+
+    expect(await alert.sendIfClosed(evening())).toBe(true);
+    expect(await alert.sendIfClosed(evening())).toBe(false);
+    const sent = await closedAlerts();
+    // The admin and the owner; the employee gets nothing.
+    expect(sent).toHaveLength(2);
+    expect(sent[0]).toMatchObject({ title: 'The day is closed', link: `/day?date=${today()}` });
   });
 });

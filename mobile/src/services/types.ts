@@ -42,6 +42,13 @@ export interface Product {
   imageUrl: string | null;
   category: { id: number; name: string };
   price: number;
+  /** Two-letter code of the country it comes from, or null. */
+  originCountry: string | null;
+  /** Percent of VAT in the price. */
+  vatRate: number;
+  isActive: boolean;
+  /** Only sent to the people who run the shop. */
+  costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion, with the price it gives for one unit. */
@@ -250,8 +257,89 @@ export interface StockCount extends StockCountSummary {
   lines: StockCountLine[];
 }
 
+/** A product someone asked to add; approving it creates the product. */
+export interface ProductRequest {
+  id: number;
+  status: 'pending' | 'approved' | 'rejected';
+  name: string;
+  category: { id: number; name: string } | null;
+  price: number;
+  vatRate: number;
+  barcode: string | null;
+  originCountry: string | null;
+  photoUrl: string | null;
+  stock: number;
+  note: string | null;
+  requestedBy: { id: number; name: string } | null;
+  requestedAt: string;
+}
+
+export interface NewProductInput {
+  name: string;
+  categoryId: number | null;
+  price: number;
+  barcode: string | null;
+  stock: number;
+  note: string | null;
+  photo: { mime: string; data: string } | null;
+}
+
+/** A new product either went straight in (for whoever runs the shop) or waits as a request. */
+export type NewProductOutcome = { kind: 'product'; productId: number } | { kind: 'request'; request: ProductRequest };
+
+type PersonRef = { id: number; name: string };
+
+/** A return waiting for a decision. */
+export interface PendingReturn {
+  id: number;
+  productName: string;
+  quantity: number;
+  refundAmount: number;
+  condition: 'resellable' | 'damaged';
+  notes: string | null;
+  needsApprovalBecause: string[];
+  requestedBy: PersonRef | null;
+  requestedAt: string;
+}
+
+/** Damaged, lost or expired stock waiting for a decision. */
+export interface PendingWriteOff {
+  id: number;
+  productName: string;
+  quantity: number;
+  reason: string;
+  value: number | null;
+  notes: string | null;
+  requestedBy: PersonRef | null;
+  requestedAt: string;
+}
+
+/** A scanned bill as the phone checks it; `input` is set when it can be confirmed here. */
+export interface QuickBillCheck {
+  id: number;
+  supplierName: string | null;
+  number: string | null;
+  amount: number | null;
+  scannedBy: string | null;
+  scannedAt: string;
+  pages: Array<{ url: string; isPdf: boolean }>;
+  lines: Array<{ name: string; product: string | null; pieces: number; unitCost: number | null; oldCost: number | null; stamp: 'new' | 'unsure' | 'barcode' | 'price' | 'match' }>;
+  blockers: Array<'decided' | 'supplier' | 'duplicate' | 'totals' | 'no_lines' | 'new_product' | 'unsure' | 'amount'>;
+  input: unknown;
+}
+
+/** A scanned bill waiting to be checked. */
+export interface WaitingBill {
+  id: number;
+  supplierName: string | null;
+  number: string | null;
+  amount: number | null;
+  scannedBy: string | null;
+  scannedAt: string;
+}
+
 export interface MyRequest {
-  type: 'return' | 'write_off' | 'count' | 'sale';
+  type: 'return' | 'write_off' | 'count' | 'sale' | 'product' | 'bill';
   id: number;
   summary: string;
   status: string;

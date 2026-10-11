@@ -20,6 +20,9 @@ import { CountScreen } from '../screens/CountScreen';
 import { CountsScreen } from '../screens/CountsScreen';
 import { DeliveriesScreen } from '../screens/DeliveriesScreen';
 import { ScanBillScreen } from '../screens/ScanBillScreen';
+import { NewProductScreen } from '../screens/NewProductScreen';
+import { BillCheckScreen, ProductRequestScreen, RequestsScreen } from '../screens/RequestsScreen';
+import { onPushTap } from '../push/devicePush';
 import { EndShiftScreen } from '../screens/EndShiftScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -46,6 +49,18 @@ function openPendingScan() {
   const code = takePendingScan();
   if (code) navigationRef.navigate('ScanResult', { code });
 }
+/** Tapping an alert: a request to decide opens the requests, a decision opens Home. */
+let pushTapped: string | null = null;
+function openFromPush(type: string | null) {
+  if (!navigationRef.isReady()) {
+    pushTapped = type;
+    return;
+  }
+  pushTapped = null;
+  if (type === 'approval') navigationRef.navigate('Requests');
+  else if (type === 'approval_decision') navigationRef.navigate('Main', { screen: 'Home' });
+}
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 type TabIcon = typeof House;
@@ -170,11 +185,16 @@ export function RootNavigator() {
   useEffect(() => {
     if (signedIn) openPendingScan();
   }, [signedIn]);
+  useEffect(() => (signedIn ? onPushTap(openFromPush) : undefined), [signedIn]);
 
   if (state.status === 'loading') return <Loading />;
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => signedIn && openPendingScan()}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => {
+        if (!signedIn) return;
+        openPendingScan();
+        if (pushTapped) openFromPush(pushTapped);
+      }}>
       <Stack.Navigator
         screenLayout={CanvasPage}
         screenOptions={{
@@ -220,6 +240,14 @@ export function RootNavigator() {
             <Stack.Screen name="Carwash" component={CarwashScreen} options={{ title: t.nav.carwash, presentation: 'modal' }} />
             <Stack.Screen name="Deliveries" component={DeliveriesScreen} options={{ title: t.nav.deliveries, presentation: 'modal' }} />
             <Stack.Screen name="ScanBill" component={ScanBillScreen} options={{ title: t.nav.scanBill, presentation: 'modal' }} />
+            <Stack.Screen
+              name="NewProduct"
+              component={NewProductScreen}
+              options={({ route }) => ({ title: route.params?.productId ? t.nav.editProduct : t.nav.newProduct, presentation: 'modal' })}
+            />
+            <Stack.Screen name="Requests" component={RequestsScreen} options={{ title: t.nav.requests, headerBackTitle: t.nav.back }} />
+            <Stack.Screen name="ProductRequest" component={ProductRequestScreen} options={{ title: t.nav.productRequest, headerBackTitle: t.nav.back }} />
+            <Stack.Screen name="BillCheck" component={BillCheckScreen} options={{ title: t.nav.checkBill, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Tabs" component={TabsScreen} options={{ title: t.nav.customerTabs, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Tab" component={TabScreen} options={({ route }) => ({ title: route.params.name, headerBackTitle: t.nav.back })} />
           </>

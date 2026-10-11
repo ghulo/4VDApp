@@ -42,3 +42,17 @@ export function promotionLabel(promotion: { percentOff: number; endsAt: string }
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : activeCatalogue().common.somethingWrong;
 }
+
+/** A country's flag as emoji (phones draw these), from its two-letter code. */
+export function flagEmoji(code: string): string {
+  return [...code.toUpperCase()].map((letter) => String.fromCodePoint(0x1f1e6 + letter.charCodeAt(0) - 65)).join('');
+}
+
+/** A country's name in the current language; the code itself where the phone has no names. */
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames([current], { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}

@@ -58,3 +58,16 @@ export async function disablePush(): Promise<void> {
   await pushApi.removeDevice(token).catch(() => undefined);
   await secureStorage.removeItem(TOKEN_KEY);
 }
+
+/** Calls `open` with the alert's type when someone taps an alert, including the one that opened the app. */
+export function onPushTap(open: (type: string | null) => void): () => void {
+  const typeOf = (response: Notifications.NotificationResponse) =>
+    (response.notification.request.content.data as { type?: string } | undefined)?.type ?? null;
+  const last = Notifications.getLastNotificationResponse();
+  if (last) {
+    Notifications.clearLastNotificationResponse();
+    open(typeOf(last));
+  }
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => open(typeOf(response)));
+  return () => subscription.remove();
+}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { canOversee } from '../auth/roles';
+import { canEditProducts, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { activityApi, productsApi } from '../services/api';
@@ -43,7 +43,7 @@ export function BarcodeCard({ product }: { product: Product }) {
           <p className="field-hint">{t.barcodes.qrHint}</p>
           <div className="form-actions">
             <ButtonLink to={`/labels?products=${product.id}`}>{t.barcodes.printLabel}</ButtonLink>
-            <ManagersOnly>
+            <ManagersOnly can={canEditProducts}>
               <Button variant="danger-text" disabled={save.isPending} onClick={() => save.mutate(null)}>
                 {t.barcodes.remove}
               </Button>
@@ -51,7 +51,7 @@ export function BarcodeCard({ product }: { product: Product }) {
           </div>
         </div>
       )}
-      <ManagersOnly>
+      <ManagersOnly can={canEditProducts}>
         <form className="settings-form" onSubmit={handleSubmit}>
           <Field label={product.barcode ? t.barcodes.replace : t.barcodes.scanIn} hint={t.barcodes.scanHint}>
             {/* A USB scanner types the code and presses Enter, which saves it. */}

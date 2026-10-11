@@ -40,7 +40,10 @@ const summaryTimer = setInterval(() => {
     .sendIfDue()
     // Logged as a warning on purpose: as an error it would be counted again and retried forever.
     .catch((error) => logger.warn('Sending the error alert failed', { error: String(error) }));
-  Promise.all([report, expenses, alert]).finally(() => {
+  const dayClosed = container.dayClosedAlert
+    .sendIfClosed()
+    .catch((error) => logger.error('Sending the day closed alert failed', { error: String(error) }));
+  Promise.all([report, expenses, alert, dayClosed]).finally(() => {
     isChecking = false;
   });
 }, SUMMARY_CHECK_MS);

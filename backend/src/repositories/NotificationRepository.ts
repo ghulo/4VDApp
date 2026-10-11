@@ -17,7 +17,7 @@ export interface NewNotification {
 }
 
 export interface NotificationSubject {
-  type: 'return' | 'write_off' | 'stock_count';
+  type: 'return' | 'write_off' | 'stock_count' | 'product_request' | 'bill_scan';
   id: number;
 }
 
@@ -48,7 +48,7 @@ export class NotificationRepository {
       const text = notification.write(messages[language]);
       const result = await this.db
         .insertInto('notifications')
-        .columns(['user_id', 'title', 'message', 'type', 'subject_type', 'subject_id'])
+        .columns(['user_id', 'title', 'message', 'type', 'subject_type', 'subject_id', 'link'])
         .expression((eb) =>
           eb
             .selectFrom('users')
@@ -59,6 +59,7 @@ export class NotificationRepository {
               eb.val(notification.type).as('type'),
               eb.val(notification.subject?.type ?? null).as('subject_type'),
               eb.val(notification.subject?.id ?? null).as('subject_id'),
+              eb.val(notification.link ?? null).as('link'),
             ])
             .where('role', 'in', roles)
             .where('language', '=', language)
@@ -69,6 +70,21 @@ export class NotificationRepository {
       sent += Number(result.numInsertedOrUpdatedRows ?? 0n);
     }
     return sent;
+  }
+
+  /** True the first time it is called for `day`, so the closing alert goes out once a day. */
+  async claimDayClosing(day: string): Promise<boolean> {
+    const claimed = await this.db
+      .insertInto('day_closings')
+      .values({ day })
+      .onConflict((oc) => oc.column('day').doNothing())
+      .returning('day')
+      .executeTakeFirst();
+    return claimed !== undefined;
+  }
+
+  async releaseDayClosing(day: string): Promise<void> {
+    await this.db.deleteFrom('day_closings').where('day', '=', day).execute();
   }
 
   async findForUser(userId: number, options: { unreadOnly: boolean; limit: number; offset: number }) {

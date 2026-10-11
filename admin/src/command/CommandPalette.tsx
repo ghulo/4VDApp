@@ -5,7 +5,8 @@ import { documentsApi, productsApi, usersApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
-import { canManage, canOversee } from '../auth/roles';
+import type { UserRole } from '../services/types';
+import { canEditProducts, canManage, canOversee } from '../auth/roles';
 import { formatMoney } from '../utils/format';
 import { documentNumberFromScan } from '../utils/scanLinks';
 import { type Catalogue, en } from '../i18n/en';
@@ -19,15 +20,15 @@ interface Command extends Searchable {
   group: Group;
   hint?: string;
   to: string;
-  /** Only for the developer and admins. */
-  managersOnly?: boolean;
+  /** Who may use it; everyone when left out. */
+  allowed?: (role: UserRole) => boolean;
 }
 
-const ACTIONS: Array<{ key: ActionKey; to: string; managersOnly?: boolean }> = [
-  { key: 'addProduct', to: '/products/new', managersOnly: true },
-  { key: 'invite', to: '/people', managersOnly: true },
+const ACTIONS: Array<{ key: ActionKey; to: string; allowed?: (role: UserRole) => boolean }> = [
+  { key: 'addProduct', to: '/products/new', allowed: canEditProducts },
+  { key: 'invite', to: '/people', allowed: canManage },
   { key: 'sale', to: '/sales?new=1' },
-  { key: 'promotion', to: '/promotions', managersOnly: true },
+  { key: 'promotion', to: '/promotions', allowed: canManage },
   { key: 'count', to: '/counts' },
   { key: 'ask', to: '/ask' },
 ];
@@ -67,13 +68,13 @@ const pageLabel = (t: Catalogue, key: PageKey) => (key === 'profile' ? t.palette
  */
 function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command[] } {
   return {
-    actions: ACTIONS.map(({ key, to, managersOnly }) => ({
+    actions: ACTIONS.map(({ key, to, allowed }) => ({
       id: `action-${key}`,
       group: 'actions',
       label: t.palette.actions[key].label,
       keywords: `${t.palette.actions[key].keywords} ${en.palette.actions[key].label} ${en.palette.actions[key].keywords}`,
       to,
-      managersOnly,
+      allowed,
     })),
     pages: PAGES.map(([key, to]) => ({
       id: `page-${to}`,
@@ -143,7 +144,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       }));
     const ranked = [
       ...documentCommands,
-      ...rankMatches(trimmed, commands.actions.filter((action) => !action.managersOnly || canManage(role))),
+      ...rankMatches(trimmed, commands.actions.filter((action) => !action.allowed || action.allowed(role))),
       ...rankMatches(trimmed, commands.pages),
       // Products already come back filtered by the server's search.
       ...productCommands,

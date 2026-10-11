@@ -26,13 +26,14 @@ export function createProductRoutes({ productService, activityLogService, guards
   router.get('/', guards.authenticated, controller.list);
   router.get('/barcode/:barcode', guards.authenticated, controller.getByBarcode);
   router.get('/:id', guards.authenticated, controller.getById);
-  router.put('/:id/barcode', ...guards.manage, controller.setBarcode);
-  router.post('/:id/barcode', ...guards.manage, controller.createBarcode);
-  router.put('/:id/image', ...guards.manage, readImage, controller.setImage);
-  router.delete('/:id/image', ...guards.manage, controller.removeImage);
+  // Adding and editing products is for whoever runs the shop (owner included); deleting stays with managers.
+  router.put('/:id/barcode', ...guards.products, controller.setBarcode);
+  router.post('/:id/barcode', ...guards.products, controller.createBarcode);
+  router.put('/:id/image', ...guards.products, readImage, controller.setImage);
+  router.delete('/:id/image', ...guards.products, controller.removeImage);
   router.get('/:id/price-history', ...guards.oversee, controller.priceHistory);
-  router.post('/', ...guards.manage, controller.create);
-  router.put('/:id', ...guards.manage, controller.update);
+  router.post('/', ...guards.products, controller.create);
+  router.put('/:id', ...guards.products, controller.update);
   router.delete('/:id', ...guards.manage, controller.remove);
 
   return router;
@@ -65,7 +66,7 @@ export function createPricingRoutes({ pricingService, guards }: Container): Rout
   const router = Router();
 
   router.get('/tiers/:productId', guards.authenticated, controller.getTiers);
-  router.put('/tiers/:productId', ...guards.manage, controller.replaceTiers);
+  router.put('/tiers/:productId', ...guards.products, controller.replaceTiers);
 
   return router;
 }

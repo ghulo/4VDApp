@@ -38,3 +38,6 @@ export function canRecordSales(user: User): boolean {
 export function decidesRequests(user: User): boolean {
   return user.role === 'developer' || user.role === 'admin' || user.role === 'owner';
 }
+
+/** The same people add and change products; everyone else's new product waits for them. */
+export const canEditProducts = decidesRequests;

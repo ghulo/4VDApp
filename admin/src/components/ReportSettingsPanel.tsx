@@ -1,3 +1,4 @@
+import { SendReportResult, useSendReport } from '../push/SendReport';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link } from 'react-router';
@@ -27,10 +28,7 @@ function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
     mutationFn: () => fullReportsApi.saveSettings(draft),
     onSuccess: (saved) => queryClient.setQueryData(KEY, saved),
   });
-  const test = useMutation({
-    mutationFn: (kind: ReportKind) => fullReportsApi.sendTest(kind),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
-  });
+  const test = useSendReport();
   const changed = JSON.stringify(draft) !== JSON.stringify(initial);
 
   function handleSubmit(event: FormEvent) {
@@ -148,15 +146,7 @@ function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
         <SettingRow
           title={t.reportSettings.test}
           description={
-            test.isSuccess ? (
-              <span role="status">{t.reportSettings.testSent}</span>
-            ) : test.isError ? (
-              <span className="form-error" role="alert">
-                {errorMessage(test.error)}
-              </span>
-            ) : (
-              t.reportSettings.testHint
-            )
+            test.isSuccess || test.isError ? <SendReportResult send={test} /> : t.reportSettings.testHint
           }
         >
           <Button disabled={test.isPending} onClick={() => test.mutate('daily')}>

@@ -32,6 +32,12 @@ export type RootStackParamList = {
   Deliveries: undefined;
   /** Photograph a supplier's bill for the owner to check. */
   ScanBill: undefined;
+  /** Add a product (or ask to); with `productId`, change that product. */
+  NewProduct: { productId?: number } | undefined;
+  /** Everything waiting for the people who run the shop to decide. */
+  Requests: undefined;
+  ProductRequest: { id: number };
+  BillCheck: { id: number };
   /** Opened from a product QR code. */
   ScanResult: { code: string };
 };

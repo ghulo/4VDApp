@@ -60,3 +60,8 @@ export async function disablePush(): Promise<void> {
   await pushApi.removeDevice(subscription.endpoint).catch(() => undefined);
   await subscription.unsubscribe();
 }
+
+/** In a browser, tapping an alert just brings the app forward (see public/sw.js). */
+export function onPushTap(_open: (type: string | null) => void): () => void {
+  return () => undefined;
+}

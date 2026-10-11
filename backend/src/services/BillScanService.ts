@@ -7,6 +7,10 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import { countryFromBarcode } from '../utils/barcodeCountry.js';
 import { checkTotals, type KnownCode, type LineMatch, matchLine, nameSimilarity } from '../utils/billMatching.js';
 import { roundMoney } from '../utils/money.js';
+import { canOversee } from '../utils/roles.js';
+import { zonedDay } from '../utils/zonedDates.js';
+import type { PublicUser } from '../types/auth.js';
+import { closePendingAlerts, notifyAdminsOfPending } from './approvals/approvalHelpers.js';
 import { type BillPage, type BillReader, type BillReading, billReadingSchema } from './ai/billReader.js';
 import { mediaUrl } from './mappers.js';
 import { applyStockChange } from './InventoryService.js';
@@ -60,6 +64,23 @@ export interface BillScanDto {
   orderId: number | null;
   /** The choices from the last confirm, when the scan was reopened: the check page starts from them. */
   previous: ConfirmScanInput | null;
+}
+
+/** Why a bill can't be confirmed on the phone. */
+export type QuickBlocker = 'decided' | 'supplier' | 'duplicate' | 'totals' | 'no_lines' | 'new_product' | 'unsure' | 'amount';
+
+/** A scanned bill as the phone shows it, with the confirm it would send when nothing blocks it. */
+export interface QuickCheckDto {
+  id: number;
+  supplierName: string | null;
+  number: string | null;
+  amount: number | null;
+  scannedBy: string | null;
+  scannedAt: string;
+  pages: Array<{ url: string; isPdf: boolean }>;
+  lines: Array<{ name: string; product: string | null; pieces: number; unitCost: number | null; oldCost: number | null; stamp: LineMatch['stamp'] }>;
+  blockers: QuickBlocker[];
+  input: ConfirmScanInput | null;
 }
 
 /** A waiting scan as the To do list and the Bills page list it. */
@@ -126,9 +147,11 @@ export class BillScanService {
     private readonly mediaService: MediaService,
     private readonly transactions: TransactionManager,
     private readonly reader: BillReader | null,
+    private readonly timeZone: string,
   ) {}
 
-  async scan(pages: UploadedPage[], actorId: number): Promise<ScanReceiptDto> {
+  async scan(pages: UploadedPage[], actor: PublicUser): Promise<ScanReceiptDto> {
+    const actorId = actor.id;
     if (!this.reader) throw new AiUnavailableError('Reading bills needs ANTHROPIC_API_KEY in the server settings. Add the bill by hand for now.');
     if (pages.length === 0 || pages.length > MAX_SCAN_PAGES) throw new ValidationError(`Send between 1 and ${MAX_SCAN_PAGES} pages`);
 
@@ -154,6 +177,12 @@ export class BillScanService {
           entityId: scanId,
           summary: `Scanned a bill${reading.supplier.name ? ` from ${reading.supplier.name}` : ''} (${reading.lines.length} ${reading.lines.length === 1 ? 'line' : 'lines'})`,
         });
+        // Someone who runs the shop scanned it themselves and is checking it now; anyone else's waits for them.
+        if (!canOversee(actor.role)) {
+          await notifyAdminsOfPending(repos, 'bill', { type: 'bill_scan', id: scanId }, (t) =>
+            t.billPending({ name: actor.name, supplier: reading.supplier.name, lines: reading.lines.length }),
+          );
+        }
         return scanId;
       });
       return { id, supplierName: reading.supplier.name, number: reading.number, lines: reading.lines.length };
@@ -225,6 +254,81 @@ export class BillScanService {
     };
   }
 
+  /**
+   * Whether the bill can be confirmed on the phone as it stands, and the
+   * confirm it would send: every line matched to a product, the supplier known,
+   * the lines adding up and no copy already saved. The choices are the check
+   * page's own first choices (a new price becomes the cost, a different barcode
+   * is left alone). Anything else is finished on the dashboard.
+   */
+  async quickCheck(id: number, now = new Date()): Promise<QuickCheckDto> {
+    const scan = await this.get(id);
+    const { reading } = scan;
+    const blockers: QuickBlocker[] = [];
+    if (scan.status !== 'waiting') blockers.push('decided');
+    if (!scan.supplier) blockers.push('supplier');
+    if (scan.duplicateBillId !== null) blockers.push('duplicate');
+    if (!scan.totals.adds) blockers.push('totals');
+    if (scan.lines.length === 0) blockers.push('no_lines');
+    if (scan.lines.some(({ match }) => match.productId === null || match.stamp === 'new')) blockers.push('new_product');
+    if (scan.lines.some(({ match }) => match.stamp === 'unsure')) blockers.push('unsure');
+
+    const today = zonedDay(now, this.timeZone);
+    const issuedOn = reading.issuedOn && reading.issuedOn <= today ? reading.issuedOn : today;
+    const gross = reading.totals.gross ?? (reading.totals.net !== null ? reading.totals.net + (reading.totals.vat ?? 0) : scan.totals.linesTotal);
+    const amount = roundMoney(gross);
+    if (!(amount > 0)) blockers.push('amount');
+
+    const names = new Map(scan.products.map((product) => [product.id, product.name]));
+    const input: ConfirmScanInput | null =
+      blockers.length > 0 || !scan.supplier
+        ? null
+        : {
+            supplierId: scan.supplier.id,
+            orderId: scan.openOrders[0]?.id ?? null,
+            categoryId: null,
+            bill: { number: reading.number, issuedOn, dueOn: reading.dueOn && reading.dueOn >= issuedOn ? reading.dueOn : null, amount, note: null },
+            lines: scan.lines.map(({ read, match }, readIndex) => ({
+              readIndex,
+              productId: match.productId,
+              newProduct: null,
+              code: read.code,
+              pieces: match.pieces,
+              unitsPerPack: match.unitsPerPack,
+              unitCost: match.unitCost,
+              updateCost: match.stamp === 'price',
+              barcode: read.barcode,
+              updateBarcode: false,
+            })),
+          };
+    return {
+      id: scan.id,
+      supplierName: scan.supplier?.name ?? reading.supplier.name,
+      number: reading.number,
+      amount: amount > 0 ? amount : null,
+      scannedBy: scan.scannedBy,
+      scannedAt: scan.scannedAt,
+      pages: scan.pages,
+      lines: scan.lines.map(({ read, match }) => ({
+        name: read.name,
+        product: match.productId === null ? null : (names.get(match.productId) ?? null),
+        pieces: match.pieces,
+        unitCost: match.unitCost,
+        oldCost: match.oldCost,
+        stamp: match.stamp,
+      })),
+      blockers,
+      input,
+    };
+  }
+
+  /** Confirm with the quick check's own choices, worked out again now so nothing stale is sent. */
+  async quickConfirm(id: number, actorId: number, now = new Date()): Promise<{ billId: number; orderId: number }> {
+    const check = await this.quickCheck(id, now);
+    if (!check.input) throw new ConflictError('This bill needs choices made on the dashboard before it can be confirmed');
+    return this.confirm(id, check.input, actorId, now);
+  }
+
   /** The supplier asked for, else the one whose NUI or name is on the bill. */
   private async findSupplier(reading: BillReading, supplierId?: number): Promise<BillScanDto['supplier']> {
     if (supplierId) {
@@ -252,6 +356,7 @@ export class BillScanService {
       const scan = await repos.billScans.findById(id);
       if (!scan) throw new NotFoundError(`Scan ${id} does not exist`);
       if (scan.status !== 'waiting') throw new ConflictError('This scan was already dealt with');
+      await closePendingAlerts(repos, { type: 'bill_scan', id });
       const supplier = await repos.orders.findSupplier(input.supplierId);
       if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} does not exist`);
       if (input.lines.length === 0) throw new ValidationError('Nothing to receive: every line was skipped');
@@ -339,6 +444,7 @@ export class BillScanService {
       const scan = await repos.billScans.findById(id);
       if (!scan) throw new NotFoundError(`Scan ${id} does not exist`);
       if (scan.status !== 'waiting') throw new ConflictError('This scan was already dealt with');
+      await closePendingAlerts(repos, { type: 'bill_scan', id });
       const reading = parseReading(scan);
       await repos.billScans.decide(id, { status: 'discarded', by: actorId, at: now });
       await repos.activityLog.create({

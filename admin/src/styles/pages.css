@@ -92,29 +92,14 @@
   color: var(--signal-out);
 }
 
-.stock-tag__gauge {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 2px;
-}
-
-.stock-tag__block {
-  background: var(--line-strong);
-}
-
-.stock-tag__block--lit {
+.stock-tag .target-bar__fill {
   background: var(--tag-color);
-}
-
-/* The reorder point: a wider gap after the fifth block. */
-.stock-tag__block:nth-child(6) {
-  margin-left: 2px;
 }
 
 .stock-tag--large {
   min-width: 12rem;
-  grid-template-rows: auto 6px;
-  gap: var(--space-2);
+  grid-template-rows: auto 8px;
+  gap: var(--space-3);
 }
 
 .stock-tag--large .stock-tag__count {
@@ -122,31 +107,8 @@
   letter-spacing: -0.04em;
 }
 
-/* One slim track that sits into the card, filled to the stock level, with a
-   tick at the reorder point (halfway). */
-.stock-tag__track {
-  position: relative;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunk);
-  box-shadow: var(--shadow-inset);
-}
-
-.stock-tag__fill {
-  display: block;
-  height: 100%;
-  min-width: 0;
-  border-radius: inherit;
-  background: var(--tag-color);
-}
-
-.stock-tag__mark {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  left: 50%;
-  width: 2px;
-  border-radius: 1px;
-  background: var(--ink-muted);
+.stock-tag--large .target-bar__track {
+  block-size: 8px;
 }
 
 .stock-hero {

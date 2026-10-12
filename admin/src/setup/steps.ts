@@ -49,7 +49,7 @@ export function setupSteps(data: SetupData, t: Catalogue = en): SetupStep[] {
     {
       id: 'alerts',
       ...t.setup.steps.alerts,
-      to: '/profile',
+      to: '/profile/alerts',
       done: data.alertDevices > 0,
     },
   ];

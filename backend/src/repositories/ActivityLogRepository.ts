@@ -21,6 +21,8 @@ export interface ActivityFilters {
   actions?: string[];
   /** Same format as `actions`, left out of the results. */
   excludeActions?: string[];
+  /** Words that must all appear in the summary, any case. */
+  search?: string;
   limit: number;
   offset: number;
 }
@@ -72,6 +74,9 @@ export class ActivityLogRepository {
     }
     for (const action of filters.excludeActions ?? []) {
       query = action.includes('.') ? query.where('a.action', '!=', action) : query.where('a.action', 'not like', `${action}.%`);
+    }
+    for (const word of filters.search?.trim().split(/\s+/).filter(Boolean) ?? []) {
+      query = query.where('a.summary', 'ilike', `%${word.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
     }
 
     const [entries, count] = await Promise.all([

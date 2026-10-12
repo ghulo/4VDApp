@@ -22,6 +22,12 @@ export interface User {
   createdAt: string;
 }
 
+/** Someone on the People page: their account and when they last used 4VD. */
+export interface TeamMember extends User {
+  /** Their newest login or refresh on any device; null if never. */
+  lastActiveAt: string | null;
+}
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -747,6 +753,8 @@ export interface CashCount {
   difference: number | null;
   note: string | null;
   countedBy: string | null;
+  /** The account that counted it; null once that account is removed. */
+  countedById: number | null;
   countedAt: string;
   /** Who looked at the difference; null until someone does. */
   checkedBy: string | null;

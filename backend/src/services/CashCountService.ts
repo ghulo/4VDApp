@@ -31,6 +31,8 @@ export interface CashCountDto {
   difference: number | null;
   note: string | null;
   countedBy: string | null;
+  /** The account that counted it; null once that account is removed. */
+  countedById: number | null;
   countedAt: string;
   /** Who looked at the difference and when; null until someone does. */
   checkedBy: string | null;
@@ -107,6 +109,7 @@ export class CashCountService {
         difference: expected === null ? null : roundMoney(counted - float - expected),
         note: row.note,
         countedBy: row.counted_by_name,
+        countedById: row.counted_by,
         countedAt: row.counted_at.toISOString(),
         checkedBy: row.checked_by_name,
         checkedAt: row.checked_at?.toISOString() ?? null,

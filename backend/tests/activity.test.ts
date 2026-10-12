@@ -54,6 +54,19 @@ describe('GET /api/activity', () => {
     expect(byEntity.body.data).toHaveLength(1);
   });
 
+  it('should find entries by words in what changed, any case', async () => {
+    const repository = new ActivityLogRepository(context.db);
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 7, summary: 'Added 5 to Ceramic Vase' });
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 8, summary: 'Added 2 to Oak Chair' });
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 9, summary: 'Sold 100% of Vase stock' });
+
+    const found = await listActivity('?search=ceramic%20vase');
+    const literalPercent = await listActivity('?search=100%25');
+
+    expect(found.body.data.map((entry: { summary: string }) => entry.summary)).toEqual(['Added 5 to Ceramic Vase']);
+    expect(literalPercent.body.data.map((entry: { entityId: number }) => entry.entityId)).toEqual([9]);
+  });
+
   it('should leave out excluded kinds, like logins', async () => {
     const repository = new ActivityLogRepository(context.db);
     await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, summary: 'Added category Lighting' });

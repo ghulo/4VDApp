@@ -151,3 +151,14 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from
+
+## Inbox, Activity, Settings, Profile and People, made better (branch team-pages-polish)
+
+- [x] Inbox To do: summary tiles, grouped Urgent / To check / Ideas, icon per kind, one main action, "All clear" empty state
+- [x] Inbox Updates: grouped by day, filter chips, tap opens and marks read, mark as read on hover
+- [x] Activity: grouped by day, icon per kind, avatars, clickable names, search + person/kind filters, phone layout; fix broken characters in names
+- [x] Settings: each section its own page; carwashes as a list with a side panel; Before launch checklist with progress; danger zone
+- [x] Profile: each section its own page; header card; proper switches; devices grouped with real names
+- [x] People: tiles, role/status chips, last active, sales vs target; invite in a side panel
+- [x] Person page: sales vs target, commission, refunds and write-offs, cash differences, recent activity, devices, manage
+- [x] Merged and pushed

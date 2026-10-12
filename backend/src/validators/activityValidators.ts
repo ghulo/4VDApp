@@ -20,6 +20,8 @@ export const activityQuerySchema = paginationSchema.extend({
   action: actionList.optional(),
   // Same format, left out: "auth" hides logins so the log shows what changed.
   exclude: actionList.optional(),
+  // Words to find in what changed: "vase", "Fresh Foods".
+  search: z.string().trim().max(100).optional(),
 });
 
 /** The newest entry the developer was shown, so a restore never acts on a changed record. */

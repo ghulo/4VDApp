@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { describeDevice } from '../src/services/SessionService.js';
-import { createTestUser, resetData, setupTestApp, TEST_PASSWORD, type TestContext } from './helpers/testApp.js';
+import { createTestUser, loginAs, resetData, setupTestApp, TEST_PASSWORD, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
 
@@ -88,5 +88,29 @@ describe('describeDevice', () => {
     expect(describeDevice('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) Gecko/20100101 Firefox/131.0')).toBe('Firefox on Mac');
     expect(describeDevice('okhttp/4.12.0')).toBe('4VD app');
     expect(describeDevice(null)).toBe('Unknown device');
+  });
+});
+
+describe('someone else\'s devices', () => {
+  it('should show an overseer when each person was last active and which devices they use', async () => {
+    const employee = await createTestUser(context.db, 'employee', { email: 'ana@example.com' });
+    await login(SAFARI_IPHONE);
+    const ownerToken = await loginAs(context, 'owner');
+
+    const people = await request(context.app).get('/api/users').set(auth(ownerToken));
+    const devices = await request(context.app).get(`/api/users/${employee.id}/sessions`).set(auth(ownerToken));
+
+    const ana = people.body.data.find((person: { id: number }) => person.id === employee.id);
+    expect(ana.lastActiveAt).toEqual(expect.any(String));
+    expect(devices.body.data).toEqual([expect.objectContaining({ device: 'Safari on iPhone', current: false })]);
+  });
+
+  it('should not show an employee anyone\'s devices', async () => {
+    const employee = await createTestUser(context.db, 'employee', { email: 'ana@example.com' });
+    const token = (await login(SAFARI_IPHONE)).body.data.token;
+
+    const devices = await request(context.app).get(`/api/users/${employee.id}/sessions`).set(auth(token));
+
+    expect(devices.status).toBe(403);
   });
 });

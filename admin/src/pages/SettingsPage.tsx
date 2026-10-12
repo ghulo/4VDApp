@@ -1,3 +1,4 @@
+import { Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BusinessPanel } from '../components/BusinessPanel';
@@ -16,10 +17,13 @@ import { useT } from '../i18n/useT';
 export function SettingsPage() {
   const t = useT();
   const { role } = useCurrentUser();
+  const isDeveloper = role === 'developer';
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
   });
+  const launch = useQuery({ queryKey: ['settings', 'launch-checklist'], queryFn: settingsApi.launchChecklist, enabled: isDeveloper });
+  const launchDone = launch.data?.filter((step) => step.done).length;
 
   return (
     <>
@@ -28,10 +32,12 @@ export function SettingsPage() {
         description={t.settings.description}
       />
       <SettingsLayout
+        base="/settings"
         sections={[
           {
             id: 'shop',
             label: t.business.title,
+            icon: Storefront,
             content: (
               <ManagersOnly note={t.settings.managersOnly}>
                 <BusinessPanel />
@@ -41,6 +47,7 @@ export function SettingsPage() {
           {
             id: 'approvals',
             label: t.settings.approvals,
+            icon: Scales,
             content: (
               <ManagersOnly>
                 {settings.isPending && <Loading />}
@@ -52,6 +59,7 @@ export function SettingsPage() {
           {
             id: 'carwashes',
             label: t.carwashes.title,
+            icon: Drop,
             content: (
               <ManagersOnly>
                 <CarwashesPanel />
@@ -59,10 +67,16 @@ export function SettingsPage() {
             ),
           },
           // The developer's own tools come last: the shop's settings are what the owner opens this page for.
-          ...(role === 'developer'
+          ...(isDeveloper
             ? [
-                { id: 'launch', label: t.launch.title, content: <LaunchChecklist /> },
-                { id: 'wipe', label: t.wipe.title, content: <WipeDataPanel /> },
+                {
+                  id: 'launch',
+                  label: t.launch.title,
+                  icon: RocketLaunch,
+                  note: launch.data && `${launchDone}/${launch.data.length}`,
+                  content: <LaunchChecklist />,
+                },
+                { id: 'wipe', label: t.wipe.title, icon: Warning, content: <WipeDataPanel /> },
               ]
             : []),
         ]}

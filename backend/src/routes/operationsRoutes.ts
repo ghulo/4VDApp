@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createReturnsController } from '../controllers/returnsController.js';
+import { createSessionController } from '../controllers/sessionController.js';
 import {
   createAnalyticsController,
   createFavoriteController,
@@ -37,12 +38,14 @@ export function createAnalyticsRoutes({ analyticsService, guards }: Container): 
   return router;
 }
 
-export function createUserRoutes({ userService, guards }: Container): Router {
+export function createUserRoutes({ userService, sessionService, guards }: Container): Router {
   const controller = createUserController(userService);
+  const sessions = createSessionController(sessionService);
   const router = Router();
 
   // The owner may see who works here; only managers change it (UserService checks who may touch whom).
   router.get('/', ...guards.oversee, controller.list);
+  router.get('/:id/sessions', ...guards.oversee, sessions.ofUser);
   router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);
   router.delete('/:id', ...guards.manage, controller.remove);

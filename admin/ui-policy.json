@@ -62,5 +62,27 @@
     "light",
     "dark"
   ],
-  "exceptions": []
+  "exceptions": [
+    {
+      "selector": ".visually-hidden",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "Screen-reader-only text (table captions, severity and unread labels) is clipped to 1px on purpose."
+    },
+    {
+      "selector": ".table--stack thead th",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "Stacked phone tables keep their header row for screen readers only; each cell shows its own label."
+    },
+    {
+      "selector": ".segmented__option",
+      "rules": [
+        "control-gap"
+      ],
+      "reason": "Segments share one inset track (DESIGN.md segmented control); the 2px seam is the design, and each segment meets the size rules."
+    }
+  ]
 }

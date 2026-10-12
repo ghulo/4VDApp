@@ -1,3 +1,4 @@
+import { Bell, ChartBar, Devices, LockKey, PaintBrush, UserCircle } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
@@ -8,11 +9,12 @@ import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
 import { Badge, Button, Card, Field, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
 import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
-import type { Session, User } from '../services/types';
+import type { User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime } from '../utils/format';
+import { formatDate } from '../utils/format';
+import { DeviceList, type DeviceGroup } from '../components/DeviceList';
 import { canOversee } from '../auth/roles';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -34,22 +36,33 @@ function Result({ error, success }: { error: unknown; success: string | null }) 
   ) : null;
 }
 
-/** The signed-in person's own details, look, alerts and security. */
+/** The signed-in person's own details, look, alerts and security, one short page each. */
 export function ProfilePage() {
   const t = useT();
   const user = useCurrentUser();
   return (
     <>
-      <PageHeader
-        title={t.profile.title}
-        description={t.profile.description(t.common.roles[user.role])}
-      />
+      <PageHeader title={t.profile.title} description={t.profile.descriptionShort} />
+      <section className="profile-hero" aria-label={t.profile.you}>
+        <Avatar name={user.name} url={user.avatarUrl} size={64} />
+        <div className="profile-hero__text">
+          <p className="profile-hero__name">{user.name}</p>
+          <p className="profile-hero__meta">
+            <Badge tone="brand">{t.common.roles[user.role]}</Badge>
+            <span>{user.email}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t.profile.memberSince(formatDate(user.createdAt))}</span>
+          </p>
+        </div>
+      </section>
       <SettingsLayout
+        base="/profile"
         sections={[
-          { id: 'you', label: t.profile.you, content: <DetailsPanel user={user} /> },
+          { id: 'you', label: t.profile.you, icon: UserCircle, content: <DetailsPanel user={user} /> },
           {
             id: 'look',
             label: t.profile.look,
+            icon: PaintBrush,
             content: (
               <Card title={t.profile.look}>
                 <SettingRow title={t.theme.label} description={t.profile.themeHint}>
@@ -61,10 +74,12 @@ export function ProfilePage() {
               </Card>
             ),
           },
-          { id: 'alerts', label: t.push.title, content: <PushSettingsPanel /> },
-          ...(canOversee(user.role) ? [{ id: 'reports', label: t.reportSettings.title, content: <ReportSettingsPanel /> }] : []),
-          { id: 'security', label: t.profile.security, content: <SecurityPanel user={user} /> },
-          { id: 'devices', label: t.profile.devices, content: <DevicesPanel /> },
+          { id: 'alerts', label: t.push.title, icon: Bell, content: <PushSettingsPanel /> },
+          ...(canOversee(user.role)
+            ? [{ id: 'reports', label: t.reportSettings.title, icon: ChartBar, content: <ReportSettingsPanel /> }]
+            : []),
+          { id: 'security', label: t.profile.security, icon: LockKey, content: <SecurityPanel user={user} /> },
+          { id: 'devices', label: t.profile.devices, icon: Devices, content: <DevicesPanel /> },
         ]}
       />
     </>
@@ -303,24 +318,23 @@ function SecurityPanel({ user }: { user: User }) {
   );
 }
 
-const DEVICES_SHOWN = 5;
-
 function DevicesPanel() {
   const t = useT();
   const queryClient = useQueryClient();
   const sessions = useQuery({ queryKey: ['me', 'sessions'], queryFn: meApi.sessions });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me', 'sessions'] });
-  const endOne = useMutation({ mutationFn: meApi.endSession, onSuccess: refresh });
+  // One row can stand for several logins from the same kind of device: log them all out.
+  const endGroup = useMutation({
+    mutationFn: (group: DeviceGroup) => Promise.all(group.sessions.map((session) => meApi.endSession(session.id))),
+    onSettled: refresh,
+  });
   const endOthers = useMutation({ mutationFn: meApi.endOtherSessions, onSuccess: refresh });
-  const [showAll, setShowAll] = useState(false);
   const others = sessions.data?.filter((session) => !session.current).length ?? 0;
-  // This device first; long lists (every browser ever used) stay short until asked.
-  const ordered = sessions.data ? [...sessions.data].sort((a, b) => Number(b.current) - Number(a.current)) : [];
-  const shown = showAll ? ordered : ordered.slice(0, DEVICES_SHOWN);
 
   return (
     <Card
       title={t.profile.devices}
+      description={t.profile.devicesHint}
       actions={
         others > 0 && (
           <Button size="sm" disabled={endOthers.isPending} onClick={() => endOthers.mutate()}>
@@ -331,48 +345,12 @@ function DevicesPanel() {
     >
       {sessions.isPending && <Loading />}
       {sessions.isError && <ErrorNotice error={sessions.error} onRetry={() => sessions.refetch()} />}
-      {(endOne.isError || endOthers.isError) && (
+      {(endGroup.isError || endOthers.isError) && (
         <p>
-          <Result error={endOne.error ?? endOthers.error} success={null} />
+          <Result error={endGroup.error ?? endOthers.error} success={null} />
         </p>
       )}
-      {sessions.data && (
-        <ul id="device-list" className="device-list">
-          {shown.map((session) => (
-            <DeviceRow key={session.id} session={session} onEnd={() => endOne.mutate(session.id)} busy={endOne.isPending} />
-          ))}
-        </ul>
-      )}
-      {ordered.length > DEVICES_SHOWN && (
-        <p className="form-actions--spaced">
-          <Button size="sm" variant="ghost" aria-expanded={showAll} aria-controls="device-list" onClick={() => setShowAll(!showAll)}>
-            {showAll ? t.profile.showFewerDevices : t.profile.showAllDevices(ordered.length)}
-          </Button>
-        </p>
-      )}
+      {sessions.data && <DeviceList sessions={sessions.data} onEnd={(group) => endGroup.mutate(group)} busy={endGroup.isPending} />}
     </Card>
-  );
-}
-
-function DeviceRow({ session, onEnd, busy }: { session: Session; onEnd: () => void; busy: boolean }) {
-  const t = useT();
-  return (
-    <li className="device-list__row">
-      <span>
-        <span className="device-list__name">
-          {session.device} {session.current && <Badge tone="ok">{t.profile.thisDevice}</Badge>}
-        </span>
-        {!session.current && (
-          <span className="device-list__meta">
-            {session.lastUsedAt ? t.profile.lastUsed(formatDateTime(session.lastUsedAt)) : t.profile.untracked}
-          </span>
-        )}
-      </span>
-      {!session.current && (
-        <Button size="sm" disabled={busy} onClick={onEnd}>
-          {t.profile.logOut}
-        </Button>
-      )}
-    </li>
   );
 }

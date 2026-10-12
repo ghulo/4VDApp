@@ -36,13 +36,16 @@ export class UserService {
     private readonly transactions: TransactionManager,
   ) {}
 
-  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser>> {
-    const { users, total } = await this.userRepository.findAll({
-      role: query.role,
-      limit: query.limit,
-      offset: toOffset(query),
-    });
-    return { items: users.map(toPublicUser), meta: toPaginationMeta(query, total) };
+  /** Everyone, each with when they last used 4VD on any device (null if never). */
+  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser & { lastActiveAt: string | null }>> {
+    const [{ users, total }, lastUsed] = await Promise.all([
+      this.userRepository.findAll({ role: query.role, limit: query.limit, offset: toOffset(query) }),
+      this.refreshTokenRepository.lastUsedByUser(),
+    ]);
+    return {
+      items: users.map((user) => ({ ...toPublicUser(user), lastActiveAt: lastUsed.get(user.id)?.toISOString() ?? null })),
+      meta: toPaginationMeta(query, total),
+    };
   }
 
   async create(input: CreateUserInput, actorId: number): Promise<PublicUser> {

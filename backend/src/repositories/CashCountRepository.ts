@@ -14,6 +14,7 @@ export interface CashCountRecord {
   float_amount: string;
   counted_amount: string;
   note: string | null;
+  counted_by: number | null;
   counted_by_name: string | null;
   counted_at: Date;
   checked_by_name: string | null;
@@ -40,6 +41,7 @@ export class CashCountRepository {
         'c.float_amount',
         'c.counted_amount',
         'c.note',
+        'c.counted_by',
         'u.name as counted_by_name',
         'c.counted_at',
         'k.name as checked_by_name',

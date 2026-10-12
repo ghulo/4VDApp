@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PendingDecisions } from '../components/PendingDecisions';
-import { TodoList } from '../components/TodoList';
+import { TodoGroups } from '../components/TodoList';
 import { Button, ButtonLink, EmptyState, PageHeader, ShopSunrise, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { notificationsApi } from '../services/api';
-import type { AppNotification, TodoItem, TodoSeverity } from '../services/types';
+import type { AppNotification, TodoSeverity } from '../services/types';
 import { dayHeading, formatTime, groupByDay } from '../utils/format';
 import { useAttention } from '../utils/useAttention';
 
@@ -20,8 +20,6 @@ const PAGE_BY_TYPE: Record<string, string> = {
   cash_difference: '/cash',
   daily_summary: '/report',
 };
-
-const SEVERITIES: TodoSeverity[] = ['urgent', 'check', 'idea'];
 
 /**
  * To do (DESIGN.md 3.3): requests to decide first, then everything else the
@@ -62,24 +60,8 @@ export function InboxPage() {
           <PendingDecisions />
         </section>
       )}
-      {SEVERITIES.map((severity) => (
-        <TodoGroup key={severity} severity={severity} items={others.filter((item) => item.severity === severity)} />
-      ))}
+      <TodoGroups items={others} idPrefix="inbox" />
     </>
-  );
-}
-
-function TodoGroup({ severity, items }: { severity: TodoSeverity; items: TodoItem[] }) {
-  const t = useT();
-  if (items.length === 0) return null;
-  return (
-    <section aria-labelledby={`inbox-${severity}`} className="inbox__section">
-      <h2 id={`inbox-${severity}`} className={`inbox__heading inbox__heading--${severity}`}>
-        {t.inbox.groups[severity]}
-        <span className="inbox__heading-count">{items.length}</span>
-      </h2>
-      <TodoList items={items} showSeverity={false} />
-    </section>
   );
 }
 

@@ -153,7 +153,7 @@
    left; the shop at sunrise, the 4VD mark's scene, standing on the page rule. */
 .overview-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(240px, 30vw, 360px);
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 24vw, 300px);
   align-items: end;
   gap: var(--space-5);
   margin-bottom: var(--space-5);
@@ -234,8 +234,12 @@
   box-shadow: var(--shadow-raise);
 }
 
-.today .day-bars__empty {
-  fill: var(--surface);
+.today .day-bars__base {
+  fill: var(--line-strong);
+}
+
+.today .day-bars__break {
+  fill: var(--fill);
 }
 
 .today__headline {
@@ -252,44 +256,6 @@
 .today__compare {
   max-width: 60ch;
   color: var(--ink-muted);
-}
-
-.today__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-}
-
-.today__links:empty {
-  display: none;
-}
-
-.today__link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 32px;
-  color: var(--ink);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.today__link strong {
-  font-variant-numeric: tabular-nums;
-}
-
-.today__link:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* Something is waiting: a small warm dot, words still carry the meaning. */
-.today__link--due::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--warn);
 }
 
 .today__text {
@@ -320,14 +286,34 @@
   .today {
     grid-template-columns: 1fr;
   }
-
-  .today__link {
-    min-height: 44px;
-  }
 }
 
 .overview__more {
   margin-top: var(--space-2);
+}
+
+/* A titled section on the canvas (no box around it): the To do groups. */
+.overview-section {
+  margin-bottom: var(--space-6);
+}
+
+.overview-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.overview-section__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.overview-section .inbox__section + .inbox__section {
+  margin-top: var(--space-5);
 }
 
 /* ---------- Restock list ---------- */

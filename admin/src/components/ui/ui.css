@@ -927,34 +927,13 @@ input.switch:focus-visible {
   overflow: visible;
 }
 
-/* The sun and its halo are glass: crisp rims instead of a soft blur. */
 .shop-sunrise__sun {
-  stroke: var(--cta-edge);
-  stroke-opacity: 0.35;
-  stroke-width: 1;
-}
-
-.shop-sunrise__glass-top {
-  stop-color: var(--cta-hover);
-}
-
-.shop-sunrise__glass-base {
-  stop-color: var(--accent);
+  fill: var(--accent);
 }
 
 .shop-sunrise__glow {
   fill: var(--accent);
-  fill-opacity: 0.1;
-  stroke: var(--accent);
-  stroke-opacity: 0.35;
-  stroke-width: 1;
-}
-
-.shop-sunrise__shine {
-  fill: none;
-  stroke: var(--glass-line);
-  stroke-width: 2.5;
-  stroke-linecap: round;
+  opacity: 0.16;
 }
 
 .shop-sunrise__shop {

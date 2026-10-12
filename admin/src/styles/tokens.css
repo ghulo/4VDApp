@@ -48,8 +48,6 @@
   --key-drop-pressed: 0 1px 2px rgb(20 20 19 / 0.12);
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.4);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.9);
-  /* The bright line light leaves on glass (the sunrise halo). */
-  --glass-line: rgb(255 255 255 / 0.85);
   --cta-edge: #a8482a;
   --danger-edge: #7a1f1a;
   --glass-bg: rgb(250 249 245 / 0.72);
@@ -101,7 +99,6 @@
   --key-drop-pressed: 0 1px 2px rgb(0 0 0 / 0.4);
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.3);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.12);
-  --glass-line: rgb(255 255 255 / 0.4);
   --cta-edge: #9a4024;
   --danger-edge: #a8463c;
   --glass-bg: rgb(37 36 33 / 0.72);

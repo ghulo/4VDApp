@@ -499,8 +499,10 @@ never a glow.
 One soft light from above, never colour. Tokens in `tokens.css`, each with a
 dark-mode twin:
 - **Light raise** (`--light-raise`): layered over every raised surface's fill.
-  The top 56px catch the light, the bottom 64px turn a shade darker, so cards
-  read as slabs. Fixed px stops, so tall cards don't wash out.
+  The top catches the light and eases out over 96px in light mode (several
+  stops, so there is no visible band). Dark mode gets only a 2.5% whisper
+  fading over half the card, no shaded foot and no canvas light: on a dark
+  screen anything more reads as glare.
 - **Inset lip**: fields, tracks and footer strips are shaded for 10px under
   their top lip. This lives in the Inset shadow, not a gradient, so field
   text keeps a solid, measurable background.

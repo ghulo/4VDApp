@@ -1,3 +1,4 @@
+import { CheckCircle, Circle, Question } from '@phosphor-icons/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useT } from '../i18n/useT';
@@ -6,10 +7,7 @@ import type { LaunchStep } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { Badge, Button, ButtonLink, Card, SettingRow } from './ui';
-
-/** Scrolls to a card further down Settings. */
-const goTo = (id: string) => () => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+import { Button, ButtonLink, Card } from './ui';
 
 /** What's left before the real shop starts. Worked out on the server, so it ticks off by itself. */
 export function LaunchChecklist() {
@@ -21,20 +19,60 @@ export function LaunchChecklist() {
   const done = steps.data.filter((step) => step.done).length;
 
   return (
-    <Card title={t.launch.title} description={t.launch.progress(done, steps.data.length)}>
-      {steps.data.map((step) => (
-        <SettingRow key={step.key} title={t.launch.steps[step.key]} description={how(step, t)}>
-          {step.done === null ? (
-            <Badge tone="neutral">{t.launch.checkYourself}</Badge>
-          ) : step.done ? (
-            <Badge tone="ok">{t.launch.done}</Badge>
-          ) : (
-            <Badge tone="warn">{t.launch.toDo}</Badge>
-          )}
-          {!step.done && action(step, t)}
-        </SettingRow>
-      ))}
+    <Card
+      title={t.launch.title}
+      description={t.launch.progress(done, steps.data.length)}
+      actions={<ProgressRing done={done} total={steps.data.length} />}
+      flush
+    >
+      <ol className="checklist">
+        {steps.data.map((step) => {
+          const state = step.done === null ? 'yourself' : step.done ? 'done' : 'todo';
+          const StateIcon = state === 'done' ? CheckCircle : state === 'todo' ? Circle : Question;
+          return (
+            <li key={step.key} className={`checklist__row checklist__row--${state}`}>
+              <StateIcon size={22} weight={state === 'done' ? 'fill' : 'regular'} className="checklist__icon" aria-hidden="true" />
+              <span className="checklist__text">
+                <span className="checklist__title">
+                  {t.launch.steps[step.key]}
+                  <span className="visually-hidden">
+                    {' '}
+                    ({state === 'done' ? t.launch.done : state === 'todo' ? t.launch.toDo : t.launch.checkYourself})
+                  </span>
+                </span>
+                <span className="checklist__how">{how(step, t)}</span>
+              </span>
+              {!step.done && <span className="checklist__action">{action(step, t)}</span>}
+            </li>
+          );
+        })}
+      </ol>
     </Card>
+  );
+}
+
+/** How far along, as a ring that fills with each step done. */
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const radius = 20;
+  const length = 2 * Math.PI * radius;
+  const share = total === 0 ? 0 : done / total;
+  return (
+    <span className="progress-ring" aria-hidden="true">
+      <svg width="52" height="52" viewBox="0 0 52 52">
+        <circle className="progress-ring__track" cx="26" cy="26" r={radius} />
+        <circle
+          className="progress-ring__fill"
+          cx="26"
+          cy="26"
+          r={radius}
+          strokeDasharray={length}
+          strokeDashoffset={length * (1 - share)}
+        />
+      </svg>
+      <span className="progress-ring__label">
+        {done}/{total}
+      </span>
+    </span>
   );
 }
 
@@ -42,18 +80,26 @@ export function LaunchChecklist() {
 function action(step: LaunchStep, t: ReturnType<typeof useT>): ReactNode {
   switch (step.key) {
     case 'wiped':
-      return <Button onClick={goTo('wipe-data')}>{t.launch.actions.wipe}</Button>;
+      return (
+        <ButtonLink to="/settings/wipe" variant="secondary" size="sm">
+          {t.launch.actions.wipe}
+        </ButtonLink>
+      );
     case 'shopDetails':
-      return <Button onClick={goTo('shop')}>{t.launch.actions.shop}</Button>;
+      return (
+        <ButtonLink to="/settings" variant="secondary" size="sm">
+          {t.launch.actions.shop}
+        </ButtonLink>
+      );
     case 'owner':
       return (
-        <ButtonLink to="/users?invite=owner" variant="secondary">
+        <ButtonLink to="/people?invite=owner" variant="secondary" size="sm">
           {t.launch.actions.inviteOwner}
         </ButtonLink>
       );
     case 'team':
       return (
-        <ButtonLink to="/users?invite=employee" variant="secondary">
+        <ButtonLink to="/people?invite=employee" variant="secondary" size="sm">
           {t.launch.actions.inviteTeam}
         </ButtonLink>
       );
@@ -70,7 +116,7 @@ function TestEmail() {
   const test = useMutation({ mutationFn: settingsApi.testEmail });
   return (
     <>
-      <Button disabled={test.isPending} onClick={() => test.mutate()}>
+      <Button size="sm" disabled={test.isPending} onClick={() => test.mutate()}>
         {test.isPending ? t.launch.actions.sending : t.launch.actions.testEmail}
       </Button>
       {test.isError && (

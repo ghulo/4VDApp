@@ -258,6 +258,17 @@ describe('notifications', () => {
     expect(after.body.data.unreadCount).toBe(0);
   });
 
+  it('should keep only the asked kinds of alert, still counting every unread one', async () => {
+    await sell(adminToken, 25);
+
+    const stock = await request(context.app).get('/api/notifications?types=low_stock,out_of_stock').set(auth(adminToken));
+    const cash = await request(context.app).get('/api/notifications?types=cash_difference').set(auth(adminToken));
+
+    expect(stock.body.data.notifications.map((alert: { type: string }) => alert.type)).toEqual(['low_stock']);
+    expect(cash.body.data.notifications).toEqual([]);
+    expect(cash.body.data.unreadCount).toBe(1);
+  });
+
   it("should not let someone mark another user's notification", async () => {
     await sell(adminToken, 25);
     const list = await request(context.app).get('/api/notifications').set(auth(adminToken));

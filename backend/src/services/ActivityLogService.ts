@@ -61,6 +61,7 @@ export class ActivityLogService {
       entityId: query.entityId,
       actions: query.actions,
       excludeActions: query.excludeActions,
+      search: query.search,
       limit: query.limit,
       offset: toOffset(query),
     });

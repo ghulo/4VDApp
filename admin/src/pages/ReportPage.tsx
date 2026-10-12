@@ -39,7 +39,7 @@ export function ReportPage() {
             <Button icon={PaperPlaneTilt} disabled={sendTest.isPending} onClick={() => sendTest.mutate(kind)}>
               {sendTest.isPending ? t.fullReport.sending : t.fullReport.sendMe}
             </Button>
-            <ButtonLink to="/profile" variant="ghost">
+            <ButtonLink to="/profile/reports" variant="ghost">
               {t.fullReport.choose}
             </ButtonLink>
           </>

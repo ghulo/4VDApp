@@ -50,7 +50,7 @@ import { PromotionDetailPage, PromotionsPage } from './pages/PromotionsPage';
 import { AskPage } from './pages/AskPage';
 import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
-import { UsersPage } from './pages/UsersPage';
+import { PersonPage, UsersPage } from './pages/UsersPage';
 import { ButtonLink } from './components/ui';
 import { useT } from './i18n/useT';
 
@@ -146,13 +146,14 @@ function App() {
                   <Route path="bills/scans/:id" element={<ScanCheckPage />} />
                   <Route path="bills/:id" element={<BillDetailPage />} />
                   <Route path="people" element={<UsersPage />} />
+                  <Route path="people/:id" element={<PersonPage />} />
                   <Route path="counts" element={<StockCountsPage />} />
                   <Route path="counts/:id" element={<StockCountDetailPage />} />
                   <Route path="promotions" element={<PromotionsPage />} />
                   <Route path="promotions/:id" element={<PromotionDetailPage />} />
                   <Route path="ask" element={<AskPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="settings/:section?" element={<SettingsPage />} />
+                  <Route path="profile/:section?" element={<ProfilePage />} />
                   <Route path="activity" element={<ActivityPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

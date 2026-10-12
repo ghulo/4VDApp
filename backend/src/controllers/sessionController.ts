@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import type { SessionService } from '../services/SessionService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { parseInput } from '../validators/validate.js';
+import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 const sessionParamsSchema = z.object({ sessionId: z.uuid() });
 
@@ -10,6 +10,12 @@ export function createSessionController(sessionService: SessionService) {
   return {
     async list(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await sessionService.list(req.user!.id, req.identity?.sessionId));
+    },
+
+    /** Someone else's devices, for the person page (overseers only). */
+    async ofUser(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await sessionService.list(id, undefined));
     },
 
     async end(req: Request, res: Response): Promise<void> {

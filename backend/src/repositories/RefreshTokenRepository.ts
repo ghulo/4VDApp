@@ -54,6 +54,16 @@ export class RefreshTokenRepository {
       .execute();
   }
 
+  /** When each person last used 4VD on any device (a refresh or a login), by user id. */
+  async lastUsedByUser(): Promise<Map<number, Date>> {
+    const rows = await this.db
+      .selectFrom('refresh_tokens')
+      .select(['user_id', (eb) => eb.fn.max(eb.fn.coalesce('last_used_at', 'created_at')).as('last_used')])
+      .groupBy('user_id')
+      .execute();
+    return new Map(rows.map((row) => [row.user_id, new Date(row.last_used as Date)]));
+  }
+
   /** Devices still logged in: one row per session, from its newest token. */
   async activeSessions(userId: number): Promise<
     Array<{ session_id: string; user_agent: string | null; ip: string | null; last_used_at: Date | null; started_at: Date }>

@@ -1,36 +1,29 @@
+import { ClockCounterClockwise } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
+import { ActivityFeed } from '../components/activity/ActivityFeed';
+import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
-import { activityApi, usersApi } from '../services/api';
-import { formatDateTime } from '../utils/format';
-import { Button, DataTable, EmptyState, PageHeader } from '../components/ui';
-import { UndoConfirm } from '../components/activity/UndoConfirm';
-import type { ActivityEntry } from '../services/types';
-import { useT } from '../i18n/useT';
+import { SearchInput } from '../components/SearchInput';
+import { EmptyState, PageHeader } from '../components/ui';
 import type { Catalogue } from '../i18n/en';
+import { useT } from '../i18n/useT';
+import { activityApi, usersApi } from '../services/api';
 
 /**
  * Kinds of change a person would filter by, mapped to action prefixes. The
  * default leaves logins out: they outnumber real changes and bury what can be undone.
  */
-const EVERYTHING = 'everything';
 const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }> = [
   { value: '', key: 'all' },
-  { value: 'product,pricing,category', key: 'products' },
-  { value: 'stock', key: 'stock' },
-  { value: 'sale', key: 'sales' },
-  { value: 'return', key: 'returns' },
-  { value: 'write_off', key: 'damage' },
-  { value: 'count', key: 'counts' },
-  { value: 'user', key: 'people' },
-  { value: 'carwash', key: 'carwash' },
-  { value: 'cash', key: 'cash' },
-  { value: 'expense', key: 'expenses' },
-  { value: 'customer,tab', key: 'tabs' },
+  { value: 'sale,return,promotion,document', key: 'sales' },
+  { value: 'product,pricing,category,stock,count,expiry,write_off', key: 'stock' },
+  { value: 'order,bill,supplier', key: 'buying' },
+  { value: 'cash,expense,carwash,customer,tab', key: 'money' },
+  { value: 'user,settings,business', key: 'people' },
   { value: 'auth', key: 'logins' },
-  { value: EVERYTHING, key: 'everything' },
 ];
 
 export function ActivityPage() {
@@ -38,157 +31,100 @@ export function ActivityPage() {
   const [params, setParams] = useSearchParams();
   const page = Number(params.get('page') ?? 1);
   const userId = params.get('userId') ? Number(params.get('userId')) : undefined;
+  // Old links named a single prefix ("kind=stock"); any value still filters.
   const action = params.get('kind') ?? '';
+  const search = params.get('search') ?? '';
 
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
   const activity = useQuery({
-    queryKey: ['activity', { page, userId, action }],
+    queryKey: ['activity', { page, userId, action, search }],
     queryFn: () =>
       activityApi.list({
         page,
         userId,
-        action: action && action !== EVERYTHING ? action : undefined,
+        action: action || undefined,
+        search: search || undefined,
         // Logins and issued invoices (one per checkout) would crowd the timeline; each has its own place.
         exclude: action === '' ? 'auth,document.issued' : undefined,
       }),
     placeholderData: keepPreviousData,
   });
 
-  const [open, setOpen] = useState<{ id: number; mode: 'undo' | 'restore' } | null>(null);
-
-  function closeConfirm() {
-    const id = open?.id;
-    setOpen(null);
-    // Back to the row's button, which now says Undo or Restore.
-    requestAnimationFrame(() => document.getElementById(`undo-button-${id}`)?.focus());
-  }
-
-  function undoCell(entry: ActivityEntry) {
-    const undo = entry.undo;
-    if (!undo) return null;
-    const mode = undo.state === 'undoable' ? 'undo' : undo.state === 'undone' && undo.allowed && undo.lockedReason === null ? 'restore' : null;
-    if (mode) {
-      const isOpen = open?.id === entry.id;
-      return (
-        <Button
-          id={`undo-button-${entry.id}`}
-          size="sm"
-          variant={mode === 'undo' ? 'secondary' : 'ghost'}
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? `undo-confirm-${entry.id}` : undefined}
-          aria-label={mode === 'undo' ? t.undo.undoLabel(entry.summary) : t.undo.restoreLabel(entry.summary)}
-          onClick={() => (isOpen ? setOpen(null) : setOpen({ id: entry.id, mode }))}
-        >
-          {mode === 'undo' ? t.undo.undo : t.undo.restore}
-        </Button>
-      );
-    }
-    if (undo.state === 'locked' || (undo.state === 'undone' && undo.lockedReason)) {
-      return <span className="activity-undo__locked">{t.undo.locked[undo.lockedReason!]}</span>;
-    }
-    return null;
-  }
-
-  function summaryCell(entry: ActivityEntry) {
-    if (entry.undo?.state !== 'undone') return entry.summary;
-    const when = entry.undo.undoneAt ? formatDateTime(entry.undo.undoneAt) : '';
-    return (
-      <>
-        <s className="activity-undo__struck">{entry.summary}</s>
-        <span className="activity-undo__stamp">
-          {entry.undo.undoneBy ? t.undo.undoneBy(entry.undo.undoneBy.name, when) : t.undo.undoneAt(when)}
-          {entry.undo.note && <q className="activity-undo__note">{entry.undo.note}</q>}
-        </span>
-      </>
-    );
-  }
-
-  function updateParams(changes: Record<string, string>) {
-    const next = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(changes)) {
-      if (value) next.set(key, value);
-      else next.delete(key);
-    }
-    if (!('page' in changes)) next.delete('page');
-    setParams(next);
-  }
+  const updateParams = useCallback(
+    (changes: Record<string, string>) =>
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          for (const [key, value] of Object.entries(changes)) {
+            if (value) next.set(key, value);
+            else next.delete(key);
+          }
+          if (!('page' in changes)) next.delete('page');
+          return next;
+        },
+        { replace: !('page' in changes) },
+      ),
+    [setParams],
+  );
+  const onSearch = useCallback((value: string) => updateParams({ search: value }), [updateParams]);
+  const filtered = Boolean(userId || action || search);
 
   return (
     <>
       <PageHeader title={t.activity.title} description={t.activity.description} />
 
+      <div className="card activity-filters">
+        <SearchInput value={search} onChange={onSearch} label={t.activity.search} />
+        <div className="chip-row" role="radiogroup" aria-label={t.activity.person}>
+          <button type="button" role="radio" aria-checked={!userId} className="chip" onClick={() => updateParams({ userId: '' })}>
+            {t.activity.everyone}
+          </button>
+          {people.data?.items.map((person) => (
+            <button
+              key={person.id}
+              type="button"
+              role="radio"
+              aria-checked={userId === person.id}
+              className="chip chip--person"
+              onClick={() => updateParams({ userId: userId === person.id ? '' : String(person.id) })}
+            >
+              <Avatar name={person.name} url={person.avatarUrl} size={24} />
+              {person.name}
+            </button>
+          ))}
+        </div>
+        <div className="segmented segmented--small activity-filters__kinds" role="radiogroup" aria-label={t.activity.kind}>
+          {KINDS.map((kind) => (
+            <button
+              key={kind.key}
+              type="button"
+              role="radio"
+              aria-checked={action === kind.value}
+              className="segmented__option"
+              onClick={() => updateParams({ kind: kind.value })}
+            >
+              {t.activity.kinds[kind.key]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {activity.isPending && <Loading />}
       {activity.isError && <ErrorNotice error={activity.error} onRetry={() => activity.refetch()} />}
-      {activity.data && (
-        <DataTable
-          caption={t.activity.title}
-          rows={activity.data.items}
-          rowKey={(entry) => entry.id}
-          columns={[
-            {
-              header: t.activity.whatChanged,
-              cell: (entry) => (
-                <>
-                  {summaryCell(entry)}
-                  <span className="table__secondary table__phone-only">
-                    {entry.user?.name ?? t.activity.system} · {formatDateTime(entry.createdAt)}
-                  </span>
-                </>
-              ),
-            },
-            { header: t.activity.who, cell: (entry) => entry.user?.name ?? t.activity.system, className: 'table__phone-hide' },
-            {
-              header: t.activity.when,
-              cell: (entry) => formatDateTime(entry.createdAt),
-              className: 'table__nowrap table__phone-hide',
-            },
-            { header: <span className="visually-hidden">{t.undo.undo}</span>, cell: undoCell, align: 'end', className: 'table__nowrap' },
-          ]}
-          afterRow={(entry) =>
-            open?.id === entry.id &&
-            entry.undo && (
-              <tr className="activity-undo__row">
-                <td colSpan={4}>
-                  <UndoConfirm
-                    id={`undo-confirm-${entry.id}`}
-                    entry={{ ...entry, undo: entry.undo }}
-                    mode={open.mode}
-                    onClose={closeConfirm}
-                  />
-                </td>
-              </tr>
-            )
-          }
-          toolbar={
-            <>
-              <select aria-label={t.activity.person} value={userId ?? ''} onChange={(event) => updateParams({ userId: event.target.value })}>
-                <option value="">{t.activity.everyone}</option>
-                {people.data?.items.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.name}
-                  </option>
-                ))}
-              </select>
-              <select aria-label={t.activity.kind} value={action} onChange={(event) => updateParams({ kind: event.target.value })}>
-                {KINDS.map((kind) => (
-                  <option key={kind.key} value={kind.value}>
-                    {t.activity.kinds[kind.key]}
-                  </option>
-                ))}
-              </select>
-            </>
-          }
-          empty={<EmptyState title={t.activity.empty}>{t.activity.emptyHint}</EmptyState>}
-          footer={
-            activity.data.items.length > 0 && (
-              <Pagination
-                meta={activity.data.meta}
-                itemLabel={t.activity.items}
-                onPageChange={(next) => updateParams({ page: String(next) })}
-              />
-            )
-          }
-        />
+      {activity.data && activity.data.items.length === 0 && (
+        <EmptyState icon={ClockCounterClockwise} title={filtered ? t.activity.noMatch : t.activity.empty}>
+          {filtered ? t.activity.noMatchHint : t.activity.emptyHint}
+        </EmptyState>
+      )}
+      {activity.data && activity.data.items.length > 0 && (
+        <div className={activity.isPlaceholderData ? 'is-refreshing' : undefined} aria-busy={activity.isPlaceholderData}>
+          <ActivityFeed entries={activity.data.items} people={people.data?.items} />
+          <Pagination
+            meta={activity.data.meta}
+            itemLabel={t.activity.items}
+            onPageChange={(next) => updateParams({ page: String(next) })}
+          />
+        </div>
       )}
     </>
   );

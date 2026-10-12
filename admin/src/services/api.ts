@@ -74,6 +74,7 @@ import type {
   Sale,
   StockReason,
   TeamRow,
+  TeamMember,
   User,
   UserRole,
   ShopDay,
@@ -320,7 +321,9 @@ export const analyticsApi = {
 };
 
 export const usersApi = {
-  list: (page: number) => paginated<User>('/users', { page, limit: 50 }),
+  list: (page: number) => paginated<TeamMember>('/users', { page, limit: 50 }),
+  /** Someone's devices, for their page. */
+  sessions: async (id: number) => (await apiRequest<Session[]>(`/users/${id}/sessions`)).data,
   create: async (input: { email: string; name: string; role: UserRole; password: string }) =>
     (await apiRequest<User>('/users', { method: 'POST', body: input })).data,
   update: async (
@@ -345,10 +348,10 @@ export const attentionApi = {
 };
 
 export const notificationsApi = {
-  async list(page: number, unreadOnly = false) {
+  async list(page: number, unreadOnly = false, types?: string) {
     const { data, meta } = await apiRequest<{ notifications: AppNotification[]; unreadCount: number }>(
       '/notifications',
-      { query: { page, limit: 20, unreadOnly } },
+      { query: { page, limit: 20, unreadOnly, types } },
     );
     return { items: data.notifications, unreadCount: data.unreadCount, meta: meta! };
   },
@@ -589,7 +592,7 @@ export const exportsApi = {
 };
 
 export const activityApi = {
-  list: (query: { page: number; userId?: number; action?: string; exclude?: string }) =>
+  list: (query: { page: number; userId?: number; action?: string; exclude?: string; search?: string; limit?: number }) =>
     paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
   undo: async (id: number, note: string) =>
     (await apiRequest<ActivityEntry>(`/activity/${id}/undo`, { method: 'POST', body: note ? { note } : {} })).data,

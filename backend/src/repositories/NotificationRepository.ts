@@ -87,9 +87,10 @@ export class NotificationRepository {
     await this.db.deleteFrom('day_closings').where('day', '=', day).execute();
   }
 
-  async findForUser(userId: number, options: { unreadOnly: boolean; limit: number; offset: number }) {
+  async findForUser(userId: number, options: { unreadOnly: boolean; types?: string[]; limit: number; offset: number }) {
     let query = this.db.selectFrom('notifications').where('user_id', '=', userId);
     if (options.unreadOnly) query = query.where('is_read', '=', false);
+    if (options.types?.length) query = query.where('type', 'in', options.types);
 
     const [notifications, count, unread] = await Promise.all([
       query.selectAll().orderBy('created_at', 'desc').orderBy('id', 'desc').limit(options.limit).offset(options.offset).execute(),

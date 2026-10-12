@@ -67,7 +67,8 @@ export function HistoryCard({ entityType, entityId }: { entityType: HistoryEntit
   });
   if (!allowed) return null;
 
-  const entries = [...(history.data ?? [])].reverse();
+  // Logins are about using an account, not changes to it; Activity keeps them.
+  const entries = [...(history.data ?? [])].filter((entry) => !entry.action.startsWith('auth.')).reverse();
   const shown = all ? entries : entries.slice(0, SHOWN);
   const own = (entry: ActivityEntry) => entry.entityType === entityType && entry.entityId === entityId;
   // Restoring to the newest change would change nothing, so it gets no button.

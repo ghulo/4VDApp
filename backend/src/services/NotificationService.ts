@@ -5,9 +5,10 @@ import { type PageRequest, toOffset, toPaginationMeta } from '../utils/paginatio
 export class NotificationService {
   constructor(private readonly notificationRepository: NotificationRepository) {}
 
-  async list(userId: number, query: PageRequest & { unreadOnly: boolean }) {
+  async list(userId: number, query: PageRequest & { unreadOnly: boolean; types?: string[] }) {
     const { notifications, total, unreadCount } = await this.notificationRepository.findForUser(userId, {
       unreadOnly: query.unreadOnly,
+      types: query.types,
       limit: query.limit,
       offset: toOffset(query),
     });

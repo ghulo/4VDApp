@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatMoney, setFormatLanguage, formatHeadlineMoney, formatTimes } from './format';
+import { dayHeading, formatHeadlineMoney, formatMoney, formatTimes, groupByDay, setFormatLanguage } from './format';
 
 afterEach(() => setFormatLanguage('en'));
 
@@ -26,5 +26,27 @@ describe('formatMoney', () => {
     // Albanian groups thousands with a space, and only from five digits up.
     expect(formatMoney(1204.5)).toMatch(/^1204,50\s€$/);
     expect(formatMoney(12045.5)).toMatch(/^12\s045,50\s€$/);
+  });
+});
+
+describe('dayHeading', () => {
+  const words = { today: 'Today', yesterday: 'Yesterday' };
+  const now = new Date(2026, 9, 12, 10, 0);
+
+  it('should name today and yesterday, and spell out older days', () => {
+    expect(dayHeading('2026-10-12', words, now)).toBe('Today');
+    expect(dayHeading('2026-10-11', words, now)).toBe('Yesterday');
+    expect(dayHeading('2026-10-09', words, now)).toBe('Friday 9 October');
+    expect(dayHeading('2025-12-31', words, now)).toBe('Wednesday, 31 December 2025');
+  });
+});
+
+describe('groupByDay', () => {
+  it('should keep the order and start a new group when the local day changes', () => {
+    const rows = [new Date(2026, 9, 12, 9).toISOString(), new Date(2026, 9, 12, 8).toISOString(), new Date(2026, 9, 11, 22).toISOString()];
+    expect(groupByDay(rows, (row) => row).map((group) => [group.day, group.rows.length])).toEqual([
+      ['2026-10-12', 2],
+      ['2026-10-11', 1],
+    ]);
   });
 });

@@ -113,6 +113,12 @@ export const userQuerySchema = paginationSchema.extend({
 
 export const notificationQuerySchema = paginationSchema.extend({
   unreadOnly: booleanQuerySchema.default(false),
+  // Comma-separated alert types to keep: "low_stock,out_of_stock".
+  types: z
+    .string()
+    .regex(/^[a-z_]+(,[a-z_]+)*$/, 'Alert types are lowercase words separated by commas')
+    .transform((value) => value.split(','))
+    .optional(),
 });
 
 export const pushPreferencesSchema = z

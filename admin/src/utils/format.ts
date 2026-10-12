@@ -87,3 +87,42 @@ export const formatDateTime = (iso: string) =>
 
 /** "+5" / "−3": a real minus sign lines up with the plus in tabular figures. */
 export const formatSignedQuantity = (quantity: number) => (quantity > 0 ? `+${quantity}` : `−${Math.abs(quantity)}`);
+
+/** "09:46": the time of day, for rows already grouped under their day. */
+export const formatTime = (iso: string) => formatDateWith(new Date(iso), { hour: '2-digit', minute: '2-digit' });
+
+/** The local calendar day of a moment, "2026-10-12", for grouping rows by day. */
+export function localDay(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * The heading over a day's rows: "Today", "Yesterday", or the day itself,
+ * "Friday 9 October" (with the year once it isn't this year's).
+ */
+export function dayHeading(day: string, words: { today: string; yesterday: string }, now = new Date()): string {
+  const today = localDay(now.toISOString());
+  const yesterday = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString());
+  if (day === today) return words.today;
+  if (day === yesterday) return words.yesterday;
+  const [year, month, date] = day.split('-').map(Number) as [number, number, number];
+  return formatDateWith(new Date(year, month - 1, date), {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    ...(year !== now.getFullYear() && { year: 'numeric' }),
+  });
+}
+
+/** Rows in the order given, gathered under the local day they happened. */
+export function groupByDay<T>(rows: T[], at: (row: T) => string): Array<{ day: string; rows: T[] }> {
+  const groups: Array<{ day: string; rows: T[] }> = [];
+  for (const row of rows) {
+    const day = localDay(at(row));
+    const last = groups[groups.length - 1];
+    if (last?.day === day) last.rows.push(row);
+    else groups.push({ day, rows: [row] });
+  }
+  return groups;
+}

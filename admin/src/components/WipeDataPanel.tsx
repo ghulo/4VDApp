@@ -39,7 +39,7 @@ export function WipeDataPanel() {
     : 0;
 
   return (
-    <Card id="wipe-data" title={t.wipe.title} description={t.wipe.description}>
+    <Card id="wipe-data" className="card--danger" title={t.wipe.title} description={t.wipe.description}>
       {wipe.isSuccess && !open && (
         <p className="form-success" role="status">
           {t.wipe.done}

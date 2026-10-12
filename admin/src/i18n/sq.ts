@@ -1583,6 +1583,11 @@ export const sq: Catalogue = {
     warnAt: 'Më paralajmëro kur stoku arrin',
     saving: 'Duke ruajtur…',
     save: 'Ruaj ndryshimin e stokut',
+    oneLess: 'Një më pak',
+    oneMore: 'Një më shumë',
+    afterChange: (now, after) => `${now} → ${after} në raft pas kësaj.`,
+    alertAt: (level) => `Paralajmërim kur arrin ${level}`,
+    alertTitle: 'Paralajmërimi për stok të ulët',
   },
   categories: {
     title: 'Kategori',

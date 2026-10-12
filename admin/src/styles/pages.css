@@ -133,6 +133,34 @@
   margin-bottom: var(--space-5);
 }
 
+.stock-hero__note {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* Add or remove: the choice, then the amount with − and +, then what the shelf will hold. */
+.adjust-form .segmented {
+  margin-bottom: var(--space-4);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stepper input {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.adjust-form__after {
+  min-height: 1lh;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 .stock-hero__warning {
   align-self: flex-start;
   padding: var(--space-1) var(--space-2);

@@ -617,6 +617,16 @@ export interface Customer {
   owingSince: string | null;
   lastPaymentAt: string | null;
   archived: boolean;
+  /** Everything they bought (tab or paid at the till), returns taken off. */
+  spent: number;
+  spentThisYear: number;
+  purchases: number;
+  lastPurchaseAt: string | null;
+}
+
+export interface CustomerDetail extends Customer {
+  entries: TabEntry[];
+  topProducts: Array<{ productId: number; name: string; quantity: number; total: number }>;
 }
 
 export interface TabEntry {
@@ -881,6 +891,35 @@ export interface Promotion {
   status: PromotionStatus;
   createdBy: string | null;
   createdAt: string;
+  /** What sold at its price so far. */
+  sold: PromotionSales;
+}
+
+/** Sold at a promotion's price; `discount` is what customers saved. */
+export interface PromotionSales {
+  pieces: number;
+  revenue: number;
+  discount: number;
+  profit: number;
+}
+
+export interface PromotionPreviewLine {
+  id: number;
+  name: string;
+  price: number;
+  newPrice: number;
+  cost: number | null;
+  lowestAllowed: number | null;
+  profitEach: number | null;
+  tooLow: boolean;
+}
+
+export interface PromotionResults {
+  promotion: Promotion;
+  days: number;
+  during: { pieces: number; revenue: number };
+  before: { pieces: number; revenue: number };
+  daily: Array<{ day: string; pieces: number; revenue: number; during: boolean }>;
 }
 
 export interface PriceChange {

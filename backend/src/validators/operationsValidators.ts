@@ -28,8 +28,9 @@ export const recordSaleSchema = z.object({
   quantity: z.number().int().min(1).max(1_000_000),
   notes: optionalText(1000),
   saleDate: isoDate.transform((value) => new Date(value)).optional(),
-  /** Puts the sale on this customer's tab instead of taking the money now. */
+  /** The registered customer it was for. Goes on their tab unless `paidNow`. */
   customerId: idSchema.optional(),
+  paidNow: z.boolean().optional(),
 });
 
 /** Several products sold together. Each product once; the quantity says how many. */
@@ -48,6 +49,7 @@ export const basketSchema = z
       .max(100),
     notes: optionalText(1000),
     customerId: idSchema.optional(),
+    paidNow: z.boolean().optional(),
   })
   .refine((basket) => new Set(basket.items.map((item) => item.productId)).size === basket.items.length, {
     message: 'each product can only be in the basket once',

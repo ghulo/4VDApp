@@ -58,6 +58,9 @@ export function BasketForm() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [paid, setPaid] = useState('');
   const [customerId, setCustomerId] = useState('');
+  // A named customer pays now unless the tab is picked; anonymous sales are always paid now.
+  const [onTab, setOnTab] = useState(false);
+  const owing = customerId !== '' && onTab;
   const [notes, setNotes] = useState('');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<DocumentRef | null>(null);
@@ -141,7 +144,7 @@ export function BasketForm() {
           return { productId: line.product.id, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
         }),
         notes: notes.trim() || null,
-        ...(customerId && { customerId: Number(customerId) }),
+        ...(customerId && { customerId: Number(customerId), paidNow: !onTab }),
       }),
     onSuccess: (result) => {
       for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash']) {
@@ -154,6 +157,7 @@ export function BasketForm() {
       setDiscountAll('');
       setPaid('');
       setCustomerId('');
+      setOnTab(false);
       setNotes('');
       scanRef.current?.focus();
     },
@@ -300,12 +304,12 @@ export function BasketForm() {
 
       <div className="field-row">
         <Field label={t.basket.paid} narrow>
-          <input type="number" inputMode="decimal" min={0} step={0.01} value={paid} onChange={(event) => setPaid(event.target.value)} disabled={customerId !== ''} />
+          <input type="number" inputMode="decimal" min={0} step={0.01} value={paid} onChange={(event) => setPaid(event.target.value)} disabled={owing} />
         </Field>
         {customers.data && customers.data.length > 0 && (
-          <Field label={t.tabs.putOnTab} hint={customerId ? t.tabs.onTabHint : undefined}>
+          <Field label={t.tabs.customer} hint={customerId ? undefined : t.tabs.anonymousHint}>
             <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
-              <option value="">{t.tabs.noTab}</option>
+              <option value="">{t.tabs.anonymous}</option>
               {customers.data.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name}
@@ -315,8 +319,19 @@ export function BasketForm() {
           </Field>
         )}
       </div>
-      {change !== null && !customerId && <p className="basket__change">{t.basket.change(formatMoney(change))}</p>}
-      {paid.trim() !== '' && paidAmount < total && !customerId && <p className="form-error">{t.basket.short(formatMoney(roundMoney(total - paidAmount)))}</p>}
+      {customerId && (
+        <Field label={t.tabs.howPaid} hint={onTab ? t.tabs.onTabHint : undefined}>
+          <div className="segmented" role="radiogroup" aria-label={t.tabs.howPaid}>
+            {[false, true].map((option) => (
+              <button key={String(option)} type="button" role="radio" aria-checked={onTab === option} className="segmented__option" onClick={() => setOnTab(option)}>
+                {option ? t.tabs.putOnTab : t.tabs.paidNow}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
+      {change !== null && !owing && <p className="basket__change">{t.basket.change(formatMoney(change))}</p>}
+      {paid.trim() !== '' && paidAmount < total && !owing && <p className="form-error">{t.basket.short(formatMoney(roundMoney(total - paidAmount)))}</p>}
       <Field label={t.sales.note}>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </Field>

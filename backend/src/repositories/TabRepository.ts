@@ -35,6 +35,13 @@ export interface TabEntryRecord {
   created_by_name: string | null;
 }
 
+export interface PurchaseTotals {
+  spent: number;
+  spentThisYear: number;
+  purchases: number;
+  lastPurchaseAt: Date | null;
+}
+
 /** Charges on undone sales and refunds of undone returns don't count; everything else does. */
 const counts = sql<boolean>`((e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null))`;
 
@@ -113,6 +120,56 @@ export class TabRepository {
       group by 1
     `.execute(this.db);
     return new Map(result.rows.map((row) => [row.day, Number(row.effect)]));
+  }
+
+  /**
+   * What each registered customer bought, from the invoices made out to them
+   * (tab or paid at the till) less their credit notes: in all, since
+   * `yearStart`, how many purchases and when the last one was. Customers
+   * who never bought anything are left out.
+   */
+  async purchaseTotals(yearStart: Date, customerIds?: number[]): Promise<Map<number, PurchaseTotals>> {
+    if (customerIds && customerIds.length === 0) return new Map();
+    let query = this.db
+      .selectFrom('documents')
+      .select([
+        'customer_id',
+        sql<string>`sum(case when kind = 'invoice' then total else -total end)`.as('spent'),
+        sql<string>`coalesce(sum(case when kind = 'invoice' then total else -total end) filter (where issued_at >= ${yearStart}), 0)`.as('spent_this_year'),
+        sql<string>`count(*) filter (where kind = 'invoice')`.as('purchases'),
+        sql<Date | null>`max(issued_at) filter (where kind = 'invoice')`.as('last_purchase_at'),
+      ])
+      .where('customer_id', 'is not', null)
+      .groupBy('customer_id');
+    if (customerIds) query = query.where('customer_id', 'in', customerIds);
+    const rows = await query.execute();
+    return new Map(
+      rows.map((row) => [
+        row.customer_id!,
+        { spent: Number(row.spent), spentThisYear: Number(row.spent_this_year), purchases: Number(row.purchases), lastPurchaseAt: row.last_purchase_at },
+      ]),
+    );
+  }
+
+  /** What a customer buys most, by money spent, returns taken off. */
+  async topProducts(customerId: number, limit = 8): Promise<Array<{ productId: number; name: string; quantity: number; total: number }>> {
+    const rows = await this.db
+      .selectFrom('document_lines as l')
+      .innerJoin('documents as d', 'd.id', 'l.document_id')
+      .innerJoin('sales as s', 's.id', 'l.sale_id')
+      .select([
+        's.product_id',
+        sql<string>`max(l.product_name)`.as('name'),
+        sql<string>`sum(case when d.kind = 'invoice' then l.quantity else -l.quantity end)`.as('quantity'),
+        sql<string>`sum(case when d.kind = 'invoice' then l.total else -l.total end)`.as('total'),
+      ])
+      .where('d.customer_id', '=', customerId)
+      .groupBy('s.product_id')
+      .having(sql<boolean>`sum(case when d.kind = 'invoice' then l.quantity else -l.quantity end) > 0`)
+      .orderBy(sql`4`, 'desc')
+      .limit(limit)
+      .execute();
+    return rows.map((row) => ({ productId: row.product_id, name: row.name, quantity: Number(row.quantity), total: Number(row.total) }));
   }
 
   async createCustomer(input: CustomerFields & { createdBy: number }): Promise<number> {

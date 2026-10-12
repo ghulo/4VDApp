@@ -151,6 +151,25 @@ describe('customer tabs', () => {
     expect(tabs[0]).toMatchObject({ customerId: arben, productId: null, title: 'Arben owes €40.00 on their tab' });
   });
 
+  it('should count a registered customer paying at the till as their purchase, without touching their tab', async () => {
+    const arben = await openTab();
+    const product = await createTestProduct(context, adminToken, { name: 'Coffee', price: 10, costPrice: 4, stock: 50 });
+    const paid = await request(context.app)
+      .post('/api/sales/basket')
+      .set(auth(employeeToken))
+      .send({ items: [{ productId: product, quantity: 3 }], customerId: arben, paidNow: true });
+    await sellOnTab(arben, 2);
+
+    const data = await detail(arben);
+    const invoice = await context.db.selectFrom('documents').select(['customer_id', 'payment_method']).where('id', '=', paid.body.data.invoice.id).executeTakeFirstOrThrow();
+
+    expect(paid.status).toBe(201);
+    expect(invoice).toEqual({ customer_id: arben, payment_method: 'till' });
+    expect(data).toMatchObject({ balance: 20, spent: 50, spentThisYear: 50, purchases: 2 });
+    expect(data.topProducts[0]).toMatchObject({ productId: product, name: 'Coffee', quantity: 3, total: 30 });
+    expect(data.lastPurchaseAt).not.toBeNull();
+  });
+
   it('should list the most owed first', async () => {
     const arben = await openTab('Arben');
     const besa = await openTab('Besa');

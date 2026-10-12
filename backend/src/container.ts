@@ -182,7 +182,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
-  const promotionService = new PromotionService(promotionRepository, settingsService, transactions);
+  const promotionService = new PromotionService(promotionRepository, settingsService, transactions, config.shopTimeZone);
   const undoService = new UndoService(
     transactions,
     undoRepository,
@@ -190,7 +190,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     documentService,
   );
   const tabRepository = new TabRepository(db);
-  const tabService = new TabService(tabRepository, transactions);
+  const tabService = new TabService(tabRepository, transactions, config.shopTimeZone);
   const purchaseOrderRepository = new PurchaseOrderRepository(db);
   const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
   const supplierBillRepository = new SupplierBillRepository(db);

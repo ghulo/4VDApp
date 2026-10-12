@@ -452,7 +452,7 @@
 }
 
 .segmented--small .segmented__option {
-  height: 26px;
+  height: var(--control-h-sm);
   padding: 0 10px;
   font-size: var(--text-sm);
 }

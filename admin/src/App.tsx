@@ -38,7 +38,7 @@ import { CarwashPage } from './pages/CarwashPage';
 import { CashPage } from './pages/CashPage';
 import { DayPage } from './pages/DayPage';
 import { ExpensesPage } from './pages/ExpensesPage';
-import { CustomerDetailPage, CustomersPage, TabsRedirect } from './pages/CustomersPage';
+import { CustomerDetailPage, CustomersPage, CustomerStatementPage, TabsRedirect } from './pages/CustomersPage';
 import { SupplierDetailPage } from './pages/SupplierDetailPage';
 import { SuppliersPage } from './pages/SuppliersPage';
 import { NewOrderPage } from './pages/NewOrderPage';
@@ -46,7 +46,7 @@ import { OrdersPage } from './pages/OrdersPage';
 import { LabelsPage } from './pages/LabelsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { PromotionsPage } from './pages/PromotionsPage';
+import { PromotionDetailPage, PromotionsPage } from './pages/PromotionsPage';
 import { AskPage } from './pages/AskPage';
 import { StockCountDetailPage } from './pages/StockCountDetailPage';
 import { StockCountsPage } from './pages/StockCountsPage';
@@ -133,6 +133,7 @@ function App() {
                   </Route>
                   <Route path="customers" element={<CustomersPage />} />
                   <Route path="customers/:id" element={<CustomerDetailPage />} />
+                  <Route path="customers/:id/statement" element={<CustomerStatementPage />} />
                   <Route path="tabs" element={<TabsRedirect />} />
                   <Route element={<SectionTabs tabs={SECTIONS.buy} labelKey="suppliers" />}>
                     <Route path="suppliers" element={<SuppliersPage />} />
@@ -148,6 +149,7 @@ function App() {
                   <Route path="counts" element={<StockCountsPage />} />
                   <Route path="counts/:id" element={<StockCountDetailPage />} />
                   <Route path="promotions" element={<PromotionsPage />} />
+                  <Route path="promotions/:id" element={<PromotionDetailPage />} />
                   <Route path="ask" element={<AskPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />

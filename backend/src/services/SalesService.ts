@@ -51,8 +51,9 @@ export interface RecordSaleInput {
   notes: string | null;
   /** For entering a sale after the fact. Defaults to now. */
   saleDate?: Date;
-  /** Puts the sale on this customer's tab instead of taking the money now. */
+  /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
+  paidNow?: boolean;
   /** Rabat off the price for this quantity, in percent. */
   discountPercent?: number;
 }
@@ -61,8 +62,9 @@ export interface BasketInput {
   /** `discountPercent`: rabat on that line; employees may give up to the shop's limit. */
   items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
   notes: string | null;
-  /** Puts the whole basket on this customer's tab. */
+  /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
+  paidNow?: boolean;
 }
 
 export interface SaleQuery extends PageRequest {
@@ -139,7 +141,7 @@ export class SalesService {
 
     const saleId = await this.transactions.run(async (repos) => {
       const id = await this.recordInTransaction(repos, input, soldBy);
-      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, issuedBy: soldBy });
+      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy });
       return id;
     });
 
@@ -162,9 +164,9 @@ export class SalesService {
     const { saleIds, invoice } = await this.transactions.run(async (repos) => {
       const saleIds: number[] = [];
       for (const item of input.items) {
-        saleIds.push(await this.recordInTransaction(repos, { ...item, notes: input.notes, customerId: input.customerId }, soldBy));
+        saleIds.push(await this.recordInTransaction(repos, { ...item, notes: input.notes, customerId: input.customerId, paidNow: input.paidNow }, soldBy));
       }
-      const invoice = await this.documents.invoiceSales(repos, { saleIds, customerId: input.customerId ?? null, issuedBy: soldBy });
+      const invoice = await this.documents.invoiceSales(repos, { saleIds, customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy });
       return { saleIds, invoice };
     });
     const sales = (await Promise.all(saleIds.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));
@@ -214,9 +216,11 @@ export class SalesService {
       reorderLevel: product.reorder_level ?? 0,
     });
     const total = roundMoney(pricePerUnit * input.quantity);
-    if (customer) {
+    const tabOf = input.paidNow ? null : customer;
+    const onTab = Boolean(tabOf);
+    if (tabOf) {
       await repos.tabs.addEntry({
-        customerId: customer.id,
+        customerId: tabOf.id,
         kind: 'charge',
         amount: total,
         note: `${input.quantity} × ${product.name}`,
@@ -230,8 +234,8 @@ export class SalesService {
       action: 'sale.recorded',
       entityType: 'sale',
       entityId: id,
-      summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${discountPercent ? ` with ${discountPercent}% rabat` : ''}${customer ? ` on ${customer.name}'s tab` : ''}`,
-      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, customerId: customer?.id ?? null },
+      summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${discountPercent ? ` with ${discountPercent}% rabat` : ''}${customer ? (onTab ? ` on ${customer.name}'s tab` : ` to ${customer.name}`) : ''}`,
+      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, customerId: customer?.id ?? null, onTab },
     });
     return id;
   }

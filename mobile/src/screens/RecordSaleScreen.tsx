@@ -66,7 +66,10 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const [paid, setPaid] = useState('');
   const [notes, setNotes] = useState('');
-  const [tab, setTab] = useState<Customer | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [onTab, setOnTab] = useState(false);
+  // Only a sale on a tab leaves the money out of the drawer.
+  const tab = onTab ? customer : null;
   const [invoice, setInvoice] = useState<DocumentRef | null>(null);
   const [discount, setDiscount] = useState('');
   const user = useCurrentUser();
@@ -133,7 +136,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
       salesApi.recordBasket({
         items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity, ...(discountPercent > 0 && { discountPercent }) })),
         notes: notes.trim() || null,
-        ...(tab && { customerId: tab.id }),
+        ...(customer && { customerId: customer.id, paidNow: !onTab }),
       }),
     onSuccess: (result) => {
       for (const key of [['products'], ['reports', 'my-sales'], ['inventory'], ['customers'], ['cash']]) queryClient.invalidateQueries({ queryKey: key });
@@ -147,7 +150,8 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
       setPaid('');
       setNotes('');
       setDiscount('');
-      setTab(null);
+      setCustomer(null);
+      setOnTab(false);
     },
   });
 
@@ -279,7 +283,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
             {!tab && paid.trim() !== '' && paidAmount < total && (
               <Text style={[styles.message, { color: colors.signalOut }]}>{t.sell.short(formatMoney(roundMoney(total - paidAmount)))}</Text>
             )}
-            <TabPicker value={tab} onChange={setTab} />
+            <TabPicker value={customer} onChange={setCustomer} onTab={onTab} onTabChange={setOnTab} />
             <TextField label={t.sell.note} value={notes} onChangeText={setNotes} maxLength={1000} />
           </>
         )}

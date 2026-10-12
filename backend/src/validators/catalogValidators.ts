@@ -140,6 +140,9 @@ export const createPromotionSchema = z.object({
   endsAt: endDateQuery,
 });
 
+/** What a promotion would do, before it is started. */
+export const promotionPreviewSchema = createPromotionSchema.pick({ percentOff: true, productId: true, categoryId: true });
+
 // ---------- Product requests ----------
 
 // No defaults here: an approval's corrections leave out what stays as asked.

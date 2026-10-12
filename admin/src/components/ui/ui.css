@@ -278,7 +278,7 @@
   /* Paper resting just above the ivory canvas. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 
@@ -1007,7 +1007,7 @@ input.switch:focus-visible {
   /* Paper resting above the canvas, like the other cards. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   overflow: hidden;
 }

@@ -1601,6 +1601,11 @@ export const en = {
     warnAt: 'Warn me when stock reaches',
     saving: 'Saving…',
     save: 'Save stock change',
+    oneLess: 'One less',
+    oneMore: 'One more',
+    afterChange: (now: number, after: number) => `${now} → ${after} on the shelf after this.`,
+    alertAt: (level: number) => `Alert when it reaches ${level}`,
+    alertTitle: 'Low-stock alert',
   },
   categories: {
     title: 'Categories',

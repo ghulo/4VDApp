@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExpiryCard } from '../components/ExpiryCard';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 import { useParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
@@ -10,7 +10,7 @@ import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '../services/types';
 import { formatDateTime, formatSignedQuantity } from '../utils/format';
 import { Button, ButtonLink, Card, PageHeader } from '../components/ui';
-import { PencilSimple } from '@phosphor-icons/react';
+import { Minus, PencilSimple, Plus } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 
@@ -50,7 +50,9 @@ export function InventoryDetailPage() {
               <p className="stock-hero__warning">{t.inventory.outWarning}</p>
             ) : item.quantity <= item.reorderLevel ? (
               <p className="stock-hero__warning">{t.inventory.lowWarning(item.reorderLevel)}</p>
-            ) : null}
+            ) : (
+              <p className="stock-hero__note">{t.inventory.alertAt(item.reorderLevel)}</p>
+            )}
           </div>
           <AdjustStockForm item={item} />
           <h3 className="subheading">{t.inventory.lossTitle}</h3>
@@ -135,6 +137,11 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
     });
   }
 
+  const amountId = useId();
+  const count = Math.max(0, Math.floor(Number(amount) || 0));
+  const max = direction === 'remove' ? item.quantity : Infinity;
+  const after = item.quantity + (direction === 'add' ? count : -count);
+  const step = (by: number) => setAmount(String(Math.min(max, Math.max(0, count + by)) || ''));
   const reasons = MANUAL_STOCK_REASONS.filter((option) => direction === 'add' || option !== 'Restock');
   const hasChange = Number(amount) > 0 || (reorderLevel !== '' && Number(reorderLevel) !== item.reorderLevel);
 
@@ -157,18 +164,31 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
         </div>
 
         <div className="field-row">
-          <label className="field">
-            <span className="field__label">{t.inventory.howMany}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={direction === 'remove' ? item.quantity : undefined}
-              step={1}
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          </label>
+          <div className="field">
+            <label className="field__label" htmlFor={amountId}>
+              {t.inventory.howMany}
+            </label>
+            {/* Most changes are a few units: the buttons count them without typing. */}
+            <span className="stepper">
+              <Button aria-label={t.inventory.oneLess} icon={Minus} disabled={count <= 0} onClick={() => step(-1)} />
+              <input
+                id={amountId}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={direction === 'remove' ? item.quantity : undefined}
+                step={1}
+                placeholder="0"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+              <Button aria-label={t.inventory.oneMore} icon={Plus} disabled={count >= max} onClick={() => step(1)} />
+            </span>
+            {/* What the shelf will hold once this is saved, before you save it. */}
+            <span className="adjust-form__after" aria-live="polite">
+              {count > 0 && t.inventory.afterChange(item.quantity, after)}
+            </span>
+          </div>
           <label className="field">
             <span className="field__label">{t.inventory.reason}</span>
             <select value={reason} onChange={(event) => setReason(event.target.value as StockReason)}>
@@ -186,6 +206,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
           <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
         </label>
 
+        <h3 className="subheading">{t.inventory.alertTitle}</h3>
         <label className="field field--narrow">
           <span className="field__label">{t.inventory.warnAt}</span>
           <input

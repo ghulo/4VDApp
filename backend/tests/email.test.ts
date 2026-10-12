@@ -81,4 +81,22 @@ describe('email templates', () => {
     expect(email.html).not.toContain('<script>');
     expect(email.html).toContain('&lt;script&gt;');
   });
+
+  it('should lay the report out as rows with stamps, escaping names, with the same rows in the text part', () => {
+    const email = emailTemplates.report({
+      subject: 'Daily report',
+      headline: 'Daily report',
+      period: '11 Oct',
+      intro: 'Hi',
+      summary: '1 bill overdue',
+      blocks: [{ heading: 'Supplier bills', rows: [{ label: '<b>Elkos</b>', value: '€600.00', stamp: { text: 'Overdue', tone: 'danger' } }] }],
+      link: 'https://app.test/report',
+    });
+
+    expect(email.html).not.toContain('<b>Elkos</b>');
+    expect(email.html).toContain('&lt;b&gt;Elkos&lt;/b&gt;');
+    expect(email.html).toContain('s-danger');
+    expect(email.html).toContain('prefers-color-scheme:dark');
+    expect(email.text).toContain('[Overdue] <b>Elkos</b>: €600.00');
+  });
 });

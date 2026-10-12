@@ -8,7 +8,7 @@ import { isoWeekday, zonedDay, zonedHour } from '../../utils/zonedDates.js';
 import type { EmailService } from '../email/EmailService.js';
 import { emailTemplates } from '../email/templates.js';
 import { pickSections, type Report, type ReportBuilder, reportHeadline, type ReportKind, reportPeriod, REPORT_SECTIONS } from './ReportBuilder.js';
-import { reportText } from './reportText.js';
+import { reportBlocks } from './reportText.js';
 
 export interface ReportSettings {
   daily: { enabled: boolean; hour: number };
@@ -124,11 +124,12 @@ export class ReportDeliveryService {
         person.email_address,
         emailTemplates.report(
           {
-            name: person.name.split(' ')[0]!,
             subject: title,
+            headline: (test ? t.report.testPrefix : '') + t.report.kindTitle[report.kind],
+            period: reportPeriod(report, t),
             intro: t.report.emailIntro({ name: person.name.split(' ')[0]!, kind: report.kind, period: reportPeriod(report, t) }),
             summary: headline.message,
-            sections: reportText(report, t),
+            blocks: reportBlocks(report, t),
             link: `${this.dashboardUrl}${link}`,
           },
           t,

@@ -111,6 +111,6 @@ describe('carwash takings', () => {
     const weekly = emails.find((email) => email.subject.startsWith('Weekly report'))!;
 
     expect(weekly.text).toContain('Carwash: €110.00');
-    expect(weekly.text).toContain('€100.00 in sales');
+    expect(weekly.text).toContain('Sales: €100.00');
   });
 });

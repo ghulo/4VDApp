@@ -648,8 +648,8 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   **never larger than the information beside it**: up to 360px in the Overview
   hero (standing on the page rule), 240px in empty states, 560px on sign-in. Hidden from screen readers;
   the sun rises once, off under reduced motion.
-- **Paper grain** over the dashboard (7% light, 5% dark), off under more contrast
-  and in print.
+- **No paper grain**: the noise overlay was removed (2026-10-12); the canvas
+  is clean ivory with only the faint pillar weave.
 - **The canvas** (both apps, behind every page): the mark's **four pillars**
   woven very faintly across it (two staggered groups of four strokes per 72px
   tile; Ink at 3.5% light, 2.5% dark). No corner watermark (tried: one more

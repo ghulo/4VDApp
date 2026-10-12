@@ -181,7 +181,7 @@ export function InventoryPage() {
                   <span className="product-cell">
                     <ProductPhoto src={row.imageUrl} />
                     <span className="product-cell__text">
-                      <Link to={`/inventory/${row.productId}`} className="table__primary-link">
+                      <Link to={`/products/${row.productId}`} className="table__primary-link">
                         {row.productName}
                       </Link>
                       <span className="table__secondary">{[row.sku, row.categoryName].filter(Boolean).join(' · ')}</span>

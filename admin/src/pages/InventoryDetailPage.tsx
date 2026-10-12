@@ -9,14 +9,15 @@ import { WriteOffForm } from '../components/WriteOffForm';
 import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '../services/types';
 import { formatDateTime, formatSignedQuantity } from '../utils/format';
-import { Button, ButtonLink, Card, PageHeader } from '../components/ui';
-import { Minus, PencilSimple, Plus } from '@phosphor-icons/react';
+import { Button, Card } from '../components/ui';
+import { Minus, Plus } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 
-export function InventoryDetailPage() {
+/** The Stock tab of a product's page: what's on the shelf, changing it, and its history. */
+export function ProductStockTab() {
   const t = useT();
-  const productId = Number(useParams().productId);
+  const productId = Number(useParams().id);
   const query = useQuery({
     queryKey: ['inventory', productId],
     queryFn: () => inventoryApi.get(productId),
@@ -28,17 +29,6 @@ export function InventoryDetailPage() {
   const item = query.data;
   return (
     <>
-      <PageHeader
-        title={item.productName}
-        description={item.sku ? t.inventory.sku(item.sku) : undefined}
-        crumbs={[{ label: t.nav.items.stock, to: '/inventory' }]}
-        actions={
-          <ButtonLink to={`/products/${item.productId}`} icon={PencilSimple}>
-            {t.inventory.editProduct}
-          </ButtonLink>
-        }
-      />
-
       <ExpiryCard productId={item.productId} />
 
       <div className="split">

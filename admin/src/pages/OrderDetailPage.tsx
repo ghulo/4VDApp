@@ -87,7 +87,7 @@ export function OrderDetailPage() {
                 header: t.orders.product,
                 title: true,
                 cell: (line) => (
-                  <Link to={`/inventory/${line.productId}`}>
+                  <Link to={`/products/${line.productId}`}>
                     {line.productName}
                     {line.sku && <span className="table__secondary"> {line.sku}</span>}
                   </Link>

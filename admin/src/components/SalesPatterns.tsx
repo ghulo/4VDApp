@@ -115,7 +115,7 @@ export function TopProductsCard({ range, userId, title }: { range: ReportRange; 
             items={top.map((row) => ({
               key: row.id,
               label: row.name,
-              to: `/inventory/${row.id}`,
+              to: `/products/${row.id}`,
               value: row.revenue,
               display: formatHeadlineMoney(row.revenue),
               detail: t.analysis.productDetail(row.unitsSold, formatHeadlineMoney(row.profit)),

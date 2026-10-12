@@ -65,7 +65,7 @@ export function OverviewPage() {
             <ul className="restock-list">
               {lowStock.data.items.map((item) => (
                 <li key={item.productId}>
-                  <Link to={`/inventory/${item.productId}`} className="restock-list__row">
+                  <Link to={`/products/${item.productId}`} className="restock-list__row">
                     <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} />
                     <span className="restock-list__name product-cell">
                       <ProductPhoto src={item.imageUrl} />

@@ -9,9 +9,9 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
 import { type Category, type PriceChange, type Product, type ProductInput, VAT_RATES, type VatRate } from '../services/types';
-import { formatDateTime, formatMoney, formatPromotionDay } from '../utils/format';
-import { Badge, Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
-import { Camera, Package } from '@phosphor-icons/react';
+import { formatDateTime, formatMoney } from '../utils/format';
+import { Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
+import { Camera } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { canEditProducts, canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -177,7 +177,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       if (photoFailed) {
         // The product exists now, so open it rather than leave a form that would add it twice.
-        navigate(`/products/${saved.id}`, { replace: true, state: { photoError: t.productForm.photoNotSaved(photoFailed) } });
+        navigate(`/products/${saved.id}/details`, { replace: true, state: { photoError: t.productForm.photoNotSaved(photoFailed) } });
         return;
       }
       navigate(isNew ? `/products/${saved.id}` : '/products', { replace: isNew });
@@ -217,33 +217,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
   return (
     <>
-      <PageHeader
-        title={isNew ? t.productForm.addProduct : product.name}
-        crumbs={[{ label: t.nav.items.stock, to: '/products' }]}
-        meta={product?.promotion && <Badge tone="brand">{t.productForm.promotionNow(product.promotion.percentOff)}</Badge>}
-        description={
-          product?.promotion && (
-            <>
-              {t.productForm.onPromotion({
-                name: product.promotion.name,
-                percent: product.promotion.percentOff,
-                price: formatMoney(product.promotion.price),
-                until: formatPromotionDay(product.promotion.endsAt, true),
-              })}{' '}
-              <Link to="/promotions" className="text-link">
-                {t.nav.items.promotions}
-              </Link>
-            </>
-          )
-        }
-        actions={
-          !isNew && (
-            <ButtonLink to={`/inventory/${product.id}`} icon={Package}>
-              {t.productForm.stockAndHistory}
-            </ButtonLink>
-          )
-        }
-      />
+      {/* Editing sits under the product page's own header and tabs. */}
+      {isNew && <PageHeader title={t.productForm.addProduct} crumbs={[{ label: t.nav.items.stock, to: '/products' }]} />}
 
       {categories.length === 0 ? (
         <div className="notice">
@@ -442,7 +417,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   ) : (
                     <p className="field-hint">
                       {t.productForm.stockElsewhereBefore(product.stock.quantity)}{' '}
-                      <Link to={`/inventory/${product.id}`} className="text-link">
+                      <Link to={`/products/${product.id}`} className="text-link">
                         {t.productForm.stockPage}
                       </Link>
                       .

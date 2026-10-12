@@ -22,7 +22,7 @@ const columns = (t: Catalogue): Column<Product>[] => [
       <span className="product-cell">
         <ProductPhoto src={product.imageUrl} />
         <span className="product-cell__text">
-          <Link to={`/products/${product.id}`} className="table__primary-link">
+          <Link to={`/products/${product.id}/details`} className="table__primary-link">
             {product.name}
           </Link>
           <span className="table__secondary">
@@ -57,7 +57,7 @@ const columns = (t: Catalogue): Column<Product>[] => [
   {
     header: t.products.inStock,
     cell: (product) => (
-      <Link to={`/inventory/${product.id}`} aria-label={t.products.stockFor(product.name)}>
+      <Link to={`/products/${product.id}`} aria-label={t.products.stockFor(product.name)}>
         <StockTag quantity={product.stock.quantity} reorderLevel={product.stock.reorderLevel} />
       </Link>
     ),

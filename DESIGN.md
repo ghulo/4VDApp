@@ -621,9 +621,10 @@ phones a stamp sits **above** its text, not in a side column.
   with a mini graph or none). No half-empty last rows: let the last card span.
 
 ### 10.8 Stock tag
-The shelf count over 10 printed blocks (both apps): full at twice the reorder
-level, a wider gap after the fifth block (the reorder point), lit blocks in the
-stock colour, the rest Strong Hairline.
+The shelf count over the app's progress bar (the same inset track as sales
+against a target): full at four times the reorder level, so the alert point is a
+quarter along; the fill is the stock colour (fine, low, out). 6px in lists, 8px
+under the big number on a product page. The team app still uses 10 blocks.
 
 ### 10.9 Product photo
 Square, 40px with 8px corners in lists, 112px with 16px in forms. With no photo,

@@ -20,7 +20,7 @@ import type {
   ReturnCondition,
   ReturnItem,
   StockCount,
-  StockCountSummary,
+  StockCountListItem,
   WriteOff,
   WriteOffReason,
   AppNotification,
@@ -649,7 +649,7 @@ export const writeOffsApi = {
 };
 
 export const stockCountsApi = {
-  list: async () => (await apiRequest<StockCountSummary[]>('/stock-counts')).data,
+  list: async () => (await apiRequest<StockCountListItem[]>('/stock-counts')).data,
   get: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}`)).data,
   start: async (categoryId: number | null) =>
     (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId } })).data,

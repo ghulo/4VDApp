@@ -11,8 +11,8 @@ import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createStockCountsController(stockCountService: StockCountService) {
   return {
-    async list(_req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await stockCountService.list());
+    async list(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await stockCountService.list(req.user!));
     },
 
     async start(req: Request, res: Response): Promise<void> {

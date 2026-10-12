@@ -61,6 +61,21 @@ describe('stock counts', () => {
     expect(response.body.data.totals).toMatchObject({ products: 2, counted: 0 });
   });
 
+  it('should list counts with their progress, hiding differences from employees', async () => {
+    const countId = await startCount(employeeToken);
+    await count(employeeToken, countId, saw, 7);
+
+    const asEmployee = await api().get('/api/stock-counts').set(auth(employeeToken));
+    const asAdmin = await api().get('/api/stock-counts').set(auth(adminToken));
+    const employeeRow = asEmployee.body.data.find((row: { id: number }) => row.id === countId);
+    const adminRow = asAdmin.body.data.find((row: { id: number }) => row.id === countId);
+
+    expect(employeeRow.totals.counted).toBe(1);
+    expect(employeeRow.totals.differences).toBeNull();
+    expect(adminRow.totals.differences).toBe(1);
+    expect(adminRow.lines).toBeUndefined();
+  });
+
   it('should refuse a second count that overlaps', async () => {
     await startCount(employeeToken, null);
 

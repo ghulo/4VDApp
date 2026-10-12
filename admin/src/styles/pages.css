@@ -113,7 +113,7 @@
 
 .stock-tag--large {
   min-width: 12rem;
-  grid-template-rows: auto 10px;
+  grid-template-rows: auto 6px;
   gap: var(--space-2);
 }
 
@@ -122,8 +122,31 @@
   letter-spacing: -0.04em;
 }
 
-.stock-tag--large .stock-tag__gauge {
-  gap: 3px;
+/* One slim track that sits into the card, filled to the stock level, with a
+   tick at the reorder point (halfway). */
+.stock-tag__track {
+  position: relative;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.stock-tag__fill {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--tag-color);
+}
+
+.stock-tag__mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ink-muted);
 }
 
 .stock-hero {

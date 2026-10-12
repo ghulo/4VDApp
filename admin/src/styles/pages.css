@@ -230,7 +230,7 @@
   margin-bottom: var(--space-4);
   padding: var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--sheen), var(--fill);
+  background: var(--sheen), var(--light-raise), var(--fill);
   box-shadow: var(--shadow-raise);
 }
 
@@ -579,7 +579,7 @@ form.product-form > .form-actions {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
@@ -1364,7 +1364,7 @@ form.product-form > .form-actions {
 }
 
 .ask-chat--current {
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 
@@ -1438,7 +1438,7 @@ form.product-form > .form-actions {
   grid-template-rows: 1fr auto;
   min-block-size: calc(100dvh - 180px);
   border-radius: var(--radius-panel);
-  background: var(--sheen), var(--surface);
+  background: var(--sheen), var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 
@@ -1505,7 +1505,7 @@ form.product-form > .form-actions {
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
-  background: var(--sheen), var(--surface);
+  background: var(--sheen), var(--light-raise), var(--surface);
   box-shadow: var(--key-shine-paper), var(--key-drop);
   color: var(--ink);
   font: inherit;
@@ -1784,7 +1784,7 @@ form.product-form > .form-actions {
     display: block;
     padding: var(--space-2);
     border-radius: var(--radius-panel);
-    background: var(--surface);
+    background: var(--light-raise), var(--surface);
     box-shadow: var(--shadow-raise);
   }
 
@@ -1996,7 +1996,7 @@ form.product-form > .form-actions {
   margin-bottom: var(--space-5);
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 
@@ -3071,7 +3071,7 @@ fieldset.report-sections {
   padding: var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
-  background: var(--sheen), var(--surface);
+  background: var(--sheen), var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 

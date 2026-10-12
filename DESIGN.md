@@ -495,6 +495,20 @@ looked cold and generic on ivory.
 The user dislikes flat UI: surfaces keep this depth. Never invent a shadow,
 never a glow.
 
+### Light (the only gradients allowed on surfaces)
+One soft light from above, never colour. Tokens in `tokens.css`, each with a
+dark-mode twin:
+- **Light raise** (`--light-raise`): layered over every raised surface's fill.
+  The top 56px catch the light, the bottom 64px turn a shade darker, so cards
+  read as slabs. Fixed px stops, so tall cards don't wash out.
+- **Inset lip**: fields, tracks and footer strips are shaded for 10px under
+  their top lip. This lives in the Inset shadow, not a gradient, so field
+  text keeps a solid, measurable background.
+- **Light canvas** (`--light-canvas`): the page is brightest under the top
+  bar, fading out over the first screen.
+No brand-colour gradients, none on tables, charts or glass, and no one-off
+gradients in screens: use these tokens.
+
 ### 8.1 Glass (clean and purposeful)
 Glass is for **chrome that floats over moving content**, so you can see the page
 pass underneath. Allowed only on: the dashboard top bar, the Ctrl K palette, the

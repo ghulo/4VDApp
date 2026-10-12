@@ -47,7 +47,7 @@
   padding: 0;
   list-style: none;
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   overflow: hidden;
 }
@@ -193,7 +193,7 @@
   gap: var(--space-3);
   padding: var(--space-7) var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   text-align: center;
 }
@@ -660,7 +660,7 @@
   margin-bottom: var(--space-5);
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--sheen), var(--surface);
+  background: var(--sheen), var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
 }
 

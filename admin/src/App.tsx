@@ -12,7 +12,8 @@ import { InboxPage, UpdatesPage } from './pages/InboxPage';
 import { SectionTabs } from './components/SectionTabs';
 import { SECTIONS } from './navigation/sections';
 import { CategoriesPage } from './pages/CategoriesPage';
-import { InventoryDetailPage } from './pages/InventoryDetailPage';
+import { ProductStockTab } from './pages/InventoryDetailPage';
+import { OldStockPageRedirect, ProductPage } from './pages/ProductPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { LoginPage } from './pages/LoginPage';
 import {
@@ -109,9 +110,12 @@ function App() {
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="categories" element={<CategoriesPage />} />
                   </Route>
-                  <Route path="inventory/:productId" element={<InventoryDetailPage />} />
+                  <Route path="inventory/:productId" element={<OldStockPageRedirect />} />
                   <Route path="products/new" element={<ProductFormPage />} />
-                  <Route path="products/:id" element={<ProductFormPage />} />
+                  <Route path="products/:id" element={<ProductPage />}>
+                    <Route index element={<ProductStockTab />} />
+                    <Route path="details" element={<ProductFormPage />} />
+                  </Route>
                   <Route path="labels" element={<LabelsPage />} />
                   <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
                     <Route path="sales" element={<SalesPage />} />

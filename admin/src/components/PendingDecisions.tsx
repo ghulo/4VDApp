@@ -216,7 +216,7 @@ function WriteOffRow({ item }: { item: WriteOff }) {
     <li className="approval-row">
       <div className="approval-row__what">
         <span className="approval-row__title">
-          {item.quantity} × <Link to={`/inventory/${item.productId}`}>{item.productName}</Link>,{' '}
+          {item.quantity} × <Link to={`/products/${item.productId}`}>{item.productName}</Link>,{' '}
           {t.writeOff.reasons[item.reason] ?? item.reason}
         </span>
         <span className="approval-row__meta">

@@ -59,7 +59,7 @@ function linkFor(entry: ActivityEntry): string | null {
   const id = entry.entityId;
   switch (entry.entityType) {
     case 'product':
-      return id ? `/inventory/${id}` : null;
+      return id ? `/products/${id}` : null;
     case 'customer':
       return id ? `/customers/${id}` : null;
     case 'supplier':

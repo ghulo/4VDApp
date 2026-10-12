@@ -983,12 +983,15 @@ export const en = {
     emptyHint: 'Add what you sell, with its price and how many you have.',
     items: 'products',
   },
+  productPage: {
+    stock: 'Stock',
+    details: 'Details',
+  },
   productForm: {
     addProduct: 'Add product',
     promotionNow: (percent: number) => `−${percent}% now`,
     onPromotion: (p: { name: string; percent: number; price: string; until: string }) =>
       `On promotion: ${p.name}, −${p.percent}% (${p.price}) until ${p.until}.`,
-    stockAndHistory: 'Stock and history',
     needCategory: 'Products need a category. Create one first.',
     goToCategories: 'Go to categories',
     managersOnly: 'Only the developer or an admin can change this.',
@@ -1028,7 +1031,7 @@ export const en = {
     startingStock: 'Starting stock',
     warnAt: 'Warn me when stock reaches',
     stockElsewhereBefore: (count: number) => `${count} in stock. Stock changes are logged, so they're made on the`,
-    stockPage: 'stock page',
+    stockPage: 'Stock tab',
     saving: 'Saving…',
     saveChanges: 'Save changes',
     deleteConfirm: (name: string) => `Delete ${name}? Sales history is kept.`,
@@ -1582,7 +1585,6 @@ export const en = {
     slower: ', selling slower',
     about: (days: number, trend: string) => `About ${days} ${days === 1 ? 'day' : 'days'}${trend}`,
     sku: (sku: string) => `SKU ${sku}`,
-    editProduct: 'Edit product',
     onShelf: 'On the shelf',
     outWarning: 'Out of stock',
     lowWarning: (level: number) => `Stock is at or below the reorder level (${level})`,

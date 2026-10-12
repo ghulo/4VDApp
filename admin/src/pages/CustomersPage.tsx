@@ -409,7 +409,7 @@ export function CustomerDetailPage() {
                 value: product.total,
                 display: formatMoney(product.total),
                 detail: t.customers.pieces(product.quantity),
-                to: `/inventory/${product.productId}`,
+                to: `/products/${product.productId}`,
               }))}
             />
           )}

@@ -124,7 +124,7 @@ export function StockCountDetailPage() {
               title: true,
               cell: (line) => (
                 <>
-                  <Link to={`/inventory/${line.productId}`} className="table__primary-link">
+                  <Link to={`/products/${line.productId}`} className="table__primary-link">
                     {line.productName}
                   </Link>
                   <span className="table__secondary">{line.sku ?? line.categoryName}</span>

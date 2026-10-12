@@ -1,13 +1,26 @@
 import type { Request, Response } from 'express';
 import type { PromotionService } from '../services/PromotionService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { createPromotionSchema } from '../validators/catalogValidators.js';
+import { createPromotionSchema, promotionPreviewSchema } from '../validators/catalogValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createPromotionController(promotionService: PromotionService) {
   return {
     async list(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await promotionService.list());
+    },
+
+    async summary(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await promotionService.monthSummary());
+    },
+
+    async results(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await promotionService.results(id));
+    },
+
+    async preview(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await promotionService.preview(parseInput(promotionPreviewSchema, req.body)));
     },
 
     async create(req: Request, res: Response): Promise<void> {

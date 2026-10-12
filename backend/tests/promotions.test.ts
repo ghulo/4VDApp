@@ -101,6 +101,35 @@ describe('promotions', () => {
   });
 });
 
+describe('promotion preview and results', () => {
+  it('should show each covered product at the new price and flag the ones below the minimum margin', async () => {
+    await request(context.app).put('/api/settings').set(auth(adminToken)).send({ minimumMarginPercent: 10 });
+    const preview = await request(context.app).post('/api/promotions/preview').set(auth(adminToken)).send({ percentOff: 10, categoryId });
+
+    expect(preview.status).toBe(200);
+    expect(preview.body.data).toEqual([
+      expect.objectContaining({ id: chairId, price: 100, newPrice: 90, profitEach: 30, tooLow: false }),
+      expect.objectContaining({ id: tableId, price: 200, newPrice: 180, lowestAllowed: 198, tooLow: true }),
+    ]);
+  });
+
+  it('should report what sold at its price, the discount given, and the month so far', async () => {
+    const created = await createPromotion({ percentOff: 20, productId: chairId });
+    await sell(chairId, 3);
+
+    const results = await request(context.app).get(`/api/promotions/${created.body.data.id}/results`).set(auth(adminToken));
+    const summary = await request(context.app).get('/api/promotions/summary').set(auth(adminToken));
+    const list = await request(context.app).get('/api/promotions').set(auth(adminToken));
+
+    expect(results.body.data.promotion.sold).toEqual({ pieces: 3, revenue: 240, discount: 60, profit: 60 });
+    expect(results.body.data.during).toEqual({ pieces: 3, revenue: 240 });
+    expect(results.body.data.before).toEqual({ pieces: 0, revenue: 0 });
+    expect(results.body.data.daily.at(-1)).toMatchObject({ pieces: 3, during: true });
+    expect(summary.body.data).toMatchObject({ pieces: 3, discount: 60 });
+    expect(list.body.data[0].sold.pieces).toBe(3);
+  });
+});
+
 describe('price history', () => {
   it('should list the starting price and every later price or cost change, newest first', async () => {
     await request(context.app)

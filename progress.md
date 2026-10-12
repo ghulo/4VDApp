@@ -137,6 +137,17 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Merged and pushed
 - [ ] iPhone alerts confirmed working
 
+## Customers and Promotions, made better (branch customers-promotions)
+
+- [x] Sales stay anonymous by default; at the till (dashboard and team app) a registered customer can be picked, then Paid now or On their tab
+- [x] Customers: tiles for owed, overdue, bought this month and credit; search, filter chips (All / Owes / Overdue / Firms), sorting; spent this year and last purchase per row; add in a side panel
+- [x] Customer page: owes, spent this year, purchases and average, last purchase; tab with payments beside what they buy most; purchases and invoices with how each was paid; edit in a side panel
+- [x] Statement of account to print or save as PDF; Remind on WhatsApp with the amount filled in
+- [x] Promotions: tiles for running, starting later, discount given and sold on promotion this month; Running / Starts later / Past; sold and discount per promotion; end or cancel after a confirm
+- [x] New promotion in a side panel with quick dates and a live preview of every new price, profit each, and products below the minimum margin
+- [x] Promotion page: sold at its price, revenue, discount given, profit, and what it covers against the same number of days before, with a day-by-day chart; Run again
+- [x] Merged and pushed
+
 ## Optional
 
 - [ ] Link from a product to the supplier you usually buy it from

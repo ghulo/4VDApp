@@ -106,7 +106,7 @@ export const documentsApi = {
 };
 
 export const salesApi = {
-  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
+  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number; paidNow?: boolean }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,

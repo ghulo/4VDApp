@@ -34,6 +34,9 @@ import type {
   PriceSuggestion,
   PricingTier,
   Promotion,
+  PromotionPreviewLine,
+  PromotionResults,
+  PromotionSales,
   Carwash,
   CarwashDay,
   CarwashTotals,
@@ -49,8 +52,8 @@ import type {
   ExpenseTotals,
   RecurringExpense,
   Customer,
+  CustomerDetail,
   CustomerKind,
-  TabEntry,
   Supplier,
   PurchaseOrder,
   ExpiryDate,
@@ -216,6 +219,10 @@ export const promotionsApi = {
     endsAt: string;
   }) => (await apiRequest<Promotion>('/promotions', { method: 'POST', body: input })).data,
   end: async (id: number) => (await apiRequest<Promotion>(`/promotions/${id}/end`, { method: 'POST' })).data,
+  summary: async () => (await apiRequest<PromotionSales>('/promotions/summary')).data,
+  results: async (id: number) => (await apiRequest<PromotionResults>(`/promotions/${id}/results`)).data,
+  preview: async (input: { percentOff: number; productId?: number; categoryId?: number }) =>
+    (await apiRequest<PromotionPreviewLine[]>('/promotions/preview', { method: 'POST', body: input })).data,
 };
 
 export const categoriesApi = {
@@ -300,7 +307,7 @@ export const salesApi = {
     });
     return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
-  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number }) =>
+  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number; paidNow?: boolean }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
@@ -523,12 +530,12 @@ export interface SupplierInput {
 
 export const customersApi = {
   list: async () => (await apiRequest<Customer[]>('/customers')).data,
-  detail: async (id: number) => (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}`)).data,
+  detail: async (id: number) => (await apiRequest<CustomerDetail>(`/customers/${id}`)).data,
   create: async (input: CustomerInput) => (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
   update: async (id: number, input: CustomerInput) =>
     (await apiRequest<Customer>(`/customers/${id}`, { method: 'PUT', body: input })).data,
   pay: async (id: number, input: { amount: number; note: string | null }) =>
-    (await apiRequest<Customer & { entries: TabEntry[] }>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
+    (await apiRequest<CustomerDetail>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
   archive: async (id: number) => {
     await apiRequest(`/customers/${id}/archive`, { method: 'POST' });
   },

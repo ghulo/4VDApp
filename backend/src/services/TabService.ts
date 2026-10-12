@@ -1,8 +1,9 @@
 import type { TabEntryKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { CustomerFields, CustomerRecord, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
+import type { CustomerFields, CustomerRecord, PurchaseTotals, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
+import { startOfDay, zonedDay } from '../utils/zonedDates.js';
 
 /** A tab unpaid this long shows up in "Needs your attention". */
 export const OVERDUE_DAYS = 30;
@@ -22,6 +23,16 @@ export interface CustomerDto {
   owingSince: string | null;
   lastPaymentAt: string | null;
   archived: boolean;
+  /** Everything they bought (tab or paid at the till), returns taken off. */
+  spent: number;
+  spentThisYear: number;
+  purchases: number;
+  lastPurchaseAt: string | null;
+}
+
+export interface CustomerDetailDto extends CustomerDto {
+  entries: TabEntryDto[];
+  topProducts: Array<{ productId: number; name: string; quantity: number; total: number }>;
 }
 
 export interface TabEntryDto {
@@ -72,7 +83,9 @@ function summarise(entries: TabEntryRecord[]) {
   return { balance, owingSince: unpaid[0]?.at ?? null, lastPaymentAt };
 }
 
-function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[]): CustomerDto {
+const NO_PURCHASES: PurchaseTotals = { spent: 0, spentThisYear: 0, purchases: 0, lastPurchaseAt: null };
+
+function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[], bought: PurchaseTotals = NO_PURCHASES): CustomerDto {
   const { balance, owingSince, lastPaymentAt } = summarise(entries);
   return {
     id: customer.id,
@@ -85,6 +98,10 @@ function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[]): Cus
     owingSince: owingSince?.toISOString() ?? null,
     lastPaymentAt: lastPaymentAt?.toISOString() ?? null,
     archived: customer.archived_at !== null,
+    spent: roundMoney(bought.spent),
+    spentThisYear: roundMoney(bought.spentThisYear),
+    purchases: bought.purchases,
+    lastPurchaseAt: bought.lastPurchaseAt?.toISOString() ?? null,
   };
 }
 
@@ -107,22 +124,33 @@ export class TabService {
   constructor(
     private readonly tabRepository: TabRepository,
     private readonly transactions: TransactionManager,
+    private readonly timeZone: string,
   ) {}
+
+  /** The first moment of this calendar year in the shop's time zone. */
+  private yearStart(now = new Date()): Date {
+    return startOfDay(`${zonedDay(now, this.timeZone).slice(0, 4)}-01-01`, this.timeZone);
+  }
 
   /** Everyone with a tab, most owed first, then by name. */
   async list(): Promise<CustomerDto[]> {
     const customers = await this.tabRepository.findCustomers();
-    const entries = await this.tabRepository.findEntries(customers.map((customer) => customer.id));
+    const ids = customers.map((customer) => customer.id);
+    const [entries, bought] = await Promise.all([this.tabRepository.findEntries(ids), this.tabRepository.purchaseTotals(this.yearStart(), ids)]);
     return customers
-      .map((customer) => toCustomerDto(customer, entries.filter((entry) => entry.customer_id === customer.id)))
+      .map((customer) => toCustomerDto(customer, entries.filter((entry) => entry.customer_id === customer.id), bought.get(customer.id)))
       .sort((a, b) => b.balance - a.balance || a.name.localeCompare(b.name));
   }
 
-  async detail(id: number): Promise<CustomerDto & { entries: TabEntryDto[] }> {
+  async detail(id: number): Promise<CustomerDetailDto> {
     const customer = await this.tabRepository.findCustomer(id);
     if (!customer) throw new NotFoundError(`Customer ${id} does not exist`);
-    const entries = await this.tabRepository.findEntries([id]);
-    return { ...toCustomerDto(customer, entries), entries: [...entries].reverse().map(toEntryDto) };
+    const [entries, bought, topProducts] = await Promise.all([
+      this.tabRepository.findEntries([id]),
+      this.tabRepository.purchaseTotals(this.yearStart(), [id]),
+      this.tabRepository.topProducts(id),
+    ]);
+    return { ...toCustomerDto(customer, entries, bought.get(id)), entries: [...entries].reverse().map(toEntryDto), topProducts };
   }
 
   async create(input: CustomerInput, actorId: number): Promise<CustomerDto> {

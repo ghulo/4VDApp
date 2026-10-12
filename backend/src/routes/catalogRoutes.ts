@@ -55,6 +55,9 @@ export function createPromotionRoutes({ promotionService, guards }: Container): 
   const router = Router();
 
   router.get('/', ...guards.oversee, controller.list);
+  router.get('/summary', ...guards.oversee, controller.summary);
+  router.get('/:id/results', ...guards.oversee, controller.results);
+  router.post('/preview', ...guards.manage, controller.preview);
   router.post('/', ...guards.manage, controller.create);
   router.post('/:id/end', ...guards.manage, controller.end);
 

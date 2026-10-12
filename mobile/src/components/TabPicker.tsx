@@ -7,15 +7,27 @@ import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { Button } from './ui';
+import { ChoiceRow } from './inputs';
 import { cleanNui, isNui } from '../utils/nui';
 
 const SHOWN = 6;
 
 /**
- * "Put on a tab" for a sale: pick a regular, or open a tab for someone new
- * by typing their name. Paid now is the default.
+ * The customer a sale is for, when they want to be named: pick a registered
+ * one, or register someone new by typing their name. Most sales stay without
+ * a name. A named customer pays now unless "On their tab" is picked.
  */
-export function TabPicker({ value, onChange }: { value: Customer | null; onChange: (customer: Customer | null) => void }) {
+export function TabPicker({
+  value,
+  onChange,
+  onTab,
+  onTabChange,
+}: {
+  value: Customer | null;
+  onChange: (customer: Customer | null) => void;
+  onTab: boolean;
+  onTabChange: (onTab: boolean) => void;
+}) {
   const colors = useThemeColors();
   const t = useT();
   const queryClient = useQueryClient();
@@ -42,6 +54,7 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
 
   function pick(customer: Customer | null) {
     onChange(customer);
+    onTabChange(false);
     setOpen(false);
     setSearch('');
     setAsBusiness(false);
@@ -51,10 +64,19 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
   if (value) {
     return (
       <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
-        <Text style={[styles.label, { color: colors.ink }]}>{t.tabs.onTabOf(value.name)}</Text>
-        <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.onTabHint}</Text>
+        <Text style={[styles.label, { color: colors.ink }]}>{t.tabs.forCustomer(value.name)}</Text>
+        <ChoiceRow
+          label={t.tabs.howPaid}
+          value={onTab ? 'tab' : 'now'}
+          onChange={(choice) => onTabChange(choice === 'tab')}
+          options={[
+            { value: 'now', label: t.tabs.paidNow },
+            { value: 'tab', label: t.tabs.putOnTab },
+          ]}
+        />
+        {onTab && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.tabs.onTabHint}</Text>}
         <Pressable accessibilityRole="button" onPress={() => pick(null)} hitSlop={8}>
-          <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.paidNow}</Text>
+          <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.noCustomer}</Text>
         </Pressable>
       </View>
     );
@@ -63,7 +85,7 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
   if (!open) {
     return (
       <Pressable accessibilityRole="button" onPress={() => setOpen(true)} hitSlop={8} style={styles.opener}>
-        <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.putOnTab}</Text>
+        <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.addCustomer}</Text>
       </Pressable>
     );
   }
@@ -140,7 +162,7 @@ export function TabPicker({ value, onChange }: { value: Customer | null; onChang
       )}
       {create.isError && <Text style={[styles.hint, { color: colors.signalOut }]}>{errorMessage(create.error)}</Text>}
       <Pressable accessibilityRole="button" onPress={() => pick(null)} hitSlop={8}>
-        <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.paidNow}</Text>
+        <Text style={[styles.link, { color: colors.ink }]}>{t.tabs.noCustomer}</Text>
       </Pressable>
     </View>
   );

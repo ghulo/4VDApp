@@ -1019,8 +1019,12 @@ export interface StockCountLine {
   value?: number | null;
 }
 
-export interface StockCount extends StockCountSummary {
+/** A count in the list, with its totals. Differences stay null for employees until it closes. */
+export interface StockCountListItem extends StockCountSummary {
   totals: { products: number; counted: number; differences: number | null; pending: number | null; shortageValue: number | null };
+}
+
+export interface StockCount extends StockCountListItem {
   lines: StockCountLine[];
 }
 

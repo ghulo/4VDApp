@@ -37,16 +37,22 @@ export interface StockCountSummaryDto {
   closedAt: string | null;
 }
 
-export interface StockCountDto extends StockCountSummaryDto {
-  totals: {
-    products: number;
-    counted: number;
-    // Hidden (null) from employees until the count is closed.
-    differences: number | null;
-    pending: number | null;
-    /** Value at cost of what is missing; negative when there is more than expected. */
-    shortageValue: number | null;
-  };
+export interface StockCountTotals {
+  products: number;
+  counted: number;
+  // Hidden (null) from employees until the count is closed.
+  differences: number | null;
+  pending: number | null;
+  /** Value at cost of what is missing; negative when there is more than expected. */
+  shortageValue: number | null;
+}
+
+/** A count in the list, with its totals so the page can show progress and results. */
+export interface StockCountListItemDto extends StockCountSummaryDto {
+  totals: StockCountTotals;
+}
+
+export interface StockCountDto extends StockCountListItemDto {
   lines: StockCountLineDto[];
 }
 
@@ -84,9 +90,16 @@ export class StockCountService {
     return this.get(id, user);
   }
 
-  async list(): Promise<StockCountSummaryDto[]> {
+  async list(user: PublicUser): Promise<StockCountListItemDto[]> {
     const counts = await this.stockCountRepository.findRecent(RECENT_CLOSED_COUNTS);
-    return counts.map(toSummaryDto);
+    // One small query per count: the list is only the active counts plus the last few finished ones.
+    return Promise.all(
+      counts.map(async (count) => {
+        const products = await this.stockCountRepository.products(count.id, count.category_id);
+        const { lines: _lines, ...item } = toCountDto(count, products, canOversee(user.role) || count.status === 'closed');
+        return item;
+      }),
+    );
   }
 
   async get(id: number, user: PublicUser): Promise<StockCountDto> {

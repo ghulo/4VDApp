@@ -3835,3 +3835,43 @@ fieldset.report-sections {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* ---------- Close the day: tick marks ---------- */
+
+.day-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* An empty ring pressed into the card while the step is open. */
+.day-step__mark {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 20px;
+  block-size: 20px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+/* Done: filled with the ok colour, the tick in the card's own colour. */
+.day-step__mark--done {
+  border-color: var(--ok);
+  background: var(--ok);
+  box-shadow: none;
+  color: var(--surface);
+}
+
+.day-step__mark svg {
+  inline-size: 12px;
+  block-size: 12px;
+}
+
+/* The line under a step starts where its name does, past the tick. */
+.day-step__note {
+  display: block;
+  padding-inline-start: calc(20px + var(--space-3));
+}

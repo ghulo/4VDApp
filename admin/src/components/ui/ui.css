@@ -927,8 +927,19 @@ input.switch:focus-visible {
   overflow: visible;
 }
 
+/* The sun is glass: lit at its crown, with a crisp rim instead of a soft edge. */
 .shop-sunrise__sun {
-  fill: var(--accent);
+  stroke: var(--cta-edge);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+}
+
+.shop-sunrise__glass-top {
+  stop-color: var(--cta-hover);
+}
+
+.shop-sunrise__glass-base {
+  stop-color: var(--accent);
 }
 
 .shop-sunrise__glow {

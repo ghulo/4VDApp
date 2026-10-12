@@ -8,7 +8,8 @@ import type { DayStep, ShopDay } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { carwashLabel } from '../utils/useCarwashes';
-import { Badge, Button, ButtonLink, Card, SettingRow } from './ui';
+import { Check } from '@phosphor-icons/react';
+import { Button, ButtonLink, Card, SettingRow } from './ui';
 
 /**
  * The close-the-day steps as the server defines them (the team app's End your
@@ -146,12 +147,16 @@ function Item({ title, done, description, children, showAction }: ItemProps) {
   return (
     <SettingRow
       title={
-        <span className="setting-row__title-line">
+        <span className="day-step">
+          {/* A tick box like on paper: an empty ring to do, a filled tick once done. */}
+          <span className={`day-step__mark${done ? ' day-step__mark--done' : ''}`}>
+            {done && <Check weight="bold" aria-hidden="true" />}
+            <span className="visually-hidden">{done ? t.dayClose.done : t.dayClose.toDo}: </span>
+          </span>
           {title}
-          {done ? <Badge tone="ok">{t.dayClose.done}</Badge> : <Badge tone="warn">{t.dayClose.toDo}</Badge>}
         </span>
       }
-      description={description}
+      description={<span className="day-step__note">{description}</span>}
     >
       {actionShown && children}
     </SettingRow>

@@ -24,28 +24,9 @@ body {
   font-size: var(--text-base);
 }
 
-/* Paper grain: a faint printed-paper noise over the whole page, like the
-   textured stock on anthropic.com. It never takes clicks and goes away when
-   the computer asks for more contrast, and on paper. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: var(--grain-opacity);
-  mix-blend-mode: var(--grain-blend);
-  background-image: var(--grain-image);
-  background-size: 180px 180px;
-}
-
 @media (prefers-contrast: more), print {
   body {
     background: var(--bg);
-  }
-
-  body::after {
-    display: none;
   }
 }
 

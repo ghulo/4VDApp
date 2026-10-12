@@ -506,14 +506,8 @@ dark-mode twin:
   text keeps a solid, measurable background.
 - **Light canvas** (`--light-canvas`): the page is brightest under the top
   bar, fading out over the first screen.
-- **Warm light**: highlights are cream (255 248 236), shadows are clay-brown
-  (74 36 16; dark mode 22 10 4), never neutral grey. The paper feels sunlit
-  without spending the orange, which still means "act here".
-- **Sunrise** (`--sunrise`): the one coloured wash, a faint clay rise from the
-  Today strip's bottom-right corner, echoing the shop at sunrise. Today strip
-  only. Light mode stays at 10% so the muted label over it keeps 4.5:1.
-No other brand-colour gradients, none on tables, charts or glass, and no
-one-off gradients in screens: use these tokens.
+No brand-colour gradients, none on tables, charts or glass, and no one-off
+gradients in screens: use these tokens.
 
 ### 8.1 Glass (clean and purposeful)
 Glass is for **chrome that floats over moving content**, so you can see the page

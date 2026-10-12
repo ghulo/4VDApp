@@ -17,9 +17,10 @@ interface StockTagProps {
 const BLOCKS = 10;
 
 /**
- * Stock count styled like a shelf tag, over a row of printed blocks showing how
- * far stock is above the reorder level: the row is full at twice the reorder
- * level, and a wider gap after the fifth block marks the reorder point.
+ * Stock count styled like a shelf tag, over a gauge of how far stock is above
+ * the reorder level: full at twice the reorder level, so the reorder point sits
+ * halfway. In lists it's a row of printed blocks with a wider gap at that point;
+ * large (a product's own page) it's one slim track with a tick there.
  */
 export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagProps) {
   const t = useT();
@@ -31,11 +32,18 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
   return (
     <span className={`stock-tag stock-tag--${level} stock-tag--${size}`} title={t.stockTag.title(label, reorderLevel)}>
       <span className="stock-tag__count">{quantity}</span>
-      <span className="stock-tag__gauge" aria-hidden="true">
-        {Array.from({ length: BLOCKS }, (_, index) => (
-          <span key={index} className={index < lit ? 'stock-tag__block stock-tag__block--lit' : 'stock-tag__block'} />
-        ))}
-      </span>
+      {size === 'large' ? (
+        <span className="stock-tag__track" aria-hidden="true">
+          <span className="stock-tag__fill" style={{ width: `${Math.min(quantity / fullAt, 1) * 100}%` }} />
+          <span className="stock-tag__mark" />
+        </span>
+      ) : (
+        <span className="stock-tag__gauge" aria-hidden="true">
+          {Array.from({ length: BLOCKS }, (_, index) => (
+            <span key={index} className={index < lit ? 'stock-tag__block stock-tag__block--lit' : 'stock-tag__block'} />
+          ))}
+        </span>
+      )}
       <span className="visually-hidden">{label}</span>
     </span>
   );

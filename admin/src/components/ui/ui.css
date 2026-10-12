@@ -996,8 +996,14 @@ input.switch:focus-visible {
   fill: var(--ink);
 }
 
-.day-bars__empty {
+/* One hairline the bars stand on, so quiet days read as calm, not broken. */
+.day-bars__base {
   fill: var(--line-strong);
+}
+
+/* The gap across a bar that runs off the top. */
+.day-bars__break {
+  fill: var(--surface);
 }
 
 /* ---------- Metric cards (analytics boards) ---------- */

@@ -265,14 +265,22 @@ describe('Badge, StatTile and EmptyState', () => {
 });
 
 describe('DayBars', () => {
-  it('should draw one bar per day and keep quiet days visible', () => {
-    const html = render(<DayBars values={[0, 1, 10]} label="Sales per day" />);
+  it('should stand the days with sales on one baseline and leave empty days bare', () => {
+    const html = render(<DayBars values={[0, 4, 10]} label="Sales per day" />);
 
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Sales per day"');
+    // The baseline plus a bar for each day that sold; the empty day draws nothing.
     expect(html.match(/<rect/g)).toHaveLength(3);
-    // A faint tick for the empty day, real bars for the others, the latest in ink.
-    expect(html.match(/day-bars__empty/g)).toHaveLength(1);
+    expect(html.match(/day-bars__base/g)).toHaveLength(1);
+    expect(html.match(/day-bars__bar"|day-bars__bar /g)).toHaveLength(2);
     expect(html).toContain('day-bars__bar--latest');
+    expect(html).not.toContain('day-bars__break');
+  });
+
+  it('should cap one huge day with a break mark so the other days stay readable', () => {
+    const html = render(<DayBars values={[2, 3, 40]} label="Sales per day" />);
+
+    expect(html.match(/day-bars__break/g)).toHaveLength(1);
   });
 });

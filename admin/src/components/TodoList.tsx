@@ -18,7 +18,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useT } from '../i18n/useT';
 import { cashApi } from '../services/api';
-import type { TodoItem } from '../services/types';
+import type { TodoItem, TodoSeverity } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ATTENTION_KEY } from '../utils/useAttention';
 import { Button, ButtonLink } from './ui';
@@ -41,6 +41,36 @@ const ICONS: Record<string, Icon> = {
   bill_scan: Scan,
   requests: Tray,
 };
+
+const SEVERITIES: TodoSeverity[] = ['urgent', 'check', 'idea'];
+
+/**
+ * To do items split under Urgent, To check and Ideas, so no row needs its own
+ * stamp. Shared by the Inbox and the Overview; `idPrefix` keeps heading ids unique
+ * and `level` fits the headings into the page's outline.
+ */
+export function TodoGroups({ items, idPrefix, level = 2 }: { items: TodoItem[]; idPrefix: string; level?: 2 | 3 }) {
+  const t = useT();
+  const Heading = level === 2 ? 'h2' : 'h3';
+  return (
+    <>
+      {SEVERITIES.map((severity) => {
+        const group = items.filter((item) => item.severity === severity);
+        if (group.length === 0) return null;
+        const id = `${idPrefix}-${severity}`;
+        return (
+          <section key={severity} aria-labelledby={id} className="inbox__section">
+            <Heading id={id} className={`inbox__heading inbox__heading--${severity}`}>
+              {t.inbox.groups[severity]}
+              <span className="inbox__heading-count">{group.length}</span>
+            </Heading>
+            <TodoList items={group} showSeverity={false} />
+          </section>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * To do items, most urgent first: an icon for what it's about, a line that
@@ -93,7 +123,7 @@ function TodoRow({ item, showSeverity }: { item: TodoItem; showSeverity: boolean
       <span className="todo-row__actions">
         {item.verb === 'markChecked' ? (
           <>
-            <ButtonLink to={item.to} variant="ghost" size="sm" aria-label={`${t.todo.openDay}: ${item.title}`}>
+            <ButtonLink to={item.to} variant="secondary" size="sm" aria-label={`${t.todo.openDay}: ${item.title}`}>
               {t.todo.openDay}
             </ButtonLink>
             <Button size="sm" disabled={check.isPending} aria-label={`${t.todo.verbs.markChecked}: ${item.title}`} onClick={() => check.mutate()}>

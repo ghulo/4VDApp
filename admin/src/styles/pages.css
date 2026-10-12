@@ -230,7 +230,7 @@
   margin-bottom: var(--space-4);
   padding: var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--sheen), var(--light-raise), var(--fill);
+  background: var(--sunrise), var(--sheen), var(--light-raise), var(--fill);
   box-shadow: var(--shadow-raise);
 }
 

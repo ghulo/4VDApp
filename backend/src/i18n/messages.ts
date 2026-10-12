@@ -148,27 +148,41 @@ export interface ServerMessages {
     nothing: string;
     testPrefix: string;
     sections: Record<string, string>;
+    /** The email's headline. */
+    kindTitle: Record<'daily' | 'weekly', string>;
     emailIntro: (p: { name: string; kind: 'daily' | 'weekly'; period: string }) => string;
     emailButton: string;
     emailNote: string;
+    /** The report email's figures, rows and stamps, laid out like the report page. */
     lines: {
-      revenue: (p: { revenue: number; change: number | null }) => string;
-      profit: (p: { profit: number; margin: number | null; net: number }) => string;
-      count: (p: { sales: number; units: number; average: number }) => string;
-      product: (p: { name: string; units: number; revenue: number }) => string;
-      person: (p: { name: string; sales: number; revenue: number }) => string;
-      losses: (p: { refunds: number; stockLosses: number }) => string;
-      carwash: (p: { name: string; total: number }) => string;
-      cash: (p: { day: string; place: string; float: number; difference: number | null }) => string;
-      expense: (p: { category: string; amount: number }) => string;
-      expensesTotal: (amount: number) => string;
-      tabs: (p: { owed: number; customers: number }) => string;
-      tabOverdue: (p: { name: string; balance: number }) => string;
-      billsOwed: (p: { owed: number; overdue: number; overdueCount: number; dueSoon: number }) => string;
-      billsPaid: (p: { count: number; total: number }) => string;
-      bill: (p: { supplier: string; left: number; dueOn: string | null; overdue: boolean }) => string;
-      stockList: (p: { label: 'soldOut' | 'runningOut' | 'expiring'; names: string[] }) => string;
-      approvals: (total: number) => string;
+      revenue: string;
+      profit: string;
+      net: string;
+      salesCount: string;
+      change: (percent: number) => string;
+      before: (amount: number) => string;
+      margin: (margin: number) => string;
+      netHint: string;
+      units: (p: { units: number; average: number }) => string;
+      byDay: string;
+      sold: (units: number) => string;
+      sales: (count: number) => string;
+      refunds: string;
+      stockLosses: string;
+      float: (amount: number) => string;
+      counted: string;
+      matched: string;
+      short: (amount: number) => string;
+      over: (amount: number) => string;
+      total: string;
+      owedBy: (customers: number) => string;
+      overdue: string;
+      owed: string;
+      dueSoon: string;
+      paid: (count: number) => string;
+      due: (p: { day: string; overdue: boolean }) => string;
+      stock: Record<'soldOut' | 'runningOut' | 'expiring', string>;
+      waiting: string;
       none: string;
     };
   };
@@ -398,32 +412,39 @@ export const en: ServerMessages = {
       stock: 'Stock',
       approvals: 'Approvals',
     },
+    kindTitle: { daily: 'Daily report', weekly: 'Weekly report' },
     emailIntro: ({ name, kind, period }) => `Hi ${name}, here is your ${kind === 'daily' ? 'daily' : 'weekly'} report for ${period}.`,
     emailButton: 'Open the full report',
     emailNote: 'Choose what is in this report, when it comes and whether it is emailed on your Profile page.',
     lines: {
-      revenue: ({ revenue, change }) =>
-        `${money(revenue, 'en')} in sales${change === null ? '' : `, ${change >= 0 ? 'up' : 'down'} ${Math.abs(change)}% on the period before`}`,
-      profit: ({ profit, margin, net }) =>
-        `${money(profit, 'en')} profit${margin === null ? '' : ` (${Math.round(margin * 100)}% margin)`}; ${money(net, 'en')} after the carwash and expenses`,
-      count: ({ sales, units, average }) =>
-        `${sales} ${sales === 1 ? 'sale' : 'sales'}, ${units} ${units === 1 ? 'unit' : 'units'}, ${money(average, 'en')} on average`,
-      product: ({ name, units, revenue }) => `${name}: ${units} sold, ${money(revenue, 'en')}`,
-      person: ({ name, sales, revenue }) => `${name}: ${sales} ${sales === 1 ? 'sale' : 'sales'}, ${money(revenue, 'en')}`,
-      losses: ({ refunds, stockLosses }) => `${money(refunds, 'en')} refunded, ${money(stockLosses, 'en')} of stock lost`,
-      carwash: ({ name, total }) => `${name}: ${money(total, 'en')}`,
-      cash: ({ day, place, float, difference }) =>
-        `${day} ${place}: ${difference === null ? 'counted' : difference === 0 ? 'matched' : difference < 0 ? `short ${money(-difference, 'en')}` : `over ${money(difference, 'en')}`} (float ${money(float, 'en')})`,
-      expense: ({ category, amount }) => `${category}: ${money(amount, 'en')}`,
-      expensesTotal: (amount) => `${money(amount, 'en')} spent`,
-      tabs: ({ owed, customers }) => `${money(owed, 'en')} owed by ${customers} ${customers === 1 ? 'customer' : 'customers'}`,
-      tabOverdue: ({ name, balance }) => `${name} owes ${money(balance, 'en')} (overdue)`,
-      billsOwed: ({ owed, overdue, overdueCount, dueSoon }) =>
-        `${money(owed, 'en')} owed to suppliers; ${overdueCount > 0 ? `${money(overdue, 'en')} overdue` : 'nothing overdue'}, ${money(dueSoon, 'en')} due this week`,
-      billsPaid: ({ count, total }) => `${money(total, 'en')} paid in ${count} ${count === 1 ? 'payment' : 'payments'}`,
-      bill: ({ supplier, left, dueOn, overdue }) => `${supplier}: ${money(left, 'en')}${dueOn ? `, ${overdue ? 'was due' : 'due'} ${dueOn}` : ''}`,
-      stockList: ({ label, names }) => `${{ soldOut: 'Sold out', runningOut: 'Running out', expiring: 'Expiring' }[label]}: ${names.join(', ')}`,
-      approvals: (total) => `${total} ${total === 1 ? 'request' : 'requests'} waiting for you`,
+      revenue: 'Sales',
+      profit: 'Profit',
+      net: 'Left after costs',
+      salesCount: 'Number of sales',
+      change: (percent) => `${percent >= 0 ? 'Up' : 'Down'} ${Math.abs(percent)}% on the period before`,
+      before: (amount) => `${money(amount, 'en')} the period before`,
+      margin: (margin) => `${Math.round(margin * 100)}% margin`,
+      netHint: 'Shop profit plus the carwash, minus expenses',
+      units: ({ units, average }) => `${count(units, 'unit', 'units')} · ${money(average, 'en')} on average`,
+      byDay: 'Sales by day',
+      sold: (units) => `${units} sold`,
+      sales: (n) => count(n, 'sale', 'sales'),
+      refunds: 'Refunded',
+      stockLosses: 'Stock lost',
+      float: (amount) => `float ${money(amount, 'en')}`,
+      counted: 'Counted',
+      matched: 'Matched',
+      short: (amount) => `Short ${money(amount, 'en')}`,
+      over: (amount) => `Over ${money(amount, 'en')}`,
+      total: 'Total',
+      owedBy: (customers) => `Owed by ${count(customers, 'customer', 'customers')}`,
+      overdue: 'Overdue',
+      owed: 'You owe',
+      dueSoon: 'Due this week',
+      paid: (n) => `Paid in ${count(n, 'payment', 'payments')}`,
+      due: ({ day, overdue }) => `${overdue ? 'was due' : 'due'} ${day}`,
+      stock: { soldOut: 'Sold out', runningOut: 'Running out', expiring: 'Expiring' },
+      waiting: 'Requests waiting for you',
       none: 'Nothing here.',
     },
   },
@@ -657,31 +678,39 @@ export const sq: ServerMessages = {
       stock: 'Stoku',
       approvals: 'Miratimet',
     },
+    kindTitle: { daily: 'Raporti ditor', weekly: 'Raporti javor' },
     emailIntro: ({ name, kind, period }) => `Përshëndetje ${name}, ja raporti yt ${kind === 'daily' ? 'ditor' : 'javor'} për ${period}.`,
     emailButton: 'Hap raportin e plotë',
     emailNote: 'Zgjidh çfarë ka ky raport, kur vjen dhe nëse vjen me email te faqja e Profilit.',
     lines: {
-      revenue: ({ revenue, change }) =>
-        `${money(revenue, 'sq')} shitje${change === null ? '' : `, ${change >= 0 ? 'rritje' : 'rënie'} ${Math.abs(change)}% nga periudha e mëparshme`}`,
-      profit: ({ profit, margin, net }) =>
-        `${money(profit, 'sq')} fitim${margin === null ? '' : ` (marzhë ${Math.round(margin * 100)}%)`}; ${money(net, 'sq')} pas lavazhit dhe shpenzimeve`,
-      count: ({ sales, units, average }) => `${sales} shitje, ${units} copë, mesatarisht ${money(average, 'sq')}`,
-      product: ({ name, units, revenue }) => `${name}: ${units} të shitura, ${money(revenue, 'sq')}`,
-      person: ({ name, sales, revenue }) => `${name}: ${sales} shitje, ${money(revenue, 'sq')}`,
-      losses: ({ refunds, stockLosses }) => `${money(refunds, 'sq')} të rimbursuara, ${money(stockLosses, 'sq')} stok i humbur`,
-      carwash: ({ name, total }) => `${name}: ${money(total, 'sq')}`,
-      cash: ({ day, place, float, difference }) =>
-        `${day} ${place}: ${difference === null ? 'u numërua' : difference === 0 ? 'përputhet' : difference < 0 ? `mungojnë ${money(-difference, 'sq')}` : `tepricë ${money(difference, 'sq')}`} (kusuri fillestar ${money(float, 'sq')})`,
-      expense: ({ category, amount }) => `${category}: ${money(amount, 'sq')}`,
-      expensesTotal: (amount) => `${money(amount, 'sq')} të shpenzuara`,
-      tabs: ({ owed, customers }) => `${money(owed, 'sq')} borxh nga ${customers} ${customers === 1 ? 'klient' : 'klientë'}`,
-      tabOverdue: ({ name, balance }) => `${name} ka borxh ${money(balance, 'sq')} (i vonuar)`,
-      billsOwed: ({ owed, overdue, overdueCount, dueSoon }) =>
-        `${money(owed, 'sq')} borxh te furnitorët; ${overdueCount > 0 ? `${money(overdue, 'sq')} të vonuara` : 'asgjë e vonuar'}, ${money(dueSoon, 'sq')} për t’u paguar këtë javë`,
-      billsPaid: ({ count, total }) => `${money(total, 'sq')} të paguara me ${count} ${count === 1 ? 'pagesë' : 'pagesa'}`,
-      bill: ({ supplier, left, dueOn, overdue }) => `${supplier}: ${money(left, 'sq')}${dueOn ? `, ${overdue ? 'afati ishte' : 'afati'} ${dueOn}` : ''}`,
-      stockList: ({ label, names }) => `${{ soldOut: 'Mbaruan', runningOut: 'Po mbarojnë', expiring: 'Po skadojnë' }[label]}: ${names.join(', ')}`,
-      approvals: (total) => `${total} ${total === 1 ? 'kërkesë' : 'kërkesa'} të presin`,
+      revenue: 'Shitjet',
+      profit: 'Fitimi',
+      net: 'Mbetet pas kostove',
+      salesCount: 'Nr. i shitjeve',
+      change: (percent) => `${percent >= 0 ? 'Rritje' : 'Rënie'} ${Math.abs(percent)}% nga periudha e mëparshme`,
+      before: (amount) => `${money(amount, 'sq')} periudha e mëparshme`,
+      margin: (margin) => `marzhë ${Math.round(margin * 100)}%`,
+      netHint: 'Fitimi i dyqanit plus lavazhi, minus shpenzimet',
+      units: ({ units, average }) => `${units} copë · mesatarisht ${money(average, 'sq')}`,
+      byDay: 'Shitjet sipas ditës',
+      sold: (units) => `${units} të shitura`,
+      sales: (n) => `${n} shitje`,
+      refunds: 'Rimbursuar',
+      stockLosses: 'Stok i humbur',
+      float: (amount) => `kusuri fillestar ${money(amount, 'sq')}`,
+      counted: 'U numërua',
+      matched: 'Përputhet',
+      short: (amount) => `Mungojnë ${money(amount, 'sq')}`,
+      over: (amount) => `Tepricë ${money(amount, 'sq')}`,
+      total: 'Gjithsej',
+      owedBy: (customers) => `Borxh nga ${customers} ${customers === 1 ? 'klient' : 'klientë'}`,
+      overdue: 'E vonuar',
+      owed: 'Ke borxh',
+      dueSoon: 'Për t’u paguar këtë javë',
+      paid: (n) => `Paguar me ${n} ${n === 1 ? 'pagesë' : 'pagesa'}`,
+      due: ({ day, overdue }) => `${overdue ? 'afati ishte' : 'afati'} ${day}`,
+      stock: { soldOut: 'Mbaruan', runningOut: 'Po mbarojnë', expiring: 'Po skadojnë' },
+      waiting: 'Kërkesa që të presin',
       none: 'Asgjë këtu.',
     },
   },

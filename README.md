@@ -174,3 +174,7 @@ Every app has a `.env.example` listing what it needs. Copy it to `.env` and fill
 ## Project Status
 - Phase: First full version, running locally. Not deployed yet
 - Last Updated: 2026-10-01
+
+## License
+
+[MIT](LICENSE)

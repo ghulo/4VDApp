@@ -1968,7 +1968,7 @@ export const en = {
     openInbox: 'Open Inbox',
   },
   dayPage: {
-    description: (day: string) => `${day}: the drawers, the carwash and what was spent. Nothing gets locked; you can still change anything later.`,
+    description: (day: string) => `${day}: the drawers, the carwash and what was spent.`,
     earlier: 'Day before',
     later: 'Day after',
     today: 'Today',

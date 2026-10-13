@@ -8,7 +8,7 @@ import { cashApi } from '../services/api';
 import type { CashCount } from '../services/types';
 import { formatMoney } from '../utils/format';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Button, Card, EmptyState, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import { Button, EmptyState, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
@@ -48,9 +48,9 @@ export function CashPage() {
       {counts.isPending && <Loading />}
       {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
       {counts.data && (
-        <Card title={t.cash.countsInPeriod} flush>
+        <Section title={t.cash.countsInPeriod}>
           <CashCountsTable counts={counts.data} empty={<EmptyState icon={Coins} title={t.cash.none}>{t.cash.noneHint}</EmptyState>} />
-        </Card>
+        </Section>
       )}
     </>
   );

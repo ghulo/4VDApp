@@ -1949,7 +1949,7 @@ export const sq: Catalogue = {
     openInbox: 'Hap Kutinë hyrëse',
   },
   dayPage: {
-    description: (day: string) => `${day}: arkat, lavazhi dhe çfarë u shpenzua. Asgjë nuk kyçet; mund të ndryshosh çdo gjë edhe më vonë.`,
+    description: (day: string) => `${day}: arkat, lavazhi dhe çfarë u shpenzua.`,
     earlier: 'Dita më parë',
     later: 'Dita pas',
     today: 'Sot',

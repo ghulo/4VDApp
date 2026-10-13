@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, DayBars, EmptyState, MetricCard, MetricGrid, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DayBars, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
 import type { FullReport, ReportKind } from '../services/types';
@@ -100,6 +100,8 @@ function ReportSections({ report }: { report: FullReport }) {
   const t = useT();
   const s = report.sections;
   const none = (text: string) => <p className="field-hint">{text}</p>;
+  // A table stands on the page under its heading; other parts sit in a card.
+  const section = (key: keyof typeof t.report.sections, children: ReactNode) => <Section title={t.report.sections[key]}>{children}</Section>;
   const card = (key: keyof typeof t.report.sections, children: ReactNode, actions?: ReactNode) => (
     <Card title={t.report.sections[key]} actions={actions}>
       {children}
@@ -134,7 +136,7 @@ function ReportSections({ report }: { report: FullReport }) {
 
       <div className="report-grid">
         {s.products &&
-          card(
+          section(
             'products',
             s.products.length === 0 ? (
               none(t.fullReport.noSales)
@@ -153,7 +155,7 @@ function ReportSections({ report }: { report: FullReport }) {
             ),
           )}
         {s.team &&
-          card(
+          section(
             'team',
             s.team.length === 0 ? (
               none(t.fullReport.noSales)

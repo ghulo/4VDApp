@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight, Coins } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Coins, Wallet } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { CashCountsTable, CountForm, formatDay } from '../components/CashCount';
@@ -9,7 +9,7 @@ import type { ShopDay } from '../services/types';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { useDayChecklist } from '../utils/useDayChecklist';
-import { Button, Card, DataTable, EmptyState, PageHeader, Sheet } from '../components/ui';
+import { Button, DataTable, EmptyState, PageHeader, Section, Sheet } from '../components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const shift = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
@@ -87,9 +87,9 @@ function DayDetails({ day, details }: { day: ShopDay; details: NonNullable<ShopD
   const { several } = useCarwashes();
   return (
     <>
-      <Card
+      <Section
         title={t.dayPage.counts}
-        flush
+       
         actions={
           <Link to="/cash" className="text-link">
             {t.dayPage.seeAll}
@@ -101,12 +101,12 @@ function DayDetails({ day, details }: { day: ShopDay; details: NonNullable<ShopD
           showDay={false}
           empty={<EmptyState icon={Coins} title={t.dayPage.noCounts} />}
         />
-      </Card>
+      </Section>
 
       {details.carwash.length > 0 && (
-        <Card
+        <Section
           title={t.dayPage.carwash}
-          flush
+         
           actions={
             <Link to="/carwash" className="text-link">
               {t.dayPage.seeAll}
@@ -123,12 +123,12 @@ function DayDetails({ day, details }: { day: ShopDay; details: NonNullable<ShopD
               { header: t.carwash.change, cell: (row) => (row.takings ? formatMoney(row.takings.change) : '–'), align: 'end' },
             ]}
           />
-        </Card>
+        </Section>
       )}
 
-      <Card
+      <Section
         title={t.dayPage.expenses}
-        flush
+       
         actions={
           <Link to="/expenses" className="text-link">
             {t.dayPage.seeAll}
@@ -139,7 +139,7 @@ function DayDetails({ day, details }: { day: ShopDay; details: NonNullable<ShopD
           caption={`${t.dayPage.expenses}, ${formatDay(day.day)}`}
           rows={details.expenses}
           rowKey={(row) => row.id}
-          empty={<EmptyState title={t.dayPage.noExpenses} />}
+          empty={<EmptyState icon={Wallet} title={t.dayPage.noExpenses} />}
           columns={[
             { header: t.expenses.category, cell: (row) => t.expenses.categories[row.category], title: true },
             {
@@ -158,7 +158,7 @@ function DayDetails({ day, details }: { day: ShopDay; details: NonNullable<ShopD
             },
           ]}
         />
-      </Card>
+      </Section>
     </>
   );
 }

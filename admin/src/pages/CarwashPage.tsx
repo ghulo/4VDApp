@@ -14,7 +14,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Button, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Button, Card, DataTable, EmptyState, Field, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 
 /** "2026-10-04": today on this computer's calendar. */
 const today = () => new Date().toLocaleDateString('en-CA');
@@ -230,7 +230,7 @@ function DaysTable({ days, several, onEdit }: { days: CarwashDay[]; several: boo
   const manager = canManage(role);
 
   return (
-    <Card title={t.carwash.days} flush>
+    <Section title={t.carwash.days}>
       <DataTable
         caption={t.carwash.caption}
         rows={days}
@@ -253,7 +253,7 @@ function DaysTable({ days, several, onEdit }: { days: CarwashDay[]; several: boo
             : []),
         ]}
       />
-    </Card>
+    </Section>
   );
 }
 

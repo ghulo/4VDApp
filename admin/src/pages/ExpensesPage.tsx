@@ -13,7 +13,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, Card, DataTable, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import { Badge, Button, DataTable, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 
 /** Same cap as the server: every month has a 28th. */
 const LAST_REPEAT_DAY = 28;
@@ -204,7 +204,7 @@ function ExpenseTable({ expenses }: { expenses: Expense[] }) {
   const { role } = useCurrentUser();
   const { several } = useCarwashes();
   return (
-    <Card title={t.expenses.list} flush>
+    <Section title={t.expenses.list}>
       <DataTable
         caption={t.expenses.caption}
         rows={expenses}
@@ -233,7 +233,7 @@ function ExpenseTable({ expenses }: { expenses: Expense[] }) {
             : []),
         ]}
       />
-    </Card>
+    </Section>
   );
 }
 
@@ -290,7 +290,7 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
   });
 
   return (
-    <Card title={t.expenses.repeating} flush>
+    <Section title={t.expenses.repeating}>
       <DataTable
         caption={t.expenses.repeatingCaption}
         rows={rules}
@@ -333,6 +333,6 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
           {errorMessage(stop.error)}
         </p>
       )}
-    </Card>
+    </Section>
   );
 }

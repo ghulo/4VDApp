@@ -12,7 +12,7 @@ import { productsApi, reportsApi, salesApi, usersApi } from '../services/api';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, Card, DataTable, MetricCard, MetricGrid, PageHeader, Sheet, useNewSheet } from '../components/ui';
+import { Badge, Button, DataTable, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
 import type { Checkout } from '../services/types';
 import { useT } from '../i18n/useT';
@@ -196,7 +196,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   }
 
   return (
-    <Card title={t.sales.history} flush>
+    <Section title={t.sales.history}>
       {returnMessage && (
         <p className="form-success" role="status">
           {returnMessage}
@@ -356,6 +356,6 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
           }
         />
       )}
-    </Card>
+    </Section>
   );
 }

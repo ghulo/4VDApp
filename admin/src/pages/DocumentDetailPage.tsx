@@ -169,8 +169,8 @@ function FiscalReceiptCard({ document }: { document: SalesDocumentDetail }) {
             }}
           />
         </Field>
-        <Button type="submit" disabled={unchanged || save.isPending}>
-          {save.isPending ? t.documents.saving : t.documents.save}
+        <Button type="submit" disabled={unchanged || save.isPending} loading={save.isPending}>
+          {t.documents.save}
         </Button>
       </form>
       {save.isError && (

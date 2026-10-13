@@ -164,8 +164,8 @@ function StartCountForm() {
             </option>
           ))}
       </select>
-      <Button type="submit" variant="primary" icon={ClipboardText} disabled={start.isPending}>
-        {start.isPending ? t.counts.starting : t.counts.start}
+      <Button type="submit" variant="primary" icon={ClipboardText} disabled={start.isPending} loading={start.isPending}>
+        {t.counts.start}
       </Button>
       {start.isError && (
         <p className="form-error" role="alert">

@@ -130,8 +130,8 @@ function BusinessForm({ initial }: { initial: Business }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || !ibanOk || save.isPending}>
-              {save.isPending ? t.settings.saving : t.business.save}
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || !ibanOk || save.isPending} loading={save.isPending}>
+              {t.business.save}
             </Button>
           </>
         }
@@ -150,8 +150,8 @@ function BusinessForm({ initial }: { initial: Business }) {
         >
           {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" width={72} height={72} /> : <LogoMark size={48} />}
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickLogo} />
-          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
-            {upload.isPending ? t.profile.uploading : logo ? t.profile.change : t.business.addLogo}
+          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()} loading={upload.isPending}>
+            {logo ? t.profile.change : t.business.addLogo}
           </Button>
           {logo && (
             <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>

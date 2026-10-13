@@ -282,8 +282,8 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
             <Button variant="ghost" onClick={onClose}>
               {t.common.cancel}
             </Button>
-            <Button type="submit" variant="primary" disabled={receive.isPending || (withBill && !isBillValid(bill))}>
-              {receive.isPending ? t.orders.receiving : t.orders.confirmReceive}
+            <Button type="submit" variant="primary" disabled={receive.isPending || (withBill && !isBillValid(bill))} loading={receive.isPending}>
+              {t.orders.confirmReceive}
             </Button>
           </div>
         </div>
@@ -378,8 +378,8 @@ function OrderBillCard({ order }: { order: PurchaseOrder }) {
           </p>
         )}
         <div className="form-actions">
-          <Button type="submit" variant="primary" disabled={!isBillValid(draft) || create.isPending}>
-            {create.isPending ? t.bills.saving : t.orderDetail.addBill}
+          <Button type="submit" variant="primary" disabled={!isBillValid(draft) || create.isPending} loading={create.isPending}>
+            {t.orderDetail.addBill}
           </Button>
         </div>
       </form>

@@ -120,8 +120,8 @@ function EditCarwash({ carwash, onlyOpenOne, onDone }: { carwash: Carwash; onlyO
           </Button>
         ) : (
           <>
-            <Button type="submit" variant="primary" disabled={!isValid || !hasChanges || update.isPending}>
-              {update.isPending ? t.settings.saving : t.carwashes.save}
+            <Button type="submit" variant="primary" disabled={!isValid || !hasChanges || update.isPending} loading={update.isPending}>
+              {t.carwashes.save}
             </Button>
             <span className="form-actions__danger">
               <Button
@@ -174,8 +174,8 @@ function AddCarwash({ onDone }: { onDone: () => void }) {
         </p>
       )}
       <div className="form-actions">
-        <Button type="submit" variant="primary" disabled={!isValid || add.isPending}>
-          {add.isPending ? t.settings.saving : t.carwashes.add}
+        <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
+          {t.carwashes.add}
         </Button>
       </div>
     </form>

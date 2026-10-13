@@ -56,9 +56,8 @@ export function PushSettingsPanel() {
               <Button
                 variant={thisBrowser.data ? 'secondary' : 'primary'}
                 disabled={toggleBrowser.isPending || thisBrowser.isPending}
-                onClick={() => toggleBrowser.mutate(!thisBrowser.data)}
-              >
-                {toggleBrowser.isPending ? t.push.working : thisBrowser.data ? t.push.turnOff : t.push.turnOn}
+                onClick={() => toggleBrowser.mutate(!thisBrowser.data)} loading={toggleBrowser.isPending}>
+                {thisBrowser.data ? t.push.turnOff : t.push.turnOn}
               </Button>
             )}
           </SettingRow>
@@ -77,8 +76,8 @@ export function PushSettingsPanel() {
               )
             }
           >
-            <Button disabled={sendTest.isPending} onClick={() => sendTest.mutate()}>
-              {sendTest.isPending ? t.push.working : t.push.sendTest}
+            <Button disabled={sendTest.isPending} onClick={() => sendTest.mutate()} loading={sendTest.isPending}>
+              {t.push.sendTest}
             </Button>
           </SettingRow>
 

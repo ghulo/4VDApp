@@ -162,8 +162,8 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
                 {t.settings.saved}
               </span>
             )}
-            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!isValid || save.isPending}>
-              {save.isPending ? t.settings.saving : t.settings.saveChanges}
+            <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!isValid || save.isPending} loading={save.isPending}>
+              {t.settings.saveChanges}
             </Button>
           </>
         }

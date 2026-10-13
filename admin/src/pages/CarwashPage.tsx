@@ -217,8 +217,8 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
           {t.carwash.saved(formatDay(savedDay))}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
-        {save.isPending ? t.carwash.saving : t.carwash.save}
+      <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
+        {t.carwash.save}
       </Button>
     </form>
   );

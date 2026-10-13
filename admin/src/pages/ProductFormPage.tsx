@@ -432,8 +432,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                 )}
 
                 <div className="form-actions">
-                  <Button type="submit" disabled={save.isPending} variant="primary">
-                    {save.isPending ? t.productForm.saving : isNew ? t.productForm.addProduct : t.productForm.saveChanges}
+                  <Button type="submit" disabled={save.isPending} variant="primary" loading={save.isPending}>
+                    {isNew ? t.productForm.addProduct : t.productForm.saveChanges}
                   </Button>
                   <ButtonLink to="/products">
                     {t.common.cancel}
@@ -443,8 +443,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       {confirmingDelete ? (
                         <>
                           <span>{t.productForm.deleteConfirm(product.name)}</span>
-                          <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending}>
-                            {remove.isPending ? t.productForm.deleting : t.productForm.deleteProduct}
+                          <Button variant="danger" onClick={() => remove.mutate()} disabled={remove.isPending} loading={remove.isPending}>
+                            {t.productForm.deleteProduct}
                           </Button>
                           <Button onClick={() => setConfirmingDelete(false)}>
                             {t.productForm.keepIt}
@@ -490,8 +490,8 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
   return (
     <div className="price-suggestion">
       {!result && (
-        <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
-          {suggestion.isPending ? t.productForm.lookingAtSales : t.productForm.suggestPrice}
+        <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()} loading={suggestion.isPending}>
+          {t.productForm.suggestPrice}
         </Button>
       )}
       {suggestion.isError && (
@@ -518,8 +518,8 @@ function PriceSuggestionBox({ productId, onUse }: { productId: number; onUse: (p
                 {t.productForm.use(formatMoney(result.suggestedPrice))}
               </Button>
             )}
-            <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()}>
-              {suggestion.isPending ? t.productForm.lookingAgain : t.productForm.askAgain}
+            <Button disabled={suggestion.isPending} onClick={() => suggestion.mutate()} loading={suggestion.isPending}>
+              {t.productForm.askAgain}
             </Button>
             <span className="field-hint">{t.productForm.by(result.provider)}</span>
           </div>

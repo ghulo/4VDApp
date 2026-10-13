@@ -1,8 +1,7 @@
-import type { Icon } from '@phosphor-icons/react';
+import { CircleNotch, type Icon } from '@phosphor-icons/react';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Link } from 'react-router';
 import { buttonClass, type ButtonVariant } from './buttonClass';
-
 
 interface Look {
   variant?: ButtonVariant;
@@ -12,27 +11,40 @@ interface Look {
   children?: ReactNode;
 }
 
-function Contents({ icon: IconComponent, children, size }: Look) {
+function Contents({ icon: IconComponent, children, size, loading }: Look & { loading?: boolean }) {
+  const iconSize = size === 'sm' ? 14 : 16;
   return (
     <>
-      {IconComponent && <IconComponent size={size === 'sm' ? 14 : 16} weight="bold" aria-hidden="true" />}
+      {loading ? (
+        <CircleNotch size={iconSize} weight="bold" className="button__spinner" aria-hidden="true" />
+      ) : (
+        IconComponent && <IconComponent size={iconSize} weight="bold" aria-hidden="true" />
+      )}
       {children}
     </>
   );
 }
 
-type ButtonProps = Look & ButtonHTMLAttributes<HTMLButtonElement> & { wide?: boolean; ref?: Ref<HTMLButtonElement> };
+type ButtonProps = Look &
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    wide?: boolean;
+    ref?: Ref<HTMLButtonElement>;
+    /** While its action runs: a spinner takes the icon's place, the label and width stay, and it can't be pressed again. */
+    loading?: boolean;
+  };
 
 /** Primary for the one main action, secondary for the rest, ghost for quiet ones, danger to destroy. */
-export function Button({ variant, size, icon, wide, className, type = 'button', children, ...rest }: ButtonProps) {
+export function Button({ variant, size, icon, wide, loading, className, type = 'button', children, disabled, ...rest }: ButtonProps) {
   const iconOnly = Boolean(icon) && children === undefined;
   return (
     <button
       type={type}
       className={[buttonClass({ variant, size, iconOnly, wide }), className].filter(Boolean).join(' ')}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...rest}
     >
-      <Contents icon={icon} size={size}>
+      <Contents icon={icon} size={size} loading={loading}>
         {children}
       </Contents>
     </button>

@@ -192,8 +192,8 @@ function ExpenseForm() {
           {t.expenses.saved}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || add.isPending}>
-        {add.isPending ? t.expenses.saving : t.expenses.save}
+      <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
+        {t.expenses.save}
       </Button>
     </form>
   );

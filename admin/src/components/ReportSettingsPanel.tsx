@@ -67,8 +67,8 @@ function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
                 {t.reportSettings.saved}
               </span>
             )}
-            <Button type="submit" variant={changed ? 'primary' : 'secondary'} disabled={!changed || draft.sections.length === 0 || save.isPending}>
-              {save.isPending ? t.reportSettings.saving : t.common.save}
+            <Button type="submit" variant={changed ? 'primary' : 'secondary'} disabled={!changed || draft.sections.length === 0 || save.isPending} loading={save.isPending}>
+              {t.common.save}
             </Button>
           </>
         }

@@ -128,8 +128,8 @@ function DetailsPanel({ user }: { user: User }) {
         footer={
           <>
             <Result error={save.error} success={save.isSuccess ? t.profile.saved : null} />
-            <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending}>
-              {save.isPending ? t.auth.saving : t.common.save}
+            <Button type="submit" variant="primary" disabled={!name.trim() || save.isPending} loading={save.isPending}>
+              {t.common.save}
             </Button>
           </>
         }
@@ -148,8 +148,8 @@ function DetailsPanel({ user }: { user: User }) {
         >
           <Avatar name={user.name} url={user.avatarUrl} size={48} />
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickPhoto} />
-          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()}>
-            {upload.isPending ? t.profile.uploading : user.avatarUrl ? t.profile.change : t.profile.addPhoto}
+          <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()} loading={upload.isPending}>
+            {user.avatarUrl ? t.profile.change : t.profile.addPhoto}
           </Button>
           {user.avatarUrl && (
             <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>

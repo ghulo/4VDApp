@@ -1,3 +1,4 @@
+import type { Icon } from 'phosphor-react-native';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -17,38 +18,49 @@ interface ButtonProps {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'quiet';
+  /** Small keys (36px) sit in rows and lists; regular ones (48px) end a form. */
+  size?: 'regular' | 'small';
+  /** A line icon before the label. */
+  icon?: Icon;
+  /** What a screen reader says when the label alone isn't enough ("Log out iPhone"). */
+  accessibilityLabel?: string;
   disabled?: boolean;
+  /** While its action runs: a spinner takes the icon's place and the label stays. */
   loading?: boolean;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', size = 'regular', icon: IconComponent, accessibilityLabel, disabled, loading }: ButtonProps) {
   const colors = useThemeColors();
   const isPrimary = variant === 'primary';
+  const isSmall = size === 'small';
+  // A busy key keeps its face; only a key that can't be used goes flat.
+  const inactive = disabled && !loading;
+  const labelColor = inactive ? colors.inkMuted : isPrimary ? colors.ctaInk : colors.ink;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        isSmall && styles.buttonSmall,
         isPrimary
           ? { backgroundColor: colors.cta }
           : { borderColor: colors.lineStrong, borderWidth: 1, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
         // Raised like a key, pressing down into its edge. Disabled ones sit flat
         // on sunk paper with a hairline ring, never half see-through.
-        !(disabled || loading) && { boxShadow: keyShadow(colors, isPrimary ? 'clay' : 'paper', pressed), ...keyTravel(pressed) },
-        disabled && { backgroundColor: colors.surfaceSunk, borderColor: colors.line, borderWidth: 1 },
+        !inactive && { boxShadow: keyShadow(colors, isPrimary ? 'clay' : 'paper', pressed), ...keyTravel(pressed) },
+        inactive && { backgroundColor: colors.surfaceSunk, borderColor: colors.line, borderWidth: 1 },
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? colors.ctaInk : colors.ink} />
+        <ActivityIndicator size="small" color={labelColor} />
       ) : (
-        <Text style={[styles.buttonLabel, { color: disabled ? colors.inkMuted : isPrimary ? colors.ctaInk : colors.ink }]}>
-          {label}
-        </Text>
+        IconComponent && <IconComponent size={isSmall ? 14 : 16} color={labelColor} weight="bold" />
       )}
+      <Text style={[styles.buttonLabel, isSmall && styles.buttonLabelSmall, { color: labelColor }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -131,13 +143,17 @@ export function EmptyState({
 
 const styles = StyleSheet.create({
   button: {
+    flexDirection: 'row',
+    gap: spacing.sm,
     minHeight: 48,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.small,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonSmall: { minHeight: 36, paddingHorizontal: spacing.md, gap: spacing.xs, alignSelf: 'flex-start' },
   buttonLabel: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  buttonLabelSmall: { fontSize: type.label },
   field: { gap: spacing.xs, marginBottom: spacing.lg },
   fieldLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   fieldNote: { fontFamily: fonts.body, fontSize: type.label },

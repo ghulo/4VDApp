@@ -433,8 +433,8 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
           {errorMessage(create.error)}
         </p>
       )}
-      <Button type="submit" disabled={!isValid || create.isPending} variant="primary">
-        {create.isPending ? t.promotions.saving : t.promotions.start}
+      <Button type="submit" disabled={!isValid || create.isPending} variant="primary" loading={create.isPending}>
+        {t.promotions.start}
       </Button>
     </form>
   );

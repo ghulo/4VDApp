@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../navigation/types';
 import { documentsApi, reportsApi, salesApi } from '../services/api';
 import type { Checkout, DocumentRef } from '../services/types';
-import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors, type } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { canPrint, printDocument } from '../utils/printDocument';
@@ -156,8 +156,10 @@ function CheckoutRow({ checkout, first }: { checkout: Checkout; first: boolean }
                   </Text>
                 </View>
                 {left > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <Button
+                    variant="quiet"
+                    size="small"
+                    label={t.mySales.return}
                     accessibilityLabel={t.mySales.returnLabel(line.productName)}
                     onPress={() =>
                       navigation.navigate('Return', {
@@ -169,14 +171,7 @@ function CheckoutRow({ checkout, first }: { checkout: Checkout; first: boolean }
                         saleDate: line.saleDate,
                       })
                     }
-                    style={({ pressed }) => [
-                      styles.returnKey,
-                      { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
-                      { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
-                    ]}
-                  >
-                    <Text style={[styles.returnLabel, { color: colors.ink }]}>{t.mySales.return}</Text>
-                  </Pressable>
+                  />
                 ) : (
                   <Text style={[styles.time, { color: colors.steel }]}>{t.mySales.returned}</Text>
                 )}
@@ -215,8 +210,6 @@ const styles = StyleSheet.create({
   caretOpen: { transform: [{ rotate: '180deg' }] },
   lines: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   line: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 56, paddingVertical: spacing.xs },
-  returnKey: { minHeight: 36, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small, justifyContent: 'center' },
-  returnLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   invoice: { gap: spacing.xs, paddingTop: spacing.sm },
 });
 

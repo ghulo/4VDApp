@@ -37,14 +37,13 @@ export function PrintDocumentButton({ document, variant = 'secondary', size, ico
         variant={variant}
         size={size}
         icon={Printer}
-        disabled={print.isPending}
+        loading={print.isPending}
         // Icon-only rows name the document; a labelled button keeps its visible words as its name.
         aria-label={iconOnly ? t.documents.printLabel(document.number) : undefined}
-        aria-busy={print.isPending}
         title={iconOnly ? t.documents.print : undefined}
         onClick={() => print.mutate()}
       >
-        {iconOnly ? undefined : print.isPending ? t.documents.preparing : t.documents.print}
+        {iconOnly ? undefined : t.documents.print}
       </Button>
       {!iconOnly && (
         <span className="segmented segmented--small" role="radiogroup" aria-label={t.documents.printLanguage}>

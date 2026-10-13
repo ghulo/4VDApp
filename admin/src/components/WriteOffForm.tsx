@@ -79,8 +79,8 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
           {savedMessage}
         </p>
       )}
-      <Button type="submit" disabled={!isValid || mutation.isPending} variant="danger">
-        {mutation.isPending ? t.writeOff.writingOff : t.writeOff.writeOff}
+      <Button type="submit" disabled={!isValid || mutation.isPending} variant="danger" loading={mutation.isPending}>
+        {t.writeOff.writeOff}
       </Button>
     </form>
   );

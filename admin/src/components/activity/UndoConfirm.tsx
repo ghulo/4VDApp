@@ -102,8 +102,8 @@ export function UndoConfirm({ entry, mode, onClose, id }: UndoConfirmProps) {
         </p>
       )}
       <div className="undo-confirm__buttons">
-        <Button type="submit" variant={mode === 'undo' ? 'danger' : 'primary'} disabled={action.isPending}>
-          {action.isPending ? t.undo.working : t.undo.confirm(mode, kind)}
+        <Button type="submit" variant={mode === 'undo' ? 'danger' : 'primary'} disabled={action.isPending} loading={action.isPending}>
+          {t.undo.confirm(mode, kind)}
         </Button>
         <Button onClick={onClose} disabled={action.isPending}>
           {t.common.cancel}

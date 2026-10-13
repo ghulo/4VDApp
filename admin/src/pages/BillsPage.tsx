@@ -207,8 +207,8 @@ function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onD
         <Button variant="ghost" onClick={onDone}>
           {t.common.cancel}
         </Button>
-        <Button type="submit" variant="primary" disabled={!supplierId || !isBillValid(draft) || create.isPending}>
-          {create.isPending ? t.bills.saving : t.bills.save}
+        <Button type="submit" variant="primary" disabled={!supplierId || !isBillValid(draft) || create.isPending} loading={create.isPending}>
+          {t.bills.save}
         </Button>
       </div>
     </form>

@@ -268,8 +268,8 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
               {errorMessage(create.error)}
             </p>
           )}
-          <Button type="submit" variant="primary" wide disabled={blocker !== null || create.isPending} aria-describedby="new-order-why">
-            {create.isPending ? t.orders.creating : t.orders.create}
+          <Button type="submit" variant="primary" wide disabled={blocker !== null || create.isPending} aria-describedby="new-order-why" loading={create.isPending}>
+            {t.orders.create}
           </Button>
           <p id="new-order-why" className="field-hint">
             {blocker ?? t.orders.afterSave}

@@ -66,8 +66,8 @@ export function StockCountDetailPage() {
               </Button>
             )}
             {data.status === 'submitted' && (data.totals.pending ?? 0) > 0 && (
-              <Button variant="primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending}>
-                {applyAll.isPending ? t.counts.correcting : t.counts.applyAll}
+              <Button variant="primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending} loading={applyAll.isPending}>
+                {t.counts.applyAll}
               </Button>
             )}
           </>

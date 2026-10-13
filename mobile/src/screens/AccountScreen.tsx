@@ -10,7 +10,7 @@ import { meApi } from '../services/api';
 import { API_URL, DASHBOARD_URL } from '../services/apiClient';
 import type { Session } from '../services/types';
 import { useAuth, useCurrentUser } from '../state/useAuth';
-import { fonts, keyShadow, keyTravel, radius, spacing, type ThemePreference, useTheme, useThemeColors, type } from '../theme';
+import { fonts, radius, spacing, type ThemePreference, useTheme, useThemeColors, type } from '../theme';
 import { errorMessage, formatDateWith } from '../utils/format';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useT } from '../i18n/useT';
@@ -283,19 +283,15 @@ function DevicesSection() {
             </Text>
           </View>
           {!group.current && (
-            <Pressable
-              accessibilityRole="button"
+            <Button
+              variant="quiet"
+              size="small"
+              label={t.account.logOut}
               accessibilityLabel={t.account.logOutDevice(deviceName(group))}
+              loading={end.isPending && end.variables === group}
               disabled={end.isPending}
               onPress={() => end.mutate(group)}
-              style={({ pressed }) => [
-                styles.smallKey,
-                { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
-                { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
-              ]}
-            >
-              <Text style={[styles.smallKeyLabel, { color: colors.ink }]}>{t.account.logOut}</Text>
-            </Pressable>
+            />
           )}
         </View>
       ))}
@@ -329,7 +325,5 @@ const styles = StyleSheet.create({
   look: { gap: spacing.lg },
   device: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
   deviceName: { fontFamily: fonts.bodyMedium, fontSize: type.body },
-  smallKey: { minHeight: 36, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small, justifyContent: 'center' },
-  smallKeyLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   footnote: { fontFamily: fonts.body, fontSize: type.label, textAlign: 'center' },
 });

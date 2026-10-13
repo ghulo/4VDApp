@@ -212,8 +212,8 @@ function RestorePanel({ id, entryId, onClose }: { id: string; entryId: number; o
       <div className="undo-confirm__buttons">
         {changes.length > 0 &&
           (sure ? (
-            <Button ref={confirmRef} variant="danger" disabled={restore.isPending} onClick={() => restore.mutate()}>
-              {restore.isPending ? t.history.restore.working : t.history.restore.confirm}
+            <Button ref={confirmRef} variant="danger" disabled={restore.isPending} onClick={() => restore.mutate()} loading={restore.isPending}>
+              {t.history.restore.confirm}
             </Button>
           ) : (
             <Button variant="primary" disabled={plan.isFetching} onClick={() => setSure(true)}>

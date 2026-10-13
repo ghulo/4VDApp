@@ -82,8 +82,8 @@ export function WipeDataPanel() {
             </p>
           )}
           <div className="form-actions">
-            <Button type="submit" variant="danger" disabled={typed !== WIPE_PHRASE || !preview.data || wipe.isPending}>
-              {wipe.isPending ? t.wipe.wiping : t.wipe.confirm}
+            <Button type="submit" variant="danger" disabled={typed !== WIPE_PHRASE || !preview.data || wipe.isPending} loading={wipe.isPending}>
+              {t.wipe.confirm}
             </Button>
             <Button
               variant="ghost"

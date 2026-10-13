@@ -356,8 +356,8 @@ export function BasketForm() {
           )}
         </div>
       )}
-      <Button type="submit" variant="primary" disabled={lines.length === 0 || tooMuchDiscount || record.isPending}>
-        {record.isPending ? t.sales.recording : t.basket.record(formatMoney(total))}
+      <Button type="submit" variant="primary" disabled={lines.length === 0 || tooMuchDiscount || record.isPending} loading={record.isPending}>
+        {t.basket.record(formatMoney(total))}
       </Button>
     </form>
   );

@@ -293,8 +293,8 @@ function InviteForm() {
           {t.people.inviteSent(invite.data.data.email)}
         </p>
       )}
-      <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary">
-        {invite.isPending ? t.people.sending : t.people.sendInvite}
+      <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary" loading={invite.isPending}>
+        {t.people.sendInvite}
       </Button>
     </form>
   );

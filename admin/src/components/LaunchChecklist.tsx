@@ -116,8 +116,8 @@ function TestEmail() {
   const test = useMutation({ mutationFn: settingsApi.testEmail });
   return (
     <>
-      <Button size="sm" disabled={test.isPending} onClick={() => test.mutate()}>
-        {test.isPending ? t.launch.actions.sending : t.launch.actions.testEmail}
+      <Button size="sm" disabled={test.isPending} onClick={() => test.mutate()} loading={test.isPending}>
+        {t.launch.actions.testEmail}
       </Button>
       {test.isError && (
         <p className="form-error" role="alert">

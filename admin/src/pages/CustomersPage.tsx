@@ -324,8 +324,8 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || save.isPending}>
-        {save.isPending ? t.tabs.saving : customer ? t.tabs.saveDetails : t.customers.add}
+      <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
+        {customer ? t.tabs.saveDetails : t.customers.add}
       </Button>
     </form>
   );
@@ -528,8 +528,8 @@ function PaymentForm({ customer }: { customer: Customer }) {
         </p>
       )}
       <div className="form-actions">
-        <Button type="submit" variant="primary" disabled={!isValid || pay.isPending}>
-          {pay.isPending ? t.tabs.paying : t.tabs.payButton}
+        <Button type="submit" variant="primary" disabled={!isValid || pay.isPending} loading={pay.isPending}>
+          {t.tabs.payButton}
         </Button>
         <Button variant="ghost" onClick={() => setAmount(String(customer.balance))}>
           {t.tabs.paidAll}
@@ -558,8 +558,8 @@ function CloseTab({ customer }: { customer: Customer }) {
           {errorMessage(close.error)}
         </p>
       )}
-      <Button variant="danger" disabled={close.isPending} onClick={() => close.mutate()}>
-        {close.isPending ? t.tabs.closing : t.tabs.close}
+      <Button variant="danger" disabled={close.isPending} onClick={() => close.mutate()} loading={close.isPending}>
+        {t.tabs.close}
       </Button>
     </Card>
   );

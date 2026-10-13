@@ -36,8 +36,8 @@ export function ReportPage() {
         meta={report.data?.partial ? <Badge tone="info">{t.fullReport.soFar}</Badge> : undefined}
         actions={
           <>
-            <Button icon={PaperPlaneTilt} disabled={sendTest.isPending} onClick={() => sendTest.mutate(kind)}>
-              {sendTest.isPending ? t.fullReport.sending : t.fullReport.sendMe}
+            <Button icon={PaperPlaneTilt} disabled={sendTest.isPending} onClick={() => sendTest.mutate(kind)} loading={sendTest.isPending}>
+              {t.fullReport.sendMe}
             </Button>
             <ButtonLink to="/profile/reports" variant="ghost">
               {t.fullReport.choose}

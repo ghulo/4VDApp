@@ -58,8 +58,8 @@ export function ForgotPasswordPage() {
             <input type="email" autoComplete="email" required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <FormError error={send.error} />
-          <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide>
-            {send.isPending ? t.auth.sending : t.auth.emailMeLink}
+          <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide loading={send.isPending}>
+            {t.auth.emailMeLink}
           </Button>
         </form>
       )}
@@ -109,8 +109,8 @@ export function ResetPasswordPage() {
           <FormError error={reset.error} />
           <Button type="submit"
            
-            disabled={password.length < MIN_PASSWORD_LENGTH || reset.isPending} variant="primary" wide>
-            {reset.isPending ? t.auth.saving : t.auth.saveNewPassword}
+            disabled={password.length < MIN_PASSWORD_LENGTH || reset.isPending} variant="primary" wide loading={reset.isPending}>
+            {t.auth.saveNewPassword}
           </Button>
         </form>
       )}
@@ -245,8 +245,8 @@ export function AcceptInvitePage() {
             <FormError error={accept.error ?? google.error} />
             <Button type="submit"
              
-              disabled={!name.trim() || password.length < MIN_PASSWORD_LENGTH || accept.isPending} variant="primary" wide>
-              {accept.isPending ? t.auth.settingUp : t.auth.joinButton}
+              disabled={!name.trim() || password.length < MIN_PASSWORD_LENGTH || accept.isPending} variant="primary" wide loading={accept.isPending}>
+              {t.auth.joinButton}
             </Button>
           </form>
           <GoogleButton onCredential={(credential) => google.mutate(credential)} />

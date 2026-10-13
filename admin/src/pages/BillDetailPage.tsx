@@ -148,8 +148,8 @@ function PayCard({ bill }: { bill: SupplierBill }) {
           </p>
         )}
         <div className="form-actions">
-          <Button type="submit" variant="primary" disabled={!valid || pay.isPending}>
-            {pay.isPending ? t.bills.saving : value === bill.left ? t.bills.payInFull(formatMoney(value)) : t.bills.pay(formatMoney(value || 0))}
+          <Button type="submit" variant="primary" disabled={!valid || pay.isPending} loading={pay.isPending}>
+            {value === bill.left ? t.bills.payInFull(formatMoney(value)) : t.bills.pay(formatMoney(value || 0))}
           </Button>
         </div>
       </form>
@@ -235,8 +235,8 @@ function PhotoCard({ bill }: { bill: SupplierBill }) {
       actions={
         <>
           <input ref={input} type="file" accept="image/*" capture="environment" hidden onChange={pick} />
-          <Button size="sm" disabled={upload.isPending} onClick={() => input.current?.click()}>
-            {upload.isPending ? t.bills.uploading : src ? t.bills.replacePhoto : t.bills.addPhoto}
+          <Button size="sm" disabled={upload.isPending} onClick={() => input.current?.click()} loading={upload.isPending}>
+            {src ? t.bills.replacePhoto : t.bills.addPhoto}
           </Button>
           {src && (
             <Button size="sm" variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
@@ -288,8 +288,8 @@ function EditCard({ bill }: { bill: SupplierBill }) {
           </p>
         )}
         <div className="form-actions">
-          <Button type="submit" variant={changed ? 'primary' : 'secondary'} disabled={!changed || !isBillValid(draft) || save.isPending}>
-            {save.isPending ? t.bills.saving : t.common.save}
+          <Button type="submit" variant={changed ? 'primary' : 'secondary'} disabled={!changed || !isBillValid(draft) || save.isPending} loading={save.isPending}>
+            {t.common.save}
           </Button>
         </div>
       </form>

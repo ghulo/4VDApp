@@ -183,19 +183,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   );
 
   const extraChip = (key: keyof typeof extras, label: string) => (
-    <Pressable
-      key={key}
-      accessibilityRole="button"
-      onPress={() => setExtras((current) => ({ ...current, [key]: true }))}
-      style={({ pressed }) => [
-        styles.extraChip,
-        { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
-        { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
-      ]}
-    >
-      <Plus size={14} color={colors.ink} weight="bold" />
-      <Text style={[styles.extraLabel, { color: colors.ink }]}>{label}</Text>
-    </Pressable>
+    <Button key={key} variant="quiet" size="small" icon={Plus} label={label} onPress={() => setExtras((current) => ({ ...current, [key]: true }))} />
   );
 
   return (
@@ -530,8 +518,6 @@ const styles = StyleSheet.create({
   cash: { marginTop: spacing.sm },
   change: { fontFamily: fonts.bodyBold, fontSize: type.title, fontVariant: ['tabular-nums'], marginTop: -spacing.sm, marginBottom: spacing.md },
   extras: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  extraChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 36, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small },
-  extraLabel: { fontFamily: fonts.bodyMedium, fontSize: type.label },
   soldHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   soldMark: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   soldTitle: { flex: 1, fontFamily: fonts.display, fontSize: type.title },

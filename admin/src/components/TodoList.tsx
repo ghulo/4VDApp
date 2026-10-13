@@ -126,8 +126,8 @@ function TodoRow({ item, showSeverity }: { item: TodoItem; showSeverity: boolean
             <ButtonLink to={item.to} variant="secondary" size="sm" aria-label={`${t.todo.openDay}: ${item.title}`}>
               {t.todo.openDay}
             </ButtonLink>
-            <Button size="sm" disabled={check.isPending} aria-label={`${t.todo.verbs.markChecked}: ${item.title}`} onClick={() => check.mutate()}>
-              {check.isPending ? t.todo.checking : t.todo.verbs.markChecked}
+            <Button size="sm" disabled={check.isPending} aria-label={`${t.todo.verbs.markChecked}: ${item.title}`} onClick={() => check.mutate()} loading={check.isPending}>
+              {t.todo.verbs.markChecked}
             </Button>
           </>
         ) : (

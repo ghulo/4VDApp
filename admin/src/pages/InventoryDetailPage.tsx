@@ -220,8 +220,8 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
           </p>
         )}
 
-        <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary">
-          {mutation.isPending ? t.inventory.saving : t.inventory.save}
+        <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary" loading={mutation.isPending}>
+          {t.inventory.save}
         </Button>
       </form>
     </ManagersOnly>

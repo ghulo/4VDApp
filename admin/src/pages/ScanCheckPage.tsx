@@ -366,8 +366,8 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
               {errorMessage(confirm.error)}
             </p>
           )}
-          <Button type="submit" variant="primary" wide disabled={blocker !== null || confirm.isPending} aria-describedby="scan-why">
-            {confirm.isPending ? t.scans.confirming : t.scans.confirm}
+          <Button type="submit" variant="primary" wide disabled={blocker !== null || confirm.isPending} aria-describedby="scan-why" loading={confirm.isPending}>
+            {t.scans.confirm}
           </Button>
           <p id="scan-why" className="field-hint">
             {blocker ?? t.scans.afterConfirm}

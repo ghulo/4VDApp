@@ -3,25 +3,29 @@ import { useRoute } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Barcode } from 'phosphor-react-native/src/icons/Barcode';
+import { Check } from 'phosphor-react-native/src/icons/Check';
 import { MagnifyingGlass } from 'phosphor-react-native/src/icons/MagnifyingGlass';
 import { Minus } from 'phosphor-react-native/src/icons/Minus';
 import { Plus } from 'phosphor-react-native/src/icons/Plus';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, Vibration, View } from 'react-native';
 import { BarcodeScanner } from '../components/BarcodeScanner';
+import { ProductPhoto } from '../components/ProductPhoto';
 import { TabPicker } from '../components/TabPicker';
 import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
 import { documentsApi, favoritesApi, productsApi, salesApi, settingsApi } from '../services/api';
 import { decidesRequests, useCurrentUser } from '../state/useAuth';
 import type { Customer, DocumentRef, Product } from '../services/types';
-import { fonts, radius, spacing, useThemeColors, type } from '../theme';
+import { fonts, keyShadow, keyTravel, radius, spacing, useThemeColors, type } from '../theme';
 import { errorMessage, formatMoney } from '../utils/format';
 import { salePriceFor } from '../utils/pricing';
 import { canPrint, printDocument } from '../utils/printDocument';
 import { useT } from '../i18n/useT';
 import { useTabBarSpace } from '../components/TabBarSpace';
 
-const SEARCH_RESULTS = 8;
-const QUICK_PICKS = 6;
+const SEARCH_RESULTS = 9;
+/** Three rows of shelf tiles before "Show all". */
+const SHELF_SHOWN = 9;
+const TILE_GAP = spacing.sm;
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
 /** The unit price after a rabat, rounded like the server rounds it. */
@@ -34,7 +38,7 @@ interface Line {
 
 /**
  * The counter's checkout, as the "Sell" tab and as a modal from a product:
- * scan, tap a favourite or search to fill the basket, then record it at once.
+ * scan, tap a tile or search to fill the basket, then record it at once.
  */
 export function RecordSaleScreen() {
   const t = useT();
@@ -63,15 +67,21 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
+  const [notFound, setNotFound] = useState<string | null>(null);
   const [paid, setPaid] = useState('');
   const [notes, setNotes] = useState('');
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [onTab, setOnTab] = useState(false);
   // Only a sale on a tab leaves the money out of the drawer.
   const tab = onTab ? customer : null;
-  const [invoice, setInvoice] = useState<DocumentRef | null>(null);
+  const [sold, setSold] = useState<{ total: number; products: number; tabName: string | null; invoice: DocumentRef } | null>(null);
   const [discount, setDiscount] = useState('');
+  // Rabat, customer and note stay folded away until someone asks for them.
+  const [extras, setExtras] = useState({ discount: false, customer: false, note: false });
+  const [showWholeShelf, setShowWholeShelf] = useState(false);
+  // What "Clear" took out, so one tap can put it back.
+  const [cleared, setCleared] = useState<Line[] | null>(null);
+  const [gridWidth, setGridWidth] = useState(0);
   const user = useCurrentUser();
   const settings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   // Owners and admins give any rabat; everyone else up to the shop's limit.
@@ -86,13 +96,16 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     : [];
   const favorites = new Set(favoriteIds.data ?? []);
   const favoritePicks = products.filter((product) => favorites.has(product.id));
-  // No favourites yet: offer what's on the shelf, so the screen is useful from day one.
-  const showingFavorites = favoritePicks.length > 0;
-  const quickPicks = (showingFavorites ? favoritePicks : products).slice(0, QUICK_PICKS);
+  const shelf = products.filter((product) => !favorites.has(product.id));
+  const shelfShown = showWholeShelf ? shelf : shelf.slice(0, SHELF_SHOWN);
+  const inBasket = new Map(lines.map((line) => [line.product.id, line.quantity]));
+  // Three tiles to a row; measured, because the web build caps the column at 520.
+  const tileWidth = gridWidth > 0 ? Math.floor((gridWidth - TILE_GAP * 2) / 3) : undefined;
 
   function add(product: Product) {
-    setNotice(null);
-    setInvoice(null);
+    setNotFound(null);
+    setSold(null);
+    setCleared(null);
     print.reset();
     setLines((current) => {
       const existing = current.find((line) => line.product.id === product.id);
@@ -113,7 +126,7 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
       Vibration.vibrate(30);
       add(product);
     } catch {
-      setNotice({ text: t.sell.notFound(code), ok: false });
+      setNotFound(t.sell.notFound(code));
     }
   }
 
@@ -125,6 +138,17 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     );
   }
 
+  function clear() {
+    setLines([]);
+    setPaid('');
+    setNotes('');
+    setDiscount('');
+    setCustomer(null);
+    setOnTab(false);
+    setExtras({ discount: false, customer: false, note: false });
+  }
+
+  const listTotal = roundMoney(lines.reduce((sum, line) => sum + salePriceFor(line.product, line.quantity).unitPrice * line.quantity, 0));
   const total = roundMoney(
     lines.reduce((sum, line) => sum + afterDiscount(salePriceFor(line.product, line.quantity).unitPrice, discountPercent) * line.quantity, 0),
   );
@@ -141,17 +165,8 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     onSuccess: (result) => {
       for (const key of [['products'], ['reports', 'my-sales'], ['inventory'], ['customers'], ['cash']]) queryClient.invalidateQueries({ queryKey: key });
       Vibration.vibrate(60);
-      setNotice({
-        text: t.sell.soldBasket(result.sales.length, formatMoney(result.total)) + (tab ? t.tabs.soldOnTab(tab.name) : '') + t.sell.invoiceReady(result.invoice.number),
-        ok: true,
-      });
-      setInvoice(result.invoice);
-      setLines([]);
-      setPaid('');
-      setNotes('');
-      setDiscount('');
-      setCustomer(null);
-      setOnTab(false);
+      setSold({ total: result.total, products: result.sales.length, tabName: tab?.name ?? null, invoice: result.invoice });
+      clear();
     },
   });
 
@@ -159,18 +174,27 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
     mutationFn: (document: DocumentRef) => printDocument(() => documentsApi.printPage(document.id), document.number),
   });
 
-  const productRow = (product: Product) => (
+  const tiles = (list: Product[]) => (
+    <View style={styles.tiles} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>
+      {list.map((product) => (
+        <ProductTile key={product.id} product={product} quantity={inBasket.get(product.id) ?? 0} width={tileWidth} onPress={() => add(product)} />
+      ))}
+    </View>
+  );
+
+  const extraChip = (key: keyof typeof extras, label: string) => (
     <Pressable
-      key={product.id}
+      key={key}
       accessibilityRole="button"
-      accessibilityLabel={t.sell.addToBasket(product.name)}
-      onPress={() => add(product)}
-      style={({ pressed }) => [styles.pickerRow, { backgroundColor: pressed ? colors.surfaceSunk : colors.surface, borderColor: colors.line }]}
+      onPress={() => setExtras((current) => ({ ...current, [key]: true }))}
+      style={({ pressed }) => [
+        styles.extraChip,
+        { borderColor: colors.lineStrong, backgroundColor: pressed ? colors.surfaceSunk : colors.surface },
+        { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
+      ]}
     >
-      <Text style={[styles.pickerName, { color: colors.ink }]}>{product.name}</Text>
-      <Text style={[styles.pickerMeta, { color: colors.steel }]}>
-        {t.sell.priceAndStock(formatMoney(product.promotion?.price ?? product.price), product.stock.quantity)}
-      </Text>
+      <Plus size={14} color={colors.ink} weight="bold" />
+      <Text style={[styles.extraLabel, { color: colors.ink }]}>{label}</Text>
     </Pressable>
   );
 
@@ -199,126 +223,249 @@ function Basket({ products, initial }: { products: Product[]; initial: Line[] })
             accessibilityLabel={scanning ? t.sell.stopScanning : t.sell.scan}
             accessibilityState={{ selected: scanning }}
             onPress={() => setScanning((current) => !current)}
-            style={[styles.scanButton, { borderColor: colors.lineStrong, backgroundColor: scanning ? colors.selected : colors.surface }]}
+            style={({ pressed }) => [
+              styles.scanButton,
+              { borderColor: scanning ? colors.selected : colors.lineStrong, backgroundColor: scanning ? colors.selected : pressed ? colors.surfaceSunk : colors.surface },
+              !scanning && { boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
+            ]}
           >
             <Barcode size={24} color={scanning ? colors.onSelected : colors.ink} />
           </Pressable>
         </View>
 
         {scanning && <BarcodeScanner onScan={handleScan} />}
-
-        {query !== '' && matches.length === 0 && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.noMatch(search.trim())}</Text>}
-        {matches.map(productRow)}
-
-        {query === '' && quickPicks.length > 0 && (
-          <>
-            <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
-              {showingFavorites ? t.sell.favorites : t.sell.onShelf}
-            </Text>
-            {!showingFavorites && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.pinFavorites}</Text>}
-            <View style={styles.tiles}>
-              {quickPicks.map((product) => (
-                <Pressable
-                  key={product.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.sell.addToBasket(product.name)}
-                  onPress={() => add(product)}
-                  style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? colors.surfaceSunk : colors.surface, borderColor: colors.line }]}
-                >
-                  <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-                  <Text style={[styles.pickerMeta, { color: colors.steel }]}>{formatMoney(product.promotion?.price ?? product.price)}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
+        {notFound && (
+          <Text style={[styles.message, { color: colors.signalOut }]} accessibilityLiveRegion="polite">
+            {notFound}
+          </Text>
         )}
 
-        <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
-          {t.sell.basket}
-        </Text>
-        <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
-          {lines.length === 0 && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.emptyBasket}</Text>}
-          {lines.map((line, index) => {
-            const { unitPrice, isPromotion } = salePriceFor(line.product, line.quantity);
-            return (
-              <View key={line.product.id} style={[styles.line, index > 0 && { borderTopWidth: 1, borderTopColor: colors.line }]}>
-                <View style={styles.lineText}>
-                  <Text style={[styles.pickerName, { color: colors.ink }]}>{line.product.name}</Text>
-                  <Text style={[styles.pickerMeta, { color: unitPrice < line.product.price ? colors.stockOk : colors.steel }]}>
-                    {line.quantity} × {formatMoney(afterDiscount(unitPrice, discountPercent))}
-                    {unitPrice < line.product.price ? ` · ${isPromotion ? t.sell.promotionApplied : t.sell.bulkApplied}` : ''}
-                    {discountPercent > 0 ? ` · ${t.sell.discountOff(discountText)}` : ''}
-                  </Text>
-                </View>
-                <StepButton icon={Minus} accessibilityLabel={t.sell.oneLessOf(line.product.name)} onPress={() => change(line.product.id, -1)} disabled={false} />
-                <Text style={[styles.quantity, { color: colors.ink }]} accessibilityLiveRegion="polite">
-                  {line.quantity}
-                </Text>
-                <StepButton
-                  icon={Plus}
-                  accessibilityLabel={t.sell.oneMoreOf(line.product.name)}
-                  onPress={() => change(line.product.id, 1)}
-                  disabled={line.quantity >= line.product.stock.quantity}
-                />
+        {cleared && lines.length === 0 && (
+          <View style={styles.receiptHead} accessibilityLiveRegion="polite">
+            <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.sell.basketCleared}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setLines(cleared);
+                setCleared(null);
+              }}
+              hitSlop={12}
+              style={styles.clear}
+            >
+              <Text style={[styles.link, { color: colors.ink }]}>{t.sell.undo}</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {sold && (
+          <View style={[styles.receipt, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]} accessibilityLiveRegion="polite">
+            <View style={styles.soldHead}>
+              <View style={[styles.soldMark, { backgroundColor: colors.okSoft }]}>
+                <Check size={18} color={colors.ok} weight="bold" />
               </View>
-            );
-          })}
-        </View>
+              <Text style={[styles.soldTitle, { color: colors.ink }]}>{t.sell.soldTitle}</Text>
+              <Text style={[styles.totalFigure, { color: colors.ink }]}>{formatMoney(sold.total)}</Text>
+            </View>
+            <Text style={[styles.meta, { color: colors.inkMuted }]}>
+              {t.sell.soldBasket(sold.products, formatMoney(sold.total)) + (sold.tabName ? t.tabs.soldOnTab(sold.tabName) : '') + t.sell.invoiceReady(sold.invoice.number)}
+            </Text>
+            {canPrint && <Button label={t.sell.printInvoice} variant="quiet" onPress={() => print.mutate(sold.invoice)} loading={print.isPending} />}
+            {print.isError && (
+              <Text style={[styles.message, { color: colors.signalOut }]} accessibilityLiveRegion="polite">
+                {print.error.message === 'blocked' ? t.sell.printBlocked : errorMessage(print.error)}
+              </Text>
+            )}
+          </View>
+        )}
 
         {lines.length > 0 && (
-          <>
-            <TextField
-              label={t.sell.discount}
-              value={discount}
-              onChangeText={setDiscount}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              hint={discountLimit < 100 ? t.sell.discountUpTo(discountLimit) : undefined}
-              error={discountTooHigh ? t.sell.discountTooHigh(discountLimit) : undefined}
-            />
-            {!tab && <TextField label={t.sell.paid} value={paid} onChangeText={setPaid} keyboardType="decimal-pad" placeholder="0,00" />}
-            {giveBack !== null && <Text style={[styles.change, { color: colors.ink }]}>{t.sell.giveBack(formatMoney(giveBack))}</Text>}
-            {!tab && paid.trim() !== '' && paidAmount < total && (
-              <Text style={[styles.message, { color: colors.signalOut }]}>{t.sell.short(formatMoney(roundMoney(total - paidAmount)))}</Text>
+          <View style={[styles.receipt, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
+            <View style={styles.receiptHead}>
+              <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
+                {t.sell.basket}
+              </Text>
+              <Pressable accessibilityRole="button" onPress={() => { setCleared(lines); clear(); }} hitSlop={12} style={styles.clear}>
+                <Text style={[styles.link, { color: colors.inkMuted }]}>{t.sell.clear}</Text>
+              </Pressable>
+            </View>
+            {lines.map((line) => {
+              const { unitPrice, isPromotion } = salePriceFor(line.product, line.quantity);
+              const cheaper = unitPrice < line.product.price;
+              return (
+                <View key={line.product.id} style={[styles.line, { borderTopColor: colors.line }]}>
+                  <View style={styles.lineRow}>
+                    <Text style={[styles.lineName, { color: colors.ink }]} numberOfLines={2}>
+                      {line.product.name}
+                    </Text>
+                    <Text style={[styles.lineTotal, { color: colors.ink }]}>{formatMoney(roundMoney(unitPrice * line.quantity))}</Text>
+                  </View>
+                  <View style={styles.lineRow}>
+                    <Text style={[styles.meta, { color: cheaper ? colors.ok : colors.inkMuted }]}>
+                      {t.sell.each(formatMoney(unitPrice))}
+                      {cheaper ? ` · ${isPromotion ? t.sell.promotionApplied : t.sell.bulkApplied}` : ''}
+                    </Text>
+                    <View style={[styles.stepper, { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset }]}>
+                      <StepButton icon={Minus} accessibilityLabel={t.sell.oneLessOf(line.product.name)} onPress={() => change(line.product.id, -1)} disabled={false} />
+                      <Text style={[styles.quantity, { color: colors.ink }]} accessibilityLiveRegion="polite">
+                        {line.quantity}
+                      </Text>
+                      <StepButton
+                        icon={Plus}
+                        accessibilityLabel={t.sell.oneMoreOf(line.product.name)}
+                        onPress={() => change(line.product.id, 1)}
+                        disabled={line.quantity >= line.product.stock.quantity}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* The tear line of a till receipt, then what is owed. */}
+            <View style={[styles.tear, { borderColor: colors.lineStrong }]} />
+            {discountPercent > 0 && !discountTooHigh && (
+              <View style={styles.lineRow}>
+                <Text style={[styles.meta, { color: colors.inkMuted }]}>{t.sell.discountOff(discountText)}</Text>
+                <Text style={[styles.meta, { color: colors.inkMuted }]}>−{formatMoney(roundMoney(listTotal - total))}</Text>
+              </View>
             )}
-            <TabPicker value={customer} onChange={setCustomer} onTab={onTab} onTabChange={setOnTab} />
-            <TextField label={t.sell.note} value={notes} onChangeText={setNotes} maxLength={1000} />
-          </>
+            <View style={styles.lineRow}>
+              <Text style={[styles.groupTitle, { color: colors.ink }]}>{t.sell.total}</Text>
+              <Text style={[styles.totalFigure, { color: colors.ink }]} accessibilityLiveRegion="polite">
+                {formatMoney(total)}
+              </Text>
+            </View>
+
+            {!tab && (
+              <View style={styles.cash}>
+                <TextField label={t.sell.paid} value={paid} onChangeText={setPaid} keyboardType="decimal-pad" placeholder="0,00" />
+                {giveBack !== null && <Text style={[styles.change, { color: colors.ink }]}>{t.sell.giveBack(formatMoney(giveBack))}</Text>}
+                {paid.trim() !== '' && paidAmount < total && (
+                  <Text style={[styles.change, { color: colors.signalOut }]}>{t.sell.short(formatMoney(roundMoney(total - paidAmount)))}</Text>
+                )}
+              </View>
+            )}
+
+            {extras.discount && (
+              <TextField
+                label={t.sell.discount}
+                value={discount}
+                onChangeText={setDiscount}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                autoFocus
+                hint={discountLimit < 100 ? t.sell.discountUpTo(discountLimit) : undefined}
+                error={discountTooHigh ? t.sell.discountTooHigh(discountLimit) : undefined}
+              />
+            )}
+            {(extras.customer || customer) && (
+              <TabPicker
+                value={customer}
+                onChange={setCustomer}
+                onTab={onTab}
+                onTabChange={setOnTab}
+                initiallyOpen
+                onDismiss={() => setExtras((current) => ({ ...current, customer: false }))}
+              />
+            )}
+            {extras.note && <TextField label={t.sell.note} value={notes} onChangeText={setNotes} maxLength={1000} autoFocus />}
+            {!(extras.discount && (extras.customer || customer) && extras.note) && (
+              <View style={styles.extras}>
+                {!extras.discount && extraChip('discount', t.sell.addDiscount)}
+                {!extras.customer && !customer && extraChip('customer', t.sell.addCustomer)}
+                {!extras.note && extraChip('note', t.sell.addNote)}
+              </View>
+            )}
+
+            {record.isError && (
+              <Text style={[styles.message, { color: colors.signalOut }]} accessibilityRole="alert">
+                {errorMessage(record.error)}
+              </Text>
+            )}
+          </View>
         )}
 
-        {record.isError && (
-          <Text style={[styles.message, { color: colors.signalOut }]} accessibilityRole="alert">
-            {errorMessage(record.error)}
-          </Text>
-        )}
-        {notice && (
-          <Text style={[styles.message, { color: notice.ok ? colors.stockOk : colors.signalOut }]} accessibilityLiveRegion="polite">
-            {notice.text}
-          </Text>
-        )}
-        {notice?.ok && invoice && canPrint && (
-          <Button label={t.sell.printInvoice} variant="quiet" onPress={() => print.mutate(invoice)} loading={print.isPending} />
-        )}
-        {print.isError && (
-          <Text style={[styles.message, { color: colors.signalOut }]} accessibilityLiveRegion="polite">
-            {print.error.message === 'blocked' ? t.sell.printBlocked : errorMessage(print.error)}
-          </Text>
+        {query !== '' ? (
+          matches.length === 0 ? (
+            <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.noMatch(search.trim())}</Text>
+          ) : (
+            tiles(matches)
+          )
+        ) : (
+          <>
+            {favoritePicks.length > 0 && (
+              <>
+                <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
+                  {t.sell.favorites}
+                </Text>
+                {tiles(favoritePicks)}
+              </>
+            )}
+            {shelf.length > 0 && (
+              <>
+                <Text style={[styles.groupTitle, { color: colors.ink }]} accessibilityRole="header">
+                  {t.sell.onShelf}
+                </Text>
+                {favoritePicks.length === 0 && <Text style={[styles.hint, { color: colors.steel }]}>{t.sell.pinFavorites}</Text>}
+                {tiles(shelfShown)}
+                {shelf.length > SHELF_SHOWN && !showWholeShelf && (
+                  <Button label={t.sell.showAll(shelf.length)} variant="quiet" onPress={() => setShowWholeShelf(true)} />
+                )}
+              </>
+            )}
+          </>
         )}
       </ScrollView>
       <View style={[styles.actionBar, { backgroundColor: colors.surface, borderTopColor: colors.line, marginBottom: tabBarSpace }]}>
-        <Button
-          label={`${t.sell.record} · ${formatMoney(total)}`}
-          onPress={() => record.mutate()}
-          disabled={lines.length === 0 || discountTooHigh}
-          loading={record.isPending}
-        />
+        {lines.length > 0 ? (
+          <Button label={`${t.sell.record} · ${formatMoney(total)}`} onPress={() => record.mutate()} disabled={discountTooHigh} loading={record.isPending} />
+        ) : (
+          // Nothing to record yet: say how to start instead of showing a dead button.
+          <Text style={[styles.startHint, { color: colors.inkMuted }]}>{t.sell.emptyBasket}</Text>
+        )}
       </View>
     </View>
   );
 }
 
+/** One product to tap into the basket: photo, name, price; how many are already in it. */
+function ProductTile({ product, quantity, width, onPress }: { product: Product; quantity: number; width: number | undefined; onPress: () => void }) {
+  const colors = useThemeColors();
+  const t = useT();
+  const full = quantity >= product.stock.quantity;
+  const low = product.stock.quantity <= product.stock.reorderLevel;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={quantity > 0 ? t.sell.inBasket(product.name, quantity) : t.sell.addToBasket(product.name)}
+      accessibilityState={{ disabled: full }}
+      disabled={full}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tile,
+        width === undefined ? styles.tileFallback : { width },
+        { backgroundColor: colors.surface, borderColor: quantity > 0 ? colors.ink : colors.line, boxShadow: pressed ? colors.inset : colors.raise },
+        full && { backgroundColor: colors.surfaceSunk, boxShadow: 'none' },
+      ]}
+    >
+      <View>
+        <ProductPhoto uri={product.imageUrl} size="fill" />
+        {quantity > 0 && (
+          <View style={[styles.count, { backgroundColor: colors.ink }]}>
+            <Text style={[styles.countText, { color: colors.surface }]}>{quantity}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={2}>
+        {product.name}
+      </Text>
+      <Text style={[styles.tilePrice, { color: colors.ink }]}>{formatMoney(product.promotion?.price ?? product.price)}</Text>
+      {low && <Text style={[styles.tileLeft, { color: colors.warn }]}>{t.sell.left(product.stock.quantity)}</Text>}
+    </Pressable>
+  );
+}
+
+/** − or + inside the basket's quantity track: a small paper key. */
 function StepButton(props: { icon: typeof Plus; accessibilityLabel: string; onPress: () => void; disabled: boolean }) {
   const Icon = props.icon;
   const colors = useThemeColors();
@@ -329,9 +476,12 @@ function StepButton(props: { icon: typeof Plus; accessibilityLabel: string; onPr
       accessibilityState={{ disabled: props.disabled }}
       disabled={props.disabled}
       onPress={props.onPress}
-      style={[styles.stepButton, { borderColor: colors.lineStrong }, props.disabled && { opacity: 0.4 }]}
+      style={({ pressed }) => [
+        styles.stepButton,
+        !props.disabled && { backgroundColor: pressed ? colors.fill : colors.surface, boxShadow: keyShadow(colors, 'paper', pressed), ...keyTravel(pressed) },
+      ]}
     >
-      <Icon size={22} color={colors.ink} weight="bold" />
+      <Icon size={18} color={props.disabled ? colors.inkMuted : colors.ink} weight="bold" />
     </Pressable>
   );
 }
@@ -344,21 +494,49 @@ const styles = StyleSheet.create({
   // The whole field shows focus (see searchFocused), so the browser's ring on the bare input is off.
   searchInput: { flex: 1, minHeight: 46, fontFamily: fonts.body, fontSize: type.input, outlineStyle: 'solid', outlineWidth: 0 },
   scanButton: { width: 48, height: 48, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
-  groupTitle: { fontFamily: fonts.bodyBold, fontSize: type.body, marginTop: spacing.sm },
-  // Two columns; an odd last tile keeps its size instead of stretching across.
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
-  tile: { width: '48.5%', minHeight: 72, padding: spacing.md, borderWidth: 1, borderRadius: radius.panel, justifyContent: 'space-between' },
-  tileName: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  groupTitle: { fontFamily: fonts.bodyBold, fontSize: type.body },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP },
+  tile: { padding: spacing.sm, gap: spacing.xs, borderWidth: 1, borderRadius: radius.panel },
+  tileFallback: { width: '31%' },
+  count: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: spacing.xs,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { fontFamily: fonts.bodyBold, fontSize: type.label, fontVariant: ['tabular-nums'] },
+  tileName: { fontFamily: fonts.bodyBold, fontSize: type.label, lineHeight: 17, minHeight: 34 },
+  tilePrice: { fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
+  tileLeft: { fontFamily: fonts.bodyBold, fontSize: type.caption },
+  receipt: { padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderRadius: radius.panel },
+  receiptHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  clear: { minHeight: 32, justifyContent: 'center' },
+  link: { fontFamily: fonts.bodyMedium, fontSize: type.label, textDecorationLine: 'underline' },
+  line: { gap: spacing.xs, paddingTop: spacing.sm, borderTopWidth: 1 },
+  lineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  lineName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: type.body },
+  lineTotal: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
+  meta: { flexShrink: 1, fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: 2, borderRadius: radius.small },
+  stepButton: { width: 44, height: 40, borderRadius: radius.small - 2, alignItems: 'center', justifyContent: 'center' },
+  quantity: { fontFamily: fonts.bodyBold, fontSize: type.title, minWidth: 28, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  tear: { borderTopWidth: 1, borderStyle: 'dashed', marginVertical: spacing.xs },
+  totalFigure: { fontFamily: fonts.bodyBold, fontSize: type.figure, fontVariant: ['tabular-nums'] },
+  cash: { marginTop: spacing.sm },
+  change: { fontFamily: fonts.bodyBold, fontSize: type.title, fontVariant: ['tabular-nums'], marginTop: -spacing.sm, marginBottom: spacing.md },
+  extras: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  extraChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 36, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small },
+  extraLabel: { fontFamily: fonts.bodyMedium, fontSize: type.label },
+  soldHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  soldMark: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  soldTitle: { flex: 1, fontFamily: fonts.display, fontSize: type.title },
   actionBar: { padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth },
+  startHint: { fontFamily: fonts.body, fontSize: type.body, textAlign: 'center' },
   hint: { fontFamily: fonts.body, fontSize: type.body },
-  pickerRow: { padding: spacing.lg, borderRadius: radius.panel, borderWidth: 1 },
-  pickerName: { fontFamily: fonts.bodyBold, fontSize: type.body },
-  pickerMeta: { fontFamily: fonts.body, fontSize: type.label },
-  panel: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.panel, borderWidth: 1 },
-  line: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
-  lineText: { flex: 1, gap: 2 },
-  stepButton: { width: 44, height: 44, borderWidth: 1, borderRadius: radius.small, alignItems: 'center', justifyContent: 'center' },
-  quantity: { fontFamily: fonts.bodyBold, fontSize: type.title, minWidth: 32, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  change: { fontFamily: fonts.bodyBold, fontSize: type.figure, fontVariant: ['tabular-nums'] },
   message: { fontFamily: fonts.bodyBold, fontSize: type.body },
 });

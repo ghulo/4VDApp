@@ -22,16 +22,22 @@ export function TabPicker({
   onChange,
   onTab,
   onTabChange,
+  initiallyOpen = false,
+  onDismiss,
 }: {
   value: Customer | null;
   onChange: (customer: Customer | null) => void;
   onTab: boolean;
   onTabChange: (onTab: boolean) => void;
+  /** Opened from a button elsewhere: start with the search showing. */
+  initiallyOpen?: boolean;
+  /** Called when they choose no customer, so the opener can hide this again. */
+  onDismiss?: () => void;
 }) {
   const colors = useThemeColors();
   const t = useT();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [search, setSearch] = useState('');
   // A business tab needs its NUI before it can be opened.
   const [asBusiness, setAsBusiness] = useState(false);
@@ -59,6 +65,7 @@ export function TabPicker({
     setSearch('');
     setAsBusiness(false);
     setNui('');
+    if (!customer) onDismiss?.();
   }
 
   if (value) {
@@ -103,6 +110,8 @@ export function TabPicker({
         placeholder={t.tabs.searchPlaceholder}
         placeholderTextColor={colors.steel}
         accessibilityLabel={t.tabs.whose}
+        // Opened from a button that then goes away: carry focus here.
+        autoFocus={initiallyOpen}
         autoCorrect={false}
         style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.background }]}
       />

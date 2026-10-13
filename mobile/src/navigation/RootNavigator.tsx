@@ -151,7 +151,7 @@ function MainTabs() {
         <Tab.Screen
           name="Sell"
           component={RecordSaleScreen}
-          options={{ title: t.nav.recordSale, tabBarLabel: t.nav.tabs.sell, tabBarIcon: () => <SellIcon /> }}
+          options={{ title: t.nav.tabs.sell, tabBarLabel: t.nav.tabs.sell, tabBarIcon: () => <SellIcon /> }}
         />
       )}
       <Tab.Screen
@@ -218,7 +218,7 @@ export function RootNavigator() {
             <Stack.Screen
               name="RecordSale"
               component={RecordSaleScreen}
-              options={{ title: t.nav.recordSale, presentation: 'modal' }}
+              options={{ title: t.nav.tabs.sell, presentation: 'modal' }}
             />
             <Stack.Screen name="MySales" component={MySalesScreen} options={{ title: t.nav.mySales, headerBackTitle: t.nav.back }} />
             <Stack.Screen name="Return" component={ReturnScreen} options={{ title: t.nav.returnSale, presentation: 'modal' }} />

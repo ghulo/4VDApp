@@ -1,9 +1,8 @@
-import { Image } from 'expo-image';
-import { mediaSrc } from '../services/apiClient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { formatMoney, promotionLabel } from '../utils/format';
+import { ProductPhoto } from './ProductPhoto';
 import { StockTag } from './StockTag';
 import { useT } from '../i18n/useT';
 
@@ -28,13 +27,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         pressed && { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset },
       ]}
     >
-      {product.imageUrl ? (
-        <Image source={mediaSrc(product.imageUrl)} style={styles.image} contentFit="cover" accessibilityIgnoresInvertColors />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder, { backgroundColor: colors.background }]}>
-          <Text style={[styles.placeholderInitial, { color: colors.steel }]}>{product.name.charAt(0)}</Text>
-        </View>
-      )}
+      <ProductPhoto uri={product.imageUrl} size={64} />
       <View style={styles.details}>
         <Text style={[styles.name, { color: colors.ink }]} numberOfLines={2}>
           {product.name}
@@ -71,9 +64,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.panel,
   },
-  image: { width: 64, height: 64, borderRadius: radius.small },
-  imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  placeholderInitial: { fontFamily: fonts.bodyBold, fontSize: type.figure },
   details: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.bodyBold, fontSize: type.body },
   category: { fontFamily: fonts.body, fontSize: type.label },

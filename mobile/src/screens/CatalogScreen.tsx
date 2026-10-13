@@ -12,12 +12,13 @@ import { categoriesApi, favoritesApi, productsApi } from '../services/api';
 import type { Product } from '../services/types';
 import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
-import { TabBarSpacer } from '../components/TabBarSpace';
+import { useTabBarSpace } from '../components/TabBarSpace';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function CatalogScreen() {
   const colors = useThemeColors();
+  const tabBarSpace = useTabBarSpace();
   const t = useT();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<MainTabParamList, 'Catalog'>>();
@@ -145,8 +146,13 @@ export function CatalogScreen() {
         <FlatList
           data={items}
           keyExtractor={(product) => String(product.id)}
-          contentContainerStyle={items.length === 0 ? styles.emptyList : styles.list}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+          contentContainerStyle={
+            items.length === 0
+              ? styles.emptyList
+              : // The tab bar's room goes under the panel, not inside it.
+                [styles.list, { marginBottom: spacing.lg + tabBarSpace, backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]
+          }
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.line }]} />}
           renderItem={({ item }) => (
             <ProductCard product={item} onPress={() => open(item)} />
           )}
@@ -165,12 +171,7 @@ export function CatalogScreen() {
               </EmptyState>
             )
           }
-          ListFooterComponent={
-            <>
-              {products.isFetchingNextPage && <Loading />}
-              <TabBarSpacer />
-            </>
-          }
+          ListFooterComponent={products.isFetchingNextPage ? <Loading /> : null}
         />
       )}
     </View>
@@ -219,6 +220,8 @@ const styles = StyleSheet.create({
   chipLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.xs },
   toggleLabel: { fontFamily: fonts.body, fontSize: type.body },
-  list: { padding: spacing.lg },
+  // The rows share one raised surface, separated by hairlines (DESIGN.md 8).
+  list: { margin: spacing.lg, borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md },
   emptyList: { flexGrow: 1 },
 });

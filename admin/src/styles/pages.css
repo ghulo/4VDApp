@@ -3030,21 +3030,6 @@ fieldset.report-sections {
   gap: var(--space-1);
 }
 
-.target-bar__track {
-  display: block;
-  block-size: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunk);
-  box-shadow: var(--shadow-inset);
-  overflow: hidden;
-}
-
-.target-bar__fill {
-  display: block;
-  block-size: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--chart-series);
-}
 
 @media (max-width: 900px) {
   .analysis-grid {

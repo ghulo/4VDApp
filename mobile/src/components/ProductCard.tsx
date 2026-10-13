@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../services/types';
-import { fonts, radius, spacing, useThemeColors, type } from '../theme';
+import { fonts, spacing, useThemeColors, type } from '../theme';
 import { formatMoney, promotionLabel } from '../utils/format';
 import { ProductPhoto } from './ProductPhoto';
 import { StockTag } from './StockTag';
@@ -11,8 +11,9 @@ interface ProductCardProps {
 }
 
 /**
- * One product in the list: photo, name, then category and price on one line,
- * with the shelf count on the right. Bulk prices wait on the product page.
+ * One row of the product list: photo, name, then category and price on one line,
+ * with the shelf count on the right. Rows share one raised surface (the list draws
+ * it), so a row is only a pressable band. Bulk prices wait on the product page.
  */
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const colors = useThemeColors();
@@ -23,9 +24,8 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       accessibilityLabel={`${product.name}, ${formatMoney(product.promotion?.price ?? product.price)}${product.promotion ? `, ${promotionLabel(product.promotion)}` : ''}`}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise },
-        pressed && { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset },
+        styles.row,
+        pressed && { backgroundColor: colors.surfaceSunk },
       ]}
     >
       <ProductPhoto uri={product.imageUrl} size={48} />
@@ -47,15 +47,13 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     minHeight: 64,
-    borderWidth: 1,
-    borderRadius: radius.panel,
   },
   details: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.bodyBold, fontSize: type.body },

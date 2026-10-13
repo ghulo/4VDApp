@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { fonts, useThemeColors, type } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { useT } from '../i18n/useT';
 
 type StockLevel = 'out' | 'low' | 'ok';
@@ -10,25 +10,22 @@ function stockLevel(quantity: number, reorderLevel: number): StockLevel {
   return 'ok';
 }
 
-
 interface StockTagProps {
   quantity: number;
   reorderLevel: number;
   size?: 'regular' | 'large';
 }
 
-const BLOCKS = 10;
-
 /**
- * Shelf-tag style stock count, matching the admin dashboard: a row of printed
- * blocks, full at twice the reorder level, with a wider gap after the fifth
- * block marking "reorder now".
+ * The shelf count over an inset bar, as on the dashboard (DESIGN.md 10.8): full
+ * at four times the reorder level, so the alert point sits a quarter along, and
+ * coloured fine, low or out. Only low and out are said in words; fine stays quiet.
  */
 export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagProps) {
   const colors = useThemeColors();
   const t = useT();
   const level = stockLevel(quantity, reorderLevel);
-  const lit = Math.round(Math.min(quantity / Math.max(reorderLevel * 2, 1), 1) * BLOCKS);
+  const filled = Math.min(quantity / Math.max(reorderLevel * 4, 1), 1);
   const barColor = { out: colors.signalOut, low: colors.signalLow, ok: colors.stockOk }[level];
   const isLarge = size === 'large';
 
@@ -38,39 +35,22 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
       accessible
       accessibilityLabel={t.stockTag.label(quantity, t.stockTag[level])}
     >
-      <Text
-        style={[
-          styles.count,
-          isLarge && styles.countLarge,
-          { color: level === 'out' ? colors.signalOut : colors.ink },
-        ]}
-      >
-        {quantity}
-      </Text>
-      <View style={[styles.gauge, isLarge && styles.gaugeLarge]}>
-        {Array.from({ length: BLOCKS }, (_, index) => (
-          <View
-            key={index}
-            style={[styles.block, index === BLOCKS / 2 && styles.reorderGap, { backgroundColor: index < lit ? barColor : colors.lineStrong }]}
-          />
-        ))}
+      <Text style={[styles.count, isLarge && styles.countLarge, { color: level === 'out' ? colors.signalOut : colors.ink }]}>{quantity}</Text>
+      <View style={[styles.track, isLarge && styles.trackLarge, { backgroundColor: colors.fill, boxShadow: colors.inset }]}>
+        <View style={[styles.fill, { width: `${filled * 100}%`, backgroundColor: barColor }]} />
       </View>
-      <Text style={[styles.label, { color: barColor === colors.stockOk ? colors.steel : barColor }]}>
-        {t.stockTag[level].toLocaleUpperCase()}
-      </Text>
+      {level !== 'ok' && <Text style={[styles.label, { color: barColor }]}>{t.stockTag[level].toLocaleUpperCase()}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { minWidth: 64, gap: 3 },
-  containerLarge: { minWidth: 160, gap: 6 },
+  container: { minWidth: 64, gap: spacing.xs },
+  containerLarge: { minWidth: 160, gap: spacing.md },
   count: { fontFamily: fonts.bodyBold, fontSize: type.title, lineHeight: 20, fontVariant: ['tabular-nums'] },
   countLarge: { fontSize: type.hero, lineHeight: 66 },
-  gauge: { flexDirection: 'row', gap: 2, height: 6 },
-  gaugeLarge: { gap: 3, height: 10 },
-  block: { flex: 1 },
-  // The reorder point: a wider gap after the fifth block.
-  reorderGap: { marginLeft: 2 },
+  track: { height: 6, borderRadius: radius.pill, overflow: 'hidden' },
+  trackLarge: { height: 8 },
+  fill: { height: '100%', borderRadius: radius.pill },
   label: { fontFamily: fonts.mono, fontSize: type.caption, letterSpacing: 0.6 },
 });

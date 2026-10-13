@@ -1110,7 +1110,7 @@ export const en = {
     oneMore: (name: string) => `One more ${name}`,
     remove: 'Remove',
     removeLabel: (name: string) => `Take ${name} out of the basket`,
-    total: (amount: string) => `Total ${amount}`,
+    total: 'Total',
     paid: 'Customer paid (optional)',
     change: (amount: string) => `Give back ${amount}`,
     short: (amount: string) => `${amount} short`,

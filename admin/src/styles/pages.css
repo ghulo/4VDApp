@@ -2356,10 +2356,57 @@ form.product-form > .form-actions {
   font-weight: 600;
 }
 
+/* The basket as a till receipt: lines on paper, a dashed tear line, the total big. */
+.basket__receipt {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+/* Receipt lines sit closer than a dashboard table, so they fit the sheet. */
+.basket__receipt .table td,
+.basket__receipt .table th {
+  padding-inline: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.basket__receipt .table__secondary {
+  white-space: normal;
+}
+
+.basket__receipt .table td:first-child,
+.basket__receipt .table th:first-child {
+  padding-inline-start: var(--space-4);
+}
+
+.basket__receipt .table td:last-child,
+.basket__receipt .table th:last-child {
+  padding-inline-end: var(--space-2);
+}
+
 .basket__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
   margin: 0;
-  font-size: var(--text-lg);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px dashed var(--line-strong);
+}
+
+.basket__total-label {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.basket__total-amount {
+  font-size: var(--text-figure);
   font-weight: 600;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 

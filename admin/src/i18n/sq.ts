@@ -1099,7 +1099,7 @@ export const sq: Catalogue = {
     oneMore: (name: string) => `Një ${name} më shumë`,
     remove: 'Hiq',
     removeLabel: (name: string) => `Hiqe ${name} nga shporta`,
-    total: (amount: string) => `Gjithsej ${amount}`,
+    total: 'Gjithsej',
     paid: 'Klienti dha (opsionale)',
     change: (amount: string) => `Kthe kusur ${amount}`,
     short: (amount: string) => `Mungojnë ${amount}`,

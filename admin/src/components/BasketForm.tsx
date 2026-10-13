@@ -212,76 +212,81 @@ export function BasketForm() {
       {lines.length === 0 ? (
         <p className="field-hint">{t.basket.empty}</p>
       ) : (
-        <div className="table-wrap">
-          <table className="table table--stack">
-            <caption className="visually-hidden">{t.basket.title}</caption>
-            <thead>
-              <tr>
-                <th scope="col">{t.sales.product}</th>
-                <th scope="col">{t.sales.quantity}</th>
-                <th scope="col" className="table__numeric">{t.basket.discount}</th>
-                <th scope="col" className="table__numeric">{t.sales.total}</th>
-                <th scope="col">
-                  <span className="visually-hidden">{t.basket.remove}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line) => {
-                const listed = unitPriceFor(line.product, line.quantity);
-                const percent = parsePercent(line.discount);
-                const each = afterDiscount(listed, percent);
-                return (
-                  <tr key={line.product.id}>
-                    <td>
-                      {line.product.name}
-                      {listed < line.product.price && <span className="table__secondary">{t.basket.cheaper}</span>}
-                    </td>
-                    <td data-label={t.sales.quantity}>
-                      <span className="basket__stepper">
-                        <Button variant="ghost" aria-label={t.basket.oneLess(line.product.name)} onClick={() => setQuantity(line.product.id, line.quantity - 1)} icon={Minus} />
-                        <span className="basket__quantity" aria-live="polite">
-                          {line.quantity}
+        // The basket reads like the till receipt it becomes, as on the team app's Sell.
+        <div className="basket__receipt">
+          <div className="table-wrap">
+            <table className="table table--stack">
+              <caption className="visually-hidden">{t.basket.title}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t.sales.product}</th>
+                  <th scope="col">{t.sales.quantity}</th>
+                  <th scope="col" className="table__numeric">{t.basket.discount}</th>
+                  <th scope="col" className="table__numeric">{t.sales.total}</th>
+                  <th scope="col">
+                    <span className="visually-hidden">{t.basket.remove}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((line) => {
+                  const listed = unitPriceFor(line.product, line.quantity);
+                  const percent = parsePercent(line.discount);
+                  const each = afterDiscount(listed, percent);
+                  return (
+                    <tr key={line.product.id}>
+                      <td>
+                        {line.product.name}
+                        {listed < line.product.price && <span className="table__secondary">{t.basket.cheaper}</span>}
+                      </td>
+                      <td data-label={t.sales.quantity}>
+                        <span className="basket__stepper">
+                          <Button variant="ghost" aria-label={t.basket.oneLess(line.product.name)} onClick={() => setQuantity(line.product.id, line.quantity - 1)} icon={Minus} />
+                          <span className="basket__quantity" aria-live="polite">
+                            {line.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            aria-label={t.basket.oneMore(line.product.name)}
+                            disabled={line.quantity >= line.product.stock.quantity}
+                            onClick={() => setQuantity(line.product.id, line.quantity + 1)}
+                            icon={Plus}
+                          />
                         </span>
-                        <Button
-                          variant="ghost"
-                          aria-label={t.basket.oneMore(line.product.name)}
-                          disabled={line.quantity >= line.product.stock.quantity}
-                          onClick={() => setQuantity(line.product.id, line.quantity + 1)}
-                          icon={Plus}
+                      </td>
+                      <td className="table__numeric" data-label={t.basket.discount}>
+                        <input
+                          className="input--compact basket__discount"
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
+                          placeholder="0"
+                          aria-label={t.basket.discountFor(line.product.name)}
+                          aria-invalid={percent > discountLimit || percent < 0}
+                          value={line.discount}
+                          onChange={(event) => setDiscount(line.product.id, event.target.value)}
                         />
-                      </span>
-                    </td>
-                    <td className="table__numeric" data-label={t.basket.discount}>
-                      <input
-                        className="input--compact basket__discount"
-                        type="text"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        placeholder="0"
-                        aria-label={t.basket.discountFor(line.product.name)}
-                        aria-invalid={percent > discountLimit || percent < 0}
-                        value={line.discount}
-                        onChange={(event) => setDiscount(line.product.id, event.target.value)}
-                      />
-                    </td>
-                    <td className="table__numeric" data-label={t.sales.total}>
-                      {formatMoney(roundMoney(each * line.quantity))}
-                      <span className="table__secondary">{t.basket.each(formatMoney(each))}</span>
-                      {percent > 0 && <span className="table__secondary">{t.basket.discountOff(formatPercent(percent / 100))}</span>}
-                    </td>
-                    <td>
-                      <Button variant="ghost" aria-label={t.basket.removeLabel(line.product.name)} onClick={() => setQuantity(line.product.id, 0)} icon={X} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="table__numeric" data-label={t.sales.total}>
+                        {formatMoney(roundMoney(each * line.quantity))}
+                        <span className="table__secondary">{t.basket.each(formatMoney(each))}</span>
+                        {percent > 0 && <span className="table__secondary">{t.basket.discountOff(formatPercent(percent / 100))}</span>}
+                      </td>
+                      <td>
+                        <Button variant="ghost" aria-label={t.basket.removeLabel(line.product.name)} onClick={() => setQuantity(line.product.id, 0)} icon={X} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="basket__total">
+            <span className="basket__total-label">{t.basket.total}</span>
+            <span className="basket__total-amount">{formatMoney(total)}</span>
+          </p>
         </div>
       )}
-
-      <p className="basket__total">{t.basket.total(formatMoney(total))}</p>
 
       {lines.length > 0 && (
         <Field

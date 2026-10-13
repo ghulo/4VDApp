@@ -44,16 +44,14 @@ export function ExpensesPage() {
         title={t.expenses.title}
         description={t.expenses.description(range.label)}
         actions={
-          <>
-            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
-            {canManage(role) && (
-              <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
-                {t.expenses.add}
-              </Button>
-            )}
-          </>
+          canManage(role) && (
+            <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
+              {t.expenses.add}
+            </Button>
+          )
         }
       />
+      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
 
       {expenses.data && <Totals totals={expenses.data.totals} />}
       {!canManage(role) && <p className="field-hint">{t.expenses.managersOnly}</p>}

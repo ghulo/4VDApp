@@ -498,7 +498,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: var(--control-h-sm);
+  height: var(--control-h);
   padding: 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-pill);
@@ -546,21 +546,52 @@
   background: var(--surface);
 }
 
-/* Thumb-sized on phones, like the segments. */
-@media (max-width: 900px) {
-  .chip,
-  .segmented--chips .segmented__option {
-    height: 40px;
-  }
+/* A filter dropdown beside the chips (supplier, category, sort, compare) is
+   the same raised pill with its value in ink, so a filter row reads as one
+   set of keys rather than chips next to form fields. */
+.toolbar select,
+.data-table__toolbar select {
+  width: auto;
+  height: var(--control-h);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--light-raise), var(--surface);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);
+  transition:
+    box-shadow var(--fast) var(--ease),
+    color var(--fast) var(--ease);
 }
 
-/* A chip row that scrolls sideways (phone list toolbars) would clip the
-   chips' drop and press; room inside, given back outside. */
+.toolbar select:hover,
+.data-table__toolbar select:hover {
+  box-shadow: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper), var(--key-drop);
+}
+
+.toolbar select:focus-visible,
+.data-table__toolbar select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper), var(--key-drop);
+}
+
+/* A chip row that scrolls sideways on phones would clip the chips' drop and
+   press; room inside, given back outside. */
 @media (max-width: 599px) {
-  .data-table__toolbar .segmented--chips {
+  .segmented--chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
     padding: var(--space-1) var(--space-1) var(--space-2);
     margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) calc(-1 * var(--space-2));
     width: calc(100% + 2 * var(--space-1));
+    max-width: none;
+  }
+
+  .segmented--chips .segmented__option {
+    flex: none;
   }
 }
 

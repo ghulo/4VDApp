@@ -23,16 +23,12 @@ export type ReportsView = 'figures' | 'team' | 'profit' | 'downloads';
 export function ReportsPage({ view }: { view: ReportsView }) {
   const t = useT();
   const { period, from, to, range, rangeKey, comparedRange, changePeriod, compare, changeCompare } = usePeriodParams('this-month');
-  const picker = <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />;
 
   if (view !== 'figures') {
     return (
       <>
-        <PageHeader
-          title={t.nav.items.reports}
-          description={t.reports.description(range.label)}
-          actions={picker}
-        />
+        <PageHeader title={t.nav.items.reports} description={t.reports.description(range.label)} />
+        <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
         {view === 'team' && <TeamView range={rangeKey} previous={previousOf(comparedRange)} />}
         {view === 'profit' && <ProfitTable range={rangeKey} />}
         {view === 'downloads' && <Exports range={rangeKey} label={range.label} />}

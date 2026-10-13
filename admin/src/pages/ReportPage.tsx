@@ -4,13 +4,15 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, DateField, DayBars, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, ColumnChart, DataTable, DateField, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
 import type { FullReport, ReportKind } from '../services/types';
-import { formatDate, formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
+import { formatDate, formatDateWith, formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** The day of the month under a week's column; the list beside it has the full dates. */
+const dayOfMonth = (day: string) => formatDateWith(new Date(`${day}T00:00:00Z`), { day: 'numeric', timeZone: 'UTC' });
 const shift = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 
 /** The full daily or weekly report, the same one the alert links to. */
@@ -52,7 +54,7 @@ export function ReportPage() {
       )}
 
       <div className="toolbar report-toolbar">
-        <div className="segmented" role="radiogroup" aria-label={t.fullReport.kind}>
+        <div className="segmented segmented--chips" role="radiogroup" aria-label={t.fullReport.kind}>
           {(['daily', 'weekly'] as const).map((option) => (
             <button
               key={option}
@@ -118,17 +120,29 @@ function ReportSections({ report }: { report: FullReport }) {
             <MetricCard label={t.fullReport.net} value={formatHeadlineMoney(s.sales.netProfit)} hint={t.fullReport.netHint} />
             <MetricCard label={t.fullReport.salesCount} value={s.sales.salesCount} hint={t.fullReport.units(s.sales.unitsSold, formatMoney(s.sales.averageSale))} />
           </MetricGrid>
-          {s.sales.byDay.length > 0 && (
+          {/* One day is already the revenue card; a week gets its columns with the figures beside them. */}
+          {s.sales.byDay.length > 1 && (
             <Card title={t.fullReport.byDay}>
-              <DayBars values={s.sales.byDay.map((day) => day.revenue)} label={t.fullReport.byDay} />
-              <ul className="report-days">
+              <div className="report-days">
+                {/* Seven columns at chart height; DayBars is the 30-day strip and would stretch to a wall here. */}
+                <ColumnChart
+                  label={t.fullReport.byDay}
+                  columns={s.sales.byDay.map((day) => ({
+                    key: day.day,
+                    label: dayOfMonth(day.day),
+                    value: day.revenue,
+                    description: `${formatDate(day.day)}: ${formatMoney(day.revenue)}`,
+                  }))}
+                />
+                <ul className="report-list report-days__list">
                 {s.sales.byDay.map((day) => (
                   <li key={day.day}>
                     <span>{formatDate(day.day)}</span>
                     <span>{formatMoney(day.revenue)}</span>
                   </li>
                 ))}
-              </ul>
+                </ul>
+              </div>
             </Card>
           )}
         </section>

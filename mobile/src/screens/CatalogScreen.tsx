@@ -192,13 +192,21 @@ function Chip({ label, icon: IconComponent, isSelected, onPress }: { label: stri
       aria-checked={isSelected}
       onPress={onPress}
       hitSlop={{ top: 4, bottom: 4 }}
-      style={[
+      // The dashboard's filter chip (DESIGN.md 10.10): a raised paper pill; the chosen one pressed into the page.
+      style={({ pressed }) => [
         styles.chip,
-        isSelected ? { backgroundColor: colors.selected, borderColor: colors.selected } : { borderColor: colors.lineStrong },
+        isSelected
+          ? { backgroundColor: colors.fill, borderColor: colors.lineStrong, boxShadow: colors.inset }
+          : {
+              backgroundColor: colors.surface,
+              borderColor: pressed ? colors.lineStrong : colors.line,
+              boxShadow: `${colors.keyShinePaper}, ${pressed ? colors.keyDropPressed : colors.keyDrop}`,
+              transform: [{ translateY: pressed ? 1 : 0 }],
+            },
       ]}
     >
-      {IconComponent && <IconComponent size={14} color={isSelected ? colors.onSelected : colors.ink} weight={isSelected ? 'fill' : 'regular'} />}
-      <Text style={[styles.chipLabel, { color: isSelected ? colors.onSelected : colors.ink }]}>{label}</Text>
+      {IconComponent && <IconComponent size={14} color={isSelected ? colors.ink : colors.inkMuted} weight={isSelected ? 'fill' : 'regular'} />}
+      <Text style={[styles.chipLabel, { color: isSelected ? colors.ink : colors.inkMuted }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -224,7 +232,7 @@ const styles = StyleSheet.create({
     fontSize: type.input,
   },
   chips: { gap: spacing.sm, paddingVertical: spacing.md },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, minHeight: 36, justifyContent: 'center', borderRadius: 18, borderWidth: 1 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, minHeight: 36, justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1 },
   chipLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   toggleLabel: { fontFamily: fonts.body, fontSize: type.body },

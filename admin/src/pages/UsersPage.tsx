@@ -154,7 +154,7 @@ export function UsersPage() {
           rowKey={(person) => person.id}
           onRowClick={(person) => navigate(`/people/${person.id}`)}
           toolbar={
-            <div className="segmented segmented--small" role="radiogroup" aria-label={t.people.show}>
+            <div className="segmented segmented--chips" role="radiogroup" aria-label={t.people.show}>
               {FILTERS.map((key) => (
                 <button
                   key={key}
@@ -175,7 +175,7 @@ export function UsersPage() {
                   }
                 >
                   {t.people.filters[key]}
-                  {key !== 'all' && <span className="segmented__count">{all.filter(matches[key]).length}</span>}
+                  {key !== 'all' && all.some(matches[key]) && <span className="segmented__count">{all.filter(matches[key]).length}</span>}
                 </button>
               ))}
             </div>

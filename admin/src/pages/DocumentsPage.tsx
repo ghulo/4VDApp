@@ -65,11 +65,20 @@ export function DocumentsPage() {
           toolbar={
             <div className="toolbar">
               <SearchInput value={search} onChange={onSearch} label={t.documents.search} />
-              <select aria-label={t.documents.kind} value={kind} onChange={(event) => updateParams({ kind: event.target.value })}>
-                <option value="">{t.documents.anyKind}</option>
-                <option value="invoice">{t.documents.kinds.invoice}</option>
-                <option value="credit_note">{t.documents.kinds.credit_note}</option>
-              </select>
+              <div className="segmented segmented--chips" role="radiogroup" aria-label={t.documents.kind}>
+                {(['all', 'invoice', 'credit_note'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={(kind || 'all') === option}
+                    className="segmented__option"
+                    onClick={() => updateParams({ kind: option === 'all' ? '' : option })}
+                  >
+                    {t.documents.filters[option]}
+                  </button>
+                ))}
+              </div>
               <label className="inline-field">
                 {t.sales.from}
                 <DateField value={startDate} max={endDate || undefined} onChange={(value) => updateParams({ from: value })} />

@@ -633,6 +633,8 @@ and team-app `Stamp` are the same stamp.
   the next highest, cap the axis, draw the capped bar to the top with a break
   mark and label its real value. Every chart scales through the same
   `scaleTop` (daily bars, column charts, bar lists and mini graphs).
+- `DayBars` is only the 30-day strip (Today, metric cards). A week or a day's
+  hours is a `ColumnChart`, which keeps chart height whatever the width.
 - Metric cards sit on an even grid: every card in a row has the same parts (all
   with a mini graph or none). No half-empty last rows: let the last card span.
 
@@ -653,12 +655,17 @@ Joined options on an Oat inset track, the selected one raised on Paper. Used for
 theme (Light / Dark / Auto, with icons) and language (English / Shqip) **in both
 apps**, and for small view switches. Not for more than 4 options.
 
-**Filter chips** (what a list shows: Bills, Orders, Customers, Stock, Inbox,
-Offers, Activity): each choice is its own raised pill (`.chip`, or
-`.segmented--chips` on a segmented control), Paper lit from above with a bright
-top line, a hairline and the key's soft drop; the chosen one is pressed into
-the page (Oat, inset shadow, Ink label). On phones a list's chip row scrolls
-sideways in one line. Form choices (how paid, add/remove) keep the track.
+**Filter chips** (what a page or list shows: every list filter, every period
+picker, Daily / Weekly on Reports, invoice kind, which carwash): each choice is
+its own raised pill (`.chip`, or `.segmented--chips` on a segmented control),
+control height, Paper lit from above with a bright top line, a hairline and the
+key's soft drop; the chosen one is pressed into the page (Oat, inset shadow,
+Ink label). A filter dropdown beside them (supplier, category, sort, compare)
+is the same raised pill. Counts of 0 are hidden. On phones a chip row scrolls
+sideways in one line. The period is always `PeriodPicker`, on its own row under
+the page header (in the board head on Analytics). Form and settings choices
+(how paid, add/remove, theme, language, a view switch inside a card) keep the
+track. In the team app, `Chip` in `CatalogScreen` follows the same recipe.
 
 ### 10.11 Navigation
 Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
@@ -727,5 +734,3 @@ closed the earlier gaps (words, date fields, dashboard receipt).
 
 1. **Albanian numbers group from five digits**: "1578 €" sits above
    "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
-2. **Two period pickers**: Sales uses a segmented control, Analytics a select
-   plus a compare select. One pattern should serve both. → 10.10

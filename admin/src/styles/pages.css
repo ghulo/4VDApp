@@ -10,11 +10,6 @@
   margin-bottom: var(--space-4);
 }
 
-.toolbar select,
-.data-table__toolbar select {
-  width: auto;
-}
-
 .search-input {
   width: min(300px, 100%);
 }
@@ -969,7 +964,9 @@ form.product-form > .form-actions {
   }
 
   .toolbar > .inline-field,
-  .data-table__toolbar > .inline-field {
+  .data-table__toolbar > .inline-field,
+  .period-picker__dates,
+  .period-picker__dates > .inline-field {
     flex: 1 1 100%;
   }
 
@@ -2846,7 +2843,6 @@ form.product-form > .form-actions {
   margin-bottom: var(--space-3);
 }
 
-.report-days,
 .report-list {
   margin: 0;
   padding: 0;
@@ -2854,24 +2850,37 @@ form.product-form > .form-actions {
   font-variant-numeric: tabular-nums;
 }
 
+/* A week: the columns, and each day's figure beside them. */
 .report-days {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--space-1) var(--space-4);
-  margin-top: var(--space-3);
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  gap: var(--space-5);
+  align-items: end;
+}
+
+.report-days__list {
   font-size: var(--text-sm);
 }
 
-.report-days li,
+.report-list.report-days__list li {
+  padding: var(--space-1) 0;
+}
+
+.report-days__list li span:first-child {
+  color: var(--ink-muted);
+}
+
+@media (max-width: 760px) {
+  .report-days {
+    grid-template-columns: 1fr;
+  }
+}
+
 .report-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
-}
-
-.report-days li span:first-child {
-  color: var(--ink-muted);
 }
 
 .report-list li {
@@ -2954,15 +2963,7 @@ fieldset.report-sections {
 
 /* ---------- Sales ---------- */
 
-.sales-periods {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.sales-periods__dates {
+.period-picker__dates {
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);

@@ -33,15 +33,13 @@ export function CashPage() {
         title={t.nav.items.day}
         description={t.cash.description(range.label)}
         actions={
-          <>
-            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
-            {/* Everyone on the dashboard may count a drawer (the owner too). */}
-            <Button variant="primary" icon={Coins} onClick={() => setCounting(true)}>
-              {t.cash.countTitle}
-            </Button>
-          </>
+          /* Everyone on the dashboard may count a drawer (the owner too). */
+          <Button variant="primary" icon={Coins} onClick={() => setCounting(true)}>
+            {t.cash.countTitle}
+          </Button>
         }
       />
+      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
 
       {counts.data && <Totals counts={counts.data} />}
 

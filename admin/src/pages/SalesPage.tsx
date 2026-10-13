@@ -6,13 +6,14 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { BasketForm } from '../components/BasketForm';
 import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
+import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
 import { useSalesSeries } from '../components/useSalesSeries';
 import { productsApi, reportsApi, salesApi, usersApi } from '../services/api';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, DataTable, DateField, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
+import { Badge, Button, DataTable, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
 import type { Checkout } from '../services/types';
 import { useT } from '../i18n/useT';
@@ -47,42 +48,7 @@ export function SalesPage() {
         }
       />
 
-      <div className="sales-periods">
-        <div className="segmented" role="radiogroup" aria-label={t.sales.period}>
-          {PERIODS.map((key) => (
-            <button
-              key={key}
-              type="button"
-              role="radio"
-              aria-checked={period.period === key}
-              className="segmented__option"
-              onClick={() => period.changePeriod({ period: key, from: period.from, to: period.to })}
-            >
-              {key === 'custom' ? t.sales.custom : t.periods.options[key]}
-            </button>
-          ))}
-        </div>
-        {period.period === 'custom' && (
-          <span className="sales-periods__dates">
-            <label className="inline-field">
-              {t.sales.from}
-              <DateField
-                value={period.from}
-                max={period.to || undefined}
-                onChange={(value) => period.changePeriod({ period: 'custom', from: value, to: period.to })}
-              />
-            </label>
-            <label className="inline-field">
-              {t.sales.to}
-              <DateField
-                value={period.to}
-                min={period.from || undefined}
-                onChange={(value) => period.changePeriod({ period: 'custom', from: period.from, to: value })}
-              />
-            </label>
-          </span>
-        )}
-      </div>
+      <PeriodPicker period={period.period} from={period.from} to={period.to} onChange={period.changePeriod} periods={PERIODS} />
       {period.range.waitingForDates && <p className="field-hint">{t.reports.waitingForDates(period.range.label)}</p>}
 
       <PeriodSummary range={period.comparedRange} />

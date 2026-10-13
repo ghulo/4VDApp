@@ -144,7 +144,7 @@ export function PromotionsPage() {
                 {VIEWS.map((key) => (
                   <button key={key} type="button" role="radio" aria-checked={view === key} className="segmented__option" onClick={() => showView(key)}>
                     {t.promotions.views[key]}
-                    <span className="segmented__count">{count(key)}</span>
+                    {count(key) > 0 && <span className="segmented__count">{count(key)}</span>}
                   </button>
                 ))}
               </div>

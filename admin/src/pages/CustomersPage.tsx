@@ -180,7 +180,7 @@ export function CustomersPage() {
                       onClick={() => updateParams({ show: key === 'all' ? null : key })}
                     >
                       {t.customers.filters[key]}
-                      {key !== 'all' && <span className="segmented__count">{count(key)}</span>}
+                      {key !== 'all' && count(key) > 0 && <span className="segmented__count">{count(key)}</span>}
                     </button>
                   ))}
                 </div>

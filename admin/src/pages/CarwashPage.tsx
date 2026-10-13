@@ -47,22 +47,18 @@ export function CarwashPage() {
       <PageHeader
         title={t.nav.items.day}
         description={t.carwash.description(range.label)}
-        actions={
-          <>
-            {several && (
-              <select aria-label={t.carwash.which} value={which} onChange={(event) => setWhich(event.target.value)}>
-                <option value="">{t.carwash.allCarwashes}</option>
-                {places.map((place) => (
-                  <option key={place.id} value={place.id}>
-                    {place.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
-          </>
-        }
       />
+      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod}>
+        {several && (
+          <div className="segmented segmented--chips" role="radiogroup" aria-label={t.carwash.which}>
+            {[{ id: '', name: t.carwash.allCarwashes }, ...places.map((place) => ({ id: String(place.id), name: place.name }))].map((place) => (
+              <button key={place.id} type="button" role="radio" aria-checked={which === place.id} className="segmented__option" onClick={() => setWhich(place.id)}>
+                {place.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </PeriodPicker>
 
       {takings.data && (
         <StatGrid>

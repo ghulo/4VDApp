@@ -12,6 +12,7 @@ import { Avatar } from '../components/Avatar';
 import { LogoMark } from '../components/LogoMark';
 import { BlockMeter, DoubleRule, IconChip, Kicker, PrintSection, ShopSunrise } from '../components/print';
 import { WelcomeTour } from '../components/WelcomeTour';
+import { Stamp } from '../components/ui';
 import { checkoutSummary, dayRanges, monthRanges, MY_SALES_QUERY_KEY, useMyCheckouts } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
@@ -127,7 +128,7 @@ export function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={t.home.yourAccount}
             onPress={() => navigation.navigate('Main', { screen: 'Account' })}
-            hitSlop={8}
+            style={styles.avatarKey}
           >
             <Avatar name={user.name} url={user.avatarUrl} size={40} />
           </Pressable>
@@ -353,7 +354,7 @@ function TargetBar({ colors, revenue, target, monthName }: { colors: ThemeColors
 /** One To do item: its stamp, what it is and what to do; tappable when the team app can do it. */
 function TodoRow({ item, colors, first, onPress }: { item: TodoItem; colors: ThemeColors; first: boolean; onPress?: () => void }) {
   const t = useT();
-  const stamp = item.severity === 'urgent' ? colors.signalOut : item.severity === 'check' ? colors.signalLowInk : colors.inkMuted;
+  const tone = item.severity === 'urgent' ? 'danger' : item.severity === 'check' ? 'warn' : 'neutral';
   return (
     <Pressable
       disabled={!onPress}
@@ -367,7 +368,9 @@ function TodoRow({ item, colors, first, onPress }: { item: TodoItem; colors: The
       ]}
     >
       <View style={styles.happenedText}>
-        <Text style={[styles.stamp, { color: stamp, borderColor: stamp }]}>{t.home.severity[item.severity]}</Text>
+        <View style={styles.stampGap}>
+          <Stamp label={t.home.severity[item.severity]} tone={tone} />
+        </View>
         <Text style={[styles.rowName, { color: colors.ink }]}>{item.title}</Text>
         <Text style={[styles.tileDetail, { color: colors.steel }]}>{item.detail}</Text>
       </View>
@@ -406,10 +409,8 @@ function RequestRow({ request, colors, first }: { request: MyRequest; colors: Th
   return (
     <View style={[styles.requestRow, !first && { borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
       <Text style={[styles.rowName, { color: colors.ink }]}>{request.summary}</Text>
-      <Text style={[styles.requestStatus, { color: isRejected ? colors.signalOut : isWaiting ? colors.signalLowInk : colors.stockOk }]}>
-        {t.home.requestStatus[request.status] ?? request.status}
-        {isRejected && request.decisionNote ? `: ${request.decisionNote}` : ''}
-      </Text>
+      <Stamp label={t.home.requestStatus[request.status] ?? request.status} tone={isRejected ? 'danger' : isWaiting ? 'warn' : 'ok'} />
+      {isRejected && request.decisionNote ? <Text style={[styles.tileDetail, { color: colors.steel }]}>{request.decisionNote}</Text> : null}
     </View>
   );
 }
@@ -489,20 +490,9 @@ const styles = StyleSheet.create({
   rowValue: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
   rowTime: { width: 52, textAlign: 'right', fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
   muted: { fontFamily: fonts.body, fontSize: type.body, paddingVertical: spacing.sm },
-  requestRow: { paddingVertical: spacing.sm, gap: 2 },
+  requestRow: { paddingVertical: spacing.sm, gap: spacing.xs },
   happenedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
   happenedText: { flex: 1, gap: 2 },
-  // The severity reads like a printed stamp, as on the dashboard.
-  stamp: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.xs,
-    borderWidth: 1,
-    borderRadius: radius.small,
-    fontFamily: fonts.bodyBold,
-    fontSize: type.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 2,
-  },
-  requestStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
+  stampGap: { marginBottom: 2 },
+  avatarKey: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

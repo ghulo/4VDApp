@@ -199,7 +199,7 @@ export function RootNavigator() {
         screenLayout={CanvasPage}
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },
-          headerTitleStyle: { fontFamily: fonts.display, fontSize: type.title, color: colors.ink },
+          headerTitleStyle: { fontFamily: fonts.bodyBold, fontSize: type.title, color: colors.ink },
           headerTintColor: colors.ink,
           headerShadowVisible: false,
         }}

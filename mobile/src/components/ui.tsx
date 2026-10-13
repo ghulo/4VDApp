@@ -1,4 +1,5 @@
 import type { Icon } from 'phosphor-react-native';
+import { WarningCircle } from 'phosphor-react-native/src/icons/WarningCircle';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -107,8 +108,27 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   const t = useT();
   return (
     <View style={styles.centered} accessibilityRole="alert">
-      <Text style={[styles.stateText, { color: colors.ink }]}>{errorMessage(error)}</Text>
+      <IconChip icon={WarningCircle} background={colors.dangerSoft} />
+      <Text style={[styles.emptyTitle, { color: colors.ink }]}>{t.common.somethingWrong}</Text>
+      <Text style={[styles.stateText, { color: colors.steel }]}>{errorMessage(error)}</Text>
       {onRetry && <Button label={t.common.tryAgain} variant="quiet" onPress={onRetry} />}
+    </View>
+  );
+}
+
+export type StampTone = 'neutral' | 'ok' | 'warn' | 'danger';
+
+/**
+ * A status word printed like a rubber stamp, the same as the dashboard's badge
+ * (DESIGN.md 10.5): monospace capitals in a squared outline, no fill. The
+ * colour names the state; the word carries it.
+ */
+export function Stamp({ label, tone = 'neutral' }: { label: string; tone?: StampTone }) {
+  const colors = useThemeColors();
+  const color = { neutral: colors.inkMuted, ok: colors.ok, warn: colors.warn, danger: colors.danger }[tone];
+  return (
+    <View style={[styles.stamp, { borderColor: color }]}>
+      <Text style={[styles.stampLabel, { color }]}>{label.toLocaleUpperCase()}</Text>
     </View>
   );
 }
@@ -167,6 +187,8 @@ const styles = StyleSheet.create({
   },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
   stateText: { fontFamily: fonts.body, fontSize: type.body, textAlign: 'center' },
+  stamp: { alignSelf: 'flex-start', height: 22, paddingHorizontal: 6, borderWidth: 1, borderRadius: radius.stamp, justifyContent: 'center' },
+  stampLabel: { fontFamily: fonts.mono, fontSize: type.caption, fontWeight: '600', letterSpacing: 0.7 },
   emptyTitle: { fontFamily: fonts.display, fontSize: type.headline },
 });
 

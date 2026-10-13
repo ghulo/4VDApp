@@ -155,7 +155,7 @@ export function Segmented<TValue extends string>({ label, options, value, onChan
   return (
     <View style={segmented.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
       <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
-      <View style={[segmented.track, { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset }]}>
+      <View style={[segmented.track, { backgroundColor: colors.fill, boxShadow: colors.inset }]}>
         {options.map((option) => {
           const isSelected = option.value === value;
           return (

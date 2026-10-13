@@ -1,9 +1,10 @@
 import { Package } from 'phosphor-react-native/src/icons/Package';
+import type { Icon } from 'phosphor-react-native';
 import { Star } from 'phosphor-react-native/src/icons/Star';
 import { type RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { ProductCard } from '../components/ProductCard';
 import { Button, EmptyState, ErrorState, Loading } from '../components/ui';
@@ -30,6 +31,10 @@ export function CatalogScreen() {
   const [favouritesOnly, setFavouritesOnly] = useState(false);
   // From Home's "Something happened": tapping a product reports damage or an expiry date instead of opening it.
   const then = route.params?.then;
+  // While picking, the screen is titled by the task, not "Products".
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: then === 'writeOff' ? t.nav.writeOff : then === 'expiry' ? t.nav.expiry : t.nav.tabs.products });
+  }, [navigation, then, t]);
 
   // A search typed on Home arrives as a route param.
   const searchFromHome = route.params?.search;
@@ -100,6 +105,7 @@ export function CatalogScreen() {
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t.newProduct.category}>
           <Chip
+            icon={Star}
             label={t.catalog.favourites}
             isSelected={favouritesOnly}
             onPress={() => {
@@ -178,18 +184,20 @@ export function CatalogScreen() {
   );
 }
 
-function Chip({ label, isSelected, onPress }: { label: string; isSelected: boolean; onPress: () => void }) {
+function Chip({ label, icon: IconComponent, isSelected, onPress }: { label: string; icon?: Icon; isSelected: boolean; onPress: () => void }) {
   const colors = useThemeColors();
   return (
     <Pressable
       accessibilityRole="radio"
       aria-checked={isSelected}
       onPress={onPress}
+      hitSlop={{ top: 4, bottom: 4 }}
       style={[
         styles.chip,
         isSelected ? { backgroundColor: colors.selected, borderColor: colors.selected } : { borderColor: colors.lineStrong },
       ]}
     >
+      {IconComponent && <IconComponent size={14} color={isSelected ? colors.onSelected : colors.ink} weight={isSelected ? 'fill' : 'regular'} />}
       <Text style={[styles.chipLabel, { color: isSelected ? colors.onSelected : colors.ink }]}>{label}</Text>
     </Pressable>
   );
@@ -216,9 +224,9 @@ const styles = StyleSheet.create({
     fontSize: type.input,
   },
   chips: { gap: spacing.sm, paddingVertical: spacing.md },
-  chip: { paddingHorizontal: spacing.md, minHeight: 36, justifyContent: 'center', borderRadius: 18, borderWidth: 1 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, minHeight: 36, justifyContent: 'center', borderRadius: 18, borderWidth: 1 },
   chipLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: spacing.xs },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   toggleLabel: { fontFamily: fonts.body, fontSize: type.body },
   // The rows share one raised surface, separated by hairlines (DESIGN.md 8).
   list: { margin: spacing.lg, borderWidth: 1, borderRadius: radius.panel, overflow: 'hidden' },

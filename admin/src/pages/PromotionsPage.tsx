@@ -140,7 +140,7 @@ export function PromotionsPage() {
           onRowClick={(promotion) => navigate(`/promotions/${promotion.id}`)}
           toolbar={
             all.length > 0 && (
-              <div className="segmented segmented--small" role="radiogroup" aria-label={t.promotions.show}>
+              <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.promotions.show}>
                 {VIEWS.map((key) => (
                   <button key={key} type="button" role="radio" aria-checked={view === key} className="segmented__option" onClick={() => showView(key)}>
                     {t.promotions.views[key]}

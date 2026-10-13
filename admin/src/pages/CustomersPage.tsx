@@ -169,7 +169,7 @@ export function CustomersPage() {
             all.length > 0 && (
               <>
                 <SearchInput value={params.get('search') ?? ''} onChange={(value) => updateParams({ search: value })} label={t.customers.search} />
-                <div className="segmented segmented--small" role="radiogroup" aria-label={t.customers.show}>
+                <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.customers.show}>
                   {FILTERS.map((key) => (
                     <button
                       key={key}

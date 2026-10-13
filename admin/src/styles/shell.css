@@ -480,6 +480,90 @@
   justify-content: center;
 }
 
+/* ---------- Filter chips (what a list shows) ----------
+   Each choice is its own small raised pill, lit from above with a bright top
+   line and a soft drop, like a key; the chosen one is pressed into the page.
+   `.segmented--chips` turns a segmented control's track into a row of these;
+   form choices keep the track. */
+
+.segmented--chips {
+  gap: var(--space-2);
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.chip,
+.segmented--chips .segmented__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--light-raise), var(--surface);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);
+  transition:
+    background-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--instant) var(--ease);
+}
+
+.chip:hover,
+.segmented--chips .segmented__option:hover {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper), var(--key-drop);
+}
+
+.chip:active,
+.segmented--chips .segmented__option:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 0 0 1px var(--line-strong), var(--key-shine-paper), var(--key-drop-pressed);
+}
+
+.chip[aria-checked='true'],
+.segmented--chips .segmented__option[aria-checked='true'] {
+  background: var(--fill);
+  color: var(--ink);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--line-strong);
+}
+
+.chip:focus-visible,
+.segmented--chips .segmented__option:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.segmented--chips .segmented__option[aria-checked='true'] .segmented__count {
+  background: var(--surface);
+}
+
+/* Thumb-sized on phones, like the segments. */
+@media (max-width: 900px) {
+  .chip,
+  .segmented--chips .segmented__option {
+    height: 40px;
+  }
+}
+
+/* A chip row that scrolls sideways (phone list toolbars) would clip the
+   chips' drop and press; room inside, given back outside. */
+@media (max-width: 599px) {
+  .data-table__toolbar .segmented--chips {
+    padding: var(--space-1) var(--space-1) var(--space-2);
+    margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) calc(-1 * var(--space-2));
+    width: calc(100% + 2 * var(--space-1));
+  }
+}
+
 /* ---------- Feedback ---------- */
 
 .loading {

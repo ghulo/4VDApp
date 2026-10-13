@@ -142,7 +142,7 @@ export function InventoryPage() {
             toolbar={
               <>
                 <SearchInput value={params.get('search') ?? ''} onChange={(value) => updateParams({ search: value })} label={t.inventory.search} />
-                <div className="segmented segmented--small" role="radiogroup" aria-label={t.inventory.show}>
+                <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.inventory.show}>
                   {FILTERS.map((key) => (
                     <button
                       key={key}

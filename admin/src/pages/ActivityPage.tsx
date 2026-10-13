@@ -93,7 +93,7 @@ export function ActivityPage() {
             </button>
           ))}
         </div>
-        <div className="segmented segmented--small activity-filters__kinds" role="radiogroup" aria-label={t.activity.kind}>
+        <div className="segmented segmented--small segmented--chips activity-filters__kinds" role="radiogroup" aria-label={t.activity.kind}>
           {KINDS.map((kind) => (
             <button
               key={kind.key}

@@ -653,6 +653,13 @@ Joined options on an Oat inset track, the selected one raised on Paper. Used for
 theme (Light / Dark / Auto, with icons) and language (English / Shqip) **in both
 apps**, and for small view switches. Not for more than 4 options.
 
+**Filter chips** (what a list shows: Bills, Orders, Customers, Stock, Inbox,
+Offers, Activity): each choice is its own raised pill (`.chip`, or
+`.segmented--chips` on a segmented control), Paper lit from above with a bright
+top line, a hairline and the key's soft drop; the chosen one is pressed into
+the page (Oat, inset shadow, Ink label). On phones a list's chip row scrolls
+sideways in one line. Form choices (how paid, add/remove) keep the track.
+
 ### 10.11 Navigation
 Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
 hover Oat; current = Clay Tint fill, Clay Text label, 3px Clay marker on the edge.
@@ -692,7 +699,7 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
     the same in and out. Colour/hover is `--fast` 150ms on `--ease`.
   - Pages: sections rise in (6px, fade) one after another, `--stagger` 40ms,
     first six. Reuse `.rise` (one element) and `.rise-group` (its children).
-  - Selection glides: the chosen segment of every segmented control and the
+  - Selection glides: the chosen segment of every segmented track and the
     current sidebar item (with its orange tick) are one highlight that slides
     to the next choice (`selectionPills.ts`, no per-screen code).
   - Panels leave the way they came: the side sheet in from and out to the

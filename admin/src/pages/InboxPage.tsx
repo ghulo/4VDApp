@@ -133,7 +133,7 @@ function AlertList() {
   return (
     <>
       <div className="toolbar inbox__toolbar">
-        <div className="segmented segmented--small" role="radiogroup" aria-label={t.inbox.show}>
+        <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.inbox.show}>
           {ALERT_FILTERS.map((option) => (
             <button
               key={option.key}

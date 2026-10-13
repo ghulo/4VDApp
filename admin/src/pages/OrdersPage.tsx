@@ -75,7 +75,7 @@ export function OrdersPage() {
           toolbar={
             (orders.data?.length ?? 0) > 0 && (
               <div className="toolbar">
-                <div className="segmented" role="radiogroup" aria-label={t.bills.show}>
+                <div className="segmented segmented--chips" role="radiogroup" aria-label={t.bills.show}>
                   {FILTERS.map((option) => (
                     <button
                       key={option}

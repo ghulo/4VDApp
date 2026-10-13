@@ -5,9 +5,11 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import {
   Badge,
+  BarList,
   Button,
   ButtonLink,
   Card,
+  ColumnChart,
   DataTable,
   DayBars,
   EmptyState,
@@ -282,5 +284,28 @@ describe('DayBars', () => {
     const html = render(<DayBars values={[2, 3, 40]} label="Sales per day" />);
 
     expect(html.match(/day-bars__break/g)).toHaveLength(1);
+  });
+});
+
+describe('BarList and ColumnChart', () => {
+  const bars = (values: number[]) =>
+    render(<BarList label="Top products" items={values.map((value, key) => ({ key, label: `P${key}`, value, display: String(value) }))} />);
+  const columns = (values: number[]) =>
+    render(<ColumnChart label="Weekdays" columns={values.map((value, key) => ({ key, label: `D${key}`, description: String(value), value }))} />);
+
+  it('should cap one huge bar with a break so the others keep their size', () => {
+    const html = bars([100, 10, 8]);
+
+    expect(html.match(/bar-list__bar--capped/g)).toHaveLength(1);
+    expect(html).toContain('inline-size:100%');
+    // Scaled to the second-longest with headroom: 10 of 12.5.
+    expect(html).toContain('inline-size:80%');
+    expect(html).toContain('>100<');
+  });
+
+  it('should cap one huge column the same way, and leave an even chart alone', () => {
+    expect(columns([5, 60, 4]).match(/column-chart__bar--capped/g)).toHaveLength(1);
+    expect(columns([5, 6, 4])).not.toContain('--capped');
+    expect(bars([5, 6, 4])).not.toContain('--capped');
   });
 });

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
+import { scaleTop } from './sparkline';
 
 export interface BarItem {
   key: string | number;
@@ -16,13 +17,14 @@ export interface BarItem {
 /**
  * One series as labelled horizontal bars, longest first as given: reads at
  * phone width, and each value is printed at its bar's end, so nothing depends
- * on colour or hover. Below zero is hatched in the loss colour.
+ * on colour or hover. Below zero is hatched in the loss colour. One bar far
+ * longer than the rest runs to the end with a break, so the others keep their size.
  */
 export function BarList({ items, label }: { items: BarItem[]; label: string }) {
-  const max = Math.max(...items.map((item) => Math.abs(item.value)), 0);
+  const { top: max, outlier } = scaleTop(items.map((item) => Math.abs(item.value)));
   return (
     <ul className="bar-list" aria-label={label}>
-      {items.map((item) => (
+      {items.map((item, index) => (
         <li key={item.key} className="bar-list__row">
           <span className="bar-list__label">
             {item.to ? (
@@ -36,8 +38,8 @@ export function BarList({ items, label }: { items: BarItem[]; label: string }) {
           </span>
           <span className="bar-list__track" aria-hidden="true">
             <span
-              className={`bar-list__bar${item.value < 0 ? ' bar-list__bar--negative' : ''}`}
-              style={{ inlineSize: max > 0 && item.value !== 0 ? `${Math.max(1, (Math.abs(item.value) / max) * 100)}%` : '0%' }}
+              className={`bar-list__bar${item.value < 0 ? ' bar-list__bar--negative' : ''}${index === outlier ? ' bar-list__bar--capped' : ''}`}
+              style={{ inlineSize: max > 0 && item.value !== 0 ? `${Math.min(100, Math.max(1, (Math.abs(item.value) / max) * 100))}%` : '0%' }}
             />
           </span>
           <span className="bar-list__value">{item.display}</span>

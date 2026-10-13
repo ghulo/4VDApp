@@ -735,7 +735,6 @@ form.product-form > .form-actions {
 .login__moment--d {
   bottom: 2%;
   right: 4%;
-  opacity: 0.6;
 }
 
 @media (prefers-reduced-motion: no-preference) {

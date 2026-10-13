@@ -34,6 +34,9 @@ interface DataTableProps<Row> {
   footer?: ReactNode;
 }
 
+/** A cell with nothing to say: stacked rows on phones leave it out instead of printing "–". */
+const isBlank = (content: ReactNode) => content === null || content === undefined || content === false || content === '' || content === '–';
+
 /** A list of records in a bordered frame, with an optional toolbar and footer. */
 export function DataTable<Row>({
   caption,
@@ -94,11 +97,14 @@ export function DataTable<Row>({
                         })
                       }
                     >
-                      {columns.map((column, index) => (
-                        <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)}>
-                          {column.cell(row)}
-                        </td>
-                      ))}
+                      {columns.map((column, index) => {
+                        const content = column.cell(row);
+                        return (
+                          <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)} data-empty={isBlank(content) || undefined}>
+                            {content}
+                          </td>
+                        );
+                      })}
                     </tr>
                     {afterRow?.(row)}
                   </Fragment>

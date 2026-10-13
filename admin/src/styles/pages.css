@@ -218,16 +218,12 @@
   display: none;
 }
 
+/* Phones: the greeting and To do come first; the shop stays small beside the
+   greeting on the same rule instead of pushing everything down. */
 @media (max-width: 760px) {
   .overview-hero {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .overview-hero__art {
-    order: -1;
-    width: min(260px, 70%);
-    margin: 0 auto var(--space-4);
+    grid-template-columns: minmax(0, 1fr) 88px;
+    gap: var(--space-3);
   }
 }
 

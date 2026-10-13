@@ -423,8 +423,6 @@ export const sq: Catalogue = {
     totalFrom: (p) => `${p.amount} nga ${p.count} shitje`,
     whatSold: 'Çfarë u shit',
     andMore: (first: string, more: number) => `${first} dhe ${more} të tjera`,
-    open: 'Hap',
-    openLabel: (what: string) => `Hap shitjen: ${what}`,
     lines: 'Çfarë bleu ky klient',
     noSalesInDates: 'Asnjë shitje nuk përputhet me këto filtra',
     noSalesYet: 'Ende pa shitje',

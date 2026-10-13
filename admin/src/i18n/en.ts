@@ -430,8 +430,6 @@ export const en = {
     totalFrom: (p: { amount: string; count: number }) => `${p.amount} from ${p.count} ${p.count === 1 ? 'sale' : 'sales'}`,
     whatSold: 'What was sold',
     andMore: (first: string, more: number) => `${first} and ${more} more`,
-    open: 'Open',
-    openLabel: (what: string) => `Open the sale: ${what}`,
     lines: 'What this customer bought',
     noSalesInDates: 'No sales match these filters',
     noSalesYet: 'No sales yet',

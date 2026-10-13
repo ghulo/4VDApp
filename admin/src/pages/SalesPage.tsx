@@ -266,7 +266,10 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
               cell: (checkout) => (
                 <>
                   <span className="sales-what">
-                    {describe(checkout)}
+                    {/* The whole row opens the sale; this is its keyboard way in. */}
+                    <button type="button" className="row-toggle" aria-expanded={openKey === checkout.key} onClick={() => toggle(checkout)}>
+                      {describe(checkout)}
+                    </button>
                     <ReturnedBadge checkout={checkout} />
                   </span>
                   <span className="table__secondary table__phone-only">
@@ -280,20 +283,6 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
             {
               header: t.documents.invoice,
               cell: (checkout) => (checkout.invoice ? <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link> : '–'),
-            },
-            {
-              header: <span className="visually-hidden">{t.sales.actions}</span>,
-              cell: (checkout) => (
-                <button
-                  type="button"
-                  className="text-button"
-                  aria-expanded={openKey === checkout.key}
-                  aria-label={openKey === checkout.key ? undefined : t.sales.openLabel(describe(checkout))}
-                  onClick={() => toggle(checkout)}
-                >
-                  {openKey === checkout.key ? t.sales.close : t.sales.open}
-                </button>
-              ),
             },
           ]}
           afterRow={(checkout) =>

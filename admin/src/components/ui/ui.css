@@ -192,6 +192,22 @@
   text-underline-offset: 3px;
 }
 
+/* The title of a row that opens in place: reads as the row's text, underlines on hover. */
+.row-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.row-toggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- Page header ---------- */
 
 .page-header {
@@ -479,6 +495,26 @@
   width: auto;
 }
 
+/* Phones: search on its own line, the filter segments in one row that scrolls
+   sideways, then the selects side by side, never wrapping under each other. */
+@media (max-width: 599px) {
+  .data-table__toolbar .segmented {
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .data-table__toolbar .segmented__option {
+    flex: none;
+  }
+
+  .data-table__toolbar select {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
 /* Positioned for the same reason as .table-wrap: keeps hidden labels in the scroll box. */
 .data-table__scroll {
   position: relative;
@@ -643,7 +679,8 @@
     justify-self: end;
   }
 
-  .table--stack td:empty {
+  .table--stack td:empty,
+  .table--stack td[data-empty] {
     display: none;
   }
 

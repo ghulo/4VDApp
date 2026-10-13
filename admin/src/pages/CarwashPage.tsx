@@ -11,7 +11,7 @@ import { useT } from '../i18n/useT';
 import { carwashApi } from '../services/api';
 import type { CarwashDay } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDateWith, formatMoney } from '../utils/format';
+import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Button, Card, DataTable, EmptyState, Field, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
@@ -66,11 +66,11 @@ export function CarwashPage() {
 
       {takings.data && (
         <StatGrid>
-          <StatTile label={t.carwash.carwash} value={formatMoney(takings.data.totals.carwash)} />
-          <StatTile label={t.carwash.change} value={formatMoney(takings.data.totals.change)} hint={t.carwash.changeHint} />
+          <StatTile label={t.carwash.carwash} value={formatHeadlineMoney(takings.data.totals.carwash)} />
+          <StatTile label={t.carwash.change} value={formatHeadlineMoney(takings.data.totals.change)} hint={t.carwash.changeHint} />
           <StatTile
             label={t.carwash.total}
-            value={formatMoney(takings.data.totals.total)}
+            value={formatHeadlineMoney(takings.data.totals.total)}
             hint={t.carwash.daysEntered(takings.data.totals.days)}
           />
         </StatGrid>

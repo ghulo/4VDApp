@@ -122,15 +122,16 @@ export function InventoryPage() {
                 hint={withoutCost > 0 ? t.inventory.withoutCost(withoutCost) : t.inventory.atCost}
                 to={filterLink('all')}
               />
-              <StatTile icon={Warning} label={t.inventory.lowCount} value={count('low')} tone={count('low') > 0 ? 'warn' : 'default'} to={filterLink('low')} />
+              <StatTile icon={Warning} label={t.inventory.lowCount} value={count('low')} words={count('low') === 0 && t.inventory.noneLow} tone={count('low') > 0 ? 'warn' : 'default'} to={filterLink('low')} />
               <StatTile
                 icon={WarningOctagon}
                 label={t.inventory.outCount}
                 value={count('out')}
+                words={count('out') === 0 && t.inventory.noneOut}
                 tone={count('out') > 0 ? 'danger' : 'default'}
                 to={filterLink('out')}
               />
-              <StatTile icon={Hourglass} label={t.inventory.soonCount} value={count('soon')} tone={count('soon') > 0 ? 'warn' : 'default'} to={filterLink('soon')} />
+              <StatTile icon={Hourglass} label={t.inventory.soonCount} value={count('soon')} words={count('soon') === 0 && t.inventory.noneSoon} tone={count('soon') > 0 ? 'warn' : 'default'} to={filterLink('soon')} />
             </StatGrid>
           )}
 
@@ -152,7 +153,7 @@ export function InventoryPage() {
                       onClick={() => updateParams({ status: key === 'all' ? null : key })}
                     >
                       {t.inventory.filters[key]}
-                      {key !== 'all' && <span className="segmented__count">{count(key)}</span>}
+                      {key !== 'all' && count(key) > 0 && <span className="segmented__count">{count(key)}</span>}
                     </button>
                   ))}
                 </div>

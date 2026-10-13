@@ -178,7 +178,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] B1 Dates read like "14 Oct" in To do and Activity; "cash check" and "mobile app" wording gone
 - [x] B1b Activity and request lines read in the reader's own language
 - [x] B2 Tables sit on the page under their heading, never inside a card
-- [ ] B3 Metric rows even, big figures without cents, zeros as calm words, Overview greeting on the type scale
+- [x] B3 Metric rows even, big figures without cents, zeros as calm words, Overview greeting on the type scale
 - [ ] B4 One huge day no longer flattens any chart
 - [x] B5 Healthy stock is quiet (stamps only for low and out); team app Products on one surface
 - [ ] B6 Dashboard on a phone: no empty "–" lines, tidy Stock toolbar, To do first on Overview, whole Sales row opens

@@ -118,9 +118,14 @@ function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>
           change={change.revenue}
           series={points.map((point) => point.revenue)}
         />
-        <MetricCard label={t.sales.profit} value={formatHeadlineMoney(current.profit)} change={change.profit} />
-        <MetricCard label={t.sales.salesCount} value={current.salesCount} change={change.salesCount} />
-        <MetricCard label={t.sales.average} value={formatMoney(average(current))} change={averageChange} />
+        <MetricCard label={t.sales.profit} value={formatHeadlineMoney(current.profit)} change={change.profit} series={points.map((point) => point.profit)} />
+        <MetricCard label={t.sales.salesCount} value={current.salesCount} change={change.salesCount} series={points.map((point) => point.salesCount)} />
+        <MetricCard
+          label={t.sales.average}
+          value={formatHeadlineMoney(average(current))}
+          change={averageChange}
+          series={points.map((point) => (point.salesCount > 0 ? point.revenue / point.salesCount : 0))}
+        />
       </MetricGrid>
       <p className="field-hint">{t.sales.wholeShop}</p>
     </section>

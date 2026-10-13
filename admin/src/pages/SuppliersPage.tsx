@@ -10,7 +10,7 @@ import { Badge, Button, ButtonLink, DataTable, EmptyState, PageHeader, Sheet, St
 import { useT } from '../i18n/useT';
 import { billsApi, ordersApi, reportsApi, suppliersApi } from '../services/api';
 import type { Supplier } from '../services/types';
-import { formatDate, formatMoney } from '../utils/format';
+import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
 
 /** Everyone the shop buys from: what is owed, what is on the way, and what to order from whom. */
 export function SuppliersPage() {
@@ -68,13 +68,13 @@ export function SuppliersPage() {
         <StatGrid>
           <StatTile
             label={t.bills.owed}
-            value={formatMoney(summary.data.owed)}
+            value={formatHeadlineMoney(summary.data.owed)}
             hint={summary.data.bySupplier.length > 0 ? t.bills.suppliersCount(summary.data.bySupplier.length) : undefined}
             to="/bills"
           />
           <StatTile
             label={t.bills.overdue}
-            value={formatMoney(summary.data.overdue.amount)}
+            value={formatHeadlineMoney(summary.data.overdue.amount)}
             hint={summary.data.overdue.count > 0 ? t.bills.billsCount(summary.data.overdue.count) : undefined}
             tone={summary.data.overdue.count > 0 ? 'danger' : 'default'}
             to="/bills?status=overdue"

@@ -76,17 +76,20 @@ export function ReportsPage({ view }: { view: ReportsView }) {
               label={t.reports.together}
               value={formatHeadlineMoney(current.revenue + carwash.current.total)}
               hint={t.reports.togetherHint}
+              to="/report"
             />
-            <MetricCard label={t.reports.expenses} value={formatHeadlineMoney(expenses.current)} to="/expenses" />
+            <MetricCard label={t.reports.expenses} value={formatHeadlineMoney(expenses.current)} hint={t.reports.expensesHint} to="/expenses" />
             <MetricCard
               label={t.reports.netProfit}
               value={formatHeadlineMoney(netProfit.current)}
               change={netProfit.change}
               hint={t.reports.netProfitHint}
+              to="/report"
             />
             <MetricCard
               label={t.analytics.margin}
               value={current.margin === null ? t.reports.unknown : formatPercent(current.margin)}
+              to="/sales"
             />
             <MetricCard label={t.analytics.refunds} value={formatHeadlineMoney(current.refunds)} to="/inbox" />
             <MetricCard
@@ -233,7 +236,7 @@ function PersonReport({ userId, range, previous }: { userId: number; range: Rang
               change={changeOf(person.salesCount, earlier?.salesCount)}
               series={patterns.data?.days.map((day) => day.salesCount)}
             />
-            <MetricCard label={t.analysis.averageSale} value={formatMoney(person.averageSale)} change={changeOf(person.averageSale, earlier?.averageSale)} />
+            <MetricCard label={t.analysis.averageSale} value={formatHeadlineMoney(person.averageSale)} change={changeOf(person.averageSale, earlier?.averageSale)} />
             <MetricCard label={t.analysis.profit} value={formatHeadlineMoney(person.profit)} change={changeOf(person.profit, earlier?.profit)} />
             <MetricCard
               label={t.analysis.commission}

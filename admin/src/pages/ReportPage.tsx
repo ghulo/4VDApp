@@ -177,10 +177,10 @@ function ReportSections({ report }: { report: FullReport }) {
             'bills',
             <>
               <StatGrid>
-                <StatTile label={t.fullReport.owed} value={formatMoney(s.bills.owed)} to="/bills" />
-                <StatTile label={t.fullReport.overdue} value={formatMoney(s.bills.overdue.amount)} hint={t.fullReport.billCount(s.bills.overdue.count)} tone={s.bills.overdue.count > 0 ? 'danger' : 'default'} to="/bills" />
-                <StatTile label={t.fullReport.dueSoon} value={formatMoney(s.bills.dueSoon.amount)} hint={t.fullReport.billCount(s.bills.dueSoon.count)} to="/bills" />
-                <StatTile label={t.fullReport.paidInPeriod} value={formatMoney(s.bills.paid.total)} hint={t.fullReport.payments(s.bills.paid.count)} />
+                <StatTile label={t.fullReport.owed} value={formatHeadlineMoney(s.bills.owed)} to="/bills" />
+                <StatTile label={t.fullReport.overdue} value={formatHeadlineMoney(s.bills.overdue.amount)} hint={t.fullReport.billCount(s.bills.overdue.count)} tone={s.bills.overdue.count > 0 ? 'danger' : 'default'} to="/bills" />
+                <StatTile label={t.fullReport.dueSoon} value={formatHeadlineMoney(s.bills.dueSoon.amount)} hint={t.fullReport.billCount(s.bills.dueSoon.count)} to="/bills" />
+                <StatTile label={t.fullReport.paidInPeriod} value={formatHeadlineMoney(s.bills.paid.total)} hint={t.fullReport.payments(s.bills.paid.count)} />
               </StatGrid>
               {s.bills.next.length > 0 && (
                 <ul className="report-list">
@@ -225,8 +225,8 @@ function ReportSections({ report }: { report: FullReport }) {
           card(
             'losses',
             <StatGrid>
-              <StatTile label={t.fullReport.refunds} value={formatMoney(s.losses.refunds)} />
-              <StatTile label={t.fullReport.stockLosses} value={formatMoney(s.losses.stockLosses)} />
+              <StatTile label={t.fullReport.refunds} value={formatHeadlineMoney(s.losses.refunds)} />
+              <StatTile label={t.fullReport.stockLosses} value={formatHeadlineMoney(s.losses.stockLosses)} />
             </StatGrid>,
           )}
         {s.carwash &&

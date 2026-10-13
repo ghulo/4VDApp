@@ -190,7 +190,7 @@
 
 .overview-hero__title {
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+  font-size: clamp(var(--text-figure), 3.6vw, var(--text-figure-lg));
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.015em;
@@ -770,7 +770,7 @@ form.product-form > .form-actions {
 .login__headline {
   max-width: 18ch;
   font-family: var(--font-display);
-  font-size: clamp(1.875rem, 3.2vw, 2.75rem);
+  font-size: clamp(var(--text-figure), 3.2vw, var(--text-figure-lg));
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.01em;

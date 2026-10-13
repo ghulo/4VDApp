@@ -49,7 +49,7 @@ export function OverviewPage() {
 
       <SetupGuide />
 
-      {/* Nothing to restock already reads as 0 on its tile above, so the list only shows when it has rows. */}
+      {/* Nothing to restock already says so on its tile above, so the list only shows when it has rows. */}
       {(lowStock.isPending || lowStock.isError || (lowCount ?? 0) > 0) && (
         <Card
           title={t.overview.needsRestocking}
@@ -227,22 +227,23 @@ function TodayFigures({ lowCount }: { lowCount: number | undefined }) {
       <StatTile
         icon={Coins}
         label={t.overview.profitToday}
-        value={formatMoney(current.profit)}
+        value={formatHeadlineMoney(current.profit)}
         hint={t.overview.itemsSold(current.unitsSold)}
         to="/sales"
       />
       <StatTile
         icon={Drop}
         label={t.overview.carwashTile}
-        value={carwashEntered ? formatMoney(carwash.current.total) : t.overview.notEntered}
+        value={formatHeadlineMoney(carwash.current.total)}
+        words={!carwashEntered && t.overview.notEntered}
         hint={someCarwashesMissing ? t.overview.carwashSome(carwash.byCarwash.length, openCarwashes.length) : undefined}
-        tone={carwashEntered ? 'default' : 'warn'}
         to="/carwash"
       />
       <StatTile
         icon={Package}
         label={t.overview.restockTile}
         value={lowCount ?? '–'}
+        words={lowCount === 0 && t.overview.restockNone}
         hint={t.overview.restockHint}
         tone={lowCount ? 'warn' : 'default'}
         to="/inventory?status=low"
@@ -252,7 +253,7 @@ function TodayFigures({ lowCount }: { lowCount: number | undefined }) {
           icon={MoonStars}
           label={t.overview.closingTile}
           value={`${day.data.done} / ${day.data.total}`}
-          hint={day.data.allDone ? t.overview.closingDone : closingDue ? t.overview.closingDue : undefined}
+          hint={day.data.allDone ? t.overview.closingDone : closingDue ? t.overview.closingDue : t.overview.closingLeft(day.data.total - day.data.done)}
           tone={closingDue ? 'warn' : 'default'}
           to="/day"
         />

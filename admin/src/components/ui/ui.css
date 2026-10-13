@@ -742,6 +742,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Where the figure would be: same slot, body size, so the row still lines up. */
+.stat__words {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--text-figure) * 1.15);
+  color: var(--ink-muted);
+  font-size: var(--text-base);
+}
+
 .stat__hint {
   color: var(--ink-muted);
   font-size: var(--text-sm);

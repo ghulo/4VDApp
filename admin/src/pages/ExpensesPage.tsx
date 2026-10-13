@@ -10,7 +10,7 @@ import { useT } from '../i18n/useT';
 import { expensesApi } from '../services/api';
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDateWith, formatMoney } from '../utils/format';
+import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, DataTable, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
@@ -77,7 +77,7 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
   );
   return (
     <StatGrid>
-      <StatTile label={t.expenses.total} value={formatMoney(totals.total)} />
+      <StatTile label={t.expenses.total} value={formatHeadlineMoney(totals.total)} />
       <StatTile
         label={`${t.expenses.places.shop} · ${t.expenses.places.carwash} · ${t.expenses.places.both}`}
         value={`${formatMoney(totals.byPlace.shop)} · ${formatMoney(totals.byPlace.carwash)} · ${formatMoney(totals.byPlace.both)}`}

@@ -6,7 +6,7 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { stockCountsApi } from '../services/api';
 import type { StockCount, StockCountLine } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, formatMoney, formatSignedQuantity } from '../utils/format';
+import { formatDateTime, formatHeadlineMoney, formatMoney, formatSignedQuantity } from '../utils/format';
 import { Button, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 
@@ -83,7 +83,7 @@ export function StockCountDetailPage() {
         />
         <StatTile
           label={shortage >= 0 ? t.counts.missing : t.counts.extra}
-          value={formatMoney(Math.abs(shortage))}
+          value={formatHeadlineMoney(Math.abs(shortage))}
           tone={shortage > 0 ? 'danger' : 'default'}
         />
       </StatGrid>

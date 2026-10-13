@@ -10,6 +10,11 @@ export function StatGrid({ children }: { children: ReactNode }) {
 interface StatTileProps {
   label: string;
   value: ReactNode;
+  /**
+   * A calm sentence in place of the figure ("None low", "Not entered yet"):
+   * body text, so a zero or a missing figure never shouts (DESIGN.md 3.3).
+   */
+  words?: ReactNode;
   hint?: ReactNode;
   icon?: Icon;
   tone?: 'default' | 'warn' | 'danger';
@@ -17,14 +22,14 @@ interface StatTileProps {
   to?: string;
 }
 
-export function StatTile({ label, value, hint, icon: IconComponent, tone = 'default', to }: StatTileProps) {
+export function StatTile({ label, value, words, hint, icon: IconComponent, tone = 'default', to }: StatTileProps) {
   const body = (
     <>
       <span className="stat__label">
         {IconComponent && <IconComponent size={16} aria-hidden="true" />}
         {label}
       </span>
-      <span className="stat__value">{value}</span>
+      {words ? <span className="stat__words">{words}</span> : <span className="stat__value">{value}</span>}
       {hint && <span className="stat__hint">{hint}</span>}
     </>
   );

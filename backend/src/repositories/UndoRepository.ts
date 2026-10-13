@@ -23,7 +23,7 @@ export class UndoRepository {
   findEntry(id: number) {
     return this.db
       .selectFrom('activity_log')
-      .select(['id', 'action', 'entity_id', 'details', 'summary', 'user_id', 'undone_at', 'undone_by'])
+      .select(['id', 'action', 'entity_id', 'details', 'summary', 'summary_say', 'user_id', 'undone_at', 'undone_by'])
       .where('id', '=', id)
       .executeTakeFirst();
   }

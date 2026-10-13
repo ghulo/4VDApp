@@ -271,6 +271,8 @@ export interface ActivityLogTable {
   entity_type: string | null;
   entity_id: number | null;
   summary: string;
+  /** What it says as a sentence key and values (see i18n/activityText); null on older entries. */
+  summary_say: ColumnType<Record<string, unknown> | null, Record<string, unknown> | null | undefined, never>;
   // pg serialises plain objects to JSON for us and parses JSONB on the way out.
   details: ColumnType<Record<string, unknown> | null, Record<string, unknown> | null | undefined, never>;
   created_at: CreatedAt;

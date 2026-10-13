@@ -62,28 +62,11 @@ export class SettingsService {
           action: 'settings.updated',
           entityType: 'settings',
           entityId: null,
-          summary: `Changed ${changes.map((name) => describe(name, before[name], input[name]!)).join(' and ')}`,
+          say: { key: 'settingsChanged', params: { changes: changes.map((name) => ({ name, from: before[name], to: input[name]! })) } },
           details: { ...Object.fromEntries(changes.map((name) => [name, { from: before[name], to: input[name] }])), ...logExtra },
         });
       });
     }
     return this.get();
-  }
-}
-
-function describe(name: keyof AppSettings, from: number, to: number): string {
-  switch (name) {
-    case 'refundApprovalLimit':
-      return `the refund approval limit from €${from} to €${to}`;
-    case 'returnWindowDays':
-      return `the return window from ${from} to ${to} days`;
-    case 'minimumMarginPercent':
-      return `the minimum margin from ${from}% to ${to}%`;
-    case 'cashFloatShop':
-      return `the shop's cash float from €${from} to €${to}`;
-    case 'paymentTermsDays':
-      return `the payment terms from ${from} to ${to} days`;
-    case 'employeeDiscountLimit':
-      return `the most rabat employees can give from ${from}% to ${to}%`;
   }
 }

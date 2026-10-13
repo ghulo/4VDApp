@@ -5,6 +5,8 @@ import type { UndoRepository } from '../repositories/UndoRepository.js';
 import type { DocumentRepository } from '../repositories/DocumentRepository.js';
 import type { ActivityEntityType } from '../constants/activity.js';
 import { fieldChangesOf } from './activity/fieldChanges.js';
+import { isSay, sayIn } from '../i18n/activityText.js';
+import type { Language } from '../i18n/language.js';
 import { undoStatesFor } from './undo/undoStates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 
@@ -24,7 +26,8 @@ interface FieldChange {
   to: unknown;
 }
 
-type Viewer = { id: number; role: UserRole };
+/** Who is looking; sentences are written in their language (English when not known). */
+type Viewer = { id: number; role: UserRole; language?: Language };
 
 export interface ActivityQuery extends PageRequest, Omit<ActivityFilters, 'limit' | 'offset'> {}
 
@@ -81,7 +84,7 @@ export class ActivityLogService {
       action: entry.action,
       entityType: entry.entity_type,
       entityId: entry.entity_id,
-      summary: entry.summary,
+      summary: isSay(entry.summary_say) ? sayIn(entry.summary_say, viewer.language ?? 'en') : entry.summary,
       details: entry.details,
       /** The fields it changed, before and after, the same shape whichever way it was logged. */
       changes: fieldChangesOf(entry),

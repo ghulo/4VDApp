@@ -94,13 +94,14 @@ export class ReturnService {
         approvalReasons: reasons,
         requestedBy: user.id,
       });
-      const what = `${input.quantity} × ${sale.product_name}`;
+      const units = { quantity: input.quantity, product: sale.product_name };
+      const what = `${units.quantity} × ${units.product}`;
       await repos.activityLog.create({
         userId: user.id,
         action: 'return.requested',
         entityType: 'return',
         entityId: id,
-        summary: `Returned ${what} from sale #${saleId}, refund ${formatEuro(refundAmount)}`,
+        say: { key: 'returned', params: { ...units, saleId, refund: refundAmount } },
         details: { saleId, quantity: input.quantity, refundAmount, condition: input.condition, approvalReasons: reasons },
       });
 
@@ -122,13 +123,14 @@ export class ReturnService {
       await closePendingAlerts(repos, { type: 'return', id });
       await approveReturn(repos, id, admin.id, this.documents);
       const item = (await repos.returns.findById(id))!;
-      const what = `${item.quantity} × ${item.product_name}`;
+      const units = { quantity: item.quantity, product: item.product_name };
+      const what = `${units.quantity} × ${units.product}`;
       await repos.activityLog.create({
         userId: admin.id,
         action: 'return.approved',
         entityType: 'return',
         entityId: id,
-        summary: `Approved the return of ${what}, refund ${formatEuro(toMoney(item.refund_amount))}`,
+        say: { key: 'returnApproved', params: { ...units, refund: toMoney(item.refund_amount) } },
       });
       await notifyRequester(repos, item.requested_by, admin.id, (t) => ({
         title: t.returnApproved(what),
@@ -144,13 +146,14 @@ export class ReturnService {
       await closePendingAlerts(repos, { type: 'return', id });
       await repos.returns.decide(id, { status: 'rejected', decidedBy: admin.id, note });
       const item = (await repos.returns.findById(id))!;
-      const what = `${item.quantity} × ${item.product_name}`;
+      const units = { quantity: item.quantity, product: item.product_name };
+      const what = `${units.quantity} × ${units.product}`;
       await repos.activityLog.create({
         userId: admin.id,
         action: 'return.rejected',
         entityType: 'return',
         entityId: id,
-        summary: `Rejected the return of ${what}: ${note}`,
+        say: { key: 'returnRejected', params: { ...units, note } },
       });
       await notifyRequester(repos, item.requested_by, admin.id, (t) => ({ title: t.returnRejected(what), message: note }));
     });

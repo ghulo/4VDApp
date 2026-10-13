@@ -151,8 +151,8 @@ describe('takings with several carwashes', () => {
     const archived = await takings('2026-10-03', { carwashId: second, carwash: 20, change: 0 });
 
     const summaries = await context.db.selectFrom('activity_log').select('summary').where('action', '=', 'carwash.recorded').orderBy('id').execute();
-    expect(summaries[0]!.summary).toContain('the carwash takings for 2026-10-01');
-    expect(summaries[1]!.summary).toContain('the Prishtina carwash takings for 2026-10-02');
+    expect(summaries[0]!.summary).toContain('the carwash takings for 1 Oct');
+    expect(summaries[1]!.summary).toContain('the Prishtina carwash takings for 2 Oct');
     expect(archived.status).toBe(409);
   });
 

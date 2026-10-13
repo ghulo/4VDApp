@@ -1,5 +1,4 @@
 import type { UserRole, UserRow } from '../database/types.js';
-import { formatEuro } from '../utils/money.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
@@ -10,6 +9,7 @@ import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '..
 import { hashPassword } from '../utils/password.js';
 import { canHandOut, canManage, MANAGER_ROLES } from '../utils/roles.js';
 import { toMoneyOrNull, toPublicUser } from './mappers.js';
+import type { Say, UserChange } from '../i18n/activityText.js';
 
 const TOP_ROLE_MESSAGE = 'Only the developer can add or change an owner, admin or developer';
 
@@ -72,7 +72,7 @@ export class UserService {
           action: 'user.created',
           entityType: 'user',
           entityId: user.id,
-          summary: `Added ${user.name} as ${user.role}`,
+          say: { key: 'userAdded', params: { name: user.name, role: user.role } },
           details: { email: user.email, role: user.role },
         });
         return toPublicUser(user);
@@ -114,7 +114,7 @@ export class UserService {
         action: 'user.updated',
         entityType: 'user',
         entityId: id,
-        summary: describeUserChanges(user, input),
+        say: describeUserChanges(user, input),
         // Never the password itself, only that it changed.
         details: {
           ...(input.name !== undefined && { name: { from: user.name, to: input.name } }),
@@ -155,7 +155,7 @@ export class UserService {
         action: 'user.deleted',
         entityType: 'user',
         entityId: id,
-        summary: `Removed ${user.name}`,
+        say: { key: 'userRemoved', params: { name: user.name } },
       });
     });
     await this.refreshTokenRepository.revokeAllForUser(id);
@@ -187,21 +187,21 @@ export class UserService {
   }
 }
 
-function describeUserChanges(user: UserRow, input: UpdateUserInput): string {
+/** What an edit changed about someone, for the activity sentence. */
+function describeUserChanges(user: UserRow, input: UpdateUserInput): Say {
   const { name, role, is_active: isActive } = user;
-  const parts: string[] = [];
-  if (input.name !== undefined && input.name !== name) parts.push(`renamed ${name} to ${input.name}`);
-  if (input.role !== undefined && input.role !== role) parts.push(`changed ${name}'s role from ${role} to ${input.role}`);
-  if (input.isActive === false && isActive) parts.push(`blocked ${name}`);
-  if (input.isActive === true && !isActive) parts.push(`let ${name} back in`);
-  if (input.password !== undefined) parts.push(`set a new password for ${name}`);
+  const changes: UserChange[] = [];
+  if (input.name !== undefined && input.name !== name) changes.push({ kind: 'renamed', to: input.name });
+  if (input.role !== undefined && input.role !== role) changes.push({ kind: 'role', from: role, to: input.role });
+  if (input.isActive === false && isActive) changes.push({ kind: 'blocked' });
+  if (input.isActive === true && !isActive) changes.push({ kind: 'allowed' });
+  if (input.password !== undefined) changes.push({ kind: 'password' });
   if (input.monthlyTarget !== undefined && input.monthlyTarget !== toMoneyOrNull(user.monthly_target)) {
-    parts.push(input.monthlyTarget === null ? `removed ${name}'s monthly target` : `set ${name}'s monthly target to ${formatEuro(input.monthlyTarget)}`);
+    changes.push(input.monthlyTarget === null ? { kind: 'targetRemoved' } : { kind: 'target', to: input.monthlyTarget });
   }
   const commission = user.commission_percent === null ? null : Number(user.commission_percent);
   if (input.commissionPercent !== undefined && input.commissionPercent !== commission) {
-    parts.push(input.commissionPercent === null ? `removed ${name}'s commission` : `set ${name}'s commission to ${input.commissionPercent}%`);
+    changes.push(input.commissionPercent === null ? { kind: 'commissionRemoved' } : { kind: 'commission', to: input.commissionPercent });
   }
-  const sentence = parts.length > 0 ? parts.join('; ') : `saved ${name} with no changes`;
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+  return { key: 'userChanged', params: { name, changes } };
 }

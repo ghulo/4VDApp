@@ -47,7 +47,7 @@ export class GoogleAuthService {
       if (!user.email_verified_at) user = (await this.userRepository.update(user.id, { email_verified_at: new Date() }))!;
     }
     if (!user.is_active) throw new UnauthorizedError('Your account is no longer active');
-    return this.authService.startSession(user, device, 'logged in with Google');
+    return this.authService.startSession(user, device, 'google');
   }
 
   /** Accept an invite with the Google account it was sent to; no password needed. */
@@ -59,7 +59,7 @@ export class GoogleAuthService {
     }
     const user = await this.inviteService.createMember(invite, { name: profile.name, passwordHash: null, language });
     await this.identities.link(user.id, 'google', profile.subject, profile.email);
-    return this.authService.startSession(user, device, 'logged in with Google for the first time');
+    return this.authService.startSession(user, device, 'googleFirst');
   }
 
   async security(userId: number): Promise<SecurityDto> {

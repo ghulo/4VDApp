@@ -45,7 +45,7 @@ export class PricingService {
         action: 'pricing.updated',
         entityType: 'product',
         entityId: productId,
-        summary: `Updated bulk prices for ${product.name}`,
+        say: { key: 'bulkPricesUpdated', params: { product: product.name } },
         details: { from: previousTiers, to: sortedTiers, ...logExtra },
       });
     });

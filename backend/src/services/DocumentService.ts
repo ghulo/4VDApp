@@ -4,7 +4,7 @@ import type { Language } from '../i18n/language.js';
 import type { DocumentLineRecord, DocumentRecord, DocumentRepository, NewDocumentLine } from '../repositories/DocumentRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import type { PublicUser } from '../types/auth.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { canOversee } from '../utils/roles.js';
 import { zonedDay } from '../utils/zonedDates.js';
@@ -88,8 +88,6 @@ export interface FollowUp {
 }
 
 const PREFIX: Record<DocumentKind, string> = { invoice: 'F', credit_note: 'K' };
-const KIND_WORD: Record<DocumentKind, string> = { invoice: 'invoice', credit_note: 'credit note' };
-
 /**
  * Sales documents. Issuing happens inside the caller's transaction (a checkout,
  * an undo, a return), so a sale and its document are saved together or not at
@@ -192,7 +190,7 @@ export class DocumentService {
       action: 'document.issued',
       entityType: 'document',
       entityId: id,
-      summary: `Issued ${KIND_WORD[p.kind]} ${number} for ${formatEuro(sum((line) => line.total))}`,
+      say: { key: 'documentIssued', params: { kind: p.kind, number, total: sum((line) => line.total) } },
       details: { kind: p.kind, number, total: sum((line) => line.total), correctsId: p.correctsId, reason: p.reason },
     });
     return { id, number };
@@ -233,9 +231,7 @@ export class DocumentService {
         action: 'document.fiscal_receipt',
         entityType: 'document',
         entityId: id,
-        summary: value
-          ? `Linked ${record.number} to fiscal receipt ${value}`
-          : `Removed the fiscal receipt from ${record.number}`,
+        say: value ? { key: 'fiscalReceiptLinked', params: { number: record.number, receipt: value } } : { key: 'fiscalReceiptRemoved', params: { number: record.number } },
         details: { from: record.fiscal_receipt_no, to: value },
       });
     });

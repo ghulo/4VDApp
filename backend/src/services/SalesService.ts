@@ -2,7 +2,7 @@ import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import type { UserRole } from '../database/types.js';
@@ -234,7 +234,7 @@ export class SalesService {
       action: 'sale.recorded',
       entityType: 'sale',
       entityId: id,
-      summary: `Sold ${input.quantity} × ${product.name} for ${formatEuro(total)}${discountPercent ? ` with ${discountPercent}% rabat` : ''}${customer ? (onTab ? ` on ${customer.name}'s tab` : ` to ${customer.name}`) : ''}`,
+      say: { key: 'sold', params: { quantity: input.quantity, product: product.name, total, discount: discountPercent ? discountPercent : null, customer: customer?.name ?? null, onTab } },
       details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, customerId: customer?.id ?? null, onTab },
     });
     return id;

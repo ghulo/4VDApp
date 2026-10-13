@@ -1,4 +1,4 @@
-import { formatEuro } from '../../utils/money.js';
+import type { ProductField, Say } from '../../i18n/activityText.js';
 import type { PricingTier } from '../pricing/bulkPricing.js';
 
 export interface ProductSnapshot {
@@ -16,19 +16,8 @@ export interface ProductSnapshot {
   bulkPricingTiers?: PricingTier[];
 }
 
-const FIELD_LABELS: Record<keyof ProductSnapshot, string> = {
-  name: 'name',
-  description: 'description',
-  categoryId: 'category',
-  price: 'price',
-  costPrice: 'cost price',
-  imageUrl: 'image',
-  sku: 'SKU',
-  isActive: 'visibility',
-  vatRate: 'VAT rate',
-  originCountry: 'country',
-  bulkPricingTiers: 'bulk prices',
-};
+/** Every field a change is checked for, in the order sentences name them. */
+const FIELDS: ProductField[] = ['name', 'description', 'categoryId', 'price', 'costPrice', 'imageUrl', 'sku', 'isActive', 'vatRate', 'originCountry', 'bulkPricingTiers'];
 
 type FieldChanges = Partial<Record<keyof ProductSnapshot, { from: unknown; to: unknown }>>;
 
@@ -39,9 +28,9 @@ type FieldChanges = Partial<Record<keyof ProductSnapshot, { from: unknown; to: u
 export function describeProductChanges(
   before: ProductSnapshot,
   after: ProductSnapshot,
-): { summary: string; details: FieldChanges } | null {
+): { say: Say; details: FieldChanges } | null {
   const details: FieldChanges = {};
-  for (const field of Object.keys(FIELD_LABELS) as Array<keyof ProductSnapshot>) {
+  for (const field of FIELDS) {
     if (field === 'bulkPricingTiers' && after.bulkPricingTiers === undefined) continue;
     if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
       details[field] = { from: before[field], to: after[field] };
@@ -51,24 +40,16 @@ export function describeProductChanges(
   const changed = Object.keys(details) as Array<keyof ProductSnapshot>;
   if (changed.length === 0) return null;
 
-  let headline: keyof ProductSnapshot | null = null;
-  let summary: string;
+  const also = (headline: ProductField) => changed.filter((field) => field !== headline);
+  let say: Say;
   if (details.price) {
-    headline = 'price';
-    summary = `Changed price of ${after.name} from ${formatEuro(before.price)} to ${formatEuro(after.price)}`;
+    say = { key: 'productPriceChanged', params: { name: after.name, from: before.price, to: after.price, also: also('price') } };
   } else if (details.isActive) {
-    headline = 'isActive';
-    summary = after.isActive ? `Showed ${after.name} in the app` : `Hid ${after.name} from the app`;
+    say = { key: after.isActive ? 'productShown' : 'productHidden', params: { name: after.name, also: also('isActive') } };
   } else if (details.name) {
-    headline = 'name';
-    summary = `Renamed ${before.name} to ${after.name}`;
+    say = { key: 'productRenamed', params: { from: before.name, to: after.name, also: also('name') } };
   } else {
-    summary = `Edited ${after.name}: ${changed.map((field) => FIELD_LABELS[field]).join(', ')}`;
+    say = { key: 'productEdited', params: { name: after.name, fields: changed } };
   }
-
-  const others = changed.filter((field) => field !== headline);
-  if (headline && others.length > 0) {
-    summary += ` (also changed ${others.map((field) => FIELD_LABELS[field]).join(', ')})`;
-  }
-  return { summary, details };
+  return { say, details };
 }

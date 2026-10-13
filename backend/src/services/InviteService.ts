@@ -90,7 +90,7 @@ export class InviteService {
         action: 'user.invited',
         entityType: 'user',
         entityId: null,
-        summary: `Invited ${email} as ${role}`,
+        say: { key: 'invited', params: { email, role } },
       });
       return inviteId;
     });
@@ -148,7 +148,7 @@ export class InviteService {
       passwordHash: await hashPassword(input.password),
       language: input.language,
     });
-    return this.authService.startSession(user, device, 'logged in for the first time');
+    return this.authService.startSession(user, device, 'invite');
   }
 
   /** The invite behind a link, if it can still be used. Shared with Google sign-in. */
@@ -184,7 +184,7 @@ export class InviteService {
         action: 'user.created',
         entityType: 'user',
         entityId: user.id,
-        summary: `${user.name} joined as ${user.role}`,
+        say: { key: 'joined', params: { name: user.name, role: user.role } },
         details: { email: user.email, role: user.role, invitedBy: invite.invited_by_name },
       });
       return user;

@@ -161,7 +161,7 @@ export class TabService {
         action: 'customer.created',
         entityType: 'customer',
         entityId: customerId,
-        summary: `Opened a tab for ${input.name}`,
+        say: { key: 'tabOpened', params: { name: input.name } },
         details: { ...input },
       });
       return customerId;
@@ -179,7 +179,7 @@ export class TabService {
         action: 'customer.updated',
         entityType: 'customer',
         entityId: id,
-        summary: `Changed ${before.name}'s details`,
+        say: { key: 'customerChanged', params: { name: before.name } },
         details: { before: { name: before.name, kind: before.kind, nui: before.nui, phone: before.phone, note: before.note }, after: input, ...logExtra },
       });
     });
@@ -203,7 +203,7 @@ export class TabService {
         action: 'customer.archived',
         entityType: 'customer',
         entityId: id,
-        summary: `Closed ${customer.name}'s tab`,
+        say: { key: 'tabClosed', params: { name: customer.name } },
         details: null,
       });
     });
@@ -226,7 +226,7 @@ export class TabService {
         action: 'tab.paid',
         entityType: 'customer',
         entityId: customerId,
-        summary: `${customer.name} paid ${formatEuro(input.amount)} off their tab`,
+        say: { key: 'tabPaid', params: { name: customer.name, amount: input.amount } },
         details: { amount: input.amount, before: balance },
       });
     });

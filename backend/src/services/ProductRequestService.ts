@@ -100,7 +100,7 @@ export class ProductRequestService {
         action: 'product.requested',
         entityType: 'product_request',
         entityId: requestId,
-        summary: `Asked to add ${input.name} at ${formatEuro(input.price)}`,
+        say: { key: 'productRequested', params: { name: input.name, price: input.price } },
         details: { price: input.price, barcode: input.barcode, stock: input.stock },
       });
       await notifyAdminsOfPending(repos, 'product', { type: 'product_request', id: requestId }, (t) =>
@@ -163,7 +163,7 @@ export class ProductRequestService {
         action: 'product.request_approved',
         entityType: 'product_request',
         entityId: id,
-        summary: `Approved adding ${final.name}${request.requested_by_name ? `, asked for by ${request.requested_by_name}` : ''}`,
+        say: { key: 'productRequestApproved', params: { name: final.name, by: request.requested_by_name } },
         details: { productId },
       });
       await notifyRequester(repos, request.requested_by, actor.id, (t) => ({ title: t.productApproved(final.name), message: t.productApprovedMessage }));
@@ -184,7 +184,7 @@ export class ProductRequestService {
         action: 'product.request_rejected',
         entityType: 'product_request',
         entityId: id,
-        summary: `Did not add ${row.name}: ${note}`,
+        say: { key: 'productRequestRejected', params: { name: row.name, note } },
       });
       await notifyRequester(repos, row.requested_by, actor.id, (t) => ({ title: t.productRejected(row.name), message: note }));
       return row;

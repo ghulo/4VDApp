@@ -83,7 +83,7 @@ export class StockCountService {
         action: 'count.started',
         entityType: 'stock_count',
         entityId: id,
-        summary: `Started a stock count of ${scopeLabel(count)}`,
+        say: { key: 'countStarted', params: { scope: count.category_name } },
       });
       return id;
     });
@@ -143,7 +143,7 @@ export class StockCountService {
         action: 'count.submitted',
         entityType: 'stock_count',
         entityId: id,
-        summary: `Submitted the stock count of ${scopeLabel(count)}: ${counted.length} counted, ${pending} different`,
+        say: { key: 'countSubmitted', params: { scope: count.category_name, counted: counted.length, different: pending } },
         details: { counted: counted.length, differences: pending },
       });
       if (pending === 0) {
@@ -170,7 +170,7 @@ export class StockCountService {
         action: 'count.cancelled',
         entityType: 'stock_count',
         entityId: id,
-        summary: `Cancelled the stock count of ${scopeLabel(count)}`,
+        say: { key: 'countCancelled', params: { scope: count.category_name } },
       });
     });
     return this.get(id, user);
@@ -207,7 +207,7 @@ export class StockCountService {
         action: 'count.line_approved',
         entityType: 'stock_count',
         entityId: id,
-        summary: `Corrected ${line.product_name} by ${difference > 0 ? '+' : ''}${difference} after the count of ${scopeLabel(count)}`,
+        say: { key: 'countCorrected', params: { product: line.product_name, difference, scope: count.category_name } },
         details: { productId, counted: line.counted_quantity, expected: line.expected_quantity, difference },
       });
       await this.closeIfDone(repos, count, admin.id);
@@ -224,7 +224,7 @@ export class StockCountService {
         action: 'count.line_rejected',
         entityType: 'stock_count',
         entityId: id,
-        summary: `Kept the stock of ${line.product_name} unchanged after the count of ${scopeLabel(count)}: ${note}`,
+        say: { key: 'countKept', params: { product: line.product_name, scope: count.category_name, note } },
       });
       await this.closeIfDone(repos, count, admin.id);
     });

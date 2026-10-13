@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApprovalService } from '../services/ApprovalService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
+import { messages } from '../i18n/messages.js';
 
 export function createApprovalsController(approvalService: ApprovalService) {
   return {
@@ -9,7 +10,7 @@ export function createApprovalsController(approvalService: ApprovalService) {
     },
 
     async mine(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await approvalService.mine(req.user!.id));
+      sendSuccess(res, await approvalService.mine(req.user!.id, messages[req.user!.language]));
     },
   };
 }

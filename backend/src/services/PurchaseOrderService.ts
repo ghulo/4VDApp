@@ -1,8 +1,9 @@
+import type { CostReason } from '../i18n/activityText.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, PurchaseOrderRepository, SupplierFields, SupplierRecord } from '../repositories/PurchaseOrderRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
 import { type BillInput, createBill } from './SupplierBillService.js';
 
@@ -124,7 +125,7 @@ export class PurchaseOrderService {
         action: 'supplier.created',
         entityType: 'supplier',
         entityId: supplierId,
-        summary: `Added the supplier ${input.name}`,
+        say: { key: 'supplierAdded', params: { name: input.name } },
         details: { ...input },
       });
       return supplierId;
@@ -142,7 +143,7 @@ export class PurchaseOrderService {
         action: 'supplier.updated',
         entityType: 'supplier',
         entityId: id,
-        summary: `Changed the supplier ${before.name}'s details`,
+        say: { key: 'supplierChanged', params: { name: before.name } },
         details: { before, after: input, ...logExtra },
       });
     });
@@ -159,7 +160,7 @@ export class PurchaseOrderService {
         action: 'supplier.removed',
         entityType: 'supplier',
         entityId: id,
-        summary: `Removed the supplier ${supplier.name}`,
+        say: { key: 'supplierRemoved', params: { name: supplier.name } },
         details: null,
       });
     });
@@ -212,7 +213,7 @@ export class PurchaseOrderService {
         action: 'order.created',
         entityType: 'order',
         entityId: orderId,
-        summary: `Ordered ${input.lines.length} ${input.lines.length === 1 ? 'product' : 'products'} from ${supplier.name}`,
+        say: { key: 'ordered', params: { products: input.lines.length, supplier: supplier.name } },
         details: { supplierId: supplier.id, lines: input.lines },
       });
       return orderId;
@@ -245,7 +246,7 @@ export class PurchaseOrderService {
         action: 'order.cancelled',
         entityType: 'order',
         entityId: id,
-        summary: `Cancelled order #${id} from ${order.supplier_name}`,
+        say: { key: 'orderCancelled', params: { orderId: id, supplier: order.supplier_name } },
         details: null,
       });
     });
@@ -261,17 +262,16 @@ export class PurchaseOrderService {
 /** Sets a product's cost and writes it to its history (and Price history), like an edit on the product page. */
 export async function changeCost(
   repos: TransactionalRepositories,
-  p: { productId: number; productName: string; from: number | null; to: number | null; actorId: number; because: string },
+  p: { productId: number; productName: string; from: number | null; to: number | null; actorId: number; because: CostReason },
 ): Promise<void> {
   if (p.from === p.to) return;
   await repos.orders.setCostPrice(p.productId, p.to);
-  const money = (value: number | null) => (value === null ? 'none' : formatEuro(value));
   await repos.activityLog.create({
     userId: p.actorId,
     action: 'product.updated',
     entityType: 'product',
     entityId: p.productId,
-    summary: `Changed cost of ${p.productName} from ${money(p.from)} to ${money(p.to)} (${p.because})`,
+    say: { key: 'costChanged', params: { product: p.productName, from: p.from, to: p.to, because: p.because } },
     details: { costPrice: { from: p.from, to: p.to } },
   });
 }
@@ -321,7 +321,7 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
           from: product.cost_price === null ? null : Number(product.cost_price),
           to: unitCost,
           actorId,
-          because: `order #${id} from ${order.supplier_name}`,
+          because: { order: id, supplier: order.supplier_name },
         });
       }
       units += quantity;
@@ -333,7 +333,7 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
       action: 'order.received',
       entityType: 'order',
       entityId: id,
-      summary: `Received order #${id} from ${order.supplier_name}: ${units} ${units === 1 ? 'unit' : 'units'} into stock`,
+      say: { key: 'orderReceived', params: { orderId: id, supplier: order.supplier_name, units } },
       details: { ...input },
     });
 }

@@ -112,13 +112,13 @@ export class WriteOffService {
         throw new ValidationError(`Only ${inStock} in stock, so at most ${inStock} can be written off`);
       }
       const { id, productName } = await createWriteOffRecord(repos, { ...input, returnId: null, requestedBy: user.id });
-      const what = `${input.quantity} × ${productName} (${input.reason})`;
+      const units = { quantity: input.quantity, product: productName, reason: input.reason };
       await repos.activityLog.create({
         userId: user.id,
         action: 'write_off.requested',
         entityType: 'write_off',
         entityId: id,
-        summary: `Reported ${what}`,
+        say: { key: 'writeOffReported', params: units },
         details: { productId: input.productId, quantity: input.quantity, reason: input.reason, notes: input.notes },
       });
       if (canOversee(user.role)) {
@@ -143,12 +143,13 @@ export class WriteOffService {
       await approveWriteOff(repos, id, admin.id, { removeStock: true });
       const writeOff = (await repos.writeOffs.findById(id))!;
       const what = `${writeOff.quantity} × ${writeOff.product_name}`;
+      const units = { quantity: writeOff.quantity, product: writeOff.product_name, reason: writeOff.reason };
       await repos.activityLog.create({
         userId: admin.id,
         action: 'write_off.approved',
         entityType: 'write_off',
         entityId: id,
-        summary: `Approved the write-off of ${what}`,
+        say: { key: 'writeOffApproved', params: units },
       });
       await notifyRequester(repos, writeOff.requested_by, admin.id, (t) => ({
         title: t.writeOffApproved(what),
@@ -165,12 +166,13 @@ export class WriteOffService {
       await repos.writeOffs.decide(id, { status: 'rejected', decidedBy: admin.id, note });
       const writeOff = (await repos.writeOffs.findById(id))!;
       const what = `${writeOff.quantity} × ${writeOff.product_name}`;
+      const units = { quantity: writeOff.quantity, product: writeOff.product_name, reason: writeOff.reason };
       await repos.activityLog.create({
         userId: admin.id,
         action: 'write_off.rejected',
         entityType: 'write_off',
         entityId: id,
-        summary: `Rejected the write-off of ${what}: ${note}`,
+        say: { key: 'writeOffRejected', params: { ...units, note } },
       });
       await notifyRequester(repos, writeOff.requested_by, admin.id, (t) => ({ title: t.writeOffRejected(what), message: note }));
     });

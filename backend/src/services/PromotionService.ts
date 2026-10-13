@@ -176,7 +176,7 @@ export class PromotionService {
         action: 'promotion.created',
         entityType: 'promotion',
         entityId: promotionId,
-        summary: `Started promotion "${input.name}": ${input.percentOff}% off ${input.productId ? products[0]!.name : `${products.length} products`}`,
+        say: { key: 'promotionStarted', params: { name: input.name, percent: input.percentOff, product: input.productId ? products[0]!.name : null, products: products.length } },
         details: { percentOff: input.percentOff, ...target, startsAt: input.startsAt, endsAt: input.endsAt },
       });
       return promotionId;
@@ -198,7 +198,7 @@ export class PromotionService {
         action: 'promotion.ended',
         entityType: 'promotion',
         entityId: id,
-        summary: status === 'scheduled' ? `Cancelled promotion "${existing.name}"` : `Ended promotion "${existing.name}" early`,
+        say: status === 'scheduled' ? { key: 'promotionCancelled', params: { name: existing.name } } : { key: 'promotionEnded', params: { name: existing.name } },
         details: logExtra ?? null,
       });
     });

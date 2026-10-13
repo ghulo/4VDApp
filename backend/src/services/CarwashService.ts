@@ -1,7 +1,7 @@
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CarwashRecord, CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 
@@ -109,7 +109,7 @@ export class CarwashService {
         action: 'carwash.created',
         entityType: 'carwash',
         entityId: newId,
-        summary: `Added the carwash ${input.name} (cash float ${formatEuro(input.cashFloat)})`,
+        say: { key: 'carwashAdded', params: { name: input.name, float: input.cashFloat } },
         details: { ...input },
       });
       return newId;
@@ -153,7 +153,7 @@ export class CarwashService {
           action: changes.archived ? 'carwash.archived' : 'carwash.restored',
           entityType: 'carwash',
           entityId: id,
-          summary: `${changes.archived ? 'Archived' : 'Restored'} the carwash ${before.name}${stoppedExpenses > 0 ? `; its ${stoppedExpenses} monthly expense${stoppedExpenses === 1 ? '' : 's'} stopped repeating` : ''}`,
+          say: changes.archived ? { key: 'carwashArchived', params: { name: before.name, stoppedExpenses } } : { key: 'carwashRestored', params: { name: before.name } },
           details: { name: before.name, stoppedExpenses },
         });
       }
@@ -163,12 +163,14 @@ export class CarwashService {
           action: 'carwash.updated',
           entityType: 'carwash',
           entityId: id,
-          summary: [
-            renamed ? `Renamed the carwash ${before.name} to ${changes.name}` : `Changed the carwash ${before.name}`,
-            floatChanged ? `cash float from ${formatEuro(Number(before.cash_float))} to ${formatEuro(changes.cashFloat!)}` : null,
-          ]
-            .filter(Boolean)
-            .join(': '),
+          say: {
+            key: 'carwashChanged',
+            params: {
+              name: before.name,
+              renamedTo: renamed ? changes.name! : null,
+              float: floatChanged ? { from: Number(before.cash_float), to: changes.cashFloat! } : null,
+            },
+          },
           details: { before: { name: before.name, cashFloat: Number(before.cash_float) }, after: { name, cashFloat: changes.cashFloat ?? Number(before.cash_float) } },
         });
       }
@@ -254,7 +256,7 @@ export class CarwashService {
         action: 'carwash.recorded',
         entityType: 'carwash',
         entityId: carwash.id,
-        summary: `${before ? 'Changed' : 'Entered'} the ${label} takings for ${day}: ${formatEuro(takings.carwash)} carwash + ${formatEuro(takings.change)} change`,
+        say: { key: 'takingsSaved', params: { carwash: label, day, changed: Boolean(before), carwashAmount: takings.carwash, change: takings.change } },
         details: {
           carwashId: carwash.id,
           day,
@@ -278,7 +280,7 @@ export class CarwashService {
         action: 'carwash.removed',
         entityType: 'carwash',
         entityId: carwash.id,
-        summary: `Removed the ${label} takings for ${day}`,
+        say: { key: 'takingsRemoved', params: { carwash: label, day } },
         details: { carwashId: carwash.id, day, carwash: Number(before.carwash_amount), change: Number(before.change_amount) },
       });
     });
@@ -291,8 +293,9 @@ export class CarwashService {
   }
 
   /** "carwash" with one open carwash, "Name carwash" ("Prishtina carwash") with several. */
-  private async label(carwash: CarwashDto): Promise<string> {
-    return (await this.displayNames()).get(carwash.id) ? `${carwash.name} carwash` : 'carwash';
+  /** The carwash's name when there is more than one to tell apart, else null. */
+  private async label(carwash: CarwashDto): Promise<string | null> {
+    return (await this.displayNames()).get(carwash.id) ? carwash.name : null;
   }
 }
 

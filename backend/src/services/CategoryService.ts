@@ -41,7 +41,7 @@ export class CategoryService {
           action: 'category.created',
           entityType: 'category',
           entityId: category.id,
-          summary: `Added category ${category.name}`,
+          say: { key: 'categoryAdded', params: { name: category.name } },
         });
         return { id: category.id, name: category.name, description: category.description };
       });
@@ -66,10 +66,10 @@ export class CategoryService {
           action: 'category.updated',
           entityType: 'category',
           entityId: id,
-          summary:
+          say:
             existing.name === category.name
-              ? `Edited category ${category.name}`
-              : `Renamed category ${existing.name} to ${category.name}`,
+              ? { key: 'categoryEdited', params: { name: category.name } }
+              : { key: 'categoryRenamed', params: { from: existing.name, to: category.name } },
           details: { from: { name: existing.name, description: existing.description }, to: input },
         });
         return { id: category.id, name: category.name, description: category.description };
@@ -96,7 +96,7 @@ export class CategoryService {
         action: 'category.deleted',
         entityType: 'category',
         entityId: id,
-        summary: `Deleted category ${category.name}`,
+        say: { key: 'categoryDeleted', params: { name: category.name } },
       });
     });
   }

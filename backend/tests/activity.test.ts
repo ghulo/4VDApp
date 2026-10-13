@@ -22,8 +22,8 @@ describe('GET /api/activity', () => {
   it('should list entries newest first with who did them', async () => {
     const employee = await createTestUser(context.db, 'employee');
     const repository = new ActivityLogRepository(context.db);
-    await repository.create({ userId: employee.id, action: 'product.created', entityType: 'product', entityId: 1, summary: 'Added product Chair' });
-    await repository.create({ userId: employee.id, action: 'product.deleted', entityType: 'product', entityId: 1, summary: 'Deleted product Chair' });
+    await repository.create({ userId: employee.id, action: 'product.created', entityType: 'product', entityId: 1, say: { key: 'productAdded', params: { name: 'Chair' } } });
+    await repository.create({ userId: employee.id, action: 'product.deleted', entityType: 'product', entityId: 1, say: { key: 'productDeleted', params: { name: 'Chair' } } });
 
     const response = await listActivity('?entityType=product');
 
@@ -39,9 +39,9 @@ describe('GET /api/activity', () => {
   it('should filter by action prefix, exact action, person and entity', async () => {
     const employee = await createTestUser(context.db, 'employee');
     const repository = new ActivityLogRepository(context.db);
-    await repository.create({ userId: employee.id, action: 'stock.adjusted', entityType: 'product', entityId: 7, summary: 'Added 5 to Lamp (Restock)' });
-    await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, summary: 'Added category Lighting' });
-    await repository.create({ userId: employee.id, action: 'pricing.updated', entityType: 'product', entityId: 8, summary: 'Updated bulk prices for Rug' });
+    await repository.create({ userId: employee.id, action: 'stock.adjusted', entityType: 'product', entityId: 7, say: { key: 'stockAdded', params: { product: 'Lamp', amount: 5, reason: 'Restock' } } });
+    await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, say: { key: 'categoryAdded', params: { name: 'Lighting' } } });
+    await repository.create({ userId: employee.id, action: 'pricing.updated', entityType: 'product', entityId: 8, say: { key: 'bulkPricesUpdated', params: { product: 'Rug' } } });
 
     const byPrefixes = await listActivity('?action=category,pricing');
     const byExact = await listActivity('?action=stock.adjusted');
@@ -56,20 +56,20 @@ describe('GET /api/activity', () => {
 
   it('should find entries by words in what changed, any case', async () => {
     const repository = new ActivityLogRepository(context.db);
-    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 7, summary: 'Added 5 to Ceramic Vase' });
-    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 8, summary: 'Added 2 to Oak Chair' });
-    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 9, summary: 'Sold 100% of Vase stock' });
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 7, say: { key: 'stockAdded', params: { product: 'Ceramic Vase', amount: 5, reason: 'Restock' } } });
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 8, say: { key: 'stockAdded', params: { product: 'Oak Chair', amount: 2, reason: 'Restock' } } });
+    await repository.create({ userId: null, action: 'stock.adjusted', entityType: 'product', entityId: 9, say: { key: 'productAdded', params: { name: '100% Vase' } } });
 
     const found = await listActivity('?search=ceramic%20vase');
     const literalPercent = await listActivity('?search=100%25');
 
-    expect(found.body.data.map((entry: { summary: string }) => entry.summary)).toEqual(['Added 5 to Ceramic Vase']);
+    expect(found.body.data.map((entry: { summary: string }) => entry.summary)).toEqual(['Added 5 to Ceramic Vase (Restock)']);
     expect(literalPercent.body.data.map((entry: { entityId: number }) => entry.entityId)).toEqual([9]);
   });
 
   it('should leave out excluded kinds, like logins', async () => {
     const repository = new ActivityLogRepository(context.db);
-    await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, summary: 'Added category Lighting' });
+    await repository.create({ userId: null, action: 'category.created', entityType: 'category', entityId: 2, say: { key: 'categoryAdded', params: { name: 'Lighting' } } });
 
     // beforeEach logged the admin in, so there's one login to hide.
     const withoutLogins = await listActivity('?exclude=auth');
@@ -210,6 +210,20 @@ describe('stock, sales, people and login activity', () => {
       entityType: 'sale',
       user: { name: 'Test employee' },
     });
+  });
+
+  it("should write each entry in the reader's language", async () => {
+    const productId = await createProduct();
+    const employeeToken = await loginAs(context, 'employee');
+    await request(context.app).post('/api/sales').set(auth(employeeToken)).send({ productId, quantity: 2 });
+    await request(context.app).put('/api/me/profile').set(auth(adminToken)).send({ language: 'sq' });
+
+    const response = await listActivity('?action=sale.recorded');
+    const found = await listActivity('?search=oak');
+
+    // Albanian money has a no-break space before the euro sign.
+    expect(response.body.data[0].summary.replace(/\s/g, ' ')).toBe('Shiti 2 × Oak Chair për 200,00 €');
+    expect(found.body.data.map((entry: { action: string }) => entry.action)).toContain('sale.recorded');
   });
 
   it('should log people changes without ever storing a password', async () => {

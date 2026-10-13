@@ -102,7 +102,7 @@ export class InventoryService {
           action: 'stock.adjusted',
           entityType: 'product',
           entityId: productId,
-          summary: `Changed reorder level of ${item.product_name} from ${item.reorder_level} to ${input.reorderLevel}`,
+          say: { key: 'reorderLevelChanged', params: { product: item.product_name, from: item.reorder_level, to: input.reorderLevel } },
           details: { reorderLevel: { from: item.reorder_level, to: input.reorderLevel }, ...logExtra },
         });
       }
@@ -123,10 +123,7 @@ export class InventoryService {
           action: 'stock.adjusted',
           entityType: 'product',
           entityId: productId,
-          summary:
-            input.quantity > 0
-              ? `Added ${amount} to ${item.product_name} (${reason})`
-              : `Removed ${amount} from ${item.product_name} (${reason})`,
+          say: { key: input.quantity > 0 ? 'stockAdded' : 'stockRemoved', params: { product: item.product_name, amount, reason } },
           details: { quantity: input.quantity, reason, notes: input.notes, before, after },
         });
       }

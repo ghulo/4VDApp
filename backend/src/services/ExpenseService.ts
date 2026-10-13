@@ -2,7 +2,7 @@ import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpensePlace } from '../
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { ExpenseRecord, ExpenseRepository, RecurringExpenseRecord } from '../repositories/ExpenseRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { CarwashService } from './CarwashService.js';
 import type { DateRange } from './reports/calculations.js';
@@ -139,7 +139,6 @@ export class ExpenseService {
     const dayOfMonth = Math.min(Number(input.day.slice(8, 10)), LAST_REPEAT_DAY);
     const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
     const carwashId = carwash?.id ?? null;
-    const placeName = carwash ? `${carwash.name} carwash` : input.place;
 
     const id = await this.transactions.run(async (repos) => {
       const recurringId = input.repeatMonthly
@@ -151,7 +150,7 @@ export class ExpenseService {
         action: 'expense.added',
         entityType: 'expense',
         entityId: expenseId,
-        summary: `Added an expense: ${formatEuro(input.amount)} for ${input.category} (${placeName}) on ${input.day}${input.repeatMonthly ? ', repeating every month' : ''}`,
+        say: { key: 'expenseAdded', params: { amount: input.amount, category: input.category, at: carwash ? { carwash: carwash.name } : { place: input.place }, day: input.day, monthly: Boolean(input.repeatMonthly) } },
         details: { ...input, carwashId },
       });
       return expenseId;
@@ -171,7 +170,7 @@ export class ExpenseService {
         action: 'expense.removed',
         entityType: 'expense',
         entityId: id,
-        summary: `Removed the ${formatEuro(Number(expense.amount))} ${expense.category} expense of ${expense.day}`,
+        say: { key: 'expenseRemoved', params: { amount: Number(expense.amount), category: expense.category, day: String(expense.day) } },
         details: { ...toDto(expense) },
       });
     });
@@ -188,7 +187,7 @@ export class ExpenseService {
         action: 'expense.repeat_stopped',
         entityType: 'expense',
         entityId: null,
-        summary: `Stopped the monthly ${rule.category} expense`,
+        say: { key: 'expenseStopped', params: { category: rule.category } },
         details: { recurringId: id },
       });
     });

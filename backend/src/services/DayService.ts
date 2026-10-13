@@ -138,7 +138,7 @@ export class DayService {
         action: none ? 'expense.none_marked' : 'expense.none_cleared',
         entityType: 'expense',
         entityId: null,
-        summary: none ? `Said ${date} had no expenses` : `Took back "no expenses" for ${date}`,
+        say: none ? { key: 'noExpenses', params: { day: date } } : { key: 'noExpensesTakenBack', params: { day: date } },
         details: { day: date },
       });
     });

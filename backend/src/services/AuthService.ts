@@ -60,7 +60,7 @@ export class AuthService {
    * Log someone in whose identity was already proven (password, invite link,
    * Google). Starts a new device session.
    */
-  async startSession(user: UserRow, device: DeviceInfo = {}, how = 'logged in'): Promise<LoginResult> {
+  async startSession(user: UserRow, device: DeviceInfo = {}, how: 'password' | 'google' | 'googleFirst' | 'invite' = 'password'): Promise<LoginResult> {
     const publicUser = toPublicUser(user);
     const tokens = await this.issueTokens(publicUser, { userAgent: device.userAgent, ip: device.ip });
     await this.userRepository.update(user.id, { last_login_at: new Date() });
@@ -70,7 +70,7 @@ export class AuthService {
       action: 'auth.logged_in',
       entityType: 'user',
       entityId: user.id,
-      summary: `${user.name} ${how}`,
+      say: { key: 'loggedIn', params: { name: user.name, how } },
     });
     return { ...tokens, user: publicUser };
   }

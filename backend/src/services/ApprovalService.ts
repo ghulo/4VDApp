@@ -1,5 +1,5 @@
 import type { ApprovalRepository, MyRequestRow } from '../repositories/ApprovalRepository.js';
-import { formatEuro } from '../utils/money.js';
+import { en, type ServerMessages } from '../i18n/messages.js';
 import { toIsoOrNull, toMoney } from './mappers.js';
 
 export interface MyRequestDto {
@@ -26,13 +26,14 @@ export class ApprovalService {
     return { ...counts, total: counts.returns + counts.writeOffs + counts.countLines + counts.productRequests };
   }
 
-  async mine(userId: number): Promise<MyRequestDto[]> {
+  /** Their recent requests, each described in the language of `t`. */
+  async mine(userId: number, t: ServerMessages = en): Promise<MyRequestDto[]> {
     const since = new Date(Date.now() - MY_REQUESTS_DAYS * MS_PER_DAY);
     const rows = await this.approvalRepository.requestsBy(userId, since, MY_REQUESTS_LIMIT);
     return rows.map((row) => ({
       type: row.type,
       id: row.id,
-      summary: describe(row),
+      summary: describe(row, t),
       status: row.status,
       decisionNote: row.decision_note,
       requestedAt: row.requested_at.toISOString(),
@@ -41,19 +42,21 @@ export class ApprovalService {
   }
 }
 
-function describe(row: MyRequestRow): string {
+function describe(row: MyRequestRow, t: ServerMessages): string {
+  const what = `${row.quantity} × ${row.product_name}`;
+  const amount = toMoney(row.refund_amount ?? 0);
   switch (row.type) {
     case 'return':
-      return `Return of ${row.quantity} × ${row.product_name}, refund ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
+      return t.myRequest.return({ what, refund: amount });
     case 'write_off':
-      return `${row.quantity} × ${row.product_name} (${row.reason})`;
+      return t.myRequest.writeOff({ what, reason: t.writeOffReason[row.reason ?? ''] ?? row.reason ?? '' });
     case 'count':
-      return `Stock count of ${row.category_name ?? 'the whole shop'}`;
+      return t.myRequest.count(row.category_name);
     case 'sale':
-      return `Sale of ${row.quantity} × ${row.product_name}, ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
+      return t.myRequest.sale({ what, total: amount });
     case 'product':
-      return `New product ${row.product_name} at ${formatEuro(toMoney(row.refund_amount ?? 0))}`;
+      return t.myRequest.product({ name: row.product_name ?? '', price: amount });
     case 'bill':
-      return `Bill${row.product_name ? ` from ${row.product_name}` : ''} (${row.quantity} ${row.quantity === 1 ? 'line' : 'lines'})`;
+      return t.myRequest.bill({ supplier: row.product_name, lines: row.quantity ?? 0 });
   }
 }

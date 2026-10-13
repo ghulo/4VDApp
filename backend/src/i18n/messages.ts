@@ -17,6 +17,15 @@ export interface ServerMessages {
   language: Language;
   roleName: Record<string, string>;
   writeOffReason: Record<string, string>;
+  /** One line per request in the team app's "Your requests". */
+  myRequest: {
+    return: (p: { what: string; refund: number }) => string;
+    writeOff: (p: { what: string; reason: string }) => string;
+    count: (scope: string | null) => string;
+    sale: (p: { what: string; total: number }) => string;
+    product: (p: { name: string; price: number }) => string;
+    bill: (p: { supplier: string | null; lines: number }) => string;
+  };
   wholeShop: string;
 
   outOfStockTitle: (product: string) => string;
@@ -248,6 +257,14 @@ export const en: ServerMessages = {
   language: 'en',
   roleName: { developer: 'the developer', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member' },
   writeOffReason: { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' },
+  myRequest: {
+    return: ({ what, refund }) => `Return of ${what}, refund ${money(refund, 'en')}`,
+    writeOff: ({ what, reason }) => `${what} (${reason})`,
+    count: (scope) => `Stock count of ${scope ?? 'the whole shop'}`,
+    sale: ({ what, total }) => `Sale of ${what}, ${money(total, 'en')}`,
+    product: ({ name, price }) => `New product ${name} at ${money(price, 'en')}`,
+    bill: ({ supplier, lines }) => `Bill${supplier ? ` from ${supplier}` : ''} (${lines} ${lines === 1 ? 'line' : 'lines'})`,
+  },
   wholeShop: 'the whole shop',
 
   outOfStockTitle: (product) => `Out of stock: ${product}`,
@@ -509,6 +526,14 @@ export const sq: ServerMessages = {
   language: 'sq',
   roleName: { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes' },
   writeOffReason: { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' },
+  myRequest: {
+    return: ({ what, refund }) => `Kthim i ${what}, rimbursim ${money(refund, 'sq')}`,
+    writeOff: ({ what, reason }) => `${what} (${reason})`,
+    count: (scope) => `Numërim stoku i ${scope ?? 'gjithë dyqanit'}`,
+    sale: ({ what, total }) => `Shitje e ${what}, ${money(total, 'sq')}`,
+    product: ({ name, price }) => `Produkt i ri ${name} me ${money(price, 'sq')}`,
+    bill: ({ supplier, lines }) => `Faturë${supplier ? ` nga ${supplier}` : ''} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'})`,
+  },
   wholeShop: 'i gjithë dyqani',
 
   outOfStockTitle: (product) => `Mbaroi stoku: ${product}`,

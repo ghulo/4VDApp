@@ -4,6 +4,7 @@ import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRe
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { mediaUrl } from './mappers.js';
 import type { MediaService } from './MediaService.js';
+import type { ShopField } from '../i18n/activityText.js';
 
 export interface BusinessDto {
   id: number;
@@ -29,17 +30,6 @@ export interface BusinessChanges {
   iban?: string | null;
   invoiceNote?: string | null;
 }
-
-const FIELD_NAMES: Record<string, string> = {
-  name: 'name',
-  address: 'address',
-  phone: 'phone',
-  nui: 'NUI',
-  timeZone: 'time zone',
-  bankName: 'bank',
-  iban: 'IBAN',
-  invoiceNote: 'invoice note',
-};
 
 const toDto = (business: BusinessRow): BusinessDto => ({
   id: business.id,
@@ -90,7 +80,7 @@ export class BusinessService {
         action: 'business.updated',
         entityType: 'business',
         entityId: business.id,
-        summary: `Changed the shop's ${fields.map((field) => FIELD_NAMES[field] ?? field).join(', ')}`,
+        say: { key: 'shopChanged', params: { fields: fields as ShopField[] } },
         details: { fields: fields.map((field) => ({ field, from: before[field] ?? null, to: after[field] ?? null })), ...logExtra },
       });
     }

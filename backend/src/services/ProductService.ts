@@ -18,6 +18,7 @@ import { type PricingTier, validatePricingTiers } from './pricing/bulkPricing.js
 import { bestPromotionFor, discountedPrice, type RunningPromotion } from './pricing/promotions.js';
 import { canOversee } from '../utils/roles.js';
 import { DEFAULT_VAT_RATE } from './documents/vat.js';
+import type { Say } from '../i18n/activityText.js';
 
 export interface ProductDto {
   id: number;
@@ -138,7 +139,7 @@ export class ProductService {
         product,
         to: barcode,
         actorId,
-        summary: barcode === null ? `Removed the barcode of ${product.name}` : `Set the barcode of ${product.name} to ${barcode}`,
+        say: barcode === null ? { key: 'barcodeRemoved', params: { product: product.name } } : { key: 'barcodeSet', params: { product: product.name, to: barcode } },
         logExtra,
       }),
     );
@@ -161,7 +162,7 @@ export class ProductService {
         action: 'product.image_set',
         entityType: 'product',
         entityId: id,
-        summary: imageUrl ? `Changed the photo of ${product.name}` : `Removed the photo of ${product.name}`,
+        say: imageUrl ? { key: 'photoChanged', params: { product: product.name } } : { key: 'photoRemoved', params: { product: product.name } },
       });
     });
     await this.mediaService.remove(mediaIdFrom(product.image_url));
@@ -223,7 +224,7 @@ export class ProductService {
           action: 'product.created',
           entityType: 'product',
           entityId: id,
-          summary: `Added product ${input.name}`,
+          say: { key: 'productAdded', params: { name: input.name } },
           details: { price: input.price, costPrice: input.costPrice, stock: input.stock, ...logExtra },
         });
         return id;
@@ -274,7 +275,7 @@ export class ProductService {
             action: 'product.updated',
             entityType: 'product',
             entityId: id,
-            summary: change.summary,
+            say: change.say,
             details: { ...change.details, ...logExtra },
           });
         }
@@ -298,7 +299,7 @@ export class ProductService {
         action: 'product.deleted',
         entityType: 'product',
         entityId: id,
-        summary: `Deleted product ${existing.name}`,
+        say: { key: 'productDeleted', params: { name: existing.name } },
       });
     });
   }
@@ -394,7 +395,7 @@ export async function setProductBarcode(
     product: { id: number; barcode: string | null; origin_country: string | null };
     to: string | null;
     actorId: number;
-    summary: string;
+    say: Say;
     logExtra?: Record<string, unknown>;
   },
 ): Promise<void> {
@@ -407,7 +408,7 @@ export async function setProductBarcode(
     action: 'product.barcode_set',
     entityType: 'product',
     entityId: product.id,
-    summary: p.summary,
+    say: p.say,
     details: { barcode: { from: product.barcode, to: p.to }, ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
   });
 }

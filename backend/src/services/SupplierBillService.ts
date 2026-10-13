@@ -148,7 +148,7 @@ export class SupplierBillService {
         action: 'bill.updated',
         entityType: 'bill',
         entityId: id,
-        summary: `Edited ${describe(bill)}`,
+        say: { key: 'billEdited', params: billWords(bill) },
         details: { from: { number: bill.number, issuedOn: bill.issued_on, dueOn: bill.due_on, amount: Number(bill.amount), note: bill.note }, to: input },
       });
     });
@@ -169,7 +169,7 @@ export class SupplierBillService {
         action: 'bill.paid',
         entityType: 'bill',
         entityId: id,
-        summary: `Paid ${formatEuro(input.amount)} on ${describe(bill)}${input.amount === left ? ' (paid in full)' : `, ${formatEuro(roundMoney(left - input.amount))} left`}`,
+        say: { key: 'billPaid', params: { ...billWords(bill), paid: input.amount, left: input.amount === left ? 0 : roundMoney(left - input.amount) } },
         details: { paymentId, ...input },
       });
     });
@@ -190,7 +190,7 @@ export class SupplierBillService {
         action: 'bill.payment_voided',
         entityType: 'bill',
         entityId: billId,
-        summary: `Removed a ${formatEuro(Number(payment.amount))} payment from ${describe(bill)}`,
+        say: { key: 'billPaymentRemoved', params: { ...billWords(bill), payment: Number(payment.amount) } },
         details: { paymentId },
       });
     });
@@ -209,7 +209,7 @@ export class SupplierBillService {
         action: 'bill.voided',
         entityType: 'bill',
         entityId: id,
-        summary: `Voided ${describe(bill)}: ${note}`,
+        say: { key: 'billVoided', params: { ...billWords(bill), note } },
       });
     });
     return this.get(id);
@@ -226,7 +226,7 @@ export class SupplierBillService {
         action: 'bill.updated',
         entityType: 'bill',
         entityId: id,
-        summary: `${mediaId ? 'Added a photo to' : 'Removed the photo from'} ${describe(bill)}`,
+        say: mediaId ? { key: 'billPhotoAdded', params: billWords(bill) } : { key: 'billPhotoRemoved', params: billWords(bill) },
       });
     });
     await this.mediaService.remove(bill.photo_media_id);
@@ -269,13 +269,14 @@ export async function createBill(repos: TransactionalRepositories, input: NewBil
     action: 'bill.added',
     entityType: 'bill',
     entityId: id,
-    summary: `Added a ${formatEuro(input.amount)} bill from ${supplier.name}${input.number ? ` (no. ${input.number})` : ''}${input.dueOn ? `, due ${input.dueOn}` : ''}`,
+    say: { key: 'billAdded', params: { amount: input.amount, supplier: supplier.name, number: input.number ?? null, dueOn: input.dueOn ?? null } },
     details: { ...input },
   });
   return id;
 }
 
-const describe = (bill: BillRecord) => `the ${formatEuro(Number(bill.amount))} bill from ${bill.supplier_name}${bill.number ? ` (no. ${bill.number})` : ''}`;
+/** The values a sentence needs to name a bill: "the €120.00 bill from Fresh Foods (no. FF-1)". */
+const billWords = (bill: BillRecord) => ({ amount: Number(bill.amount), supplier: bill.supplier_name, number: bill.number });
 
 function toDto(bill: BillRecord, payments: PaymentRecord[], today: string): SupplierBillDto {
   const amount = Number(bill.amount);

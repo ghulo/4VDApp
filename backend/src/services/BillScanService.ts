@@ -175,7 +175,7 @@ export class BillScanService {
           action: 'bill.scanned',
           entityType: 'bill_scan',
           entityId: scanId,
-          summary: `Scanned a bill${reading.supplier.name ? ` from ${reading.supplier.name}` : ''} (${reading.lines.length} ${reading.lines.length === 1 ? 'line' : 'lines'})`,
+          say: { key: 'billScanned', params: { supplier: reading.supplier.name, lines: reading.lines.length } },
         });
         // Someone who runs the shop scanned it themselves and is checking it now; anyone else's waits for them.
         if (!canOversee(actor.role)) {
@@ -381,7 +381,7 @@ export class BillScanService {
           const from = product.cost_price === null ? null : Number(product.cost_price);
           if (!confirmation.costs.some((cost) => cost.productId === product.id)) confirmation.costs.push({ productId: product.id, from, to: line.unitCost });
           else confirmation.costs.find((cost) => cost.productId === product.id)!.to = line.unitCost;
-          await changeCost(repos, { productId: product.id, productName: product.name, from: product.cost_price === null ? null : Number(product.cost_price), to: line.unitCost, actorId, because: `scanned bill from ${supplier.name}` });
+          await changeCost(repos, { productId: product.id, productName: product.name, from: product.cost_price === null ? null : Number(product.cost_price), to: line.unitCost, actorId, because: { scan: supplier.name } });
         }
         if (line.code) {
           const code = line.code.trim().toLowerCase();
@@ -430,7 +430,7 @@ export class BillScanService {
         action: 'bill.scan_confirmed',
         entityType: 'bill_scan',
         entityId: id,
-        summary: `Confirmed the scanned bill from ${supplier.name}: ${pieces} pieces into stock with order #${orderId}${confirmation.createdProducts.length > 0 ? `, ${confirmation.createdProducts.length} new products` : ''}`,
+        say: { key: 'billScanConfirmed', params: { supplier: supplier.name, pieces, orderId, newProducts: confirmation.createdProducts.length } },
         details: { billId, orderId, createdProducts: confirmation.createdProducts },
       });
       return { billId, orderId };
@@ -452,7 +452,7 @@ export class BillScanService {
         action: 'bill.scan_discarded',
         entityType: 'bill_scan',
         entityId: id,
-        summary: `Discarded a scanned bill${reading.supplier.name ? ` from ${reading.supplier.name}` : ''}`,
+        say: { key: 'billScanDiscarded', params: { supplier: reading.supplier.name } },
       });
     });
   }
@@ -472,7 +472,7 @@ export class BillScanService {
         action: 'order.created',
         entityType: 'order',
         entityId: orderId,
-        summary: `Made order #${orderId} from a scanned bill`,
+        say: { key: 'orderFromScan', params: { orderId } },
         details: { supplierId: input.supplierId, lines },
       });
       return { id: orderId, created: true, lines: [], addedLineIds: [] };
@@ -548,7 +548,7 @@ export class BillScanService {
         for (const change of done.costs) {
           const product = await repos.products.findById(change.productId, true);
           if (product && Number(product.cost_price) === change.to) {
-            await changeCost(repos, { productId: product.id, productName: product.name, from: change.to, to: change.from, actorId, because: 'scanned bill reopened' });
+            await changeCost(repos, { productId: product.id, productName: product.name, from: change.to, to: change.from, actorId, because: { reopened: true } });
           }
         }
         for (const change of done.barcodes) {
@@ -558,7 +558,7 @@ export class BillScanService {
               product,
               to: change.from,
               actorId,
-              summary: `Put the barcode of ${product.name} back${change.from ? ` to ${change.from}` : ''} (scanned bill reopened)`,
+              say: { key: 'barcodePutBack', params: { product: product.name, to: change.from } },
             });
           }
         }
@@ -578,7 +578,7 @@ export class BillScanService {
         action: 'bill.scan_reopened',
         entityType: 'bill_scan',
         entityId: id,
-        summary: `Reopened the scanned bill${reading.supplier.name ? ` from ${reading.supplier.name}` : ''}${done ? ': stock, bill and order put back' : ''}`,
+        say: { key: 'billScanReopened', params: { supplier: reading.supplier.name, undone: Boolean(done) } },
         details: { billId: scan.bill_id, orderId: scan.order_id },
       });
     });
@@ -617,7 +617,7 @@ export class BillScanService {
       action: 'product.created',
       entityType: 'product',
       entityId: id,
-      summary: `Added product ${product.name} from ${supplierName}'s bill`,
+      say: { key: 'productFromBill', params: { product: product.name, supplier: supplierName } },
       details: { price: product.price, costPrice: line.unitCost, barcode: product.barcode },
     });
     return id;
@@ -636,7 +636,7 @@ export class BillScanService {
       product,
       to,
       actorId,
-      summary: `Changed the barcode of ${product.name}${product.barcode ? ` from ${product.barcode}` : ''} to ${to}, as on ${supplierName}'s bill`,
+      say: { key: 'barcodeFromBill', params: { product: product.name, from: product.barcode, to, supplier: supplierName } },
     });
   }
 

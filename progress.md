@@ -176,7 +176,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 ## UI audit fixes (branch ui-audit, see docs/UI_AUDIT.md)
 
 - [x] B1 Dates read like "14 Oct" in To do and Activity; "cash check" and "mobile app" wording gone
-- [ ] B1b Activity and request lines read in the reader's own language
+- [x] B1b Activity and request lines read in the reader's own language
 - [x] B2 Tables sit on the page under their heading, never inside a card
 - [ ] B3 Metric rows even, big figures without cents, zeros as calm words, Overview greeting on the type scale
 - [ ] B4 One huge day no longer flattens any chart

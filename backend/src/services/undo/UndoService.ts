@@ -10,6 +10,7 @@ import { applyStockChange } from '../InventoryService.js';
 import { toMoney } from '../mappers.js';
 import type { EditReverts } from './editReverts.js';
 import { canUndo, type UndoTarget, undoTargetOf } from './undoRules.js';
+import { isSay } from '../../i18n/activityText.js';
 
 type Mode = 'undo' | 'restore';
 
@@ -162,7 +163,7 @@ async function logAndTell(
     action: p.mode === 'undo' ? 'undo.applied' : 'undo.restored',
     entityType: 'activity',
     entityId: p.entry.id,
-    summary: `${p.mode === 'undo' ? 'Undid' : 'Restored'}: ${p.entry.summary}`,
+    say: { key: p.mode === 'undo' ? 'undid' : 'restored', params: { entry: isSay(p.entry.summary_say) ? p.entry.summary_say : { text: p.entry.summary } } },
     details: { entryId: p.entry.id, kind: p.target.kind, targetId: p.target.id, note: p.note, effect: p.effect },
   });
   if (p.ownerId === null || p.ownerId === p.actor.id) return;

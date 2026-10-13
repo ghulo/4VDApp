@@ -1,13 +1,15 @@
 import type { ActivityAction, ActivityEntityType } from '../constants/activity.js';
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { type Say, sayIn } from '../i18n/activityText.js';
 
 export interface NewActivity {
   userId: number | null;
   action: ActivityAction;
   entityType: ActivityEntityType | null;
   entityId: number | null;
-  /** A sentence a person can read, e.g. "Changed price of Oak Chair from €89.00 to €95.00". */
-  summary: string;
+  /** What happened, as a sentence key and its values; written out in each reader's language. */
+  say: Say;
   details?: Record<string, unknown> | null;
 }
 
@@ -21,7 +23,7 @@ export interface ActivityFilters {
   actions?: string[];
   /** Same format as `actions`, left out of the results. */
   excludeActions?: string[];
-  /** Words that must all appear in the summary, any case. */
+  /** Words that must all appear in the summary (or its names and values), any case. */
   search?: string;
   limit: number;
   offset: number;
@@ -33,6 +35,7 @@ export interface ActivityRecord {
   entity_type: string | null;
   entity_id: number | null;
   summary: string;
+  summary_say: Record<string, unknown> | null;
   details: Record<string, unknown> | null;
   created_at: Date;
   user_id: number | null;
@@ -54,7 +57,8 @@ export class ActivityLogRepository {
         action: entry.action,
         entity_type: entry.entityType,
         entity_id: entry.entityId,
-        summary: entry.summary,
+        summary: sayIn(entry.say, 'en'),
+        summary_say: entry.say,
         details: entry.details ?? null,
       })
       .execute();
@@ -76,7 +80,9 @@ export class ActivityLogRepository {
       query = action.includes('.') ? query.where('a.action', '!=', action) : query.where('a.action', 'not like', `${action}.%`);
     }
     for (const word of filters.search?.trim().split(/\s+/).filter(Boolean) ?? []) {
-      query = query.where('a.summary', 'ilike', `%${word.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+      const pattern = `%${word.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      // The English sentence, or the names and values inside it whatever language is searched in.
+      query = query.where((eb) => eb.or([eb('a.summary', 'ilike', pattern), eb(sql<string>`a.summary_say::text`, 'ilike', pattern)]));
     }
 
     const [entries, count] = await Promise.all([
@@ -87,6 +93,7 @@ export class ActivityLogRepository {
           'a.entity_type',
           'a.entity_id',
           'a.summary',
+          'a.summary_say',
           'a.details',
           'a.created_at',
           'a.user_id',
@@ -133,6 +140,7 @@ export class ActivityLogRepository {
       'a.entity_type',
       'a.entity_id',
       'a.summary',
+      'a.summary_say',
       'a.details',
       'a.created_at',
       'a.user_id',

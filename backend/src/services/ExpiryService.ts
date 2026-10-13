@@ -100,7 +100,7 @@ export class ExpiryService {
         action: 'expiry.added',
         entityType: 'product',
         entityId: product.id,
-        summary: `Noted ${input.quantity} × ${product.name} expiring on ${input.expiresOn}`,
+        say: { key: 'expiryNoted', params: { quantity: input.quantity, product: product.name, day: input.expiresOn } },
         details: { ...input },
       });
       return expiryId;
@@ -120,7 +120,7 @@ export class ExpiryService {
         action: 'expiry.cleared',
         entityType: 'product',
         entityId: row.product_id,
-        summary: `Dealt with ${row.quantity} × ${row.product_name} expiring on ${row.expires_on}`,
+        say: { key: 'expiryCleared', params: { quantity: row.quantity, product: row.product_name, day: row.expires_on } },
         details: { expiryId: id },
       });
     });

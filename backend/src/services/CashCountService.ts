@@ -6,7 +6,7 @@ import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
-import { formatEuro, roundMoney } from '../utils/money.js';
+import { roundMoney } from '../utils/money.js';
 import { OVERSEER_ROLES } from '../utils/roles.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
@@ -161,7 +161,7 @@ export class CashCountService {
         action: 'cash.checked',
         entityType: 'cash_count',
         entityId: id,
-        summary: 'Checked a cash difference',
+        say: { key: 'cashDifferenceChecked' },
         details: {},
       });
     });
@@ -178,7 +178,6 @@ export class CashCountService {
     // Usually the float from Settings; whoever counts can say the drawer started with something else today.
     const float = input.float ?? (carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop);
     const carwashName = carwash ? ((await this.carwashService.displayNames()).get(carwash.id) ?? null) : null;
-    const drawerName = carwash ? `${carwash.name} carwash` : 'shop';
     const id = await this.transactions.run(async (repos) => {
       const countId = await repos.cashCounts.save({
         place: input.place,
@@ -194,7 +193,7 @@ export class CashCountService {
         action: 'cash.counted',
         entityType: 'cash_count',
         entityId: countId,
-        summary: `Counted ${formatEuro(input.counted)} in the ${drawerName} drawer (float ${formatEuro(float)})`,
+        say: { key: 'cashCounted', params: { counted: input.counted, drawer: carwash ? carwash.name : null, float } },
         details: { place: input.place, carwashId: carwash?.id ?? null, day, counted: input.counted, float },
       });
       return countId;

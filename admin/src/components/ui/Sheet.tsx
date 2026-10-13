@@ -1,5 +1,5 @@
 import { X } from '@phosphor-icons/react';
-import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
 
@@ -21,6 +21,16 @@ export function Sheet({ open, onClose, title, description, children }: SheetProp
   const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
+  // The form stays on the panel while it slides out, then goes, so the next
+  // opening starts fresh. Each opening gets its own key for the same reason.
+  const [shown, setShown] = useState(open);
+  const [opening, setOpening] = useState(0);
+  if (open && !shown) setShown(true);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setOpening((count) => count + 1);
+  }
 
   useEffect(() => {
     const dialog = ref.current;
@@ -30,7 +40,18 @@ export function Sheet({ open, onClose, title, description, children }: SheetProp
       // Start in the form's first field, ready to type or scan, not on the close button.
       dialog.querySelector<HTMLElement>('.sheet__body :is(input, select, textarea):not([disabled])')?.focus();
     }
-    if (!open && dialog.open) dialog.close();
+    if (!open) {
+      // Esc closes the dialog itself before this runs.
+      if (dialog.open) dialog.close();
+      // Wait for the slide out (none under reduced motion), unless it reopened meanwhile.
+      let cancelled = false;
+      Promise.all(dialog.getAnimations?.({ subtree: true }).map((animation) => animation.finished) ?? [])
+        .catch(() => undefined)
+        .then(() => !cancelled && setShown(false));
+      return () => {
+        cancelled = true;
+      };
+    }
   }, [open]);
 
   return (
@@ -54,7 +75,7 @@ export function Sheet({ open, onClose, title, description, children }: SheetProp
             <X size={20} aria-hidden="true" />
           </button>
         </div>
-        <div className="sheet__body">{open && children}</div>
+        <div className="sheet__body">{shown && <Fragment key={opening}>{children}</Fragment>}</div>
       </div>
     </dialog>
   );

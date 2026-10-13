@@ -1,6 +1,6 @@
 /* 4VD dashboard styles, in layers: tokens, then bare elements, then decoration,
-   the component kit, the app frame, the page-specific rules, and last the glass
-   on floating layers. */
+   the component kit, the app frame, the page-specific rules, the glass on
+   floating layers, and last the shared motion. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/decor.css';
@@ -9,3 +9,4 @@
 @import './styles/pages.css';
 @import './styles/team.css';
 @import './styles/glass.css';
+@import './styles/motion.css';

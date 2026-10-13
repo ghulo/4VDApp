@@ -305,7 +305,16 @@
 
 /* ---------- Phones: the sidebar becomes a drawer ---------- */
 
+/* The drawer's dimmed backdrop only exists on phones. */
+.drawer-backdrop {
+  display: none;
+}
+
 @media (max-width: 900px) {
+  .drawer-backdrop {
+    display: block;
+  }
+
   .app,
   .app--collapsed {
     grid-template-columns: minmax(0, 1fr);
@@ -351,7 +360,7 @@
     width: min(300px, 85vw);
     height: 100vh;
     transform: translateX(-105%);
-    transition: transform 0.18s ease-out;
+    transition: transform var(--moderate) var(--ease);
     box-shadow: var(--shadow-float);
   }
 
@@ -404,6 +413,14 @@
     z-index: 30;
     background: rgb(20 20 19 / 0.3);
     backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--moderate) var(--ease);
+  }
+
+  .drawer-backdrop--open {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .main__frame {
@@ -554,7 +571,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .palette {
-    animation: palette-in 120ms ease-out;
+    animation: palette-in var(--fast) var(--ease);
   }
 }
 
@@ -654,20 +671,6 @@
 .table__primary-link,
 .table__secondary {
   white-space: nowrap;
-}
-
-/* Each page fades in when it opens: one quiet moment, no sliding sections. */
-@media (prefers-reduced-motion: no-preference) {
-  .main__frame > * {
-    animation: page-in 260ms var(--ease) both;
-  }
-}
-
-@keyframes page-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
 }
 
 /* ---------- Tabs over pages that share one menu item ---------- */

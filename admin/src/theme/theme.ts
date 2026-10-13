@@ -36,7 +36,18 @@ function systemPrefersDark(): boolean {
 
 /** Colours the page now, and remembers the choice for next time. */
 export function applyTheme(preference: ThemePreference): void {
-  document.documentElement.dataset.theme = resolveTheme(preference, systemPrefersDark());
+  const root = document.documentElement;
+  const theme = resolveTheme(preference, systemPrefersDark());
+  const paint = () => {
+    root.dataset.theme = theme;
+  };
+  // A real change cross-fades (motion.css) instead of flashing the whole screen.
+  const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
+  if (root.dataset.theme && root.dataset.theme !== theme && !calm && document.startViewTransition) {
+    document.startViewTransition(paint);
+  } else {
+    paint();
+  }
   try {
     safeStorage()?.setItem(THEME_STORAGE_KEY, preference);
   } catch {

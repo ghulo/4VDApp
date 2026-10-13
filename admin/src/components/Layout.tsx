@@ -130,7 +130,12 @@ export function Layout() {
         </div>
       </header>
 
-      {drawerOpen && <div className="drawer-backdrop" onClick={closeDrawer} aria-hidden="true" />}
+      {/* Always there on phones so it can fade out with the drawer, not vanish before it. */}
+      <div
+        className={drawerOpen ? 'drawer-backdrop drawer-backdrop--open' : 'drawer-backdrop'}
+        onClick={closeDrawer}
+        aria-hidden="true"
+      />
 
       <aside id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
         <div className="sidebar__drawer-head">

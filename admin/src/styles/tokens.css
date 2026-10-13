@@ -155,9 +155,18 @@
   --radius-segment: 6px;
   --radius-pill: 999px;
 
-  /* Motion: quick and soft, never bouncy. */
+  /* Motion: quick and soft, never bouncy (the behaviours live in
+     styles/motion.css). Things arrive on --ease, which settles like a
+     critically damped spring, and leave on --ease-exit, its mirror. Press
+     feedback is --instant; colour and hover changes are --fast; panels and
+     page entrances are --moderate; data growing in is --slow. */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --instant: 100ms;
   --fast: 150ms;
+  --moderate: 240ms;
+  --slow: 420ms;
+  --stagger: 40ms;
 }
 
 /* Phones: bigger controls for thumbs, like SBB's element sizes (44px minimum). */

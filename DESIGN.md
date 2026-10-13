@@ -684,8 +684,22 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 12. Motion and accessibility
 
-- Motion: 150ms, `cubic-bezier(0.16, 1, 0.3, 1)`, never bouncy; all inside
-  `prefers-reduced-motion: no-preference`.
+- Motion: quick and soft, never bouncy; all inside
+  `prefers-reduced-motion: no-preference`. One vocabulary in
+  `admin/src/styles/motion.css`, on tokens: `--ease` (arrive, settles like a
+  critically damped spring) and `--ease-exit` (its mirror, to leave);
+  `--instant` 100ms press, `--fast` 150ms colour/hover, `--moderate` 240ms
+  panels and entrances, `--slow` 420ms data growing in, `--stagger` 40ms.
+  - Pages: sections rise in (6px, fade) one after another, first six staggered.
+    Reuse `.rise` (one element) and `.rise-group` (its children in turn).
+  - Press: keys sink into their edge; tiles, rows, segments and menu links
+    (`.press`) dip to 97% on press.
+  - Panels leave the way they came: the side sheet slides in from the right
+    and back out to the right with its form still on it; the phone drawer and
+    its backdrop fade out together.
+  - Charts grow in once (bars from their base). Errors and empty pages rise in;
+    "Loading" only appears after 300ms. Light/dark cross-fades.
+  - Only `transform` and `opacity` move. No looping motion, no parallax.
 - WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
 - Keyboard: every action reachable, visible focus, one tab stop per chart
   (arrows walk the data), dialogs trap focus and return it.

@@ -1562,19 +1562,6 @@ input.switch:focus-visible {
   padding: var(--space-5);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .sheet[open] .sheet__panel {
-    animation: sheet-in 240ms var(--ease);
-  }
-}
-
-@keyframes sheet-in {
-  from {
-    transform: translateX(24px);
-    opacity: 0;
-  }
-}
-
 @media (max-width: 600px) {
   .sheet__head,
   .sheet__body {

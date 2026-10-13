@@ -172,3 +172,19 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Pass 2, Home and shift: one clay key, To do first (calm words when empty), the day as a slim strip, End shift with tick circles, My sales as whole sales with returns and the invoice from the sale; undone sales no longer show in sales history (dashboard too)
 - [x] Pass 3, the rest: lighter Products list, Account reorganised into sections like the dashboard Profile (with segmented switches) and gaining Security (change password) and Devices (where you are signed in, sign out others), better headers and forms on sub-screens, open wording gaps, EN/SQ light/dark checked; form screens in raised panels; selected chips and switches now tell screen readers they are chosen
 - [ ] You look each pass over locally, then merge and push
+
+## UI audit fixes (branch ui-audit, see docs/UI_AUDIT.md)
+
+- [ ] B1 Dates read like "14 Oct" in To do and Activity; "cash check" and "mobile app" wording gone
+- [ ] B2 Tables sit on the page under their heading, never inside a card
+- [ ] B3 Metric rows even, big figures without cents, zeros as calm words, Overview greeting on the type scale
+- [ ] B4 One huge day no longer flattens any chart
+- [ ] B5 Healthy stock is quiet (stamps only for low and out); team app Products on one surface
+- [ ] B6 Dashboard on a phone: no empty "–" lines, tidy Stock toolbar, To do first on Overview, whole Sales row opens
+- [ ] B7 Busy buttons keep their label; team app gets a small key
+- [ ] B8 Team app matches the dashboard: stamps, segmented track, header sizes, favourites star, picker titles, error state, 44px targets
+- [ ] B9 Sell tiles without a photo give the name and price the room
+- [ ] B10 Every date field reads day / month / year
+- [ ] B11 Dashboard basket looks like a receipt
+- [ ] B12 Rulebook and design tooling match the code
+- [ ] You look it over locally, then merge and push

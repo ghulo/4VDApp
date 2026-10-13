@@ -2,6 +2,7 @@ import type { InsightsRepository } from '../repositories/InsightsRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import { roundMoney } from '../utils/money.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
+import { dayMonth } from '../i18n/language.js';
 import type { ReportsService } from './ReportsService.js';
 import { OVERDUE_DAYS, type TabService } from './TabService.js';
 import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
@@ -174,7 +175,7 @@ export class InsightsService {
         title: overdue
           ? t.insight.billOverdueTitle({ supplier: bill.supplier.name, amount: bill.left, days: -bill.daysLeft })
           : t.insight.billDueSoonTitle({ supplier: bill.supplier.name, amount: bill.left, days: bill.daysLeft }),
-        detail: t.insight.billDetail({ number: bill.number, dueOn: bill.dueOn! }),
+        detail: t.insight.billDetail({ number: bill.number, dueOn: dayMonth(new Date(`${bill.dueOn}T12:00:00Z`), t.language, 'UTC') }),
         productId: null,
         billId: bill.id,
       });

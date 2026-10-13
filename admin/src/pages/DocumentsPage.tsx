@@ -79,14 +79,16 @@ export function DocumentsPage() {
                   </button>
                 ))}
               </div>
-              <label className="inline-field">
-                {t.sales.from}
-                <DateField value={startDate} max={endDate || undefined} onChange={(value) => updateParams({ from: value })} />
-              </label>
-              <label className="inline-field">
-                {t.sales.to}
-                <DateField value={endDate} min={startDate || undefined} onChange={(value) => updateParams({ to: value })} />
-              </label>
+              <span className="date-range">
+                <label className="inline-field">
+                  {t.sales.from}
+                  <DateField value={startDate} max={endDate || undefined} onChange={(value) => updateParams({ from: value })} />
+                </label>
+                <label className="inline-field">
+                  {t.sales.to}
+                  <DateField value={endDate} min={startDate || undefined} onChange={(value) => updateParams({ to: value })} />
+                </label>
+              </span>
             </div>
           }
           columns={[

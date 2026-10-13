@@ -965,8 +965,8 @@ form.product-form > .form-actions {
 
   .toolbar > .inline-field,
   .data-table__toolbar > .inline-field,
-  .period-picker__dates,
-  .period-picker__dates > .inline-field {
+  .date-range,
+  .date-range > .inline-field {
     flex: 1 1 100%;
   }
 
@@ -2833,10 +2833,13 @@ form.product-form > .form-actions {
 }
 
 .report-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
-  gap: 0 var(--space-4);
-  align-items: start;
+  /* Two columns that fill top to bottom, so a short card never leaves a hole beside a tall one. */
+  columns: 2 360px;
+  column-gap: var(--space-4);
+}
+
+.report-grid > * {
+  break-inside: avoid;
 }
 
 .report .stat-grid {
@@ -2963,7 +2966,7 @@ fieldset.report-sections {
 
 /* ---------- Sales ---------- */
 
-.period-picker__dates {
+.date-range {
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);

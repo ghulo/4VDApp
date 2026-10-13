@@ -1910,6 +1910,7 @@ export const en = {
     stop: 'Stop repeating',
     stopLabel: (what: string) => `Stop repeating ${what}`,
     biggest: 'Biggest',
+    nothingSpent: 'Nothing spent',
   },
   cash: {
     title: 'Cash counts',

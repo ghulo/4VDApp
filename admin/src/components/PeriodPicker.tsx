@@ -46,7 +46,7 @@ export function PeriodPicker({ period, from, to, onChange, periods = PERIOD_KEYS
       )}
       {children}
       {period === 'custom' && (
-        <span className="period-picker__dates">
+        <span className="date-range">
           <label className="inline-field">
             {t.periods.from}
             <DateField value={from} max={to || undefined} onChange={(value) => onChange({ period, from: value, to })} />

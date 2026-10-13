@@ -76,11 +76,15 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
   return (
     <StatGrid>
       <StatTile label={t.expenses.total} value={formatHeadlineMoney(totals.total)} />
+      {/* One figure per tile; a place with nothing spent says so in words. "Both" shows only when used. */}
+      <StatTile label={t.expenses.places.shop} value={formatHeadlineMoney(totals.byPlace.shop)} words={totals.byPlace.shop === 0 && t.expenses.nothingSpent} />
       <StatTile
-        label={`${t.expenses.places.shop} · ${t.expenses.places.carwash} · ${t.expenses.places.both}`}
-        value={`${formatMoney(totals.byPlace.shop)} · ${formatMoney(totals.byPlace.carwash)} · ${formatMoney(totals.byPlace.both)}`}
+        label={t.expenses.places.carwash}
+        value={formatHeadlineMoney(totals.byPlace.carwash)}
+        words={totals.byPlace.carwash === 0 && t.expenses.nothingSpent}
         hint={totals.byCarwash.length > 1 ? totals.byCarwash.map((row) => `${row.name} ${formatMoney(row.total)}`).join(' · ') : undefined}
       />
+      {totals.byPlace.both > 0 && <StatTile label={t.expenses.places.both} value={formatHeadlineMoney(totals.byPlace.both)} />}
       <StatTile
         label={t.expenses.biggest}
         value={biggest ? t.expenses.categories[biggest] : '–'}

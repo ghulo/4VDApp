@@ -1891,6 +1891,7 @@ export const sq: Catalogue = {
     stop: 'Ndalo përsëritjen',
     stopLabel: (what: string) => `Ndalo përsëritjen e ${what}`,
     biggest: 'Më i madhi',
+    nothingSpent: 'Asgjë e shpenzuar',
   },
   cash: {
     title: 'Numërimet e arkës',

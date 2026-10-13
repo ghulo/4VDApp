@@ -6,6 +6,7 @@ export { buttonClass, type ButtonVariant } from './buttonClass';
 export { Card, SettingRow } from './Card';
 export { ColumnChart, type ChartColumn } from './ColumnChart';
 export { DataTable, type Column } from './DataTable';
+export { DateField } from './DateField';
 export { DayBars } from './DayBars';
 export { EmptyState } from './EmptyState';
 export { MetricCard, MetricGrid } from './MetricCard';

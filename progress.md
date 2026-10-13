@@ -185,7 +185,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] B7 Busy buttons keep their label; team app gets a small key
 - [x] B8 Team app matches the dashboard: stamps, segmented track, header sizes, favourites star, picker titles, error state, 44px targets
 - [x] B9 Sell tiles without a photo give the name and price the room
-- [ ] B10 Every date field reads day / month / year
+- [x] B10 Every date field reads day / month / year
 - [ ] B11 Dashboard basket looks like a receipt
 - [ ] B12 Rulebook and design tooling match the code
 - [ ] You look it over locally, then merge and push

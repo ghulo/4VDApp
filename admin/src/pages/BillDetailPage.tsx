@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -123,7 +123,7 @@ function PayCard({ bill }: { bill: SupplierBill }) {
             <input required type="number" inputMode="decimal" autoComplete="off" min={0.01} max={bill.left} step={0.01} value={amount} onChange={(event) => setAmount(event.target.value)} />
           </Field>
           <Field label={t.bills.paidOn}>
-            <input required type="date" max={todayIso()} value={paidOn} onChange={(event) => setPaidOn(event.target.value)} />
+            <DateField required max={todayIso()} value={paidOn} onChange={(value) => setPaidOn(value)} />
           </Field>
         </div>
         <div className="field">

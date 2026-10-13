@@ -2202,6 +2202,11 @@ export const sq: Catalogue = {
     removeHint: 'Fshin llogarinë. Shitjet dhe ndryshimet e kaluara mbeten.',
   },
   common: {
+    dateFormat: 'dd/mm/vvvv',
+    pickDate: 'Zgjidh një datë',
+    badDate: 'Shkruaje datën si ditë/muaj/vit, p.sh. 13/10/2026.',
+    notBefore: (day: string) => `Zgjidh një ditë nga ${day} e tutje.`,
+    notAfter: (day: string) => `Zgjidh një ditë deri më ${day}.`,
     close: 'Mbyll',
     onThisPage: 'Në këtë faqe',
     save: 'Ruaj',

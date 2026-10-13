@@ -9,7 +9,7 @@ import type { ShopDay } from '../services/types';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { useDayChecklist } from '../utils/useDayChecklist';
-import { Button, DataTable, EmptyState, PageHeader, Section, Sheet } from '../components/ui';
+import { Button, DataTable, DateField, EmptyState, PageHeader, Section, Sheet } from '../components/ui';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const shift = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
@@ -45,11 +45,10 @@ export function DayPage() {
               <Button variant="ghost" size="sm" icon={CaretLeft} aria-label={t.dayPage.earlier} onClick={() => go(shift(day.data.day, -1))} />
               <label className="inline-field">
                 <span className="visually-hidden">{t.dayPage.pick}</span>
-                <input
-                  type="date"
+                <DateField
                   value={day.data.day}
                   max={day.data.today}
-                  onChange={(event) => event.target.value && go(event.target.value)}
+                  onChange={(value) => value && go(value)}
                 />
               </label>
               <Button

@@ -6,7 +6,7 @@ import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, businessApi, ordersApi } from '../services/api';
 import type { OrderLine, PurchaseOrder } from '../services/types';
@@ -246,11 +246,10 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
             {
               header: t.orders.expiresOn,
               cell: (line) => (
-                <input
-                  type="date"
+                <DateField
                   aria-label={`${t.orders.expiresOn}: ${line.productName}`}
                   value={expires[line.id] ?? ''}
-                  onChange={(event) => setExpires((current) => ({ ...current, [line.id]: event.target.value }))}
+                  onChange={(value) => setExpires((current) => ({ ...current, [line.id]: value }))}
                 />
               ),
             },

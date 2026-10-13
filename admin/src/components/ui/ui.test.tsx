@@ -11,6 +11,7 @@ import {
   Card,
   ColumnChart,
   DataTable,
+  DateField,
   DayBars,
   EmptyState,
   Field,
@@ -21,6 +22,7 @@ import {
   StatGrid,
   StatTile,
 } from './index';
+import { dayMonthYearToIso, isoToDayMonthYear } from './DateField';
 
 const render = (element: ReactElement) => renderToStaticMarkup(<MemoryRouter>{element}</MemoryRouter>);
 
@@ -307,5 +309,31 @@ describe('BarList and ColumnChart', () => {
     expect(columns([5, 60, 4]).match(/column-chart__bar--capped/g)).toHaveLength(1);
     expect(columns([5, 6, 4])).not.toContain('--capped');
     expect(bars([5, 6, 4])).not.toContain('--capped');
+  });
+});
+
+describe('DateField', () => {
+  it('should read and write day/month/year whatever the language', () => {
+    expect(isoToDayMonthYear('2026-10-13')).toBe('13/10/2026');
+    expect(isoToDayMonthYear('')).toBe('');
+    expect(dayMonthYearToIso('13/10/2026')).toBe('2026-10-13');
+    expect(dayMonthYearToIso('1.2.26')).toBe('2026-02-01');
+    expect(dayMonthYearToIso(' 5-11-2026 ')).toBe('2026-11-05');
+  });
+
+  it('should refuse text that is not a real day', () => {
+    expect(dayMonthYearToIso('31/02/2026')).toBeNull();
+    expect(dayMonthYearToIso('13/13/2026')).toBeNull();
+    expect(dayMonthYearToIso('10/13')).toBeNull();
+    expect(dayMonthYearToIso('tomorrow')).toBeNull();
+  });
+
+  it('should show the day as text with a calendar button', () => {
+    const html = render(<DateField value="2026-10-13" onChange={() => undefined} max="2026-12-31" />);
+
+    expect(html).toContain('value="13/10/2026"');
+    expect(html).toContain('inputMode="numeric"');
+    expect(html).toContain('date-field__calendar');
+    expect(html).toContain('tabindex="-1"');
   });
 });

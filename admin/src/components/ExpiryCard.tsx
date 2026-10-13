@@ -5,7 +5,7 @@ import { expiryApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { Badge, Button, Card, Field } from './ui';
+import { Badge, Button, Card, DateField, Field } from './ui';
 
 /** Same as the server: warnings start a week ahead, urgent in the last two days. */
 const WARNING_DAYS = 7;
@@ -96,7 +96,7 @@ export function ExpiryCard({ productId }: { productId: number }) {
               <input type="number" inputMode="numeric" required min={1} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} />
             </Field>
             <Field label={t.expiry.expiresOn}>
-              <input type="date" required value={expiresOn} onChange={(event) => setExpiresOn(event.target.value)} />
+              <DateField required value={expiresOn} onChange={(value) => setExpiresOn(value)} />
             </Field>
           </div>
           {add.isError && (

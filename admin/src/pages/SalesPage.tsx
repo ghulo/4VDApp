@@ -12,7 +12,7 @@ import { productsApi, reportsApi, salesApi, usersApi } from '../services/api';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, DataTable, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
+import { Badge, Button, DataTable, DateField, MetricCard, MetricGrid, PageHeader, Section, Sheet, useNewSheet } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
 import type { Checkout } from '../services/types';
 import { useT } from '../i18n/useT';
@@ -66,20 +66,18 @@ export function SalesPage() {
           <span className="sales-periods__dates">
             <label className="inline-field">
               {t.sales.from}
-              <input
-                type="date"
+              <DateField
                 value={period.from}
                 max={period.to || undefined}
-                onChange={(event) => period.changePeriod({ period: 'custom', from: event.target.value, to: period.to })}
+                onChange={(value) => period.changePeriod({ period: 'custom', from: value, to: period.to })}
               />
             </label>
             <label className="inline-field">
               {t.sales.to}
-              <input
-                type="date"
+              <DateField
                 value={period.to}
                 min={period.from || undefined}
-                onChange={(event) => period.changePeriod({ period: 'custom', from: period.from, to: event.target.value })}
+                onChange={(value) => period.changePeriod({ period: 'custom', from: period.from, to: value })}
               />
             </label>
           </span>

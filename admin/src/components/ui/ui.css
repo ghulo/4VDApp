@@ -208,6 +208,67 @@
   text-underline-offset: 3px;
 }
 
+/* ---------- Date field: day/month/year text with the calendar at its end ---------- */
+
+.date-field {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  max-width: 100%;
+}
+
+.date-field input[type='text'] {
+  width: 100%;
+  min-width: 13ch;
+  padding-inline-end: calc(var(--control-h-sm) + var(--space-1));
+  font-variant-numeric: tabular-nums;
+}
+
+.inline-field .date-field {
+  width: auto;
+}
+
+.date-field__calendar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 2px;
+  display: grid;
+  place-items: center;
+  width: var(--control-h-sm);
+  margin-block: auto;
+  height: var(--control-h-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.date-field__calendar:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.date-field__calendar:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* The browser's own date box, kept only to open its calendar under the button. */
+.date-field .date-field__native {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- Page header ---------- */
 
 .page-header {

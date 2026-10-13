@@ -13,7 +13,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Badge, Button, DataTable, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import { Badge, Button, DataTable, DateField, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 
 /** Same cap as the server: every month has a 28th. */
 const LAST_REPEAT_DAY = 28;
@@ -135,7 +135,7 @@ function ExpenseForm() {
     <form className="settings-form" onSubmit={handleSubmit}>
       <div className="field-row">
         <Field label={t.expenses.day}>
-          <input type="date" required max={today()} value={day} onChange={(event) => setDay(event.target.value)} />
+          <DateField required max={today()} value={day} onChange={(value) => setDay(value)} />
         </Field>
         <Field label={t.expenses.amount}>
           <input

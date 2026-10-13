@@ -1,5 +1,6 @@
 import { COMPARE_KEYS, type CompareKey, PERIOD_KEYS, type PeriodKey } from '../utils/periods';
 import { useT } from '../i18n/useT';
+import { DateField } from './ui';
 
 interface PeriodPickerProps {
   period: PeriodKey;
@@ -38,11 +39,11 @@ export function PeriodPicker({ period, from, to, onChange, compare }: PeriodPick
         <>
           <label className="inline-field">
             {t.periods.from}
-            <input type="date" value={from} max={to || undefined} onChange={(event) => onChange({ period, from: event.target.value, to })} />
+            <DateField value={from} max={to || undefined} onChange={(value) => onChange({ period, from: value, to })} />
           </label>
           <label className="inline-field">
             {t.periods.to}
-            <input type="date" value={to} min={from || undefined} onChange={(event) => onChange({ period, from, to: event.target.value })} />
+            <DateField value={to} min={from || undefined} onChange={(value) => onChange({ period, from, to: value })} />
           </label>
         </>
       )}

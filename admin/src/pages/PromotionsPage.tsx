@@ -9,22 +9,7 @@ import { categoriesApi, productsApi, promotionsApi } from '../services/api';
 import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPromotionDay } from '../utils/format';
-import {
-  Badge,
-  Button,
-  ButtonLink,
-  Card,
-  DataTable,
-  EmptyState,
-  Field,
-  MetricCard,
-  MetricGrid,
-  PageHeader,
-  Sheet,
-  StatGrid,
-  StatTile,
-  type Tone,
-} from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, MetricCard, MetricGrid, PageHeader, Sheet, StatGrid, StatTile, type Tone } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const STATUS_TONE: Record<PromotionStatus, Tone> = {
@@ -382,10 +367,10 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
       </Field>
       <div className="field-row">
         <Field label={t.promotions.firstDay}>
-          <input type="date" required value={dates.startsAt} onChange={(event) => setDates({ ...dates, startsAt: event.target.value })} />
+          <DateField required value={dates.startsAt} onChange={(value) => setDates({ ...dates, startsAt: value })} />
         </Field>
         <Field label={t.promotions.lastDay}>
-          <input type="date" required min={dates.startsAt} value={dates.endsAt} onChange={(event) => setDates({ ...dates, endsAt: event.target.value })} />
+          <DateField required min={dates.startsAt} value={dates.endsAt} onChange={(value) => setDates({ ...dates, endsAt: value })} />
         </Field>
       </div>
 

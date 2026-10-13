@@ -6,7 +6,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PrintDocumentButton } from '../components/PrintDocumentButton';
 import { SearchInput } from '../components/SearchInput';
-import { Badge, DataTable, EmptyState, PageHeader } from '../components/ui';
+import { Badge, DataTable, DateField, EmptyState, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { documentsApi } from '../services/api';
 import type { DocumentKind, SalesDocument } from '../services/types';
@@ -72,11 +72,11 @@ export function DocumentsPage() {
               </select>
               <label className="inline-field">
                 {t.sales.from}
-                <input type="date" value={startDate} max={endDate || undefined} onChange={(event) => updateParams({ from: event.target.value })} />
+                <DateField value={startDate} max={endDate || undefined} onChange={(value) => updateParams({ from: value })} />
               </label>
               <label className="inline-field">
                 {t.sales.to}
-                <input type="date" value={endDate} min={startDate || undefined} onChange={(event) => updateParams({ to: event.target.value })} />
+                <DateField value={endDate} min={startDate || undefined} onChange={(value) => updateParams({ to: value })} />
               </label>
             </div>
           }

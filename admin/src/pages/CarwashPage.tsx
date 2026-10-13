@@ -14,7 +14,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
-import { Button, Card, DataTable, EmptyState, Field, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
+import { Button, Card, DataTable, DateField, EmptyState, Field, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 
 /** "2026-10-04": today on this computer's calendar. */
 const today = () => new Date().toLocaleDateString('en-CA');
@@ -170,7 +170,7 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
           </Field>
         )}
         <Field label={t.carwash.day} narrow>
-          <input type="date" required max={today()} value={day} onChange={(event) => pickDay(event.target.value)} />
+          <DateField required max={today()} value={day} onChange={(value) => pickDay(value)} />
         </Field>
       </div>
       <div className="field-row">

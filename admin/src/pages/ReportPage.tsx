@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, DayBars, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, DayBars, EmptyState, MetricCard, MetricGrid, PageHeader, Section, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
 import type { FullReport, ReportKind } from '../services/types';
@@ -71,7 +71,7 @@ export function ReportPage() {
             <Button variant="ghost" size="sm" icon={CaretLeft} aria-label={t.fullReport.earlier} onClick={() => go({ from: shift(report.data.from, -step) })} />
             <label className="inline-field">
               <span className="visually-hidden">{t.fullReport.startsOn}</span>
-              <input type="date" value={report.data.from} onChange={(event) => event.target.value && go({ from: event.target.value })} />
+              <DateField value={report.data.from} onChange={(value) => value && go({ from: value })} />
             </label>
             <Button
               variant="ghost"

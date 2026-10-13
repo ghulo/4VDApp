@@ -2,7 +2,7 @@ import { useT } from '../i18n/useT';
 import type { SupplierBill } from '../services/types';
 import { addDaysIso, type BillDraft, todayIso } from '../utils/bills';
 import { formatDate } from '../utils/format';
-import { Badge, Button, Field } from './ui';
+import { Badge, Button, DateField, Field } from './ui';
 
 /** When a bill is due, as a badge: late, due soon, or just the date. */
 export function DueBadge({ bill }: { bill: SupplierBill }) {
@@ -30,10 +30,10 @@ export function BillFields({ draft, onChange }: { draft: BillDraft; onChange: (d
       </div>
       <div className="field-row">
         <Field label={t.bills.issuedOn}>
-          <input required type="date" max={todayIso()} value={draft.issuedOn} onChange={(event) => set({ issuedOn: event.target.value })} />
+          <DateField required max={todayIso()} value={draft.issuedOn} onChange={(value) => set({ issuedOn: value })} />
         </Field>
         <Field label={t.bills.due} hint={t.bills.dueHint}>
-          <input type="date" min={draft.issuedOn} value={draft.dueOn} onChange={(event) => set({ dueOn: event.target.value })} />
+          <DateField min={draft.issuedOn} value={draft.dueOn} onChange={(value) => set({ dueOn: value })} />
         </Field>
       </div>
       <div className="quick-due" role="group" aria-label={t.bills.quickDue}>

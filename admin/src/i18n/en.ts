@@ -2222,6 +2222,11 @@ export const en = {
     removeHint: 'Deletes the account. Their past sales and changes stay.',
   },
   common: {
+    dateFormat: 'dd/mm/yyyy',
+    pickDate: 'Pick a date',
+    badDate: 'Write the date as day/month/year, like 13/10/2026.',
+    notBefore: (day: string) => `Pick a day from ${day} on.`,
+    notAfter: (day: string) => `Pick a day up to ${day}.`,
     close: 'Close',
     onThisPage: 'On this page',
     save: 'Save',

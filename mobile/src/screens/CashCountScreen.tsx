@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow } from '../components/inputs';
-import { Button, ErrorState, Loading, TextField } from '../components/ui';
+import { Button, ErrorState, Loading, TextField, Panel } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { cashApi } from '../services/api';
 import { fonts, spacing, useThemeColors, type } from '../theme';
@@ -78,27 +78,29 @@ export function CashCountScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <ChoiceRow
-        label={t.cash.whichDrawer}
-        options={drawers.map((option) => ({ value: option.key, label: option.label }))}
-        value={chosen.key}
-        onChange={(key) => {
-          setDrawer(key);
-          setFloatInput(null);
-        }}
-      />
-      <TextField label={t.cash.float} value={floatText} onChangeText={setFloatInput} keyboardType="decimal-pad" placeholder="0,00" />
-      <Text style={[styles.hint, { color: colors.inkMuted }]}>
-        {float > 0 ? t.cash.includeFloat(formatMoney(float)) : t.cash.countAll}
-      </Text>
-      <TextField
-        label={t.cash.counted}
-        value={counted}
-        onChangeText={setCounted}
-        keyboardType="decimal-pad"
-        placeholder="0,00"
-      />
-      <TextField label={t.cash.note} value={note} onChangeText={setNote} maxLength={500} placeholder={t.cash.notePlaceholder} />
+      <Panel>
+        <ChoiceRow
+          label={t.cash.whichDrawer}
+          options={drawers.map((option) => ({ value: option.key, label: option.label }))}
+          value={chosen.key}
+          onChange={(key) => {
+            setDrawer(key);
+            setFloatInput(null);
+          }}
+        />
+        <TextField label={t.cash.float} value={floatText} onChangeText={setFloatInput} keyboardType="decimal-pad" placeholder="0,00" />
+        <Text style={[styles.hint, { color: colors.inkMuted }]}>
+          {float > 0 ? t.cash.includeFloat(formatMoney(float)) : t.cash.countAll}
+        </Text>
+        <TextField
+          label={t.cash.counted}
+          value={counted}
+          onChangeText={setCounted}
+          keyboardType="decimal-pad"
+          placeholder="0,00"
+        />
+        <TextField label={t.cash.note} value={note} onChangeText={setNote} maxLength={500} placeholder={t.cash.notePlaceholder} />
+      </Panel>
       {status.countedAt && <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.cash.alreadyCounted(status.countedBy)}</Text>}
       {submit.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(submit.error)}</Text>}
       <Button label={t.cash.save} onPress={() => submit.mutate({ drawer: chosen.key, float })} disabled={!isValid} loading={submit.isPending} />

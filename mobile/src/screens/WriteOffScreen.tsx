@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
-import { Button, TextField } from '../components/ui';
+import { Button, TextField, Panel } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { writeOffsApi } from '../services/api';
 import type { WriteOffReason } from '../services/types';
@@ -53,19 +53,24 @@ export function WriteOffScreen({ route, navigation }: Props) {
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: colors.ink }]}>{productName}</Text>
-      <Text style={[styles.muted, { color: colors.steel }]}>{inStock} in stock</Text>
+      <Text style={[styles.muted, { color: colors.steel }]}>{t.sell.inStock(inStock)}</Text>
 
-      <Stepper label={t.writeOff.howMany} value={quantity} onChange={setQuantity} min={1} max={inStock} />
-      <ChoiceRow
-        label={t.writeOff.whatHappened}
-        options={REASONS.map((value) => ({ value, label: t.writeOff.reasons[value] }))} value={reason} onChange={setReason} />
-      <TextField
-        label={t.writeOff.note}
-        value={notes}
-        onChangeText={setNotes}
-        maxLength={1000}
-        placeholder={t.writeOff.notePlaceholder}
-      />
+      <Panel>
+        <Stepper label={t.writeOff.howMany} value={quantity} onChange={setQuantity} min={1} max={inStock} />
+        <ChoiceRow
+          label={t.writeOff.whatHappened}
+          options={REASONS.map((value) => ({ value, label: t.writeOff.reasons[value] }))}
+          value={reason}
+          onChange={setReason}
+        />
+        <TextField
+          label={t.writeOff.note}
+          value={notes}
+          onChangeText={setNotes}
+          maxLength={1000}
+          placeholder={t.writeOff.notePlaceholder}
+        />
+      </Panel>
 
       {!decidesRequests(user) && (
         <View style={[styles.notice, { borderColor: colors.signalLow, backgroundColor: colors.surface }]}>

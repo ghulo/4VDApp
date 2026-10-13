@@ -1,6 +1,8 @@
 import { apiRequest, apiText, tokenStore } from './apiClient';
 import type {
   Checkout,
+  Security,
+  Session,
   TestDelivery,
   NewProductInput,
   NewProductOutcome,
@@ -67,6 +69,12 @@ export const meApi = {
     (await apiRequest<User>('/me/profile', { method: 'PUT', body: changes })).data,
   uploadAvatar: async (file: Blob) => (await apiRequest<User>('/me/avatar', { method: 'PUT', file })).data,
   removeAvatar: async () => (await apiRequest<User>('/me/avatar', { method: 'DELETE' })).data,
+  security: async () => (await apiRequest<Security>('/me/security')).data,
+  changePassword: async (input: { currentPassword?: string; newPassword: string }) =>
+    await apiRequest<null>('/me/password', { method: 'POST', body: input }),
+  sessions: async () => (await apiRequest<Session[]>('/me/sessions')).data,
+  endSession: async (id: string) => await apiRequest<null>(`/me/sessions/${id}`, { method: 'DELETE' }),
+  endOtherSessions: async () => await apiRequest<null>('/me/sessions/log-out-others', { method: 'POST' }),
 };
 
 export interface ProductQuery {

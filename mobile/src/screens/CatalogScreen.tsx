@@ -97,7 +97,7 @@ export function CatalogScreen() {
           clearButtonMode="while-editing"
           style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.background }]}
         />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t.newProduct.category}>
           <Chip
             label={t.catalog.favourites}
             isSelected={favouritesOnly}
@@ -181,8 +181,8 @@ function Chip({ label, isSelected, onPress }: { label: string; isSelected: boole
   const colors = useThemeColors();
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
+      accessibilityRole="radio"
+      aria-checked={isSelected}
       onPress={onPress}
       style={[
         styles.chip,

@@ -4,17 +4,18 @@ import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { formatMoney, promotionLabel } from '../utils/format';
 import { ProductPhoto } from './ProductPhoto';
 import { StockTag } from './StockTag';
-import { useT } from '../i18n/useT';
 
 interface ProductCardProps {
   product: Product;
   onPress: () => void;
 }
 
+/**
+ * One product in the list: photo, name, then category and price on one line,
+ * with the shelf count on the right. Bulk prices wait on the product page.
+ */
 export function ProductCard({ product, onPress }: ProductCardProps) {
   const colors = useThemeColors();
-  const t = useT();
-  const cheapestTier = product.bulkPricingTiers.at(-1);
 
   return (
     <Pressable
@@ -27,28 +28,18 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
         pressed && { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset },
       ]}
     >
-      <ProductPhoto uri={product.imageUrl} size={64} />
+      <ProductPhoto uri={product.imageUrl} size={48} />
       <View style={styles.details}>
         <Text style={[styles.name, { color: colors.ink }]} numberOfLines={2}>
           {product.name}
         </Text>
-        <Text style={[styles.category, { color: colors.steel }]}>{product.category.name}</Text>
-        {product.promotion ? (
-          <>
-            <Text style={[styles.price, { color: colors.ink }]}>
-              {formatMoney(product.promotion.price)}{' '}
-              <Text style={[styles.wasPrice, { color: colors.steel }]}>{formatMoney(product.price)}</Text>
-            </Text>
-            <Text style={[styles.promotion, { color: colors.stockOk }]}>{promotionLabel(product.promotion)}</Text>
-          </>
-        ) : (
-          <Text style={[styles.price, { color: colors.ink }]}>{formatMoney(product.price)}</Text>
-        )}
-        {cheapestTier && (
-          <Text style={[styles.bulk, { color: colors.steel }]}>
-            {t.product.bulkFrom(formatMoney(cheapestTier.price), cheapestTier.quantity)}
-          </Text>
-        )}
+        <Text style={[styles.meta, { color: colors.steel }]} numberOfLines={1}>
+          {product.category.name} ·{' '}
+          <Text style={[styles.price, { color: colors.ink }]}>{formatMoney(product.promotion?.price ?? product.price)}</Text>
+          {product.promotion && ' '}
+          {product.promotion && <Text style={styles.wasPrice}>{formatMoney(product.price)}</Text>}
+        </Text>
+        {product.promotion && <Text style={[styles.promotion, { color: colors.ok }]}>{promotionLabel(product.promotion)}</Text>}
       </View>
       <StockTag quantity={product.stock.quantity} reorderLevel={product.stock.reorderLevel} />
     </Pressable>
@@ -60,15 +51,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 64,
     borderWidth: 1,
     borderRadius: radius.panel,
   },
   details: { flex: 1, gap: 2 },
   name: { fontFamily: fonts.bodyBold, fontSize: type.body },
-  category: { fontFamily: fonts.body, fontSize: type.label },
-  price: { fontFamily: fonts.bodyBold, fontSize: type.body, marginTop: 2 },
-  bulk: { fontFamily: fonts.body, fontSize: type.label },
-  wasPrice: { fontFamily: fonts.body, fontSize: type.label, textDecorationLine: 'line-through' },
-  promotion: { fontFamily: fonts.bodyBold, fontSize: type.label },
+  meta: { fontFamily: fonts.body, fontSize: type.label },
+  price: { fontFamily: fonts.bodyBold, fontVariant: ['tabular-nums'] },
+  wasPrice: { textDecorationLine: 'line-through' },
+  promotion: { fontFamily: fonts.bodyBold, fontSize: type.caption },
 });

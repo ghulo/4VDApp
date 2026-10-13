@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
-import { Button, EmptyState, ErrorState, Loading, TextField } from '../components/ui';
+import { Button, EmptyState, ErrorState, Loading, TextField, Panel } from '../components/ui';
 import type { RootStackParamList } from '../navigation/types';
 import { deliveriesApi } from '../services/api';
 import type { Delivery } from '../services/types';
@@ -99,7 +99,7 @@ function ReceiveForm({ order, onDone }: { order: Delivery; onDone: () => void })
       <Text style={[styles.hint, { color: colors.inkMuted }]}>{t.deliveries.intro}</Text>
 
       {order.lines.map((line) => (
-        <View key={line.id} style={[styles.line, { borderTopColor: colors.line }]}>
+        <Panel key={line.id}>
           <Text style={[styles.product, { color: colors.ink }]}>{line.productName}</Text>
           <Text style={[styles.hint, { color: colors.steel }]}>{t.deliveries.ordered(line.quantity)}</Text>
           <Stepper
@@ -118,7 +118,7 @@ function ReceiveForm({ order, onDone }: { order: Delivery; onDone: () => void })
             maxLength={10}
           />
           {badDay(line.id) && <Text style={[styles.hint, { color: colors.signalOut }]}>{t.expiry.badDate}</Text>}
-        </View>
+        </Panel>
       ))}
 
       {save.isError && <Text style={[styles.hint, { color: colors.signalOut }]}>{errorMessage(save.error)}</Text>}
@@ -132,6 +132,5 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.sm },
   title: { fontFamily: fonts.bodyBold, fontSize: type.title },
   hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
-  line: { borderTopWidth: 1, paddingTop: spacing.md, marginTop: spacing.sm, gap: spacing.xs },
   product: { fontFamily: fonts.bodyBold, fontSize: type.title },
 });

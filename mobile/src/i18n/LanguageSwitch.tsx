@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ChoiceRow } from '../components/inputs';
+import { Segmented } from '../components/inputs';
 import { meApi } from '../services/api';
 import { useAuth } from '../state/useAuth';
 import type { Language } from './language';
@@ -26,7 +26,7 @@ export function LanguageSwitch({ persist = false }: { persist?: boolean }) {
   }
 
   return (
-    <ChoiceRow
+    <Segmented
       label={t.language.label}
       options={[
         { value: 'en', label: t.language.english },

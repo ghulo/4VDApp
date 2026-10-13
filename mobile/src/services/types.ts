@@ -393,3 +393,19 @@ export interface PushSettings {
   /** Null when the server has no Web Push keys. */
   webPushPublicKey: string | null;
 }
+
+/** How you sign in: whether a password is set, and the Google account linked, if any. */
+export interface Security {
+  hasPassword: boolean;
+  googleEmail: string | null;
+}
+
+/** One place you're logged in. */
+export interface Session {
+  id: string;
+  device: string;
+  ip: string | null;
+  lastUsedAt: string | null;
+  startedAt: string;
+  current: boolean;
+}

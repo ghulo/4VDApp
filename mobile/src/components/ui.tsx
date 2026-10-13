@@ -153,3 +153,16 @@ const styles = StyleSheet.create({
   stateText: { fontFamily: fonts.body, fontSize: type.body, textAlign: 'center' },
   emptyTitle: { fontFamily: fonts.display, fontSize: type.headline },
 });
+
+/**
+ * A raised paper panel that holds a form's fields (DESIGN.md 8), so a form
+ * never sits bare on the canvas. Fields bring their own bottom spacing.
+ */
+export function Panel({ children }: { children: ReactNode }) {
+  const colors = useThemeColors();
+  return <View style={[panelStyles.panel, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>{children}</View>;
+}
+
+const panelStyles = StyleSheet.create({
+  panel: { padding: spacing.lg, paddingBottom: spacing.xs, borderRadius: radius.panel, borderWidth: 1 },
+});

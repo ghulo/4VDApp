@@ -682,14 +682,11 @@ that area; remove it from this list when done.
 
 **Words** (→ section 5)
 
-1. "Favorites" / "favourite" / "pin" / "Save to favorites"; "Record a sale" as
-   the Sell title; "Close the drawer"; "Cash check"; "mobile app"; "4VD website"
-   in the role description; "write-off" in staff-facing text.
+1. Dashboard only (the team app is done, 2026-10-13): "Cash check" and
+   "mobile app" still appear in dashboard text.
 
 **Look**
 
 2. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-3. **Mismatched pieces between apps**: no-photo placeholder (letter vs icon),
-   theme / language controls (chips vs segmented). → 10.9, 10.10
-4. **Two clay keys** on team Home ("Record a sale" + Sell tab). → 6
-5. **Sell screens** look plain: little product grid, no receipt-style basket. → 11
+3. **Dashboard Sell** basket has no receipt feel yet (tabular lines, dashed tear
+   line, total in Figure type); the team app's Sell has it. → 11

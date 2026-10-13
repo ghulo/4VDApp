@@ -91,7 +91,7 @@ export function ChoiceRow<TValue extends string>({ label, options, value, onChan
               key={option.value}
               accessibilityRole="radio"
               accessibilityLabel={option.label}
-              accessibilityState={{ selected: isSelected, checked: isSelected }}
+              aria-checked={isSelected}
               onPress={() => onChange(option.value)}
               style={[
                 styles.choice,
@@ -137,4 +137,52 @@ const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   choice: { minHeight: 44, paddingHorizontal: spacing.md, borderWidth: 1, borderRadius: radius.small, justifyContent: 'center' },
   choiceLabel: { fontFamily: fonts.bodyBold, fontSize: type.body },
+});
+
+interface SegmentedProps<TValue extends string> {
+  label: string;
+  options: ReadonlyArray<{ value: TValue; label: string }>;
+  value: TValue;
+  onChange: (value: TValue) => void;
+}
+
+/**
+ * A few joined options on an oat inset track, the chosen one raised on paper
+ * (DESIGN.md 10.10), as on the dashboard: theme, language, small view switches.
+ */
+export function Segmented<TValue extends string>({ label, options, value, onChange }: SegmentedProps<TValue>) {
+  const colors = useThemeColors();
+  return (
+    <View style={segmented.field} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      <Text style={[styles.label, { color: colors.ink }]}>{label}</Text>
+      <View style={[segmented.track, { backgroundColor: colors.surfaceSunk, boxShadow: colors.inset }]}>
+        {options.map((option) => {
+          const isSelected = option.value === value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="radio"
+              accessibilityLabel={option.label}
+              aria-checked={isSelected}
+              onPress={() => onChange(option.value)}
+              style={({ pressed }) => [
+                segmented.option,
+                isSelected && { backgroundColor: colors.surface, boxShadow: colors.raise },
+                !isSelected && pressed && { backgroundColor: colors.fill },
+              ]}
+            >
+              <Text style={[segmented.optionLabel, { color: isSelected ? colors.ink : colors.inkMuted }]}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const segmented = StyleSheet.create({
+  field: { gap: spacing.xs },
+  track: { flexDirection: 'row', padding: 3, borderRadius: radius.small, gap: 2 },
+  option: { flex: 1, minHeight: 40, borderRadius: radius.small - 2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.sm },
+  optionLabel: { fontFamily: fonts.bodyBold, fontSize: type.label },
 });

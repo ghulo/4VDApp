@@ -6,7 +6,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
-import { Button, ErrorState, Loading, TextField } from '../components/ui';
+import { Button, ErrorState, Loading, TextField, Panel } from '../components/ui';
 import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
 import { categoriesApi, productEditApi, productRequestsApi, productsApi } from '../services/api';
@@ -132,57 +132,59 @@ function ProductForm({ navigation, product }: { navigation: Props['navigation'];
           }}
         />
       )}
-      <TextField
-        label={t.newProduct.barcode}
-        hint={t.newProduct.barcodeHint}
-        value={barcode}
-        onChangeText={setBarcode}
-        keyboardType="number-pad"
-        autoCorrect={false}
-        maxLength={64}
-      />
-      <TextField
-        label={t.newProduct.name}
-        placeholder={t.newProduct.namePlaceholder}
-        value={name}
-        onChangeText={setName}
-        maxLength={255}
-        error={tried && !name.trim() ? t.newProduct.needName : undefined}
-      />
-      <TextField
-        label={t.newProduct.price}
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="decimal-pad"
-        error={tried && missing === t.newProduct.needPrice ? missing : undefined}
-      />
-      {categories.isError ? (
-        <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
-      ) : (
-        <ChoiceRow label={t.newProduct.category} options={categoryOptions} value={categoryId} onChange={setCategoryId} />
-      )}
-      {tried && missing === t.newProduct.needCategory && (
-        <Text style={[styles.error, { color: colors.signalOut }]} accessibilityRole="alert">
-          {missing}
-        </Text>
-      )}
-      {!product && <Stepper label={t.newProduct.onShelf} value={stock} onChange={setStock} min={0} max={100000} />}
-
-      <View style={styles.photoRow}>
-        {shownPhoto && (
-          <Image source={{ uri: shownPhoto }} style={[styles.photo, { borderColor: colors.lineStrong }]} accessibilityLabel={t.newProduct.photo} accessibilityIgnoresInvertColors />
+      <Panel>
+        <TextField
+          label={t.newProduct.barcode}
+          hint={t.newProduct.barcodeHint}
+          value={barcode}
+          onChangeText={setBarcode}
+          keyboardType="number-pad"
+          autoCorrect={false}
+          maxLength={64}
+        />
+        <TextField
+          label={t.newProduct.name}
+          placeholder={t.newProduct.namePlaceholder}
+          value={name}
+          onChangeText={setName}
+          maxLength={255}
+          error={tried && !name.trim() ? t.newProduct.needName : undefined}
+        />
+        <TextField
+          label={t.newProduct.price}
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="decimal-pad"
+          error={tried && missing === t.newProduct.needPrice ? missing : undefined}
+        />
+        {categories.isError ? (
+          <ErrorState error={categories.error} onRetry={() => categories.refetch()} />
+        ) : (
+          <ChoiceRow label={t.newProduct.category} options={categoryOptions} value={categoryId} onChange={setCategoryId} />
         )}
-        <View style={styles.photoButton}>
-          <Button variant="quiet" label={shownPhoto ? t.newProduct.retakePhoto : t.newProduct.photo} onPress={takePhoto} disabled={save.isPending} />
+        {tried && missing === t.newProduct.needCategory && (
+          <Text style={[styles.error, { color: colors.signalOut }]} accessibilityRole="alert">
+            {missing}
+          </Text>
+        )}
+        {!product && <Stepper label={t.newProduct.onShelf} value={stock} onChange={setStock} min={0} max={100000} />}
+  
+        <View style={styles.photoRow}>
+          {shownPhoto && (
+            <Image source={{ uri: shownPhoto }} style={[styles.photo, { borderColor: colors.lineStrong }]} accessibilityLabel={t.newProduct.photo} accessibilityIgnoresInvertColors />
+          )}
+          <View style={styles.photoButton}>
+            <Button variant="quiet" label={shownPhoto ? t.newProduct.retakePhoto : t.newProduct.photo} onPress={takePhoto} disabled={save.isPending} />
+          </View>
         </View>
-      </View>
-      {problem && (
-        <Text style={[styles.error, { color: colors.signalOut }]} accessibilityRole="alert">
-          {problem}
-        </Text>
-      )}
-
-      {!product && !direct && <TextField label={t.newProduct.note} value={note} onChangeText={setNote} maxLength={500} multiline />}
+        {problem && (
+          <Text style={[styles.error, { color: colors.signalOut }]} accessibilityRole="alert">
+            {problem}
+          </Text>
+        )}
+  
+        {!product && !direct && <TextField label={t.newProduct.note} value={note} onChangeText={setNote} maxLength={500} multiline />}
+      </Panel>
 
       {save.isError && (
         <Text style={[styles.error, { color: colors.signalOut }]} accessibilityRole="alert">

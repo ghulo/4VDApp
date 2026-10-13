@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { Confirmation } from '../components/Confirmation';
 import { ChoiceRow, Stepper } from '../components/inputs';
-import { Button, TextField } from '../components/ui';
+import { Button, TextField, Panel } from '../components/ui';
 import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
 import { expiryApi } from '../services/api';
@@ -63,26 +63,28 @@ export function ExpiryScreen({ route, navigation }: Props) {
       <Text style={[styles.title, { color: colors.ink }]}>{productName}</Text>
       <Text style={[styles.muted, { color: colors.steel }]}>{t.expiry.optional}</Text>
 
-      <Stepper label={t.expiry.howMany} value={quantity} onChange={setQuantity} min={1} max={100_000} />
-      <ChoiceRow
-        label={t.expiry.quickPick}
-        options={(Object.keys(QUICK_DAYS) as Quick[]).map((value) => ({ value, label: t.expiry.quick[value] }))}
-        value={quick}
-        onChange={pickQuick}
-      />
-      <TextField
-        label={t.expiry.expiresOn}
-        value={typed}
-        onChangeText={(text) => {
-          setTyped(text);
-          setQuick('');
-        }}
-        placeholder={typedDayHint}
-        keyboardType="numbers-and-punctuation"
-        maxLength={10}
-      />
-      {showsBadDate && <Text style={[styles.error, { color: colors.signalOut }]}>{t.expiry.badDate}</Text>}
-      <TextField label={t.expiry.note} value={note} onChangeText={setNote} maxLength={500} />
+      <Panel>
+        <Stepper label={t.expiry.howMany} value={quantity} onChange={setQuantity} min={1} max={100_000} />
+        <ChoiceRow
+          label={t.expiry.quickPick}
+          options={(Object.keys(QUICK_DAYS) as Quick[]).map((value) => ({ value, label: t.expiry.quick[value] }))}
+          value={quick}
+          onChange={pickQuick}
+        />
+        <TextField
+          label={t.expiry.expiresOn}
+          value={typed}
+          onChangeText={(text) => {
+            setTyped(text);
+            setQuick('');
+          }}
+          placeholder={typedDayHint}
+          keyboardType="numbers-and-punctuation"
+          maxLength={10}
+        />
+        {showsBadDate && <Text style={[styles.error, { color: colors.signalOut }]}>{t.expiry.badDate}</Text>}
+        <TextField label={t.expiry.note} value={note} onChangeText={setNote} maxLength={500} />
+      </Panel>
 
       {save.isError && <Text style={[styles.error, { color: colors.signalOut }]}>{errorMessage(save.error)}</Text>}
       <Button label={t.expiry.save} onPress={() => save.mutate()} disabled={!isValid} loading={save.isPending} />

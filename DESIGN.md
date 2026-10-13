@@ -25,24 +25,24 @@ colors:
   info: "#3d5670"
   info-soft: "#e6ebf0"
   focus: "#141413"
-  night-canvas: "#191817"
-  night-paper: "#262624"
-  night-sunk: "#151413"
-  night-oat: "#30302e"
-  night-ink: "#faf9f5"
-  night-muted: "#a6a39b"
-  night-hairline: "#2f2e2b"
-  night-hairline-strong: "#3e3d39"
-  night-clay-text: "#e08a6b"
+  night-canvas: "#151413"
+  night-paper: "#252421"
+  night-sunk: "#0f0e0d"
+  night-oat: "#2e2d29"
+  night-ink: "#f3f1ea"
+  night-muted: "#b0ada4"
+  night-hairline: "#3a3834"
+  night-hairline-strong: "#4a4843"
+  night-clay-text: "#ec9572"
   night-clay-edge: "#9a4024"
-  night-ok: "#86c08f"
-  night-ok-soft: "#1f3022"
-  night-warn: "#e0a85a"
-  night-warn-soft: "#3a2e19"
-  night-danger: "#f39a8f"
-  night-danger-soft: "#3d201c"
-  night-info: "#9fb4cc"
-  night-info-soft: "#222b35"
+  night-ok: "#7ccf8e"
+  night-ok-soft: "#13291a"
+  night-warn: "#f0b45a"
+  night-warn-soft: "#33240d"
+  night-danger: "#ff8f80"
+  night-danger-soft: "#3a1713"
+  night-info: "#8fb8e8"
+  night-info-soft: "#142235"
   night-focus: "#faf9f5"
 typography:
   headline:
@@ -294,6 +294,10 @@ Rules:
   invoice number. Sales history lists sales; a sale opens to show its **lines**.
   Returns start from the sale.
 - **A delivery** is one order received; a **day** is one date (3.4).
+- **Activity speaks the reader's language.** A log entry is stored as a sentence
+  key with its facts (`summary_say`), and each reader sees it in their own
+  language at read time. A new kind of entry adds its sentence in English and
+  Albanian to `backend/src/i18n/activityText.ts`, never a ready-made string.
 - People report **what happened** (a return, damage, an expiry, takings), not
   "edit stock". Stock changes are the result, recorded with who and why.
 
@@ -399,19 +403,19 @@ Warm neutrals carry everything; one clay marks brand, action and place; status
 colours are earthy and quiet, always with words.
 
 ### Neutrals
-- **Ivory Canvas** `#f0eee6` / night `#191817`: the page.
-- **Paper** `#faf9f5` / `#262624`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e8e4da` / `#151413`: footer strips, row hover, callouts, search.
-- **Oat** `#e3dacc` / `#30302e` (token `fill`): feature panels (Today, team-app
+- **Ivory Canvas** `#f0eee6` / night `#151413`: the page.
+- **Paper** `#faf9f5` / `#252421`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e8e4da` / `#0f0e0d`: footer strips, row hover, callouts, search.
+- **Oat** `#e3dacc` / `#2e2d29` (token `fill`): feature panels (Today, team-app
   job tiles), ghost hover, segmented track.
-- **Ink** `#141413` / `#faf9f5`: text, data, checked switches, count badges.
-- **Muted Ink** `#5e5d59` / `#a6a39b`: descriptions, labels, chart series.
-- **Hairline** `#e0dbcf` / `#2f2e2b` and **Strong Hairline** `#cbc3b3` / `#3e3d39`.
+- **Ink** `#141413` / `#f3f1ea`: text, data, checked switches, count badges.
+- **Muted Ink** `#5e5d59` / `#b0ada4`: descriptions, labels, chart series.
+- **Hairline** `#e0dbcf` / `#3a3834` and **Strong Hairline** `#cbc3b3` / `#4a4843`.
 
 ### Clay (brand)
 - **Clay** `#d4704f` (both themes): the logo, the sunrise, **the one primary key
   per screen**, progress toward a goal, and the current menu item's marker.
-- **Clay Text** `#a8482a` / `#e08a6b` on **Clay Tint** (14% / 18%): the current
+- **Clay Text** `#a8482a` / `#ec9572` on **Clay Tint** (14% / 18%): the current
   menu item's label and fill.
 - Text on clay is **Pillar Ink** `#1c0f08` (white fails contrast).
 
@@ -420,10 +424,10 @@ Each has a strong colour for text and outlines, and a soft tint for washes.
 
 | | Light | Light soft | Dark | Dark soft |
 |---|---|---|---|---|
-| **OK** (sage green) | `#2f6b3f` | `#e7efe3` | `#86c08f` | `#1f3022` |
-| **Warn** (ochre) | `#86500c` | `#f6ecd9` | `#e0a85a` | `#3a2e19` |
-| **Danger** (brick) | `#b0302a` | `#f8e5e1` | `#f39a8f` | `#3d201c` |
-| **Info** (slate) | `#3d5670` | `#e6ebf0` | `#9fb4cc` | `#222b35` |
+| **OK** (sage green) | `#2f6b3f` | `#e7efe3` | `#7ccf8e` | `#13291a` |
+| **Warn** (ochre) | `#86500c` | `#f6ecd9` | `#f0b45a` | `#33240d` |
+| **Danger** (brick) | `#b0302a` | `#f8e5e1` | `#ff8f80` | `#3a1713` |
+| **Info** (slate) | `#3d5670` | `#e6ebf0` | `#8fb8e8` | `#142235` |
 
 All four pass 4.5:1 on paper, canvas and oat in both themes and on their own
 soft tint (checked 2026-10-10; `admin/src/theme/contrast.test.ts` must keep
@@ -475,15 +479,17 @@ looked cold and generic on ivory.
 - Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
   content column max 1120px; page padding 32/48 desktop, 32/24 under 1100px,
   24/16 under 900px. Sections stack 16px apart.
-- Controls 36px (30px small) on desktop, **44px (36px small) under 900px** and
-  always in the team app.
+- Controls 36px (30px small) on desktop, **44px (36px small) under 900px**.
+  Team app: keys and fields **48px**, small keys **36px**; every tap area is at
+  least 44px.
 
 ### Two kinds of surface
 - **Raised card** (Paper + Raise shadow, 16px corners): things you work in:
   forms, the To do list, the Today strip, setting groups, metric cards.
 - **Table surface**: a DataTable is itself a framed surface. **Never put a
   table inside a card** (no box in a box): a section is a heading plus a table.
-- **Flat**: page header, toolbar, history headings sit on the canvas.
+- **Flat**: page header, toolbar, history headings sit on the canvas. A table's
+  heading is a `Section` (heading on the canvas, then the table), never a `Card`.
 - **Feature panel** (Oat + Sheen): the Today strip and team-app job tiles only.
 
 ### Depth vocabulary (the only shadows allowed)
@@ -569,8 +575,11 @@ hover (less jumpy in dense rows), the same recipe in both apps.
 - **Focus**: Ink ring 2px, offset 2px (section 6).
 - **Disabled**: flat (no edge, no drop), Sunk Paper face with a 1px Hairline ring
   and Muted Ink text, so it still reads as a button. Never 50% opacity.
-- **Loading**: spinner replaces the icon, label stays.
-- Sizes: 36px (30px small) desktop; 44px (36px small) phones. Padding 14px; icon
+- **Loading** (`loading` on `Button` in both apps): a spinner in place of the
+  icon (or before the label), the label stays, the key can't be pressed twice.
+  Never swap the label for "Saving…".
+- Sizes: 36px (30px small) desktop; 44px (36px small) phones; team app 48px
+  (`size="small"` 36px). Padding 14px; icon
   16px with 6px gap; label 15px/500 (primary 600).
 - **A row of actions shares one style**, apart from one primary. Never mix a
   raised key with bare text buttons in the same row.
@@ -585,7 +594,9 @@ links and breadcrumbs drop the underline until hover.
 Paper, Strong Hairline stroke, Inset, 8px corners, 36px (44px phones), 15px text.
 Label always visible above; placeholder only for an example. Focus: Ink ring as
 buttons. Checked switches and checkboxes are Ink. **Dates always read
-day / month / year** (a custom field, not the browser's native date input).
+day / month / year** (`13/10/2026`) in both languages: the dashboard's
+`DateField`, typed or picked from the calendar button at its end, never the
+browser's native date input.
 
 ### 10.4 Tables (DataTable)
 Every table is a `DataTable`: framed surface, optional toolbar and footer strips,
@@ -598,12 +609,16 @@ shows an empty state instead of headers.
 Like a rubber stamp: 22px, monospace capitals 11px, 0.06em, 1px outline in the
 status colour, 3px corners, no fill. Tones: ok, warn, danger, info, neutral, ink.
 Severity stamps: **Urgent** (danger), **Check** (warn), **Idea** (info). On
-phones a stamp sits **above** its text, not in a side column.
+phones a stamp sits **above** its text, not in a side column. Dashboard `Badge`
+and team-app `Stamp` are the same stamp.
 
 ### 10.6 Numbers, money and dates
 - **Money in tables and forms**: always cents (`€1,200.00`).
-- **Headline figures** (metric cards, the Today sentence) of €1,000 or more drop
-  the cents (`€240,769`).
+- **Headline figures** (metric cards, stat tiles, the Today sentence) of €1,000
+  or more drop the cents (`€240,769`).
+- **Zero is said in words**, not printed as a big 0: a tile with nothing shows a
+  calm line at body size ("None low", "Not entered") via `StatTile` `words`, and
+  filter counts of 0 are hidden.
 - **Changes are said in words with a number**: "38% more than September", "€120
   less than last Saturday". "Much more" alone is not allowed. If the comparison
   base is zero, say "First sales this period".
@@ -616,7 +631,8 @@ phones a stamp sits **above** its text, not in a side column.
   flat fill, hairline grid, an ink tooltip with paper text, "Show as table".
 - **One outlier must not flatten the rest**: when the top value is more than 4×
   the next highest, cap the axis, draw the capped bar to the top with a break
-  mark and label its real value.
+  mark and label its real value. Every chart scales through the same
+  `scaleTop` (daily bars, column charts, bar lists and mini graphs).
 - Metric cards sit on an even grid: every card in a row has the same parts (all
   with a mini graph or none). No half-empty last rows: let the last card span.
 
@@ -624,7 +640,8 @@ phones a stamp sits **above** its text, not in a side column.
 The shelf count over the app's progress bar (the same inset track as sales
 against a target): full at four times the reorder level, so the alert point is a
 quarter along; the fill is the stock colour (fine, low, out). 6px in lists, 8px
-under the big number on a product page. The team app still uses 10 blocks.
+under the big number on a product page. The same in both apps. Fine stock is
+quiet (number and bar only); low and out add their stamp.
 
 ### 10.9 Product photo
 Square, 40px with 8px corners in lists, 112px with 16px in forms. With no photo,
@@ -675,18 +692,13 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 - Screen readers: ARIA labels match the visible words; a badge's label says what
   it counts ("3 to do").
 
-## 13. Built vs target (known gaps, 2026-10-10)
+## 13. Built vs target (known gaps, 2026-10-13)
 
 Each item is a rule above that the code doesn't follow yet. Fix it when touching
-that area; remove it from this list when done.
+that area; remove it from this list when done. The UI audit (docs/UI_AUDIT.md)
+closed the earlier gaps (words, date fields, dashboard receipt).
 
-**Words** (→ section 5)
-
-1. Dashboard only (the team app is done, 2026-10-13): "Cash check" and
-   "mobile app" still appear in dashboard text.
-
-**Look**
-
-2. **Native date inputs** show mm/dd/yyyy in English browsers. → 10.3
-3. **Dashboard Sell** basket has no receipt feel yet (tabular lines, dashed tear
-   line, total in Figure type); the team app's Sell has it. → 11
+1. **Albanian numbers group from five digits**: "1578 €" sits above
+   "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
+2. **Two period pickers**: Sales uses a segmented control, Analytics a select
+   plus a compare select. One pattern should serve both. → 10.10

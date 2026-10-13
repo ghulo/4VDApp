@@ -1,56 +1,328 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T12:00:00Z",
+  "generatedAt": "2026-10-13T14:34:57Z",
   "title": "Design System: 4VD",
   "extensions": {
     "colorMeta": {
-      "signal-orange": { "role": "primary", "displayName": "Signal Orange", "canonical": "#ff5e1f", "tonalRamp": ["#3d1406", "#6b230b", "#9c3310", "#cc4314", "#ff5e1f", "#ff8a5c", "#ffb999", "#ffe3d6"] },
-      "orange-tint": { "role": "primary", "displayName": "Orange Tint", "canonical": "rgb(255 94 31 / 0.1)" },
-      "ember-text": { "role": "primary", "displayName": "Ember Text", "canonical": "#c2410c" },
-      "pillar-ink": { "role": "neutral", "displayName": "Pillar Ink", "canonical": "#1c0f08" },
-      "warm-canvas": { "role": "neutral", "displayName": "Warm Canvas", "canonical": "#faf9f7" },
-      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#ffffff" },
-      "sunk-paper": { "role": "neutral", "displayName": "Sunk Paper", "canonical": "#f4f2ef" },
-      "fill": { "role": "neutral", "displayName": "Fill", "canonical": "#efece8" },
-      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1f1b19", "tonalRamp": ["#1f1b19", "#3a3431", "#544d49", "#6b635f", "#8a827e", "#aaa39f", "#d9d3ce", "#f4f2ef"] },
-      "ink-muted": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#6b635f" },
-      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#ebe7e3" },
-      "hairline-strong": { "role": "neutral", "displayName": "Strong Hairline", "canonical": "#d9d3ce" },
-      "night-canvas": { "role": "neutral", "displayName": "Night Canvas", "canonical": "#151414" },
-      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#1c1b1a" },
-      "night-ink": { "role": "neutral", "displayName": "Night Ink", "canonical": "#f2ebe7" },
-      "ok": { "role": "status", "displayName": "OK", "canonical": "#047857" },
-      "warn": { "role": "status", "displayName": "Warn", "canonical": "#b45309" },
-      "danger": { "role": "status", "displayName": "Danger", "canonical": "#b91c1c" },
-      "info": { "role": "status", "displayName": "Info / Focus", "canonical": "#1d4ed8" }
+      "clay": {
+        "role": "primary",
+        "displayName": "Clay",
+        "canonical": "#d4704f"
+      },
+      "clay-hover": {
+        "role": "primary",
+        "displayName": "Clay Hover",
+        "canonical": "#df8667"
+      },
+      "clay-edge": {
+        "role": "primary",
+        "displayName": "Clay Edge",
+        "canonical": "#a8482a"
+      },
+      "clay-text": {
+        "role": "primary",
+        "displayName": "Clay Text",
+        "canonical": "#a8482a"
+      },
+      "clay-tint": {
+        "role": "primary",
+        "displayName": "Clay Tint",
+        "canonical": "rgb(217 119 87 / 0.14)"
+      },
+      "pillar-ink": {
+        "role": "neutral",
+        "displayName": "Pillar Ink",
+        "canonical": "#1c0f08"
+      },
+      "ivory-canvas": {
+        "role": "neutral",
+        "displayName": "Ivory Canvas",
+        "canonical": "#f0eee6"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#faf9f5"
+      },
+      "sunk-paper": {
+        "role": "neutral",
+        "displayName": "Sunk Paper",
+        "canonical": "#e8e4da"
+      },
+      "oat": {
+        "role": "neutral",
+        "displayName": "Oat",
+        "canonical": "#e3dacc"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#141413"
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#5e5d59"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e0dbcf"
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "#cbc3b3"
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "OK",
+        "canonical": "#2f6b3f"
+      },
+      "ok-soft": {
+        "role": "status",
+        "displayName": "OK Soft",
+        "canonical": "#e7efe3"
+      },
+      "warn": {
+        "role": "status",
+        "displayName": "Warn",
+        "canonical": "#86500c"
+      },
+      "warn-soft": {
+        "role": "status",
+        "displayName": "Warn Soft",
+        "canonical": "#f6ecd9"
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Danger",
+        "canonical": "#b0302a"
+      },
+      "danger-soft": {
+        "role": "status",
+        "displayName": "Danger Soft",
+        "canonical": "#f8e5e1"
+      },
+      "info": {
+        "role": "status",
+        "displayName": "Info",
+        "canonical": "#3d5670"
+      },
+      "info-soft": {
+        "role": "status",
+        "displayName": "Info Soft",
+        "canonical": "#e6ebf0"
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "Focus",
+        "canonical": "#141413"
+      },
+      "night-canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "#151413"
+      },
+      "night-paper": {
+        "role": "neutral",
+        "displayName": "Night Paper",
+        "canonical": "#252421"
+      },
+      "night-sunk": {
+        "role": "neutral",
+        "displayName": "Night Sunk",
+        "canonical": "#0f0e0d"
+      },
+      "night-oat": {
+        "role": "neutral",
+        "displayName": "Night Oat",
+        "canonical": "#2e2d29"
+      },
+      "night-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "#f3f1ea"
+      },
+      "night-muted": {
+        "role": "neutral",
+        "displayName": "Night Muted",
+        "canonical": "#b0ada4"
+      },
+      "night-hairline": {
+        "role": "neutral",
+        "displayName": "Night Hairline",
+        "canonical": "#3a3834"
+      },
+      "night-hairline-strong": {
+        "role": "neutral",
+        "displayName": "Night Hairline Strong",
+        "canonical": "#4a4843"
+      },
+      "night-clay-text": {
+        "role": "primary",
+        "displayName": "Night Clay Text",
+        "canonical": "#ec9572"
+      },
+      "night-clay-edge": {
+        "role": "primary",
+        "displayName": "Night Clay Edge",
+        "canonical": "#9a4024"
+      },
+      "night-ok": {
+        "role": "status",
+        "displayName": "Night OK",
+        "canonical": "#7ccf8e"
+      },
+      "night-ok-soft": {
+        "role": "status",
+        "displayName": "Night OK Soft",
+        "canonical": "#13291a"
+      },
+      "night-warn": {
+        "role": "status",
+        "displayName": "Night Warn",
+        "canonical": "#f0b45a"
+      },
+      "night-warn-soft": {
+        "role": "status",
+        "displayName": "Night Warn Soft",
+        "canonical": "#33240d"
+      },
+      "night-danger": {
+        "role": "status",
+        "displayName": "Night Danger",
+        "canonical": "#ff8f80"
+      },
+      "night-danger-soft": {
+        "role": "status",
+        "displayName": "Night Danger Soft",
+        "canonical": "#3a1713"
+      },
+      "night-info": {
+        "role": "status",
+        "displayName": "Night Info",
+        "canonical": "#8fb8e8"
+      },
+      "night-info-soft": {
+        "role": "status",
+        "displayName": "Night Info Soft",
+        "canonical": "#142235"
+      },
+      "night-focus": {
+        "role": "neutral",
+        "displayName": "Night Focus",
+        "canonical": "#faf9f5"
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Day headline (serif)", "purpose": "The Overview's one-sentence day headline; sign-in headings use the same voice." },
-      "headline": { "displayName": "Page title (serif)", "purpose": "One per page, in the shared page header." },
-      "figure": { "displayName": "Figure", "purpose": "Metric and stat values, tabular; 2.25rem on large metric cards." },
-      "title": { "displayName": "Title", "purpose": "Card, board and empty-state titles." },
-      "body-large": { "displayName": "Body large", "purpose": "Muted page descriptions and the day's comparison line." },
-      "body": { "displayName": "Body", "purpose": "Everything else, tables included (15px)." },
-      "label": { "displayName": "Label", "purpose": "Field labels, table headers, metric labels, breadcrumbs." },
-      "caption": { "displayName": "Caption", "purpose": "Badges, sidebar and palette group names." }
+      "display": {
+        "displayName": "Day headline (serif)",
+        "purpose": "The Overview's one-sentence day headline; sign-in headings use the same voice."
+      },
+      "headline": {
+        "displayName": "Page title (serif)",
+        "purpose": "One per page, in the shared page header."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Metric and stat values, tabular; 2.25rem on large metric cards."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card, board and empty-state titles."
+      },
+      "body-large": {
+        "displayName": "Body large",
+        "purpose": "Muted page descriptions and the day's comparison line."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Everything else, tables included (15px)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, table headers, metric labels, breadcrumbs."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Badges, sidebar and palette group names."
+      }
     },
     "shadows": [
-      { "name": "float", "value": "0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)", "purpose": "Command palette and phone drawer only. Dark: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5)." }
+      {
+        "name": "raise",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.8), inset 0 -1px 0 rgb(20 20 19 / 0.05), 0 0 0 1px rgb(20 20 19 / 0.05), 0 1px 2px rgb(20 20 19 / 0.07), 0 4px 14px rgb(20 20 19 / 0.06), 0 20px 40px -20px rgb(20 20 19 / 0.24)",
+        "purpose": "Cards and panels resting just above the canvas. Dark: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 -1px 0 rgb(0 0 0 / 0.3), 0 0 0 1px rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.5), 0 6px 18px rgb(0 0 0 / 0.35), 0 22px 40px -18px rgb(0 0 0 / 0.6)."
+      },
+      {
+        "name": "inset",
+        "value": "inset 0 1px 2px rgb(20 20 19 / 0.08), inset 0 10px 10px -10px rgb(20 20 19 / 0.12)",
+        "purpose": "Fields, segmented tracks and footer strips sitting into the page. Dark: inset 0 1px 3px rgb(0 0 0 / 0.7), inset 0 10px 10px -10px rgb(0 0 0 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.04)."
+      },
+      {
+        "name": "float",
+        "value": "0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.12)",
+        "purpose": "Command palette, drawer, menus and dialogs over a dimmed backdrop. Dark: 0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 40px rgb(0 0 0 / 0.5)."
+      },
+      {
+        "name": "key",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.4), 0 2px 0 var(--edge), 0 2px 6px rgb(20 20 19 / 0.1)",
+        "purpose": "Buttons stand on a 2px solid edge and press down into it (face moves 2px, edge to 0)."
+      }
     ],
     "motion": [
-      { "name": "ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for state changes and entrances." },
-      { "name": "fast", "value": "150ms", "purpose": "Hover, press and colour changes." },
-      { "name": "palette-in", "value": "120ms ease-out", "purpose": "The command palette opening." },
-      { "name": "drawer", "value": "180ms ease-out", "purpose": "The phone drawer sliding in." },
-      { "name": "page-in", "value": "260ms", "purpose": "The one fade when a page opens." }
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Default easing for state changes and entrances."
+      },
+      {
+        "name": "fast",
+        "value": "150ms",
+        "purpose": "Hover, press and colour changes."
+      },
+      {
+        "name": "palette-in",
+        "value": "120ms ease-out",
+        "purpose": "The command palette opening."
+      },
+      {
+        "name": "drawer",
+        "value": "180ms ease-out",
+        "purpose": "The phone drawer sliding in."
+      },
+      {
+        "name": "page-in",
+        "value": "260ms",
+        "purpose": "The one fade when a page opens."
+      }
     ],
     "breakpoints": [
-      { "name": "metric-single", "value": "560px" },
-      { "name": "table-stack", "value": "599px" },
-      { "name": "setting-stack", "value": "640px" },
-      { "name": "drawer", "value": "900px" },
-      { "name": "metric-pair", "value": "960px" },
-      { "name": "compact", "value": "1100px" }
+      {
+        "name": "metric-single",
+        "value": "560px"
+      },
+      {
+        "name": "table-stack",
+        "value": "599px"
+      },
+      {
+        "name": "setting-stack",
+        "value": "640px"
+      },
+      {
+        "name": "drawer",
+        "value": "900px"
+      },
+      {
+        "name": "metric-pair",
+        "value": "960px"
+      },
+      {
+        "name": "compact",
+        "value": "1100px"
+      }
     ]
   },
   "components": [
@@ -58,119 +330,147 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one main action on a view; neutral when disabled.",
-      "html": "<button class=\"ds-btn-primary\">Add product</button> <button class=\"ds-btn-primary\" disabled>Add product</button>",
-      "css": ".ds-btn-primary { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #ff5e1f; color: #1c0f08; font: 600 15px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1), transform 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:not(:disabled):hover { background: #ff7038; } .ds-btn-primary:not(:disabled):active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; } .ds-btn-primary:disabled { background: #efece8; color: #6b635f; cursor: not-allowed; }"
+      "description": "The one main action per screen: a clay key on its edge; flat Sunk Paper when disabled, spinner beside the label when busy.",
+      "html": "<button class=\"ds-btn-primary\">Sell</button> <button class=\"ds-btn-primary\" disabled>Sell</button>",
+      "css": ".ds-btn-primary { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #d4704f; color: #1c0f08; font: 600 15px 'Hanken Grotesk', system-ui, sans-serif; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 2px 0 #a8482a, 0 2px 6px rgb(20 20 19 / 0.1); cursor: pointer; } .ds-btn-primary:not(:disabled):hover { background: #df8667; } .ds-btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: 0 0 0 #a8482a, 0 1px 2px rgb(20 20 19 / 0.12); } .ds-btn-primary:disabled { background: #e8e4da; color: #5e5d59; box-shadow: inset 0 0 0 1px #e0dbcf; cursor: not-allowed; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Every other action: paper with a hairline ring.",
-      "html": "<button class=\"ds-btn-secondary\">Add details</button>",
-      "css": ".ds-btn-secondary { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; color: #1f1b19; box-shadow: inset 0 0 0 1px #d9d3ce; font: 500 15px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-secondary:hover { background: #f4f2ef; } .ds-btn-secondary:active { transform: translateY(1px); } .ds-btn-secondary:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; }"
+      "description": "Every other action: a paper key with a hairline ring on a Strong Hairline edge.",
+      "html": "<button class=\"ds-btn-secondary\">Add an expense</button>",
+      "css": ".ds-btn-secondary { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #faf9f5; color: #141413; font: 500 15px 'Hanken Grotesk', system-ui, sans-serif; box-shadow: inset 0 0 0 1px #cbc3b3, inset 0 1px 0 rgb(255 255 255 / 0.9), 0 2px 0 #cbc3b3, 0 2px 6px rgb(20 20 19 / 0.1); cursor: pointer; } .ds-btn-secondary:active { transform: translateY(2px); box-shadow: inset 0 0 0 1px #cbc3b3; }"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "A labelled input; label always visible.",
-      "html": "<label class=\"ds-field\"><span>Email</span><input class=\"ds-input\" placeholder=\"name@shop.com\"></label>",
-      "css": ".ds-field { display: grid; gap: 6px; font: 600 13px 'Hanken Grotesk', system-ui, sans-serif; color: #1f1b19; } .ds-input { height: 36px; padding: 6px 10px; border: 1px solid #d9d3ce; border-radius: 8px; background: #fff; color: #1f1b19; font: 400 15px 'Hanken Grotesk', system-ui, sans-serif; transition: border-color 0.1s, box-shadow 0.1s; } .ds-input::placeholder { color: #6b635f; } .ds-input:hover { border-color: #a29a95; } .ds-input:focus-visible { outline: none; border-color: #1d4ed8; box-shadow: 0 0 0 3px rgb(29 78 216 / 0.25); }"
+      "description": "A labelled field set into the page; label always visible. Dates read day / month / year.",
+      "html": "<label class=\"ds-field\"><span>Date</span><input class=\"ds-input\" placeholder=\"dd/mm/yyyy\" value=\"13/10/2026\"></label>",
+      "css": ".ds-field { display: grid; gap: 4px; font: 600 13px 'Hanken Grotesk', system-ui, sans-serif; color: #141413; } .ds-input { height: 36px; padding: 6px 10px; border: 1px solid #cbc3b3; border-radius: 8px; background: #faf9f5; box-shadow: inset 0 1px 2px rgb(20 20 19 / 0.08); color: #141413; font: 400 15px 'Hanken Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-input:focus-visible { outline: 2px solid #141413; outline-offset: 2px; }"
     },
     {
       "name": "Sidebar Navigation",
       "kind": "nav",
       "refersTo": "nav-item-current",
-      "description": "Grouped sidebar: the current item is the only orange in the menu; counts are ink pills.",
-      "html": "<nav class=\"ds-nav\"><p class=\"ds-nav-group\">Today</p><a class=\"ds-nav-link ds-nav-link--current\" href=\"#\" aria-current=\"page\">Overview</a><a class=\"ds-nav-link\" href=\"#\">Approvals</a><a class=\"ds-nav-link\" href=\"#\">Alerts <span class=\"ds-nav-count\">4</span></a></nav>",
-      "css": ".ds-nav { display: grid; gap: 2px; width: 208px; padding: 16px 12px; background: #fff; border-right: 1px solid #ebe7e3; font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-nav-group { margin: 0; padding: 0 10px 4px; color: #6b635f; font-size: 12px; font-weight: 600; } .ds-nav-link { position: relative; display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border-radius: 8px; color: #6b635f; font-size: 15px; font-weight: 500; text-decoration: none; transition: background-color 150ms cubic-bezier(0.16,1,0.3,1), color 150ms cubic-bezier(0.16,1,0.3,1); } .ds-nav-link:hover { background: #efece8; color: #1f1b19; } .ds-nav-link:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; } .ds-nav-link--current, .ds-nav-link--current:hover { background: rgb(255 94 31 / 0.1); color: #c2410c; } .ds-nav-link--current::before { content: ''; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 2px 2px 0; background: #ff5e1f; } .ds-nav-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: #1f1b19; color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; }"
+      "description": "Grouped sidebar: the current item has the Clay Tint fill, Clay Text label and a 3px clay marker; counts are ink pills.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-link--current\" href=\"#\" aria-current=\"page\">Overview</a><a class=\"ds-nav-link\" href=\"#\">Inbox <span class=\"ds-nav-count\">2</span></a><a class=\"ds-nav-link\" href=\"#\">Stock</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 2px; width: 232px; font: 500 15px 'Hanken Grotesk', system-ui, sans-serif; } .ds-nav-link { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border-radius: 8px; color: #5e5d59; text-decoration: none; } .ds-nav-link:hover { background: #e3dacc; } .ds-nav-link--current { background: rgb(217 119 87 / 0.14); color: #a8482a; box-shadow: inset 3px 0 0 #d4704f; } .ds-nav-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: #141413; color: #faf9f5; font-size: 12px; text-align: center; }"
     },
     {
-      "name": "Status Badge",
+      "name": "Status Stamp",
       "kind": "chip",
       "refersTo": "badge",
-      "description": "A short status label with a tinted fill; words carry the meaning.",
-      "html": "<span class=\"ds-badge ds-badge--danger\">Urgent</span> <span class=\"ds-badge ds-badge--warn\">Check</span> <span class=\"ds-badge ds-badge--ok\">Active</span>",
-      "css": ".ds-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font: 600 12px 'Hanken Grotesk', system-ui, sans-serif; } .ds-badge--danger { background: #fdecec; color: #b91c1c; } .ds-badge--warn { background: #fef3e2; color: #b45309; } .ds-badge--ok { background: #e6f5ee; color: #047857; }"
+      "description": "A rubber stamp: monospace capitals in a squared outline, no fill; the same in both apps. Fine stock gets none.",
+      "html": "<span class=\"ds-stamp ds-stamp--danger\">Urgent</span> <span class=\"ds-stamp ds-stamp--warn\">Check</span> <span class=\"ds-stamp ds-stamp--ok\">Approved</span>",
+      "css": ".ds-stamp { display: inline-flex; align-items: center; height: 22px; padding: 0 6px; border: 1px solid currentColor; border-radius: 3px; font: 600 11px ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; } .ds-stamp--danger { color: #b0302a; } .ds-stamp--warn { color: #86500c; } .ds-stamp--ok { color: #2f6b3f; }"
     },
     {
       "name": "Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "A hairline-framed block with a sunk footer strip.",
-      "html": "<section class=\"ds-card\"><h2>Your shop</h2><p>Shown to your team.</p><div class=\"ds-card-foot\"><span>Saved</span><button class=\"ds-card-save\">Save changes</button></div></section>",
-      "css": ".ds-card { border: 1px solid #ebe7e3; border-radius: 12px; background: #fff; color: #1f1b19; font-family: 'Hanken Grotesk', system-ui, sans-serif; overflow: hidden; } .ds-card h2 { margin: 16px 24px 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; } .ds-card p { margin: 2px 24px 24px; color: #6b635f; font-size: 15px; } .ds-card-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-top: 1px solid #ebe7e3; background: #f4f2ef; color: #6b635f; font-size: 15px; } .ds-card-save { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #ff5e1f; color: #1c0f08; font: 600 15px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; } .ds-card-save:hover { background: #ff7038; } .ds-card-save:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; }"
+      "description": "Paper raised just above the canvas, 16px corners: forms, setting groups, the To do list. Never around a table.",
+      "html": "<section class=\"ds-card\"><h2>Your shop</h2><p>Shown on invoices and to your team.</p></section>",
+      "css": ".ds-card { padding: 16px 24px 24px; border-radius: 16px; background: #faf9f5; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), inset 0 -1px 0 rgb(20 20 19 / 0.05), 0 0 0 1px rgb(20 20 19 / 0.05), 0 1px 2px rgb(20 20 19 / 0.07), 0 4px 14px rgb(20 20 19 / 0.06), 0 20px 40px -20px rgb(20 20 19 / 0.24); font: 400 15px 'Hanken Grotesk', system-ui, sans-serif; color: #141413; } .ds-card h2 { margin: 0 0 4px; font: 600 17px 'Hanken Grotesk', system-ui, sans-serif; } .ds-card p { margin: 0; color: #5e5d59; }"
     },
     {
-      "name": "Today Card",
+      "name": "Section",
       "kind": "custom",
-      "refersTo": "today-card",
-      "description": "The Overview's calm morning card: a serif sentence, the comparison, two quiet links.",
-      "html": "<section class=\"ds-today\"><h2>No sales yet today.</h2><p>Last Saturday had €140.00 by this time.</p><div class=\"ds-today-links\"><a href=\"#\" class=\"ds-today-link ds-today-link--due\"><strong>2</strong> waiting for you</a><a href=\"#\" class=\"ds-today-link\"><strong>3</strong> to restock</a></div></section>",
-      "css": ".ds-today { display: grid; gap: 8px; padding: 24px 32px; border: 1px solid #ebe7e3; border-radius: 12px; background: #fff; color: #1f1b19; font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-today h2 { margin: 0; max-width: 28ch; font: 500 clamp(1.75rem, 3.2vw, 2.25rem)/1.15 'Source Serif 4', Georgia, serif; letter-spacing: -0.01em; } .ds-today p { margin: 0; color: #6b635f; font-size: 17px; } .ds-today-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 12px; } .ds-today-link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: #1f1b19; font-size: 15px; font-weight: 500; text-decoration: none; } .ds-today-link strong { font-variant-numeric: tabular-nums; } .ds-today-link:hover { text-decoration: underline; text-underline-offset: 3px; } .ds-today-link:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 3px; } .ds-today-link--due::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #b45309; }"
+      "refersTo": "section",
+      "description": "A heading on the canvas followed by a framed table: how every table stands on a page.",
+      "html": "<section class=\"ds-section\"><h2>History</h2><div class=\"ds-table\">09:51 · Ceramic Vase · €420.33</div></section>",
+      "css": ".ds-section h2 { margin: 8px 0 12px; font: 600 17px 'Hanken Grotesk', system-ui, sans-serif; color: #141413; } .ds-table { padding: 12px 16px; border: 1px solid #e0dbcf; border-radius: 16px; background: #faf9f5; font: 400 15px 'Hanken Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; }"
     },
     {
       "name": "Metric Card",
       "kind": "custom",
       "refersTo": "metric-card",
-      "description": "Reports' analytics card: label, tabular figure, change in words, ink area graph.",
-      "html": "<article class=\"ds-metric\"><p class=\"ds-metric-label\">Revenue</p><p class=\"ds-metric-figure\"><span>€2,405.00</span><span class=\"ds-metric-up\">Much more</span></p><svg class=\"ds-metric-graph\" viewBox=\"0 0 200 64\" preserveAspectRatio=\"none\"><path d=\"M0 64 L0 50 L40 44 L80 30 L120 36 L160 18 L200 24 L200 64 Z\" fill=\"rgb(107 99 95 / 0.18)\"/><path d=\"M0 50 L40 44 L80 30 L120 36 L160 18 L200 24\" fill=\"none\" stroke=\"#6b635f\" stroke-width=\"2\" stroke-linejoin=\"round\"/></svg></article>",
-      "css": ".ds-metric { display: grid; gap: 4px; width: 280px; padding: 16px 16px 0; border: 1px solid #ebe7e3; border-radius: 12px; background: #fff; color: #1f1b19; font-family: 'Hanken Grotesk', system-ui, sans-serif; overflow: hidden; } .ds-metric-label { margin: 0; color: #6b635f; font-size: 13px; font-weight: 500; } .ds-metric-figure { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; } .ds-metric-up { color: #047857; font-size: 13px; letter-spacing: 0; } .ds-metric-graph { display: block; width: calc(100% + 32px); height: 64px; margin: 8px -16px 0; }"
+      "description": "Label in spec capitals, a tabular figure (no cents from €1,000), the change as a figure, and an ink mini graph; every card in a row has the same parts.",
+      "html": "<article class=\"ds-metric\"><p class=\"ds-metric-label\">Revenue</p><p class=\"ds-metric-figure\">€242,098 <span class=\"ds-metric-up\">↗ 73×</span></p><svg class=\"ds-metric-graph\" viewBox=\"0 0 200 56\" preserveAspectRatio=\"none\"><path d=\"M0 56 L0 20 L40 50 L80 52 L120 48 L160 30 L200 28 L200 56 Z\" fill=\"rgb(20 20 19 / 0.12)\"/><path d=\"M0 20 L40 50 L80 52 L120 48 L160 30 L200 28\" fill=\"none\" stroke=\"#141413\" stroke-width=\"1.5\"/></svg></article>",
+      "css": ".ds-metric { padding: 16px; border-radius: 16px; background: #faf9f5; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), inset 0 -1px 0 rgb(20 20 19 / 0.05), 0 0 0 1px rgb(20 20 19 / 0.05), 0 1px 2px rgb(20 20 19 / 0.07), 0 4px 14px rgb(20 20 19 / 0.06), 0 20px 40px -20px rgb(20 20 19 / 0.24); color: #141413; } .ds-metric-label { margin: 0; font: 500 12px ui-monospace, 'SF Mono', Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; color: #5e5d59; } .ds-metric-figure { margin: 4px 0 8px; font: 600 28px 'Hanken Grotesk', system-ui, sans-serif; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; } .ds-metric-up { color: #2f6b3f; font-size: 13px; } .ds-metric-graph { display: block; width: 100%; height: 56px; }"
     },
     {
-      "name": "Callout",
+      "name": "Feature Panel",
       "kind": "card",
-      "refersTo": "callout",
-      "description": "An answer or suggestion set apart on sunk paper, no border.",
-      "html": "<div class=\"ds-callout\">Selling about 0.47 a day. Order about 25.</div>",
-      "css": ".ds-callout { padding: 12px 16px; border-radius: 8px; background: #f4f2ef; color: #1f1b19; font: 400 15px/1.5 'Hanken Grotesk', system-ui, sans-serif; }"
+      "refersTo": "feature-panel",
+      "description": "Oat with a soft sheen: the Today strip and team-app job tiles only.",
+      "html": "<div class=\"ds-panel\"><strong>End your shift</strong><span>0 of 5 steps done</span></div>",
+      "css": ".ds-panel { display: grid; gap: 2px; padding: 16px; border-radius: 16px; background: #e3dacc; color: #141413; font: 600 17px 'Hanken Grotesk', system-ui, sans-serif; } .ds-panel span { font: 400 13px 'Hanken Grotesk', system-ui, sans-serif; color: #5e5d59; }"
     }
   ],
   "narrative": {
     "northStar": "Calm Shop",
-    "overview": "Four equal pillars hold up one roof: the four Dacaj brothers holding up the family shop. The interface carries that idea as structure and fairness rather than ornament: hairline frames, equal columns, nothing bigger or louder than its job. The structure is Cloudflare's dashboard (a grouped sidebar, warm neutrals, hairline tables, Ctrl K to jump anywhere, dense analytics cards); the rigour is the SBB design system's (reduced content, plain words, responsive spacing, 44px touch targets); the finish is anthropic.com's calm (a serif voice for headings, ink-coloured underlined links, generous quiet around the few things that matter).\n\nIt is a working tool for a shop counter, read in the morning and used all day. Working screens are plain paper on a warm canvas. The Overview is a calm morning page that says the day in one serif sentence; the dense figures live on Reports. Data is drawn in ink, so orange keeps exactly one meaning: act here, or you are here. Dots are the brand signature: a halftone field frames the page column, data is drawn in dots, and the mark is made of them; never in tables or forms.",
+    "overview": "4VD is two apps for one family shop and its carwashes (4VD = \"4 Vëllezërit Dacaj\", the four Dacaj brothers): the dashboard to run the shop and the team app to sell at the counter. They are one product with one language and one look.\n\nInk on ivory paper with oat panels, one clay brand colour, tactile keys and the shop at sunrise. Structure, data and interaction are crisp and modern (Cloudflare's dashboard, SBB's rigour); paper, a serif for titles, rubber stamps and the sunrise are the vintage finish (anthropic.com's calm). Calm at rest, clear when touched.",
     "keyCharacteristics": [
-      "Ink on warm paper; flat surfaces separated by hairlines, no shadows at rest.",
-      "One orange voice (`#ff5e1f`): the main button, the current menu item, the logo.",
-      "A serif (Source Serif 4, 500) for page titles, the day's headline and sign-in headings; a grotesk (Hanken Grotesk) for everything else, every figure tabular.",
-      "Charts and counts in ink and muted ink, never orange.",
-      "15px body for comfortable reading; 44px controls on phones.",
-      "Quick, soft motion (150ms, gentle ease-out); off when the computer asks for less.",
-      "Both themes first-class; dark is warm (`#151414`), not blue-black."
+      "Ink on ivory paper; raised cards, inset fields and tactile keys (never flat), one soft light from above, never a coloured gradient.",
+      "One clay voice (`#d4704f`): the logo, the sunrise, the one primary key per screen, progress and the current menu item.",
+      "Source Serif 4 only for page titles and the day's headline; Hanken Grotesk for everything else, every figure tabular; monospace capitals for stamps and spec labels.",
+      "Status colours are earthy and quiet (sage, ochre, brick, slate) and always come with words; data is drawn in ink.",
+      "Tables stand on the page under a heading, never inside a card. Zero is said in words; big sums drop their cents.",
+      "Dates read day / month / year (`13/10/2026`) everywhere; Activity is written in the reader's language."
     ],
     "rules": [
-      { "name": "The One Voice Rule", "body": "Orange appears in exactly three places: the main button, the current menu item (tint, ember text, 3px marker) and the logo. Badges, links, charts and counts are never orange.", "section": "colors" },
-      { "name": "The Ink Data Rule", "body": "Data is drawn in ink: chart series in Muted Ink, the active bar or point in Ink, count badges in Ink with Paper text. Orange in a chart would read as a button.", "section": "colors" },
-      { "name": "The Dark Text On Orange Rule", "body": "Text on Signal Orange is always Pillar Ink. White on this orange reaches only 3:1. Contrast pairs are guarded by `admin/src/theme/contrast.test.ts` (WCAG AA).", "section": "colors" },
-      { "name": "The Serif Ration Rule", "body": "The serif is for page titles, the Overview day headline and sign-in headings only. Card titles, figures, tables and controls stay in Hanken Grotesk.", "section": "typography" },
-      { "name": "The Tabular Rule", "body": "Every number that can sit in a column or change in place uses tabular figures.", "section": "typography" },
-      { "name": "The No Shouting Rule", "body": "No weight above 600 outside the wordmark and count badges, no all-caps labels, sentence case everywhere.", "section": "typography" },
-      { "name": "The Same Header Rule", "body": "Every page starts with the shared page header. No page invents its own title block.", "section": "layout" },
-      { "name": "The Stacking Table Rule", "body": "Under 600px a table marked to stack shows each row as a block: the title cell heads it in 600 weight, every other cell is a line with its column name on the left and the value on the right. Header cells stay for screen readers only.", "section": "layout" },
-      { "name": "The Flat Rule", "body": "Nothing casts a shadow or a glow unless it floats above the page. Hover answers with a fill change (sunk paper or fill), never light.", "section": "elevation" }
+      {
+        "name": "One Clay Voice",
+        "body": "Clay marks brand, action and place only: the logo, the sunrise, the one primary key per screen, progress and the current menu item. Badges, links and charts are never clay.",
+        "section": "colors"
+      },
+      {
+        "name": "Ink Data",
+        "body": "Charts and figures are drawn in ink; one value far above the rest is capped with a break mark so the others stay readable.",
+        "section": "colors"
+      },
+      {
+        "name": "Words With Status",
+        "body": "A status colour always comes with its word, in a stamp or a sentence; meaning never rests on colour alone.",
+        "section": "colors"
+      },
+      {
+        "name": "No Box In A Box",
+        "body": "A table is its own framed surface: a section is a heading on the canvas plus the table, never a card around it.",
+        "section": "layout"
+      },
+      {
+        "name": "Depth, Not Decoration",
+        "body": "Only Raise, Inset, Key, Float and Glass; never an invented shadow or glow, never a coloured gradient.",
+        "section": "elevation"
+      },
+      {
+        "name": "Calm Zeros",
+        "body": "Emphasis never goes to zeros, decoration or disabled things: an empty figure is a calm sentence at body size.",
+        "section": "typography"
+      },
+      {
+        "name": "Busy Keeps Its Word",
+        "body": "A working button keeps its label with a spinner beside it and can't be pressed twice.",
+        "section": "components"
+      },
+      {
+        "name": "Day Month Year",
+        "body": "Every date reads day / month / year, typed or picked; never month-first, never ISO on screen.",
+        "section": "components"
+      },
+      {
+        "name": "Same In Both Apps",
+        "body": "Stamps, stock tags, segmented controls, keys and wording match between the dashboard and the team app.",
+        "section": "components"
+      }
     ],
     "dos": [
-      "**Do** build every page from the kit in `admin/src/components/ui/` (PageHeader, Card, SettingRow, DataTable, StatGrid, MetricCard, Badge, Button, Field, EmptyState).",
-      "**Do** use tokens from `admin/src/styles/tokens.css`; mirror changes in `mobile/src/theme.ts`.",
-      "**Do** keep Signal Orange for the main button, the current menu item and the logo.",
-      "**Do** draw data in ink: series in Muted Ink, the active value in Ink.",
-      "**Do** set page titles in the serif and every figure in tabular Hanken Grotesk.",
-      "**Do** put callouts on sunk paper (`.callout`) instead of framing them.",
-      "**Do** mark phone tables to stack and give every cell its column name.",
-      "**Do** keep touch targets at least 44px on phones.",
-      "**Do** write sentence case, verb-first buttons and errors that say how to fix.",
-      "**Do** wrap motion in `prefers-reduced-motion: no-preference`."
+      "**Do** read `DESIGN.md` first; it is the one rulebook for both apps.",
+      "**Do** build dashboard pages from `admin/src/components/ui/` (PageHeader, Card, Section, DataTable, StatTile, MetricCard, Badge, Button, Field, DateField, EmptyState) and team-app screens from `mobile/src/components/ui.tsx` (Button, Stamp, TextField, EmptyState, ErrorState).",
+      "**Do** use tokens from `admin/src/styles/tokens.css` and mirror them in `mobile/src/theme.ts`.",
+      "**Do** give every screen hover, focus, disabled, loading, empty and error states.",
+      "**Do** keep tap areas at least 44px on phones."
     ],
     "donts": [
-      "**Don't** put white text on Signal Orange.",
-      "**Don't** add glows, corner nodes or dashed rails; keep dots out of tables, forms and from behind text.",
-      "**Don't** colour charts, counts, links or badges orange.",
-      "**Don't** add drop shadows to cards or tables.",
-      "**Don't** use the serif for figures, tables, card titles or controls.",
-      "**Don't** use weights above 600 outside the wordmark and count badges, or all-caps labels.",
-      "**Don't** add a second accent colour; status colours are for status only.",
-      "**Don't** let colour alone carry meaning: badges and changes always have words."
+      "**Don't** put a table inside a card.",
+      "**Don't** use a coloured gradient, glow or invented shadow, or leave a surface flat.",
+      "**Don't** print 0 at figure size or show cents on a headline figure of €1,000 or more.",
+      "**Don't** use the browser's native date box or a month-first date.",
+      "**Don't** swap a button's label for \"Saving…\".",
+      "**Don't** use clay for anything but brand, the main action and where you are."
     ]
   }
 }

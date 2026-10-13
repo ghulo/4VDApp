@@ -187,5 +187,5 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] B9 Sell tiles without a photo give the name and price the room
 - [x] B10 Every date field reads day / month / year
 - [x] B11 Dashboard basket looks like a receipt
-- [ ] B12 Rulebook and design tooling match the code
+- [x] B12 Rulebook and design tooling match the code
 - [ ] You look it over locally, then merge and push

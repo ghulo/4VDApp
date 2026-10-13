@@ -12,6 +12,7 @@ import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
+import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { canManage } from '../auth/roles';
 import { useT } from '../i18n/useT';
 import { isCurrent, NAV_GROUPS } from '../navigation/sections';
@@ -57,6 +58,16 @@ export function Layout() {
     setDrawerOpen(false);
     menuButton.current?.focus();
   }, []);
+
+  // On phones the drawer can be swiped back out to the left.
+  const sidebar = useRef<HTMLElement>(null);
+  useSwipeToDismiss(sidebar, {
+    side: 'left',
+    closed: 'translateX(-105%)',
+    onDismiss: closeDrawer,
+    enabled: drawerOpen,
+    progressTarget: () => sidebar.current?.parentElement ?? null,
+  });
 
   // Moving to another page closes the drawer on phones.
   const [lastPath, setLastPath] = useState(location.pathname);
@@ -137,7 +148,7 @@ export function Layout() {
         aria-hidden="true"
       />
 
-      <aside id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
+      <aside ref={sidebar} id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
         <div className="sidebar__drawer-head">
           <span className="topbar__brand">
             <LogoMark size={28} />

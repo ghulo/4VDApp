@@ -1,14 +1,16 @@
 /* Shared motion (DESIGN.md 12). One vocabulary for the whole dashboard, on the
-   tokens in tokens.css: things rise in on --ease and leave on --ease-exit the
-   same way they came; a press answers on --instant; data grows in once on
-   --slow. Only transform and opacity move, so it stays smooth on phones.
-   Everything here is off under reduced motion: base.css stops all transitions
-   and animations, and the rest sits inside no-preference.
+   tokens in tokens.css: everything that moves rides --spring, Apple's
+   critically damped spring, in and out alike, and leaves the way it came.
+   Only transform and opacity move (plus the size of a sliding highlight), so
+   it stays smooth on phones. Under reduced motion base.css stops every
+   transition and animation; the entrances sit inside no-preference.
 
-   Reusable classes:
-   .rise        one element rises in when it appears
-   .rise-group  its children rise in one after another (first six stagger)
-   .press       a tile or row that dips under the finger, like a key */
+   Reusable pieces:
+   .rise              one element rises in when it appears
+   .rise-group        its children rise in one after another (first six stagger)
+   selectionPills.ts  the selected segment or sidebar item is one highlight
+                      that slides to the next choice
+   useSwipeToDismiss  a phone panel follows the finger and can be flicked away */
 
 @keyframes rise {
   from {
@@ -35,17 +37,112 @@
   }
 }
 
+/* ---------- Sliding selection (selectionPills.ts) ----------
+   The script measures the chosen option and writes --pill-x/-y/-w/-h on its
+   group; the group draws the highlight behind its options and the option
+   itself drops its own. Without the script the options keep their own look. */
+
+[data-pill] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-pill]::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: var(--pill-w, 0);
+  height: var(--pill-h, 0);
+  transform: translate(var(--pill-x, 0), var(--pill-y, 0));
+  pointer-events: none;
+  content: '';
+}
+
+[data-pill='none']::before,
+[data-pill='none']::after {
+  opacity: 0;
+}
+
+.segmented[data-pill]::after {
+  border-radius: var(--radius-segment);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
+}
+
+.segmented[data-pill] .segmented__option[aria-checked='true'] {
+  background: transparent;
+  box-shadow: none;
+}
+
+.sidebar__nav[data-pill]::after {
+  border-radius: var(--radius-small);
+  background: var(--tint);
+  box-shadow: var(--shadow-raise);
+}
+
+.sidebar__nav[data-pill] .sidebar__link.active {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The orange tick slides with it. */
+.sidebar__nav[data-pill] .sidebar__link.active::before {
+  display: none;
+}
+
+.sidebar__nav[data-pill]::before {
+  position: absolute;
+  top: 0;
+  left: -12px;
+  width: 3px;
+  height: max(0px, calc(var(--pill-h, 0px) - 16px));
+  transform: translateY(calc(var(--pill-y, 0px) + 8px));
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  pointer-events: none;
+  content: '';
+}
+
+.app--collapsed .sidebar__nav[data-pill]::before {
+  left: -8px;
+}
+
+/* ---------- Swiping a panel away (useSwipeToDismiss) ---------- */
+
+/* Sideways drags are ours; up and down still scroll the panel. Set on
+   everything inside, because the browser stops reading at the nearest
+   scrolling box (the sheet's body) and at controls with their own value. */
+:is(.sheet, .sidebar),
+:is(.sheet, .sidebar) * {
+  touch-action: pan-y;
+}
+
+/* The dimmed page lightens as the panel is pulled away. */
+.sheet[open]::backdrop {
+  opacity: calc(1 - var(--swipe, 0));
+}
+
+.app .drawer-backdrop--open {
+  opacity: calc(1 - var(--swipe, 0));
+}
+
+.sheet[data-swiping]::backdrop,
+[data-swiping] .drawer-backdrop {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* ---------- Arriving ---------- */
 
   /* A page's sections rise in one after another when it opens; groups of
-     cards inside do the same. */
+     cards inside do the same. Dialogs are left alone: they have their own. */
   .main__frame > :not(dialog),
   .rise,
   .rise-group > *,
   .metric-grid > *,
   .count-cards > * {
-    animation: rise var(--moderate) var(--ease) backwards;
+    animation: rise var(--spring-time) var(--spring) backwards;
     animation-delay: calc(var(--rise-step, 0) * var(--stagger));
   }
 
@@ -73,39 +170,29 @@
   .notice,
   .form-error,
   .empty-state {
-    animation: rise var(--moderate) var(--ease) backwards;
+    animation: rise var(--spring-time) var(--spring) backwards;
   }
 
   /* "Loading" only shows when loading is slow enough to notice, so a quick
      answer never flashes it. */
   .loading {
-    animation: fade var(--moderate) var(--ease) 300ms backwards;
+    animation: fade var(--spring-time) var(--spring) 300ms backwards;
   }
 
-  .palette-backdrop {
-    animation: fade var(--fast) var(--ease);
-  }
-
+  .palette-backdrop,
   .column-chart__slot:hover .column-chart__tip {
     animation: fade var(--fast) var(--ease);
   }
 
-  /* ---------- Pressing ---------- */
+  /* ---------- The highlight glides to the new choice ---------- */
 
-  .press,
-  .segmented__option,
-  .sidebar__link {
+  [data-pill='live']::before,
+  [data-pill='live']::after {
     transition:
-      background-color var(--fast) var(--ease),
-      box-shadow var(--fast) var(--ease),
-      color var(--fast) var(--ease),
-      transform var(--instant) var(--ease);
-  }
-
-  .press:active,
-  .segmented__option:active,
-  .sidebar__link:active {
-    transform: scale(0.97);
+      transform var(--spring-time) var(--spring),
+      width var(--spring-time) var(--spring),
+      height var(--spring-time) var(--spring),
+      opacity var(--fast) var(--ease);
   }
 
   /* ---------- The side sheet: in from the right, back out to the right ---------- */
@@ -113,27 +200,21 @@
   .sheet {
     transform: translateX(100%);
     transition:
-      display var(--moderate) allow-discrete,
-      overlay var(--moderate) allow-discrete,
-      transform var(--moderate) var(--ease-exit);
+      display var(--spring-time) allow-discrete,
+      overlay var(--spring-time) allow-discrete,
+      transform var(--spring-time) var(--spring);
   }
 
   .sheet::backdrop {
     opacity: 0;
     transition:
-      display var(--moderate) allow-discrete,
-      overlay var(--moderate) allow-discrete,
-      opacity var(--moderate) var(--ease-exit);
+      display var(--spring-time) allow-discrete,
+      overlay var(--spring-time) allow-discrete,
+      opacity var(--spring-time) var(--spring);
   }
 
   .sheet[open] {
     transform: none;
-    transition-timing-function: linear, linear, var(--ease);
-  }
-
-  .sheet[open]::backdrop {
-    opacity: 1;
-    transition-timing-function: linear, linear, var(--ease);
   }
 
   @starting-style {
@@ -146,17 +227,17 @@
     }
   }
 
-  /* ---------- Data grows in once, then follows changes ---------- */
+  /* ---------- Data grows in once ---------- */
 
   .bar-list__bar {
     transform-origin: left;
-    animation: grow-x var(--slow) var(--ease);
+    animation: grow-x var(--spring-time) var(--spring);
   }
 
   .column-chart__bar,
   .day-bars__bar {
     transform-origin: bottom;
-    animation: grow-y var(--slow) var(--ease);
+    animation: grow-y var(--spring-time) var(--spring);
   }
 
   .day-bars__bar {
@@ -167,7 +248,7 @@
 
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: var(--moderate);
-    animation-timing-function: var(--ease);
+    animation-duration: var(--spring-time);
+    animation-timing-function: var(--spring);
   }
 }

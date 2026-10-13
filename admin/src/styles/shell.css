@@ -360,7 +360,7 @@
     width: min(300px, 85vw);
     height: 100vh;
     transform: translateX(-105%);
-    transition: transform var(--moderate) var(--ease);
+    transition: transform var(--spring-time) var(--spring);
     box-shadow: var(--shadow-float);
   }
 
@@ -415,7 +415,7 @@
     backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity var(--moderate) var(--ease);
+    transition: opacity var(--spring-time) var(--spring);
   }
 
   .drawer-backdrop--open {

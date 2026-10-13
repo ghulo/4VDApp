@@ -684,22 +684,28 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 12. Motion and accessibility
 
-- Motion: quick and soft, never bouncy; all inside
-  `prefers-reduced-motion: no-preference`. One vocabulary in
-  `admin/src/styles/motion.css`, on tokens: `--ease` (arrive, settles like a
-  critically damped spring) and `--ease-exit` (its mirror, to leave);
-  `--instant` 100ms press, `--fast` 150ms colour/hover, `--moderate` 240ms
-  panels and entrances, `--slow` 420ms data growing in, `--stagger` 40ms.
-  - Pages: sections rise in (6px, fade) one after another, first six staggered.
-    Reuse `.rise` (one element) and `.rise-group` (its children in turn).
-  - Press: keys sink into their edge; tiles, rows, segments and menu links
-    (`.press`) dip to 97% on press.
-  - Panels leave the way they came: the side sheet slides in from the right
-    and back out to the right with its form still on it; the phone drawer and
-    its backdrop fade out together.
-  - Charts grow in once (bars from their base). Errors and empty pages rise in;
-    "Loading" only appears after 300ms. Light/dark cross-fades.
-  - Only `transform` and `opacity` move. No looping motion, no parallax.
+- Motion: Apple's fluid motion, quiet; entrances inside
+  `prefers-reduced-motion: no-preference`, and base.css stops every
+  transition under reduce. One vocabulary in `admin/src/styles/motion.css`:
+  - Anything that moves rides `--spring` over `--spring-time` (500ms): a
+    critically damped spring (response 0.34s, no overshoot, half-way at 90ms),
+    the same in and out. Colour/hover is `--fast` 150ms on `--ease`.
+  - Pages: sections rise in (6px, fade) one after another, `--stagger` 40ms,
+    first six. Reuse `.rise` (one element) and `.rise-group` (its children).
+  - Selection glides: the chosen segment of every segmented control and the
+    current sidebar item (with its orange tick) are one highlight that slides
+    to the next choice (`selectionPills.ts`, no per-screen code).
+  - Panels leave the way they came: the side sheet in from and out to the
+    right, form still on it; the phone drawer with its backdrop.
+  - Swipe on touch (`useSwipeToDismiss`): the side sheet and phone drawer
+    follow the finger 1:1, rubber-band past the open edge, and on release
+    project the flick to decide close or stay, starting at the finger's speed.
+    Vertical drags still scroll; fields stay free for text selection.
+  - Keys sink into their edge on press. Charts grow in once from their base.
+    Errors and empty pages rise in; "Loading" waits 300ms. Light/dark
+    cross-fades.
+  - Only `transform` and `opacity` move (plus the highlight's size). No
+    bounce, looping motion or parallax.
 - WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
 - Keyboard: every action reachable, visible focus, one tab stop per chart
   (arrows walk the data), dialogs trap focus and return it.

@@ -25,6 +25,8 @@ const PAIRS: Array<[string, string, number]> = [
   ['ink-muted', 'surface', 4.5],
   ['ink-muted', 'bg', 4.5],
   ['ink-muted', 'surface-sunk', 4.5],
+  // Unchosen segments sit on the segmented track.
+  ['ink-muted', 'fill', 4.5],
   ['brand-ink', 'brand', 4.5],
   ['brand', 'surface', 4.5],
   ['brand', 'brand-soft', 4.5],

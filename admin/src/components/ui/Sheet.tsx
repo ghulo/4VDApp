@@ -2,6 +2,7 @@ import { X } from '@phosphor-icons/react';
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { useSwipeToDismiss } from './useSwipeToDismiss';
 
 interface SheetProps {
   open: boolean;
@@ -31,6 +32,8 @@ export function Sheet({ open, onClose, title, description, children }: SheetProp
     setWasOpen(open);
     if (open) setOpening((count) => count + 1);
   }
+  // On a touch screen the panel can be swiped back out to the right.
+  useSwipeToDismiss(ref, { side: 'right', closed: 'translateX(100%)', onDismiss: onClose, enabled: open });
 
   useEffect(() => {
     const dialog = ref.current;

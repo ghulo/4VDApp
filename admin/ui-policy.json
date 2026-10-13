@@ -85,6 +85,13 @@
       "reason": "Segments share one inset track (DESIGN.md segmented control); the 2px seam is the design, and each segment meets the size rules."
     },
     {
+      "selector": "[data-pill] .segmented__option",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The chosen segment's paper is one sliding highlight drawn behind the options (motion.css, selectionPills.ts), so the tool cannot read a background. The colours are unchanged: --ink on --surface for the chosen one, --ink-muted on --fill for the rest, which src/theme/contrast.test.ts checks pass 4.5:1."
+    },
+    {
       "selector": ".login__moment *",
       "rules": [
         "text-contrast"

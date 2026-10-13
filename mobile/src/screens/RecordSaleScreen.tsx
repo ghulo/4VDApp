@@ -422,6 +422,9 @@ function ProductTile({ product, quantity, width, onPress }: { product: Product; 
   const t = useT();
   const full = quantity >= product.stock.quantity;
   const low = product.stock.quantity <= product.stock.reorderLevel;
+  // Without a photo the empty photo box would be the biggest thing on the tile:
+  // a small box instead, and the name and price get the room.
+  const hasPhoto = product.imageUrl !== null;
   return (
     <Pressable
       accessibilityRole="button"
@@ -437,17 +440,17 @@ function ProductTile({ product, quantity, width, onPress }: { product: Product; 
       ]}
     >
       <View>
-        <ProductPhoto uri={product.imageUrl} size="fill" />
+        <ProductPhoto uri={product.imageUrl} size={hasPhoto ? 'fill' : 32} />
         {quantity > 0 && (
           <View style={[styles.count, { backgroundColor: colors.ink }]}>
             <Text style={[styles.countText, { color: colors.surface }]}>{quantity}</Text>
           </View>
         )}
       </View>
-      <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={2}>
+      <Text style={[styles.tileName, { color: colors.ink }]} numberOfLines={hasPhoto ? 2 : 3}>
         {product.name}
       </Text>
-      <Text style={[styles.tilePrice, { color: colors.ink }]}>{formatMoney(product.promotion?.price ?? product.price)}</Text>
+      <Text style={[styles.tilePrice, !hasPhoto && styles.tilePriceBare, { color: colors.ink }]}>{formatMoney(product.promotion?.price ?? product.price)}</Text>
       {low && <Text style={[styles.tileLeft, { color: colors.warn }]}>{t.sell.left(product.stock.quantity)}</Text>}
     </Pressable>
   );
@@ -499,7 +502,8 @@ const styles = StyleSheet.create({
   },
   countText: { fontFamily: fonts.bodyBold, fontSize: type.label, fontVariant: ['tabular-nums'] },
   tileName: { fontFamily: fonts.bodyBold, fontSize: type.label, lineHeight: 17, minHeight: 34 },
-  tilePrice: { fontFamily: fonts.body, fontSize: type.label, fontVariant: ['tabular-nums'] },
+  tilePrice: { fontFamily: fonts.bodyBold, fontSize: type.body, fontVariant: ['tabular-nums'] },
+  tilePriceBare: { marginTop: 'auto' },
   tileLeft: { fontFamily: fonts.bodyBold, fontSize: type.caption },
   receipt: { padding: spacing.lg, gap: spacing.sm, borderWidth: 1, borderRadius: radius.panel },
   receiptHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

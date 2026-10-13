@@ -30,8 +30,8 @@ export const en = {
   tour: {
     staff: [
       {
-        title: 'Record a sale in seconds',
-        body: 'Tap "Record a sale" on Home or the Sell tab. Bulk prices and promotions apply by themselves, and stock updates straight away.',
+        title: 'Sell in seconds',
+        body: 'Tap Sell at the bottom, then tap, scan or search products into the basket. Bulk prices and promotions apply by themselves, and stock updates straight away.',
       },
       {
         title: 'Find any product',
@@ -90,6 +90,9 @@ export const en = {
     returnLabel: (name: string) => `Return ${name}`,
     return: 'Return',
     returned: 'Returned',
+    returnedSome: (quantity: number) => `${quantity} returned`,
+    sales: 'Sales this month',
+    printInvoice: (number: string) => `Print or save invoice ${number}`,
     none: 'No sales yet this month.',
   },
   home: {
@@ -142,6 +145,7 @@ export const en = {
     targetReached: (amount: string, month: string) => `Target of ${amount} reached for ${month}`,
     targetToGo: (p: { left: string; month: string; target: string }) => `${p.left} to go to your ${p.month} target of ${p.target}`,
     todo: 'To do',
+    nothingToDo: 'Nothing needs you right now.',
     severity: { urgent: 'Urgent', check: 'Check', idea: 'Idea' } as Record<string, string>,
     onDashboard: 'Act on the rest on the 4VD dashboard.',
     somethingHappened: 'Something happened',

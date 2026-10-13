@@ -68,7 +68,9 @@ export class SalesRepository {
     let query = this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .leftJoin('users as u', 'u.id', 's.sold_by');
+      .leftJoin('users as u', 'u.id', 's.sold_by')
+      // An undone sale never happened, as far as history and totals go.
+      .where('s.undone_at', 'is', null);
     if (filters.startDate) query = query.where('s.sale_date', '>=', filters.startDate);
     if (filters.endDate) query = query.where('s.sale_date', '<', filters.endDate);
     if (filters.productId) query = query.where('s.product_id', '=', filters.productId);
@@ -132,6 +134,7 @@ export class SalesRepository {
       filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
       filters.productId ? sql`s.product_id = ${filters.productId}` : sql`true`,
       filters.soldBy ? sql`s.sold_by = ${filters.soldBy}` : sql`true`,
+      sql`s.undone_at is null`,
     ];
     const keyed = sql`
       select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 's' || s.id) as key,

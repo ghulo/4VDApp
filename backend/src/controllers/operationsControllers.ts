@@ -36,6 +36,13 @@ export function createSalesController(salesService: SalesService) {
       sendSuccess(res, { checkouts: items, totalRevenue: revenue, days }, { meta });
     },
 
+    async myCheckouts(req: Request, res: Response): Promise<void> {
+      // Always the caller's own, whatever soldBy was asked for.
+      const query = { ...parseInput(saleQuerySchema, req.query), soldBy: req.user!.id };
+      const { items, meta, revenue, days } = await salesService.checkouts(query);
+      sendSuccess(res, { checkouts: items, totalRevenue: revenue, days }, { meta });
+    },
+
     async record(req: Request, res: Response): Promise<void> {
       const input = parseInput(recordSaleSchema, req.body);
       const sale = await salesService.record(input, req.user!.id);

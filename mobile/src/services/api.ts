@@ -1,5 +1,6 @@
 import { apiRequest, apiText, tokenStore } from './apiClient';
 import type {
+  Checkout,
   TestDelivery,
   NewProductInput,
   NewProductOutcome,
@@ -110,6 +111,9 @@ export const salesApi = {
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
+  /** Your own sales as whole checkouts (one invoice each), newest first. */
+  myCheckouts: async (query: { startDate: string; endDate: string; limit: number }) =>
+    (await apiRequest<{ checkouts: Checkout[] }>('/sales/checkouts/mine', { query })).data.checkouts,
 };
 
 export const pushApi = {

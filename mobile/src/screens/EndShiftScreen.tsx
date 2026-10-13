@@ -11,7 +11,7 @@ import { useT } from '../i18n/useT';
 import type { RootStackParamList } from '../navigation/types';
 import { dayApi, reportsApi } from '../services/api';
 import { useCurrentUser } from '../state/useAuth';
-import { fonts, spacing, useThemeColors, type } from '../theme';
+import { fonts, radius, spacing, useThemeColors, type } from '../theme';
 import { formatMoney } from '../utils/format';
 import { DAY_QUERY_KEY, type ShiftStep, shiftSteps } from '../utils/shift';
 
@@ -65,7 +65,7 @@ export function EndShiftScreen({ navigation }: Props) {
         </Text>
       )}
 
-      <View style={[styles.list, { borderTopColor: colors.lineStrong }]}>
+      <View style={[styles.list, { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: colors.raise }]}>
         {steps.map((step, index) => {
           const label = stepLabel(step, several, t);
           return (
@@ -84,13 +84,18 @@ export function EndShiftScreen({ navigation }: Props) {
               ]}
             >
               <View style={styles.rowText}>
-                <Text style={[styles.rowName, { color: step.done ? colors.inkMuted : colors.ink }]}>{label}</Text>
-                <View style={styles.status}>
-                  {step.done && <Check size={14} weight="bold" color={colors.stockOk} />}
-                  <Text style={[styles.rowStatus, { color: step.done ? colors.stockOk : colors.signalLowInk }]}>
-                    {step.done ? t.shift.done : t.shift.toDo}
-                  </Text>
+                {/* A tick box like on paper, as on the dashboard: an empty ring to do, a filled tick once done. */}
+                <View
+                  style={[
+                    styles.mark,
+                    step.done
+                      ? { backgroundColor: colors.ok, borderColor: colors.ok }
+                      : { backgroundColor: colors.surfaceSunk, borderColor: colors.lineStrong, boxShadow: colors.inset },
+                  ]}
+                >
+                  {step.done && <Check size={12} weight="bold" color={colors.surface} />}
                 </View>
+                <Text style={[styles.rowName, { color: step.done ? colors.inkMuted : colors.ink }]}>{label}</Text>
               </View>
               {!step.done && <CaretRight size={18} color={colors.inkMuted} />}
             </Pressable>
@@ -112,12 +117,11 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg },
   title: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
   lead: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 22, marginTop: -spacing.sm },
-  list: { borderTopWidth: 2 },
+  list: { borderWidth: 1, borderRadius: radius.panel, paddingHorizontal: spacing.lg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 56, paddingVertical: spacing.sm },
-  // Long place names wrap onto their own lines; the status sits under the name.
-  rowText: { flex: 1, gap: spacing.xs },
-  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  rowName: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 22 },
-  rowStatus: { fontFamily: fonts.bodyBold, fontSize: type.label },
+  // Long place names wrap onto their own lines, next to the tick.
+  rowText: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  mark: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  rowName: { flex: 1, fontFamily: fonts.body, fontSize: type.body, lineHeight: 22 },
   hint: { fontFamily: fonts.body, fontSize: type.body, lineHeight: 21 },
 });

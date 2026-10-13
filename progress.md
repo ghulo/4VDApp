@@ -169,6 +169,6 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 ## Team app catches up (2026-10-13)
 
 - [x] Pass 1, Selling: Sell screen with photo tiles and stock, receipt-style basket, − / + steppers, proper total and checkout key, title "Sell"; products without a photo show the box icon like the dashboard; Clear can be undone
-- [ ] Pass 2, Home and shift: one clay key, To do first, the day as a slim strip, End shift with tick circles, My sales as whole sales with returns from the sale
+- [x] Pass 2, Home and shift: one clay key, To do first (calm words when empty), the day as a slim strip, End shift with tick circles, My sales as whole sales with returns and the invoice from the sale; undone sales no longer show in sales history (dashboard too)
 - [ ] Pass 3, the rest: lighter Products list, Account reorganised into sections like the dashboard Profile (with segmented switches) and gaining Security (change password) and Devices (where you are signed in, sign out others), better headers and forms on sub-screens, open wording gaps, EN/SQ light/dark checked
 - [ ] You look each pass over locally, then merge and push

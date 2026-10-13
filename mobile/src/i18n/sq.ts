@@ -28,8 +28,8 @@ export const sq: Catalogue = {
   tour: {
     staff: [
       {
-        title: 'Regjistro një shitje në sekonda',
-        body: 'Prek "Regjistro një shitje" te Kreu ose te skeda Shit. Çmimet me shumicë dhe ofertat zbatohen vetë, dhe stoku përditësohet menjëherë.',
+        title: 'Shit në pak sekonda',
+        body: 'Prek Shit poshtë, pastaj prek, skano ose kërko produktet për t’i shtuar në shportë. Çmimet me shumicë dhe ofertat zbatohen vetë, dhe stoku përditësohet menjëherë.',
       },
       {
         title: 'Gjej çdo produkt',
@@ -86,6 +86,9 @@ export const sq: Catalogue = {
     returnLabel: (name) => `Kthe ${name}`,
     return: 'Kthe',
     returned: 'U kthye',
+    returnedSome: (quantity) => `${quantity} të kthyera`,
+    sales: 'Shitjet këtë muaj',
+    printInvoice: (number) => `Printo ose ruaj faturën ${number}`,
     none: 'Ende pa shitje këtë muaj.',
   },
   home: {
@@ -138,6 +141,7 @@ export const sq: Catalogue = {
     targetReached: (amount, month) => `Objektivi prej ${amount} u arrit për ${month}`,
     targetToGo: (p) => `Mungojnë ${p.left} për objektivin e ${p.month} prej ${p.target}`,
     todo: 'Për t’u bërë',
+    nothingToDo: 'Asgjë nuk të pret tani.',
     severity: { urgent: 'Urgjente', check: 'Kontrollo', idea: 'Ide' },
     onDashboard: 'Pjesën tjetër zgjidhe te paneli i 4VD.',
     somethingHappened: 'Ndodhi diçka',

@@ -17,6 +17,8 @@ export function createSalesRoutes({ salesService, returnService, guards }: Conta
 
   router.get('/', ...guards.oversee, controller.list);
   router.get('/checkouts', ...guards.oversee, controller.checkouts);
+  // Everyone sees their own checkouts, to find a sale again and start a return from it.
+  router.get('/checkouts/mine', ...guards.staff, controller.myCheckouts);
   // Employees record sales too; only the people who run the shop see the full history.
   router.post('/', ...guards.staff, controller.record);
   router.post('/basket', ...guards.staff, controller.recordBasket);

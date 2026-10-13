@@ -69,6 +69,28 @@ export interface DocumentRef {
   number: string;
 }
 
+/** One product within a checkout, with how many have come back. */
+export interface SaleLine {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  pricePerUnit: number;
+  totalAmount: number;
+  saleDate: string;
+  /** Units returned or waiting for a return decision. */
+  returnedQuantity: number;
+}
+
+/** Everything one customer bought at once: one invoice, one or more lines. */
+export interface Checkout {
+  key: string;
+  invoice: DocumentRef | null;
+  saleDate: string;
+  total: number;
+  lines: SaleLine[];
+}
+
 export interface SalesTotals {
   salesCount: number;
   unitsSold: number;

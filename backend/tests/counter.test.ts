@@ -146,6 +146,48 @@ describe('sales history by checkout', () => {
     expect((await request(context.app).get('/api/sales/checkouts').set(auth(employeeToken))).status).toBe(403);
   });
 
+  it("should show staff only their own checkouts, with how much of each line was returned", async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
+    const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 10 });
+    await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: bread, quantity: 1 }] });
+    const mine = await request(context.app)
+      .post('/api/sales/basket')
+      .set(auth(employeeToken))
+      .send({ items: [{ productId: milk, quantity: 3 }, { productId: bread, quantity: 2 }] });
+    const milkLine = mine.body.data.sales[0].id;
+    await request(context.app).post(`/api/sales/${milkLine}/returns`).set(auth(employeeToken)).send({ quantity: 1, condition: 'resellable' });
+
+    // Asking for someone else's sales still gives your own.
+    const adminId = (await request(context.app).get('/api/auth/me').set(auth())).body.data.id;
+    const response = await request(context.app).get('/api/sales/checkouts/mine').query({ soldBy: adminId }).set(auth(employeeToken));
+
+    expect(response.status).toBe(200);
+    const { checkouts } = response.body.data;
+    expect(checkouts).toHaveLength(1);
+    expect(checkouts[0]).toMatchObject({ total: 5.6, invoice: { number: expect.any(String) } });
+    expect(checkouts[0].lines.find((line: { productName: string }) => line.productName === 'Milk')).toMatchObject({ quantity: 3, returnedQuantity: 1 });
+  });
+
+  it('should leave an undone sale out of the history and its totals', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
+    await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: milk, quantity: 1 }] });
+    const sale = (await request(context.app).post('/api/sales').set(auth()).send({ productId: milk, quantity: 2, notes: null })).body.data;
+    const entry = await context.db
+      .selectFrom('activity_log')
+      .select('id')
+      .where('entity_type', '=', 'sale')
+      .where('entity_id', '=', sale.id)
+      .executeTakeFirstOrThrow();
+    expect((await request(context.app).post(`/api/activity/${entry.id}/undo`).set(auth()).send({})).status).toBe(200);
+
+    const checkouts = (await request(context.app).get('/api/sales/checkouts').set(auth())).body.data;
+    expect(checkouts.checkouts).toHaveLength(1);
+    expect(checkouts.totalRevenue).toBe(1.2);
+    const list = (await request(context.app).get('/api/sales').set(auth())).body;
+    expect(list.data.sales.map((line: { id: number }) => line.id)).not.toContain(sale.id);
+    expect(list.data.totalRevenue).toBe(1.2);
+  });
+
   it('should find checkouts by product or invoice number, and total each day shown', async () => {
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
     const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 10 });

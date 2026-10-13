@@ -6,21 +6,20 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '../components/Avatar';
 import { LogoMark } from '../components/LogoMark';
 import { BlockMeter, DoubleRule, IconChip, Kicker, PrintSection, ShopSunrise } from '../components/print';
-import { Button } from '../components/ui';
 import { WelcomeTour } from '../components/WelcomeTour';
-import { dayRanges, monthRanges, MY_SALES_QUERY_KEY } from '../components/MySales';
+import { checkoutSummary, dayRanges, monthRanges, MY_SALES_QUERY_KEY, useMyCheckouts } from '../components/MySales';
 import type { RootStackParamList } from '../navigation/types';
 import { DELIVERIES_QUERY_KEY } from './DeliveriesScreen';
 import { approvalsApi, attentionApi, countsApi, dayApi, customersApi, deliveriesApi, inventoryApi, reportsApi } from '../services/api';
 import type { MyRequest, TodoItem } from '../services/types';
 import { canRecordSales, decidesRequests, useCurrentUser } from '../state/useAuth';
 import { fonts, radius, spacing, type ThemeColors, useThemeColors, type } from '../theme';
-import { formatDateWith, formatMoney } from '../utils/format';
+import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { TabBarSpacer } from '../components/TabBarSpace';
@@ -47,7 +46,6 @@ export function HomeScreen() {
   const user = useCurrentUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const sells = canRecordSales(user);
   const now = new Date();
@@ -81,11 +79,10 @@ export function HomeScreen() {
   const todoTarget = (item: (typeof todo)[number]): (() => void) | undefined => {
     if (item.verb === 'endShift' || item.verb === 'closeDay') return () => navigation.navigate('EndShift');
     if (item.verb === 'decide' && decidesRequests(user)) return () => navigation.navigate('Requests');
-    const bill = /^bill_scan:(d+)$/.exec(item.key);
+    const bill = /^bill_scan:(\d+)$/.exec(item.key);
     if (item.verb === 'checkBill' && bill && decidesRequests(user)) return () => navigation.navigate('BillCheck', { id: Number(bill[1]) });
     return undefined;
   };
-  const closingDue = todo.some((item) => item.verb === 'endShift' || item.verb === 'closeDay');
   const hasCarwash = shift.steps.some((step) => step.kind === 'carwash');
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.lowStock(LOW_STOCK_SHOWN) });
 
@@ -99,10 +96,6 @@ export function HomeScreen() {
     setIsRefreshing(false);
   }
 
-  function openSearch() {
-    navigation.navigate('Main', { screen: 'Catalog', params: { search: search.trim() } });
-    setSearch('');
-  }
 
   const firstName = user.name.split(' ')[0];
   const openCounts = counts.data?.filter((count) => count.status === 'open').length ?? 0;
@@ -112,7 +105,7 @@ export function HomeScreen() {
       request.status === 'submitted' ||
       (request.decidedAt !== null && now.getTime() - new Date(request.decidedAt).getTime() < DECIDED_SHOWN_DAYS * MS_PER_DAY),
   );
-  const recentSales = thisMonth.data?.recentSales.slice(0, RECENT_SALES_SHOWN) ?? [];
+  const recentSales = useMyCheckouts(month, RECENT_SALES_SHOWN, sells);
 
   return (
     <ScrollView
@@ -147,7 +140,16 @@ export function HomeScreen() {
 
       <View style={styles.body}>
         {sells && (
-          <View style={[styles.today, { backgroundColor: colors.fill, boxShadow: colors.raise }]}>
+          // The day in one slim strip (DESIGN.md 3.2); selling itself is the Sell tab, the one clay key.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityHint={t.home.mySales}
+            onPress={() => navigation.navigate('MySales')}
+            style={({ pressed }) => [
+              styles.today,
+              { backgroundColor: colors.surface, borderColor: colors.line, boxShadow: pressed ? colors.inset : colors.raise },
+            ]}
+          >
             <View style={styles.todayArt}>
               <ShopSunrise />
             </View>
@@ -155,7 +157,7 @@ export function HomeScreen() {
               <Text style={[styles.todayHeadline, { color: colors.ink }]} accessibilityLiveRegion="polite">
                 {today.data
                   ? today.data.current.salesCount > 0
-                    ? t.home.takenToday(formatMoney(today.data.current.revenue), today.data.current.salesCount)
+                    ? t.home.takenToday(formatHeadlineMoney(today.data.current.revenue), today.data.current.salesCount)
                     : t.home.noSalesToday
                   : today.isError
                     ? t.home.notAvailable
@@ -163,68 +165,32 @@ export function HomeScreen() {
               </Text>
               {thisMonth.data && (
                 <Text style={[styles.todayDetail, { color: colors.inkMuted }]}>
-                  {t.home.monthSoFar(formatMoney(thisMonth.data.current.revenue), month.name)}
+                  {`${t.home.mySales} · ${t.home.salesIn(t.home.sales(thisMonth.data.current.salesCount), month.name)}`}
                 </Text>
               )}
-              {thisMonth.data?.monthlyTarget ? (
-                <TargetBar
-                  colors={colors}
-                  revenue={thisMonth.data.current.revenue}
-                  target={thisMonth.data.monthlyTarget}
-                  monthName={month.name}
-                />
-              ) : null}
-              {shiftClosed && <Text style={[styles.todayDetail, { color: colors.stockOk }]}>{t.home.closedUp}</Text>}
-              <View style={styles.todayActions}>
-                {/* What's next: selling all day; from closing time, ending the shift until it's done. */}
-                {closingDue && !shiftClosed ? (
-                  <>
-                    <Button label={t.home.endShift} onPress={() => navigation.navigate('EndShift')} />
-                    <Button variant="quiet" label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
-                  </>
-                ) : (
-                  <Button label={t.home.recordSale} onPress={() => navigation.navigate('RecordSale', {})} />
-                )}
-                <Button
-                  variant="quiet"
-                  label={
-                    thisMonth.data
-                      ? `${t.home.mySales} · ${t.home.salesIn(t.home.sales(thisMonth.data.current.salesCount), month.name)}`
-                      : t.home.mySales
-                  }
-                  onPress={() => navigation.navigate('MySales')}
-                />
-              </View>
+              {shiftClosed && <Text style={[styles.todayDetail, { color: colors.ok }]}>{t.home.closedUp}</Text>}
             </View>
-          </View>
+            <CaretRight size={18} color={colors.inkMuted} />
+          </Pressable>
         )}
+        {sells && thisMonth.data?.monthlyTarget ? (
+          <TargetBar colors={colors} revenue={thisMonth.data.current.revenue} target={thisMonth.data.monthlyTarget} monthName={month.name} />
+        ) : null}
 
-        {todo.length > 0 && (
-          <PrintSection title={t.home.todo}>
-            {todo.map((item, index) => (
-              <TodoRow
-                key={item.key}
-                item={item}
-                colors={colors}
-                first={index === 0}
-                onPress={todoTarget(item)}
-              />
-            ))}
-            {todo.some((item) => !todoTarget(item)) && <Muted colors={colors}>{t.home.onDashboard}</Muted>}
-          </PrintSection>
-        )}
-
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          onSubmitEditing={openSearch}
-          placeholder={t.home.searchPlaceholder}
-          placeholderTextColor={colors.steel}
-          accessibilityLabel={t.home.searchLabel}
-          autoCorrect={false}
-          returnKeyType="search"
-          style={[styles.search, { color: colors.ink, borderColor: colors.lineStrong, backgroundColor: colors.surface, boxShadow: colors.inset }]}
-        />
+        <PrintSection title={t.home.todo}>
+          {attention.isPending && <Muted colors={colors}>…</Muted>}
+          {attention.data && todo.length === 0 && <Muted colors={colors}>{t.home.nothingToDo}</Muted>}
+          {todo.map((item, index) => (
+            <TodoRow
+              key={item.key}
+              item={item}
+              colors={colors}
+              first={index === 0}
+              onPress={todoTarget(item)}
+            />
+          ))}
+          {todo.some((item) => !todoTarget(item)) && <Muted colors={colors}>{t.home.onDashboard}</Muted>}
+        </PrintSection>
 
         {sells && (
           <PrintSection title={t.home.somethingHappened}>
@@ -333,18 +299,26 @@ export function HomeScreen() {
 
         {sells && (
           <PrintSection title={t.home.latestSales}>
-            {thisMonth.data && recentSales.length === 0 && <Muted colors={colors}>{t.home.noSalesYet}</Muted>}
-            {recentSales.map((sale, index) => (
-              <View
-                key={sale.id}
-                style={[styles.row, index > 0 && { borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth }]}
+            {recentSales.data?.length === 0 && <Muted colors={colors}>{t.home.noSalesYet}</Muted>}
+            {/* Whole sales, as in My sales; a tap opens the list, where returns start. */}
+            {recentSales.data?.map((checkout, index) => (
+              <Pressable
+                key={checkout.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${saleTime(checkout.saleDate, now)}, ${formatMoney(checkout.total)}. ${checkoutSummary(checkout)}`}
+                onPress={() => navigation.navigate('MySales')}
+                style={({ pressed }) => [
+                  styles.row,
+                  index > 0 && { borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth },
+                  pressed && { backgroundColor: colors.surfaceSunk },
+                ]}
               >
                 <Text style={[styles.rowName, { color: colors.ink }]} numberOfLines={1}>
-                  {sale.quantity} × {sale.productName}
+                  {checkoutSummary(checkout)}
                 </Text>
-                <Text style={[styles.rowValue, { color: colors.ink }]}>{formatMoney(sale.totalAmount)}</Text>
-                <Text style={[styles.rowTime, { color: colors.steel }]}>{saleTime(sale.saleDate, now)}</Text>
-              </View>
+                <Text style={[styles.rowValue, { color: colors.ink }]}>{formatMoney(checkout.total)}</Text>
+                <Text style={[styles.rowTime, { color: colors.steel }]}>{saleTime(checkout.saleDate, now)}</Text>
+              </Pressable>
             ))}
           </PrintSection>
         )}
@@ -490,22 +464,13 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.75 },
   greeting: { fontFamily: fonts.display, fontSize: type.display, lineHeight: 38, marginTop: spacing.sm },
   body: { padding: spacing.lg, gap: spacing.xl },
-  // The day on an oat panel under the shop at sunrise; the sale button is clay.
-  today: { borderRadius: radius.panel, overflow: 'hidden', padding: spacing.xl, paddingBottom: 0 },
-  todayArt: { width: '100%', maxWidth: 168, alignSelf: 'center' },
-  todayText: { paddingTop: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
-  todayHeadline: { fontFamily: fonts.display, fontSize: type.headline, lineHeight: 34 },
-  todayDetail: { fontFamily: fonts.body, fontSize: type.body },
-  todayActions: { marginTop: spacing.lg, gap: spacing.sm },
+  // The day as one slim raised strip: a small sunrise, the sentence, a way into My sales.
+  today: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderWidth: 1, borderRadius: radius.panel },
+  todayArt: { width: 64 },
+  todayText: { flex: 1, gap: 2 },
+  todayHeadline: { fontFamily: fonts.display, fontSize: type.title, lineHeight: 22 },
+  todayDetail: { fontFamily: fonts.body, fontSize: type.label },
   target: { marginTop: spacing.md, gap: spacing.sm },
-  search: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: radius.small,
-    paddingHorizontal: spacing.md,
-    fontFamily: fonts.body,
-    fontSize: type.input,
-  },
   jobs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   tile: {
     flexGrow: 1,

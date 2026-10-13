@@ -1,4 +1,4 @@
-import { albanianDate, albanianMoney } from '../i18n/albanianFormat';
+import { albanianDate, albanianMoney, albanianNumber } from '../i18n/albanianFormat';
 import type { Language } from '../i18n/language';
 import { activeCatalogue, setActiveLanguage } from '../i18n/useT';
 
@@ -21,6 +21,20 @@ export const formatMoney = (amount: number) =>
   current === 'sq'
     ? albanianMoney(amount)
     : cached('money', () => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })).format(amount);
+
+/**
+ * Money as a headline figure (the month on My sales, the day's sentence), as
+ * on the dashboard: from €1,000 up the cents are dropped ("€240,769").
+ */
+export const formatHeadlineMoney = (amount: number) => {
+  if (Math.abs(amount) < 1000) return formatMoney(amount);
+  return current === 'sq'
+    ? `${albanianNumber(Math.round(amount), 0)}${String.fromCharCode(160)}€`
+    : cached(
+        'money-whole',
+        () => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, minimumFractionDigits: 0 }),
+      ).format(amount);
+};
 
 /** Any date in the current language, e.g. { month: 'long' } → "October" / "tetor". */
 export const formatDateWith = (date: Date, options: Intl.DateTimeFormatOptions) =>

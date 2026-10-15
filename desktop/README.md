@@ -4,7 +4,7 @@ A Windows app that opens the live dashboard (dashboard.4vd.app) in its own windo
 Dashboard changes reach it the moment they are deployed; only changes to this
 folder need a new app version.
 
-- Download on any PC: https://4vd.app/download
+- Download on any PC: https://dashboard.4vd.app/download
 - Try it locally: `npm install`, then `npm start`
 
 ## Releasing a new version

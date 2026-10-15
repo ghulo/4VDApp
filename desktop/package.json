@@ -1,0 +1,41 @@
+{
+  "name": "4vd-desktop",
+  "productName": "4VD",
+  "version": "0.1.0",
+  "private": true,
+  "description": "4VD dashboard as a Windows app",
+  "author": "4VD",
+  "license": "UNLICENSED",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "app.4vd.desktop",
+    "productName": "4VD",
+    "files": ["src/**/*"],
+    "icon": "src/icon.png",
+    "win": {
+      "target": "nsis",
+      "artifactName": "4VD-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "4VD"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ghulo",
+      "repo": "4VDApp"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

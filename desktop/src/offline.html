@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'">
+<title>4VD</title>
+<style>
+  /* Colours from DESIGN.md; the system font stands in because web fonts need the internet. */
+  :root { --canvas: #f0eee6; --paper: #faf9f5; --ink: #141413; --muted: #5e5d59; --hairline: #e0dbcf; --edge: #cbc3b3; --focus: #141413; }
+  @media (prefers-color-scheme: dark) {
+    :root { --canvas: #151413; --paper: #252421; --ink: #f3f1ea; --muted: #b0ada4; --hairline: #3a3834; --edge: #4a4843; --focus: #faf9f5; }
+  }
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: var(--canvas); color: var(--ink); font: 16px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 360px; margin: 0 16px; padding: 32px; background: var(--paper); border: 1px solid var(--hairline); border-radius: 12px; box-shadow: 0 1px 0 var(--hairline), 0 8px 24px rgb(20 20 19 / 0.08); text-align: center; }
+  img { width: 56px; height: 56px; border-radius: 12px; }
+  h1 { margin: 16px 0 8px; font: 600 24px/1.25 Georgia, "Times New Roman", serif; }
+  p { margin: 0 0 24px; color: var(--muted); }
+  button { font: inherit; font-weight: 600; line-height: 1; color: var(--paper); background: var(--ink); border: 0; border-radius: 8px; padding: 12px 24px; box-shadow: 0 2px 0 var(--edge); cursor: pointer; }
+  button:active { transform: translateY(2px); box-shadow: none; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  button:disabled { cursor: default; box-shadow: none; opacity: 1; background: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon.png" alt="">
+  <h1 id="title">Can't reach 4VD</h1>
+  <p id="body">Check this computer's internet connection. We'll keep trying every few seconds.</p>
+  <button id="retry" type="button">Try again</button>
+</main>
+<script>
+  const retry = new URLSearchParams(location.search).get('retry') || 'https://dashboard.4vd.app/';
+  const button = document.getElementById('retry');
+  if (navigator.language.startsWith('sq')) {
+    document.documentElement.lang = 'sq';
+    document.getElementById('title').textContent = 'Nuk lidhet me 4VD';
+    document.getElementById('body').textContent = 'Kontrolloni internetin e këtij kompjuteri. Do të provojmë sërish çdo disa sekonda.';
+    button.textContent = 'Provo sërish';
+  }
+  function go() { button.disabled = true; location.href = retry; }
+  button.addEventListener('click', go);
+  window.addEventListener('online', go);
+  setTimeout(go, 10000);
+</script>
+</body>
+</html>

@@ -189,3 +189,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] B11 Dashboard basket looks like a receipt
 - [x] B12 Rulebook and design tooling match the code
 - [ ] You look it over locally, then merge and push
+
+## Requests 2026-10-15
+
+- [x] Windows app (Electron, desktop/) that opens the live dashboard; install on any PC from dashboard.4vd.app/download, updates itself from GitHub Releases

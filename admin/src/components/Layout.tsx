@@ -1,6 +1,6 @@
 import { CaretDoubleLeft, CaretDoubleRight, List, MagnifyingGlass, SignOut, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { CommandPalette } from '../command/CommandPalette';
@@ -10,6 +10,7 @@ import { useAttention } from '../utils/useAttention';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
+import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
@@ -203,7 +204,9 @@ export function Layout() {
       <main className="main">
         <div className="main__frame">
           <ErrorBoundary key={location.pathname}>
-            <Outlet />
+            <Suspense fallback={<Loading />}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </div>
       </main>

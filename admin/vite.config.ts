@@ -6,9 +6,15 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // One bundle for the whole dashboard is fine for staff on a shop computer;
-    // the line icons put it just over Vite's default 500 kB warning.
-    chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // React, the router and the data cache change far less often than our own code,
+          // so they get their own file that browsers keep between releases.
+          groups: [{ name: 'vendor', test: /node_modules[\/](react|react-dom|scheduler|react-router|@tanstack)[\/]/ }],
+        },
+      },
+    },
   },
   test: {
     // Tests read the real stylesheet (e.g. the colour contrast check), so don't stub CSS.

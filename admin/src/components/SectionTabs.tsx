@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { Loading } from './Feedback';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import type { SectionTab } from '../navigation/sections';
@@ -17,7 +19,9 @@ export function SectionTabs({ tabs, labelKey }: { tabs: SectionTab[]; labelKey: 
           </NavLink>
         ))}
       </nav>
-      <Outlet />
+      <Suspense fallback={<Loading />}>
+        <Outlet />
+      </Suspense>
     </>
   );
 }

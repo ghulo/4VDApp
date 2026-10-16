@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Suspense } from 'react';
 import { Link, Navigate, NavLink, Outlet, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, PageHeader } from '../components/ui';
@@ -60,7 +61,9 @@ export function ProductPage() {
           {t.productPage.details}
         </NavLink>
       </nav>
-      <Outlet />
+      <Suspense fallback={<Loading />}>
+        <Outlet />
+      </Suspense>
     </>
   );
 }

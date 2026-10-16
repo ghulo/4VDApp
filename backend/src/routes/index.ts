@@ -16,6 +16,7 @@ import { createOrderRoutes, createSupplierRoutes } from './orderRoutes.js';
 import { createExpiryRoutes } from './expiryRoutes.js';
 import {
   createCategoryRoutes,
+  createDuplicateRoutes,
   createInventoryRoutes,
   createPricingRoutes,
   createProductRoutes,
@@ -46,6 +47,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/auth', createAuthRoutes(container));
   router.use('/categories', createCategoryRoutes(container));
   router.use('/products', createProductRoutes(container));
+  router.use('/duplicates', createDuplicateRoutes(container));
   router.use('/inventory', createInventoryRoutes(container));
   router.use('/pricing', createPricingRoutes(container));
   router.use('/promotions', createPromotionRoutes(container));

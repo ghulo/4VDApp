@@ -99,6 +99,8 @@ import { TransactionManager } from './repositories/TransactionManager.js';
 import { UserRepository } from './repositories/UserRepository.js';
 import { AuthService } from './services/AuthService.js';
 import { CategoryService } from './services/CategoryService.js';
+import { DuplicateService } from './services/DuplicateService.js';
+import { DuplicateRepository } from './repositories/DuplicateRepository.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
 import { ProductService } from './services/ProductService.js';
@@ -145,6 +147,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
   const categoryService = new CategoryService(categoryRepository, transactions);
+  const duplicateService = new DuplicateService(new DuplicateRepository(db), transactions);
   const mediaService = new MediaService(new MediaRepository(db));
   const productService = new ProductService(
     productRepository,
@@ -224,7 +227,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
         : null,
     config.shopTimeZone,
   );
-  const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, billScanRepository, config.shopTimeZone);
+  const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, billScanRepository, duplicateService, config.shopTimeZone);
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
@@ -367,6 +370,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     userRepository,
     authService,
     categoryService,
+    duplicateService,
     productService,
     inventoryService,
     pricingService,

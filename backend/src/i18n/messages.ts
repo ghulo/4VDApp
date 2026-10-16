@@ -87,6 +87,8 @@ export interface ServerMessages {
     closeDayDetail: string;
     shiftTitle: (left: number) => string;
     shiftDetail: string;
+    duplicatesTitle: (count: number) => string;
+    duplicatesDetail: string;
   };
 
   testAlertTitle: string;
@@ -333,6 +335,8 @@ export const en: ServerMessages = {
     closeDayDetail: 'Count the drawers, enter the carwash and add the expenses before you go.',
     shiftTitle: (left) => `End your shift: ${left} ${left === 1 ? 'step' : 'steps'} left`,
     shiftDetail: 'Count your drawer and enter the takings before you go.',
+    duplicatesTitle: (count) => `${count} ${count === 1 ? 'product may be' : 'products may be'} listed twice`,
+    duplicatesDetail: 'Merge each pair or keep both, so stock and sales add up in one place.',
   },
 
   testAlertTitle: 'Test alert from 4VD',
@@ -607,6 +611,8 @@ export const sq: ServerMessages = {
     closeDayDetail: 'Numëro arkat, fut lavazhin dhe shto shpenzimet para se të ikësh.',
     shiftTitle: (left) => `Mbyll turnin: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
     shiftDetail: 'Numëro arkën dhe fut të ardhurat para se të ikësh.',
+    duplicatesTitle: (count) => `${count === 1 ? 'Një produkt mund të jetë' : `${count} produkte mund të jenë`} dy herë në listë`,
+    duplicatesDetail: 'Bashkoji ose mbaji të dyja, që stoku dhe shitjet të mblidhen në një vend.',
   },
 
   testAlertTitle: 'Njoftim provë nga 4VD',

@@ -141,6 +141,8 @@ const en = {
   photoRemoved: (p: { product: string }) => `Removed the photo of ${p.product}`,
   productAdded: (p: { name: string }) => `Added product ${p.name}`,
   productDeleted: (p: { name: string }) => `Deleted product ${p.name}`,
+  productsMerged: (p: { kept: string; merged: string }) => `Merged ${p.merged} into ${p.kept}`,
+  duplicateKeptApart: (p: { name: string; other: string }) => `Kept ${p.name} and ${p.other} as two products`,
   productPriceChanged: (p: { name: string; from: number; to: number; also: ProductField[] }, w: Words) =>
     `Changed price of ${p.name} from ${w.money(p.from)} to ${w.money(p.to)}${enAlso(p.also)}`,
   productShown: (p: { name: string; also: ProductField[] }) => `Showed ${p.name} in the app${enAlso(p.also)}`,
@@ -465,6 +467,8 @@ const sq: Templates = {
   photoRemoved: (p) => `Hoqi foton e ${p.product}`,
   productAdded: (p) => `Shtoi produktin ${p.name}`,
   productDeleted: (p) => `Fshiu produktin ${p.name}`,
+  productsMerged: (p) => `Bashkoi ${p.merged} me ${p.kept}`,
+  duplicateKeptApart: (p) => `I la ${p.name} dhe ${p.other} si dy produkte`,
   productPriceChanged: (p, w) => `Ndryshoi çmimin e ${p.name} nga ${w.money(p.from)} në ${w.money(p.to)}${sqAlso(p.also)}`,
   productShown: (p) => `Shfaqi ${p.name} në aplikacion${sqAlso(p.also)}`,
   productHidden: (p) => `Fshehu ${p.name} nga aplikacioni${sqAlso(p.also)}`,

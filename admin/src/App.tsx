@@ -58,6 +58,7 @@ const SupplierDetailPage = lazyPage(() => import('./pages/SupplierDetailPage'), 
 const SuppliersPage = lazyPage(() => import('./pages/SuppliersPage'), 'SuppliersPage');
 const NewOrderPage = lazyPage(() => import('./pages/NewOrderPage'), 'NewOrderPage');
 const OrdersPage = lazyPage(() => import('./pages/OrdersPage'), 'OrdersPage');
+const DuplicatesPage = lazyPage(() => import('./pages/DuplicatesPage'), 'DuplicatesPage');
 const LabelsPage = lazyPage(() => import('./pages/LabelsPage'), 'LabelsPage');
 const SettingsPage = lazyPage(() => import('./pages/SettingsPage'), 'SettingsPage');
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage'), 'ProfilePage');
@@ -125,6 +126,7 @@ function App() {
                       <Route path="products" element={<ProductsPage />} />
                       <Route path="categories" element={<CategoriesPage />} />
                     </Route>
+                    <Route path="inventory/duplicates" element={<DuplicatesPage />} />
                     <Route path="inventory/:productId" element={<OldStockPageRedirect />} />
                     <Route path="products/new" element={<ProductFormPage />} />
                     <Route path="products/:id" element={<ProductPage />}>

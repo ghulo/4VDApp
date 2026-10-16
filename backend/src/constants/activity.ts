@@ -3,6 +3,8 @@ export const ACTIVITY_ACTIONS = [
   'product.created',
   'product.updated',
   'product.deleted',
+  'product.merged',
+  'product.kept_apart',
   'product.barcode_set',
   'product.image_set',
   'product.requested',

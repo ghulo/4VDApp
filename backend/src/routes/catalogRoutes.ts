@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { readImage } from './profileRoutes.js';
 import type { Container } from '../container.js';
 import { createCategoryController } from '../controllers/categoryController.js';
+import { createDuplicateController } from '../controllers/duplicateController.js';
 import { createInventoryController } from '../controllers/inventoryController.js';
 import { createPricingController } from '../controllers/pricingController.js';
 import { createProductController } from '../controllers/productController.js';
@@ -15,6 +16,18 @@ export function createCategoryRoutes({ categoryService, guards }: Container): Ro
   router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);
   router.delete('/:id', ...guards.manage, controller.remove);
+
+  return router;
+}
+
+/** Products that look like the same item twice: merge them or keep both. */
+export function createDuplicateRoutes({ duplicateService, guards }: Container): Router {
+  const controller = createDuplicateController(duplicateService);
+  const router = Router();
+
+  router.get('/', ...guards.products, controller.list);
+  router.post('/:id/merge', ...guards.products, controller.merge);
+  router.post('/:id/keep-both', ...guards.products, controller.keepBoth);
 
   return router;
 }

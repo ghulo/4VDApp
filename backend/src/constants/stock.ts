@@ -12,6 +12,7 @@ export const SYSTEM_STOCK_REASONS = {
   UNDO: 'Undo',
   RESTORE: 'Restore',
   DELIVERY: 'Delivery',
+  MERGE: 'Merged duplicate',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

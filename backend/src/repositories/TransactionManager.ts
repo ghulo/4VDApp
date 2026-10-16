@@ -6,6 +6,7 @@ import { DocumentRepository } from './DocumentRepository.js';
 import { SupplierBillRepository } from './SupplierBillRepository.js';
 import { BillScanRepository } from './BillScanRepository.js';
 import { ProductRequestRepository } from './ProductRequestRepository.js';
+import { DuplicateRepository } from './DuplicateRepository.js';
 import { ExpenseRepository } from './ExpenseRepository.js';
 import { TabRepository } from './TabRepository.js';
 import { PurchaseOrderRepository } from './PurchaseOrderRepository.js';
@@ -54,6 +55,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     bills: new SupplierBillRepository(db),
     billScans: new BillScanRepository(db),
     productRequests: new ProductRequestRepository(db),
+    duplicates: new DuplicateRepository(db),
   };
 }
 

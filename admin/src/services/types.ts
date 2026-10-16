@@ -589,7 +589,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -1172,3 +1172,30 @@ export interface ConfirmScanInput {
 
 /** Records that have a History card (the server's activity entity types). */
 export type HistoryEntity = 'product' | 'category' | 'user' | 'sale' | 'customer' | 'supplier' | 'order' | 'document' | 'bill' | 'bill_scan' | 'business' | 'promotion' | 'expense' | 'stock_count';
+
+/** One side of a pair of products that may be the same item. */
+export interface DuplicateSide {
+  id: number;
+  name: string;
+  barcode: string | null;
+  sku: string | null;
+  price: number;
+  costPrice: number | null;
+  imageUrl: string | null;
+  category: string;
+  stock: number;
+  unitsSold90d: number;
+  unitsSold: number;
+  lastSoldAt: string | null;
+}
+
+/** Two products that may be the same item; the busier seller comes first. */
+export interface DuplicatePair {
+  id: number;
+  reason: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolution: 'merged' | 'kept_both' | null;
+  resolvedBy: string | null;
+  products: [DuplicateSide, DuplicateSide];
+}

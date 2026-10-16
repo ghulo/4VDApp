@@ -24,6 +24,7 @@ import type {
   WriteOffReason,
   AppNotification,
   Category,
+  DuplicatePair,
   Dashboard,
   Insight,
   InventoryDetail,
@@ -222,6 +223,16 @@ export const promotionsApi = {
   results: async (id: number) => (await apiRequest<PromotionResults>(`/promotions/${id}/results`)).data,
   preview: async (input: { percentOff: number; productId?: number; categoryId?: number }) =>
     (await apiRequest<PromotionPreviewLine[]>('/promotions/preview', { method: 'POST', body: input })).data,
+};
+
+export const duplicatesApi = {
+  list: async (status: 'open' | 'done') => (await apiRequest<DuplicatePair[]>(`/duplicates?status=${status}`)).data,
+  merge: async (id: number, input: { keepId: number; barcodeFromId: number }) => {
+    await apiRequest(`/duplicates/${id}/merge`, { method: 'POST', body: input });
+  },
+  keepBoth: async (id: number) => {
+    await apiRequest(`/duplicates/${id}/keep-both`, { method: 'POST' });
+  },
 };
 
 export const categoriesApi = {

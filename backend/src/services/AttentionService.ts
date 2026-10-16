@@ -6,6 +6,7 @@ import type { BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
 import type { CashCountService } from './CashCountService.js';
 import type { DayService } from './DayService.js';
+import type { DuplicateService } from './DuplicateService.js';
 import type { Insight, InsightKind, InsightSeverity, InsightsService } from './InsightsService.js';
 
 /** From this hour (shop time) an unfinished day or shift becomes something to do. */
@@ -15,8 +16,8 @@ const CASH_CHECK_DAYS = 30;
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -87,6 +88,7 @@ export class AttentionService {
     private readonly cashCountService: CashCountService,
     private readonly dayService: DayService,
     private readonly billScans: BillScanRepository,
+    private readonly duplicates: DuplicateService,
     private readonly timeZone: string,
   ) {}
 
@@ -98,12 +100,13 @@ export class AttentionService {
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
   private async overseer(role: UserRole, t: ServerMessages, now: Date): Promise<TodoItem[]> {
-    const [approvals, insights, cash, day, scans] = await Promise.all([
+    const [approvals, insights, cash, day, scans, duplicates] = await Promise.all([
       this.approvalService.summary(),
       this.insightsService.list(now, t),
       this.cashCountService.unchecked(CASH_CHECK_DAYS, now),
       this.closingDay(role, now),
       this.billScans.findWaiting(),
+      this.duplicates.countOpen(),
     ]);
     const items: TodoItem[] = [];
     if (approvals.total > 0) {
@@ -139,6 +142,17 @@ export class AttentionService {
         verb: 'markChecked',
         to: `/day?date=${count.day}`,
         cashCountId: count.id,
+      });
+    }
+    if (duplicates > 0) {
+      items.push({
+        key: 'duplicates',
+        kind: 'duplicates',
+        severity: 'check',
+        title: t.todo.duplicatesTitle(duplicates),
+        detail: t.todo.duplicatesDetail,
+        verb: 'reviewDuplicates',
+        to: '/inventory/duplicates',
       });
     }
     if (day && !day.allDone) {

@@ -562,6 +562,7 @@
   /* A page's own toolbar inside this one fits the card instead of growing to
      the length of its scrolling filter row. */
   .data-table__toolbar > .toolbar {
+    flex: 1 1 100%;
     min-width: 0;
     max-width: 100%;
   }

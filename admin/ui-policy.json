@@ -104,6 +104,13 @@
         "text-contrast"
       ],
       "reason": "The clay key is lit by a soft light gradient (DESIGN.md 8, Light), so the tool cannot measure it. Its text is --cta-ink on --cta, which src/theme/contrast.test.ts checks passes 4.5:1."
+    },
+    {
+      "selector": ".duplicate-side *",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The two product cards on Possible duplicates are raised panels lit by the sheen and light gradients (DESIGN.md 8, Light), so the tool cannot read their background. Measured on the flat fill: muted text 4.76:1 light, 6.14:1 dark; ink 13.3:1 and 12.2:1."
     }
   ]
 }

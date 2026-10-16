@@ -32,6 +32,8 @@ export interface PaginationMeta {
   page: number;
   limit: number;
   total: number;
+  /** Sums over every matching record, not just this page (a list's totals row). */
+  totals?: Record<string, number>;
 }
 
 export interface Paginated<TItem> {

@@ -82,6 +82,13 @@ export interface NewDocument {
   lines: NewDocumentLine[];
 }
 
+/** What the matching documents add up to; credit notes count against invoices. */
+export type DocumentSums = {
+  netTotal: number;
+  vatTotal: number;
+  total: number;
+};
+
 export interface DocumentFilters {
   kind?: DocumentKind;
   /** Part of a number or the buyer's name. */
@@ -218,7 +225,7 @@ export class DocumentRepository {
       ]);
   }
 
-  async findMany(filters: DocumentFilters): Promise<{ documents: DocumentRecord[]; total: number }> {
+  async findMany(filters: DocumentFilters): Promise<{ documents: DocumentRecord[]; total: number; sums: DocumentSums }> {
     let query = this.baseQuery();
     if (filters.kind) query = query.where('d.kind', '=', filters.kind);
     if (filters.customerId) query = query.where('d.customer_id', '=', filters.customerId);
@@ -228,11 +235,21 @@ export class DocumentRepository {
       const pattern = `%${escapeLikePattern(filters.search)}%`;
       query = query.where((eb) => eb.or([eb('d.number', 'ilike', pattern), eb(sql`d.buyer->>'name'`, 'ilike', pattern)]));
     }
+    // A credit note takes its amount back off the invoices.
+    const signed = (column: 'd.net_total' | 'd.vat_total' | 'd.total') =>
+      sql<string>`coalesce(sum(case when d.kind = 'credit_note' then -${sql.ref(column)} else ${sql.ref(column)} end), 0)`;
     const [documents, count] = await Promise.all([
       query.orderBy('d.issued_at', 'desc').orderBy('d.id', 'desc').limit(filters.limit).offset(filters.offset).execute(),
-      query.clearSelect().select((eb) => eb.fn.countAll<string>().as('total')).executeTakeFirstOrThrow(),
+      query
+        .clearSelect()
+        .select((eb) => [eb.fn.countAll<string>().as('total'), signed('d.net_total').as('net'), signed('d.vat_total').as('vat'), signed('d.total').as('sum')])
+        .executeTakeFirstOrThrow(),
     ]);
-    return { documents, total: Number(count.total) };
+    return {
+      documents,
+      total: Number(count.total),
+      sums: { netTotal: Number(count.net), vatTotal: Number(count.vat), total: Number(count.sum) },
+    };
   }
 
   findById(id: number): Promise<DocumentRecord | undefined> {

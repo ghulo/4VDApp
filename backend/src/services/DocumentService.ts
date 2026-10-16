@@ -197,7 +197,7 @@ export class DocumentService {
   }
 
   async list(query: DocumentQuery) {
-    const { documents, total } = await this.documentRepository.findMany({
+    const { documents, total, sums } = await this.documentRepository.findMany({
       kind: query.kind,
       search: query.search,
       customerId: query.customerId,
@@ -206,7 +206,7 @@ export class DocumentService {
       limit: query.limit,
       offset: toOffset(query),
     });
-    return { items: documents.map(toDto), meta: toPaginationMeta(query, total) };
+    return { items: documents.map(toDto), meta: { ...toPaginationMeta(query, total), totals: sums } };
   }
 
   async get(id: number, viewer: PublicUser): Promise<DocumentDetailDto> {

@@ -25,11 +25,16 @@ export function BarcodeCard({ product }: { product: Product }) {
   };
   const save = useMutation({ mutationFn: (barcode: string | null) => productsApi.setBarcode(product.id, barcode), onSuccess: onSaved });
   const create = useMutation({ mutationFn: () => productsApi.createBarcode(product.id), onSuccess: onSaved });
-  const error = save.error ?? create.error;
+  const add = useMutation({ mutationFn: (barcode: string) => productsApi.addBarcode(product.id, barcode), onSuccess: onSaved });
+  const dropOther = useMutation({ mutationFn: (barcode: string) => productsApi.removeBarcode(product.id, barcode), onSuccess: onSaved });
+  const error = save.error ?? create.error ?? add.error ?? dropOther.error;
+  const busy = save.isPending || create.isPending || add.isPending || dropOther.isPending;
 
+  // With a main barcode already, a scan adds another one so nothing is lost.
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    save.mutate(value.trim());
+    if (product.barcode) add.mutate(value.trim());
+    else save.mutate(value.trim());
   }
 
   return (
@@ -44,16 +49,38 @@ export function BarcodeCard({ product }: { product: Product }) {
           <div className="form-actions">
             <ButtonLink to={`/labels?products=${product.id}`}>{t.barcodes.printLabel}</ButtonLink>
             <ManagersOnly can={canEditProducts}>
-              <Button variant="danger-text" disabled={save.isPending} onClick={() => save.mutate(null)}>
+              <Button variant="danger-text" disabled={busy} onClick={() => save.mutate(null)}>
                 {t.barcodes.remove}
               </Button>
             </ManagersOnly>
           </div>
+          {product.otherBarcodes.length > 0 && (
+            <>
+              <h3 className="subheading">{t.barcodes.others}</h3>
+              <ul className="barcode-others">
+                {product.otherBarcodes.map((code) => (
+                  <li key={code}>
+                    <code>{code}</code>
+                    <ManagersOnly can={canEditProducts}>
+                      <span className="barcode-others__actions">
+                        <Button variant="ghost" disabled={busy} aria-label={t.barcodes.makeMainLabel(code)} onClick={() => save.mutate(code)}>
+                          {t.barcodes.makeMain}
+                        </Button>
+                        <Button variant="danger-text" disabled={busy} aria-label={t.barcodes.removeOtherLabel(code)} onClick={() => dropOther.mutate(code)}>
+                          {t.barcodes.removeOther}
+                        </Button>
+                      </span>
+                    </ManagersOnly>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
       <ManagersOnly can={canEditProducts}>
         <form className="settings-form" onSubmit={handleSubmit}>
-          <Field label={product.barcode ? t.barcodes.replace : t.barcodes.scanIn} hint={t.barcodes.scanHint}>
+          <Field label={product.barcode ? t.barcodes.addAnother : t.barcodes.scanIn} hint={t.barcodes.scanHint}>
             {/* A USB scanner types the code and presses Enter, which saves it. */}
             <input inputMode="numeric" autoComplete="off" maxLength={64} value={value} onChange={(event) => setValue(event.target.value)} />
           </Field>
@@ -63,11 +90,16 @@ export function BarcodeCard({ product }: { product: Product }) {
             </p>
           )}
           <div className="form-actions">
-            <Button type="submit" disabled={value.trim().length < 4 || save.isPending}>
-              {t.barcodes.save}
+            <Button type="submit" disabled={value.trim().length < 4 || busy}>
+              {product.barcode ? t.barcodes.add : t.barcodes.save}
             </Button>
+            {product.barcode && (
+              <Button disabled={value.trim().length < 4 || busy} onClick={() => save.mutate(value.trim())}>
+                {t.barcodes.replaceMain}
+              </Button>
+            )}
             {!product.barcode && (
-              <Button variant="primary" disabled={create.isPending} onClick={() => create.mutate()}>
+              <Button variant="primary" disabled={busy} onClick={() => create.mutate()}>
                 {t.barcodes.create}
               </Button>
             )}

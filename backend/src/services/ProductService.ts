@@ -25,7 +25,10 @@ export interface ProductDto {
   name: string;
   description: string | null;
   sku: string | null;
+  /** The main barcode, the one labels print. */
   barcode: string | null;
+  /** More barcodes the same product comes under; each one finds it when scanned. */
+  otherBarcodes: string[];
   imageUrl: string | null;
   isActive: boolean;
   /** Percent of VAT included in the price. */
@@ -143,6 +146,44 @@ export class ProductService {
         logExtra,
       }),
     );
+    return this.getById(id, 'admin');
+  }
+
+  /**
+   * Gives the product another barcode, for when the same item comes under more
+   * than one. A product with no barcode yet takes it as its main one.
+   */
+  async addBarcode(id: number, barcode: string, actorId: number): Promise<ProductDto> {
+    if (!hasValidCheckDigit(barcode)) {
+      throw new ValidationError(`${barcode} isn't a valid barcode: its last digit doesn't match. Scan it again or check for a typo.`);
+    }
+    const product = await this.productRepository.findById(id, true);
+    if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    if (!product.barcode) return this.setBarcode(id, barcode, actorId);
+    const owner = await this.productRepository.findIdByBarcode(barcode);
+    if (owner === id) throw new ConflictError(`${product.name} already has the barcode ${barcode}`);
+    if (owner !== undefined) throw new ConflictError(`Another product already has the barcode ${barcode}`);
+    await this.transactions.run((repos) =>
+      addProductBarcode(repos, { product, code: barcode, actorId, say: { key: 'barcodeAdded', params: { product: product.name, code: barcode } } }),
+    );
+    return this.getById(id, 'admin');
+  }
+
+  /** Takes one of the product's other barcodes off it (the main one goes with setBarcode). */
+  async removeBarcode(id: number, barcode: string, actorId: number): Promise<ProductDto> {
+    const product = await this.productRepository.findById(id, true);
+    if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    await this.transactions.run(async (repos) => {
+      if (!(await repos.products.removeOtherBarcode(id, barcode))) throw new NotFoundError(`${product.name} has no other barcode ${barcode}`);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'product.barcode_removed',
+        entityType: 'product',
+        entityId: id,
+        say: { key: 'otherBarcodeRemoved', params: { product: product.name, code: barcode } },
+        details: { otherBarcode: barcode },
+      });
+    });
     return this.getById(id, 'admin');
   }
 
@@ -340,6 +381,7 @@ export class ProductService {
       description: product.description,
       sku: product.sku,
       barcode: product.barcode,
+      otherBarcodes: product.other_barcodes,
       imageUrl: product.image_url,
       isActive: product.is_active,
       vatRate: product.vat_rate,
@@ -400,7 +442,10 @@ export async function setProductBarcode(
   },
 ): Promise<void> {
   const { product } = p;
+  // One of its other barcodes becoming the main one swaps places with the old main one.
+  const promoted = p.to !== null && (await repos.products.removeOtherBarcode(product.id, p.to));
   await repos.products.setBarcode(product.id, p.to);
+  if (promoted && product.barcode) await repos.products.addOtherBarcode(product.id, product.barcode, p.actorId);
   const country = product.origin_country ? null : countryFromBarcode(p.to);
   if (country) await repos.products.setOriginCountry(product.id, country);
   await repos.activityLog.create({
@@ -410,5 +455,27 @@ export async function setProductBarcode(
     entityId: product.id,
     say: p.say,
     details: { barcode: { from: product.barcode, to: p.to }, ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
+  });
+}
+
+/**
+ * Gives a product another barcode (the product page and scanned bills). A
+ * product with no country yet takes the one the barcode was registered in.
+ * Run inside a transaction; the caller checks the barcode is free.
+ */
+export async function addProductBarcode(
+  repos: TransactionalRepositories,
+  p: { product: { id: number; origin_country: string | null }; code: string; actorId: number; say: Say; logExtra?: Record<string, unknown> },
+): Promise<void> {
+  await repos.products.addOtherBarcode(p.product.id, p.code, p.actorId);
+  const country = p.product.origin_country ? null : countryFromBarcode(p.code);
+  if (country) await repos.products.setOriginCountry(p.product.id, country);
+  await repos.activityLog.create({
+    userId: p.actorId,
+    action: 'product.barcode_added',
+    entityType: 'product',
+    entityId: p.product.id,
+    say: p.say,
+    details: { otherBarcode: p.code, ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
   });
 }

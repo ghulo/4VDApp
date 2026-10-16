@@ -210,6 +210,15 @@ export interface SalesTable {
 }
 
 /** Two products that look like the same item, for someone to merge or keep apart. */
+/** A product's other barcodes; `products.barcode` is its main one. */
+export interface ProductBarcodesTable {
+  id: Generated<number>;
+  product_id: number;
+  barcode: string;
+  added_by: number | null;
+  created_at: CreatedAt;
+}
+
 export interface ProductDuplicateFlagsTable {
   id: Generated<number>;
   product_id: number;
@@ -778,6 +787,7 @@ export interface Database {
   supplier_product_codes: SupplierProductCodesTable;
   report_subscriptions: ReportSubscriptionsTable;
   product_duplicate_flags: ProductDuplicateFlagsTable;
+  product_barcodes: ProductBarcodesTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

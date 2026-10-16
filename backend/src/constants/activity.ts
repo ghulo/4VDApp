@@ -6,6 +6,8 @@ export const ACTIVITY_ACTIONS = [
   'product.merged',
   'product.kept_apart',
   'product.barcode_set',
+  'product.barcode_added',
+  'product.barcode_removed',
   'product.image_set',
   'product.requested',
   'product.request_approved',

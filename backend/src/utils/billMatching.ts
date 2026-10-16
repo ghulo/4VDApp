@@ -6,6 +6,8 @@ export interface MatchableProduct {
   name: string;
   sku: string | null;
   barcode: string | null;
+  /** Its other barcodes; a bill printing any of them is the same product. */
+  otherBarcodes?: string[];
   costPrice: number | null;
   vatRate: number;
 }
@@ -60,6 +62,8 @@ export function nameSimilarity(a: string, b: string): number {
 }
 
 const sameCode = (a: string | null, b: string | null) => Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase());
+/** Whether the code is the product's main barcode or one of its others. */
+const hasBarcode = (product: MatchableProduct, code: string | null) => sameCode(product.barcode, code) || (product.otherBarcodes ?? []).some((other) => sameCode(other, code));
 
 type ReadLine = BillReading['lines'][number];
 
@@ -89,11 +93,11 @@ export function matchLine(
     if (product) matchedBy = 'code';
   }
   if (!product && line.barcode) {
-    product = products.find((row) => sameCode(row.barcode, line.barcode));
+    product = products.find((row) => hasBarcode(row, line.barcode));
     if (product) matchedBy = 'barcode';
   }
   if (!product && line.code) {
-    product = products.find((row) => sameCode(row.sku, line.code) || sameCode(row.barcode, line.code));
+    product = products.find((row) => sameCode(row.sku, line.code) || hasBarcode(row, line.code));
     if (product) matchedBy = 'sku';
   }
   if (!product) {
@@ -115,8 +119,8 @@ export function matchLine(
   const unitsPerPack = known?.unitsPerPack ?? (line.unitsPerPack && line.unitsPerPack > 1 ? Math.round(line.unitsPerPack) : 1);
   const unitCost = pieceCost(line, unitsPerPack, reading.pricesIncludeVat, product?.vatRate ?? 18);
   const oldCost = product && unitCost !== null && product.costPrice !== unitCost ? product.costPrice : null;
-  const oldBarcode = product && line.barcode && !sameCode(product.barcode, line.barcode) ? product.barcode : null;
-  const barcodeDiffers = Boolean(product && line.barcode && !sameCode(product.barcode, line.barcode));
+  const barcodeDiffers = Boolean(product && line.barcode && !hasBarcode(product, line.barcode));
+  const oldBarcode = barcodeDiffers ? product!.barcode : null;
 
   return {
     productId: product?.id ?? null,

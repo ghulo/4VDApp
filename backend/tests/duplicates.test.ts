@@ -57,10 +57,10 @@ describe('duplicate products', () => {
     expect(second).toMatchObject({ id: kept, unitsSold90d: 3, stock: 2 });
   });
 
-  it('should merge: sales and stock move over, the chosen barcode stays and the other product goes', async () => {
+  it('should merge: sales, stock and barcodes move over and the other product goes', async () => {
     const { kept, other, id } = await redBulls();
 
-    const response = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept, barcodeFromId: other });
+    const response = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept });
 
     expect(response.status).toBe(200);
     expect(await stockOf(context, kept)).toBe(2 + 6);
@@ -68,8 +68,12 @@ describe('duplicate products', () => {
     const sales = await context.db.selectFrom('sales').select('product_id').execute();
     expect(sales.every((sale) => sale.product_id === kept)).toBe(true);
     const products = await context.db.selectFrom('products').select(['id', 'barcode', 'deleted_at']).orderBy('id').execute();
-    expect(products[0]).toMatchObject({ id: kept, barcode: '90162602', deleted_at: null });
+    // The kept product keeps its own barcode; the other's still finds it when scanned.
+    expect(products[0]).toMatchObject({ id: kept, barcode: '9002490100070', deleted_at: null });
+    expect(products[1]).toMatchObject({ barcode: null });
     expect(products[1]!.deleted_at).not.toBeNull();
+    const scanned = await request(context.app).get('/api/products/barcode/90162602').set(auth());
+    expect(scanned.body.data).toMatchObject({ id: kept, otherBarcodes: ['90162602'] });
     const adjustment = await context.db.selectFrom('stock_adjustments').selectAll().where('reason', '=', 'Merged duplicate').executeTakeFirstOrThrow();
     expect(adjustment).toMatchObject({ product_id: kept, adjustment_quantity: 6 });
     const log = await context.db.selectFrom('activity_log').select(['action', 'entity_id']).where('action', '=', 'product.merged').executeTakeFirstOrThrow();
@@ -77,7 +81,7 @@ describe('duplicate products', () => {
 
     const done = await request(context.app).get('/api/duplicates?status=done').set(auth());
     expect(done.body.data[0]).toMatchObject({ id, resolution: 'merged', resolvedBy: expect.any(String) });
-    const again = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept, barcodeFromId: kept });
+    const again = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept });
     expect(again.status).toBe(409);
   });
 
@@ -87,7 +91,7 @@ describe('duplicate products', () => {
     const otherPair = await flag(other, third);
     const samePair = await flag(kept, third);
 
-    await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept, barcodeFromId: kept });
+    await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: kept });
 
     const open = await context.db.selectFrom('product_duplicate_flags').select(['id', 'product_id', 'other_product_id']).where('resolved_at', 'is', null).execute();
     // The other product's pair with the third would repeat the kept one's, so it goes.
@@ -111,7 +115,7 @@ describe('duplicate products', () => {
     const { kept, id } = await redBulls();
     const stranger = await createTestProduct(context, token, { name: 'Coca Cola' });
 
-    const wrong = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: stranger, barcodeFromId: kept });
+    const wrong = await request(context.app).post(`/api/duplicates/${id}/merge`).set(auth()).send({ keepId: stranger });
     const employee = await loginAs(context, 'employee');
     const staff = await request(context.app).get('/api/duplicates').set({ Authorization: `Bearer ${employee}` });
 

@@ -15,7 +15,7 @@ import { type BillPage, type BillReader, type BillReading, billReadingSchema } f
 import { mediaUrl } from './mappers.js';
 import { applyStockChange } from './InventoryService.js';
 import type { MediaService } from './MediaService.js';
-import { setProductBarcode } from './ProductService.js';
+import { addProductBarcode, setProductBarcode } from './ProductService.js';
 import { changeCost, type OrderDto, type PurchaseOrderService, receiveOrder } from './PurchaseOrderService.js';
 import { type BillInput, createBill, type SupplierBillService } from './SupplierBillService.js';
 
@@ -122,7 +122,8 @@ export interface ScanConfirmation {
   input: ConfirmScanInput;
   createdProducts: number[];
   costs: Array<{ productId: number; from: number | null; to: number }>;
-  barcodes: Array<{ productId: number; from: string | null; to: string }>;
+  /** Barcodes taken from the bill: `added` when it became another barcode, else it replaced `from` (or the product had none). */
+  barcodes: Array<{ productId: number; from: string | null; to: string; added?: boolean }>;
   /** Supplier codes as they were before (null: the code was new). */
   codes: Array<{ code: string; before: { productId: number; unitsPerPack: number } | null }>;
   /** The order filled: made for this bill, or an open one with its lines as they were and the lines added. */
@@ -227,6 +228,7 @@ export class BillScanService {
       name: row.name,
       sku: row.sku,
       barcode: row.barcode,
+      otherBarcodes: row.other_barcodes,
       costPrice: row.cost_price === null ? null : Number(row.cost_price),
       vatRate: row.vat_rate,
     }));
@@ -373,9 +375,9 @@ export class BillScanService {
         }
         const product = await repos.products.findById(productId, true);
         if (!product) throw new NotFoundError(`Product ${productId} does not exist`);
-        if (line.productId && line.updateBarcode && line.barcode && line.barcode !== product.barcode) {
-          await this.setBarcode(repos, product, line.barcode, supplier.name, actorId);
-          confirmation.barcodes.push({ productId: product.id, from: product.barcode, to: line.barcode });
+        if (line.productId && line.updateBarcode && line.barcode && line.barcode !== product.barcode && !product.other_barcodes.includes(line.barcode)) {
+          const added = await this.takeBarcode(repos, product, line.barcode, supplier.name, actorId);
+          confirmation.barcodes.push({ productId: product.id, from: product.barcode, to: line.barcode, ...(added && { added }) });
         }
         if (line.productId && line.updateCost && line.unitCost !== null) {
           const from = product.cost_price === null ? null : Number(product.cost_price);
@@ -553,7 +555,18 @@ export class BillScanService {
         }
         for (const change of done.barcodes) {
           const product = await repos.products.findById(change.productId, true);
-          if (product?.barcode === change.to) {
+          if (change.added) {
+            if (product && (await repos.products.removeOtherBarcode(product.id, change.to))) {
+              await repos.activityLog.create({
+                userId: actorId,
+                action: 'product.barcode_removed',
+                entityType: 'product',
+                entityId: product.id,
+                say: { key: 'barcodeTakenBack', params: { product: product.name, code: change.to } },
+                details: { otherBarcode: change.to },
+              });
+            }
+          } else if (product?.barcode === change.to) {
             await setProductBarcode(repos, {
               product,
               to: change.from,
@@ -623,21 +636,31 @@ export class BillScanService {
     return id;
   }
 
-  private async setBarcode(
+  /**
+   * The barcode printed on the bill goes on the product: as another barcode
+   * when it has one already (the same item under a second code), else as its
+   * main one. True when it was added as another.
+   */
+  private async takeBarcode(
     repos: TransactionalRepositories,
     product: { id: number; name: string; barcode: string | null; origin_country: string | null },
     to: string,
     supplierName: string,
     actorId: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const holder = await repos.products.findIdByBarcode(to);
     if (holder && holder !== product.id) throw new ConflictError(`Another product already has the barcode ${to}`);
+    if (product.barcode) {
+      await addProductBarcode(repos, { product, code: to, actorId, say: { key: 'barcodeAddedFromBill', params: { product: product.name, code: to, supplier: supplierName } } });
+      return true;
+    }
     await setProductBarcode(repos, {
       product,
       to,
       actorId,
       say: { key: 'barcodeFromBill', params: { product: product.name, from: product.barcode, to, supplier: supplierName } },
     });
+    return false;
   }
 
   private async firstPhoto(scan: BillScanRecord): Promise<string | null> {

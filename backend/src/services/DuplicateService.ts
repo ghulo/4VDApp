@@ -7,6 +7,7 @@ export interface DuplicateSideDto {
   id: number;
   name: string;
   barcode: string | null;
+  otherBarcodes: string[];
   sku: string | null;
   price: number;
   costPrice: number | null;
@@ -30,10 +31,8 @@ export interface DuplicatePairDto {
 }
 
 export interface MergeInput {
-  /** The product that stays; the other is folded into it. */
+  /** The product that stays; the other is folded into it, barcodes included. */
   keepId: number;
-  /** The product whose barcode the kept one ends up with. */
-  barcodeFromId: number;
 }
 
 function toSide(side: DuplicateSideRecord): DuplicateSideDto {
@@ -41,6 +40,7 @@ function toSide(side: DuplicateSideRecord): DuplicateSideDto {
     id: side.id,
     name: side.name,
     barcode: side.barcode,
+    otherBarcodes: side.other_barcodes,
     sku: side.sku,
     price: Number(side.base_price),
     costPrice: side.cost_price === null ? null : Number(side.cost_price),
@@ -92,9 +92,7 @@ export class DuplicateService {
     await this.transactions.run(async (repos) => {
       const flag = await this.openFlag(repos.duplicates, id);
       const pair = [flag.product_id, flag.other_product_id];
-      if (!pair.includes(input.keepId) || !pair.includes(input.barcodeFromId)) {
-        throw new ValidationError('keepId and barcodeFromId must be one of the two products in the pair');
-      }
+      if (!pair.includes(input.keepId)) throw new ValidationError('keepId must be one of the two products in the pair');
       const dropId = pair.find((productId) => productId !== input.keepId)!;
       const products = await repos.duplicates.lockProducts(pair);
       const keep = products.find((product) => product.id === input.keepId);
@@ -102,13 +100,11 @@ export class DuplicateService {
       if (!keep || !drop || keep.deleted_at || drop.deleted_at) {
         throw new ConflictError('One of these products has been deleted, so they can no longer be merged.');
       }
-      const barcode = (input.barcodeFromId === keep.id ? keep.barcode : drop.barcode) ?? keep.barcode ?? drop.barcode;
       const dropStock = drop.quantity_on_hand ?? 0;
 
-      await repos.duplicates.merge({
+      const barcodesAdded = await repos.duplicates.merge({
         keepId: keep.id,
         dropId,
-        barcode,
         dropStock,
         reorderLevel: Math.max(keep.reorder_level ?? 0, drop.reorder_level ?? 0),
       });
@@ -132,7 +128,7 @@ export class DuplicateService {
         details: {
           mergedProductId: dropId,
           stockAdded: dropStock,
-          ...(barcode !== keep.barcode && { barcode: { from: keep.barcode, to: barcode } }),
+          ...(barcodesAdded.length > 0 && { barcodesAdded }),
         },
       });
     });

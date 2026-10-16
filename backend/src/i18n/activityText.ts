@@ -136,6 +136,10 @@ const en = {
   productRequestRejected: (p: { name: string; note: string }) => `Did not add ${p.name}: ${p.note}`,
 
   barcodeRemoved: (p: { product: string }) => `Removed the barcode of ${p.product}`,
+  barcodeAdded: (p: { product: string; code: string }) => `Gave ${p.product} another barcode, ${p.code}`,
+  otherBarcodeRemoved: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product}`,
+  barcodeAddedFromBill: (p: { product: string; code: string; supplier: string }) => `Gave ${p.product} another barcode, ${p.code}, as on ${p.supplier}'s bill`,
+  barcodeTakenBack: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product} (scanned bill reopened)`,
   barcodeSet: (p: { product: string; to: string }) => `Set the barcode of ${p.product} to ${p.to}`,
   photoChanged: (p: { product: string }) => `Changed the photo of ${p.product}`,
   photoRemoved: (p: { product: string }) => `Removed the photo of ${p.product}`,
@@ -462,6 +466,10 @@ const sq: Templates = {
   productRequestRejected: (p) => `Nuk e shtoi ${p.name}: ${p.note}`,
 
   barcodeRemoved: (p) => `Hoqi barkodin e ${p.product}`,
+  barcodeAdded: (p) => `I dha ${p.product} edhe një barkod, ${p.code}`,
+  otherBarcodeRemoved: (p) => `Hoqi barkodin ${p.code} nga ${p.product}`,
+  barcodeAddedFromBill: (p) => `I dha ${p.product} edhe një barkod, ${p.code}, si në faturën e ${p.supplier}`,
+  barcodeTakenBack: (p) => `Hoqi barkodin ${p.code} nga ${p.product} (fatura e skanuar u rihap)`,
   barcodeSet: (p) => `Vendosi barkodin e ${p.product} në ${p.to}`,
   photoChanged: (p) => `Ndryshoi foton e ${p.product}`,
   photoRemoved: (p) => `Hoqi foton e ${p.product}`,

@@ -4,7 +4,9 @@ import type { ProductService } from '../services/ProductService.js';
 import { uploadedImage } from './profileController.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import {
+  addBarcodeSchema,
   barcodeParamsSchema,
+  productBarcodeParamsSchema,
   createProductSchema,
   productQuerySchema,
   setBarcodeSchema,
@@ -34,6 +36,17 @@ export function createProductController(productService: ProductService, activity
       const { id } = parseInput(idParamsSchema, req.params);
       const { barcode } = parseInput(setBarcodeSchema, req.body);
       sendSuccess(res, await productService.setBarcode(id, barcode, req.user!.id), { message: 'Barcode saved' });
+    },
+
+    async addBarcode(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      const { barcode } = parseInput(addBarcodeSchema, req.body);
+      sendSuccess(res, await productService.addBarcode(id, barcode, req.user!.id), { message: 'Barcode added' });
+    },
+
+    async removeBarcode(req: Request, res: Response): Promise<void> {
+      const { id, barcode } = parseInput(productBarcodeParamsSchema, req.params);
+      sendSuccess(res, await productService.removeBarcode(id, barcode, req.user!.id), { message: 'Barcode removed' });
     },
 
     async setImage(req: Request, res: Response): Promise<void> {

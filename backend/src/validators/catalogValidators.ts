@@ -70,6 +70,10 @@ const barcodeSchema = z
 
 export const barcodeParamsSchema = z.object({ barcode: barcodeSchema });
 
+export const addBarcodeSchema = z.object({ barcode: barcodeSchema });
+
+export const productBarcodeParamsSchema = z.object({ id: z.coerce.number().int().positive(), barcode: barcodeSchema });
+
 export const setBarcodeSchema = z.object({
   barcode: barcodeSchema.nullable(),
 });

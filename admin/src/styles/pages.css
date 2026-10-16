@@ -2572,6 +2572,34 @@ form.product-form > .form-actions {
   overflow-wrap: anywhere;
 }
 
+.barcode-others {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barcode-others li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.barcode-others code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.barcode-others__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .barcode-history__when {
   color: var(--steel);
   font-size: var(--text-sm);
@@ -4012,26 +4040,6 @@ fieldset.report-sections {
   overflow-wrap: anywhere;
 }
 
-.duplicate-review__barcode {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.duplicate-side__stamp {
-  margin-top: var(--space-1);
-}
-
-.duplicate-review__barcode .segmented {
-  justify-self: start;
-  max-width: 100%;
-}
-
-.duplicate-review__code {
-  font-variant-numeric: tabular-nums;
-}
 
 .duplicate-review__summary {
   margin: 0;

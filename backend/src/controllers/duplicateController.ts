@@ -5,7 +5,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 const listSchema = z.object({ status: z.enum(['open', 'done']).default('open') });
-const mergeSchema = z.object({ keepId: z.coerce.number().int().positive(), barcodeFromId: z.coerce.number().int().positive() });
+const mergeSchema = z.object({ keepId: z.coerce.number().int().positive() });
 
 export function createDuplicateController(duplicateService: DuplicateService) {
   return {

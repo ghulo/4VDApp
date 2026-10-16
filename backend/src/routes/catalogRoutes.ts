@@ -42,6 +42,8 @@ export function createProductRoutes({ productService, activityLogService, guards
   // Adding and editing products is for whoever runs the shop (owner included); deleting stays with managers.
   router.put('/:id/barcode', ...guards.products, controller.setBarcode);
   router.post('/:id/barcode', ...guards.products, controller.createBarcode);
+  router.post('/:id/barcodes', ...guards.products, controller.addBarcode);
+  router.delete('/:id/barcodes/:barcode', ...guards.products, controller.removeBarcode);
   router.put('/:id/image', ...guards.products, readImage, controller.setImage);
   router.delete('/:id/image', ...guards.products, controller.removeImage);
   router.get('/:id/price-history', ...guards.oversee, controller.priceHistory);

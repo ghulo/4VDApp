@@ -165,7 +165,8 @@ describe('scanned supplier bills', () => {
 
     const chair = (await api().get(`/api/products/${chairId}`).set(auth())).body.data;
     expect(chair.stock.quantity).toBe(12);
-    expect(chair).toMatchObject({ barcode: '3800000000099', costPrice: 55 });
+    // The chair already had a barcode, so the bill's becomes another one: both scan to it.
+    expect(chair).toMatchObject({ barcode: '3800000000011', otherBarcodes: ['3800000000099'], costPrice: 55 });
     const order = (await api().get(`/api/orders/${orderId}`).set(auth())).body.data;
     expect(order.status).toBe('received');
     const bill = (await api().get(`/api/bills/${billId}`).set(auth())).body.data;
@@ -267,7 +268,7 @@ describe('scanned supplier bills', () => {
 
     const chair = (await api().get(`/api/products/${chairId}`).set(auth())).body.data;
     expect(chair.stock.quantity).toBe(10);
-    expect(chair).toMatchObject({ barcode: '3800000000011', costPrice: 60 });
+    expect(chair).toMatchObject({ barcode: '3800000000011', otherBarcodes: [], costPrice: 60 });
     expect(await context.db.selectFrom('products').select('id').where('name', '=', 'Mango juice').where('deleted_at', 'is', null).executeTakeFirst()).toBeUndefined();
     expect((await api().get(`/api/bills/${confirmed.billId}`).set(auth())).body.data).toMatchObject({ status: 'void', paid: 0 });
     const back = (await api().get(`/api/orders/${order.id}`).set(auth())).body.data;

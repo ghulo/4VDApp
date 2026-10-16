@@ -1065,9 +1065,16 @@ export const en = {
     printLabel: 'Print labels',
     remove: 'Remove barcode',
     scanIn: 'Scan or type the barcode',
-    replace: 'Replace with another barcode',
     scanHint: 'With a USB scanner, click here and scan: it saves by itself.',
     save: 'Save barcode',
+    addAnother: 'Add another barcode',
+    add: 'Add barcode',
+    replaceMain: 'Replace the main one',
+    others: 'Other barcodes',
+    makeMain: 'Make main',
+    makeMainLabel: (code: string) => `Make main: ${code}`,
+    removeOther: 'Remove',
+    removeOtherLabel: (code: string) => `Remove: ${code}`,
     create: 'Make a barcode',
     qrLabel: (name: string) => `QR code of ${name}: opens it in the team app`,
     qrHint: 'The QR code opens this product in the team app when scanned with any phone camera.',
@@ -1147,7 +1154,7 @@ export const en = {
     title: 'Check the scanned bill',
     titleFrom: (supplier: string) => `Scanned bill from ${supplier}`,
     description: 'Each line has a stamp saying what to look at. Confirming adds new products, puts the stock in and saves the bill.',
-    stamps: { new: 'New product', unsure: 'Not sure', barcode: 'Barcode differs', price: 'New price', match: 'Matches' } as Record<
+    stamps: { new: 'New product', unsure: 'Not sure', barcode: 'New barcode', price: 'New price', match: 'Matches' } as Record<
       'new' | 'unsure' | 'barcode' | 'price' | 'match',
       string
     >,
@@ -1183,7 +1190,7 @@ export const en = {
     unitCostHint: 'Without VAT, after rabat.',
     updateCost: (old: string) => `Make this the product's cost (was ${old})`,
     useCost: "Make this the product's cost",
-    updateBarcode: (p: { from: string | null; to: string }) => (p.from ? `Change the barcode from ${p.from} to ${p.to}` : `Give it the barcode ${p.to}`),
+    updateBarcode: (p: { from: string | null; to: string }) => (p.from ? `Add the barcode ${p.to} too (keeps ${p.from})` : `Give it the barcode ${p.to}`),
     newName: 'Name',
     newBarcode: 'Barcode',
     newPrice: 'Selling price',
@@ -1618,9 +1625,8 @@ export const en = {
     soldEver: 'Sold in total',
     lastSold: 'Last sold',
     never: 'Never',
-    whichBarcode: 'Barcode to keep',
-    summary: (p: { kept: string; other: string; stock: number }) =>
-      `${p.other} will be removed. Its sales and history move to ${p.kept}${p.stock > 0 ? `, and its ${p.stock} in stock are added` : ''}.`,
+    summary: (p: { kept: string; other: string; stock: number; barcodes: number }) =>
+      `${p.other} will be removed. Its sales${p.barcodes > 0 ? ', history and barcodes' : ' and history'} move to ${p.kept}${p.stock > 0 ? `, and its ${p.stock} in stock are added` : ''}.${p.barcodes > 0 ? ` Scanning ${p.barcodes === 1 ? 'its barcode' : 'any of its barcodes'} will find ${p.kept}.` : ''}`,
     merge: 'Merge',
     keepBoth: 'Keep both',
     merged: 'Merged',

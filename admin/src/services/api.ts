@@ -143,6 +143,10 @@ export const productsApi = {
   byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
   setBarcode: async (id: number, barcode: string | null) =>
     (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
+  addBarcode: async (id: number, barcode: string) =>
+    (await apiRequest<Product>(`/products/${id}/barcodes`, { method: 'POST', body: { barcode } })).data,
+  removeBarcode: async (id: number, barcode: string) =>
+    (await apiRequest<Product>(`/products/${id}/barcodes/${encodeURIComponent(barcode)}`, { method: 'DELETE' })).data,
   createBarcode: async (id: number) => (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'POST' })).data,
   uploadImage: async (id: number, file: Blob) =>
     (await apiRequest<Product>(`/products/${id}/image`, { method: 'PUT', file })).data,
@@ -227,7 +231,7 @@ export const promotionsApi = {
 
 export const duplicatesApi = {
   list: async (status: 'open' | 'done') => (await apiRequest<DuplicatePair[]>(`/duplicates?status=${status}`)).data,
-  merge: async (id: number, input: { keepId: number; barcodeFromId: number }) => {
+  merge: async (id: number, input: { keepId: number }) => {
     await apiRequest(`/duplicates/${id}/merge`, { method: 'POST', body: input });
   },
   keepBoth: async (id: number) => {

@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 
@@ -36,6 +37,8 @@ export interface ProductRecord {
   image_url: string | null;
   sku: string | null;
   barcode: string | null;
+  /** Its other barcodes, oldest first; `barcode` is the main one. */
+  other_barcodes: string[];
   is_active: boolean;
   vat_rate: number;
   origin_country: string | null;
@@ -43,6 +46,14 @@ export interface ProductRecord {
   reorder_level: number | null;
   created_at: Date;
   updated_at: Date;
+}
+
+/** A product's other barcodes, as an array (empty when it has none). */
+const otherBarcodes = sql<string[]>`coalesce((SELECT array_agg(b.barcode ORDER BY b.id) FROM product_barcodes b WHERE b.product_id = p.id), '{}')`.as('other_barcodes');
+
+/** Live products whose main or other barcode is this one. */
+function hasBarcode(barcode: string) {
+  return sql<boolean>`(p.barcode = ${barcode} OR EXISTS (SELECT 1 FROM product_barcodes b WHERE b.product_id = p.id AND b.barcode = ${barcode}))`;
 }
 
 export class ProductRepository {
@@ -90,24 +101,24 @@ export class ProductRepository {
       const pattern = `%${escapeLikePattern(filters.search)}%`;
       // A scanned barcode matches exactly; names and SKUs match in part.
       query = query.where((eb) =>
-        eb.or([eb('p.name', 'ilike', pattern), eb('p.sku', 'ilike', pattern), eb('p.barcode', '=', filters.search!.trim())]),
+        eb.or([eb('p.name', 'ilike', pattern), eb('p.sku', 'ilike', pattern), hasBarcode(filters.search!.trim())]),
       );
     }
 
     const [products, count] = await Promise.all([
-      query.select(this.columns).orderBy('p.name').orderBy('p.id').limit(filters.limit).offset(filters.offset).execute(),
+      query.select(this.columns).select(otherBarcodes).orderBy('p.name').orderBy('p.id').limit(filters.limit).offset(filters.offset).execute(),
       query.select((eb) => eb.fn.countAll<string>().as('total')).executeTakeFirstOrThrow(),
     ]);
     return { products, total: Number(count.total) };
   }
 
   findById(id: number, includeInactive: boolean): Promise<ProductRecord | undefined> {
-    return this.baseQuery(includeInactive).select(this.columns).where('p.id', '=', id).executeTakeFirst();
+    return this.baseQuery(includeInactive).select(this.columns).select(otherBarcodes).where('p.id', '=', id).executeTakeFirst();
   }
 
   findByIds(ids: number[], includeInactive: boolean): Promise<ProductRecord[]> {
     if (ids.length === 0) return Promise.resolve([]);
-    return this.baseQuery(includeInactive).select(this.columns).where('p.id', 'in', ids).execute();
+    return this.baseQuery(includeInactive).select(this.columns).select(otherBarcodes).where('p.id', 'in', ids).execute();
   }
 
   async exists(id: number): Promise<boolean> {
@@ -163,24 +174,50 @@ export class ProductRepository {
   }
 
   /** Every live product, with just what matching a supplier's bill needs. */
-  async findAllForMatching(): Promise<Array<{ id: number; name: string; sku: string | null; barcode: string | null; cost_price: string | null; vat_rate: number }>> {
+  async findAllForMatching(): Promise<
+    Array<{ id: number; name: string; sku: string | null; barcode: string | null; other_barcodes: string[]; cost_price: string | null; vat_rate: number }>
+  > {
     return this.db
-      .selectFrom('products')
-      .select(['id', 'name', 'sku', 'barcode', 'cost_price', 'vat_rate'])
-      .where('deleted_at', 'is', null)
-      .orderBy('name')
+      .selectFrom('products as p')
+      .select(['p.id', 'p.name', 'p.sku', 'p.barcode', 'p.cost_price', 'p.vat_rate'])
+      .select(otherBarcodes)
+      .where('p.deleted_at', 'is', null)
+      .orderBy('p.name')
       .execute();
   }
 
-  /** The live product with this barcode, if any. */
+  /** The live product with this barcode, main or other, if any. */
   async findIdByBarcode(barcode: string): Promise<number | undefined> {
     const row = await this.db
-      .selectFrom('products')
-      .select('id')
-      .where('barcode', '=', barcode)
-      .where('deleted_at', 'is', null)
+      .selectFrom('products as p')
+      .select('p.id')
+      .where(hasBarcode(barcode))
+      .where('p.deleted_at', 'is', null)
       .executeTakeFirst();
     return row?.id;
+  }
+
+  /**
+   * Gives the product another barcode. A deleted product still holding it
+   * lets go first; the caller has checked no live product has it.
+   */
+  async addOtherBarcode(productId: number, barcode: string, actorId: number | null): Promise<void> {
+    await sql`
+      DELETE FROM product_barcodes b USING products p
+      WHERE b.barcode = ${barcode} AND p.id = b.product_id AND p.deleted_at IS NOT NULL
+    `.execute(this.db);
+    await this.db.insertInto('product_barcodes').values({ product_id: productId, barcode, added_by: actorId }).execute();
+  }
+
+  /** Takes one of the product's other barcodes off it; false when it didn't have it. */
+  async removeOtherBarcode(productId: number, barcode: string): Promise<boolean> {
+    const result = await this.db.deleteFrom('product_barcodes').where('product_id', '=', productId).where('barcode', '=', barcode).executeTakeFirst();
+    return result.numDeletedRows > 0n;
+  }
+
+  /** Moves every other barcode of one product onto another (merging duplicates). */
+  async moveOtherBarcodes(fromId: number, toId: number): Promise<void> {
+    await this.db.updateTable('product_barcodes').set({ product_id: toId }).where('product_id', '=', fromId).execute();
   }
 
   async setImageUrl(id: number, imageUrl: string | null): Promise<void> {

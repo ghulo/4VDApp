@@ -58,6 +58,8 @@ export interface Product {
   sku: string | null;
   /** Scanned at the counter: the manufacturer's, or one 4VD made. */
   barcode: string | null;
+  /** Further barcodes that also find this product when scanned, oldest first. */
+  otherBarcodes: string[];
   imageUrl: string | null;
   isActive: boolean;
   category: { id: number; name: string };
@@ -1178,6 +1180,7 @@ export interface DuplicateSide {
   id: number;
   name: string;
   barcode: string | null;
+  otherBarcodes: string[];
   sku: string | null;
   price: number;
   costPrice: number | null;

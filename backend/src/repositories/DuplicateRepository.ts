@@ -6,6 +6,7 @@ export interface DuplicateSideRecord {
   id: number;
   name: string;
   barcode: string | null;
+  other_barcodes: string[];
   sku: string | null;
   base_price: string;
   cost_price: string | null;
@@ -32,6 +33,7 @@ export interface DuplicatePairRecord {
 const side = (alias: string) => sql<DuplicateSideRecord>`(
   select json_build_object(
     'id', p.id, 'name', p.name, 'barcode', p.barcode, 'sku', p.sku,
+    'other_barcodes', coalesce((select json_agg(b.barcode order by b.id) from product_barcodes b where b.product_id = p.id), '[]'::json),
     'base_price', p.base_price::text, 'cost_price', p.cost_price::text, 'image_url', p.image_url,
     'category_name', c.name, 'quantity_on_hand', coalesce(i.quantity_on_hand, 0),
     'units_sold_90d', (select coalesce(sum(s.quantity_sold), 0) from sales s
@@ -105,8 +107,10 @@ export class DuplicateRepository {
    * dates, order lines, requests, supplier codes, promotions, favourites and
    * count lines move over, its stock is added to the kept one's, and it is
    * deleted (kept in the database for history, like any deleted product).
+   * Every barcode it had stays scannable: the kept product keeps its main one
+   * (or takes the other's, when it has none) and gets the rest as others.
    */
-  async merge(input: { keepId: number; dropId: number; barcode: string | null; dropStock: number; reorderLevel: number }): Promise<void> {
+  async merge(input: { keepId: number; dropId: number; dropStock: number; reorderLevel: number }): Promise<string[]> {
     const { keepId, dropId } = input;
     for (const table of MOVED) {
       await sql`UPDATE ${sql.table(table)} SET product_id = ${keepId} WHERE product_id = ${dropId}`.execute(this.db);
@@ -136,18 +140,29 @@ export class DuplicateRepository {
       WHERE k.product_id = ${keepId}
     `.execute(this.db);
 
-    // The deleted product lets go of its barcode first, in case the kept one takes it.
-    await sql`
-      UPDATE products SET deleted_at = now(), is_active = false, updated_at = now(),
-        barcode = CASE WHEN barcode = ${input.barcode} THEN NULL ELSE barcode END
-      WHERE id = ${dropId}
+    // The deleted product lets go of its main barcode before the kept one takes it.
+    const dropped = await sql<{ barcode: string | null }>`
+      UPDATE products d SET deleted_at = now(), is_active = false, updated_at = now(), barcode = NULL
+      FROM (SELECT barcode FROM products WHERE id = ${dropId}) old
+      WHERE d.id = ${dropId}
+      RETURNING old.barcode
     `.execute(this.db);
-    await sql`
-      UPDATE products k SET barcode = ${input.barcode},
+    const dropBarcode = dropped.rows[0]?.barcode ?? null;
+    const kept = await sql<{ barcode: string | null }>`
+      UPDATE products k SET barcode = coalesce(k.barcode, ${dropBarcode}),
         cost_price = coalesce(k.cost_price, (SELECT d.cost_price FROM products d WHERE d.id = ${dropId})),
         updated_at = now()
       WHERE k.id = ${keepId}
+      RETURNING k.barcode
     `.execute(this.db);
+    const moved = await this.db.selectFrom('product_barcodes').select('barcode').where('product_id', '=', dropId).orderBy('id').execute();
+    await this.db.updateTable('product_barcodes').set({ product_id: keepId }).where('product_id', '=', dropId).execute();
+    const added = moved.map((row) => row.barcode);
+    if (dropBarcode && dropBarcode !== kept.rows[0]?.barcode) {
+      await this.db.insertInto('product_barcodes').values({ product_id: keepId, barcode: dropBarcode }).onConflict((oc) => oc.column('barcode').doNothing()).execute();
+      added.unshift(dropBarcode);
+    }
+    return added;
   }
 
   async resolve(id: number, resolution: 'merged' | 'kept_both', actorId: number): Promise<void> {

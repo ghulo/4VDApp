@@ -145,10 +145,7 @@ function PairReview({ pair, onDecided }: { pair: DuplicatePair; onDecided: () =>
   const [keepId, setKeepId] = useState(first.id);
   const kept = keepId === first.id ? first : second;
   const other = keepId === first.id ? second : first;
-  const [barcodeFromId, setBarcodeFromId] = useState<number | null>(null);
-  // The barcode follows the kept product until someone picks the other one's.
-  const barcodeFrom = barcodeFromId ?? (kept.barcode ? kept.id : other.id);
-  const bothBarcodes = Boolean(first.barcode && second.barcode && first.barcode !== second.barcode);
+  const barcodes = (other.barcode ? 1 : 0) + other.otherBarcodes.length;
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['duplicates'] });
@@ -157,7 +154,7 @@ function PairReview({ pair, onDecided }: { pair: DuplicatePair; onDecided: () =>
     queryClient.invalidateQueries({ queryKey: ['inventory'] });
   };
   const merge = useMutation({
-    mutationFn: () => duplicatesApi.merge(pair.id, { keepId, barcodeFromId: barcodeFrom }),
+    mutationFn: () => duplicatesApi.merge(pair.id, { keepId }),
     onSuccess: () => {
       refresh();
       onDecided();
@@ -182,28 +179,7 @@ function PairReview({ pair, onDecided }: { pair: DuplicatePair; onDecided: () =>
         ))}
       </fieldset>
 
-      {bothBarcodes && (
-        <fieldset className="duplicate-review__barcode">
-          <legend className="field__label">{t.duplicates.whichBarcode}</legend>
-          <div className="segmented" role="radiogroup" aria-label={t.duplicates.whichBarcode}>
-            {[kept, other].map((side) => (
-              <button
-                key={side.id}
-                type="button"
-                role="radio"
-                aria-checked={barcodeFrom === side.id}
-                className="segmented__option duplicate-review__code"
-                disabled={busy}
-                onClick={() => setBarcodeFromId(side.id)}
-              >
-                {side.barcode}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      )}
-
-      <p className="duplicate-review__summary" aria-live="polite">{t.duplicates.summary({ kept: kept.name, other: other.name, stock: other.stock })}</p>
+      <p className="duplicate-review__summary" aria-live="polite">{t.duplicates.summary({ kept: kept.name, other: other.name, stock: other.stock, barcodes })}</p>
 
       {error && (
         <p className="form-error" role="alert">
@@ -249,7 +225,7 @@ function SideCard({ side, chosen, onChoose, disabled }: { side: DuplicateSide; c
       <dl className="duplicate-side__facts">
         <div>
           <dt>{t.duplicates.barcode}</dt>
-          <dd>{side.barcode ?? t.duplicates.noBarcode}</dd>
+          <dd>{side.barcode ? [side.barcode, ...side.otherBarcodes].join(', ') : t.duplicates.noBarcode}</dd>
         </div>
         <div>
           <dt>{t.duplicates.price}</dt>

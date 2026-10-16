@@ -178,8 +178,10 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const activityLogService = new ActivityLogService(activityLogRepository, undoRepository, documentRepository);
   const carwashRepository = new CarwashRepository(db);
   const carwashService = new CarwashService(carwashRepository, transactions, config.shopTimeZone);
+  const supplierBillRepository = new SupplierBillRepository(db);
+  const supplierBillService = new SupplierBillService(supplierBillRepository, mediaService, transactions, config.shopTimeZone);
   const expenseRepository = new ExpenseRepository(db);
-  const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, config.shopTimeZone);
+  const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, supplierBillService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
@@ -197,9 +199,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const tabService = new TabService(tabRepository, transactions, config.shopTimeZone);
   const purchaseOrderRepository = new PurchaseOrderRepository(db);
   const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
-  const supplierBillRepository = new SupplierBillRepository(db);
   const booksService = new BooksService(db, config.shopTimeZone);
-  const supplierBillService = new SupplierBillService(supplierBillRepository, mediaService, transactions, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
   const cashCountService = new CashCountService(

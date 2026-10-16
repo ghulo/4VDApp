@@ -1,9 +1,22 @@
 import { sql } from 'kysely';
+import type { BillLineKind, WithholdingType } from '../constants/bills.js';
 import type { DatabaseClient } from '../database/connection.js';
 
 export type OrderStatus = 'open' | 'received' | 'cancelled';
 
-export type SupplierFields = Omit<SupplierRecord, 'id'>;
+/** A supplier's details; the bill memory fields left out keep what is stored. */
+export interface SupplierFields {
+  name: string;
+  nui: string | null;
+  phone: string | null;
+  email: string | null;
+  note: string | null;
+  abroad?: boolean;
+  usualKind?: BillLineKind | null;
+  usualCategory?: string | null;
+  usualVatRate?: number | null;
+  withholdingType?: WithholdingType | null;
+}
 
 export interface SupplierRecord {
   id: number;
@@ -12,7 +25,41 @@ export interface SupplierRecord {
   phone: string | null;
   email: string | null;
   note: string | null;
+  /** From another country: its bills are imports. */
+  abroad: boolean;
+  /** Its usual line, VAT and tax held back, remembered from its last bill to fill in the next. */
+  usualKind: BillLineKind | null;
+  usualCategory: string | null;
+  usualVatRate: number | null;
+  withholdingType: WithholdingType | null;
 }
+
+const SUPPLIER_COLUMNS = [
+  'id',
+  'name',
+  'nui',
+  'phone',
+  'email',
+  'note',
+  'abroad',
+  'usual_kind as usualKind',
+  'usual_category as usualCategory',
+  'usual_vat_rate as usualVatRate',
+  'withholding_type as withholdingType',
+] as const;
+
+const supplierRow = (input: SupplierFields) => ({
+  name: input.name,
+  nui: input.nui,
+  phone: input.phone,
+  email: input.email,
+  note: input.note,
+  ...(input.abroad !== undefined && { abroad: input.abroad }),
+  ...(input.usualKind !== undefined && { usual_kind: input.usualKind }),
+  ...(input.usualCategory !== undefined && { usual_category: input.usualCategory }),
+  ...(input.usualVatRate !== undefined && { usual_vat_rate: input.usualVatRate }),
+  ...(input.withholdingType !== undefined && { withholding_type: input.withholdingType }),
+});
 
 export interface OrderRecord {
   id: number;
@@ -55,7 +102,7 @@ export class PurchaseOrderRepository {
   async findSuppliers(): Promise<SupplierRecord[]> {
     return this.db
       .selectFrom('suppliers')
-      .select(['id', 'name', 'nui', 'phone', 'email', 'note'])
+      .select(SUPPLIER_COLUMNS)
       .where('archived_at', 'is', null)
       .orderBy('name')
       .execute();
@@ -64,19 +111,19 @@ export class PurchaseOrderRepository {
   async findSupplier(id: number): Promise<SupplierRecord | undefined> {
     return this.db
       .selectFrom('suppliers')
-      .select(['id', 'name', 'nui', 'phone', 'email', 'note'])
+      .select(SUPPLIER_COLUMNS)
       .where('id', '=', id)
       .where('archived_at', 'is', null)
       .executeTakeFirst();
   }
 
   async createSupplier(input: SupplierFields): Promise<number> {
-    const row = await this.db.insertInto('suppliers').values(input).returning('id').executeTakeFirstOrThrow();
+    const row = await this.db.insertInto('suppliers').values(supplierRow(input)).returning('id').executeTakeFirstOrThrow();
     return row.id;
   }
 
   async updateSupplier(id: number, changes: SupplierFields): Promise<void> {
-    await this.db.updateTable('suppliers').set(changes).where('id', '=', id).execute();
+    await this.db.updateTable('suppliers').set(supplierRow(changes)).where('id', '=', id).execute();
   }
 
   async archiveSupplier(id: number, at: Date): Promise<void> {
@@ -203,6 +250,10 @@ export class PurchaseOrderRepository {
 
   async setCostPrice(productId: number, cost: number | null): Promise<void> {
     await this.db.updateTable('products').set({ cost_price: cost, updated_at: new Date() }).where('id', '=', productId).execute();
+  }
+
+  async setPrice(productId: number, price: number): Promise<void> {
+    await this.db.updateTable('products').set({ base_price: price, updated_at: new Date() }).where('id', '=', productId).execute();
   }
 
   /** Who each product was last ordered from, so a new order can suggest the usual supplier. */

@@ -184,7 +184,7 @@ export class ReportBuilder {
         next: open
           .filter((bill) => bill.dueOn !== null)
           .slice(0, LIST_LIMIT)
-          .map((bill) => ({ supplier: bill.supplier.name, number: bill.number, left: bill.left, dueOn: bill.dueOn, overdue: bill.overdue })),
+          .map((bill) => ({ supplier: bill.supplier?.name ?? '', number: bill.number, left: bill.left, dueOn: bill.dueOn, overdue: bill.overdue })),
       },
       stock: {
         soldOut: names(['sold_out']).slice(0, LIST_LIMIT),

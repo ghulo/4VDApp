@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { money } from './catalogValidators.js';
+import { BILL_LINE_KINDS, CUSTOMS_PAID_METHODS, WITHHOLDING_TYPES } from '../constants/bills.js';
+import { EXPENSE_PLACES } from '../constants/expenses.js';
 import { SUPPLIER_PAYMENT_METHODS } from '../database/types.js';
 import { calendarDaySchema, idSchema, nuiSchema } from './validate.js';
 
@@ -24,6 +26,12 @@ export const supplierSchema = z.object({
     .or(z.literal(''))
     .transform((value) => value || null),
   note: optional(500),
+  /** From another country: its bills are imports. */
+  abroad: z.boolean().optional(),
+  usualKind: z.enum(BILL_LINE_KINDS).nullish(),
+  usualCategory: z.string().trim().max(32).nullish(),
+  usualVatRate: z.union([z.literal(18), z.literal(8), z.literal(0)]).nullish(),
+  withholdingType: z.enum(WITHHOLDING_TYPES).nullish(),
 });
 
 export const newOrderSchema = z.object({
@@ -76,6 +84,61 @@ export const billSchema = z
   });
 
 export const newBillSchema = z.intersection(billSchema, z.object({ supplierId: idSchema, orderId: idSchema.nullish() }));
+
+const vatRateSchema = z.union([z.literal(18), z.literal(8), z.literal(0)]);
+/** A price for one, to the tenth of a cent (prices without VAT often have more than two decimals). */
+const unitPriceSchema = z.number().nonnegative().max(1_000_000).transform((value) => Math.round(value * 10_000) / 10_000);
+
+export const billLineSchema = z.object({
+  kind: z.enum(BILL_LINE_KINDS),
+  productId: idSchema.nullish(),
+  quantity: z.number().int().min(1).max(100_000).nullish(),
+  unitPrice: unitPriceSchema.nullish(),
+  category: z.string().trim().max(32).nullish(),
+  description: optional(300),
+  amount: positiveMoney.nullish(),
+  vatRate: vatRateSchema.nullish(),
+});
+
+/** The one bill form: lines of products, costs and equipment, and what 4VD needs to work out the rest. */
+export const billFormSchema = z.object({
+  supplierId: idSchema.nullish().transform((value) => value ?? null),
+  number: optional(60),
+  issuedOn: calendarDaySchema,
+  dueOn: calendarDaySchema.nullish().transform((value) => value ?? null),
+  note: optional(500),
+  lines: z.array(billLineSchema).min(1, 'add at least one line').max(300),
+  pricesIncludeVat: z.boolean().default(true),
+  customs: z
+    .object({ vat: money, duty: money, method: z.enum(CUSTOMS_PAID_METHODS).default('bank') })
+    .nullish()
+    .transform((value) => value ?? null),
+  withholdingType: z.enum(WITHHOLDING_TYPES).nullish().transform((value) => value ?? null),
+  paidNow: z
+    .object({ method: z.enum(SUPPLIER_PAYMENT_METHODS) })
+    .nullish()
+    .transform((value) => value ?? null),
+  place: z.enum(EXPENSE_PLACES).default('shop'),
+  carwashId: idSchema.nullish().transform((value) => value ?? null),
+  repeatMonthly: z.boolean().default(false),
+  updateCosts: z.boolean().default(true),
+  prices: z
+    .array(z.object({ productId: idSchema, price: positiveMoney }))
+    .max(300)
+    .default([]),
+});
+
+/** A bill typed as a total (the old form) or with lines (the one bill form). */
+export const anyNewBillSchema = z.union([billFormSchema, newBillSchema]);
+
+export const creditSchema = z.object({
+  returnsStock: z.boolean(),
+  number: optional(60),
+  issuedOn: calendarDaySchema,
+  note: optional(500),
+  pricesIncludeVat: z.boolean().optional(),
+  lines: z.array(billLineSchema).min(1, 'add at least one line').max(300),
+});
 
 export const billQuerySchema = z.object({
   supplierId: z.coerce.number().int().positive().optional(),

@@ -12,6 +12,7 @@ export const SYSTEM_STOCK_REASONS = {
   UNDO: 'Undo',
   RESTORE: 'Restore',
   DELIVERY: 'Delivery',
+  SUPPLIER_RETURN: 'Returned to supplier',
   MERGE: 'Merged duplicate',
 } as const;
 

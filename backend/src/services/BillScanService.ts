@@ -429,7 +429,7 @@ export class BillScanService {
         actorId,
         now,
       );
-      const billId = await createBill(repos, { ...input.bill, supplierId: supplier.id, orderId }, actorId);
+      const billId = (await createBill(repos, { ...input.bill, supplierId: supplier.id, orderId }, actorId))!;
       // The first photo becomes the bill's picture; the scan keeps every page.
       const photo = await this.firstPhoto(scan);
       if (photo) await repos.bills.setPhoto(billId, photo);

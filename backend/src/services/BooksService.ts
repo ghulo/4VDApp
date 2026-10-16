@@ -409,6 +409,12 @@ export class BooksService {
         const payments = await this.db.selectFrom('supplier_payments').select('id').where('bill_id', '=', id).execute();
         return [`bill:${id}`, ...payments.map((payment) => `payment:${payment.id}`)];
       }
+      case 'expense': {
+        // An expense is a cost line on a bill paid on the spot; from before that, it may have its own old entry.
+        const line = await this.db.selectFrom('bill_lines').select('bill_id').where('id', '=', id).executeTakeFirst();
+        const keys = line ? await this.sourceKeys('bill', line.bill_id) : [];
+        return [`expense:${id}`, ...keys];
+      }
       case 'count': {
         const lines = await this.db.selectFrom('stock_count_lines').select('id').where('count_id', '=', id).execute();
         return lines.map((line) => `count_line:${line.id}`);

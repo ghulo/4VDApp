@@ -1,8 +1,7 @@
 import { type Kysely, sql } from 'kysely';
 
 /**
- * Promotions, a minimum margin, and sales targets and commission per person
- * (see docs/superpowers/specs/2026-10-02-price-control-and-team-design.md).
+ * Promotions, a minimum margin, and sales targets and commission per person.
  */
 export async function up(db: Kysely<unknown>): Promise<void> {
   const statements = [

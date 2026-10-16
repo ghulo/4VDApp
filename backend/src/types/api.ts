@@ -4,7 +4,7 @@ export interface PaginationMeta {
   limit: number;
 }
 
-/** Shape every endpoint returns, as described in docs/API.md. */
+/** Shape every endpoint returns. */
 export interface ApiResponse<TData> {
   success: boolean;
   data: TData | null;

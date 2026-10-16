@@ -72,9 +72,7 @@ Logistics and inventory app. It keeps track of every item the business holds, ho
 │   │   └── App.tsx
 │   └── .env.example
 └── docs/
-    ├── API.md
     ├── ARCHITECTURE.md
-    ├── DATABASE.md
     ├── DEPLOYMENT.md
     └── ENGINEERING_RULES.md
 docker-compose.yml    # local PostgreSQL
@@ -160,9 +158,7 @@ For the front ends: `cd admin && npm run build && npm run lint`, and `cd mobile 
 Every app has a `.env.example` listing what it needs. Copy it to `.env` and fill it in. Never commit `.env` files.
 
 ## Documentation
-- [API endpoints](docs/API.md)
 - [Architecture & design patterns](docs/ARCHITECTURE.md)
-- [Database schema](docs/DATABASE.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Engineering rules](docs/ENGINEERING_RULES.md)
 

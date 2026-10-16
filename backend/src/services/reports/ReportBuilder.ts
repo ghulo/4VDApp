@@ -17,7 +17,6 @@ export type ReportKind = 'daily' | 'weekly';
 
 /** The parts of a report, in the order they're shown. Each person picks the ones they want. */
 export const REPORT_SECTIONS = ['sales', 'products', 'team', 'losses', 'carwash', 'cash', 'expenses', 'tabs', 'bills', 'stock', 'approvals'] as const;
-export type ReportSection = (typeof REPORT_SECTIONS)[number];
 
 const TOP_PRODUCTS = 5;
 const LIST_LIMIT = 8;

@@ -11,15 +11,6 @@ const MONTHS_LONG = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korr
 const MONTHS_SHORT = ['jan', 'shk', 'mar', 'pri', 'maj', 'qer', 'korr', 'gush', 'sht', 'tet', 'nën', 'dhj'];
 const WEEKDAYS = ['e diel', 'e hënë', 'e martë', 'e mërkurë', 'e enjte', 'e premte', 'e shtunë'];
 
-/** True when this browser or phone really has Albanian formatting built in. */
-export function hasAlbanianIntl(): boolean {
-  try {
-    return new Intl.NumberFormat('sq-AL').resolvedOptions().locale.startsWith('sq');
-  } catch {
-    return false;
-  }
-}
-
 /** 12.5 → "12,5"; thousands grouped with spaces from five digits up, as Albanian writes them. */
 export function albanianNumber(value: number, fractionDigits: number): string {
   const [whole, fraction] = Math.abs(value).toFixed(fractionDigits).split('.');

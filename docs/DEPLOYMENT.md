@@ -247,7 +247,7 @@ Practise this once after setup, with a local database
 
 ## Rate Limiting
 
-**Enabled:** Yes (see API.md for limits)
+**Enabled:** Yes (limits in backend/src/constants/rateLimits.ts)
 
 **Implementation:**
 ```bash

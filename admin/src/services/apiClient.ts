@@ -1,6 +1,6 @@
 import type { PaginationMeta } from './types';
 
-/** Shape every backend endpoint returns, see docs/API.md. */
+/** Shape every backend endpoint returns (backend/src/types/api.ts). */
 interface ApiResponse<TData> {
   success: boolean;
   data: TData;

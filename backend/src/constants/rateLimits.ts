@@ -1,4 +1,4 @@
-// Limits come from docs/API.md. Windows are in milliseconds.
+// Windows are in milliseconds.
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 export const RATE_LIMIT_WINDOW_MS = FIFTEEN_MINUTES_MS;

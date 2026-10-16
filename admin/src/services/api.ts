@@ -15,7 +15,6 @@ import type {
   SalesDocumentDetail,
   ActivityEntry,
   ApprovalStatus,
-  ApprovalSummary,
   AppSettings,
   ReturnCondition,
   ReturnItem,
@@ -32,7 +31,6 @@ import type {
   Paginated,
   PriceChange,
   PriceSuggestion,
-  PricingTier,
   Promotion,
   PromotionPreviewLine,
   PromotionResults,
@@ -256,11 +254,6 @@ export const inventoryApi = {
   get: async (productId: number) => (await apiRequest<InventoryDetail>(`/inventory/${productId}`)).data,
   adjust: async (productId: number, input: StockAdjustmentInput) =>
     (await apiRequest<InventoryDetail>(`/inventory/${productId}`, { method: 'PATCH', body: input })).data,
-};
-
-export const pricingApi = {
-  replace: async (productId: number, tiers: PricingTier[]) =>
-    (await apiRequest<{ tiers: PricingTier[] }>(`/pricing/tiers/${productId}`, { method: 'PUT', body: { tiers } })).data,
 };
 
 export interface SaleListQuery {
@@ -665,8 +658,4 @@ export const stockCountsApi = {
         { method: 'POST' },
       )
     ).data,
-};
-
-export const approvalsApi = {
-  summary: async () => (await apiRequest<ApprovalSummary>('/approvals/summary')).data,
 };

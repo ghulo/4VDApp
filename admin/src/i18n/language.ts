@@ -1,7 +1,6 @@
 import type { Language } from '../services/types';
 
 export type { Language };
-export const LANGUAGES: Language[] = ['en', 'sq'];
 export const LANGUAGE_STORAGE_KEY = '4vd.language';
 
 const isLanguage = (value: unknown): value is Language => value === 'en' || value === 'sq';

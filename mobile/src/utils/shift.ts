@@ -6,9 +6,6 @@ export type ShiftStep = Extract<DayStep, { kind: 'drawer' | 'carwash' }>;
 /** Under ['cash'], so counting a drawer or entering takings ticks its step off. */
 export const DAY_QUERY_KEY = ['cash', 'day'] as const;
 
-/** From this hour Home suggests ending the shift. */
-export const CLOSING_HOUR = 18;
-
 const atTheCounter = (step: DayStep): step is ShiftStep => step.kind === 'drawer' || step.kind === 'carwash';
 
 /**

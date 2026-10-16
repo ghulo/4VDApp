@@ -1,8 +1,7 @@
 import { type Kysely, sql } from 'kysely';
 
 /**
- * Returns, write-offs and stock counts, each with its own approval status
- * (see docs/superpowers/specs/2026-10-01-returns-and-stock-counts-design.md).
+ * Returns, write-offs and stock counts, each with its own approval status.
  *
  * - settings: owner-editable limits, e.g. when a refund needs approval.
  * - sales_ledger: sales plus approved returns as negative rows, so every

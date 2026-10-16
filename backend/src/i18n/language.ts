@@ -2,14 +2,8 @@
 export const LANGUAGES = ['en', 'sq'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-export const DEFAULT_LANGUAGE: Language = 'en';
-
 /** The locale used for dates and numbers in each language. */
 export const LOCALE: Record<Language, string> = { en: 'en-IE', sq: 'sq-AL' };
-
-export function isLanguage(value: unknown): value is Language {
-  return typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value);
-}
 
 /** Euros the way each language writes them: "€1,204.50" or "1.204,50 €". */
 export function money(amount: number, language: Language): string {
@@ -28,8 +22,4 @@ export function dayMonth(date: Date, language: Language, timeZone: string): stri
     month: 'short',
     timeZone,
   }).format(date);
-}
-
-export function weekdayName(date: Date, language: Language, timeZone: string): string {
-  return new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : LOCALE[language], { weekday: 'long', timeZone }).format(date);
 }

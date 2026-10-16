@@ -1,7 +1,7 @@
 import { type Kysely, sql } from 'kysely';
 
 /**
- * V1 schema from docs/DATABASE.md, with these deliberate changes:
+ * V1 schema, with these deliberate changes:
  * - TIMESTAMPTZ instead of TIMESTAMP so every time is stored as UTC
  * - deleted_at on users, categories and products (soft delete, see
  *   docs/ENGINEERING_RULES.md)

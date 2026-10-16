@@ -1,7 +1,7 @@
 import { type Kysely, sql } from 'kysely';
 
 /**
- * Real accounts (see docs/superpowers/specs/2026-10-02-rebrand-accounts-design.md):
+ * Real accounts:
  *
  * - businesses: the SaaS foundation. One row today; every user belongs to it.
  * - media: small images (photos, the shop logo) kept in the database.

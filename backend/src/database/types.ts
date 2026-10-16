@@ -87,8 +87,6 @@ export interface MediaTable {
   created_at: CreatedAt;
 }
 
-export const INVITE_ROLES = ['developer', 'admin', 'owner', 'employee', 'family'] as const;
-
 export interface InvitesTable {
   id: Generated<number>;
   business_id: number;
@@ -769,9 +767,4 @@ export type UserRow = Selectable<UsersTable>;
 export type NewUserRow = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type CategoryRow = Selectable<CategoriesTable>;
-export type ProductRow = Selectable<ProductsTable>;
-export type InventoryRow = Selectable<InventoryTable>;
-export type BulkPricingTierRow = Selectable<BulkPricingTiersTable>;
-export type SaleRow = Selectable<SalesTable>;
 export type NotificationRow = Selectable<NotificationsTable>;
-export type ActivityLogRow = Selectable<ActivityLogTable>;

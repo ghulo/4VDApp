@@ -1,4 +1,4 @@
-// Mirrors the shapes the backend returns (see docs/API.md).
+// Mirrors the shapes the backend returns (see its DTOs in backend/src/services).
 
 export type Language = 'en' | 'sq';
 

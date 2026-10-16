@@ -12,6 +12,7 @@ export interface BillRecord {
   issued_on: string;
   due_on: string | null;
   amount: string;
+  vat_amount: string | null;
   /** Paid so far, voided payments left out. */
   paid: string;
   note: string | null;
@@ -43,6 +44,7 @@ export interface NewBill {
   issuedOn: string;
   dueOn: string | null;
   amount: number;
+  vatAmount?: number | null;
   note: string | null;
   createdBy: number;
 }
@@ -74,6 +76,7 @@ export class SupplierBillRepository {
         sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
         sql<string | null>`to_char(b.due_on, 'YYYY-MM-DD')`.as('due_on'),
         'b.amount',
+        'b.vat_amount',
         paid.as('paid'),
         'b.note',
         'b.photo_media_id',
@@ -149,6 +152,7 @@ export class SupplierBillRepository {
         issued_on: bill.issuedOn,
         due_on: bill.dueOn,
         amount: bill.amount,
+        vat_amount: bill.vatAmount ?? null,
         note: bill.note,
         created_by: bill.createdBy,
       })
@@ -157,10 +161,11 @@ export class SupplierBillRepository {
     return row.id;
   }
 
-  async update(id: number, changes: { number: string | null; issuedOn: string; dueOn: string | null; amount: number; note: string | null }) {
+  async update(id: number, changes: { number: string | null; issuedOn: string; dueOn: string | null; amount: number; vatAmount?: number | null; note: string | null }) {
     await this.db
       .updateTable('supplier_bills')
-      .set({ number: changes.number, issued_on: changes.issuedOn, due_on: changes.dueOn, amount: changes.amount, note: changes.note })
+      // A form that doesn't ask for the VAT leaves it as it was.
+      .set({ number: changes.number, issued_on: changes.issuedOn, due_on: changes.dueOn, amount: changes.amount, vat_amount: changes.vatAmount, note: changes.note })
       .where('id', '=', id)
       .execute();
   }

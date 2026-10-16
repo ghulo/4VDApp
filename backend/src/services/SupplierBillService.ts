@@ -33,6 +33,7 @@ export interface SupplierBillDto {
   issuedOn: string;
   dueOn: string | null;
   amount: number;
+  vatAmount: number | null;
   paid: number;
   /** What is still owed; 0 once paid or voided. */
   left: number;
@@ -55,6 +56,8 @@ export interface BillInput {
   issuedOn: string;
   dueOn: string | null;
   amount: number;
+  /** The VAT in the amount; null or missing when unknown. */
+  vatAmount?: number | null;
   note: string | null;
 }
 
@@ -293,6 +296,7 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], today: string): Supp
     issuedOn: bill.issued_on,
     dueOn: bill.due_on,
     amount,
+    vatAmount: bill.vat_amount === null ? null : Number(bill.vat_amount),
     paid,
     left,
     status,

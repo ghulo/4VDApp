@@ -10,6 +10,7 @@ import { createDayRoutes } from './dayRoutes.js';
 import { createAttentionRoutes } from './attentionRoutes.js';
 import { createDocumentRoutes } from './documentRoutes.js';
 import { createBillRoutes } from './billRoutes.js';
+import { createBooksRoutes } from './booksRoutes.js';
 import { createBillScanRoutes } from './billScanRoutes.js';
 import { createProductRequestRoutes } from './productRequestRoutes.js';
 import { createOrderRoutes, createSupplierRoutes } from './orderRoutes.js';
@@ -68,6 +69,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/suppliers', createSupplierRoutes(container));
   router.use('/orders', createOrderRoutes(container));
   router.use('/bills', createBillRoutes(container));
+  router.use('/books', createBooksRoutes(container));
   router.use('/bill-scans', createBillScanRoutes(container));
   router.use('/product-requests', createProductRequestRoutes(container));
   router.use('/expiry', createExpiryRoutes(container));

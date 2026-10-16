@@ -25,6 +25,7 @@ import { FavoriteService } from './services/FavoriteService.js';
 import { NotificationService } from './services/NotificationService.js';
 import { DocumentService } from './services/DocumentService.js';
 import { SupplierBillService } from './services/SupplierBillService.js';
+import { BooksService } from './services/BooksService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
 import { InventoryRepository } from './repositories/InventoryRepository.js';
@@ -197,6 +198,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const purchaseOrderRepository = new PurchaseOrderRepository(db);
   const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
   const supplierBillRepository = new SupplierBillRepository(db);
+  const booksService = new BooksService(db, config.shopTimeZone);
   const supplierBillService = new SupplierBillService(supplierBillRepository, mediaService, transactions, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
@@ -402,6 +404,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     tabService,
     purchaseOrderService,
     supplierBillService,
+    booksService,
     billScanService,
     expiryService,
     pushService,

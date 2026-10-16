@@ -8,6 +8,7 @@ import type {
 } from '../constants/approvals.js';
 import type { Language } from '../i18n/language.js';
 import type { ExpenseCategory, ExpensePlace } from '../constants/expenses.js';
+import type { AccountClass, CashFlowActivity } from '../constants/chartOfAccounts.js';
 
 /**
  * TypeScript view of the tables created by the migrations in ./migrations.
@@ -587,6 +588,8 @@ export interface SupplierBillsTable {
   voided_at: Date | null;
   voided_by: number | null;
   void_note: string | null;
+  /** The VAT on the bill, to claim back; null when nobody entered it. */
+  vat_amount: ColumnType<string | null, number | string | null | undefined, number | string | null>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -735,6 +738,62 @@ export interface DocumentLinesTable {
   total: Decimal;
 }
 
+/** One account in the chart (Plani kontabël). */
+export interface LedgerAccountsTable {
+  id: Generated<number>;
+  number: string;
+  name: string;
+  class: AccountClass;
+  /** TREFIN's "Lloji", e.g. Pasuria Qarkulluese. */
+  type_name: string;
+  /** TREFIN's "Grupi", e.g. Stoqet. */
+  group_name: string;
+  cash_flow: ColumnType<CashFlowActivity, CashFlowActivity | undefined, CashFlowActivity>;
+  archived_at: Date | null;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+}
+
+/** Which account a kind of movement posts to (see DEFAULT_ACCOUNT_LINKS). */
+export interface LedgerLinksTable {
+  key: string;
+  account_id: number;
+}
+
+export type LedgerEntryKind = 'auto' | 'manual' | 'reversal';
+
+export interface LedgerEntriesTable {
+  id: Generated<number>;
+  /** A calendar day. */
+  entry_date: ColumnType<string, string, string>;
+  kind: LedgerEntryKind;
+  source_key: string | null;
+  description: string;
+  warning: string | null;
+  fingerprint: string | null;
+  reverses_id: number | null;
+  reversed_at: Date | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface LedgerLinesTable {
+  id: Generated<number>;
+  entry_id: number;
+  account_id: number;
+  debit: Decimal;
+  credit: Decimal;
+  supplier_id: number | null;
+  customer_id: number | null;
+  memo: string | null;
+}
+
+export interface LedgerQueueTable {
+  source_table: string;
+  row_id: number;
+  queued_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -788,6 +847,11 @@ export interface Database {
   report_subscriptions: ReportSubscriptionsTable;
   product_duplicate_flags: ProductDuplicateFlagsTable;
   product_barcodes: ProductBarcodesTable;
+  ledger_accounts: LedgerAccountsTable;
+  ledger_links: LedgerLinksTable;
+  ledger_entries: LedgerEntriesTable;
+  ledger_lines: LedgerLinesTable;
+  ledger_queue: LedgerQueueTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

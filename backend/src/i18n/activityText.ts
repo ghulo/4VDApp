@@ -116,6 +116,14 @@ const en = {
   expenseRemoved: (p: { amount: number; category: string; day: string }, w: Words) =>
     `Removed the ${w.money(p.amount)} ${EN_EXPENSE[p.category] ?? p.category} expense of ${w.day(p.day)}`,
   expenseStopped: (p: { category: string }) => `Stopped the monthly ${EN_EXPENSE[p.category] ?? p.category} expense`,
+  bookEntryAdded: (p: { id: number; amount: number; description: string }, w: Words) =>
+    `Wrote entry #${p.id} in the books (${w.money(p.amount)}): ${p.description}`,
+  bookEntryReversed: (p: { id: number }) => `Reversed entry #${p.id} in the books`,
+  bookAccountAdded: (p: { number: string; name: string }) => `Added account ${p.number} ${p.name} to the books`,
+  bookAccountChanged: (p: { number: string; name: string }) => `Changed account ${p.number} ${p.name} in the books`,
+  bookLinksChanged: () => 'Changed which accounts the books post to',
+  booksStartChanged: (p: { from: string | null; to: string }, w: Words) =>
+    `Set the books to start on ${w.day(p.to)}${p.from ? ` (was ${w.day(p.from)})` : ''}`,
 
   expiryNoted: (p: Units & { day: string }, w: Words) => `Noted ${p.quantity} × ${p.product} expiring on ${w.day(p.day)}`,
   expiryCleared: (p: Units & { day: string }, w: Words) => `Dealt with ${p.quantity} × ${p.product} expiring on ${w.day(p.day)}`,
@@ -448,6 +456,12 @@ const sq: Templates = {
     `Shtoi një shpenzim: ${w.money(p.amount)} për ${SQ_EXPENSE[p.category] ?? p.category} (${'carwash' in p.at ? `lavazhi ${p.at.carwash}` : (SQ_EXPENSE[p.at.place] ?? p.at.place)}) më ${w.day(p.day)}${p.monthly ? ', përsëritet çdo muaj' : ''}`,
   expenseRemoved: (p, w) => `Hoqi shpenzimin prej ${w.money(p.amount)} për ${SQ_EXPENSE[p.category] ?? p.category} të ${w.day(p.day)}`,
   expenseStopped: (p) => `Ndali shpenzimin mujor për ${SQ_EXPENSE[p.category] ?? p.category}`,
+  bookEntryAdded: (p, w) => `Shkroi regjistrimin #${p.id} në libra (${w.money(p.amount)}): ${p.description}`,
+  bookEntryReversed: (p) => `Anuloi regjistrimin #${p.id} në libra`,
+  bookAccountAdded: (p) => `Shtoi llogarinë ${p.number} ${p.name} në libra`,
+  bookAccountChanged: (p) => `Ndryshoi llogarinë ${p.number} ${p.name} në libra`,
+  bookLinksChanged: () => 'Ndryshoi se në cilat llogari regjistrohen veprimet',
+  booksStartChanged: (p, w) => `Caktoi fillimin e librave më ${w.day(p.to)}${p.from ? ` (ishte ${w.day(p.from)})` : ''}`,
 
   expiryNoted: (p, w) => `Shënoi ${p.quantity} × ${p.product} që skadojnë më ${w.day(p.day)}`,
   expiryCleared: (p, w) => `U mor me ${p.quantity} × ${p.product} që skadojnë më ${w.day(p.day)}`,

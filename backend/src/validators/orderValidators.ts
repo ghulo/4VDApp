@@ -60,15 +60,22 @@ export const receiveOrderSchema = z.object({
 
 const positiveMoney = money.refine((value) => value > 0, 'must be more than 0');
 
-export const billSchema = z.object({
-  number: optional(60),
-  issuedOn: calendarDaySchema,
-  dueOn: calendarDaySchema.nullish().transform((value) => value ?? null),
-  amount: positiveMoney,
-  note: optional(500),
-});
+export const billSchema = z
+  .object({
+    number: optional(60),
+    issuedOn: calendarDaySchema,
+    dueOn: calendarDaySchema.nullish().transform((value) => value ?? null),
+    amount: positiveMoney,
+    /** The VAT in the amount, to claim back; left out when unknown. */
+    vatAmount: money.nullish(),
+    note: optional(500),
+  })
+  .refine((bill) => bill.vatAmount === undefined || bill.vatAmount === null || bill.vatAmount < bill.amount, {
+    message: "the VAT has to be less than the bill's total",
+    path: ['vatAmount'],
+  });
 
-export const newBillSchema = billSchema.extend({ supplierId: idSchema, orderId: idSchema.nullish() });
+export const newBillSchema = z.intersection(billSchema, z.object({ supplierId: idSchema, orderId: idSchema.nullish() }));
 
 export const billQuerySchema = z.object({
   supplierId: z.coerce.number().int().positive().optional(),

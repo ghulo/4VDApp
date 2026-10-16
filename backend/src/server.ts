@@ -43,7 +43,11 @@ const summaryTimer = setInterval(() => {
   const dayClosed = container.dayClosedAlert
     .sendIfClosed()
     .catch((error) => logger.error('Sending the day closed alert failed', { error: String(error) }));
-  Promise.all([report, expenses, alert, dayClosed]).finally(() => {
+  // The books post on every read too; this keeps them current when nobody is looking.
+  const books = container.booksService.poster
+    .sync()
+    .catch((error) => logger.error('Posting to the books failed', { error: String(error) }));
+  Promise.all([report, expenses, alert, dayClosed, books]).finally(() => {
     isChecking = false;
   });
 }, SUMMARY_CHECK_MS);

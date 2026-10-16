@@ -11,6 +11,9 @@ export const WIPE_PHRASE = 'wipe 4vd.app';
  * (children before the rows they point at).
  */
 const EMPTIED = [
+  'ledger_queue',
+  'ledger_lines',
+  'ledger_entries',
   'assistant_messages',
   'assistant_chats',
   'document_lines',

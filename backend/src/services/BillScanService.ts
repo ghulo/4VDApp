@@ -289,7 +289,15 @@ export class BillScanService {
             supplierId: scan.supplier.id,
             orderId: scan.openOrders[0]?.id ?? null,
             categoryId: null,
-            bill: { number: reading.number, issuedOn, dueOn: reading.dueOn && reading.dueOn >= issuedOn ? reading.dueOn : null, amount, note: null },
+            bill: {
+              number: reading.number,
+              issuedOn,
+              dueOn: reading.dueOn && reading.dueOn >= issuedOn ? reading.dueOn : null,
+              amount,
+              // The VAT the bill prints, so the books can claim it back.
+              vatAmount: reading.totals.vat !== null && reading.totals.vat >= 0 && reading.totals.vat < amount ? roundMoney(reading.totals.vat) : null,
+              note: null,
+            },
             lines: scan.lines.map(({ read, match }, readIndex) => ({
               readIndex,
               productId: match.productId,

@@ -4114,6 +4114,36 @@ fieldset.report-sections {
   white-space: normal;
 }
 
+/* Ledger columns: the day and the kind of entry stay on one line, the description takes the rest. */
+.table td.books-date {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.table td.books-kind {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.table td.books-description {
+  width: 100%;
+  min-width: 16ch;
+  white-space: normal;
+}
+
+.table td.books-description .books-warning {
+  display: block;
+}
+
+/* "Totals" and the trial balance's stamp, side by side in the totals row. */
+.books-totals-label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .books-warning {
   color: var(--warn);
 }

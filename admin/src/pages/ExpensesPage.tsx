@@ -40,7 +40,7 @@ export function ExpensesPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader wide
         title={t.expenses.title}
         description={t.expenses.description(range.label)}
         actions={

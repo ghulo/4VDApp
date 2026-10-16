@@ -337,6 +337,18 @@ block. Then one of these shapes:
 - **List page**: header (primary "Add …" / "New …") → toolbar (search,
   filters) → table → pagination. **No create form on top of a list.** Adding
   opens a form page (or a panel for a few fields).
+- **Work page** (a list page you work through: Books, Sales, Stock, Bills,
+  Expenses, Customers, Suppliers, Activity…): `PageHeader wide`, which widens
+  the frame to 1600px and tightens the header. Rows are ledger rows (8px cells).
+  Figures, if any, are a slim strip (`StatGrid compact`). **One command bar**:
+  the table's toolbar holds the period (`PeriodPicker compact`), search and
+  filters on the left and downloads in `.toolbar__end` on the right; several
+  downloads share one `MenuButton`. Money columns end in a **totals row**
+  (`DataTable totals`). A record opened from the list opens in an
+  `Inspector`: docked beside the list from 1440px (the row stays marked with
+  the clay bar), a Sheet below that. The header's actions keep only the
+  primary action and Edit. Where a period also scopes figures above the table
+  (Sales, Reports), the period stays on its own row of chips.
 - **Detail / hub page**: header with breadcrumb and status stamp → a stat row →
   sections of related records, each a heading plus a table.
 - **Form page**: grouped cards up to 720px wide; a **footer bar** with the
@@ -484,7 +496,8 @@ looked cold and generic on ivory.
 ### Layout
 - 4px grid: 4, 8, 12, 16, 24, 32, 48.
 - Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
-  content column max 1120px; page padding 32/48 desktop, 32/24 under 1100px,
+  content column max 1120px (`--frame-reading`), 1600px on work pages
+  (`--frame-wide`, 3.8); page padding 32/48 desktop, 32/24 under 1100px,
   24/16 under 900px. Sections stack 16px apart.
 - Controls 36px (30px small) on desktop, **44px (36px small) under 900px**.
   Team app: keys and fields **48px**, small keys **36px**; every tap area is at
@@ -608,7 +621,14 @@ browser's native date input.
 ### 10.4 Tables (DataTable)
 Every table is a `DataTable`: framed surface, optional toolbar and footer strips,
 12px cells (16px at the edges), spec-label headers, hairline rows, sunk hover,
-numbers right-aligned and tabular, ARIA table roles. Under 600px rows stack:
+numbers right-aligned and tabular and never wrapped, ARIA table roles. On work
+pages (3.8) or with `density="compact"` rows are ledger rows: 8px cells. A
+**totals row** (`totals`, one cell per column) closes money columns: strong
+hairline above, Oat, 600 weight; a trial balance puts its **Balanced** stamp
+(ok) there, or **Off by …** (danger). The row whose record is open in an
+Inspector is marked like the menu: Oat with a 3px Clay bar on its first cell
+(`table__row--selected`); columns that can wait while it is open take
+`table__dock-hide`. Under 600px rows stack:
 title cell first in 600 weight, then "column name: value" lines. An empty table
 shows an empty state instead of headers.
 
@@ -670,9 +690,19 @@ key's soft drop; the chosen one is pressed into the page (Oat, inset shadow,
 Ink label). A filter dropdown beside them (supplier, category, sort, compare)
 is the same raised pill. Counts of 0 are hidden. On phones a chip row scrolls
 sideways in one line. The period is always `PeriodPicker`, on its own row under
-the page header (in the board head on Analytics). Form and settings choices
+the page header (in the board head on Analytics); on a work page (3.8) it is
+`PeriodPicker compact`, a dropdown inside the table's toolbar. Form and settings choices
 (how paid, add/remove, theme, language, a view switch inside a card) keep the
 track. In the team app, `Chip` in `CatalogScreen` follows the same recipe.
+
+### 10.11a Inspector and menu button
+`Inspector` shows one record opened from a list: at 1440px and wider it docks
+beside the list (`InspectorLayout`, 400px, sticky under the top bar, raised
+Paper, its heading takes focus, Esc or × closes and focus returns to the row's
+key); narrower, it is a Sheet. Long names in its tables wrap.
+`MenuButton` is a quiet key with a caret that opens a short list of related
+actions (a page's downloads): Float shadow, 36px rows, arrow keys, Home/End,
+Esc returns to the key, a click away closes it.
 
 ### 10.11 Navigation
 Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
@@ -741,3 +771,7 @@ closed the earlier gaps (words, date fields, dashboard receipt).
 
 1. **Albanian numbers group from five digits**: "1578 €" sits above
    "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
+2. **Work pages only half done outside the Books**: the other work pages have
+   the wide frame and ledger rows, but their downloads and filters are not yet
+   in one command bar, money lists have no totals row, and their records open
+   in a Sheet or their own page instead of an `Inspector`. → 3.8

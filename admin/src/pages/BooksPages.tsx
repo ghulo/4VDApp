@@ -7,6 +7,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import {
   BalanceFigure,
   BooksDownload,
+  BooksDownloads,
   cardPath,
   EntryBadges,
   EntryById,
@@ -20,7 +21,22 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
-import { Badge, Button, ButtonLink, DataTable, DateField, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  DataTable,
+  DateField,
+  EmptyState,
+  Field,
+  Inspector,
+  InspectorLayout,
+  PageHeader,
+  Sheet,
+  StatGrid,
+  StatTile,
+  useNewSheet,
+} from '../components/ui';
 import { useT } from '../i18n/useT';
 import { booksApi, customersApi, suppliersApi } from '../services/api';
 import {
@@ -60,8 +76,11 @@ function useAccounts() {
 /** The id of the account a kind of movement goes to. */
 const linkedAccount = (accounts: LedgerAccount[] | undefined, key: AccountLinkKey) => accounts?.find((account) => account.links.includes(key));
 
-/** The entry sheet: one entry opened from a list, by its number. */
-function useEntrySheet() {
+/**
+ * One entry opened from a list, by its number: beside the list on a wide screen,
+ * in a sheet otherwise. The row it came from stays marked.
+ */
+function useEntryInspector() {
   const t = useT();
   const [openId, setOpenId] = useState<number | null>(null);
   // The title stays while the sheet slides out.
@@ -70,13 +89,17 @@ function useEntrySheet() {
     setOpenId(id);
     setShownId(id);
   }, []);
-  const sheet = (
-    <Sheet open={openId !== null} onClose={() => setOpenId(null)} title={shownId ? t.books.entryTitle(shownId) : t.books.title}>
+  const inspector = (
+    <Inspector open={openId !== null} onClose={() => setOpenId(null)} title={shownId ? t.books.entryTitle(shownId) : t.books.title}>
       {openId !== null && <EntryById key={openId} id={openId} onOpen={open} />}
-    </Sheet>
+    </Inspector>
   );
-  return { open, sheet };
+  return { open, openId, inspector };
 }
+
+/** Marks the row whose entry is open, and steps back corrections. */
+const rowClass = (selected: boolean, ...rest: Array<string | false | undefined>) =>
+  [selected && 'table__row--selected', ...rest].filter(Boolean).join(' ') || undefined;
 
 /* ---------- Balances ---------- */
 
@@ -100,17 +123,7 @@ export function BooksBalancesPage() {
 
   return (
     <>
-      <PageHeader
-        title={t.nav.items.books}
-        description={t.books.description(range.label)}
-        actions={
-          <>
-            <BooksDownload what="trial-balance" period={days} label={t.books.downloads['trial-balance']} />
-            <BooksDownload what="ledger" period={days} label={t.books.downloads.ledger} />
-          </>
-        }
-      />
-      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+      <PageHeader wide title={t.nav.items.books} description={t.books.description(range.label)} />
       {balances.isPending && <Loading />}
       {balances.isError && <ErrorNotice error={balances.error} onRetry={() => balances.refetch()} />}
       {balances.data && (
@@ -128,6 +141,21 @@ export function BooksBalancesPage() {
             caption={t.books.caption(range.label)}
             rows={rows}
             rowKey={(row) => row.accountId}
+            density="compact"
+            toolbar={
+              <div className="toolbar">
+                <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+                <div className="toolbar__end">
+                  <BooksDownloads
+                    period={days}
+                    items={[
+                      { what: 'trial-balance', label: t.books.downloads['trial-balance'] },
+                      { what: 'ledger', label: t.books.downloads.ledger },
+                    ]}
+                  />
+                </div>
+              </div>
+            }
             group={(row) => ({ key: row.accountClass, heading: t.books.classes[row.accountClass] })}
             empty={
               <EmptyState icon={Books} title={t.books.empty}>
@@ -149,10 +177,21 @@ export function BooksBalancesPage() {
               { header: t.books.credit, align: 'end', cell: (row) => (row.credit ? formatMoney(row.credit) : '–') },
               { header: t.books.closing, align: 'end', cell: (row) => formatBalance(t, row.closing) },
             ]}
+            totals={[
+              <span key="stamp" className="books-totals-label">
+                {t.books.totals}
+                <BalanceStamp debits={debits} credits={credits} />
+              </span>,
+              '',
+              formatMoney(debits),
+              formatMoney(credits),
+              '',
+            ]}
             footer={
-              rows.length > 0 && (
-                <p className={cents(debits) === cents(credits) ? 'books-total' : 'books-total books-total--off'} role="status">
-                  {cents(debits) === cents(credits) ? t.books.balanced(formatMoney(debits)) : t.books.unbalanced(formatMoney(Math.abs(debits - credits)))}
+              rows.length > 0 &&
+              cents(debits) !== cents(credits) && (
+                <p className="books-total books-total--off" role="alert">
+                  {t.books.unbalanced(formatMoney(Math.abs(debits - credits)))}
                 </p>
               )
             }
@@ -160,6 +199,16 @@ export function BooksBalancesPage() {
         </>
       )}
     </>
+  );
+}
+
+/** The stamp under a trial balance: debits and credits agree, or by how much they don't. */
+function BalanceStamp({ debits, credits }: { debits: number; credits: number }) {
+  const t = useT();
+  return cents(debits) === cents(credits) ? (
+    <Badge tone="ok">{t.books.stamp.balanced}</Badge>
+  ) : (
+    <Badge tone="danger">{t.books.stamp.off(formatMoney(Math.abs(debits - credits)))}</Badge>
   );
 }
 
@@ -180,7 +229,7 @@ function BalanceTiles({ rows, accounts, search }: { rows: TrialBalanceRow[]; acc
   const vatDue = (vatOut ? vatOut.credit - vatOut.debit : 0) - (vatIn ? vatIn.debit - vatIn.credit : 0);
 
   return (
-    <StatGrid>
+    <StatGrid compact>
       <StatTile label={t.books.tiles.cashAndBank} value={formatHeadlineMoney(closing('cash') + closing('bank'))} to={to('cash')} />
       <StatTile label={t.books.tiles.stock} value={formatHeadlineMoney(closing('stock'))} to={to('stock')} />
       <StatTile label={t.books.tiles.suppliers} value={formatHeadlineMoney(0 - closing('payables'))} to={to('payables')} />
@@ -214,7 +263,7 @@ export function BooksJournalPage() {
   });
   const settings = useQuery({ queryKey: ['books', 'settings'], queryFn: booksApi.settings });
   const [adding, setAdding] = useNewSheet();
-  const { open, sheet } = useEntrySheet();
+  const { open, openId, inspector } = useEntryInspector();
 
   const update = useCallback(
     (changes: Record<string, string>) =>
@@ -235,11 +284,11 @@ export function BooksJournalPage() {
   return (
     <>
       <PageHeader
+        wide
         title={t.nav.tabs.journal}
         description={t.books.journalDescription(range.label)}
         actions={
           <>
-            <BooksDownload what="journal" period={days} label={t.books.downloads.journal} />
             {canManage(role) && (
               <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
                 {t.books.newEntry}
@@ -248,64 +297,65 @@ export function BooksJournalPage() {
           </>
         }
       />
-      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
       {entries.isPending && <Loading />}
       {entries.isError && <ErrorNotice error={entries.error} onRetry={() => entries.refetch()} />}
       {entries.data && (
-        <DataTable<LedgerEntry>
-          caption={t.books.entryCaption}
-          rows={entries.data.items}
-          rowKey={(entry) => entry.id}
-          onRowClick={(entry) => open(entry.id)}
-          rowClassName={(entry) => (entry.reversed || entry.kind === 'reversal' ? 'books-row--old' : undefined)}
-          toolbar={
-            <div className="toolbar">
-              <SearchInput value={search} onChange={onSearch} label={t.books.searchPlaceholder} />
-              <label className="toggle" title={t.books.correctionsHint}>
-                <input type="checkbox" checked={corrections} onChange={(event) => update({ corrections: event.target.checked ? '1' : '' })} />
-                {t.books.corrections}
-              </label>
-            </div>
-          }
-          empty={
-            <EmptyState icon={Books} title={t.books.empty}>
-              {startDay ? t.books.emptyHint(formatBookDay(startDay)) : t.books.emptyNoStart}
-            </EmptyState>
-          }
-          columns={[
-            {
-              header: t.books.what,
-              title: true,
-              cell: (entry) => (
-                <>
-                  <span className="books-entry__kind">{kindLabel(t, entry)}</span>
-                  <span className="table__secondary books-description">{entry.description}</span>
-                </>
-              ),
-            },
-            { header: t.books.date, cell: (entry) => formatBookDay(entry.date) },
-            {
-              header: t.nav.tabs.accounts,
-              className: 'table__phone-hide books-accounts',
-              cell: (entry) => [...new Set(entry.lines.map((line) => line.accountNumber))].join(', '),
-            },
-            {
-              header: <span className="visually-hidden">{t.books.correction}</span>,
-              cell: (entry) => <EntryBadges entry={entry} />,
-            },
-            { header: t.books.amount, align: 'end', cell: (entry) => formatMoney(entry.total) },
-            {
-              header: <span className="visually-hidden">{t.books.openColumn}</span>,
-              align: 'end',
-              cell: (entry) => (
-                <Button size="sm" variant="ghost" aria-label={t.books.open(entry.id)} onClick={() => open(entry.id)}>
-                  #{entry.id}
-                </Button>
-              ),
-            },
-          ]}
-          footer={<Pagination meta={entries.data.meta} onPageChange={(next) => update({ page: String(next) })} itemLabel={t.books.entriesWord} />}
-        />
+        <InspectorLayout open={openId !== null}>
+          <div className="inspector-layout__list">
+            <DataTable<LedgerEntry>
+              caption={t.books.entryCaption}
+              rows={entries.data.items}
+              rowKey={(entry) => entry.id}
+              density="compact"
+              onRowClick={(entry) => open(entry.id)}
+              rowClassName={(entry) => rowClass(entry.id === openId, (entry.reversed || entry.kind === 'reversal') && 'books-row--old')}
+              toolbar={
+                <div className="toolbar">
+                  <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+                  <SearchInput value={search} onChange={onSearch} label={t.books.searchPlaceholder} />
+                  <label className="toggle" title={t.books.correctionsHint}>
+                    <input type="checkbox" checked={corrections} onChange={(event) => update({ corrections: event.target.checked ? '1' : '' })} />
+                    {t.books.corrections}
+                  </label>
+                  <div className="toolbar__end">
+                    <BooksDownload what="journal" period={days} label={t.books.downloads.journal} />
+                  </div>
+                </div>
+              }
+              empty={
+                <EmptyState icon={Books} title={t.books.empty}>
+                  {startDay ? t.books.emptyHint(formatBookDay(startDay)) : t.books.emptyNoStart}
+                </EmptyState>
+              }
+              columns={[
+                { header: t.books.date, className: 'books-date', cell: (entry) => formatBookDay(entry.date) },
+                { header: t.books.what, title: true, className: 'books-kind', cell: (entry) => kindLabel(t, entry) },
+                { header: t.books.descriptionColumn, className: 'books-description', cell: (entry) => entry.description },
+                {
+                  header: t.nav.tabs.accounts,
+                  className: 'table__phone-hide table__dock-hide books-accounts',
+                  cell: (entry) => [...new Set(entry.lines.map((line) => line.accountNumber))].join(', '),
+                },
+                {
+                  header: <span className="visually-hidden">{t.books.correction}</span>,
+                  cell: (entry) => <EntryBadges entry={entry} />,
+                },
+                { header: t.books.amount, align: 'end', cell: (entry) => formatMoney(entry.total) },
+                {
+                  header: <span className="visually-hidden">{t.books.openColumn}</span>,
+                  align: 'end',
+                  cell: (entry) => (
+                    <Button size="sm" variant="ghost" aria-label={t.books.open(entry.id)} onClick={() => open(entry.id)}>
+                      #{entry.id}
+                    </Button>
+                  ),
+                },
+              ]}
+              footer={<Pagination meta={entries.data.meta} onPageChange={(next) => update({ page: String(next) })} itemLabel={t.books.entriesWord} />}
+            />
+          </div>
+          {inspector}
+        </InspectorLayout>
       )}
       <Sheet open={adding} onClose={() => setAdding(false)} title={t.books.newEntry}>
         <ManualEntryForm
@@ -316,7 +366,6 @@ export function BooksJournalPage() {
           }}
         />
       </Sheet>
-      {sheet}
     </>
   );
 }
@@ -537,6 +586,7 @@ export function BooksAccountsPage() {
   return (
     <>
       <PageHeader
+        wide
         title={t.nav.tabs.accounts}
         description={t.books.accountsDescription}
         actions={
@@ -554,6 +604,7 @@ export function BooksAccountsPage() {
           caption={t.nav.tabs.accounts}
           rows={rows}
           rowKey={(account) => account.id}
+          density="compact"
           group={(account) => ({ key: account.accountClass, heading: t.books.classes[account.accountClass] })}
           toolbar={
             <div className="toolbar">
@@ -779,7 +830,7 @@ export function AccountCardPage() {
   });
   const accounts = useAccounts();
   const [editing, setEditing] = useState(false);
-  const { open, sheet } = useEntrySheet();
+  const { open, openId, inspector } = useEntryInspector();
 
   if (card.isPending) return <Loading />;
   if (card.isError) return <ErrorNotice error={card.error} onRetry={() => card.refetch()} />;
@@ -817,6 +868,7 @@ export function AccountCardPage() {
   return (
     <>
       <PageHeader
+        wide
         title={`${account.number} ${account.name}`}
         description={`${t.books.classes[account.accountClass]} · ${account.group}`}
         crumbs={[
@@ -834,96 +886,105 @@ export function AccountCardPage() {
           </>
         }
         actions={
-          <>
-            <BooksDownload what={{ account: account.id }} period={days} label={t.books.downloads.card} />
-            {canManage(role) && (
-              <Button icon={PencilSimple} onClick={() => setEditing(true)}>
-                {t.books.accounts.edit}
-              </Button>
-            )}
-          </>
+          canManage(role) && (
+            <Button icon={PencilSimple} onClick={() => setEditing(true)}>
+              {t.books.accounts.edit}
+            </Button>
+          )
         }
       />
-      <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
-      <p className="field-hint">{t.books.card.description}</p>
-      <StatGrid>
+      <StatGrid compact>
         <StatTile label={t.books.opening} value={<BalanceFigure balance={card.data.opening} />} />
         <StatTile label={t.books.debit} value={formatMoney(card.data.debit)} />
         <StatTile label={t.books.credit} value={formatMoney(card.data.credit)} />
         <StatTile label={t.books.closing} value={<BalanceFigure balance={card.data.closing} />} />
       </StatGrid>
-      <DataTable<CardRow>
-        caption={t.books.card.caption(`${account.number} ${account.name}`)}
-        rows={rows}
-        rowKey={(row) => (row.opening ? 'opening' : `${row.entryId}-${row.debit}-${row.credit}-${row.party?.id ?? row.memo ?? ''}`)}
-        onRowClick={(row) => !row.opening && open(row.entryId)}
-        rowClassName={(row) => (row.opening ? 'books-row--opening' : row.correction ? 'books-row--old' : undefined)}
-        toolbar={
-          <div className="toolbar">
-            <label className="toggle" title={t.books.correctionsHint}>
-              <input
-                type="checkbox"
-                checked={corrections}
-                onChange={(event) =>
-                  setParams((current) => {
-                    const next = new URLSearchParams(current);
-                    if (event.target.checked) next.set('corrections', '1');
-                    else next.delete('corrections');
-                    next.delete('page');
-                    return next;
-                  })
-                }
-              />
-              {t.books.corrections}
-            </label>
-          </div>
-        }
-        columns={[
-          {
-            header: t.books.what,
-            title: true,
-            cell: (row) =>
-              row.opening ? (
-                <span className="books-entry__kind">{row.description}</span>
+      <InspectorLayout open={openId !== null}>
+        <div className="inspector-layout__list">
+          <DataTable<CardRow>
+            caption={t.books.card.caption(`${account.number} ${account.name}`)}
+            rows={rows}
+            rowKey={(row) => (row.opening ? 'opening' : `${row.entryId}-${row.debit}-${row.credit}-${row.party?.id ?? row.memo ?? ''}`)}
+            density="compact"
+            onRowClick={(row) => !row.opening && open(row.entryId)}
+            rowClassName={(row) => rowClass(!row.opening && row.entryId === openId, row.opening ? 'books-row--opening' : row.correction && 'books-row--old')}
+            toolbar={
+              <div className="toolbar">
+                <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+                <label className="toggle" title={t.books.correctionsHint}>
+                  <input
+                    type="checkbox"
+                    checked={corrections}
+                    onChange={(event) =>
+                      setParams((current) => {
+                        const next = new URLSearchParams(current);
+                        if (event.target.checked) next.set('corrections', '1');
+                        else next.delete('corrections');
+                        next.delete('page');
+                        return next;
+                      })
+                    }
+                  />
+                  {t.books.corrections}
+                </label>
+                <div className="toolbar__end">
+                  <BooksDownload what={{ account: account.id }} period={days} label={t.books.downloads.card} />
+                </div>
+              </div>
+            }
+            columns={[
+              { header: t.books.date, className: 'books-date', cell: (row) => formatBookDay(row.date) },
+              { header: t.books.what, title: true, className: 'books-kind table__dock-hide', cell: (row) => !row.opening && kindLabel(t, row) },
+              {
+                header: t.books.descriptionColumn,
+                className: 'books-description',
+                cell: (row) =>
+                  row.opening ? (
+                    <span className="books-entry__kind">{row.description}</span>
+                  ) : (
+                    <>
+                      {[row.description, row.party?.name ?? row.memo].filter(Boolean).join(' · ')}
+                      {row.warning && <span className="table__secondary books-warning">{warningText(t, row.warning)}</span>}
+                    </>
+                  ),
+              },
+              { header: t.books.debit, align: 'end', cell: (row) => (row.debit ? formatMoney(row.debit) : '') },
+              { header: t.books.credit, align: 'end', cell: (row) => (row.credit ? formatMoney(row.credit) : '') },
+              { header: t.books.balance, align: 'end', cell: (row) => formatBalance(t, row.balance) },
+              {
+                header: <span className="visually-hidden">{t.books.openColumn}</span>,
+                align: 'end',
+                cell: (row) =>
+                  row.opening ? (
+                    ''
+                  ) : (
+                    <Button size="sm" variant="ghost" aria-label={t.books.open(row.entryId)} onClick={() => open(row.entryId)}>
+                      #{row.entryId}
+                    </Button>
+                  ),
+              },
+            ]}
+            totals={
+              card.data.lines.length > 0
+                ? [t.books.totals, '', '', formatMoney(card.data.debit), formatMoney(card.data.credit), formatBalance(t, card.data.closing), '']
+                : undefined
+            }
+            footer={
+              card.data.lines.length === 0 ? (
+                <p className="books-total">{t.books.card.none}</p>
               ) : (
-                <>
-                  <span className="books-entry__kind">{kindLabel(t, row)}</span>
-                  <span className="table__secondary books-description">{[row.description, row.party?.name ?? row.memo].filter(Boolean).join(' · ')}</span>
-                  {row.warning && <span className="table__secondary books-warning">{warningText(t, row.warning)}</span>}
-                </>
-              ),
-          },
-          { header: t.books.date, cell: (row) => formatBookDay(row.date) },
-          { header: t.books.debit, align: 'end', cell: (row) => (row.debit ? formatMoney(row.debit) : '') },
-          { header: t.books.credit, align: 'end', cell: (row) => (row.credit ? formatMoney(row.credit) : '') },
-          { header: t.books.balance, align: 'end', cell: (row) => formatBalance(t, row.balance) },
-          {
-            header: <span className="visually-hidden">{t.books.openColumn}</span>,
-            align: 'end',
-            cell: (row) =>
-              row.opening ? (
-                ''
-              ) : (
-                <Button size="sm" variant="ghost" aria-label={t.books.open(row.entryId)} onClick={() => open(row.entryId)}>
-                  #{row.entryId}
-                </Button>
-              ),
-          },
-        ]}
-        footer={
-          card.data.lines.length === 0 ? (
-            <p className="books-total">{t.books.card.none}</p>
-          ) : (
-            card.data.lines.length > CARD_PAGE && (
-              <Pagination meta={{ page, limit: CARD_PAGE, total: card.data.lines.length }} onPageChange={setPage} itemLabel={t.books.lines.toLocaleLowerCase()} />
-            )
-          )
-        }
-      />
+                card.data.lines.length > CARD_PAGE && (
+                  <Pagination meta={{ page, limit: CARD_PAGE, total: card.data.lines.length }} onPageChange={setPage} itemLabel={t.books.lines.toLocaleLowerCase()} />
+                )
+              )
+            }
+          />
+        </div>
+        {inspector}
+      </InspectorLayout>
       <Sheet open={editing} onClose={() => setEditing(false)} title={`${account.number} ${account.name}`}>
         <AccountForm accounts={accounts.data ?? []} account={account} onSaved={() => setEditing(false)} />
       </Sheet>
-      {sheet}
     </>
   );
 }

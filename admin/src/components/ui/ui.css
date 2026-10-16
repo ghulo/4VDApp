@@ -1820,3 +1820,222 @@ input.switch:focus-visible {
     block-size: 110px;
   }
 }
+
+/* ---------- Work pages: wide header, dense ledger rows, docked records ----------
+   Pages full of rows (books, sales, stock) read like a ledger on a desk: a
+   slimmer header, one toolbar holding every filter, rows close together, a
+   real totals row, and the opened record beside the list on wide screens. */
+
+.page-header--wide {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+}
+
+.page-header--wide .page-header__description {
+  font-size: var(--text-base);
+}
+
+/* Ledger rows: tables on a wide work page, or asked for with density="compact". */
+@media (min-width: 600px) {
+  :is(.data-table--compact, .main__frame:has(.page-header--wide) .data-table) .table th,
+  :is(.data-table--compact, .main__frame:has(.page-header--wide) .data-table) .table td {
+    padding-block: var(--space-2);
+  }
+}
+
+/* An amount never breaks over two lines, and "Dr" stays with its figure. */
+.table td.table__numeric {
+  white-space: nowrap;
+}
+
+/* Each cell's shadow reaches 1px into the next, so no light seams show between
+   cells where column edges fall between pixels. */
+.table__totals td {
+  border-top: 1px solid var(--line-strong);
+  background: var(--surface-sunk);
+  box-shadow: 1px 0 0 var(--surface-sunk);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 599px) {
+  .table--stack tfoot {
+    display: block;
+  }
+
+  .table--stack .table__totals {
+    border-top: 1px solid var(--line-strong);
+    background: var(--surface-sunk);
+  }
+
+  .table--stack .table__totals td {
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+}
+
+/* The row whose record is open beside the list: clay marks where you are, as in the menu. */
+.table tbody tr.table__row--selected td {
+  background: var(--surface-sunk);
+  box-shadow: 1px 0 0 var(--surface-sunk);
+}
+
+.table tbody tr.table__row--selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent), 1px 0 0 var(--surface-sunk);
+}
+
+/* Figures as one slim strip over a ledger. */
+.stat-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.stat-grid--compact .stat {
+  padding: var(--space-3) var(--space-4);
+}
+
+.stat-grid--compact .stat__value {
+  font-size: var(--text-lg);
+  letter-spacing: 0;
+}
+
+.stat-grid--compact .stat__words {
+  min-height: calc(var(--text-lg) * 1.15);
+  font-size: var(--text-sm);
+}
+
+/* A page's toolbar inside a table's toolbar fills the row and adds no space under it,
+   so its last group (.toolbar__end) can sit at the right. The period dropdown is one
+   filter among the others. */
+.data-table__toolbar > .toolbar {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
+.data-table__toolbar .period-picker--compact {
+  margin-bottom: 0;
+}
+
+.toolbar__end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* ---------- Inspector: a record docked beside its list ---------- */
+
+@media (min-width: 1440px) {
+  .inspector-layout--open {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--inspector-width);
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  /* Columns that can wait while a record is open beside the list. */
+  .inspector-layout--open .table__dock-hide {
+    display: none;
+  }
+}
+
+.inspector-layout__list {
+  min-width: 0;
+}
+
+.inspector {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--topbar-h) - var(--space-6));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+  overflow: hidden;
+}
+
+.inspector__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* The heading only takes focus so a screen reader starts the record there; it is not a control. */
+.inspector__title:focus {
+  outline: none;
+}
+
+.inspector__description {
+  margin-top: var(--space-1);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* A narrow pane: long names in its tables wrap instead of scrolling sideways. */
+.inspector .table__primary-link {
+  white-space: normal;
+}
+
+.inspector__body {
+  padding: var(--space-4);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------- Menu button: a key that opens a short list of actions ---------- */
+
+.menu-button {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 30;
+  min-width: 240px;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  background: var(--surface-sunk);
+}
+
+.menu__item svg {
+  color: var(--ink-muted);
+}

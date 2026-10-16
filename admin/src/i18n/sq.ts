@@ -2327,6 +2327,9 @@ export const sq: Catalogue = {
     closing: 'Në fund',
     balance: 'Saldo',
     dr: 'D',
+    totals: 'Gjithsej',
+    descriptionColumn: 'Përshkrimi',
+    stamp: { balanced: 'E barazuar', off: (amount) => `Diferencë ${amount}` },
     cr: 'K',
     caption: (group) => `${group}: saldot në periudhë`,
     balanced: (amount) => `Debia dhe kredia përputhen: ${amount} secila.`,
@@ -2418,7 +2421,6 @@ export const sq: Catalogue = {
       noEntries: 'Ende pa regjistrime',
     },
     card: {
-      description: 'Çdo lëvizje në këtë llogari gjatë periudhës, me saldon pas secilës.',
       openingRow: 'Saldo para kësaj periudhe',
       none: 'Asnjë lëvizje në këtë llogari në këtë periudhë.',
       caption: (account) => `Lëvizjet në ${account}`,

@@ -155,6 +155,13 @@
   --radius-segment: 6px;
   --radius-pill: 999px;
 
+  /* Page frames: the reading column for forms and hubs, the wide desk for pages full of rows. */
+  --topbar-h: 56px;
+  --frame-reading: 1120px;
+  --frame-wide: 1600px;
+  /* A record docked beside its list (wide screens). */
+  --inspector-width: 400px;
+
   /* Motion: quick and soft, never bouncy (the behaviours live in
      styles/motion.css). Anything that moves, both ways, rides --spring over
      --spring-time: Apple's critically damped spring (response 0.34s, no

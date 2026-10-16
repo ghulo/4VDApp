@@ -2347,6 +2347,9 @@ export const en = {
     closing: 'At the end',
     balance: 'Balance',
     dr: 'Dr',
+    totals: 'Totals',
+    descriptionColumn: 'Description',
+    stamp: { balanced: 'Balanced', off: (amount: string) => `Off by ${amount}` },
     cr: 'Cr',
     caption: (group: string) => `${group}: balances in the period`,
     balanced: (amount: string) => `Debits and credits match: ${amount} each.`,
@@ -2438,7 +2441,6 @@ export const en = {
       noEntries: 'No entries yet',
     },
     card: {
-      description: 'Every movement on this account in the period, with the balance after each.',
       openingRow: 'Balance before this period',
       none: 'No movements on this account in this period.',
       caption: (account: string) => `Movements on ${account}`,

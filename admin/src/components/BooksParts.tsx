@@ -11,7 +11,7 @@ import { EXPENSE_CATEGORIES, type AccountLinkKey, type BooksPeriod, type EntrySo
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable } from './ui';
+import { Badge, Button, ButtonLink, DataTable, MenuButton, Section } from './ui';
 
 /** "4 Oct 2026" for a "2026-10-04" day, without any time zone moving it. */
 export const formatBookDay = (day: string) =>
@@ -86,6 +86,7 @@ export function EntryLines({ entry }: { entry: LedgerEntry }) {
   const t = useT();
   return (
     <DataTable
+      density="compact"
       caption={t.books.lines}
       rows={entry.lines}
       rowKey={(line) => `${line.accountId}-${line.party?.kind ?? ''}${line.party?.id ?? ''}-${line.debit}-${line.credit}`}
@@ -105,7 +106,7 @@ export function EntryLines({ entry }: { entry: LedgerEntry }) {
         { header: t.books.debit, align: 'end', cell: (line) => (line.debit ? formatMoney(line.debit) : '') },
         { header: t.books.credit, align: 'end', cell: (line) => (line.credit ? formatMoney(line.credit) : '') },
       ]}
-      footer={<p className="books-total">{t.books.balanced(formatMoney(entry.total))}</p>}
+      totals={[t.books.totals, formatMoney(entry.total), formatMoney(entry.total)]}
     />
   );
 }
@@ -194,7 +195,7 @@ export function EntryById({ id, onOpen }: { id: number; onOpen: (id: number) => 
 }
 
 /** An Excel download of the books for a period, in the language the dashboard is in. */
-export function BooksDownload({ what, period, label }: { what: 'trial-balance' | 'journal' | 'ledger' | { account: number }; period: BooksPeriod; label: string }) {
+export function BooksDownload({ what, period, label }: { what: DownloadWhat; period: BooksPeriod; label: string }) {
   const t = useT();
   const { language } = useLanguage();
   const download = useMutation({ mutationFn: () => booksApi.download(what, period, language) });
@@ -203,6 +204,30 @@ export function BooksDownload({ what, period, label }: { what: 'trial-balance' |
       <Button variant="ghost" size="sm" icon={FileXls} loading={download.isPending} disabled={download.isPending} onClick={() => download.mutate()}>
         {download.isPending ? t.books.downloading : label}
       </Button>
+      {download.isError && (
+        <p className="form-error" role="alert">
+          {errorMessage(download.error)}
+        </p>
+      )}
+    </>
+  );
+}
+
+type DownloadWhat = 'trial-balance' | 'journal' | 'ledger' | { account: number };
+
+/** Several Excel downloads of the books behind one key, for a page with more than one. */
+export function BooksDownloads({ items, period }: { items: { what: DownloadWhat; label: string }[]; period: BooksPeriod }) {
+  const t = useT();
+  const { language } = useLanguage();
+  const download = useMutation({ mutationFn: (what: DownloadWhat) => booksApi.download(what, period, language) });
+  return (
+    <>
+      <MenuButton
+        label={download.isPending ? t.books.downloading : t.books.download}
+        icon={FileXls}
+        loading={download.isPending}
+        items={items.map((item) => ({ label: item.label, icon: FileXls, onSelect: () => download.mutate(item.what) }))}
+      />
       {download.isError && (
         <p className="form-error" role="alert">
           {errorMessage(download.error)}
@@ -223,7 +248,7 @@ function EntriesPanelBody({ source, id }: { source: EntrySource; id: number }) {
   const t = useT();
   const entries = useQuery({ queryKey: ['books', 'for', source, id], queryFn: () => booksApi.entriesFor(source, id) });
   return (
-    <Card title={t.books.panel.title} description={t.books.panel.description}>
+    <Section title={t.books.panel.title} description={t.books.panel.description}>
       {entries.isPending && <Loading />}
       {entries.isError && <ErrorNotice error={entries.error} onRetry={() => entries.refetch()} />}
       {entries.data?.length === 0 && (
@@ -248,6 +273,6 @@ function EntriesPanelBody({ source, id }: { source: EntrySource; id: number }) {
           ))}
         </ol>
       )}
-    </Card>
+    </Section>
   );
 }

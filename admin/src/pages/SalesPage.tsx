@@ -36,7 +36,7 @@ export function SalesPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader wide
         title={t.nav.items.sales}
         description={t.sales.description}
         actions={

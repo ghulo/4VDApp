@@ -290,7 +290,7 @@
 }
 
 .main__frame {
-  max-width: 1120px;
+  max-width: var(--frame-reading);
   min-height: 100%;
   margin: 0 auto;
   padding: var(--space-6) var(--space-7) var(--space-7);
@@ -866,4 +866,9 @@
 .inbox__count {
   color: var(--ink-muted);
   font-size: var(--text-sm);
+}
+
+/* Work pages (a wide PageHeader) use the whole desk: books, sales, stock lists. */
+.main__frame:has(.page-header--wide) {
+  max-width: var(--frame-wide);
 }

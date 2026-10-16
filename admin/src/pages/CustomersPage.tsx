@@ -120,7 +120,7 @@ export function CustomersPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader wide
         title={t.customers.title}
         description={t.customers.description}
         actions={

@@ -14,27 +14,39 @@ interface PeriodPickerProps {
   compare?: { value: CompareKey; onChange: (next: CompareKey) => void };
   /** Further filters for the same view, after the period (e.g. which carwash). */
   children?: ReactNode;
+  /** A dropdown instead of a row of chips, to sit in a table's toolbar with the other filters. */
+  compact?: boolean;
 }
 
 /** The period a page shows, as one row of filter chips (DESIGN.md 10.10), the same on every page. */
-export function PeriodPicker({ period, from, to, onChange, periods = PERIOD_KEYS, compare, children }: PeriodPickerProps) {
+export function PeriodPicker({ period, from, to, onChange, periods = PERIOD_KEYS, compare, children, compact }: PeriodPickerProps) {
   const t = useT();
   return (
-    <div className="toolbar period-picker">
-      <div className="segmented segmented--chips" role="radiogroup" aria-label={t.periods.label}>
-        {periods.map((key) => (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={period === key}
-            className="segmented__option"
-            onClick={() => onChange({ period: key, from, to })}
-          >
-            {t.periods.options[key]}
-          </button>
-        ))}
-      </div>
+    <div className={compact ? 'toolbar period-picker period-picker--compact' : 'toolbar period-picker'}>
+      {compact ? (
+        <select aria-label={t.periods.label} value={period} onChange={(event) => onChange({ period: event.target.value as PeriodKey, from, to })}>
+          {periods.map((key) => (
+            <option key={key} value={key}>
+              {t.periods.options[key]}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="segmented segmented--chips" role="radiogroup" aria-label={t.periods.label}>
+          {periods.map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={period === key}
+              className="segmented__option"
+              onClick={() => onChange({ period: key, from, to })}
+            >
+              {t.periods.options[key]}
+            </button>
+          ))}
+        </div>
+      )}
       {compare && (
         <select aria-label={t.periods.compareWith} value={compare.value} onChange={(event) => compare.onChange(event.target.value as CompareKey)}>
           {COMPARE_KEYS.map((key) => (

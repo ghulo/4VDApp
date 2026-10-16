@@ -94,7 +94,7 @@ export function PromotionsPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader wide
         title={t.promotions.title}
         description={manager ? t.promotions.description : `${t.promotions.description} ${t.promotions.managersOnly}`}
         actions={

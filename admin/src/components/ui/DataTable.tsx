@@ -32,6 +32,10 @@ interface DataTableProps<Row> {
   empty?: ReactNode;
   /** Under the table, usually pagination. */
   footer?: ReactNode;
+  /** A totals row under the last row, one cell per column (empty cells stay blank). */
+  totals?: ReactNode[];
+  /** Ledger rows: tighter, for long lists read on a computer. Phones stack rows as usual. */
+  density?: 'comfortable' | 'compact';
 }
 
 /** A cell with nothing to say: stacked rows on phones leave it out instead of printing "–". */
@@ -50,6 +54,8 @@ export function DataTable<Row>({
   toolbar,
   empty,
   footer,
+  totals,
+  density = 'comfortable',
 }: DataTableProps<Row>) {
   const cellClass = (column: Column<Row>) =>
     [column.align === 'end' && 'table__numeric', column.title && 'table__title', column.className].filter(Boolean).join(' ') ||
@@ -59,7 +65,7 @@ export function DataTable<Row>({
   const cellLabel = (column: Column<Row>) => (typeof column.header === 'string' ? column.header : undefined);
 
   return (
-    <div className="data-table">
+    <div className={density === 'compact' ? 'data-table data-table--compact' : 'data-table'}>
       {toolbar && <div className="data-table__toolbar">{toolbar}</div>}
       {rows.length === 0 ? (
         <div className="data-table__empty">{empty}</div>
@@ -111,6 +117,17 @@ export function DataTable<Row>({
                 ))}
               </tbody>
             ))}
+            {totals && (
+              <tfoot role="rowgroup">
+                <tr role="row" className="table__totals">
+                  {columns.map((column, index) => (
+                    <td key={index} role="cell" className={cellClass(column)} data-label={cellLabel(column)} data-empty={isBlank(totals[index]) || undefined}>
+                      {totals[index]}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}

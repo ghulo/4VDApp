@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 
 /** Figures side by side in cells that share their borders. */
-export function StatGrid({ children }: { children: ReactNode }) {
-  return <div className="stat-grid">{children}</div>;
+export function StatGrid({ children, compact }: { children: ReactNode; /** One slim strip of figures over a ledger, instead of tall tiles. */ compact?: boolean }) {
+  return <div className={compact ? 'stat-grid stat-grid--compact' : 'stat-grid'}>{children}</div>;
 }
 
 interface StatTileProps {

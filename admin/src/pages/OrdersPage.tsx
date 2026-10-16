@@ -52,7 +52,7 @@ export function OrdersPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader wide
         title={t.nav.items.suppliers}
         description={t.orders.description}
         actions={

@@ -71,7 +71,7 @@ export function ActivityPage() {
 
   return (
     <>
-      <PageHeader title={t.activity.title} description={t.activity.description} />
+      <PageHeader wide title={t.activity.title} description={t.activity.description} />
 
       <div className="card activity-filters">
         <SearchInput value={search} onChange={onSearch} label={t.activity.search} />

@@ -48,6 +48,8 @@ export function applyTheme(preference: ThemePreference): void {
   } else {
     paint();
   }
+  // The Windows app colours its frame (Mica, caption buttons) to match.
+  window.fourvdDesktop?.setTheme(preference);
   try {
     safeStorage()?.setItem(THEME_STORAGE_KEY, preference);
   } catch {

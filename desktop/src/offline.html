@@ -12,6 +12,8 @@
   }
   html, body { height: 100%; margin: 0; }
   body { display: grid; place-items: center; background: var(--canvas); color: var(--ink); font: 16px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  /* The window has no frame of its own, so the top strip is what drags it. */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: 56px; app-region: drag; }
   main { max-width: 360px; margin: 0 16px; padding: 32px; background: var(--paper); border: 1px solid var(--hairline); border-radius: 12px; box-shadow: 0 1px 0 var(--hairline), 0 8px 24px rgb(20 20 19 / 0.08); text-align: center; }
   img { width: 56px; height: 56px; border-radius: 12px; }
   h1 { margin: 16px 0 8px; font: 600 24px/1.25 Georgia, "Times New Roman", serif; }

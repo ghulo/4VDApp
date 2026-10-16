@@ -5,7 +5,8 @@ Dashboard changes reach it the moment they are deployed; only changes to this
 folder need a new app version.
 
 - Download on any PC: https://dashboard.4vd.app/download
-- Try it locally: `npm install`, then `npm start`
+- Try it locally: `npm install`, then `npm start`. To try dashboard changes before they
+  are deployed, run `npm run dev` in `admin/` and start with `DASHBOARD_URL=http://localhost:5173/`.
 
 ## Releasing a new version
 

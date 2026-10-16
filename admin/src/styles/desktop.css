@@ -1,0 +1,81 @@
+/* ---------- The Windows app (desktop/) ----------
+   index.html sets data-shell="desktop" when the page runs inside it. The
+   window has no frame of its own: the top bar is the title bar, Windows draws
+   the caption buttons over its right end, and Mica shows through the top bar
+   and sidebar while the page itself stays on the warm canvas. */
+
+/* The top 56px drags the window on every screen, signed in or not. Anything
+   you can click inside it stays clickable. */
+[data-shell='desktop'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  height: 56px;
+  app-region: drag;
+  pointer-events: none;
+}
+
+[data-shell='desktop'] :is(a, button, input, select, textarea, label, summary, [role='button'], [tabindex]) {
+  app-region: no-drag;
+}
+
+/* Room for the minimise, maximise and close buttons Windows draws on the right. */
+[data-shell='desktop'] .topbar {
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + var(--space-3));
+}
+
+/* Windows 11 draws its own thin scrollbars here (desktop/src/main.js); a
+   custom colour would swap them back for Chrome's. */
+[data-shell='desktop'] {
+  scrollbar-color: auto;
+}
+
+/* Like a Windows app: the frame's labels aren't text to select or drag, and
+   buttons and menu entries keep the arrow pointer. Text in the page stays selectable. */
+[data-shell='desktop'] :is(.topbar, .sidebar, button, [role='button'], [role='tab'], label, kbd) {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-shell='desktop'] :is(img, a) {
+  -webkit-user-drag: none;
+}
+
+[data-shell='desktop'] :is(button, [role='button'], [role='tab'], summary, select, .sidebar__link, .topbar a) {
+  cursor: default;
+}
+
+/* Mica in the frame, the canvas in the page. Only on wide windows: under
+   900px the sidebar is a drawer over the page and keeps its paper. */
+@media (min-width: 901px) {
+  [data-shell='desktop'],
+  [data-shell='desktop'] body {
+    background: transparent;
+  }
+
+  [data-shell='desktop'] .topbar:not(.topbar--glass),
+  [data-shell='desktop'] .sidebar {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  /* The page sits in the frame like a sheet, with one rounded corner under the
+     top bar, the way Windows 11's own apps hold their content. */
+  [data-shell='desktop'] .main {
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    border-top-left-radius: var(--radius-small);
+    background: var(--weave-image) 0 0 / 72px 72px, var(--light-canvas) 0 0 / 100% 100vh no-repeat, var(--bg);
+  }
+
+  /* Screens without the frame (sign-in, setup) keep the canvas edge to edge. */
+  [data-shell='desktop'] #root > :not(.app) {
+    background-color: var(--bg);
+  }
+}
+
+@media (prefers-contrast: more) {
+  [data-shell='desktop'] .main {
+    background: var(--bg);
+  }
+}

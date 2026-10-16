@@ -20,6 +20,11 @@
       (function () {
         var choice = 'system';
         try { choice = localStorage.getItem('4vd.theme') || 'system'; } catch (e) {}
+        // Inside the Windows app the window frame follows the same choice (src/styles/desktop.css).
+        if (window.fourvdDesktop) {
+          document.documentElement.dataset.shell = 'desktop';
+          window.fourvdDesktop.setTheme(choice === 'light' || choice === 'dark' ? choice : 'system');
+        }
         if (choice !== 'light' && choice !== 'dark') {
           choice = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }

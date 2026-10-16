@@ -9,8 +9,33 @@ import { startOfDay } from '../utils/zonedDates.js';
 export const IMPORT_PHRASE = 'import trefin';
 /** Settings key written once the import is done, so it can't run twice. */
 export const TREFIN_IMPORTED_KEY = 'trefin_imported_at';
-/** TREFIN keeps every product in this one category. */
+/** TREFIN keeps every product in this one category; here it is what's left over. */
 const CATEGORY = 'Të ndryshme';
+/** The categories a market's products are sorted into (see categoriseTrefin). */
+export const MARKET_CATEGORIES = [
+  'Cigare dhe duhan',
+  'Ujë',
+  'Pije freskuese',
+  'Pije energjike',
+  'Alkool',
+  'Kafe dhe çaj',
+  'Çokollata dhe ëmbëlsira',
+  'Biskota dhe kek',
+  'Çipsa dhe fara',
+  'Bulmet dhe vezë',
+  'Mish dhe sallam',
+  'Fruta dhe perime',
+  'Bukë dhe furrë',
+  'Ushqime bazë',
+  'Akullore dhe të ngrira',
+  'Higjienë personale',
+  'Pastrim shtëpie',
+  'Shtëpi dhe kopsht',
+  'Elektronikë',
+  CATEGORY,
+] as const;
+/** product_code → category, written by categoriseTrefin and checked by hand. */
+export const CATEGORIES_FILE = 'categories.csv';
 /** TREFIN's stand-ins for "any supplier", "any customer" and the cash desk. */
 const GENERIC_PARTNERS = new Set(['700000', '700001', '699999']);
 const BATCH = 1000;
@@ -25,11 +50,13 @@ export interface TrefinExport {
   customers: Row[];
   sales: Row[];
   duplicates: Row[];
+  /** product_code → category name; products not in it go to "Të ndryshme". */
+  categories: Map<string, string>;
 }
 
 export interface TrefinImportReport {
   applied: boolean;
-  created: { products: number; suppliers: number; customers: number; sales: number; checkouts: number; duplicateFlags: number };
+  created: { categories: number; products: number; suppliers: number; customers: number; sales: number; checkouts: number; duplicateFlags: number };
   revenue: number;
   firstSale: string | null;
   lastSale: string | null;
@@ -71,6 +98,17 @@ export function parseCsv(text: string): Row[] {
   return rows.filter((cells) => cells.length > 1).map((cells) => Object.fromEntries(header.map((name, i) => [name, cells[i] ?? ''])));
 }
 
+/** The sorted categories, if categoriseTrefin has run; empty otherwise. */
+export function readCategoryFile(dir: string): Map<string, string> {
+  const file = path.join(dir, CATEGORIES_FILE);
+  if (!fs.existsSync(file)) return new Map();
+  return new Map(
+    parseCsv(fs.readFileSync(file, 'utf8'))
+      .map((row) => [clean(row.product_code), clean(row.category)] as const)
+      .filter(([code, category]) => code && category),
+  );
+}
+
 export function readTrefinExport(dir: string): TrefinExport {
   const load = (name: string) => parseCsv(fs.readFileSync(path.join(dir, `${name}.csv`), 'utf8'));
   return {
@@ -79,6 +117,7 @@ export function readTrefinExport(dir: string): TrefinExport {
     customers: load('customers'),
     sales: load('sales'),
     duplicates: load('duplicates'),
+    categories: readCategoryFile(dir),
   };
 }
 
@@ -152,10 +191,21 @@ export async function importTrefin(
       const existing = await trx.selectFrom('products').select((eb) => eb.fn.countAll<string>().as('n')).executeTakeFirstOrThrow();
       if (Number(existing.n) > 0) throw new Error(`The shop already has ${existing.n} products. Wipe the test data first (npm run wipe), then import.`);
 
-      // Category
-      const category =
-        (await trx.selectFrom('categories').select('id').where(sql`lower(name)`, '=', CATEGORY.toLowerCase()).where('deleted_at', 'is', null).executeTakeFirst()) ??
-        (await trx.insertInto('categories').values({ name: CATEGORY, description: 'Everything brought over from TREFIN' }).returning('id').executeTakeFirstOrThrow());
+      // Categories: the sorted ones in use, plus the leftover one; an existing category of the same name is reused.
+      const categoryOf = (code: string) => data.categories.get(code) || CATEGORY;
+      const categoryIds = new Map<string, number>();
+      let newCategories = 0;
+      for (const name of new Set(data.products.map((p) => categoryOf(clean(p.product_code))))) {
+        const existing = await trx.selectFrom('categories').select('id').where(sql`lower(name)`, '=', name.toLowerCase()).where('deleted_at', 'is', null).executeTakeFirst();
+        if (existing) categoryIds.set(name, existing.id);
+        else {
+          const created = await trx.insertInto('categories').values({ name: name.slice(0, 255), description: null }).returning('id').executeTakeFirstOrThrow();
+          categoryIds.set(name, created.id);
+          newCategories++;
+        }
+      }
+      if (data.categories.size === 0) note('no categories.csv: every product went to "Të ndryshme" (run categorise:trefin first)');
+      else note('products not in categories.csv, put in "Të ndryshme"', data.products.filter((p) => !data.categories.has(clean(p.product_code))).length);
 
       // Products and their stock
       const productIds = new Map<string, number>();
@@ -178,7 +228,7 @@ export async function importTrefin(
           return {
             name: clean(p.name).slice(0, 255),
             description: unit && unit !== 'Copë' ? `Unit in TREFIN: ${unit}` : null,
-            category_id: category.id,
+            category_id: categoryIds.get(categoryOf(clean(p.product_code)))!,
             base_price: money(Math.max(0, num(p.sale_price_incl_vat))),
             cost_price: cost > 0.005 ? money(cost) : null,
             sku: clean(p.product_code),
@@ -323,6 +373,7 @@ export async function importTrefin(
       if (flags.size > 0) await trx.insertInto('product_duplicate_flags').values([...flags.values()]).execute();
 
       const created = {
+        categories: newCategories,
         products: productIds.size,
         suppliers: suppliers.length,
         customers: customers.length,

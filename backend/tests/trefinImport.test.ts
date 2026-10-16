@@ -73,6 +73,11 @@ function sample(): TrefinExport {
       line('K-26-00000001', '339', '1', '0.50', { sale_date: '2023-05-27', sale_time: '' }),
     ],
     duplicates: [{ reason: 'identical name', similarity: '1', code_a: '679', code_b: '901' }],
+    categories: new Map([
+      ['339', 'Pije energjike'],
+      ['679', 'Cigare dhe duhan'],
+      ['901', 'Cigare dhe duhan'],
+    ]),
   };
 }
 
@@ -90,7 +95,7 @@ describe('importTrefin', () => {
     const report = await importTrefin(context.db, sample(), { apply: false, timeZone: TZ });
 
     expect(report.applied).toBe(false);
-    expect(report.created).toMatchObject({ products: 4, suppliers: 1, customers: 1, sales: 4, checkouts: 3, duplicateFlags: 1 });
+    expect(report.created).toMatchObject({ categories: 3, products: 4, suppliers: 1, customers: 1, sales: 4, checkouts: 3, duplicateFlags: 1 });
     expect(await count('products')).toBe(0);
     expect(await count('sales')).toBe(0);
   });
@@ -108,6 +113,13 @@ describe('importTrefin', () => {
     expect(products[0]).toMatchObject({ sku: '339', name: 'Golden Eagle 0.25L', base_price: '0.50', cost_price: '0.40', origin_country: 'XK', quantity_on_hand: 12 });
     expect(products[1]).toMatchObject({ sku: '679', quantity_on_hand: 0 });
     expect(products[2]).toMatchObject({ sku: '900', description: 'Unit in TREFIN: KG', quantity_on_hand: 4 });
+    const categories = await context.db
+      .selectFrom('products as p')
+      .innerJoin('categories as c', 'c.id', 'p.category_id')
+      .select(['p.sku', 'c.name'])
+      .orderBy('p.sku')
+      .execute();
+    expect(categories.map((row) => row.name)).toEqual(['Pije energjike', 'Cigare dhe duhan', 'Të ndryshme', 'Cigare dhe duhan']);
 
     const sales = await context.db.selectFrom('sales').select(['receipt_no', 'quantity_sold', 'price_per_unit', 'unit_cost', 'notes', 'sale_date']).orderBy('id').execute();
     expect(sales[0]).toMatchObject({ receipt_no: 'K-26-00000001', quantity_sold: 2, price_per_unit: '0.50', unit_cost: '0.39' });

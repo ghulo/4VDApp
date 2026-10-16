@@ -23,6 +23,7 @@
     "migrate:prod": "node dist/scripts/migrate.js",
     "wipe": "tsx src/scripts/wipe.ts",
     "import:trefin": "tsx src/scripts/importTrefin.ts",
+    "categorise:trefin": "tsx src/scripts/categoriseTrefin.ts",
     "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {

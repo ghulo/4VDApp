@@ -33,6 +33,7 @@ async function main(): Promise<void> {
     const report = await importTrefin(db, data, { apply, timeZone: config.shopTimeZone });
     const { created } = report;
     console.log(apply ? '\nImported:' : '\nWould import (checked against the database, nothing has changed yet):');
+    console.log(`  categories       ${created.categories}  (new)`);
     console.log(`  products         ${created.products}`);
     console.log(`  suppliers        ${created.suppliers}`);
     console.log(`  customers        ${created.customers}`);

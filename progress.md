@@ -193,3 +193,29 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 ## Requests 2026-10-15
 
 - [x] Windows app (Electron, desktop/) that opens the live dashboard; install on any PC from dashboard.4vd.app/download, updates itself from GitHub Releases
+
+## TREFIN data (2026-10-16)
+
+- [x] Importer: products, barcodes, suppliers, customers and sales history in one command (tried on a test copy)
+- [x] Products sorted into 20 real shop categories
+- [x] Possible duplicates page: merge or keep each pair
+- [x] Several barcodes per product; merging keeps them all
+- [ ] "TREFIN imported" step on the Before-launch list
+- [ ] Run the import for real at launch
+
+## Everything TREFIN and Pro-Data do, the 4VD way (plan 2026-10-16)
+
+Every feature they have, made simpler and fitting 4VD's look, working on a phone too, with a report and Excel export everywhere. One screen with a "type" instead of a menu per case.
+
+- [ ] 0. Survey: every menu and screen listed against what 4VD has
+- [ ] 1. Books underneath: your own chart of accounts, and every sale, bill, expense, payment and stock change writes its own entry
+- [ ] 2. Buying: one bill screen with types (domestic, import, expense, rent with withholding tax, reverse charge, transit), goods received and confirmed, returns, debit notes, purchase book
+- [ ] 3. Selling: one sale screen with types (cash, invoice, services, export, transit), delivery notes, credit notes and returns, summary invoices, sales book, transaction book
+- [ ] 4. Items: price lists, price calculation from cost, actions and promotions, classifications, labels
+- [ ] 5. Customers and suppliers: one profile with banks, locations, payment terms, special prices per customer, messages
+- [ ] 6. Payments: cash and bank, matched to bills and invoices, statements
+- [ ] 7. Moving stock: several locations or warehouses, transfers between them, orders
+- [ ] 8. Accounting reports: VAT return, trial balance, general ledger, profit and loss, balance sheet
+- [ ] 9. People: employee list with the fields the accountant needs, then payroll
+- [ ] 10. Fixed assets: list, value and depreciation
+- [ ] 11. Administration: users and rights, document numbering, backups, fiscal printer

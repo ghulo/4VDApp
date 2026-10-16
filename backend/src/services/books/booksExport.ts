@@ -164,6 +164,7 @@ export function cardSheet(
     credit: 0,
     balance: card.opening,
     correction: false,
+    target: null,
   };
   const columns: ExportColumn<CardLineDto>[] = [
     { header: w.date, kind: 'date', value: (row) => row.date },

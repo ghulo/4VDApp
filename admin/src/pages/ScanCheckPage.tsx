@@ -82,7 +82,14 @@ function freshDecision(read: BillScan['lines'][number]['read'], match: BillScan[
 function firstBill(scan: BillScan): BillDraft {
   const previous = scan.previous?.bill;
   if (previous) {
-    return { number: previous.number ?? '', issuedOn: previous.issuedOn, dueOn: previous.dueOn ?? '', amount: String(previous.amount), note: previous.note ?? '' };
+    return {
+      number: previous.number ?? '',
+      issuedOn: previous.issuedOn,
+      dueOn: previous.dueOn ?? '',
+      amount: String(previous.amount),
+      vat: previous.vatAmount === null || previous.vatAmount === undefined ? '' : String(previous.vatAmount),
+      note: previous.note ?? '',
+    };
   }
   const { reading, totals } = scan;
   const issued = reading.issuedOn && reading.issuedOn <= todayIso() ? reading.issuedOn : todayIso();
@@ -92,6 +99,7 @@ function firstBill(scan: BillScan): BillDraft {
     issuedOn: issued,
     dueOn: reading.dueOn && reading.dueOn >= issued ? reading.dueOn : '',
     amount: amount > 0 ? String(roundMoney(amount)) : '',
+    vat: reading.totals.vat !== null && reading.totals.vat >= 0 && reading.totals.vat < amount ? String(roundMoney(reading.totals.vat)) : '',
     note: '',
   };
 }

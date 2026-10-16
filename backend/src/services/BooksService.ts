@@ -40,6 +40,14 @@ export interface EntryLineDto {
   memo: string | null;
 }
 
+/** The page a document lives on, so an entry can link to it. */
+export interface EntryTarget {
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales';
+  id?: number;
+  /** For the sales page: what to search for. */
+  search?: string;
+}
+
 export interface EntryDto {
   id: number;
   date: string;
@@ -54,6 +62,7 @@ export interface EntryDto {
   createdAt: string;
   total: number;
   lines: EntryLineDto[];
+  target: EntryTarget | null;
 }
 
 export interface TrialBalanceRow {
@@ -83,6 +92,7 @@ export interface CardLineDto {
   /** Debits minus credits after this line. */
   balance: number;
   correction: boolean;
+  target: EntryTarget | null;
 }
 
 export interface Period {
@@ -119,7 +129,7 @@ function toLine(line: LineRecord): EntryLineDto {
   };
 }
 
-function toEntries(records: EntryRecord[], lines: LineRecord[]): EntryDto[] {
+function toEntries(records: EntryRecord[], lines: LineRecord[], targets: Map<string, EntryTarget>): EntryDto[] {
   const byEntry = new Map<number, EntryLineDto[]>();
   for (const line of lines) byEntry.set(line.entry_id, [...(byEntry.get(line.entry_id) ?? []), toLine(line)]);
   return records.map((record) => {
@@ -137,6 +147,7 @@ function toEntries(records: EntryRecord[], lines: LineRecord[]): EntryDto[] {
       createdAt: record.created_at.toISOString(),
       total: roundMoney(entryLines.reduce((sum, line) => sum + line.debit, 0)),
       lines: entryLines,
+      target: record.source_key ? (targets.get(record.source_key) ?? null) : null,
     };
   });
 }
@@ -292,6 +303,7 @@ export class BooksService {
       this.repository.balanceBefore(id, period.from),
       this.repository.cardLines(id, period.from, period.to, withCorrections),
     ]);
+    const targets = await this.targetsOf(records.map((record) => record.source_key));
     let running = opening;
     const lines = records.map((record: CardLineRecord): CardLineDto => {
       const line = toLine(record);
@@ -309,6 +321,7 @@ export class BooksService {
         credit: line.credit,
         balance: running,
         correction: record.reversed_at !== null || record.kind === 'reversal',
+        target: record.source_key ? (targets.get(record.source_key) ?? null) : null,
       };
     });
     const debit = roundMoney(lines.reduce((sum, line) => sum + line.debit, 0));
@@ -326,14 +339,14 @@ export class BooksService {
   async journal(filters: Period & { search: string | null; withCorrections: boolean; limit: number; offset: number }): Promise<{ entries: EntryDto[]; total: number }> {
     await this.poster.sync();
     const { entries, total } = await this.repository.journal(filters);
-    return { entries: toEntries(entries, await this.repository.linesOf(entries.map((entry) => entry.id))), total };
+    return { entries: await this.withLines(entries), total };
   }
 
   async entry(id: number): Promise<EntryDto> {
     await this.poster.sync();
     const record = await this.repository.findEntry(id);
     if (!record) throw new NotFoundError(`Entry ${id} does not exist`);
-    return toEntries([record], await this.repository.linesOf([id]))[0]!;
+    return (await this.withLines([record]))[0]!;
   }
 
   /** The entries a document posted, reversals included, oldest first. */
@@ -341,7 +354,53 @@ export class BooksService {
     await this.poster.sync();
     const keys = await this.sourceKeys(source, id);
     const records = await this.repository.entriesForSources(keys);
-    return toEntries(records, await this.repository.linesOf(records.map((record) => record.id)));
+    return this.withLines(records);
+  }
+
+  private async withLines(records: EntryRecord[]): Promise<EntryDto[]> {
+    const [lines, targets] = await Promise.all([
+      this.repository.linesOf(records.map((record) => record.id)),
+      this.targetsOf(records.map((record) => record.source_key)),
+    ]);
+    return toEntries(records, lines, targets);
+  }
+
+  /** Where each source's document lives, for links from the books. */
+  private async targetsOf(sourceKeys: Array<string | null>): Promise<Map<string, EntryTarget>> {
+    const targets = new Map<string, EntryTarget>();
+    const idsOf = (kind: string) => [...new Set(sourceKeys.filter((key): key is string => key?.startsWith(`${kind}:`) ?? false).map((key) => Number(key.slice(kind.length + 1))))];
+    for (const key of new Set(sourceKeys)) {
+      if (!key) continue;
+      const [kind, ref] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
+      if (kind === 'checkout' && ref[0] === 'i') targets.set(key, { page: 'document', id: Number(ref.slice(1)) });
+      else if (kind === 'checkout' && ref[0] === 'r') targets.set(key, { page: 'sales', search: ref.slice(1, ref.lastIndexOf('@')) });
+      else if (kind === 'checkout') targets.set(key, { page: 'sales' });
+      else if (kind === 'bill') targets.set(key, { page: 'bill', id: Number(ref) });
+      else if (kind === 'expense') targets.set(key, { page: 'expenses' });
+    }
+    const lookups: Array<[string, Promise<Array<{ id: number; target: number | null }>>, EntryTarget['page']]> = [];
+    const payments = idsOf('payment');
+    if (payments.length > 0) lookups.push(['payment', this.db.selectFrom('supplier_payments').select(['id', 'bill_id as target']).where('id', 'in', payments).execute(), 'bill']);
+    const countLines = idsOf('count_line');
+    if (countLines.length > 0) lookups.push(['count_line', this.db.selectFrom('stock_count_lines').select(['id', 'count_id as target']).where('id', 'in', countLines).execute(), 'count']);
+    const adjustments = idsOf('adjustment');
+    if (adjustments.length > 0) lookups.push(['adjustment', this.db.selectFrom('stock_adjustments').select(['id', 'product_id as target']).where('id', 'in', adjustments).execute(), 'product']);
+    const tabPayments = idsOf('tab_payment');
+    if (tabPayments.length > 0) lookups.push(['tab_payment', this.db.selectFrom('tab_entries').select(['id', 'customer_id as target']).where('id', 'in', tabPayments).execute(), 'customer']);
+    const writeOffs = idsOf('write_off');
+    if (writeOffs.length > 0) lookups.push(['write_off', this.db.selectFrom('write_offs').select(['id', 'product_id as target']).where('id', 'in', writeOffs).execute(), 'product']);
+    const returns = idsOf('return');
+    if (returns.length > 0) {
+      lookups.push([
+        'return',
+        this.db.selectFrom('document_lines').select(['return_id as id', 'document_id as target']).where('return_id', 'in', returns).execute() as Promise<Array<{ id: number; target: number }>>,
+        'document',
+      ]);
+    }
+    for (const [kind, rows, page] of lookups) {
+      for (const row of await rows) if (row.target !== null) targets.set(`${kind}:${row.id}`, { page, id: row.target });
+    }
+    return targets;
   }
 
   private async sourceKeys(source: EntrySource, id: number): Promise<string[]> {

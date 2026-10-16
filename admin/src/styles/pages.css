@@ -4051,3 +4051,160 @@ fieldset.report-sections {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Books ---------- */
+
+/* Account numbers line up and read as codes beside the plain name. */
+.books-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.books-total {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.books-total--off {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.books-entry {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.books-entry > .button {
+  justify-self: start;
+}
+
+.books-entry__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.books-entry__kind {
+  display: block;
+  font-weight: 600;
+}
+
+.books-entry__head .books-entry__kind {
+  display: inline;
+}
+
+.books-entry__what {
+  margin: 0;
+}
+
+.books-entry__reverse {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+/* Long descriptions wrap instead of stretching the table. */
+.table__secondary.books-description,
+.table__secondary.books-warning {
+  white-space: normal;
+}
+
+.books-warning {
+  color: var(--warn);
+}
+
+.books-accounts {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.books-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* A reversed entry and its reversal stay in the books, but step back. */
+.books-row--old td {
+  color: var(--ink-muted);
+}
+
+.books-row--opening td {
+  background: var(--surface-sunk);
+  font-weight: 500;
+}
+
+.books-panel {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.books-panel__entry {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.books-panel__entry--old {
+  opacity: 0.7;
+}
+
+/* One line of an entry written by hand: a raised block per line, like a slip. */
+.books-line {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.books-line > .button {
+  justify-self: start;
+}
+
+.books-line__legend {
+  padding: 0 var(--space-1);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* The live check under the lines: grey while it doesn't add up, green once it balances. */
+.books-check {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-variant-numeric: tabular-nums;
+}
+
+.books-check--ok {
+  border-color: color-mix(in srgb, var(--ok) 35%, transparent);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.books-settings__heading {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-base);
+}
+
+.books-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-3) var(--space-4);
+}

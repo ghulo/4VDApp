@@ -1,6 +1,7 @@
-import { Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
+import { Books, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
+import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
 import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
@@ -63,6 +64,16 @@ export function SettingsPage() {
             content: (
               <ManagersOnly>
                 <CarwashesPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'books',
+            label: t.books.settings.title,
+            icon: Books,
+            content: (
+              <ManagersOnly>
+                <BooksSettingsPanel />
               </ManagersOnly>
             ),
           },

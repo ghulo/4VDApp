@@ -12,17 +12,27 @@ export interface BillDraft {
   issuedOn: string;
   dueOn: string;
   amount: string;
+  /** The VAT in the amount; empty when not known. */
+  vat: string;
   note: string;
 }
 
-export const emptyBill = (amount = ''): BillDraft => ({ number: '', issuedOn: todayIso(), dueOn: '', amount, note: '' });
+export const emptyBill = (amount = ''): BillDraft => ({ number: '', issuedOn: todayIso(), dueOn: '', amount, vat: '', note: '' });
 
 export const toBillInput = (draft: BillDraft): BillInput => ({
   number: draft.number.trim() || null,
   issuedOn: draft.issuedOn,
   dueOn: draft.dueOn || null,
   amount: Number(draft.amount),
+  vatAmount: draft.vat.trim() === '' ? null : Number(draft.vat),
   note: draft.note.trim() || null,
 });
 
-export const isBillValid = (draft: BillDraft) => Number(draft.amount) > 0 && draft.issuedOn !== '' && (!draft.dueOn || draft.dueOn >= draft.issuedOn);
+/** The VAT is optional, but when given it has to be less than the total. */
+export const isVatValid = (draft: BillDraft) => draft.vat.trim() === '' || (Number(draft.vat) >= 0 && Number(draft.vat) < Number(draft.amount));
+
+export const isBillValid = (draft: BillDraft) =>
+  Number(draft.amount) > 0 && draft.issuedOn !== '' && (!draft.dueOn || draft.dueOn >= draft.issuedOn) && isVatValid(draft);
+
+/** The VAT inside a VAT-inclusive total at a rate, to the cent. */
+export const vatInside = (total: number, rate: number) => Math.round(((total * rate) / (100 + rate)) * 100) / 100;

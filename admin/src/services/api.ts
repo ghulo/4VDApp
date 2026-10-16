@@ -89,6 +89,16 @@ import type {
   ProductRequest,
   ConfirmScanInput,
   WaitingScan,
+  AccountCard,
+  AccountInput,
+  AccountLinkKey,
+  BooksPeriod,
+  BooksSettings,
+  EntrySource,
+  LedgerAccount,
+  LedgerEntry,
+  ManualEntryInput,
+  TrialBalance,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -673,4 +683,31 @@ export const stockCountsApi = {
         { method: 'POST' },
       )
     ).data,
+};
+
+export const booksApi = {
+  accounts: async () => (await apiRequest<LedgerAccount[]>('/books/accounts')).data,
+  addAccount: async (input: AccountInput) => (await apiRequest<LedgerAccount>('/books/accounts', { method: 'POST', body: input })).data,
+  updateAccount: async (id: number, input: Partial<AccountInput & { archived: boolean }>) =>
+    (await apiRequest<LedgerAccount>(`/books/accounts/${id}`, { method: 'PATCH', body: input })).data,
+  card: async (id: number, period: BooksPeriod, corrections: boolean) =>
+    (await apiRequest<AccountCard>(`/books/accounts/${id}/card`, { query: { ...period, corrections } })).data,
+  trialBalance: async (period: BooksPeriod) => (await apiRequest<TrialBalance>('/books/trial-balance', { query: { ...period } })).data,
+  journal: (query: BooksPeriod & { page: number; search?: string; corrections: boolean }) =>
+    paginated<LedgerEntry>('/books/journal', { limit: 25, ...query }),
+  entry: async (id: number) => (await apiRequest<LedgerEntry>(`/books/entries/${id}`)).data,
+  /** The entries one document wrote, oldest first. */
+  entriesFor: async (source: EntrySource, id: number) => (await apiRequest<LedgerEntry[]>('/books/entries', { query: { source, id } })).data,
+  addEntry: async (input: ManualEntryInput) => (await apiRequest<LedgerEntry>('/books/entries', { method: 'POST', body: input })).data,
+  reverseEntry: async (id: number) => (await apiRequest<LedgerEntry>(`/books/entries/${id}/reverse`, { method: 'POST' })).data,
+  settings: async () => (await apiRequest<BooksSettings>('/books/settings')).data,
+  updateSettings: async (input: { startDay?: string; links?: Partial<Record<AccountLinkKey, number>> }) =>
+    (await apiRequest<BooksSettings>('/books/settings', { method: 'PUT', body: input })).data,
+  /** An Excel file: the trial balance, journal, general ledger, or one account's card. */
+  async download(what: 'trial-balance' | 'journal' | 'ledger' | { account: number }, period: BooksPeriod, lang: 'sq' | 'en'): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const path = typeof what === 'string' ? `/books/${what}.xlsx` : `/books/accounts/${what.account}/card.xlsx`;
+    const { blob, filename } = await apiDownload(path, { ...period, lang, tz });
+    saveDownload(blob, filename ?? '4vd-books.xlsx');
+  },
 };

@@ -7,6 +7,7 @@ import { stockCountsApi } from '../services/api';
 import type { StockCount, StockCountLine } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatHeadlineMoney, formatMoney, formatSignedQuantity } from '../utils/format';
+import { EntriesPanel } from '../components/BooksParts';
 import { Button, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 
@@ -147,6 +148,7 @@ export function StockCountDetailPage() {
           ]}
         />
       </Card>
+      <EntriesPanel source="count" id={countId} />
     </>
   );
 }

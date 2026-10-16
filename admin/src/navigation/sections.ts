@@ -1,4 +1,5 @@
 import {
+  Books,
   ChartLine,
   ClipboardText,
   ClockCounterClockwise,
@@ -39,6 +40,8 @@ export interface NavItem {
   badge?: 'inbox';
   /** Hidden from the owner, who sees the business but doesn't change its setup. */
   managersOnly?: boolean;
+  /** Only for those who oversee the business (managers and the owner), like the books. */
+  overseersOnly?: boolean;
 }
 
 /**
@@ -68,6 +71,11 @@ export const SECTIONS = {
     { to: '/suppliers', key: 'suppliers' },
     { to: '/orders', key: 'orders' },
     { to: '/bills', key: 'bills' },
+  ],
+  books: [
+    { to: '/books', key: 'balances', keepSearch: true },
+    { to: '/books/journal', key: 'journal', keepSearch: true },
+    { to: '/books/accounts', key: 'accounts' },
   ],
   reports: [
     { to: '/report', key: 'report' },
@@ -115,6 +123,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
       { to: '/day', key: 'day', icon: Coins, also: ['/cash', '/carwash'] },
       { to: '/expenses', key: 'expenses', icon: Wallet },
       { to: '/report', key: 'reports', icon: ChartLine, also: ['/reports'] },
+      { to: '/books', key: 'books', icon: Books, overseersOnly: true },
     ],
   },
   {

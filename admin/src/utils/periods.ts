@@ -1,9 +1,33 @@
 import { type Catalogue, en } from '../i18n/en';
 import { formatDateWith } from './format';
 
-export type PeriodKey = 'today' | 'yesterday' | 'this-week' | 'this-month' | 'last-month' | 'last-30-days' | 'this-year' | 'custom';
+export type PeriodKey =
+  | 'today'
+  | 'yesterday'
+  | 'this-week'
+  | 'this-month'
+  | 'last-month'
+  | 'last-30-days'
+  | 'quarter-1'
+  | 'quarter-2'
+  | 'quarter-3'
+  | 'quarter-4'
+  | 'this-year'
+  | 'last-year'
+  | 'custom';
 
 export const PERIOD_KEYS: PeriodKey[] = ['this-month', 'last-month', 'last-30-days', 'this-year', 'custom'];
+
+/** The books' periods: months, this year's quarters (the tax quarters, TM1 to TM4) and whole years. */
+export const BOOKS_PERIOD_KEYS: PeriodKey[] = ['this-month', 'last-month', 'quarter-1', 'quarter-2', 'quarter-3', 'quarter-4', 'this-year', 'last-year', 'custom'];
+
+/** "2026-10-04": a date's day on this computer's calendar. */
+const isoDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+/** A resolved period as the first and last calendar day it covers, both included (what the books take). */
+export function periodDays(range: { startDate: string; endDate: string }): { from: string; to: string } {
+  return { from: isoDay(new Date(range.startDate)), to: isoDay(new Date(new Date(range.endDate).getTime() - 1)) };
+}
 
 export interface ResolvedPeriod {
   startDate: string;
@@ -157,6 +181,32 @@ export function resolvePeriod(
         previousStartDate: previousStart.toISOString(),
         previousEndDate: sameMomentEarlier(end, { years: 1 }, start).toISOString(),
         label: t.periods.soFar(String(year)),
+      };
+    }
+    case 'last-year': {
+      const start = new Date(year - 1, 0, 1);
+      return {
+        startDate: start.toISOString(),
+        endDate: new Date(year, 0, 1).toISOString(),
+        previousStartDate: new Date(year - 2, 0, 1).toISOString(),
+        previousEndDate: start.toISOString(),
+        label: String(year - 1),
+      };
+    }
+    case 'quarter-1':
+    case 'quarter-2':
+    case 'quarter-3':
+    case 'quarter-4': {
+      const quarter = Number(key.slice(-1));
+      const start = new Date(year, (quarter - 1) * 3, 1);
+      const end = new Date(year, quarter * 3, 1);
+      return {
+        startDate: start.toISOString(),
+        // A quarter still running ends now, like this month does.
+        endDate: (start <= now && end > now ? nowToTheMinute(now) : end).toISOString(),
+        previousStartDate: new Date(year, (quarter - 2) * 3, 1).toISOString(),
+        previousEndDate: start.toISOString(),
+        label: t.periods.quarter(quarter, year),
       };
     }
     default: {

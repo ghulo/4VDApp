@@ -9,6 +9,7 @@ import { documentsApi } from '../services/api';
 import type { DocumentParty, SalesDocumentDetail } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '../utils/format';
+import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
@@ -101,6 +102,7 @@ export function DocumentDetailPage() {
       </Card>
 
       <FiscalReceiptCard document={doc} />
+      <EntriesPanel source="document" id={doc.id} />
       <HistoryCard entityType="document" entityId={doc.id} />
     </>
   );

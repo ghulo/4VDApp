@@ -473,6 +473,8 @@ export interface SupplierBill {
   issuedOn: string;
   dueOn: string | null;
   amount: number;
+  /** The VAT in the amount; null when nobody entered it. */
+  vatAmount: number | null;
   paid: number;
   left: number;
   status: BillStatus;
@@ -493,6 +495,8 @@ export interface BillInput {
   issuedOn: string;
   dueOn: string | null;
   amount: number;
+  /** The VAT in the amount, to claim back; null when not known. */
+  vatAmount?: number | null;
   note: string | null;
 }
 
@@ -1201,4 +1205,172 @@ export interface DuplicatePair {
   resolution: 'merged' | 'kept_both' | null;
   resolvedBy: string | null;
   products: [DuplicateSide, DuplicateSide];
+}
+
+/** The books: the chart of accounts and the entries 4VD writes from every document. */
+export const ACCOUNT_CLASSES = ['asset', 'liability', 'equity', 'revenue', 'cost_of_sales', 'expense', 'other_income', 'other_expense'] as const;
+export type AccountClass = (typeof ACCOUNT_CLASSES)[number];
+export const CASH_FLOW_ACTIVITIES = ['operating', 'investing', 'financing'] as const;
+export type CashFlowActivity = (typeof CASH_FLOW_ACTIVITIES)[number];
+/** Classes whose balance normally sits on the debit side. */
+export const DEBIT_CLASSES: readonly AccountClass[] = ['asset', 'cost_of_sales', 'expense', 'other_expense'];
+
+export const ACCOUNT_LINK_KEYS = [
+  'cash',
+  'bank',
+  'receivables',
+  'vat_in',
+  'stock',
+  'payables',
+  'vat_out',
+  'revenue',
+  'sales_returns',
+  'cost_of_sales',
+  'stock_corrections',
+  'expense:rent',
+  'expense:electricity',
+  'expense:water',
+  'expense:wages',
+  'expense:supplies',
+  'expense:repairs',
+  'expense:taxes',
+  'expense:other',
+] as const;
+export type AccountLinkKey = (typeof ACCOUNT_LINK_KEYS)[number];
+
+export interface LedgerAccount {
+  id: number;
+  number: string;
+  name: string;
+  accountClass: AccountClass;
+  type: string;
+  group: string;
+  cashFlow: CashFlowActivity;
+  archived: boolean;
+  /** On the side the account normally sits. */
+  balance: number;
+  used: boolean;
+  links: AccountLinkKey[];
+}
+
+export interface AccountInput {
+  number: string;
+  name: string;
+  accountClass: AccountClass;
+  type: string;
+  group: string;
+  cashFlow: CashFlowActivity;
+}
+
+export type EntryKind = 'auto' | 'manual' | 'reversal';
+
+/** The page that shows the document behind an entry. */
+export interface EntryTarget {
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales';
+  id?: number;
+  search?: string;
+}
+
+export interface EntryParty {
+  kind: 'supplier' | 'customer';
+  id: number;
+  name: string;
+}
+
+export interface EntryLine {
+  accountId: number;
+  accountNumber: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  party: EntryParty | null;
+  memo: string | null;
+}
+
+export interface LedgerEntry {
+  id: number;
+  date: string;
+  kind: EntryKind;
+  /** What wrote it, e.g. "bill:12" or "checkout:i40"; null when written by hand. */
+  source: string | null;
+  description: string;
+  /** e.g. "no_cost:2" or "no_vat". */
+  warning: string | null;
+  reversesId: number | null;
+  reversed: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  total: number;
+  lines: EntryLine[];
+  target: EntryTarget | null;
+}
+
+export interface TrialBalanceRow {
+  accountId: number;
+  number: string;
+  name: string;
+  accountClass: AccountClass;
+  group: string;
+  /** Debits minus credits. */
+  opening: number;
+  debit: number;
+  credit: number;
+  closing: number;
+}
+
+export interface BooksWarning {
+  warning: 'no_cost' | 'no_vat';
+  entries: number;
+  items: number;
+}
+
+export interface TrialBalance {
+  rows: TrialBalanceRow[];
+  warnings: BooksWarning[];
+}
+
+export interface CardLine {
+  entryId: number;
+  date: string;
+  kind: EntryKind;
+  source: string | null;
+  description: string;
+  warning: string | null;
+  party: EntryParty | null;
+  memo: string | null;
+  debit: number;
+  credit: number;
+  /** Debits minus credits after this line. */
+  balance: number;
+  correction: boolean;
+  target: EntryTarget | null;
+}
+
+export interface AccountCard {
+  account: LedgerAccount;
+  opening: number;
+  closing: number;
+  debit: number;
+  credit: number;
+  lines: CardLine[];
+}
+
+export interface ManualEntryInput {
+  date: string;
+  description: string;
+  lines: Array<{ accountId: number; debit: number; credit: number; supplierId?: number | null; customerId?: number | null; memo?: string | null }>;
+}
+
+export interface BooksSettings {
+  startDay: string | null;
+  links: Array<{ key: AccountLinkKey; accountId: number }>;
+}
+
+/** A record whose entries can be shown. */
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale';
+
+/** First and last day of a period, both included, as yyyy-mm-dd. */
+export interface BooksPeriod {
+  from: string;
+  to: string;
 }

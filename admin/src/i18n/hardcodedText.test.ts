@@ -73,6 +73,9 @@ const TRANSLATED = [
   'src/components/BusinessPanel.tsx',
   'src/components/ManagersOnly.tsx',
   'src/App.tsx',
+  'src/components/BooksParts.tsx',
+  'src/pages/BooksPages.tsx',
+  'src/components/BooksSettingsPanel.tsx',
 ];
 
 /** Brand and symbols that are fine to write directly. */

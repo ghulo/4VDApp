@@ -1,7 +1,7 @@
 import { useT } from '../i18n/useT';
 import type { SupplierBill } from '../services/types';
-import { addDaysIso, type BillDraft, todayIso } from '../utils/bills';
-import { formatDate } from '../utils/format';
+import { addDaysIso, type BillDraft, isVatValid, todayIso, vatInside } from '../utils/bills';
+import { formatDate, formatMoney } from '../utils/format';
 import { Badge, Button, DateField, Field } from './ui';
 
 /** When a bill is due, as a badge: late, due soon, or just the date. */
@@ -28,6 +28,35 @@ export function BillFields({ draft, onChange }: { draft: BillDraft; onChange: (d
           <input required type="number" inputMode="decimal" autoComplete="off" min={0.01} step={0.01} value={draft.amount} onChange={(event) => set({ amount: event.target.value })} />
         </Field>
       </div>
+      <Field label={t.bills.vat} hint={t.bills.vatHint} error={isVatValid(draft) ? undefined : t.bills.vatTooBig}>
+        <input
+          type="number"
+          inputMode="decimal"
+          autoComplete="off"
+          min={0}
+          step={0.01}
+          value={draft.vat}
+          aria-invalid={!isVatValid(draft)}
+          onChange={(event) => set({ vat: event.target.value })}
+        />
+      </Field>
+      <div className="quick-due" role="group" aria-label={t.bills.vatQuick}>
+        {[18, 8].map((rate) => (
+          <Button key={rate} size="sm" variant="ghost" disabled={!(Number(draft.amount) > 0)} onClick={() => set({ vat: String(vatInside(Number(draft.amount), rate)) })}>
+            {t.bills.vatAt(rate)}
+          </Button>
+        ))}
+        <Button size="sm" variant="ghost" disabled={draft.vat === ''} onClick={() => set({ vat: '' })}>
+          {t.bills.vatNone}
+        </Button>
+      </div>
+      {Number(draft.amount) > 0 && isVatValid(draft) && (
+        <p className="field-hint" role="status">
+          {draft.vat.trim() === ''
+            ? t.bills.booksPreviewNoVat(formatMoney(Number(draft.amount)))
+            : t.bills.booksPreview(formatMoney(Number(draft.amount) - Number(draft.vat)), formatMoney(Number(draft.vat)))}
+        </p>
+      )}
       <div className="field-row">
         <Field label={t.bills.issuedOn}>
           <DateField required max={todayIso()} value={draft.issuedOn} onChange={(value) => set({ issuedOn: value })} />

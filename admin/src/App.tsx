@@ -50,6 +50,10 @@ const CarwashPage = lazyPage(() => import('./pages/CarwashPage'), 'CarwashPage')
 const CashPage = lazyPage(() => import('./pages/CashPage'), 'CashPage');
 const DayPage = lazyPage(() => import('./pages/DayPage'), 'DayPage');
 const ExpensesPage = lazyPage(() => import('./pages/ExpensesPage'), 'ExpensesPage');
+const BooksBalancesPage = lazyPage(() => import('./pages/BooksPages'), 'BooksBalancesPage');
+const BooksJournalPage = lazyPage(() => import('./pages/BooksPages'), 'BooksJournalPage');
+const BooksAccountsPage = lazyPage(() => import('./pages/BooksPages'), 'BooksAccountsPage');
+const AccountCardPage = lazyPage(() => import('./pages/BooksPages'), 'AccountCardPage');
 const CustomerDetailPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerDetailPage');
 const CustomersPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomersPage');
 const CustomerStatementPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerStatementPage');
@@ -145,6 +149,12 @@ function App() {
                       <Route path="carwash" element={<CarwashPage />} />
                     </Route>
                     <Route path="expenses" element={<ExpensesPage />} />
+                    <Route element={<SectionTabs tabs={SECTIONS.books} labelKey="books" />}>
+                      <Route path="books" element={<BooksBalancesPage />} />
+                      <Route path="books/journal" element={<BooksJournalPage />} />
+                      <Route path="books/accounts" element={<BooksAccountsPage />} />
+                    </Route>
+                    <Route path="books/accounts/:id" element={<AccountCardPage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
                       <Route path="report" element={<ReportPage />} />
                       <Route path="reports" element={<ReportsPage view="figures" />} />

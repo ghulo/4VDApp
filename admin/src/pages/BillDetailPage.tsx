@@ -12,6 +12,7 @@ import { formatDate, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
 import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
+import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
 
 const METHODS: SupplierPaymentMethod[] = ['bank', 'drawer', 'cash'];
@@ -65,6 +66,7 @@ export function BillDetailPage() {
           <PaymentsCard bill={b} />
           <PhotoCard bill={b} />
           {open && <EditCard bill={b} />}
+          <EntriesPanel source="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
         {open && b.left > 0 && (
@@ -265,7 +267,7 @@ function PhotoCard({ bill }: { bill: SupplierBill }) {
 function EditCard({ bill }: { bill: SupplierBill }) {
   const t = useT();
   const onSaved = useBillUpdate();
-  const initial: BillDraft = { number: bill.number ?? '', issuedOn: bill.issuedOn, dueOn: bill.dueOn ?? '', amount: String(bill.amount), note: bill.note ?? '' };
+  const initial: BillDraft = { number: bill.number ?? '', issuedOn: bill.issuedOn, dueOn: bill.dueOn ?? '', amount: String(bill.amount), vat: bill.vatAmount === null ? '' : String(bill.vatAmount), note: bill.note ?? '' };
   const [draft, setDraft] = useState(initial);
   const [voidNote, setVoidNote] = useState('');
   const save = useMutation({ mutationFn: () => billsApi.update(bill.id, toBillInput(draft)), onSuccess: onSaved });

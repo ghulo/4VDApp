@@ -205,7 +205,17 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 
 ## Everything TREFIN does, the 4VD way (plan 2026-10-16, from the TREFIN survey)
 
-The survey is in `C:\Users\labid\Downloads\program-survey\program-survey` (SURVEY.md, REPORT.md, screenshots). Rules for every step: one screen with a "type" instead of a menu per case; works on a phone; reuses 4VD's components; every list has the period picker (day, month, quarter TM-1..4, year, custom) and Excel/PDF download; each document shows the accounting entries it made.
+The survey is in `C:\Users\labid\Downloads\program-survey\program-survey` (SURVEY.md, REPORT.md, screenshots).
+
+**The bar for every step:** copying TREFIN isn't enough. Each feature has to work better than TREFIN's and be easy to understand and use without training:
+- Plain words instead of codes. Say "Expense bill", not "FBS". Show an account's name next to its number. Explain each VAT box in one line.
+- 4VD fills in what it can: accounts, VAT, due dates and entries. Nobody types an account number for a normal sale or bill.
+- Before saving, show what will happen ("This bill adds €120 to stock and €21.60 of VAT you can claim back").
+- Check mistakes as you type, and say how to fix them, not just "error".
+- Never more than one way to do the same job, and no screen that's only reachable through a menu inside a menu.
+- The accountant should find every figure they look for in TREFIN, and the owner should understand every screen.
+
+Rules for every step: one screen with a "type" instead of a menu per case; works on a phone; reuses 4VD's components; every list has the period picker (day, month, quarter TM-1..4, year, custom) and Excel/PDF download; each document shows the accounting entries it made.
 
 **A. Needed to switch TREFIN off** (in this order)
 - [x] 0. Survey of TREFIN against 4VD

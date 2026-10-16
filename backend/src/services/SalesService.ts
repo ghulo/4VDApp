@@ -26,6 +26,8 @@ export interface SaleDto {
   soldBy: string | null;
   saleDate: string;
   notes: string | null;
+  /** The old till's receipt number, on sales imported from it. */
+  receiptNo: string | null;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
   /** The newest invoice the sale is on; null for sales from before documents. */
@@ -34,9 +36,11 @@ export interface SaleDto {
 
 /** Everything one customer bought at once: one invoice, one or more lines. */
 export interface CheckoutDto {
-  /** "i<invoice id>", or "s<sale id>" for an older sale without an invoice. */
+  /** "i<invoice id>", "r<receipt no>@<day>" for an imported receipt, or "s<sale id>" for an older sale with neither. */
   key: string;
   invoice: { id: number; number: string } | null;
+  /** The old till's receipt number, when the checkout was imported from it. */
+  receiptNo: string | null;
   saleDate: string;
   /** The shop day it falls on, for grouping. */
   day: string;
@@ -114,11 +118,12 @@ export class SalesService {
     );
     const lines = sales.map(toSaleDto);
     const items = keys.map((key) => {
-      const own = lines.filter((sale) => (sale.invoice ? `i${sale.invoice.id}` : `s${sale.id}`) === key);
+      const own = lines.filter((sale) => checkoutKey(sale, this.timeZone) === key);
       const saleDate = own.reduce((latest, sale) => (sale.saleDate > latest ? sale.saleDate : latest), own[0]?.saleDate ?? '');
       return {
         key,
         invoice: own[0]?.invoice ?? null,
+        receiptNo: own[0]?.receiptNo ?? null,
         saleDate,
         day: zonedDay(new Date(saleDate), this.timeZone),
         soldBy: own[0]?.soldBy ?? null,
@@ -241,6 +246,13 @@ export class SalesService {
   }
 }
 
+/** Which checkout a sale belongs to; the same key findCheckouts groups by. */
+function checkoutKey(sale: SaleDto, timeZone: string): string {
+  if (sale.invoice) return `i${sale.invoice.id}`;
+  if (sale.receiptNo) return `r${sale.receiptNo}@${zonedDay(new Date(sale.saleDate), timeZone)}`;
+  return `s${sale.id}`;
+}
+
 function toSaleDto(sale: SaleRecord): SaleDto {
   return {
     id: sale.id,
@@ -253,6 +265,7 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     soldBy: sale.sold_by_name,
     saleDate: sale.sale_date.toISOString(),
     notes: sale.notes,
+    receiptNo: sale.receipt_no,
     returnedQuantity: Number(sale.returned_quantity),
     invoice: sale.invoice_id === null ? null : { id: sale.invoice_id, number: sale.invoice_number! },
   };

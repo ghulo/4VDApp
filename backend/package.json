@@ -22,6 +22,7 @@
     "db:setup": "npm run migrate && npm run seed",
     "migrate:prod": "node dist/scripts/migrate.js",
     "wipe": "tsx src/scripts/wipe.ts",
+    "import:trefin": "tsx src/scripts/importTrefin.ts",
     "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {

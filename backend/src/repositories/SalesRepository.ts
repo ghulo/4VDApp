@@ -7,7 +7,7 @@ export interface SaleFilters {
   endDate?: Date;
   productId?: number;
   soldBy?: number;
-  /** Checkouts only: a product name or invoice number. */
+  /** Checkouts only: a product name, invoice number or imported receipt number. */
   search?: string;
   limit: number;
   offset: number;
@@ -30,6 +30,8 @@ export interface SaleRecord {
   sold_by_name: string | null;
   sale_date: Date;
   notes: string | null;
+  /** The old till's receipt number, on sales imported from it. */
+  receipt_no: string | null;
   /** Units returned or waiting for a return decision. */
   returned_quantity: string;
   invoice_id: number | null;
@@ -93,6 +95,7 @@ export class SalesRepository {
           'u.name as sold_by_name',
           's.sale_date',
           's.notes',
+          's.receipt_no',
           returnedQuantity,
           invoiceId,
           invoiceNumber,
@@ -113,8 +116,10 @@ export class SalesRepository {
   }
 
   /**
-   * Sales grouped by checkout: everything on one invoice is one checkout; an
-   * older sale without an invoice stands alone. Paged by checkout, newest
+   * Sales grouped by checkout: everything on one invoice is one checkout, and
+   * so is everything on one receipt imported from the old till (its numbers
+   * restarted, so the receipt and its day together); an older sale with
+   * neither stands alone. Paged by checkout, newest
    * first, with the lines of each checkout on the page.
    */
   /**
@@ -128,7 +133,7 @@ export class SalesRepository {
     const pattern = filters.search ? `%${escapeLikePattern(filters.search)}%` : null;
     const conditions = [
       pattern
-        ? sql`(exists (select 1 from products p where p.id = s.product_id and p.name ilike ${pattern}) or (${lastInvoice} ->> 'number') ilike ${pattern})`
+        ? sql`(exists (select 1 from products p where p.id = s.product_id and p.name ilike ${pattern}) or (${lastInvoice} ->> 'number') ilike ${pattern} or s.receipt_no ilike ${pattern})`
         : sql`true`,
       filters.startDate ? sql`s.sale_date >= ${filters.startDate}` : sql`true`,
       filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
@@ -137,7 +142,7 @@ export class SalesRepository {
       sql`s.undone_at is null`,
     ];
     const keyed = sql`
-      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 's' || s.id) as key,
+      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 'r' || s.receipt_no || '@' || (s.sale_date at time zone ${timeZone})::date::text, 's' || s.id) as key,
         (s.sale_date at time zone ${timeZone})::date::text as day
       from sales s where ${sql.join(conditions, sql` and `)}
     `;
@@ -183,6 +188,7 @@ export class SalesRepository {
               'u.name as sold_by_name',
               's.sale_date',
               's.notes',
+              's.receipt_no',
               returnedQuantity,
               invoiceId,
               invoiceNumber,
@@ -237,6 +243,7 @@ export class SalesRepository {
         'u.name as sold_by_name',
         's.sale_date',
         's.notes',
+        's.receipt_no',
         returnedQuantity,
         invoiceId,
         invoiceNumber,

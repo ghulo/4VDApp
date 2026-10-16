@@ -35,6 +35,7 @@ import * as productRequests from './033_product_requests.js';
 import * as dayClosings from './034_day_closings.js';
 import * as pushDeviceApp from './035_push_device_app.js';
 import * as activitySay from './036_activity_say.js';
+import * as trefinImport from './037_trefin_import.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -79,4 +80,5 @@ export const migrations: Record<string, Migration> = {
   '034_day_closings': dayClosings,
   '035_push_device_app': pushDeviceApp,
   '036_activity_say': activitySay,
+  '037_trefin_import': trefinImport,
 };

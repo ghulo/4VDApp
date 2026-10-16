@@ -205,6 +205,22 @@ export interface SalesTable {
   undone_at: Date | null;
   undone_by: number | null;
   undo_note: string | null;
+  /** The old till's receipt number on sales imported from it; its lines are one checkout. */
+  receipt_no: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+/** Two products that look like the same item, for someone to merge or keep apart. */
+export interface ProductDuplicateFlagsTable {
+  id: Generated<number>;
+  product_id: number;
+  other_product_id: number;
+  /** 'identical name' or 'very similar name'. */
+  reason: string;
+  similarity: Decimal | null;
+  created_at: CreatedAt;
+  resolved_at: Date | null;
+  resolved_by: number | null;
+  resolution: 'merged' | 'kept_both' | null;
 }
 
 export interface StockAdjustmentsTable {
@@ -761,6 +777,7 @@ export interface Database {
   day_closings: DayClosingsTable;
   supplier_product_codes: SupplierProductCodesTable;
   report_subscriptions: ReportSubscriptionsTable;
+  product_duplicate_flags: ProductDuplicateFlagsTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

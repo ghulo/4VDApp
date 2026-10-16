@@ -246,7 +246,8 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
             { header: t.sales.soldBy, className: 'table__phone-hide', cell: (checkout) => checkout.soldBy ?? t.sales.unknown },
             {
               header: t.documents.invoice,
-              cell: (checkout) => (checkout.invoice ? <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link> : '–'),
+              cell: (checkout) =>
+                checkout.invoice ? <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link> : (checkout.receiptNo ?? '–'),
             },
           ]}
           afterRow={(checkout) =>

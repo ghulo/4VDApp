@@ -131,6 +131,8 @@ export interface Sale {
   soldBy: string | null;
   saleDate: string;
   notes: string | null;
+  /** The old till's receipt number, on sales imported from it. */
+  receiptNo: string | null;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
   /** The newest invoice the sale is on; null for sales from before invoices. */
@@ -139,9 +141,11 @@ export interface Sale {
 
 /** Everything one customer bought at once: one invoice, one or more lines (DESIGN.md 3.5). */
 export interface Checkout {
-  /** "i<invoice id>", or "s<sale id>" for an older sale without an invoice. */
+  /** "i<invoice id>", "r<receipt no>@<day>" for an imported receipt, or "s<sale id>" for an older sale with neither. */
   key: string;
   invoice: DocumentRef | null;
+  /** The old till's receipt number, when the checkout was imported from it. */
+  receiptNo: string | null;
   saleDate: string;
   /** The shop day it falls on (YYYY-MM-DD), for grouping. */
   day: string;

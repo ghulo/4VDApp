@@ -344,9 +344,11 @@ block. Then one of these shapes:
   the table's toolbar holds the period (`PeriodPicker compact`), search and
   filters on the left and downloads in `.toolbar__end` on the right; several
   downloads share one `MenuButton`. Money columns end in a **totals row**
-  (`DataTable totals`). A record opened from the list opens in an
-  `Inspector`: docked beside the list from 1440px (the row stays marked with
-  the clay bar), a Sheet below that. The header's actions keep only the
+  (`DataTable totals`). A record that would otherwise open in a Sheet opens
+  in an `Inspector`: docked beside the list from 1440px (the row stays marked
+  with the clay bar), a Sheet below that. Rows that lead to a detail page with
+  its own work (a bill, an invoice, a product) stay links; a preview would only
+  repeat that page. The header's actions keep only the
   primary action and Edit. Where a period also scopes figures above the table
   (Sales, Reports), the period stays on its own row of chips.
 - **Detail / hub page**: header with breadcrumb and status stamp → a stat row →
@@ -772,7 +774,6 @@ closed the earlier gaps (words, date fields, dashboard receipt).
 1. **Albanian numbers group from five digits**: "1578 €" sits above
    "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
 2. **Work pages left: Sales history, Customers, Suppliers**: they have the
-   wide frame and ledger rows, but not yet the command bar, a totals row, or
-   the `Inspector` for records that now open in a Sheet. (Books, Expenses,
-   Bills, Invoices and Stock follow 3.8; bills, invoices and products still
-   open on their own pages, which is fine while those pages hold the work.) → 3.8
+   wide frame and ledger rows, but no totals row yet (Sales history shows its
+   total as words in the toolbar). Books, Expenses, Bills, Invoices and Stock
+   follow 3.8. → 3.8

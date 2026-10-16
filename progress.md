@@ -203,19 +203,30 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [ ] "TREFIN imported" step on the Before-launch list
 - [ ] Run the import for real at launch
 
-## Everything TREFIN and Pro-Data do, the 4VD way (plan 2026-10-16)
+## Everything TREFIN does, the 4VD way (plan 2026-10-16, from the TREFIN survey)
 
-Every feature they have, made simpler and fitting 4VD's look, working on a phone too, with a report and Excel export everywhere. One screen with a "type" instead of a menu per case.
+The survey is in `C:\Users\labid\Downloads\program-survey\program-survey` (SURVEY.md, REPORT.md, screenshots). Rules for every step: one screen with a "type" instead of a menu per case; works on a phone; reuses 4VD's components; every list has the period picker (day, month, quarter TM-1..4, year, custom) and Excel/PDF download; each document shows the accounting entries it made.
 
-- [ ] 0. Survey: every menu and screen listed against what 4VD has
-- [ ] 1. Books underneath: your own chart of accounts, and every sale, bill, expense, payment and stock change writes its own entry
-- [ ] 2. Buying: one bill screen with types (domestic, import, expense, rent with withholding tax, reverse charge, transit), goods received and confirmed, returns, debit notes, purchase book
-- [ ] 3. Selling: one sale screen with types (cash, invoice, services, export, transit), delivery notes, credit notes and returns, summary invoices, sales book, transaction book
-- [ ] 4. Items: price lists, price calculation from cost, actions and promotions, classifications, labels
-- [ ] 5. Customers and suppliers: one profile with banks, locations, payment terms, special prices per customer, messages
-- [ ] 6. Payments: cash and bank, matched to bills and invoices, statements
-- [ ] 7. Moving stock: several locations or warehouses, transfers between them, orders
-- [ ] 8. Accounting reports: VAT return, trial balance, general ledger, profit and loss, balance sheet
-- [ ] 9. People: employee list with the fields the accountant needs, then payroll
-- [ ] 10. Fixed assets: list, value and depreciation
-- [ ] 11. Administration: users and rights, document numbering, backups, fiscal printer
+**A. Needed to switch TREFIN off** (in this order)
+- [x] 0. Survey of TREFIN against 4VD
+- [ ] 1. Books underneath: TREFIN's 144-account chart brought in as is (editable), each product, supplier, customer, cash and bank linked to its accounts (stock 1340, revenue 4000, cost 5000, payables 2000, VAT 1260/2340), and every sale, return, bill, payment, expense, write-off and count writes its own entry. Manual journal (FK), account card, trial balance, general ledger, journal
+- [ ] 2. Bill types on the one bill screen: goods (FBM), expense (FBS), investment (FBI), import of goods / services / investment with customs VAT (IMM/IMS/IMI), reverse charge (NGK), debit note (NDI), return to supplier; withholding tax tab with the 7 ATK categories (account 2370)
+- [ ] 3. ATK books and VAT: sales book and purchase book with the VAT-form box columns (till sales as one line per day), the monthly VAT return boxes 9-72 with carry-forward (68) and refunds, VAT 16% and exempt rates added, monthly withholding (WR) list, purchases over €500
+- [ ] 4. Cash and bank: cash till and bank accounts, deposits and withdrawals, paying several supplier bills at once ("spread the amount"), customer receipts against invoices, cash and bank card and day book
+- [ ] 5. Counter: barcode scanner selling, several receipts open at once, GEKOS fiscal printer (receipts, X and Z reports, sending the item list to the printer), receipt footer text
+- [ ] 6. Moving over: opening balances, open bills and invoices and stock from TREFIN on the launch date; then run 4VD next to TREFIN for one VAT month and check the books and VAT return line by line
+
+**B. Used, or needed soon**
+- [ ] 7. Financial statements: balance sheet, income statement, changes in equity, cash flow; year close and carry-over; quarterly tax instalments (TM)
+- [ ] 8. Sales documents: invoice types (goods, services, export, fixed-asset sale), pro-forma and offer, delivery note, credit note, return; agent, carrier and payment terms on invoices; customer balances and late payments
+- [ ] 9. Products and prices: wholesale and retail price each with its margin, price calculation from cost, price import from Excel, price lists, extra barcodes with pack size and pack price, units (kg and so on), stock in and out documents
+- [ ] 10. Customers and suppliers as one "partner": fiscal and VAT number, several addresses, discount and bonus %, credit limit, bank account, look-up in the ATK register
+- [ ] 11. Settings and safety: company details with logo, stamp and signature on invoices, numbering like FSM-26-000001, decimals, negative stock on/off; recycle bin for deleted documents; attachments on any document
+
+**C. In TREFIN but unused here (build after A and B)**
+- [ ] 12. Fixed assets register and depreciation
+- [ ] 13. Employees and payroll: contract fields, monthly payroll with pension contributions and wage tax, payslips, the EDI payroll declaration, annual leave
+- [ ] 14. Several warehouses and transfers between them
+- [ ] 15. Loyalty cards and bonus, B2B portal for business customers
+- [ ] 16. Production (recipes, semi-finished goods), serial numbers, projects
+- [ ] 17. Yearly declarations (CD / PD)

@@ -211,6 +211,7 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
 | | **Expenses** | `/expenses` | – |
 | | **Reports** | `/report` | Daily & weekly · Analytics |
+| | **Books** (managers and the owner) | `/books` | Balances · Entries · Accounts (an account opens its card, `/books/accounts/:id`) |
 | Team | **People** · **Activity** · **Settings** | | – |
 
 Rules:
@@ -396,6 +397,12 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Who did what, when | **Activity** | **Aktiviteti** | log |
 | Carwash takings | **carwash** (Lavazhi) + **change** (Këmbimi) | **Lavazhi** + **Këmbimi** | car wash |
 | The person account screen | **Account** | **Llogaria** | Me, Profile (team app) |
+| The shop's accounting | **Books** | **Librat** *(confirm)* | ledger, accounting |
+| One record in the books | **entry** | **regjistrim** *(confirm)* | journal entry, posting, voucher |
+| The two sides of an entry | **Debit** / **Credit** (short **Dr** / **Cr**) | **Debi** / **Kredi** (short **D** / **K**) *(confirm)* | |
+| The list of the shop's accounts | **chart of accounts** (page **Accounts**) | **plani kontabël** (page **Llogaritë**) *(confirm)* | |
+| What each account held in a period | **trial balance** (page **Balances**) | **bilanci** *(confirm)* | |
+| Every movement on one account | **account card** | **kartela** *(confirm)* | ledger card |
 
 ## 6. Colour
 

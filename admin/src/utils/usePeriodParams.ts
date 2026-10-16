@@ -31,6 +31,8 @@ export function usePeriodParams(fallback: PeriodKey) {
     nextParams.set('period', next.period);
     nextParams.delete('from');
     nextParams.delete('to');
+    // Page 3 of last month means nothing in another period.
+    nextParams.delete('page');
     if (next.period === 'custom') {
       if (next.from) nextParams.set('from', next.from);
       if (next.to) nextParams.set('to', next.to);

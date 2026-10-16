@@ -5,6 +5,7 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import {
+  BalanceFigure,
   BooksDownload,
   cardPath,
   EntryBadges,
@@ -42,6 +43,8 @@ import { usePeriodParams } from '../utils/usePeriodParams';
 
 const CLASS_ORDER = (accountClass: AccountClass) => ACCOUNT_CLASSES.indexOf(accountClass);
 const cents = (amount: number) => Math.round(amount * 100);
+/** Lines per page on an account card: a busy till account has thousands a year. */
+const CARD_PAGE = 100;
 
 /** The period the books pages show, as first and last day. */
 function useBooksPeriod() {
@@ -180,7 +183,7 @@ function BalanceTiles({ rows, accounts, search }: { rows: TrialBalanceRow[]; acc
     <StatGrid>
       <StatTile label={t.books.tiles.cashAndBank} value={formatHeadlineMoney(closing('cash') + closing('bank'))} to={to('cash')} />
       <StatTile label={t.books.tiles.stock} value={formatHeadlineMoney(closing('stock'))} to={to('stock')} />
-      <StatTile label={t.books.tiles.suppliers} value={formatHeadlineMoney(-closing('payables'))} to={to('payables')} />
+      <StatTile label={t.books.tiles.suppliers} value={formatHeadlineMoney(0 - closing('payables'))} to={to('payables')} />
       <StatTile label={t.books.tiles.customers} value={formatHeadlineMoney(closing('receivables'))} to={to('receivables')} />
       <StatTile
         label={t.books.tiles.vat}
@@ -282,13 +285,9 @@ export function BooksJournalPage() {
             },
             { header: t.books.date, cell: (entry) => formatBookDay(entry.date) },
             {
-              header: t.books.lines,
-              className: 'table__phone-hide',
-              cell: (entry) => (
-                <span className="books-accounts">
-                  {[...new Set(entry.lines.map((line) => line.accountNumber))].join(', ')}
-                </span>
-              ),
+              header: t.nav.tabs.accounts,
+              className: 'table__phone-hide books-accounts',
+              cell: (entry) => [...new Set(entry.lines.map((line) => line.accountNumber))].join(', '),
             },
             {
               header: <span className="visually-hidden">{t.books.correction}</span>,
@@ -392,14 +391,12 @@ function ManualEntryForm({ startDay, onSaved }: { startDay: string | null; onSav
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
-      <div className="field-row">
-        <Field label={t.books.date}>
-          <DateField required min={startDay ?? undefined} value={date} onChange={(value) => setDate(value)} />
-        </Field>
-        <Field label={f.description}>
-          <input required maxLength={300} autoComplete="off" placeholder={f.descriptionPlaceholder} value={description} onChange={(event) => setDescription(event.target.value)} />
-        </Field>
-      </div>
+      <Field label={f.description}>
+        <input required maxLength={300} autoComplete="off" placeholder={f.descriptionPlaceholder} value={description} onChange={(event) => setDescription(event.target.value)} />
+      </Field>
+      <Field label={t.books.date} narrow>
+        <DateField required min={startDay ?? undefined} value={date} onChange={(value) => setDate(value)} />
+      </Field>
       {accounts.isError && <ErrorNotice error={accounts.error} onRetry={() => accounts.refetch()} />}
       {lines.map((line, index) => (
         <fieldset key={line.key} className="books-line">
@@ -773,6 +770,7 @@ export function AccountCardPage() {
   const { search } = useLocation();
   const [params, setParams] = useSearchParams();
   const corrections = params.get('corrections') === '1';
+  const page = Number(params.get('page') ?? 1);
   const { period, from, to, days, changePeriod } = useBooksPeriod();
   const card = useQuery({
     queryKey: ['books', 'card', accountId, days, corrections],
@@ -786,8 +784,9 @@ export function AccountCardPage() {
   if (card.isPending) return <Loading />;
   if (card.isError) return <ErrorNotice error={card.error} onRetry={() => card.refetch()} />;
   const { account } = card.data;
-  const keptSearch = search.replace(/[?&]corrections=1/, '').replace(/^&/, '?');
-  const rows: CardRow[] = [
+  const keptSearch = search.replace(/[?&](corrections|page)=[^&]*/g, '').replace(/^&/, '?');
+  const pageLines = card.data.lines.slice((page - 1) * CARD_PAGE, page * CARD_PAGE);
+  const opening: CardRow[] = [
     {
       entryId: 0,
       date: days.from,
@@ -804,8 +803,16 @@ export function AccountCardPage() {
       target: null,
       opening: true,
     },
-    ...card.data.lines,
   ];
+  // The balance before the period heads the first page; each line carries its own running balance.
+  const rows = page === 1 ? [...opening, ...pageLines] : pageLines;
+  const setPage = (next: number) =>
+    setParams((current) => {
+      const updated = new URLSearchParams(current);
+      if (next > 1) updated.set('page', String(next));
+      else updated.delete('page');
+      return updated;
+    });
 
   return (
     <>
@@ -840,10 +847,10 @@ export function AccountCardPage() {
       <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
       <p className="field-hint">{t.books.card.description}</p>
       <StatGrid>
-        <StatTile label={t.books.opening} value={formatBalance(t, card.data.opening)} />
+        <StatTile label={t.books.opening} value={<BalanceFigure balance={card.data.opening} />} />
         <StatTile label={t.books.debit} value={formatMoney(card.data.debit)} />
         <StatTile label={t.books.credit} value={formatMoney(card.data.credit)} />
-        <StatTile label={t.books.closing} value={formatBalance(t, card.data.closing)} />
+        <StatTile label={t.books.closing} value={<BalanceFigure balance={card.data.closing} />} />
       </StatGrid>
       <DataTable<CardRow>
         caption={t.books.card.caption(`${account.number} ${account.name}`)}
@@ -862,6 +869,7 @@ export function AccountCardPage() {
                     const next = new URLSearchParams(current);
                     if (event.target.checked) next.set('corrections', '1');
                     else next.delete('corrections');
+                    next.delete('page');
                     return next;
                   })
                 }
@@ -902,7 +910,15 @@ export function AccountCardPage() {
               ),
           },
         ]}
-        footer={card.data.lines.length === 0 && <p className="books-total">{t.books.card.none}</p>}
+        footer={
+          card.data.lines.length === 0 ? (
+            <p className="books-total">{t.books.card.none}</p>
+          ) : (
+            card.data.lines.length > CARD_PAGE && (
+              <Pagination meta={{ page, limit: CARD_PAGE, total: card.data.lines.length }} onPageChange={setPage} itemLabel={t.books.lines.toLocaleLowerCase()} />
+            )
+          )
+        }
       />
       <Sheet open={editing} onClose={() => setEditing(false)} title={`${account.number} ${account.name}`}>
         <AccountForm accounts={accounts.data ?? []} account={account} onSaved={() => setEditing(false)} />

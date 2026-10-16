@@ -4120,6 +4120,7 @@ fieldset.report-sections {
 
 .books-accounts {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-sm);
   color: var(--ink-muted);
 }
@@ -4160,6 +4161,8 @@ fieldset.report-sections {
 /* One line of an entry written by hand: a raised block per line, like a slip. */
 .books-line {
   display: grid;
+  /* Fieldsets grow to their widest select by default; long account names must not widen the sheet. */
+  min-width: 0;
   gap: var(--space-3);
   margin: 0;
   padding: var(--space-3) var(--space-4) var(--space-4);
@@ -4207,4 +4210,10 @@ fieldset.report-sections {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
   gap: var(--space-3) var(--space-4);
+}
+
+.books-side {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }

@@ -2352,7 +2352,7 @@ export const en = {
     balanced: (amount: string) => `Debits and credits match: ${amount} each.`,
     unbalanced: (amount: string) => `Debits and credits differ by ${amount}. Tell the developer; this should never happen.`,
     warnings: {
-      no_cost: (count: number) => `${count} ${count === 1 ? 'product was' : 'products were'} sold with no cost price, so their cost didn't leave stock. Add their cost price.`,
+      no_cost: (count: number) => `${count} sale ${count === 1 ? 'line has' : 'lines have'} a product with no cost price, so that cost didn't leave stock. Add the products' cost price.`,
       no_vat: (count: number) => `${count} supplier ${count === 1 ? 'bill has' : 'bills have'} no VAT entered, so none is claimed back. Open each bill and add its VAT.`,
     },
     warningAction: { no_cost: 'Open products', no_vat: 'Open bills' },

@@ -40,6 +40,17 @@ export function formatBalance(t: Catalogue, balance: number): string {
   return `${formatMoney(Math.abs(balance))} ${balance > 0 ? t.books.dr : t.books.cr}`;
 }
 
+/** A balance as a headline figure, the side it sits on in small type after it. */
+export function BalanceFigure({ balance }: { balance: number }) {
+  const t = useT();
+  if (Math.abs(balance) < 0.005) return <>{formatMoney(0)}</>;
+  return (
+    <>
+      {formatMoney(Math.abs(balance))} <span className="books-side">{balance > 0 ? t.books.dr : t.books.cr}</span>
+    </>
+  );
+}
+
 /** The page that shows the document behind an entry. */
 export function targetPath(target: EntryTarget, day: string): string {
   const onTheDay = `period=custom&from=${day}&to=${day}`;

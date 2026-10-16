@@ -2332,7 +2332,7 @@ export const sq: Catalogue = {
     balanced: (amount) => `Debia dhe kredia përputhen: ${amount} secila.`,
     unbalanced: (amount) => `Debia dhe kredia ndryshojnë për ${amount}. Lajmëro zhvilluesin; kjo s’duhet të ndodhë kurrë.`,
     warnings: {
-      no_cost: (count) => `${count} ${count === 1 ? 'produkt u shit' : 'produkte u shitën'} pa çmim kostoje, kështu që kostoja nuk doli nga stoku. Shto çmimin e kostos.`,
+      no_cost: (count) => `${count} ${count === 1 ? 'rresht shitjeje ka' : 'rreshta shitjesh kanë'} produkt pa çmim kostoje, kështu që kostoja nuk doli nga stoku. Shto çmimin e kostos së produkteve.`,
       no_vat: (count) => `${count} ${count === 1 ? 'faturë furnitori nuk ka' : 'fatura furnitori nuk kanë'} TVSH të shënuar, kështu që s’zbritet asgjë. Hap secilën faturë dhe shto TVSH-në.`,
     },
     warningAction: { no_cost: 'Hap produktet', no_vat: 'Hap faturat' },

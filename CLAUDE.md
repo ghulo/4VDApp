@@ -1,5 +1,14 @@
 # 4VD
 
+## Handoff between sessions
+@handoff.md
+
+- Every session starts from `handoff.md` (imported above). In a worktree it isn't there: read the main checkout's copy, `C:\Users\labid\Desktop\4VDApp\handoff.md`.
+- Before you end a turn that finished, paused or stopped a task, update `handoff.md` in the main checkout (never a worktree copy). It is gitignored; never commit it.
+- One `##` section per open piece of work, named after it. Touch only your own section, because other sessions may be writing theirs. Rewrite it to show where things are now; don't append a log.
+- Each section has: **Goal**, **Current state** (done, not done, not verified), **Active files**, **Changes made** (commits or branches), **Failed attempts** (what was tried, and why it didn't work), **Next steps** (specific).
+- When a piece of work is fully done and merged, delete its section. Keep the whole file under about 150 lines.
+
 ## UI/UX rules
 - Design direction: follow frontend-design. Never use generic defaults (Inter + purple gradients).
 - Before building any UI, read DESIGN.md. If missing, generate it with design-md first.

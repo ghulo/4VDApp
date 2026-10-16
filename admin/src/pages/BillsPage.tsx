@@ -44,6 +44,8 @@ export function BillsPage() {
   const narrow = NARROW[status];
   const rows = (bills.data ?? []).filter((bill) => !narrow || narrow(bill));
   const leftInList = rows.filter(isOpen).reduce((sum, bill) => sum + bill.left, 0);
+  const counted = rows.filter((bill) => bill.status !== 'void');
+  const amountInList = counted.reduce((sum, bill) => sum + bill.amount, 0);
   const counts: Partial<Record<StatusFilter, number>> = supplierId ? {} : { overdue: summary.data?.overdue.count, soon: summary.data?.dueSoon.count };
   const supplierName = suppliers.data?.find((row) => String(row.id) === supplierId)?.name;
 
@@ -58,7 +60,8 @@ export function BillsPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
+        wide
         title={t.nav.items.suppliers}
         description={t.bills.description}
         actions={
@@ -145,7 +148,7 @@ export function BillsPage() {
               ) : null,
           },
         ]}
-        footer={leftInList > 0 ? <p className="data-table__total">{t.bills.listTotal(rows.filter(isOpen).length, formatMoney(leftInList))}</p> : undefined}
+        totals={[t.bills.totalOf(counted.length), '', '', formatMoney(amountInList), leftInList > 0 ? formatMoney(leftInList) : '–', '', '']}
         empty={
           bills.isPending ? (
             <Loading />

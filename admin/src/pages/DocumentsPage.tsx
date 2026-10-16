@@ -107,7 +107,7 @@ export function DocumentsPage() {
                 <Badge tone={document.kind === 'invoice' ? 'neutral' : 'warn'}>{t.documents.kinds[document.kind]}</Badge>
               ),
             },
-            { header: t.documents.issued, cell: (document) => formatDateTime(document.issuedAt) },
+            { header: t.documents.issued, className: 'table__nowrap', cell: (document) => formatDateTime(document.issuedAt) },
             { header: t.documents.buyer, cell: (document) => document.buyer?.name ?? t.documents.walkIn },
             {
               header: t.documents.fiscal,
@@ -127,6 +127,17 @@ export function DocumentsPage() {
             <EmptyState icon={FileText} title={filtered ? t.documents.noneMatch : t.documents.none}>
               {filtered ? undefined : t.documents.noneHint}
             </EmptyState>
+          }
+          totals={
+            documents.data.meta.totals && [
+              t.documents.totalOf(documents.data.meta.total),
+              '',
+              '',
+              '',
+              '',
+              formatMoney(documents.data.meta.totals.total),
+              '',
+            ]
           }
           footer={
             <Pagination meta={documents.data.meta} itemLabel={t.documents.items} onPageChange={(next) => updateParams({ page: String(next) })} />

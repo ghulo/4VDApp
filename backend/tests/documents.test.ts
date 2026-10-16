@@ -136,6 +136,17 @@ describe('reversals', () => {
     });
   });
 
+  it('should add up the whole list for its totals row, taking credit notes off the invoices', async () => {
+    const { sales } = await checkout(employeeToken, [{ productId: chair, quantity: 2 }]);
+    await api().post(`/api/sales/${sales[0]!.id}/returns`).set(auth(adminToken)).send({ quantity: 1, condition: 'resellable', refundAmount: 100 });
+
+    const list = await api().get('/api/documents?limit=1').set(auth(adminToken));
+    expect(list.body.data).toHaveLength(1);
+    expect(list.body.meta.total).toBe(2);
+    // Two chairs at 118 invoiced, 100 refunded.
+    expect(list.body.meta.totals.total).toBeCloseTo(236 - 100, 2);
+  });
+
   it('should credit an undone sale and invoice it again when it is restored', async () => {
     const { sales, invoice } = await checkout(employeeToken, [{ productId: chair, quantity: 1 }]);
     const entryId = await entryOf('sale.recorded');

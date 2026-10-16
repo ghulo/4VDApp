@@ -771,7 +771,8 @@ closed the earlier gaps (words, date fields, dashboard receipt).
 
 1. **Albanian numbers group from five digits**: "1578 €" sits above
    "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
-2. **Work pages only half done outside the Books**: the other work pages have
-   the wide frame and ledger rows, but their downloads and filters are not yet
-   in one command bar, money lists have no totals row, and their records open
-   in a Sheet or their own page instead of an `Inspector`. → 3.8
+2. **Work pages left: Sales history, Customers, Suppliers**: they have the
+   wide frame and ledger rows, but not yet the command bar, a totals row, or
+   the `Inspector` for records that now open in a Sheet. (Books, Expenses,
+   Bills, Invoices and Stock follow 3.8; bills, invoices and products still
+   open on their own pages, which is fine while those pages hold the work.) → 3.8

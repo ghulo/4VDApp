@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
+import { ExportMenu } from '../components/ExportMenu';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
@@ -86,6 +87,7 @@ export function InventoryPage() {
   const pageRows = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const totalValue = rows.reduce((sum, row) => sum + (valueOf(row) ?? 0), 0);
+  const shownValue = shown.reduce((sum, row) => sum + (valueOf(row) ?? 0), 0);
   const withoutCost = rows.filter((row) => row.costPrice === null && row.quantity > 0).length;
   const count = (key: Filter) => rows.filter(matches[key]).length;
   const filterLink = (key: Filter) => {
@@ -99,7 +101,8 @@ export function InventoryPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
+        wide
         title={t.nav.items.stock}
         description={t.inventory.description}
         actions={
@@ -114,7 +117,7 @@ export function InventoryPage() {
       {stock.data && (
         <>
           {rows.length > 0 && (
-            <StatGrid>
+            <StatGrid compact>
               <StatTile
                 icon={Coins}
                 label={t.inventory.stockValue}
@@ -140,7 +143,7 @@ export function InventoryPage() {
             rows={pageRows}
             rowKey={(row) => row.productId}
             toolbar={
-              <>
+              <div className="toolbar">
                 <SearchInput value={params.get('search') ?? ''} onChange={(value) => updateParams({ search: value })} label={t.inventory.search} />
                 <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.inventory.show}>
                   {FILTERS.map((key) => (
@@ -172,7 +175,10 @@ export function InventoryPage() {
                     </option>
                   ))}
                 </select>
-              </>
+                <div className="toolbar__end">
+                  <ExportMenu kind="stock" />
+                </div>
+              </div>
             }
             columns={[
               {
@@ -206,7 +212,6 @@ export function InventoryPage() {
               {
                 header: t.inventory.value,
                 align: 'end',
-                className: 'table__phone-hide',
                 cell: (row) => {
                   const value = valueOf(row);
                   return value === null ? '–' : formatMoney(value);
@@ -266,6 +271,7 @@ export function InventoryPage() {
                 </EmptyState>
               )
             }
+            totals={[t.inventory.totalOf(shown.length), '', '', formatMoney(shownValue), '', '']}
             footer={
               shown.length > 0 && (
                 <Pagination

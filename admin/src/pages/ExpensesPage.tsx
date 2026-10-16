@@ -3,11 +3,12 @@ import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { ErrorNotice, Loading } from '../components/Feedback';
+import { ExportMenu } from '../components/ExportMenu';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
-import { expensesApi } from '../services/api';
+import { expensesApi, type ReportRange } from '../services/api';
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -40,7 +41,8 @@ export function ExpensesPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
+        wide
         title={t.expenses.title}
         description={t.expenses.description(range.label)}
         actions={
@@ -58,7 +60,7 @@ export function ExpensesPage() {
 
       {expenses.isPending && <Loading />}
       {expenses.isError && <ErrorNotice error={expenses.error} onRetry={() => expenses.refetch()} />}
-      {expenses.data && <ExpenseTable expenses={expenses.data.expenses} />}
+      {expenses.data && <ExpenseTable expenses={expenses.data.expenses} range={rangeKey} />}
       {recurring.data && recurring.data.length > 0 && <RecurringTable rules={recurring.data} />}
       <Sheet open={adding} onClose={() => setAdding(false)} title={t.expenses.add}>
         <ExpenseForm />
@@ -74,7 +76,7 @@ function Totals({ totals }: { totals: ExpenseTotals }) {
     null,
   );
   return (
-    <StatGrid>
+    <StatGrid compact>
       <StatTile label={t.expenses.total} value={formatHeadlineMoney(totals.total)} />
       {/* One figure per tile; a place with nothing spent says so in words. "Both" shows only when used. */}
       <StatTile label={t.expenses.places.shop} value={formatHeadlineMoney(totals.byPlace.shop)} words={totals.byPlace.shop === 0 && t.expenses.nothingSpent} />
@@ -201,16 +203,24 @@ function ExpenseForm() {
   );
 }
 
-function ExpenseTable({ expenses }: { expenses: Expense[] }) {
+function ExpenseTable({ expenses, range }: { expenses: Expense[]; range: ReportRange }) {
   const t = useT();
   const { role } = useCurrentUser();
   const { several } = useCarwashes();
+  const total = expenses.reduce((sum, row) => sum + row.amount, 0);
   return (
     <Section title={t.expenses.list}>
       <DataTable
         caption={t.expenses.caption}
         rows={expenses}
         rowKey={(row) => row.id}
+        toolbar={
+          <div className="toolbar">
+            <div className="toolbar__end">
+              <ExportMenu kind="expenses" range={range} />
+            </div>
+          </div>
+        }
         empty={<EmptyState title={t.expenses.none}>{t.expenses.noneHint}</EmptyState>}
         columns={[
           {
@@ -228,12 +238,14 @@ function ExpenseTable({ expenses }: { expenses: Expense[] }) {
           { header: t.expenses.amount, cell: (row) => formatMoney(row.amount), align: 'end' },
           {
             header: t.expenses.addedBy,
+            className: 'table__phone-hide',
             cell: (row) => (row.recurringId !== null && row.addedBy === null ? <Badge tone="neutral">{t.expenses.automatic}</Badge> : (row.addedBy ?? '–')),
           },
           ...(canManage(role)
             ? [{ header: <span className="visually-hidden">{t.expenses.remove}</span>, cell: (row: Expense) => <RemoveExpense expense={row} /> }]
             : []),
         ]}
+        totals={[t.common.total, '', '', formatMoney(total), '', ...(canManage(role) ? [''] : [])]}
       />
     </Section>
   );
@@ -297,6 +309,7 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
         caption={t.expenses.repeatingCaption}
         rows={rules}
         rowKey={(row) => row.id}
+        totals={[t.expenses.eachMonth, '', '', formatMoney(rules.reduce((sum, row) => sum + row.amount, 0)), ...(canManage(role) ? [''] : [])]}
         columns={[
           {
             header: t.expenses.category,

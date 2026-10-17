@@ -290,13 +290,33 @@ export interface ReportSummary {
   netProfit: { current: number; previous: number; change: number | null };
 }
 
-export const EXPENSE_CATEGORIES = ['rent', 'electricity', 'water', 'wages', 'supplies', 'repairs', 'taxes', 'other'] as const;
+export const EXPENSE_CATEGORIES = [
+  'rent',
+  'electricity',
+  'water',
+  'internet',
+  'fuel',
+  'transport',
+  'repairs',
+  'cleaning',
+  'advertising',
+  'bank_fees',
+  'professional',
+  'insurance',
+  'office',
+  'supplies',
+  'wages',
+  'taxes',
+  'other',
+] as const;
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 export const EXPENSE_PLACES = ['shop', 'carwash', 'both'] as const;
 export type ExpensePlace = (typeof EXPENSE_PLACES)[number];
 
 export interface Expense {
   id: number;
+  /** The bill it is on: an expense is a bill paid on the spot. */
+  billId: number;
   /** "2026-10-04" */
   day: string;
   amount: number;
@@ -309,6 +329,9 @@ export interface Expense {
   /** Set when a monthly rule added it. */
   recurringId: number | null;
   addedBy: string | null;
+  supplierName: string | null;
+  /** Paid when entered; a cost on a bill to pay later is changed on its bill. */
+  paidNow: boolean;
 }
 
 export interface ExpenseTotals {
@@ -321,8 +344,10 @@ export interface ExpenseTotals {
 
 export interface RecurringExpense {
   id: number;
+  supplier: { id: number; name: string } | null;
   amount: number;
-  category: ExpenseCategory;
+  /** The first cost line's category. */
+  category: ExpenseCategory | null;
   place: ExpensePlace;
   carwashId: number | null;
   carwashName: string | null;
@@ -436,7 +461,24 @@ export interface Supplier {
   phone: string | null;
   email: string | null;
   note: string | null;
+  /** From another country: its bills are imports, and 4VD handles their VAT. */
+  abroad: boolean;
+  /** What its bills usually are, so a new bill starts there. */
+  usualKind: BillLineKind | null;
+  usualCategory: string | null;
+  usualVatRate: VatRate | null;
+  withholdingType: WithholdingType | null;
 }
+
+export const BILL_LINE_KINDS = ['product', 'cost', 'equipment'] as const;
+export type BillLineKind = (typeof BILL_LINE_KINDS)[number];
+export const EQUIPMENT_CATEGORIES = ['furniture', 'equipment', 'vehicle', 'building', 'other'] as const;
+export type EquipmentCategory = (typeof EQUIPMENT_CATEGORIES)[number];
+/** Tax the shop holds back from a payment and pays the tax office instead, with its rate in percent. */
+export const WITHHOLDING_RATES = { interest: 10, royalties: 10, lottery: 10, rent: 9, entertainers: 5, nonresident_services: 5, special: 3 } as const;
+export type WithholdingType = keyof typeof WITHHOLDING_RATES;
+export const WITHHOLDING_TYPES = Object.keys(WITHHOLDING_RATES) as WithholdingType[];
+export type CustomsPaidMethod = 'bank' | 'cash';
 
 export interface OrderLine {
   id: number;
@@ -465,18 +507,52 @@ export interface PurchaseOrder {
 
 export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void';
 export type SupplierPaymentMethod = 'drawer' | 'cash' | 'bank';
+/** A payment row can also be a return or credit taken off the bill. */
+export type BillPaymentMethod = SupplierPaymentMethod | 'credit';
+
+export interface BillLine {
+  id: number;
+  kind: BillLineKind;
+  productId: number | null;
+  productName: string | null;
+  quantity: number | null;
+  /** The price for one, as the paper shows it. */
+  unitPrice: number | null;
+  category: string | null;
+  description: string | null;
+  vatRate: number;
+  net: number;
+  vat: number;
+  gross: number;
+  /** The net plus its share of an import's duty and transport. */
+  landed: number;
+  /** Transport on an import, added to the goods' cost. */
+  spread: boolean;
+  /** VAT charged to yourself on a service from abroad. */
+  selfVat: number;
+  /** The stock came in with a delivery (an order), not with the bill. */
+  fromDelivery: boolean;
+}
 
 export interface SupplierBill {
   id: number;
-  supplier: { id: number; name: string };
+  /** A bill, or a return or credit against one. */
+  kind: 'bill' | 'credit';
+  /** Null for an expense paid to nobody in particular. */
+  supplier: { id: number; name: string } | null;
   orderId: number | null;
   /** The supplier's own invoice number. */
   number: string | null;
   issuedOn: string;
   dueOn: string | null;
+  /** What the supplier is owed (a return or credit: what it gives back). */
   amount: number;
+  /** What the paper adds up to: the amount plus any tax held back. */
+  total: number;
   /** The VAT in the amount; null when nobody entered it. */
   vatAmount: number | null;
+  /** VAT to claim back: the paper's and the customs VAT. */
+  vatToClaim: number;
   paid: number;
   left: number;
   status: BillStatus;
@@ -489,7 +565,118 @@ export interface SupplierBill {
   scanId: number | null;
   recordedBy: string | null;
   voidNote: string | null;
-  payments: Array<{ id: number; amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null; recordedBy: string | null; voided: boolean }>;
+  /** An expense: paid when it was entered. */
+  paidNow: boolean;
+  pricesIncludeVat: boolean;
+  /** From a supplier abroad: an import. */
+  abroad: boolean;
+  customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
+  withholding: { type: WithholdingType; rate: number; amount: number } | null;
+  place: ExpensePlace;
+  carwash: { id: number; name: string } | null;
+  /** Made by a monthly repeat. */
+  repeatId: number | null;
+  /** A return or credit: the bill it is against. */
+  creditFor: { id: number; number: string | null } | null;
+  /** A return: its units went back out of stock. */
+  returnsStock: boolean;
+  /** Returns and credits against this bill. */
+  credits: Array<{ id: number; number: string | null; issuedOn: string; amount: number; returnsStock: boolean; voided: boolean }>;
+  lines: BillLine[];
+  payments: Array<{
+    id: number;
+    /** The bill it paid (on a return or credit: the bill it went against). */
+    billId: number;
+    amount: number;
+    paidOn: string;
+    method: BillPaymentMethod;
+    /** For a credit: the return or credit that paid it. */
+    credit: { id: number; number: string | null } | null;
+    note: string | null;
+    recordedBy: string | null;
+    voided: boolean;
+  }>;
+}
+
+/** One line of the bill form, as the server takes it. */
+export interface BillLineInput {
+  kind: BillLineKind;
+  productId?: number | null;
+  quantity?: number | null;
+  unitPrice?: number | null;
+  category?: string | null;
+  description?: string | null;
+  /** A cost's or equipment's amount as on the paper. */
+  amount?: number | null;
+  vatRate?: number | null;
+}
+
+/** The one bill form: lines, and what 4VD needs to work out the rest. */
+export interface BillFormInput {
+  supplierId: number | null;
+  number: string | null;
+  issuedOn: string;
+  dueOn: string | null;
+  note: string | null;
+  lines: BillLineInput[];
+  pricesIncludeVat: boolean;
+  customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
+  withholdingType: WithholdingType | null;
+  paidNow: { method: SupplierPaymentMethod } | null;
+  place: ExpensePlace;
+  carwashId: number | null;
+  repeatMonthly: boolean;
+  /** New shelf prices chosen from the price alerts. */
+  prices: Array<{ productId: number; price: number }>;
+}
+
+export interface CreditInput {
+  /** A return: the product lines' units go back out of stock. Otherwise only what's owed goes down. */
+  returnsStock: boolean;
+  number: string | null;
+  issuedOn: string;
+  note: string | null;
+  pricesIncludeVat: boolean;
+  lines: BillLineInput[];
+}
+
+/** What a bill will do, worked out before it is saved. */
+export interface BillPreview {
+  /** Each line's figures, in the order sent. */
+  lines: Array<{ net: number; vat: number; landed: number; spread: boolean; selfVat: number; unitCost: number | null }>;
+  /** What the paper adds up to. */
+  total: number;
+  /** Added to stock, at cost without VAT. */
+  stock: number;
+  /** Booked as costs, without VAT, per category. */
+  costs: Record<string, number>;
+  /** Booked as equipment, without VAT. */
+  equipment: number;
+  /** VAT the shop claims back: the paper's plus the customs VAT. */
+  vatToClaim: number;
+  /** VAT charged to yourself and claimed back at once. */
+  selfVat: number;
+  /** Paid at the border. */
+  customs: number;
+  withholdingRate: number;
+  withheld: number;
+  /** What the supplier is owed. */
+  owed: number;
+  abroad: boolean;
+  /** Customs only apply to goods and equipment from abroad. */
+  hasGoods: boolean;
+  priceAlerts: Array<{
+    productId: number;
+    name: string;
+    oldCost: number | null;
+    newCost: number;
+    price: number;
+    /** Margin in percent of the shelf price, before and after. */
+    marginBefore: number | null;
+    marginAfter: number;
+    /** A shelf price that keeps the old margin. */
+    suggestedPrice: number;
+  }>;
 }
 
 export interface BillInput {
@@ -1237,6 +1424,21 @@ export const ACCOUNT_LINK_KEYS = [
   'expense:repairs',
   'expense:taxes',
   'expense:other',
+  'expense:internet',
+  'expense:fuel',
+  'expense:transport',
+  'expense:cleaning',
+  'expense:advertising',
+  'expense:bank_fees',
+  'expense:professional',
+  'expense:insurance',
+  'expense:office',
+  'asset:furniture',
+  'asset:equipment',
+  'asset:vehicle',
+  'asset:building',
+  'asset:other',
+  'withholding',
 ] as const;
 export type AccountLinkKey = (typeof ACCOUNT_LINK_KEYS)[number];
 

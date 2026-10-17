@@ -1,16 +1,14 @@
 import { Plus, Receipt, Scan } from '@phosphor-icons/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, DataTable, EmptyState, Field, PageHeader, Sheet, useNewSheet } from '../components/ui';
+import { Badge, Button, ButtonLink, DataTable, EmptyState, PageHeader, Sheet, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
-import { BillFields, DueBadge } from '../components/BillParts';
+import { DueBadge } from '../components/BillParts';
 import { ScanBillForm, WaitingScans } from '../components/BillScanParts';
-import { BILL_STATUS_TONE, emptyBill, isBillValid, toBillInput } from '../utils/bills';
-import { errorMessage } from '../utils/errors';
+import { BILL_STATUS_TONE } from '../utils/bills';
 import { formatDate, formatMoney } from '../utils/format';
 
 /** Matches the server's "due this week" (BILL_DUE_SOON_DAYS). */
@@ -18,7 +16,10 @@ const DUE_SOON_DAYS = 7;
 const FILTERS = ['open', 'overdue', 'soon', 'paid', 'all'] as const;
 type StatusFilter = (typeof FILTERS)[number];
 
-const isOpen = (bill: SupplierBill) => bill.status !== 'void' && bill.left > 0;
+/** A bill with money still to pay; a return or credit is never paid from here. */
+const isOpen = (bill: SupplierBill) => bill.kind === 'bill' && bill.status !== 'void' && bill.left > 0;
+/** A return or credit counts against the bills it sits beside. */
+const signed = (bill: SupplierBill) => (bill.kind === 'credit' ? -bill.amount : bill.amount);
 const NARROW: Partial<Record<StatusFilter, (bill: SupplierBill) => boolean>> = {
   overdue: (bill) => bill.overdue,
   soon: (bill) => !bill.overdue && bill.daysLeft !== null && bill.daysLeft <= DUE_SOON_DAYS,
@@ -31,7 +32,6 @@ export function BillsPage() {
   const [params, setParams] = useSearchParams();
   const status: StatusFilter = (FILTERS as readonly string[]).includes(params.get('status') ?? '') ? (params.get('status') as StatusFilter) : 'open';
   const supplierId = params.get('supplier') ?? '';
-  const [adding, setAdding] = useNewSheet();
   const [scanning, setScanning] = useNewSheet('scan');
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
@@ -45,7 +45,7 @@ export function BillsPage() {
   const rows = (bills.data ?? []).filter((bill) => !narrow || narrow(bill));
   const leftInList = rows.filter(isOpen).reduce((sum, bill) => sum + bill.left, 0);
   const counted = rows.filter((bill) => bill.status !== 'void');
-  const amountInList = counted.reduce((sum, bill) => sum + bill.amount, 0);
+  const amountInList = counted.reduce((sum, bill) => sum + signed(bill), 0);
   const counts: Partial<Record<StatusFilter, number>> = supplierId ? {} : { overdue: summary.data?.overdue.count, soon: summary.data?.dueSoon.count };
   const supplierName = suppliers.data?.find((row) => String(row.id) === supplierId)?.name;
 
@@ -58,6 +58,10 @@ export function BillsPage() {
     setParams(next, { replace: true });
   };
 
+  // The old "add a bill" link (?new=1) opens the bill form.
+  const newBill = supplierId ? `/bills/new?supplier=${supplierId}` : '/bills/new';
+  if (params.get('new')) return <Navigate to={newBill} replace />;
+
   return (
     <>
       <PageHeader
@@ -66,19 +70,15 @@ export function BillsPage() {
         description={t.bills.description}
         actions={
           <>
-            <Button icon={Plus} onClick={() => setAdding(true)}>
+            <ButtonLink to={newBill} icon={Plus}>
               {t.bills.add}
-            </Button>
+            </ButtonLink>
             <Button variant="primary" icon={Scan} onClick={() => setScanning(true)}>
               {t.scans.scan}
             </Button>
           </>
         }
       />
-
-      <Sheet open={adding} onClose={() => setAdding(false)} title={t.bills.newBill} description={t.bills.addHint}>
-        <NewBillForm initialSupplier={supplierId} onDone={() => setAdding(false)} />
-      </Sheet>
 
       <Sheet open={scanning} onClose={() => setScanning(false)} title={t.scans.scanTitle} description={t.scans.scanHint}>
         <ScanBillForm onDone={() => setScanning(false)} />
@@ -127,14 +127,18 @@ export function BillsPage() {
             title: true,
             cell: (bill) => (
               <Link to={`/bills/${bill.id}`} className="table__primary-link">
-                {bill.supplier.name}
-                <span className="table__secondary">{bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber}</span>
+                {bill.supplier?.name ?? t.bills.noSupplier}
+                <span className="table__secondary">
+                  {[bill.kind === 'credit' ? (bill.returnsStock ? t.bills.returnStamp : t.bills.creditStamp) : null, bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
               </Link>
             ),
           },
           { header: t.bills.issuedOn, cell: (bill) => formatDate(bill.issuedOn) },
           { header: t.bills.due, cell: (bill) => (isOpen(bill) ? <DueBadge bill={bill} /> : '–') },
-          { header: t.bills.amount, align: 'end', cell: (bill) => formatMoney(bill.amount) },
+          { header: t.bills.amount, align: 'end', cell: (bill) => formatMoney(signed(bill)) },
           { header: t.bills.left, align: 'end', cell: (bill) => (isOpen(bill) ? <strong>{formatMoney(bill.left)}</strong> : '–') },
           { header: t.bills.status, cell: (bill) => <Badge tone={BILL_STATUS_TONE[bill.status]}>{t.bills.statuses[bill.status]}</Badge> },
           {
@@ -142,7 +146,7 @@ export function BillsPage() {
             align: 'end',
             cell: (bill) =>
               isOpen(bill) ? (
-                <ButtonLink to={`/bills/${bill.id}#pay`} size="sm" aria-label={t.bills.payLabel(bill.supplier.name)}>
+                <ButtonLink to={`/bills/${bill.id}#pay`} size="sm" aria-label={t.bills.payLabel(bill.supplier?.name ?? t.bills.noSupplier)}>
                   {t.bills.payShort}
                 </ButtonLink>
               ) : null,
@@ -163,57 +167,3 @@ export function BillsPage() {
   );
 }
 
-function NewBillForm({ initialSupplier, onDone }: { initialSupplier: string; onDone: () => void }) {
-  const t = useT();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
-  const [supplierId, setSupplierId] = useState(initialSupplier);
-  const [draft, setDraft] = useState(emptyBill());
-  const create = useMutation({
-    mutationFn: () => billsApi.create({ supplierId: Number(supplierId), ...toBillInput(draft) }),
-    onSuccess: (bill) => {
-      for (const key of ['bills', 'attention']) queryClient.invalidateQueries({ queryKey: [key] });
-      onDone();
-      navigate(`/bills/${bill.id}`);
-    },
-  });
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    create.mutate();
-  }
-
-  if (suppliers.data?.length === 0) {
-    return <EmptyState title={t.bills.noSuppliers} action={<ButtonLink to="/suppliers?new=1">{t.bills.addSupplier}</ButtonLink>} />;
-  }
-
-  return (
-    <form className="settings-form" onSubmit={handleSubmit}>
-      <Field label={t.bills.supplier}>
-        <select required value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
-          <option value="">{t.bills.chooseSupplier}</option>
-          {suppliers.data?.map((supplier) => (
-            <option key={supplier.id} value={supplier.id}>
-              {supplier.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <BillFields draft={draft} onChange={setDraft} />
-      {create.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(create.error)}
-        </p>
-      )}
-      <div className="form-actions">
-        <Button variant="ghost" onClick={onDone}>
-          {t.common.cancel}
-        </Button>
-        <Button type="submit" variant="primary" disabled={!supplierId || !isBillValid(draft) || create.isPending} loading={create.isPending}>
-          {t.bills.save}
-        </Button>
-      </div>
-    </form>
-  );
-}

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../../database/connection.js';
 import { roundMoney } from '../../utils/money.js';
+import type { AccountLinkKey } from '../../constants/chartOfAccounts.js';
 import { type AccountLinks, type DraftEntry, EntryBuilder, vatOf } from './entryBuilder.js';
 
 /**
@@ -12,11 +13,18 @@ import { type AccountLinks, type DraftEntry, EntryBuilder, vatOf } from './entry
  *   moves from stock 1340 to cost of goods 5000.
  * - Return: revenue back through sales returns 4200 and VAT 2340, against the
  *   cash paid out or the tab; its cost goes back into stock.
- * - Supplier bill: stock 1340 and VAT to claim back 1260, against what's owed to
- *   the supplier 2000. Paying it: 2000 against cash 1110 or bank 1120.
+ * - Supplier bill, by its lines: products to stock 1340, costs to their
+ *   category's expense account (6xxx), equipment to its fixed-asset account
+ *   (16xx-19xx) and the VAT to claim back to 1260, against what's owed to the
+ *   supplier 2000 and any tax held back for ATK 2370. An import adds the customs
+ *   VAT (1260) and the duty (onto the goods, with the transport), paid at the
+ *   border from bank 1120 or cash 1110, and VAT charged to yourself on services
+ *   from abroad both ways (1260 against 2340). A return or credit posts its
+ *   lines the other way round. Paying a bill: 2000 against cash 1110 or bank
+ *   1120; a credit applied to it posts nothing more. An expense is a bill paid
+ *   on the spot. Carwash-only bills are left out until the accountant says how
+ *   the carwash is booked.
  * - Customer paying their tab: cash 1110 against 1230.
- * - Expense: its category's account (6xxx) against cash. Carwash-only expenses
- *   are left out until the accountant says how the carwash is booked.
  * - Write-off, count difference, manual stock correction: stock corrections
  *   5400 against stock 1340, at cost.
  *
@@ -237,20 +245,95 @@ export class PostingRules {
   private async bill(id: number): Promise<DraftEntry | null> {
     const bill = await this.db
       .selectFrom('supplier_bills as b')
-      .innerJoin('suppliers as s', 's.id', 'b.supplier_id')
-      .select(['b.supplier_id', 'b.order_id', 'b.number', 'b.amount', 'b.vat_amount', 's.name', sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on')])
+      .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
+      .select([
+        'b.supplier_id',
+        'b.order_id',
+        'b.number',
+        'b.amount',
+        'b.vat_amount',
+        'b.kind',
+        'b.withheld',
+        'b.customs_vat',
+        'b.customs_duty',
+        'b.customs_paid_method',
+        'b.place',
+        's.name',
+        sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
+      ])
       .where('b.id', '=', id)
       .where('b.voided_at', 'is', null)
       .executeTakeFirst();
-    if (!bill || this.tooEarly(bill.issued_on)) return null;
-    const gross = Number(bill.amount);
-    let vat = n(bill.vat_amount);
-    if (vat === null && bill.order_id !== null) vat = await this.vatFromOrder(bill.order_id, gross);
-    const entry = this.builder()
-      .debit('stock', gross - (vat ?? 0))
-      .debit('vat_in', vat ?? 0)
-      .credit('payables', gross, { supplierId: bill.supplier_id });
-    return entry.build(bill.issued_on, bill.number ? `${bill.name} ${bill.number}` : bill.name, vat === null ? 'no_vat' : null);
+    if (!bill || this.tooEarly(bill.issued_on) || bill.place === 'carwash') return null;
+    const lines = await this.db
+      .selectFrom('bill_lines')
+      .select(['kind', 'category', 'net', 'vat', 'landed', 'self_vat', 'spread', 'order_line_id'])
+      .where('bill_id', '=', id)
+      .orderBy('position')
+      .execute();
+    const party = { supplierId: bill.supplier_id };
+    const amount = Number(bill.amount);
+    const withheld = Number(bill.withheld);
+    const description = bill.name ? (bill.number ? `${bill.name} ${bill.number}` : bill.name) : (bill.number ?? lines[0]?.category ?? '');
+
+    if (lines.length === 0) {
+      // A bill typed as a total, before bills had lines: all of it is stock.
+      let vat = n(bill.vat_amount);
+      if (vat === null && bill.order_id !== null) vat = await this.vatFromOrder(bill.order_id, amount);
+      return this.builder()
+        .debit('stock', amount - (vat ?? 0))
+        .debit('vat_in', vat ?? 0)
+        .credit('payables', amount, party)
+        .build(bill.issued_on, description, vat === null ? 'no_vat' : null);
+    }
+
+    // A return or credit posts its lines the other way round.
+    const sign = bill.kind === 'credit' ? -1 : 1;
+    const entry = this.builder();
+    const debit = (account: AccountLinkKey, value: number, onParty = {}) => entry.debit(account, sign * value, onParty);
+    let warning: string | null = null;
+    const others = lines.filter((line) => line.kind !== 'product');
+    const products = lines.filter((line) => line.kind === 'product');
+    let vatIn = others.reduce((sum, line) => sum + Number(line.vat), 0);
+    for (const line of others) {
+      if (line.kind === 'equipment') debit(`asset:${line.category}` as AccountLinkKey, Number(line.landed));
+      else if (!line.spread) debit(`expense:${line.category}` as AccountLinkKey, Number(line.net));
+      // VAT on a service from abroad, charged to yourself: owed and claimed back at once.
+      const selfVat = Number(line.self_vat);
+      if (selfVat > 0) {
+        debit('vat_in', selfVat);
+        debit('vat_out', -selfVat);
+      }
+    }
+    if (products.length > 0) {
+      if (products.every((line) => line.order_line_id === null)) {
+        debit('stock', products.reduce((sum, line) => sum + Number(line.landed), 0));
+        vatIn += products.reduce((sum, line) => sum + Number(line.vat), 0);
+      } else {
+        // A delivery's lines say what share of the paper's total is VAT; the paper's total wins.
+        const othersGross = others.reduce((sum, line) => sum + Number(line.net) + Number(line.vat), 0);
+        const productsGross = roundMoney(amount + withheld - othersGross);
+        const linesGross = products.reduce((sum, line) => sum + Number(line.net) + Number(line.vat), 0);
+        const linesVat = products.reduce((sum, line) => sum + Number(line.vat), 0);
+        let productsVat: number;
+        if (n(bill.vat_amount) !== null) productsVat = roundMoney(Number(bill.vat_amount) - vatIn);
+        else if (linesGross > 0) productsVat = roundMoney((productsGross * linesVat) / linesGross);
+        else {
+          productsVat = 0;
+          warning = 'no_vat';
+        }
+        debit('stock', productsGross - productsVat);
+        vatIn += productsVat;
+      }
+    }
+    const customsVat = n(bill.customs_vat) ?? 0;
+    const duty = n(bill.customs_duty) ?? 0;
+    debit('vat_in', vatIn + customsVat);
+    // Customs VAT and duty are paid at the border.
+    if (customsVat + duty > 0) debit(bill.customs_paid_method === 'cash' ? 'cash' : 'bank', -(customsVat + duty));
+    debit('payables', -amount, party);
+    debit('withholding', -withheld);
+    return entry.build(bill.issued_on, description, warning);
   }
 
   /** The VAT in a bill that came from an order, by the rates of the products on it; null when the order has no costs. */
@@ -277,32 +360,24 @@ export class PostingRules {
     const row = await this.db
       .selectFrom('supplier_payments as pay')
       .innerJoin('supplier_bills as b', 'b.id', 'pay.bill_id')
-      .innerJoin('suppliers as s', 's.id', 'b.supplier_id')
-      .select(['pay.amount', 'pay.method', 'b.supplier_id', 'b.number', 's.name', sql<string>`to_char(pay.paid_on, 'YYYY-MM-DD')`.as('paid_on')])
+      .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
+      .select(['pay.amount', 'pay.method', 'b.supplier_id', 'b.number', 'b.place', 's.name', sql<string>`to_char(pay.paid_on, 'YYYY-MM-DD')`.as('paid_on')])
       .where('pay.id', '=', id)
       .where('pay.voided_at', 'is', null)
+      // A credit applied to a bill posts nothing more: the return or credit posted itself.
+      .where('pay.method', '!=', 'credit')
       .executeTakeFirst();
-    if (!row || this.tooEarly(row.paid_on)) return null;
+    if (!row || this.tooEarly(row.paid_on) || row.place === 'carwash') return null;
     const amount = Number(row.amount);
     return this.builder()
       .debit('payables', amount, { supplierId: row.supplier_id })
       .credit(row.method === 'bank' ? 'bank' : 'cash', amount)
-      .build(row.paid_on, row.number ? `${row.name} ${row.number}` : row.name);
+      .build(row.paid_on, row.name ? (row.number ? `${row.name} ${row.number}` : row.name) : (row.number ?? ''));
   }
 
-  private async expense(id: number): Promise<DraftEntry | null> {
-    const row = await this.db
-      .selectFrom('expenses')
-      .select(['amount', 'category', 'note', sql<string>`to_char(day, 'YYYY-MM-DD')`.as('day')])
-      .where('id', '=', id)
-      .where('place', '!=', 'carwash')
-      .executeTakeFirst();
-    if (!row || this.tooEarly(row.day)) return null;
-    const amount = Number(row.amount);
-    return this.builder()
-      .debit(`expense:${row.category}`, amount)
-      .credit('cash', amount)
-      .build(row.day, row.note ?? '');
+  /** Expenses were their own documents until they became bills paid on the spot; their old entries are reversed. */
+  private async expense(_id: number): Promise<DraftEntry | null> {
+    return null;
   }
 
   private async tabPayment(id: number): Promise<DraftEntry | null> {

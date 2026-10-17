@@ -1,6 +1,19 @@
 import { type Kysely, sql } from 'kysely';
-import { POSTING_TABLES } from '../../constants/chartOfAccounts.js';
 import { seedBooks } from '../books.js';
+
+/** The posting tables as they were when the books started (later migrations add and remove some). */
+const POSTING_TABLES = [
+  'sales',
+  'document_lines',
+  'returns',
+  'write_offs',
+  'stock_count_lines',
+  'stock_adjustments',
+  'supplier_bills',
+  'supplier_payments',
+  'expenses',
+  'tab_entries',
+] as const;
 
 /**
  * The books underneath: a chart of accounts (TREFIN's, as the accountant uses

@@ -173,8 +173,8 @@ export class InsightsService {
         kind: overdue ? 'bill_overdue' : 'bill_due_soon',
         severity: overdue ? 'urgent' : bill.daysLeft <= URGENT_DAYS ? 'warning' : 'info',
         title: overdue
-          ? t.insight.billOverdueTitle({ supplier: bill.supplier.name, amount: bill.left, days: -bill.daysLeft })
-          : t.insight.billDueSoonTitle({ supplier: bill.supplier.name, amount: bill.left, days: bill.daysLeft }),
+          ? t.insight.billOverdueTitle({ supplier: bill.supplier?.name ?? '', amount: bill.left, days: -bill.daysLeft })
+          : t.insight.billDueSoonTitle({ supplier: bill.supplier?.name ?? '', amount: bill.left, days: bill.daysLeft }),
         detail: t.insight.billDetail({ number: bill.number, dueOn: dayMonth(new Date(`${bill.dueOn}T12:00:00Z`), t.language, 'UTC') }),
         productId: null,
         billId: bill.id,

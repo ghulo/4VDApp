@@ -17,6 +17,7 @@ export const ACTIVITY_ACTIONS = [
   'sale.recorded',
   'document.fiscal_receipt',
   'bill.added',
+  'bill.credited',
   'bill.updated',
   'bill.paid',
   'bill.payment_voided',

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { SupplierBillService } from '../services/SupplierBillService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { billQuerySchema, billSchema, newBillSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
+import { anyNewBillSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { uploadedImage } from './profileController.js';
 
@@ -21,7 +21,26 @@ export function createBillController(billService: SupplierBillService) {
     },
 
     async create(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await billService.create(parseInput(newBillSchema, req.body), req.user!.id), { statusCode: 201, message: 'Bill added' });
+      sendSuccess(res, await billService.create(parseInput(anyNewBillSchema, req.body), req.user!.id), { statusCode: 201, message: 'Bill added' });
+    },
+
+    async preview(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await billService.preview(parseInput(billFormSchema, req.body)));
+    },
+
+    async credit(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.credit(id, parseInput(creditSchema, req.body), req.user!.id), { statusCode: 201, message: 'Return or credit saved' });
+    },
+
+    async repeats(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await billService.repeats());
+    },
+
+    async stopRepeat(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await billService.stopRepeat(id, req.user!.id);
+      sendSuccess(res, null, { message: 'Stopped repeating' });
     },
 
     async update(req: Request, res: Response): Promise<void> {

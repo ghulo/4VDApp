@@ -7,7 +7,8 @@ import type {
   WriteOffReason,
 } from '../constants/approvals.js';
 import type { Language } from '../i18n/language.js';
-import type { ExpenseCategory, ExpensePlace } from '../constants/expenses.js';
+import type { BillKind, BillLineKind, CustomsPaidMethod, WithholdingType } from '../constants/bills.js';
+import type { ExpensePlace } from '../constants/expenses.js';
 import type { AccountClass, CashFlowActivity } from '../constants/chartOfAccounts.js';
 
 /**
@@ -375,12 +376,14 @@ export interface AssistantMessagesTable {
   created_at: ColumnType<Date, Date | undefined, never>;
 }
 
-export interface RecurringExpensesTable {
+/** A bill made by itself every month (rent, internet, power), from the bill form's own input. */
+export interface BillRepeatsTable {
   id: Generated<number>;
+  supplier_id: number | null;
+  template: ColumnType<unknown, string, string>;
   amount: Decimal;
-  category: ExpenseCategory;
-  place: ExpensePlace;
-  /** Which carwash, when `place` is 'carwash'. */
+  category: string | null;
+  place: Generated<ExpensePlace>;
   carwash_id: number | null;
   note: string | null;
   day_of_month: number;
@@ -390,18 +393,24 @@ export interface RecurringExpensesTable {
   created_at: CreatedAt;
 }
 
-/** `day` is a calendar date in shop time. */
-export interface ExpensesTable {
+/** One line of a supplier bill: a product into stock, a cost with a category, or equipment. */
+export interface BillLinesTable {
   id: Generated<number>;
-  day: ColumnType<string, string, string>;
-  amount: Decimal;
-  category: ExpenseCategory;
-  place: ExpensePlace;
-  carwash_id: number | null;
-  note: string | null;
-  recurring_id: number | null;
-  created_by: number | null;
-  created_at: CreatedAt;
+  bill_id: number;
+  position: number;
+  kind: BillLineKind;
+  product_id: number | null;
+  quantity: number | null;
+  unit_price: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  category: string | null;
+  description: string | null;
+  vat_rate: number;
+  net: Decimal;
+  vat: Decimal;
+  landed: Decimal;
+  spread: Generated<boolean>;
+  self_vat: ColumnType<string, number | string | undefined, number | string>;
+  order_line_id: number | null;
 }
 
 /** A day a manager said had no expenses, so the end-of-day list can close. */
@@ -446,6 +455,13 @@ export interface SuppliersTable {
   phone: string | null;
   email: string | null;
   note: string | null;
+  /** A supplier from another country: its bills are imports, handled by 4VD (customs VAT, VAT charged to yourself). */
+  abroad: Generated<boolean>;
+  /** Remembered from its last bill, to fill in the next one. */
+  usual_kind: BillLineKind | null;
+  usual_category: string | null;
+  usual_vat_rate: number | null;
+  withholding_type: WithholdingType | null;
   archived_at: Date | null;
   created_at: CreatedAt;
 }
@@ -573,7 +589,8 @@ export interface SalesLedgerView {
 
 export interface SupplierBillsTable {
   id: Generated<number>;
-  supplier_id: number;
+  /** Null for an expense paid to nobody in particular. */
+  supplier_id: number | null;
   /** The purchase order it bills, if it came from one. */
   order_id: number | null;
   /** The supplier's own invoice number. */
@@ -590,6 +607,26 @@ export interface SupplierBillsTable {
   void_note: string | null;
   /** The VAT on the bill, to claim back; null when nobody entered it. */
   vat_amount: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  /** 'credit': a return or credit against the bill `credit_for_id`. */
+  kind: Generated<BillKind>;
+  credit_for_id: number | null;
+  /** A return: its product lines' units went back out of stock. */
+  returns_stock: Generated<boolean>;
+  /** Whether the paper's prices include VAT. */
+  prices_include_vat: Generated<boolean>;
+  /** The supplier was abroad when it was saved: an import. */
+  abroad: Generated<boolean>;
+  customs_vat: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  customs_duty: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  customs_paid_method: CustomsPaidMethod | null;
+  withholding_type: WithholdingType | null;
+  /** Tax held back for ATK: taken off `amount`, which is what the supplier is owed. */
+  withheld: ColumnType<string, number | string | undefined, number | string>;
+  /** An expense: paid when it was entered. */
+  paid_now: Generated<boolean>;
+  place: Generated<ExpensePlace>;
+  carwash_id: number | null;
+  repeat_id: number | null;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -649,7 +686,8 @@ export interface SupplierProductCodesTable {
 }
 
 export const SUPPLIER_PAYMENT_METHODS = ['drawer', 'cash', 'bank'] as const;
-export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number];
+/** How a bill was paid: `credit` is a return or credit from the supplier applied to it. */
+export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number] | 'credit';
 
 export interface SupplierPaymentsTable {
   id: Generated<number>;
@@ -663,6 +701,8 @@ export interface SupplierPaymentsTable {
   created_at: CreatedAt;
   voided_at: Date | null;
   voided_by: number | null;
+  /** The return or credit applied, for a `credit` payment. */
+  credit_id: number | null;
 }
 
 export interface ReportSubscriptionsTable {
@@ -825,8 +865,8 @@ export interface Database {
   cash_counts: CashCountsTable;
   assistant_chats: AssistantChatsTable;
   assistant_messages: AssistantMessagesTable;
-  recurring_expenses: RecurringExpensesTable;
-  expenses: ExpensesTable;
+  bill_repeats: BillRepeatsTable;
+  bill_lines: BillLinesTable;
   no_expense_days: NoExpenseDaysTable;
   customers: CustomersTable;
   tab_entries: TabEntriesTable;

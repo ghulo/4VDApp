@@ -1,18 +1,21 @@
 import { EXPENSE_CATEGORIES, type ExpenseCategory, type ExpensePlace } from '../constants/expenses.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { ExpenseRecord, ExpenseRepository, RecurringExpenseRecord } from '../repositories/ExpenseRepository.js';
+import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { CarwashService } from './CarwashService.js';
 import type { DateRange } from './reports/calculations.js';
+import { type BillRepeatDto, createBill, type SupplierBillService, voidBill } from './SupplierBillService.js';
 
-/** A monthly rule's day is capped here so every month has it. */
-export const LAST_REPEAT_DAY = 28;
+export { LAST_REPEAT_DAY, nextMonthDay } from './SupplierBillService.js';
 
 export interface ExpenseDto {
   id: number;
+  /** The bill it is on: an expense is a bill paid on the spot. */
+  billId: number;
   day: string;
+  /** Negative for a return or credit. */
   amount: number;
   category: ExpenseCategory;
   place: ExpensePlace;
@@ -20,9 +23,12 @@ export interface ExpenseDto {
   carwashId: number | null;
   carwashName: string | null;
   note: string | null;
-  /** Set when a monthly rule added it. */
+  /** Set when a monthly repeat made it. */
   recurringId: number | null;
   addedBy: string | null;
+  supplierName: string | null;
+  /** Paid when entered; a cost on a bill to pay later is changed on its bill. */
+  paidNow: boolean;
 }
 
 export interface ExpenseTotals {
@@ -33,17 +39,7 @@ export interface ExpenseTotals {
   byCategory: Record<ExpenseCategory, number>;
 }
 
-export interface RecurringExpenseDto {
-  id: number;
-  amount: number;
-  category: ExpenseCategory;
-  place: ExpensePlace;
-  carwashId: number | null;
-  carwashName: string | null;
-  note: string | null;
-  dayOfMonth: number;
-  addedBy: string | null;
-}
+export type RecurringExpenseDto = BillRepeatDto;
 
 export interface NewExpenseInput {
   day: string;
@@ -52,12 +48,15 @@ export interface NewExpenseInput {
   place: ExpensePlace;
   /** For a carwash expense; left out means the only open carwash. */
   carwashId?: number;
+  /** Who was paid, when it was a supplier. */
+  supplierId?: number | null;
   note: string | null;
   repeatMonthly: boolean;
 }
 
 const toDto = (row: ExpenseRecord): ExpenseDto => ({
   id: row.id,
+  billId: row.bill_id,
   day: row.day,
   amount: Number(row.amount),
   category: row.category,
@@ -67,36 +66,21 @@ const toDto = (row: ExpenseRecord): ExpenseDto => ({
   note: row.note,
   recurringId: row.recurring_id,
   addedBy: row.created_by_name,
+  supplierName: row.supplier_name,
+  paidNow: row.paid_now,
 });
-
-const toRecurringDto = (row: RecurringExpenseRecord): RecurringExpenseDto => ({
-  id: row.id,
-  amount: Number(row.amount),
-  category: row.category,
-  place: row.place,
-  carwashId: row.carwash_id,
-  carwashName: row.carwash_name,
-  note: row.note,
-  dayOfMonth: row.day_of_month,
-  addedBy: row.created_by_name,
-});
-
-/** The same day of the month after `day` ("2026-10-28" → "2026-11-28"). */
-export function nextMonthDay(day: string, dayOfMonth: number): string {
-  const [year, month] = day.split('-').map(Number) as [number, number];
-  const next = new Date(Date.UTC(year, month, dayOfMonth));
-  return next.toISOString().slice(0, 10);
-}
 
 /**
  * What the business spends, for the shop, the carwash or both, so reports
- * can show real profit. Rent and wages repeat by themselves every month.
+ * can show real profit. Every cost is a bill line underneath: an expense is a
+ * bill paid on the spot, and rent and wages repeat by themselves every month.
  */
 export class ExpenseService {
   constructor(
     private readonly expenseRepository: ExpenseRepository,
     private readonly transactions: TransactionManager,
     private readonly carwashService: CarwashService,
+    private readonly billService: SupplierBillService,
     private readonly timeZone: string,
   ) {}
 
@@ -113,7 +97,7 @@ export class ExpenseService {
         entry.total = roundMoney(entry.total + expense.amount);
         byCarwash.set(expense.carwashId, entry);
       }
-      byCategory[expense.category] = roundMoney(byCategory[expense.category] + expense.amount);
+      byCategory[expense.category] = roundMoney((byCategory[expense.category] ?? 0) + expense.amount);
     }
     const total = roundMoney(expenses.reduce((sum, expense) => sum + expense.amount, 0));
     return { expenses, totals: { total, byPlace, byCarwash: [...byCarwash.values()], byCategory } };
@@ -129,42 +113,59 @@ export class ExpenseService {
     return roundMoney(await this.expenseRepository.total(from, to));
   }
 
+  /** Monthly repeats, of expenses and of bills to pay later alike. */
   async recurring(): Promise<RecurringExpenseDto[]> {
-    return (await this.expenseRepository.findActiveRecurring()).map(toRecurringDto);
+    return this.billService.repeats();
   }
 
+  /** An expense paid on the spot: a bill with one cost line, paid from cash. */
   async add(input: NewExpenseInput, actorId: number, now = new Date()): Promise<ExpenseDto> {
     const today = zonedDay(now, this.timeZone);
     if (input.day > today) throw new ValidationError("An expense can't be for a day that hasn't happened yet");
-    const dayOfMonth = Math.min(Number(input.day.slice(8, 10)), LAST_REPEAT_DAY);
     const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
     const carwashId = carwash?.id ?? null;
 
-    const id = await this.transactions.run(async (repos) => {
-      const recurringId = input.repeatMonthly
-        ? await repos.expenses.addRecurring({ ...input, carwashId, dayOfMonth, lastFilledOn: input.day, createdBy: actorId })
-        : null;
-      const expenseId = (await repos.expenses.add({ ...input, carwashId, recurringId, createdBy: actorId }))!;
+    const billId = await this.transactions.run(async (repos) => {
+      const id = (await createBill(
+        repos,
+        {
+          supplierId: input.supplierId ?? null,
+          number: null,
+          issuedOn: input.day,
+          dueOn: null,
+          note: input.note,
+          lines: [{ kind: 'cost', category: input.category, amount: input.amount, vatRate: 0 }],
+          pricesIncludeVat: true,
+          paidNow: { method: 'cash' },
+          place: input.place,
+          carwashId,
+          repeatMonthly: input.repeatMonthly,
+        },
+        actorId,
+        { today, quiet: true },
+      ))!;
       await repos.activityLog.create({
         userId: actorId,
         action: 'expense.added',
         entityType: 'expense',
-        entityId: expenseId,
+        entityId: id,
         say: { key: 'expenseAdded', params: { amount: input.amount, category: input.category, at: carwash ? { carwash: carwash.name } : { place: input.place }, day: input.day, monthly: Boolean(input.repeatMonthly) } },
-        details: { ...input, carwashId },
+        details: { ...input, carwashId, billId: id },
       });
-      return expenseId;
+      return id;
     });
-    // A monthly rule started in the past fills in the months since.
+    // A monthly repeat started in the past fills in the months since.
     if (input.repeatMonthly) await this.fillDue(now);
-    return toDto((await this.expenseRepository.findById(id))!);
+    return toDto((await this.expenseRepository.findByBill(billId))!);
   }
 
-  async remove(id: number, actorId: number): Promise<void> {
+  /** Crosses out an expense paid on the spot, with its payment. A cost on a bill to pay later is changed on its bill. */
+  async remove(id: number, actorId: number, now = new Date()): Promise<void> {
     const expense = await this.expenseRepository.findById(id);
     if (!expense) throw new NotFoundError(`Expense ${id} does not exist`);
+    if (!expense.paid_now) throw new ConflictError('This cost is on a bill to pay later. Open the bill to change it.');
     await this.transactions.run(async (repos) => {
-      await repos.expenses.remove(id);
+      await voidBill(repos, expense.bill_id, 'Removed from the expenses', actorId, now);
       await repos.activityLog.create({
         userId: actorId,
         action: 'expense.removed',
@@ -177,50 +178,11 @@ export class ExpenseService {
   }
 
   async stopRepeating(id: number, actorId: number, now = new Date()): Promise<void> {
-    const rule = await this.expenseRepository.findRecurringById(id);
-    if (!rule) throw new NotFoundError(`Repeating expense ${id} does not exist`);
-    if (rule.stopped_at) throw new ConflictError('This expense has already stopped repeating');
-    await this.transactions.run(async (repos) => {
-      await repos.expenses.stopRecurring(id, now);
-      await repos.activityLog.create({
-        userId: actorId,
-        action: 'expense.repeat_stopped',
-        entityType: 'expense',
-        entityId: null,
-        say: { key: 'expenseStopped', params: { category: rule.category } },
-        details: { recurringId: id },
-      });
-    });
+    await this.billService.stopRepeat(id, actorId, now);
   }
 
-  /**
-   * Adds each monthly rule's expense for every month whose day has come.
-   * Called every minute by the server; safe to run twice. Returns how many it added.
-   */
+  /** Makes every repeat's bill whose day has come. Called every minute by the server; safe to run twice. */
   async fillDue(now = new Date()): Promise<number> {
-    const today = zonedDay(now, this.timeZone);
-    let added = 0;
-    for (const rule of await this.expenseRepository.findActiveRecurring()) {
-      let next = nextMonthDay(rule.last_filled_on, rule.day_of_month);
-      while (next <= today) {
-        const day = next;
-        await this.transactions.run(async (repos) => {
-          const id = await repos.expenses.add({
-            day,
-            amount: Number(rule.amount),
-            category: rule.category,
-            place: rule.place,
-            carwashId: rule.carwash_id,
-            note: rule.note,
-            recurringId: rule.id,
-            createdBy: null,
-          });
-          if (id !== null) added += 1;
-          await repos.expenses.markFilled(rule.id, day);
-        });
-        next = nextMonthDay(day, rule.day_of_month);
-      }
-    }
-    return added;
+    return this.billService.fillRepeats(now);
   }
 }

@@ -86,7 +86,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Orders: one list with On the way / Needs a bill / Cancelled and a supplier filter; each row shows its next step (Receive, Add the bill, bill to pay)
 - [x] New order is its own page: supplier, what is running low, price per line, a summary with the estimated cost
 - [x] Order page: copy the order text, receive the delivery right there, cancel only after a confirm
-- [x] Bills: every bill in one list, most urgent first; Unpaid / Overdue / Due this week / Paid / All; one supplier only via the filter or their page; Pay button; total left to pay; add a bill in a side panel
+- [x] Bills: every bill in one list, most urgent first; Unpaid / Overdue / Due this week / Paid / All; one supplier only via the filter or their page; Pay button; total left to pay; add a bill on its own page
 - [x] Bill page: paying sits beside the payments, photo and details
 - [x] Merged and pushed together with the invoice work
 
@@ -220,7 +220,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 **A. Needed to switch TREFIN off** (in this order)
 - [x] 0. Survey of TREFIN against 4VD
 - [x] 1. Books underneath: TREFIN's 144-account chart brought in as is (editable), each product, supplier, customer, cash and bank linked to its accounts (stock 1340, revenue 4000, cost 5000, payables 2000, VAT 1260/2340), and every sale, return, bill, payment, expense, write-off and count writes its own entry. Manual journal (FK), account card, trial balance, general ledger, journal. Done 2026-10-16 (Books in the menu: Balances, Entries, Accounts, each account's card, entries on bills, invoices and counts). The links are shop-wide for now (one account per kind of movement, changeable in Settings → Books); accounts per product or partner come with step 10
-- [ ] 2. Every kind of supplier bill, with no type menu (agreed 2026-10-16; ideas from Xero, Odoo, Dext and QuickBooks; TREFIN's codes never shown). One bill form, and 4VD works out the kind of bill:
+- [x] 2. Every kind of supplier bill, with no type menu (agreed 2026-10-16, done 2026-10-17: Add a bill opens `/bills/new`, and "Return or credit" sits on each bill; ideas from Xero, Odoo, Dext and QuickBooks; TREFIN's codes never shown). One bill form, and 4VD works out the kind of bill:
   - Each line is a product (into stock), a cost with a plain category (rent, power, transport…) or equipment, and one bill can mix them.
   - The supplier remembers its usual category, VAT and tax held back.
   - A supplier marked "abroad" gets import VAT or self-charged VAT by itself.

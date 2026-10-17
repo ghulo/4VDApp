@@ -147,7 +147,7 @@ export class CarwashService {
       });
       if (changes.archived !== undefined && changes.archived !== wasArchived) {
         // A closed carwash stops adding its monthly expenses; restoring it doesn't bring them back.
-        const stoppedExpenses = changes.archived ? await repos.expenses.stopRecurringForCarwash(id, now) : 0;
+        const stoppedExpenses = changes.archived ? await repos.bills.stopRepeatsForCarwash(id, now) : 0;
         await repos.activityLog.create({
           userId: actorId,
           action: changes.archived ? 'carwash.archived' : 'carwash.restored',

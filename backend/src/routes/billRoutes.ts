@@ -11,12 +11,16 @@ export function createBillRoutes({ supplierBillService, guards }: Container): Ro
   router.use(...guards.oversee);
   router.get('/', controller.list);
   router.get('/summary', controller.summary);
+  router.get('/repeats', controller.repeats);
+  router.post('/repeats/:id/stop', controller.stopRepeat);
+  router.post('/preview', controller.preview);
   router.get('/:id', controller.get);
   router.post('/', controller.create);
   router.put('/:id', controller.update);
   router.post('/:id/payments', controller.pay);
   router.post('/:id/payments/:paymentId/void', controller.voidPayment);
   router.post('/:id/void', controller.void);
+  router.post('/:id/credit', controller.credit);
   router.put('/:id/photo', readImage, controller.setPhoto);
   router.delete('/:id/photo', controller.removePhoto);
 

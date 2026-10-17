@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { suppliersApi } from '../services/api';
-import type { Supplier } from '../services/types';
+import { type Supplier, WITHHOLDING_RATES, WITHHOLDING_TYPES, type WithholdingType } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 import { Button, Field } from './ui';
 
-/** Adds a supplier, or with `supplier` changes one. The NUI is required either way. */
+/** Adds a supplier, or with `supplier` changes one. The NUI is required, unless the supplier is abroad. */
 export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; onDone: (saved?: Supplier) => void }) {
   const t = useT();
   const queryClient = useQueryClient();
@@ -15,9 +15,19 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
   const [nui, setNui] = useState(supplier?.nui ?? '');
   const [phone, setPhone] = useState(supplier?.phone ?? '');
   const [email, setEmail] = useState(supplier?.email ?? '');
+  const [abroad, setAbroad] = useState(supplier?.abroad ?? false);
+  const [withholding, setWithholding] = useState<WithholdingType | ''>(supplier?.withholdingType ?? '');
+  const nuiOk = isNui(nui) || (abroad && nui.trim() === '');
   const save = useMutation({
     mutationFn: () => {
-      const input = { name: name.trim(), nui: cleanNui(nui), phone: phone.trim() || null, email: email.trim() || null };
+      const input = {
+        name: name.trim(),
+        nui: nui.trim() === '' ? null : cleanNui(nui),
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        abroad,
+        withholdingType: withholding || null,
+      };
       return supplier ? suppliersApi.update(supplier.id, input) : suppliersApi.add(input);
     },
     onSuccess: (saved) => {
@@ -27,6 +37,8 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
       setNui('');
       setPhone('');
       setEmail('');
+      setAbroad(false);
+      setWithholding('');
       onDone(saved);
     },
   });
@@ -46,10 +58,14 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
         <Field label={t.orders.supplierName}>
           <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
-        <Field label={t.nui.label} hint={t.nui.hint}>
-          <NuiInput required value={nui} onChange={(event) => setNui(event.target.value)} />
+        <Field label={abroad ? t.suppliers.nuiOptional : t.nui.label} hint={abroad ? t.suppliers.abroadHint : t.nui.hint}>
+          <NuiInput required={!abroad} value={nui} onChange={(event) => setNui(event.target.value)} />
         </Field>
       </div>
+      <label className="toggle">
+        <input type="checkbox" checked={abroad} onChange={(event) => setAbroad(event.target.checked)} />
+        {t.suppliers.abroad}
+      </label>
       <div className="field-row">
         <Field label={t.orders.phone}>
           <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
@@ -58,13 +74,23 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
           <input type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
         </Field>
       </div>
+      <Field label={t.suppliers.withholding} hint={t.suppliers.withholdingHint}>
+        <select value={withholding} onChange={(event) => setWithholding(event.target.value as WithholdingType | '')}>
+          <option value="">{t.billForm.withholdingNone}</option>
+          {WITHHOLDING_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {t.billForm.withholdingOption(t.bills.withholdingTypes[type], WITHHOLDING_RATES[type])}
+            </option>
+          ))}
+        </select>
+      </Field>
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}
         </p>
       )}
       <div className="form-actions">
-        <Button type="submit" disabled={name.trim() === '' || !isNui(nui) || save.isPending}>
+        <Button type="submit" disabled={name.trim() === '' || !nuiOk || save.isPending}>
           {supplier ? t.orders.saveSupplier : t.orders.add}
         </Button>
         {supplier && (

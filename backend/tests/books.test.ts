@@ -188,9 +188,15 @@ describe('entries written from documents', () => {
     expect((await balances())['6650']).toBe(300);
     expect((await balances())['6830']).toBeUndefined();
 
+    // An expense is a bill paid on the spot: the cost against the supplier account, and its payment from cash.
+    const [costEntry, paymentEntry] = await entriesFor('expense', rent.body.data.id);
+    expect(readLines(costEntry!)).toEqual(['2000 Cr 300', '6650 Dr 300']);
+    expect(readLines(paymentEntry!)).toEqual(['1110 Cr 300', '2000 Dr 300']);
+
     await api().delete(`/api/expenses/${rent.body.data.id}`).set(auth());
     const entries = await entriesFor('expense', rent.body.data.id);
-    expect(entries.map((entry) => entry.kind)).toEqual(['auto', 'reversal']);
+    expect(entries.map((entry) => entry.kind).sort()).toEqual(['auto', 'auto', 'reversal', 'reversal']);
+    expect((await balances())['6650'] ?? 0).toBe(0);
   });
 
   it('posts an approved write-off at cost against stock corrections', async () => {

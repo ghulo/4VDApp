@@ -86,7 +86,6 @@ export class BooksPoster {
         union all select 'stock_adjustments', id from stock_adjustments where reason = 'Manual adjustment'
         union all select 'supplier_bills', id from supplier_bills where issued_on >= ${start}::date
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
-        union all select 'expenses', id from expenses where day >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'
         on conflict do nothing
       `.execute(trx);

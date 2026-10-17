@@ -61,6 +61,7 @@ const TabsRedirect = lazyPage(() => import('./pages/CustomersPage'), 'TabsRedire
 const SupplierDetailPage = lazyPage(() => import('./pages/SupplierDetailPage'), 'SupplierDetailPage');
 const SuppliersPage = lazyPage(() => import('./pages/SuppliersPage'), 'SuppliersPage');
 const NewOrderPage = lazyPage(() => import('./pages/NewOrderPage'), 'NewOrderPage');
+const NewBillPage = lazyPage(() => import('./pages/NewBillPage'), 'NewBillPage');
 const OrdersPage = lazyPage(() => import('./pages/OrdersPage'), 'OrdersPage');
 const DuplicatesPage = lazyPage(() => import('./pages/DuplicatesPage'), 'DuplicatesPage');
 const LabelsPage = lazyPage(() => import('./pages/LabelsPage'), 'LabelsPage');
@@ -174,6 +175,7 @@ function App() {
                     <Route path="suppliers/:id" element={<SupplierDetailPage />} />
                     <Route path="orders/new" element={<NewOrderPage />} />
                     <Route path="orders/:id" element={<OrderDetailPage />} />
+                    <Route path="bills/new" element={<NewBillPage />} />
                     <Route path="bills/scans/:id" element={<ScanCheckPage />} />
                     <Route path="bills/:id" element={<BillDetailPage />} />
                     <Route path="people" element={<UsersPage />} />

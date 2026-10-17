@@ -31,6 +31,10 @@ export function linkLabel(t: Catalogue, key: AccountLinkKey): string {
     const category = key.slice('expense:'.length) as (typeof EXPENSE_CATEGORIES)[number];
     return t.books.expenseLink(t.expenses.categories[category]);
   }
+  if (key.startsWith('asset:')) {
+    const category = key.slice('asset:'.length) as keyof Catalogue['bills']['equipmentCategories'];
+    return t.books.assetLink(t.bills.equipmentCategories[category]);
+  }
   return t.books.links[key as keyof Catalogue['books']['links']];
 }
 

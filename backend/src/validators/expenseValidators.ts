@@ -10,6 +10,8 @@ export const newExpenseSchema = z.object({
   place: z.enum(EXPENSE_PLACES),
   /** Which carwash, for a carwash expense; left out it means the only open one. */
   carwashId: idSchema.optional(),
+  /** Who was paid, when it was a supplier. */
+  supplierId: idSchema.nullish(),
   note: z
     .string()
     .trim()

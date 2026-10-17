@@ -49,7 +49,7 @@ export function SupplierDetailPage() {
         actions={
           canManage(role) && (
             <>
-              <ButtonLink to={`/bills?supplier=${id}&new=1`} icon={Invoice}>
+              <ButtonLink to={`/bills/new?supplier=${id}`} icon={Invoice}>
                 {t.suppliers.addBill}
               </ButtonLink>
               <ButtonLink to={`/orders/new?supplier=${id}`} variant="primary" icon={Truck}>

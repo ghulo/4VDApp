@@ -296,8 +296,8 @@ export class AssistantService {
       })),
       supplierBillsOpen: bills.map((bill) => ({
         billId: bill.id,
-        supplierId: bill.supplier.id,
-        supplier: bill.supplier.name,
+        supplierId: bill.supplier?.id ?? null,
+        supplier: bill.supplier?.name ?? '',
         number: bill.number,
         issuedOn: bill.issuedOn,
         dueOn: bill.dueOn,

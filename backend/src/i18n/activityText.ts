@@ -52,7 +52,7 @@ type ExpensePlace = { carwash: string } | { place: string };
 type WriteOffReason = 'damaged' | 'lost' | 'expired' | 'other' | string;
 
 /** Why a cost changed: a delivery, a scanned bill, or a scanned bill taken back. */
-export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true };
+export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string };
 
 /** A product line in a sentence: "2 × Oak Chair". */
 type Units = { quantity: number; product: string };
@@ -174,7 +174,7 @@ const en = {
   orderCancelled: (p: { orderId: number; supplier: string }) => `Cancelled order #${p.orderId} from ${p.supplier}`,
   costChanged: (p: { product: string; from: number | null; to: number | null; because: CostReason }, w: Words) =>
     `Changed cost of ${p.product} from ${p.from === null ? 'none' : w.money(p.from)} to ${p.to === null ? 'none' : w.money(p.to)} (${
-      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'scanned bill reopened'
+      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'bill' in p.because ? `bill from ${p.because.bill}` : 'scanned bill reopened'
     })`,
   orderReceived: (p: { orderId: number; supplier: string; units: number }) =>
     `Received order #${p.orderId} from ${p.supplier}: ${p.units} ${p.units === 1 ? 'unit' : 'units'} into stock`,
@@ -205,8 +205,14 @@ const en = {
   billVoided: (p: Bill & { note: string }, w: Words) => `Voided ${enBill(p, w)}: ${p.note}`,
   billPhotoAdded: (p: Bill, w: Words) => `Added a photo to ${enBill(p, w)}`,
   billPhotoRemoved: (p: Bill, w: Words) => `Removed the photo from ${enBill(p, w)}`,
-  billAdded: (p: Bill & { dueOn: string | null }, w: Words) =>
-    `Added a ${w.money(p.amount)} bill from ${p.supplier}${p.number ? ` (no. ${p.number})` : ''}${p.dueOn ? `, due ${w.day(p.dueOn)}` : ''}`,
+  billAdded: (p: Bill & { dueOn: string | null; paidNow?: boolean }, w: Words) =>
+    p.supplier === null
+      ? `Added a ${w.money(p.amount)} expense, paid on the spot`
+      : `Added a ${w.money(p.amount)} bill from ${p.supplier}${p.number ? ` (no. ${p.number})` : ''}${p.paidNow ? ', paid on the spot' : p.dueOn ? `, due ${w.day(p.dueOn)}` : ''}`,
+  billCredited: (p: Bill & { credit: number; returned: boolean }, w: Words) =>
+    `Recorded ${p.returned ? 'a return' : 'a credit'} of ${w.money(p.credit)} against ${enBill(p, w)}`,
+  priceChanged: (p: { product: string; from: number; to: number; because: { bill: string } }, w: Words) =>
+    `Changed the price of ${p.product} from ${w.money(p.from)} to ${w.money(p.to)} (bill from ${p.because.bill})`,
 
   tabOpened: (p: { name: string }) => `Opened a tab for ${p.name}`,
   customerChanged: (p: { name: string }) => `Changed ${p.name}'s details`,
@@ -232,7 +238,7 @@ const en = {
   restored: (p: { entry: unknown }, _w: Words, language: Language) => `Restored: ${said(p.entry as Said, language)}`,
 };
 
-type Bill = { amount: number; supplier: string; number: string | null };
+type Bill = { amount: number; supplier: string | null; number: string | null };
 
 const EN_ROLE: Record<Role, string> = { developer: 'developer', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family' };
 const EN_REASON: Record<string, string> = { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' };
@@ -245,6 +251,15 @@ const EN_EXPENSE: Record<string, string> = {
   repairs: 'repairs',
   taxes: 'taxes',
   other: 'other',
+  internet: 'internet and phone',
+  fuel: 'fuel',
+  transport: 'transport',
+  cleaning: 'cleaning',
+  advertising: 'advertising',
+  bank_fees: 'bank fees',
+  professional: 'accountant and lawyer',
+  insurance: 'insurance',
+  office: 'office',
   shop: 'shop',
 };
 const EN_PRODUCT_FIELD: Record<ProductField, string> = {
@@ -261,7 +276,8 @@ const EN_PRODUCT_FIELD: Record<ProductField, string> = {
   bulkPricingTiers: 'bulk prices',
 };
 const enAlso = (also: ProductField[]) => (also.length > 0 ? ` (also changed ${also.map((field) => EN_PRODUCT_FIELD[field]).join(', ')})` : '');
-const enBill = (p: Bill, w: Words) => `the ${w.money(p.amount)} bill from ${p.supplier}${p.number ? ` (no. ${p.number})` : ''}`;
+const enBill = (p: Bill, w: Words) =>
+  p.supplier === null ? `the ${w.money(p.amount)} expense` : `the ${w.money(p.amount)} bill from ${p.supplier}${p.number ? ` (no. ${p.number})` : ''}`;
 
 function enSetting({ name, from, to }: SettingChange, w: Words): string {
   switch (name) {
@@ -323,6 +339,15 @@ const SQ_EXPENSE: Record<string, string> = {
   repairs: 'riparime',
   taxes: 'taksa dhe tarifa',
   other: 'të tjera',
+  internet: 'interneti dhe telefoni',
+  fuel: 'karburanti',
+  transport: 'transporti',
+  cleaning: 'pastrimi',
+  advertising: 'reklamat',
+  bank_fees: 'tarifat bankare',
+  professional: 'kontabilisti dhe avokati',
+  insurance: 'sigurimi',
+  office: 'zyra',
   shop: 'dyqani',
 };
 const SQ_STOCK_REASON: Record<string, string> = {
@@ -336,6 +361,7 @@ const SQ_STOCK_REASON: Record<string, string> = {
   Undo: 'zhbërje',
   Restore: 'rikthim',
   Delivery: 'furnizim',
+  'Returned to supplier': 'kthim te furnitori',
 };
 const SQ_PRODUCT_FIELD: Record<ProductField, string> = {
   name: 'emri',
@@ -361,7 +387,8 @@ const SQ_SHOP_FIELD: Record<ShopField, string> = {
   invoiceNote: 'shënimin e faturës',
 };
 const sqAlso = (also: ProductField[]) => (also.length > 0 ? ` (ndryshoi edhe ${also.map((field) => SQ_PRODUCT_FIELD[field]).join(', ')})` : '');
-const sqBill = (p: Bill, w: Words) => `faturën prej ${w.money(p.amount)} nga ${p.supplier}${p.number ? ` (nr. ${p.number})` : ''}`;
+const sqBill = (p: Bill, w: Words) =>
+  p.supplier === null ? `shpenzimin prej ${w.money(p.amount)}` : `faturën prej ${w.money(p.amount)} nga ${p.supplier}${p.number ? ` (nr. ${p.number})` : ''}`;
 const sqScope = (scope: string | null) => scope ?? 'gjithë dyqanit';
 const sqCarwash = (carwash: string | null) => (carwash ? `lavazhit ${carwash}` : 'lavazhit');
 
@@ -508,7 +535,7 @@ const sq: Templates = {
   orderCancelled: (p) => `Anuloi porosinë #${p.orderId} nga ${p.supplier}`,
   costChanged: (p, w) =>
     `Ndryshoi koston e ${p.product} nga ${p.from === null ? 'asnjë' : w.money(p.from)} në ${p.to === null ? 'asnjë' : w.money(p.to)} (${
-      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'fatura e skanuar u rihap'
+      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'bill' in p.because ? `fatura nga ${p.because.bill}` : 'fatura e skanuar u rihap'
     })`,
   orderReceived: (p) => `Mori porosinë #${p.orderId} nga ${p.supplier}: ${p.units} copë në stok`,
 
@@ -534,7 +561,11 @@ const sq: Templates = {
   billPhotoAdded: (p, w) => `Shtoi një foto te ${sqBill(p, w)}`,
   billPhotoRemoved: (p, w) => `Hoqi foton nga ${sqBill(p, w)}`,
   billAdded: (p, w) =>
-    `Shtoi një faturë prej ${w.money(p.amount)} nga ${p.supplier}${p.number ? ` (nr. ${p.number})` : ''}${p.dueOn ? `, afati ${w.day(p.dueOn)}` : ''}`,
+    p.supplier === null
+      ? `Shtoi një shpenzim prej ${w.money(p.amount)}, të paguar në vend`
+      : `Shtoi një faturë prej ${w.money(p.amount)} nga ${p.supplier}${p.number ? ` (nr. ${p.number})` : ''}${p.paidNow ? ', të paguar në vend' : p.dueOn ? `, afati ${w.day(p.dueOn)}` : ''}`,
+  billCredited: (p, w) => `Regjistroi ${p.returned ? 'një kthim' : 'një kredi'} prej ${w.money(p.credit)} për ${sqBill(p, w)}`,
+  priceChanged: (p, w) => `Ndryshoi çmimin e ${p.product} nga ${w.money(p.from)} në ${w.money(p.to)} (fatura nga ${p.because.bill})`,
 
   tabOpened: (p) => `Hapi një borxh për ${p.name}`,
   customerChanged: (p) => `Ndryshoi të dhënat e ${p.name}`,

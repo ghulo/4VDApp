@@ -195,11 +195,30 @@ export const DEFAULT_ACCOUNT_LINKS = {
   'expense:repairs': '6670',
   'expense:taxes': '6800',
   'expense:other': '6240',
+  'expense:internet': '6690',
+  'expense:fuel': '6110',
+  'expense:transport': '6740',
+  'expense:cleaning': '6130',
+  'expense:advertising': '6010',
+  'expense:bank_fees': '6060',
+  'expense:professional': '6570',
+  'expense:insurance': '6450',
+  'expense:office': '6780',
+  'asset:furniture': '1600',
+  'asset:equipment': '1700',
+  'asset:vehicle': '1710',
+  'asset:building': '1800',
+  'asset:other': '1970',
+  withholding: '2370',
 } as const;
 export type AccountLinkKey = keyof typeof DEFAULT_ACCOUNT_LINKS;
 export const ACCOUNT_LINK_KEYS = Object.keys(DEFAULT_ACCOUNT_LINKS) as AccountLinkKey[];
 
-/** The tables whose rows post entries; a trigger queues every change to them. */
+/**
+ * The tables whose rows post entries; a trigger queues every change to them.
+ * Bill lines queue the bill they are on. (Expenses were their own table until
+ * they became bills paid on the spot.)
+ */
 export const POSTING_TABLES = [
   'sales',
   'document_lines',
@@ -208,8 +227,8 @@ export const POSTING_TABLES = [
   'stock_count_lines',
   'stock_adjustments',
   'supplier_bills',
+  'bill_lines',
   'supplier_payments',
-  'expenses',
   'tab_entries',
 ] as const;
 export type PostingTable = (typeof POSTING_TABLES)[number];

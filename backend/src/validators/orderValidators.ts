@@ -31,7 +31,8 @@ export const supplierSchema = z.object({
   abroad: z.boolean().optional(),
   usualKind: z.enum(BILL_LINE_KINDS).nullish(),
   usualCategory: z.string().trim().max(32).nullish(),
-  usualVatRate: z.union([z.literal(18), z.literal(8), z.literal(0)]).nullish(),
+  usualVatRate: z.union([z.literal(18), z.literal(16), z.literal(8), z.literal(0)]).nullish(),
+  usualVatExempt: z.boolean().optional(),
   withholdingType: z.enum(WITHHOLDING_TYPES).nullish(),
 }).refine((input) => input.abroad || input.nui !== null, { message: 'NUI must be 9 digits', path: ['nui'] });
 
@@ -86,7 +87,7 @@ export const billSchema = z
 
 export const newBillSchema = z.intersection(billSchema, z.object({ supplierId: idSchema, orderId: idSchema.nullish() }));
 
-const vatRateSchema = z.union([z.literal(18), z.literal(8), z.literal(0)]);
+const vatRateSchema = z.union([z.literal(18), z.literal(16), z.literal(8), z.literal(0)]);
 /** A price for one, to the tenth of a cent (prices without VAT often have more than two decimals). */
 const unitPriceSchema = z.number().nonnegative().max(1_000_000).transform((value) => Math.round(value * 10_000) / 10_000);
 
@@ -99,6 +100,7 @@ export const billLineSchema = z.object({
   description: optional(300),
   amount: positiveMoney.nullish(),
   vatRate: vatRateSchema.nullish(),
+  vatExempt: z.boolean().nullish(),
 });
 
 /** The one bill form: lines of products, costs and equipment, and what 4VD needs to work out the rest. */
@@ -195,7 +197,7 @@ export const confirmScanSchema = z.object({
             name: z.string().trim().min(1, 'give the new product a name').max(255),
             barcode: barcodeSchema,
             price: positiveMoney,
-            vatRate: z.union([z.literal(0), z.literal(8), z.literal(18)]),
+            vatRate: z.union([z.literal(0), z.literal(8), z.literal(16), z.literal(18)]),
           })
           .nullable(),
         code: optional(64),

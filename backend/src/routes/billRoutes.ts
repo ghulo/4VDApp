@@ -3,26 +3,25 @@ import type { Container } from '../container.js';
 import { createBillController } from '../controllers/billController.js';
 import { readImage } from './profileRoutes.js';
 
-/** Supplier bills and their payments. The people who run the shop handle them. */
+/** Supplier bills and their payments. The people who run the shop handle them; the accountant reads them. */
 export function createBillRoutes({ supplierBillService, guards }: Container): Router {
   const controller = createBillController(supplierBillService);
   const router = Router();
 
-  router.use(...guards.oversee);
-  router.get('/', controller.list);
-  router.get('/summary', controller.summary);
-  router.get('/repeats', controller.repeats);
-  router.post('/repeats/:id/stop', controller.stopRepeat);
-  router.post('/preview', controller.preview);
-  router.get('/:id', controller.get);
-  router.post('/', controller.create);
-  router.put('/:id', controller.update);
-  router.post('/:id/payments', controller.pay);
-  router.post('/:id/payments/:paymentId/void', controller.voidPayment);
-  router.post('/:id/void', controller.void);
-  router.post('/:id/credit', controller.credit);
-  router.put('/:id/photo', readImage, controller.setPhoto);
-  router.delete('/:id/photo', controller.removePhoto);
+  router.get('/', ...guards.books, controller.list);
+  router.get('/summary', ...guards.books, controller.summary);
+  router.get('/repeats', ...guards.books, controller.repeats);
+  router.post('/repeats/:id/stop', ...guards.oversee, controller.stopRepeat);
+  router.post('/preview', ...guards.oversee, controller.preview);
+  router.get('/:id', ...guards.books, controller.get);
+  router.post('/', ...guards.oversee, controller.create);
+  router.put('/:id', ...guards.oversee, controller.update);
+  router.post('/:id/payments', ...guards.oversee, controller.pay);
+  router.post('/:id/payments/:paymentId/void', ...guards.oversee, controller.voidPayment);
+  router.post('/:id/void', ...guards.oversee, controller.void);
+  router.post('/:id/credit', ...guards.oversee, controller.credit);
+  router.put('/:id/photo', ...guards.oversee, readImage, controller.setPhoto);
+  router.delete('/:id/photo', ...guards.oversee, controller.removePhoto);
 
   return router;
 }

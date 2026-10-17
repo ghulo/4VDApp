@@ -4,6 +4,7 @@ import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositor
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
+import { assertMonthsOpen } from './vat/periodLock.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import type { UserRole } from '../database/types.js';
 import { canOversee } from '../utils/roles.js';
@@ -179,6 +180,7 @@ export class SalesService {
   }
 
   private async recordInTransaction(repos: TransactionalRepositories, input: RecordSaleInput, soldBy: number): Promise<number> {
+    await assertMonthsOpen(repos.periods, [zonedDay(input.saleDate ?? new Date(), this.timeZone)]);
     const product = await repos.products.findById(input.productId, false);
     if (!product) throw new NotFoundError(`Product ${input.productId} does not exist or is hidden`);
 

@@ -45,6 +45,7 @@ export interface DocumentLineRecord {
   discount_percent: string | null;
   price_before_discount: string | null;
   vat_rate: number;
+  vat_exempt: boolean;
   net_amount: string;
   vat_amount: string;
   total: string;
@@ -60,6 +61,7 @@ export interface NewDocumentLine {
   discountPercent: number | null;
   priceBeforeDiscount: number | null;
   vatRate: number;
+  vatExempt?: boolean;
   netAmount: number;
   vatAmount: number;
   total: number;
@@ -110,6 +112,7 @@ export interface SaleForDocument {
   discount_percent: string | null;
   price_before_discount: string | null;
   vat_rate: number;
+  vat_exempt: boolean;
 }
 
 export class DocumentRepository {
@@ -189,6 +192,7 @@ export class DocumentRepository {
           discount_percent: line.discountPercent,
           price_before_discount: line.priceBeforeDiscount,
           vat_rate: line.vatRate,
+          vat_exempt: line.vatExempt ?? false,
           net_amount: line.netAmount,
           vat_amount: line.vatAmount,
           total: line.total,
@@ -259,7 +263,7 @@ export class DocumentRepository {
   findLines(documentId: number): Promise<DocumentLineRecord[]> {
     return this.db
       .selectFrom('document_lines')
-      .select(['id', 'sale_id', 'return_id', 'product_name', 'product_code', 'quantity', 'unit_price', 'discount_percent', 'price_before_discount', 'vat_rate', 'net_amount', 'vat_amount', 'total'])
+      .select(['id', 'sale_id', 'return_id', 'product_name', 'product_code', 'quantity', 'unit_price', 'discount_percent', 'price_before_discount', 'vat_rate', 'vat_exempt', 'net_amount', 'vat_amount', 'total'])
       .where('document_id', '=', documentId)
       .orderBy('id')
       .execute();
@@ -283,7 +287,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 's.discount_percent', 's.price_before_discount', 'p.vat_rate'])
+      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 's.discount_percent', 's.price_before_discount', 'p.vat_rate', 'p.vat_exempt'])
       .where('s.id', 'in', saleIds)
       .orderBy('s.id')
       .execute();
@@ -294,7 +298,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('document_lines as l')
       .innerJoin('documents as d', 'd.id', 'l.document_id')
-      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'd.payment_method', 'l.product_name', 'l.product_code', 'l.discount_percent', 'l.price_before_discount', 'l.vat_rate'])
+      .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'd.payment_method', 'l.product_name', 'l.product_code', 'l.discount_percent', 'l.price_before_discount', 'l.vat_rate', 'l.vat_exempt'])
       .where('l.sale_id', '=', saleId)
       .where('d.kind', '=', 'invoice')
       .orderBy('d.id', 'desc')

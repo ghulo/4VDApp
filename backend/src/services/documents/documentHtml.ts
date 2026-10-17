@@ -78,7 +78,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
         <td class="num">${line.quantity}</td>
         <td class="num">${eur(line.priceBeforeDiscount ?? line.unitPrice)}</td>
         <td class="num">${line.discountPercent ? `${formatPercent(line.discountPercent, language)}` : ''}</td>
-        <td class="num">${line.vatRate}%</td>
+        <td class="num">${line.vatExempt ? escape(t.vatExempt) : `${line.vatRate}%`}</td>
         <td class="num">${eur(line.netAmount)}</td>
         <td class="num">${eur(line.vatAmount)}</td>
         <td class="num strong">${eur(line.total)}</td>

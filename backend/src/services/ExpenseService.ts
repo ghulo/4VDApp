@@ -4,6 +4,7 @@ import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRe
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
+import { assertMonthsOpen } from './vat/periodLock.js';
 import type { CarwashService } from './CarwashService.js';
 import type { DateRange } from './reports/calculations.js';
 import { type BillRepeatDto, createBill, type SupplierBillService, voidBill } from './SupplierBillService.js';
@@ -126,6 +127,8 @@ export class ExpenseService {
     const carwashId = carwash?.id ?? null;
 
     const billId = await this.transactions.run(async (repos) => {
+      // Unlike a supplier's late bill, an expense typed for a filed month is a mistake: refused.
+      await assertMonthsOpen(repos.periods, [input.day]);
       const id = (await createBill(
         repos,
         {

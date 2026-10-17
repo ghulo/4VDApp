@@ -629,6 +629,7 @@ export class BillScanService {
       sku: null,
       isActive: true,
       vatRate: product.vatRate,
+      vatExempt: false,
       originCountry: countryFromBarcode(product.barcode),
     });
     await repos.inventory.create(id, 0, DEFAULT_REORDER_LEVEL);

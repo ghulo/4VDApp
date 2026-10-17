@@ -260,11 +260,14 @@ export class PostingRules {
         'b.place',
         's.name',
         sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
+        sql<string | null>`to_char(b.vat_month, 'YYYY-MM-DD')`.as('vat_month'),
       ])
       .where('b.id', '=', id)
       .where('b.voided_at', 'is', null)
       .executeTakeFirst();
     if (!bill || this.tooEarly(bill.issued_on) || bill.place === 'carwash') return null;
+    // A bill that came after its month was filed is booked on the first day of the month it counts in.
+    const day = bill.vat_month !== null && bill.vat_month > bill.issued_on ? bill.vat_month : bill.issued_on;
     const lines = await this.db
       .selectFrom('bill_lines')
       .select(['kind', 'category', 'net', 'vat', 'landed', 'self_vat', 'spread', 'order_line_id'])
@@ -284,7 +287,7 @@ export class PostingRules {
         .debit('stock', amount - (vat ?? 0))
         .debit('vat_in', vat ?? 0)
         .credit('payables', amount, party)
-        .build(bill.issued_on, description, vat === null ? 'no_vat' : null);
+        .build(day, description, vat === null ? 'no_vat' : null);
     }
 
     // A return or credit posts its lines the other way round.
@@ -333,7 +336,7 @@ export class PostingRules {
     if (customsVat + duty > 0) debit(bill.customs_paid_method === 'cash' ? 'cash' : 'bank', -(customsVat + duty));
     debit('payables', -amount, party);
     debit('withholding', -withheld);
-    return entry.build(bill.issued_on, description, warning);
+    return entry.build(day, description, warning);
   }
 
   /** The VAT in a bill that came from an order, by the rates of the products on it; null when the order has no costs. */

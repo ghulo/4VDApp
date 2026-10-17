@@ -22,7 +22,7 @@ type Decimal = ColumnType<string, number | string, number | string>;
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
 type UpdatedAt = ColumnType<Date, Date | undefined, Date>;
 
-export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family'] as const;
+export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family', 'accountant'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export interface UsersTable {
@@ -157,8 +157,10 @@ export interface ProductsTable {
   sku: string | null;
   /** Scanned at the counter; set through its own endpoints, not the product form. */
   barcode: ColumnType<string | null, string | null | undefined, string | null>;
-  /** VAT percent included in the price: 18, 8 or 0. */
+  /** VAT percent included in the price: 18, 16, 8 or 0. */
   vat_rate: Generated<number>;
+  /** Exempt from VAT (a 0% rate that goes in the VAT return's exempt box). */
+  vat_exempt: Generated<boolean>;
   /** Where it comes from (ISO code); starts from the barcode's prefix. */
   origin_country: string | null;
   is_active: Generated<boolean>;
@@ -405,6 +407,7 @@ export interface BillLinesTable {
   category: string | null;
   description: string | null;
   vat_rate: number;
+  vat_exempt: Generated<boolean>;
   net: Decimal;
   vat: Decimal;
   landed: Decimal;
@@ -461,6 +464,7 @@ export interface SuppliersTable {
   usual_kind: BillLineKind | null;
   usual_category: string | null;
   usual_vat_rate: number | null;
+  usual_vat_exempt: Generated<boolean>;
   withholding_type: WithholdingType | null;
   archived_at: Date | null;
   created_at: CreatedAt;
@@ -627,6 +631,8 @@ export interface SupplierBillsTable {
   place: Generated<ExpensePlace>;
   carwash_id: number | null;
   repeat_id: number | null;
+  /** The VAT month it counts in when its own month was already filed; null: its own month. */
+  vat_month: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -664,6 +670,7 @@ export interface ProductRequestsTable {
   category_id: number | null;
   price: Decimal;
   vat_rate: ColumnType<number, number | undefined, number>;
+  vat_exempt: Generated<boolean>;
   barcode: string | null;
   origin_country: string | null;
   photo_media_id: string | null;
@@ -771,6 +778,7 @@ export interface DocumentLinesTable {
   /** VAT-inclusive. */
   unit_price: Decimal;
   vat_rate: number;
+  vat_exempt: Generated<boolean>;
   discount_percent: Decimal | null;
   price_before_discount: Decimal | null;
   net_amount: Decimal;
@@ -834,6 +842,39 @@ export interface LedgerQueueTable {
   queued_at: CreatedAt;
 }
 
+/** A VAT month someone has filed, asked a refund for, or typed the credit carried in for. */
+export interface VatMonthsTable {
+  /** Its first day. */
+  month: ColumnType<string, string, string>;
+  filed_at: Date | null;
+  filed_by: number | null;
+  /** The return as filed (see VatService). */
+  figures: unknown;
+  /** Box 70. */
+  refund: ColumnType<string, number | string | undefined, number | string>;
+  /** Box 68 typed by hand. */
+  carried_in: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  updated_by: number | null;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+/** Questions the accountant leaves on a document, answered there by the people who run the shop. */
+export interface DocumentThreadsTable {
+  id: Generated<number>;
+  subject: string;
+  status: ColumnType<'open' | 'answered', 'open' | 'answered' | undefined, 'open' | 'answered'>;
+  opened_by: number | null;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+export interface DocumentNotesTable {
+  id: Generated<number>;
+  thread_id: number;
+  author_id: number | null;
+  body: string;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
@@ -892,6 +933,9 @@ export interface Database {
   ledger_entries: LedgerEntriesTable;
   ledger_lines: LedgerLinesTable;
   ledger_queue: LedgerQueueTable;
+  vat_months: VatMonthsTable;
+  document_threads: DocumentThreadsTable;
+  document_notes: DocumentNotesTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

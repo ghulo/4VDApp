@@ -42,6 +42,8 @@ export interface BillRecord {
   carwash_id: number | null;
   carwash_name: string | null;
   repeat_id: number | null;
+  /** The VAT month it counts in when its own month was filed before it came; null: its own month. */
+  vat_month: string | null;
 }
 
 export interface PaymentRecord {
@@ -95,6 +97,7 @@ export interface BillLineRecord {
   category: string | null;
   description: string | null;
   vat_rate: number;
+  vat_exempt: boolean;
   net: string;
   vat: string;
   landed: string;
@@ -111,6 +114,7 @@ export interface NewBillLine {
   category: string | null;
   description: string | null;
   vatRate: number;
+  vatExempt: boolean;
   net: number;
   vat: number;
   landed: number;
@@ -148,6 +152,7 @@ export class SupplierBillRepository {
         'b.order_id',
         'b.number',
         sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
+        sql<string | null>`to_char(b.vat_month, 'YYYY-MM-DD')`.as('vat_month'),
         sql<string | null>`to_char(b.due_on, 'YYYY-MM-DD')`.as('due_on'),
         'b.amount',
         'b.vat_amount',
@@ -303,6 +308,7 @@ export class SupplierBillRepository {
         'l.category',
         'l.description',
         'l.vat_rate',
+        'l.vat_exempt',
         'l.net',
         'l.vat',
         'l.landed',
@@ -331,6 +337,7 @@ export class SupplierBillRepository {
           category: line.category,
           description: line.description,
           vat_rate: line.vatRate,
+          vat_exempt: line.vatExempt,
           net: line.net,
           vat: line.vat,
           landed: line.landed,
@@ -345,11 +352,11 @@ export class SupplierBillRepository {
   /** Learn a supplier's usual line, VAT and tax held back from the bill just saved. */
   async rememberForSupplier(
     supplierId: number,
-    usual: { kind: BillLineKind; category: string | null; vatRate: number | null; withholdingType: WithholdingType | null },
+    usual: { kind: BillLineKind; category: string | null; vatRate: number | null; vatExempt: boolean; withholdingType: WithholdingType | null },
   ): Promise<void> {
     await this.db
       .updateTable('suppliers')
-      .set({ usual_kind: usual.kind, usual_category: usual.category, usual_vat_rate: usual.vatRate, withholding_type: usual.withholdingType })
+      .set({ usual_kind: usual.kind, usual_category: usual.category, usual_vat_rate: usual.vatRate, usual_vat_exempt: usual.vatExempt, withholding_type: usual.withholdingType })
       .where('id', '=', supplierId)
       .execute();
   }
@@ -361,6 +368,10 @@ export class SupplierBillRepository {
       .set({ number: changes.number, issued_on: changes.issuedOn, due_on: changes.dueOn, amount: changes.amount, vat_amount: changes.vatAmount, note: changes.note })
       .where('id', '=', id)
       .execute();
+  }
+
+  async setVatMonth(id: number, month: string | null): Promise<void> {
+    await this.db.updateTable('supplier_bills').set({ vat_month: month }).where('id', '=', id).execute();
   }
 
   async setPhoto(id: number, mediaId: string | null): Promise<void> {

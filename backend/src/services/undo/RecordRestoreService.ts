@@ -12,7 +12,7 @@ import type { UserService } from '../UserService.js';
 
 /** Records a developer can put back to an earlier point, and the fields that go back. */
 const RESTORABLE = {
-  product: ['name', 'description', 'categoryId', 'price', 'costPrice', 'sku', 'isActive', 'vatRate', 'originCountry', 'bulkPricingTiers', 'barcode'],
+  product: ['name', 'description', 'categoryId', 'price', 'costPrice', 'sku', 'isActive', 'vatRate', 'vatExempt', 'originCountry', 'bulkPricingTiers', 'barcode'],
   user: ['name', 'role', 'isActive'],
   supplier: ['name', 'nui', 'phone', 'email', 'note'],
   customer: ['name', 'kind', 'nui', 'phone', 'note'],
@@ -104,6 +104,7 @@ export class RecordRestoreService {
             sku: product.sku,
             isActive: product.isActive,
             vatRate: product.vatRate,
+            vatExempt: product.vatExempt,
             originCountry: product.originCountry,
             ...rest,
           };

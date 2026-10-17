@@ -127,6 +127,22 @@ export class UndoRepository {
       .executeTakeFirst();
   }
 
+  /** The shop day the undone thing happened on (a sale's date, a decision's), for the VAT month lock. */
+  async happenedOn(row: UndoRow, timeZone: string): Promise<string | null> {
+    const day = (column: string) => sql<string>`(${sql.ref(column)} at time zone ${timeZone})::date::text`.as('day');
+    let found: { day: string | null } | undefined;
+    if (row.table === 'stock_count_lines') {
+      found = await this.db.selectFrom('stock_count_lines').select(day('decided_at')).where('count_id', '=', row.countId).where('product_id', '=', row.productId).executeTakeFirst();
+    } else if (row.table === 'sales') {
+      found = await this.db.selectFrom('sales').select(day('sale_date')).where('id', '=', row.id).executeTakeFirst();
+    } else if (row.table === 'activity_log') {
+      found = await this.db.selectFrom('activity_log').select(day('created_at')).where('id', '=', row.id).executeTakeFirst();
+    } else {
+      found = await this.db.selectFrom(row.table).select(day('decided_at')).where('id', '=', row.id).executeTakeFirst();
+    }
+    return found?.day ?? null;
+  }
+
   // Batched reads for showing undo state on a page of activity entries.
 
   salesByIds(ids: number[]) {

@@ -98,6 +98,7 @@ export class EditReverts {
           sku: product.sku,
           isActive: product.isActive,
           vatRate: product.vatRate,
+          vatExempt: product.vatExempt,
           originCountry: product.originCountry,
         };
         for (const field of changedFields(entry)) (input as unknown as Record<string, unknown>)[field] = valueOf(field);

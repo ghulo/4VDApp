@@ -52,6 +52,8 @@ const productFields = {
     .number()
     .refine((rate) => (VAT_RATES as readonly number[]).includes(rate), `VAT must be one of ${VAT_RATES.join(', ')}%`)
     .optional(),
+  /** Exempt from VAT, with a 0% rate. */
+  vatExempt: z.boolean().optional(),
   /** ISO code of the country it comes from; null clears it, left out keeps it. */
   originCountry: z
     .string()

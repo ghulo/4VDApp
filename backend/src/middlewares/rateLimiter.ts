@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import { ipKeyGenerator, rateLimit, type RateLimitRequestHandler } from 'express-rate-limit';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMITS } from '../constants/rateLimits.js';
-import { canOversee } from '../utils/roles.js';
+import { canReadBooks } from '../utils/roles.js';
 
 const rateLimitedBody = (message: string) => ({
   success: false,
@@ -11,7 +11,7 @@ const rateLimitedBody = (message: string) => ({
 });
 
 function limitFor(req: Request): number {
-  if (canOversee(req.identity?.role)) return RATE_LIMITS.ADMIN;
+  if (canReadBooks(req.identity?.role)) return RATE_LIMITS.ADMIN;
   if (req.identity) return RATE_LIMITS.AUTHENTICATED;
   return RATE_LIMITS.PUBLIC;
 }

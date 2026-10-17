@@ -105,7 +105,18 @@ import { DuplicateRepository } from './repositories/DuplicateRepository.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
 import { ProductService } from './services/ProductService.js';
-import { MANAGER_ROLES, OVERSEER_ROLES, PRODUCT_EDITOR_ROLES, SELLER_ROLES } from './utils/roles.js';
+import {
+  BOOKKEEPER_ROLES,
+  CUSTOMER_READER_ROLES,
+  ENTRY_WRITER_ROLES,
+  FILING_ROLES,
+  MANAGER_ROLES,
+  OVERSEER_ROLES,
+  PRODUCT_EDITOR_ROLES,
+  SELLER_ROLES,
+} from './utils/roles.js';
+import { ThreadService } from './services/ThreadService.js';
+import { VatService } from './services/vat/VatService.js';
 
 /**
  * The one place where repositories and services are created and wired
@@ -194,6 +205,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     undoRepository,
     new EditReverts(undoRepository, productService, pricingService, settingsService, inventoryService, promotionService),
     documentService,
+    config.shopTimeZone,
   );
   const tabRepository = new TabRepository(db);
   const tabService = new TabService(tabRepository, transactions, config.shopTimeZone);
@@ -229,7 +241,19 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
         : null,
     config.shopTimeZone,
   );
-  const attentionService = new AttentionService(insightsService, approvalService, cashCountService, dayService, billScanRepository, duplicateService, config.shopTimeZone);
+  const vatService = new VatService(db, config.shopTimeZone);
+  const threadService = new ThreadService(db);
+  const attentionService = new AttentionService(
+    insightsService,
+    approvalService,
+    cashCountService,
+    dayService,
+    billScanRepository,
+    duplicateService,
+    vatService,
+    threadService,
+    config.shopTimeZone,
+  );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
     carwashService,
@@ -363,6 +387,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     oversee: [authenticated, requireRole(...OVERSEER_ROLES)] as RequestHandler[],
     products: [authenticated, requireRole(...PRODUCT_EDITOR_ROLES)] as RequestHandler[],
     staff: [authenticated, requireRole(...SELLER_ROLES)] as RequestHandler[],
+    /** The money side: the books, VAT, bills, invoices, expenses and reports; the accountant too. */
+    books: [authenticated, requireRole(...BOOKKEEPER_ROLES)] as RequestHandler[],
+    filing: [authenticated, requireRole(...FILING_ROLES)] as RequestHandler[],
+    /** Hand-written entries in the books: managers and the accountant. */
+    entries: [authenticated, requireRole(...ENTRY_WRITER_ROLES)] as RequestHandler[],
+    /** The customer list: the counter (for tabs) and the accountant. */
+    customers: [authenticated, requireRole(...CUSTOMER_READER_ROLES)] as RequestHandler[],
+    /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
+    documents: [authenticated, requireRole(...CUSTOMER_READER_ROLES)] as RequestHandler[],
     developer: [authenticated, requireRole('developer')] as RequestHandler[],
   };
 
@@ -405,6 +438,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     purchaseOrderService,
     supplierBillService,
     booksService,
+    vatService,
+    threadService,
     billScanService,
     expiryService,
     pushService,

@@ -28,6 +28,10 @@ export const ACTIVITY_ACTIONS = [
   'books.entry_reversed',
   'books.links_changed',
   'books.start_changed',
+  'vat.filed',
+  'vat.reopened',
+  'question.asked',
+  'question.answered',
   'category.created',
   'category.updated',
   'category.deleted',
@@ -87,5 +91,5 @@ export const ACTIVITY_ACTIONS = [
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

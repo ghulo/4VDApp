@@ -22,6 +22,7 @@ export interface ProductData {
   sku: string | null;
   isActive: boolean;
   vatRate: number;
+  vatExempt: boolean;
   originCountry: string | null;
 }
 
@@ -41,6 +42,7 @@ export interface ProductRecord {
   other_barcodes: string[];
   is_active: boolean;
   vat_rate: number;
+  vat_exempt: boolean;
   origin_country: string | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
@@ -82,6 +84,7 @@ export class ProductRepository {
     'p.barcode',
     'p.is_active',
     'p.vat_rate',
+    'p.vat_exempt',
     'p.origin_country',
     'i.quantity_on_hand',
     'i.reorder_level',
@@ -144,6 +147,7 @@ export class ProductRepository {
         sku: data.sku,
         is_active: data.isActive,
         vat_rate: data.vatRate,
+        vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
       })
       .returning('id')
@@ -164,6 +168,7 @@ export class ProductRepository {
         sku: data.sku,
         is_active: data.isActive,
         vat_rate: data.vatRate,
+        vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
         updated_at: new Date(),
       })

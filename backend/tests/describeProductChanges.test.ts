@@ -13,6 +13,7 @@ const base: ProductSnapshot = {
   categoryId: 1,
   price: 89,
   costPrice: 45,
+  vatExempt: false,
   imageUrl: null,
   sku: 'CHAIR-1',
   isActive: true,

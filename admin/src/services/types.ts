@@ -638,7 +638,8 @@ export interface BillFormInput {
   pricesIncludeVat: boolean;
   customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
   withholdingType: WithholdingType | null;
-  paidNow: { method: SupplierPaymentMethod } | null;
+  /** Paid from a place, or only how, for that kind's usual place. */
+  paidNow: { method?: SupplierPaymentMethod; placeId?: number } | null;
   place: ExpensePlace;
   carwashId: number | null;
   repeatMonthly: boolean;

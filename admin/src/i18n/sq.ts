@@ -2987,7 +2987,8 @@ export const sq: Catalogue = {
       openInvoice: (number: string) => `Fatura ${number}`,
       openTab: 'Në borxh, pa faturë',
       itemDetail: (date: string, due: string | null) => (due ? `${date} · afati ${due}` : date),
-      leftOver: (amount: string) => `${amount} më shumë se borxhi. Mbeten si kredi në llogarinë e tij.`,
+      leftOver: (amount: string) => `${amount} janë më shumë se sa kanë mbetur zërat e shënuar. Ule shumën ose shëno një tjetër.`,
+      sentence: (money: string, to: string) => `${money} hyjnë te ${to}.`,
     },
     statement: {
       caption: (place: string) => `Rreshtat në ekstraktin e ${place}`,

@@ -214,6 +214,7 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
 | | **Expenses** | `/expenses` | – |
 | | **Reports** | `/report` | Daily & weekly · Analytics |
+| | **Money** (managers, the owner and the accountant) | `/money` | Every place money is kept; a place opens its book, `/money/:id`; a bank account also has **Bank statement**, `/money/:id/statement` |
 | | **Books** (managers, the owner and the accountant) | `/books` | Balances · Entries · Accounts · VAT · Sales book · Purchase book (an account opens its card, `/books/accounts/:id`; VAT is `/books/vat`, the books `/books/sales-book` and `/books/purchase-book`) |
 | Team | **People** · **Activity** · **Settings** | | – |
 
@@ -433,6 +434,11 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | One month's VAT figures for ATK | **VAT return** (page **VAT**) | **deklarata e TVSH-së** (page **TVSH**) *(confirm)* | tax form, TV form |
 | A month sent to ATK and locked | **filed** (stamp **Filed**); action **Mark as filed** · **Reopen** | **deklaruar** (**Deklaruar**); **Shëno si të deklaruar** · **Rihap** *(confirm)* | closed, submitted |
 | Every sale or purchase of a month, in ATK's columns | **sales book** · **purchase book** | **libri i shitjes** · **libri i blerjes** *(confirm)* | ledger, register |
+| A till, the safe or a bank account | **place** (page **Money**) | **vend** (page **Paratë**) *(confirm)* | account, wallet, cash box |
+| Money from one place to another, or the owner's | **Move money** | **Lëviz para** *(confirm)* | transfer, deposit, withdrawal |
+| The bank's list of what came in and went out | **bank statement** | **ekstrakt i bankës** *(confirm)* | bank feed, export |
+| Saying what a statement line is | **match** · **Confirm** · **Leave it out** · **Take the match back** | **përputh** · **Konfirmo** · **Lëre jashtë** · **Ktheje përputhjen** *(confirm)* | reconcile |
+| Words that make a line the same thing every time | **rule** | **rregull** | bank rule |
 | The outside bookkeeper | **accountant** | **kontabilist** *(confirm)* | bookkeeper, auditor |
 
 ## 6. Colour

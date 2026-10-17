@@ -3007,7 +3007,8 @@ export const en = {
       openInvoice: (number: string) => `Invoice ${number}`,
       openTab: 'On the tab, no invoice',
       itemDetail: (date: string, due: string | null) => (due ? `${date} · due ${due}` : date),
-      leftOver: (amount: string) => `${amount} more than they owe. It stays as credit on their tab.`,
+      leftOver: (amount: string) => `${amount} is more than the ticked items owe. Lower the amount or tick another one.`,
+      sentence: (money: string, to: string) => `${money} arrives in ${to}.`,
     },
     statement: {
       caption: (place: string) => `Lines on the statement of ${place}`,

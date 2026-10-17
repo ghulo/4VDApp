@@ -6,7 +6,8 @@ import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Fiel
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
-import type { BillLine, SupplierBill, SupplierPaymentMethod } from '../services/types';
+import type { BillLine, SupplierBill } from '../services/types';
+import { PlaceSelect, usePlaces, usualPlace } from '../components/MoneyParts';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
@@ -21,7 +22,6 @@ import { canOversee } from '../auth/roles';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
 
-const METHODS: SupplierPaymentMethod[] = ['bank', 'drawer', 'cash'];
 
 /** What a cost or equipment line is, in words. */
 const lineWhat = (t: Catalogue, line: BillLine) => {
@@ -253,10 +253,13 @@ function PayCard({ bill }: { bill: SupplierBill }) {
   const onSaved = useBillUpdate();
   const [amount, setAmount] = useState(String(bill.left));
   const [paidOn, setPaidOn] = useState(todayIso());
-  const [method, setMethod] = useState<SupplierPaymentMethod>('bank');
+  const places = usePlaces();
+  const [chosenPlace, setPlace] = useState<number | null>(null);
+  const placeId = chosenPlace ?? usualPlace(places.data, 'bank');
+  const fromShopTill = places.data?.find((place) => place.id === placeId)?.kind === 'till' && places.data.find((place) => place.id === placeId)?.carwashId === null;
   const [note, setNote] = useState('');
   const pay = useMutation({
-    mutationFn: () => billsApi.pay(bill.id, { amount: Number(amount), paidOn, method, note: note.trim() || null }),
+    mutationFn: () => billsApi.pay(bill.id, { amount: Number(amount), paidOn, ...(placeId === null ? { method: 'bank' as const } : { placeId }), note: note.trim() || null }),
     onSuccess: (updated) => {
       onSaved(updated);
       setAmount(String(updated.left));
@@ -290,17 +293,11 @@ function PayCard({ bill }: { bill: SupplierBill }) {
           </Field>
         </div>
         <div className="field">
-          <span className="field__label" id={`method-${bill.id}`}>
-            {t.bills.how}
-          </span>
-          <div className="segmented" role="radiogroup" aria-labelledby={`method-${bill.id}`}>
-            {METHODS.map((option) => (
-              <button key={option} type="button" role="radio" aria-checked={method === option} className="segmented__option" onClick={() => setMethod(option)}>
-                {t.bills.methods[option]}
-              </button>
-            ))}
-          </div>
-          {method === 'drawer' && <span className="field__hint">{t.bills.drawerHint}</span>}
+          <label className="field__label" htmlFor={`place-${bill.id}`}>
+            {t.money.payBills.from}
+          </label>
+          <PlaceSelect id={`place-${bill.id}`} places={places.data ?? []} value={placeId} onChange={setPlace} required />
+          {fromShopTill && <span className="field__hint">{t.bills.drawerHint}</span>}
         </div>
         <Field label={t.bills.note}>
           <input maxLength={500} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} />

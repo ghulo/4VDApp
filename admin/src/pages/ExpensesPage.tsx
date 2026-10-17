@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -8,7 +8,7 @@ import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
-import { expensesApi, type ReportRange } from '../services/api';
+import { expensesApi, type ReportRange, suppliersApi } from '../services/api';
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type ExpensePlace, type ExpenseTotals, type RecurringExpense } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -109,10 +109,12 @@ function ExpenseForm() {
   const { places: carwashes, several } = useCarwashes();
   const [note, setNote] = useState('');
   const [repeatMonthly, setRepeatMonthly] = useState(false);
+  const [supplierId, setSupplierId] = useState('');
+  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
 
   const add = useMutation({
     mutationFn: () => {
-      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly };
+      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly, supplierId: supplierId ? Number(supplierId) : null };
       return place.startsWith('carwash:')
         ? expensesApi.add({ ...input, place: 'carwash', carwashId: Number(place.split(':')[1]) })
         : expensesApi.add({ ...input, place: place as ExpensePlace });
@@ -178,6 +180,18 @@ function ExpenseForm() {
           </select>
         </Field>
       </div>
+      {suppliers.data && suppliers.data.length > 0 && (
+        <Field label={t.expenses.paidTo}>
+          <select value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
+            <option value="">{t.expenses.nobody}</option>
+            {suppliers.data.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <Field label={t.expenses.note}>
         <input maxLength={500} placeholder={t.expenses.notePlaceholder} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
@@ -199,6 +213,9 @@ function ExpenseForm() {
       <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
         {t.expenses.save}
       </Button>
+      <p className="field-hint">
+        {t.expenses.fullBill} <Link to="/bills/new?paid=now">{t.expenses.fullBillLink}</Link>
+      </p>
     </form>
   );
 }
@@ -229,7 +246,7 @@ function ExpenseTable({ expenses, range }: { expenses: Expense[]; range: ReportR
             cell: (row) => (
               <>
                 {t.expenses.categories[row.category]}
-                {row.note && <span className="table__secondary">{row.note}</span>}
+                {(row.supplierName || row.note) && <span className="table__secondary">{[row.supplierName, row.note].filter(Boolean).join(' · ')}</span>}
               </>
             ),
           },
@@ -242,7 +259,19 @@ function ExpenseTable({ expenses, range }: { expenses: Expense[]; range: ReportR
             cell: (row) => (row.recurringId !== null && row.addedBy === null ? <Badge tone="neutral">{t.expenses.automatic}</Badge> : (row.addedBy ?? '–')),
           },
           ...(canManage(role)
-            ? [{ header: <span className="visually-hidden">{t.expenses.remove}</span>, cell: (row: Expense) => <RemoveExpense expense={row} /> }]
+            ? [
+                {
+                  header: <span className="visually-hidden">{t.expenses.remove}</span>,
+                  cell: (row: Expense) =>
+                    row.paidNow ? (
+                      <RemoveExpense expense={row} />
+                    ) : (
+                      <Link to={`/bills/${row.billId}`} aria-label={t.expenses.onBillLabel(t.expenses.categories[row.category])}>
+                        {t.expenses.onBill}
+                      </Link>
+                    ),
+                },
+              ]
             : []),
         ]}
         totals={[t.common.total, '', '', formatMoney(total), '', ...(canManage(role) ? [''] : [])]}
@@ -316,8 +345,8 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
             title: true,
             cell: (row) => (
               <>
-                {t.expenses.categories[row.category]}
-                {row.note && <span className="table__secondary">{row.note}</span>}
+                {row.category ? t.expenses.categories[row.category] : t.expenses.aBill}
+                {(row.supplier || row.note) && <span className="table__secondary">{[row.supplier?.name, row.note].filter(Boolean).join(' · ')}</span>}
               </>
             ),
           },
@@ -332,7 +361,7 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
                     <Button
                       variant="danger-text"
                       disabled={stop.isPending}
-                      aria-label={t.expenses.stopLabel(t.expenses.categories[row.category])}
+                      aria-label={t.expenses.stopLabel(row.category ? t.expenses.categories[row.category] : t.expenses.aBill)}
                       onClick={() => stop.mutate(row.id)}
                     >
                       {t.expenses.stop}

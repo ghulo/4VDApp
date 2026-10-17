@@ -3,6 +3,10 @@ import type { Language } from '../i18n/language';
 import type {
   TestDelivery,
   BillInput,
+  BillFormInput,
+  BillPreview,
+  CreditInput,
+  WithholdingType,
   FullReport,
   PayablesSummary,
   ReportKind,
@@ -422,8 +426,12 @@ export const billsApi = {
     (await apiRequest<SupplierBill[]>('/bills', { query })).data,
   summary: async () => (await apiRequest<PayablesSummary>('/bills/summary')).data,
   get: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}`)).data,
-  create: async (input: BillInput & { supplierId: number; orderId?: number | null }) =>
+  create: async (input: BillFormInput | (BillInput & { supplierId: number; orderId?: number | null })) =>
     (await apiRequest<SupplierBill>('/bills', { method: 'POST', body: input })).data,
+  /** What a bill will do before it is saved: stock, costs, VAT, what is owed, and costs that went up. */
+  preview: async (input: BillFormInput) => (await apiRequest<BillPreview>('/bills/preview', { method: 'POST', body: input })).data,
+  /** A return or credit against a bill. */
+  credit: async (id: number, input: CreditInput) => (await apiRequest<SupplierBill>(`/bills/${id}/credit`, { method: 'POST', body: input })).data,
   update: async (id: number, input: BillInput) => (await apiRequest<SupplierBill>(`/bills/${id}`, { method: 'PUT', body: input })).data,
   pay: async (id: number, input: { amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null }) =>
     (await apiRequest<SupplierBill>(`/bills/${id}/payments`, { method: 'POST', body: input })).data,
@@ -521,6 +529,8 @@ export const expensesApi = {
     category: ExpenseCategory;
     place: ExpensePlace;
     carwashId?: number;
+    /** Who was paid, when it was a supplier. */
+    supplierId?: number | null;
     note: string | null;
     repeatMonthly: boolean;
   }) =>
@@ -544,9 +554,12 @@ export interface CustomerInput {
 
 export interface SupplierInput {
   name: string;
-  nui: string;
+  /** Null for a business abroad, which has no Kosovo NUI. */
+  nui: string | null;
   phone: string | null;
   email: string | null;
+  abroad: boolean;
+  withholdingType: WithholdingType | null;
 }
 
 export const customersApi = {

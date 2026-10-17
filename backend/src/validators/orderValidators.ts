@@ -15,7 +15,8 @@ const optional = (max: number) =>
 
 export const supplierSchema = z.object({
   name: z.string().trim().min(1, 'give the supplier a name').max(120),
-  nui: nuiSchema,
+  /** A business abroad has no Kosovo NUI. */
+  nui: nuiSchema.nullish().or(z.literal('')).transform((value) => value || null),
   phone: optional(40),
   email: z
     .string()
@@ -32,7 +33,7 @@ export const supplierSchema = z.object({
   usualCategory: z.string().trim().max(32).nullish(),
   usualVatRate: z.union([z.literal(18), z.literal(8), z.literal(0)]).nullish(),
   withholdingType: z.enum(WITHHOLDING_TYPES).nullish(),
-});
+}).refine((input) => input.abroad || input.nui !== null, { message: 'NUI must be 9 digits', path: ['nui'] });
 
 export const newOrderSchema = z.object({
   supplierId: idSchema,

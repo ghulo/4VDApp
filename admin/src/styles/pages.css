@@ -2838,6 +2838,159 @@ form.product-form > .form-actions {
   width: auto;
 }
 
+/* The one bill form: each line is a product, a cost or equipment, separated
+   by a hairline inside its card (no box in a box). */
+.bill-lines {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.bill-line {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.bill-line__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.bill-line__sum {
+  margin-left: auto;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bill-line--off .bill-line__head {
+  margin-bottom: 0;
+  color: var(--ink-muted);
+}
+
+.bill-line__product {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.bill-line__name {
+  font-weight: 600;
+}
+
+.bill-search {
+  position: relative;
+}
+
+.bill-search__list {
+  display: grid;
+  margin: calc(-1 * var(--space-3)) 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
+  overflow: hidden;
+}
+
+.bill-search__list[hidden] {
+  display: none;
+}
+
+.bill-search__option,
+.bill-search__none {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.bill-search__option:last-child,
+.bill-search__none:last-child {
+  border-bottom: 0;
+}
+
+.bill-search__option {
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.bill-search__option:hover,
+.bill-search__option[aria-selected='true'] {
+  background: var(--surface-sunk);
+}
+
+.bill-search__none {
+  color: var(--ink-muted);
+}
+
+.bill-abroad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-4);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* What the bill does, in one sentence, above its figures. */
+.bill-sentence {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.bill-extras {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.bill-extras .field-hint {
+  margin: 0;
+}
+
+.price-alerts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.price-alerts__title {
+  margin: 0;
+  color: var(--warn);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.price-alert {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.price-alert__what {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.price-alert .field {
+  margin-bottom: 0;
+}
+
 .inline-confirm {
   display: inline-flex;
   flex-wrap: wrap;

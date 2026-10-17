@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
-import type { SupplierBill, SupplierPaymentMethod } from '../services/types';
+import type { BillLine, SupplierBill, SupplierPaymentMethod } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
@@ -14,43 +14,90 @@ import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
 import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
+import { CreditForm } from '../components/CreditForm';
+import type { Catalogue } from '../i18n/en';
 
 const METHODS: SupplierPaymentMethod[] = ['bank', 'drawer', 'cash'];
 
-/** One supplier bill: what's left, every payment, the paper photo, and fixing mistakes. */
+/** What a cost or equipment line is, in words. */
+const lineWhat = (t: Catalogue, line: BillLine) => {
+  if (line.kind === 'product') return line.productName ?? t.bills.kinds.product;
+  const category = line.category ?? 'other';
+  const named =
+    line.kind === 'cost'
+      ? (t.expenses.categories as Record<string, string>)[category]
+      : (t.bills.equipmentCategories as Record<string, string>)[category];
+  return named ?? category;
+};
+
+/** A bill with money still to pay. */
+const owes = (bill: SupplierBill) => bill.kind === 'bill' && bill.status !== 'void' && bill.left > 0;
+
+/** One supplier bill (or a return or credit): what's on it, what's left, every payment, the paper photo, and fixing mistakes. */
 export function BillDetailPage() {
   const t = useT();
   const id = Number(useParams().id);
   const bill = useQuery({ queryKey: ['bills', id], queryFn: () => billsApi.get(id) });
+  const [crediting, setCrediting] = useNewSheet('credit');
 
   if (bill.isPending) return <Loading />;
   if (bill.isError) return <ErrorNotice error={bill.error} onRetry={() => bill.refetch()} />;
   const b = bill.data;
   const open = b.status !== 'void';
+  const isCredit = b.kind === 'credit';
+  const who = b.supplier?.name ?? null;
+  const title = isCredit ? (b.returnsStock ? t.bills.returnTitle(who ?? '') : t.bills.creditTitle(who ?? '')) : (who ?? t.bills.expenseTitle);
+  const canCredit = !isCredit && open && b.supplier !== null && b.lines.length > 0;
 
   return (
     <>
       <PageHeader
-        title={b.supplier.name}
+        title={title}
         crumbs={[{ label: t.nav.tabs.bills, to: '/bills' }]}
-        meta={<Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>}
+        meta={
+          <>
+            <Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>
+            {b.paidNow && <Badge tone="neutral">{t.bills.paidNowStamp}</Badge>}
+            {b.repeatId !== null && <Badge tone="neutral">{t.bills.repeatStamp}</Badge>}
+          </>
+        }
         description={[b.number ? t.bills.numbered(b.number) : t.bills.noNumber, t.bills.recordedBy(b.recordedBy ?? t.sales.unknown)].join(' · ')}
         actions={
-          <ButtonLink to={`/suppliers/${b.supplier.id}`} variant="ghost">
-            {t.suppliers.see}
-          </ButtonLink>
+          <>
+            {b.supplier && (
+              <ButtonLink to={`/suppliers/${b.supplier.id}`} variant="ghost">
+                {t.suppliers.see}
+              </ButtonLink>
+            )}
+            {canCredit && <Button onClick={() => setCrediting(true)}>{t.bills.returnOrCredit}</Button>}
+          </>
         }
       />
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
 
-      <StatGrid>
-        <StatTile label={t.bills.amount} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
-        <StatTile label={t.bills.paid} value={formatMoney(b.paid)} />
-        <StatTile label={t.bills.left} value={formatMoney(b.left)} tone={b.overdue ? 'danger' : 'default'} hint={<DueBadge bill={b} />} />
-      </StatGrid>
+      {isCredit ? (
+        <StatGrid>
+          <StatTile label={t.bills.givesBack} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
+          <StatTile label={t.bills.usedOnBill} value={formatMoney(b.paid)} />
+          <StatTile label={t.bills.owesYou} value={formatMoney(b.left)} words={b.left === 0 && t.bills.statuses.paid} />
+        </StatGrid>
+      ) : (
+        <StatGrid>
+          <StatTile label={t.bills.amount} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
+          <StatTile label={t.bills.paid} value={formatMoney(b.paid)} />
+          <StatTile label={t.bills.left} value={formatMoney(b.left)} tone={b.overdue ? 'danger' : 'default'} hint={<DueBadge bill={b} />} />
+        </StatGrid>
+      )}
 
-      {(b.orderId || b.scanId) && (
+      {isCredit && open && b.left > 0 && who && <p className="callout document-note">{t.bills.owesYouHint(who, formatMoney(b.left))}</p>}
+
+      {(b.orderId || b.scanId || b.creditFor) && (
         <p className="field-hint">
+          {b.creditFor && (
+            <>
+              {t.bills.against} <Link to={`/bills/${b.creditFor.id}`}>{t.bills.againstBill(b.creditFor.number)}</Link>
+            </>
+          )}
           {b.orderId && (
             <>
               {t.bills.fromOrder} <Link to={`/orders/${b.orderId}`}>{t.bills.orderNo(b.orderId)}</Link>
@@ -61,21 +108,121 @@ export function BillDetailPage() {
         </p>
       )}
 
-      <div className={open && b.left > 0 ? 'product-layout' : undefined}>
+      <div className={owes(b) ? 'product-layout' : undefined}>
         <div className="product-layout__main">
+          {b.lines.length > 0 && <LinesSection bill={b} />}
+          {b.credits.length > 0 && <CreditsSection bill={b} />}
           <PaymentsCard bill={b} />
           <PhotoCard bill={b} />
           {open && <EditCard bill={b} />}
           <EntriesPanel source="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
-        {open && b.left > 0 && (
+        {owes(b) && (
           <div className="product-layout__side buy-side buy-side--first">
             <PayCard bill={b} />
           </div>
         )}
       </div>
+
+      {canCredit && (
+        <Sheet open={crediting} onClose={() => setCrediting(false)} title={t.bills.returnOrCredit} description={t.creditForm.description}>
+          <CreditForm bill={b} onDone={() => setCrediting(false)} />
+        </Sheet>
+      )}
     </>
+  );
+}
+
+/** The bill's lines, and what it did beyond them: customs, tax held back. */
+function LinesSection({ bill }: { bill: SupplierBill }) {
+  const t = useT();
+  const vat = bill.lines.reduce((sum, line) => sum + line.vat, 0);
+  const gross = bill.lines.reduce((sum, line) => sum + line.gross, 0);
+  const selfVat = bill.lines.reduce((sum, line) => sum + line.selfVat, 0);
+  const round = (amount: number) => Math.round(amount * 100) / 100;
+  return (
+    <Section title={t.bills.lines}>
+      <DataTable
+        caption={t.bills.linesCaption}
+        rows={bill.lines}
+        rowKey={(line) => line.id}
+        columns={[
+          {
+            header: t.bills.what,
+            title: true,
+            cell: (line) => (
+              <>
+                {line.kind === 'product' && line.productId !== null ? <Link to={`/products/${line.productId}`}>{lineWhat(t, line)}</Link> : lineWhat(t, line)}
+                <span className="table__secondary">
+                  {[
+                    t.bills.kinds[line.kind],
+                    line.description,
+                    line.spread ? t.bills.spreadNote : null,
+                    line.fromDelivery ? t.bills.fromDeliveryNote : null,
+                    line.selfVat > 0 ? t.bills.selfVatNote(formatMoney(line.selfVat)) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </>
+            ),
+          },
+          { header: t.bills.quantity, align: 'end', cell: (line) => line.quantity ?? '–' },
+          { header: t.bills.unitPrice, align: 'end', cell: (line) => (line.unitPrice === null ? '–' : formatMoney(line.unitPrice)) },
+          { header: t.bills.vatRate, align: 'end', cell: (line) => (line.vat > 0 ? formatMoney(line.vat) : '–') },
+          { header: t.bills.lineTotal, align: 'end', cell: (line) => formatMoney(line.gross) },
+        ]}
+        totals={[t.common.total, '', '', vat > 0 ? formatMoney(round(vat)) : '–', formatMoney(round(gross))]}
+      />
+      {(bill.customs || bill.withholding || selfVat > 0) && (
+        <div className="bill-extras">
+          {bill.customs && (
+            <p className="field-hint">
+              {t.bills.customsLine(formatMoney(bill.customs.vat), formatMoney(bill.customs.duty), t.billForm.customsMethods[bill.customs.method].toLowerCase())}
+            </p>
+          )}
+          {bill.withholding && (
+            <p className="field-hint">{t.bills.withheldLine(t.bills.withholdingTypes[bill.withholding.type], bill.withholding.rate, formatMoney(bill.withholding.amount))}</p>
+          )}
+          {bill.vatToClaim > 0 && (
+            <p className="field-hint">
+              {t.bills.vatToClaim}: {formatMoney(bill.vatToClaim)}
+            </p>
+          )}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/** Returns and credits made against this bill. */
+function CreditsSection({ bill }: { bill: SupplierBill }) {
+  const t = useT();
+  return (
+    <Section title={t.bills.credits}>
+      <DataTable
+        caption={t.bills.creditsCaption}
+        rows={bill.credits}
+        rowKey={(credit) => credit.id}
+        rowClassName={(credit) => (credit.voided ? 'is-undone' : undefined)}
+        columns={[
+          {
+            header: t.bills.bill,
+            title: true,
+            cell: (credit) => (
+              <Link to={`/bills/${credit.id}`} className="table__primary-link">
+                {credit.returnsStock ? t.bills.returnStamp : t.bills.creditStamp}
+                <span className="table__secondary">{credit.number ? t.bills.numbered(credit.number) : t.bills.noNumber}</span>
+              </Link>
+            ),
+          },
+          { header: t.bills.issuedOn, cell: (credit) => formatDate(credit.issuedOn) },
+          { header: t.bills.amount, align: 'end', cell: (credit) => (credit.voided ? <s>{formatMoney(credit.amount)}</s> : formatMoney(credit.amount)) },
+          { header: t.bills.status, cell: (credit) => (credit.voided ? <Badge>{t.bills.statuses.void}</Badge> : null) },
+        ]}
+      />
+    </Section>
   );
 }
 
@@ -181,7 +328,15 @@ function PaymentsCard({ bill }: { bill: SupplierBill }) {
         rowClassName={(payment) => (payment.voided ? 'is-undone' : undefined)}
         columns={[
           { header: t.bills.paidOn, title: true, cell: (payment) => formatDate(payment.paidOn) },
-          { header: t.bills.how, cell: (payment) => t.bills.methods[payment.method] },
+          {
+            header: t.bills.how,
+            cell: (payment) =>
+              payment.method === 'credit' && payment.credit ? (
+                <Link to={`/bills/${bill.kind === 'credit' ? payment.billId : payment.credit.id}`}>{t.bills.methods.credit}</Link>
+              ) : (
+                t.bills.methods[payment.method]
+              ),
+          },
           { header: t.bills.note, cell: (payment) => payment.note ?? '–' },
           { header: t.bills.by, cell: (payment) => payment.recordedBy ?? '–' },
           { header: t.bills.amount, align: 'end', cell: (payment) => (payment.voided ? <s>{formatMoney(payment.amount)}</s> : formatMoney(payment.amount)) },
@@ -190,7 +345,7 @@ function PaymentsCard({ bill }: { bill: SupplierBill }) {
             cell: (payment) =>
               payment.voided ? (
                 <Badge>{t.bills.removed}</Badge>
-              ) : confirming === payment.id ? (
+              ) : payment.method === 'credit' || bill.paidNow ? null : confirming === payment.id ? (
                 <span className="inline-confirm">
                   <Button size="sm" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(payment.id)}>
                     {t.bills.confirmRemove}
@@ -250,7 +405,7 @@ function PhotoCard({ bill }: { bill: SupplierBill }) {
     >
       {src ? (
         <a href={src} target="_blank" rel="noreferrer" className="bill-photo">
-          <img src={src} alt={t.bills.photoAlt(bill.supplier.name)} />
+          <img src={src} alt={t.bills.photoAlt(bill.supplier?.name ?? t.bills.noSupplier)} />
         </a>
       ) : (
         <p className="field-hint">{t.bills.noPhoto}</p>
@@ -273,7 +428,11 @@ function EditCard({ bill }: { bill: SupplierBill }) {
   const save = useMutation({ mutationFn: () => billsApi.update(bill.id, toBillInput(draft)), onSuccess: onSaved });
   const voidBill = useMutation({ mutationFn: () => billsApi.void(bill.id, voidNote.trim()), onSuccess: onSaved });
   const changed = JSON.stringify(draft) !== JSON.stringify(initial);
-  const hasPayments = bill.payments.some((payment) => !payment.voided);
+  // A bill paid on the spot takes its payment back with it; a return or credit's rows are its own.
+  const hasPayments = !bill.paidNow && bill.kind === 'bill' && bill.payments.some((payment) => !payment.voided && payment.method !== 'credit');
+  const hasCredits = bill.credits.some((credit) => !credit.voided);
+  const blocked = hasPayments || hasCredits;
+  const lockAmount = bill.lines.length > 0 && bill.lines.every((line) => !line.fromDelivery);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -283,7 +442,7 @@ function EditCard({ bill }: { bill: SupplierBill }) {
   return (
     <Card title={t.bills.details} description={t.bills.detailsHint}>
       <form className="settings-form" onSubmit={handleSubmit}>
-        <BillFields draft={draft} onChange={setDraft} />
+        <BillFields draft={draft} onChange={setDraft} lockAmount={lockAmount} />
         {save.isError && (
           <p className="form-error" role="alert">
             {errorMessage(save.error)}
@@ -297,7 +456,7 @@ function EditCard({ bill }: { bill: SupplierBill }) {
       </form>
       <div className="danger-zone">
         <p className="setting-row__title">{t.bills.voidTitle}</p>
-        <p className="field-hint">{hasPayments ? t.bills.voidNeedsNoPayments : t.bills.voidHint}</p>
+        <p className="field-hint">{hasCredits ? t.bills.voidNeedsNoCredits : hasPayments ? t.bills.voidNeedsNoPayments : bill.paidNow ? t.bills.voidPaidNow : t.bills.voidHint}</p>
         <div className="inline-form">
           <label className="visually-hidden" htmlFor={`void-${bill.id}`}>
             {t.bills.voidReason}
@@ -308,10 +467,10 @@ function EditCard({ bill }: { bill: SupplierBill }) {
             placeholder={t.bills.voidReason}
             maxLength={500}
             value={voidNote}
-            disabled={hasPayments}
+            disabled={blocked}
             onChange={(event) => setVoidNote(event.target.value)}
           />
-          <Button variant="danger" disabled={hasPayments || !voidNote.trim() || voidBill.isPending} onClick={() => voidBill.mutate()}>
+          <Button variant="danger" disabled={blocked || !voidNote.trim() || voidBill.isPending} onClick={() => voidBill.mutate()}>
             {t.bills.void}
           </Button>
         </div>

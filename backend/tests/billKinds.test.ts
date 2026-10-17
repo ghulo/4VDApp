@@ -135,6 +135,14 @@ describe('one bill form for every kind of bill', () => {
     expect(readLines(entry!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 140', '2000 Cr 120']);
   });
 
+  it('lets a supplier abroad go without a Kosovo NUI, but not one at home', async () => {
+    const abroad = await api().post('/api/suppliers').set(auth()).send({ name: 'Milano Coffee', nui: '', abroad: true });
+    expect(abroad.status).toBe(201);
+    expect(abroad.body.data).toMatchObject({ nui: null, abroad: true });
+    const home = await api().post('/api/suppliers').set(auth()).send({ name: 'Local Ltd', nui: '' });
+    expect(home.status).toBe(400);
+  });
+
   it('charges VAT to yourself on a service from abroad, both ways so it nets to zero', async () => {
     const abroad = await supplier({ name: 'Ads Abroad', abroad: true });
     const saved = await bill({ supplierId: abroad, lines: [{ kind: 'cost', category: 'advertising', amount: 200, vatRate: 18 }] });

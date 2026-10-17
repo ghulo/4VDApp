@@ -22,6 +22,9 @@ export interface DraftEntry {
 
 export type AccountLinks = Record<AccountLinkKey, number>;
 
+/** An account by its link, or by its id (a place's own account). */
+export type AccountRef = AccountLinkKey | { accountId: number };
+
 interface Party {
   supplierId?: number | null;
   customerId?: number | null;
@@ -45,17 +48,18 @@ export class EntryBuilder {
 
   constructor(private readonly links: AccountLinks) {}
 
-  debit(account: AccountLinkKey, amount: number, party: Party = {}): this {
+  debit(account: AccountRef, amount: number, party: Party = {}): this {
     return this.add(account, roundMoney(amount), party);
   }
 
-  credit(account: AccountLinkKey, amount: number, party: Party = {}): this {
+  credit(account: AccountRef, amount: number, party: Party = {}): this {
     return this.add(account, -roundMoney(amount), party);
   }
 
-  private add(account: AccountLinkKey, signed: number, party: Party): this {
+  private add(account: AccountRef, signed: number, party: Party): this {
     if (signed === 0) return this;
-    const accountId = this.links[account];
+    const accountId = typeof account === 'string' ? this.links[account] : account.accountId;
+    if (accountId === undefined) throw new Error(`The books have no account for ${String(account)}`);
     const supplierId = party.supplierId ?? null;
     const customerId = party.customerId ?? null;
     const key = `${accountId}/${supplierId}/${customerId}`;

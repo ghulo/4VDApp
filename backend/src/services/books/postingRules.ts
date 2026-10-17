@@ -2,13 +2,42 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../../database/connection.js';
 import { roundMoney } from '../../utils/money.js';
 import type { AccountLinkKey } from '../../constants/chartOfAccounts.js';
-import { type AccountLinks, type DraftEntry, EntryBuilder, vatOf } from './entryBuilder.js';
+import { type AccountLinks, type AccountRef, type DraftEntry, EntryBuilder, vatOf } from './entryBuilder.js';
+
+/** Each place money is kept and its account; a carwash's till is outside the books (like the carwash's bills). */
+export interface PlaceAccounts {
+  shopTill: number;
+  defaultBank: number;
+  byId: Map<number, { accountId: number; inBooks: boolean }>;
+}
+
+/** The places' accounts, for the posting rules. Every place has one once ensurePlaces has run. */
+export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccounts> {
+  const rows = await db.selectFrom('money_places').select(['id', 'kind', 'carwash_id', 'account_id', 'is_default']).execute();
+  const byId = new Map<number, { accountId: number; inBooks: boolean }>();
+  let shopTill: number | null = null;
+  let defaultBank: number | null = null;
+  for (const row of rows) {
+    if (row.account_id === null) continue;
+    byId.set(row.id, { accountId: row.account_id, inBooks: row.carwash_id === null });
+    if (row.kind === 'till' && row.carwash_id === null) shopTill = row.account_id;
+    if (row.kind === 'bank' && row.is_default) defaultBank = row.account_id;
+  }
+  if (shopTill === null || defaultBank === null) throw new Error("The shop's till or bank account has no account in the books");
+  return { shopTill, defaultBank, byId };
+}
 
 /**
  * How each document posts, in plain terms (account numbers are TREFIN's defaults,
  * each one changeable under Books → Settings):
  *
- * - Sale (one entry per checkout): cash 1110, or the customer's receivable 1230
+ * Cash and bank mean the place the money was kept: each till, the safe and each
+ * bank account has its own account under 1110 or 1120 (the shop's till is 1110
+ * itself, the first bank 1120). A carwash's till is outside the books, like the
+ * carwash's bills, so money from it counts as the owner's put in (3000) and
+ * money into it as taken out (3100).
+ *
+ * - Sale (one entry per checkout): the shop's till, or the customer's receivable 1230
  *   for what went on their tab, against revenue 4000 and VAT owed 2340. Its cost
  *   moves from stock 1340 to cost of goods 5000.
  * - Return: revenue back through sales returns 4200 and VAT 2340, against the
@@ -24,14 +53,16 @@ import { type AccountLinks, type DraftEntry, EntryBuilder, vatOf } from './entry
  *   1120; a credit applied to it posts nothing more. An expense is a bill paid
  *   on the spot. Carwash-only bills are left out until the accountant says how
  *   the carwash is booked.
- * - Customer paying their tab: cash 1110 against 1230.
+ * - Customer paying their tab: the place it reached against 1230.
+ * - Money moved: the place it reached against the place it left; the owner
+ *   putting money in is capital 3000, taking it out drawings 3100.
  * - Write-off, count difference, manual stock correction: stock corrections
  *   5400 against stock 1340, at cost.
  *
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'bill' | 'payment' | 'expense' | 'tab_payment';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -49,6 +80,7 @@ export class PostingRules {
   constructor(
     private readonly db: DatabaseClient,
     private readonly links: AccountLinks,
+    private readonly places: PlaceAccounts,
     private readonly timeZone: string,
     /** The books' first day; documents before it post nothing. Null: no limit. */
     private readonly startDay: string | null,
@@ -56,6 +88,24 @@ export class PostingRules {
 
   private builder() {
     return new EntryBuilder(this.links);
+  }
+
+  /** Money leaving a place: its account, or the owner's capital when it came from outside the books. */
+  private from(placeId: number | null): AccountRef {
+    const place = placeId === null ? undefined : this.places.byId.get(placeId);
+    if (placeId !== null && !place) throw new Error(`Place ${placeId} has no account in the books`);
+    return place?.inBooks ? { accountId: place.accountId } : 'owner_in';
+  }
+
+  /** Money reaching a place: its account, or the owner's drawings when it leaves the books. */
+  private to(placeId: number | null): AccountRef {
+    const place = placeId === null ? undefined : this.places.byId.get(placeId);
+    if (placeId !== null && !place) throw new Error(`Place ${placeId} has no account in the books`);
+    return place?.inBooks ? { accountId: place.accountId } : 'owner_out';
+  }
+
+  private get till(): AccountRef {
+    return { accountId: this.places.shopTill };
   }
 
   private tooEarly(day: string): boolean {
@@ -85,6 +135,8 @@ export class PostingRules {
         return this.expense(Number(ref));
       case 'tab_payment':
         return this.tabPayment(Number(ref));
+      case 'move':
+        return this.move(Number(ref));
       default:
         throw new Error(`Unknown source ${sourceKey}`);
     }
@@ -135,7 +187,7 @@ export class PostingRules {
     }
     const gross = roundMoney([...grossByRate.values()].reduce((sum, value) => sum + value, 0));
     const charged = roundMoney(rows.reduce((sum, row) => sum + Number(row.charged), 0));
-    entry.debit('cash', gross - charged);
+    entry.debit(this.till, gross - charged);
     for (const [rate, rateGross] of grossByRate) {
       const vat = vatOf(rateGross, rate);
       entry.credit('revenue', rateGross - vat).credit('vat_out', vat);
@@ -182,7 +234,7 @@ export class PostingRules {
       .debit('sales_returns', refund - vat)
       .debit('vat_out', vat)
       .credit('receivables', offTab, { customerId: row.customer_id })
-      .credit('cash', refund - offTab);
+      .credit(this.till, refund - offTab);
     const cost = row.unit_cost === null ? 0 : row.quantity * Number(row.unit_cost);
     entry.debit('stock', cost).credit('cost_of_sales', cost);
     return entry.build(row.day, `${row.quantity} × ${row.product_name}`, row.unit_cost === null ? 'no_cost:1' : null);
@@ -293,7 +345,7 @@ export class PostingRules {
     // A return or credit posts its lines the other way round.
     const sign = bill.kind === 'credit' ? -1 : 1;
     const entry = this.builder();
-    const debit = (account: AccountLinkKey, value: number, onParty = {}) => entry.debit(account, sign * value, onParty);
+    const debit = (account: AccountRef, value: number, onParty = {}) => entry.debit(account, sign * value, onParty);
     let warning: string | null = null;
     const others = lines.filter((line) => line.kind !== 'product');
     const products = lines.filter((line) => line.kind === 'product');
@@ -333,7 +385,7 @@ export class PostingRules {
     const duty = n(bill.customs_duty) ?? 0;
     debit('vat_in', vatIn + customsVat);
     // Customs VAT and duty are paid at the border.
-    if (customsVat + duty > 0) debit(bill.customs_paid_method === 'cash' ? 'cash' : 'bank', -(customsVat + duty));
+    if (customsVat + duty > 0) debit(bill.customs_paid_method === 'cash' ? this.till : { accountId: this.places.defaultBank }, -(customsVat + duty));
     debit('payables', -amount, party);
     debit('withholding', -withheld);
     return entry.build(day, description, warning);
@@ -364,7 +416,7 @@ export class PostingRules {
       .selectFrom('supplier_payments as pay')
       .innerJoin('supplier_bills as b', 'b.id', 'pay.bill_id')
       .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
-      .select(['pay.amount', 'pay.method', 'b.supplier_id', 'b.number', 'b.place', 's.name', sql<string>`to_char(pay.paid_on, 'YYYY-MM-DD')`.as('paid_on')])
+      .select(['pay.amount', 'pay.place_id', 'b.supplier_id', 'b.number', 'b.place', 's.name', sql<string>`to_char(pay.paid_on, 'YYYY-MM-DD')`.as('paid_on')])
       .where('pay.id', '=', id)
       .where('pay.voided_at', 'is', null)
       // A credit applied to a bill posts nothing more: the return or credit posted itself.
@@ -374,7 +426,7 @@ export class PostingRules {
     const amount = Number(row.amount);
     return this.builder()
       .debit('payables', amount, { supplierId: row.supplier_id })
-      .credit(row.method === 'bank' ? 'bank' : 'cash', amount)
+      .credit(this.from(row.place_id), amount)
       .build(row.paid_on, row.name ? (row.number ? `${row.name} ${row.number}` : row.name) : (row.number ?? ''));
   }
 
@@ -387,12 +439,46 @@ export class PostingRules {
     const row = await this.db
       .selectFrom('tab_entries as t')
       .innerJoin('customers as c', 'c.id', 't.customer_id')
-      .select(['t.amount', 't.customer_id', 'c.name', zonedDaySql(sql.ref('t.occurred_at'), this.timeZone).as('day')])
+      .select(['t.amount', 't.customer_id', 't.place_id', 'c.name', zonedDaySql(sql.ref('t.occurred_at'), this.timeZone).as('day')])
       .where('t.id', '=', id)
       .where('t.kind', '=', 'payment')
       .executeTakeFirst();
     if (!row || this.tooEarly(row.day)) return null;
     const amount = Number(row.amount);
-    return this.builder().debit('cash', amount).credit('receivables', amount, { customerId: row.customer_id }).build(row.day, row.name);
+    return this.builder()
+      .debit(row.place_id === null ? this.till : this.to(row.place_id), amount)
+      .credit('receivables', amount, { customerId: row.customer_id })
+      .build(row.day, row.name);
+  }
+
+  /** Money moved between places, or put in or taken out by the owner. Between two places outside the books, nothing. */
+  private async move(id: number): Promise<DraftEntry | null> {
+    const row = await this.db
+      .selectFrom('money_moves')
+      .select(['amount', 'from_place_id', 'to_place_id', 'note', sql<string>`to_char(day, 'YYYY-MM-DD')`.as('day')])
+      .where('id', '=', id)
+      .where('voided_at', 'is', null)
+      .executeTakeFirst();
+    if (!row || this.tooEarly(row.day)) return null;
+    const amount = Number(row.amount);
+    const description = await this.moveDescription(row.from_place_id, row.to_place_id, row.note);
+    return this.builder().debit(this.to(row.to_place_id), amount).credit(this.from(row.from_place_id), amount).build(row.day, description);
+  }
+
+  /** "Arka → Banka – Raiffeisen": the places' accounts, in the accountant's words. */
+  private async moveDescription(fromId: number | null, toId: number | null, note: string | null): Promise<string> {
+    const ids = [fromId, toId].filter((id): id is number => id !== null);
+    const names = new Map(
+      (
+        await this.db
+          .selectFrom('money_places as p')
+          .innerJoin('ledger_accounts as a', 'a.id', 'p.account_id')
+          .select(['p.id', 'a.name'])
+          .where('p.id', 'in', ids.length > 0 ? ids : [0])
+          .execute()
+      ).map((place) => [place.id, place.name]),
+    );
+    const side = (id: number | null) => (id === null ? 'Pronari' : (names.get(id) ?? ''));
+    return [`${side(fromId)} → ${side(toId)}`, note].filter(Boolean).join(' · ');
   }
 }

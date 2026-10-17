@@ -36,6 +36,7 @@ import { CarwashRepository } from './repositories/CarwashRepository.js';
 import { CarwashService } from './services/CarwashService.js';
 import { CashCountRepository } from './repositories/CashCountRepository.js';
 import { CashCountService } from './services/CashCountService.js';
+import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { DayService } from './services/DayService.js';
@@ -219,6 +220,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     reportsRepository,
     tabRepository,
     supplierBillRepository,
+    new MoneyRepository(db),
     settingsService,
     carwashService,
     transactions,

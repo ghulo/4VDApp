@@ -118,7 +118,7 @@ export const billFormSchema = z.object({
     .transform((value) => value ?? null),
   withholdingType: z.enum(WITHHOLDING_TYPES).nullish().transform((value) => value ?? null),
   paidNow: z
-    .object({ method: z.enum(SUPPLIER_PAYMENT_METHODS) })
+    .object({ method: z.enum(SUPPLIER_PAYMENT_METHODS).nullish(), placeId: idSchema.nullish() })
     .nullish()
     .transform((value) => value ?? null),
   place: z.enum(EXPENSE_PLACES).default('shop'),
@@ -151,7 +151,9 @@ export const billQuerySchema = z.object({
 export const paymentSchema = z.object({
   amount: positiveMoney,
   paidOn: calendarDaySchema,
-  method: z.enum(SUPPLIER_PAYMENT_METHODS),
+  /** Where the money came from; or only how it was paid, for its usual place. */
+  placeId: idSchema.nullish(),
+  method: z.enum(SUPPLIER_PAYMENT_METHODS).nullish(),
   note: optional(500),
 });
 

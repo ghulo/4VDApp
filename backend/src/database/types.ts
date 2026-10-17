@@ -449,6 +449,8 @@ export interface TabEntriesTable {
   return_id: number | null;
   occurred_at: ColumnType<Date, Date | undefined, Date>;
   created_by: number | null;
+  /** On a payment: where the money arrived (null: the shop's till). */
+  place_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface SuppliersTable {
@@ -710,6 +712,10 @@ export interface SupplierPaymentsTable {
   voided_by: number | null;
   /** The return or credit applied, for a `credit` payment. */
   credit_id: number | null;
+  /** Where the money came from; null only for a credit. */
+  place_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** One payment over several bills. */
+  group_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface ReportSubscriptionsTable {
@@ -858,6 +864,111 @@ export interface VatMonthsTable {
   updated_at: ColumnType<Date, Date | undefined, Date>;
 }
 
+export type MoneyPlaceKind = 'till' | 'safe' | 'bank';
+
+/** A place money is kept: the shop's till, a carwash's till, a safe, a bank account. */
+export interface MoneyPlacesTable {
+  id: Generated<number>;
+  kind: MoneyPlaceKind;
+  name: string | null;
+  carwash_id: number | null;
+  bank_name: string | null;
+  iban: string | null;
+  account_id: number | null;
+  is_default: Generated<boolean>;
+  opening_balance: ColumnType<string, number | string | undefined, number | string>;
+  opening_day: ColumnType<string | null, string | null | undefined, string | null>;
+  statement_layout: ColumnType<unknown | null, string | null | undefined, string | null>;
+  archived_at: Date | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+/** Money taken from one place to another; one side empty when the owner put it in or took it out. */
+export interface MoneyMovesTable {
+  id: Generated<number>;
+  day: ColumnType<string, string, string>;
+  amount: Decimal;
+  from_place_id: number | null;
+  to_place_id: number | null;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: Date | null;
+  voided_by: number | null;
+}
+
+export interface PaymentGroupsTable {
+  id: Generated<number>;
+  supplier_id: number | null;
+  place_id: number;
+  paid_on: ColumnType<string, string, string>;
+  amount: Decimal;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface TabAllocationsTable {
+  id: Generated<number>;
+  payment_id: number;
+  /** Null: the tab's charges that are on no invoice. */
+  document_id: number | null;
+  amount: Decimal;
+}
+
+export type BankRuleAction = 'expense' | 'transfer' | 'owner';
+
+export interface BankRulesTable {
+  id: Generated<number>;
+  place_id: number | null;
+  contains: string;
+  direction: 'in' | 'out';
+  action: BankRuleAction;
+  category: string | null;
+  supplier_id: number | null;
+  other_place_id: number | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface BankStatementsTable {
+  id: Generated<number>;
+  place_id: number;
+  file_name: string;
+  format: 'csv' | 'xlsx' | 'pdf';
+  first_day: ColumnType<string | null, string | null | undefined, string | null>;
+  last_day: ColumnType<string | null, string | null | undefined, string | null>;
+  opening_balance: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  closing_balance: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  lines_read: number;
+  lines_skipped: number;
+  uploaded_by: number | null;
+  uploaded_at: CreatedAt;
+}
+
+export type BankLineStatus = 'open' | 'done' | 'skipped';
+export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense';
+
+export interface BankLinesTable {
+  id: Generated<number>;
+  statement_id: number;
+  place_id: number;
+  day: ColumnType<string, string, string>;
+  text: string;
+  amount: Decimal;
+  balance: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  fingerprint: string;
+  position: number;
+  status: ColumnType<BankLineStatus, BankLineStatus | undefined, BankLineStatus>;
+  done_kind: BankLineDoneKind | null;
+  done_ref: number | null;
+  made_record: Generated<boolean>;
+  rule_id: number | null;
+  done_by: number | null;
+  done_at: Date | null;
+}
+
 /** Questions the accountant leaves on a document, answered there by the people who run the shop. */
 export interface DocumentThreadsTable {
   id: Generated<number>;
@@ -936,6 +1047,13 @@ export interface Database {
   vat_months: VatMonthsTable;
   document_threads: DocumentThreadsTable;
   document_notes: DocumentNotesTable;
+  money_places: MoneyPlacesTable;
+  money_moves: MoneyMovesTable;
+  payment_groups: PaymentGroupsTable;
+  tab_allocations: TabAllocationsTable;
+  bank_rules: BankRulesTable;
+  bank_statements: BankStatementsTable;
+  bank_lines: BankLinesTable;
 }
 
 export type UserRow = Selectable<UsersTable>;

@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import type { BillKind, BillLineKind, CustomsPaidMethod, WithholdingType } from '../constants/bills.js';
 import type { ExpensePlace } from '../constants/expenses.js';
 import type { DatabaseClient } from '../database/connection.js';
-import type { SupplierPaymentMethod } from '../database/types.js';
+import type { MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
 
 export interface BillRecord {
   id: number;
@@ -55,6 +55,11 @@ export interface PaymentRecord {
   amount: string;
   paid_on: string;
   method: SupplierPaymentMethod;
+  place_id: number | null;
+  place_kind: MoneyPlaceKind | null;
+  /** The place's own name, else its carwash's; null for the shop's till and the safe. */
+  place_name: string | null;
+  group_id: number | null;
   note: string | null;
   created_by_name: string | null;
   created_at: Date;
@@ -225,6 +230,8 @@ export class SupplierBillRepository {
       .selectFrom('supplier_payments as p')
       .leftJoin('users as u', 'u.id', 'p.created_by')
       .leftJoin('supplier_bills as c', 'c.id', 'p.credit_id')
+      .leftJoin('money_places as mp', 'mp.id', 'p.place_id')
+      .leftJoin('carwashes as cw', 'cw.id', 'mp.carwash_id')
       .select([
         'p.id',
         'p.bill_id',
@@ -233,6 +240,10 @@ export class SupplierBillRepository {
         'p.amount',
         sql<string>`to_char(p.paid_on, 'YYYY-MM-DD')`.as('paid_on'),
         'p.method',
+        'p.place_id',
+        'mp.kind as place_kind',
+        sql<string | null>`coalesce(mp.name, cw.name)`.as('place_name'),
+        'p.group_id',
         'p.note',
         'u.name as created_by_name',
         'p.created_at',
@@ -392,6 +403,9 @@ export class SupplierBillRepository {
     amount: number;
     paidOn: string;
     method: SupplierPaymentMethod;
+    /** Where the money came from; null only for a credit. */
+    placeId: number | null;
+    groupId?: number | null;
     note: string | null;
     createdBy: number | null;
     creditId?: number | null;
@@ -403,6 +417,8 @@ export class SupplierBillRepository {
         amount: payment.amount,
         paid_on: payment.paidOn,
         method: payment.method,
+        place_id: payment.placeId,
+        group_id: payment.groupId ?? null,
         note: payment.note,
         created_by: payment.createdBy,
         credit_id: payment.creditId ?? null,
@@ -416,16 +432,16 @@ export class SupplierBillRepository {
     await this.db.updateTable('supplier_payments').set({ voided_at: at, voided_by: by }).where('id', '=', id).execute();
   }
 
-  /** Cash taken out of the shop drawer to pay suppliers, per day ("2026-10-09" -> euros). */
+  /** Cash taken out of a till to pay suppliers, per till and day ("12|2026-10-09" -> euros). */
   async drawerPaymentsByDay(from: string, to: string): Promise<Map<string, number>> {
     const rows = await this.db
       .selectFrom('supplier_payments')
-      .select([sql<string>`to_char(paid_on, 'YYYY-MM-DD')`.as('day'), sql<string>`sum(amount)`.as('total')])
+      .select([sql<string>`place_id || '|' || to_char(paid_on, 'YYYY-MM-DD')`.as('day'), sql<string>`sum(amount)`.as('total')])
       .where('method', '=', 'drawer')
       .where('voided_at', 'is', null)
       .where('paid_on', '>=', from)
       .where('paid_on', '<=', to)
-      .groupBy('paid_on')
+      .groupBy(['place_id', 'paid_on'])
       .execute();
     return new Map(rows.map((row) => [row.day, Number(row.total)]));
   }

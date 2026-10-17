@@ -27,6 +27,7 @@ import { StockAdjustmentRepository } from './StockAdjustmentRepository.js';
 import { UndoRepository } from './UndoRepository.js';
 import { UserRepository } from './UserRepository.js';
 import { VatMonthRepository } from './VatMonthRepository.js';
+import { MoneyRepository } from './MoneyRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -58,6 +59,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     productRequests: new ProductRequestRepository(db),
     duplicates: new DuplicateRepository(db),
     periods: new VatMonthRepository(db),
+    money: new MoneyRepository(db),
   };
 }
 

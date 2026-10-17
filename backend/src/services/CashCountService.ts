@@ -2,6 +2,7 @@ import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import { NotFoundError } from '../errors/httpErrors.js';
 import type { ServerMessages } from '../i18n/messages.js';
 import type { CashCountRepository, CashPlace } from '../repositories/CashCountRepository.js';
+import type { MoneyRepository } from '../repositories/MoneyRepository.js';
 import type { ReportsRepository } from '../repositories/ReportsRepository.js';
 import type { SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TabRepository } from '../repositories/TabRepository.js';
@@ -64,6 +65,7 @@ export class CashCountService {
     private readonly reportsRepository: ReportsRepository,
     private readonly tabRepository: TabRepository,
     private readonly billRepository: SupplierBillRepository,
+    private readonly moneyRepository: MoneyRepository,
     private readonly settingsService: SettingsService,
     private readonly carwashService: CarwashService,
     private readonly transactions: TransactionManager,
@@ -81,22 +83,26 @@ export class CashCountService {
   }
 
   private async between(from: string, to: string): Promise<CashCountDto[]> {
-    const [rows, shop, tabs, supplierPayments, carwash] = await Promise.all([
+    const [rows, shop, tabs, supplierPayments, carwash, tills, moves] = await Promise.all([
       this.cashCountRepository.findBetween(from, to),
       this.reportsRepository.shopRevenueByDay(from, to, this.timeZone),
       // Tab sales never reach the drawer; tab payments do.
       this.tabRepository.drawerEffectByDay(from, to, this.timeZone),
-      // Suppliers paid with cash from the till.
+      // Suppliers paid with cash from a till.
       this.billRepository.drawerPaymentsByDay(from, to),
       this.cashCountRepository.carwashTakingsByDay(from, to),
+      this.moneyRepository.tills(),
+      // Money moved into or out of a till that day before it was counted (a deposit at noon).
+      this.moneyRepository.movesBeforeCounts(from, to),
     ]);
     return rows.map((row) => {
       const float = Number(row.float_amount);
       const counted = Number(row.counted_amount);
-      const expected =
-        row.place === 'shop'
-          ? roundMoney((shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0) - (supplierPayments.get(row.day) ?? 0))
-          : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
+      const till = tills.get(row.place === 'shop' ? null : row.carwash_id);
+      const paidOut = supplierPayments.get(`${till}|${row.day}`) ?? 0;
+      const moved = moves.get(row.id) ?? 0;
+      const takings = row.place === 'shop' ? (shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0) : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
+      const expected = takings === null && paidOut === 0 && moved === 0 ? null : roundMoney((takings ?? 0) - paidOut + moved);
       return {
         id: row.id,
         place: row.place,

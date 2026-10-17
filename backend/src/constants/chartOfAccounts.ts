@@ -173,11 +173,13 @@ export const TREFIN_ACCOUNTS: SeedAccount[] = [
 /**
  * Which account each kind of money movement posts to, so nobody types an
  * account number for a normal sale, bill or expense. Editable in the books'
- * settings; these are TREFIN's defaults.
+ * settings; these are TREFIN's defaults. Cash and bank are not here: each
+ * place money is kept (a till, the safe, a bank account) has its own account.
+ * The owner's money put in goes to capital (3000), taken out to drawings (3100).
  */
 export const DEFAULT_ACCOUNT_LINKS = {
-  cash: '1110',
-  bank: '1120',
+  owner_in: '3000',
+  owner_out: '3100',
   receivables: '1230',
   vat_in: '1260',
   stock: '1340',

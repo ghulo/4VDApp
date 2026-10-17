@@ -14,6 +14,7 @@ const TOPICS_BY_ROLE: Record<UserRole, PushTopic[]> = {
   owner: ['stock', 'approvals', 'summary'],
   employee: ['decisions'],
   family: [],
+  accountant: [],
 };
 
 export type PushPreferences = Partial<Record<PushTopic, boolean>>;

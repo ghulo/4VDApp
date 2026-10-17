@@ -1,3 +1,4 @@
+import type { QuestionOn } from './activityText.js';
 import { type Language, money, wholeMoney } from './language.js';
 
 /**
@@ -89,6 +90,14 @@ export interface ServerMessages {
     shiftDetail: string;
     duplicatesTitle: (count: number) => string;
     duplicatesDetail: string;
+    /** month "2026-09"; the return is due on day 20 of the month after. */
+    vatDueTitle: (month: string) => string;
+    vatDueDetail: (late: boolean) => string;
+    questionTitle: (on: QuestionOn) => string;
+    questionDetail: (p: { name: string | null; text: string }) => string;
+  };
+  questions: {
+    answeredTitle: (on: QuestionOn) => string;
   };
 
   testAlertTitle: string;
@@ -220,6 +229,7 @@ export interface ServerMessages {
     vat: string;
     total: string;
     vatAt: (rate: number) => string;
+    vatExempt: string;
     netTotal: string;
     vatTotal: string;
     grandTotal: string;
@@ -245,6 +255,12 @@ export interface ServerMessages {
   };
 }
 
+const EN_MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const SQ_MONTH = ['janarit', 'shkurtit', 'marsit', 'prillit', 'majit', 'qershorit', 'korrikut', 'gushtit', 'shtatorit', 'tetorit', 'nëntorit', 'dhjetorit'];
+const SQ_MONTH_DAY = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+const EN_ON_TODO: Record<QuestionOn['kind'], string> = { bill: 'the bill', document: 'invoice', entry: 'entry' };
+const SQ_ON_TODO: Record<QuestionOn['kind'], string> = { bill: 'faturën', document: 'faturën e shitjes', entry: 'regjistrimin' };
+
 const enUndoneKind: Record<UndoneKind, string> = {
   sale: 'sale',
   return: 'return',
@@ -257,7 +273,7 @@ const enUndoneKind: Record<UndoneKind, string> = {
 
 export const en: ServerMessages = {
   language: 'en',
-  roleName: { developer: 'the developer', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member' },
+  roleName: { developer: 'the developer', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member', accountant: 'the accountant' },
   writeOffReason: { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' },
   myRequest: {
     return: ({ what, refund }) => `Return of ${what}, refund ${money(refund, 'en')}`,
@@ -337,6 +353,13 @@ export const en: ServerMessages = {
     shiftDetail: 'Count your drawer and enter the takings before you go.',
     duplicatesTitle: (count) => `${count} ${count === 1 ? 'product may be' : 'products may be'} listed twice`,
     duplicatesDetail: 'Merge each pair or keep both, so stock and sales add up in one place.',
+    vatDueTitle: (month) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} VAT is due by 20 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
+    vatDueDetail: (late) => (late ? 'The day to file has passed. File it with ATK, then mark the month as filed.' : 'Check the figures, file them with ATK, then mark the month as filed.'),
+    questionTitle: (on) => `The accountant asks about ${EN_ON_TODO[on.kind]} ${on.label}`,
+    questionDetail: ({ name, text }) => `${name ?? 'The accountant'}: “${text}”`,
+  },
+  questions: {
+    answeredTitle: (on) => `Your question on ${EN_ON_TODO[on.kind]} ${on.label} has an answer`,
   },
 
   testAlertTitle: 'Test alert from 4VD',
@@ -491,6 +514,7 @@ export const en: ServerMessages = {
     vat: 'VAT',
     total: 'Total',
     vatAt: (rate) => `VAT ${rate}%`,
+    vatExempt: 'Exempt',
     netTotal: 'Total without VAT',
     vatTotal: 'Total VAT',
     grandTotal: 'Total to pay',
@@ -528,7 +552,7 @@ const sqUndoneKind: Record<UndoneKind, string> = {
 
 export const sq: ServerMessages = {
   language: 'sq',
-  roleName: { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes' },
+  roleName: { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' },
   writeOffReason: { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' },
   myRequest: {
     return: ({ what, refund }) => `Kthim i ${what}, rimbursim ${money(refund, 'sq')}`,
@@ -613,6 +637,13 @@ export const sq: ServerMessages = {
     shiftDetail: 'Numëro arkën dhe fut të ardhurat para se të ikësh.',
     duplicatesTitle: (count) => `${count === 1 ? 'Një produkt mund të jetë' : `${count} produkte mund të jenë`} dy herë në listë`,
     duplicatesDetail: 'Bashkoji ose mbaji të dyja, që stoku dhe shitjet të mblidhen në një vend.',
+    vatDueTitle: (month) => `TVSH-ja e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]} duhet deklaruar deri më 20 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
+    vatDueDetail: (late) => (late ? 'Afati ka kaluar. Deklaroje në ATK, pastaj shëno muajin si të deklaruar.' : 'Kontrollo shifrat, deklaroji në ATK, pastaj shëno muajin si të deklaruar.'),
+    questionTitle: (on) => `Kontabilisti pyet për ${SQ_ON_TODO[on.kind]} ${on.label}`,
+    questionDetail: ({ name, text }) => `${name ?? 'Kontabilisti'}: “${text}”`,
+  },
+  questions: {
+    answeredTitle: (on) => `Pyetja jote për ${SQ_ON_TODO[on.kind]} ${on.label} ka përgjigje`,
   },
 
   testAlertTitle: 'Njoftim provë nga 4VD',
@@ -767,6 +798,7 @@ export const sq: ServerMessages = {
     vat: 'TVSH',
     total: 'Gjithsej',
     vatAt: (rate) => `TVSH ${rate}%`,
+    vatExempt: 'E liruar',
     netTotal: 'Gjithsej pa TVSH',
     vatTotal: 'Gjithsej TVSH',
     grandTotal: 'Për pagesë',

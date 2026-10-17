@@ -14,6 +14,10 @@ import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
 import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
+import { QuestionsCard } from '../components/QuestionsCard';
+import { formatMonth } from '../utils/vat';
+import { useCurrentUser } from '../auth/useAuth';
+import { canOversee } from '../auth/roles';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
 
@@ -39,6 +43,8 @@ export function BillDetailPage() {
   const id = Number(useParams().id);
   const bill = useQuery({ queryKey: ['bills', id], queryFn: () => billsApi.get(id) });
   const [crediting, setCrediting] = useNewSheet('credit');
+  // The accountant reads bills and asks about them; changing them stays with the people who run the shop.
+  const writes = canOversee(useCurrentUser().role);
 
   if (bill.isPending) return <Loading />;
   if (bill.isError) return <ErrorNotice error={bill.error} onRetry={() => bill.refetch()} />;
@@ -47,7 +53,7 @@ export function BillDetailPage() {
   const isCredit = b.kind === 'credit';
   const who = b.supplier?.name ?? null;
   const title = isCredit ? (b.returnsStock ? t.bills.returnTitle(who ?? '') : t.bills.creditTitle(who ?? '')) : (who ?? t.bills.expenseTitle);
-  const canCredit = !isCredit && open && b.supplier !== null && b.lines.length > 0;
+  const canCredit = writes && !isCredit && open && b.supplier !== null && b.lines.length > 0;
 
   return (
     <>
@@ -78,6 +84,7 @@ export function BillDetailPage() {
         }
       />
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
+      {b.vatMonth && <p className="callout document-note">{t.bills.lateVat(formatMonth(b.vatMonth))}</p>}
 
       {isCredit ? (
         <StatGrid>
@@ -112,17 +119,18 @@ export function BillDetailPage() {
         </p>
       )}
 
-      <div className={owes(b) ? 'product-layout' : undefined}>
+      <div className={writes && owes(b) ? 'product-layout' : undefined}>
         <div className="product-layout__main">
           {b.lines.length > 0 && <LinesSection bill={b} />}
           {b.credits.length > 0 && <CreditsSection bill={b} />}
-          <PaymentsCard bill={b} />
-          <PhotoCard bill={b} />
-          {open && <EditCard bill={b} />}
+          <PaymentsCard bill={b} writes={writes} />
+          <PhotoCard bill={b} writes={writes} />
+          {writes && open && <EditCard bill={b} />}
+          <QuestionsCard kind="bill" id={b.id} />
           <EntriesPanel source="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
-        {owes(b) && (
+        {writes && owes(b) && (
           <div className="product-layout__side buy-side buy-side--first">
             {/* A new amount left (after a return) starts the form again. */}
             <PayCard key={b.left} bill={b} />
@@ -312,7 +320,7 @@ function PayCard({ bill }: { bill: SupplierBill }) {
   );
 }
 
-function PaymentsCard({ bill }: { bill: SupplierBill }) {
+function PaymentsCard({ bill, writes }: { bill: SupplierBill; writes: boolean }) {
   const t = useT();
   const onSaved = useBillUpdate();
   const [confirming, setConfirming] = useState<number | null>(null);
@@ -351,7 +359,7 @@ function PaymentsCard({ bill }: { bill: SupplierBill }) {
             cell: (payment) =>
               payment.voided ? (
                 <Badge>{t.bills.removed}</Badge>
-              ) : payment.method === 'credit' || bill.paidNow ? null : confirming === payment.id ? (
+              ) : !writes || payment.method === 'credit' || bill.paidNow ? null : confirming === payment.id ? (
                 <span className="inline-confirm">
                   <Button size="sm" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(payment.id)}>
                     {t.bills.confirmRemove}
@@ -377,7 +385,7 @@ function PaymentsCard({ bill }: { bill: SupplierBill }) {
   );
 }
 
-function PhotoCard({ bill }: { bill: SupplierBill }) {
+function PhotoCard({ bill, writes }: { bill: SupplierBill; writes: boolean }) {
   const t = useT();
   const onSaved = useBillUpdate();
   const input = useRef<HTMLInputElement>(null);
@@ -396,6 +404,7 @@ function PhotoCard({ bill }: { bill: SupplierBill }) {
       title={t.bills.photo}
       description={t.bills.photoHint}
       actions={
+        writes && (
         <>
           <input ref={input} type="file" accept="image/*" capture="environment" hidden onChange={pick} />
           <Button size="sm" disabled={upload.isPending} onClick={() => input.current?.click()} loading={upload.isPending}>
@@ -407,6 +416,7 @@ function PhotoCard({ bill }: { bill: SupplierBill }) {
             </Button>
           )}
         </>
+        )
       }
     >
       {src ? (

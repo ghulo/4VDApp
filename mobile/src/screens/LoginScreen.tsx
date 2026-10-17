@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, TextField } from '../components/ui';
-import { useAuth } from '../state/useAuth';
+import { DashboardOnlyError, useAuth } from '../state/useAuth';
 import { LogoMark } from '../components/LogoMark';
 import { ShopSunrise } from '../components/print';
 import { DASHBOARD_URL } from '../services/apiClient';
@@ -26,7 +26,7 @@ export function LoginScreen() {
     try {
       await login(email.trim(), password);
     } catch (loginError) {
-      setError(errorMessage(loginError));
+      setError(loginError instanceof DashboardOnlyError ? t.login.dashboardOnly : errorMessage(loginError));
       setIsSubmitting(false);
     }
   }

@@ -15,6 +15,7 @@ export interface SupplierFields {
   usualKind?: BillLineKind | null;
   usualCategory?: string | null;
   usualVatRate?: number | null;
+  usualVatExempt?: boolean;
   withholdingType?: WithholdingType | null;
 }
 
@@ -31,6 +32,8 @@ export interface SupplierRecord {
   usualKind: BillLineKind | null;
   usualCategory: string | null;
   usualVatRate: number | null;
+  /** Its usual VAT is "exempt" (a 0% rate). */
+  usualVatExempt: boolean;
   withholdingType: WithholdingType | null;
 }
 
@@ -45,6 +48,7 @@ const SUPPLIER_COLUMNS = [
   'usual_kind as usualKind',
   'usual_category as usualCategory',
   'usual_vat_rate as usualVatRate',
+  'usual_vat_exempt as usualVatExempt',
   'withholding_type as withholdingType',
 ] as const;
 
@@ -58,6 +62,7 @@ const supplierRow = (input: SupplierFields) => ({
   ...(input.usualKind !== undefined && { usual_kind: input.usualKind }),
   ...(input.usualCategory !== undefined && { usual_category: input.usualCategory }),
   ...(input.usualVatRate !== undefined && { usual_vat_rate: input.usualVatRate }),
+  ...(input.usualVatExempt !== undefined && { usual_vat_exempt: input.usualVatRate === 0 && input.usualVatExempt }),
   ...(input.withholdingType !== undefined && { withholding_type: input.withholdingType }),
 });
 

@@ -40,7 +40,7 @@ export function SalesPage() {
         title={t.nav.items.sales}
         description={t.sales.description}
         actions={
-          user.role !== 'owner' && (
+          user.role !== 'owner' && user.role !== 'accountant' && (
             <Button variant="primary" icon={Receipt} onClick={() => setRecording(true)}>
               {t.sales.record}
             </Button>

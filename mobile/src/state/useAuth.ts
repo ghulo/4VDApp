@@ -16,6 +16,9 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** The accountant works on the dashboard only: the team app turns them away at sign-in. */
+export class DashboardOnlyError extends Error {}
+
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used inside <AuthProvider>');
@@ -29,9 +32,9 @@ export function useCurrentUser(): User {
   return state.user;
 }
 
-/** Everyone but family records sales; family members only browse. */
+/** Everyone but family and the accountant records sales; family members only browse. */
 export function canRecordSales(user: User): boolean {
-  return user.role !== 'family';
+  return user.role !== 'family' && user.role !== 'accountant';
 }
 
 /** The developer, admins and the owner decide requests, so theirs never wait. Same rule as the server. */

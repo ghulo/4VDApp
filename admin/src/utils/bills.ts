@@ -20,11 +20,17 @@ export interface DraftLine {
   description: string;
   /** A cost's or equipment's amount. */
   amount: string;
+  /** "18", "16", "8", "0", or "exempt" (0% and exempt from VAT). */
   vatRate: string;
   /** On a return or credit: whether this line is part of it, and the most it can be. */
   include?: boolean;
   max?: number;
 }
+
+/** The VAT choice for a line exempt from VAT. */
+export const EXEMPT = 'exempt';
+/** The rate a line's VAT choice stands for: exempt is 0%. */
+export const rateOf = (choice: string) => (choice === EXEMPT ? 0 : Number(choice));
 
 let nextKey = 1;
 export const lineKey = () => nextKey++;
@@ -41,7 +47,7 @@ export const emptyLine = (supplier?: Supplier | null): DraftLine => {
     category: kind === 'cost' ? (supplier?.usualCategory ?? 'other') : kind === 'equipment' ? (supplier?.usualCategory ?? 'equipment') : '',
     description: '',
     amount: '',
-    vatRate: String(supplier?.usualVatRate ?? 18),
+    vatRate: supplier?.usualVatExempt ? EXEMPT : String(supplier?.usualVatRate ?? 18),
   };
 };
 
@@ -63,8 +69,8 @@ export const isLineDone = (line: DraftLine) =>
 
 export const toLineInput = (line: DraftLine): BillLineInput =>
   line.kind === 'product'
-    ? { kind: 'product', productId: line.product!.id, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), vatRate: Number(line.vatRate) }
-    : { kind: line.kind, category: line.category, description: line.description.trim() || null, amount: Number(line.amount), vatRate: Number(line.vatRate) };
+    ? { kind: 'product', productId: line.product!.id, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), vatRate: rateOf(line.vatRate), vatExempt: line.vatRate === EXEMPT }
+    : { kind: line.kind, category: line.category, description: line.description.trim() || null, amount: Number(line.amount), vatRate: rateOf(line.vatRate), vatExempt: line.vatRate === EXEMPT };
 
 /** A bill's saved line as a return or credit line, at the price on the paper. */
 export const lineFromBill = (line: BillLine, pricesIncludeVat: boolean): DraftLine => {
@@ -79,7 +85,7 @@ export const lineFromBill = (line: BillLine, pricesIncludeVat: boolean): DraftLi
     category: line.category ?? '',
     description: line.description ?? '',
     amount: String(paper),
-    vatRate: String(line.vatRate),
+    vatRate: line.vatExempt ? EXEMPT : String(line.vatRate),
     include: true,
     max: line.kind === 'product' ? quantity : paper,
   };
@@ -88,7 +94,7 @@ export const lineFromBill = (line: BillLine, pricesIncludeVat: boolean): DraftLi
 /** What a line comes to with its VAT, the way the server rounds it (each line to the cent). */
 export const lineGross = (line: DraftLine, pricesIncludeVat: boolean) => {
   const paper = line.kind === 'product' ? Number(line.quantity) * Number(line.unitPrice) : Number(line.amount);
-  const gross = pricesIncludeVat ? paper : paper * (1 + Number(line.vatRate) / 100);
+  const gross = pricesIncludeVat ? paper : paper * (1 + rateOf(line.vatRate) / 100);
   return Math.round(gross * 100) / 100;
 };
 

@@ -239,6 +239,7 @@ export const en = {
       owner: 'Owner. See the whole business and decide requests on the dashboard.',
       employee: 'Employee. You can browse products and record sales.',
       family: 'Family. You can browse products and save favourites.',
+      accountant: 'Accountant. Books and VAT, on the dashboard.',
     },
     photoTooBig: 'That photo is too big. Use one under 5 MB.',
     changePhotoLabel: 'Change your photo',
@@ -283,6 +284,7 @@ export const en = {
     password: 'Password',
     logIn: 'Log in',
     forgot: 'Forgot your password?',
+    dashboardOnly: 'Accountants work on the dashboard. Sign in at 4vd.app on a computer.',
   },
   stockTag: {
     out: 'Sold out',

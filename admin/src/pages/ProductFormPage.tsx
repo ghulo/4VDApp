@@ -33,6 +33,7 @@ interface ProductDraft {
   price: string;
   costPrice: string;
   vatRate: VatRate;
+  vatExempt: boolean;
   /** Two-letter code, or '' for unknown. */
   originCountry: string;
   sku: string;
@@ -62,6 +63,7 @@ function toDraft(product?: Product): ProductDraft {
     price: product ? String(product.price) : '',
     costPrice: product?.costPrice != null ? String(product.costPrice) : '',
     vatRate: product?.vatRate ?? 18,
+    vatExempt: product?.vatExempt ?? false,
     originCountry: product?.originCountry ?? '',
     sku: product?.sku ?? '',
     imageUrl: product?.imageUrl ?? '',
@@ -84,6 +86,7 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
     price: Number(draft.price),
     costPrice: draft.costPrice === '' ? null : Number(draft.costPrice),
     vatRate: draft.vatRate,
+    vatExempt: draft.vatRate === 0 && draft.vatExempt,
     originCountry: draft.originCountry || null,
     sku: draft.sku.trim() || null,
     imageUrl: draft.imageUrl.trim() || null,
@@ -332,12 +335,19 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     </label>
                     <label className="field">
                       <span className="field__label">{t.productForm.vatRate}</span>
-                      <select value={draft.vatRate} onChange={(event) => update('vatRate', Number(event.target.value) as VatRate)}>
+                      <select
+                        value={draft.vatExempt && draft.vatRate === 0 ? 'exempt' : draft.vatRate}
+                        onChange={(event) => {
+                          const exempt = event.target.value === 'exempt';
+                          setDraft((current) => ({ ...current, vatRate: exempt ? 0 : (Number(event.target.value) as VatRate), vatExempt: exempt }));
+                        }}
+                      >
                         {VAT_RATES.map((rate) => (
                           <option key={rate} value={rate}>
                             {t.productForm.vatOption(rate)}
                           </option>
                         ))}
+                        <option value="exempt">{t.productForm.vatExemptOption}</option>
                       </select>
                       <span className="field__hint">{t.productForm.vatHint}</span>
                     </label>

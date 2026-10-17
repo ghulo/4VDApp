@@ -34,7 +34,7 @@ export type WithholdingType = keyof typeof WITHHOLDING_RATES;
 export const WITHHOLDING_TYPES = ['interest', 'royalties', 'lottery', 'rent', 'entertainers', 'nonresident_services', 'special'] as const satisfies readonly WithholdingType[];
 
 /** The VAT rates a bill line can have. */
-export const BILL_VAT_RATES = [18, 8, 0] as const;
+export const BILL_VAT_RATES = [18, 16, 8, 0] as const;
 
 /**
  * VAT on a service bought from abroad, which the shop charges itself: owed and

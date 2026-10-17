@@ -15,7 +15,7 @@ interface Words {
   list: (items: string[]) => string;
 }
 
-type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
+type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite';
 export type ProductField =
   | 'name'
@@ -27,6 +27,7 @@ export type ProductField =
   | 'sku'
   | 'isActive'
   | 'vatRate'
+  | 'vatExempt'
   | 'originCountry'
   | 'bulkPricingTiers';
 export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote';
@@ -119,6 +120,15 @@ const en = {
   bookEntryAdded: (p: { id: number; amount: number; description: string }, w: Words) =>
     `Wrote entry #${p.id} in the books (${w.money(p.amount)}): ${p.description}`,
   bookEntryReversed: (p: { id: number }) => `Reversed entry #${p.id} in the books`,
+
+  vatFiled: (p: { month: string; outcome: 'pay' | 'carry' | 'nothing'; amount: number }, w: Words) =>
+    `Filed the VAT return for ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${
+      p.outcome === 'pay' ? `${w.money(p.amount)} to pay` : p.outcome === 'carry' ? `${w.money(p.amount)} carried to next month` : 'nothing to pay'
+    }`,
+  vatReopened: (p: { month: string; reason: string }) =>
+    `Reopened the VAT month ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  questionAsked: (p: { on: QuestionOn; text: string }) => `Asked about ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
+  questionAnswered: (p: { on: QuestionOn; text: string }) => `Answered on ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p: { number: string; name: string }) => `Added account ${p.number} ${p.name} to the books`,
   bookAccountChanged: (p: { number: string; name: string }) => `Changed account ${p.number} ${p.name} in the books`,
   bookLinksChanged: () => 'Changed which accounts the books post to',
@@ -239,8 +249,15 @@ const en = {
 };
 
 type Bill = { amount: number; supplier: string | null; number: string | null };
+/** What a question is about, for a sentence: "the bill Fresh Foods 123". */
+export type QuestionOn = { kind: 'bill' | 'document' | 'entry'; label: string };
 
-const EN_ROLE: Record<Role, string> = { developer: 'developer', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family' };
+const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const EN_ON: Record<QuestionOn['kind'], string> = { bill: 'the bill', document: 'invoice', entry: 'entry' };
+const SQ_MONTHS = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
+const SQ_ON: Record<QuestionOn['kind'], string> = { bill: 'faturën', document: 'faturën e shitjes', entry: 'regjistrimin' };
+
+const EN_ROLE: Record<Role, string> = { developer: 'developer', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family', accountant: 'accountant' };
 const EN_REASON: Record<string, string> = { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' };
 const EN_EXPENSE: Record<string, string> = {
   rent: 'rent',
@@ -272,6 +289,7 @@ const EN_PRODUCT_FIELD: Record<ProductField, string> = {
   sku: 'SKU',
   isActive: 'visibility',
   vatRate: 'VAT rate',
+  vatExempt: 'VAT exemption',
   originCountry: 'country',
   bulkPricingTiers: 'bulk prices',
 };
@@ -328,7 +346,7 @@ export type Say = { [K in Key]: Parameters<Templates[K]>[0] extends undefined ? 
 /** A stored Say, or an old entry's English sentence when it has none. */
 export type Said = Say | { text: string };
 
-const SQ_ROLE: Record<Role, string> = { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes' };
+const SQ_ROLE: Record<Role, string> = { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' };
 const SQ_REASON: Record<string, string> = { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' };
 const SQ_EXPENSE: Record<string, string> = {
   rent: 'qiraja',
@@ -373,6 +391,7 @@ const SQ_PRODUCT_FIELD: Record<ProductField, string> = {
   sku: 'SKU',
   isActive: 'dukshmëria',
   vatRate: 'TVSH-ja',
+  vatExempt: 'lirimi nga TVSH-ja',
   originCountry: 'vendi',
   bulkPricingTiers: 'çmimet me shumicë',
 };
@@ -485,6 +504,14 @@ const sq: Templates = {
   expenseStopped: (p) => `Ndali shpenzimin mujor për ${SQ_EXPENSE[p.category] ?? p.category}`,
   bookEntryAdded: (p, w) => `Shkroi regjistrimin #${p.id} në libra (${w.money(p.amount)}): ${p.description}`,
   bookEntryReversed: (p) => `Anuloi regjistrimin #${p.id} në libra`,
+
+  vatFiled: (p, w) =>
+    `Dorëzoi deklaratën e TVSH-së për ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${
+      p.outcome === 'pay' ? `${w.money(p.amount)} për t'u paguar` : p.outcome === 'carry' ? `${w.money(p.amount)} bartet në muajin tjetër` : "asgjë për t'u paguar"
+    }`,
+  vatReopened: (p) => `Rihapi muajin e TVSH-së ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  questionAsked: (p) => `Pyeti për ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
+  questionAnswered: (p) => `U përgjigj te ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p) => `Shtoi llogarinë ${p.number} ${p.name} në libra`,
   bookAccountChanged: (p) => `Ndryshoi llogarinë ${p.number} ${p.name} në libra`,
   bookLinksChanged: () => 'Ndryshoi se në cilat llogari regjistrohen veprimet',

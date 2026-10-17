@@ -21,6 +21,7 @@ import {
 import { OverviewPage } from './pages/OverviewPage';
 import { ButtonLink } from './components/ui';
 import { useT } from './i18n/useT';
+import { useCurrentUser } from './auth/useAuth';
 
 /** Loads a page's code only when someone first opens it, so the first visit stays light. */
 function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) {
@@ -54,6 +55,9 @@ const BooksBalancesPage = lazyPage(() => import('./pages/BooksPages'), 'BooksBal
 const BooksJournalPage = lazyPage(() => import('./pages/BooksPages'), 'BooksJournalPage');
 const BooksAccountsPage = lazyPage(() => import('./pages/BooksPages'), 'BooksAccountsPage');
 const AccountCardPage = lazyPage(() => import('./pages/BooksPages'), 'AccountCardPage');
+const VatPage = lazyPage(() => import('./pages/VatPages'), 'VatPage');
+const SalesBookPage = lazyPage(() => import('./pages/VatPages'), 'SalesBookPage');
+const PurchaseBookPage = lazyPage(() => import('./pages/VatPages'), 'PurchaseBookPage');
 const CustomerDetailPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerDetailPage');
 const CustomersPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomersPage');
 const CustomerStatementPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerStatementPage');
@@ -97,6 +101,12 @@ function NotFoundPage() {
   );
 }
 
+/** The Overview, or for the accountant (who sees only the money side) the VAT page. */
+function HomePage() {
+  const { role } = useCurrentUser();
+  return role === 'accountant' ? <Navigate to="/books/vat" replace /> : <OverviewPage />;
+}
+
 function App() {
   return (
     <I18nProvider>
@@ -119,7 +129,7 @@ function App() {
                       </RequireAuth>
                     }
                   >
-                    <Route index element={<OverviewPage />} />
+                    <Route index element={<HomePage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>
                       <Route path="inbox" element={<InboxPage />} />
                       <Route path="inbox/updates" element={<UpdatesPage />} />
@@ -154,6 +164,9 @@ function App() {
                       <Route path="books" element={<BooksBalancesPage />} />
                       <Route path="books/journal" element={<BooksJournalPage />} />
                       <Route path="books/accounts" element={<BooksAccountsPage />} />
+                      <Route path="books/vat" element={<VatPage />} />
+                      <Route path="books/sales-book" element={<SalesBookPage />} />
+                      <Route path="books/purchase-book" element={<PurchaseBookPage />} />
                     </Route>
                     <Route path="books/accounts/:id" element={<AccountCardPage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>

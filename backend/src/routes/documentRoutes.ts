@@ -6,10 +6,10 @@ export function createDocumentRoutes({ documentService, guards }: Container): Ro
   const controller = createDocumentController(documentService);
   const router = Router();
 
-  router.get('/', ...guards.oversee, controller.list);
-  // Employees open, print and link the documents they issued; the service checks that.
-  router.get('/:id', ...guards.staff, controller.get);
-  router.get('/:id/print', ...guards.staff, controller.print);
+  router.get('/', ...guards.books, controller.list);
+  // Employees open, print and link the documents they issued; the service checks that. The accountant reads them all.
+  router.get('/:id', ...guards.documents, controller.get);
+  router.get('/:id/print', ...guards.documents, controller.print);
   router.put('/:id/fiscal-receipt', ...guards.staff, controller.setFiscalReceipt);
 
   return router;

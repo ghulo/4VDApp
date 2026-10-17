@@ -6,7 +6,7 @@ import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
 import { activeCatalogue, useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
-import { canOversee } from './roles';
+import { canUseDashboard } from './roles';
 import { languageAfterSignIn, takeSignInPick } from '../i18n/signInLanguage';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const user = await authApi.login(email, password);
-    if (!canOversee(user.role)) {
+    if (!canUseDashboard(user.role)) {
       await authApi.logout();
       throw new Error(activeCatalogue().auth.dashboardOnly);
     }
@@ -68,12 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Keep a session started elsewhere (invite accepted, Google sign-in). Only
-   * the developer, admins and the owner use the dashboard; for anyone else the
+   * the developer, admins, the owner and the accountant use the dashboard; for anyone else the
    * tokens are dropped and the caller sends them to the team app instead.
    */
   const adoptSession = useCallback(async (result: LoginResult): Promise<'signedIn' | 'notAdmin'> => {
     tokenStore.save(result.token, result.refreshToken);
-    if (!canOversee(result.user.role)) {
+    if (!canUseDashboard(result.user.role)) {
       await authApi.logout().catch(() => undefined);
       return 'notAdmin';
     }

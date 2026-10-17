@@ -17,7 +17,7 @@ import { orderSummary } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
 
 const STAMP_TONE: Record<ScanStamp, Tone> = { new: 'brand', unsure: 'warn', barcode: 'warn', price: 'info', match: 'ok' };
-const VAT_RATES = [18, 8, 0] as const;
+const VAT_RATES = [18, 16, 8, 0] as const;
 const NEW = 'new';
 const SKIP = 'skip';
 

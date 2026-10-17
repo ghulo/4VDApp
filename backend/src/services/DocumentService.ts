@@ -6,8 +6,9 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import type { PublicUser } from '../types/auth.js';
 import { roundMoney } from '../utils/money.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
-import { canOversee } from '../utils/roles.js';
+import { canReadBooks } from '../utils/roles.js';
 import { zonedDay } from '../utils/zonedDates.js';
+import { assertMonthsOpen } from './vat/periodLock.js';
 import { renderDocumentHtml } from './documents/documentHtml.js';
 import { splitVat } from './documents/vat.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
@@ -27,6 +28,8 @@ export interface DocumentLineDto {
   /** The unit price before that rabat. */
   priceBeforeDiscount: number | null;
   vatRate: number;
+  /** Exempt from VAT (its rate is 0). */
+  vatExempt: boolean;
   netAmount: number;
   vatAmount: number;
   total: number;
@@ -116,6 +119,7 @@ export class DocumentService {
         discountPercent: toMoneyOrNull(sale.discount_percent),
         priceBeforeDiscount: toMoneyOrNull(sale.price_before_discount),
         vatRate: sale.vat_rate,
+        vatExempt: sale.vat_exempt,
       });
     });
     const buyer = p.customerId === null ? null : ((await repos.documents.customerParty(p.customerId)) ?? null);
@@ -141,6 +145,7 @@ export class DocumentService {
       quantity: p.quantity,
       unitPrice: roundMoney(p.total / p.quantity),
       vatRate: invoiced.vat_rate,
+      vatExempt: invoiced.vat_exempt,
       total: p.total,
     });
     return this.issue(repos, {
@@ -225,6 +230,7 @@ export class DocumentService {
   async setFiscalReceipt(id: number, value: string | null, viewer: PublicUser): Promise<DocumentDetailDto> {
     const record = await this.visible(id, viewer);
     await this.transactions.run(async (repos) => {
+      await assertMonthsOpen(repos.periods, [zonedDay(record.issued_at, this.timeZone)]);
       await repos.documents.setFiscalReceipt(id, value);
       await repos.activityLog.create({
         userId: viewer.id,
@@ -238,11 +244,11 @@ export class DocumentService {
     return this.get(id, viewer);
   }
 
-  /** Employees see the documents they issued; the people who run the shop see all. */
+  /** Employees see the documents they issued; the people who run the shop, and the accountant, see all. */
   private async visible(id: number, viewer: PublicUser): Promise<DocumentRecord> {
     const record = await this.documentRepository.findById(id);
     if (!record) throw new NotFoundError(`Document ${id} does not exist`);
-    if (!canOversee(viewer.role) && record.issued_by !== viewer.id) {
+    if (!canReadBooks(viewer.role) && record.issued_by !== viewer.id) {
       throw new ForbiddenError('You can only open the documents you issued');
     }
     return record;
@@ -259,6 +265,7 @@ function lineFor(p: {
   discountPercent: number | null;
   priceBeforeDiscount: number | null;
   vatRate: number;
+  vatExempt?: boolean;
   total?: number;
 }): NewDocumentLine {
   const total = p.total ?? roundMoney(p.unitPrice * p.quantity);
@@ -307,6 +314,7 @@ function toLineDto(line: DocumentLineRecord): DocumentLineDto {
     discountPercent: toMoneyOrNull(line.discount_percent),
     priceBeforeDiscount: toMoneyOrNull(line.price_before_discount),
     vatRate: line.vat_rate,
+    vatExempt: line.vat_exempt,
     netAmount: toMoney(line.net_amount),
     vatAmount: toMoney(line.vat_amount),
     total: toMoney(line.total),

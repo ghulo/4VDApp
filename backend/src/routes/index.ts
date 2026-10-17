@@ -40,6 +40,7 @@ import { createMeRoutes } from './meRoutes.js';
 import { createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
 import { createReportsRoutes } from './reportsRoutes.js';
+import { createThreadRoutes, createVatRoutes } from './vatRoutes.js';
 
 /** Root router for everything under /api. */
 export function createApiRoutes(container: Container): Router {
@@ -70,6 +71,8 @@ export function createApiRoutes(container: Container): Router {
   router.use('/orders', createOrderRoutes(container));
   router.use('/bills', createBillRoutes(container));
   router.use('/books', createBooksRoutes(container));
+  router.use('/vat', createVatRoutes(container));
+  router.use('/threads', createThreadRoutes(container));
   router.use('/bill-scans', createBillScanRoutes(container));
   router.use('/product-requests', createProductRequestRoutes(container));
   router.use('/expiry', createExpiryRoutes(container));

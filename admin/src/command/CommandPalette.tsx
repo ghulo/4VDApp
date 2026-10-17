@@ -6,7 +6,7 @@ import { useT } from '../i18n/useT';
 import { rankMatches, type Searchable } from './matching';
 import { useCurrentUser } from '../auth/useAuth';
 import type { UserRole } from '../services/types';
-import { canEditProducts, canManage, canOversee } from '../auth/roles';
+import { canEditProducts, canManage, canOversee, canReadBooks } from '../auth/roles';
 import { formatMoney } from '../utils/format';
 import { documentNumberFromScan } from '../utils/scanLinks';
 import { type Catalogue, en } from '../i18n/en';
@@ -18,6 +18,8 @@ type PageKey = keyof Catalogue['palette']['pageKeywords'];
 interface Command extends Searchable {
   id: string;
   group: Group;
+  /** A page's key, so the list can be cut down to what this person sees. */
+  key?: PageKey;
   hint?: string;
   to: string;
   /** Who may use it; everyone when left out. */
@@ -27,10 +29,10 @@ interface Command extends Searchable {
 const ACTIONS: Array<{ key: ActionKey; to: string; allowed?: (role: UserRole) => boolean }> = [
   { key: 'addProduct', to: '/products/new', allowed: canEditProducts },
   { key: 'invite', to: '/people', allowed: canManage },
-  { key: 'sale', to: '/sales?new=1' },
+  { key: 'sale', to: '/sales?new=1', allowed: (role) => role !== 'accountant' },
   { key: 'promotion', to: '/promotions', allowed: canManage },
-  { key: 'count', to: '/counts' },
-  { key: 'ask', to: '/ask' },
+  { key: 'count', to: '/counts', allowed: (role) => role !== 'accountant' },
+  { key: 'ask', to: '/ask', allowed: (role) => role !== 'accountant' },
 ];
 
 const PAGES: Array<[PageKey, string]> = [
@@ -55,11 +57,15 @@ const PAGES: Array<[PageKey, string]> = [
   ['suppliers', '/suppliers'],
   ['bills', '/bills'],
   ['reports', '/reports'],
+  ['books', '/books'],
   ['people', '/people'],
   ['activity', '/activity'],
   ['settings', '/settings'],
   ['profile', '/profile'],
 ];
+
+/** The pages the accountant sees: the money side only. */
+const ACCOUNTANT_PAGES = new Set<PageKey>(['inbox', 'report', 'orders', 'sales', 'documents', 'bills', 'expenses', 'customers', 'suppliers', 'reports', 'books', 'profile']);
 
 const pageLabel = (t: Catalogue, key: PageKey) => (key === 'profile' ? t.palette.yourProfile : t.nav.items[key]);
 
@@ -78,6 +84,7 @@ function staticCommands(t: Catalogue): { actions: Array<Command>; pages: Command
       allowed,
     })),
     pages: PAGES.map(([key, to]) => ({
+      key,
       id: `page-${to}`,
       group: 'pages',
       label: pageLabel(t, key),
@@ -105,16 +112,16 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const products = useQuery({
     queryKey: ['command', 'products', trimmed],
     queryFn: () => productsApi.list({ page: 1, limit: MAX_PER_GROUP, search: trimmed }),
-    enabled: trimmed.length >= 2,
+    enabled: trimmed.length >= 2 && role !== 'accountant',
     staleTime: 30_000,
   });
-  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), staleTime: 60_000 });
+  const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1), staleTime: 60_000, enabled: canOversee(role) });
   // A scanned or typed invoice number (its barcode) jumps straight to that document.
   const documentNumber = documentNumberFromScan(trimmed);
   const documents = useQuery({
     queryKey: ['command', 'documents', documentNumber],
     queryFn: () => documentsApi.list({ page: 1, search: documentNumber! }),
-    enabled: documentNumber !== null && canOversee(role),
+    enabled: documentNumber !== null && canReadBooks(role),
   });
 
   const results = useMemo(() => {
@@ -146,7 +153,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     const ranked = [
       ...documentCommands,
       ...rankMatches(trimmed, commands.actions.filter((action) => !action.allowed || action.allowed(role))),
-      ...rankMatches(trimmed, commands.pages),
+      ...rankMatches(trimmed, commands.pages.filter((page) => role !== 'accountant' || ACCOUNTANT_PAGES.has(page.key!))),
       // Products already come back filtered by the server's search.
       ...productCommands,
       ...(trimmed ? rankMatches(trimmed, peopleCommands) : []),

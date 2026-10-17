@@ -6,9 +6,9 @@ export function createExpenseRoutes({ expenseService, guards }: Container): Rout
   const controller = createExpenseController(expenseService);
   const router = Router();
 
-  router.get('/', ...guards.oversee, controller.list);
+  router.get('/', ...guards.books, controller.list);
   router.post('/', ...guards.manage, controller.add);
-  router.get('/recurring', ...guards.oversee, controller.recurring);
+  router.get('/recurring', ...guards.books, controller.recurring);
   router.post('/recurring/:id/stop', ...guards.manage, controller.stopRepeating);
   router.delete('/:id', ...guards.manage, controller.remove);
 

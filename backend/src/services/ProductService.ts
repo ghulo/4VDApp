@@ -33,6 +33,8 @@ export interface ProductDto {
   isActive: boolean;
   /** Percent of VAT included in the price. */
   vatRate: number;
+  /** Exempt from VAT (its rate is 0). */
+  vatExempt: boolean;
   /** ISO code of the country it comes from, or null when unknown. */
   originCountry: string | null;
   category: { id: number; name: string };
@@ -58,6 +60,8 @@ export interface ProductInput {
   isActive: boolean;
   /** Left out keeps the current rate (the default for a new product). */
   vatRate?: number;
+  /** Exempt from VAT; only with a 0% rate. Left out keeps it while the rate stays 0. */
+  vatExempt?: boolean;
   /** Left out keeps the current country (none for a new product). */
   originCountry?: string | null;
   /** Replaces every tier when given; leaves them unchanged when undefined (updates only). */
@@ -248,7 +252,7 @@ export class ProductService {
 
     try {
       const productId = await this.transactions.run(async (repos) => {
-        const id = await repos.products.create(this.toProductData(input, input.vatRate ?? DEFAULT_VAT_RATE, input.originCountry ?? null));
+        const id = await repos.products.create(this.toProductData(input, input.vatRate ?? DEFAULT_VAT_RATE, input.vatRate === 0 && Boolean(input.vatExempt), input.originCountry ?? null));
         await repos.inventory.create(id, input.stock, input.reorderLevel ?? DEFAULT_REORDER_LEVEL);
         await repos.pricingTiers.replaceForProduct(id, tiers);
         if (input.stock > 0) {
@@ -291,6 +295,7 @@ export class ProductService {
     // still be valid against the new price.
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? existingTiers);
     const vatRate = input.vatRate ?? existing.vat_rate;
+    const vatExempt = vatRate === 0 && (input.vatExempt ?? (input.vatRate === undefined || input.vatRate === existing.vat_rate ? existing.vat_exempt : false));
     const originCountry = input.originCountry === undefined ? existing.origin_country : input.originCountry;
     const change = describeProductChanges(toSnapshot(existing, existingTiers), {
       name: input.name,
@@ -302,13 +307,14 @@ export class ProductService {
       sku: input.sku,
       isActive: input.isActive,
       vatRate,
+      vatExempt,
       originCountry,
       bulkPricingTiers: input.bulkPricingTiers ? tiers : undefined,
     });
 
     try {
       await this.transactions.run(async (repos) => {
-        await repos.products.update(id, this.toProductData(input, vatRate, originCountry));
+        await repos.products.update(id, this.toProductData(input, vatRate, vatExempt, originCountry));
         if (input.bulkPricingTiers) await repos.pricingTiers.replaceForProduct(id, tiers);
         if (change) {
           await repos.activityLog.create({
@@ -350,7 +356,7 @@ export class ProductService {
     if (!category) throw new ValidationError(`categoryId: category ${categoryId} does not exist`);
   }
 
-  private toProductData(input: ProductInput, vatRate: number, originCountry: string | null): ProductData {
+  private toProductData(input: ProductInput, vatRate: number, vatExempt: boolean, originCountry: string | null): ProductData {
     return {
       name: input.name,
       description: input.description,
@@ -361,6 +367,7 @@ export class ProductService {
       sku: input.sku,
       isActive: input.isActive,
       vatRate,
+      vatExempt,
       originCountry,
     };
   }
@@ -385,6 +392,7 @@ export class ProductService {
       imageUrl: product.image_url,
       isActive: product.is_active,
       vatRate: product.vat_rate,
+      vatExempt: product.vat_exempt,
       originCountry: product.origin_country,
       category: { id: product.category_id, name: product.category_name },
       price,
@@ -420,6 +428,7 @@ function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapsh
     sku: product.sku,
     isActive: product.is_active,
     vatRate: product.vat_rate,
+    vatExempt: product.vat_exempt,
     originCountry: product.origin_country,
     bulkPricingTiers: tiers,
   };

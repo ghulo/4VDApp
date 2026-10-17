@@ -15,6 +15,7 @@ import { mediaUrl } from './mappers.js';
 import type { MediaService } from './MediaService.js';
 import { validatePricingTiers } from './pricing/bulkPricing.js';
 import { changeCost } from './PurchaseOrderService.js';
+import { assertMonthsOpen, monthOf, vatMonthForBill } from './vat/periodLock.js';
 
 /** A bill due within this many days counts as "due soon". */
 export const BILL_DUE_SOON_DAYS = 7;
@@ -49,6 +50,8 @@ export interface BillLineDto {
   category: string | null;
   description: string | null;
   vatRate: number;
+  /** Exempt from VAT (its rate is 0). */
+  vatExempt: boolean;
   net: number;
   vat: number;
   gross: number;
@@ -71,6 +74,11 @@ export interface SupplierBillDto {
   /** The supplier's own invoice number. */
   number: string | null;
   issuedOn: string;
+  /**
+   * The VAT month it counts in, "2026-10", when that is not its own: it came
+   * after its month was filed, so it counts in the next open month. Null: its own month.
+   */
+  vatMonth: string | null;
   dueOn: string | null;
   /** What the supplier is owed (a return or credit: what it gives back). */
   amount: number;
@@ -136,6 +144,8 @@ export interface BillLineInput {
   amount?: number | null;
   /** Left out: the product's own rate, else the supplier's usual, else 18%. */
   vatRate?: number | null;
+  /** Exempt from VAT (with a 0% rate); left out follows the rate's source like vatRate. */
+  vatExempt?: boolean | null;
 }
 
 /**
@@ -317,6 +327,7 @@ export class SupplierBillService {
     await this.transactions.run(async (repos) => {
       await repos.bills.lock(id);
       const bill = await openBill(repos, id);
+      await assertBillOpen(repos, bill);
       checkDates(input);
       const lines = await repos.bills.findLines([id]);
       const typed = lines.length > 0 && lines.every((line) => line.order_line_id === null);
@@ -327,6 +338,7 @@ export class SupplierBillService {
         throw new ValidationError(`The amount can't be less than the ${formatEuro(Number(bill.paid))} already paid`);
       }
       await repos.bills.update(id, typed ? { ...input, vatAmount: undefined } : input);
+      if (input.issuedOn !== bill.issued_on) await placeInVatMonth(repos, id, input.issuedOn);
       await repos.activityLog.create({
         userId: actorId,
         action: 'bill.updated',
@@ -479,6 +491,19 @@ async function openBill(repos: TransactionalRepositories, id: number): Promise<B
   return bill;
 }
 
+/** The VAT month a bill counts in. */
+export const countedMonth = (bill: Pick<BillRecord, 'issued_on' | 'vat_month'>) => bill.vat_month ?? monthOf(bill.issued_on);
+
+/** A bill counted in a filed VAT month can't change: the return it is on has gone to ATK. */
+async function assertBillOpen(repos: TransactionalRepositories, bill: BillRecord): Promise<void> {
+  await assertMonthsOpen(repos.periods, [countedMonth(bill)]);
+}
+
+/** A bill dated in a filed month is still taken, and counted in the next open month (see periodLock). */
+async function placeInVatMonth(repos: TransactionalRepositories, id: number, issuedOn: string): Promise<void> {
+  await repos.bills.setVatMonth(id, await vatMonthForBill(repos.periods, issuedOn));
+}
+
 interface PlannedLine {
   input: BillLineInput;
   row: NewBillLine;
@@ -503,11 +528,13 @@ async function planBill(
   const lines = input.lines ?? [];
   let supplier: BillPlan['supplier'] = null;
   let usualVat: number | null = null;
+  let usualExempt = false;
   if (input.supplierId) {
     const found = await repos.orders.findSupplier(input.supplierId);
     if (!found) throw new NotFoundError(`Supplier ${input.supplierId} does not exist`);
     supplier = { id: found.id, name: found.name, abroad: found.abroad };
     usualVat = found.usualVatRate;
+    usualExempt = found.usualVatExempt;
   }
   const abroad = abroadOverride ?? supplier?.abroad ?? false;
 
@@ -526,9 +553,16 @@ async function planBill(
   }
 
   const rateOf = (line: BillLineInput) => {
+    if (line.vatExempt) return 0;
     if (line.vatRate !== null && line.vatRate !== undefined) return line.vatRate;
     if (line.kind === 'product') return products.get(line.productId!)!.vat_rate;
     return usualVat ?? 18;
+  };
+  const exemptOf = (line: BillLineInput) => {
+    if (line.vatExempt !== null && line.vatExempt !== undefined) return line.vatExempt;
+    if (line.vatRate !== null && line.vatRate !== undefined) return false;
+    if (line.kind === 'product') return products.get(line.productId!)!.vat_exempt;
+    return usualVat === 0 && usualExempt;
   };
   const hasGoods = lines.some((line) => line.kind !== 'cost');
   const figures = billFigures({
@@ -567,6 +601,7 @@ async function planBill(
         category: product ? null : line.category!,
         description: line.description?.trim() || null,
         vatRate: abroad ? 0 : rateOf(line),
+        vatExempt: !abroad && exemptOf(line),
         net: lineFigures.net,
         vat: lineFigures.vat,
         landed: lineFigures.landed,
@@ -675,6 +710,7 @@ export async function createBill(
     throw error;
   }
   await repos.bills.addLines(id, rows);
+  await placeInVatMonth(repos, id, input.issuedOn);
 
   const who = supplier?.name ?? null;
   if (typed) {
@@ -719,6 +755,7 @@ export async function createBill(
       kind: first.kind,
       category: plan.lines.find((line) => line.row.kind !== 'product')?.row.category ?? null,
       vatRate: plan.abroad ? null : mostCommon(rates),
+      vatExempt: !plan.abroad && plan.lines.every((line) => line.row.vatExempt),
       withholdingType: withholding,
     });
   }
@@ -753,6 +790,7 @@ async function deliveryLines(repos: TransactionalRepositories, orderId: number):
         category: null,
         description: null,
         vatRate: rate,
+        vatExempt: products.get(line.product_id)?.vat_exempt ?? false,
         net: roundMoney(gross - vat),
         vat,
         landed: roundMoney(gross - vat),
@@ -872,6 +910,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
     carwashId: bill.carwash_id,
   });
   await repos.bills.addLines(id, plan.lines.map((line) => line.row));
+  await placeInVatMonth(repos, id, input.issuedOn);
   if (input.returnsStock) {
     for (const line of plan.lines) {
       if (!line.product) continue;
@@ -907,6 +946,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
 export async function voidBill(repos: TransactionalRepositories, id: number, note: string, actorId: number, now: Date): Promise<BillRecord> {
   await repos.bills.lock(id);
   const bill = await openBill(repos, id);
+  await assertBillOpen(repos, bill);
   const lines = await repos.bills.findLines([id]);
   if (bill.kind === 'credit') {
     for (const payment of await repos.bills.creditPayments(id)) await repos.bills.voidPayment(payment.id, actorId, now);
@@ -977,6 +1017,7 @@ const toLineDto = (line: BillLineRecord): BillLineDto => ({
   category: line.category,
   description: line.description,
   vatRate: line.vat_rate,
+  vatExempt: line.vat_exempt,
   net: Number(line.net),
   vat: Number(line.vat),
   gross: roundMoney(Number(line.net) + Number(line.vat)),
@@ -1003,6 +1044,7 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
     orderId: bill.order_id,
     number: bill.number,
     issuedOn: bill.issued_on,
+    vatMonth: bill.vat_month && bill.vat_month.slice(0, 7) !== bill.issued_on.slice(0, 7) ? bill.vat_month.slice(0, 7) : null,
     dueOn: bill.due_on,
     amount,
     total: roundMoney(amount + withheld),

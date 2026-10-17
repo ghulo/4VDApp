@@ -2,6 +2,11 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Language } from '../i18n/language';
 import type {
   TestDelivery,
+  Thread,
+  ThreadSubject,
+  VatMonth,
+  VatYearRow,
+  WithholdingRow,
   BillInput,
   BillFormInput,
   BillPreview,
@@ -723,4 +728,42 @@ export const booksApi = {
     const { blob, filename } = await apiDownload(path, { ...period, lang, tz });
     saveDownload(blob, filename ?? '4vd-books.xlsx');
   },
+};
+
+export type BookKind = 'sales' | 'purchases';
+
+export const vatApi = {
+  filed: async () => (await apiRequest<string[]>('/vat/filed')).data,
+  month: async (month: string) => (await apiRequest<VatMonth>(`/vat/${month}`)).data,
+  year: async (year: number) => (await apiRequest<VatYearRow[]>(`/vat/year/${year}`)).data,
+  /** Box 70 (refund asked for), and box 68 for the first month. */
+  saveTyped: async (month: string, input: { refund?: number; carriedIn?: number | null }) =>
+    (await apiRequest<VatMonth>(`/vat/${month}`, { method: 'PUT', body: input })).data,
+  file: async (month: string) => (await apiRequest<VatMonth>(`/vat/${month}/file`, { method: 'POST' })).data,
+  reopen: async (month: string, reason: string) => (await apiRequest<VatMonth>(`/vat/${month}/reopen`, { method: 'POST', body: { reason } })).data,
+  withholding: async (month: string) => (await apiRequest<WithholdingRow[]>(`/vat/${month}/withholding`)).data,
+  /** The sales or purchase book as Excel, or as the file for ATK's EDI upload. */
+  async downloadBook(month: string, kind: BookKind, format: 'xlsx' | 'edi', lang: Language, all: boolean): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/vat/${month}/books/${kind}`, { format, lang, all, tz });
+    saveDownload(blob, filename ?? `4vd-${kind}-${month}.${format === 'edi' ? 'csv' : 'xlsx'}`);
+  },
+  /** The book as a page to print or save as PDF. */
+  bookPage: async (month: string, kind: BookKind, lang: Language, all: boolean) =>
+    (await apiDownload(`/vat/${month}/books/${kind}`, { format: 'html', lang, all })).blob.text(),
+  async downloadWithholding(month: string, lang: Language): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/vat/${month}/withholding/download`, { lang, tz });
+    saveDownload(blob, filename ?? `4vd-withholding-${month}.xlsx`);
+  },
+  async downloadYear(year: number, lang: Language): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/vat/year/${year}/download`, { lang, tz });
+    saveDownload(blob, filename ?? `4vd-vat-${year}.xlsx`);
+  },
+};
+
+export const threadsApi = {
+  get: async (kind: ThreadSubject, id: number) => (await apiRequest<Thread>(`/threads/${kind}/${id}`)).data,
+  post: async (kind: ThreadSubject, id: number, body: string) => (await apiRequest<Thread>(`/threads/${kind}/${id}`, { method: 'POST', body: { body } })).data,
 };

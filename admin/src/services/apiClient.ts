@@ -151,7 +151,9 @@ export async function apiDownload(
     throw toApiError(response, body);
   }
   const disposition = response.headers.get('Content-Disposition') ?? '';
-  const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? null;
+  // A name with accents comes encoded as filename*=UTF-8''…; prefer it.
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  const filename = encoded ? decodeURIComponent(encoded) : (/filename="([^"]+)"/.exec(disposition)?.[1] ?? null);
   return { blob: await response.blob(), filename };
 }
 

@@ -13,6 +13,8 @@ import { type AccountRecord, BooksRepository, type CardLineRecord, type EntryRec
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { BOOKS_START_KEY, BooksPoster, insertLines, reverseEntry } from './books/BooksPoster.js';
 import { checkoutKeySql } from './books/postingRules.js';
+import { VatMonthRepository } from '../repositories/VatMonthRepository.js';
+import { assertMonthsOpen } from './vat/periodLock.js';
 
 export interface AccountDto {
   id: number;
@@ -159,6 +161,7 @@ function toEntries(records: EntryRecord[], lines: LineRecord[], targets: Map<str
  */
 export class BooksService {
   private readonly repository: BooksRepository;
+  private readonly periods: VatMonthRepository;
   readonly poster: BooksPoster;
 
   constructor(
@@ -166,6 +169,7 @@ export class BooksService {
     private readonly timeZone: string,
   ) {
     this.repository = new BooksRepository(db);
+    this.periods = new VatMonthRepository(db);
     this.poster = new BooksPoster(db, timeZone);
   }
 
@@ -436,6 +440,7 @@ export class BooksService {
   }
 
   async addManualEntry(input: ManualEntryInput, actorId: number): Promise<EntryDto> {
+    await assertMonthsOpen(this.periods, [input.date]);
     const start = await this.poster.startDay();
     if (start && input.date < start) {
       throw new ValidationError(`The books start on ${start}. An entry can't be dated before that; balances from before go in the opening entry on ${start}.`);
@@ -501,6 +506,8 @@ export class BooksService {
       );
     }
     if (entry.reversed_at) throw new ValidationError(`Entry #${id} is already reversed.`);
+    // The reversal is dated like the entry, so it would change that month.
+    await assertMonthsOpen(this.periods, [entry.entry_date]);
     const reversalId = await this.db.transaction().execute(async (trx) => {
       const newId = await reverseEntry(trx, id, actorId, null);
       await new ActivityLogRepository(trx).create({

@@ -1,6 +1,6 @@
 // Mirrors the shapes the backend returns (see its DTOs in backend/src/services).
 
-export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
+export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 
 export interface User {
   id: number;

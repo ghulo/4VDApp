@@ -82,6 +82,8 @@ export function CustomersPage() {
   const t = useT();
   const navigate = useNavigate();
   const [adding, setAdding] = useNewSheet();
+  // The accountant reads customers; adding them and taking tab payments stays at the counter.
+  const writes = useCurrentUser().role !== 'accountant';
   const [params, setParams] = useSearchParams();
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   // The first moment of this month, fixed when the page opens.
@@ -126,9 +128,11 @@ export function CustomersPage() {
         title={t.customers.title}
         description={t.customers.description}
         actions={
-          <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
-            {t.customers.add}
-          </Button>
+          writes && (
+            <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
+              {t.customers.add}
+            </Button>
+          )
         }
       />
 
@@ -203,9 +207,11 @@ export function CustomersPage() {
                 icon={AddressBook}
                 title={t.customers.none}
                 action={
-                  <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
-                    {t.customers.add}
-                  </Button>
+                  writes && (
+                    <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
+                      {t.customers.add}
+                    </Button>
+                  )
                 }
               >
                 {t.customers.noneHint}
@@ -430,11 +436,14 @@ export function CustomerDetailPage() {
 /** What they owe on the tab: take a payment, and every charge and payment. */
 function TabCard({ customer }: { customer: CustomerDetail }) {
   const t = useT();
+  const takesPayments = useCurrentUser().role !== 'accountant';
   return (
     <Card title={t.customers.tab} flush>
-      <div className="tab-card__pay">
-        {customer.balance > 0 ? <PaymentForm customer={customer} /> : <p className="field-hint">{t.customers.tabSettled}</p>}
-      </div>
+      {(takesPayments || customer.balance <= 0) && (
+        <div className="tab-card__pay">
+          {customer.balance > 0 ? <PaymentForm customer={customer} /> : <p className="field-hint">{t.customers.tabSettled}</p>}
+        </div>
+      )}
       <DataTable
         caption={t.tabs.historyCaption}
         rows={customer.entries}

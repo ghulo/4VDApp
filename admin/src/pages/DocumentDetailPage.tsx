@@ -11,12 +11,16 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '../utils/format';
 import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
+import { QuestionsCard } from '../components/QuestionsCard';
+import { useCurrentUser } from '../auth/useAuth';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
   const t = useT();
   const id = Number(useParams().id);
   const document = useQuery({ queryKey: ['documents', id], queryFn: () => documentsApi.get(id) });
+  // The counter matches a document to its fiscal receipt; the accountant only reads it.
+  const matchesReceipts = useCurrentUser().role !== 'accountant';
 
   if (document.isPending) return <Loading />;
   if (document.isError) return <ErrorNotice error={document.error} onRetry={() => document.refetch()} />;
@@ -69,7 +73,7 @@ export function DocumentDetailPage() {
             { header: t.sales.qty, align: 'end', cell: (line) => line.quantity },
             { header: t.sales.each, align: 'end', cell: (line) => formatMoney(line.priceBeforeDiscount ?? line.unitPrice) },
             { header: t.documents.discount, align: 'end', cell: (line) => (line.discountPercent ? formatPercent(line.discountPercent / 100) : '') },
-            { header: t.documents.vat, align: 'end', cell: (line) => `${line.vatRate}%` },
+            { header: t.documents.vat, align: 'end', cell: (line) => (line.vatExempt ? t.documents.vatExempt : `${line.vatRate}%`) },
             { header: t.documents.net, align: 'end', cell: (line) => formatMoney(line.netAmount) },
             { header: t.documents.vatAmount, align: 'end', cell: (line) => formatMoney(line.vatAmount) },
             { header: t.sales.total, align: 'end', cell: (line) => formatMoney(line.total) },
@@ -101,7 +105,8 @@ export function DocumentDetailPage() {
         </dl>
       </Card>
 
-      <FiscalReceiptCard document={doc} />
+      {matchesReceipts && <FiscalReceiptCard document={doc} />}
+      <QuestionsCard kind="document" id={doc.id} />
       <EntriesPanel source="document" id={doc.id} />
       <HistoryCard entityType="document" entityId={doc.id} />
     </>

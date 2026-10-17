@@ -1,13 +1,15 @@
 import type { UserRole } from '../database/types.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
-import { canOversee, canSell } from '../utils/roles.js';
-import { zonedHour } from '../utils/zonedDates.js';
+import { canOversee, canReadBooks, canSell } from '../utils/roles.js';
+import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
 import type { CashCountService } from './CashCountService.js';
 import type { DayService } from './DayService.js';
 import type { DuplicateService } from './DuplicateService.js';
 import type { Insight, InsightKind, InsightSeverity, InsightsService } from './InsightsService.js';
+import type { ThreadService } from './ThreadService.js';
+import { DUE_DAY, addMonths, type VatService } from './vat/VatService.js';
 
 /** From this hour (shop time) an unfinished day or shift becomes something to do. */
 export const CLOSING_HOUR = 18;
@@ -16,8 +18,8 @@ const CASH_CHECK_DAYS = 30;
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'answer';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'question';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -89,11 +91,19 @@ export class AttentionService {
     private readonly dayService: DayService,
     private readonly billScans: BillScanRepository,
     private readonly duplicates: DuplicateService,
+    private readonly vat: VatService,
+    private readonly threads: ThreadService,
     private readonly timeZone: string,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
-    const todo = canOversee(role) ? await this.overseer(role, t, now) : canSell(role) ? await this.counter(role, t, now) : [];
+    const todo = canOversee(role)
+      ? [...(await this.overseer(role, t, now)), ...(await this.books(t, now)), ...(await this.questions(t))]
+      : canReadBooks(role)
+        ? await this.books(t, now)
+        : canSell(role)
+          ? await this.counter(role, t, now)
+          : [];
     todo.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return { todo, count: todo.filter((item) => item.severity !== 'idea').length };
   }
@@ -184,6 +194,42 @@ export class AttentionService {
         to: '/day',
       },
     ];
+  }
+
+  /**
+   * "September VAT is due by 20 October", from the 1st of the month after
+   * until the month is marked as filed; urgent once the 20th has passed.
+   */
+  private async books(t: ServerMessages, now: Date): Promise<TodoItem[]> {
+    const today = zonedDay(now, this.timeZone);
+    const months = await this.vat.unfiled(now);
+    return months.map((month) => {
+      const due = `${addMonths(`${month}-01`, 1).slice(0, 7)}-${String(DUE_DAY).padStart(2, '0')}`;
+      const late = today > due;
+      return {
+        key: `vat_due:${month}`,
+        kind: 'vat_due',
+        severity: late ? 'urgent' : 'check',
+        title: t.todo.vatDueTitle(month),
+        detail: t.todo.vatDueDetail(late),
+        verb: 'fileVat',
+        to: `/books/vat?month=${month}`,
+      };
+    });
+  }
+
+  /** Questions the accountant left on documents, until someone answers. */
+  private async questions(t: ServerMessages): Promise<TodoItem[]> {
+    const open = await this.threads.open();
+    return open.map((question) => ({
+      key: `question:${question.threadId}`,
+      kind: 'question',
+      severity: 'check',
+      title: t.todo.questionTitle({ kind: question.kind, label: question.label }),
+      detail: t.todo.questionDetail({ name: question.askedBy, text: question.text }),
+      verb: 'answer',
+      to: question.kind === 'bill' ? `/bills/${question.id}` : question.kind === 'document' ? `/documents/${question.id}` : `/books/journal?entry=${question.id}`,
+    }));
   }
 
   /** Today's steps as this person sees them, but only once it's closing time. */

@@ -11,13 +11,14 @@ export interface ProductSnapshot {
   sku: string | null;
   isActive: boolean;
   vatRate: number;
+  vatExempt: boolean;
   originCountry: string | null;
   /** Undefined means "not part of this change". */
   bulkPricingTiers?: PricingTier[];
 }
 
 /** Every field a change is checked for, in the order sentences name them. */
-const FIELDS: ProductField[] = ['name', 'description', 'categoryId', 'price', 'costPrice', 'imageUrl', 'sku', 'isActive', 'vatRate', 'originCountry', 'bulkPricingTiers'];
+const FIELDS: ProductField[] = ['name', 'description', 'categoryId', 'price', 'costPrice', 'imageUrl', 'sku', 'isActive', 'vatRate', 'vatExempt', 'originCountry', 'bulkPricingTiers'];
 
 type FieldChanges = Partial<Record<keyof ProductSnapshot, { from: unknown; to: unknown }>>;
 

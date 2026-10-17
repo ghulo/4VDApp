@@ -11,6 +11,7 @@ import { toMoney } from '../mappers.js';
 import type { EditReverts } from './editReverts.js';
 import { canUndo, type UndoTarget, undoTargetOf } from './undoRules.js';
 import { isSay } from '../../i18n/activityText.js';
+import { assertMonthsOpen } from '../vat/periodLock.js';
 
 type Mode = 'undo' | 'restore';
 
@@ -52,6 +53,7 @@ export class UndoService {
     private readonly undoRepository: UndoRepository,
     private readonly edits: EditReverts,
     private readonly documents: DocumentService,
+    private readonly timeZone: string,
   ) {}
 
   undo(entryId: number, actor: PublicUser, note: string | null): Promise<void> {
@@ -72,6 +74,8 @@ export class UndoService {
     await this.transactions.run(async (repos) => {
       const plan = await planFor(repos, target, entry);
       await assertAllowed(repos, actor, plan.ownerId, plan.state, mode);
+      // Nothing dated in a filed VAT month changes, undone or put back.
+      await assertMonthsOpen(repos.periods, await Promise.all(plan.rows.map((row) => repos.undo.happenedOn(row, this.timeZone))));
       await plan.check?.(mode);
 
       const effect = plan.stock ? await moveStock(repos, plan, mode, actor.id) : null;

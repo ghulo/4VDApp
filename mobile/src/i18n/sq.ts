@@ -165,6 +165,7 @@ export const sq: Catalogue = {
       owner: 'Pronar. Shiko gjithë biznesin dhe vendos për kërkesat në panel.',
       employee: 'Punonjës. Mund të shfletosh produkte dhe të regjistrosh shitje.',
       family: 'Familje. Mund të shfletosh produkte dhe të ruash të preferuarat.',
+      accountant: 'Kontabilist. Librat dhe TVSH-ja, në panel.',
     },
     photoTooBig: 'Kjo foto është shumë e madhe. Përdor një nën 5 MB.',
     changePhotoLabel: 'Ndrysho foton tënde',
@@ -209,6 +210,7 @@ export const sq: Catalogue = {
     password: 'Fjalëkalimi',
     logIn: 'Hyr',
     forgot: 'Harrove fjalëkalimin?',
+    dashboardOnly: 'Kontabilistët punojnë në panel. Hyr në 4vd.app nga kompjuteri.',
   },
   stockTag: {
     out: 'Mbaroi',

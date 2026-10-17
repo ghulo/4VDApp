@@ -1,4 +1,5 @@
 import {
+  Bank,
   Books,
   ChartLine,
   ClipboardText,
@@ -132,6 +133,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
       { to: '/day', key: 'day', icon: Coins, also: ['/cash', '/carwash'] },
       { to: '/expenses', key: 'expenses', icon: Wallet, accountant: true },
       { to: '/report', key: 'reports', icon: ChartLine, also: ['/reports'], accountant: true },
+      { to: '/money', key: 'money', icon: Bank, overseersOnly: true, accountant: true },
       { to: '/books', key: 'books', icon: Books, overseersOnly: true, accountant: true },
     ],
   },

@@ -156,8 +156,9 @@ export function SpreadList<T extends { key: string; left: number; label: string;
                 </span>
               </label>
               <span className="money-spread__left">{t.money.spreadLeft(formatMoney(item.left))}</span>
-              <strong className="money-spread__part" aria-label={t.money.spreadPart(formatMoney(part))}>
-                {part > 0 ? formatMoney(part) : '–'}
+              <strong className="money-spread__part">
+                <span className="visually-hidden">{t.money.spreadPart(formatMoney(part))}</span>
+                <span aria-hidden="true">{part > 0 ? formatMoney(part) : '–'}</span>
               </strong>
             </li>
           );

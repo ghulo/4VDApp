@@ -1,4 +1,4 @@
-import { ArrowsLeftRight, Bank, CashRegister, CheckCircle, FileArrowUp, PencilSimple, Plus, Vault } from '@phosphor-icons/react';
+import { ArrowsLeftRight, Bank, CashRegister, CheckCircle, FileXls, PencilSimple, Plus, Vault } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, type ReactNode, useId, useMemo, useState } from 'react';
 import { Link, NavLink, useParams, useSearchParams } from 'react-router';
@@ -135,12 +135,11 @@ function PlaceTile({ place }: { place: MoneyPlace }) {
         : place.isDefault && place.kind !== 'till'
           ? t.money.main
           : undefined;
-  const hint = [place.account?.number, place.iban && formatIban(place.iban)].filter(Boolean).join(' · ') || undefined;
+  const hint = [words, place.account?.number, place.iban && formatIban(place.iban)].filter(Boolean).join(' · ') || undefined;
   return (
     <StatTile
       label={placeName(t, place)}
       value={formatHeadlineMoney(place.balance)}
-      words={words}
       hint={hint}
       icon={KIND_ICON[place.kind]}
       tone={place.balance < -0.005 ? 'danger' : place.openLines > 0 ? 'warn' : 'default'}
@@ -206,7 +205,7 @@ function PlaceForm({ place, onDone }: { place?: MoneyPlace; onDone: () => void }
             <input maxLength={100} autoComplete="off" value={bankName} onChange={(event) => setBankName(event.target.value)} />
           </Field>
           <Field label={t.money.iban}>
-            <input maxLength={42} autoComplete="off" spellCheck={false} value={iban} onChange={(event) => setIban(event.target.value)} placeholder="XK05 1212 0123 4567 8906" />
+            <input maxLength={42} autoComplete="off" spellCheck={false} value={iban} onChange={(event) => setIban(event.target.value)} placeholder="XK05 1212 0123 4567 8906…" />
           </Field>
         </div>
       )}
@@ -388,7 +387,7 @@ export function PlaceBookPage() {
           <div className="toolbar">
             <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
             <div className="toolbar__end">
-              <Button variant="ghost" size="sm" icon={FileArrowUp} loading={download.isPending} disabled={download.isPending} onClick={() => download.mutate()}>
+              <Button variant="ghost" size="sm" icon={FileXls} loading={download.isPending} disabled={download.isPending} onClick={() => download.mutate()}>
                 {download.isPending ? t.common.downloading : t.money.downloadBook}
               </Button>
             </div>
@@ -397,7 +396,7 @@ export function PlaceBookPage() {
         empty={<EmptyState title={book.isPending ? t.common.loading : t.money.nothingMoved} />}
         columns={[
           { header: t.money.date, className: 'books-date', cell: (row) => formatBookDay(row.day) },
-          { header: t.money.what, title: true, className: 'books-kind table__dock-hide', cell: (row) => (row.opening ? '' : t.money.lineKinds[row.kind]) },
+          { header: t.money.what, title: true, className: 'books-kind table__dock-hide', cell: (row) => (row.opening ? '' : row.kind === 'supplier' && !row.party ? t.money.expenseKind : t.money.lineKinds[row.kind]) },
           { header: t.money.details, className: 'books-description', cell: (row) => (row.opening ? <span className="books-entry__kind">{t.money.openingRow}</span> : <LineDetails row={row} />) },
           { header: t.money.moneyIn, align: 'end', cell: (row) => (row.amount > 0 ? formatMoney(row.amount) : '') },
           { header: t.money.moneyOut, align: 'end', cell: (row) => (row.amount < 0 ? formatMoney(-row.amount) : '') },
@@ -417,7 +416,7 @@ export function PlaceBookPage() {
                     </Button>
                   </span>
                 ) : (
-                  <Button size="sm" variant="ghost" onClick={() => setConfirming(row.refId)}>
+                  <Button size="sm" variant="ghost" aria-label={`${t.money.remove}: ${formatBookDay(row.day)}, ${formatMoney(Math.abs(row.amount))}`} onClick={() => setConfirming(row.refId)}>
                     {t.money.remove}
                   </Button>
                 )
@@ -460,7 +459,7 @@ function LineDetails({ row }: { row: PlaceBookLine }) {
         {what && (row.billId ? <> · <Link to={`/bills/${row.billId}`}>{what}</Link></> : <> · {what}</>)}
       </>
     );
-  } else if (row.billId) main = <Link to={`/bills/${row.billId}`}>{row.detail ? t.money.billNumber(row.detail) : t.money.theBill}</Link>;
+  } else if (row.billId) main = <Link to={`/bills/${row.billId}`}>{row.detail ? t.money.billNumber(row.detail) : row.kind === 'supplier' ? t.money.theExpense : t.money.theBill}</Link>;
   else if (row.detail) main = row.detail;
   return (
     <>
@@ -559,6 +558,7 @@ export function StatementPage() {
                   writes && line.status === 'open' && line.suggestions[0]?.sure ? (
                     <Button
                       size="sm"
+                      aria-label={t.money.statement.openLine(t.money.statement.confirm, line.text)}
                       loading={confirm.isPending && confirm.variables?.line.id === line.id}
                       disabled={confirm.isPending}
                       onClick={(event) => {
@@ -569,7 +569,12 @@ export function StatementPage() {
                       {t.money.statement.confirm}
                     </Button>
                   ) : (
-                    <Button size="sm" variant="ghost" aria-label={t.money.statement.openLine(line.text)} onClick={() => setOpenLine(line.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label={t.money.statement.openLine(line.status === 'open' ? t.money.statement.choose : t.money.statement.view, line.text)}
+                      onClick={() => setOpenLine(line.id)}
+                    >
                       {line.status === 'open' ? t.money.statement.choose : t.money.statement.view}
                     </Button>
                   ),
@@ -783,6 +788,7 @@ function LineInspector({ line, place, places, writes }: { line: BankLine; place:
                     <Button
                       size="sm"
                       variant={index === 0 ? 'primary' : undefined}
+                      aria-label={t.money.statement.openLine(t.money.statement.confirm, suggestionText(t, suggestion, moneyIn, byId))}
                       loading={confirm.isPending && confirm.variables?.action === suggestion.action}
                       disabled={confirm.isPending}
                       onClick={() => confirm.mutate({ action: suggestion.action, ruleId: suggestion.ruleId })}
@@ -838,6 +844,7 @@ function SomethingElse({
   const [other, setOther] = useState<number | null>(places.find((candidate) => candidate.id !== place.id && !candidate.archived && candidate.kind === 'till')?.id ?? null);
   const [saveRule, setSaveRule] = useState(false);
   const [contains, setContains] = useState(ruleWord(line.text));
+  const [submitted, setSubmitted] = useState(false);
   const categoryId = useId();
   const otherId = useId();
   const action: LineAction | null =
@@ -846,7 +853,9 @@ function SomethingElse({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (action && ruleOk) onConfirm({ action, rule: saveRule ? { contains: contains.trim() } : null });
+    if (!action || !ruleOk) return;
+    setSubmitted(true);
+    onConfirm({ action, rule: saveRule ? { contains: contains.trim() } : null });
   }
 
   return (
@@ -891,7 +900,7 @@ function SomethingElse({
         </Field>
       )}
       <div className="form-actions">
-        <Button type="submit" disabled={!action || !ruleOk || pending} loading={pending}>
+        <Button type="submit" disabled={!action || !ruleOk || pending} loading={pending && submitted}>
           {t.money.statement.record}
         </Button>
       </div>
@@ -1129,7 +1138,7 @@ function RulesCard({ places, writes }: { places: MoneyPlace[]; writes: boolean }
             align: 'end',
             cell: (rule) =>
               writes ? (
-                <Button size="sm" variant="ghost" icon={PencilSimple} onClick={() => setEditing(rule)}>
+                <Button size="sm" variant="ghost" icon={PencilSimple} aria-label={`${t.money.edit}: “${rule.contains}”`} onClick={() => setEditing(rule)}>
                   {t.money.edit}
                 </Button>
               ) : (
@@ -1155,6 +1164,7 @@ function RuleForm({ rule, places, onDone }: { rule: BankRule | null; places: Mon
   const [other, setOther] = useState<number | null>(rule?.otherPlaceId ?? null);
   const [placeId, setPlaceId] = useState<number | null>(rule?.placeId ?? null);
   const ids = { category: useId(), other: useId(), place: useId() };
+  const [removing, setRemoving] = useState(false);
   const banks = places.filter((place) => place.kind === 'bank' && !place.archived);
   const effective: BankRuleAction = direction === 'in' && action === 'expense' ? 'transfer' : action;
   const save = useMutation({
@@ -1251,11 +1261,21 @@ function RuleForm({ rule, places, onDone }: { rule: BankRule | null; places: Mon
         <Button variant="ghost" onClick={onDone}>
           {t.common.cancel}
         </Button>
-        {rule && (
-          <Button variant="danger" className="money-actions__end" loading={remove.isPending} disabled={remove.isPending} onClick={() => remove.mutate()}>
-            {t.money.rules.remove}
-          </Button>
-        )}
+        {rule &&
+          (removing ? (
+            <span className="money-confirm money-actions__end">
+              <Button variant="danger" loading={remove.isPending} disabled={remove.isPending} onClick={() => remove.mutate()}>
+                {t.money.removeMove}
+              </Button>
+              <Button variant="ghost" onClick={() => setRemoving(false)}>
+                {t.money.keep}
+              </Button>
+            </span>
+          ) : (
+            <Button variant="danger" className="money-actions__end" onClick={() => setRemoving(true)}>
+              {t.money.rules.remove}
+            </Button>
+          ))}
       </div>
     </form>
   );

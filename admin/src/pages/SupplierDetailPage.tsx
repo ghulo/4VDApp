@@ -72,7 +72,14 @@ export function SupplierDetailPage() {
         }
       />
       <Sheet open={paying} onClose={() => setPaying(false)} title={t.money.payBills.title} description={t.money.payBills.hint}>
-        {paying && <PayBillsForm supplierId={id} bills={payable} onDone={() => setPaying(false)} />}
+        {paying &&
+          (bills.isPending ? (
+            <Loading />
+          ) : payable.length === 0 ? (
+            <EmptyState title={t.money.payBills.none} />
+          ) : (
+            <PayBillsForm supplierId={id} bills={payable} onDone={() => setPaying(false)} />
+          ))}
       </Sheet>
 
       <StatGrid>

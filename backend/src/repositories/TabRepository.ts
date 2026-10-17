@@ -219,6 +219,11 @@ export class TabRepository {
     await this.db.updateTable('customers').set({ archived_at: at }).where('id', '=', id).execute();
   }
 
+  /** A received payment that a bank statement match made, taken back with the match. */
+  async removePayment(id: number): Promise<void> {
+    await this.db.deleteFrom('tab_entries').where('id', '=', id).where('kind', '=', 'payment').execute();
+  }
+
   async addEntry(entry: {
     customerId: number;
     kind: TabEntryKind;

@@ -1,7 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import { accountForPlace, ensurePlaces } from '../database/places.js';
-import type { BankLineDoneKind, MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
+import type { BankLineDoneKind, BankLineStatus, BankRuleAction, MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 
 export interface PlaceRecord {
@@ -44,6 +44,47 @@ export interface MoveRecord {
   created_by_name: string | null;
   created_at: Date;
   voided_at: Date | null;
+}
+
+export interface BankLineRecord {
+  id: number;
+  statement_id: number;
+  place_id: number;
+  day: string;
+  text: string;
+  amount: string;
+  balance: string | null;
+  position: number;
+  status: BankLineStatus;
+  done_kind: BankLineDoneKind | null;
+  done_ref: number | null;
+  made_record: boolean;
+  rule_id: number | null;
+  done_by_name: string | null;
+  done_at: Date | null;
+}
+
+export interface BankRuleRecord {
+  id: number;
+  place_id: number | null;
+  contains: string;
+  direction: 'in' | 'out';
+  action: BankRuleAction;
+  category: string | null;
+  supplier_id: number | null;
+  supplier_name: string | null;
+  other_place_id: number | null;
+  created_at: Date;
+}
+
+export interface RuleFields {
+  placeId: number | null;
+  contains: string;
+  direction: 'in' | 'out';
+  action: BankRuleAction;
+  category: string | null;
+  supplierId: number | null;
+  otherPlaceId: number | null;
 }
 
 /** The places money is kept and the moves between them. */
@@ -245,5 +286,243 @@ export class MoneyRepository {
       group by c.id
     `.execute(this.db);
     return new Map(rows.map((row) => [row.id, Number(row.net)]));
+  }
+
+  // Bank statements
+
+  /** A record a statement line could find: the place it touched and its amount, below zero when money left the place. */
+  async recordFor(kind: BankLineDoneKind, ref: number): Promise<{ placeId: number | null; amount: number } | null> {
+    if (kind === 'payment') {
+      const row = await this.db.selectFrom('supplier_payments').select(['place_id', 'amount', 'group_id']).where('id', '=', ref).where('voided_at', 'is', null).executeTakeFirst();
+      return row && row.group_id === null ? { placeId: row.place_id, amount: -Number(row.amount) } : null;
+    }
+    if (kind === 'payment_group') {
+      const row = await this.db
+        .selectFrom('payment_groups as g')
+        .innerJoin('supplier_payments as p', (join) => join.onRef('p.group_id', '=', 'g.id').on('p.voided_at', 'is', null))
+        .select(['g.place_id', sql<string>`sum(p.amount)`.as('amount')])
+        .where('g.id', '=', ref)
+        .groupBy('g.place_id')
+        .executeTakeFirst();
+      return row ? { placeId: row.place_id, amount: -Number(row.amount) } : null;
+    }
+    if (kind === 'tab_payment') {
+      const row = await this.db.selectFrom('tab_entries').select(['place_id', 'amount']).where('id', '=', ref).where('kind', '=', 'payment').executeTakeFirst();
+      return row ? { placeId: row.place_id, amount: Number(row.amount) } : null;
+    }
+    return null;
+  }
+
+  /** A move as seen from one place: below zero when it left the place. */
+  async moveFor(ref: number, placeId: number): Promise<{ placeId: number; amount: number } | null> {
+    const move = await this.findMove(ref);
+    if (!move || move.voided_at) return null;
+    if (move.from_place_id === placeId) return { placeId, amount: -Number(move.amount) };
+    if (move.to_place_id === placeId) return { placeId, amount: Number(move.amount) };
+    return null;
+  }
+
+  /** Several bills paid together, taken back as one. */
+  async voidGroup(groupId: number, by: number, at: Date): Promise<void> {
+    await this.db.updateTable('supplier_payments').set({ voided_at: at, voided_by: by }).where('group_id', '=', groupId).where('voided_at', 'is', null).execute();
+  }
+
+  async knownFingerprints(placeId: number, fingerprints: string[]): Promise<Set<string>> {
+    if (fingerprints.length === 0) return new Set();
+    const rows = await this.db.selectFrom('bank_lines').select('fingerprint').where('place_id', '=', placeId).where('fingerprint', 'in', fingerprints).execute();
+    return new Set(rows.map((row) => row.fingerprint));
+  }
+
+  async addStatement(statement: {
+    placeId: number;
+    fileName: string;
+    format: 'csv' | 'xlsx' | 'pdf';
+    firstDay: string | null;
+    lastDay: string | null;
+    openingBalance: number | null;
+    closingBalance: number | null;
+    linesRead: number;
+    linesSkipped: number;
+    uploadedBy: number;
+  }): Promise<number> {
+    const row = await this.db
+      .insertInto('bank_statements')
+      .values({
+        place_id: statement.placeId,
+        file_name: statement.fileName,
+        format: statement.format,
+        first_day: statement.firstDay,
+        last_day: statement.lastDay,
+        opening_balance: statement.openingBalance,
+        closing_balance: statement.closingBalance,
+        lines_read: statement.linesRead,
+        lines_skipped: statement.linesSkipped,
+        uploaded_by: statement.uploadedBy,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return row.id;
+  }
+
+  async addLines(statementId: number, placeId: number, lines: Array<{ day: string; text: string; amount: number; balance: number | null; fingerprint: string; position: number }>): Promise<void> {
+    if (lines.length === 0) return;
+    await this.db
+      .insertInto('bank_lines')
+      .values(
+        lines.map((line) => ({
+          statement_id: statementId,
+          place_id: placeId,
+          day: line.day,
+          text: line.text,
+          amount: line.amount,
+          balance: line.balance,
+          fingerprint: line.fingerprint,
+          position: line.position,
+        })),
+      )
+      .onConflict((conflict) => conflict.columns(['place_id', 'fingerprint']).doNothing())
+      .execute();
+  }
+
+  private lineQuery() {
+    return this.db
+      .selectFrom('bank_lines as l')
+      .leftJoin('users as u', 'u.id', 'l.done_by')
+      .select([
+        'l.id',
+        'l.statement_id',
+        'l.place_id',
+        sql<string>`to_char(l.day, 'YYYY-MM-DD')`.as('day'),
+        'l.text',
+        'l.amount',
+        'l.balance',
+        'l.position',
+        'l.status',
+        'l.done_kind',
+        'l.done_ref',
+        'l.made_record',
+        'l.rule_id',
+        'u.name as done_by_name',
+        'l.done_at',
+      ]);
+  }
+
+  /** A place's lines: open ones first, then the newest. */
+  lines(placeId: number, status: BankLineStatus | 'all', limit = 500): Promise<BankLineRecord[]> {
+    let query = this.lineQuery().where('l.place_id', '=', placeId);
+    if (status !== 'all') query = query.where('l.status', '=', status);
+    return query
+      .orderBy(sql`l.status = 'open'`, 'desc')
+      .orderBy('l.day', 'desc')
+      .orderBy('l.statement_id', 'desc')
+      .orderBy('l.position', 'desc')
+      .limit(limit)
+      .execute();
+  }
+
+  /** One line, locked for the change about to be made. */
+  async lockLine(id: number): Promise<BankLineRecord> {
+    await sql`select id from bank_lines where id = ${id} for update`.execute(this.db);
+    const line = await this.lineQuery().where('l.id', '=', id).executeTakeFirst();
+    if (!line) throw new NotFoundError(`Bank line ${id} does not exist`);
+    return line;
+  }
+
+  async markDone(id: number, done: { kind: BankLineDoneKind; ref: number; madeRecord: boolean; ruleId: number | null; by: number; at: Date }): Promise<void> {
+    await this.db
+      .updateTable('bank_lines')
+      .set({ status: 'done', done_kind: done.kind, done_ref: done.ref, made_record: done.madeRecord, rule_id: done.ruleId, done_by: done.by, done_at: done.at })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  async markStatus(id: number, status: 'open' | 'skipped', by: number, at: Date): Promise<void> {
+    const open = status === 'open';
+    await this.db
+      .updateTable('bank_lines')
+      .set({ status, done_kind: null, done_ref: null, made_record: false, rule_id: null, done_by: open ? null : by, done_at: open ? null : at })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  /** The records of a kind statement lines already found or made. */
+  async linkedRefs(kind: BankLineDoneKind): Promise<Set<number>> {
+    const rows = await this.db.selectFrom('bank_lines').select('done_ref').where('status', '=', 'done').where('done_kind', '=', kind).execute();
+    return new Set(rows.map((row) => row.done_ref!));
+  }
+
+  statements(placeId: number) {
+    return this.db
+      .selectFrom('bank_statements as s')
+      .leftJoin('users as u', 'u.id', 's.uploaded_by')
+      .select([
+        's.id',
+        's.file_name',
+        's.format',
+        sql<string | null>`to_char(s.first_day, 'YYYY-MM-DD')`.as('first_day'),
+        sql<string | null>`to_char(s.last_day, 'YYYY-MM-DD')`.as('last_day'),
+        's.opening_balance',
+        's.closing_balance',
+        's.lines_read',
+        's.lines_skipped',
+        'u.name as uploaded_by_name',
+        's.uploaded_at',
+      ])
+      .where('s.place_id', '=', placeId)
+      .orderBy(sql`s.last_day desc nulls last`)
+      .orderBy('s.id', 'desc')
+      .limit(50)
+      .execute();
+  }
+
+  rules(): Promise<BankRuleRecord[]> {
+    return this.db
+      .selectFrom('bank_rules as r')
+      .leftJoin('suppliers as s', 's.id', 'r.supplier_id')
+      .select(['r.id', 'r.place_id', 'r.contains', 'r.direction', 'r.action', 'r.category', 'r.supplier_id', 's.name as supplier_name', 'r.other_place_id', 'r.created_at'])
+      .orderBy('r.contains')
+      .execute();
+  }
+
+  findRule(id: number) {
+    return this.db.selectFrom('bank_rules').selectAll().where('id', '=', id).executeTakeFirst();
+  }
+
+  async addRule(rule: RuleFields, createdBy: number): Promise<number> {
+    const row = await this.db
+      .insertInto('bank_rules')
+      .values({
+        place_id: rule.placeId,
+        contains: rule.contains,
+        direction: rule.direction,
+        action: rule.action,
+        category: rule.category,
+        supplier_id: rule.supplierId,
+        other_place_id: rule.otherPlaceId,
+        created_by: createdBy,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return row.id;
+  }
+
+  async updateRule(id: number, rule: RuleFields): Promise<void> {
+    await this.db
+      .updateTable('bank_rules')
+      .set({
+        place_id: rule.placeId,
+        contains: rule.contains,
+        direction: rule.direction,
+        action: rule.action,
+        category: rule.category,
+        supplier_id: rule.supplierId,
+        other_place_id: rule.otherPlaceId,
+      })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  async removeRule(id: number): Promise<void> {
+    await this.db.deleteFrom('bank_rules').where('id', '=', id).execute();
   }
 }

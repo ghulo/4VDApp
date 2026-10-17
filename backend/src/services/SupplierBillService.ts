@@ -372,6 +372,7 @@ export class SupplierBillService {
       if (!payment || payment.bill_id !== billId) throw new NotFoundError(`Payment ${paymentId} is not on bill ${billId}`);
       if (payment.voided_at) throw new ConflictError('This payment was already removed');
       if (payment.method === 'credit') throw new ConflictError('This came from a return or credit. Void that instead.');
+      await assertNotOnStatement(repos, payment.id, payment.group_id);
       const bill = await openBill(repos, billId);
       await repos.bills.voidPayment(paymentId, actorId, now);
       await repos.activityLog.create({
@@ -393,6 +394,10 @@ export class SupplierBillService {
    */
   async void(id: number, note: string, actorId: number, now = new Date()): Promise<SupplierBillDto> {
     await this.transactions.run(async (repos) => {
+      if (await repos.money.lineFor('expense', id)) throw new ConflictError('This came from a bank statement line. Take that match back instead.');
+      for (const payment of await repos.bills.findPayments([id])) {
+        if (!payment.voided_at) await assertNotOnStatement(repos, payment.id, payment.group_id);
+      }
       await voidBill(repos, id, note, actorId, now);
     });
     return this.get(id);
@@ -514,6 +519,12 @@ export async function payBill(
     details: { paymentId, amount: input.amount, paidOn: input.paidOn, placeId: from.placeId, method: from.method, groupId: input.groupId ?? null, note: input.note },
   });
   return paymentId;
+}
+
+/** A payment a bank statement line found or made is taken back from the statement, so the two never disagree. */
+async function assertNotOnStatement(repos: TransactionalRepositories, paymentId: number, groupId: number | null): Promise<void> {
+  const line = (await repos.money.lineFor('payment', paymentId)) ?? (groupId === null ? undefined : await repos.money.lineFor('payment_group', groupId));
+  if (line) throw new ConflictError('This payment is matched to a bank statement line. Take that match back instead.');
 }
 
 async function openBill(repos: TransactionalRepositories, id: number): Promise<BillRecord> {

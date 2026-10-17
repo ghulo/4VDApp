@@ -117,6 +117,8 @@ export function CustomersPage() {
     .filter(matches[filter])
     .filter((row) => !search || [row.name, row.phone, row.nui].some((value) => value?.toLowerCase().includes(search)))
     .sort(compare[sort]);
+  const spentInList = rows.reduce((sum, row) => sum + row.spentThisYear, 0);
+  const owedInList = rows.reduce((sum, row) => sum + Math.max(row.balance, 0), 0);
 
   return (
     <>
@@ -194,6 +196,7 @@ export function CustomersPage() {
               </>
             )
           }
+          totals={[t.customers.totalOf(rows.length), spentInList !== 0 ? formatMoney(spentInList) : '–', '', '', owedInList > 0 ? formatMoney(owedInList) : '–']}
           empty={
             all.length === 0 ? (
               <EmptyState

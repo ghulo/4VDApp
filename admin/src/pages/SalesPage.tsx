@@ -211,11 +211,9 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
                   </option>
                 ))}
               </select>
-              <span className="toolbar__summary" aria-live="polite">
-                {t.sales.totalFrom({ amount: formatMoney(sales.data.totalRevenue), count: sales.data.meta.total })}
-              </span>
             </>
           }
+          totals={['', t.sales.totalOf(sales.data.meta.total), formatMoney(sales.data.totalRevenue), '', '']}
           empty={<EmptyState icon={Receipt} title={t.sales.noSalesInDates} />}
           footer={
             sales.data.items.length > 0 && (

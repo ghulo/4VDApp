@@ -2,7 +2,9 @@ import { type Kysely, sql } from 'kysely';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { seedBooks } from '../src/database/books.js';
+import { Migrator } from 'kysely/migration';
 import { runMigrations } from '../src/database/migrator.js';
+import { migrations } from '../src/database/migrations/index.js';
 import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
@@ -19,7 +21,9 @@ describe('moving expenses into bills', () => {
     const token = await loginAs(context, 'admin');
     const productId = await createTestProduct(context, token, { price: 10, costPrice: 5, stock: 0, vatRate: 18 });
     const db = context.db as unknown as Kysely<unknown>;
-    await runMigrations(db, 'down');
+    // Back to just before bills took over expenses, however many migrations came after it.
+    const stepBack = await new Migrator({ db, provider: { getMigrations: async () => migrations } }).migrateTo('039_books');
+    if (stepBack.error) throw stepBack.error;
 
     const carwashId = (await sql<{ id: number }>`select id from carwashes limit 1`.execute(db)).rows[0]!.id;
     await sql`insert into recurring_expenses (id, amount, category, place, note, day_of_month, last_filled_on) values (7, 300, 'rent', 'shop', 'Shop rent', 5, '2026-09-05')`.execute(db);

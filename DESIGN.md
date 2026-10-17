@@ -773,7 +773,3 @@ closed the earlier gaps (words, date fields, dashboard receipt).
 
 1. **Albanian numbers group from five digits**: "1578 €" sits above
    "238 969 €" in one column, so a right-aligned column changes rhythm. → 10.6
-2. **Work pages left: Sales history, Customers, Suppliers**: they have the
-   wide frame and ledger rows, but no totals row yet (Sales history shows its
-   total as words in the toolbar). Books, Expenses, Bills, Invoices and Stock
-   follow 3.8. → 3.8

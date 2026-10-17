@@ -39,6 +39,8 @@ export function SuppliersPage() {
   const rows = (suppliers.data ?? []).filter(
     (row) => !needle || [row.name, row.phone, row.email, row.nui].some((value) => value?.toLowerCase().includes(needle)),
   );
+  const overdueInList = rows.reduce((sum, row) => sum + (owedBy.get(row.id)?.overdue ?? 0), 0);
+  const owedInList = rows.reduce((sum, row) => sum + (owedBy.get(row.id)?.owed ?? 0), 0);
 
   return (
     <>
@@ -105,6 +107,14 @@ export function SuppliersPage() {
               </div>
             )
           }
+          totals={[
+            t.suppliers.totalOf(rows.length),
+            '',
+            '',
+            overdueInList > 0 ? formatMoney(overdueInList) : '–',
+            owedInList > 0 ? formatMoney(owedInList) : '–',
+            ...(manager ? [''] : []),
+          ]}
           empty={
             suppliers.data.length === 0 ? (
               <EmptyState

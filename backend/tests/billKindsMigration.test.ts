@@ -28,10 +28,10 @@ describe('moving expenses into bills', () => {
     const carwashId = (await sql<{ id: number }>`select id from carwashes limit 1`.execute(db)).rows[0]!.id;
     await sql`insert into recurring_expenses (id, amount, category, place, note, day_of_month, last_filled_on) values (7, 300, 'rent', 'shop', 'Shop rent', 5, '2026-09-05')`.execute(db);
     await sql`insert into expenses (id, day, amount, category, place, note, recurring_id) values
-      (41, '2026-09-05', 300, 'rent', 'shop', 'Shop rent', 7),
-      (42, '2026-09-10', 45.5, 'water', 'carwash', null, null)`.execute(db);
-    await sql`update expenses set carwash_id = ${carwashId} where id = 42`.execute(db);
-    // A delivery's bill: its products become its lines.
+      (1, '2026-09-05', 300, 'rent', 'shop', 'Shop rent', 7),
+      (2, '2026-09-10', 45.5, 'water', 'carwash', null, null)`.execute(db);
+    await sql`update expenses set carwash_id = ${carwashId} where id = 2`.execute(db);
+    // A delivery's bill: its products become its lines, numbered above the expense lines that keep ids 1 and 2.
     await sql`insert into suppliers (id, name) values (3, 'Fresh Foods')`.execute(db);
     await sql`insert into purchase_orders (id, supplier_id, status) values (5, 3, 'received')`.execute(db);
     await sql`insert into purchase_order_lines (order_id, product_id, quantity, unit_cost, received_quantity) values (5, ${productId}, 4, 5.9, 4)`.execute(db);
@@ -44,8 +44,8 @@ describe('moving expenses into bills', () => {
     const range = { startDate: '2026-09-01T00:00:00Z', endDate: '2026-09-30T23:59:59Z' };
     const { expenses, totals } = (await api.get('/api/expenses').set(auth).query(range)).body.data;
     expect(expenses.map((row: { id: number; day: string; amount: number; paidNow: boolean; recurringId: number | null }) => [row.id, row.day, row.amount, row.paidNow, row.recurringId])).toEqual([
-      [42, '2026-09-10', 45.5, true, null],
-      [41, '2026-09-05', 300, true, 7],
+      [2, '2026-09-10', 45.5, true, null],
+      [1, '2026-09-05', 300, true, 7],
     ]);
     expect(totals.byPlace).toEqual({ shop: 300, carwash: 45.5, both: 0 });
 
@@ -62,6 +62,6 @@ describe('moving expenses into bills', () => {
     // The next new line and repeat don't collide with the kept ids.
     const added = await api.post('/api/expenses').set(auth).send({ day: '2026-09-12', amount: 10, category: 'office', place: 'shop' });
     expect(added.status).toBe(201);
-    expect(added.body.data.id).toBeGreaterThan(42);
+    expect(added.body.data.id).toBeGreaterThan(2);
   });
 });

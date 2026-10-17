@@ -146,20 +146,6 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     await sql`INSERT INTO ledger_links (key, account_id) SELECT ${key}, id FROM ledger_accounts WHERE number = ${number} ON CONFLICT (key) DO NOTHING`.execute(db);
   }
 
-  // Bills from deliveries get their products as lines, so every bill reads the same way.
-  await sql`
-    INSERT INTO bill_lines (bill_id, position, kind, product_id, quantity, unit_price, vat_rate, net, vat, landed, order_line_id)
-    SELECT b.id, row_number() OVER (PARTITION BY b.id ORDER BY l.id), 'product', l.product_id, l.received_quantity, l.unit_cost, p.vat_rate,
-      x.gross - x.vat, x.vat, x.gross - x.vat, l.id
-    FROM supplier_bills b
-    JOIN purchase_order_lines l ON l.order_id = b.order_id AND l.received_quantity > 0
-    JOIN products p ON p.id = l.product_id
-    CROSS JOIN LATERAL (
-      SELECT round(l.received_quantity * coalesce(l.unit_cost, 0), 2) AS gross,
-             round(round(l.received_quantity * coalesce(l.unit_cost, 0), 2) * p.vat_rate / (100 + p.vat_rate), 2) AS vat
-    ) x
-  `.execute(db);
-
   // Monthly expense rules become repeating bills, paid on the spot like the expenses they made.
   await sql`
     INSERT INTO bill_repeats (id, template, amount, category, place, carwash_id, note, day_of_month, last_filled_on, stopped_at, created_by, created_at)
@@ -185,6 +171,21 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     FROM expenses e JOIN supplier_bills b ON b.legacy_expense_id = e.id
   `.execute(db);
   await sql`SELECT setval(pg_get_serial_sequence('bill_lines', 'id'), greatest((SELECT max(id) FROM bill_lines), 1), (SELECT max(id) FROM bill_lines) IS NOT NULL)`.execute(db);
+  // Bills from deliveries get their products as lines, so every bill reads the same way. This comes after
+  // the expense lines, which keep their expenses' ids, so the new ids start above them.
+  await sql`
+    INSERT INTO bill_lines (bill_id, position, kind, product_id, quantity, unit_price, vat_rate, net, vat, landed, order_line_id)
+    SELECT b.id, row_number() OVER (PARTITION BY b.id ORDER BY l.id), 'product', l.product_id, l.received_quantity, l.unit_cost, p.vat_rate,
+      x.gross - x.vat, x.vat, x.gross - x.vat, l.id
+    FROM supplier_bills b
+    JOIN purchase_order_lines l ON l.order_id = b.order_id AND l.received_quantity > 0
+    JOIN products p ON p.id = l.product_id
+    CROSS JOIN LATERAL (
+      SELECT round(l.received_quantity * coalesce(l.unit_cost, 0), 2) AS gross,
+             round(round(l.received_quantity * coalesce(l.unit_cost, 0), 2) * p.vat_rate / (100 + p.vat_rate), 2) AS vat
+    ) x
+  `.execute(db);
+
   await sql`
     INSERT INTO supplier_payments (bill_id, amount, paid_on, method, created_by, created_at)
     SELECT b.id, e.amount, e.day, 'cash', e.created_by, e.created_at

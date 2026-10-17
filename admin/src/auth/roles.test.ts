@@ -10,10 +10,11 @@ describe('roles', () => {
   });
 
   it('should leave the top roles to the developer', () => {
-    expect(assignableRoles('developer')).toEqual(['developer', 'admin', 'owner', 'employee', 'family']);
+    expect(assignableRoles('developer')).toEqual(['developer', 'admin', 'owner', 'accountant', 'employee', 'family']);
     expect(assignableRoles('admin')).toEqual(['employee', 'family']);
     expect(assignableRoles('owner')).toEqual([]);
     expect(canHandOut('admin', 'owner')).toBe(false);
     expect(canHandOut('developer', 'owner')).toBe(true);
+    expect(canHandOut('admin', 'accountant')).toBe(false);
   });
 });

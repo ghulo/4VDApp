@@ -31,6 +31,7 @@ import { addMonths, formatMonth, bookBoxes, bookItems, bookTotal, boxSum, CHARGE
 
 /** "2026-09" → "September 2026", in the reader's language. */
 /** "2026-10-20" → "20 October", the day a return is due. */
+const moneyOrDash = (amount: number) => (amount ? formatMoney(amount) : '–');
 const formatDueDay = (day: string) => formatDateWith(new Date(`${day}T12:00:00`), { day: 'numeric', month: 'long' });
 
 /** The month a VAT page shows, kept in the address; last month by default, the one most likely to file. */
@@ -64,7 +65,7 @@ function MonthPicker({ month, onChange, first }: { month: string; onChange: (mon
   }, [last, start, month]);
   return (
     <div className="month-picker" role="group" aria-label={t.vat.month}>
-      <Button size="sm" variant="ghost" icon={CaretLeft} aria-label={t.vat.previous} title={t.vat.previous} onClick={() => onChange(addMonths(month, -1))} />
+      <Button size="sm" variant="ghost" className="vat-step" icon={CaretLeft} aria-label={t.vat.previous} title={t.vat.previous} onClick={() => onChange(addMonths(month, -1))} />
       <label className="month-picker__field">
         <span className="visually-hidden">{t.vat.month}</span>
         <select value={month} onChange={(event) => onChange(event.target.value)}>
@@ -78,6 +79,7 @@ function MonthPicker({ month, onChange, first }: { month: string; onChange: (mon
       <Button
         size="sm"
         variant="ghost"
+        className="vat-step"
         icon={CaretRight}
         aria-label={t.vat.next}
         title={t.vat.next}
@@ -430,11 +432,12 @@ function TypedFigures({ data, typesCarried }: { data: VatMonth; typesCarried: bo
     <form className="vat-typed" onSubmit={submit}>
       {typesCarried && (
         <Field label={<><BoxNumber box={68} /> {t.vat.carriedIn}</>} hint={t.vat.carriedFrom.none} narrow>
-          <input type="number" inputMode="decimal" min={0} step={0.01} autoComplete="off" value={carried} onChange={(event) => setCarried(event.target.value)} />
+          <input name="carriedIn" type="number" inputMode="decimal" min={0} step={0.01} autoComplete="off" value={carried} onChange={(event) => setCarried(event.target.value)} />
         </Field>
       )}
-      <Field label={<><BoxNumber box={70} /> {t.vat.refund}</>} hint={t.vat.results[70].hint} narrow>
+      <Field label={<><BoxNumber box={70} /> {t.vat.refund}</>} hint={credit <= 0 && !typesCarried ? t.vat.refundNone : t.vat.results[70].hint} narrow>
         <input
+          name="refund"
           type="number"
           inputMode="decimal"
           min={0}
@@ -579,7 +582,7 @@ function ReopenForm({ month, onDone }: { month: string; onDone: () => void }) {
     >
       <p>{t.vat.reopenBody}</p>
       <Field label={t.vat.reason} hint={t.vat.reasonHint} error={tried && short ? t.vat.reasonShort : undefined}>
-        <textarea required minLength={3} maxLength={500} rows={3} aria-invalid={tried && short} value={reason} onChange={(event) => setReason(event.target.value)} />
+        <textarea name="reason" required minLength={3} maxLength={500} rows={3} aria-invalid={tried && short} value={reason} onChange={(event) => setReason(event.target.value)} />
       </Field>
       {reopen.isError && (
         <p className="form-error" role="alert">
@@ -715,10 +718,11 @@ function VatYear({ year: start, month, onPick }: { year: number; month: string; 
       description={w.description}
       actions={
         <>
-          <Button size="sm" variant="ghost" icon={CaretLeft} aria-label={w.previousYear} title={w.previousYear} onClick={() => setYear(year - 1)} />
+          <Button size="sm" variant="ghost" className="vat-step" icon={CaretLeft} aria-label={w.previousYear} title={w.previousYear} onClick={() => setYear(year - 1)} />
           <Button
             size="sm"
             variant="ghost"
+            className="vat-step"
             icon={CaretRight}
             aria-label={w.nextYear}
             title={w.nextYear}
@@ -822,11 +826,12 @@ function VatBookPage({ kind }: { kind: BookKind }) {
     },
   });
   const title = kind === 'sales' ? t.nav.tabs.salesBook : t.nav.tabs.purchaseBook;
-  const words = (box: number) => {
+  /** A box column's heading: its line's words, or just "VAT" for the VAT beside it; `full` names the line either way. */
+  const words = (box: number, full = false) => {
     const rows = kind === 'sales' ? CHARGED_ROWS : CLAIM_ROWS;
     const row = rows.find((candidate) => candidate.base === box || ('vat' in candidate && candidate.vat === box))!;
     const label = rowWords(t, kind === 'sales' ? 'charged' : 'claim', row.key).label;
-    return row.base === box ? label : `${t.vat.vatColumn} · ${label}`;
+    return row.base === box ? label : full ? `${t.vat.vatColumn} · ${label}` : t.vat.vatColumn;
   };
 
   return (
@@ -897,22 +902,23 @@ function VatBookPage({ kind }: { kind: BookKind }) {
               },
               {
                 header: kind === 'sales' ? w.customer : w.supplier,
-                cell: (item) => (item.kind === 'till_day' ? t.vat.documents.tillDay(item.count ?? 0) : (item.party ?? '–')),
+                cell: (item) => (item.kind === 'till_day' ? w.saleCount(item.count ?? 0) : (item.party ?? '–')),
               },
               { header: w.nui, className: 'table__phone-hide', cell: (item) => item.nui ?? '–' },
               { header: kind === 'sales' ? w.salesTotal : w.purchasesTotal, align: 'end', cell: (item) => formatMoney(bookTotal(kind, item)) },
               ...boxes.map((box) => ({
                 header: (
-                  <span className="vat-book__head" title={words(box)}>
+                  <span className="vat-book__head" title={words(box, true)}>
                     <BoxNumber box={box} />
                     <span className="vat-book__head-words">{words(box)}</span>
                   </span>
                 ),
+                label: `${box} · ${words(box, true)}`,
                 align: 'end' as const,
                 cell: (item: VatItem) => (item.boxes[box] ? formatMoney(item.boxes[box]!) : '–'),
               })),
-              { header: w.vat18, align: 'end', cell: (item) => formatMoney(boxSum(item, VAT_18[kind])) },
-              { header: w.vat8, align: 'end', cell: (item) => formatMoney(boxSum(item, VAT_8[kind])) },
+              { header: w.vat18, align: 'end', cell: (item) => moneyOrDash(boxSum(item, VAT_18[kind])) },
+              { header: w.vat8, align: 'end', cell: (item) => moneyOrDash(boxSum(item, VAT_8[kind])) },
             ]}
             totals={[
               w.totals,

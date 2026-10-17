@@ -2718,6 +2718,7 @@ export const sq: Catalogue = {
     },
     carriedIn: 'Teprica e bartur',
     refund: 'Kërkesa për rimbursim',
+    refundNone: 'Këtë muaj nuk ka kredi, ndaj nuk ka çfarë të kërkohet mbrapsht.',
     save: 'Ruaj',
     saved: 'U ruajt',
     documents: {
@@ -2826,11 +2827,14 @@ export const sq: Catalogue = {
     edi: 'Për ngarkim në EDI',
     ediHint: 'Një skedar për ta ngarkuar në EDI te “Ngarko Librin”.',
     tillDay: 'Shitjet në arkë',
+    saleCount: (count) => `${count} shitje`,
   },
   questions: {
     title: 'Pyetjet',
     description: 'Pyetjet e kontabilistit për këtë dokument dhe përgjigjet.',
     ask: 'Bëj një pyetje',
+    asked: 'Pyetja u dërgua.',
+    replied: 'Përgjigjja u dërgua.',
     askLabel: 'Pyetja jote',
     askHint: 'Shkon te Për t’u bërë i atyre që drejtojnë dyqanin; përgjigjja e tyre vjen këtu.',
     reply: 'Përgjigju',

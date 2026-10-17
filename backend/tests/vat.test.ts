@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedBooks } from '../src/database/books.js';
 import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
@@ -164,7 +165,8 @@ describe('filing a month', () => {
     await sellOn(`${EARLIER}-10`);
     const { id: entryId } = await context.db.selectFrom('activity_log').select('id').where('action', '=', 'sale.recorded').executeTakeFirstOrThrow();
     const { id: documentId } = await context.db.selectFrom('documents').select('id').executeTakeFirstOrThrow();
-    await context.db.updateTable('documents').set({ issued_at: new Date(`${EARLIER}-10T10:00:00Z`) }).where('id', '=', documentId).execute();
+    // Documents never change their date in the app, so the test moves it straight in the database.
+    await sql`update documents set issued_at = ${`${EARLIER}-10T10:00:00Z`} where id = ${documentId}`.execute(context.db);
     await api().post(`/api/vat/${EARLIER}/file`).set(auth(accountantToken));
     const undo = await api().post(`/api/activity/${entryId}/undo`).set(auth()).send({ note: 'wrong' });
     expect(undo.status).toBe(409);

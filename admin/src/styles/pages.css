@@ -4487,6 +4487,8 @@ fieldset.report-sections {
 
 /* A form line's name is the key that opens the documents behind it. */
 .vat-row-button {
+  /* A comfortable target on phones, where the line's words are what you tap. */
+  min-block-size: 30px;
   padding: 0;
   border: 0;
   background: none;
@@ -4505,6 +4507,10 @@ fieldset.report-sections {
 .table td.vat-what {
   width: 100%;
   min-width: 18ch;
+  white-space: normal;
+}
+
+.table td.vat-what .table__secondary {
   white-space: normal;
 }
 
@@ -4630,10 +4636,10 @@ fieldset.report-sections {
 
 .vat-book__head-words {
   display: -webkit-box;
-  max-width: 14ch;
+  max-width: 16ch;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   font-weight: 500;
   white-space: normal;
   text-align: end;

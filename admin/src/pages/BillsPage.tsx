@@ -4,6 +4,8 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, Button, ButtonLink, DataTable, EmptyState, PageHeader, Sheet, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
+import { canOversee } from '../auth/roles';
+import { useCurrentUser } from '../auth/useAuth';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
 import { DueBadge } from '../components/BillParts';
@@ -33,6 +35,8 @@ export function BillsPage() {
   const status: StatusFilter = (FILTERS as readonly string[]).includes(params.get('status') ?? '') ? (params.get('status') as StatusFilter) : 'open';
   const supplierId = params.get('supplier') ?? '';
   const [scanning, setScanning] = useNewSheet('scan');
+  // The accountant reads the bills; adding and paying them stays with the people who run the shop.
+  const writes = canOversee(useCurrentUser().role);
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   // Overdue and due-this-week are the unpaid list narrowed down here, so they share its request.
@@ -69,6 +73,7 @@ export function BillsPage() {
         title={t.nav.items.suppliers}
         description={t.bills.description}
         actions={
+          writes && (
           <>
             <ButtonLink to={newBill} icon={Plus}>
               {t.bills.add}
@@ -77,6 +82,7 @@ export function BillsPage() {
               {t.scans.scan}
             </Button>
           </>
+          )
         }
       />
 
@@ -145,7 +151,7 @@ export function BillsPage() {
             header: <span className="visually-hidden">{t.bills.actions}</span>,
             align: 'end',
             cell: (bill) =>
-              isOpen(bill) ? (
+              writes && isOpen(bill) ? (
                 <ButtonLink to={`/bills/${bill.id}#pay`} size="sm" aria-label={t.bills.payLabel(bill.supplier?.name ?? t.bills.noSupplier)}>
                   {t.bills.payShort}
                 </ButtonLink>

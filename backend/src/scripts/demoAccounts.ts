@@ -14,6 +14,7 @@ export const DEMO_ACCOUNTS: ReadonlyArray<{ email: string; password: string; nam
   { email: 'demo-admin@4vd.local', password: 'demo-admin-4vd', name: 'Demo Admin', role: 'admin' },
   { email: 'demo-employee@4vd.local', password: 'demo-employee-4vd', name: 'Demo Employee', role: 'employee' },
   { email: 'demo-family@4vd.local', password: 'demo-family-4vd', name: 'Demo Family', role: 'family' },
+  { email: 'demo-accountant@4vd.local', password: 'demo-accountant-4vd', name: 'Demo Accountant', role: 'accountant' },
 ];
 
 /** Create the demo accounts, or reset them (password, role, active) if they already exist. */

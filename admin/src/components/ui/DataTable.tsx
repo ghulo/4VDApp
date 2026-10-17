@@ -8,6 +8,8 @@ export interface Column<Row> {
   className?: string;
   /** On phones, where rows stack, this cell heads the row. Defaults to the first cell. */
   title?: boolean;
+  /** The words beside the cell on phones, when the header is more than text. */
+  label?: string;
 }
 
 interface DataTableProps<Row> {
@@ -62,7 +64,7 @@ export function DataTable<Row>({
     undefined;
   // Explicit roles: older Safari drops table semantics once rows stack with display: grid.
   // Stacked rows on phones name each value with its column; hidden headers (like actions) get none.
-  const cellLabel = (column: Column<Row>) => (typeof column.header === 'string' ? column.header : undefined);
+  const cellLabel = (column: Column<Row>) => column.label ?? (typeof column.header === 'string' ? column.header : undefined);
 
   return (
     <div className={density === 'compact' ? 'data-table data-table--compact' : 'data-table'}>

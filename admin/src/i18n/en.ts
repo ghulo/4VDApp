@@ -2738,6 +2738,7 @@ export const en = {
     },
     carriedIn: 'Credit carried in',
     refund: 'Refund asked for',
+    refundNone: 'No credit this month, so there is nothing to ask back.',
     save: 'Save',
     saved: 'Saved',
     documents: {
@@ -2846,11 +2847,14 @@ export const en = {
     edi: 'For EDI upload',
     ediHint: 'A file to upload in EDI under “Ngarko Librin”.',
     tillDay: 'Till sales',
+    saleCount: (count: number) => `${count} ${count === 1 ? 'sale' : 'sales'}`,
   },
   questions: {
     title: 'Questions',
     description: 'The accountant’s questions on this document, and the answers.',
     ask: 'Ask a question',
+    asked: 'Question sent.',
+    replied: 'Answer sent.',
     askLabel: 'Your question',
     askHint: 'It goes to the To do of the people who run the shop; their answer comes back here.',
     reply: 'Answer',

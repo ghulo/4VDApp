@@ -65,8 +65,13 @@ function QuestionsBody({ kind, id, asking }: { kind: ThreadSubject; id: number; 
       )}
       <form className="thread-form" onSubmit={submit}>
         <Field label={asking ? w.askLabel : w.replyLabel} hint={asking ? w.askHint : undefined}>
-          <textarea rows={3} maxLength={2000} value={body} onChange={(event) => setBody(event.target.value)} />
+          <textarea name="note" rows={3} maxLength={2000} value={body} onChange={(event) => setBody(event.target.value)} />
         </Field>
+        {send.isSuccess && body === '' && (
+          <p className="visually-hidden" role="status">
+            {asking ? w.asked : w.replied}
+          </p>
+        )}
         {send.isError && (
           <p className="form-error" role="alert">
             {errorMessage(send.error)}

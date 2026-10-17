@@ -118,6 +118,13 @@
         "numeric-alignment"
       ],
       "reason": "The accounts an entry touches, as account numbers (codes like 1110, 4000), not amounts; they read left to right like a list."
+    },
+    {
+      "selector": ".vat-step",
+      "rules": [
+        "icon-button-tooltip"
+      ],
+      "reason": "The previous/next arrows beside a month or year menu: the arrow beside the month name says what it does, and each has an aria-label and a title for mouse users."
     }
   ]
 }

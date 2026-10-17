@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
@@ -26,6 +26,10 @@ export function CreditForm({ bill, onDone }: { bill: SupplierBill; onDone: () =>
   const amount = Math.round(kept.reduce((sum, line) => sum + lineGross(line, bill.pricesIncludeVat), 0) * 100) / 100;
   const units = kept.filter((line) => line.kind === 'product').reduce((sum, line) => sum + Number(line.quantity), 0);
   const returning = hasProducts && returnsStock;
+  // Why saving waits: no line kept, or a kept line not filled in.
+  const unfinished = lines.findIndex((line) => line.include && !isLineDone(line));
+  const hintId = useId();
+  const sentenceId = useId();
 
   const save = useMutation({
     mutationFn: () =>
@@ -38,7 +42,8 @@ export function CreditForm({ bill, onDone }: { bill: SupplierBill; onDone: () =>
         lines: kept.map(toLineInput),
       }),
     onSuccess: () => {
-      for (const key of ['bills', 'attention', 'expenses', 'inventory', 'products', 'activity', 'reports', 'books', 'suppliers']) queryClient.invalidateQueries({ queryKey: [key] });
+      for (const key of ['bills', 'attention', 'expenses', 'inventory', 'products', 'activity', 'reports', 'books', 'suppliers'])
+        queryClient.invalidateQueries({ queryKey: [key] });
       onDone();
     },
   });
@@ -61,8 +66,11 @@ export function CreditForm({ bill, onDone }: { bill: SupplierBill; onDone: () =>
               { value: 'credit', label: t.creditForm.creditOnly },
             ]}
             onChange={(value) => setReturnsStock(value === 'return')}
+            describedBy={hintId}
           />
-          <span className="field__hint">{returnsStock ? t.creditForm.returnHint : t.creditForm.creditHint}</span>
+          <span className="field__hint" id={hintId}>
+            {returnsStock ? t.creditForm.returnHint : t.creditForm.creditHint}
+          </span>
         </div>
       )}
       <div className="field-row">
@@ -77,8 +85,14 @@ export function CreditForm({ bill, onDone }: { bill: SupplierBill; onDone: () =>
       <Field label={t.bills.note}>
         <input maxLength={500} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
-      <p className="bill-sentence" role="status" aria-live="polite">
-        {kept.length === 0 ? t.creditForm.nothing : returning && units > 0 ? t.creditForm.sentenceReturn(units, formatMoney(amount)) : t.creditForm.sentenceCredit(formatMoney(amount))}
+      <p className="bill-sentence" role="status" aria-live="polite" id={sentenceId}>
+        {kept.length === 0
+          ? t.creditForm.nothing
+          : unfinished !== -1
+            ? t.billForm.lineIncomplete(unfinished + 1)
+            : returning && units > 0
+              ? t.creditForm.sentenceReturn(units, formatMoney(amount))
+              : t.creditForm.sentenceCredit(formatMoney(amount))}
       </p>
       {amount > bill.left && kept.length > 0 && <p className="field-hint">{t.creditForm.beyond(formatMoney(Math.round((amount - bill.left) * 100) / 100))}</p>}
       {save.isError && (
@@ -90,7 +104,7 @@ export function CreditForm({ bill, onDone }: { bill: SupplierBill; onDone: () =>
         <Button variant="ghost" onClick={onDone}>
           {t.common.cancel}
         </Button>
-        <Button type="submit" variant="primary" disabled={!ready || save.isPending} loading={save.isPending}>
+        <Button type="submit" variant="primary" disabled={!ready || save.isPending} aria-describedby={sentenceId} loading={save.isPending}>
           {t.creditForm.save}
         </Button>
       </div>

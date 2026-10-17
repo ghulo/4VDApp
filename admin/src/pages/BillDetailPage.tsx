@@ -56,7 +56,11 @@ export function BillDetailPage() {
         crumbs={[{ label: t.nav.tabs.bills, to: '/bills' }]}
         meta={
           <>
-            <Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>
+            {isCredit && open ? (
+              <Badge tone="info">{b.returnsStock ? t.bills.returnStamp : t.bills.creditStamp}</Badge>
+            ) : (
+              <Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>
+            )}
             {b.paidNow && <Badge tone="neutral">{t.bills.paidNowStamp}</Badge>}
             {b.repeatId !== null && <Badge tone="neutral">{t.bills.repeatStamp}</Badge>}
           </>
@@ -79,7 +83,7 @@ export function BillDetailPage() {
         <StatGrid>
           <StatTile label={t.bills.givesBack} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
           <StatTile label={t.bills.usedOnBill} value={formatMoney(b.paid)} />
-          <StatTile label={t.bills.owesYou} value={formatMoney(b.left)} words={b.left === 0 && t.bills.statuses.paid} />
+          <StatTile label={t.bills.owesYou} value={formatMoney(b.left)} words={b.left === 0 && t.bills.nothingOwed} />
         </StatGrid>
       ) : (
         <StatGrid>
@@ -120,7 +124,8 @@ export function BillDetailPage() {
         </div>
         {owes(b) && (
           <div className="product-layout__side buy-side buy-side--first">
-            <PayCard bill={b} />
+            {/* A new amount left (after a return) starts the form again. */}
+            <PayCard key={b.left} bill={b} />
           </div>
         )}
       </div>
@@ -213,13 +218,14 @@ function CreditsSection({ bill }: { bill: SupplierBill }) {
             cell: (credit) => (
               <Link to={`/bills/${credit.id}`} className="table__primary-link">
                 {credit.returnsStock ? t.bills.returnStamp : t.bills.creditStamp}
-                <span className="table__secondary">{credit.number ? t.bills.numbered(credit.number) : t.bills.noNumber}</span>
+                <span className="table__secondary">
+                  {[credit.number ? t.bills.numbered(credit.number) : t.bills.noNumber, credit.voided ? t.bills.statuses.void : null].filter(Boolean).join(' · ')}
+                </span>
               </Link>
             ),
           },
           { header: t.bills.issuedOn, cell: (credit) => formatDate(credit.issuedOn) },
           { header: t.bills.amount, align: 'end', cell: (credit) => (credit.voided ? <s>{formatMoney(credit.amount)}</s> : formatMoney(credit.amount)) },
-          { header: t.bills.status, cell: (credit) => (credit.voided ? <Badge>{t.bills.statuses.void}</Badge> : null) },
         ]}
       />
     </Section>
@@ -442,7 +448,7 @@ function EditCard({ bill }: { bill: SupplierBill }) {
   return (
     <Card title={t.bills.details} description={t.bills.detailsHint}>
       <form className="settings-form" onSubmit={handleSubmit}>
-        <BillFields draft={draft} onChange={setDraft} lockAmount={lockAmount} />
+        <BillFields draft={draft} onChange={setDraft} lockAmount={lockAmount} hideDue={bill.kind === 'credit' || bill.paidNow} />
         {save.isError && (
           <p className="form-error" role="alert">
             {errorMessage(save.error)}

@@ -2795,7 +2795,7 @@ form.product-form > .form-actions {
 .quick-due {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin: calc(-1 * var(--space-2)) 0 var(--space-4);
 }
 

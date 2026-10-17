@@ -58,7 +58,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
         <Field label={t.orders.supplierName}>
           <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
-        <Field label={t.nui.label} hint={abroad ? t.suppliers.abroadHint : t.nui.hint}>
+        <Field label={abroad ? t.suppliers.nuiOptional : t.nui.label} hint={abroad ? t.suppliers.abroadHint : t.nui.hint}>
           <NuiInput required={!abroad} value={nui} onChange={(event) => setNui(event.target.value)} />
         </Field>
       </div>

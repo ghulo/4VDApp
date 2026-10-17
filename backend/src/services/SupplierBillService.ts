@@ -584,7 +584,8 @@ async function planBill(
     const unitCost = figures.lines[index]!.unitCost;
     if (!line.product || unitCost === null || seen.has(line.product.id)) return;
     const { costPrice, price } = line.product;
-    if (costPrice !== null && unitCost <= costPrice) return;
+    // Without an earlier cost there is nothing it went up from.
+    if (costPrice === null || unitCost <= costPrice) return;
     seen.add(line.product.id);
     const margin = (cost: number) => (price > 0 ? roundMoney(((price - cost) / price) * 100) : 0);
     priceAlerts.push({

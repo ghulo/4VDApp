@@ -395,6 +395,13 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | What is being built before recording | **basket** | **shporta** *(confirm)* | cart |
 | Numbered A4 document for a sale | **invoice** | **faturë** | receipt (the fiscal printer does receipts) |
 | A supplier's invoice to the shop | **supplier bill** | **fatura e furnitorit** | |
+| What one line of a supplier bill is | **Product** (into stock) · **Cost** (a category) · **Equipment** (what the business owns) | **Produkt** · **Shpenzim** · **Pajisje** *(confirm)* | bill type, item type, fixed asset |
+| When a supplier bill is paid | **Pay later** · **Paid now** (an expense is a bill paid now) | **Paguaj më vonë** · **Paguar tani** *(confirm)* | cash bill, expense bill |
+| Goods sent back, or a lower price agreed after the bill | **Return or credit** (stamps **Return** / **Credit**) | **Kthim ose zbritje** (**Kthim** / **Zbritje**) *(confirm)* | credit note (except the supplier's own document number), debit note |
+| Tax the shop keeps back and pays to ATK itself | **tax held back** | **tatim i mbajtur** *(confirm)* | withholding, WR |
+| A supplier based outside Kosovo | **abroad** | **jashtë vendit** *(confirm)* | reverse charge, self-charged VAT, foreign |
+| What the customs paper shows | **customs**: **VAT paid at customs** and **duty** | **dogana**: **TVSH e paguar në doganë** and **taksa doganore** *(confirm)* | landed cost, import declaration |
+| When a bill raises a product's cost | **Costs went up** (with the margin and a new shelf price) | **Kostot u rritën** *(confirm)* | price variance |
 | What a customer owes | **tab** | **borxh** | credit, debt |
 | Someone you sell to | **customer** | **klient** | client |
 | Counting a drawer's money | **cash count**; action **Count the drawer** | **numërimi i arkës**; **Numëro arkën** *(confirm)* | cash check, close the drawer |
@@ -683,6 +690,17 @@ line box icon (not a letter).
 Joined options on an Oat inset track, the selected one raised on Paper. Used for
 theme (Light / Dark / Auto, with icons) and language (English / Shqip) **in both
 apps**, and for small view switches. Not for more than 4 options.
+Inside a form it is a choice like radio buttons (`Segmented` in
+`BillLines.tsx`): a supplier bill line's kind, Pay later / Paid now, how it was
+paid. One tab stop; the arrow keys move the choice.
+
+**The supplier bill form** (`/bills/new`) has no type menu: the lines' kinds,
+the supplier (its usual kind, VAT, tax held back, abroad) and Pay later / Paid
+now decide what the bill does. Cards: Who and when · What's on the bill ·
+Customs (abroad with goods) · Paying; beside them, **What this bill does**: one
+sentence from the server's preview, the figures, any **Costs went up** alerts,
+and Save with the reason it waits ("Line 2 is not finished."). Returns and
+credits start from the bill, in a side panel, with its lines filled in.
 
 **Filter chips** (what a page or list shows: every list filter, every period
 picker, Daily / Weekly on Reports, invoice kind, which carwash): each choice is

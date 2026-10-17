@@ -17,8 +17,19 @@ export function DueBadge({ bill }: { bill: SupplierBill }) {
 /**
  * Number, dates, amount and note: the fields a bill has, for adding one or fixing a typo.
  * `lockAmount`: a bill worked out from its lines keeps the amount its lines give.
+ * `hideDue`: a credit or a bill paid on the spot has nothing to pay later, so no due date.
  */
-export function BillFields({ draft, onChange, lockAmount }: { draft: BillDraft; onChange: (draft: BillDraft) => void; lockAmount?: boolean }) {
+export function BillFields({
+  draft,
+  onChange,
+  lockAmount,
+  hideDue,
+}: {
+  draft: BillDraft;
+  onChange: (draft: BillDraft) => void;
+  lockAmount?: boolean;
+  hideDue?: boolean;
+}) {
   const t = useT();
   const set = (patch: Partial<BillDraft>) => onChange({ ...draft, ...patch });
   return (
@@ -85,17 +96,21 @@ export function BillFields({ draft, onChange, lockAmount }: { draft: BillDraft; 
         <Field label={t.bills.issuedOn}>
           <DateField required max={todayIso()} value={draft.issuedOn} onChange={(value) => set({ issuedOn: value })} />
         </Field>
-        <Field label={t.bills.due} hint={t.bills.dueHint}>
-          <DateField min={draft.issuedOn} value={draft.dueOn} onChange={(value) => set({ dueOn: value })} />
-        </Field>
+        {!hideDue && (
+          <Field label={t.bills.due} hint={t.bills.dueHint}>
+            <DateField min={draft.issuedOn} value={draft.dueOn} onChange={(value) => set({ dueOn: value })} />
+          </Field>
+        )}
       </div>
-      <div className="quick-due" role="group" aria-label={t.bills.quickDue}>
-        {[0, 15, 30, 60].map((days) => (
-          <Button key={days} size="sm" variant="ghost" onClick={() => set({ dueOn: addDaysIso(draft.issuedOn || todayIso(), days) })}>
-            {days === 0 ? t.bills.dueNow : t.bills.inDays(days)}
-          </Button>
-        ))}
-      </div>
+      {!hideDue && (
+        <div className="quick-due" role="group" aria-label={t.bills.quickDue}>
+          {[0, 15, 30, 60].map((days) => (
+            <Button key={days} size="sm" variant="ghost" onClick={() => set({ dueOn: addDaysIso(draft.issuedOn || todayIso(), days) })}>
+              {days === 0 ? t.bills.dueNow : t.bills.inDays(days)}
+            </Button>
+          ))}
+        </div>
+      )}
       <Field label={t.bills.note}>
         <input maxLength={500} autoComplete="off" value={draft.note} onChange={(event) => set({ note: event.target.value })} />
       </Field>

@@ -131,7 +131,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const figures = done.length > 0 ? preview.data : undefined;
 
   const blocker =
-    done.length === 0
+    lines.length === 0
       ? t.billForm.needLine
       : !allDone
         ? t.billForm.lineIncomplete(lines.findIndex((line) => !isLineDone(line)) + 1)
@@ -146,6 +146,16 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
       navigate(`/bills/${bill.id}`);
     },
   });
+
+  // Reloading or closing the tab asks first once something is typed, so a long bill isn't lost.
+  const typed = number.trim() !== '' || lines.some((line) => line.product !== null || line.unitPrice !== '' || line.amount !== '' || line.description !== '');
+  const guard = typed && !create.isPending && !create.isSuccess;
+  useEffect(() => {
+    if (!guard) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [guard]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

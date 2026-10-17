@@ -21,11 +21,12 @@ import type { Language } from '../services/types';
 const MIN_PASSWORD_LENGTH = 8;
 const RUNS_THE_SHOP: UserRole[] = ['developer', 'admin', 'owner'];
 
-const FILTERS = ['all', 'running', 'employee', 'family', 'blocked'] as const;
+const FILTERS = ['all', 'running', 'accountant', 'employee', 'family', 'blocked'] as const;
 type Filter = (typeof FILTERS)[number];
 const matches: Record<Filter, (person: TeamMember) => boolean> = {
   all: (person) => person.isActive,
   running: (person) => person.isActive && RUNS_THE_SHOP.includes(person.role),
+  accountant: (person) => person.isActive && person.role === 'accountant',
   employee: (person) => person.isActive && person.role === 'employee',
   family: (person) => person.isActive && person.role === 'family',
   blocked: (person) => !person.isActive,

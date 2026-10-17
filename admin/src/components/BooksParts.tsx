@@ -2,7 +2,8 @@ import { ArrowSquareOut, FileXls } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { canManage, canOversee } from '../auth/roles';
+import { canReadBooks, canWriteEntries } from '../auth/roles';
+import { QuestionsCard } from './QuestionsCard';
 import { useCurrentUser } from '../auth/useAuth';
 import type { Catalogue } from '../i18n/en';
 import { useLanguage, useT } from '../i18n/useT';
@@ -142,7 +143,7 @@ export function EntryView({ entry, onReversed }: { entry: LedgerEntry; onReverse
       onReversed?.(reversal);
     },
   });
-  const canReverse = entry.kind === 'manual' && !entry.reversed && canManage(role);
+  const canReverse = entry.kind === 'manual' && !entry.reversed && canWriteEntries(role);
 
   return (
     <div className="books-entry">
@@ -195,7 +196,12 @@ export function EntryById({ id, onOpen }: { id: number; onOpen: (id: number) => 
   const entry = useQuery({ queryKey: ['books', 'entry', id], queryFn: () => booksApi.entry(id) });
   if (entry.isPending) return <Loading />;
   if (entry.isError) return <ErrorNotice error={entry.error} onRetry={() => entry.refetch()} />;
-  return <EntryView entry={entry.data} onReversed={(reversal) => onOpen(reversal.id)} />;
+  return (
+    <>
+      <EntryView entry={entry.data} onReversed={(reversal) => onOpen(reversal.id)} />
+      <QuestionsCard kind="entry" id={id} />
+    </>
+  );
 }
 
 /** An Excel download of the books for a period, in the language the dashboard is in. */
@@ -241,10 +247,10 @@ export function BooksDownloads({ items, period }: { items: { what: DownloadWhat;
   );
 }
 
-/** What a document wrote in the books, on its own page. Only for those who oversee the business. */
+/** What a document wrote in the books, on its own page. For those who oversee the business and the accountant. */
 export function EntriesPanel({ source, id }: { source: EntrySource; id: number }) {
   const { role } = useCurrentUser();
-  if (!canOversee(role)) return null;
+  if (!canReadBooks(role)) return null;
   return <EntriesPanelBody source={source} id={id} />;
 }
 

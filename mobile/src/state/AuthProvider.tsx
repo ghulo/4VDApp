@@ -6,7 +6,7 @@ import { disablePush } from '../push/devicePush';
 import type { User } from '../services/types';
 import { useTheme } from '../theme';
 import { useLanguage } from '../i18n/useT';
-import { AuthContext, type AuthState } from './useAuth';
+import { AuthContext, type AuthState, DashboardOnlyError } from './useAuth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async (hasToken) => {
         if (!hasToken) return setState({ status: 'signedOut' });
         const user = await authApi.me();
+        if (user.role === 'accountant') throw new DashboardOnlyError();
         // The theme someone picked follows them from device to device.
         setPreference(user.theme);
         setLanguage(user.language);
@@ -37,6 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const user = await authApi.login(email, password);
+      if (user.role === 'accountant') {
+        await authApi.logout().catch(() => undefined);
+        await tokenStore.clear();
+        throw new DashboardOnlyError();
+      }
       setPreference(user.theme);
       setLanguage(user.language);
       setState({ status: 'signedIn', user });

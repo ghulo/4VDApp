@@ -1,8 +1,8 @@
-import { Books, Plus, PencilSimple } from '@phosphor-icons/react';
+import { Books, LockSimple, Plus, PencilSimple } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
-import { canManage } from '../auth/roles';
+import { canManage, canWriteEntries } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import {
   BalanceFigure,
@@ -38,7 +38,7 @@ import {
   useNewSheet,
 } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { booksApi, customersApi, suppliersApi } from '../services/api';
+import { booksApi, customersApi, suppliersApi, vatApi } from '../services/api';
 import {
   ACCOUNT_CLASSES,
   CASH_FLOW_ACTIVITIES,
@@ -80,11 +80,11 @@ const linkedAccount = (accounts: LedgerAccount[] | undefined, key: AccountLinkKe
  * One entry opened from a list, by its number: beside the list on a wide screen,
  * in a sheet otherwise. The row it came from stays marked.
  */
-function useEntryInspector() {
+function useEntryInspector(initial: number | null = null) {
   const t = useT();
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(initial);
   // The title stays while the sheet slides out.
-  const [shownId, setShownId] = useState<number | null>(null);
+  const [shownId, setShownId] = useState<number | null>(initial);
   const open = useCallback((id: number) => {
     setOpenId(id);
     setShownId(id);
@@ -95,6 +95,23 @@ function useEntryInspector() {
     </Inspector>
   );
   return { open, openId, inspector };
+}
+
+/** The VAT months filed with ATK ("2026-09"); nothing dated in them can change. */
+function useFiledMonths() {
+  const filed = useQuery({ queryKey: ['vat', 'filed'], queryFn: vatApi.filed, staleTime: 60_000 });
+  return useMemo(() => new Set(filed.data ?? []), [filed.data]);
+}
+
+/** A small lock stamp on something dated in a filed VAT month. */
+function FiledStamp() {
+  const t = useT();
+  return (
+    <span className="books-filed" title={t.vat.filedNote}>
+      <LockSimple size={12} aria-hidden="true" />
+      <span className="visually-hidden">{t.vat.stamp.filed}</span>
+    </span>
+  );
 }
 
 /** Marks the row whose entry is open, and steps back corrections. */
@@ -263,7 +280,9 @@ export function BooksJournalPage() {
   });
   const settings = useQuery({ queryKey: ['books', 'settings'], queryFn: booksApi.settings });
   const [adding, setAdding] = useNewSheet();
-  const { open, openId, inspector } = useEntryInspector();
+  // A link from a question in To do opens its entry (?entry=40).
+  const { open, openId, inspector } = useEntryInspector(Number(params.get('entry')) || null);
+  const filed = useFiledMonths();
 
   const update = useCallback(
     (changes: Record<string, string>) =>
@@ -289,7 +308,7 @@ export function BooksJournalPage() {
         description={t.books.journalDescription(range.label)}
         actions={
           <>
-            {canManage(role) && (
+            {canWriteEntries(role) && (
               <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>
                 {t.books.newEntry}
               </Button>
@@ -328,7 +347,16 @@ export function BooksJournalPage() {
                 </EmptyState>
               }
               columns={[
-                { header: t.books.date, className: 'books-date', cell: (entry) => formatBookDay(entry.date) },
+                {
+                  header: t.books.date,
+                  className: 'books-date',
+                  cell: (entry) => (
+                    <>
+                      {formatBookDay(entry.date)}
+                      {filed.has(entry.date.slice(0, 7)) && <FiledStamp />}
+                    </>
+                  ),
+                },
                 { header: t.books.what, title: true, className: 'books-kind', cell: (entry) => kindLabel(t, entry) },
                 { header: t.books.descriptionColumn, className: 'books-description', cell: (entry) => entry.description },
                 {

@@ -2,7 +2,7 @@
 
 export type Language = 'en' | 'sq';
 
-export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family';
+export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 
 export interface User {
   id: number;
@@ -66,8 +66,10 @@ export interface Product {
   isActive: boolean;
   category: { id: number; name: string };
   price: number;
-  /** Percent of VAT included in the price: 18, 8 or 0. */
+  /** Percent of VAT included in the price: 18, 16 (the old rate), 8 or 0. */
   vatRate: VatRate;
+  /** At 0%: exempt from VAT altogether (box 9 of the return), rather than taxed at 0%. */
+  vatExempt: boolean;
   /** Two-letter code of the country it comes from; starts from the barcode, can be corrected. */
   originCountry: string | null;
   costPrice?: number | null;
@@ -89,6 +91,7 @@ export interface ProductInput {
   sku: string | null;
   isActive: boolean;
   vatRate: VatRate;
+  vatExempt?: boolean;
   originCountry: string | null;
   bulkPricingTiers: PricingTier[];
   stock?: number;
@@ -166,7 +169,8 @@ export interface CheckoutDayTotal {
 }
 
 /** Kosovo's VAT rates, in percent. */
-export const VAT_RATES = [18, 8, 0] as const;
+/** 16% is the old standard rate, still on some products and bills. A 0% product can also be exempt (vatExempt). */
+export const VAT_RATES = [18, 16, 8, 0] as const;
 export type VatRate = (typeof VAT_RATES)[number];
 
 export type DocumentKind = 'invoice' | 'credit_note';
@@ -219,6 +223,8 @@ export interface SalesDocumentDetail extends SalesDocument {
     discountPercent: number | null;
     priceBeforeDiscount: number | null;
     vatRate: number;
+    /** At 0%: exempt from VAT. */
+    vatExempt?: boolean;
     netAmount: number;
     vatAmount: number;
     total: number;
@@ -263,7 +269,7 @@ export interface AppNotification {
   createdAt: string;
 }
 
-export const USER_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'employee', 'family'];
+export const USER_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'accountant', 'employee', 'family'];
 
 export interface PeriodTotals {
   /** After refunds. */
@@ -467,6 +473,7 @@ export interface Supplier {
   usualKind: BillLineKind | null;
   usualCategory: string | null;
   usualVatRate: VatRate | null;
+  usualVatExempt?: boolean;
   withholdingType: WithholdingType | null;
 }
 
@@ -521,6 +528,8 @@ export interface BillLine {
   category: string | null;
   description: string | null;
   vatRate: number;
+  /** At 0%: exempt from VAT, not taxed at 0%. */
+  vatExempt: boolean;
   net: number;
   vat: number;
   gross: number;
@@ -544,6 +553,8 @@ export interface SupplierBill {
   /** The supplier's own invoice number. */
   number: string | null;
   issuedOn: string;
+  /** The VAT month it counts in ("2026-10") when it came after its own month was filed; null: its own month. */
+  vatMonth: string | null;
   dueOn: string | null;
   /** What the supplier is owed (a return or credit: what it gives back). */
   amount: number;
@@ -609,6 +620,7 @@ export interface BillLineInput {
   /** A cost's or equipment's amount as on the paper. */
   amount?: number | null;
   vatRate?: number | null;
+  vatExempt?: boolean | null;
 }
 
 /** The one bill form: lines, and what 4VD needs to work out the rest. */
@@ -784,7 +796,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'answer';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -1577,4 +1589,104 @@ export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off
 export interface BooksPeriod {
   from: string;
   to: string;
+}
+
+/* ---------- VAT ---------- */
+
+export type VatItemKind = 'invoice' | 'till_day' | 'return' | 'bill' | 'credit';
+
+/** One document as the VAT return sees it, with what it puts in each box. */
+export interface VatItem {
+  kind: VatItemKind;
+  /** The document's id; a till day's date. */
+  ref: string;
+  date: string;
+  number: string | null;
+  party: string | null;
+  nui: string | null;
+  boxes: Partial<Record<number, number>>;
+  /** A bill from an earlier month that was already filed, counted here instead ("2026-08"). */
+  lateFrom?: string;
+  count?: number;
+}
+
+export type VatCheckKind = 'no_nui' | 'vat_mismatch' | 'cash_over_limit' | 'order_without_bill' | 'previous_open' | 'books_differ';
+
+export interface VatCheck {
+  kind: VatCheckKind;
+  to: string;
+  facts: Record<string, string | number | null>;
+}
+
+export interface Over500Row {
+  billId: number;
+  date: string;
+  supplier: string | null;
+  nui: string | null;
+  number: string | null;
+  total: number;
+  bank: number;
+  cash: number;
+  unpaid: number;
+}
+
+export interface VatMonth {
+  /** "2026-09". */
+  month: string;
+  status: 'open' | 'filed';
+  filedAt: string | null;
+  filedBy: string | null;
+  canFile: boolean;
+  dueOn: string;
+  boxes: Record<number, number>;
+  outcome: 'pay' | 'carry' | 'nothing';
+  carriedFrom: 'previous' | 'typed' | 'none';
+  refundAsked: number;
+  firstMonth: string | null;
+  items: VatItem[];
+  checks: VatCheck[];
+  over500: Over500Row[];
+}
+
+export interface VatYearRow {
+  month: string;
+  status: 'open' | 'filed' | 'future';
+  sales: number;
+  purchases: number;
+  equipment: number;
+  charged: number;
+  claimable: number;
+  difference: number;
+  carriedIn: number;
+  carriedOut: number;
+  toPay: number;
+}
+
+export interface WithholdingRow {
+  billId: number;
+  date: string;
+  supplier: string | null;
+  nui: string | null;
+  number: string | null;
+  type: string;
+  rate: number;
+  gross: number;
+  withheld: number;
+}
+
+export type ThreadSubject = 'bill' | 'document' | 'entry';
+
+export interface ThreadNote {
+  id: number;
+  author: string | null;
+  side: 'question' | 'answer';
+  body: string;
+  createdAt: string;
+}
+
+export interface Thread {
+  id: number | null;
+  subject: string;
+  status: 'open' | 'answered' | 'none';
+  notes: ThreadNote[];
 }

@@ -14,9 +14,8 @@ import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
-import { canManage, canOversee } from '../auth/roles';
 import { useT } from '../i18n/useT';
-import { isCurrent, NAV_GROUPS } from '../navigation/sections';
+import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
 
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -161,7 +160,7 @@ export function Layout() {
           {NAV_GROUPS.map((group) => (
             <div key={group.key} className="sidebar__group">
               <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
-              {group.items.filter((item) => (!item.managersOnly || canManage(user.role)) && (!item.overseersOnly || canOversee(user.role))).map((item) => {
+              {group.items.filter((item) => shownTo(user.role, item)).map((item) => {
                 const count = item.badge === 'inbox' ? inboxCount : 0;
                 const ItemIcon = item.icon;
                 const label = t.nav.items[item.key];

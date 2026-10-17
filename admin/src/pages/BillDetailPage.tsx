@@ -14,6 +14,8 @@ import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
 import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
+import { QuestionsCard } from '../components/QuestionsCard';
+import { formatMonth } from '../utils/vat';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
 
@@ -78,6 +80,7 @@ export function BillDetailPage() {
         }
       />
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
+      {b.vatMonth && <p className="callout document-note">{t.bills.lateVat(formatMonth(b.vatMonth))}</p>}
 
       {isCredit ? (
         <StatGrid>
@@ -119,6 +122,7 @@ export function BillDetailPage() {
           <PaymentsCard bill={b} />
           <PhotoCard bill={b} />
           {open && <EditCard bill={b} />}
+          <QuestionsCard kind="bill" id={b.id} />
           <EntriesPanel source="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>

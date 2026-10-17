@@ -185,7 +185,10 @@ never wonder whether two words, colours or buttons mean the same thing.
 4. **One word, one meaning.** Every thing has one name in each language, used
    everywhere (section 5).
 5. **Nothing touches stock or money without a record**, and where it matters,
-   the owner's decision. Everything can be undone or corrected; nothing locks.
+   the owner's decision. Everything can be undone or corrected; nothing locks,
+   except a VAT month once it is **filed**: then nothing dated in it changes
+   until the accountant or the owner reopens it with a reason (kept in Activity).
+   A late supplier bill still goes in; its VAT counts in the next open month.
 6. **Calm at rest, clear when touched.** Emphasis goes to what matters most on
    the screen, never to decoration, zeros or disabled things.
 7. **Modern frame, vintage finish.** Structure, data and interaction are crisp
@@ -211,7 +214,7 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
 | | **Expenses** | `/expenses` | – |
 | | **Reports** | `/report` | Daily & weekly · Analytics |
-| | **Books** (managers and the owner) | `/books` | Balances · Entries · Accounts (an account opens its card, `/books/accounts/:id`) |
+| | **Books** (managers, the owner and the accountant) | `/books` | Balances · Entries · Accounts · VAT · Sales book · Purchase book (an account opens its card, `/books/accounts/:id`; VAT is `/books/vat`, the books `/books/sales-book` and `/books/purchase-book`) |
 | Team | **People** · **Activity** · **Settings** | | – |
 
 Rules:
@@ -221,6 +224,9 @@ Rules:
   old links keep working. Old URLs always redirect, never 404.
 - **Ctrl K** ("Search or jump to") reaches every page, tab and record.
 - Settings is hidden from the owner (they see everything but change no setup).
+- The **accountant** sees only the money side: Inbox, Sales (read only),
+  Customers, Suppliers, Expenses, Reports and Books. They land on VAT. The team
+  app turns them away at sign-in.
 
 ### 3.2 Team app tabs
 
@@ -424,6 +430,10 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | The list of the shop's accounts | **chart of accounts** (page **Accounts**) | **plani kontabël** (page **Llogaritë**) *(confirm)* | |
 | What each account held in a period | **trial balance** (page **Balances**) | **bilanci** *(confirm)* | |
 | Every movement on one account | **account card** | **kartela** *(confirm)* | ledger card |
+| One month's VAT figures for ATK | **VAT return** (page **VAT**) | **deklarata e TVSH-së** (page **TVSH**) *(confirm)* | tax form, TV form |
+| A month sent to ATK and locked | **filed** (stamp **Filed**); action **Mark as filed** · **Reopen** | **deklaruar** (**Deklaruar**); **Shëno si të deklaruar** · **Rihap** *(confirm)* | closed, submitted |
+| Every sale or purchase of a month, in ATK's columns | **sales book** · **purchase book** | **libri i shitjes** · **libri i blerjes** *(confirm)* | ledger, register |
+| The outside bookkeeper | **accountant** | **kontabilist** *(confirm)* | bookkeeper, auditor |
 
 ## 6. Colour
 

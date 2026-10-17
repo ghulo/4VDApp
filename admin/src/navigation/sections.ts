@@ -17,7 +17,9 @@ import {
   Wallet,
   type Icon,
 } from '@phosphor-icons/react';
+import { canManage, canOversee } from '../auth/roles';
 import type { Catalogue } from '../i18n/en';
+import type { UserRole } from '../services/types';
 
 type NavKey = keyof Catalogue['nav']['items'];
 type TabKey = keyof Catalogue['nav']['tabs'];
@@ -28,6 +30,8 @@ export interface SectionTab {
   key: TabKey;
   /** Keep the address's filters (like the chosen period) when switching to this tab. */
   keepSearch?: boolean;
+  /** The accountant sees it (they see only the money side). */
+  accountant?: boolean;
 }
 
 export interface NavItem {
@@ -42,6 +46,8 @@ export interface NavItem {
   managersOnly?: boolean;
   /** Only for those who oversee the business (managers and the owner), like the books. */
   overseersOnly?: boolean;
+  /** The accountant sees it (they see only the money side). */
+  accountant?: boolean;
 }
 
 /**
@@ -50,8 +56,8 @@ export interface NavItem {
  */
 export const SECTIONS = {
   inbox: [
-    { to: '/inbox', key: 'todo' },
-    { to: '/inbox/updates', key: 'updates' },
+    { to: '/inbox', key: 'todo', accountant: true },
+    { to: '/inbox/updates', key: 'updates', accountant: true },
   ],
   stock: [
     { to: '/inventory', key: 'shelf' },
@@ -59,8 +65,8 @@ export const SECTIONS = {
     { to: '/categories', key: 'categories' },
   ],
   sales: [
-    { to: '/sales', key: 'history' },
-    { to: '/documents', key: 'invoices' },
+    { to: '/sales', key: 'history', accountant: true },
+    { to: '/documents', key: 'invoices', accountant: true },
   ],
   day: [
     { to: '/day', key: 'close' },
@@ -68,21 +74,24 @@ export const SECTIONS = {
     { to: '/carwash', key: 'carwash' },
   ],
   buy: [
-    { to: '/suppliers', key: 'suppliers' },
-    { to: '/orders', key: 'orders' },
-    { to: '/bills', key: 'bills' },
+    { to: '/suppliers', key: 'suppliers', accountant: true },
+    { to: '/orders', key: 'orders', accountant: true },
+    { to: '/bills', key: 'bills', accountant: true },
   ],
   books: [
-    { to: '/books', key: 'balances', keepSearch: true },
-    { to: '/books/journal', key: 'journal', keepSearch: true },
-    { to: '/books/accounts', key: 'accounts' },
+    { to: '/books', key: 'balances', keepSearch: true, accountant: true },
+    { to: '/books/journal', key: 'journal', keepSearch: true, accountant: true },
+    { to: '/books/accounts', key: 'accounts', accountant: true },
+    { to: '/books/vat', key: 'vat', accountant: true },
+    { to: '/books/sales-book', key: 'salesBook', accountant: true },
+    { to: '/books/purchase-book', key: 'purchaseBook', accountant: true },
   ],
   reports: [
-    { to: '/report', key: 'report' },
+    { to: '/report', key: 'report', accountant: true },
     { to: '/reports', key: 'analytics', keepSearch: true },
     { to: '/reports/team', key: 'team', keepSearch: true },
-    { to: '/reports/profit', key: 'profit', keepSearch: true },
-    { to: '/reports/downloads', key: 'downloads', keepSearch: true },
+    { to: '/reports/profit', key: 'profit', keepSearch: true, accountant: true },
+    { to: '/reports/downloads', key: 'downloads', keepSearch: true, accountant: true },
   ],
 } satisfies Record<string, SectionTab[]>;
 
@@ -92,15 +101,15 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     key: 'today',
     items: [
       { to: '/', key: 'overview', icon: House },
-      { to: '/inbox', key: 'inbox', icon: Tray, badge: 'inbox' },
+      { to: '/inbox', key: 'inbox', icon: Tray, badge: 'inbox', accountant: true },
       { to: '/ask', key: 'ask', icon: Sparkle },
     ],
   },
   {
     key: 'sell',
     items: [
-      { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents'] },
-      { to: '/customers', key: 'customers', icon: AddressBook },
+      { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents'], accountant: true },
+      { to: '/customers', key: 'customers', icon: AddressBook, accountant: true },
       { to: '/promotions', key: 'promotions', icon: Percent },
     ],
   },
@@ -114,16 +123,16 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'buy',
     items: [
-      { to: '/suppliers', key: 'suppliers', icon: Storefront, also: ['/orders', '/bills'] },
+      { to: '/suppliers', key: 'suppliers', icon: Storefront, also: ['/orders', '/bills'], accountant: true },
     ],
   },
   {
     key: 'money',
     items: [
       { to: '/day', key: 'day', icon: Coins, also: ['/cash', '/carwash'] },
-      { to: '/expenses', key: 'expenses', icon: Wallet },
-      { to: '/report', key: 'reports', icon: ChartLine, also: ['/reports'] },
-      { to: '/books', key: 'books', icon: Books, overseersOnly: true },
+      { to: '/expenses', key: 'expenses', icon: Wallet, accountant: true },
+      { to: '/report', key: 'reports', icon: ChartLine, also: ['/reports'], accountant: true },
+      { to: '/books', key: 'books', icon: Books, overseersOnly: true, accountant: true },
     ],
   },
   {
@@ -135,6 +144,12 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     ],
   },
 ];
+
+/** Whether this person sees the menu item or tab: the accountant sees only the money side. */
+export function shownTo(role: UserRole, item: { managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
+  if (role === 'accountant') return Boolean(item.accountant);
+  return (!item.managersOnly || canManage(role)) && (!item.overseersOnly || canOversee(role));
+}
 
 /** Whether the menu item is the one for this address (its own page, a tab under it, or a detail page). */
 export function isCurrent(item: NavItem, pathname: string): boolean {

@@ -11,6 +11,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney, formatPercent } from '../utils/format';
 import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
+import { QuestionsCard } from '../components/QuestionsCard';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
@@ -69,7 +70,7 @@ export function DocumentDetailPage() {
             { header: t.sales.qty, align: 'end', cell: (line) => line.quantity },
             { header: t.sales.each, align: 'end', cell: (line) => formatMoney(line.priceBeforeDiscount ?? line.unitPrice) },
             { header: t.documents.discount, align: 'end', cell: (line) => (line.discountPercent ? formatPercent(line.discountPercent / 100) : '') },
-            { header: t.documents.vat, align: 'end', cell: (line) => `${line.vatRate}%` },
+            { header: t.documents.vat, align: 'end', cell: (line) => (line.vatExempt ? t.documents.vatExempt : `${line.vatRate}%`) },
             { header: t.documents.net, align: 'end', cell: (line) => formatMoney(line.netAmount) },
             { header: t.documents.vatAmount, align: 'end', cell: (line) => formatMoney(line.vatAmount) },
             { header: t.sales.total, align: 'end', cell: (line) => formatMoney(line.total) },
@@ -102,6 +103,7 @@ export function DocumentDetailPage() {
       </Card>
 
       <FiscalReceiptCard document={doc} />
+      <QuestionsCard kind="document" id={doc.id} />
       <EntriesPanel source="document" id={doc.id} />
       <HistoryCard entityType="document" entityId={doc.id} />
     </>

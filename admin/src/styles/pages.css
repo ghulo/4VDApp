@@ -4393,3 +4393,302 @@ fieldset.report-sections {
   font-size: var(--text-sm);
   font-weight: 500;
 }
+
+/* ---------- VAT ---------- */
+
+/* Back a month, the month, forward a month: one compact control. */
+.month-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.month-picker__field select {
+  width: auto;
+  min-width: 15ch;
+  min-height: var(--control-h-sm);
+}
+
+/* The result in one serif sentence on raised paper; a filed month carries its stamp. */
+.vat-outcome .card__body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.vat-outcome__month {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.vat-outcome__sentence {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 500;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  text-wrap: balance;
+}
+
+.vat-outcome__hint {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--ink-muted);
+}
+
+.vat-outcome__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.vat-outcome__note svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.vat-outcome--filed .vat-outcome__note {
+  color: var(--ok);
+}
+
+/* The box number, set small beside its figure as on ATK's form. */
+.vat-box {
+  display: inline-block;
+  min-width: 3ch;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-stamp);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.vat-figure {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.vat-figure__amount--zero {
+  color: var(--ink-muted);
+}
+
+/* A form line's name is the key that opens the documents behind it. */
+.vat-row-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.vat-row-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-stamp);
+}
+
+.table td.vat-what {
+  width: 100%;
+  min-width: 18ch;
+  white-space: normal;
+}
+
+.vat-result__label {
+  display: block;
+  font-weight: 600;
+}
+
+.table tbody tr.vat-result-row td {
+  font-weight: 600;
+}
+
+.vat-checks {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vat-checks > .notice {
+  margin: 0;
+  justify-content: space-between;
+}
+
+.vat-checks__none {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--ok);
+}
+
+/* Box 68 (first month) and box 70, typed under the result. */
+.vat-typed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.vat-typed .field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.vat-typed__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  /* Lines the key up with the fields, under their labels. */
+  padding-top: calc(var(--text-sm) * 1.5 + var(--space-1));
+}
+
+.vat-typed__actions .form-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.vat-documents {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.vat-documents__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vat-documents__item {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.vat-documents__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.vat-documents__name {
+  font-weight: 600;
+}
+
+.vat-documents__date {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.vat-documents__late {
+  display: block;
+  color: var(--warn);
+  font-size: var(--text-sm);
+}
+
+.vat-documents__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.vat-cash {
+  color: var(--warn);
+}
+
+/* A book's box column: the number on top, the form's words under it, kept short. */
+.vat-book__head {
+  display: inline-grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.vat-book__head-words {
+  display: -webkit-box;
+  max-width: 14ch;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-weight: 500;
+  white-space: normal;
+  text-align: end;
+}
+
+/* The accountant's questions on a document, and the answers, as a short thread. */
+.thread {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.thread__note {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 68ch;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.thread__note--answer {
+  justify-self: end;
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.thread__who {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.thread__body {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.thread-form {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.thread-form > .button {
+  justify-self: start;
+}
+
+/* A filed VAT month's lock beside a date in the books. */
+.books-filed {
+  display: inline-flex;
+  margin-left: var(--space-1);
+  color: var(--ok);
+  vertical-align: -1px;
+}

@@ -4,11 +4,11 @@ import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { productsApi } from '../services/api';
 import { BILL_LINE_KINDS, EQUIPMENT_CATEGORIES, EXPENSE_CATEGORIES, type BillLineKind, type Supplier } from '../services/types';
-import { type DraftLine, emptyLine, type LineProduct, withKind } from '../utils/bills';
+import { type DraftLine, emptyLine, EXEMPT, type LineProduct, withKind } from '../utils/bills';
 import { formatMoney } from '../utils/format';
 import { Button, Field } from './ui';
 
-const VAT_RATES = ['18', '8', '0'];
+const VAT_RATES = ['18', '16', '8', '0', EXEMPT];
 const SEARCH_DEBOUNCE_MS = 250;
 const MATCHES = 8;
 
@@ -342,7 +342,7 @@ export function BillLines({ lines, onChange, abroad, supplier, sums, fromBill, l
                       <select value={line.vatRate} disabled={fromBill} onChange={(event) => set(line.key, { vatRate: event.target.value })}>
                         {VAT_RATES.map((rate) => (
                           <option key={rate} value={rate}>
-                            {t.bills.vatAt(Number(rate))}
+                            {rate === EXEMPT ? t.billForm.vatExempt : t.bills.vatAt(Number(rate))}
                           </option>
                         ))}
                       </select>

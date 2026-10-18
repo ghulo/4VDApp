@@ -80,6 +80,9 @@ describe('the financial statements', () => {
     expect(cash.totals.net.amount).toBe(200);
     expect(cash.sections.find((section: { key: string }) => section.key === 'operating').amount).toBe(200);
     expect(cash.totals.closing.amount).toBe(200);
+    // The goods' cost leaving stock moved no cash: only sales and VAT explain the money in.
+    const cashLines = cash.sections.flatMap((section: { groups: Array<{ lines: Array<{ number: string; amount: number }> }> }) => section.groups.flatMap((group) => group.lines));
+    expect(cashLines.map((line: { number: string }) => line.number).sort()).toEqual(['2340', '4000']);
 
     const equity = await statement('equity', { from: `${LAST}-01-01`, to: `${LAST}-12-31` });
     expect(equity.profit).toBe(49.5);

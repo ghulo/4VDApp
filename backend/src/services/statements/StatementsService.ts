@@ -307,14 +307,38 @@ export class StatementsService {
   async cashFlow(period: Period, compare: Period | null = null): Promise<CashFlowStatement> {
     await this.poster.sync();
     const [accounts, cash] = await Promise.all([this.accounts(), this.cashAccounts()]);
+    // A sale's entry also moves the goods' cost out of stock (cost of sales against stock): no cash moves
+    // there, so inside each entry a line on the same side as the cash is left out together with an
+    // opposite line of the same amount, preferring a balance sheet account (stock) over income or costs.
     const flows = async (range: Period) => {
       const { rows } = await sql<{ account_id: number; flow: string }>`
-        select l.account_id, sum(l.debit - l.credit) as flow
-        from ledger_lines l join ledger_entries e on e.id = l.entry_id
-        where e.entry_date between ${range.from}::date and ${range.to}::date
-          and l.account_id <> all(${cash}::int[])
-          and exists (select 1 from ledger_lines c where c.entry_id = l.entry_id and c.account_id = any(${cash}::int[]))
-        group by l.account_id
+        with moved as (
+          select l.entry_id, l.account_id, sum(l.debit - l.credit) as n, bool_or(l.account_id = any(${cash}::int[])) as is_cash
+          from ledger_lines l join ledger_entries e on e.id = l.entry_id
+          where e.entry_date between ${range.from}::date and ${range.to}::date
+            and exists (select 1 from ledger_lines c where c.entry_id = l.entry_id and c.account_id = any(${cash}::int[]))
+          group by l.entry_id, l.account_id
+        ),
+        cash_side as (select entry_id, sum(n) as c from moved where is_cash group by entry_id),
+        other as (
+          select m.entry_id, m.account_id, m.n, cs.c, a.class
+          from moved m join cash_side cs on cs.entry_id = m.entry_id join ledger_accounts a on a.id = m.account_id
+          where not m.is_cash and m.n <> 0
+        ),
+        pairs as (
+          select distinct on (s.entry_id, s.account_id) s.entry_id, s.account_id as same_id, p.account_id as partner_id
+          from other s join other p on p.entry_id = s.entry_id and p.n = -s.n
+          where sign(s.n) = sign(s.c)
+          order by s.entry_id, s.account_id, (p.class in ('asset', 'liability', 'equity')) desc, p.account_id
+        ),
+        dropped as (
+          select entry_id, same_id as account_id from pairs
+          union select entry_id, partner_id from pairs
+        )
+        select o.account_id, sum(o.n) as flow
+        from other o
+        where not exists (select 1 from dropped d where d.entry_id = o.entry_id and d.account_id = o.account_id)
+        group by o.account_id
       `.execute(this.db);
       // Money comes in when the other side is credited: flip so money in is positive whatever the account.
       return new Map(rows.map((row) => [row.account_id, -Number(row.flow)]));

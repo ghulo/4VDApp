@@ -3051,7 +3051,7 @@ export const en = {
     },
     empty: 'Nothing in the books for this period',
     emptyHint: 'Pick another period, or check that the books start before it (Books → Opening balances).',
-    unclosedProfit: 'Profit not yet closed into the year',
+    unclosedProfit: 'Profit this year, not yet closed',
     totalOf: (heading: string) => `Total ${heading.toLowerCase()}`,
     sections: {
       revenue: 'Sales',
@@ -3108,7 +3108,7 @@ export const en = {
       profitSoFar: 'Profit so far this year',
       profit: 'Profit this year to the quarter’s end',
       tax: 'Tax on it',
-      paidBefore: 'Already paid',
+      paidBefore: 'Earlier quarters (their tax, or what was paid if more)',
       paid: 'Paid',
       soFar: 'So far',
       toPay: 'To pay',

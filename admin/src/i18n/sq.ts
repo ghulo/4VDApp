@@ -3031,7 +3031,7 @@ export const sq: Catalogue = {
     },
     empty: 'Asgjë në libra për këtë periudhë',
     emptyHint: 'Zgjidh një periudhë tjetër, ose kontrollo që librat fillojnë para saj (Librat → Gjendjet fillestare).',
-    unclosedProfit: 'Fitimi ende i pambyllur në vit',
+    unclosedProfit: 'Fitimi i vitit, ende pa u mbyllur',
     totalOf: (heading: string) => `Gjithsej ${heading.toLowerCase()}`,
     sections: {
       revenue: 'Shitjet',
@@ -3088,7 +3088,7 @@ export const sq: Catalogue = {
       profitSoFar: 'Fitimi deri tani këtë vit',
       profit: 'Fitimi i vitit deri në fund të tremujorit',
       tax: 'Tatimi mbi të',
-      paidBefore: 'Paguar më parë',
+      paidBefore: 'Tremujorët e mëparshëm (tatimi i tyre, ose sa u pagua nëse më shumë)',
       paid: 'Paguar',
       soFar: 'Deri tani',
       toPay: 'Për të paguar',

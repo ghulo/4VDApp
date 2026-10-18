@@ -1,6 +1,6 @@
 import { Bank, CalendarCheck, FilePdf, FileXls, LockSimple, Printer } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Segmented } from '../components/BillLines';
 import { cardPath, formatBookDay } from '../components/BooksParts';
@@ -58,6 +58,57 @@ const VIEWS: View[] = ['you', 'official', 'bank'];
 const KINDS: StatementKind[] = ['balance', 'income', 'equity', 'cashflow'];
 const cents = (amount: number) => Math.round(amount * 100);
 
+/** Chips that pick one thing: one tab stop, the arrow keys move the choice (like Segmented). */
+function ChipChoice<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  className,
+}: {
+  label: string;
+  value: T;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+  className?: string;
+}) {
+  function handleKey(event: KeyboardEvent<HTMLDivElement>) {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (step === 0) return;
+    event.preventDefault();
+    const index = (options.findIndex((option) => option.value === value) + step + options.length) % options.length;
+    onChange(options[index]!.value);
+    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=radio]')[index]?.focus();
+  }
+
+  return (
+    <div className={['segmented segmented--chips', className].filter(Boolean).join(' ')} role="radiogroup" aria-label={label} onKeyDown={handleKey}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={option.value === value}
+          tabIndex={option.value === value ? 0 : -1}
+          className="segmented__option"
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** When a button swaps itself for "Yes / Cancel", keyboard focus moves to the "Yes" instead of falling back to the page. */
+function useFocusFirst(open: boolean) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (open) ref.current?.querySelector('button')?.focus();
+  }, [open]);
+  return ref;
+}
+
 /* ---------- Statements ---------- */
 
 /** Which statement, read which way, for which period: all kept in the address, so a link shows the same page. */
@@ -96,7 +147,7 @@ export function StatementsPage() {
     mutationFn: async (finish: PrintFinish) => printHtml(await statementsApi.page(kind, query, finish, language), `${w.kinds[kind]} · ${period.range.label}`),
   });
   const excel = useMutation({ mutationFn: () => statementsApi.downloadXlsx(kind, query, language) });
-  const compareLabel = compareDays ? t.periods.range(formatBookDay(compareDays.from), formatBookDay(compareDays.to)) : null;
+  const compareLabel = !compareDays ? null : kind === 'balance' ? w.onDay(formatBookDay(compareDays.to)) : t.periods.range(formatBookDay(compareDays.from), formatBookDay(compareDays.to));
   // A balance sheet is a picture on one day: the period's last.
   const currentLabel = kind === 'balance' ? w.onDay(formatBookDay(days.to)) : period.range.label;
   const data = statement.data;
@@ -129,13 +180,7 @@ export function StatementsPage() {
       />
       <div className="statements-controls">
         <Segmented label={w.viewLabel} value={view} options={VIEWS.map((value) => ({ value, label: w.views[value] }))} onChange={setView} />
-        <div className="segmented segmented--chips" role="radiogroup" aria-label={w.kindLabel}>
-          {KINDS.map((value) => (
-            <button key={value} type="button" role="radio" aria-checked={kind === value} className="segmented__option" onClick={() => setKind(value)}>
-              {w.kinds[value]}
-            </button>
-          ))}
-        </div>
+        <ChipChoice label={w.kindLabel} value={kind} options={KINDS.map((value) => ({ value, label: w.kinds[value] }))} onChange={setKind} />
       </div>
       <PeriodPicker
         period={period.period}
@@ -579,13 +624,13 @@ export function YearPage() {
   return (
     <>
       <PageHeader wide title={t.nav.tabs.year} description={w.description} />
-      <div className="segmented segmented--chips statements-years" role="radiogroup" aria-label={w.yearLabel}>
-        {years.map((value) => (
-          <button key={value} type="button" role="radio" aria-checked={year === value} className="segmented__option" onClick={() => setYear(value)}>
-            {value}
-          </button>
-        ))}
-      </div>
+      <ChipChoice
+        className="statements-years"
+        label={w.yearLabel}
+        value={String(year)}
+        options={years.map((value) => ({ value: String(value), label: String(value) }))}
+        onChange={(value) => setYear(Number(value))}
+      />
       {view.isPending && <Loading />}
       {view.isError && <ErrorNotice error={view.error} onRetry={() => view.refetch()} />}
       {view.data && (
@@ -598,7 +643,7 @@ export function YearPage() {
             )}
             <div className="year-quarters">
               {view.data.quarters.map((quarter) => (
-                <QuarterCard key={quarter.quarter} year={view.data.year} quarter={quarter} canPay={canPayTax(role) && !view.data.close.closed} onPay={() => setPaying(quarter)} />
+                <QuarterCard key={quarter.quarter} year={view.data.year} quarter={quarter} earlier={Math.max(view.data.quarters[quarter.quarter - 2]?.tax ?? 0, quarter.paidBefore)} canPay={canPayTax(role) && !view.data.close.closed} onPay={() => setPaying(quarter)} />
               ))}
             </div>
           </Section>
@@ -612,12 +657,13 @@ export function YearPage() {
   );
 }
 
-function QuarterCard({ year, quarter, canPay, onPay }: { year: number; quarter: Quarter; canPay: boolean; onPay: () => void }) {
+function QuarterCard({ year, quarter, earlier, canPay, onPay }: { year: number; quarter: Quarter; earlier: number; canPay: boolean; onPay: () => void }) {
   const t = useT();
   const w = t.year.tm;
   const { language } = useLanguage();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
+  const confirmRef = useFocusFirst(confirming);
   const undo = useMutation({
     mutationFn: () => statementsApi.undo(quarter.instalment!.id),
     onSuccess: (data) => {
@@ -650,10 +696,10 @@ function QuarterCard({ year, quarter, canPay, onPay }: { year: number; quarter: 
               <dt>{w.tax}</dt>
               <dd>{formatMoney(quarter.tax ?? 0)}</dd>
             </div>
-            {quarter.paidBefore > 0 && (
+            {earlier > 0 && (
               <div>
                 <dt>{w.paidBefore}</dt>
-                <dd>−{formatMoney(quarter.paidBefore)}</dd>
+                <dd>−{formatMoney(earlier)}</dd>
               </div>
             )}
           </dl>
@@ -661,7 +707,7 @@ function QuarterCard({ year, quarter, canPay, onPay }: { year: number; quarter: 
             <span>{quarter.instalment ? w.paid : quarter.status === 'running' ? w.soFar : w.toPay}</span>
             <strong>{formatMoney(toPay ?? 0)}</strong>
           </p>
-          <p className="year-quarter__due">{w.dueBy(formatBookDay(quarter.due))}</p>
+          {!quarter.instalment && <p className="year-quarter__due">{w.dueBy(formatBookDay(quarter.due))}</p>}
         </>
       )}
       {quarter.instalment && (
@@ -675,7 +721,7 @@ function QuarterCard({ year, quarter, canPay, onPay }: { year: number; quarter: 
             {quarter.instalment.entryId && <Link to={`/books/journal?entry=${quarter.instalment.entryId}&period=custom&from=${quarter.instalment.paidOn}&to=${quarter.instalment.paidOn}`}>{w.openEntry}</Link>}
             {canPay &&
               (confirming ? (
-                <span className="year-quarter__confirm">
+                <span className="year-quarter__confirm" ref={confirmRef}>
                   <Button size="sm" variant="danger" loading={undo.isPending} onClick={() => undo.mutate()}>
                     {w.takeBackConfirm}
                   </Button>
@@ -740,7 +786,7 @@ function PayForm({ year, quarter, onDone }: { year: number; quarter: Quarter; on
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
       <Field label={w.amount} hint={quarter.suggested !== null ? w.amountHint(formatMoney(quarter.suggested)) : undefined}>
-        <input type="number" inputMode="decimal" min={0.01} step={0.01} required value={amount} onChange={(event) => setAmount(event.target.value)} />
+        <input name="amount" autoComplete="off" type="number" inputMode="decimal" min={0.01} step={0.01} required value={amount} onChange={(event) => setAmount(event.target.value)} />
       </Field>
       <div className="field-row">
         <Field label={w.day}>
@@ -751,7 +797,7 @@ function PayForm({ year, quarter, onDone }: { year: number; quarter: Quarter; on
         </Field>
       </div>
       <Field label={w.note} hint={w.noteHint}>
-        <input maxLength={300} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} />
+        <input name="note" maxLength={300} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
       {ready && place && <p className="statements-sentence">{w.sentence(formatMoney(value), placeInSentence(t, place), quarter.quarter, year)}</p>}
       {save.isError && (
@@ -778,6 +824,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
   const { close, year } = data;
   const [tax, setTax] = useState(String(close.suggestedTax));
   const [confirming, setConfirming] = useState(false);
+  const confirmRef = useFocusFirst(confirming);
   const [reopening, setReopening] = useState(false);
   const refresh = (next: BookYear) => {
     queryClient.setQueryData(['books', 'year', year], next);
@@ -852,7 +899,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
           </dt>
           <dd>
             {canClose && !blocker ? (
-              <input id="year-close-tax" className="year-close__tax" type="number" inputMode="decimal" min={0} step={0.01} value={tax} aria-describedby="year-close-tax-hint" onChange={(event) => setTax(event.target.value)} />
+              <input id="year-close-tax" name="tax" autoComplete="off" className="year-close__tax" type="number" inputMode="decimal" min={0} step={0.01} value={tax} aria-describedby="year-close-tax-hint" onChange={(event) => setTax(event.target.value)} />
             ) : (
               formatMoney(close.suggestedTax)
             )}
@@ -860,7 +907,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
         </div>
         <div>
           <dt>{w.paidTm}</dt>
-          <dd>−{formatMoney(data.paid)}</dd>
+          <dd>{data.paid > 0 ? `−${formatMoney(data.paid)}` : formatMoney(0)}</dd>
         </div>
         <div className="year-close__strong">
           <dt>{left >= 0 ? w.leftToPay : w.overpaid}</dt>
@@ -881,7 +928,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
           <li key={line}>{line}</li>
         ))}
       </ul>
-      {close.unfiledMonths.length > 0 && (
+      {close.unfiledMonths.length > 0 && blocker !== 'not_over' && (
         <p className="notice notice--warn" role="status">
           {w.unfiled(close.unfiledMonths.length)}
         </p>
@@ -897,7 +944,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
         ) : confirming ? (
           <div className="year-close__confirm" role="group" aria-label={w.confirmTitle(year)}>
             <p>{w.confirmText(year)}</p>
-            <span>
+            <span ref={confirmRef}>
               <Button variant="primary" loading={closeYear.isPending} onClick={() => closeYear.mutate()}>
                 {w.confirm(year)}
               </Button>
@@ -937,7 +984,7 @@ function ReopenForm({ year, onDone }: { year: number; onDone: (next: BookYear | 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
       <Field label={w.reason} hint={w.reasonHint}>
-        <textarea required minLength={3} maxLength={500} rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
+        <textarea name="reason" required minLength={3} maxLength={500} rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
       </Field>
       {reopen.isError && (
         <p className="form-error" role="alert">

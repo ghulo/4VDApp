@@ -5193,6 +5193,52 @@ fieldset.report-sections {
   font-weight: 700;
 }
 
+/* Phones: a statement stays a statement, one line per row (name left, figure right), this period only. */
+@media (max-width: 599px) {
+  .table--stack tr.statement-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    padding-block: var(--space-2);
+  }
+
+  .table--stack tr.statement-row td {
+    display: block;
+    border: 0;
+    background: none;
+  }
+
+  .table--stack tr.statement-row td::before {
+    content: none;
+  }
+
+  .table--stack tr.statement-row td:nth-child(n + 3) {
+    display: none;
+  }
+
+  .table--stack tr.statement-row td:first-child {
+    text-align: start;
+  }
+
+  .table--stack tr.statement-row--line td:first-child {
+    padding-left: var(--space-3);
+  }
+
+  .table--stack tr.statement-row--heading {
+    padding-top: var(--space-4);
+  }
+
+  .table--stack tr.statement-row--subtotal,
+  .table--stack tr.statement-row--total {
+    border-top: 1px solid var(--line-strong);
+  }
+
+  .table--stack tr.statement-row--total {
+    background: var(--fill);
+  }
+}
+
 .statements-years {
   margin-bottom: var(--space-2);
 }

@@ -24,6 +24,7 @@
     "wipe": "tsx src/scripts/wipe.ts",
     "import:trefin": "tsx src/scripts/importTrefin.ts",
     "categorise:trefin": "tsx src/scripts/categoriseTrefin.ts",
+    "opening:trefin": "tsx src/scripts/openingTrefin.ts",
     "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {

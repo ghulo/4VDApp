@@ -105,6 +105,12 @@ function action(step: LaunchStep, t: ReturnType<typeof useT>): ReactNode {
       );
     case 'emails':
       return <TestEmail />;
+    case 'opening':
+      return (
+        <ButtonLink to="/books/opening" variant="secondary" size="sm">
+          {t.launch.actions.opening}
+        </ButtonLink>
+      );
     default:
       return null;
   }
@@ -143,6 +149,10 @@ function how(step: LaunchStep, t: ReturnType<typeof useT>): string {
   switch (step.key) {
     case 'wiped':
       return facts.wipedAt ? t.launch.wipedAt(formatDate(facts.wipedAt)) : t.launch.wipeHow({ products: facts.products ?? 0, sales: facts.sales ?? 0 });
+    case 'trefin':
+      return facts.importedAt ? t.launch.trefinAt(formatDate(facts.importedAt)) : t.launch.trefinHow;
+    case 'opening':
+      return t.launch.openingHow;
     case 'shopDetails':
       return t.launch.shopDetailsHow;
     case 'owner':

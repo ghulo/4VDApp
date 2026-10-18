@@ -430,6 +430,8 @@ export interface CustomersTable {
   nui: string | null;
   phone: string | null;
   note: string | null;
+  /** The partner code it had in TREFIN. */
+  external_code: ColumnType<string | null, string | null | undefined, string | null>;
   archived_at: Date | null;
   created_by: number | null;
   created_at: CreatedAt;
@@ -451,6 +453,8 @@ export interface TabEntriesTable {
   created_by: number | null;
   /** On a payment: where the money arrived (null: the shop's till). */
   place_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** A balance from before the books start, brought over at launch: out of the books. */
+  brought_over: Generated<boolean>;
 }
 
 export interface SuppliersTable {
@@ -460,6 +464,8 @@ export interface SuppliersTable {
   phone: string | null;
   email: string | null;
   note: string | null;
+  /** The partner code it had in TREFIN. */
+  external_code: ColumnType<string | null, string | null | undefined, string | null>;
   /** A supplier from another country: its bills are imports, handled by 4VD (customs VAT, VAT charged to yourself). */
   abroad: Generated<boolean>;
   /** Remembered from its last bill, to fill in the next one. */
@@ -635,6 +641,8 @@ export interface SupplierBillsTable {
   repeat_id: number | null;
   /** The VAT month it counts in when its own month was already filed; null: its own month. */
   vat_month: ColumnType<string | null, string | null | undefined, string | null>;
+  /** An open bill from before the books start, brought over at launch: out of the books and the VAT return. */
+  brought_over: Generated<boolean>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -1070,6 +1078,30 @@ export interface Database {
   bank_rules: BankRulesTable;
   bank_statements: BankStatementsTable;
   bank_lines: BankLinesTable;
+  opening_lines: OpeningLinesTable;
+}
+
+export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
+export type OpeningSource = 'trefin' | 'counted' | 'statement' | 'stock' | 'typed';
+
+/** One line of what the shop has and owes when the books start (see migration 044). */
+export interface OpeningLinesTable {
+  id: Generated<number>;
+  kind: OpeningLineKind;
+  account_id: number | null;
+  place_id: number | null;
+  supplier_id: number | null;
+  customer_id: number | null;
+  /** Debits minus credits, for typed lines; null for worked-out ones. */
+  amount: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  trefin_amount: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  source: Generated<OpeningSource>;
+  note: string | null;
+  confirmed_amount: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  confirmed_by: number | null;
+  confirmed_at: Date | null;
+  updated_by: number | null;
+  updated_at: Generated<Date>;
 }
 
 export type UserRow = Selectable<UsersTable>;

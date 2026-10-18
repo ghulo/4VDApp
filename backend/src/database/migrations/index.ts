@@ -42,6 +42,7 @@ import * as billKinds from './040_bill_kinds.js';
 import * as vat from './041_vat.js';
 import * as money from './042_money.js';
 import * as counter from './043_counter.js';
+import * as opening from './044_opening.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -93,4 +94,5 @@ export const migrations: Record<string, Migration> = {
   '041_vat': vat,
   '042_money': money,
   '043_counter': counter,
+  '044_opening': opening,
 };

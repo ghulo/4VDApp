@@ -9,7 +9,7 @@ import { LAST_BACKUP_KEY } from '../repositories/LaunchRepository.js';
 const BACKUP_FRESH_DAYS = 9;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';
+export type LaunchStepKey = 'wiped' | 'trefin' | 'opening' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';
 
 export interface LaunchStep {
   key: LaunchStepKey;
@@ -77,6 +77,8 @@ export class LaunchService {
         done: facts.wiped_at !== null,
         facts: facts.wiped_at ? { wipedAt: facts.wiped_at } : { products: Number(facts.products), sales: Number(facts.sales) },
       },
+      { key: 'trefin', done: facts.trefin_imported_at !== null, ...(facts.trefin_imported_at && { facts: { importedAt: facts.trefin_imported_at } }) },
+      { key: 'opening', done: facts.opening_posted },
       { key: 'shopDetails', done: facts.has_address && facts.has_phone && facts.has_nui },
       { key: 'owner', done: Number(facts.owners) > 0 },
       { key: 'team', done: Number(facts.employees) > 0, facts: { employees: Number(facts.employees) } },

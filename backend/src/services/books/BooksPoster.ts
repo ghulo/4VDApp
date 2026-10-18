@@ -2,7 +2,8 @@ import { sql } from 'kysely';
 import { ACCOUNT_LINK_KEYS, type AccountLinkKey } from '../../constants/chartOfAccounts.js';
 import type { DatabaseClient } from '../../database/connection.js';
 import { type AccountLinks, type DraftEntry, fingerprintOf } from './entryBuilder.js';
-import { checkoutKeySql, PostingRules } from './postingRules.js';
+import { ensurePlaces } from '../../database/places.js';
+import { checkoutKeySql, loadPlaceAccounts, PostingRules } from './postingRules.js';
 
 /** Any number, shared by every server: only one of them posts at a time. */
 const POSTING_LOCK = 40_839;
@@ -17,6 +18,7 @@ const DIRECT_SOURCES: Record<string, string> = {
   stock_adjustments: 'adjustment',
   supplier_payments: 'payment',
   expenses: 'expense',
+  money_moves: 'move',
 };
 
 export const BOOKS_START_KEY = 'books_start';
@@ -52,7 +54,8 @@ export class BooksPoster {
     if (!waiting) return;
     await this.db.transaction().execute(async (trx) => {
       await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
-      const rules = new PostingRules(trx, await this.links(trx), this.timeZone, await this.startDay(trx));
+      await ensurePlaces(trx as never);
+      const rules = new PostingRules(trx, await this.links(trx), await loadPlaceAccounts(trx), this.timeZone, await this.startDay(trx));
       for (;;) {
         const taken = await sql<{ source_table: string; row_id: number }>`
           delete from ledger_queue where (source_table, row_id) in (select source_table, row_id from ledger_queue limit ${BATCH})
@@ -87,6 +90,7 @@ export class BooksPoster {
         union all select 'supplier_bills', id from supplier_bills where issued_on >= ${start}::date
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'
+        union all select 'money_moves', id from money_moves where day >= ${start}::date
         on conflict do nothing
       `.execute(trx);
     });

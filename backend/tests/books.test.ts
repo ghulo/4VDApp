@@ -72,7 +72,9 @@ describe('the chart of accounts', () => {
   it("starts with TREFIN's 144 accounts, each kind of movement linked to its account", async () => {
     const response = await api().get('/api/books/accounts').set(auth());
     expect(response.status).toBe(200);
-    expect(response.body.data).toHaveLength(144);
+    // TREFIN's 144, and a sub-account each for the safe and the carwash's till (the shop's till and the bank use 1110 and 1120).
+    expect(response.body.data).toHaveLength(146);
+    expect(response.body.data.filter((account: { number: string }) => ['1111', '1112'].includes(account.number))).toHaveLength(2);
     const stock = response.body.data.find((account: { number: string }) => account.number === '1340');
     expect(stock).toMatchObject({ name: 'Stoqet e produkteve të gatshme', accountClass: 'asset', links: ['stock'] });
   });
@@ -188,10 +190,10 @@ describe('entries written from documents', () => {
     expect((await balances())['6650']).toBe(300);
     expect((await balances())['6830']).toBeUndefined();
 
-    // An expense is a bill paid on the spot: the cost against the supplier account, and its payment from cash.
+    // An expense is a bill paid on the spot: the cost against the supplier account, and its payment from the safe (cash not from the till).
     const [costEntry, paymentEntry] = await entriesFor('expense', rent.body.data.id);
     expect(readLines(costEntry!)).toEqual(['2000 Cr 300', '6650 Dr 300']);
-    expect(readLines(paymentEntry!)).toEqual(['1110 Cr 300', '2000 Dr 300']);
+    expect(readLines(paymentEntry!)).toEqual(['1111 Cr 300', '2000 Dr 300']);
 
     await api().delete(`/api/expenses/${rent.body.data.id}`).set(auth());
     const entries = await entriesFor('expense', rent.body.data.id);
@@ -287,10 +289,10 @@ describe('the first day of the books', () => {
   });
 
   it('posts to the account a movement is linked to', async () => {
-    const otherCash = (await context.db.selectFrom('ledger_accounts').select('id').where('number', '=', '1100').executeTakeFirstOrThrow()).id;
-    expect((await api().put('/api/books/settings').set(auth()).send({ links: { cash: otherCash } })).status).toBe(200);
+    const services = (await context.db.selectFrom('ledger_accounts').select('id').where('number', '=', '4100').executeTakeFirstOrThrow()).id;
+    expect((await api().put('/api/books/settings').set(auth()).send({ links: { revenue: services } })).status).toBe(200);
     const [entry] = await entriesFor('sale', await sell());
-    expect(readLines(entry!)).toContain('1100 Dr 100');
+    expect(readLines(entry!)).toContain('4100 Cr 84.75');
   });
 });
 

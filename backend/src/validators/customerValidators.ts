@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { money } from './catalogValidators.js';
-import { nuiSchema } from './validate.js';
+import { calendarDaySchema, idSchema, nuiSchema } from './validate.js';
 
 const optional = (max: number) =>
   z
@@ -25,4 +25,12 @@ export const customerSchema = z
 export const tabPaymentSchema = z.object({
   amount: money.refine((value) => value > 0, 'must be more than 0'),
   note: optional(500),
+  /** Where the money arrived; the shop's till when left out. */
+  placeId: idSchema.nullish(),
+  day: calendarDaySchema.nullish(),
+  /** Which invoices it is for (documentId null: the tab's charges on no invoice); the rest pays the oldest first. */
+  allocations: z
+    .array(z.object({ documentId: idSchema.nullable(), amount: money }))
+    .max(500)
+    .optional(),
 });

@@ -1,7 +1,7 @@
 import { type BillKind, type BillLineKind, type CustomsPaidMethod, EQUIPMENT_CATEGORIES, WITHHOLDING_RATES, type WithholdingType } from '../constants/bills.js';
 import { EXPENSE_CATEGORIES, type ExpensePlace } from '../constants/expenses.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import type { SupplierPaymentMethod } from '../database/types.js';
+import type { MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { BillFilters, BillLineRecord, BillRecord, NewBillLine, PaymentRecord, RepeatRecord, SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
@@ -16,6 +16,7 @@ import type { MediaService } from './MediaService.js';
 import { validatePricingTiers } from './pricing/bulkPricing.js';
 import { changeCost } from './PurchaseOrderService.js';
 import { assertMonthsOpen, monthOf, vatMonthForBill } from './vat/periodLock.js';
+import { placeWords } from '../repositories/MoneyRepository.js';
 
 /** A bill due within this many days counts as "due soon". */
 export const BILL_DUE_SOON_DAYS = 7;
@@ -32,6 +33,10 @@ export interface SupplierPaymentDto {
   amount: number;
   paidOn: string;
   method: SupplierPaymentMethod;
+  /** Where the money came from (null for a credit); a null name is its kind's usual name. */
+  place: { id: number; kind: MoneyPlaceKind; name: string | null } | null;
+  /** Paid with other bills in one payment. */
+  groupId: number | null;
   /** For a credit: the return or credit that paid it. */
   credit: { id: number; number: string | null } | null;
   note: string | null;
@@ -169,7 +174,7 @@ export interface NewBillInput {
   customs?: { vat: number; duty: number; method: CustomsPaidMethod } | null;
   withholdingType?: WithholdingType | null;
   /** An expense: paid now, from here. */
-  paidNow?: { method: Exclude<SupplierPaymentMethod, 'credit'> } | null;
+  paidNow?: { method?: Exclude<SupplierPaymentMethod, 'credit'> | null; placeId?: number | null } | null;
   place?: ExpensePlace;
   carwashId?: number | null;
   /** Make the same bill by itself every month. */
@@ -193,7 +198,9 @@ export interface CreditInput {
 export interface PaymentInput {
   amount: number;
   paidOn: string;
-  method: Exclude<SupplierPaymentMethod, 'credit'>;
+  /** Where the money came from; or only how it was paid (the drawer, other cash, the bank), for its usual place. */
+  placeId?: number | null;
+  method?: Exclude<SupplierPaymentMethod, 'credit'> | null;
   note: string | null;
 }
 
@@ -353,23 +360,7 @@ export class SupplierBillService {
 
   async pay(id: number, input: PaymentInput, actorId: number, now = new Date()): Promise<SupplierBillDto> {
     if (input.paidOn > this.today(now)) throw new ValidationError("paidOn can't be in the future");
-    await this.transactions.run(async (repos) => {
-      await repos.bills.lock(id);
-      const bill = await openBill(repos, id);
-      if (bill.kind === 'credit') throw new ConflictError("A return or credit isn't paid; it lowers what its bill owes");
-      const left = roundMoney(Number(bill.amount) - Number(bill.paid));
-      if (left <= 0) throw new ConflictError('This bill is already paid');
-      if (input.amount > left) throw new ValidationError(`Only ${formatEuro(left)} is left to pay on this bill`);
-      const paymentId = await repos.bills.addPayment({ billId: id, ...input, createdBy: actorId });
-      await repos.activityLog.create({
-        userId: actorId,
-        action: 'bill.paid',
-        entityType: 'bill',
-        entityId: id,
-        say: { key: 'billPaid', params: { ...billWords(bill), paid: input.amount, left: input.amount === left ? 0 : roundMoney(left - input.amount) } },
-        details: { paymentId, ...input },
-      });
-    });
+    await this.transactions.run((repos) => payBill(repos, id, input, actorId));
     return this.get(id);
   }
 
@@ -381,6 +372,7 @@ export class SupplierBillService {
       if (!payment || payment.bill_id !== billId) throw new NotFoundError(`Payment ${paymentId} is not on bill ${billId}`);
       if (payment.voided_at) throw new ConflictError('This payment was already removed');
       if (payment.method === 'credit') throw new ConflictError('This came from a return or credit. Void that instead.');
+      await assertNotOnStatement(repos, payment.id, payment.group_id);
       const bill = await openBill(repos, billId);
       await repos.bills.voidPayment(paymentId, actorId, now);
       await repos.activityLog.create({
@@ -402,6 +394,10 @@ export class SupplierBillService {
    */
   async void(id: number, note: string, actorId: number, now = new Date()): Promise<SupplierBillDto> {
     await this.transactions.run(async (repos) => {
+      if (await repos.money.lineFor('expense', id)) throw new ConflictError('This came from a bank statement line. Take that match back instead.');
+      for (const payment of await repos.bills.findPayments([id])) {
+        if (!payment.voided_at) await assertNotOnStatement(repos, payment.id, payment.group_id);
+      }
       await voidBill(repos, id, note, actorId, now);
     });
     return this.get(id);
@@ -482,6 +478,53 @@ type RepeatTemplate = Omit<NewBillInput, 'number' | 'issuedOn' | 'dueOn' | 'repe
 
 function checkDates(input: { issuedOn: string; dueOn: string | null }) {
   if (input.dueOn !== null && input.dueOn < input.issuedOn) throw new ValidationError("The due date can't be before the bill's date");
+}
+
+/**
+ * Pay (part of) a bill from a place, inside a transaction: never more than is
+ * left, never on a return or credit, never dated in a filed month. Returns the
+ * payment's id.
+ */
+export async function payBill(
+  repos: TransactionalRepositories,
+  id: number,
+  input: PaymentInput & { groupId?: number | null; supplierId?: number | null },
+  actorId: number,
+): Promise<number> {
+  await repos.bills.lock(id);
+  const bill = await openBill(repos, id);
+  if (input.supplierId !== undefined && bill.supplier_id !== input.supplierId) throw new ValidationError(`Bill ${id} is from another supplier`);
+  if (bill.kind === 'credit') throw new ConflictError("A return or credit isn't paid; it lowers what its bill owes");
+  const left = roundMoney(Number(bill.amount) - Number(bill.paid));
+  if (left <= 0) throw new ConflictError(`${bill.number ? `Bill ${bill.number}` : 'This bill'} is already paid`);
+  if (input.amount > left) throw new ValidationError(`Only ${formatEuro(left)} is left to pay on ${bill.number ? `bill ${bill.number}` : 'this bill'}`);
+  await assertMonthsOpen(repos.periods, [input.paidOn]);
+  const from = await repos.money.payFrom(input);
+  const place = await repos.money.placeOrThrow(from.placeId);
+  const paymentId = await repos.bills.addPayment({
+    billId: id,
+    amount: input.amount,
+    paidOn: input.paidOn,
+    note: input.note,
+    ...from,
+    groupId: input.groupId ?? null,
+    createdBy: actorId,
+  });
+  await repos.activityLog.create({
+    userId: actorId,
+    action: 'bill.paid',
+    entityType: 'bill',
+    entityId: id,
+    say: { key: 'billPaid', params: { ...billWords(bill), paid: input.amount, left: input.amount === left ? 0 : roundMoney(left - input.amount), from: placeWords(place) } },
+    details: { paymentId, amount: input.amount, paidOn: input.paidOn, placeId: from.placeId, method: from.method, groupId: input.groupId ?? null, note: input.note },
+  });
+  return paymentId;
+}
+
+/** A payment a bank statement line found or made is taken back from the statement, so the two never disagree. */
+async function assertNotOnStatement(repos: TransactionalRepositories, paymentId: number, groupId: number | null): Promise<void> {
+  const line = (await repos.money.lineFor('payment', paymentId)) ?? (groupId === null ? undefined : await repos.money.lineFor('payment_group', groupId));
+  if (line) throw new ConflictError('This payment is matched to a bank statement line. Take that match back instead.');
 }
 
 async function openBill(repos: TransactionalRepositories, id: number): Promise<BillRecord> {
@@ -746,7 +789,8 @@ export async function createBill(
   }
 
   if (input.paidNow) {
-    await repos.bills.addPayment({ billId: id, amount, paidOn: input.issuedOn, method: input.paidNow.method, note: null, createdBy: actorId });
+    const from = await repos.money.payFrom(input.paidNow);
+    await repos.bills.addPayment({ billId: id, amount, paidOn: input.issuedOn, ...from, note: null, createdBy: actorId });
   }
   if (supplier && typed) {
     const first = plan.lines[0]!.row;
@@ -929,7 +973,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
   const left = roundMoney(Number(bill.amount) - Number(bill.paid));
   const applied = roundMoney(Math.min(amount, left));
   if (applied > 0) {
-    await repos.bills.addPayment({ billId, amount: applied, paidOn: input.issuedOn, method: 'credit', note: null, createdBy: actorId, creditId: id });
+    await repos.bills.addPayment({ billId, amount: applied, paidOn: input.issuedOn, method: 'credit', placeId: null, note: null, createdBy: actorId, creditId: id });
   }
   await repos.activityLog.create({
     userId: actorId,
@@ -1090,6 +1134,8 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
         amount: Number(payment.amount),
         paidOn: payment.paid_on,
         method: payment.method,
+        place: payment.place_id === null ? null : { id: payment.place_id, kind: payment.place_kind!, name: payment.place_name },
+        groupId: payment.group_id,
         credit: payment.credit_id === null ? null : { id: payment.credit_id, number: payment.credit_number },
         note: payment.note,
         recordedBy: payment.created_by_name,

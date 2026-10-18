@@ -95,6 +95,33 @@ export class TabRepository {
     return Number(row.rows[0]!.balance);
   }
 
+  /** For each sale charged to these customers' tabs, the invoice it is on (if any). */
+  async chargeInvoices(customerIds: number[]): Promise<Map<number, { id: number; number: string; issuedAt: Date; dueDate: string | null }>> {
+    if (customerIds.length === 0) return new Map();
+    const rows = await this.db
+      .selectFrom('tab_entries as e')
+      .innerJoin('document_lines as l', 'l.sale_id', 'e.sale_id')
+      .innerJoin('documents as d', 'd.id', 'l.document_id')
+      .select(['e.sale_id', 'd.id', 'd.number', 'd.issued_at', sql<string | null>`to_char(d.due_date, 'YYYY-MM-DD')`.as('due_date')])
+      .where('e.customer_id', 'in', customerIds)
+      .where('e.kind', '=', 'charge')
+      .where('d.kind', '=', 'invoice')
+      .orderBy('d.id')
+      .execute();
+    return new Map(rows.map((row) => [row.sale_id!, { id: row.id, number: row.number, issuedAt: row.issued_at, dueDate: row.due_date }]));
+  }
+
+  /** What these customers' payments were said to be for. */
+  allocations(customerIds: number[]) {
+    if (customerIds.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('tab_allocations as a')
+      .innerJoin('tab_entries as e', 'e.id', 'a.payment_id')
+      .select(['a.payment_id', 'a.document_id', 'a.amount', 'e.customer_id'])
+      .where('e.customer_id', 'in', customerIds)
+      .execute();
+  }
+
   /** The customer whose tab a sale was put on, if it was. */
   async customerOfSale(saleId: number): Promise<number | undefined> {
     const row = await this.db
@@ -116,7 +143,10 @@ export class TabRepository {
       select to_char((e.occurred_at at time zone ${timeZone})::date, 'YYYY-MM-DD') as day,
              sum(case when e.kind = 'charge' then -e.amount else e.amount end) as effect
       from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
-      where ${counts} and (e.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
+      where ${counts}
+        -- A payment that went to the bank or another place never reached the shop's till.
+        and (e.kind <> 'payment' or e.place_id is null or e.place_id = (select id from money_places where kind = 'till' and carwash_id is null))
+        and (e.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
       group by 1
     `.execute(this.db);
     return new Map(result.rows.map((row) => [row.day, Number(row.effect)]));
@@ -189,6 +219,11 @@ export class TabRepository {
     await this.db.updateTable('customers').set({ archived_at: at }).where('id', '=', id).execute();
   }
 
+  /** A received payment that a bank statement match made, taken back with the match. */
+  async removePayment(id: number): Promise<void> {
+    await this.db.deleteFrom('tab_entries').where('id', '=', id).where('kind', '=', 'payment').execute();
+  }
+
   async addEntry(entry: {
     customerId: number;
     kind: TabEntryKind;
@@ -198,6 +233,8 @@ export class TabRepository {
     returnId?: number;
     createdBy: number;
     occurredAt?: Date;
+    /** A payment: where the money arrived. */
+    placeId?: number | null;
   }): Promise<number> {
     const row = await this.db
       .insertInto('tab_entries')
@@ -209,6 +246,7 @@ export class TabRepository {
         sale_id: entry.saleId,
         return_id: entry.returnId ?? null,
         created_by: entry.createdBy,
+        place_id: entry.placeId ?? null,
         ...(entry.occurredAt && { occurred_at: entry.occurredAt }),
       })
       .returning('id')

@@ -36,6 +36,7 @@ import { CarwashRepository } from './repositories/CarwashRepository.js';
 import { CarwashService } from './services/CarwashService.js';
 import { CashCountRepository } from './repositories/CashCountRepository.js';
 import { CashCountService } from './services/CashCountService.js';
+import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { DayService } from './services/DayService.js';
@@ -58,6 +59,9 @@ import { AssistantService } from './services/AssistantService.js';
 import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { type BillReader, ClaudeBillReader } from './services/ai/billReader.js';
+import { ClaudeStatementReader, type StatementReader } from './services/ai/statementReader.js';
+import { MoneyService } from './services/MoneyService.js';
+import { StatementService } from './services/StatementService.js';
 import { BillScanRepository } from './repositories/BillScanRepository.js';
 import { BillScanService } from './services/BillScanService.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
@@ -134,6 +138,8 @@ export interface ContainerOptions {
   aiProvider?: AiProvider | null;
   /** Tests pass a fake bill reader. Null switches bill scanning off. */
   billReader?: BillReader | null;
+  /** Tests pass a fake bank statement reader. Null switches reading PDF statements off. */
+  statementReader?: StatementReader | null;
 }
 
 export function createContainer(config: AppConfig, db: DatabaseClient, options: ContainerOptions = {}) {
@@ -214,14 +220,31 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const booksService = new BooksService(db, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
+  const moneyRepository = new MoneyRepository(db);
   const cashCountService = new CashCountService(
     new CashCountRepository(db),
     reportsRepository,
     tabRepository,
     supplierBillRepository,
+    moneyRepository,
     settingsService,
     carwashService,
     transactions,
+    config.shopTimeZone,
+  );
+  const moneyService = new MoneyService(db, moneyRepository, cashCountService, transactions, config.shopTimeZone);
+  const statementService = new StatementService(
+    db,
+    moneyRepository,
+    supplierBillRepository,
+    moneyService,
+    tabService,
+    transactions,
+    options.statementReader !== undefined
+      ? options.statementReader
+      : config.ai?.provider === 'anthropic'
+        ? new ClaudeStatementReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
+        : null,
     config.shopTimeZone,
   );
   const dayService = new DayService(cashCountService, carwashService, expenseService, expenseRepository, approvalService, transactions, config.shopTimeZone);
@@ -460,6 +483,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     reportDeliveryService,
     errorAlertService,
     launchService,
+    moneyService,
+    statementService,
     guards,
   };
 }

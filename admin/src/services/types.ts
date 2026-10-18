@@ -601,6 +601,10 @@ export interface SupplierBill {
     amount: number;
     paidOn: string;
     method: BillPaymentMethod;
+    /** Where the money came from; null for a credit. */
+    place: { id: number; kind: MoneyPlaceKind; name: string | null } | null;
+    /** Paid together with other bills in one payment. */
+    groupId: number | null;
     /** For a credit: the return or credit that paid it. */
     credit: { id: number; number: string | null } | null;
     note: string | null;
@@ -634,7 +638,8 @@ export interface BillFormInput {
   pricesIncludeVat: boolean;
   customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
   withholdingType: WithholdingType | null;
-  paidNow: { method: SupplierPaymentMethod } | null;
+  /** Paid from a place, or only how, for that kind's usual place. */
+  paidNow: { method?: SupplierPaymentMethod; placeId?: number } | null;
   place: ExpensePlace;
   carwashId: number | null;
   repeatMonthly: boolean;
@@ -843,6 +848,8 @@ export interface Customer {
 
 export interface CustomerDetail extends Customer {
   entries: TabEntry[];
+  /** What is still owed: each invoice, and the charges on no invoice. */
+  openItems: OpenItem[];
   topProducts: Array<{ productId: number; name: string; quantity: number; total: number }>;
 }
 
@@ -1417,8 +1424,8 @@ export type CashFlowActivity = (typeof CASH_FLOW_ACTIVITIES)[number];
 export const DEBIT_CLASSES: readonly AccountClass[] = ['asset', 'cost_of_sales', 'expense', 'other_expense'];
 
 export const ACCOUNT_LINK_KEYS = [
-  'cash',
-  'bank',
+  'owner_in',
+  'owner_out',
   'receivables',
   'vat_in',
   'stock',
@@ -1583,7 +1590,7 @@ export interface BooksSettings {
 }
 
 /** A record whose entries can be shown. */
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment';
 
 /** First and last day of a period, both included, as yyyy-mm-dd. */
 export interface BooksPeriod {
@@ -1690,3 +1697,212 @@ export interface Thread {
   status: 'open' | 'answered' | 'none';
   notes: ThreadNote[];
 }
+
+/* ---------- Money: where it is kept ---------- */
+
+export type MoneyPlaceKind = 'till' | 'safe' | 'bank';
+
+/** A place money is kept: a till, the safe, or a bank account. */
+export interface MoneyPlace {
+  id: number;
+  kind: MoneyPlaceKind;
+  /** Its own name, else its carwash's; null for the shop's till and an unnamed safe. */
+  name: string | null;
+  carwashId: number | null;
+  bankName: string | null;
+  iban: string | null;
+  account: { id: number; number: string; name: string } | null;
+  /** The safe or bank account a payment goes to when only "cash" or "bank" is said. */
+  isDefault: boolean;
+  /** A carwash's till is outside the books for now. */
+  inBooks: boolean;
+  openingBalance: number;
+  openingDay: string | null;
+  balance: number;
+  archived: boolean;
+  /** Bank statement lines still to match. */
+  openLines: number;
+  lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
+}
+
+export type PlaceBookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'count';
+
+export interface PlaceBookLine {
+  day: string;
+  kind: PlaceBookLineKind;
+  refId: number | null;
+  /** Money in above zero, money out below; 0 on a count. */
+  amount: number;
+  balance: number;
+  party: { id: number; name: string } | null;
+  /** A move's other place; null with kind move: the owner. */
+  otherPlace: { id: number; kind: MoneyPlaceKind; name: string | null } | null;
+  detail: string | null;
+  bills: number | null;
+  billId: number | null;
+  note: string | null;
+  count: { counted: number; difference: number | null } | null;
+}
+
+export interface PlaceBook {
+  place: MoneyPlace;
+  from: string;
+  to: string;
+  opening: number;
+  moneyIn: number;
+  moneyOut: number;
+  closing: number;
+  lines: PlaceBookLine[];
+}
+
+export interface MoveInput {
+  day: string;
+  amount: number;
+  /** Null: the owner put the money in. */
+  fromPlaceId: number | null;
+  /** Null: the owner took the money out. */
+  toPlaceId: number | null;
+  note: string | null;
+}
+
+export interface PlaceInput {
+  kind: 'bank' | 'safe';
+  name: string;
+  bankName: string | null;
+  iban: string | null;
+  openingBalance: number;
+  openingDay: string | null;
+}
+
+export interface PlaceChanges {
+  name?: string;
+  bankName?: string | null;
+  iban?: string | null;
+  openingBalance?: number;
+  openingDay?: string | null;
+  makeDefault?: boolean;
+  archived?: boolean;
+}
+
+export interface PayBillsInput {
+  supplierId: number;
+  placeId: number;
+  paidOn: string;
+  note: string | null;
+  bills: Array<{ billId: number; amount: number }>;
+}
+
+/** Something a customer still owes: an invoice, or (documentId null) the charges on no invoice. */
+export interface OpenItem {
+  documentId: number | null;
+  number: string | null;
+  date: string;
+  dueDate: string | null;
+  total: number;
+  paid: number;
+  left: number;
+}
+
+export interface ReceiveInput {
+  amount: number;
+  note: string | null;
+  placeId?: number | null;
+  day?: string | null;
+  allocations?: Array<{ documentId: number | null; amount: number }>;
+}
+
+/* ---------- Bank statements ---------- */
+
+export interface BankStatement {
+  id: number;
+  fileName: string;
+  format: 'csv' | 'xlsx' | 'pdf';
+  firstDay: string | null;
+  lastDay: string | null;
+  openingBalance: number | null;
+  closingBalance: number | null;
+  /** What 4VD says was in the account at the end of the statement's last day. */
+  ourBalance: number | null;
+  /** The statement's closing balance less 4VD's. */
+  difference: number | null;
+  linesRead: number;
+  linesSkipped: number;
+  uploadedBy: string | null;
+  uploadedAt: string;
+}
+
+export type MatchReason =
+  | { key: 'sameAmount' }
+  | { key: 'sumOfBills'; count: number }
+  | { key: 'nameInText'; name: string }
+  | { key: 'numberInText'; number: string }
+  | { key: 'daysApart'; days: number }
+  | { key: 'rule'; contains: string }
+  | { key: 'depositWords' };
+
+export type LineAction =
+  | { kind: 'payBills'; supplierId: number; bills: Array<{ billId: number; amount: number }> }
+  | { kind: 'linkPayment'; paymentId: number }
+  | { kind: 'linkGroup'; groupId: number }
+  | { kind: 'receive'; customerId: number; allocations: Array<{ documentId: number | null; amount: number }> }
+  | { kind: 'linkReceipt'; entryId: number }
+  | { kind: 'linkMove'; moveId: number }
+  | { kind: 'move'; otherPlaceId: number | null }
+  | { kind: 'expense'; category: ExpenseCategory; supplierId: number | null };
+
+export interface MatchSuggestion {
+  action: LineAction;
+  sure: boolean;
+  reasons: MatchReason[];
+  label: { supplier?: string | null; customer?: string; numbers?: string[]; placeId?: number | null; category?: string };
+  ruleId: number | null;
+}
+
+export type BankLineStatus = 'open' | 'done' | 'skipped';
+export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense';
+
+export interface BankLine {
+  id: number;
+  statementId: number;
+  day: string;
+  text: string;
+  amount: number;
+  balance: number | null;
+  status: BankLineStatus;
+  done: { kind: BankLineDoneKind; ref: number; madeRecord: boolean; by: string | null; at: string | null; billId: number | null; customerId: number | null } | null;
+  ruleId: number | null;
+  suggestions: MatchSuggestion[];
+}
+
+export type BankRuleAction = 'expense' | 'transfer' | 'owner';
+
+export interface BankRule {
+  id: number;
+  placeId: number | null;
+  contains: string;
+  direction: 'in' | 'out';
+  action: BankRuleAction;
+  category: ExpenseCategory | null;
+  supplierId: number | null;
+  supplierName: string | null;
+  otherPlaceId: number | null;
+}
+
+export type BankRuleInput = Omit<BankRule, 'id' | 'supplierName'>;
+
+/** Which column of a statement file holds what, by position. */
+export interface StatementLayout {
+  headerRow: number;
+  date: number;
+  text: number;
+  party: number | null;
+  moneyIn: number | null;
+  moneyOut: number | null;
+  amount: number | null;
+  balance: number | null;
+  headers: string[];
+}
+
+export type StatementUpload =
+  | { needsLayout: false; statement: BankStatement; added: number; skipped: number }
+  | { needsLayout: true; preview: string[][]; guess: StatementLayout | null };

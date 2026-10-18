@@ -55,6 +55,11 @@ type WriteOffReason = 'damaged' | 'lost' | 'expired' | 'other' | string;
 /** Why a cost changed: a delivery, a scanned bill, or a scanned bill taken back. */
 export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string };
 
+/** A place money is kept; a null name is the usual name of its kind. */
+type Place = { kind: 'till' | 'safe' | 'bank'; name: string | null };
+/** A move's sides; null is the owner (money put in or taken out). */
+type Move = { amount: number; from: Place | null; to: Place | null };
+
 /** A product line in a sentence: "2 × Oak Chair". */
 type Units = { quantity: number; product: string };
 
@@ -209,8 +214,8 @@ const en = {
     `Kept the stock of ${p.product} unchanged after the count of ${p.scope ?? 'the whole shop'}: ${p.note}`,
 
   billEdited: (p: Bill, w: Words) => `Edited ${enBill(p, w)}`,
-  billPaid: (p: Bill & { paid: number; left: number }, w: Words) =>
-    `Paid ${w.money(p.paid)} on ${enBill(p, w)}${p.left === 0 ? ' (paid in full)' : `, ${w.money(p.left)} left`}`,
+  billPaid: (p: Bill & { paid: number; left: number; from?: Place }, w: Words) =>
+    `Paid ${w.money(p.paid)} on ${enBill(p, w)}${p.from ? ` from ${enPlace(p.from)}` : ''}${p.left === 0 ? ' (paid in full)' : `, ${w.money(p.left)} left`}`,
   billPaymentRemoved: (p: Bill & { payment: number }, w: Words) => `Removed a ${w.money(p.payment)} payment from ${enBill(p, w)}`,
   billVoided: (p: Bill & { note: string }, w: Words) => `Voided ${enBill(p, w)}: ${p.note}`,
   billPhotoAdded: (p: Bill, w: Words) => `Added a photo to ${enBill(p, w)}`,
@@ -227,7 +232,24 @@ const en = {
   tabOpened: (p: { name: string }) => `Opened a tab for ${p.name}`,
   customerChanged: (p: { name: string }) => `Changed ${p.name}'s details`,
   tabClosed: (p: { name: string }) => `Closed ${p.name}'s tab`,
-  tabPaid: (p: { name: string; amount: number }, w: Words) => `${p.name} paid ${w.money(p.amount)} off their tab`,
+  tabPaid: (p: { name: string; amount: number; place?: Place }, w: Words) =>
+    `${p.name} paid ${w.money(p.amount)} off their tab${p.place && !(p.place.kind === 'till' && p.place.name === null) ? ` into ${enPlace(p.place)}` : ''}`,
+
+  placeAdded: (p: { place: Place }) => `Added ${enPlace(p.place)} as a place money is kept`,
+  placeChanged: (p: { place: Place }) => `Changed the details of ${enPlace(p.place)}`,
+  placeClosed: (p: { place: Place }) => `Closed ${enPlace(p.place)}`,
+  moneyMoved: (p: Move, w: Words) => enMove(p, w),
+  moveRemoved: (p: Move, w: Words) => `Removed: ${enMove(p, w)}`,
+  billsPaidTogether: (p: { supplier: string | null; amount: number; bills: number; from: Place }, w: Words) =>
+    `Paid ${w.money(p.amount)} over ${p.bills} ${p.bills === 1 ? 'bill' : 'bills'}${p.supplier ? ` from ${p.supplier}` : ''}, from ${enPlace(p.from)}`,
+  statementUploaded: (p: { place: Place; lines: number; skipped: number }) =>
+    `Uploaded a statement for ${enPlace(p.place)}: ${p.lines} ${p.lines === 1 ? 'line' : 'lines'}${p.skipped > 0 ? ` (${p.skipped} already in)` : ''}`,
+  bankLineConfirmed: (p: { place: Place; amount: number; text: string; lines?: number }, w: Words) =>
+    p.lines && p.lines > 1 ? `Matched ${p.lines} lines of the ${enPlace(p.place)} statement` : `Matched the ${w.money(p.amount)} line "${p.text}" of the ${enPlace(p.place)} statement`,
+  bankLineUndone: (p: { place: Place; amount: number; text: string }, w: Words) => `Took back the match of the ${w.money(p.amount)} line "${p.text}" of the ${enPlace(p.place)} statement`,
+  bankLineSkipped: (p: { place: Place; amount: number; text: string }, w: Words) => `Left out the ${w.money(p.amount)} line "${p.text}" of the ${enPlace(p.place)} statement`,
+  bankRuleSaved: (p: { contains: string }) => `Saved a rule for bank lines with "${p.contains}"`,
+  bankRuleRemoved: (p: { contains: string }) => `Removed the rule for bank lines with "${p.contains}"`,
 
   userAdded: (p: { name: string; role: Role }) => `Added ${p.name} as ${EN_ROLE[p.role]}`,
   userChanged: (p: { name: string; changes: UserChange[] }, w: Words) => {
@@ -294,6 +316,14 @@ const EN_PRODUCT_FIELD: Record<ProductField, string> = {
   bulkPricingTiers: 'bulk prices',
 };
 const enAlso = (also: ProductField[]) => (also.length > 0 ? ` (also changed ${also.map((field) => EN_PRODUCT_FIELD[field]).join(', ')})` : '');
+const enPlace = (place: Place) =>
+  place.kind === 'till' ? (place.name ? `the ${place.name} till` : "the shop's till") : place.kind === 'safe' ? (place.name ?? 'the safe') : (place.name ?? 'the bank');
+const enMove = (p: Move, w: Words) =>
+  p.from === null
+    ? `Put ${w.money(p.amount)} of the owner's money into ${enPlace(p.to!)}`
+    : p.to === null
+      ? `Took ${w.money(p.amount)} out of ${enPlace(p.from)} for the owner`
+      : `Moved ${w.money(p.amount)} from ${enPlace(p.from)} to ${enPlace(p.to)}`;
 const enBill = (p: Bill, w: Words) =>
   p.supplier === null ? `the ${w.money(p.amount)} expense` : `the ${w.money(p.amount)} bill from ${p.supplier}${p.number ? ` (no. ${p.number})` : ''}`;
 
@@ -406,6 +436,22 @@ const SQ_SHOP_FIELD: Record<ShopField, string> = {
   invoiceNote: 'shënimin e faturës',
 };
 const sqAlso = (also: ProductField[]) => (also.length > 0 ? ` (ndryshoi edhe ${also.map((field) => SQ_PRODUCT_FIELD[field]).join(', ')})` : '');
+/** A place in the case the sentence needs: "arka e dyqanit", "arkën e dyqanit", "arkës së dyqanit". */
+const SQ_PLACE = {
+  nom: ['arka', 'e', 'kasaforta', 'banka'],
+  acc: ['arkën', 'e', 'kasafortën', 'bankën'],
+  gen: ['arkës', 'së', 'kasafortës', 'bankës'],
+} as const;
+const sqPlace = (place: Place, form: keyof typeof SQ_PLACE = 'nom') => {
+  const [till, of, safe, bank] = SQ_PLACE[form];
+  return place.kind === 'till' ? `${till} ${of} ${place.name ?? 'dyqanit'}` : (place.name ?? (place.kind === 'safe' ? safe : bank));
+};
+const sqMove = (p: Move, w: Words) =>
+  p.from === null
+    ? `Futi ${w.money(p.amount)} të pronarit në ${sqPlace(p.to!, 'acc')}`
+    : p.to === null
+      ? `Nxori ${w.money(p.amount)} nga ${sqPlace(p.from)} për pronarin`
+      : `Kaloi ${w.money(p.amount)} nga ${sqPlace(p.from)} te ${sqPlace(p.to)}`;
 const sqBill = (p: Bill, w: Words) =>
   p.supplier === null ? `shpenzimin prej ${w.money(p.amount)}` : `faturën prej ${w.money(p.amount)} nga ${p.supplier}${p.number ? ` (nr. ${p.number})` : ''}`;
 const sqScope = (scope: string | null) => scope ?? 'gjithë dyqanit';
@@ -582,7 +628,7 @@ const sq: Templates = {
   countKept: (p) => `La stokun e ${p.product} pa ndryshuar pas numërimit të ${sqScope(p.scope)}: ${p.note}`,
 
   billEdited: (p, w) => `Ndryshoi ${sqBill(p, w)}`,
-  billPaid: (p, w) => `Pagoi ${w.money(p.paid)} për ${sqBill(p, w)}${p.left === 0 ? ' (e paguar plotësisht)' : `, mbeten ${w.money(p.left)}`}`,
+  billPaid: (p, w) => `Pagoi ${w.money(p.paid)} për ${sqBill(p, w)}${p.from ? ` nga ${sqPlace(p.from)}` : ''}${p.left === 0 ? ' (e paguar plotësisht)' : `, mbeten ${w.money(p.left)}`}`,
   billPaymentRemoved: (p, w) => `Hoqi një pagesë prej ${w.money(p.payment)} nga ${sqBill(p, w)}`,
   billVoided: (p, w) => `Anuloi ${sqBill(p, w)}: ${p.note}`,
   billPhotoAdded: (p, w) => `Shtoi një foto te ${sqBill(p, w)}`,
@@ -597,7 +643,23 @@ const sq: Templates = {
   tabOpened: (p) => `Hapi një borxh për ${p.name}`,
   customerChanged: (p) => `Ndryshoi të dhënat e ${p.name}`,
   tabClosed: (p) => `Mbylli borxhin e ${p.name}`,
-  tabPaid: (p, w) => `${p.name} pagoi ${w.money(p.amount)} nga borxhi`,
+  tabPaid: (p, w) =>
+    `${p.name} pagoi ${w.money(p.amount)} nga borxhi${p.place && !(p.place.kind === 'till' && p.place.name === null) ? ` në ${sqPlace(p.place, 'acc')}` : ''}`,
+
+  placeAdded: (p) => `Shtoi ${sqPlace(p.place, 'acc')} si vend ku mbahen paratë`,
+  placeChanged: (p) => `Ndryshoi të dhënat e ${sqPlace(p.place, 'gen')}`,
+  placeClosed: (p) => `Mbylli ${sqPlace(p.place, 'acc')}`,
+  moneyMoved: (p, w) => sqMove(p, w),
+  moveRemoved: (p, w) => `Hoqi: ${sqMove(p, w)}`,
+  billsPaidTogether: (p, w) =>
+    `Pagoi ${w.money(p.amount)} për ${p.bills} ${p.bills === 1 ? 'faturë' : 'fatura'}${p.supplier ? ` të ${p.supplier}` : ''}, nga ${sqPlace(p.from)}`,
+  statementUploaded: (p) => `Ngarkoi një ekstrakt për ${sqPlace(p.place, 'acc')}: ${p.lines} rreshta${p.skipped > 0 ? ` (${p.skipped} ishin brenda)` : ''}`,
+  bankLineConfirmed: (p, w) =>
+    p.lines && p.lines > 1 ? `Përputhi ${p.lines} rreshta të ekstraktit të ${sqPlace(p.place, 'gen')}` : `Përputhi rreshtin prej ${w.money(p.amount)} "${p.text}" të ekstraktit të ${sqPlace(p.place, 'gen')}`,
+  bankLineUndone: (p, w) => `Anuloi përputhjen e rreshtit prej ${w.money(p.amount)} "${p.text}" të ekstraktit të ${sqPlace(p.place, 'gen')}`,
+  bankLineSkipped: (p, w) => `La jashtë rreshtin prej ${w.money(p.amount)} "${p.text}" të ekstraktit të ${sqPlace(p.place, 'gen')}`,
+  bankRuleSaved: (p) => `Ruajti një rregull për rreshtat e bankës me "${p.contains}"`,
+  bankRuleRemoved: (p) => `Hoqi rregullin për rreshtat e bankës me "${p.contains}"`,
 
   userAdded: (p) => `Shtoi ${p.name} si ${SQ_ROLE[p.role]}`,
   userChanged: (p, w) => {

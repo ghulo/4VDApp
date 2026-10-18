@@ -55,6 +55,9 @@ const BooksBalancesPage = lazyPage(() => import('./pages/BooksPages'), 'BooksBal
 const BooksJournalPage = lazyPage(() => import('./pages/BooksPages'), 'BooksJournalPage');
 const BooksAccountsPage = lazyPage(() => import('./pages/BooksPages'), 'BooksAccountsPage');
 const AccountCardPage = lazyPage(() => import('./pages/BooksPages'), 'AccountCardPage');
+const MoneyPage = lazyPage(() => import('./pages/MoneyPages'), 'MoneyPage');
+const PlaceBookPage = lazyPage(() => import('./pages/MoneyPages'), 'PlaceBookPage');
+const StatementPage = lazyPage(() => import('./pages/MoneyPages'), 'StatementPage');
 const VatPage = lazyPage(() => import('./pages/VatPages'), 'VatPage');
 const SalesBookPage = lazyPage(() => import('./pages/VatPages'), 'SalesBookPage');
 const PurchaseBookPage = lazyPage(() => import('./pages/VatPages'), 'PurchaseBookPage');
@@ -169,6 +172,9 @@ function App() {
                       <Route path="books/purchase-book" element={<PurchaseBookPage />} />
                     </Route>
                     <Route path="books/accounts/:id" element={<AccountCardPage />} />
+                    <Route path="money" element={<MoneyPage />} />
+                    <Route path="money/:id" element={<PlaceBookPage />} />
+                    <Route path="money/:id/statement" element={<StatementPage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
                       <Route path="report" element={<ReportPage />} />
                       <Route path="reports" element={<ReportsPage view="figures" />} />

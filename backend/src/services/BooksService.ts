@@ -108,7 +108,7 @@ export interface ManualEntryInput {
   lines: Array<{ accountId: number; debit: number; credit: number; supplierId?: number | null; customerId?: number | null; memo?: string | null }>;
 }
 
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment';
 
 /** The balance the way people read it: debit-side accounts as debits minus credits, the others the other way. */
 export const naturalBalance = (accountClass: AccountClass, debitMinusCredit: number) =>

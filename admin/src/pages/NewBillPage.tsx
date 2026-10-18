@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { BillLines, Segmented } from '../components/BillLines';
 import { ErrorNotice, Loading } from '../components/Feedback';
+import { PlaceSelect, usePlaces, usualPlace } from '../components/MoneyParts';
 import { Badge, Button, Card, DateField, Field, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, suppliersApi } from '../services/api';
@@ -12,7 +13,6 @@ import {
   type CustomsPaidMethod,
   type ExpensePlace,
   type Supplier,
-  type SupplierPaymentMethod,
   WITHHOLDING_RATES,
   WITHHOLDING_TYPES,
   type WithholdingType,
@@ -25,7 +25,6 @@ import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 const PREVIEW_DEBOUNCE_MS = 300;
 /** Same cap as the server: every month has a 28th. */
 const LAST_REPEAT_DAY = 28;
-const PAY_METHODS: SupplierPaymentMethod[] = ['bank', 'drawer', 'cash'];
 
 /** Waits until typing pauses, so each keystroke isn't a request. */
 function useSettled<T>(value: T, ms: number): T {
@@ -76,7 +75,10 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const [customsMethod, setCustomsMethod] = useState<CustomsPaidMethod>('bank');
   const [withholding, setWithholding] = useState<WithholdingType | ''>(initialSupplier?.withholdingType ?? '');
   const [pay, setPay] = useState<'later' | 'now'>(params.get('paid') === 'now' ? 'now' : 'later');
-  const [payMethod, setPayMethod] = useState<SupplierPaymentMethod>('bank');
+  const places = usePlaces();
+  const [chosenPayPlace, setPayPlace] = useState<number | null>(null);
+  const payPlace = chosenPayPlace ?? usualPlace(places.data, 'bank');
+  const payFromShopTill = places.data?.some((row) => row.id === payPlace && row.kind === 'till' && row.carwashId === null) ?? false;
   // "shop", "both" or "carwash:<id>", so each carwash has its own choice.
   const [place, setPlace] = useState('shop');
   const [repeatMonthly, setRepeatMonthly] = useState(false);
@@ -110,7 +112,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
     pricesIncludeVat: abroad ? false : pricesIncludeVat,
     customs: showCustoms && (Number(customsVat) > 0 || Number(duty) > 0) ? { vat: Number(customsVat) || 0, duty: Number(duty) || 0, method: customsMethod } : null,
     withholdingType: withholding || null,
-    paidNow: pay === 'now' ? { method: payMethod } : null,
+    paidNow: pay === 'now' ? (payPlace === null ? { method: 'bank' } : { placeId: payPlace }) : null,
     place: hasCosts ? placeKind : 'shop',
     carwashId: hasCosts ? carwashId : null,
     repeatMonthly: onlyCosts && repeatMonthly,
@@ -277,9 +279,11 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
             </>
           ) : (
             <div className="field">
-              <span className="field__label">{t.bills.how}</span>
-              <Segmented label={t.bills.how} value={payMethod} options={PAY_METHODS.map((method) => ({ value: method, label: t.bills.methods[method] }))} onChange={setPayMethod} />
-              {payMethod === 'drawer' && <span className="field__hint">{t.bills.drawerHint}</span>}
+              <label className="field__label" htmlFor="new-bill-place">
+                {t.money.payBills.from}
+              </label>
+              <PlaceSelect id="new-bill-place" places={places.data ?? []} value={payPlace} onChange={setPayPlace} required />
+              {payFromShopTill && <span className="field__hint">{t.bills.drawerHint}</span>}
             </div>
           )}
           <div className="field-row">

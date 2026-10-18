@@ -102,6 +102,21 @@ import type {
   AccountInput,
   AccountLinkKey,
   BooksPeriod,
+  BankLine,
+  BankLineStatus,
+  BankRule,
+  BankRuleInput,
+  BankStatement,
+  LineAction,
+  MoneyPlace,
+  MoveInput,
+  PayBillsInput,
+  PlaceBook,
+  PlaceChanges,
+  PlaceInput,
+  ReceiveInput,
+  StatementLayout,
+  StatementUpload,
   BooksSettings,
   EntrySource,
   LedgerAccount,
@@ -438,7 +453,8 @@ export const billsApi = {
   /** A return or credit against a bill. */
   credit: async (id: number, input: CreditInput) => (await apiRequest<SupplierBill>(`/bills/${id}/credit`, { method: 'POST', body: input })).data,
   update: async (id: number, input: BillInput) => (await apiRequest<SupplierBill>(`/bills/${id}`, { method: 'PUT', body: input })).data,
-  pay: async (id: number, input: { amount: number; paidOn: string; method: SupplierPaymentMethod; note: string | null }) =>
+  /** From a place (placeId), or only how it was paid (method) for that kind's usual place. */
+  pay: async (id: number, input: { amount: number; paidOn: string; placeId?: number; method?: SupplierPaymentMethod; note: string | null }) =>
     (await apiRequest<SupplierBill>(`/bills/${id}/payments`, { method: 'POST', body: input })).data,
   voidPayment: async (id: number, paymentId: number) =>
     (await apiRequest<SupplierBill>(`/bills/${id}/payments/${paymentId}/void`, { method: 'POST' })).data,
@@ -573,8 +589,7 @@ export const customersApi = {
   create: async (input: CustomerInput) => (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
   update: async (id: number, input: CustomerInput) =>
     (await apiRequest<Customer>(`/customers/${id}`, { method: 'PUT', body: input })).data,
-  pay: async (id: number, input: { amount: number; note: string | null }) =>
-    (await apiRequest<CustomerDetail>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
+  pay: async (id: number, input: ReceiveInput) => (await apiRequest<CustomerDetail>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
   archive: async (id: number) => {
     await apiRequest(`/customers/${id}/archive`, { method: 'POST' });
   },
@@ -727,6 +742,44 @@ export const booksApi = {
     const path = typeof what === 'string' ? `/books/${what}.xlsx` : `/books/accounts/${what.account}/card.xlsx`;
     const { blob, filename } = await apiDownload(path, { ...period, lang, tz });
     saveDownload(blob, filename ?? '4vd-books.xlsx');
+  },
+};
+
+/** Where money is kept, the moves between places, and bank statements. */
+export const moneyApi = {
+  places: async () => (await apiRequest<MoneyPlace[]>('/money/places')).data,
+  addPlace: async (input: PlaceInput) => (await apiRequest<MoneyPlace>('/money/places', { method: 'POST', body: input })).data,
+  updatePlace: async (id: number, input: PlaceChanges) => (await apiRequest<MoneyPlace>(`/money/places/${id}`, { method: 'PATCH', body: input })).data,
+  book: async (id: number, period: BooksPeriod) => (await apiRequest<PlaceBook>(`/money/places/${id}/book`, { query: { ...period } })).data,
+  async downloadBook(id: number, period: BooksPeriod, lang: 'sq' | 'en'): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/money/places/${id}/book.xlsx`, { ...period, lang, tz });
+    saveDownload(blob, filename ?? '4vd-money.xlsx');
+  },
+  move: async (input: MoveInput) => (await apiRequest<{ id: number }>('/money/moves', { method: 'POST', body: input })).data,
+  voidMove: async (id: number) => {
+    await apiRequest(`/money/moves/${id}/void`, { method: 'POST' });
+  },
+  payBills: async (input: PayBillsInput) => (await apiRequest<{ groupId: number }>('/money/pay-bills', { method: 'POST', body: input })).data,
+  statements: async (placeId: number) => (await apiRequest<BankStatement[]>(`/money/places/${placeId}/statements`)).data,
+  upload: async (placeId: number, input: { fileName: string; data: string; layout?: StatementLayout }) =>
+    (await apiRequest<StatementUpload>(`/money/places/${placeId}/statements`, { method: 'POST', body: input })).data,
+  lines: async (placeId: number, status: BankLineStatus | 'all') => (await apiRequest<BankLine[]>(`/money/places/${placeId}/lines`, { query: { status } })).data,
+  confirm: async (lineId: number, input: { action: LineAction; rule?: { contains: string } | null; ruleId?: number | null }) => {
+    await apiRequest(`/money/lines/${lineId}/confirm`, { method: 'POST', body: input });
+  },
+  confirmSure: async (placeId: number) => (await apiRequest<{ confirmed: number; failed: number }>(`/money/places/${placeId}/confirm-sure`, { method: 'POST' })).data,
+  undo: async (lineId: number) => {
+    await apiRequest(`/money/lines/${lineId}/undo`, { method: 'POST' });
+  },
+  skip: async (lineId: number, skipped: boolean) => {
+    await apiRequest(`/money/lines/${lineId}/skip`, { method: 'POST', body: { skipped } });
+  },
+  rules: async () => (await apiRequest<BankRule[]>('/money/rules')).data,
+  addRule: async (input: BankRuleInput) => (await apiRequest<BankRule>('/money/rules', { method: 'POST', body: input })).data,
+  updateRule: async (id: number, input: BankRuleInput) => (await apiRequest<BankRule>(`/money/rules/${id}`, { method: 'PUT', body: input })).data,
+  removeRule: async (id: number) => {
+    await apiRequest(`/money/rules/${id}`, { method: 'DELETE' });
   },
 };
 

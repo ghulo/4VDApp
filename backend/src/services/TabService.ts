@@ -1,9 +1,11 @@
 import type { TabEntryKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CustomerFields, CustomerRecord, PurchaseTotals, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
-import type { TransactionManager } from '../repositories/TransactionManager.js';
+import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
+import { placeWords } from '../repositories/MoneyRepository.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { startOfDay, zonedDay } from '../utils/zonedDates.js';
+import { assertMonthsOpen } from './vat/periodLock.js';
 
 /** A tab unpaid this long shows up in "Needs your attention". */
 export const OVERDUE_DAYS = 30;
@@ -32,6 +34,8 @@ export interface CustomerDto {
 
 export interface CustomerDetailDto extends CustomerDto {
   entries: TabEntryDto[];
+  /** What is still to pay, invoice by invoice, oldest first; charges on no invoice are one item. */
+  openItems: OpenItemDto[];
   topProducts: Array<{ productId: number; name: string; quantity: number; total: number }>;
 }
 
@@ -49,6 +53,92 @@ export interface TabEntryDto {
 }
 
 export type CustomerInput = CustomerFields;
+
+/** Something a customer still owes for: an invoice on their account, or the charges on their tab that are on no invoice. */
+export interface OpenItemDto {
+  /** Null: the tab's charges on no invoice. */
+  documentId: number | null;
+  number: string | null;
+  /** The invoice's day, or the oldest of the charges. */
+  date: string;
+  dueDate: string | null;
+  total: number;
+  paid: number;
+  left: number;
+}
+
+/** A received payment said to be for these items (the rest pays the oldest first). */
+export interface Allocation {
+  documentId: number | null;
+  amount: number;
+}
+
+export interface ReceiveInput {
+  amount: number;
+  note: string | null;
+  /** Where the money arrived; the shop's till when left out. */
+  placeId?: number | null;
+  /** The day it was paid; today when left out. */
+  day?: string | null;
+  allocations?: Allocation[];
+}
+
+/**
+ * Each open item, oldest first. Payments said to be for an item pay it first;
+ * the rest of every payment and refund pays the oldest items, the way a tab
+ * always has.
+ */
+export function openItemsOf(
+  entries: Array<Pick<TabEntryRecord, 'id' | 'kind' | 'amount' | 'sale_id' | 'sale_undone' | 'occurred_at'>>,
+  invoiceOf: Map<number, { id: number; number: string; issuedAt: Date; dueDate: string | null }>,
+  allocations: Array<{ payment_id: number; document_id: number | null; amount: string }>,
+): OpenItemDto[] {
+  const items = new Map<string, OpenItemDto>();
+  const keyOf = (documentId: number | null) => (documentId === null ? 'tab' : `d${documentId}`);
+  for (const entry of entries) {
+    if (entry.sale_undone || entry.kind !== 'charge') continue;
+    const invoice = entry.sale_id === null ? undefined : invoiceOf.get(entry.sale_id);
+    const key = keyOf(invoice?.id ?? null);
+    const item = items.get(key) ?? {
+      documentId: invoice?.id ?? null,
+      number: invoice?.number ?? null,
+      date: (invoice?.issuedAt ?? entry.occurred_at).toISOString(),
+      dueDate: invoice?.dueDate ?? null,
+      total: 0,
+      paid: 0,
+      left: 0,
+    };
+    item.total = roundMoney(item.total + Number(entry.amount));
+    item.left = item.total;
+    items.set(key, item);
+  }
+  const ordered = [...items.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const pay = (item: OpenItemDto, amount: number) => {
+    const used = Math.min(amount, item.left);
+    item.paid = roundMoney(item.paid + used);
+    item.left = roundMoney(item.left - used);
+    return roundMoney(amount - used);
+  };
+
+  let pool = 0;
+  const allocatedByPayment = new Map<number, number>();
+  for (const allocation of allocations) {
+    const amount = Number(allocation.amount);
+    allocatedByPayment.set(allocation.payment_id, roundMoney((allocatedByPayment.get(allocation.payment_id) ?? 0) + amount));
+    const item = items.get(keyOf(allocation.document_id));
+    // An item that no longer needs it (its sale was undone) gives it to the oldest instead.
+    pool = roundMoney(pool + (item ? pay(item, amount) : amount));
+  }
+  for (const entry of entries) {
+    if (entry.sale_undone || entry.kind === 'charge') continue;
+    pool = roundMoney(pool + Number(entry.amount) - (entry.kind === 'payment' ? (allocatedByPayment.get(entry.id) ?? 0) : 0));
+  }
+  for (const item of ordered) {
+    if (pool <= 0) break;
+    pool = pay(item, pool);
+  }
+  return ordered.filter((item) => item.left > 0);
+}
 
 /**
  * Balance, oldest unpaid charge and last payment from a customer's entries
@@ -145,12 +235,37 @@ export class TabService {
   async detail(id: number): Promise<CustomerDetailDto> {
     const customer = await this.tabRepository.findCustomer(id);
     if (!customer) throw new NotFoundError(`Customer ${id} does not exist`);
-    const [entries, bought, topProducts] = await Promise.all([
+    const [entries, bought, topProducts, invoices, allocations] = await Promise.all([
       this.tabRepository.findEntries([id]),
       this.tabRepository.purchaseTotals(this.yearStart(), [id]),
       this.tabRepository.topProducts(id),
+      this.tabRepository.chargeInvoices([id]),
+      this.tabRepository.allocations([id]),
     ]);
-    return { ...toCustomerDto(customer, entries, bought.get(id)), entries: [...entries].reverse().map(toEntryDto), topProducts };
+    return {
+      ...toCustomerDto(customer, entries, bought.get(id)),
+      entries: [...entries].reverse().map(toEntryDto),
+      openItems: openItemsOf(entries, invoices, allocations),
+      topProducts,
+    };
+  }
+
+  /** Every customer's open items, for matching a bank statement's lines. */
+  async allOpenItems(): Promise<Array<OpenItemDto & { customerId: number; customerName: string }>> {
+    const customers = await this.tabRepository.findCustomers(true);
+    const ids = customers.map((customer) => customer.id);
+    const [entries, invoices, allocations] = await Promise.all([
+      this.tabRepository.findEntries(ids),
+      this.tabRepository.chargeInvoices(ids),
+      this.tabRepository.allocations(ids),
+    ]);
+    return customers.flatMap((customer) =>
+      openItemsOf(
+        entries.filter((entry) => entry.customer_id === customer.id),
+        invoices,
+        allocations.filter((allocation) => allocation.customer_id === customer.id),
+      ).map((item) => ({ ...item, customerId: customer.id, customerName: customer.name })),
+    );
   }
 
   async create(input: CustomerInput, actorId: number): Promise<CustomerDto> {
@@ -209,27 +324,13 @@ export class TabService {
     });
   }
 
-  /** Money in against the tab. Never more than they owe; credit only comes from undone sales. */
-  async pay(customerId: number, input: { amount: number; note: string | null }, actorId: number): Promise<CustomerDto> {
-    await this.transactions.run(async (repos) => {
-      const customer = await repos.tabs.findCustomer(customerId);
-      if (!customer) throw new NotFoundError(`Customer ${customerId} does not exist`);
-      const balance = await repos.tabs.balance(customerId);
-      if (input.amount > balance) {
-        throw new ValidationError(
-          balance <= 0 ? `${customer.name} doesn't owe anything` : `${customer.name} only owes ${formatEuro(balance)}`,
-        );
-      }
-      await repos.tabs.addEntry({ customerId, kind: 'payment', amount: input.amount, note: input.note, saleId: null, createdBy: actorId });
-      await repos.activityLog.create({
-        userId: actorId,
-        action: 'tab.paid',
-        entityType: 'customer',
-        entityId: customerId,
-        say: { key: 'tabPaid', params: { name: customer.name, amount: input.amount } },
-        details: { amount: input.amount, before: balance },
-      });
-    });
+  /**
+   * Money in against the tab: at the till, or into a bank or the safe. Never
+   * more than they owe; credit only comes from undone sales. It can be said to
+   * be for some invoices (the rest pays the oldest first).
+   */
+  async pay(customerId: number, input: ReceiveInput, actorId: number, now = new Date()): Promise<CustomerDetailDto> {
+    await this.transactions.run((repos) => receivePayment(repos, customerId, input, actorId, this.timeZone, now));
     return this.detail(customerId);
   }
 
@@ -240,4 +341,65 @@ export class TabService {
       .filter((customer) => customer.owingSince !== null && new Date(customer.owingSince).getTime() <= cutoff)
       .sort((a, b) => a.owingSince!.localeCompare(b.owingSince!));
   }
+}
+
+/** A day's payment that isn't today's goes in at noon, so it stays on that day in every time zone near the shop's. */
+function momentOf(day: string | null | undefined, timeZone: string, now: Date): Date {
+  if (!day || day === zonedDay(now, timeZone)) return now;
+  return new Date(startOfDay(day, timeZone).getTime() + 12 * 60 * 60 * 1000);
+}
+
+/** Record money received from a customer, inside a transaction. Returns the payment's tab entry id. */
+export async function receivePayment(
+  repos: TransactionalRepositories,
+  customerId: number,
+  input: ReceiveInput,
+  actorId: number,
+  timeZone: string,
+  now: Date,
+): Promise<number> {
+  const today = zonedDay(now, timeZone);
+  const day = input.day ?? today;
+  if (day > today) throw new ValidationError("A payment can't be dated in the future");
+  await assertMonthsOpen(repos.periods, [day]);
+  const customer = await repos.tabs.findCustomer(customerId);
+  if (!customer) throw new NotFoundError(`Customer ${customerId} does not exist`);
+  const balance = await repos.tabs.balance(customerId);
+  if (input.amount > balance) {
+    throw new ValidationError(balance <= 0 ? `${customer.name} doesn't owe anything` : `${customer.name} only owes ${formatEuro(balance)}`);
+  }
+  const allocations = (input.allocations ?? []).filter((allocation) => allocation.amount > 0);
+  if (allocations.length > 0) {
+    const total = roundMoney(allocations.reduce((sum, allocation) => sum + allocation.amount, 0));
+    if (total !== roundMoney(input.amount)) throw new ValidationError(`The ticked items add up to ${formatEuro(total)}, not ${formatEuro(input.amount)}`);
+    const [entries, invoices, earlier] = await Promise.all([repos.tabs.findEntries([customerId]), repos.tabs.chargeInvoices([customerId]), repos.tabs.allocations([customerId])]);
+    const open = openItemsOf(entries, invoices, earlier);
+    for (const allocation of allocations) {
+      const item = open.find((candidate) => candidate.documentId === allocation.documentId);
+      if (!item) throw new ValidationError(allocation.documentId === null ? 'Nothing on the tab is left to pay' : 'That invoice is already paid');
+      if (allocation.amount > item.left) throw new ValidationError(`Only ${formatEuro(item.left)} is left on ${item.number ?? 'the tab'}`);
+    }
+  }
+  const place = await repos.money.payFrom({ placeId: input.placeId ?? null, method: 'drawer' });
+  const placeRecord = await repos.money.placeOrThrow(place.placeId);
+  const paymentId = await repos.tabs.addEntry({
+    customerId,
+    kind: 'payment',
+    amount: input.amount,
+    note: input.note,
+    saleId: null,
+    createdBy: actorId,
+    occurredAt: momentOf(day, timeZone, now),
+    placeId: place.placeId,
+  });
+  await repos.money.addAllocations(paymentId, allocations);
+  await repos.activityLog.create({
+    userId: actorId,
+    action: 'tab.paid',
+    entityType: 'customer',
+    entityId: customerId,
+    say: { key: 'tabPaid', params: { name: customer.name, amount: input.amount, place: placeWords(placeRecord) } },
+    details: { amount: input.amount, before: balance, placeId: place.placeId, day, allocations },
+  });
+  return paymentId;
 }

@@ -4698,3 +4698,232 @@ fieldset.report-sections {
   color: var(--ok);
   vertical-align: -1px;
 }
+
+/* ---------- Money: places, moves, bank statements ---------- */
+
+.money-total {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* The sentence under the move form: says in words what saving will do. */
+.money-sentence {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-weight: 500;
+}
+
+.money-place-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.money-actions__end {
+  margin-left: auto;
+}
+
+.money-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+/* A count is a check, not money moving: it steps back. */
+.money-row--count td {
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.money-row--settled td {
+  color: var(--ink-muted);
+}
+
+.money-match {
+  min-width: 14rem;
+}
+
+.money-match__text {
+  display: grid;
+  gap: 2px;
+}
+
+.money-match__text .badge {
+  justify-self: start;
+}
+
+.money-balance {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.money-line {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.money-line__text {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.money-line__text + .table__secondary {
+  margin: 0;
+}
+
+.money-line__heading {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.money-line__block {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.money-line__block p {
+  margin: 0;
+}
+
+.money-line__block.settings-form {
+  justify-items: stretch;
+}
+
+.money-suggestions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each suggestion is a raised slip with its reasons and its own Confirm. */
+.money-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.money-suggestion > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.money-suggestion .badge {
+  justify-self: start;
+}
+
+.money-layout {
+  margin-top: var(--space-4);
+}
+
+.money-layout__preview td,
+.money-layout__preview th {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Bills or invoices a payment is spread over: tick, name, what is left, what it gets. */
+.money-spread {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.money-spread__list {
+  display: grid;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  list-style: none;
+}
+
+.money-spread__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.money-spread__item + .money-spread__item {
+  border-top: 1px solid var(--line);
+}
+
+.money-spread__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.money-spread__name {
+  display: grid;
+  min-width: 0;
+}
+
+.money-spread__left {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.money-spread__part {
+  min-width: 5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .money-spread__item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .money-spread__left {
+    grid-column: 1;
+    padding-left: var(--space-6);
+  }
+
+  .money-suggestion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

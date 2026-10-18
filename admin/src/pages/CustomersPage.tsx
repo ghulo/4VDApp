@@ -1,9 +1,10 @@
 import { AddressBook, PencilSimple, Plus, Printer, WhatsappLogo } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
+import { PlaceSelect, SpreadList, placeInSentence, spread, usePlaces, usualPlace } from '../components/MoneyParts';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
@@ -21,6 +22,7 @@ import {
   buttonClass,
   Card,
   DataTable,
+  DateField,
   EmptyState,
   Field,
   PageHeader,
@@ -29,6 +31,7 @@ import {
   StatTile,
   useNewSheet,
 } from '../components/ui';
+import { todayIso } from '../utils/bills';
 import { HistoryCard } from '../components/HistoryCard';
 
 /** Same as the server: tabs unpaid this long need a reminder. */
@@ -441,7 +444,7 @@ function TabCard({ customer }: { customer: CustomerDetail }) {
     <Card title={t.customers.tab} flush>
       {(takesPayments || customer.balance <= 0) && (
         <div className="tab-card__pay">
-          {customer.balance > 0 ? <PaymentForm customer={customer} /> : <p className="field-hint">{t.customers.tabSettled}</p>}
+          {customer.balance > 0 ? <PaymentForm key={customer.balance} customer={customer} /> : <p className="field-hint">{t.customers.tabSettled}</p>}
         </div>
       )}
       <DataTable
@@ -493,27 +496,65 @@ function EntryWhat({ entry }: { entry: TabEntry }) {
   );
 }
 
-function PaymentForm({ customer }: { customer: Customer }) {
+/** A payment from the customer: where the money went, the day, and which invoices it pays, oldest first. */
+function PaymentForm({ customer }: { customer: CustomerDetail }) {
   const t = useT();
   const queryClient = useQueryClient();
+  const places = usePlaces();
+  const placeId = useId();
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [day, setDay] = useState(todayIso());
+  const [chosenPlace, setPlace] = useState<number | null>(null);
+  const items = useMemo(
+    () =>
+      customer.openItems.map((item) => ({
+        key: String(item.documentId ?? 'tab'),
+        documentId: item.documentId,
+        left: item.left,
+        label: item.number ? t.money.receive.openInvoice(item.number) : t.money.receive.openTab,
+        detail: t.money.receive.itemDetail(formatDate(item.date), item.dueDate ? formatDate(item.dueDate) : null),
+      })),
+    [customer.openItems, t],
+  );
+  const [ticked, setTicked] = useState(() => new Set(items.map((item) => item.key)));
+  const into = chosenPlace ?? usualPlace(places.data, 'till');
+  const value = Number(amount);
+  const parts = spread(items, ticked, value);
+  const used = [...parts.values()].reduce((sum, part) => sum + part, 0);
+  const extra = items.length > 0 ? Math.round((value - used) * 100) / 100 : 0;
   const pay = useMutation({
-    mutationFn: () => customersApi.pay(customer.id, { amount: Number(amount), note: note.trim() || null }),
+    mutationFn: () =>
+      customersApi.pay(customer.id, {
+        amount: value,
+        note: note.trim() || null,
+        placeId: into,
+        day,
+        allocations: items.length > 0 ? items.filter((item) => (parts.get(item.key) ?? 0) > 0).map((item) => ({ documentId: item.documentId, amount: parts.get(item.key)! })) : undefined,
+      }),
     onSuccess: () => {
-      for (const key of ['customers', 'activity', 'cash', 'reports']) queryClient.invalidateQueries({ queryKey: [key] });
+      for (const key of ['customers', 'activity', 'cash', 'reports', 'money', 'books']) queryClient.invalidateQueries({ queryKey: [key] });
       setAmount('');
       setNote('');
     },
   });
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    pay.mutate();
+  function toggle(key: string) {
+    setTicked((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   }
 
-  const value = Number(amount);
-  const isValid = value > 0 && value <= customer.balance;
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (isValid) pay.mutate();
+  }
+
+  const isValid = value > 0 && value <= customer.balance && extra < 0.005 && day !== '';
+  const to = places.data?.find((place) => place.id === into) ?? null;
 
   return (
     <form className="settings-form" onSubmit={handleSubmit} aria-label={t.tabs.takePayment}>
@@ -530,10 +571,27 @@ function PaymentForm({ customer }: { customer: Customer }) {
             onChange={(event) => setAmount(event.target.value)}
           />
         </Field>
+        <Field label={t.money.day}>
+          <DateField required max={todayIso()} value={day} onChange={setDay} />
+        </Field>
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label className="field__label" htmlFor={placeId}>
+            {t.money.receive.to}
+          </label>
+          <PlaceSelect id={placeId} places={places.data ?? []} value={into} onChange={setPlace} />
+        </div>
         <Field label={t.tabs.note}>
           <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
         </Field>
       </div>
+      {items.length > 1 && value > 0 && <SpreadList items={items} ticked={ticked} onToggle={toggle} parts={parts} caption={t.money.receive.spreadOver} />}
+      {value > 0 && (
+        <p className="money-sentence" aria-live="polite">
+          {extra >= 0.005 ? t.money.receive.leftOver(formatMoney(extra)) : t.money.receive.sentence(formatMoney(value), placeInSentence(t, to))}
+        </p>
+      )}
       {pay.isError && (
         <p className="form-error" role="alert">
           {errorMessage(pay.error)}

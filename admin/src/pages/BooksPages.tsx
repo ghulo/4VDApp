@@ -244,10 +244,12 @@ function BalanceTiles({ rows, accounts, search }: { rows: TrialBalanceRow[]; acc
   const vatOut = row('vat_out').row;
   const vatIn = row('vat_in').row;
   const vatDue = (vatOut ? vatOut.credit - vatOut.debit : 0) - (vatIn ? vatIn.debit - vatIn.credit : 0);
+  // Every till, safe and bank account sits under 1110 or 1120.
+  const cashAndBank = rows.filter((candidate) => /^11[12]/.test(candidate.number)).reduce((sum, candidate) => sum + candidate.closing, 0);
 
   return (
     <StatGrid compact>
-      <StatTile label={t.books.tiles.cashAndBank} value={formatHeadlineMoney(closing('cash') + closing('bank'))} to={to('cash')} />
+      <StatTile label={t.books.tiles.cashAndBank} value={formatHeadlineMoney(cashAndBank)} to="/money" />
       <StatTile label={t.books.tiles.stock} value={formatHeadlineMoney(closing('stock'))} to={to('stock')} />
       <StatTile label={t.books.tiles.suppliers} value={formatHeadlineMoney(0 - closing('payables'))} to={to('payables')} />
       <StatTile label={t.books.tiles.customers} value={formatHeadlineMoney(closing('receivables'))} to={to('receivables')} />

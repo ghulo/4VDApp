@@ -270,6 +270,8 @@ export class VatService {
       .where(sql<boolean>`coalesce(b.vat_month, date_trunc('month', b.issued_on)::date) = ${month}::date`)
       .where('b.voided_at', 'is', null)
       .where('b.place', '<>', 'carwash')
+      // Open bills from TREFIN were in TREFIN's returns already.
+      .where('b.brought_over', '=', false)
       .execute();
     if (bills.length === 0) return [];
     const lines = await this.db

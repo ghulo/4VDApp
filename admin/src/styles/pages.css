@@ -4377,6 +4377,99 @@ fieldset.report-sections {
   color: var(--ok);
 }
 
+/* ---------- Opening balances ---------- */
+
+/* A group heading with its "Confirm all" key beside it. */
+.opening-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.opening-what {
+  display: grid;
+  gap: 2px;
+}
+
+.opening-what__hint {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  white-space: normal;
+}
+
+.opening-what__differs {
+  color: var(--warn);
+}
+
+/* Typed figures sit in the ledger row: short, right-aligned, compact height. */
+.opening-amount {
+  display: inline-grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.opening-amount__input {
+  width: 9rem;
+  min-height: var(--control-h-sm);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.opening-source {
+  width: auto;
+  min-width: 10rem;
+  min-height: var(--control-h-sm);
+}
+
+.opening-check {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.opening-capital td {
+  background: var(--surface-sunk);
+}
+
+.opening-sentence {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.opening-sentence strong {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.opening-trefin {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.opening-skipped {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .opening-amount,
+  .opening-amount__input,
+  .opening-source {
+    width: 100%;
+  }
+  .opening-amount {
+    justify-items: stretch;
+  }
+}
+
 .books-settings__heading {
   margin: var(--space-2) 0 0;
   font-size: var(--text-base);

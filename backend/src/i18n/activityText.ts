@@ -128,6 +128,10 @@ const en = {
   bookEntryAdded: (p: { id: number; amount: number; description: string }, w: Words) =>
     `Wrote entry #${p.id} in the books (${w.money(p.amount)}): ${p.description}`,
   bookEntryReversed: (p: { id: number }) => `Reversed entry #${p.id} in the books`,
+  openingPosted: (p: { id: number; day: string; amount: number }, w: Words) => `Posted the opening balances on ${w.day(p.day)} (entry #${p.id}, ${w.money(p.amount)})`,
+  openingTakenBack: (p: { id: number; reason: string }) => `Took back the opening balances (entry #${p.id}): ${p.reason}`,
+  openingTrefinLoaded: (p: { bills: number; charges: number; lines: number }) =>
+    `Brought the opening balances over from TREFIN: ${p.lines} lines, ${p.bills} open supplier bills, ${p.charges} customer balances`,
 
   vatFiled: (p: { month: string; outcome: 'pay' | 'carry' | 'nothing'; amount: number }, w: Words) =>
     `Filed the VAT return for ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${
@@ -556,6 +560,9 @@ const sq: Templates = {
   expenseStopped: (p) => `Ndali shpenzimin mujor për ${SQ_EXPENSE[p.category] ?? p.category}`,
   bookEntryAdded: (p, w) => `Shkroi regjistrimin #${p.id} në libra (${w.money(p.amount)}): ${p.description}`,
   bookEntryReversed: (p) => `Anuloi regjistrimin #${p.id} në libra`,
+  openingPosted: (p, w) => `Regjistroi gjendjet fillestare më ${w.day(p.day)} (regjistrimi #${p.id}, ${w.money(p.amount)})`,
+  openingTakenBack: (p) => `Anuloi gjendjet fillestare (regjistrimi #${p.id}): ${p.reason}`,
+  openingTrefinLoaded: (p) => `Solli gjendjet fillestare nga TREFIN: ${p.lines} rreshta, ${p.bills} fatura të hapura të furnitorëve, ${p.charges} borxhe të klientëve`,
 
   vatFiled: (p, w) =>
     `Dorëzoi deklaratën e TVSH-së për ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${

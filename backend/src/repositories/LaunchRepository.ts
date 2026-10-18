@@ -1,5 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { TREFIN_IMPORTED_KEY } from '../scripts/trefinImport.js';
+import { OPENING_POSTED_KEY } from '../services/OpeningService.js';
 
 /** Settings key the launch wipe writes, so the checklist knows it happened. */
 export const WIPED_AT_KEY = 'shop_data_wiped_at';
@@ -9,6 +11,8 @@ export const LAST_BACKUP_KEY = 'last_backup_at';
 export interface LaunchFacts {
   wiped_at: string | null;
   last_backup_at: string | null;
+  trefin_imported_at: string | null;
+  opening_posted: boolean;
   products: string;
   sales: string;
   has_address: boolean;
@@ -27,6 +31,8 @@ export class LaunchRepository {
       select
         (select value #>> '{}' from settings where key = ${WIPED_AT_KEY}) as wiped_at,
         (select value #>> '{}' from settings where key = ${LAST_BACKUP_KEY}) as last_backup_at,
+        (select value #>> '{}' from settings where key = ${TREFIN_IMPORTED_KEY}) as trefin_imported_at,
+        exists (select 1 from settings where key = ${OPENING_POSTED_KEY}) as opening_posted,
         (select count(*) from products) as products,
         (select count(*) from sales) as sales,
         coalesce((select address is not null and address <> '' from businesses order by id limit 1), false) as has_address,

@@ -119,6 +119,8 @@ import type {
   StatementUpload,
   BooksSettings,
   EntrySource,
+  OpeningBalances,
+  TYPED_OPENING_SOURCES,
   LedgerAccount,
   LedgerEntry,
   ManualEntryInput,
@@ -769,6 +771,16 @@ export const booksApi = {
   settings: async () => (await apiRequest<BooksSettings>('/books/settings')).data,
   updateSettings: async (input: { startDay?: string; links?: Partial<Record<AccountLinkKey, number>> }) =>
     (await apiRequest<BooksSettings>('/books/settings', { method: 'PUT', body: input })).data,
+  opening: async () => (await apiRequest<OpeningBalances>('/books/opening')).data,
+  updateOpeningLine: async (id: number, input: { amount?: number; source?: (typeof TYPED_OPENING_SOURCES)[number]; note?: string | null }) =>
+    (await apiRequest<OpeningBalances>(`/books/opening/lines/${id}`, { method: 'PATCH', body: input })).data,
+  addOpeningLine: async (input: { accountId: number; amount: number; note?: string | null }) =>
+    (await apiRequest<OpeningBalances>('/books/opening/lines', { method: 'POST', body: input })).data,
+  removeOpeningLine: async (id: number) => (await apiRequest<OpeningBalances>(`/books/opening/lines/${id}`, { method: 'DELETE' })).data,
+  confirmOpening: async (ids: number[], confirmed: boolean) =>
+    (await apiRequest<OpeningBalances>('/books/opening/confirm', { method: 'POST', body: { ids, confirmed } })).data,
+  postOpening: async () => (await apiRequest<OpeningBalances>('/books/opening/post', { method: 'POST' })).data,
+  takeBackOpening: async (reason: string) => (await apiRequest<OpeningBalances>('/books/opening/take-back', { method: 'POST', body: { reason } })).data,
   /** An Excel file: the trial balance, journal, general ledger, or one account's card. */
   async download(what: 'trial-balance' | 'journal' | 'ledger' | { account: number }, period: BooksPeriod, lang: 'sq' | 'en'): Promise<void> {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;

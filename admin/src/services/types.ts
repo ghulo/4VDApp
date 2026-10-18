@@ -369,13 +369,13 @@ export interface WipeReport {
   deleted: Record<string, number>;
 }
 
-export type LaunchStepKey = 'wiped' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';
+export type LaunchStepKey = 'wiped' | 'trefin' | 'opening' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';
 
 export interface LaunchStep {
   key: LaunchStepKey;
   /** Null when the app can't see it (backups live on GitHub and R2). */
   done: boolean | null;
-  facts?: { wipedAt?: string; products?: number; sales?: number; employees?: number; lastBackupAt?: string };
+  facts?: { wipedAt?: string; importedAt?: string; products?: number; sales?: number; employees?: number; lastBackupAt?: string };
 }
 
 export interface CarwashTotals {
@@ -1582,6 +1582,40 @@ export interface ManualEntryInput {
   date: string;
   description: string;
   lines: Array<{ accountId: number; debit: number; credit: number; supplierId?: number | null; customerId?: number | null; memo?: string | null }>;
+}
+
+export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
+export type OpeningSource = 'trefin' | 'counted' | 'statement' | 'stock' | 'typed';
+export const TYPED_OPENING_SOURCES = ['counted', 'statement', 'trefin', 'typed'] as const;
+
+/** One figure of what the shop has or owes when the books start. Amounts sit on the account's usual side. */
+export interface OpeningLine {
+  id: number;
+  kind: OpeningLineKind;
+  account: { id: number; number: string; name: string; accountClass: AccountClass };
+  place: { id: number; kind: MoneyPlaceKind; name: string | null } | null;
+  party: { id: number; name: string } | null;
+  amount: number;
+  trefinAmount: number | null;
+  source: OpeningSource;
+  note: string | null;
+  confirmed: boolean;
+  confirmedBy: string | null;
+  confirmedAt: string | null;
+  editable: boolean;
+  facts: { products?: number; noCost?: number; documents?: number };
+}
+
+export interface OpeningBalances {
+  startDay: string | null;
+  posted: { entryId: number; at: string; by: string | null } | null;
+  trefin: { at: string; off: number; skipped: Array<{ what: string; amount: number }> } | null;
+  lines: OpeningLine[];
+  capital: { account: { id: number; number: string; name: string }; amount: number };
+  debits: number;
+  credits: number;
+  confirmed: number;
+  blockers: Array<'no_start' | 'unconfirmed' | 'posted' | 'empty'>;
 }
 
 export interface BooksSettings {

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import { WIPED_AT_KEY } from '../repositories/LaunchRepository.js';
+import { OPENING_POSTED_KEY, OPENING_TREFIN_KEY } from '../services/OpeningService.js';
 import { TREFIN_IMPORTED_KEY } from './trefinImport.js';
 
 /** What has to be typed to really delete, so it can't happen by accident. */
@@ -11,6 +12,7 @@ export const WIPE_PHRASE = 'wipe 4vd.app';
  * (children before the rows they point at).
  */
 const EMPTIED = [
+  'opening_lines',
   'counter_events',
   'ledger_queue',
   'ledger_lines',
@@ -99,6 +101,8 @@ export async function wipeShopData(db: DatabaseClient, options: { apply: boolean
       deleted.media = Number(media.numAffectedRows ?? 0n);
       // The imported TREFIN data is gone, so it can be imported again.
       await sql`DELETE FROM settings WHERE key = ${TREFIN_IMPORTED_KEY}`.execute(trx);
+      // So are the opening balances brought over from it.
+      await sql`DELETE FROM settings WHERE key IN (${OPENING_POSTED_KEY}, ${OPENING_TREFIN_KEY})`.execute(trx);
       // Ticks off "test data wiped" on the launch checklist.
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${WIPED_AT_KEY}, to_jsonb(now()::text), now())

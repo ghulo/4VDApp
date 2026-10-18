@@ -314,6 +314,7 @@ export class PostingRules {
         'b.customs_duty',
         'b.customs_paid_method',
         'b.place',
+        'b.brought_over',
         's.name',
         sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
         sql<string | null>`to_char(b.vat_month, 'YYYY-MM-DD')`.as('vat_month'),
@@ -321,7 +322,8 @@ export class PostingRules {
       .where('b.id', '=', id)
       .where('b.voided_at', 'is', null)
       .executeTakeFirst();
-    if (!bill || this.tooEarly(bill.issued_on) || bill.place === 'carwash') return null;
+    // A brought-over bill is in the opening entry already.
+    if (!bill || bill.brought_over || this.tooEarly(bill.issued_on) || bill.place === 'carwash') return null;
     // A bill that came after its month was filed is booked on the first day of the month it counts in.
     const day = bill.vat_month !== null && bill.vat_month > bill.issued_on ? bill.vat_month : bill.issued_on;
     const lines = await this.db

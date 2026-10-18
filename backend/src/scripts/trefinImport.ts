@@ -438,7 +438,7 @@ export async function importTrefin(
         if (!supplierId) note('bills from TREFIN\'s "any supplier" or an unknown one (name in the note)');
         const credit = bill.type === 'KB';
         const notes = [
-          `From TREFIN: ${PURCHASE_TYPES[bill.type] ?? bill.type} (${bill.type}) in ${DATABASE_LABELS[bill.db] ?? bill.db}.`,
+          `From TREFIN: ${PURCHASE_TYPES[bill.type] ?? bill.type} in ${DATABASE_LABELS[bill.db] ?? bill.db}.`,
           !supplierId && bill.supplierName ? `Supplier in TREFIN: ${bill.supplierName}.` : '',
           bill.paidInTrefin !== null ? `Marked paid in TREFIN: €${bill.paidInTrefin.toFixed(2)}.` : 'Not marked paid in TREFIN.',
         ];

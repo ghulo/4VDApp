@@ -356,7 +356,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     </label>
                   </div>
                   {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
-                  <label className="field">
+                  {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
+
+                  <h3 className="subheading">{t.productForm.wholesale}</h3>
+                  <label className="field field--narrow">
                     <span className="field__label">{t.productForm.wholesalePrice}</span>
                     <input
                       type="number"
@@ -368,7 +371,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     />
                     <span className="field__hint">{t.productForm.wholesaleHint}</span>
                   </label>
-                  {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
                   <h3 className="subheading">{t.productForm.bulkPrices}</h3>
                   <p className="field-hint">{t.productForm.bulkHint}</p>

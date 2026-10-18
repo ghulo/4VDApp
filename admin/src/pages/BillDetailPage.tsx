@@ -75,7 +75,7 @@ export function BillDetailPage() {
             {b.repeatId !== null && <Badge tone="neutral">{t.bills.repeatStamp}</Badge>}
           </>
         }
-        description={[b.number ? t.bills.numbered(b.number) : t.bills.noNumber, t.bills.recordedBy(b.recordedBy ?? t.sales.unknown)].join(' · ')}
+        description={[b.number ? t.bills.numbered(b.number) : t.bills.noNumber, !b.fromTrefin && t.bills.recordedBy(b.recordedBy ?? t.sales.unknown)].filter(Boolean).join(' · ')}
         actions={
           <>
             {b.supplier && (
@@ -139,10 +139,10 @@ export function BillDetailPage() {
           {b.lines.length > 0 && <LinesSection bill={b} />}
           {b.credits.length > 0 && <CreditsSection bill={b} />}
           {!b.fromTrefin && <PaymentsCard bill={b} writes={canChange} />}
-          <PhotoCard bill={b} writes={canChange} />
+          {!b.fromTrefin && <PhotoCard bill={b} writes={canChange} />}
           {canChange && open && <EditCard bill={b} />}
           <QuestionsCard kind="bill" id={b.id} />
-          <EntriesPanel source="bill" id={b.id} />
+          {!b.fromTrefin && <EntriesPanel source="bill" id={b.id} />}
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
         {canChange && owes(b) && (

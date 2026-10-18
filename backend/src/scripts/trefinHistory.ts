@@ -15,9 +15,9 @@ export const TREFIN_DATABASES = ['MARKET_2025', 'MARKET_2022', 'MARKET_2022_FINA
 export type TrefinDatabase = (typeof TREFIN_DATABASES)[number];
 /** How a person would name each database. */
 export const DATABASE_LABELS: Record<string, string> = {
-  MARKET_2025: 'MARKET_2025 (from Mar 2025)',
-  MARKET_2022: 'MARKET_2022 (May 2023 to Mar 2025)',
-  MARKET_2022_FINAL_2023_05_26: 'the 2023 backup (Apr 2022 to May 2023)',
+  MARKET_2025: 'its books from Mar 2025 on',
+  MARKET_2022: 'its books from May 2023 to Mar 2025',
+  MARKET_2022_FINAL_2023_05_26: 'its 2023 backup (Apr 2022 to May 2023)',
 };
 
 /** TREFIN's purchase document types, in plain words. KB gives back; the rest are bills. */
@@ -25,7 +25,7 @@ export const PURCHASE_TYPES: Record<string, string> = {
   FBM: 'goods bill',
   FBS: 'other purchase bill',
   FBI: 'import bill',
-  IMM: 'fixed asset bill',
+  IMM: 'equipment bill',
   KB: 'return to the supplier',
 };
 

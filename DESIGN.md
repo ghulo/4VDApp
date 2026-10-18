@@ -208,15 +208,16 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | Sell | **Sales** | `/sales` | History · Invoices |
 | | **Customers** | `/customers` | – |
 | | **Promotions** | `/promotions` | – |
+| | **Counter** | `/counter` | – (full screen, outside the menu frame; employees see only this page) |
 | Shelves | **Stock** | `/inventory` | On the shelf · Products · Categories |
 | | **Counts** | `/counts` | – |
 | Buy | **Suppliers** | `/suppliers` | All suppliers · Orders · Bills (Bills holds Scan a bill and the scan check page, `/bills/scans/:id`) |
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
 | | **Expenses** | `/expenses` | – |
-| | **Reports** | `/report` | Daily & weekly · Analytics |
+| | **Reports** | `/report` | Daily & weekly · Analytics · Counter (what each person did at the till) |
 | | **Money** (managers, the owner and the accountant) | `/money` | Every place money is kept; a place opens its book, `/money/:id`; a bank account also has **Bank statement**, `/money/:id/statement` |
 | | **Books** (managers, the owner and the accountant) | `/books` | Balances · Entries · Accounts · VAT · Sales book · Purchase book (an account opens its card, `/books/accounts/:id`; VAT is `/books/vat`, the books `/books/sales-book` and `/books/purchase-book`) |
-| Team | **People** · **Activity** · **Settings** | | – |
+| Team | **People** · **Activity** · **Settings** | | – (Settings has a **Counter** section: printer, receipt footer, tax groups, drawer key) |
 
 Rules:
 - **Menu label = page title.** The page a menu item opens is titled exactly like
@@ -396,6 +397,10 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | The page of stock levels | **On the shelf** | **Në raft** | |
 | A product you starred | **favourite** (star icon); action **Add to favourites** | **favorit**; **Shto te favoritet** *(confirm)* | pin, save to favourites, favorite |
 | The place where you sell | **Sell** (tab, title, opening button) | **Shit** | Record a sale (as a title) |
+| The full-screen till on the shop PC | **Counter** | **Arka** | POS, register, checkout |
+| What the fiscal printer prints for a sale | **receipt** | **kupon** | invoice (that is the numbered A4 document) |
+| The printer's running and closing totals | **X report** · **Z report** (Counter keys only) | **Raporti X** · **Raporti Z** | Close the day (that is the shop's own steps) |
+| Giving money back for a returned line | **refund** | **kthim** | return receipt, storno |
 | Finishing a sale | **Record sale · €X** | **Regjistro shitjen · €X** *(confirm)* | Checkout |
 | One customer's purchase | **sale** | **shitje** | transaction |
 | One product within a sale | **line** | **rresht** | |

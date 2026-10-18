@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { CounterService } from '../services/CounterService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { counterEventsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema } from '../validators/counterValidators.js';
+import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema } from '../validators/counterValidators.js';
 import { parseInput } from '../validators/validate.js';
 
 export function createCounterController(counterService: CounterService) {
@@ -21,6 +21,10 @@ export function createCounterController(counterService: CounterService) {
 
     async today(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await counterService.today());
+    },
+
+    async receipts(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await counterService.receipts(parseInput(counterReceiptsQuerySchema, req.query)));
     },
 
     async people(req: Request, res: Response): Promise<void> {

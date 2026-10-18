@@ -70,6 +70,29 @@ describe('paying at the counter by card', () => {
   });
 });
 
+describe('finding a receipt to give something back', () => {
+  it("lists today's receipts and finds one by its number, with what is left to give back", async () => {
+    const first = (await sell({ paidBy: 'card' })).body.data;
+    const second = (await sell({}, adminToken)).body.data;
+    await api().post(`/api/sales/${first.sales[0].id}/returns`).set(auth(employeeToken)).send({ quantity: 1, condition: 'resellable', notes: null });
+
+    const today = (await api().get('/api/counter/receipts').set(auth(employeeToken))).body.data;
+    expect(today.map((receipt: { number: string }) => receipt.number)).toEqual([second.invoice.number, first.invoice.number]);
+
+    const found = await api().get(`/api/counter/receipts?number=${first.invoice.number.toLowerCase()}`).set(auth(employeeToken));
+    expect(found.body.data).toEqual([
+      expect.objectContaining({
+        number: first.invoice.number,
+        total: 20,
+        paidBy: 'card',
+        soldBy: 'Test employee',
+        lines: [expect.objectContaining({ productId, quantity: 2, pricePerUnit: 10, returnedQuantity: 1, undone: false })],
+      }),
+    ]);
+    expect((await api().get('/api/counter/receipts?number=F-1999-000001').set(auth(employeeToken))).body.data).toEqual([]);
+  });
+});
+
 describe('counter settings', () => {
   it("starts from the printer's TREFIN set-up and lets a manager change it", async () => {
     const defaults = await api().get('/api/counter/settings').set(auth(employeeToken));

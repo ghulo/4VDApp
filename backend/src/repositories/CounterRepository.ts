@@ -165,4 +165,50 @@ export class CounterRepository {
     if (userId !== undefined) query = query.where('e.user_id', '=', userId);
     return query.execute();
   }
+
+  /** Invoices with their lines, newest first: one day's, or the one with this number. */
+  async receipts(p: { number?: string; day?: string; timeZone: string }): Promise<{ receipts: CounterReceiptRow[]; lines: CounterReceiptLineRow[] }> {
+    let query = this.db
+      .selectFrom('documents as d')
+      .leftJoin('users as u', 'u.id', 'd.issued_by')
+      .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.fiscal_receipt_no', 'u.name as issued_by_name'])
+      .where('d.kind', '=', 'invoice')
+      .orderBy('d.issued_at', 'desc')
+      .limit(60);
+    if (p.number !== undefined) query = query.where(sql<boolean>`upper(d.number) = upper(${p.number})`);
+    if (p.day !== undefined) query = query.where(sql<boolean>`(d.issued_at at time zone ${p.timeZone})::date = ${p.day}::date`);
+    const receipts = await query.execute();
+    if (receipts.length === 0) return { receipts, lines: [] };
+    const { rows: lines } = await sql<CounterReceiptLineRow>`
+      select l.document_id, s.id as sale_id, s.product_id, l.product_name, s.quantity_sold as quantity, s.price_per_unit, s.sale_date,
+        coalesce((select sum(r.quantity) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null), 0)::int as returned_quantity,
+        s.undone_at is not null as undone
+      from document_lines l join sales s on s.id = l.sale_id
+      where l.document_id in (${sql.join(receipts.map((receipt) => receipt.id))}) and l.return_id is null
+      order by l.id
+    `.execute(this.db);
+    return { receipts, lines };
+  }
+}
+
+export interface CounterReceiptRow {
+  id: number;
+  number: string;
+  issued_at: Date;
+  total: string;
+  payment_method: string;
+  fiscal_receipt_no: string | null;
+  issued_by_name: string | null;
+}
+
+export interface CounterReceiptLineRow {
+  document_id: number;
+  sale_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price_per_unit: string;
+  sale_date: Date;
+  returned_quantity: number;
+  undone: boolean;
 }

@@ -11,6 +11,8 @@ export function createCounterRoutes({ counterService, guards }: Container): Rout
   router.put('/settings', ...guards.manage, controller.updateSettings);
   router.post('/events', ...guards.staff, controller.record);
   router.get('/today', ...guards.staff, controller.today);
+  // Anyone at the counter finds a receipt to give something back, whoever sold it.
+  router.get('/receipts', ...guards.staff, controller.receipts);
   router.get('/people', ...guards.oversee, controller.people);
   router.get('/events', ...guards.oversee, controller.events);
 

@@ -3,6 +3,7 @@ import type { CounterRepository } from '../repositories/CounterRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
+import { zonedDay } from '../utils/zonedDates.js';
 import type { CounterEventInput, CounterSettingsInput } from '../validators/counterValidators.js';
 
 const SETTINGS_KEY = 'counter';
@@ -61,6 +62,17 @@ export interface CounterEventDto {
   reason: string | null;
   document: { id: number; number: string } | null;
   at: string;
+}
+
+export interface CounterReceiptDto {
+  id: number;
+  number: string;
+  issuedAt: string;
+  total: number;
+  paidBy: 'cash' | 'card' | 'tab';
+  fiscalReceiptNo: string | null;
+  soldBy: string | null;
+  lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;
 }
 
 export interface CounterTodayDto {
@@ -153,6 +165,34 @@ export class CounterService {
     const [z, x] = await Promise.all([this.counterRepository.lastReport('z_report'), this.counterRepository.lastReport('x_report')]);
     const shape = (row: typeof z) => (row ? { at: row.created_at.toISOString(), by: row.user_name } : null);
     return { lastZ: shape(z), lastX: shape(x) };
+  }
+
+  /** Today's receipts, or the one with this number (scanned from its barcode), with what is left to give back. */
+  async receipts(p: { number?: string }, now = new Date()): Promise<CounterReceiptDto[]> {
+    const { receipts, lines } = await this.counterRepository.receipts(
+      p.number !== undefined ? { number: p.number, timeZone: this.timeZone } : { day: zonedDay(now, this.timeZone), timeZone: this.timeZone },
+    );
+    return receipts.map((receipt) => ({
+      id: receipt.id,
+      number: receipt.number,
+      issuedAt: receipt.issued_at.toISOString(),
+      total: Number(receipt.total),
+      paidBy: receipt.payment_method === 'card' ? 'card' : receipt.payment_method === 'account' ? 'tab' : 'cash',
+      fiscalReceiptNo: receipt.fiscal_receipt_no,
+      soldBy: receipt.issued_by_name,
+      lines: lines
+        .filter((line) => line.document_id === receipt.id)
+        .map((line) => ({
+          saleId: line.sale_id,
+          productId: line.product_id,
+          productName: line.product_name,
+          quantity: line.quantity,
+          pricePerUnit: Number(line.price_per_unit),
+          saleDate: line.sale_date.toISOString(),
+          returnedQuantity: line.returned_quantity,
+          undone: line.undone,
+        })),
+    }));
   }
 
   async people(period: { from: string; to: string }): Promise<CounterPersonDto[]> {

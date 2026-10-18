@@ -9,12 +9,13 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "test": "node --test src/fiscal.test.js"
   },
   "build": {
     "appId": "app.4vd.desktop",
     "productName": "4VD",
-    "files": ["src/**/*"],
+    "files": ["src/**/*", "!src/**/*.test.js"],
     "icon": "src/icon.png",
     "win": {
       "target": "nsis",

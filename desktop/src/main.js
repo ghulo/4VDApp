@@ -4,6 +4,7 @@ const { app, BrowserWindow, Menu, ipcMain, nativeTheme, screen, shell } = requir
 const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
+const fiscal = require('./fiscal.js');
 
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://dashboard.4vd.app/';
@@ -153,6 +154,15 @@ function createWindow() {
 // The dashboard's theme choice also colours the frame: Mica and the caption buttons.
 ipcMain.on('theme', (_event, preference) => {
   if (['light', 'dark', 'system'].includes(preference)) nativeTheme.themeSource = preference;
+});
+// The counter's fiscal printer: only the dashboard itself may print.
+const fromDashboard = (event) => isDashboard(event.senderFrame?.url ?? '');
+ipcMain.handle('fiscal:status', (event) => (fromDashboard(event) ? fiscal.status() : null));
+ipcMain.handle('fiscal:send', (event, job) => {
+  if (!fromDashboard(event) || typeof job?.name !== 'string' || typeof job?.text !== 'string' || job.text.length > 20_000) {
+    return { status: 'failed', message: null };
+  }
+  return fiscal.send(job);
 });
 nativeTheme.on('updated', () => win?.setTitleBarOverlay(captionStyle()));
 

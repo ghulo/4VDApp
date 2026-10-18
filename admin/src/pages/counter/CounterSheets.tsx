@@ -119,6 +119,7 @@ function NumberForm({ label, hint, initial, whole, check, onApply }: NumberProps
         <input
           className="counter-number"
           inputMode={whole ? 'numeric' : 'decimal'}
+          aria-invalid={error ? true : undefined}
           autoComplete="off"
           value={text}
           onChange={(event) => {

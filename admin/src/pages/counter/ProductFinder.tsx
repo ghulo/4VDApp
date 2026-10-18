@@ -76,10 +76,10 @@ function FinderForm({ products, error, onRetry, initialQuery, onAdd }: FinderPro
           autoComplete="off"
           spellCheck={false}
           role="combobox"
-          aria-expanded="true"
-          aria-controls="counter-finder-list"
+          aria-expanded={shown.length > 0}
+          aria-controls={shown.length > 0 ? 'counter-finder-list' : undefined}
           aria-activedescendant={shown[active] ? `counter-finder-${shown[active].id}` : undefined}
-          placeholder={t.counter.shelfSearch}
+          placeholder={`${t.counter.shelfSearch}…`}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);

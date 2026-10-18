@@ -430,7 +430,7 @@ export function CounterPage() {
                 autoFocus
                 autoComplete="off"
                 spellCheck={false}
-                placeholder={t.counter.scan}
+                placeholder={`${t.counter.scan}…`}
                 aria-describedby="counter-scan-hint"
                 value={scan}
                 onChange={(event) => {

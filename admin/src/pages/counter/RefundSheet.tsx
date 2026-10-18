@@ -50,7 +50,7 @@ function RefundForm({ initialNumber, onDone }: { initialNumber: string | null; o
         <>
           <form className="counter-find" onSubmit={find}>
             <Field label={t.counter.receiptNumber}>
-              <input value={text} autoComplete="off" placeholder="F-2026-000042" onChange={(event) => setText(event.target.value)} />
+              <input value={text} autoComplete="off" spellCheck={false} placeholder="F-2026-000042" onChange={(event) => setText(event.target.value)} />
             </Field>
             <Button type="submit" icon={MagnifyingGlass}>
               {t.counter.find}

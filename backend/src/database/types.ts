@@ -1080,6 +1080,8 @@ export interface Database {
   bank_lines: BankLinesTable;
   opening_lines: OpeningLinesTable;
   trefin_months: TrefinMonthsTable;
+  book_years: BookYearsTable;
+  tax_instalments: TaxInstalmentsTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1121,4 +1123,31 @@ export interface TrefinMonthsTable {
   loaded_at: ColumnType<Date, Date | undefined, Date>;
   /** Difference key → { note, by, at }. */
   explained: ColumnType<unknown, unknown | undefined, unknown>;
+}
+
+/** A closed year (see migration 047). */
+export interface BookYearsTable {
+  year: number;
+  profit: ColumnType<string, number, number>;
+  tax: ColumnType<string, number, number>;
+  tax_entry_id: number | null;
+  close_entry_id: number | null;
+  closed_by: number | null;
+  closed_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+/** A quarterly profit tax instalment (TM) paid (see migration 047). */
+export interface TaxInstalmentsTable {
+  id: Generated<number>;
+  year: number;
+  quarter: number;
+  amount: ColumnType<string, number, number>;
+  paid_on: ColumnType<string, string, string>;
+  place_id: number;
+  entry_id: number | null;
+  note: string | null;
+  created_by: number | null;
+  created_at: ColumnType<Date, Date | undefined, Date>;
+  undone_at: Date | null;
+  undone_by: number | null;
 }

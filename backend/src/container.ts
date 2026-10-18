@@ -28,6 +28,8 @@ import { NotificationService } from './services/NotificationService.js';
 import { DocumentService } from './services/DocumentService.js';
 import { SupplierBillService } from './services/SupplierBillService.js';
 import { BooksService } from './services/BooksService.js';
+import { StatementsService } from './services/statements/StatementsService.js';
+import { YearService } from './services/statements/YearService.js';
 import { OpeningService } from './services/OpeningService.js';
 import { TrefinCompareService } from './services/vat/TrefinCompareService.js';
 import { SalesService } from './services/SalesService.js';
@@ -273,6 +275,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const vatService = new VatService(db, config.shopTimeZone);
   const trefinCompareService = new TrefinCompareService(db, vatService);
   const threadService = new ThreadService(db);
+  const statementsService = new StatementsService(db, booksService.poster);
+  const yearService = new YearService(db, booksService.poster, statementsService, config.shopTimeZone);
   const attentionService = new AttentionService(
     insightsService,
     approvalService,
@@ -282,6 +286,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     duplicateService,
     vatService,
     threadService,
+    yearService,
     config.shopTimeZone,
   );
   const dailySummaryService = new DailySummaryService(
@@ -469,6 +474,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     purchaseOrderService,
     supplierBillService,
     booksService,
+    statementsService,
+    yearService,
     openingService,
     vatService,
     trefinCompareService,

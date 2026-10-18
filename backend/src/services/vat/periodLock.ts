@@ -19,9 +19,16 @@ export class PeriodFiledError extends AppError {
   }
 }
 
+/** Something dated in a year closed in the books. The dashboard shows its own words for the code. */
+export class YearClosedError extends AppError {
+  constructor(readonly year: number) {
+    super(`${year} is closed in the books, so nothing dated in it can be added, changed or removed. The accountant can reopen the year if it must change.`, 409, 'YEAR_CLOSED');
+  }
+}
+
 /**
  * Refuse when any of these days (yyyy-mm-dd, in the shop's time zone) falls in
- * a filed month. Every service that creates, changes or removes something
+ * a filed month or a closed year. Every service that creates, changes or removes something
  * dated (sales, bills, invoices, expenses, counts, hand-written entries) calls
  * this, so the lock holds whichever screen or app the change comes from.
  */
@@ -29,6 +36,8 @@ export async function assertMonthsOpen(periods: VatMonthRepository, days: Array<
   const months = [...new Set(days.filter((day): day is string => Boolean(day)).map(monthOf))];
   const filed = await periods.filedAmong(months);
   if (filed.length > 0) throw new PeriodFiledError(filed.sort()[0]!);
+  const closed = await periods.closedYearsAmong([...new Set(months.map((month) => Number(month.slice(0, 4))))]);
+  if (closed.length > 0) throw new YearClosedError(Math.min(...closed));
 }
 
 /**

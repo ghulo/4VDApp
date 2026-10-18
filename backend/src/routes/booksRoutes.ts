@@ -2,11 +2,13 @@ import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createBooksController } from '../controllers/booksController.js';
 import { createOpeningController } from '../controllers/openingController.js';
+import { createStatementsController } from '../controllers/statementsController.js';
 
 /** The books: whoever oversees the business and the accountant read them; managers and the accountant write entries; managers change the chart. */
-export function createBooksRoutes({ booksService, openingService, guards }: Container): Router {
+export function createBooksRoutes({ booksService, openingService, statementsService, yearService, db, guards }: Container): Router {
   const controller = createBooksController(booksService);
   const opening = createOpeningController(openingService);
+  const statements = createStatementsController(statementsService, yearService, db);
   const router = Router();
 
   router.get('/accounts', ...guards.books, controller.accounts);
@@ -34,6 +36,16 @@ export function createBooksRoutes({ booksService, openingService, guards }: Cont
   router.post('/opening/confirm', ...guards.entries, opening.confirm);
   router.post('/opening/post', ...guards.entries, opening.post);
   router.post('/opening/take-back', ...guards.entries, opening.takeBack);
+
+  // Statements are read by whoever reads the books. Closing and reopening a year is checked in the
+  // service (like reopening a VAT month); instalments are recorded by whoever files VAT.
+  router.get('/statements/:kind', ...guards.books, statements.statement);
+  router.get('/statements/:kind/download', ...guards.books, statements.download);
+  router.get('/year/:year', ...guards.books, statements.year);
+  router.post('/year/:year/close', ...guards.books, statements.close);
+  router.post('/year/:year/reopen', ...guards.books, statements.reopen);
+  router.post('/year/:year/instalments', ...guards.filing, statements.pay);
+  router.delete('/instalments/:id', ...guards.filing, statements.undo);
 
   return router;
 }

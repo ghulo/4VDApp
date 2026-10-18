@@ -1,5 +1,5 @@
 /**
- * TREFIN's chart of accounts, as the shop's accountant uses it (144 accounts,
+ * TREFIN's chart of accounts, as the shop's accountant uses it (144 accounts, plus 8900 for the profit tax,
  * read from the shop's copy of TREFIN 26.3.3.0). The books start from this
  * list; accounts can be renamed, added or archived afterwards. `type` and
  * `group` are TREFIN's "Lloji" and "Grupi". The 6xxx expense accounts each
@@ -168,6 +168,7 @@ export const TREFIN_ACCOUNTS: SeedAccount[] = [
   { number: '8100', name: 'Shpenzimet financiare', accountClass: 'other_expense', type: 'Shpenzimet tjera', group: 'Shpenzimet financiare', cashFlow: 'operating' },
   { number: '8200', name: 'Shpenzimet tjera', accountClass: 'other_expense', type: 'Shpenzimet tjera', group: 'Shpenzimet tjera', cashFlow: 'operating' },
   { number: '8300', name: 'Shpenzimet e jashtëzakonshme', accountClass: 'other_expense', type: 'Shpenzimet tjera', group: 'Shpenzimet e jashtëzakonshme', cashFlow: 'operating' },
+  { number: '8900', name: 'Shpenzimet e tatimit në fitim', accountClass: 'other_expense', type: 'Shpenzimet tjera', group: 'Tatimi në fitim', cashFlow: 'operating' },
 ];
 
 /**
@@ -212,6 +213,10 @@ export const DEFAULT_ACCOUNT_LINKS = {
   'asset:building': '1800',
   'asset:other': '1970',
   withholding: '2370',
+  /** The year's profit tax, below profit before tax; what is owed on it (TM paid in advance sits here too); where a closed year's profit goes. */
+  profit_tax: '8900',
+  profit_tax_payable: '2350',
+  retained_earnings: '3400',
 } as const;
 export type AccountLinkKey = keyof typeof DEFAULT_ACCOUNT_LINKS;
 export const ACCOUNT_LINK_KEYS = Object.keys(DEFAULT_ACCOUNT_LINKS) as AccountLinkKey[];

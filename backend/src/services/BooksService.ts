@@ -505,6 +505,9 @@ export class BooksService {
           : "4VD wrote this entry from a document. Change or undo the document and the books follow; that keeps the two from disagreeing.",
       );
     }
+    if (entry.source_key) {
+      throw new ValidationError('This entry came from closing a year or a profit tax instalment. Reopen the year or take the instalment back on the Year page instead.');
+    }
     if (entry.reversed_at) throw new ValidationError(`Entry #${id} is already reversed.`);
     // The reversal is dated like the entry, so it would change that month.
     await assertMonthsOpen(this.periods, [entry.entry_date]);

@@ -139,6 +139,12 @@ const en = {
     }`,
   vatReopened: (p: { month: string; reason: string }) =>
     `Reopened the VAT month ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  yearClosed: (p: { year: number; profit: number; tax: number }, w: Words) =>
+    `Closed ${p.year} in the books: ${p.profit >= 0 ? 'profit' : 'loss'} of ${w.money(Math.abs(p.profit))} after ${w.money(p.tax)} profit tax moved into retained earnings`,
+  yearReopened: (p: { year: number; reason: string }) => `Reopened ${p.year} in the books: ${p.reason}`,
+  tmPaid: (p: { year: number; quarter: number; amount: number; day: string }, w: Words) =>
+    `Paid the profit tax instalment for Q${p.quarter} ${p.year}: ${w.money(p.amount)} on ${w.day(p.day)}`,
+  tmUndone: (p: { year: number; quarter: number; amount: number }, w: Words) => `Took back the ${w.money(p.amount)} profit tax instalment for Q${p.quarter} ${p.year}`,
   questionAsked: (p: { on: QuestionOn; text: string }) => `Asked about ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   questionAnswered: (p: { on: QuestionOn; text: string }) => `Answered on ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p: { number: string; name: string }) => `Added account ${p.number} ${p.name} to the books`,
@@ -569,6 +575,11 @@ const sq: Templates = {
       p.outcome === 'pay' ? `${w.money(p.amount)} për t'u paguar` : p.outcome === 'carry' ? `${w.money(p.amount)} bartet në muajin tjetër` : "asgjë për t'u paguar"
     }`,
   vatReopened: (p) => `Rihapi muajin e TVSH-së ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${p.reason}`,
+  yearClosed: (p, w) =>
+    `Mbylli vitin ${p.year} në libra: ${p.profit >= 0 ? 'fitimi' : 'humbja'} prej ${w.money(Math.abs(p.profit))} pas tatimit në fitim prej ${w.money(p.tax)} kaloi te fitimet e mbajtura`,
+  yearReopened: (p) => `Rihapi vitin ${p.year} në libra: ${p.reason}`,
+  tmPaid: (p, w) => `Pagoi këstin e tatimit në fitim për TM${p.quarter} ${p.year}: ${w.money(p.amount)} më ${w.day(p.day)}`,
+  tmUndone: (p, w) => `Anuloi këstin e tatimit në fitim prej ${w.money(p.amount)} për TM${p.quarter} ${p.year}`,
   questionAsked: (p) => `Pyeti për ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   questionAnswered: (p) => `U përgjigj te ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p) => `Shtoi llogarinë ${p.number} ${p.name} në libra`,

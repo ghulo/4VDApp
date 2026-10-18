@@ -10,6 +10,7 @@ import type { DuplicateService } from './DuplicateService.js';
 import type { Insight, InsightKind, InsightSeverity, InsightsService } from './InsightsService.js';
 import type { ThreadService } from './ThreadService.js';
 import { DUE_DAY, addMonths, type VatService } from './vat/VatService.js';
+import type { YearService } from './statements/YearService.js';
 
 /** From this hour (shop time) an unfinished day or shift becomes something to do. */
 export const CLOSING_HOUR = 18;
@@ -18,8 +19,8 @@ const CASH_CHECK_DAYS = 30;
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'answer';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'question';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'tm_due' | 'question';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -93,6 +94,7 @@ export class AttentionService {
     private readonly duplicates: DuplicateService,
     private readonly vat: VatService,
     private readonly threads: ThreadService,
+    private readonly years: YearService,
     private readonly timeZone: string,
   ) {}
 
@@ -198,12 +200,25 @@ export class AttentionService {
 
   /**
    * "September VAT is due by 20 October", from the 1st of the month after
-   * until the month is marked as filed; urgent once the 20th has passed.
+   * until the month is marked as filed; urgent once the 20th has passed. Also
+   * "Profit tax for Q3 is due by 15 October" for a quarter over with tax to pay
+   * and no instalment marked as paid.
    */
   private async books(t: ServerMessages, now: Date): Promise<TodoItem[]> {
     const today = zonedDay(now, this.timeZone);
-    const months = await this.vat.unfiled(now);
-    return months.map((month) => {
+    const [months, instalments] = await Promise.all([this.vat.unfiled(now), this.years.dueInstalments(now)]);
+    const tm = instalments.map(
+      (item): TodoItem => ({
+        key: `tm_due:${item.year}-${item.quarter}`,
+        kind: 'tm_due',
+        severity: item.late ? 'urgent' : 'check',
+        title: t.todo.tmDueTitle(item),
+        detail: t.todo.tmDueDetail(item),
+        verb: 'payTm',
+        to: `/books/year?year=${item.year}`,
+      }),
+    );
+    const vat = months.map((month): TodoItem => {
       const due = `${addMonths(`${month}-01`, 1).slice(0, 7)}-${String(DUE_DAY).padStart(2, '0')}`;
       const late = today > due;
       return {
@@ -216,6 +231,7 @@ export class AttentionService {
         to: `/books/vat?month=${month}`,
       };
     });
+    return [...vat, ...tm];
   }
 
   /** Questions the accountant left on documents, until someone answers. */

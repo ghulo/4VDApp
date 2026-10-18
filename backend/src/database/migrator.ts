@@ -8,6 +8,8 @@ function createMigrator(db: Kysely<unknown>): Migrator {
   return new Migrator({
     db,
     provider: { getMigrations: async () => migrations },
+    // Work is built in parallel branches, each with its next-numbered migration; one merged later may sort before one a database already ran.
+    allowUnorderedMigrations: true,
   });
 }
 

@@ -43,6 +43,13 @@ export class VatMonthRepository {
     return rows.map((row) => row.month);
   }
 
+  /** Which of these years are closed in the books. */
+  async closedYearsAmong(years: number[]): Promise<number[]> {
+    if (years.length === 0) return [];
+    const rows = await this.db.selectFrom('book_years').select('year').where('year', 'in', years).execute();
+    return rows.map((row) => row.year);
+  }
+
   async filedMonths(): Promise<string[]> {
     const rows = await this.db
       .selectFrom('vat_months')

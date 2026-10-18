@@ -6,7 +6,7 @@ import { ensurePlaces } from '../../database/places.js';
 import { checkoutKeySql, loadPlaceAccounts, PostingRules } from './postingRules.js';
 
 /** Any number, shared by every server: only one of them posts at a time. */
-const POSTING_LOCK = 40_839;
+export const POSTING_LOCK = 40_839;
 /** Queue rows taken per round. */
 const BATCH = 5_000;
 

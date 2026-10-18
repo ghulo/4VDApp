@@ -1,4 +1,4 @@
-import { Books, CashRegister, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, Desktop, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
@@ -6,6 +6,8 @@ import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
 import { CounterSettingsPanel } from '../components/CounterSettingsPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
+import { ThisComputerPanel } from '../components/ThisComputerPanel';
+import { desktopBridge } from '../desktop/desktopSetup';
 import { WipeDataPanel } from '../components/WipeDataPanel';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -88,6 +90,10 @@ export function SettingsPage() {
               </ManagersOnly>
             ),
           },
+          // Only inside the Windows app: what this computer opens, and starting with Windows.
+          ...(desktopBridge()
+            ? [{ id: 'this-computer', label: t.desktop.thisComputer.title, icon: Desktop, content: <ThisComputerPanel /> }]
+            : []),
           // The developer's own tools come last: the shop's settings are what the owner opens this page for.
           ...(isDeveloper
             ? [

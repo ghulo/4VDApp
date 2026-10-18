@@ -204,7 +204,9 @@ ipcMain.handle('setup:save', (event, change) => {
   setup = setupStore.merge(setup, change);
   setupStore.write(setupFile(), setup);
   if (app.isPackaged && typeof change?.openAtLogin === 'boolean') app.setLoginItemSettings({ openAtLogin: change.openAtLogin });
-  if ('role' in (change ?? {}) || 'done' in (change ?? {})) applyRole();
+  // Full screen comes on when the welcome finishes (or at the next start), never in the middle of Settings.
+  if (change?.done === true) applyRole();
+  else if (setup.role === 'office') win?.setFullScreen(false);
   return { ...setup, openAtLogin: openAtLogin(), canOpenAtLogin: app.isPackaged, version: app.getVersion() };
 });
 // The dashboard's language, so the loading and offline pages speak it too.

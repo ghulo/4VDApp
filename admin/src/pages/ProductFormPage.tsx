@@ -32,6 +32,7 @@ interface ProductDraft {
   categoryId: string;
   price: string;
   costPrice: string;
+  wholesalePrice: string;
   vatRate: VatRate;
   vatExempt: boolean;
   /** Two-letter code, or '' for unknown. */
@@ -62,6 +63,7 @@ function toDraft(product?: Product): ProductDraft {
     categoryId: product ? String(product.category.id) : '',
     price: product ? String(product.price) : '',
     costPrice: product?.costPrice != null ? String(product.costPrice) : '',
+    wholesalePrice: product?.wholesalePrice != null ? String(product.wholesalePrice) : '',
     vatRate: product?.vatRate ?? 18,
     vatExempt: product?.vatExempt ?? false,
     originCountry: product?.originCountry ?? '',
@@ -85,6 +87,7 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
     categoryId: Number(draft.categoryId),
     price: Number(draft.price),
     costPrice: draft.costPrice === '' ? null : Number(draft.costPrice),
+    wholesalePrice: draft.wholesalePrice === '' ? null : Number(draft.wholesalePrice),
     vatRate: draft.vatRate,
     vatExempt: draft.vatRate === 0 && draft.vatExempt,
     originCountry: draft.originCountry || null,
@@ -353,6 +356,18 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     </label>
                   </div>
                   {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
+                  <label className="field">
+                    <span className="field__label">{t.productForm.wholesalePrice}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      inputMode="decimal"
+                      value={draft.wholesalePrice}
+                      onChange={(event) => update('wholesalePrice', event.target.value)}
+                    />
+                    <span className="field__hint">{t.productForm.wholesaleHint}</span>
+                  </label>
                   {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
                   <h3 className="subheading">{t.productForm.bulkPrices}</h3>

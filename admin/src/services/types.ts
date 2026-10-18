@@ -72,6 +72,8 @@ export interface Product {
   vatExempt: boolean;
   /** Two-letter code of the country it comes from; starts from the barcode, can be corrected. */
   originCountry: string | null;
+  /** What a business pays, with VAT; null: the shelf price. */
+  wholesalePrice: number | null;
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
@@ -87,6 +89,7 @@ export interface ProductInput {
   categoryId: number;
   price: number;
   costPrice: number | null;
+  wholesalePrice?: number | null;
   imageUrl: string | null;
   sku: string | null;
   isActive: boolean;
@@ -459,7 +462,7 @@ export interface ExpiryDate {
   addedBy: string | null;
 }
 
-export interface Supplier {
+export interface Supplier extends PartnerDetails {
   id: number;
   name: string;
   /** Older suppliers may not have one yet. */
@@ -512,7 +515,24 @@ export interface PurchaseOrder {
   bill: { id: number; number: string | null; amount: number; left: number; dueOn: string | null } | null;
 }
 
-export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void';
+/** history: a bill from TREFIN, only to look at. */
+export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void' | 'history';
+
+/** Which records a list shows: made in 4VD, or brought over from TREFIN's history. */
+export type RecordSource = '4vd' | 'trefin';
+
+/** What a supplier or customer can carry besides name, NUI and phone (TREFIN kept them all). */
+export interface PartnerDetails {
+  address: string | null;
+  city: string | null;
+  /** The business registration no. (NRB). */
+  businessNo: string | null;
+  fiscalNo: string | null;
+  vatNo: string | null;
+  iban: string | null;
+  contactPerson: string | null;
+  mobile: string | null;
+}
 export type SupplierPaymentMethod = 'drawer' | 'cash' | 'bank';
 /** A payment row can also be a return or credit taken off the bill. */
 export type BillPaymentMethod = SupplierPaymentMethod | 'credit';
@@ -594,6 +614,8 @@ export interface SupplierBill {
   /** Returns and credits against this bill. */
   credits: Array<{ id: number; number: string | null; issuedOn: string; amount: number; returnsStock: boolean; voided: boolean }>;
   lines: BillLine[];
+  /** From TREFIN's history: never owed, posted or counted for VAT here, and it can't be changed. */
+  fromTrefin: boolean;
   payments: Array<{
     id: number;
     /** The bill it paid (on a return or credit: the bill it went against). */
@@ -826,7 +848,7 @@ export interface Attention {
 
 export type CustomerKind = 'person' | 'business';
 
-export interface Customer {
+export interface Customer extends PartnerDetails {
   id: number;
   name: string;
   kind: CustomerKind;
@@ -834,6 +856,9 @@ export interface Customer {
   nui: string | null;
   phone: string | null;
   note: string | null;
+  /** The most they may owe on their tab, and their usual discount in percent; null: none. */
+  creditLimit: number | null;
+  discountPercent: number | null;
   balance: number;
   /** When the oldest unpaid charge was made; null when nothing is owed. */
   owingSince: string | null;

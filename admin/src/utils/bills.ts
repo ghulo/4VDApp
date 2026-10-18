@@ -108,7 +108,7 @@ export const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.
 export const todayIso = () => new Date().toLocaleDateString('en-CA');
 export const addDaysIso = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
-export const BILL_STATUS_TONE = { unpaid: 'warn', partly_paid: 'info', paid: 'ok', void: 'neutral' } as const;
+export const BILL_STATUS_TONE = { unpaid: 'warn', partly_paid: 'info', paid: 'ok', void: 'neutral', history: 'neutral' } as const;
 
 /** A bill as its form holds it: every field a string while typing. */
 export interface BillDraft {

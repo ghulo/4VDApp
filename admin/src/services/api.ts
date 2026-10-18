@@ -1,6 +1,8 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Language } from '../i18n/language';
 import type {
+  PartnerDetails,
+  RecordSource,
   TestDelivery,
   Thread,
   ThreadSubject,
@@ -322,6 +324,7 @@ export interface SaleListQuery {
   soldBy?: number;
   /** Checkouts only: a product name or invoice number. */
   search?: string;
+  source?: RecordSource;
 }
 
 export interface DocumentListQuery {
@@ -478,7 +481,7 @@ export interface ComparedRange extends ReportRange {
 }
 
 export const billsApi = {
-  list: async (query: { status?: 'open' | 'paid' | 'void'; supplierId?: number } = {}) =>
+  list: async (query: { status?: 'open' | 'paid' | 'void'; supplierId?: number; source?: RecordSource } = {}) =>
     (await apiRequest<SupplierBill[]>('/bills', { query })).data,
   summary: async () => (await apiRequest<PayablesSummary>('/bills/summary')).data,
   get: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}`)).data,
@@ -601,15 +604,18 @@ export const expensesApi = {
   },
 };
 
-export interface CustomerInput {
+export interface CustomerInput extends Partial<PartnerDetails> {
   name: string;
   kind: CustomerKind;
   nui: string | null;
   phone: string | null;
   note: string | null;
+  creditLimit?: number | null;
+  discountPercent?: number | null;
 }
 
-export interface SupplierInput {
+/** The partner details left out keep what is stored. */
+export interface SupplierInput extends Partial<PartnerDetails> {
   name: string;
   /** Null for a business abroad, which has no Kosovo NUI. */
   nui: string | null;

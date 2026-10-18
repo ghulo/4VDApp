@@ -11,6 +11,7 @@ import { PlaceSelect, usePlaces, usualPlace } from '../components/MoneyParts';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
+import { TrefinTag } from '../components/TrefinParts';
 import { BillFields, DueBadge } from '../components/BillParts';
 import { BILL_STATUS_TONE, type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
 import { EntriesPanel } from '../components/BooksParts';
@@ -49,11 +50,13 @@ export function BillDetailPage() {
   if (bill.isPending) return <Loading />;
   if (bill.isError) return <ErrorNotice error={bill.error} onRetry={() => bill.refetch()} />;
   const b = bill.data;
+  // TREFIN's history is only to look at.
+  const canChange = writes && !b.fromTrefin;
   const open = b.status !== 'void';
   const isCredit = b.kind === 'credit';
   const who = b.supplier?.name ?? null;
   const title = isCredit ? (b.returnsStock ? t.bills.returnTitle(who ?? '') : t.bills.creditTitle(who ?? '')) : (who ?? t.bills.expenseTitle);
-  const canCredit = writes && !isCredit && open && b.supplier !== null && b.lines.length > 0;
+  const canCredit = canChange && !isCredit && open && b.supplier !== null && b.lines.length > 0;
 
   return (
     <>
@@ -67,6 +70,7 @@ export function BillDetailPage() {
             ) : (
               <Badge tone={BILL_STATUS_TONE[b.status]}>{t.bills.statuses[b.status]}</Badge>
             )}
+            {b.fromTrefin && (isCredit || b.status !== 'history') && <TrefinTag />}
             {b.paidNow && <Badge tone="neutral">{t.bills.paidNowStamp}</Badge>}
             {b.repeatId !== null && <Badge tone="neutral">{t.bills.repeatStamp}</Badge>}
           </>
@@ -86,7 +90,18 @@ export function BillDetailPage() {
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
       {b.vatMonth && <p className="callout document-note">{t.bills.lateVat(formatMonth(b.vatMonth))}</p>}
 
-      {isCredit ? (
+      {b.fromTrefin ? (
+        <>
+          <div className="callout document-note">
+            <p>{t.fromTrefin.billNote}</p>
+            {b.note && <p className="field-hint">{b.note}</p>}
+          </div>
+          <StatGrid>
+            <StatTile label={isCredit ? t.bills.givesBack : t.bills.amount} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
+            <StatTile label={t.billForm.vat} value={b.vatAmount === null ? '–' : formatMoney(b.vatAmount)} />
+          </StatGrid>
+        </>
+      ) : isCredit ? (
         <StatGrid>
           <StatTile label={t.bills.givesBack} value={formatMoney(b.amount)} hint={t.bills.dated(formatDate(b.issuedOn))} />
           <StatTile label={t.bills.usedOnBill} value={formatMoney(b.paid)} />
@@ -119,18 +134,18 @@ export function BillDetailPage() {
         </p>
       )}
 
-      <div className={writes && owes(b) ? 'product-layout' : undefined}>
+      <div className={canChange && owes(b) ? 'product-layout' : undefined}>
         <div className="product-layout__main">
           {b.lines.length > 0 && <LinesSection bill={b} />}
           {b.credits.length > 0 && <CreditsSection bill={b} />}
-          <PaymentsCard bill={b} writes={writes} />
-          <PhotoCard bill={b} writes={writes} />
-          {writes && open && <EditCard bill={b} />}
+          {!b.fromTrefin && <PaymentsCard bill={b} writes={canChange} />}
+          <PhotoCard bill={b} writes={canChange} />
+          {canChange && open && <EditCard bill={b} />}
           <QuestionsCard kind="bill" id={b.id} />
           <EntriesPanel source="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
-        {writes && owes(b) && (
+        {canChange && owes(b) && (
           <div className="product-layout__side buy-side buy-side--first">
             {/* A new amount left (after a return) starts the form again. */}
             <PayCard key={b.left} bill={b} />

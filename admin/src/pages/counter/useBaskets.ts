@@ -1,0 +1,92 @@
+import { useCallback, useEffect, useState } from 'react';
+
+export const MAX_BASKETS = 5;
+
+/** One line as kept between reloads: the product's id, with its name and price as last seen. */
+export interface StoredLine {
+  productId: number;
+  name: string;
+  quantity: number;
+  /** Rabat in percent, as typed ("7,5"); blank is none. */
+  discount: string;
+}
+
+export interface Basket {
+  id: string;
+  startedAt: number;
+  lines: StoredLine[];
+}
+
+const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
+
+function read(key: string): { baskets: Basket[]; current: string } | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as { baskets: Basket[]; current: string } | null;
+    if (!saved || !Array.isArray(saved.baskets) || saved.baskets.length === 0) return null;
+    return { baskets: saved.baskets.slice(0, MAX_BASKETS), current: saved.current };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The baskets open at the Counter, one per waiting customer, up to five. They
+ * live in this browser, per person, so a reload or a closed window loses
+ * nothing; a basket is gone once it is paid or cancelled.
+ */
+export function useBaskets(userId: number) {
+  const key = `4vd.counter.baskets.${userId}`;
+  const [state, setState] = useState(() => {
+    const saved = read(key);
+    if (saved) return saved;
+    const first = newBasket();
+    return { baskets: [first], current: first.id };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch {
+      // Private window or full storage: the baskets still work until the page closes.
+    }
+  }, [key, state]);
+
+  const current = state.baskets.find((basket) => basket.id === state.current) ?? state.baskets[0]!;
+
+  const setLines = useCallback((update: (lines: StoredLine[]) => StoredLine[]) => {
+    setState((now) => ({
+      ...now,
+      baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, lines: update(basket.lines) } : basket)),
+    }));
+  }, []);
+
+  /** Park this basket and start another; false when five are open already. */
+  const open = useCallback((): boolean => {
+    // An empty basket is reused rather than a second one opened.
+    const empty = state.baskets.find((basket) => basket.lines.length === 0);
+    if (empty) {
+      setState((now) => ({ ...now, current: empty.id }));
+      return true;
+    }
+    if (state.baskets.length >= MAX_BASKETS) return false;
+    const next = newBasket();
+    setState((now) => ({ baskets: [...now.baskets, next], current: next.id }));
+    return true;
+  }, [state.baskets]);
+
+  const select = useCallback((id: string) => setState((now) => ({ ...now, current: id })), []);
+
+  /** Paid or cancelled: the basket goes, and the next waiting one comes up (or a fresh one). */
+  const close = useCallback((id: string) => {
+    setState((now) => {
+      const rest = now.baskets.filter((basket) => basket.id !== id);
+      if (rest.length === 0) {
+        const fresh = newBasket();
+        return { baskets: [fresh], current: fresh.id };
+      }
+      return { baskets: rest, current: now.current === id ? rest[0]!.id : now.current };
+    });
+  }, []);
+
+  return { baskets: state.baskets, current, setLines, open, select, close };
+}

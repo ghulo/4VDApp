@@ -22,13 +22,13 @@ export function unitPriceFor(product: Product, quantity: number): number {
   return product.promotion && product.promotion.price < tier ? product.promotion.price : tier;
 }
 
-const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
+export const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
 /** The unit price after a rabat, rounded like the server rounds it. */
-const afterDiscount = (price: number, percent: number) => (percent > 0 ? roundMoney(price * (1 - percent / 100)) : price);
+export const afterDiscount = (price: number, percent: number) => (percent > 0 ? roundMoney(price * (1 - percent / 100)) : price);
 
 /** "7,5" or "7.5" typed into a box, as a number; blank means no rabat. */
-const parsePercent = (text: string) => {
+export const parsePercent = (text: string) => {
   const value = Number(text.replace(',', '.'));
   return text.trim() === '' || !Number.isFinite(value) ? 0 : value;
 };

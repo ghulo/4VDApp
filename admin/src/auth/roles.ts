@@ -11,8 +11,12 @@ export const canOversee = (role: UserRole): boolean => canManage(role) || role =
 export const canEditProducts = canOversee;
 /** The money side: the books, VAT, bills, invoices, expenses and reports. The accountant too. */
 export const canReadBooks = (role: UserRole): boolean => canOversee(role) || role === 'accountant';
-/** Use the dashboard at all: whoever oversees the business, and the accountant. */
-export const canUseDashboard = canReadBooks;
+/** Sees only the Counter in the dashboard: the people who sell but don't run the shop. */
+export const counterOnly = (role: UserRole): boolean => role === 'employee';
+/** Sell at the Counter: everyone who sells in the team app too. */
+export const canSell = (role: UserRole): boolean => canOversee(role) || counterOnly(role);
+/** Use the dashboard at all: whoever oversees the business, the accountant, and employees for the Counter. */
+export const canUseDashboard = (role: UserRole): boolean => canReadBooks(role) || counterOnly(role);
 /** Reopen a filed VAT month: the accountant, the owner and the developer. */
 export const canReopen = (role: UserRole): boolean => role === 'developer' || role === 'owner' || role === 'accountant';
 /** Write hand-written entries in the books: managers and the accountant. */

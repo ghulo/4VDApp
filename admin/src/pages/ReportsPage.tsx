@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { CaretLeft, Coins, FileCsv, FileXls, type Icon, Package, Receipt, UsersThree, Wallet } from '@phosphor-icons/react';
 import type { Catalogue } from '../i18n/en';
 import { AnalyticsBoard } from '../components/AnalyticsBoard';
+import { CounterReport } from '../components/CounterReport';
 import { useSalesSeries } from '../components/useSalesSeries';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
@@ -18,7 +19,7 @@ import { BarList, Button, Card, DataTable, MetricCard, MetricGrid, PageHeader } 
 import type { TeamRow } from '../services/types';
 
 /** Each tab of Reports is its own address; the period stays the same across them. */
-export type ReportsView = 'figures' | 'team' | 'profit' | 'downloads';
+export type ReportsView = 'figures' | 'team' | 'counter' | 'profit' | 'downloads';
 
 export function ReportsPage({ view }: { view: ReportsView }) {
   const t = useT();
@@ -30,6 +31,7 @@ export function ReportsPage({ view }: { view: ReportsView }) {
         <PageHeader title={t.nav.items.reports} description={t.reports.description(range.label)} />
         <PeriodPicker period={period} from={from} to={to} onChange={changePeriod} />
         {view === 'team' && <TeamView range={rangeKey} previous={previousOf(comparedRange)} />}
+        {view === 'counter' && <CounterReport range={rangeKey} />}
         {view === 'profit' && <ProfitTable range={rangeKey} />}
         {view === 'downloads' && <Exports range={rangeKey} label={range.label} />}
       </>

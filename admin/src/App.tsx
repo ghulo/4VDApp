@@ -63,6 +63,8 @@ const StatementPage = lazyPage(() => import('./pages/MoneyPages'), 'StatementPag
 const VatPage = lazyPage(() => import('./pages/VatPages'), 'VatPage');
 const SalesBookPage = lazyPage(() => import('./pages/VatPages'), 'SalesBookPage');
 const PurchaseBookPage = lazyPage(() => import('./pages/VatPages'), 'PurchaseBookPage');
+const FinancialStatementsPage = lazyPage(() => import('./pages/StatementsPages'), 'StatementsPage');
+const YearPage = lazyPage(() => import('./pages/StatementsPages'), 'YearPage');
 const CustomerDetailPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerDetailPage');
 const CustomersPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomersPage');
 const CustomerStatementPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerStatementPage');
@@ -188,6 +190,8 @@ function App() {
                       <Route path="books/vat" element={<VatPage />} />
                       <Route path="books/sales-book" element={<SalesBookPage />} />
                       <Route path="books/purchase-book" element={<PurchaseBookPage />} />
+                      <Route path="books/statements" element={<FinancialStatementsPage />} />
+                      <Route path="books/year" element={<YearPage />} />
                       <Route path="books/trefin" element={<TrefinComparePage />} />
                     </Route>
                     <Route path="books/accounts/:id" element={<AccountCardPage />} />

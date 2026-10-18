@@ -5104,3 +5104,247 @@ fieldset.report-sections {
     align-items: stretch;
   }
 }
+
+/* ---------- Statements and the year (Books → Statements, Books → Year) ---------- */
+
+.statements-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.statements,
+.year-page {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.statements[aria-busy='true'],
+.year-page[aria-busy='true'] {
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.statements-outcome .vat-outcome__sentence {
+  max-width: 30ch;
+}
+
+.statements-pair {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 960px) {
+  .statements-pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.statements-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.statements-sentence {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The official table: headings, subtotals and totals read the way a printed statement does. */
+.statement-row td {
+  font-variant-numeric: tabular-nums;
+}
+
+.statement-row--heading td {
+  padding-top: var(--space-4);
+  font-weight: 700;
+}
+
+.statement-row--group td {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.statement-row--line td:first-child {
+  padding-left: var(--space-5);
+}
+
+.statement-row--subtotal td {
+  border-top: 1px solid var(--line-strong);
+  font-weight: 600;
+}
+
+.statement-row--total td {
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 3px double var(--line-strong);
+  background: var(--fill);
+  font-weight: 700;
+}
+
+.statements-years {
+  margin-bottom: var(--space-2);
+}
+
+/* Four quarters side by side on a wide screen, two on a tablet, one on a phone. */
+.year-quarters {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+}
+
+.year-quarter .card__body {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.year-quarter--later {
+  opacity: 0.75;
+}
+
+.year-quarter__words,
+.year-quarter__due,
+.year-quarter__note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.year-quarter__figures,
+.year-close__figures {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.year-quarter__figures div,
+.year-close__figures div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.year-quarter__figures dt,
+.year-close__figures dt {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.year-quarter__figures dd,
+.year-close__figures dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.year-quarter__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.year-quarter__total strong {
+  font-family: var(--font-display);
+  font-size: var(--text-figure);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.year-quarter__paid {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+
+.year-quarter__paid p {
+  margin: 0;
+}
+
+.year-quarter__actions,
+.year-close__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.year-quarter__confirm,
+.year-close__confirm span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.year-close .card__body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.year-close .card__body > p {
+  margin: 0;
+}
+
+.year-close__figures {
+  max-width: 480px;
+}
+
+.year-close__strong {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.year-close__tax {
+  width: 12ch;
+  text-align: end;
+}
+
+.year-close__what {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.year-close__why {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.year-close__confirm {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.year-close__confirm p {
+  margin: 0;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statements[aria-busy='true'],
+  .year-page[aria-busy='true'] {
+    transition: none;
+  }
+}

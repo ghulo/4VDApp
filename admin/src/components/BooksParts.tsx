@@ -21,7 +21,8 @@ export const formatBookDay = (day: string) =>
 /** What wrote an entry, in words: "Sale", "Supplier bill", "Written by hand". */
 export function kindLabel(t: Catalogue, entry: { kind: string; source: string | null }): string {
   if (entry.kind === 'reversal') return t.books.kinds.reversal;
-  if (entry.kind === 'manual' || entry.source === null) return t.books.kinds.manual;
+  // A hand-written entry has no source; the year's closing and TM payments are manual entries that say what wrote them.
+  if (entry.source === null) return t.books.kinds.manual;
   const kind = entry.source.split(':')[0] as keyof Catalogue['books']['kinds'];
   return t.books.kinds[kind] ?? t.books.kinds.manual;
 }

@@ -801,7 +801,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'answer';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -1458,6 +1458,9 @@ export const ACCOUNT_LINK_KEYS = [
   'asset:building',
   'asset:other',
   'withholding',
+  'profit_tax',
+  'profit_tax_payable',
+  'retained_earnings',
 ] as const;
 export type AccountLinkKey = (typeof ACCOUNT_LINK_KEYS)[number];
 

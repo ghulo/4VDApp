@@ -734,7 +734,7 @@ export interface ReportSubscriptionsTable {
 }
 
 export type DocumentKind = 'invoice' | 'credit_note';
-export type DocumentPaymentMethod = 'till' | 'account';
+export type DocumentPaymentMethod = 'till' | 'account' | 'card';
 
 /** Who a document is from or to, copied when it is issued. */
 export interface DocumentParty {
@@ -881,6 +881,21 @@ export interface MoneyPlacesTable {
   statement_layout: ColumnType<unknown | null, string | null | undefined, string | null>;
   archived_at: Date | null;
   created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';
+
+/** Something that happened at the counter other than a sale, by person (the counter report). */
+export interface CounterEventsTable {
+  id: Generated<number>;
+  kind: CounterEventKind;
+  user_id: number | null;
+  product_id: number | null;
+  quantity: number | null;
+  amount: Decimal | null;
+  reason: string | null;
+  document_id: number | null;
   created_at: CreatedAt;
 }
 
@@ -1048,6 +1063,7 @@ export interface Database {
   document_threads: DocumentThreadsTable;
   document_notes: DocumentNotesTable;
   money_places: MoneyPlacesTable;
+  counter_events: CounterEventsTable;
   money_moves: MoneyMovesTable;
   payment_groups: PaymentGroupsTable;
   tab_allocations: TabAllocationsTable;

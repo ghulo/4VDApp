@@ -50,6 +50,12 @@ export const basketSchema = z
     notes: optionalText(1000),
     customerId: idSchema.optional(),
     paidNow: z.boolean().optional(),
+    /** How money paid now came in: cash into the drawer (the default), or a card on the bank's terminal. */
+    paidBy: z.enum(['cash', 'card']).optional(),
+  })
+  .refine((basket) => !(basket.paidBy === 'card' && basket.customerId !== undefined && !basket.paidNow), {
+    message: 'a sale on a tab is not paid by card',
+    path: ['paidBy'],
   })
   .refine((basket) => new Set(basket.items.map((item) => item.productId)).size === basket.items.length, {
     message: 'each product can only be in the basket once',

@@ -37,8 +37,8 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * carwash's bills, so money from it counts as the owner's put in (3000) and
  * money into it as taken out (3100).
  *
- * - Sale (one entry per checkout): the shop's till, or the customer's receivable 1230
- *   for what went on their tab, against revenue 4000 and VAT owed 2340. Its cost
+ * - Sale (one entry per checkout): the shop's till (the bank when paid by card), or the
+ *   customer's receivable 1230 for what went on their tab, against revenue 4000 and VAT owed 2340. Its cost
  *   moves from stock 1340 to cost of goods 5000.
  * - Return: revenue back through sales returns 4200 and VAT 2340, against the
  *   cash paid out or the tab; its cost goes back into stock.
@@ -187,7 +187,11 @@ export class PostingRules {
     }
     const gross = roundMoney([...grossByRate.values()].reduce((sum, value) => sum + value, 0));
     const charged = roundMoney(rows.reduce((sum, row) => sum + Number(row.charged), 0));
-    entry.debit(this.till, gross - charged);
+    // Paid by card on the bank's terminal: the money reaches the bank, not the drawer.
+    const byCard =
+      key[0] === 'i' &&
+      (await this.db.selectFrom('documents').select('payment_method').where('id', '=', Number(key.slice(1))).executeTakeFirst())?.payment_method === 'card';
+    entry.debit(byCard ? { accountId: this.places.defaultBank } : this.till, gross - charged);
     for (const [rate, rateGross] of grossByRate) {
       const vat = vatOf(rateGross, rate);
       entry.credit('revenue', rateGross - vat).credit('vat_out', vat);

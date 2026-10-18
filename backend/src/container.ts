@@ -12,6 +12,8 @@ import { SupplierBillRepository } from './repositories/SupplierBillRepository.js
 import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
+import { CounterService } from './services/CounterService.js';
+import { CounterRepository } from './repositories/CounterRepository.js';
 import { WriteOffRepository } from './repositories/WriteOffRepository.js';
 import { WriteOffService } from './services/WriteOffService.js';
 import { ReturnRepository } from './repositories/ReturnRepository.js';
@@ -178,6 +180,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
   const settingsService = new SettingsService(settingsRepository, transactions);
+  const counterService = new CounterService(new CounterRepository(db), settingsRepository, transactions, config.shopTimeZone);
   const documentRepository = new DocumentRepository(db);
   const documentService = new DocumentService(documentRepository, transactions, config.shopTimeZone, settingsService);
   const salesService = new SalesService(salesRepository, transactions, documentService, config.shopTimeZone, settingsService);
@@ -444,6 +447,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     reportsService,
     exportService,
     settingsService,
+    counterService,
     writeOffService,
     returnService,
     stockCountService,

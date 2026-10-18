@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { MoneyPlaceKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import { type MoneyRepository, type PlaceRecord, placeWords } from '../repositories/MoneyRepository.js';
+import { cardSalesSql, type MoneyRepository, type PlaceRecord, placeWords } from '../repositories/MoneyRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
@@ -33,7 +33,7 @@ export interface PlaceDto {
   lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
 }
 
-export type BookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'count';
+export type BookLineKind = 'takings' | 'card' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'count';
 
 export interface BookLineDto {
   day: string;
@@ -116,17 +116,20 @@ export function validIban(iban: string): boolean {
   return rest === 1;
 }
 
-const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, move: 3, count: 4 };
+const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, card: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, move: 3, count: 4 };
 
 /**
  * Every movement of money into or out of every place, read from the records
- * themselves: a till's takings per day (sales less what went on a tab, returns
- * paid back), customers' payments, suppliers paid, customs paid at the
- * border, carwash takings and money moved. The books post the same records.
+ * themselves: a till's takings per day (sales less what went on a tab or a
+ * card, returns paid back), card takings into the bank, customers' payments,
+ * suppliers paid, customs paid at the border, carwash takings and money moved.
+ * The books post the same records.
  */
 const movementsSql = (timeZone: string) => sql`
   with shop as (select id from money_places where kind = 'till' and carwash_id is null),
   bank as (select id from money_places where kind = 'bank' and is_default),
+  -- Sales paid by card went to the bank through its card terminal, not into the drawer.
+  card as (${cardSalesSql(timeZone)}),
   takings as (
     select day, sum(amount) as amount from (
       select (l.occurred_at at time zone ${timeZone})::date as day, l.revenue as amount from sales_ledger l
@@ -134,11 +137,16 @@ const movementsSql = (timeZone: string) => sql`
       select (e.occurred_at at time zone ${timeZone})::date, case when e.kind = 'charge' then -e.amount else e.amount end
       from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
       where e.kind <> 'payment' and (e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null)
+      union all
+      select day, -amount from card
     ) t group by day
   )
   select (select id from shop) as place_id, day, 'takings' as kind, null::int as ref_id, amount, null::int as party_id, null::text as party_name,
     null::int as other_place_id, null::text as detail, null::int as bills, null::int as bill_id, null::text as note
   from takings where amount <> 0
+  union all
+  select (select id from bank), day, 'card', null, amount, null, null, null, null, null, null, null
+  from card where amount <> 0
   union all
   select cp.id, d.day, 'carwash', null, d.carwash_amount + d.change_amount, null, null, null, null, null, null, null
   from carwash_days d join money_places cp on cp.carwash_id = d.carwash_id

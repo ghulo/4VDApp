@@ -107,7 +107,7 @@ export class DocumentService {
   /** The invoice for a checkout: one line per sale. */
   async invoiceSales(
     repos: TransactionalRepositories,
-    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number },
+    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean },
   ): Promise<DocumentRef> {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
@@ -123,7 +123,7 @@ export class DocumentService {
       });
     });
     const buyer = p.customerId === null ? null : ((await repos.documents.customerParty(p.customerId)) ?? null);
-    const paymentMethod = p.customerId !== null && p.onAccount ? 'account' : 'till';
+    const paymentMethod = p.customerId !== null && p.onAccount ? 'account' : p.byCard ? 'card' : 'till';
     return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod });
   }
 

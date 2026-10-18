@@ -88,6 +88,14 @@ export interface RuleFields {
 }
 
 /** The places money is kept and the moves between them. */
+/** Each day's sales paid by card (the bank's terminal), by the day they were sold. */
+export const cardSalesSql = (timeZone: string) => sql`
+  select (s.sale_date at time zone ${timeZone})::date as day, sum(s.total_amount) as amount
+  from sales s join document_lines dl on dl.sale_id = s.id join documents d on d.id = dl.document_id
+  where d.kind = 'invoice' and d.payment_method = 'card' and s.undone_at is null
+  group by 1
+`;
+
 export class MoneyRepository {
   constructor(private readonly db: DatabaseClient) {}
 
@@ -268,6 +276,15 @@ export class MoneyRepository {
   }
 
   /** Each till's place: the shop's under null, each carwash's under its id. */
+  /** Card takings per shop day between two days, "YYYY-MM-DD" → euros. */
+  async cardSalesByDay(from: string, to: string, timeZone: string): Promise<Map<string, number>> {
+    const { rows } = await sql<{ day: string; amount: string }>`
+      select to_char(c.day, 'YYYY-MM-DD') as day, c.amount from (${cardSalesSql(timeZone)}) c
+      where c.day between ${from}::date and ${to}::date
+    `.execute(this.db);
+    return new Map(rows.map((row) => [row.day, Number(row.amount)]));
+  }
+
   async tills(): Promise<Map<number | null, number>> {
     await this.ensure();
     const rows = await this.db.selectFrom('money_places').select(['id', 'carwash_id']).where('kind', '=', 'till').execute();

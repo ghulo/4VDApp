@@ -200,7 +200,7 @@ Tasks we agree on in chat. Ticked when done. When everything is ticked, Claude a
 - [x] Products sorted into 20 real shop categories
 - [x] Possible duplicates page: merge or keep each pair
 - [x] Several barcodes per product; merging keeps them all
-- [ ] "TREFIN imported" step on the Before-launch list
+- [x] "TREFIN imported" step on the Before-launch list
 - [ ] Run the import for real at launch
 
 ## Everything TREFIN does, the 4VD way (plan 2026-10-16, from the TREFIN survey)
@@ -241,6 +241,8 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
   - Bank statement: upload Excel, CSV or PDF (PDF read by Claude), columns found by themselves or asked once per account, duplicates skipped; each line gets suggestions with reasons (bills, invoices, till deposits, moves); confirm one or all sure ones, or make it an expense, a move or the owner's, with an optional rule; leave out, take back; the bank's balance beside 4VD's. Still to check against a real Kosovo bank statement.
 - [x] 5. Counter: barcode scanner selling, several receipts open at once, GEKOS fiscal printer (receipts, X and Z reports, sending the item list to the printer), receipt footer text; cashier patterns (voids, refunds and drawer opens without a sale, per person)
 - [ ] 6. Moving over: opening balances, open bills and invoices and stock from TREFIN on the launch date; then run 4VD next to TREFIN for one VAT month and check the books and VAT return line by line
+  - [x] Opening balances (Books → Opening balances): every line pre-filled from TREFIN, a count or the bank statement, its source shown, confirmed one by one, then posted; open supplier bills and customer balances brought over (`npm run opening:trefin`); launch checklist steps for both
+  - [ ] Run one VAT month next to TREFIN and compare the books and VAT return line by line (needs TREFIN's month exports)
 
 **B. Used, or needed soon**
 - [ ] 7. Financial statements: balance sheet, income statement, changes in equity, cash flow; year close and carry-over; quarterly tax instalments (TM)

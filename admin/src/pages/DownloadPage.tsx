@@ -5,7 +5,7 @@ import { TEAM_APP_URL } from '../auth/finishSignIn';
 import { LogoMark } from '../components/LogoMark';
 import { buttonClass } from '../components/ui';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
-import { useT } from '../i18n/useT';
+import { useLanguage, useT } from '../i18n/useT';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { formatDate } from '../utils/format';
 
@@ -41,21 +41,23 @@ async function latestRelease(): Promise<Release> {
   };
 }
 
-const megabytes = (bytes: number) => `${Math.round(bytes / 1_000_000)} MB`;
+const megabytes = (bytes: number, language: string) =>
+  new Intl.NumberFormat(language, { style: 'unit', unit: 'megabyte', maximumFractionDigits: 0 }).format(bytes / 1_000_000);
 
 /** dashboard.4vd.app/download: what the Windows app is, the installer, and how to install it. Open without signing in. */
 export function DownloadPage() {
   const t = useT().download;
+  const { language } = useLanguage();
   const release = useQuery({ queryKey: ['windows-release'], queryFn: latestRelease, staleTime: 10 * 60_000, retry: 1 });
 
   let meta = t.metaPlain;
   if (release.isPending) meta = t.metaLoading;
-  else if (release.data) meta = release.data.size ? t.meta(release.data.version, megabytes(release.data.size)) : t.metaPlain;
+  else if (release.data) meta = release.data.size ? t.meta(release.data.version, megabytes(release.data.size, language)) : t.metaPlain;
 
   return (
     <div className="download">
       <header className="download__bar">
-        <Link to="/" className="download__brand">
+        <Link to="/" className="download__brand" translate="no">
           <LogoMark size={28} />
           4VD
         </Link>
@@ -107,7 +109,7 @@ export function DownloadPage() {
         </section>
 
         <section className="download__more rise-group">
-          <div className="card download__warning" aria-labelledby="download-warning">
+          <section className="card download__warning" aria-labelledby="download-warning">
             <span className="icon-chip" aria-hidden="true">
               <ShieldCheck size={20} />
             </span>
@@ -136,9 +138,9 @@ export function DownloadPage() {
                 <span className="smartscreen__key">{t.warning.sketch.dontRun}</span>
               </p>
             </div>
-          </div>
+          </section>
 
-          <div className="card download__phone" aria-labelledby="download-phone">
+          <section className="card download__phone" aria-labelledby="download-phone">
             <span className="icon-chip" aria-hidden="true">
               <DeviceMobile size={20} />
             </span>
@@ -149,7 +151,7 @@ export function DownloadPage() {
             <a href={TEAM_APP_URL} className={buttonClass({ variant: 'secondary' })}>
               {t.phone.action}
             </a>
-          </div>
+          </section>
         </section>
 
         <div className="download__prefs">

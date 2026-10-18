@@ -3472,7 +3472,7 @@ export const en = {
         text: 'Microsoft Defender SmartScreen prevented an unrecognized app from starting.',
         moreInfo: 'More info',
         run: 'Run anyway',
-        dontRun: "Don't run",
+        dontRun: 'Don’t run',
       },
     },
     phone: {

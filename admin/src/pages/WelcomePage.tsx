@@ -87,6 +87,15 @@ function StepDots({ steps, current }: { steps: Array<Step | 'signIn'>; current: 
 }
 
 function Shell({ progress, title, subtitle, children }: { progress: ReactNode; title: string; subtitle?: string; children: ReactNode }) {
+  // A new step moves focus to its title, so keyboard and screen-reader users start there.
+  const [params] = useSearchParams();
+  const step = params.get('step');
+  useEffect(() => {
+    if (!step) return;
+    const heading = document.querySelector<HTMLElement>('.login__title');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+  }, [step]);
   return (
     <AuthShell title={title} subtitle={subtitle}>
       {/* The steps sit above the title visually, but come after it for a screen reader. */}

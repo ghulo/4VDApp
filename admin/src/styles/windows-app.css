@@ -206,9 +206,10 @@
 
 /* ---------- /download ---------- */
 
+/* Plain canvas, like the sign-in page, so every line of text sits on a measurable background. */
 .download {
   min-height: 100vh;
-  background: var(--light-canvas), var(--weave-image), var(--bg);
+  background: var(--bg);
 }
 
 .download__bar {
@@ -268,6 +269,7 @@
   font-weight: 500;
   line-height: 1.15;
   letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 .download__lead {
@@ -281,9 +283,9 @@
 
 /* The one clay key, a size up: it is the whole point of the page. */
 .download__button.button {
-  min-height: 48px;
+  height: 48px;
   padding-inline: var(--space-5);
-  font-size: var(--text-lg);
+  font-weight: 600;
 }
 
 .download__meta {

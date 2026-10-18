@@ -1,0 +1,461 @@
+/* ---------- The Windows app: first-run welcome, This computer, and /download ---------- */
+
+/* A line icon in a soft chip (DESIGN.md 11): Oat on Paper. */
+.icon-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-small);
+  background: var(--fill);
+  color: var(--ink);
+}
+
+/* Welcome: step dots above the title's content, then the step, then its keys. */
+.welcome {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.welcome__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  order: -1;
+}
+
+.welcome__dots {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Done steps are ink, the current one a long clay pill (progress toward a goal), the rest an inset track. */
+.welcome__dots li {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  box-shadow: var(--shadow-inset);
+  transition: width var(--spring-time) var(--spring), background-color var(--fast) var(--ease);
+}
+
+.welcome__dots li.is-done {
+  background: var(--ink-muted);
+  box-shadow: none;
+}
+
+.welcome__dots li.is-current {
+  width: 24px;
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.welcome__count {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.welcome__note {
+  color: var(--ink-muted);
+}
+
+.welcome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.welcome__actions > :first-child:not(:only-child) {
+  margin-right: auto;
+}
+
+.welcome__setting {
+  border-bottom: 1px solid var(--line);
+}
+
+/* Two big choices, each a raised card with a radio inside; the chosen one is pressed in with a clay ring. */
+.choice-cards {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+  cursor: pointer;
+  transition: box-shadow var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+
+.choice-card:hover {
+  box-shadow: var(--shadow-raise-hover);
+}
+
+.choice-card:has(input:checked) {
+  background: var(--tint);
+  box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-inset);
+}
+
+.choice-card:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The radio stays for keyboards and screen readers; the card shows the choice. */
+.choice-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice-card__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-small);
+  background: var(--fill);
+}
+
+.choice-card:has(input:checked) .choice-card__icon {
+  background: var(--surface);
+  color: var(--brand);
+}
+
+.choice-card__text {
+  display: grid;
+  gap: 2px;
+}
+
+.choice-card__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.choice-card__hint {
+  color: var(--ink-muted);
+}
+
+/* The printer check: one row per thing that must be there. */
+.printer-check {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.printer-check__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.printer-check__row + .printer-check__row {
+  border-top: 1px solid var(--line);
+}
+
+.printer-check__label {
+  display: grid;
+  font-weight: 600;
+}
+
+.printer-check__detail {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.printer-check__checking {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.printer-check__hint {
+  grid-column: 1 / -1;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.this-computer__version {
+  margin-right: auto;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  order: -1;
+}
+
+/* ---------- /download ---------- */
+
+/* Plain canvas, like the sign-in page, so every line of text sits on a measurable background. */
+.download {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.download__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: var(--frame-reading);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-7);
+}
+
+.download__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.download__brand:focus-visible {
+  border-radius: var(--radius-small);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.download__main {
+  max-width: var(--frame-reading);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-7) var(--space-7);
+}
+
+.download__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: var(--space-7);
+  margin-bottom: var(--space-7);
+}
+
+.download__kicker {
+  margin-bottom: var(--space-3);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.download__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.2vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.download__lead {
+  max-width: 52ch;
+  margin: var(--space-3) 0 var(--space-5);
+  color: var(--ink-muted);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  text-wrap: pretty;
+}
+
+/* The one clay key, a size up: it is the whole point of the page. */
+.download__button.button {
+  height: 48px;
+  padding-inline: var(--space-5);
+  font-weight: 600;
+}
+
+.download__meta {
+  margin-top: var(--space-3);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.download__meta-error {
+  margin-top: var(--space-1);
+  color: var(--warn);
+  font-size: var(--text-sm);
+}
+
+.download__steps.card,
+.download__warning.card,
+.download__phone.card {
+  margin: 0;
+  padding: var(--space-5);
+}
+
+.download__step-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.download__step {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.download__step-number {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  box-shadow: var(--shadow-inset);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.download__step-title {
+  display: block;
+  font-weight: 600;
+}
+
+.download__step-body,
+.download__text {
+  display: block;
+  color: var(--ink-muted);
+}
+
+.download__more {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.download__warning,
+.download__phone {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+.download__how {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-weight: 600;
+}
+
+/* A sketch of Windows' SmartScreen box: paper, hairlines, the two places to click marked 1 and 2. */
+.smartscreen {
+  justify-self: stretch;
+  padding: var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-size: var(--text-sm);
+}
+
+.smartscreen__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.smartscreen__text {
+  margin: var(--space-1) 0 var(--space-2);
+  color: var(--ink-muted);
+}
+
+.smartscreen__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.smartscreen__keys {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.smartscreen__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-segment);
+  background: var(--surface);
+}
+
+.smartscreen__key--run {
+  border-color: var(--ink);
+}
+
+.smartscreen__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--cta-ink);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.download__prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-7);
+}
+
+@media (max-width: 900px) {
+  .download__bar {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .download__main {
+    padding: var(--space-4) var(--space-4) var(--space-6);
+  }
+
+  .download__hero,
+  .download__more {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+
+  .download__hero {
+    margin-bottom: var(--space-5);
+  }
+
+  .download__button.button {
+    width: 100%;
+    justify-content: center;
+  }
+}

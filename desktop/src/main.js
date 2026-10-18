@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
 const fiscal = require('./fiscal.js');
+const setupStore = require('./setup.js');
 
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://dashboard.4vd.app/';
@@ -22,6 +23,26 @@ app.commandLine.appendSwitch('enable-features', 'FluentScrollbar,FluentOverlaySc
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;
+let setup = null;
+
+function setupFile() {
+  return path.join(app.getPath('userData'), 'setup.json');
+}
+
+/** The language for the app's own pages: the dashboard's last choice, else the system's. */
+function pageLanguage() {
+  return setup?.language ?? (app.getLocale().startsWith('sq') ? 'sq' : 'en');
+}
+
+/** Starting with Windows only works for the installed app (`npm start` would add Electron itself). */
+function openAtLogin() {
+  return app.isPackaged && app.getLoginItemSettings().openAtLogin;
+}
+
+/** The counter PC fills the screen; F11 still leaves full screen for a moment. */
+function applyRole() {
+  if (setup.done) win?.setFullScreen(setup.role === 'counter');
+}
 
 // The top bar's height in the dashboard (shell.css), so the caption buttons line up with it.
 const TITLE_BAR_HEIGHT = 56;
@@ -89,6 +110,7 @@ function handleKeys(event, input) {
   const zoomBy = (step) => contents.setZoomLevel(Math.max(-3, Math.min(3, contents.getZoomLevel() + step)));
   const key = input.key.toLowerCase();
   if (key === 'f5' || (input.control && key === 'r')) contents.reload();
+  else if (key === 'f11') win.setFullScreen(!win.isFullScreen());
   else if (input.control && (key === '=' || key === '+')) zoomBy(0.5);
   else if (input.control && key === '-') zoomBy(-0.5);
   else if (input.control && key === '0') contents.setZoomLevel(0);
@@ -119,6 +141,7 @@ function createWindow() {
   });
   win.once('ready-to-show', () => {
     if (state.maximized) win.maximize();
+    if (setup.done && setup.role === 'counter') win.setFullScreen(true);
     win.show();
   });
   win.on('close', saveWindowState);
@@ -145,10 +168,19 @@ function createWindow() {
   win.webContents.on('did-fail-load', (_event, code, _description, url, isMainFrame) => {
     // -3 is a navigation that was replaced by another one, not a failure.
     if (!isMainFrame || code === -3) return;
-    win.loadFile(path.join(__dirname, 'offline.html'), { query: { retry: isDashboard(url) ? url : DASHBOARD_URL } });
+    win.loadFile(path.join(__dirname, 'offline.html'), {
+      query: { retry: isDashboard(url) ? url : startURL(), lang: pageLanguage() },
+    });
   });
 
-  win.loadURL(DASHBOARD_URL);
+  // The small 4VD loading page shows at once; it stays up until the dashboard paints.
+  win.webContents.once('did-finish-load', () => win.loadURL(startURL()));
+  win.loadFile(path.join(__dirname, 'loading.html'), { query: { lang: pageLanguage() } });
+}
+
+/** The welcome screen the first time, then the Counter or the dashboard. */
+function startURL() {
+  return new URL(setupStore.startPath(setup), DASHBOARD_URL).href;
 }
 
 // The dashboard's theme choice also colours the frame: Mica and the caption buttons.
@@ -164,6 +196,25 @@ ipcMain.handle('fiscal:send', (event, job) => {
   }
   return fiscal.send(job);
 });
+// The welcome screen and Settings → This computer.
+ipcMain.handle('setup:get', (event) =>
+  fromDashboard(event) ? { ...setup, openAtLogin: openAtLogin(), canOpenAtLogin: app.isPackaged, version: app.getVersion() } : null);
+ipcMain.handle('setup:save', (event, change) => {
+  if (!fromDashboard(event)) return null;
+  setup = setupStore.merge(setup, change);
+  setupStore.write(setupFile(), setup);
+  if (app.isPackaged && typeof change?.openAtLogin === 'boolean') app.setLoginItemSettings({ openAtLogin: change.openAtLogin });
+  // Full screen comes on when the welcome finishes (or at the next start), never in the middle of Settings.
+  if (change?.done === true) applyRole();
+  else if (setup.role === 'office') win?.setFullScreen(false);
+  return { ...setup, openAtLogin: openAtLogin(), canOpenAtLogin: app.isPackaged, version: app.getVersion() };
+});
+// The dashboard's language, so the loading and offline pages speak it too.
+ipcMain.on('language', (event, language) => {
+  if (!fromDashboard(event) || language === setup.language) return;
+  setup = setupStore.merge(setup, { language });
+  setupStore.write(setupFile(), setup);
+});
 nativeTheme.on('updated', () => win?.setTitleBarOverlay(captionStyle()));
 
 app.on('second-instance', () => {
@@ -174,6 +225,7 @@ app.on('second-instance', () => {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  setup = setupStore.read(setupFile());
   createWindow();
   // Only an installed copy can update itself; `npm start` skips this.
   if (app.isPackaged) autoUpdater.checkForUpdatesAndNotify().catch(() => {});

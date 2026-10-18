@@ -8,6 +8,8 @@ function apply(language: Language, remember: boolean): void {
   setFormatLanguage(language);
   setActiveLanguage(language);
   document.documentElement.lang = language;
+  // The Windows app's own loading and offline pages follow along.
+  window.fourvdDesktop?.setLanguage?.(language);
   if (!remember) return;
   try {
     safeStorage()?.setItem(LANGUAGE_STORAGE_KEY, language);

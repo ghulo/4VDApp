@@ -19,7 +19,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/';
-  const { finish, sentToApp } = useFinishSignIn();
+  const { finish, sentToApp } = useFinishSignIn(redirectTo);
   const t = useT();
 
   const [email, setEmail] = useState('');

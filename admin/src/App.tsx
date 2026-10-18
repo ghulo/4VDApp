@@ -82,6 +82,8 @@ const StockCountsPage = lazyPage(() => import('./pages/StockCountsPage'), 'Stock
 const PersonPage = lazyPage(() => import('./pages/UsersPage'), 'PersonPage');
 const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
 const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
+const WelcomePage = lazyPage(() => import('./pages/WelcomePage'), 'WelcomePage');
+const DownloadPage = lazyPage(() => import('./pages/DownloadPage'), 'DownloadPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -126,6 +128,9 @@ function App() {
                   <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
                   <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
                   <Route path="/invite/:token" element={<AcceptInvitePage />} />
+                  {/* The Windows app: its download page, open to anyone, and its first-run welcome. */}
+                  <Route path="/download" element={<DownloadPage />} />
+                  <Route path="/welcome" element={<WelcomePage />} />
                   {/* The Counter fills the screen: no menu, no top bar. */}
                   <Route
                     path="/counter"

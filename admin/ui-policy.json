@@ -147,6 +147,13 @@
         "icon-button-tooltip"
       ],
       "reason": "The X in every sheet corner: a universal close mark with an aria-label, and Esc does the same."
+    },
+    {
+      "selector": ".download .card *, .welcome .printer-check *, .welcome .choice-card *",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The download page cards, the printer check and the welcome choice cards are raised panels lit by --light-raise (DESIGN.md 8, Light), so the tool cannot read their background. Their text is --ink and --ink-muted on --surface (or --tint), which src/theme/contrast.test.ts checks pass 4.5:1."
     }
   ]
 }

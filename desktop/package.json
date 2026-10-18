@@ -1,7 +1,7 @@
 {
   "name": "4vd-desktop",
   "productName": "4VD",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "description": "4VD dashboard as a Windows app",
   "author": "4VD",
@@ -10,27 +10,45 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win",
-    "test": "node --test src/fiscal.test.js"
+    "test": "node --test src/fiscal.test.js src/setup.test.js"
   },
   "build": {
     "appId": "app.4vd.desktop",
     "productName": "4VD",
-    "files": ["src/**/*", "!src/**/*.test.js"],
+    "files": [
+      "src/**/*",
+      "!src/**/*.test.js"
+    ],
     "icon": "src/icon.png",
     "win": {
       "target": "nsis",
-      "artifactName": "4VD-Setup.exe"
+      "artifactName": "4VD-Setup.exe",
+      "legalTrademarks": "4VD"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
-      "shortcutName": "4VD"
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "4VD",
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "en_US",
+        "sq_AL"
+      ],
+      "multiLanguageInstaller": true,
+      "include": "build/installer.nsh",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp"
     },
     "publish": {
       "provider": "github",
       "owner": "ghulo",
       "repo": "4VDApp"
-    }
+    },
+    "copyright": "© 2026 4VD"
   },
   "devDependencies": {
     "electron": "^44.7.2",

@@ -237,6 +237,7 @@ export class TrefinCompareService {
       .select(['b.number', 's.external_code', 's.nui', 's.name', sql<string>`to_char(coalesce(b.vat_month, b.issued_on), 'YYYY-MM')`.as('counted')])
       .where('b.voided_at', 'is', null)
       .where('b.brought_over', '=', false)
+      .where('b.trefin_ref', 'is', null)
       .execute();
     const found = new Map<string, string>();
     for (const bill of bills) {

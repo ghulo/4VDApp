@@ -21,6 +21,8 @@ import type { AccountClass, CashFlowActivity } from '../constants/chartOfAccount
 type Decimal = ColumnType<string, number | string, number | string>;
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
 type UpdatedAt = ColumnType<Date, Date | undefined, Date>;
+/** A nullable column that inserts may leave out. */
+type Optional<T> = ColumnType<T | null, T | null | undefined, T | null>;
 
 export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family', 'accountant'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -163,6 +165,8 @@ export interface ProductsTable {
   vat_exempt: Generated<boolean>;
   /** Where it comes from (ISO code); starts from the barcode's prefix. */
   origin_country: string | null;
+  /** What a business pays, with VAT; null: the shelf price. */
+  wholesale_price: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -432,6 +436,18 @@ export interface CustomersTable {
   note: string | null;
   /** The partner code it had in TREFIN. */
   external_code: ColumnType<string | null, string | null | undefined, string | null>;
+  address: Optional<string>;
+  city: Optional<string>;
+  /** The business registration no. (NRB). */
+  business_no: Optional<string>;
+  fiscal_no: Optional<string>;
+  vat_no: Optional<string>;
+  iban: Optional<string>;
+  contact_person: Optional<string>;
+  mobile: Optional<string>;
+  /** The most they may owe on their tab, and their usual discount, as TREFIN had them. */
+  credit_limit: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   archived_at: Date | null;
   created_by: number | null;
   created_at: CreatedAt;
@@ -466,6 +482,15 @@ export interface SuppliersTable {
   note: string | null;
   /** The partner code it had in TREFIN. */
   external_code: ColumnType<string | null, string | null | undefined, string | null>;
+  address: Optional<string>;
+  city: Optional<string>;
+  /** The business registration no. (NRB). */
+  business_no: Optional<string>;
+  fiscal_no: Optional<string>;
+  vat_no: Optional<string>;
+  iban: Optional<string>;
+  contact_person: Optional<string>;
+  mobile: Optional<string>;
   /** A supplier from another country: its bills are imports, handled by 4VD (customs VAT, VAT charged to yourself). */
   abroad: Generated<boolean>;
   /** Remembered from its last bill, to fill in the next one. */
@@ -643,6 +668,8 @@ export interface SupplierBillsTable {
   vat_month: ColumnType<string | null, string | null | undefined, string | null>;
   /** An open bill from before the books start, brought over at launch: out of the books and the VAT return. */
   brought_over: Generated<boolean>;
+  /** "<database>/<document id>": a bill from TREFIN's history, only to look at (never owed, posted, counted for VAT or changed). */
+  trefin_ref: Optional<string>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;

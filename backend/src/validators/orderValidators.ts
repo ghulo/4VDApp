@@ -3,7 +3,8 @@ import { money } from './catalogValidators.js';
 import { BILL_LINE_KINDS, CUSTOMS_PAID_METHODS, WITHHOLDING_TYPES } from '../constants/bills.js';
 import { EXPENSE_PLACES } from '../constants/expenses.js';
 import { SUPPLIER_PAYMENT_METHODS } from '../database/types.js';
-import { calendarDaySchema, idSchema, nuiSchema } from './validate.js';
+import { calendarDaySchema, idSchema, nuiSchema, recordSourceSchema } from './validate.js';
+import { partnerDetailsShape } from './partnerDetails.js';
 
 const optional = (max: number) =>
   z
@@ -34,6 +35,7 @@ export const supplierSchema = z.object({
   usualVatRate: z.union([z.literal(18), z.literal(16), z.literal(8), z.literal(0)]).nullish(),
   usualVatExempt: z.boolean().optional(),
   withholdingType: z.enum(WITHHOLDING_TYPES).nullish(),
+  ...partnerDetailsShape,
 }).refine((input) => input.abroad || input.nui !== null, { message: 'NUI must be 9 digits', path: ['nui'] });
 
 export const newOrderSchema = z.object({
@@ -146,6 +148,7 @@ export const creditSchema = z.object({
 export const billQuerySchema = z.object({
   supplierId: z.coerce.number().int().positive().optional(),
   status: z.enum(['open', 'paid', 'void']).optional(),
+  source: recordSourceSchema.optional(),
 });
 
 export const paymentSchema = z.object({

@@ -24,7 +24,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** A monthly bill's day is capped here so every month has it. */
 export const LAST_REPEAT_DAY = 28;
 
-export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void';
+/** history: a bill from TREFIN, only to look at. */
+export type BillStatus = 'unpaid' | 'partly_paid' | 'paid' | 'void' | 'history';
 
 export interface SupplierPaymentDto {
   id: number;
@@ -125,6 +126,8 @@ export interface SupplierBillDto {
   credits: Array<{ id: number; number: string | null; issuedOn: string; amount: number; returnsStock: boolean; voided: boolean }>;
   lines: BillLineDto[];
   payments: SupplierPaymentDto[];
+  /** From TREFIN's history: never owed, posted or counted for VAT here, and it can't be changed. */
+  fromTrefin: boolean;
 }
 
 export interface BillInput {
@@ -530,6 +533,7 @@ async function assertNotOnStatement(repos: TransactionalRepositories, paymentId:
 async function openBill(repos: TransactionalRepositories, id: number): Promise<BillRecord> {
   const bill = await repos.bills.findById(id);
   if (!bill) throw new NotFoundError(`Bill ${id} does not exist`);
+  if (bill.trefin_ref) throw new ConflictError("This bill is TREFIN's history. It can be looked at, not changed or paid.");
   if (bill.voided_at) throw new ConflictError('This bill was voided');
   return bill;
 }
@@ -1077,8 +1081,9 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
   const withheld = Number(bill.withheld);
   const voided = bill.voided_at !== null;
   const isCredit = bill.kind === 'credit';
-  const left = voided ? 0 : roundMoney(Math.max(0, amount - paid));
-  const status: BillStatus = voided ? 'void' : left === 0 ? 'paid' : paid > 0 ? 'partly_paid' : 'unpaid';
+  const history = bill.trefin_ref !== null;
+  const left = voided || history ? 0 : roundMoney(Math.max(0, amount - paid));
+  const status: BillStatus = voided ? 'void' : history ? 'history' : left === 0 ? 'paid' : paid > 0 ? 'partly_paid' : 'unpaid';
   const daysLeft = !isCredit && left > 0 && bill.due_on ? daysBetween(today, bill.due_on) : null;
   const customsVat = bill.customs_vat === null ? 0 : Number(bill.customs_vat);
   return {
@@ -1141,5 +1146,6 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
         recordedBy: payment.created_by_name,
         voided: payment.voided_at !== null,
       })),
+    fromTrefin: history,
   };
 }

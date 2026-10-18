@@ -1,26 +1,56 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { TabEntryKind } from '../database/types.js';
+import { PARTNER_DETAIL_COLUMNS, partnerDetailRow, type PartnerDetails } from '../validators/partnerDetails.js';
 
-/** What staff type in for a customer. */
-export interface CustomerFields {
+/** What staff type in for a customer; the details left out keep what is stored. */
+export interface CustomerFields extends Partial<PartnerDetails> {
   name: string;
   kind: 'person' | 'business';
   nui: string | null;
   phone: string | null;
   note: string | null;
+  creditLimit?: number | null;
+  discountPercent?: number | null;
 }
 
-export interface CustomerRecord {
+export interface CustomerRecord extends PartnerDetails {
   id: number;
   name: string;
   kind: 'person' | 'business';
   nui: string | null;
   phone: string | null;
   note: string | null;
+  credit_limit: string | null;
+  discount_percent: string | null;
   archived_at: Date | null;
   created_at: Date;
 }
+
+const CUSTOMER_COLUMNS = [
+  'id',
+  'name',
+  'kind',
+  'nui',
+  'phone',
+  'note',
+  'credit_limit',
+  'discount_percent',
+  'archived_at',
+  'created_at',
+  ...PARTNER_DETAIL_COLUMNS,
+] as const;
+
+const customerRow = (input: CustomerFields) => ({
+  name: input.name,
+  kind: input.kind,
+  nui: input.nui,
+  phone: input.phone,
+  note: input.note,
+  ...(input.creditLimit !== undefined && { credit_limit: input.creditLimit }),
+  ...(input.discountPercent !== undefined && { discount_percent: input.discountPercent }),
+  ...partnerDetailRow(input),
+});
 
 export interface TabEntryRecord {
   id: number;
@@ -49,7 +79,7 @@ export class TabRepository {
   constructor(private readonly db: DatabaseClient) {}
 
   async findCustomers(includeArchived = false): Promise<CustomerRecord[]> {
-    let query = this.db.selectFrom('customers').select(['id', 'name', 'kind', 'nui', 'phone', 'note', 'archived_at', 'created_at']);
+    let query = this.db.selectFrom('customers').select(CUSTOMER_COLUMNS);
     if (!includeArchived) query = query.where('archived_at', 'is', null);
     return query.orderBy('name').execute();
   }
@@ -57,7 +87,7 @@ export class TabRepository {
   async findCustomer(id: number): Promise<CustomerRecord | undefined> {
     return this.db
       .selectFrom('customers')
-      .select(['id', 'name', 'kind', 'nui', 'phone', 'note', 'archived_at', 'created_at'])
+      .select(CUSTOMER_COLUMNS)
       .where('id', '=', id)
       .executeTakeFirst();
   }
@@ -205,14 +235,14 @@ export class TabRepository {
   async createCustomer(input: CustomerFields & { createdBy: number }): Promise<number> {
     const row = await this.db
       .insertInto('customers')
-      .values({ name: input.name, kind: input.kind, nui: input.nui, phone: input.phone, note: input.note, created_by: input.createdBy })
+      .values({ ...customerRow(input), created_by: input.createdBy })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;
   }
 
   async updateCustomer(id: number, changes: CustomerFields): Promise<void> {
-    await this.db.updateTable('customers').set(changes).where('id', '=', id).execute();
+    await this.db.updateTable('customers').set(customerRow(changes)).where('id', '=', id).execute();
   }
 
   async archiveCustomer(id: number, at: Date): Promise<void> {

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
+import type { RecordSource } from '../validators/validate.js';
 
 export interface SaleFilters {
   startDate?: Date;
@@ -9,6 +10,8 @@ export interface SaleFilters {
   soldBy?: number;
   /** Checkouts only: a product name, invoice number or imported receipt number. */
   search?: string;
+  /** trefin: imported from the old till (they carry its receipt number); 4vd: rung up here. */
+  source?: RecordSource;
   limit: number;
   offset: number;
 }
@@ -139,6 +142,7 @@ export class SalesRepository {
       filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
       filters.productId ? sql`s.product_id = ${filters.productId}` : sql`true`,
       filters.soldBy ? sql`s.sold_by = ${filters.soldBy}` : sql`true`,
+      filters.source ? (filters.source === 'trefin' ? sql`s.receipt_no is not null` : sql`s.receipt_no is null`) : sql`true`,
       sql`s.undone_at is null`,
     ];
     const keyed = sql`

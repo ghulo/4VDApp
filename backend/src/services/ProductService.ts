@@ -39,6 +39,8 @@ export interface ProductDto {
   originCountry: string | null;
   category: { id: number; name: string };
   price: number;
+  /** What a business pays, with VAT; null: the shelf price. */
+  wholesalePrice: number | null;
   /** Only included for admins. */
   costPrice?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
@@ -64,6 +66,8 @@ export interface ProductInput {
   vatExempt?: boolean;
   /** Left out keeps the current country (none for a new product). */
   originCountry?: string | null;
+  /** What a business pays, with VAT; null: the shelf price. Left out keeps it. */
+  wholesalePrice?: number | null;
   /** Replaces every tier when given; leaves them unchanged when undefined (updates only). */
   bulkPricingTiers?: PricingTier[];
 }
@@ -369,6 +373,7 @@ export class ProductService {
       vatRate,
       vatExempt,
       originCountry,
+      wholesalePrice: input.wholesalePrice,
     };
   }
 
@@ -396,6 +401,7 @@ export class ProductService {
       originCountry: product.origin_country,
       category: { id: product.category_id, name: product.category_name },
       price,
+      wholesalePrice: toMoneyOrNull(product.wholesale_price),
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
       stock: {
         quantity,

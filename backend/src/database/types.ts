@@ -805,6 +805,8 @@ export interface DocumentsTable {
   /** Paid at the till, or on the customer's account (their tab), then due by `due_date`. */
   payment_method: ColumnType<DocumentPaymentMethod, DocumentPaymentMethod | undefined, never>;
   due_date: ColumnType<string | null, string | null | undefined, never>;
+  /** "<database>/<document id>" on an invoice TREFIN issued: history only, see migration 047. */
+  trefin_ref: ColumnType<string | null, string | null | undefined, never>;
 }
 
 export interface DocumentLinesTable {
@@ -1107,6 +1109,9 @@ export interface Database {
   bank_lines: BankLinesTable;
   opening_lines: OpeningLinesTable;
   trefin_months: TrefinMonthsTable;
+  trefin_deleted_receipts: TrefinDeletedReceiptsTable;
+  trefin_stock_documents: TrefinStockDocumentsTable;
+  trefin_stock_lines: TrefinStockLinesTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1137,6 +1142,46 @@ export type NewUserRow = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type CategoryRow = Selectable<CategoriesTable>;
 export type NotificationRow = Selectable<NotificationsTable>;
+
+/** A receipt someone deleted in TREFIN, kept to look at (see migration 047). */
+export interface TrefinDeletedReceiptsTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  number: string | null;
+  kind: 'receipt' | 'invoice';
+  sold_on: ColumnType<string, string, string>;
+  deleted_at: Date;
+  deleted_by: string | null;
+  customer: string | null;
+  total: ColumnType<string, number | string, number | string>;
+  lines: ColumnType<TrefinReceiptLine[], string, string>;
+}
+
+/** TREFIN's starting stock, a correction or a count, kept to look at (see migration 048). */
+export interface TrefinStockDocumentsTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  kind: 'opening' | 'correction' | 'count';
+  number: string | null;
+  dated: ColumnType<string, string, string>;
+  source: string;
+}
+
+export interface TrefinStockLinesTable {
+  id: Generated<number>;
+  document_id: number;
+  product_id: number | null;
+  product_name: string;
+  quantity: ColumnType<string, number, number>;
+  counted: ColumnType<string | null, number | null, number | null>;
+  unit_cost: ColumnType<string | null, number | null, number | null>;
+}
+
+export interface TrefinReceiptLine {
+  name: string;
+  quantity: number;
+  total: number;
+}
 
 /** A VAT month's documents as TREFIN had them, to run 4VD next to TREFIN (see TrefinCompareService). */
 export interface TrefinMonthsTable {

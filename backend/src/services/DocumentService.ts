@@ -1,4 +1,4 @@
-import { ForbiddenError, NotFoundError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError } from '../errors/httpErrors.js';
 import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../database/types.js';
 import type { Language } from '../i18n/language.js';
 import type { DocumentLineRecord, DocumentRecord, DocumentRepository, NewDocumentLine } from '../repositories/DocumentRepository.js';
@@ -56,6 +56,8 @@ export interface DocumentDto {
   paymentMethod: DocumentPaymentMethod;
   /** "YYYY-MM-DD": when an invoice on account is due. */
   dueDate: string | null;
+  /** An invoice TREFIN issued: history to look at, never changed here. */
+  fromTrefin: boolean;
 }
 
 export interface DocumentDetailDto extends DocumentDto {
@@ -76,6 +78,7 @@ export interface DocumentQuery extends PageRequest {
   customerId?: number;
   startDate?: Date;
   endDate?: Date;
+  source?: 'trefin' | '4vd';
 }
 
 /** A follow-up document for part or all of one invoiced sale. */
@@ -208,6 +211,7 @@ export class DocumentService {
       customerId: query.customerId,
       startDate: query.startDate,
       endDate: query.endDate,
+      source: query.source,
       limit: query.limit,
       offset: toOffset(query),
     });
@@ -229,6 +233,7 @@ export class DocumentService {
   /** Link the document to the receipt the fiscal printer gave. The only change an issued document allows. */
   async setFiscalReceipt(id: number, value: string | null, viewer: PublicUser): Promise<DocumentDetailDto> {
     const record = await this.visible(id, viewer);
+    if (record.trefin_ref) throw new ConflictError("This invoice is TREFIN's history. It can be looked at, not changed.");
     await this.transactions.run(async (repos) => {
       await assertMonthsOpen(repos.periods, [zonedDay(record.issued_at, this.timeZone)]);
       await repos.documents.setFiscalReceipt(id, value);
@@ -300,6 +305,7 @@ function toDto(record: DocumentRecord): DocumentDto {
     fiscalReceiptNo: record.fiscal_receipt_no,
     paymentMethod: record.payment_method,
     dueDate: record.due_date,
+    fromTrefin: record.trefin_ref !== null,
   };
 }
 

@@ -1,4 +1,5 @@
 import { AddressBook, PencilSimple, Plus, Printer, WhatsappLogo } from '@phosphor-icons/react';
+import { TrefinTag } from '../components/TrefinParts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -693,8 +694,15 @@ function InvoicesCard({ customerId }: { customerId: number }) {
           { header: t.documents.issued, cell: (row) => formatDate(row.issuedAt) },
           {
             header: t.customers.howPaid,
+            // TREFIN's invoices never went on the tab here: they carry its tag instead.
             cell: (row) =>
-              row.kind === 'invoice' ? <Badge tone={row.paymentMethod === 'account' ? 'info' : 'neutral'}>{t.customers.paidAt[row.paymentMethod]}</Badge> : '–',
+              row.fromTrefin ? (
+                <TrefinTag />
+              ) : row.kind === 'invoice' ? (
+                <Badge tone={row.paymentMethod === 'account' ? 'info' : 'neutral'}>{t.customers.paidAt[row.paymentMethod]}</Badge>
+              ) : (
+                '–'
+              ),
           },
           { header: t.documents.total, align: 'end', cell: (row) => (row.kind === 'credit_note' ? `−${formatMoney(row.total)}` : formatMoney(row.total)) },
         ]}

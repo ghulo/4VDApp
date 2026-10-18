@@ -15,6 +15,15 @@ export function createStockCountsController(stockCountService: StockCountService
       sendSuccess(res, await stockCountService.list(req.user!));
     },
 
+    async trefinList(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await stockCountService.trefinList());
+    },
+
+    async trefinGet(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await stockCountService.trefinGet(id));
+    },
+
     async start(req: Request, res: Response): Promise<void> {
       const { categoryId } = parseInput(startCountSchema, req.body ?? {});
       sendSuccess(res, await stockCountService.start(categoryId, req.user!), { statusCode: 201, message: 'Count started' });

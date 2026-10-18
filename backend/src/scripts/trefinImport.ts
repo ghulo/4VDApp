@@ -16,6 +16,9 @@ import {
   readTrefinHistory,
   sameName,
   trefinBills,
+  trefinDeletedReceipts,
+  trefinInvoiceHeaders,
+  trefinStockDocuments,
   type TrefinHistory,
   type TrefinPartner,
 } from './trefinHistory.js';
@@ -85,6 +88,12 @@ export interface TrefinImportReport {
     bills: number;
     billLines: number;
     deletedBills: number;
+    /** TREFIN's invoices (FSM, EKS) over its sales, and the receipts deleted in TREFIN. */
+    invoices: number;
+    deletedReceipts: number;
+    /** TREFIN's starting stocks, corrections and counts, and their lines. */
+    stockDocuments: number;
+    stockLines: number;
   };
   revenue: number;
   firstSale: string | null;
@@ -152,6 +161,10 @@ const partnerDetails = (partner: TrefinPartner) => ({
 
 /** TREFIN's VAT rates that 4VD knows; anything else is taken as 18%. */
 const VAT_RATES = [0, 8, 16, 18];
+/** How a receipt not paid in cash was paid, in plain words. */
+const PAID_BY: Record<string, string> = { 'cash+bank': 'partly in cash, partly by bank', 'bank/card': 'by card or bank' };
+/** TREFIN's invoice types, in plain words. */
+const SALE_TYPES: Record<string, string> = { FSM: 'sales invoice', EKS: 'export invoice' };
 
 class DryRun extends Error {}
 
@@ -329,9 +342,10 @@ export async function importTrefin(
           .execute();
         suppliers.forEach((p, i) => supplierIds.set(p, inserted[i]!.id));
       }
+      const customerIds = new Map<TrefinPartner, number>();
       const customers = partners.filter((p) => p.isCustomer);
       if (customers.length > 0) {
-        await trx
+        const inserted = await trx
           .insertInto('customers')
           .values(
             customers.map((p) => ({
@@ -345,7 +359,9 @@ export async function importTrefin(
               discount_percent: p.discountPercent,
             })),
           )
+          .returning('id')
           .execute();
+        customers.forEach((p, i) => customerIds.set(p, inserted[i]!.id));
       }
       if (data.history) note('suppliers and customers only an older TREFIN database knew', partners.filter((p) => !p.keys.some((k) => k.startsWith('clean/'))).length);
 
@@ -355,8 +371,11 @@ export async function importTrefin(
       const receipts = new Set<string>();
       let firstSale: string | null = null;
       let lastSale: string | null = null;
+      // TREFIN's invoices, "<database>|<number>" → their lines, made into invoices once the sales have ids.
+      const invoices = new Map<string, { db: string; number: string; type: string; at: Date; customer: string; lines: Array<{ saleId: number; productId: number; name: string; code: string | null; quantity: number; unitPrice: number; vatRate: number; total: number }> }>();
       for (let i = 0; i < data.sales.length; i += BATCH) {
-        const rows = [];
+        const rows: Array<{ product_id: number; quantity_sold: number; price_per_unit: number; unit_cost: number | null; discount_percent: number | null; price_before_discount: number | null; sale_date: Date; receipt_no: string; notes: string | null }> = [];
+        const invoiceOf: Array<{ key: string; type: string; customer: string; code: string | null; name: string; vatRate: number } | null> = [];
         for (const s of data.sales.slice(i, i + BATCH)) {
           const quantity = num(s.quantity);
           if (!(quantity > 0)) {
@@ -387,9 +406,11 @@ export async function importTrefin(
             lineNotes.push(`Sold ${quantity} ${unit === 'Copë' ? 'pcs' : unit} in TREFIN, for €${total.toFixed(2)}`);
             note(Number.isInteger(quantity) ? 'sale lines whose price did not divide evenly, kept as 1 at the line total' : 'sale lines in kg or part units, kept as 1 at the line total');
           }
-          if (clean(s.doc_type) !== 'KUP') {
-            lineNotes.push(`${clean(s.doc_type_description)} ${clean(s.receipt_number)} to ${clean(s.customer)}, paid ${clean(s.payment_method)}`);
-            note('invoice lines (FSM/EKS) to named customers');
+          const invoiced = clean(s.doc_type) !== 'KUP';
+          if (invoiced) note('invoice lines (FSM/EKS) to named customers');
+          else if (PAID_BY[clean(s.payment_method)]) {
+            lineNotes.push(`Paid ${PAID_BY[clean(s.payment_method)]} in TREFIN`);
+            note('receipt lines not paid in cash (said in the note)');
           }
           const discount = num(s.discount_percent);
           const withDiscount = whole && discount > 0 && discount <= 100;
@@ -412,9 +433,125 @@ export async function importTrefin(
             receipt_no: clean(s.receipt_number).slice(0, 40),
             notes: lineNotes.length > 0 ? lineNotes.join('. ') : null,
           });
+          invoiceOf.push(
+            invoiced
+              ? {
+                  key: `${clean(s.source_db)}|${clean(s.receipt_number)}`,
+                  type: clean(s.doc_type),
+                  customer: clean(s.customer),
+                  code: clean(s.barcode) || clean(s.product_code) || null,
+                  name: clean(s.product_name),
+                  vatRate: VAT_RATES.includes(Math.round(vat)) ? Math.round(vat) : 18,
+                }
+              : null,
+          );
         }
-        if (rows.length > 0) await trx.insertInto('sales').values(rows).execute();
+        if (rows.length > 0) {
+          const inserted = await trx.insertInto('sales').values(rows).returning('id').execute();
+          invoiceOf.forEach((meta, index) => {
+            if (!meta) return;
+            const row = rows[index]!;
+            const invoice = invoices.get(meta.key) ?? { db: meta.key.slice(0, meta.key.indexOf('|')), number: meta.key.slice(meta.key.indexOf('|') + 1), type: meta.type, at: row.sale_date, customer: meta.customer, lines: [] };
+            invoice.lines.push({
+              saleId: inserted[index]!.id,
+              productId: row.product_id,
+              name: meta.name.slice(0, 200),
+              code: meta.code,
+              quantity: row.quantity_sold,
+              unitPrice: row.price_per_unit,
+              vatRate: meta.vatRate,
+              total: money(row.price_per_unit * row.quantity_sold),
+            });
+            invoices.set(meta.key, invoice);
+          });
+        }
         sales += rows.length;
+      }
+
+      // TREFIN's invoices over those sales: look-only, never on a tab, corrected or refunded from.
+      const headers = data.history ? trefinInvoiceHeaders(data.history) : new Map();
+      const invoicedIds = [...new Set([...invoices.values()].flatMap((invoice) => invoice.lines.map((line) => line.productId)))];
+      const productNames = new Map(
+        (invoicedIds.length > 0 ? await trx.selectFrom('products').select(['id', 'name']).where('id', 'in', invoicedIds).execute() : []).map((row) => [row.id, row.name]),
+      );
+      const seller = await trx.selectFrom('businesses').select(['name', 'nui', 'address', 'phone']).orderBy('id').executeTakeFirstOrThrow();
+      for (const invoice of invoices.values()) {
+        const header = headers.get(`${invoice.db}|${invoice.number}`);
+        const partner = header ? byKey.get(header.customerKey) : undefined;
+        const customerId = partner ? (customerIds.get(partner) ?? null) : null;
+        if (!customerId) note('invoices whose customer TREFIN no longer knew (name kept on the invoice)');
+        const lines = invoice.lines.map((line) => {
+          const net = money(line.total / (1 + line.vatRate / 100));
+          return { ...line, net, vat: money(line.total - net) };
+        });
+        const sum = (pick: (line: (typeof lines)[number]) => number) => money(lines.reduce((total, line) => total + pick(line), 0));
+        const created = await trx
+          .insertInto('documents')
+          .values({
+            kind: 'invoice',
+            number: invoice.number.slice(0, 20),
+            issued_at: invoice.at,
+            issued_by: null,
+            seller: JSON.stringify(seller),
+            customer_id: customerId,
+            buyer: JSON.stringify({ name: partner?.name ?? invoice.customer, nui: partner?.nui ?? null, address: partner?.address ?? null, phone: partner?.phone ?? partner?.mobile ?? null }),
+            corrects_id: null,
+            reason: [
+              `From TREFIN: ${SALE_TYPES[invoice.type] ?? 'invoice'} in ${DATABASE_LABELS[invoice.db] ?? invoice.db}.`,
+              !header ? '' : header.paidInTrefin !== null ? `Marked paid in TREFIN: €${header.paidInTrefin.toFixed(2)}.` : 'Not marked paid in TREFIN.',
+            ]
+              .filter(Boolean)
+              .join(' '),
+            net_total: sum((line) => line.net),
+            vat_total: sum((line) => line.vat),
+            total: sum((line) => line.total),
+            payment_method: 'account',
+            due_date: null,
+            trefin_ref: header?.ref ?? `${invoice.db}/${invoice.number}`,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx
+          .insertInto('document_lines')
+          .values(
+            lines.map((line) => ({
+              document_id: created.id,
+              sale_id: line.saleId,
+              return_id: null,
+              product_name: line.name || productNames.get(line.productId) || '',
+              product_code: line.code?.slice(0, 40) ?? null,
+              quantity: line.quantity,
+              unit_price: line.unitPrice,
+              discount_percent: null,
+              price_before_discount: null,
+              vat_rate: line.vatRate,
+              net_amount: line.net,
+              vat_amount: line.vat,
+              total: line.total,
+            })),
+          )
+          .execute();
+      }
+
+      // Receipts deleted in TREFIN, with who did it and when: never sales here, listed in Reports → Counter.
+      const deleted = data.history ? trefinDeletedReceipts(data.history) : [];
+      for (let i = 0; i < deleted.length; i += BATCH) {
+        await trx
+          .insertInto('trefin_deleted_receipts')
+          .values(
+            deleted.slice(i, i + BATCH).map((receipt) => ({
+              trefin_ref: receipt.ref,
+              number: receipt.number?.slice(0, 40) ?? null,
+              kind: receipt.kind,
+              sold_on: receipt.soldOn,
+              deleted_at: saleMoment(receipt.deletedAt.slice(0, 10), receipt.deletedAt.slice(11, 19), options.timeZone),
+              deleted_by: receipt.deletedBy?.slice(0, 80) ?? null,
+              customer: receipt.customer?.slice(0, 200) ?? null,
+              total: receipt.total,
+              lines: JSON.stringify(receipt.lines),
+            })),
+          )
+          .execute();
       }
 
       // Pairs that look like the same product
@@ -506,6 +643,44 @@ export async function importTrefin(
         if (bill.deleted) deletedBills++;
       }
 
+      // TREFIN's starting stocks, corrections and counts: history on each product, never a stock move here.
+      let stockLines = 0;
+      const stockDocuments = data.history ? trefinStockDocuments(data.history) : [];
+      for (const document of stockDocuments) {
+        const lines: Array<{ productId: number | null; name: string; quantity: number; counted: number | null; unitCost: number | null }> = [];
+        for (const line of document.lines) {
+          const productId = (await productFor({ db: document.db, code: line.code, barcode: line.barcode, name: line.name, price: 0 })) ?? null;
+          if (productId === null) note('stock lines for a product not in the list, kept by its TREFIN name');
+          lines.push({ productId, name: line.name, quantity: line.quantity, counted: line.counted, unitCost: line.unitCost });
+        }
+        const ids = [...new Set(lines.flatMap((line) => (line.productId === null ? [] : [line.productId])))];
+        const names = new Map<number, string>();
+        for (let i = 0; i < ids.length; i += BATCH) {
+          for (const row of await trx.selectFrom('products').select(['id', 'name']).where('id', 'in', ids.slice(i, i + BATCH)).execute()) names.set(row.id, row.name);
+        }
+        const { id } = await trx
+          .insertInto('trefin_stock_documents')
+          .values({ trefin_ref: document.ref.slice(0, 80), kind: document.kind, number: document.number?.slice(0, 40) ?? null, dated: document.dated, source: document.db })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        for (let i = 0; i < lines.length; i += BATCH) {
+          await trx
+            .insertInto('trefin_stock_lines')
+            .values(
+              lines.slice(i, i + BATCH).map((line) => ({
+                document_id: id,
+                product_id: line.productId,
+                product_name: (line.name || (line.productId !== null ? names.get(line.productId) : undefined) || 'Unknown product').slice(0, 200),
+                quantity: line.quantity,
+                counted: line.counted,
+                unit_cost: line.unitCost,
+              })),
+            )
+            .execute();
+        }
+        stockLines += lines.length;
+      }
+
       const created = {
         categories: newCategories,
         products: productIds.size,
@@ -518,6 +693,10 @@ export async function importTrefin(
         bills,
         billLines,
         deletedBills,
+        invoices: invoices.size,
+        deletedReceipts: deleted.length,
+        stockDocuments: stockDocuments.length,
+        stockLines,
       };
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${TREFIN_IMPORTED_KEY}, to_jsonb(now()::text), now())

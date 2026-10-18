@@ -41,6 +41,9 @@ async function main(): Promise<void> {
     console.log(`  duplicate pairs  ${created.duplicateFlags}  (to review)`);
     console.log(`  old products     ${created.oldProducts}  (inactive: an older database's code later went to another product)`);
     console.log(`  bills            ${created.bills}  (${created.billLines} lines, ${created.deletedBills} deleted in TREFIN; to look at only)`);
+    console.log(`  invoices         ${created.invoices}  (TREFIN's own, over its sales; to look at only)`);
+    console.log(`  deleted receipts ${created.deletedReceipts}  (deleted in TREFIN; in Reports → Counter)`);
+    console.log(`  stock documents  ${created.stockDocuments}  (${created.stockLines} lines: starting stock, corrections, counts; in Stock counts)`);
     console.log('\nWorth knowing:');
     for (const [what, n] of Object.entries(report.notes)) console.log(`  ${String(n).padStart(6)}  ${what}`);
     console.log(`\nTook ${((Date.now() - started) / 1000).toFixed(1)}s.`);

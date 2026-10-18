@@ -125,6 +125,39 @@ export interface StockAdjustment {
 export interface InventoryDetail extends InventoryItem {
   warnings: string[];
   recentAdjustments: StockAdjustment[];
+  /** Its lines in TREFIN's starting stocks, corrections and counts: history, they moved nothing here. */
+  trefinHistory: Array<{
+    id: number;
+    documentId: number;
+    kind: TrefinStockKind;
+    number: string | null;
+    /** "YYYY-MM-DD". */
+    dated: string;
+    source: string;
+    quantity: number;
+    counted: number | null;
+    unitCost: number | null;
+  }>;
+}
+
+export type TrefinStockKind = 'opening' | 'correction' | 'count';
+
+/** TREFIN's starting stock, a correction or a count: to look at, never a stock move here. */
+export interface TrefinStockDocument {
+  id: number;
+  kind: TrefinStockKind;
+  number: string | null;
+  /** "YYYY-MM-DD". */
+  dated: string;
+  /** Which TREFIN database (said in words by fromTrefin.databases). */
+  source: string;
+  lineCount: number;
+  /** The lines at TREFIN's cost. */
+  value: number;
+}
+
+export interface TrefinStockDocumentDetail extends TrefinStockDocument {
+  lines: Array<{ productId: number | null; productName: string; sku: string | null; quantity: number; counted: number | null; unitCost: number | null }>;
 }
 
 // Returns, damage and recounts have their own flows (Sales, Write off, Counts).
@@ -210,6 +243,8 @@ export interface SalesDocument extends DocumentRef {
   paymentMethod: 'till' | 'account';
   /** "YYYY-MM-DD": when an invoice on account is due. */
   dueDate: string | null;
+  /** An invoice TREFIN issued: history, to look at only. */
+  fromTrefin: boolean;
 }
 
 export interface SalesDocumentDetail extends SalesDocument {
@@ -2027,8 +2062,9 @@ export interface CounterPerson {
 }
 
 export interface CounterEvent {
+  /** Below zero for a receipt deleted in TREFIN. */
   id: number;
-  kind: CounterEventKind;
+  kind: CounterEventKind | 'trefin_deleted';
   user: { id: number; name: string } | null;
   product: { id: number; name: string } | null;
   quantity: number | null;
@@ -2036,6 +2072,15 @@ export interface CounterEvent {
   reason: string | null;
   document: { id: number; number: string } | null;
   at: string;
+  /** What TREFIN kept about a receipt deleted there. */
+  trefin: {
+    deletedBy: string | null;
+    number: string | null;
+    kind: 'receipt' | 'invoice';
+    soldOn: string;
+    customer: string | null;
+    lines: Array<{ name: string; quantity: number; total: number }>;
+  } | null;
 }
 
 /* ---------- One VAT month next to TREFIN ---------- */

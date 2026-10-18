@@ -56,6 +56,24 @@ export interface StockCountDto extends StockCountListItemDto {
   lines: StockCountLineDto[];
 }
 
+/** TREFIN's starting stock, a correction or a count: history to look at, never a stock move here. */
+export interface TrefinStockDocumentDto {
+  id: number;
+  kind: 'opening' | 'correction' | 'count';
+  number: string | null;
+  /** "YYYY-MM-DD". */
+  dated: string;
+  /** Which TREFIN database; the dashboard says it in words. */
+  source: string;
+  lineCount: number;
+  /** The lines at TREFIN's cost. */
+  value: number;
+}
+
+export interface TrefinStockDocumentDetailDto extends TrefinStockDocumentDto {
+  lines: Array<{ productId: number | null; productName: string; sku: string | null; quantity: number; counted: number | null; unitCost: number | null }>;
+}
+
 const RECENT_CLOSED_COUNTS = 20;
 
 export class StockCountService {
@@ -100,6 +118,27 @@ export class StockCountService {
         return item;
       }),
     );
+  }
+
+  async trefinList(): Promise<TrefinStockDocumentDto[]> {
+    return (await this.stockCountRepository.trefinDocuments()).map(toTrefinDocumentDto);
+  }
+
+  async trefinGet(id: number): Promise<TrefinStockDocumentDetailDto> {
+    const [document] = await this.stockCountRepository.trefinDocuments(id);
+    if (!document) throw new NotFoundError(`TREFIN stock document ${id} does not exist`);
+    const lines = await this.stockCountRepository.trefinLines(id);
+    return {
+      ...toTrefinDocumentDto(document),
+      lines: lines.map((line) => ({
+        productId: line.product_id,
+        productName: line.product_name,
+        sku: line.sku,
+        quantity: Number(line.quantity),
+        counted: line.counted === null ? null : Number(line.counted),
+        unitCost: line.unit_cost === null ? null : Number(line.unit_cost),
+      })),
+    };
   }
 
   async get(id: number, user: PublicUser): Promise<StockCountDto> {
@@ -327,4 +366,8 @@ function toCountDto(count: StockCountRecord, products: CountProductRow[], showEx
     },
     lines,
   };
+}
+
+function toTrefinDocumentDto(row: Awaited<ReturnType<StockCountRepository['trefinDocuments']>>[number]): TrefinStockDocumentDto {
+  return { id: row.id, kind: row.kind, number: row.number, dated: row.dated, source: row.source, lineCount: row.line_count, value: roundMoney(Number(row.value)) };
 }

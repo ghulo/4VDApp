@@ -43,6 +43,15 @@ export interface TrefinHistory {
   deletedBillLines: Record<string, Row[]>;
   /** tblDeleteDoc of each database: who deleted what, and when. */
   deleteLog: Record<string, Row[]>;
+  /** tblShitje of each database, invoices only (FSM, EKS): who they were to and whether they were paid. */
+  saleInvoices: Record<string, Row[]>;
+  /** tblShitje_Delete and _Detaje_Delete of each database. */
+  deletedSales: Record<string, Row[]>;
+  deletedSaleLines: Record<string, Row[]>;
+  /** tblInventari_Detaje of each database: every stock movement, sales and purchases included. */
+  stockMoves: Record<string, Row[]>;
+  /** tblInventari_INV of each database: stock counts. */
+  stockCounts: Record<string, Row[]>;
 }
 
 /** A small RFC 4180 reader: quoted fields, doubled quotes, commas and line breaks inside quotes, a BOM. */
@@ -98,6 +107,11 @@ export function readTrefinHistory(dir: string): TrefinHistory | undefined {
     deletedBills: each('tblBlerje_Delete'),
     deletedBillLines: each('tblBlerje_Detaje_Delete'),
     deleteLog: each('tblDeleteDoc'),
+    saleInvoices: Object.fromEntries(TREFIN_DATABASES.map((db) => [db, table(db, 'tblShitje').filter((row) => clean(row.LlojDok) !== 'KUP')])),
+    deletedSales: each('tblShitje_Delete'),
+    deletedSaleLines: each('tblShitje_Detaje_Delete'),
+    stockMoves: each('tblInventari_Detaje'),
+    stockCounts: each('tblInventari_INV'),
   };
 }
 
@@ -376,4 +390,148 @@ export function trefinBills(history: TrefinHistory): TrefinBill[] {
     }
   }
   return bills.sort((a, b) => a.issuedOn.localeCompare(b.issuedOn) || a.ref.localeCompare(b.ref));
+}
+
+/** What TREFIN kept about one of its invoices, found by "<database>|<invoice number>". */
+export interface TrefinInvoiceHeader {
+  ref: string;
+  customerKey: string;
+  /** TREFIN's own "paid" mark and amount. */
+  paidInTrefin: number | null;
+}
+
+export function trefinInvoiceHeaders(history: TrefinHistory): Map<string, TrefinInvoiceHeader> {
+  const headers = new Map<string, TrefinInvoiceHeader>();
+  for (const db of TREFIN_DATABASES) {
+    for (const row of history.saleInvoices[db] ?? []) {
+      headers.set(`${db}|${clean(row.NrFatura)}`, {
+        ref: `${db}/${clean(row.NrRen)}`,
+        customerKey: `${db}/${clean(row.NrKlient)}`,
+        paidInTrefin: row.PagesaPoJo === 'True' ? money(num(row.PagesaShuma)) : null,
+      });
+    }
+  }
+  return headers;
+}
+
+/** A receipt or invoice someone deleted in TREFIN. */
+export interface TrefinDeletedReceipt {
+  ref: string;
+  number: string | null;
+  kind: 'receipt' | 'invoice';
+  soldOn: string;
+  /** "YYYY-MM-DD HH:MM:SS" in the shop's time, or the day it was sold at noon when TREFIN didn't log it. */
+  deletedAt: string;
+  deletedBy: string | null;
+  /** Who it was sold to, when not TREFIN's "any customer". */
+  customer: string | null;
+  total: number;
+  lines: Array<{ name: string; quantity: number; total: number }>;
+}
+
+/**
+ * Every receipt deleted in TREFIN, once: today's database kept copies of the
+ * older one's deletions, so a receipt with the same number, day and total is
+ * taken once, from the newest database that still has its lines and log.
+ */
+export function trefinDeletedReceipts(history: TrefinHistory): TrefinDeletedReceipt[] {
+  const byTwin = new Map<string, TrefinDeletedReceipt>();
+  for (const db of TREFIN_DATABASES) {
+    const log = new Map((history.deleteLog[db] ?? []).map((row) => [`${clean(row.NrRen)}|${clean(row.LlojDok)}`, row]));
+    const linesOf = new Map<string, Row[]>();
+    for (const line of history.deletedSaleLines[db] ?? []) linesOf.set(clean(line.NrRen), [...(linesOf.get(clean(line.NrRen)) ?? []), line]);
+    const products = history.products[db];
+    for (const row of history.deletedSales[db] ?? []) {
+      const twin = `${clean(row.NrFatura)}|${day(row.Data)}|${money(num(row.Totali))}`;
+      const kept = byTwin.get(twin);
+      if (kept && kept.lines.length > 0 && kept.deletedBy !== null) continue;
+      const entry = log.get(`${clean(row.NrRen)}|${clean(row.LlojDok)}`);
+      const customer = entry && !GENERIC_PARTNERS.has(clean(row.NrKlient)) ? clean(entry.EmerKlient) || null : null;
+      const receipt: TrefinDeletedReceipt = {
+        ref: `${db}/${clean(row.NrRen)}`,
+        number: filled(row.NrFatura),
+        kind: clean(row.LlojDok) === 'KUP' ? 'receipt' : 'invoice',
+        soldOn: day(row.Data),
+        deletedAt: clean(entry?.DataDelete) || `${day(row.Data)} 12:00:00`,
+        deletedBy: entry ? clean(entry.EmerUser) || null : null,
+        customer,
+        total: money(num(row.Totali)),
+        lines: (linesOf.get(clean(row.NrRen)) ?? []).map((line) => ({
+          name: products?.get(clean(line.NrArt))?.name || clean(line.PershkrimiArt) || `Code ${clean(line.NrArt)}`,
+          quantity: num(line.Sasia),
+          total: money(num(line.Totali)),
+        })),
+      };
+      // An older copy fills in what the newer one lost.
+      byTwin.set(
+        twin,
+        kept
+          ? {
+              ...kept,
+              lines: kept.lines.length > 0 ? kept.lines : receipt.lines,
+              deletedBy: kept.deletedBy ?? receipt.deletedBy,
+              deletedAt: kept.deletedBy !== null ? kept.deletedAt : receipt.deletedAt,
+              customer: kept.customer ?? receipt.customer,
+            }
+          : receipt,
+      );
+    }
+  }
+  return [...byTwin.values()].sort((a, b) => a.deletedAt.localeCompare(b.deletedAt) || a.ref.localeCompare(b.ref));
+}
+
+/** One of TREFIN's own stock documents: a database's starting stock, a correction, or a count. */
+export interface TrefinStockDocument {
+  ref: string;
+  db: string;
+  kind: 'opening' | 'correction' | 'count';
+  number: string | null;
+  /** "YYYY-MM-DD". */
+  dated: string;
+  lines: Array<{ code: string; barcode: string; name: string; quantity: number; counted: number | null; unitCost: number | null }>;
+}
+
+/**
+ * TREFIN's stock documents that aren't a sale or a purchase (those come in as
+ * sales and bills): each database's starting stock (GJF, only products it
+ * had), stock corrections (REGJ) and counts (tblInventari_INV). TREFIN dates
+ * every starting stock 1 Jan 2022, so it takes the day of the database's
+ * first other movement. A count kept in two databases is taken once.
+ */
+export function trefinStockDocuments(history: TrefinHistory): TrefinStockDocument[] {
+  const documents = new Map<string, TrefinStockDocument>();
+  const cost = (value: string | undefined) => (num(value) > 0 ? Math.round(num(value) * 10000) / 10000 : null);
+  for (const db of TREFIN_DATABASES) {
+    const products = history.products[db];
+    const product = (code: string) => ({ code, barcode: products?.get(code)?.barcode ?? '', name: products?.get(code)?.name ?? '' });
+    const moves = history.stockMoves[db] ?? [];
+    const opening = moves.filter((row) => clean(row.LlojDok) === 'GJF' && num(row.Sasia_Pranuar) !== 0);
+    if (opening.length > 0) {
+      const first = moves.reduce((min, row) => (clean(row.LlojDok) !== 'GJF' && day(row.Data) < min ? day(row.Data) : min), '9999-12-31');
+      documents.set(`${db}/opening`, {
+        ref: `${db}/opening`,
+        db,
+        kind: 'opening',
+        number: null,
+        dated: first === '9999-12-31' ? day(opening[0]!.Data) : first,
+        lines: opening.map((row) => ({ ...product(clean(row.NrArt)), quantity: num(row.Sasia_Pranuar), counted: null, unitCost: cost(row.Kostoja) })),
+      });
+    }
+    for (const row of moves.filter((move) => clean(move.LlojDok) === 'REGJ')) {
+      const ref = `${db}/${clean(row.NrRen)}`;
+      const document = documents.get(ref) ?? { ref, db, kind: 'correction' as const, number: filled(row.NrFatura), dated: day(row.Data), lines: [] };
+      document.lines.push({ ...product(clean(row.NrArt)), quantity: num(row.Sasia), counted: null, unitCost: cost(row.Kostoja) });
+      documents.set(ref, document);
+    }
+    for (const row of history.stockCounts[db] ?? []) {
+      const twin = `count/${clean(row.NrFatura)}|${day(row.Data)}`;
+      const ref = `${db}/${clean(row.NrRen)}`;
+      // A newer database copies an older one's counts: the older one, where it was made, wins.
+      const kept = documents.get(twin);
+      const document = kept && kept.db === db ? kept : { ref, db, kind: 'count' as const, number: filled(row.NrFatura), dated: day(row.Data), lines: [] };
+      document.lines.push({ ...product(clean(row.NrArt)), quantity: num(row.SasiaM), counted: num(row.Sasia), unitCost: cost(row.CmimiB) });
+      documents.set(twin, document);
+    }
+  }
+  return [...documents.values()].sort((a, b) => a.dated.localeCompare(b.dated) || a.ref.localeCompare(b.ref));
 }

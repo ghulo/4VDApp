@@ -1,11 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../i18n/useT';
 import { counterApi } from '../services/api';
-import { formatDateTime, formatMoney } from '../utils/format';
+import type { CounterEvent, RecordSource } from '../services/types';
+import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import { periodDays } from '../utils/periods';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
+import { SourceFilter, TrefinTag } from './TrefinParts';
 import { DataTable, Section } from './ui';
 
 /**
@@ -17,7 +19,12 @@ export function CounterReport({ range }: { range: { startDate: string; endDate: 
   const t = useT();
   const days = useMemo(() => periodDays(range), [range]);
   const people = useQuery({ queryKey: ['counter', 'people', days], queryFn: () => counterApi.people(days), placeholderData: keepPreviousData });
-  const events = useQuery({ queryKey: ['counter', 'events', days], queryFn: () => counterApi.events(days), placeholderData: keepPreviousData });
+  const [source, setSource] = useState<RecordSource | undefined>();
+  const events = useQuery({
+    queryKey: ['counter', 'events', days, source],
+    queryFn: () => counterApi.events({ ...days, source }),
+    placeholderData: keepPreviousData,
+  });
   const sum = (pick: (row: NonNullable<typeof people.data>[number]) => number) => (people.data ?? []).reduce((total, row) => total + pick(row), 0);
 
   return (
@@ -82,15 +89,32 @@ export function CounterReport({ range }: { range: { startDate: string; endDate: 
             caption={t.counterReport.events}
             rows={events.data ?? []}
             rowKey={(row) => row.id}
+            toolbar={
+              <div className="toolbar">
+                <SourceFilter value={source} onChange={setSource} />
+              </div>
+            }
             empty={<EmptyState title={t.counterReport.emptyEvents}>{t.counterReport.emptyEventsHint}</EmptyState>}
             columns={[
               { header: t.counterReport.when, cell: (row) => formatDateTime(row.at) },
-              { header: t.counterReport.what, title: true, cell: (row) => t.counterReport.kinds[row.kind] },
-              { header: t.counterReport.who, cell: (row) => row.user?.name ?? '—' },
+              {
+                header: t.counterReport.what,
+                title: true,
+                cell: (row) =>
+                  row.trefin ? (
+                    <>
+                      {t.counterReport.kinds[row.kind]} <TrefinTag />
+                    </>
+                  ) : (
+                    t.counterReport.kinds[row.kind]
+                  ),
+              },
+              { header: t.counterReport.who, cell: (row) => row.user?.name ?? row.trefin?.deletedBy ?? '—' },
               {
                 header: t.counterReport.detail,
                 cell: (row) => (
                   <>
+                    {row.trefin && <TrefinDetail trefin={row.trefin} />}
                     {row.product && <span>{row.quantity !== null ? `${row.quantity} × ${row.product.name}` : row.product.name}</span>}
                     {row.document && (
                       <Link to={`/documents/${row.document.id}`} className="table__primary-link">
@@ -106,6 +130,22 @@ export function CounterReport({ range }: { range: { startDate: string; endDate: 
           />
         )}
       </Section>
+    </>
+  );
+}
+
+/** What TREFIN kept about a deleted receipt: its number, the day it was sold, who to, and its lines. */
+function TrefinDetail({ trefin }: { trefin: NonNullable<CounterEvent['trefin']> }) {
+  const t = useT();
+  const day = formatDate(`${trefin.soldOn}T12:00:00`);
+  const number = trefin.number ?? '—';
+  return (
+    <>
+      <span>{trefin.kind === 'invoice' ? t.fromTrefin.deletedInvoice(number, day) : t.fromTrefin.deletedReceipt(number, day)}</span>
+      {trefin.customer && <span className="table__secondary">{trefin.customer}</span>}
+      {trefin.lines.length > 0 && (
+        <span className="table__secondary">{trefin.lines.map((line) => `${line.quantity} × ${line.name}`).join(', ')}</span>
+      )}
     </>
   );
 }

@@ -81,6 +81,21 @@ function sample(): TrefinExport {
   };
 }
 
+const EACH = { MARKET_2025: [], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] };
+const noSalesHistory = { saleInvoices: EACH, deletedSales: EACH, deletedSaleLines: EACH };
+const noStockHistory = { stockMoves: EACH, stockCounts: EACH };
+const emptyHistory = () => ({
+  partners: EACH,
+  products: { MARKET_2025: new Map(), MARKET_2022: new Map(), MARKET_2022_FINAL_2023_05_26: new Map() },
+  bills: EACH,
+  billLines: [],
+  deletedBills: EACH,
+  deletedBillLines: EACH,
+  deleteLog: EACH,
+  ...noSalesHistory,
+  ...noStockHistory,
+});
+
 const count = async (table: 'products' | 'sales' | 'suppliers' | 'customers' | 'product_duplicate_flags') =>
   Number((await context.db.selectFrom(table).select((eb) => eb.fn.countAll<string>().as('n')).executeTakeFirstOrThrow()).n);
 
@@ -194,6 +209,8 @@ describe('importTrefin', () => {
       deletedBills: { MARKET_2025: [header('30', 'F-30', '2025-06-01', '700005', '5.00')], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
       deletedBillLines: { MARKET_2025: [{ NrRen: '30', NrArt: '339', Sasia: '2', Cmimi: '2.12', Vlera: '4.24', TVSH: '0.76' }], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
       deleteLog: { MARKET_2025: [{ NrRen: '30', LlojDok: 'FBM', DataDelete: '2025-06-02 09:15:00', EmerUser: 'Administratori', EmerKlient: 'BEL-KOS SH.P.K.' }], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
+      ...noSalesHistory,
+      ...noStockHistory,
     };
     data.sales.push(line('K-23-00000009', '339', '1', '1.00', { source_db: 'MARKET_2022', barcode: '8600000000001', product_name: 'Twix 50g', sale_date: '2024-05-04' }));
 
@@ -242,6 +259,108 @@ describe('importTrefin', () => {
 
     const imported = await request(context.app).get('/api/sales/checkouts?source=4vd').set(auth);
     expect(imported.body.data.checkouts).toEqual([]);
+  });
+
+  it("should make TREFIN's invoices look-only invoices and list its deleted receipts in the counter report", async () => {
+    const data = sample();
+    data.customers.push({ code: '700108', name: 'G Pastrimi SH.P.K.', nui_unique_id: '811111112', balance_they_owe_us: '0' });
+    const invoiceLine = (number: string, code: string, quantity: string, total: string) =>
+      line(number, code, quantity, total, { source_db: 'MARKET_2025', doc_type: 'FSM', doc_type_description: 'Sales invoice', customer: 'G Pastrimi SH.P.K.', payment_method: 'on account (invoice)', sale_date: '2025-04-18', sale_time: '10:00:00' });
+    data.sales.push(invoiceLine('FSM-25-000002', '339', '4', '2.00'), invoiceLine('FSM-25-000002', '679', '1', '3.60'));
+    data.sales.push(line('K-26-00000010', '339', '1', '0.50', { payment_method: 'bank/card' }));
+    const history = emptyHistory();
+    data.history = {
+      ...history,
+      products: { ...history.products, MARKET_2022: new Map([['339', { barcode: '', name: 'Golden Eagle (old)' }]]) },
+      saleInvoices: { ...EACH, MARKET_2025: [{ NrRen: '55', NrFatura: 'FSM-25-000002', LlojDok: 'FSM', NrKlient: '700108', PagesaPoJo: 'False', PagesaShuma: '0' }] },
+      // MARKET_2025 kept a copy of MARKET_2022's deletion: it is taken once.
+      deletedSales: {
+        ...EACH,
+        MARKET_2025: [{ NrRen: '900', NrFatura: 'K-23-00000819', Data: '2023-06-06 00:00:00', LlojDok: 'KUP', NrKlient: '700001', Totali: '2.6' }],
+        MARKET_2022: [{ NrRen: '23320', NrFatura: 'K-23-00000819', Data: '2023-06-06 00:00:00', LlojDok: 'KUP', NrKlient: '700001', Totali: '2.6' }],
+      },
+      deletedSaleLines: { ...EACH, MARKET_2022: [{ NrRen: '23320', NrArt: '339', Sasia: '2', Totali: '2.6' }] },
+      deleteLog: { ...EACH, MARKET_2022: [{ NrRen: '23320', LlojDok: 'KUP', DataDelete: '2023-06-06 17:20:00', EmerUser: 'Administratori', EmerKlient: 'Bleres te ndryshem' }] },
+    };
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ invoices: 1, deletedReceipts: 1 });
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    const documents = (await request(context.app).get('/api/documents?source=trefin').set(auth)).body.data as Array<Record<string, unknown>>;
+    expect(documents).toHaveLength(1);
+    expect(documents[0]).toMatchObject({ number: 'FSM-25-000002', fromTrefin: true, total: 5.6, paymentMethod: 'account', dueDate: null });
+    expect(documents[0]!.reason).toBe('From TREFIN: sales invoice in its books from Mar 2025 on. Not marked paid in TREFIN.');
+    expect(documents[0]!.buyer).toMatchObject({ name: 'G Pastrimi SH.P.K.', nui: '811111112' });
+    expect((await request(context.app).get('/api/documents?source=4vd').set(auth)).body.data).toEqual([]);
+    const id = documents[0]!.id as number;
+    const detail = (await request(context.app).get(`/api/documents/${id}`).set(auth)).body.data as { lines: Array<Record<string, unknown>> };
+    expect(detail.lines.map((row) => [row.productName, row.quantity, row.vatRate, row.total])).toEqual([
+      ['Golden Eagle 0.25L', 4, 18, 2],
+      ['Marlboro Gold', 1, 18, 3.6],
+    ]);
+    // Never changed here, nothing given back from it, never on a tab.
+    expect((await request(context.app).put(`/api/documents/${id}/fiscal-receipt`).set(auth).send({ fiscalReceiptNo: '123' })).status).toBe(409);
+    expect((await request(context.app).get('/api/counter/receipts?number=FSM-25-000002').set(auth)).body.data).toEqual([]);
+    const customer = await context.db.selectFrom('customers').select('id').where('name', '=', 'G Pastrimi SH.P.K.').executeTakeFirstOrThrow();
+    expect((await request(context.app).get(`/api/customers/${customer.id}`).set(auth)).body.data.balance).toBe(0);
+
+    const card = await context.db.selectFrom('sales').select('notes').where('receipt_no', '=', 'K-26-00000010').executeTakeFirstOrThrow();
+    expect(card.notes).toBe('Paid by card or bank in TREFIN');
+
+    const events = (await request(context.app).get('/api/counter/events?from=2023-06-01&to=2023-06-30').set(auth)).body.data as Array<Record<string, unknown>>;
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ kind: 'trefin_deleted', amount: 2.6, trefin: { deletedBy: 'Administratori', number: 'K-23-00000819', soldOn: '2023-06-06', customer: null, lines: [{ name: 'Golden Eagle (old)', quantity: 2, total: 2.6 }] } });
+    expect(events[0]!.at).toBe('2023-06-06T15:20:00.000Z');
+    expect((await request(context.app).get('/api/counter/events?from=2023-06-01&to=2023-06-30&source=4vd').set(auth)).body.data).toEqual([]);
+  });
+
+  it("should keep TREFIN's starting stock, corrections and counts as history on each product, moving no stock", async () => {
+    const data = sample();
+    const move = (type: string, code: string, extra: Record<string, string>) => ({ LlojDok: type, NrArt: code, Sasia_Pranuar: '0', Sasia: '0', Kostoja: '0', ...extra });
+    const counted = (db: string) => [{ NrRen: db === 'MARKET_2025' ? '7' : '46253', NrFatura: 'INV-24-000001', Data: '2024-04-25 00:00:00', NrArt: '339', Sasia: '0', SasiaM: '-5', CmimiB: '0.3' }];
+    data.history = {
+      ...emptyHistory(),
+      stockMoves: {
+        ...EACH,
+        // TREFIN dates every starting stock 1 Jan 2022; the database's first other movement says when it really began.
+        MARKET_2025: [
+          move('GJF', '339', { Data: '2022-01-01 00:00:00', Sasia_Pranuar: '9', Kostoja: '0.3' }),
+          move('GJF', '679', { Data: '2022-01-01 00:00:00' }),
+          move('KUP', '339', { Data: '2025-03-15 00:00:00', Sasia: '1' }),
+        ],
+        MARKET_2022: [move('REGJ', '339', { Data: '2024-04-24 00:00:00', NrRen: '46258', NrFatura: 'REGJ-1', Sasia: '5', Kostoja: '0.3' })],
+      },
+      // The same count kept in two databases is taken once.
+      stockCounts: { ...EACH, MARKET_2025: counted('MARKET_2025'), MARKET_2022: counted('MARKET_2022') },
+    };
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ stockDocuments: 3, stockLines: 3 });
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    const documents = (await request(context.app).get('/api/stock-counts/trefin').set(auth)).body.data as Array<Record<string, unknown>>;
+    expect(documents.map((row) => [row.kind, row.number, row.dated, row.lineCount, row.value])).toEqual([
+      ['opening', null, '2025-03-15', 1, 2.7],
+      ['count', 'INV-24-000001', '2024-04-25', 1, -1.5],
+      ['correction', 'REGJ-1', '2024-04-24', 1, 1.5],
+    ]);
+    expect(documents[0]!.source).toBe('MARKET_2025');
+    const count = (await request(context.app).get(`/api/stock-counts/trefin/${documents[1]!.id}`).set(auth)).body.data as { lines: Array<Record<string, unknown>> };
+    expect(count.lines).toEqual([{ productId: expect.any(Number), productName: 'Golden Eagle 0.25L', sku: '339', quantity: -5, counted: 0, unitCost: 0.3 }]);
+
+    const productId = count.lines[0]!.productId as number;
+    const stock = (await request(context.app).get(`/api/inventory/${productId}`).set(auth)).body.data as { quantity: number; trefinHistory: Array<Record<string, unknown>> };
+    expect(stock.trefinHistory.map((row) => [row.kind, row.quantity, row.counted])).toEqual([
+      ['opening', 9, null],
+      ['count', -5, 0],
+      ['correction', 5, null],
+    ]);
+    // History only: the stock is still what TREFIN said it was on the day of the export.
+    expect(stock.quantity).toBe(12);
+    expect((await request(context.app).get('/api/stock-counts/trefin/999999').set(auth)).status).toBe(404);
   });
 
   it('should refuse a shop that already has products, and a second import', async () => {

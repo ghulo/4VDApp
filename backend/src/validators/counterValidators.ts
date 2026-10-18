@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { periodSchema } from './moneyValidators.js';
-import { idSchema, optionalText, trimmedString } from './validate.js';
+import { idSchema, optionalText, recordSourceSchema, trimmedString } from './validate.js';
 
 /** The printer's tax group for one VAT rate (Datecs groups 1-8); null when not set yet. */
 const taxGroup = z.number().int().min(1).max(8).nullable();
@@ -31,7 +31,7 @@ export const counterEventsSchema = z.object({ events: z.array(eventSchema).min(1
 
 export const counterReportSchema = periodSchema;
 
-export const counterEventsQuerySchema = z.intersection(periodSchema, z.object({ userId: idSchema.optional() }));
+export const counterEventsQuerySchema = z.intersection(periodSchema, z.object({ userId: idSchema.optional(), source: recordSourceSchema.optional() }));
 
 /** An invoice number as printed under its barcode ("INV-26-000123"). */
 export const counterReceiptsQuerySchema = z.object({ number: z.string().trim().min(1).max(40).optional() });

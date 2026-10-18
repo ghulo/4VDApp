@@ -1,4 +1,4 @@
-import type { CounterEventKind } from '../database/types.js';
+import type { CounterEventKind, TrefinReceiptLine } from '../database/types.js';
 import type { CounterRepository } from '../repositories/CounterRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
@@ -53,8 +53,9 @@ export interface CounterPersonDto {
 }
 
 export interface CounterEventDto {
+  /** Below 0 for a receipt deleted in TREFIN. */
   id: number;
-  kind: CounterEventKind;
+  kind: CounterEventKind | 'trefin_deleted';
   user: { id: number; name: string } | null;
   product: { id: number; name: string } | null;
   quantity: number | null;
@@ -62,6 +63,8 @@ export interface CounterEventDto {
   reason: string | null;
   document: { id: number; number: string } | null;
   at: string;
+  /** A receipt someone deleted in TREFIN: who (TREFIN's user name) and what it held. */
+  trefin: { deletedBy: string | null; number: string | null; kind: 'receipt' | 'invoice'; soldOn: string; customer: string | null; lines: TrefinReceiptLine[] } | null;
 }
 
 export interface CounterReceiptDto {
@@ -216,9 +219,25 @@ export class CounterService {
     }));
   }
 
-  async events(period: { from: string; to: string; userId?: number }): Promise<CounterEventDto[]> {
-    const rows = await this.counterRepository.events(period.from, period.to, this.timeZone, period.userId);
-    return rows.map((row) => ({
+  async events(period: { from: string; to: string; userId?: number; source?: 'trefin' | '4vd' }): Promise<CounterEventDto[]> {
+    // TREFIN's deletions have no 4VD person, so asking for one person's moments leaves them out.
+    const [rows, deletions] = await Promise.all([
+      period.source === 'trefin' ? [] : this.counterRepository.events(period.from, period.to, this.timeZone, period.userId),
+      period.source === '4vd' || period.userId !== undefined ? [] : this.counterRepository.trefinDeletions(period.from, period.to, this.timeZone),
+    ]);
+    const fromTrefin: CounterEventDto[] = deletions.map((row) => ({
+      id: -row.id,
+      kind: 'trefin_deleted',
+      user: null,
+      product: null,
+      quantity: null,
+      amount: Number(row.total),
+      reason: null,
+      document: null,
+      at: row.deleted_at.toISOString(),
+      trefin: { deletedBy: row.deleted_by, number: row.number, kind: row.kind, soldOn: row.sold_on, customer: row.customer, lines: row.lines },
+    }));
+    const own: CounterEventDto[] = rows.map((row) => ({
       id: row.id,
       kind: row.kind,
       user: row.user_id === null ? null : { id: row.user_id, name: row.user_name ?? '' },
@@ -228,6 +247,8 @@ export class CounterService {
       reason: row.reason,
       document: row.document_id === null ? null : { id: row.document_id, number: row.document_number ?? '' },
       at: row.created_at.toISOString(),
+      trefin: null,
     }));
+    return [...own, ...fromTrefin].sort((a, b) => b.at.localeCompare(a.at));
   }
 }

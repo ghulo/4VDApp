@@ -13,6 +13,7 @@ import { EntriesPanel } from '../components/BooksParts';
 import { HistoryCard } from '../components/HistoryCard';
 import { QuestionsCard } from '../components/QuestionsCard';
 import { useCurrentUser } from '../auth/useAuth';
+import { TrefinTag } from '../components/TrefinParts';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
@@ -31,8 +32,13 @@ export function DocumentDetailPage() {
       <PageHeader
         title={doc.number}
         crumbs={[{ label: t.nav.items.sales, to: '/documents' }]}
-        meta={<Badge tone={doc.kind === 'invoice' ? 'neutral' : 'warn'}>{t.documents.kinds[doc.kind]}</Badge>}
-        description={t.documents.issuedOn({ when: formatDateTime(doc.issuedAt), by: doc.issuedBy ?? t.sales.unknown })}
+        meta={
+          <>
+            <Badge tone={doc.kind === 'invoice' ? 'neutral' : 'warn'}>{t.documents.kinds[doc.kind]}</Badge>
+            {doc.fromTrefin && <TrefinTag />}
+          </>
+        }
+        description={doc.fromTrefin ? formatDateTime(doc.issuedAt) : t.documents.issuedOn({ when: formatDateTime(doc.issuedAt), by: doc.issuedBy ?? t.sales.unknown })}
         actions={<PrintDocumentButton document={doc} variant="primary" />}
       />
 
@@ -43,7 +49,13 @@ export function DocumentDetailPage() {
           {doc.reason && <> · {t.documents.reason}: {doc.reason}</>}
         </p>
       )}
-      {!doc.corrects && doc.reason && (
+      {doc.fromTrefin && (
+        <div className="callout document-note">
+          <p>{t.fromTrefin.invoiceNote}</p>
+          {doc.reason && <p className="field-hint">{doc.reason}</p>}
+        </div>
+      )}
+      {!doc.corrects && !doc.fromTrefin && doc.reason && (
         <p className="callout document-note">
           {t.documents.reason}: {doc.reason}
         </p>
@@ -86,10 +98,12 @@ export function DocumentDetailPage() {
               <dd>{t.documents.netAndVat({ net: formatMoney(row.net), vat: formatMoney(row.vat) })}</dd>
             </div>
           ))}
-          <div>
-            <dt>{t.documents.payment}</dt>
-            <dd>{paymentText(doc, t)}</dd>
-          </div>
+          {!doc.fromTrefin && (
+            <div>
+              <dt>{t.documents.payment}</dt>
+              <dd>{paymentText(doc, t)}</dd>
+            </div>
+          )}
           <div>
             <dt>{t.documents.netTotal}</dt>
             <dd>{formatMoney(doc.netTotal)}</dd>
@@ -105,9 +119,9 @@ export function DocumentDetailPage() {
         </dl>
       </Card>
 
-      {matchesReceipts && <FiscalReceiptCard document={doc} />}
+      {matchesReceipts && !doc.fromTrefin && <FiscalReceiptCard document={doc} />}
       <QuestionsCard kind="document" id={doc.id} />
-      <EntriesPanel source="document" id={doc.id} />
+      {!doc.fromTrefin && <EntriesPanel source="document" id={doc.id} />}
       <HistoryCard entityType="document" entityId={doc.id} />
     </>
   );

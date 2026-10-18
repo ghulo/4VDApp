@@ -32,6 +32,8 @@ export interface DocumentRecord {
   payment_method: DocumentPaymentMethod;
   /** "YYYY-MM-DD", for invoices paid on account. */
   due_date: string | null;
+  /** Set on an invoice TREFIN issued: history only. */
+  trefin_ref: string | null;
 }
 
 export interface DocumentLineRecord {
@@ -98,6 +100,8 @@ export interface DocumentFilters {
   customerId?: number;
   startDate?: Date;
   endDate?: Date;
+  /** 4VD's own documents, or TREFIN's. */
+  source?: 'trefin' | '4vd';
   limit: number;
   offset: number;
 }
@@ -226,6 +230,7 @@ export class DocumentRepository {
         'd.fiscal_receipt_no',
         'd.payment_method',
         sql<string | null>`to_char(d.due_date, 'YYYY-MM-DD')`.as('due_date'),
+        'd.trefin_ref',
       ]);
   }
 
@@ -235,6 +240,7 @@ export class DocumentRepository {
     if (filters.customerId) query = query.where('d.customer_id', '=', filters.customerId);
     if (filters.startDate) query = query.where('d.issued_at', '>=', filters.startDate);
     if (filters.endDate) query = query.where('d.issued_at', '<', filters.endDate);
+    if (filters.source) query = query.where('d.trefin_ref', filters.source === 'trefin' ? 'is not' : 'is', null);
     if (filters.search) {
       const pattern = `%${escapeLikePattern(filters.search)}%`;
       query = query.where((eb) => eb.or([eb('d.number', 'ilike', pattern), eb(sql`d.buyer->>'name'`, 'ilike', pattern)]));
@@ -301,6 +307,8 @@ export class DocumentRepository {
       .select(['d.id as document_id', 'd.customer_id', 'd.buyer', 'd.payment_method', 'l.product_name', 'l.product_code', 'l.discount_percent', 'l.price_before_discount', 'l.vat_rate', 'l.vat_exempt'])
       .where('l.sale_id', '=', saleId)
       .where('d.kind', '=', 'invoice')
+      // TREFIN's invoices are history: a return of their sales issues nothing against them.
+      .where('d.trefin_ref', 'is', null)
       .orderBy('d.id', 'desc')
       .executeTakeFirst();
   }

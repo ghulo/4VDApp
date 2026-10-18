@@ -166,6 +166,17 @@ export class CounterRepository {
     return query.execute();
   }
 
+  /** Receipts deleted in TREFIN in these days, newest first. */
+  trefinDeletions(from: string, to: string, timeZone: string) {
+    return this.db
+      .selectFrom('trefin_deleted_receipts')
+      .select(['id', 'number', 'kind', sql<string>`to_char(sold_on, 'YYYY-MM-DD')`.as('sold_on'), 'deleted_at', 'deleted_by', 'customer', 'total', 'lines'])
+      .where(inDays(sql.ref('deleted_at'), from, to, timeZone))
+      .orderBy('deleted_at', 'desc')
+      .limit(500)
+      .execute();
+  }
+
   /** Invoices with their lines, newest first: one day's, or the one with this number. */
   async receipts(p: { number?: string; day?: string; timeZone: string }): Promise<{ receipts: CounterReceiptRow[]; lines: CounterReceiptLineRow[] }> {
     let query = this.db
@@ -173,6 +184,8 @@ export class CounterRepository {
       .leftJoin('users as u', 'u.id', 'd.issued_by')
       .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.fiscal_receipt_no', 'u.name as issued_by_name'])
       .where('d.kind', '=', 'invoice')
+      // Nothing is given back from TREFIN's invoices here.
+      .where('d.trefin_ref', 'is', null)
       .orderBy('d.issued_at', 'desc')
       .limit(60);
     if (p.number !== undefined) query = query.where(sql<boolean>`upper(d.number) = upper(${p.number})`);

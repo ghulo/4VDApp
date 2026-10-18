@@ -12,6 +12,7 @@ import { createDocumentRoutes } from './documentRoutes.js';
 import { createBillRoutes } from './billRoutes.js';
 import { createBooksRoutes } from './booksRoutes.js';
 import { createMoneyRoutes } from './moneyRoutes.js';
+import { createCounterRoutes } from './counterRoutes.js';
 import { createBillScanRoutes } from './billScanRoutes.js';
 import { createProductRequestRoutes } from './productRequestRoutes.js';
 import { createOrderRoutes, createSupplierRoutes } from './orderRoutes.js';
@@ -73,6 +74,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/bills', createBillRoutes(container));
   router.use('/books', createBooksRoutes(container));
   router.use('/money', createMoneyRoutes(container));
+  router.use('/counter', createCounterRoutes(container));
   router.use('/vat', createVatRoutes(container));
   router.use('/threads', createThreadRoutes(container));
   router.use('/bill-scans', createBillScanRoutes(container));

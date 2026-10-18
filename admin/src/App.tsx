@@ -81,6 +81,7 @@ const StockCountDetailPage = lazyPage(() => import('./pages/StockCountDetailPage
 const StockCountsPage = lazyPage(() => import('./pages/StockCountsPage'), 'StockCountsPage');
 const PersonPage = lazyPage(() => import('./pages/UsersPage'), 'PersonPage');
 const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
+const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,15 @@ function App() {
                   <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
                   <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
                   <Route path="/invite/:token" element={<AcceptInvitePage />} />
+                  {/* The Counter fills the screen: no menu, no top bar. */}
+                  <Route
+                    path="/counter"
+                    element={
+                      <RequireAuth>
+                        <CounterPage />
+                      </RequireAuth>
+                    }
+                  />
                   <Route
                     element={
                       <RequireAuth>
@@ -179,6 +189,7 @@ function App() {
                       <Route path="report" element={<ReportPage />} />
                       <Route path="reports" element={<ReportsPage view="figures" />} />
                       <Route path="reports/team" element={<ReportsPage view="team" />} />
+                      <Route path="reports/counter" element={<ReportsPage view="counter" />} />
                       <Route path="reports/profit" element={<ReportsPage view="profit" />} />
                       <Route path="reports/downloads" element={<ReportsPage view="downloads" />} />
                     </Route>

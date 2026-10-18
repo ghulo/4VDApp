@@ -1,6 +1,7 @@
 import {
   Bank,
   Books,
+  CashRegister,
   ChartLine,
   ClipboardText,
   ClockCounterClockwise,
@@ -91,6 +92,7 @@ export const SECTIONS = {
     { to: '/report', key: 'report', accountant: true },
     { to: '/reports', key: 'analytics', keepSearch: true },
     { to: '/reports/team', key: 'team', keepSearch: true },
+    { to: '/reports/counter', key: 'counter', keepSearch: true },
     { to: '/reports/profit', key: 'profit', keepSearch: true, accountant: true },
     { to: '/reports/downloads', key: 'downloads', keepSearch: true, accountant: true },
   ],
@@ -109,6 +111,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'sell',
     items: [
+      { to: '/counter', key: 'counter', icon: CashRegister },
       { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents'], accountant: true },
       { to: '/customers', key: 'customers', icon: AddressBook, accountant: true },
       { to: '/promotions', key: 'promotions', icon: Percent },

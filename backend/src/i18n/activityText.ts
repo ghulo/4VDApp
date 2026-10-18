@@ -116,6 +116,9 @@ const en = {
     `Issued ${p.kind === 'invoice' ? 'invoice' : 'credit note'} ${p.number} for ${w.money(p.total)}`,
   fiscalReceiptLinked: (p: { number: string; receipt: string }) => `Linked ${p.number} to fiscal receipt ${p.receipt}`,
   fiscalReceiptRemoved: (p: { number: string }) => `Removed the fiscal receipt from ${p.number}`,
+  counterSettingsChanged: () => 'Changed the counter settings (fiscal printer, receipt footer, drawer)',
+  printerReport: (p: { kind: 'x' | 'z' }): string => (p.kind === 'z' ? "Ran the fiscal printer's Z report (closes the fiscal day)" : "Printed the fiscal printer's X report"),
+  drawerOpened: (p: { reason: string }) => `Opened the drawer without a sale: ${p.reason}`,
 
   expenseAdded: (p: { amount: number; category: string; at: ExpensePlace; day: string; monthly: boolean }, w: Words) =>
     `Added an expense: ${w.money(p.amount)} for ${EN_EXPENSE[p.category] ?? p.category} (${'carwash' in p.at ? `${p.at.carwash} carwash` : p.at.place}) on ${w.day(p.day)}${p.monthly ? ', repeating every month' : ''}`,
@@ -542,6 +545,9 @@ const sq: Templates = {
 
   documentIssued: (p, w) => `Lëshoi ${p.kind === 'invoice' ? 'faturën' : 'notën e kreditit'} ${p.number} për ${w.money(p.total)}`,
   fiscalReceiptLinked: (p) => `Lidhi ${p.number} me kuponin fiskal ${p.receipt}`,
+  counterSettingsChanged: () => 'Ndryshoi parametrat e arkës (printeri fiskal, teksti në kupon, sirtari)',
+  printerReport: (p) => (p.kind === 'z' ? 'Nxori raportin Z të printerit fiskal (mbyll ditën fiskale)' : 'Nxori raportin X të printerit fiskal'),
+  drawerOpened: (p) => `Hapi sirtarin pa shitje: ${p.reason}`,
   fiscalReceiptRemoved: (p) => `Hoqi kuponin fiskal nga ${p.number}`,
 
   expenseAdded: (p, w) =>

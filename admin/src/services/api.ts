@@ -123,6 +123,12 @@ import type {
   LedgerEntry,
   ManualEntryInput,
   TrialBalance,
+  CounterEvent,
+  CounterEventInput,
+  CounterPerson,
+  CounterReceipt,
+  CounterSettings,
+  CounterToday,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -350,10 +356,37 @@ export const salesApi = {
     });
     return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
-  recordBasket: async (input: { items: Array<{ productId: number; quantity: number }>; notes: string | null; customerId?: number; paidNow?: boolean }) =>
+  recordBasket: async (input: {
+    items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
+    notes: string | null;
+    customerId?: number;
+    paidNow?: boolean;
+    /** At the Counter: card money goes to the bank, not the drawer. */
+    paidBy?: 'cash' | 'card';
+  }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
+};
+
+export const counterApi = {
+  settings: async () => (await apiRequest<CounterSettings>('/counter/settings')).data,
+  updateSettings: async (input: CounterSettings) => (await apiRequest<CounterSettings>('/counter/settings', { method: 'PUT', body: input })).data,
+  record: async (events: CounterEventInput[]) => {
+    await apiRequest('/counter/events', { method: 'POST', body: { events } });
+  },
+  today: async () => (await apiRequest<CounterToday>('/counter/today')).data,
+  /** Today's receipts, or the one with this number. */
+  receipts: async (number?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number } })).data,
+  people: async (period: { from: string; to: string }) => (await apiRequest<CounterPerson[]>('/counter/people', { query: period })).data,
+  events: async (period: { from: string; to: string; userId?: number }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
+  /** Every product on sale, a hundred at a time, for the Counter's shelf. */
+  async products(): Promise<Product[]> {
+    const first = await productsApi.list({ page: 1, limit: 100 });
+    const pages = Math.ceil(first.meta.total / 100);
+    const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, index) => productsApi.list({ page: index + 2, limit: 100 })));
+    return [first, ...rest].flatMap((page) => page.items).filter((product) => product.isActive);
+  },
 };
 
 export const analyticsApi = {

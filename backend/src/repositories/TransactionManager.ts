@@ -28,6 +28,7 @@ import { UndoRepository } from './UndoRepository.js';
 import { UserRepository } from './UserRepository.js';
 import { VatMonthRepository } from './VatMonthRepository.js';
 import { MoneyRepository } from './MoneyRepository.js';
+import { CounterRepository } from './CounterRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -60,6 +61,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     duplicates: new DuplicateRepository(db),
     periods: new VatMonthRepository(db),
     money: new MoneyRepository(db),
+    counter: new CounterRepository(db),
   };
 }
 

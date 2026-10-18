@@ -83,7 +83,7 @@ export class CashCountService {
   }
 
   private async between(from: string, to: string): Promise<CashCountDto[]> {
-    const [rows, shop, tabs, supplierPayments, carwash, tills, moves] = await Promise.all([
+    const [rows, shop, tabs, supplierPayments, carwash, tills, moves, card] = await Promise.all([
       this.cashCountRepository.findBetween(from, to),
       this.reportsRepository.shopRevenueByDay(from, to, this.timeZone),
       // Tab sales never reach the drawer; tab payments do.
@@ -94,6 +94,8 @@ export class CashCountService {
       this.moneyRepository.tills(),
       // Money moved into or out of a till that day before it was counted (a deposit at noon).
       this.moneyRepository.movesBeforeCounts(from, to),
+      // Sales paid by card went to the bank, not the drawer.
+      this.moneyRepository.cardSalesByDay(from, to, this.timeZone),
     ]);
     return rows.map((row) => {
       const float = Number(row.float_amount);
@@ -101,7 +103,7 @@ export class CashCountService {
       const till = tills.get(row.place === 'shop' ? null : row.carwash_id);
       const paidOut = supplierPayments.get(`${till}|${row.day}`) ?? 0;
       const moved = moves.get(row.id) ?? 0;
-      const takings = row.place === 'shop' ? (shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0) : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
+      const takings = row.place === 'shop' ? (shop.get(row.day) ?? 0) + (tabs.get(row.day) ?? 0) - (card.get(row.day) ?? 0) : (carwash.get(`${row.carwash_id}|${row.day}`) ?? null);
       const expected = takings === null && paidOut === 0 && moved === 0 ? null : roundMoney((takings ?? 0) - paidOut + moved);
       return {
         id: row.id,

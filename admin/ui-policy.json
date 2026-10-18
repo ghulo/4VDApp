@@ -66,9 +66,10 @@
     {
       "selector": ".visually-hidden",
       "rules": [
-        "content-clipping"
+        "content-clipping",
+        "font-size"
       ],
-      "reason": "Screen-reader-only text (table captions, severity and unread labels) is clipped to 1px on purpose."
+      "reason": "Screen-reader-only text (table captions, severity and unread labels) is clipped to 1px on purpose. Its size is never seen, so the type scale does not apply (the Counter keeps its h1 for screen readers only)."
     },
     {
       "selector": ".table--stack thead th",
@@ -125,6 +126,27 @@
         "icon-button-tooltip"
       ],
       "reason": "The previous/next arrows beside a month or year menu: the arrow beside the month name says what it does, and each has an aria-label and a title for mouse users."
+    },
+    {
+      "selector": ".counter__bar *, .counter-till *, .counter-side *",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The Counter bar, till tape and keys are raised paper lit from above by --light-raise (DESIGN.md 8, Light), a white wash that only lightens the paper, so the tool cannot read a background. The text is --ink and --ink-muted on --surface or --fill, which src/theme/contrast.test.ts checks pass 4.5:1."
+    },
+    {
+      "selector": ".sheet__description",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The sheet panel is lit by the same light gradient, so the tool cannot read it. The text is --ink-muted on --surface, which src/theme/contrast.test.ts checks passes 4.5:1."
+    },
+    {
+      "selector": ".sheet__close",
+      "rules": [
+        "icon-button-tooltip"
+      ],
+      "reason": "The X in every sheet corner: a universal close mark with an aria-label, and Esc does the same."
     }
   ]
 }

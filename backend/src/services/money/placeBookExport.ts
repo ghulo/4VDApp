@@ -7,6 +7,7 @@ const WORDS = {
   sq: {
     kinds: {
       takings: 'Xhiroja e ditës',
+      card: 'Xhiroja me kartelë',
       carwash: 'Xhiroja e autolarjes',
       customer: 'Pagesë klienti',
       supplier: 'Pagesë furnitorit',
@@ -34,6 +35,7 @@ const WORDS = {
   en: {
     kinds: {
       takings: "Day's takings",
+      card: 'Card takings',
       carwash: 'Carwash takings',
       customer: 'Customer payment',
       supplier: 'Supplier payment',

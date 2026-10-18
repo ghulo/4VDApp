@@ -1,7 +1,7 @@
 {
   "name": "4vd-desktop",
   "productName": "4VD",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "4VD dashboard as a Windows app",
   "author": "4VD",
@@ -9,12 +9,13 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "test": "node --test src/fiscal.test.js"
   },
   "build": {
     "appId": "app.4vd.desktop",
     "productName": "4VD",
-    "files": ["src/**/*"],
+    "files": ["src/**/*", "!src/**/*.test.js"],
     "icon": "src/icon.png",
     "win": {
       "target": "nsis",

@@ -1,9 +1,10 @@
-import { Books, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
 import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
+import { CounterSettingsPanel } from '../components/CounterSettingsPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
 import { WipeDataPanel } from '../components/WipeDataPanel';
 import { useCurrentUser } from '../auth/useAuth';
@@ -54,6 +55,16 @@ export function SettingsPage() {
                 {settings.isPending && <Loading />}
                 {settings.isError && <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />}
                 {settings.data && <SettingsForm initial={settings.data} />}
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'counter',
+            label: t.counterSettings.title,
+            icon: CashRegister,
+            content: (
+              <ManagersOnly>
+                <CounterSettingsPanel />
               </ManagersOnly>
             ),
           },

@@ -1906,3 +1906,75 @@ export interface StatementLayout {
 export type StatementUpload =
   | { needsLayout: false; statement: BankStatement; added: number; skipped: number }
   | { needsLayout: true; preview: string[][]; guess: StatementLayout | null };
+
+/** The Counter's set-up: the receipt's last line, the fiscal printer and the cash drawer. */
+export interface CounterSettings {
+  receiptFooter: string;
+  printer: {
+    /** Print a fiscal receipt for every sale, through the Windows app. */
+    enabled: boolean;
+    /** The printer's tax group (1-8) for each VAT rate; null when not set yet. */
+    taxGroups: Record<'18' | '16' | '8' | '0', number | null>;
+  };
+  /** The drawer is wired to the printer, so 4VD can open it. */
+  drawerConnected: boolean;
+}
+
+export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';
+
+export type CounterEventInput =
+  | { kind: 'line_removed'; productId: number; quantity: number; amount: number; reason: string }
+  | { kind: 'basket_cancelled'; quantity: number; amount: number; reason: string }
+  | { kind: 'drawer_opened'; reason: string }
+  | { kind: 'print_failed'; documentId?: number; reason: string | null }
+  | { kind: 'reprinted'; documentId: number }
+  | { kind: 'x_report' }
+  | { kind: 'z_report' };
+
+export interface CounterToday {
+  lastZ: { at: string; by: string | null } | null;
+  lastX: { at: string; by: string | null } | null;
+}
+
+/** A receipt found to give something back, with what is left to return on each line. */
+export interface CounterReceipt {
+  id: number;
+  number: string;
+  issuedAt: string;
+  total: number;
+  paidBy: 'cash' | 'card' | 'tab';
+  fiscalReceiptNo: string | null;
+  soldBy: string | null;
+  lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;
+}
+
+/** One person's counter over a period. */
+export interface CounterPerson {
+  user: { id: number; name: string };
+  sales: number;
+  sold: number;
+  cash: number;
+  card: number;
+  tab: number;
+  linesRemoved: number;
+  removedAmount: number;
+  basketsCancelled: number;
+  cancelledAmount: number;
+  refunds: number;
+  refunded: number;
+  drawerOpens: number;
+  printFailures: number;
+  reprints: number;
+}
+
+export interface CounterEvent {
+  id: number;
+  kind: CounterEventKind;
+  user: { id: number; name: string } | null;
+  product: { id: number; name: string } | null;
+  quantity: number | null;
+  amount: number | null;
+  reason: string | null;
+  document: { id: number; number: string } | null;
+  at: string;
+}

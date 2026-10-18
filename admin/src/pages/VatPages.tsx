@@ -1,7 +1,7 @@
 import { CaretLeft, CaretRight, CheckCircle, FileCsv, FilePdf, FileXls, LockSimple, LockSimpleOpen, Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { canReopen } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -23,6 +23,7 @@ import {
 import type { Catalogue } from '../i18n/en';
 import { useLanguage, useT } from '../i18n/useT';
 import { type BookKind, vatApi } from '../services/api';
+import { rowWords, useMonthParam } from '../utils/vatMonth';
 import type { Over500Row, VatCheck, VatItem, VatMonth, VatYearRow, WithholdingRow } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -34,25 +35,8 @@ import { addMonths, formatMonth, bookBoxes, bookItems, bookTotal, boxSum, CHARGE
 const moneyOrDash = (amount: number) => (amount ? formatMoney(amount) : '–');
 const formatDueDay = (day: string) => formatDateWith(new Date(`${day}T12:00:00`), { day: 'numeric', month: 'long' });
 
-/** The month a VAT page shows, kept in the address; last month by default, the one most likely to file. */
-function useMonthParam() {
-  const [params, setParams] = useSearchParams();
-  const raw = params.get('month');
-  const month = raw && /^\d{4}-(0[1-9]|1[0-2])$/.test(raw) ? raw : addMonths(thisMonth(), -1);
-  const setMonth = (next: string) =>
-    setParams(
-      (current) => {
-        const updated = new URLSearchParams(current);
-        updated.set('month', next);
-        return updated;
-      },
-      { replace: true },
-    );
-  return [month, setMonth] as const;
-}
-
 /** Back a month, the month as a list, forward a month (up to this month). */
-function MonthPicker({ month, onChange, first }: { month: string; onChange: (month: string) => void; first: string | null }) {
+export function MonthPicker({ month, onChange, first }: { month: string; onChange: (month: string) => void; first: string | null }) {
   const t = useT();
   const last = thisMonth();
   // Three years back, or from the first month of the books if that is earlier.
@@ -213,9 +197,6 @@ export function VatPage() {
     </>
   );
 }
-
-const rowWords = (t: Catalogue, part: 'charged' | 'claim', key: string) =>
-  (t.vat.rows[part] as Record<string, { label: string; hint: string }>)[key] ?? { label: key, hint: '' };
 
 /** The result in one sentence: pay by the 20th, or carry the credit on. */
 function Outcome({ data }: { data: VatMonth }) {

@@ -2012,3 +2012,47 @@ export interface CounterEvent {
   document: { id: number; number: string } | null;
   at: string;
 }
+
+/* ---------- One VAT month next to TREFIN ---------- */
+
+export type TrefinCompareStatus = 'same' | 'rounding' | 'differs';
+export type TrefinCompareReason = 'only_trefin' | 'only_4vd' | 'other_month' | 'amount' | 'rate';
+
+export interface TrefinCompareSide {
+  ref: string;
+  number: string | null;
+  party: string | null;
+  base: number;
+  vat: number;
+  gross: number;
+  /** Sale lines behind a till day. */
+  count: number | null;
+  boxes: Partial<Record<number, number>>;
+}
+
+export interface TrefinCompareRow {
+  key: string;
+  kind: VatItemKind;
+  date: string;
+  status: TrefinCompareStatus;
+  reason: TrefinCompareReason | null;
+  facts: { month?: string; gross?: number; vat?: number; fourVdLines?: number; trefinLines?: number };
+  fourVd: TrefinCompareSide | null;
+  trefin: TrefinCompareSide | null;
+  explained: { note: string; by: string | null; at: string } | null;
+}
+
+export interface TrefinCompareTotals {
+  charged: number;
+  claimable: number;
+  toPay: number;
+}
+
+export interface TrefinCompare {
+  month: string;
+  loaded: { at: string; by: string | null; source: string | null } | null;
+  boxes: Array<{ box: number; fourVd: number; trefin: number }>;
+  totals: { fourVd: TrefinCompareTotals; trefin: TrefinCompareTotals };
+  rows: TrefinCompareRow[];
+  counts: { same: number; rounding: number; differs: number; explained: number };
+}

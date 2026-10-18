@@ -55,6 +55,7 @@ const BooksBalancesPage = lazyPage(() => import('./pages/BooksPages'), 'BooksBal
 const BooksJournalPage = lazyPage(() => import('./pages/BooksPages'), 'BooksJournalPage');
 const BooksAccountsPage = lazyPage(() => import('./pages/BooksPages'), 'BooksAccountsPage');
 const OpeningPage = lazyPage(() => import('./pages/OpeningPage'), 'OpeningPage');
+const TrefinComparePage = lazyPage(() => import('./pages/TrefinComparePage'), 'TrefinComparePage');
 const AccountCardPage = lazyPage(() => import('./pages/BooksPages'), 'AccountCardPage');
 const MoneyPage = lazyPage(() => import('./pages/MoneyPages'), 'MoneyPage');
 const PlaceBookPage = lazyPage(() => import('./pages/MoneyPages'), 'PlaceBookPage');
@@ -187,6 +188,7 @@ function App() {
                       <Route path="books/vat" element={<VatPage />} />
                       <Route path="books/sales-book" element={<SalesBookPage />} />
                       <Route path="books/purchase-book" element={<PurchaseBookPage />} />
+                      <Route path="books/trefin" element={<TrefinComparePage />} />
                     </Route>
                     <Route path="books/accounts/:id" element={<AccountCardPage />} />
                     <Route path="money" element={<MoneyPage />} />

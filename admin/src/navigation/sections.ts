@@ -88,6 +88,7 @@ export const SECTIONS = {
     { to: '/books/vat', key: 'vat', accountant: true },
     { to: '/books/sales-book', key: 'salesBook', accountant: true },
     { to: '/books/purchase-book', key: 'purchaseBook', accountant: true },
+    { to: '/books/trefin', key: 'trefin', accountant: true },
   ],
   reports: [
     { to: '/report', key: 'report', accountant: true },

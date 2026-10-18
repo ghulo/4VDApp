@@ -150,6 +150,100 @@ describe('importTrefin', () => {
     ]);
   });
 
+  it("should bring in TREFIN's purchases as look-only bills, partners from every database and reused codes as old products", async () => {
+    const data = sample();
+    data.products[0]!.invoice_price_incl_vat = '0.45';
+    data.products[1]!.invoice_price_incl_vat = '3.60';
+    const partner = (code: string, name: string, extra: Record<string, string> = {}) => ({
+      NrKlient: code, NrID: '6', EmerKlient: name, NRB: '71159213', NRF: '601254171', NRTVSH: '0', Qyteti: 'Prizren', Adresa: 'Rr. Tirana 5',
+      Furnitor: 'True', Klient: 'False', Bank: 'False', Tel: '044/115-249', Mobil: '049 111 222', eMail: '', Kontakt: 'Arben', Limit: '0', Rabati: '0',
+      NRU: '810973116', EmerTregtar: '///', LlogariaBankare: 'XK05 1212 0123 4567 8906', ...extra,
+    });
+    const header = (id: string, number: string, day: string, supplier: string, total: string, extra: Record<string, string> = {}) => ({
+      NrRen: id, NrFatura: number, Data: `${day} 00:00:00`, LlojDok: 'FBM', NrKlient: supplier, Totali: total, TVSH: '0.36', PagesaPoJo: 'True', PagesaShuma: total, ...extra,
+    });
+    const purchase = (db: string, id: string, code: string, quantity: string, net: string, extra: Record<string, string> = {}) => ({
+      source_db: db, doc_id: id, document_number: `F-${id}`, doc_type: 'FBM', purchase_date: '2024-05-02', supplier_code: '700005', supplier: 'BEL-KOS SH.P.K.',
+      product_code: code, barcode: '', product_name: '', unit: 'Copë', quantity, unit_cost_excl_vat: '0.20', vat_rate_percent: '18.00', vat_amount: '0.36', net_amount: net, line_total: '2.36', ...extra,
+    });
+    data.history = {
+      partners: {
+        MARKET_2025: [partner('700005', 'BEL-KOS SH.P.K.')],
+        // The same business under another code in an older database, and a supplier only that database knew.
+        MARKET_2022: [partner('700031', 'Bel-Kos shpk'), partner('700040', 'Old Bakery', { NRU: '811111111', NRB: '0', NRF: '0', LlogariaBankare: '' })],
+        MARKET_2022_FINAL_2023_05_26: [],
+      },
+      products: {
+        MARKET_2025: new Map(),
+        MARKET_2022: new Map([['339', { barcode: '8600000000001', name: 'Twix 50g' }]]),
+        MARKET_2022_FINAL_2023_05_26: new Map(),
+      },
+      bills: {
+        MARKET_2025: [header('10', 'F-10', '2025-04-08', '700005', '2.36')],
+        MARKET_2022: [header('20', 'F-20', '2024-05-02', '700031', '2.36', { PagesaPoJo: 'False' }), header('21', 'KB-1', '2024-05-03', '700040', '1.18', { LlojDok: 'KB' })],
+        MARKET_2022_FINAL_2023_05_26: [],
+      },
+      billLines: [
+        purchase('MARKET_2025', '10', '339', '10', '2.00'),
+        purchase('MARKET_2025', '10', '679', '0', '0'),
+        // Code 339 was Twix in MARKET_2022; 901 still had Marlboro Gold's barcode there.
+        purchase('MARKET_2022', '20', '339', '4', '0.80', { barcode: '8600000000001', product_name: 'Twix 50g', supplier_code: '700031' }),
+        purchase('MARKET_2022', '20', '901', '1', '3.00', { barcode: '5304000011901', product_name: 'Marlboro (old name)', supplier_code: '700031' }),
+        purchase('MARKET_2022', '21', '900', '-1.5', '-1.00', { doc_type: 'KB', document_number: 'KB-1', supplier_code: '700040', unit: 'KG' }),
+      ],
+      deletedBills: { MARKET_2025: [header('30', 'F-30', '2025-06-01', '700005', '5.00')], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
+      deletedBillLines: { MARKET_2025: [{ NrRen: '30', NrArt: '339', Sasia: '2', Cmimi: '2.12', Vlera: '4.24', TVSH: '0.76' }], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
+      deleteLog: { MARKET_2025: [{ NrRen: '30', LlojDok: 'FBM', DataDelete: '2025-06-02 09:15:00', EmerUser: 'Administratori', EmerKlient: 'BEL-KOS SH.P.K.' }], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
+    };
+    data.sales.push(line('K-23-00000009', '339', '1', '1.00', { source_db: 'MARKET_2022', barcode: '8600000000001', product_name: 'Twix 50g', sale_date: '2024-05-04' }));
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ suppliers: 2, oldProducts: 1, bills: 4, billLines: 5, deletedBills: 1 });
+    const suppliers = await context.db.selectFrom('suppliers').selectAll().orderBy('id').execute();
+    expect(suppliers.map((row) => row.name)).toEqual(['BEL-KOS SH.P.K.', 'Old Bakery']);
+    expect(suppliers[0]).toMatchObject({
+      external_code: '700005', business_no: '71159213', fiscal_no: '601254171', city: 'Prizren', address: 'Prizren, TIRANA NR.5', iban: 'XK05 1212 0123 4567 8906', contact_person: 'Arben', mobile: '049 111 222',
+    });
+    const wholesale = await context.db.selectFrom('products').select(['sku', 'wholesale_price']).where('sku', 'in', ['339', '679']).orderBy('sku').execute();
+    expect(wholesale.map((row) => row.wholesale_price)).toEqual(['0.45', null]);
+    const old = await context.db.selectFrom('products').selectAll().where('name', '=', 'Twix 50g').executeTakeFirstOrThrow();
+    expect(old).toMatchObject({ is_active: false, sku: null, barcode: '8600000000001' });
+    const twixSale = await context.db.selectFrom('sales').select('product_id').where('receipt_no', '=', 'K-23-00000009').executeTakeFirstOrThrow();
+    expect(twixSale.product_id).toBe(old.id);
+
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    const history = (await request(context.app).get('/api/bills?source=trefin').set(auth)).body.data as Array<Record<string, unknown> & { lines: Array<Record<string, unknown>> }>;
+    expect(history.map((bill) => [bill.number, bill.kind, bill.status, bill.left, bill.fromTrefin])).toEqual([
+      ['F-10', 'bill', 'history', 0, true],
+      ['KB-1', 'credit', 'history', 0, true],
+      ['F-20', 'bill', 'history', 0, true],
+      ['F-30', 'bill', 'void', 0, true],
+    ]);
+    const f20 = history.find((bill) => bill.number === 'F-20')!;
+    expect(f20.supplier).toMatchObject({ name: 'BEL-KOS SH.P.K.' });
+    expect(f20.note).toContain('Not marked paid in TREFIN');
+    expect(f20.lines.map((row) => [row.productName, row.quantity])).toEqual([
+      ['Twix 50g', 4],
+      ['Marlboro Gold', 1],
+    ]);
+    const credit = history.find((bill) => bill.number === 'KB-1')!;
+    expect(credit.lines[0]).toMatchObject({ quantity: 1, net: 1, description: '1.5 KG in TREFIN' });
+    expect(history[3]!.voidNote).toBe('Deleted in TREFIN by Administratori');
+
+    // Never owed, never paid or changed here, and not in the stock.
+    expect((await request(context.app).get('/api/bills?status=open').set(auth)).body.data).toEqual([]);
+    expect((await request(context.app).get('/api/bills?source=4vd').set(auth)).body.data).toEqual([]);
+    const pay = await request(context.app).post(`/api/bills/${String(f20.id)}/payments`).set(auth).send({ amount: 1, paidOn: '2024-06-01', method: 'cash' });
+    expect(pay.status).toBe(409);
+    const stock = await context.db.selectFrom('inventory as i').innerJoin('products as p', 'p.id', 'i.product_id').select('i.quantity_on_hand').where('p.sku', '=', '339').executeTakeFirstOrThrow();
+    expect(stock.quantity_on_hand).toBe(12);
+
+    const imported = await request(context.app).get('/api/sales/checkouts?source=4vd').set(auth);
+    expect(imported.body.data.checkouts).toEqual([]);
+  });
+
   it('should refuse a shop that already has products, and a second import', async () => {
     const token = await loginAs(context, 'admin');
     await createTestProduct(context, token);

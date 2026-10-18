@@ -4,6 +4,21 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import { countryFromBarcode } from '../utils/barcodeCountry.js';
 import { startOfDay } from '../utils/zonedDates.js';
+import {
+  DATABASE_LABELS,
+  PURCHASE_TYPES,
+  clean,
+  mergePartners,
+  money,
+  normalName,
+  num,
+  parseCsv,
+  readTrefinHistory,
+  sameName,
+  trefinBills,
+  type TrefinHistory,
+  type TrefinPartner,
+} from './trefinHistory.js';
 
 /** What has to be typed to really import, so it can't happen by accident. */
 export const IMPORT_PHRASE = 'import trefin';
@@ -36,8 +51,6 @@ export const MARKET_CATEGORIES = [
 ] as const;
 /** product_code → category, written by categoriseTrefin and checked by hand. */
 export const CATEGORIES_FILE = 'categories.csv';
-/** TREFIN's stand-ins for "any supplier", "any customer" and the cash desk. */
-const GENERIC_PARTNERS = new Set(['700000', '700001', '699999']);
 const BATCH = 1000;
 /** A cost more than this many times the selling price is a box price or a typo, not a real cost. */
 const MAX_COST_TO_PRICE = 1.2;
@@ -52,11 +65,27 @@ export interface TrefinExport {
   duplicates: Row[];
   /** product_code → category name; products not in it go to "Të ndryshme". */
   categories: Map<string, string>;
+  /** The raw tables of every database: partners, purchases, old product names. Missing in an older export. */
+  history?: TrefinHistory;
 }
 
 export interface TrefinImportReport {
   applied: boolean;
-  created: { categories: number; products: number; suppliers: number; customers: number; sales: number; checkouts: number; duplicateFlags: number };
+  created: {
+    categories: number;
+    products: number;
+    /** Products only an older database had under a code that later went to another product: kept inactive. */
+    oldProducts: number;
+    suppliers: number;
+    customers: number;
+    sales: number;
+    checkouts: number;
+    duplicateFlags: number;
+    /** TREFIN's purchases as look-only bills, and how many of them were deleted in TREFIN. */
+    bills: number;
+    billLines: number;
+    deletedBills: number;
+  };
   revenue: number;
   firstSale: string | null;
   lastSale: string | null;
@@ -64,39 +93,7 @@ export interface TrefinImportReport {
   notes: Record<string, number>;
 }
 
-/** A small RFC 4180 reader: quoted fields, doubled quotes, commas and line breaks inside quotes, a BOM. */
-export function parseCsv(text: string): Row[] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i]!;
-    if (quoted) {
-      if (c === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else quoted = false;
-      } else field += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') {
-      row.push(field);
-      field = '';
-    } else if (c === '\n') {
-      row.push(field.replace(/\r$/, ''));
-      rows.push(row);
-      row = [];
-      field = '';
-    } else field += c;
-  }
-  if (field !== '' || row.length > 0) {
-    row.push(field);
-    rows.push(row);
-  }
-  const header = (rows.shift() ?? []).map((name) => name.replace(/^﻿/, ''));
-  return rows.filter((cells) => cells.length > 1).map((cells) => Object.fromEntries(header.map((name, i) => [name, cells[i] ?? ''])));
-}
+export { parseCsv };
 
 /** The sorted categories, if categoriseTrefin has run; empty otherwise. */
 export function readCategoryFile(dir: string): Map<string, string> {
@@ -118,21 +115,9 @@ export function readTrefinExport(dir: string): TrefinExport {
     sales: load('sales'),
     duplicates: load('duplicates'),
     categories: readCategoryFile(dir),
+    history: readTrefinHistory(dir),
   };
 }
-
-const money = (value: number) => Math.round(value * 100) / 100;
-const num = (value: string | undefined) => (value === undefined || value.trim() === '' ? 0 : Number(value));
-const clean = (value: string | undefined) => (value ?? '').replace(/\s+/g, ' ').trim();
-/** TREFIN fills empty ID fields with 0, 1 or ///. */
-const filled = (value: string | undefined) => {
-  const text = clean(value);
-  return text === '' || /^[0/\\.-]+$/.test(text) || text === '1' ? null : text;
-};
-const nui = (value: string | undefined) => {
-  const text = filled(value);
-  return text && /^\d{9}$/.test(text) ? text : null;
-};
 
 /** A sale's moment: TREFIN's date and time on the shop's clock (noon when it kept no time). */
 function saleMoment(day: string, time: string, timeZone: string): Date {
@@ -140,28 +125,33 @@ function saleMoment(day: string, time: string, timeZone: string): Date {
   return new Date(startOfDay(day, timeZone).getTime() + ((h ?? 12) * 3600 + (m ?? 0) * 60 + (s ?? 0)) * 1000);
 }
 
-function partnerNote(row: Row, balance: { label: string; value: string }, extra: string[] = []): string | null {
-  const lines = [
-    clean(row.trade_name) && clean(row.trade_name) !== clean(row.name) && filled(row.trade_name) ? `Trade name: ${clean(row.trade_name)}` : '',
-    [clean(row.address), clean(row.city)]
-      .join(', ')
-      .split(',')
-      .map((part) => part.trim())
-      .filter((part) => part && part.toLowerCase() !== 'pn' && part.toLowerCase() !== 'p.n.' && part.toLowerCase() !== 'pn.')
-      .join(', '),
-    filled(row.nui_unique_id) && !nui(row.nui_unique_id) ? `NUI in TREFIN: ${clean(row.nui_unique_id)}` : '',
-    filled(row.nrb_business_no) ? `NRB: ${clean(row.nrb_business_no)}` : '',
-    filled(row.fiscal_no) ? `Fiscal no.: ${clean(row.fiscal_no)}` : '',
-    filled(row.vat_no) ? `VAT no.: ${clean(row.vat_no)}` : '',
-    filled(row.bank_account_iban) ? `IBAN: ${clean(row.bank_account_iban)}` : '',
-    filled(row.contact_person) ? `Contact: ${clean(row.contact_person)}` : '',
-    filled(row.mobile) && filled(row.phone) ? `Mobile: ${clean(row.mobile)}` : '',
-    ...extra,
-    num(balance.value) !== 0 ? `${balance.label} €${money(num(balance.value)).toFixed(2)} in TREFIN on 16 Oct 2026 (not checked, may be out of date)` : '',
-    `TREFIN code ${clean(row.code)}`,
-  ].filter(Boolean);
-  return lines.length > 0 ? lines.join('\n') : null;
+/** What a partner's details can't hold: a trade name, an odd NUI, the balance TREFIN showed and its code. */
+function partnerNote(partner: TrefinPartner, balance: { label: string; value: number }): string {
+  return [
+    partner.tradeName && !sameName(partner.tradeName, partner.name) ? `Trade name: ${partner.tradeName}` : '',
+    partner.oddNui ? `NUI in TREFIN: ${partner.oddNui}` : '',
+    balance.value !== 0 ? `${balance.label} €${money(balance.value).toFixed(2)} in TREFIN on 16 Oct 2026 (not checked, may be out of date)` : '',
+    `TREFIN code ${partner.code}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
+
+const partnerDetails = (partner: TrefinPartner) => ({
+  address: partner.address?.slice(0, 200) ?? null,
+  city: partner.city?.slice(0, 80) ?? null,
+  business_no: partner.businessNo?.slice(0, 40) ?? null,
+  fiscal_no: partner.fiscalNo?.slice(0, 40) ?? null,
+  vat_no: partner.vatNo?.slice(0, 40) ?? null,
+  iban: partner.iban?.slice(0, 60) ?? null,
+  contact_person: partner.contactPerson?.slice(0, 120) ?? null,
+  // The phone field takes the phone, else the mobile; the mobile has its own field only beside a phone.
+  mobile: partner.phone && partner.mobile ? partner.mobile.slice(0, 40) : null,
+  external_code: partner.code.slice(0, 40),
+});
+
+/** TREFIN's VAT rates that 4VD knows; anything else is taken as 18%. */
+const VAT_RATES = [0, 8, 16, 18];
 
 class DryRun extends Error {}
 
@@ -225,9 +215,14 @@ export async function importTrefin(
           units.set(p.product_code!, unit);
           if (cost > 0.005) costs.set(clean(p.product_code), cost);
           if (cost > 0.005 && num(p.sale_price_incl_vat) > 0 && cost > num(p.sale_price_incl_vat) * MAX_COST_TO_PRICE) note('products whose purchase price is above the sale price (check them)');
+          // TREFIN's second ("invoice") price list is what businesses pay; empty or the same as the shelf price: none.
+          const wholesale = num(p.invoice_price_incl_vat);
+          const hasWholesale = wholesale > 0 && Math.abs(wholesale - num(p.sale_price_incl_vat)) >= 0.005;
+          if (hasWholesale) note('products with a wholesale price (TREFIN\'s invoice price)');
           return {
             name: clean(p.name).slice(0, 255),
             description: unit && unit !== 'Copë' ? `Unit in TREFIN: ${unit}` : null,
+            wholesale_price: hasWholesale ? money(wholesale) : null,
             category_id: categoryIds.get(categoryOf(clean(p.product_code)))!,
             base_price: money(Math.max(0, num(p.sale_price_incl_vat))),
             cost_price: cost > 0.005 ? money(cost) : null,
@@ -259,40 +254,100 @@ export async function importTrefin(
           .execute();
       }
 
-      // Suppliers and customers
-      const suppliers = data.suppliers.filter((s) => !GENERIC_PARTNERS.has(clean(s.code)) && clean(s.name));
+      // Which product a line from one of TREFIN's databases means. Today's database uses today's codes; an older
+      // one may have used a code for another product before it was reused, so its line must agree on the barcode
+      // or the name, else it is found by barcode or name, else it stays an inactive product of its own.
+      const current = new Map(data.products.map((p) => [clean(p.product_code), { barcode: clean(p.barcode), name: clean(p.name) }]));
+      const byBarcode = new Map<string, number>();
+      const byName = new Map<string, number>();
+      for (const [code, known] of current) {
+        const id = productIds.get(code)!;
+        if (known.barcode) byBarcode.set(known.barcode, id);
+        if (!byName.has(normalName(known.name))) byName.set(normalName(known.name), id);
+      }
+      const oldProducts = new Map<string, number>();
+      const productFor = async (line: { db?: string; code: string; barcode: string; name: string; price: number }): Promise<number | undefined> => {
+        const today = productIds.get(line.code);
+        if (!line.db || line.db === 'MARKET_2025' || (!line.barcode && !line.name)) return today;
+        const known = current.get(line.code);
+        if (today && known && ((line.barcode && line.barcode === known.barcode) || (line.name && sameName(line.name, known.name)))) return today;
+        const found = (line.barcode && byBarcode.get(line.barcode)) || (line.name && byName.get(normalName(line.name)));
+        if (found) {
+          note('lines from an older database matched to today\'s product by barcode or name (its code was reused)');
+          return found;
+        }
+        if (!line.name) return today;
+        const key = `${line.db}/${line.code}`;
+        const existing = oldProducts.get(key);
+        if (existing) return existing;
+        const created = await trx
+          .insertInto('products')
+          .values({
+            name: line.name.slice(0, 255),
+            description: `Sold in TREFIN as code ${line.code} in ${DATABASE_LABELS[line.db] ?? line.db}, before the code went to another product.`,
+            category_id: categoryIds.get(CATEGORY) ?? (await leftoverCategory()),
+            base_price: money(Math.max(0, line.price)),
+            cost_price: null,
+            sku: null,
+            barcode: line.barcode && !byBarcode.has(line.barcode) ? line.barcode : null,
+            vat_rate: 18,
+            origin_country: countryFromBarcode(line.barcode || null),
+            is_active: false,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await trx.insertInto('inventory').values({ product_id: created.id, quantity_on_hand: 0, reorder_level: 0 }).execute();
+        if (line.barcode && !byBarcode.has(line.barcode)) byBarcode.set(line.barcode, created.id);
+        oldProducts.set(key, created.id);
+        return created.id;
+      };
+      const leftoverCategory = async () => {
+        const created = await trx.insertInto('categories').values({ name: CATEGORY, description: null }).returning('id').executeTakeFirstOrThrow();
+        categoryIds.set(CATEGORY, created.id);
+        newCategories++;
+        return created.id;
+      };
+
+      // Suppliers and customers, merged from every database
+      const { partners, byKey } = mergePartners({ suppliers: data.suppliers, customers: data.customers }, data.history);
+      const supplierIds = new Map<TrefinPartner, number>();
+      const suppliers = partners.filter((p) => p.isSupplier);
       if (suppliers.length > 0) {
-        await trx
+        const inserted = await trx
           .insertInto('suppliers')
           .values(
-            suppliers.map((s) => ({
-              name: clean(s.name).slice(0, 120),
-              nui: nui(s.nui_unique_id),
-              phone: (filled(s.phone) ?? filled(s.mobile))?.slice(0, 40) ?? null,
-              email: filled(s.email)?.slice(0, 255) ?? null,
-              note: partnerNote(s, { label: 'We owed them', value: s.balance_we_owe_them ?? '' }),
+            suppliers.map((p) => ({
+              name: p.name.slice(0, 120),
+              nui: p.nui,
+              phone: (p.phone ?? p.mobile)?.slice(0, 40) ?? null,
+              email: p.email?.slice(0, 255) ?? null,
+              note: partnerNote(p, { label: 'We owed them', value: p.weOwe }),
+              ...partnerDetails(p),
             })),
           )
+          .returning('id')
           .execute();
+        suppliers.forEach((p, i) => supplierIds.set(p, inserted[i]!.id));
       }
-      const customers = data.customers.filter((c) => !GENERIC_PARTNERS.has(clean(c.code)) && clean(c.name));
+      const customers = partners.filter((p) => p.isCustomer);
       if (customers.length > 0) {
         await trx
           .insertInto('customers')
           .values(
-            customers.map((c) => ({
-              name: clean(c.name).slice(0, 120),
-              kind: nui(c.nui_unique_id) || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(c.name ?? '') ? ('business' as const) : ('person' as const),
-              nui: nui(c.nui_unique_id),
-              phone: (filled(c.phone) ?? filled(c.mobile))?.slice(0, 40) ?? null,
-              note: partnerNote(c, { label: 'They owed us', value: c.balance_they_owe_us ?? '' }, [
-                num(c.credit_limit) > 0 ? `Credit limit: €${money(num(c.credit_limit)).toFixed(2)}` : '',
-                num(c.discount_percent) > 0 ? `Discount: ${num(c.discount_percent)}%` : '',
-              ]),
+            customers.map((p) => ({
+              name: p.name.slice(0, 120),
+              kind: p.nui || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(p.name) ? ('business' as const) : ('person' as const),
+              nui: p.nui,
+              phone: (p.phone ?? p.mobile)?.slice(0, 40) ?? null,
+              note: partnerNote(p, { label: 'They owed us', value: p.theyOwe }),
+              ...partnerDetails(p),
+              credit_limit: p.creditLimit,
+              discount_percent: p.discountPercent,
             })),
           )
           .execute();
       }
+      if (data.history) note('suppliers and customers only an older TREFIN database knew', partners.filter((p) => !p.keys.some((k) => k.startsWith('clean/'))).length);
 
       // Sales, one row per receipt line
       let sales = 0;
@@ -308,7 +363,7 @@ export async function importTrefin(
             note('sale lines with quantity 0, skipped');
             continue;
           }
-          const productId = productIds.get(clean(s.product_code));
+          const productId = await productFor({ db: clean(s.source_db) || undefined, code: clean(s.product_code), barcode: clean(s.barcode), name: clean(s.product_name), price: num(s.unit_price_incl_vat) });
           if (!productId) {
             note('sale lines for a product not in the list, skipped');
             continue;
@@ -321,7 +376,8 @@ export async function importTrefin(
           const unitPrice = total / quantity;
           const believable = (c: number | undefined) => c !== undefined && c > 0 && (unitPrice === 0 || c <= unitPrice * MAX_COST_TO_PRICE);
           const lineCost = num(s.unit_cost) * (1 + vat / 100);
-          const productCost = costs.get(clean(s.product_code));
+          // A product found through an older database's reused code has no purchase price of its own here.
+          const productCost = productId === productIds.get(clean(s.product_code)) ? costs.get(clean(s.product_code)) : undefined;
           const cost = believable(lineCost) ? lineCost : believable(productCost) ? productCost! : null;
           if (num(s.unit_cost) > 0 && cost !== lineCost) note(cost === null ? 'sale lines with an unbelievable cost, cost left unknown' : "sale lines with an unbelievable cost, used the product's purchase price");
           const whole = Number.isInteger(quantity) && Math.abs(money(total / quantity) * quantity - total) < 0.005;
@@ -372,14 +428,96 @@ export async function importTrefin(
       }
       if (flags.size > 0) await trx.insertInto('product_duplicate_flags').values([...flags.values()]).execute();
 
+      // TREFIN's purchases, as bills to look at: no stock moves, nothing posted or owed.
+      let bills = 0;
+      let billLines = 0;
+      let deletedBills = 0;
+      for (const bill of data.history ? trefinBills(data.history) : []) {
+        const partner = byKey.get(bill.supplierKey);
+        const supplierId = partner ? supplierIds.get(partner) : undefined;
+        if (!supplierId) note('bills from TREFIN\'s "any supplier" or an unknown one (name in the note)');
+        const credit = bill.type === 'KB';
+        const notes = [
+          `From TREFIN: ${PURCHASE_TYPES[bill.type] ?? bill.type} (${bill.type}) in ${DATABASE_LABELS[bill.db] ?? bill.db}.`,
+          !supplierId && bill.supplierName ? `Supplier in TREFIN: ${bill.supplierName}.` : '',
+          bill.paidInTrefin !== null ? `Marked paid in TREFIN: €${bill.paidInTrefin.toFixed(2)}.` : 'Not marked paid in TREFIN.',
+        ];
+        const rows: Array<{ code: string; barcode: string; name: string; unit: string; quantity: number; unitNet: number; net: number; vat: number; vatRate: number; productId: number }> = [];
+        for (const line of bill.lines) {
+          // A return's lines may carry minus signs; on a bill, a line below zero can't be shown as a product line.
+          const quantity = credit ? Math.abs(line.quantity) : line.quantity;
+          if (!(quantity > 0) || (!credit && line.net < 0)) {
+            note(quantity === 0 ? 'bill lines with quantity 0, skipped' : 'bill lines below zero, skipped (the bill\'s total is TREFIN\'s)');
+            continue;
+          }
+          const productId = await productFor({ db: bill.db, code: line.code, barcode: line.barcode, name: line.name, price: 0 });
+          if (!productId) {
+            note('bill lines for a product not in the list, skipped');
+            continue;
+          }
+          rows.push({ ...line, quantity, net: credit ? Math.abs(line.net) : line.net, vat: credit ? Math.abs(line.vat) : line.vat, productId });
+        }
+        const inserted = await trx
+          .insertInto('supplier_bills')
+          .values({
+            supplier_id: supplierId ?? null,
+            number: bill.number?.slice(0, 60) ?? null,
+            issued_on: bill.issuedOn,
+            due_on: null,
+            amount: money(Math.abs(bill.amount)),
+            vat_amount: bill.vat !== null && bill.vat >= 0 ? bill.vat : null,
+            note: notes.filter(Boolean).join(' '),
+            kind: credit ? 'credit' : 'bill',
+            abroad: bill.type === 'FBI',
+            prices_include_vat: false,
+            voided_at: bill.deleted ? saleMoment(bill.deleted.at.slice(0, 10), bill.deleted.at.slice(11, 19), options.timeZone) : null,
+            void_note: bill.deleted ? `Deleted in TREFIN${bill.deleted.by ? ` by ${bill.deleted.by}` : ''}` : null,
+            trefin_ref: bill.ref.slice(0, 80),
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        if (rows.length > 0) {
+          await trx
+            .insertInto('bill_lines')
+            .values(
+              rows.map((line, i) => {
+                const whole = Number.isInteger(line.quantity);
+                if (!whole) note('bill lines in kg or part units, kept as 1 at the line total');
+                const rate = VAT_RATES.includes(line.vatRate) ? line.vatRate : 18;
+                return {
+                  bill_id: inserted.id,
+                  position: i + 1,
+                  kind: 'product' as const,
+                  product_id: line.productId,
+                  quantity: whole ? line.quantity : 1,
+                  unit_price: whole ? Math.max(0, line.unitNet) : money(line.net),
+                  description: whole ? null : `${line.quantity} ${line.unit || 'units'} in TREFIN`,
+                  vat_rate: rate,
+                  net: money(line.net),
+                  vat: money(Math.max(0, line.vat)),
+                  landed: money(line.net),
+                };
+              }),
+            )
+            .execute();
+        }
+        bills++;
+        billLines += rows.length;
+        if (bill.deleted) deletedBills++;
+      }
+
       const created = {
         categories: newCategories,
         products: productIds.size,
+        oldProducts: oldProducts.size,
         suppliers: suppliers.length,
         customers: customers.length,
         sales,
         checkouts: receipts.size,
         duplicateFlags: flags.size,
+        bills,
+        billLines,
+        deletedBills,
       };
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${TREFIN_IMPORTED_KEY}, to_jsonb(now()::text), now())

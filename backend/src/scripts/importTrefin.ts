@@ -39,6 +39,8 @@ async function main(): Promise<void> {
     console.log(`  customers        ${created.customers}`);
     console.log(`  sale lines       ${created.sales}  (${created.checkouts} receipts, ${report.firstSale} to ${report.lastSale}, €${report.revenue.toFixed(2)})`);
     console.log(`  duplicate pairs  ${created.duplicateFlags}  (to review)`);
+    console.log(`  old products     ${created.oldProducts}  (inactive: an older database's code later went to another product)`);
+    console.log(`  bills            ${created.bills}  (${created.billLines} lines, ${created.deletedBills} deleted in TREFIN; to look at only)`);
     console.log('\nWorth knowing:');
     for (const [what, n] of Object.entries(report.notes)) console.log(`  ${String(n).padStart(6)}  ${what}`);
     console.log(`\nTook ${((Date.now() - started) / 1000).toFixed(1)}s.`);

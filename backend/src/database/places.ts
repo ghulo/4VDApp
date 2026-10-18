@@ -72,7 +72,13 @@ export async function ensurePlaces(db: Kysely<unknown>): Promise<void> {
   `.execute(db);
   if (!rows[0]?.missing) return;
 
-  // One server at a time; the next one finds them made.
+  // One request at a time; the next one finds them made. The lock lasts until
+  // the transaction ends, so outside one it needs its own.
+  if (db.isTransaction) await makePlaces(db);
+  else await db.transaction().execute((trx) => makePlaces(trx));
+}
+
+async function makePlaces(db: Kysely<unknown>): Promise<void> {
   await sql`select pg_advisory_xact_lock(40840)`.execute(db);
   await sql`
     insert into money_places (kind) select 'till'

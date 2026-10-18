@@ -1079,6 +1079,7 @@ export interface Database {
   bank_statements: BankStatementsTable;
   bank_lines: BankLinesTable;
   opening_lines: OpeningLinesTable;
+  trefin_months: TrefinMonthsTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1109,3 +1110,15 @@ export type NewUserRow = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type CategoryRow = Selectable<CategoriesTable>;
 export type NotificationRow = Selectable<NotificationsTable>;
+
+/** A VAT month's documents as TREFIN had them, to run 4VD next to TREFIN (see TrefinCompareService). */
+export interface TrefinMonthsTable {
+  /** Its first day. */
+  month: ColumnType<string, string, string>;
+  items: unknown;
+  source: string | null;
+  loaded_by: number | null;
+  loaded_at: ColumnType<Date, Date | undefined, Date>;
+  /** Difference key → { note, by, at }. */
+  explained: ColumnType<unknown, unknown | undefined, unknown>;
+}

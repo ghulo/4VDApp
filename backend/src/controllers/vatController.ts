@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import type { ThreadService } from '../services/ThreadService.js';
 import { THREAD_SUBJECTS } from '../services/ThreadService.js';
+import type { TrefinCompareService } from '../services/vat/TrefinCompareService.js';
 import type { VatService } from '../services/vat/VatService.js';
 import { bookHtml, bookSheet, ediBook, withholdingSheet, yearSheet } from '../services/vat/vatExport.js';
 import { sendSuccess } from '../utils/apiResponse.js';
@@ -29,6 +30,7 @@ const bookParams = monthParams.extend({ kind: z.enum(['sales', 'purchases']) });
 const bookQuery = downloadSchema.extend({ format: z.enum(['xlsx', 'html', 'edi']).default('xlsx') });
 
 const threadParams = z.object({ kind: z.enum(THREAD_SUBJECTS), id: idSchema });
+const explainSchema = z.object({ key: z.string().min(1).max(80), note: z.string().trim().min(3, 'say why it is fine').max(500).nullable() });
 const noteSchema = z.object({ body: z.string().trim().min(1, 'write something first').max(2000) });
 
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -42,8 +44,23 @@ async function sendXlsx(res: Response, file: { basename: string; sheet: Sheet<an
 }
 
 /** The VAT month: its return, books and downloads, filing and reopening; and questions on documents. */
-export function createVatController(vatService: VatService, threadService: ThreadService) {
+export function createVatController(vatService: VatService, threadService: ThreadService, trefinCompare: TrefinCompareService) {
   return {
+    async trefinMonths(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await trefinCompare.months());
+    },
+
+    async trefin(req: Request, res: Response): Promise<void> {
+      const { month } = parseInput(monthParams, req.params);
+      sendSuccess(res, await trefinCompare.view(month));
+    },
+
+    async explainTrefin(req: Request, res: Response): Promise<void> {
+      const { month } = parseInput(monthParams, req.params);
+      const { key, note } = parseInput(explainSchema, req.body);
+      sendSuccess(res, await trefinCompare.explain(month, key, note, req.user!), { message: note === null ? 'Explanation taken back' : 'Explained' });
+    },
+
     async filed(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await vatService.filed());
     },

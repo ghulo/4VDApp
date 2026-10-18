@@ -13,6 +13,7 @@ export const WIPE_PHRASE = 'wipe 4vd.app';
  */
 const EMPTIED = [
   'opening_lines',
+  'trefin_months',
   'counter_events',
   'ledger_queue',
   'ledger_lines',

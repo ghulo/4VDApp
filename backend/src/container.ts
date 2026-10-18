@@ -29,6 +29,7 @@ import { DocumentService } from './services/DocumentService.js';
 import { SupplierBillService } from './services/SupplierBillService.js';
 import { BooksService } from './services/BooksService.js';
 import { OpeningService } from './services/OpeningService.js';
+import { TrefinCompareService } from './services/vat/TrefinCompareService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
 import { InventoryRepository } from './repositories/InventoryRepository.js';
@@ -270,6 +271,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
   );
   const vatService = new VatService(db, config.shopTimeZone);
+  const trefinCompareService = new TrefinCompareService(db, vatService);
   const threadService = new ThreadService(db);
   const attentionService = new AttentionService(
     insightsService,
@@ -469,6 +471,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     booksService,
     openingService,
     vatService,
+    trefinCompareService,
     threadService,
     billScanService,
     expiryService,

@@ -7,6 +7,7 @@ import type {
   VatMonth,
   VatYearRow,
   WithholdingRow,
+  TrefinCompare,
   BillInput,
   BillFormInput,
   BillPreview,
@@ -840,6 +841,11 @@ export const vatApi = {
   file: async (month: string) => (await apiRequest<VatMonth>(`/vat/${month}/file`, { method: 'POST' })).data,
   reopen: async (month: string, reason: string) => (await apiRequest<VatMonth>(`/vat/${month}/reopen`, { method: 'POST', body: { reason } })).data,
   withholding: async (month: string) => (await apiRequest<WithholdingRow[]>(`/vat/${month}/withholding`)).data,
+  /** The month side by side with TREFIN, and the months TREFIN has been loaded for. */
+  trefin: async (month: string) => (await apiRequest<TrefinCompare>(`/vat/${month}/trefin`)).data,
+  trefinMonths: async () => (await apiRequest<string[]>('/vat/trefin')).data,
+  /** Say why a difference is fine; null takes the explanation back. */
+  explainTrefin: async (month: string, key: string, note: string | null) => (await apiRequest<TrefinCompare>(`/vat/${month}/trefin/explain`, { method: 'POST', body: { key, note } })).data,
   /** The sales or purchase book as Excel, or as the file for ATK's EDI upload. */
   async downloadBook(month: string, kind: BookKind, format: 'xlsx' | 'edi', lang: Language, all: boolean): Promise<void> {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;

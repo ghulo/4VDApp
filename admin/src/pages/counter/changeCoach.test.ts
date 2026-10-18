@@ -21,5 +21,6 @@ describe('the change coach', () => {
   it('suggests the notes a customer will likely hand over', () => {
     expect(likelyNotes(7.4)).toEqual([8, 10, 20, 50]);
     expect(likelyNotes(20)).toEqual([50, 100]);
+    expect(likelyNotes(302)).toEqual([305, 310, 320, 350]);
   });
 });

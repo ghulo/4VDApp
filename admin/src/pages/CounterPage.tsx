@@ -22,7 +22,6 @@ import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMe
 import { canOversee, counterOnly } from '../auth/roles';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
-import { ErrorNotice } from '../components/Feedback';
 import { LogoMark } from '../components/LogoMark';
 import { Button, ButtonLink } from '../components/ui';
 import { useT } from '../i18n/useT';
@@ -33,13 +32,12 @@ import { formatMoney } from '../utils/format';
 import { MissingTaxGroup, clearArticlesJob, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { NumberSheet, PaySheet, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { type StoredLine, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 
-const SHELF_PAGE = 60;
-
-type Panel = 'quantity' | 'price' | 'discount' | 'remove' | 'cancel' | 'drawer' | 'pay' | 'refund' | 'z' | 'unprinted' | null;
+type Panel = 'find' | 'quantity' | 'price' | 'discount' | 'remove' | 'cancel' | 'drawer' | 'pay' | 'refund' | 'z' | 'unprinted' | null;
 
 interface Line extends StoredLine {
   product: Product | undefined;
@@ -74,7 +72,6 @@ export function CounterPage() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
-  const shelfSearchRef = useRef<HTMLInputElement>(null);
 
   const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
@@ -105,6 +102,7 @@ export function CounterPage() {
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
   const [printNote, setPrintNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [refundNumber, setRefundNumber] = useState<string | null>(null);
+  const [finderQuery, setFinderQuery] = useState('');
   const [now, setNow] = useState(() => Date.now());
 
   // Baskets show how long their customer has waited.
@@ -143,6 +141,7 @@ export function CounterPage() {
     setSelectedId(product.id);
     setLastAdded(product.id);
     setLastSale(null);
+    setPrintNote((note) => (note?.ok ? null : note));
     if (next < already + quantity) complain(t.counter.noMore(product.name, stock));
     else {
       setProblem(null);
@@ -171,9 +170,8 @@ export function CounterPage() {
     const named = shelf.filter((product) => product.name.toLowerCase().includes(lower));
     if (named.length === 1) return add(named[0]!, quantity);
     if (named.length > 1) {
-      setShelfQuery(code);
-      setShelfLimit(SHELF_PAGE);
-      return;
+      setFinderQuery(code);
+      return setPanel('find');
     }
     try {
       add(await productsApi.byBarcode(code), quantity);
@@ -194,30 +192,6 @@ export function CounterPage() {
     if (step === -1 && selected.quantity === 1) return setPanel('remove');
     setQuantity(selected.productId, selected.quantity + step);
   }
-
-  // ---- Shelf ----
-  const [shelfQuery, setShelfQuery] = useState('');
-  const [category, setCategory] = useState<number | null>(null);
-  const [shelfLimit, setShelfLimit] = useState(SHELF_PAGE);
-  const categories = useMemo(() => {
-    const counts = new Map<number, { id: number; name: string; count: number }>();
-    for (const product of products.data ?? []) {
-      const entry = counts.get(product.category.id) ?? { ...product.category, count: 0 };
-      entry.count += 1;
-      counts.set(product.category.id, entry);
-    }
-    return [...counts.values()].sort((a, b) => b.count - a.count);
-  }, [products.data]);
-  const shelf = useMemo(() => {
-    const words = shelfQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return (products.data ?? [])
-      .filter((product) => category === null || product.category.id === category)
-      .filter((product) => {
-        const haystack = `${product.name} ${product.sku ?? ''} ${product.barcode ?? ''}`.toLowerCase();
-        return words.every((word) => haystack.includes(word));
-      })
-      .sort((a, b) => Number(b.stock.quantity > 0) - Number(a.stock.quantity > 0) || a.name.localeCompare(b.name));
-  }, [products.data, shelfQuery, category]);
 
   // ---- Paying and printing ----
   const sell = useMutation({
@@ -333,7 +307,10 @@ export function CounterPage() {
     if (document.querySelector('dialog[open]')) return;
     const shortcuts: Record<string, () => void> = {
       F2: () => startPanel('quantity'),
-      F3: () => shelfSearchRef.current?.focus(),
+      F3: () => {
+        setFinderQuery('');
+        startPanel('find');
+      },
       F4: () => startPanel('discount'),
       F6: () => startPanel('price'),
       F7: () => {
@@ -409,7 +386,10 @@ export function CounterPage() {
         <div className="counter__brand">
           <LogoMark size={28} />
           <div>
-            <h1 className="counter__title">{t.counter.title}</h1>
+            <h1 className="visually-hidden">{t.counter.title}</h1>
+            <p className="counter__title" aria-hidden="true">
+              {t.counter.title}
+            </p>
             <p className="counter__who">{t.counter.signedInAs(user.name)}</p>
           </div>
         </div>
@@ -440,98 +420,6 @@ export function CounterPage() {
       </header>
 
       <main className="counter__main">
-        <section className="counter-shelf" aria-label={t.counter.shelf}>
-          <div className="counter-shelf__head">
-            <label className="counter-search">
-              <MagnifyingGlass size={16} aria-hidden="true" />
-              <span className="visually-hidden">{t.counter.shelfSearch}</span>
-              <input
-                ref={shelfSearchRef}
-                type="search"
-                autoComplete="off"
-                placeholder={`${t.counter.shelfSearch} (F3)`}
-                value={shelfQuery}
-                onChange={(event) => {
-                  setShelfQuery(event.target.value);
-                  setShelfLimit(SHELF_PAGE);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    setShelfQuery('');
-                    focusScan();
-                  }
-                  if (event.key === 'Enter' && shelf.length > 0) {
-                    event.preventDefault();
-                    add(shelf[0]!);
-                  }
-                }}
-              />
-            </label>
-            <p className="counter-shelf__count">{products.data ? t.counter.shelfCount(Math.min(shelf.length, shelfLimit), shelf.length) : ''}</p>
-          </div>
-          <div className="counter-chips" role="group" aria-label={t.counter.shelf}>
-            <button type="button" className="chip" aria-pressed={category === null} onClick={() => setCategory(null)}>
-              {t.counter.allCategories}
-            </button>
-            {categories.map((entry) => (
-              <button key={entry.id} type="button" className="chip" aria-pressed={category === entry.id} onClick={() => setCategory(entry.id)}>
-                {entry.name}
-              </button>
-            ))}
-          </div>
-          {products.isPending ? (
-            <ul className="counter-shelf__grid" aria-busy="true">
-              {Array.from({ length: 12 }, (_, index) => (
-                <li key={index} className="counter-tile counter-tile--skeleton" />
-              ))}
-            </ul>
-          ) : products.isError ? (
-            <ErrorNotice error={products.error} onRetry={() => products.refetch()} />
-          ) : shelf.length === 0 ? (
-            <div className="counter-empty">
-              <p className="counter-empty__title">{t.counter.nothingOnShelf}</p>
-              <p className="counter-hint">{t.counter.nothingOnShelfHint}</p>
-            </div>
-          ) : (
-            <>
-              <ul className="counter-shelf__grid">
-                {shelf.slice(0, shelfLimit).map((product) => {
-                  const price = unitPriceFor(product, 1);
-                  const out = product.stock.quantity <= 0;
-                  const low = !out && product.stock.isLowStock;
-                  return (
-                    <li key={product.id}>
-                      <button
-                        type="button"
-                        className={out ? 'counter-tile counter-tile--out' : 'counter-tile'}
-                        disabled={out}
-                        aria-label={t.counter.addToBasket(product.name, formatMoney(price))}
-                        onClick={() => {
-                          add(product);
-                          focusScan();
-                        }}
-                      >
-                        <span className="counter-tile__name">{product.name}</span>
-                        <span className="counter-tile__foot">
-                          <span className="counter-tile__price">{formatMoney(price)}</span>
-                          <span className={out ? 'counter-tile__stock counter-tile__stock--out' : low ? 'counter-tile__stock counter-tile__stock--low' : 'counter-tile__stock'}>
-                            {out ? t.stockTag.out : t.counter.stockLeft(product.stock.quantity)}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {shelf.length > shelfLimit && (
-                <div className="counter-shelf__more">
-                  <Button onClick={() => setShelfLimit((limit) => limit + SHELF_PAGE * 2)}>{t.counter.showMore}</Button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
         <section className="counter-till" aria-label={t.counter.title}>
           <div className="counter-scan">
             <label className="counter-scan__field">
@@ -562,6 +450,12 @@ export function CounterPage() {
                   {problem}
                 </p>
               )}
+              {printNote && (
+                <p className={printNote.ok ? 'counter-message counter-message--ok' : 'counter-message counter-message--problem'} role="status">
+                  {printNote.ok ? <CheckCircle size={16} weight="bold" aria-hidden="true" /> : <WarningCircle size={16} weight="bold" aria-hidden="true" />}
+                  {printNote.text}
+                </p>
+              )}
               {notice && !problem && (
                 <p className="counter-message counter-message--ok">
                   <CheckCircle size={16} weight="bold" aria-hidden="true" />
@@ -586,7 +480,6 @@ export function CounterPage() {
                   type="button"
                   className="counter-basket"
                   aria-pressed={basket.id === current.id}
-                  aria-label={t.counter.basketLabel(index + 1, formatMoney(basketTotal), minutes)}
                   onClick={() => {
                     selectBasket(basket.id);
                     setSelectedId(null);
@@ -671,15 +564,22 @@ export function CounterPage() {
               </span>
               <span className="counter-total__amount">{formatMoney(total)}</span>
             </div>
-            {printNote && (
-              <p className={printNote.ok ? 'counter-message counter-message--ok' : 'counter-message counter-message--problem'} role="status">
-                {printNote.ok ? <CheckCircle size={16} weight="bold" aria-hidden="true" /> : <WarningCircle size={16} weight="bold" aria-hidden="true" />}
-                {printNote.text}
-              </p>
-            )}
           </div>
 
-          <div className="counter-keys" role="group" aria-label={t.counter.keys}>
+        </section>
+
+        <section className="counter-side" aria-label={t.counter.keys}>
+          <div className="counter-keys">
+            <CounterKey
+              icon={MagnifyingGlass}
+              label={t.counter.search}
+              hotkey="F3"
+              disabled={!keysEnabled}
+              onClick={() => {
+                setFinderQuery('');
+                startPanel('find');
+              }}
+            />
             <CounterKey icon={Tag} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled || !selected} onClick={() => startPanel('quantity')} />
             <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled || !selected} onClick={() => startPanel('price')} />
             <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled || !selected} onClick={() => startPanel('discount')} />
@@ -808,6 +708,15 @@ export function CounterPage() {
           say(t.counter.drawerOpened);
           closePanel();
         }}
+      />
+      <ProductFinder
+        open={panel === 'find'}
+        products={products.data}
+        error={products.error}
+        onRetry={() => products.refetch()}
+        initialQuery={finderQuery}
+        onClose={closePanel}
+        onAdd={(product) => add(product)}
       />
       <PaySheet open={panel === 'pay'} total={total} customers={customers.data} onClose={closePanel} onPay={pay} />
       <RefundSheet

@@ -15,9 +15,8 @@ export function changeIn(amount: number): Array<{ value: number; count: number }
   return pieces;
 }
 
-/** The notes a customer is likely to hand over for this total: the next 5, 10, 20, 50 and 100 above it. */
+/** What a customer is likely to hand over for this total: the total rounded up to the next 1, 5, 10, 20, 50 and 100. */
 export function likelyNotes(total: number): number[] {
-  const notes = [5, 10, 20, 50, 100].filter((note) => note > total);
-  const rounded = Math.ceil(total);
-  return [...new Set([rounded > total ? rounded : null, ...notes].filter((note): note is number => note !== null))].slice(0, 4);
+  const amounts = [1, 5, 10, 20, 50, 100].map((step) => Math.ceil(total / step) * step).filter((amount) => amount > total);
+  return [...new Set(amounts)].slice(0, 4);
 }

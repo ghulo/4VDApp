@@ -1113,11 +1113,11 @@ input.switch:focus-visible {
 }
 
 .shop-sunrise__glass-base {
-  stop-color: var(--accent);
+  stop-color: var(--cta);
 }
 
 .shop-sunrise__glow {
-  fill: var(--accent);
+  fill: var(--cta);
   opacity: 0.16;
 }
 

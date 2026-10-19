@@ -1,5 +1,5 @@
 /* 4VD design tokens: Cloudflare's structure with a printed, editorial finish
-   (see DESIGN.md, "Calm shop"). Ink on ivory paper; clay for the brand, the
+   (see DESIGN.md, "Calm shop"). Ink on ivory paper; amber (#f2a516) for the brand, the
    one main action per screen and where you are; status colours come as a strong colour plus a
    faint tint. The theme script in index.html always sets
    data-theme, so these two blocks are the only place colours are defined.
@@ -14,18 +14,18 @@
   --ink-muted: #5e5d59;
   --line: #e0dbcf;
   --line-strong: #cbc3b3;
-  --brand: #a8482a;
+  --brand: #8a5300;
   --brand-ink: #ffffff;
-  --brand-soft: #f5e6dc;
-  --accent: #d4704f;
-  --cta: #d4704f;
-  --cta-hover: #df8667;
+  --brand-soft: #f8ecd4;
+  --accent: #b57400;
+  --cta: #f2a516;
+  --cta-hover: #f5b53f;
   --cta-ink: #1c0f08;
-  --tint: rgb(217 119 87 / 0.14);
+  --tint: rgb(242 165 22 / 0.16);
   --ok: #2f6b3f;
   --ok-soft: #e7efe3;
-  --warn: #86500c;
-  --warn-soft: #f6ecd9;
+  --warn: #9a3f0d;
+  --warn-soft: #f8e6da;
   --danger: #b0302a;
   --danger-soft: #f8e5e1;
   --info: #3d5670;
@@ -48,7 +48,7 @@
   --key-drop-pressed: 0 1px 2px rgb(20 20 19 / 0.12);
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.4);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.9);
-  --cta-edge: #a8482a;
+  --cta-edge: #b57400;
   --danger-edge: #7a1f1a;
   --glass-bg: rgb(250 249 245 / 0.72);
   --glass-bg-strong: rgb(250 249 245 / 0.9);
@@ -67,18 +67,18 @@
   --ink-muted: #b0ada4;
   --line: #3a3834;
   --line-strong: #4a4843;
-  --brand: #ec9572;
+  --brand: #f5b53f;
   --brand-ink: #1a120e;
-  --brand-soft: #3b2016;
-  --accent: #d4704f;
-  --cta: #d4704f;
-  --cta-hover: #e08a6b;
+  --brand-soft: #3a2a0e;
+  --accent: #f2a516;
+  --cta: #f2a516;
+  --cta-hover: #f5b53f;
   --cta-ink: #1c0f08;
-  --tint: rgb(217 119 87 / 0.18);
+  --tint: rgb(242 165 22 / 0.16);
   --ok: #7ccf8e;
   --ok-soft: #13291a;
-  --warn: #f0b45a;
-  --warn-soft: #33240d;
+  --warn: #f59a62;
+  --warn-soft: #36200f;
   --danger: #ff8f80;
   --danger-soft: #3a1713;
   --info: #8fb8e8;
@@ -98,7 +98,7 @@
   --key-drop-pressed: 0 1px 2px rgb(0 0 0 / 0.4);
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.3);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.12);
-  --cta-edge: #9a4024;
+  --cta-edge: #a86c00;
   --danger-edge: #a8463c;
   --glass-bg: rgb(37 36 33 / 0.72);
   --glass-bg-strong: rgb(37 36 33 / 0.92);
@@ -109,7 +109,7 @@
 }
 
 :root {
-  /* Data is drawn in ink, so clay keeps meaning "act here". */
+  /* Data is drawn in ink, so amber keeps meaning "act here". */
   --chart-series: var(--ink-muted);
 
   /* Older names still used by page styles; they follow the tokens above. */

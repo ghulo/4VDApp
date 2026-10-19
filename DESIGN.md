@@ -1,12 +1,12 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on ivory paper with oat panels, one clay brand colour, tactile keys and the shop at sunrise.
+description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on ivory paper with oat panels, one amber brand colour, tactile keys and the shop at sunrise.
 colors:
-  clay: "#d4704f"
-  clay-hover: "#df8667"
-  clay-edge: "#a8482a"
-  clay-text: "#a8482a"
-  clay-tint: "rgb(217 119 87 / 0.14)"
+  amber: "#f2a516"
+  amber-hover: "#f5b53f"
+  amber-edge: "#b57400"
+  amber-text: "#8a5300"
+  amber-tint: "rgb(242 165 22 / 0.16)"
   pillar-ink: "#1c0f08"
   ivory-canvas: "#f0eee6"
   paper: "#faf9f5"
@@ -18,8 +18,8 @@ colors:
   hairline-strong: "#cbc3b3"
   ok: "#2f6b3f"
   ok-soft: "#e7efe3"
-  warn: "#86500c"
-  warn-soft: "#f6ecd9"
+  warn: "#9a3f0d"
+  warn-soft: "#f8e6da"
   danger: "#b0302a"
   danger-soft: "#f8e5e1"
   info: "#3d5670"
@@ -33,12 +33,12 @@ colors:
   night-muted: "#b0ada4"
   night-hairline: "#3a3834"
   night-hairline-strong: "#4a4843"
-  night-clay-text: "#ec9572"
-  night-clay-edge: "#9a4024"
+  night-amber-text: "#f5b53f"
+  night-amber-edge: "#a86c00"
   night-ok: "#7ccf8e"
   night-ok-soft: "#13291a"
-  night-warn: "#f0b45a"
-  night-warn-soft: "#33240d"
+  night-warn: "#f59a62"
+  night-warn-soft: "#36200f"
   night-danger: "#ff8f80"
   night-danger-soft: "#3a1713"
   night-info: "#8fb8e8"
@@ -105,7 +105,7 @@ spacing:
   "7": "48px"
 components:
   button-primary:
-    backgroundColor: "{colors.clay}"
+    backgroundColor: "{colors.amber}"
     textColor: "{colors.pillar-ink}"
     rounded: "{rounded.control}"
     height: "36px"
@@ -124,8 +124,8 @@ components:
     rounded: "{rounded.card}"
     padding: "16px 24px 24px"
   nav-item-current:
-    backgroundColor: "{colors.clay-tint}"
-    textColor: "{colors.clay-text}"
+    backgroundColor: "{colors.amber-tint}"
+    textColor: "{colors.amber-text}"
   count-badge:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.paper}"
@@ -233,7 +233,7 @@ Rules:
 ### 3.2 Team app tabs
 
 Target: **Home · Products · Sell · Account** (bottom bar, Sell in the middle as
-the one clay key).
+the one amber key).
 
 - **Home**: the day in one sentence, then *what's next* (section 3.3), then jobs.
 - **Products**: browse and search; a **Favourites** filter chip shows the
@@ -355,7 +355,7 @@ own reading width (descriptions 68ch, card hints 60ch). Then one of these shapes
   downloads share one `MenuButton`. Money columns end in a **totals row**
   (`DataTable totals`). A record that would otherwise open in a Sheet opens
   in an `Inspector`: docked beside the list from 1440px (the row stays marked
-  with the clay bar), a Sheet below that. Rows that lead to a detail page with
+  with the amber bar), a Sheet below that. Rows that lead to a detail page with
   its own work (a bill, an invoice, a product) stay links; a preview would only
   repeat that page. The header's actions keep only the
   primary action and Edit. Where a period also scopes figures above the table
@@ -464,7 +464,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 
 ## 6. Colour
 
-Warm neutrals carry everything; one clay marks brand, action and place; status
+Warm neutrals carry everything; one amber marks brand, action and place; status
 colours are earthy and quiet, always with words.
 
 ### Neutrals
@@ -477,12 +477,17 @@ colours are earthy and quiet, always with words.
 - **Muted Ink** `#5e5d59` / `#b0ada4`: descriptions, labels, chart series.
 - **Hairline** `#e0dbcf` / `#3a3834` and **Strong Hairline** `#cbc3b3` / `#4a4843`.
 
-### Clay (brand)
-- **Clay** `#d4704f` (both themes): the logo, the sunrise, **the one primary key
-  per screen**, progress toward a goal, and the current menu item's marker.
-- **Clay Text** `#a8482a` / `#ec9572` on **Clay Tint** (14% / 18%): the current
-  menu item's label and fill.
-- Text on clay is **Pillar Ink** `#1c0f08` (white fails contrast).
+### Amber (brand)
+4VD's own colour (chosen 2026-10-19), a warm yellow-orange.
+- **Amber** `#f2a516` (both themes): the logo, the sunrise, **the one primary key
+  per screen** and progress toward a goal. On a dark screen it also marks the
+  current menu item and small marks.
+- **Amber Mark** `#b57400` (light only): small marks on paper (the menu tick,
+  rings, dots), because bright amber reaches only 2:1 on ivory; 3.6:1 here.
+- **Amber Text** `#8a5300` / `#f5b53f` on **Amber Tint** (16%): the current
+  menu item's label and fill, and any amber words. Amber itself is never text
+  on paper.
+- Text on amber is **Pillar Ink** `#1c0f08` (white fails contrast: 2:1).
 
 ### Status (earthy, quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
@@ -490,25 +495,26 @@ Each has a strong colour for text and outlines, and a soft tint for washes.
 | | Light | Light soft | Dark | Dark soft |
 |---|---|---|---|---|
 | **OK** (sage green) | `#2f6b3f` | `#e7efe3` | `#7ccf8e` | `#13291a` |
-| **Warn** (ochre) | `#86500c` | `#f6ecd9` | `#f0b45a` | `#33240d` |
+| **Warn** (burnt orange) | `#9a3f0d` | `#f8e6da` | `#f59a62` | `#36200f` |
 | **Danger** (brick) | `#b0302a` | `#f8e5e1` | `#ff8f80` | `#3a1713` |
 | **Info** (slate) | `#3d5670` | `#e6ebf0` | `#8fb8e8` | `#142235` |
 
 All four pass 4.5:1 on paper, canvas and oat in both themes and on their own
 soft tint (checked 2026-10-10; `admin/src/theme/contrast.test.ts` must keep
 passing). They replace the old bright Tailwind-style status colours, which
-looked cold and generic on ivory.
+looked cold and generic on ivory. Warn moved from ochre to burnt orange when
+the brand became amber, so a warning never reads as the brand.
 
 ### Focus
 - **Focus ring = Ink** (`#141413` light, `#faf9f5` dark), 2px, offset 2px. It
-  reaches 15:1 on canvas and stays visible on a clay key. There are no cool blue
+  reaches 15:1 on canvas; it stands off the control on paper, so it shows beside an amber key too. There are no cool blue
   accents anywhere in the interface.
 
 ### Colour rules
-- **The Clay Rule.** Clay means brand and "act here". **One clay key per
+- **The Amber Rule.** Amber means brand and "act here". **One amber key per
   screen** (a phone screen's bottom bar counts: if the Sell tab key is visible,
   the screen's own main action is a secondary key unless it *is* selling).
-  Links, badges, charts and counts are never clay.
+  Links, badges, charts and counts are never amber.
 - **The Ink Data Rule.** Data is drawn in ink: series in Muted Ink, the active
   bar or point in Ink. Up/down changes use OK/Danger words, not just colour.
 - **No second accent.** Status colours are for status only.
@@ -628,7 +634,7 @@ hover (less jumpy in dense rows), the same recipe in both apps.
 
 | Variant | Face | Edge | Use |
 |---|---|---|---|
-| **Primary** | Clay, lit from the top (linear: Clay Hover at the top to Clay at 60%) | 2px Clay Edge | the one main action per screen |
+| **Primary** | Amber, lit from the top (linear: Amber Hover at the top to Amber at 60%) | 2px Amber Edge | the one main action per screen |
 | **Secondary** | Paper with a 1px Strong Hairline ring | 2px Strong Hairline | every other action, form Cancel |
 | **Ghost** | none until hover (Oat) | none | toolbars, icon buttons, menu rows |
 | **Danger** | Danger with Paper text | 2px darker danger | destroying something, inside a confirm |
@@ -672,7 +678,7 @@ desktop every table has ledger rows: 8px cells (3.8). A
 **totals row** (`totals`, one cell per column) closes money columns: strong
 hairline above, Oat, 600 weight; a trial balance puts its **Balanced** stamp
 (ok) there, or **Off by …** (danger). The row whose record is open in an
-Inspector is marked like the menu: Oat with a 3px Clay bar on its first cell
+Inspector is marked like the menu: Oat with a 3px Amber bar on its first cell
 (`table__row--selected`); columns that can wait while it is open take
 `table__dock-hide`. Under 600px rows stack:
 title cell first in 600 weight, then "column name: value" lines. An empty table
@@ -763,7 +769,7 @@ Esc returns to the key, a click away closes it.
 
 ### 10.11 Navigation
 Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;
-hover Oat; current = Clay Tint fill, Clay Text label, 3px Clay marker on the edge.
+hover Oat; current = Amber Tint fill, Amber Text label, 3px Amber marker on the edge.
 Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 11. The printed finish (vintage, used sparingly)

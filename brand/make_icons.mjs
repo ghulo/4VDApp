@@ -17,7 +17,7 @@ const square = mark.replace(TILE, '<rect width="64" height="64" fill="#FAF9F5"/>
 const bare = mark.replace(TILE, '');
 // Android's themed icon keeps only the shape, so it gets the ink parts alone (no sun or stripes).
 const inkOnly = bare.replace(/\s*<circle[^>]*\/>/, '').replace(/\s*<rect[^>]*fill="#FAF9F5"\/>/g, '');
-if (inkOnly.includes('#D4704F') || inkOnly.includes('#FAF9F5')) throw new Error('could not strip the sun from logo-mark.svg');
+if (inkOnly.includes('#F2A516') || inkOnly.includes('#FAF9F5')) throw new Error('could not strip the sun from logo-mark.svg');
 
 const fileIn = (app, path) => new URL(`../${app}/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const out = (path) => fileIn('mobile', path);

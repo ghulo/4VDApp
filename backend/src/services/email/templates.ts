@@ -28,7 +28,7 @@ const C = {
   ink: '#141413',
   muted: '#5e5d59',
   line: '#e0dbcf',
-  clayText: '#a8482a',
+  clayText: '#8a5300',
   ok: '#2f6b3f',
   warn: '#86500c',
   danger: '#b0302a',
@@ -42,16 +42,16 @@ const NIGHT: typeof C = {
   ink: '#f3f1ea',
   muted: '#b0ada4',
   line: '#3a3834',
-  clayText: '#ec9572',
+  clayText: '#f5b53f',
   ok: '#7ccf8e',
   warn: '#f0b45a',
   danger: '#ff8f80',
   info: '#8fb8e8',
 };
-const CLAY = '#d4704f';
-const CLAY_HOVER = '#df8667';
-const CLAY_EDGE = '#a8482a';
-/** Text on clay: white fails contrast. */
+const CLAY = '#f2a516';
+const CLAY_HOVER = '#f5b53f';
+const CLAY_EDGE = '#b57400';
+/** Text on amber: white fails contrast. */
 const PILLAR_INK = '#1c0f08';
 const SANS = "'Hanken Grotesk',Helvetica,Arial,sans-serif";
 const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";

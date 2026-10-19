@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 // Same tokens as the dashboard (admin/src/styles/tokens.css, DESIGN.md "Calm
 // Shop"): ink on ivory paper with oat panels, quiet status colours with tints,
-// clay for the brand, the main action and where you are.
+// amber for the brand, the main action and where you are.
 const light = {
   background: '#f0eee6',
   surface: '#faf9f5',
@@ -13,12 +13,12 @@ const light = {
   inkMuted: '#5e5d59',
   line: '#e0dbcf',
   lineStrong: '#cbc3b3',
-  brand: '#a8482a',
+  brand: '#8a5300',
   brandInk: '#ffffff',
-  brandSoft: '#f5e6dc',
-  accent: '#d4704f',
-  warn: '#86500c',
-  warnSoft: '#f6ecd9',
+  brandSoft: '#f8ecd4',
+  accent: '#b57400',
+  warn: '#9a3f0d',
+  warnSoft: '#f8e6da',
   danger: '#b0302a',
   dangerSoft: '#f8e5e1',
   ok: '#2f6b3f',
@@ -34,7 +34,7 @@ const light = {
   keyDropPressed: '0 1px 2px rgba(20, 20, 19, 0.12)',
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-  ctaEdge: '#a8482a',
+  ctaEdge: '#b57400',
   // Glass (DESIGN.md 8.1): paper at 72% over a blur, a faint top highlight.
   glassBg: 'rgba(250, 249, 245, 0.72)',
   glassHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.6)',
@@ -49,12 +49,12 @@ const dark: typeof light = {
   inkMuted: '#b0ada4',
   line: '#3a3834',
   lineStrong: '#4a4843',
-  brand: '#ec9572',
+  brand: '#f5b53f',
   brandInk: '#1a120e',
-  brandSoft: '#3b2016',
-  accent: '#d4704f',
-  warn: '#f0b45a',
-  warnSoft: '#33240d',
+  brandSoft: '#3a2a0e',
+  accent: '#f2a516',
+  warn: '#f59a62',
+  warnSoft: '#36200f',
   danger: '#ff8f80',
   dangerSoft: '#3a1713',
   ok: '#7ccf8e',
@@ -68,7 +68,7 @@ const dark: typeof light = {
   keyDropPressed: '0 1px 2px rgba(0, 0, 0, 0.4)',
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.3)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.12)',
-  ctaEdge: '#9a4024',
+  ctaEdge: '#a86c00',
   glassBg: 'rgba(37, 36, 33, 0.72)',
   glassHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
 };
@@ -77,9 +77,9 @@ const dark: typeof light = {
 function withAliases(palette: typeof light) {
   return {
     ...palette,
-    // The main action: solid clay with near-black text, the same in both
+    // The main action: solid amber with near-black text, the same in both
     // themes, so the one thing to do on a screen always stands out.
-    cta: '#d4704f',
+    cta: '#f2a516',
     ctaInk: '#1c0f08',
     // A chosen chip or option: ink too.
     selected: palette.ink,
@@ -96,7 +96,7 @@ export const palettes = { light: withAliases(light), dark: withAliases(dark) };
 export type ThemeColors = (typeof palettes)['light'];
 
 /**
- * A raised button (DESIGN.md 10.1): clay (or paper) on a 2px edge with a soft
+ * A raised button (DESIGN.md 10.1): amber (or paper) on a 2px edge with a soft
  * drop. Pressing sinks the face into the edge; pair with keyTravel.
  */
 export function keyShadow(colors: ThemeColors, look: 'clay' | 'paper', pressed: boolean): string {

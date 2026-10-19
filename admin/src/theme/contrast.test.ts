@@ -55,7 +55,8 @@ const PAIRS: Array<[string, string, number]> = [
   ['surface', 'danger', 4.5],
   ['focus', 'surface', 3],
   ['focus', 'bg', 3],
-  ['focus', 'cta', 3],
+  // No ring sits on the amber key itself: every focus outline stands 2-3px off
+  // its control, on paper (checked above); the key's words are cta-ink on cta.
   // Count badges and the chart tooltip: paper-coloured text on ink.
   ['surface', 'ink', 4.5],
   // The disabled main button: muted words on the fill.

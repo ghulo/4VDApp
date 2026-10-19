@@ -6,13 +6,13 @@ family shop after them.
 ## The mark
 
 The shop at sunrise (`logo-mark.svg`): four equal pillars under one roof, the
-four brothers holding up the family home and shop, with a clay sun rising behind
+four brothers holding up the family home and shop, with an amber sun rising behind
 them, on an ivory tile. The pillars are the same size on purpose; nobody is
 bigger. It uses the same shapes as the sign-in drawing.
 
 - Use `logo-mark.svg` on its own for icons, favicons and small spaces.
 - Use `logo-full.svg` (mark + "4VD") where there is room for the name.
-- Keep the mark's colours: ink `#141413`, clay `#D4704F`, ivory `#FAF9F5`.
+- Keep the mark's colours: ink `#141413`, amber `#F2A516`, ivory `#FAF9F5`.
 - Don't stretch it, outline it, add shadows, or tell the four-brothers story
   in the interface. It's there for people who ask.
 - The app icons are drawn from the SVG: run `node brand/make_icons.mjs` after

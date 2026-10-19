@@ -23,7 +23,7 @@ const groupIban = (iban: string) => iban.replace(/(.{4})(?=.)/g, '$1 ');
  * Colors and type follow DESIGN.md's printed finish, on white paper so it
  * prints cleanly: a masthead with the shop's logo over a double rule, the
  * buyer and the document's facts, the lines (with any rabat), then the totals
- * with the amount due in a clay-edged box and in words, the signatures around
+ * with the amount due in an amber-edged box and in words, the signatures around
  * the stamp, and the shop and page number in the bottom margin. The number
  * is also a barcode, so scanning the paper finds the document again.
  */
@@ -119,7 +119,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
 <style>
   :root {
     --ink: #141413; --ink-muted: #5e5d59; --hairline: #e0dbcf; --hairline-strong: #cbc3b3;
-    --clay: #d4704f; --clay-text: #a8482a; --sunk: #f0eee6; --warn: #86500c; --warn-soft: #f6ecd9;
+    --clay: #f2a516; --clay-text: #8a5300; --sunk: #f0eee6; --warn: #9a3f0d; --warn-soft: #f8e6da;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
   }
   /*

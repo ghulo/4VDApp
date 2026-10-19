@@ -1420,6 +1420,16 @@ input.switch:focus-visible {
   text-transform: uppercase;
 }
 
+/* A tile named after a thing (Shop till, Bank account): its name reads as a name. */
+.stat__label--name {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 /* ---------- Settings layout ---------- */
 
 /* Long settings pages: the sections listed beside the content, staying in view

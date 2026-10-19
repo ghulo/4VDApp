@@ -9,6 +9,8 @@ export function StatGrid({ children, compact }: { children: ReactNode; /** One s
 
 interface StatTileProps {
   label: string;
+  /** The label is the name of a thing (a till, a bank account), not a spec label: body type, not monospace capitals. */
+  named?: boolean;
   value: ReactNode;
   /**
    * A calm sentence in place of the figure ("None low", "Not entered yet"):
@@ -22,10 +24,10 @@ interface StatTileProps {
   to?: string;
 }
 
-export function StatTile({ label, value, words, hint, icon: IconComponent, tone = 'default', to }: StatTileProps) {
+export function StatTile({ label, value, words, hint, icon: IconComponent, tone = 'default', to, named }: StatTileProps) {
   const body = (
     <>
-      <span className="stat__label">
+      <span className={named ? 'stat__label stat__label--name' : 'stat__label'}>
         {IconComponent && <IconComponent size={16} aria-hidden="true" />}
         {label}
       </span>

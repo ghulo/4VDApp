@@ -141,6 +141,7 @@ function PlaceTile({ place }: { place: MoneyPlace }) {
   const hint = [words, place.account?.number, place.iban && formatIban(place.iban)].filter(Boolean).join(' · ') || undefined;
   return (
     <StatTile
+      named
       label={placeName(t, place)}
       value={formatHeadlineMoney(place.balance)}
       hint={hint}

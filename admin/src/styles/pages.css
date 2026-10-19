@@ -4905,7 +4905,6 @@ fieldset.report-sections {
 /* ---------- Money: places, moves, bank statements ---------- */
 
 .money-total {
-  font-family: var(--font-mono);
   font-size: var(--text-lg);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

@@ -616,6 +616,21 @@
   white-space: nowrap;
 }
 
+/* A row label (th scope="row") reads like an ordinary cell, not a column label. */
+.table tbody th {
+  padding: var(--space-3);
+  background: none;
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: 400;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
 .table td {
   padding: var(--space-3);
   border-bottom: 1px solid var(--line);
@@ -630,7 +645,8 @@
   transition: background-color var(--fast) var(--ease);
 }
 
-.table tbody tr:hover td {
+.table tbody tr:hover td,
+.table tbody tr:hover th {
   background: color-mix(in srgb, var(--surface-sunk) 60%, var(--surface));
 }
 
@@ -1393,7 +1409,7 @@ input.switch:focus-visible {
 /* ---------- Spec labels ----------
    The small capital labels over figures and columns, set in monospace like the
    DATE / CATEGORY rows on anthropic.com. Only short labels, never sentences. */
-.table th,
+.table thead th,
 .stat__label,
 .metric__label,
 .sidebar__group-label {

@@ -5441,11 +5441,12 @@ fieldset.report-sections {
 }
 
 .roles-grid__what {
-  display: grid;
-  gap: var(--space-1);
   min-width: 220px;
   text-align: start;
-  font-weight: 400;
+}
+
+.roles-grid__what .table__secondary {
+  margin-top: var(--space-1);
 }
 
 .roles-grid__title {
@@ -5454,9 +5455,13 @@ fieldset.report-sections {
 }
 
 .roles-grid__cell input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--brand);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.roles-grid__cell input:disabled {
+  cursor: not-allowed;
 }
 
 .roles-panel__actions {

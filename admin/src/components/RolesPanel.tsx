@@ -125,7 +125,7 @@ interface Row {
   onToggle: (role: UserRole) => void;
 }
 
-/** Rows of things, a column per role, a tick where the role has it. The developer's column is always ticked. */
+/** Rows of things, a column per role, a tick where the role has it. The developer can always do everything, so has no column. */
 function RoleTable({ caption, firstHeader, roles, rows }: { caption: string; firstHeader: string; roles: UserRole[]; rows: Row[] }) {
   const t = useT();
   return (
@@ -135,9 +135,6 @@ function RoleTable({ caption, firstHeader, roles, rows }: { caption: string; fir
         <thead>
           <tr>
             <th scope="col">{firstHeader}</th>
-            <th scope="col" className="roles-grid__role">
-              {t.common.roles.developer}
-            </th>
             {roles.map((role) => (
               <th key={role} scope="col" className="roles-grid__role">
                 {t.common.roles[role]}
@@ -152,9 +149,6 @@ function RoleTable({ caption, firstHeader, roles, rows }: { caption: string; fir
                 <span className="roles-grid__title">{row.title}</span>
                 {row.hint && <span className="table__secondary">{row.hint}</span>}
               </th>
-              <td className="roles-grid__cell">
-                <input type="checkbox" checked disabled aria-label={t.permissions.cell(t.common.roles.developer, row.title)} />
-              </td>
               {roles.map((role) => (
                 <td key={role} className="roles-grid__cell">
                   <input

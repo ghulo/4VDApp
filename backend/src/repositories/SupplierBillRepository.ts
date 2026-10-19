@@ -3,6 +3,7 @@ import type { BillKind, BillLineKind, CustomsPaidMethod, WithholdingType } from 
 import type { ExpensePlace } from '../constants/expenses.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
+import type { RecordSource } from '../validators/validate.js';
 
 export interface BillRecord {
   id: number;
@@ -44,6 +45,8 @@ export interface BillRecord {
   repeat_id: number | null;
   /** The VAT month it counts in when its own month was filed before it came; null: its own month. */
   vat_month: string | null;
+  /** Set on a bill from TREFIN's history, only to look at. */
+  trefin_ref: string | null;
 }
 
 export interface PaymentRecord {
@@ -132,6 +135,8 @@ export interface BillFilters {
   supplierId?: number;
   /** open: something left to pay; paid: nothing left; void: voided. */
   status?: 'open' | 'paid' | 'void';
+  /** 4vd: made here; trefin: TREFIN's history. */
+  source?: RecordSource;
 }
 
 /** Paid on a bill; for a return or credit, how much of it went against its bill. */
@@ -185,6 +190,7 @@ export class SupplierBillRepository {
         'b.carwash_id',
         'w.name as carwash_name',
         'b.repeat_id',
+        'b.trefin_ref',
       ]);
   }
 
@@ -192,20 +198,25 @@ export class SupplierBillRepository {
   findMany(filters: BillFilters): Promise<BillRecord[]> {
     let query = this.baseQuery();
     if (filters.supplierId !== undefined) query = query.where('b.supplier_id', '=', filters.supplierId);
+    if (filters.source) query = query.where('b.trefin_ref', filters.source === 'trefin' ? 'is not' : 'is', null);
     if (filters.status === 'void') query = query.where('b.voided_at', 'is not', null);
     else if (filters.status) {
-      // A return or credit is listed with everything, never as something owed.
+      // A return or credit is listed with everything, never as something owed; TREFIN's history is neither open nor paid here.
       if (filters.status === 'open') query = query.where('b.kind', '=', 'bill');
       query = query
         .where('b.voided_at', 'is', null)
+        .where('b.trefin_ref', 'is', null)
         .where(filters.status === 'open' ? sql<boolean>`${paid} < b.amount` : sql<boolean>`${paid} >= b.amount`);
     }
+    // 4VD's own bills first, most urgent first; then TREFIN's history, newest first.
     return query
+      .orderBy(sql`b.trefin_ref is not null`)
       .orderBy(sql`b.voided_at is not null`)
       .orderBy(sql`${paid} >= b.amount`)
-      .orderBy(sql`coalesce(b.due_on, b.issued_on)`)
+      .orderBy(sql`case when b.trefin_ref is null then coalesce(b.due_on, b.issued_on) end`)
+      .orderBy('b.issued_on', 'desc')
       .orderBy('b.id', 'desc')
-      .limit(500)
+      .limit(1500)
       .execute();
   }
 

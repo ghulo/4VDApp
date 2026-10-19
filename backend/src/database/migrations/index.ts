@@ -44,7 +44,10 @@ import * as money from './042_money.js';
 import * as counter from './043_counter.js';
 import * as opening from './044_opening.js';
 import * as trefinCompare from './045_trefin_compare.js';
-import * as statements from './047_statements.js';
+import * as trefinHistory from './046_trefin_history.js';
+import * as trefinSales from './047_trefin_sales.js';
+import * as trefinStock from './048_trefin_stock.js';
+import * as statements from './052_statements.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -98,5 +101,8 @@ export const migrations: Record<string, Migration> = {
   '043_counter': counter,
   '044_opening': opening,
   '045_trefin_compare': trefinCompare,
-  '047_statements': statements,
+  '046_trefin_history': trefinHistory,
+  '047_trefin_sales': trefinSales,
+  '048_trefin_stock': trefinStock,
+  '052_statements': statements,
 };

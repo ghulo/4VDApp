@@ -43,6 +43,8 @@ const productFields = {
   categoryId: idSchema,
   price: money,
   costPrice: money.nullish().transform((value) => value ?? null),
+  /** What a business pays, with VAT; null clears it, left out keeps it. */
+  wholesalePrice: money.nullish(),
   imageUrl: optionalImageUrl,
   sku: optionalText(100),
   isActive: z.boolean().default(true),

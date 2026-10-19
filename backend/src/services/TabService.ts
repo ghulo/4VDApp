@@ -1,3 +1,4 @@
+import type { PartnerDetails } from '../validators/partnerDetails.js';
 import type { TabEntryKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CustomerFields, CustomerRecord, PurchaseTotals, TabEntryRecord, TabRepository } from '../repositories/TabRepository.js';
@@ -11,7 +12,7 @@ import { assertMonthsOpen } from './vat/periodLock.js';
 export const OVERDUE_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export interface CustomerDto {
+export interface CustomerDto extends PartnerDetails {
   id: number;
   name: string;
   kind: 'person' | 'business';
@@ -19,6 +20,9 @@ export interface CustomerDto {
   nui: string | null;
   phone: string | null;
   note: string | null;
+  /** The most they may owe on their tab, and their usual discount in percent; null: none. */
+  creditLimit: number | null;
+  discountPercent: number | null;
   /** What they owe now; below zero when they have credit. */
   balance: number;
   /** When the oldest charge still unpaid was made (payments pay off the oldest first); null when nothing is owed. */
@@ -184,6 +188,16 @@ function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[], boug
     nui: customer.nui,
     phone: customer.phone,
     note: customer.note,
+    address: customer.address,
+    city: customer.city,
+    businessNo: customer.businessNo,
+    fiscalNo: customer.fiscalNo,
+    vatNo: customer.vatNo,
+    iban: customer.iban,
+    contactPerson: customer.contactPerson,
+    mobile: customer.mobile,
+    creditLimit: customer.credit_limit === null ? null : Number(customer.credit_limit),
+    discountPercent: customer.discount_percent === null ? null : Number(customer.discount_percent),
     balance,
     owingSince: owingSince?.toISOString() ?? null,
     lastPaymentAt: lastPaymentAt?.toISOString() ?? null,

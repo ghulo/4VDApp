@@ -5,13 +5,15 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { DueBadge } from '../components/BillParts';
+import { hasDetails, PartnerFacts } from '../components/PartnerDetails';
+import { SourceFilter, TrefinTag } from '../components/TrefinParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { SupplierForm } from '../components/SupplierForm';
 import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 import { PlaceSelect, SpreadList, placeInSentence, spread, useMoneyRefresh, usePlaces, usualPlace } from '../components/MoneyParts';
 import { useT } from '../i18n/useT';
 import { billsApi, moneyApi, ordersApi, reportsApi, suppliersApi } from '../services/api';
-import type { PurchaseOrder, Supplier, SupplierBill } from '../services/types';
+import type { PurchaseOrder, RecordSource, Supplier, SupplierBill } from '../services/types';
 import { BILL_STATUS_TONE, todayIso } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -29,6 +31,7 @@ export function SupplierDetailPage() {
   const reorder = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
   const usual = useQuery({ queryKey: ['orders', 'usual-suppliers'], queryFn: ordersApi.usualSuppliers });
   const [paying, setPaying] = useNewSheet('pay');
+  const [source, setSource] = useState<RecordSource>();
 
   if (suppliers.isPending) return <Loading />;
   if (suppliers.isError) return <ErrorNotice error={suppliers.error} onRetry={() => suppliers.refetch()} />;
@@ -41,6 +44,8 @@ export function SupplierDetailPage() {
   const payable = unpaid.filter((bill) => bill.kind === 'bill');
   const owed = unpaid.reduce((sum, bill) => sum + bill.left, 0);
   const overdue = unpaid.filter((bill) => bill.overdue).reduce((sum, bill) => sum + bill.left, 0);
+  const hasTrefin = bills.data?.some((bill) => bill.fromTrefin) ?? false;
+  const shownBills = (bills.data ?? []).filter((bill) => !source || bill.fromTrefin === (source === 'trefin'));
   const lowFromThem = (reorder.data ?? []).filter((row) => row.suggestedOrder > 0 && usual.data?.[row.productId] === id).length;
 
   return (
@@ -96,10 +101,19 @@ export function SupplierDetailPage() {
       </StatGrid>
 
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
-      <Card title={t.suppliers.bills} flush actions={<Link to={`/bills?supplier=${id}&status=all`}>{t.suppliers.allBills}</Link>}>
+      <Card
+        title={t.suppliers.bills}
+        flush
+        actions={
+          <>
+            {hasTrefin && <SourceFilter value={source} onChange={setSource} />}
+            <Link to={`/bills?supplier=${id}&status=all`}>{t.suppliers.allBills}</Link>
+          </>
+        }
+      >
         <DataTable
           caption={t.suppliers.bills}
-          rows={bills.data ?? []}
+          rows={shownBills}
           rowKey={(bill) => bill.id}
           empty={<EmptyState title={bills.isPending ? t.common.loading : t.suppliers.noBills} />}
           columns={[
@@ -109,6 +123,12 @@ export function SupplierDetailPage() {
               cell: (bill) => (
                 <Link to={`/bills/${bill.id}`} className="table__primary-link">
                   {bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber}
+                  {bill.fromTrefin && bill.status !== 'history' && (
+                    <>
+                      {' '}
+                      <TrefinTag />
+                    </>
+                  )}
                   <span className="table__secondary">{formatDate(bill.issuedOn)}</span>
                 </Link>
               ),
@@ -124,7 +144,15 @@ export function SupplierDetailPage() {
       {orders.isError && <ErrorNotice error={orders.error} onRetry={() => orders.refetch()} />}
       <OrdersCard supplierId={id} orders={theirOrders} isPending={orders.isPending} />
 
-      {canManage(role) && <DetailsCard supplier={supplier} />}
+      {canManage(role) ? (
+        <DetailsCard supplier={supplier} />
+      ) : (
+        hasDetails(supplier) && (
+          <Card title={t.suppliers.details}>
+            <PartnerFacts partner={supplier} />
+          </Card>
+        )
+      )}
       <HistoryCard entityType="supplier" entityId={id} />
     </>
   );
@@ -285,6 +313,7 @@ function DetailsCard({ supplier }: { supplier: Supplier }) {
 
   return (
     <Card title={t.suppliers.details}>
+      {!editing && <PartnerFacts partner={supplier} />}
       {editing ? (
         <SupplierForm key={supplier.id} supplier={supplier} onDone={() => setEditing(false)} />
       ) : (

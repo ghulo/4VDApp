@@ -5,6 +5,7 @@ import { suppliersApi } from '../services/api';
 import { type Supplier, WITHHOLDING_RATES, WITHHOLDING_TYPES, type WithholdingType } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
+import { PartnerDetailFields, usePartnerDraft } from './PartnerDetails';
 import { Button, Field } from './ui';
 
 /** Adds a supplier, or with `supplier` changes one. The NUI is required, unless the supplier is abroad. */
@@ -17,6 +18,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
   const [email, setEmail] = useState(supplier?.email ?? '');
   const [abroad, setAbroad] = useState(supplier?.abroad ?? false);
   const [withholding, setWithholding] = useState<WithholdingType | ''>(supplier?.withholdingType ?? '');
+  const details = usePartnerDraft(supplier);
   const nuiOk = isNui(nui) || (abroad && nui.trim() === '');
   const save = useMutation({
     mutationFn: () => {
@@ -27,6 +29,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
         email: email.trim() || null,
         abroad,
         withholdingType: withholding || null,
+        ...details.values(),
       };
       return supplier ? suppliersApi.update(supplier.id, input) : suppliersApi.add(input);
     },
@@ -39,6 +42,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
       setEmail('');
       setAbroad(false);
       setWithholding('');
+      details.reset();
       onDone(saved);
     },
   });
@@ -84,6 +88,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
           ))}
         </select>
       </Field>
+      <PartnerDetailFields draft={details.draft} setDraft={details.setDraft} />
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}

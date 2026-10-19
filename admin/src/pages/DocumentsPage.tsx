@@ -7,6 +7,7 @@ import { Pagination } from '../components/Pagination';
 import { PrintDocumentButton } from '../components/PrintDocumentButton';
 import { SearchInput } from '../components/SearchInput';
 import { Badge, DataTable, DateField, EmptyState, PageHeader } from '../components/ui';
+import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { useT } from '../i18n/useT';
 import { documentsApi } from '../services/api';
 import type { DocumentKind, SalesDocument } from '../services/types';
@@ -21,9 +22,10 @@ export function DocumentsPage() {
   const search = params.get('q') ?? '';
   const startDate = params.get('from') ?? '';
   const endDate = params.get('to') ?? '';
+  const source = sourceFrom(params);
 
   const documents = useQuery({
-    queryKey: ['documents', { page, kind, search, startDate, endDate }],
+    queryKey: ['documents', { page, kind, search, startDate, endDate, source }],
     queryFn: () =>
       documentsApi.list({
         page,
@@ -31,6 +33,7 @@ export function DocumentsPage() {
         search: search || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        source,
       }),
     placeholderData: keepPreviousData,
   });
@@ -50,7 +53,7 @@ export function DocumentsPage() {
     [setParams],
   );
   const onSearch = useCallback((value: string) => updateParams({ q: value }), [updateParams]);
-  const filtered = Boolean(kind || search || startDate || endDate);
+  const filtered = Boolean(kind || search || startDate || endDate || source);
 
   return (
     <>
@@ -89,6 +92,7 @@ export function DocumentsPage() {
                   <DateField value={endDate} min={startDate || undefined} onChange={(value) => updateParams({ to: value })} />
                 </label>
               </span>
+              <SourceFilter value={source} onChange={(next) => updateParams({ source: next ?? '' })} />
             </div>
           }
           columns={[
@@ -96,9 +100,17 @@ export function DocumentsPage() {
               header: t.documents.number,
               title: true,
               cell: (document) => (
-                <Link to={`/documents/${document.id}`} className="table__primary-link">
-                  {document.number}
-                </Link>
+                <>
+                  <Link to={`/documents/${document.id}`} className="table__primary-link">
+                    {document.number}
+                  </Link>
+                  {document.fromTrefin && (
+                    <>
+                      {' '}
+                      <TrefinTag />
+                    </>
+                  )}
+                </>
               ),
             },
             {
@@ -111,7 +123,8 @@ export function DocumentsPage() {
             { header: t.documents.buyer, cell: (document) => document.buyer?.name ?? t.documents.walkIn },
             {
               header: t.documents.fiscal,
-              cell: (document) => document.fiscalReceiptNo ?? <span className="table__secondary">{t.documents.notLinked}</span>,
+              cell: (document) =>
+                document.fiscalReceiptNo ?? (document.fromTrefin ? '–' : <span className="table__secondary">{t.documents.notLinked}</span>),
             },
             {
               header: t.documents.total,

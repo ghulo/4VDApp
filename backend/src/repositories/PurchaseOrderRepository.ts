@@ -1,11 +1,12 @@
 import { sql } from 'kysely';
 import type { BillLineKind, WithholdingType } from '../constants/bills.js';
 import type { DatabaseClient } from '../database/connection.js';
+import { PARTNER_DETAIL_COLUMNS, partnerDetailRow, type PartnerDetails } from '../validators/partnerDetails.js';
 
 export type OrderStatus = 'open' | 'received' | 'cancelled';
 
-/** A supplier's details; the bill memory fields left out keep what is stored. */
-export interface SupplierFields {
+/** A supplier's details; the bill memory fields and partner details left out keep what is stored. */
+export interface SupplierFields extends Partial<PartnerDetails> {
   name: string;
   nui: string | null;
   phone: string | null;
@@ -19,7 +20,7 @@ export interface SupplierFields {
   withholdingType?: WithholdingType | null;
 }
 
-export interface SupplierRecord {
+export interface SupplierRecord extends PartnerDetails {
   id: number;
   name: string;
   nui: string | null;
@@ -50,6 +51,7 @@ const SUPPLIER_COLUMNS = [
   'usual_vat_rate as usualVatRate',
   'usual_vat_exempt as usualVatExempt',
   'withholding_type as withholdingType',
+  ...PARTNER_DETAIL_COLUMNS,
 ] as const;
 
 const supplierRow = (input: SupplierFields) => ({
@@ -64,6 +66,7 @@ const supplierRow = (input: SupplierFields) => ({
   ...(input.usualVatRate !== undefined && { usual_vat_rate: input.usualVatRate }),
   ...(input.usualVatExempt !== undefined && { usual_vat_exempt: input.usualVatRate === 0 && input.usualVatExempt }),
   ...(input.withholdingType !== undefined && { withholding_type: input.withholdingType }),
+  ...partnerDetailRow(input),
 });
 
 export interface OrderRecord {

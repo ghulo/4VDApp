@@ -9,6 +9,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
 import { DueBadge } from '../components/BillParts';
+import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { ScanBillForm, WaitingScans } from '../components/BillScanParts';
 import { BILL_STATUS_TONE } from '../utils/bills';
 import { formatDate, formatMoney } from '../utils/format';
@@ -34,6 +35,7 @@ export function BillsPage() {
   const [params, setParams] = useSearchParams();
   const status: StatusFilter = (FILTERS as readonly string[]).includes(params.get('status') ?? '') ? (params.get('status') as StatusFilter) : 'open';
   const supplierId = params.get('supplier') ?? '';
+  const source = sourceFrom(params);
   const [scanning, setScanning] = useNewSheet('scan');
   // The accountant reads the bills; adding and paying them stays with the people who run the shop.
   const writes = canOversee(useCurrentUser().role);
@@ -42,8 +44,8 @@ export function BillsPage() {
   // Overdue and due-this-week are the unpaid list narrowed down here, so they share its request.
   const asked = status === 'all' ? undefined : status === 'paid' ? 'paid' : 'open';
   const bills = useQuery({
-    queryKey: ['bills', { status: asked, supplierId }],
-    queryFn: () => billsApi.list({ status: asked, supplierId: supplierId ? Number(supplierId) : undefined }),
+    queryKey: ['bills', { status: asked, supplierId, source }],
+    queryFn: () => billsApi.list({ status: asked, supplierId: supplierId ? Number(supplierId) : undefined, source }),
   });
   const narrow = NARROW[status];
   const rows = (bills.data ?? []).filter((bill) => !narrow || narrow(bill));
@@ -124,6 +126,8 @@ export function BillsPage() {
                 </option>
               ))}
             </select>
+            {/* TREFIN's bills are never open or paid here, so asking for them shows every status. */}
+            <SourceFilter value={source} onChange={(next) => setFilter({ source: next ?? '', ...(next === 'trefin' && { status: 'all' }) })} />
             {supplierName && <Link to={`/suppliers/${supplierId}`}>{t.suppliers.see}</Link>}
           </div>
         }
@@ -134,6 +138,12 @@ export function BillsPage() {
             cell: (bill) => (
               <Link to={`/bills/${bill.id}`} className="table__primary-link">
                 {bill.supplier?.name ?? t.bills.noSupplier}
+                {bill.fromTrefin && bill.status !== 'history' && (
+                  <>
+                    {' '}
+                    <TrefinTag />
+                  </>
+                )}
                 <span className="table__secondary">
                   {[bill.kind === 'credit' ? (bill.returnsStock ? t.bills.returnStamp : t.bills.creditStamp) : null, bill.number ? t.bills.numbered(bill.number) : t.bills.noNumber]
                     .filter(Boolean)

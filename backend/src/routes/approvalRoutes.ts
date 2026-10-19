@@ -52,6 +52,9 @@ export function createStockCountRoutes({ stockCountService, guards }: Container)
 
   router.get('/', ...guards.staff, controller.list);
   router.post('/', ...guards.staff, controller.start);
+  // TREFIN's starting stocks, corrections and counts, to look at.
+  router.get('/trefin', ...guards.staff, controller.trefinList);
+  router.get('/trefin/:id', ...guards.staff, controller.trefinGet);
   router.get('/:id', ...guards.staff, controller.get);
   router.put('/:id/lines/:productId', ...guards.staff, controller.countLine);
   router.post('/:id/submit', ...guards.staff, controller.submit);

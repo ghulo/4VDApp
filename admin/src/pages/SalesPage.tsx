@@ -8,6 +8,7 @@ import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
+import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { useSalesSeries } from '../components/useSalesSeries';
 import { productsApi, reportsApi, salesApi, usersApi } from '../services/api';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
@@ -123,6 +124,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const productId = params.get('product') ?? '';
   const soldBy = params.get('seller') ?? '';
   const search = params.get('search') ?? '';
+  const source = sourceFrom(params);
   // Every product, sold out or not, and everyone who has ever sold: history keeps them all.
   const products = useQuery({
     queryKey: ['products', { page: 1, limit: 100, purpose: 'filter' }],
@@ -135,11 +137,12 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const [returningId, setReturningId] = useState<number | null>(null);
   const [returnMessage, setReturnMessage] = useState<string | null>(null);
   const sales = useQuery({
-    queryKey: ['sales', 'checkouts', { page, ...range, productId, soldBy, search }],
+    queryKey: ['sales', 'checkouts', { page, ...range, productId, soldBy, search, source }],
     queryFn: () =>
       salesApi.checkouts({
         page,
         ...range,
+        source,
         productId: productId ? Number(productId) : undefined,
         soldBy: soldBy ? Number(soldBy) : undefined,
         search: search || undefined,
@@ -211,6 +214,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
                   </option>
                 ))}
               </select>
+              <SourceFilter value={source} onChange={(next) => updateParams({ source: next ?? '' })} />
             </>
           }
           totals={['', t.sales.totalOf(sales.data.meta.total), formatMoney(sales.data.totalRevenue), '', '']}
@@ -245,7 +249,16 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
             {
               header: t.documents.invoice,
               cell: (checkout) =>
-                checkout.invoice ? <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link> : (checkout.receiptNo ?? '–'),
+                checkout.invoice ? (
+                  <Link to={`/documents/${checkout.invoice.id}`}>{checkout.invoice.number}</Link>
+                ) : checkout.receiptNo ? (
+                  // Only sales brought over from TREFIN carry its receipt number.
+                  <>
+                    {checkout.receiptNo} <TrefinTag />
+                  </>
+                ) : (
+                  '–'
+                ),
             },
           ]}
           afterRow={(checkout) =>

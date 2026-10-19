@@ -444,6 +444,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | The bank's list of what came in and went out | **bank statement** | **ekstrakt i bankës** *(confirm)* | bank feed, export |
 | Saying what a statement line is | **match** · **Confirm** · **Leave it out** · **Take the match back** | **përputh** · **Konfirmo** · **Lëre jashtë** · **Ktheje përputhjen** *(confirm)* | reconcile |
 | Words that make a line the same thing every time | **rule** | **rregull** | bank rule |
+| Records brought over from the old program, look-only | small **TREFIN** tag (neutral badge); filter **4VD and TREFIN · 4VD only · TREFIN only**; a whole TREFIN bill's status is **TREFIN** | **TREFIN**; **4VD dhe TREFIN · Vetëm 4VD · Vetëm TREFIN** *(confirm)* | archive, legacy, imported |
 | The outside bookkeeper | **accountant** | **kontabilist** *(confirm)* | bookkeeper, auditor |
 
 ## 6. Colour

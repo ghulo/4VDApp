@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
-import { booleanQuerySchema, idSchema, optionalText, paginationSchema, trimmedString } from './validate.js';
+import { booleanQuerySchema, idSchema, optionalText, paginationSchema, recordSourceSchema, trimmedString } from './validate.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -69,6 +69,7 @@ export const saleQuerySchema = paginationSchema.extend({
   // The person who recorded the sale.
   soldBy: idSchema.optional(),
   search: z.string().trim().max(100).optional(),
+  source: recordSourceSchema.optional(),
 });
 
 // ---------- Analytics ----------

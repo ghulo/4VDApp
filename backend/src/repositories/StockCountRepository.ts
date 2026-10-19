@@ -215,4 +215,34 @@ export class StockCountRepository {
       .where('id', '=', countId)
       .execute();
   }
+
+  /** TREFIN's starting stocks, corrections and counts, newest first: how many lines, and their worth at TREFIN's cost. */
+  trefinDocuments(id?: number) {
+    let query = this.db
+      .selectFrom('trefin_stock_documents as d')
+      .select([
+        'd.id',
+        'd.kind',
+        'd.number',
+        sql<string>`to_char(d.dated, 'YYYY-MM-DD')`.as('dated'),
+        'd.source',
+        sql<number>`(select count(*)::int from trefin_stock_lines l where l.document_id = d.id)`.as('line_count'),
+        sql<string>`(select coalesce(sum(l.quantity * coalesce(l.unit_cost, 0)), 0) from trefin_stock_lines l where l.document_id = d.id)`.as('value'),
+      ])
+      .orderBy('d.dated', 'desc')
+      .orderBy('d.id', 'desc');
+    if (id !== undefined) query = query.where('d.id', '=', id);
+    return query.execute();
+  }
+
+  trefinLines(documentId: number) {
+    return this.db
+      .selectFrom('trefin_stock_lines as l')
+      .leftJoin('products as p', 'p.id', 'l.product_id')
+      .select(['l.product_id', 'l.product_name', 'p.sku', 'l.quantity', 'l.counted', 'l.unit_cost'])
+      .where('l.document_id', '=', documentId)
+      .orderBy('l.product_name')
+      .orderBy('l.id')
+      .execute();
+  }
 }

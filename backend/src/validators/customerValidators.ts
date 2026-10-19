@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { money } from './catalogValidators.js';
 import { calendarDaySchema, idSchema, nuiSchema } from './validate.js';
+import { partnerDetailsShape } from './partnerDetails.js';
 
 const optional = (max: number) =>
   z
@@ -18,6 +19,10 @@ export const customerSchema = z
     nui: z.union([nuiSchema, z.literal('').transform(() => null), z.null()]).optional(),
     phone: optional(40),
     note: optional(500),
+    ...partnerDetailsShape,
+    /** Left out: kept as it is; null: none. */
+    creditLimit: money.refine((value) => value > 0, 'must be more than 0').nullish(),
+    discountPercent: z.number().gt(0).max(100).nullish(),
   })
   .refine((input) => input.kind === 'person' || Boolean(input.nui), { path: ['nui'], message: 'a business needs its NUI' })
   .transform((input) => ({ ...input, nui: input.kind === 'business' ? input.nui! : null }));

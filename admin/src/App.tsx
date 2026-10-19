@@ -83,6 +83,7 @@ const PromotionsPage = lazyPage(() => import('./pages/PromotionsPage'), 'Promoti
 const AskPage = lazyPage(() => import('./pages/AskPage'), 'AskPage');
 const StockCountDetailPage = lazyPage(() => import('./pages/StockCountDetailPage'), 'StockCountDetailPage');
 const StockCountsPage = lazyPage(() => import('./pages/StockCountsPage'), 'StockCountsPage');
+const TrefinStockPage = lazyPage(() => import('./pages/TrefinStockPage'), 'TrefinStockPage');
 const PersonPage = lazyPage(() => import('./pages/UsersPage'), 'PersonPage');
 const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
 const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
@@ -224,6 +225,7 @@ function App() {
                     <Route path="people" element={<UsersPage />} />
                     <Route path="people/:id" element={<PersonPage />} />
                     <Route path="counts" element={<StockCountsPage />} />
+                    <Route path="counts/trefin/:id" element={<TrefinStockPage />} />
                     <Route path="counts/:id" element={<StockCountDetailPage />} />
                     <Route path="promotions" element={<PromotionsPage />} />
                     <Route path="promotions/:id" element={<PromotionDetailPage />} />

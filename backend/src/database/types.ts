@@ -21,6 +21,8 @@ import type { AccountClass, CashFlowActivity } from '../constants/chartOfAccount
 type Decimal = ColumnType<string, number | string, number | string>;
 type CreatedAt = ColumnType<Date, Date | undefined, never>;
 type UpdatedAt = ColumnType<Date, Date | undefined, Date>;
+/** A nullable column that inserts may leave out. */
+type Optional<T> = ColumnType<T | null, T | null | undefined, T | null>;
 
 export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family', 'accountant'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -163,6 +165,8 @@ export interface ProductsTable {
   vat_exempt: Generated<boolean>;
   /** Where it comes from (ISO code); starts from the barcode's prefix. */
   origin_country: string | null;
+  /** What a business pays, with VAT; null: the shelf price. */
+  wholesale_price: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -432,6 +436,18 @@ export interface CustomersTable {
   note: string | null;
   /** The partner code it had in TREFIN. */
   external_code: ColumnType<string | null, string | null | undefined, string | null>;
+  address: Optional<string>;
+  city: Optional<string>;
+  /** The business registration no. (NRB). */
+  business_no: Optional<string>;
+  fiscal_no: Optional<string>;
+  vat_no: Optional<string>;
+  iban: Optional<string>;
+  contact_person: Optional<string>;
+  mobile: Optional<string>;
+  /** The most they may owe on their tab, and their usual discount, as TREFIN had them. */
+  credit_limit: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   archived_at: Date | null;
   created_by: number | null;
   created_at: CreatedAt;
@@ -466,6 +482,15 @@ export interface SuppliersTable {
   note: string | null;
   /** The partner code it had in TREFIN. */
   external_code: ColumnType<string | null, string | null | undefined, string | null>;
+  address: Optional<string>;
+  city: Optional<string>;
+  /** The business registration no. (NRB). */
+  business_no: Optional<string>;
+  fiscal_no: Optional<string>;
+  vat_no: Optional<string>;
+  iban: Optional<string>;
+  contact_person: Optional<string>;
+  mobile: Optional<string>;
   /** A supplier from another country: its bills are imports, handled by 4VD (customs VAT, VAT charged to yourself). */
   abroad: Generated<boolean>;
   /** Remembered from its last bill, to fill in the next one. */
@@ -643,6 +668,8 @@ export interface SupplierBillsTable {
   vat_month: ColumnType<string | null, string | null | undefined, string | null>;
   /** An open bill from before the books start, brought over at launch: out of the books and the VAT return. */
   brought_over: Generated<boolean>;
+  /** "<database>/<document id>": a bill from TREFIN's history, only to look at (never owed, posted, counted for VAT or changed). */
+  trefin_ref: Optional<string>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -778,6 +805,8 @@ export interface DocumentsTable {
   /** Paid at the till, or on the customer's account (their tab), then due by `due_date`. */
   payment_method: ColumnType<DocumentPaymentMethod, DocumentPaymentMethod | undefined, never>;
   due_date: ColumnType<string | null, string | null | undefined, never>;
+  /** "<database>/<document id>" on an invoice TREFIN issued: history only, see migration 047. */
+  trefin_ref: ColumnType<string | null, string | null | undefined, never>;
 }
 
 export interface DocumentLinesTable {
@@ -1082,6 +1111,9 @@ export interface Database {
   trefin_months: TrefinMonthsTable;
   book_years: BookYearsTable;
   tax_instalments: TaxInstalmentsTable;
+  trefin_deleted_receipts: TrefinDeletedReceiptsTable;
+  trefin_stock_documents: TrefinStockDocumentsTable;
+  trefin_stock_lines: TrefinStockLinesTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1113,6 +1145,46 @@ export type UserUpdate = Updateable<UsersTable>;
 export type CategoryRow = Selectable<CategoriesTable>;
 export type NotificationRow = Selectable<NotificationsTable>;
 
+/** A receipt someone deleted in TREFIN, kept to look at (see migration 047). */
+export interface TrefinDeletedReceiptsTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  number: string | null;
+  kind: 'receipt' | 'invoice';
+  sold_on: ColumnType<string, string, string>;
+  deleted_at: Date;
+  deleted_by: string | null;
+  customer: string | null;
+  total: ColumnType<string, number | string, number | string>;
+  lines: ColumnType<TrefinReceiptLine[], string, string>;
+}
+
+/** TREFIN's starting stock, a correction or a count, kept to look at (see migration 048). */
+export interface TrefinStockDocumentsTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  kind: 'opening' | 'correction' | 'count';
+  number: string | null;
+  dated: ColumnType<string, string, string>;
+  source: string;
+}
+
+export interface TrefinStockLinesTable {
+  id: Generated<number>;
+  document_id: number;
+  product_id: number | null;
+  product_name: string;
+  quantity: ColumnType<string, number, number>;
+  counted: ColumnType<string | null, number | null, number | null>;
+  unit_cost: ColumnType<string | null, number | null, number | null>;
+}
+
+export interface TrefinReceiptLine {
+  name: string;
+  quantity: number;
+  total: number;
+}
+
 /** A VAT month's documents as TREFIN had them, to run 4VD next to TREFIN (see TrefinCompareService). */
 export interface TrefinMonthsTable {
   /** Its first day. */
@@ -1125,7 +1197,7 @@ export interface TrefinMonthsTable {
   explained: ColumnType<unknown, unknown | undefined, unknown>;
 }
 
-/** A closed year (see migration 047). */
+/** A closed year (see migration 052). */
 export interface BookYearsTable {
   year: number;
   profit: ColumnType<string, number, number>;
@@ -1136,7 +1208,7 @@ export interface BookYearsTable {
   closed_at: ColumnType<Date, Date | undefined, Date>;
 }
 
-/** A quarterly profit tax instalment (TM) paid (see migration 047). */
+/** A quarterly profit tax instalment (TM) paid (see migration 052). */
 export interface TaxInstalmentsTable {
   id: Generated<number>;
   year: number;

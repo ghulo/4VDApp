@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { LANGUAGES } from '../i18n/language.js';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
-import { paginationSchema } from './validate.js';
+import { paginationSchema, recordSourceSchema } from './validate.js';
 
 export const documentQuerySchema = paginationSchema.extend({
   kind: z.enum(['invoice', 'credit_note']).optional(),
@@ -9,6 +9,7 @@ export const documentQuerySchema = paginationSchema.extend({
   customerId: z.coerce.number().int().positive().optional(),
   startDate: startDateQuery.optional(),
   endDate: endDateQuery.optional(),
+  source: recordSourceSchema.optional(),
 });
 
 /** The printed page's language; defaults to the reader's own. */

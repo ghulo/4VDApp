@@ -40,6 +40,10 @@ export const paginationSchema = z.object({
 /** Query strings only carry text, so "true"/"false" need explicit parsing. */
 export const booleanQuerySchema = z.enum(['true', 'false']).transform((value) => value === 'true');
 
+/** Which records a list shows: those made in 4VD, or the history brought over from TREFIN; missing: both. */
+export const recordSourceSchema = z.enum(['4vd', 'trefin']);
+export type RecordSource = z.infer<typeof recordSourceSchema>;
+
 export const trimmedString = (maxLength: number) => z.string().trim().min(1).max(maxLength);
 
 /** NUI (Numri Unik Identifikues): Kosovo's 9-digit business number. Spaces are dropped. */

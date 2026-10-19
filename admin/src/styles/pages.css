@@ -4187,6 +4187,29 @@ fieldset.report-sections {
 }
 
 
+.partner-facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.partner-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.partner-facts dt {
+  color: var(--ink-muted);
+}
+
+.partner-facts dd {
+  margin: 0;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
 .duplicate-review__summary {
   margin: 0;
   max-width: 60ch;

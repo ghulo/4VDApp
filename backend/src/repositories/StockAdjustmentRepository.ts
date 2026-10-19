@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
 export interface StockAdjustmentRecord {
@@ -40,6 +41,18 @@ export class StockAdjustmentRepository {
       .orderBy('s.adjustment_date', 'desc')
       .orderBy('s.id', 'desc')
       .limit(limit)
+      .execute();
+  }
+
+  /** This product's lines in TREFIN's starting stocks, corrections and counts, newest first. */
+  trefinForProduct(productId: number) {
+    return this.db
+      .selectFrom('trefin_stock_lines as l')
+      .innerJoin('trefin_stock_documents as d', 'd.id', 'l.document_id')
+      .select(['l.id', 'd.id as document_id', 'd.kind', 'd.number', sql<string>`to_char(d.dated, 'YYYY-MM-DD')`.as('dated'), 'd.source', 'l.quantity', 'l.counted', 'l.unit_cost'])
+      .where('l.product_id', '=', productId)
+      .orderBy('d.dated', 'desc')
+      .orderBy('l.id', 'desc')
       .execute();
   }
 }

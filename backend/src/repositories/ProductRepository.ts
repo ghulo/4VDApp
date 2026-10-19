@@ -24,6 +24,8 @@ export interface ProductData {
   vatRate: number;
   vatExempt: boolean;
   originCountry: string | null;
+  /** What a business pays, with VAT; left out keeps it (none for a new product). */
+  wholesalePrice?: number | null;
 }
 
 /** A product joined with its category name and stock, as the API needs it. */
@@ -44,6 +46,7 @@ export interface ProductRecord {
   vat_rate: number;
   vat_exempt: boolean;
   origin_country: string | null;
+  wholesale_price: string | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -86,6 +89,7 @@ export class ProductRepository {
     'p.vat_rate',
     'p.vat_exempt',
     'p.origin_country',
+    'p.wholesale_price',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -149,6 +153,7 @@ export class ProductRepository {
         vat_rate: data.vatRate,
         vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
+        wholesale_price: data.wholesalePrice ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -170,6 +175,7 @@ export class ProductRepository {
         vat_rate: data.vatRate,
         vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
+        ...(data.wholesalePrice !== undefined && { wholesale_price: data.wholesalePrice }),
         updated_at: new Date(),
       })
       .where('id', '=', id)

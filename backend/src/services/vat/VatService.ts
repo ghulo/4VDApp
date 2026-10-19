@@ -270,8 +270,9 @@ export class VatService {
       .where(sql<boolean>`coalesce(b.vat_month, date_trunc('month', b.issued_on)::date) = ${month}::date`)
       .where('b.voided_at', 'is', null)
       .where('b.place', '<>', 'carwash')
-      // Open bills from TREFIN were in TREFIN's returns already.
+      // Open bills from TREFIN, and TREFIN's history, were in TREFIN's returns already.
       .where('b.brought_over', '=', false)
+      .where('b.trefin_ref', 'is', null)
       .execute();
     if (bills.length === 0) return [];
     const lines = await this.db
@@ -482,7 +483,7 @@ export class VatService {
       from supplier_bills b
       left join suppliers s on s.id = b.supplier_id
       where coalesce(b.vat_month, date_trunc('month', b.issued_on)::date) = ${month}::date
-        and b.voided_at is null and b.kind = 'bill' and b.amount + b.withheld > ${CASH_LIMIT}
+        and b.voided_at is null and b.trefin_ref is null and b.kind = 'bill' and b.amount + b.withheld > ${CASH_LIMIT}
       order by b.issued_on, b.id
     `.execute(this.db);
     return rows.map((row) => {

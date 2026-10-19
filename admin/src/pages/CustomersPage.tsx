@@ -1,4 +1,5 @@
 import { AddressBook, PencilSimple, Plus, Printer, WhatsappLogo } from '@phosphor-icons/react';
+import { TrefinTag } from '../components/TrefinParts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -33,6 +34,7 @@ import {
 } from '../components/ui';
 import { todayIso } from '../utils/bills';
 import { HistoryCard } from '../components/HistoryCard';
+import { PartnerDetailFields, PartnerFacts, hasDetails, usePartnerDraft } from '../components/PartnerDetails';
 
 /** Same as the server: tabs unpaid this long need a reminder. */
 const OVERDUE_DAYS = 30;
@@ -276,6 +278,10 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
   const [nui, setNui] = useState(customer?.nui ?? '');
   const [phone, setPhone] = useState(customer?.phone ?? '');
   const [note, setNote] = useState(customer?.note ?? '');
+  const details = usePartnerDraft(customer ?? null);
+  const [creditLimit, setCreditLimit] = useState(customer?.creditLimit != null ? String(customer.creditLimit) : '');
+  const [discount, setDiscount] = useState(customer?.discountPercent != null ? String(customer.discountPercent) : '');
+  const numberOrNull = (value: string) => (value.trim() === '' ? null : Number(value.replace(',', '.')));
   const save = useMutation({
     mutationFn: () => {
       const input = {
@@ -284,6 +290,9 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
         nui: kind === 'business' ? cleanNui(nui) : null,
         phone: phone.trim() || null,
         note: note.trim() || null,
+        ...details.values(),
+        creditLimit: numberOrNull(creditLimit),
+        discountPercent: numberOrNull(discount),
       };
       return customer ? customersApi.update(customer.id, input) : customersApi.create(input);
     },
@@ -331,6 +340,15 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
       <Field label={t.tabs.note}>
         <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
+      <div className="field-row">
+        <Field label={t.partner.creditLimit}>
+          <input type="number" min={0} step="0.01" inputMode="decimal" value={creditLimit} onChange={(event) => setCreditLimit(event.target.value)} />
+        </Field>
+        <Field label={t.partner.discountPercent}>
+          <input type="number" min={0} max={100} step="0.01" inputMode="decimal" value={discount} onChange={(event) => setDiscount(event.target.value)} />
+        </Field>
+      </div>
+      <PartnerDetailFields draft={details.draft} setDraft={details.setDraft} />
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}
@@ -429,6 +447,18 @@ export function CustomerDetailPage() {
       </div>
 
       <InvoicesCard customerId={data.id} />
+
+      {(hasDetails(data) || data.creditLimit != null || data.discountPercent != null) && (
+        <Card title={t.partner.details}>
+          <PartnerFacts
+            partner={data}
+            extra={[
+              ...(data.creditLimit != null ? [{ label: t.partner.creditLimit, value: t.partner.creditLimitShort(formatMoney(data.creditLimit)) }] : []),
+              ...(data.discountPercent != null ? [{ label: t.partner.discountPercent, value: t.partner.discountShort(data.discountPercent) }] : []),
+            ]}
+          />
+        </Card>
+      )}
 
       {canManage(role) && data.balance === 0 && !data.archived && <CloseTab customer={data} />}
       <HistoryCard entityType="customer" entityId={data.id} />
@@ -664,8 +694,15 @@ function InvoicesCard({ customerId }: { customerId: number }) {
           { header: t.documents.issued, cell: (row) => formatDate(row.issuedAt) },
           {
             header: t.customers.howPaid,
+            // TREFIN's invoices never went on the tab here: they carry its tag instead.
             cell: (row) =>
-              row.kind === 'invoice' ? <Badge tone={row.paymentMethod === 'account' ? 'info' : 'neutral'}>{t.customers.paidAt[row.paymentMethod]}</Badge> : '–',
+              row.fromTrefin ? (
+                <TrefinTag />
+              ) : row.kind === 'invoice' ? (
+                <Badge tone={row.paymentMethod === 'account' ? 'info' : 'neutral'}>{t.customers.paidAt[row.paymentMethod]}</Badge>
+              ) : (
+                '–'
+              ),
           },
           { header: t.documents.total, align: 'end', cell: (row) => (row.kind === 'credit_note' ? `−${formatMoney(row.total)}` : formatMoney(row.total)) },
         ]}

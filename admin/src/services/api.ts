@@ -1,6 +1,10 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Language } from '../i18n/language';
 import type {
+  PartnerDetails,
+  RecordSource,
+  TrefinStockDocument,
+  TrefinStockDocumentDetail,
   TestDelivery,
   Thread,
   ThreadSubject,
@@ -322,6 +326,7 @@ export interface SaleListQuery {
   soldBy?: number;
   /** Checkouts only: a product name or invoice number. */
   search?: string;
+  source?: RecordSource;
 }
 
 export interface DocumentListQuery {
@@ -331,6 +336,7 @@ export interface DocumentListQuery {
   customerId?: number;
   startDate?: string;
   endDate?: string;
+  source?: RecordSource;
 }
 
 export const documentsApi = {
@@ -382,7 +388,7 @@ export const counterApi = {
   /** Today's receipts, or the one with this number. */
   receipts: async (number?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number } })).data,
   people: async (period: { from: string; to: string }) => (await apiRequest<CounterPerson[]>('/counter/people', { query: period })).data,
-  events: async (period: { from: string; to: string; userId?: number }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
+  events: async (period: { from: string; to: string; userId?: number; source?: RecordSource }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
   /** Every product on sale, a hundred at a time, for the Counter's shelf. */
   async products(): Promise<Product[]> {
     const first = await productsApi.list({ page: 1, limit: 100 });
@@ -478,7 +484,7 @@ export interface ComparedRange extends ReportRange {
 }
 
 export const billsApi = {
-  list: async (query: { status?: 'open' | 'paid' | 'void'; supplierId?: number } = {}) =>
+  list: async (query: { status?: 'open' | 'paid' | 'void'; supplierId?: number; source?: RecordSource } = {}) =>
     (await apiRequest<SupplierBill[]>('/bills', { query })).data,
   summary: async () => (await apiRequest<PayablesSummary>('/bills/summary')).data,
   get: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}`)).data,
@@ -601,15 +607,18 @@ export const expensesApi = {
   },
 };
 
-export interface CustomerInput {
+export interface CustomerInput extends Partial<PartnerDetails> {
   name: string;
   kind: CustomerKind;
   nui: string | null;
   phone: string | null;
   note: string | null;
+  creditLimit?: number | null;
+  discountPercent?: number | null;
 }
 
-export interface SupplierInput {
+/** The partner details left out keep what is stored. */
+export interface SupplierInput extends Partial<PartnerDetails> {
   name: string;
   /** Null for a business abroad, which has no Kosovo NUI. */
   nui: string | null;
@@ -738,6 +747,9 @@ export const writeOffsApi = {
 export const stockCountsApi = {
   list: async () => (await apiRequest<StockCountListItem[]>('/stock-counts')).data,
   get: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}`)).data,
+  /** TREFIN's starting stocks, corrections and counts. */
+  trefinList: async () => (await apiRequest<TrefinStockDocument[]>('/stock-counts/trefin')).data,
+  trefinGet: async (id: number) => (await apiRequest<TrefinStockDocumentDetail>(`/stock-counts/trefin/${id}`)).data,
   start: async (categoryId: number | null) =>
     (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId } })).data,
   cancel: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}/cancel`, { method: 'POST' })).data,

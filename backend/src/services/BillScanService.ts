@@ -219,7 +219,8 @@ export class BillScanService {
       this.productRepository.findAllForMatching(),
       supplier ? this.scanRepository.codesFor(supplier.id) : Promise.resolve([]),
       supplier ? this.orderService.list() : Promise.resolve([]),
-      supplier && reading.number ? this.billService.list({ supplierId: supplier.id }) : Promise.resolve([]),
+      // TREFIN's history doesn't count: a bill from the month run next to TREFIN is entered in both.
+      supplier && reading.number ? this.billService.list({ supplierId: supplier.id, source: '4vd' }) : Promise.resolve([]),
       this.mediaService.mimes(scan.media_ids),
     ]);
     const known = new Map<string, KnownCode>(codes.map((row) => [row.code, { productId: row.product_id, unitsPerPack: row.units_per_pack }]));

@@ -8,7 +8,7 @@ import { DEFAULT_ACCOUNT_LINKS, TREFIN_ACCOUNTS } from '../constants/chartOfAcco
  * kept get their accounts again the next time they are needed.
  */
 export async function seedBooks(db: Kysely<unknown>): Promise<void> {
-  // Closed years and profit tax instalments point at entries (from migration 047 on), so they go in the same statement.
+  // Closed years and profit tax instalments point at entries (from migration 052 on), so they go in the same statement.
   const years = await sql<{ exists: boolean }>`select to_regclass('book_years') is not null as exists`.execute(db);
   if (years.rows[0]?.exists) await sql`TRUNCATE book_years, tax_instalments, ledger_queue, ledger_lines, ledger_entries, ledger_links RESTART IDENTITY`.execute(db);
   else await sql`TRUNCATE ledger_queue, ledger_lines, ledger_entries, ledger_links RESTART IDENTITY`.execute(db);

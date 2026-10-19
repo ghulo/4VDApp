@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExpiryCard } from '../components/ExpiryCard';
 import { type FormEvent, useId, useState } from 'react';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { StockTag } from '../components/StockTag';
 import { WriteOffForm } from '../components/WriteOffForm';
 import { inventoryApi } from '../services/api';
-import { type InventoryDetail, MANUAL_STOCK_REASONS, type StockReason } from '../services/types';
-import { formatDateTime, formatSignedQuantity } from '../utils/format';
+import { type InventoryDetail, MANUAL_STOCK_REASONS, type RecordSource, type StockReason } from '../services/types';
+import { formatDate, formatDateTime, formatSignedQuantity } from '../utils/format';
+import { SourceFilter, TrefinTag } from '../components/TrefinParts';
 import { Button, Card } from '../components/ui';
 import { Minus, Plus } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
@@ -50,31 +51,62 @@ export function ProductStockTab() {
           <WriteOffForm productId={item.productId} inStock={item.quantity} />
         </Card>
 
-        <Card title={t.inventory.history}>
-          {item.recentAdjustments.length === 0 ? (
-            <EmptyState title={t.inventory.noChanges} />
-          ) : (
-            <ol className="history">
-              {item.recentAdjustments.map((adjustment) => (
-                <li key={adjustment.id} className="history__row">
-                  <span className={`history__qty ${adjustment.quantity > 0 ? 'history__qty--in' : 'history__qty--out'}`}>
-                    {formatSignedQuantity(adjustment.quantity)}
-                  </span>
-                  <span className="history__what">
-                    {t.stockReasons[adjustment.reason] ?? adjustment.reason}
-                    {adjustment.notes && <span className="history__notes">{adjustment.notes}</span>}
-                  </span>
-                  <span className="history__when">
-                    {formatDateTime(adjustment.date)}
-                    {adjustment.adjustedBy && <span>{adjustment.adjustedBy}</span>}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </Card>
+        <StockHistoryCard item={item} />
       </div>
     </>
+  );
+}
+
+/**
+ * Every stock change, newest first: 4VD's own, then TREFIN's starting stocks,
+ * corrections and counts for this product (history only, with its tag).
+ */
+function StockHistoryCard({ item }: { item: InventoryDetail }) {
+  const t = useT();
+  const [source, setSource] = useState<RecordSource | undefined>();
+  const own = source === 'trefin' ? [] : item.recentAdjustments;
+  const trefin = source === '4vd' ? [] : item.trefinHistory;
+  return (
+    <Card title={t.inventory.history} actions={item.trefinHistory.length > 0 ? <SourceFilter value={source} onChange={setSource} /> : undefined}>
+      {own.length === 0 && trefin.length === 0 ? (
+        <EmptyState title={t.inventory.noChanges} />
+      ) : (
+        <ol className="history">
+          {own.map((adjustment) => (
+            <li key={adjustment.id} className="history__row">
+              <span className={`history__qty ${adjustment.quantity > 0 ? 'history__qty--in' : 'history__qty--out'}`}>
+                {formatSignedQuantity(adjustment.quantity)}
+              </span>
+              <span className="history__what">
+                {t.stockReasons[adjustment.reason] ?? adjustment.reason}
+                {adjustment.notes && <span className="history__notes">{adjustment.notes}</span>}
+              </span>
+              <span className="history__when">
+                {formatDateTime(adjustment.date)}
+                {adjustment.adjustedBy && <span>{adjustment.adjustedBy}</span>}
+              </span>
+            </li>
+          ))}
+          {trefin.map((line) => (
+            <li key={`t${line.id}`} className="history__row">
+              <span className={`history__qty ${line.kind === 'opening' ? '' : line.quantity > 0 ? 'history__qty--in' : 'history__qty--out'}`}>
+                {line.kind === 'opening' ? line.quantity : formatSignedQuantity(line.quantity)}
+              </span>
+              <span className="history__what">
+                <span>
+                  <Link to={`/counts/trefin/${line.documentId}`}>{t.fromTrefin.stockKinds[line.kind]}</Link> <TrefinTag />
+                </span>
+                {line.counted !== null && <span className="history__notes">{t.fromTrefin.counted(String(line.counted))}</span>}
+              </span>
+              <span className="history__when">
+                {formatDate(`${line.dated}T12:00:00`)}
+                <span>{t.fromTrefin.databases[line.source] ?? line.source}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
   );
 }
 

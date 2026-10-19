@@ -87,7 +87,7 @@ export class BooksPoster {
         union all select 'write_offs', id from write_offs where decided_at is not null
         union all select 'stock_count_lines', id from stock_count_lines where decided_at is not null
         union all select 'stock_adjustments', id from stock_adjustments where reason = 'Manual adjustment'
-        union all select 'supplier_bills', id from supplier_bills where issued_on >= ${start}::date
+        union all select 'supplier_bills', id from supplier_bills where issued_on >= ${start}::date and trefin_ref is null
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'
         union all select 'money_moves', id from money_moves where day >= ${start}::date

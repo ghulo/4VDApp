@@ -14,6 +14,7 @@ import { toMoney, toMoneyOrNull } from './mappers.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import type { SettingsService } from './SettingsService.js';
 import { bestPromotionFor, priceWithPromotion } from './pricing/promotions.js';
+import type { RecordSource } from '../validators/validate.js';
 
 export interface SaleDto {
   id: number;
@@ -80,6 +81,7 @@ export interface SaleQuery extends PageRequest {
   productId?: number;
   soldBy?: number;
   search?: string;
+  source?: RecordSource;
 }
 
 export class SalesService {
@@ -114,6 +116,7 @@ export class SalesService {
         productId: query.productId,
         soldBy: query.soldBy,
         search: query.search,
+        source: query.source,
         limit: query.limit,
         offset: toOffset(query),
       },

@@ -30,6 +30,19 @@ export interface InventoryDetailDto extends InventoryItemDto {
     adjustedBy: string | null;
     date: string;
   }>;
+  /** Its lines in TREFIN's starting stocks, corrections and counts: history, they moved nothing here. */
+  trefinHistory: Array<{
+    id: number;
+    documentId: number;
+    kind: 'opening' | 'correction' | 'count';
+    number: string | null;
+    /** "YYYY-MM-DD". */
+    dated: string;
+    source: string;
+    quantity: number;
+    counted: number | null;
+    unitCost: number | null;
+  }>;
 }
 
 export interface StockAdjustmentInput {
@@ -66,7 +79,10 @@ export class InventoryService {
     const item = await this.inventoryRepository.findByProductId(productId);
     if (!item) throw new NotFoundError(`No stock record for product ${productId}`);
 
-    const adjustments = await this.stockAdjustmentRepository.findRecentForProduct(productId, RECENT_ADJUSTMENTS_LIMIT);
+    const [adjustments, trefin] = await Promise.all([
+      this.stockAdjustmentRepository.findRecentForProduct(productId, RECENT_ADJUSTMENTS_LIMIT),
+      this.stockAdjustmentRepository.trefinForProduct(productId),
+    ]);
     return {
       ...toInventoryItemDto(item),
       warnings: buildWarnings(item.quantity_on_hand, item.reorder_level),
@@ -77,6 +93,17 @@ export class InventoryService {
         notes: adjustment.notes,
         adjustedBy: adjustment.adjusted_by_name,
         date: adjustment.adjustment_date.toISOString(),
+      })),
+      trefinHistory: trefin.map((line) => ({
+        id: line.id,
+        documentId: line.document_id,
+        kind: line.kind,
+        number: line.number,
+        dated: line.dated,
+        source: line.source,
+        quantity: Number(line.quantity),
+        counted: line.counted === null ? null : Number(line.counted),
+        unitCost: line.unit_cost === null ? null : Number(line.unit_cost),
       })),
     };
   }

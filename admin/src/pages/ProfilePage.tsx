@@ -292,6 +292,8 @@ function SecurityPanel({ user }: { user: User }) {
         </Card>
       </form>
 
+      <PinCard hasPassword={hasPassword} hasPin={security.data.hasPin} />
+
       <Card title="Google">
         <SettingRow
           title={googleEmail ? t.profile.linked : t.profile.notLinked}
@@ -315,6 +317,75 @@ function SecurityPanel({ user }: { user: User }) {
         </SettingRow>
       </Card>
     </>
+  );
+}
+
+/** The Counter PIN: set or removed only after typing the account password. */
+function PinCard({ hasPassword, hasPin }: { hasPassword: boolean; hasPin: boolean }) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const save = useMutation({
+    mutationFn: (next: string | null) => meApi.setPin({ password, pin: next }),
+    onSuccess: (data) => {
+      setPassword('');
+      setPin('');
+      queryClient.setQueryData(['me', 'security'], data);
+    },
+  });
+  const pinOk = /^\d{4,6}$/.test(pin);
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (pinOk) save.mutate(pin);
+      }}
+    >
+      <Card
+        title={t.profile.pin}
+        description={t.profile.pinHint}
+        footer={
+          <>
+            <Result
+              error={save.error}
+              success={save.isSuccess ? (save.variables === null ? t.profile.pinRemoved : t.profile.pinSaved) : hasPin ? t.profile.pinSet : t.profile.pinNotSet}
+            />
+            {hasPin && (
+              <Button variant="danger-text" disabled={!hasPassword || !password || save.isPending} onClick={() => save.mutate(null)}>
+                {t.profile.removePin}
+              </Button>
+            )}
+            <Button type="submit" variant="primary" disabled={!hasPassword || !password || !pinOk || save.isPending} loading={save.isPending && save.variables !== null}>
+              {t.profile.setPin}
+            </Button>
+          </>
+        }
+      >
+        {hasPassword ? (
+          <div className="field-row">
+            <Field label={t.profile.newPin} hint={t.profile.pinFormat}>
+              <input
+                type="password"
+                name="new-pin"
+                inputMode="numeric"
+                autoComplete="off"
+                pattern="[0-9]{4,6}"
+                maxLength={6}
+                value={pin}
+                onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+              />
+            </Field>
+            <Field label={t.profile.yourPassword}>
+              <input type="password" name="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            </Field>
+          </div>
+        ) : (
+          <p className="field-hint">{t.profile.pinNeedsPassword}</p>
+        )}
+      </Card>
+    </form>
   );
 }
 

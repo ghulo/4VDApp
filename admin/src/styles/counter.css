@@ -1786,3 +1786,61 @@
 .counter-opening p {
   margin: 0;
 }
+
+/* Switch person and Ask the owner: one row per person with a PIN. */
+.counter-people {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.counter-people legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.counter-person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.counter-person:hover:not(:disabled) {
+  background: var(--surface-sunk);
+}
+
+.counter-person:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.counter-person[aria-pressed='true'] {
+  background: var(--tint);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--cta), inset 0 0 0 1px var(--line-strong);
+}
+
+.counter-person:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.counter-person__role {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}

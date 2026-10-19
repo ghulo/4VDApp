@@ -4,6 +4,7 @@ import { createAccountController } from '../controllers/accountController.js';
 import { createProfileController } from '../controllers/profileController.js';
 import { createSessionController } from '../controllers/sessionController.js';
 import { createGoogleController } from '../controllers/googleController.js';
+import { createCounterPinController } from '../controllers/counterPinController.js';
 import { readImage } from './profileRoutes.js';
 
 /** The signed-in person's own account. */
@@ -13,8 +14,10 @@ export function createMeRoutes({
   businessService,
   sessionService,
   googleAuthService,
+  counterPinService,
   guards,
 }: Container): Router {
+  const pins = createCounterPinController(counterPinService);
   const google = createGoogleController(googleAuthService);
   const sessions = createSessionController(sessionService);
   const account = createAccountController(accountService);
@@ -29,6 +32,7 @@ export function createMeRoutes({
   router.delete('/avatar', profile.removeAvatar);
   router.get('/security', google.security);
   router.delete('/google', google.unlink);
+  router.put('/pin', pins.setPin);
   router.get('/sessions', sessions.list);
   router.post('/sessions/log-out-others', sessions.endOthers);
   router.delete('/sessions/:sessionId', sessions.end);

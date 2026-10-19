@@ -1,9 +1,9 @@
-import { ArrowLeft, Printer } from '@phosphor-icons/react';
+import { ArrowLeft, LockKey, Printer } from '@phosphor-icons/react';
 import { type FormEvent, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
 import { Button, Field, Sheet } from '../../components/ui';
 import { useT } from '../../i18n/useT';
-import type { Customer } from '../../services/types';
+import type { Customer, PinPerson } from '../../services/types';
 import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
@@ -90,6 +90,8 @@ interface NumberProps {
   /** Why it can't be used, or null. */
   check: (value: number) => string | null;
   onApply: (value: number) => void;
+  /** Offered when `check` refuses: e.g. ask the owner for a bigger rabat. */
+  askMore?: { label: string; onAsk: (value: number) => void };
 }
 
 /** One number for the chosen line: how many, the price, or the rabat. */
@@ -101,15 +103,19 @@ export function NumberSheet({ open, title, onClose, ...form }: NumberProps & { o
   );
 }
 
-function NumberForm({ label, hint, initial, whole, check, onApply }: NumberProps) {
+function NumberForm({ label, hint, initial, whole, check, onApply, askMore }: NumberProps) {
   const t = useT();
   const [text, setText] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  // The number `check` refused, which the owner could still allow.
+  const [refused, setRefused] = useState<number | null>(null);
 
   function submit(event: FormEvent) {
     event.preventDefault();
     const value = parseAmount(text);
-    const problem = !Number.isFinite(value) || value < 0 || (whole && !Number.isInteger(value)) ? t.counter.reasonNeeded : check(value);
+    const invalid = !Number.isFinite(value) || value < 0 || (whole && !Number.isInteger(value));
+    const problem = invalid ? t.counter.reasonNeeded : check(value);
+    setRefused(problem && !invalid ? value : null);
     if (problem) return setError(problem);
     onApply(value);
   }
@@ -126,11 +132,17 @@ function NumberForm({ label, hint, initial, whole, check, onApply }: NumberProps
           onChange={(event) => {
             setText(event.target.value);
             setError(null);
+            setRefused(null);
           }}
           onFocus={(event) => event.target.select()}
         />
       </Field>
       <div className="form-actions">
+        {askMore && refused !== null && (
+          <Button icon={LockKey} onClick={() => askMore.onAsk(refused)}>
+            {askMore.label}
+          </Button>
+        )}
         <Button variant="primary" type="submit">
           {t.counter.apply}
         </Button>
@@ -536,6 +548,99 @@ function CountForm({ opening, countedToday, onSave }: CountProps) {
       <div className="form-actions">
         <Button variant="primary" type="submit" loading={busy}>
           {t.counter.countSave}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+interface PinProps {
+  /** People who can say yes here; undefined while loading. */
+  people: PinPerson[] | undefined;
+  /** Shown when nobody has a PIN yet. */
+  nobody: string;
+  submit: string;
+  onSubmit: (userId: number, pin: string) => Promise<void>;
+}
+
+/**
+ * Pick a person and type their PIN: to take over the Counter, or for an owner
+ * to allow a bigger rabat. Wrong PINs say how many tries are left.
+ */
+export function PinSheet({ open, title, description, onClose, ...form }: PinProps & { open: boolean; title: string; description: string; onClose: () => void }) {
+  return (
+    <Sheet open={open} onClose={onClose} title={title} description={description}>
+      <PinForm {...form} />
+    </Sheet>
+  );
+}
+
+function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
+  const t = useT();
+  const [userId, setUserId] = useState<number | null>(null);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const chosen = people?.find((person) => person.id === userId) ?? null;
+
+  async function send(event: FormEvent) {
+    event.preventDefault();
+    if (!chosen) return setError(t.counter.pickPerson);
+    if (!/^[0-9]{4,6}$/.test(pin)) return setError(t.profile.pinFormat);
+    setBusy(true);
+    try {
+      await onSubmit(chosen.id, pin);
+    } catch (problem) {
+      setPin('');
+      setError(errorMessage(problem));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (people === undefined) return <p className="field-hint">{t.common.loading}</p>;
+  if (people.length === 0) return <p className="field-hint">{nobody}</p>;
+
+  return (
+    <form className="counter-form" onSubmit={send}>
+      <fieldset className="counter-people">
+        <legend className="field__label">{t.counter.pickPerson}</legend>
+        {people.map((person) => (
+          <button
+            key={person.id}
+            type="button"
+            className="counter-person"
+            aria-pressed={person.id === userId}
+            disabled={person.locked}
+            onClick={() => {
+              setUserId(person.id);
+              setError(null);
+            }}
+          >
+            <span>{person.name}</span>
+            <span className="counter-person__role">{person.locked ? t.counter.pinLocked : t.common.roles[person.role]}</span>
+          </button>
+        ))}
+      </fieldset>
+      <Field label={t.counter.pinLabel} hint={t.profile.pinFormat} error={error ?? undefined}>
+        <input
+          className="counter-number"
+          type="password"
+          name="pin"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={6}
+          aria-invalid={error ? true : undefined}
+          value={pin}
+          onChange={(event) => {
+            setPin(event.target.value.replace(/[^0-9]/g, ''));
+            setError(null);
+          }}
+        />
+      </Field>
+      <div className="form-actions">
+        <Button variant="primary" type="submit" loading={busy}>
+          {submit}
         </Button>
       </div>
     </form>

@@ -13,6 +13,8 @@ import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
 import { CounterService } from './services/CounterService.js';
+import { CounterPinService } from './services/CounterPinService.js';
+import { PinRepository } from './repositories/PinRepository.js';
 import { CounterRepository } from './repositories/CounterRepository.js';
 import { WriteOffRepository } from './repositories/WriteOffRepository.js';
 import { WriteOffService } from './services/WriteOffService.js';
@@ -366,6 +368,15 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     authService,
     inviteService,
   );
+  const counterPinService = new CounterPinService(
+    new PinRepository(db),
+    userRepository,
+    refreshTokenRepository,
+    activityLogRepository,
+    new CounterRepository(db),
+    authService,
+    googleAuthService,
+  );
   const signupService = new SignupService(config.allowSignup, userRepository, accountService, transactions);
   const reportBuilder = new ReportBuilder(
     {
@@ -453,6 +464,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     permissionService,
     settingsService,
     counterService,
+    counterPinService,
     writeOffService,
     returnService,
     stockCountService,

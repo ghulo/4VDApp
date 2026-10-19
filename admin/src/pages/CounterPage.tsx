@@ -19,6 +19,7 @@ import {
   Tag,
   Trash,
   User,
+  UsersThree,
   WarningCircle,
   WifiHigh,
   WifiSlash,
@@ -44,7 +45,7 @@ import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
-import { CountSheet, CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
@@ -69,6 +70,8 @@ type Panel =
   | 'unprinted'
   | 'opening'
   | 'count'
+  | 'switch'
+  | 'approve'
   | null;
 
 /** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
@@ -127,7 +130,7 @@ export function CounterPage() {
   const t = useT();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
-  const { logout } = useAuth();
+  const { logout, adoptSession } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
   const online = useOnline();
 
@@ -187,6 +190,18 @@ export function CounterPage() {
   const [priceCheck, setPriceCheck] = useState(false);
   const [checked, setChecked] = useState<Product | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // An owner's yes on this basket raises the rabat limit until it runs out.
+  const approval = current.approval && Date.parse(current.approval.expiresAt) > now ? current.approval : null;
+  const rabatLimit = Math.max(discountLimit, approval?.percent ?? 0);
+  // A rabat waiting for the owner's PIN, and what to do once they allow it.
+  const [ask, setAsk] = useState<{ percent: number; apply: () => void } | null>(null);
+  const askOwner = (percent: number, apply: () => void) => {
+    setAsk({ percent: roundMoney(percent), apply });
+    setPanel('approve');
+  };
+  const canAsk = !canOversee(user.role);
+  const switchPeople = useQuery({ queryKey: ['counter', 'pin-people', user.id], queryFn: () => counterApi.pinPeople(false), enabled: panel === 'switch' });
+  const approvers = useQuery({ queryKey: ['counter', 'approvers', user.id], queryFn: () => counterApi.pinPeople(true), enabled: panel === 'approve' });
 
   // The clock in the status bar, and how long each basket's customer has waited.
   useEffect(() => {
@@ -352,6 +367,14 @@ export function CounterPage() {
     setQuantity(selected.productId, selected.quantity + step);
   }
 
+  function applyLineRabat(productId: number, value: number) {
+    setLines((lines) => lines.map((line) => (line.productId === productId ? { ...line, discount: value > 0 ? String(roundMoney(value)) : '', priceSet: false } : line)));
+  }
+
+  function applyPrice(productId: number, percent: number) {
+    setLines((lines) => lines.map((line) => (line.productId === productId ? { ...line, discount: percent > 0 ? String(percent) : '', priceSet: percent > 0 } : line)));
+  }
+
   // ---- Paying and printing ----
   const sell = useMutation({
     mutationFn: (payment: Payment) =>
@@ -363,6 +386,7 @@ export function CounterPage() {
         notes: null,
         ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
         ...(payment.paidBy === 'split' && payment.cardAmount !== null && { cardAmount: payment.cardAmount }),
+        ...(approval && lines.some((line) => roundMoney(line.percent) > discountLimit) && { rabatApproval: approval.token }),
         ...(payment.paidBy === 'tab' && payment.customerId !== null && { customerId: payment.customerId, paidNow: false }),
         // A customer picked with F5 who pays now: the sale goes on their record, not their tab.
         ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
@@ -621,6 +645,9 @@ export function CounterPage() {
               {t.counter.notPrinted(printer.unprinted.length)}
             </Button>
           )}
+          <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
+            <span className="counter__bar-label">{t.counter.switchKey}</span>
+          </Button>
           {counterOnly(user.role) ? (
             <>
               {/* On a phone these two shrink to their icons, so the printer's state keeps its room. */}
@@ -919,12 +946,13 @@ export function CounterPage() {
             open={panel === 'discount'}
             title={t.counter.setDiscount(selected.product?.name ?? selected.name)}
             label={`${t.counter.discount} %`}
-            hint={t.counter.discountUpTo(discountLimit)}
+            hint={t.counter.discountUpTo(rabatLimit)}
             initial={selected.discount}
-            check={(value) => (value > discountLimit ? t.counter.discountTooHigh(discountLimit) : null)}
+            check={(value) => (value > rabatLimit ? t.counter.discountTooHigh(rabatLimit) : null)}
+            askMore={canAsk ? { label: t.counter.askOwner, onAsk: (value) => askOwner(value, () => applyLineRabat(selected.productId, value)) } : undefined}
             onClose={closePanel}
             onApply={(value) => {
-              setLines((now) => now.map((line) => (line.productId === selected.productId ? { ...line, discount: value > 0 ? String(roundMoney(value)) : '', priceSet: false } : line)));
+              applyLineRabat(selected.productId, value);
               closePanel();
             }}
           />
@@ -938,15 +966,24 @@ export function CounterPage() {
               check={(value) => {
                 const shelfPrice = unitPriceFor(selected.product!, selected.quantity);
                 if (value > shelfPrice) return t.counter.setPriceHint(formatMoney(shelfPrice));
-                return roundMoney((1 - value / shelfPrice) * 100) > discountLimit ? t.counter.priceTooLow(discountLimit) : null;
+                return roundMoney((1 - value / shelfPrice) * 100) > rabatLimit ? t.counter.priceTooLow(rabatLimit) : null;
               }}
+              askMore={
+                canAsk
+                  ? {
+                      label: t.counter.askOwner,
+                      onAsk: (value) => {
+                        const shelfPrice = unitPriceFor(selected.product!, selected.quantity);
+                        const percent = shelfPrice > 0 ? roundMoney((1 - value / shelfPrice) * 100) : 0;
+                        askOwner(percent, () => applyPrice(selected.productId, percent));
+                      },
+                    }
+                  : undefined
+              }
               onClose={closePanel}
               onApply={(value) => {
                 const shelfPrice = unitPriceFor(selected.product!, selected.quantity);
-                const percent = shelfPrice > 0 ? roundMoney((1 - value / shelfPrice) * 100) : 0;
-                setLines((now) =>
-                  now.map((line) => (line.productId === selected.productId ? { ...line, discount: percent > 0 ? String(percent) : '', priceSet: percent > 0 } : line)),
-                );
+                applyPrice(selected.productId, shelfPrice > 0 ? roundMoney((1 - value / shelfPrice) * 100) : 0);
                 closePanel();
               }}
             />
@@ -970,13 +1007,52 @@ export function CounterPage() {
         open={panel === 'basketRabat'}
         title={t.counter.basketRabatTitle}
         label={`${t.counter.basketRabat} %`}
-        hint={t.counter.basketRabatHint(discountLimit)}
+        hint={t.counter.basketRabatHint(rabatLimit)}
         initial={basketRabat}
-        check={(value) => (value > discountLimit ? t.counter.discountTooHigh(discountLimit) : null)}
+        check={(value) => (value > rabatLimit ? t.counter.discountTooHigh(rabatLimit) : null)}
+        askMore={canAsk ? { label: t.counter.askOwner, onAsk: (value) => askOwner(value, () => updateBasket({ discount: String(roundMoney(value)) })) } : undefined}
         onClose={closePanel}
         onApply={(value) => {
           updateBasket({ discount: value > 0 ? String(roundMoney(value)) : '' });
           closePanel();
+        }}
+      />
+      <PinSheet
+        open={panel === 'approve'}
+        title={t.counter.askOwner}
+        description={t.counter.askOwnerHint(`${discountLimit}%`)}
+        people={approvers.data}
+        nobody={t.counter.noApprover}
+        submit={t.counter.allow}
+        onClose={() => {
+          setAsk(null);
+          closePanel();
+        }}
+        onSubmit={async (userId, pin) => {
+          if (!ask) return;
+          const allowed = await counterApi.allowRabat({ userId, pin, percent: ask.percent, basketId: current.id });
+          updateBasket({ approval: allowed });
+          ask.apply();
+          setAsk(null);
+          closePanel();
+          say(t.counter.rabatAllowed(allowed.by, `${allowed.percent}%`));
+        }}
+      />
+      <PinSheet
+        open={panel === 'switch'}
+        title={t.counter.switchTitle}
+        description={t.counter.switchHint}
+        people={switchPeople.data}
+        nobody={t.counter.switchNobody}
+        submit={t.counter.takeOver}
+        onClose={closePanel}
+        onSubmit={async (userId, pin) => {
+          const result = await counterApi.switchTo({ userId, pin });
+          closePanel();
+          await adoptSession(result);
+          // Everything on screen was the last person's: My day, permissions, the lists.
+          void queryClient.invalidateQueries();
+          say(t.counter.switchedTo(result.user.name));
         }}
       />
       <CustomerSheet

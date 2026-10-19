@@ -75,6 +75,8 @@ export interface BasketInput {
   paidBy?: 'cash' | 'card';
   /** Split payment: this much on the card terminal, the rest in cash. */
   cardAmount?: number;
+  /** An owner's one-time yes (Counter PIN) to a rabat over the employee limit. */
+  rabatApproval?: string;
 }
 
 export interface SaleQuery extends PageRequest {
@@ -170,11 +172,17 @@ export class SalesService {
   async recordBasket(input: BasketInput, seller: { id: number; role: UserRole }): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
     const soldBy = seller.id;
     const largest = Math.max(0, ...input.items.map((item) => item.discountPercent ?? 0));
+    let needsApproval = false;
     if (largest > 0 && !canOversee(seller.role)) {
       const limit = (await this.settings.get()).employeeDiscountLimit;
-      if (largest > limit) throw new ForbiddenError(`You can give at most ${limit}% rabat. Ask the owner or an admin for more.`);
+      needsApproval = largest > limit;
+      if (needsApproval && !input.rabatApproval) throw new ForbiddenError(`You can give at most ${limit}% rabat. Ask the owner or an admin for more.`);
     }
     const { saleIds, invoice } = await this.transactions.run(async (repos) => {
+      // Used up only when the sale goes through.
+      if (needsApproval && !(await repos.pins.consumeApproval(input.rabatApproval!, seller.id, largest))) {
+        throw new ForbiddenError('The owner’s yes to this rabat has run out or was used already. Ask again.');
+      }
       const saleIds: number[] = [];
       for (const item of input.items) {
         saleIds.push(await this.recordInTransaction(repos, { ...item, notes: input.notes, customerId: input.customerId, paidNow: input.paidNow }, soldBy));

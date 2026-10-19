@@ -54,6 +54,7 @@ import * as statements from './052_statements.js';
 import * as splitPayment from './053_split_payment.js';
 import * as weighedProducts from './054_weighed_products.js';
 import * as cashOpenings from './055_cash_openings.js';
+import * as counterPins from './056_counter_pins.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -117,4 +118,5 @@ export const migrations: Record<string, Migration> = {
   '053_split_payment': splitPayment,
   '054_weighed_products': weighedProducts,
   '055_cash_openings': cashOpenings,
+  '056_counter_pins': counterPins,
 };

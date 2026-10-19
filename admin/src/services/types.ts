@@ -1182,6 +1182,8 @@ export interface Business {
 
 export interface Security {
   hasPassword: boolean;
+  /** A Counter PIN is set (the PIN itself never leaves the server). */
+  hasPin: boolean;
   googleEmail: string | null;
 }
 
@@ -2083,7 +2085,7 @@ export interface CounterSettings {
   customerDisplay: boolean;
 }
 
-export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';
+export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report' | 'rabat_allowed' | 'person_switched';
 
 export type CounterEventInput =
   | { kind: 'line_removed'; productId: number; quantity: number; amount: number; reason: string }
@@ -2121,6 +2123,23 @@ export interface CounterReceipt {
 }
 
 /** One person's counter over a period. */
+/** Someone who can take over the Counter (or allow a rabat) with their PIN. */
+export interface PinPerson {
+  id: number;
+  name: string;
+  role: UserRole;
+  /** Too many wrong PINs: try again later, or sign in with the password. */
+  locked: boolean;
+}
+
+/** An owner's one-time yes to a rabat over the limit, for one basket and 5 minutes. */
+export interface RabatApproval {
+  token: string;
+  by: string;
+  percent: number;
+  expiresAt: string;
+}
+
 export interface CounterPerson {
   user: { id: number; name: string };
   sales: number;

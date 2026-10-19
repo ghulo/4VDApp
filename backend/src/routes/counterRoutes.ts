@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createCounterController } from '../controllers/counterController.js';
+import { createCounterPinController } from '../controllers/counterPinController.js';
 
 /** The counter: everyone who sells reads its settings and records what happened; the people who run the shop set it up and read the report. */
-export function createCounterRoutes({ counterService, productService, cashCountService, guards }: Container): Router {
+export function createCounterRoutes({ counterService, counterPinService, productService, cashCountService, guards }: Container): Router {
   const controller = createCounterController(counterService, productService, cashCountService);
+  const pins = createCounterPinController(counterPinService);
   const router = Router();
 
   router.get('/settings', ...guards.staff, controller.settings);
@@ -17,6 +19,10 @@ export function createCounterRoutes({ counterService, productService, cashCountS
   router.get('/receipts', ...guards.staff, controller.receipts);
   router.get('/people', ...guards.oversee, controller.people);
   router.get('/events', ...guards.oversee, controller.events);
+  // A PIN works only from a session already signed in at the Counter.
+  router.get('/pin-people', ...guards.staff, pins.people);
+  router.post('/switch', ...guards.staff, pins.switchTo);
+  router.post('/rabat-approvals', ...guards.staff, pins.allowRabat);
 
   return router;
 }

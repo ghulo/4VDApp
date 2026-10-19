@@ -9,7 +9,7 @@ export class RefreshTokenRepository {
     userId: number,
     tokenHash: string,
     expiresAt: Date,
-    session: { sessionId?: string; userAgent?: string | null; ip?: string | null } = {},
+    session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null } = {},
   ): Promise<void> {
     await this.db
       .insertInto('refresh_tokens')
@@ -18,6 +18,7 @@ export class RefreshTokenRepository {
         token_hash: tokenHash,
         expires_at: expiresAt,
         ...(session.sessionId && { session_id: session.sessionId }),
+        device_id: session.deviceId ?? null,
         user_agent: session.userAgent?.slice(0, 500) ?? null,
         ip: session.ip ?? null,
         last_used_at: new Date(),
@@ -32,16 +33,28 @@ export class RefreshTokenRepository {
    */
   async consumeValid(
     tokenHash: string,
-  ): Promise<{ userId: number; sessionId: string; userAgent: string | null } | undefined> {
+  ): Promise<{ userId: number; sessionId: string; deviceId: string | null; userAgent: string | null } | undefined> {
     const row = await this.db
       .updateTable('refresh_tokens')
       .set({ revoked_at: new Date() })
       .where('token_hash', '=', tokenHash)
       .where('revoked_at', 'is', null)
       .where('expires_at', '>', new Date())
-      .returning(['user_id', 'session_id', 'user_agent'])
+      .returning(['user_id', 'session_id', 'device_id', 'user_agent'])
       .executeTakeFirst();
-    return row ? { userId: row.user_id, sessionId: row.session_id, userAgent: row.user_agent } : undefined;
+    return row ? { userId: row.user_id, sessionId: row.session_id, deviceId: row.device_id, userAgent: row.user_agent } : undefined;
+  }
+
+/** The PC a session runs on; the session id itself for sessions from before PCs were recorded. */
+  async deviceOf(sessionId: string): Promise<string> {
+    const row = await this.db
+      .selectFrom('refresh_tokens')
+      .select('device_id')
+      .where('session_id', '=', sessionId)
+      .orderBy('id', 'desc')
+      .limit(1)
+      .executeTakeFirst();
+    return row?.device_id ?? sessionId;
   }
 
   async revoke(tokenHash: string, userId: number): Promise<void> {

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RabatApproval } from '../../services/types';
 
 export const MAX_BASKETS = 5;
 
@@ -21,6 +22,8 @@ export interface Basket {
   customerId?: number | null;
   /** Rabat in percent on every line that has none of its own; blank is none. */
   discount?: string;
+  /** An owner's yes to a rabat over the limit, for this basket and the person who asked. */
+  approval?: RabatApproval;
 }
 
 const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
@@ -49,6 +52,20 @@ export function useBaskets(userId: number) {
     return { baskets: [first], current: first.id };
   });
 
+  // Switch person keeps the till's baskets: they move to the new person (an
+  // owner's yes was for the one who asked, so it stays behind).
+  const keyRef = useRef(key);
+  useEffect(() => {
+    if (keyRef.current === key) return;
+    try {
+      localStorage.removeItem(keyRef.current);
+    } catch {
+      // Nothing saved to move.
+    }
+    keyRef.current = key;
+    setState((now) => ({ ...now, baskets: now.baskets.map(({ approval: _left, ...basket }) => basket) }));
+  }, [key]);
+
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(state));
@@ -67,7 +84,7 @@ export function useBaskets(userId: number) {
   }, []);
 
   /** Change the basket at the till: its customer or its rabat. */
-  const update = useCallback((patch: Pick<Basket, 'customerId' | 'discount'>) => {
+  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval'>>) => {
     setState((now) => ({ ...now, baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, ...patch } : basket)) }));
   }, []);
 

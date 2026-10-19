@@ -3,7 +3,7 @@ import { en } from './en';
 import { sq } from './sq';
 
 /** Same in both languages on purpose. */
-const SAME_IN_BOTH = new Set(['4VD', 'English', 'Shqip', 'Email', 'OK', 'Auto', 'Logo', 'SKU', 'NUI', 'IBAN', 'Excel', 'CSV', 'XK05 1212 0123 4567 8906', 'F-Link', 'TREFIN', '/kg']);
+const SAME_IN_BOTH = new Set(['4VD', 'English', 'Shqip', 'Email', 'OK', 'Auto', 'Logo', 'SKU', 'NUI', 'IBAN', 'Excel', 'CSV', 'XK05 1212 0123 4567 8906', 'F-Link', 'TREFIN', '/kg', 'PIN']);
 
 /** Windows' own words, shown as Windows shows them (the download page's SmartScreen sketch). */
 const WINDOWS_WORDS = '.download.warning.sketch.';

@@ -47,6 +47,11 @@ export interface UsersTable {
   commission_percent: Decimal | null;
   /** Push topic -> false when switched off; missing means on. */
   push_preferences: ColumnType<Record<string, boolean>, Record<string, boolean> | undefined, Record<string, boolean>>;
+  /** bcrypt of the Counter PIN; null when none is set. */
+  pin_hash: Generated<string | null>;
+  pin_set_at: Generated<Date | null>;
+  /** A password sign-in clears wrong-PIN attempts before this moment. */
+  pin_cleared_at: Generated<Date | null>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;
@@ -63,6 +68,28 @@ export interface RefreshTokensTable {
   user_agent: string | null;
   ip: string | null;
   last_used_at: Date | null;
+  /** One PC: new at a password sign-in, kept when someone takes over with a PIN. */
+  device_id: Generated<string | null>;
+  created_at: CreatedAt;
+}
+
+export interface PinAttemptsTable {
+  id: Generated<number>;
+  user_id: number | null;
+  device_id: string;
+  purpose: 'switch' | 'rabat';
+  ok: boolean;
+  at: CreatedAt;
+}
+
+export interface RabatApprovalsTable {
+  id: string;
+  approved_by: number;
+  asked_by: number;
+  basket_id: string;
+  percent: Decimal;
+  expires_at: Date;
+  used_at: Date | null;
   created_at: CreatedAt;
 }
 
@@ -940,7 +967,7 @@ export interface MoneyPlacesTable {
   created_at: CreatedAt;
 }
 
-export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';
+export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report' | 'rabat_allowed' | 'person_switched';
 
 /** Something that happened at the counter other than a sale, by person (the counter report). */
 export interface CounterEventsTable {
@@ -1060,6 +1087,8 @@ export interface DocumentNotesTable {
 export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
+  pin_attempts: PinAttemptsTable;
+  rabat_approvals: RabatApprovalsTable;
   categories: CategoriesTable;
   products: ProductsTable;
   inventory: InventoryTable;

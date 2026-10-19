@@ -60,10 +60,17 @@ export class AuthService {
    * Log someone in whose identity was already proven (password, invite link,
    * Google). Starts a new device session.
    */
-  async startSession(user: UserRow, device: DeviceInfo = {}, how: 'password' | 'google' | 'googleFirst' | 'invite' = 'password'): Promise<LoginResult> {
+async startSession(
+    user: UserRow,
+    device: DeviceInfo = {},
+    how: 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' = 'password',
+    /** The PC, when someone takes it over with a PIN; any other sign-in starts a new one. */
+    deviceId: string = randomUUID(),
+  ): Promise<LoginResult> {
     const publicUser = toPublicUser(user);
-    const tokens = await this.issueTokens(publicUser, { userAgent: device.userAgent, ip: device.ip });
-    await this.userRepository.update(user.id, { last_login_at: new Date() });
+    const tokens = await this.issueTokens(publicUser, { userAgent: device.userAgent, ip: device.ip, deviceId });
+    // Signing in for real clears any wrong-PIN lock on the person.
+    await this.userRepository.update(user.id, { last_login_at: new Date(), ...(how !== 'pin' && { pin_cleared_at: new Date() }) });
     // Logged once the session exists, so the log never shows a login that failed.
     await this.activityLogRepository.create({
       userId: user.id,
@@ -86,6 +93,7 @@ export class AuthService {
     // Same device, same session: keep its id so it stays one row in the devices list.
     return this.issueTokens(toPublicUser(user), {
       sessionId: consumed.sessionId,
+      deviceId: consumed.deviceId ?? undefined,
       userAgent: device.userAgent ?? consumed.userAgent,
       ip: device.ip,
     });
@@ -105,7 +113,7 @@ export class AuthService {
 
   private async issueTokens(
     user: PublicUser,
-    session: { sessionId?: string; userAgent?: string | null; ip?: string | null } = {},
+    session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null } = {},
   ): Promise<TokenPair> {
     const sessionId = session.sessionId ?? randomUUID();
     const token = signAccessToken(

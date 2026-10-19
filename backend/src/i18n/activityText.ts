@@ -18,7 +18,7 @@ interface Words {
 type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents';
 type RoleChange = { role: Role; power: RolePower; on: boolean };
-type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite';
+type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin';
 export type ProductField =
   | 'name'
   | 'description'
@@ -67,7 +67,11 @@ type Units = { quantity: number; product: string };
 
 const en = {
   loggedIn: (p: { name: string; how: LoginHow }) =>
-    `${p.name} ${{ password: 'logged in', google: 'logged in with Google', googleFirst: 'logged in with Google for the first time', invite: 'logged in for the first time' }[p.how]}`,
+    `${p.name} ${{ password: 'logged in', google: 'logged in with Google', googleFirst: 'logged in with Google for the first time', invite: 'logged in for the first time', pin: 'took over the Counter with their PIN' }[p.how]}`,
+  pinSet: () => 'Set a Counter PIN',
+  pinRemoved: () => 'Removed their Counter PIN',
+  pinLocked: (p: { name: string }) => `Too many wrong PINs for ${p.name}: locked for 15 minutes`,
+  rabatAllowed: (p: { percent: number; seller: string }) => `Allowed ${p.percent}% rabat for ${p.seller} at the Counter`,
 
   billScanned: (p: { supplier: string | null; lines: number }) =>
     `Scanned a bill${p.supplier ? ` from ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
@@ -545,7 +549,11 @@ function sqUserChange(name: string, change: UserChange, w: Words): string {
 
 const sq: Templates = {
   loggedIn: (p) =>
-    `${p.name} ${{ password: 'hyri', google: 'hyri me Google', googleFirst: 'hyri me Google për herë të parë', invite: 'hyri për herë të parë' }[p.how]}`,
+    `${p.name} ${{ password: 'hyri', google: 'hyri me Google', googleFirst: 'hyri me Google për herë të parë', invite: 'hyri për herë të parë', pin: 'mori arkën me PIN-in e vet' }[p.how]}`,
+  pinSet: () => 'Vendosi një PIN arke',
+  pinRemoved: () => 'Hoqi PIN-in e arkës',
+  pinLocked: (p) => `Shumë PIN të gabuar për ${p.name}: bllokuar për 15 minuta`,
+  rabatAllowed: (p) => `Lejoi ${p.percent}% rabat për ${p.seller} te Arka`,
 
   billScanned: (p) => `Skanoi një faturë${p.supplier ? ` nga ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   billScanConfirmed: (p) =>

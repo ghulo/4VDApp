@@ -77,6 +77,8 @@ import type {
   Invite,
   InvitePreview,
   LoginResult,
+  PinPerson,
+  RabatApproval,
   Security,
   Session,
   PushSettings,
@@ -239,6 +241,9 @@ export const meApi = {
   changeEmail: async (input: { password?: string; newEmail: string }) =>
     await apiRequest<null>('/me/email', { method: 'POST', body: input }),
   security: async () => (await apiRequest<Security>('/me/security')).data,
+  /** Set the Counter PIN (null removes it); the account password proves it is you. */
+  setPin: async (input: { password: string; pin: string | null }) =>
+    (await apiRequest<Security>('/me/pin', { method: 'PUT', body: input })).data,
   unlinkGoogle: async () => (await apiRequest<Security>('/me/google', { method: 'DELETE' })).data,
   sessions: async () => (await apiRequest<Session[]>('/me/sessions')).data,
   endSession: async (id: string) => await apiRequest<null>(`/me/sessions/${id}`, { method: 'DELETE' }),
@@ -380,6 +385,10 @@ export const salesApi = {
     paidNow?: boolean;
     /** At the Counter: card money goes to the bank, not the drawer. */
     paidBy?: 'cash' | 'card';
+    /** Cash + card: this much on the card terminal. */
+    cardAmount?: number;
+    /** An owner's one-time yes to a rabat over the limit. */
+    rabatApproval?: string;
   }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
@@ -397,6 +406,13 @@ export const counterApi = {
   receipts: async (number?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number } })).data,
   people: async (period: { from: string; to: string }) => (await apiRequest<CounterPerson[]>('/counter/people', { query: period })).data,
   events: async (period: { from: string; to: string; userId?: number; source?: RecordSource }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
+  /** Who can take over this Counter with a PIN; `approvers` lists only owners and admins (for a rabat). */
+  pinPeople: async (approvers = false) => (await apiRequest<PinPerson[]>('/counter/pin-people', { query: { approvers } })).data,
+  /** Hand the Counter to another person: their PIN starts their session on this PC and ends this one. */
+  switchTo: async (input: { userId: number; pin: string }) => (await apiRequest<LoginResult>('/counter/switch', { method: 'POST', body: input })).data,
+  /** An owner or admin allows a rabat over the limit on one basket. */
+  allowRabat: async (input: { userId: number; pin: string; percent: number; basketId: string }) =>
+    (await apiRequest<RabatApproval>('/counter/rabat-approvals', { method: 'POST', body: input })).data,
   /** Every product on sale, in one answer, for the Counter's shelf. */
   products: async () => (await apiRequest<Product[]>('/counter/shelf')).data,
 };

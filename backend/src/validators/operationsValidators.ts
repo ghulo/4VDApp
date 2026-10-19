@@ -54,6 +54,8 @@ export const basketSchema = z
     paidBy: z.enum(['cash', 'card']).optional(),
     /** Split payment: this much went on the card terminal and the rest was cash. */
     cardAmount: z.number().positive().max(10_000_000).multipleOf(0.01).optional(),
+    /** An owner's one-time yes to a rabat over the limit, from the Counter. */
+    rabatApproval: z.string().uuid().optional(),
   })
   .refine((basket) => basket.cardAmount === undefined || (basket.paidBy !== 'card' && !(basket.customerId !== undefined && !basket.paidNow)), {
     message: 'only a sale paid now in cash can have a card part',

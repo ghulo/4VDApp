@@ -10,6 +10,8 @@ const NO_ACCOUNT = 'No 4VD account uses this Google email. Ask the shop owner fo
 
 export interface SecurityDto {
   hasPassword: boolean;
+  /** A Counter PIN is set. */
+  hasPin: boolean;
   /** The Google account linked for signing in, if any. */
   googleEmail: string | null;
 }
@@ -65,7 +67,7 @@ export class GoogleAuthService {
   async security(userId: number): Promise<SecurityDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError(`User ${userId} does not exist`);
-    return { hasPassword: user.password_hash !== null, googleEmail: await this.identities.emailFor(userId, 'google') };
+    return { hasPassword: user.password_hash !== null, hasPin: user.pin_hash !== null, googleEmail: await this.identities.emailFor(userId, 'google') };
   }
 
   async unlink(userId: number): Promise<SecurityDto> {

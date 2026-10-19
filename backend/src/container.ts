@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { AppConfig } from './config/env.js';
 import type { DatabaseClient } from './database/connection.js';
-import { requireAuth, requireRole } from './middlewares/authenticate.js';
+import { requireAuth, requirePower, requireRole } from './middlewares/authenticate.js';
 import { ActivityLogRepository } from './repositories/ActivityLogRepository.js';
 import { CategoryRepository } from './repositories/CategoryRepository.js';
 import { ActivityLogService } from './services/ActivityLogService.js';
@@ -116,16 +116,7 @@ import { DuplicateRepository } from './repositories/DuplicateRepository.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
 import { ProductService } from './services/ProductService.js';
-import {
-  BOOKKEEPER_ROLES,
-  CUSTOMER_READER_ROLES,
-  ENTRY_WRITER_ROLES,
-  FILING_ROLES,
-  MANAGER_ROLES,
-  OVERSEER_ROLES,
-  PRODUCT_EDITOR_ROLES,
-  SELLER_ROLES,
-} from './utils/roles.js';
+import { PermissionService } from './services/PermissionService.js';
 import { ThreadService } from './services/ThreadService.js';
 import { VatService } from './services/vat/VatService.js';
 
@@ -415,24 +406,26 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.webPush?.publicKey ?? null,
   );
 
+  const permissionService = new PermissionService(settingsRepository, activityLogRepository, transactions);
+  // app.ts reads the rules from Settings → Roles before any API request reaches these guards.
   const authenticated = requireAuth(userRepository);
   const guards = {
     authenticated,
     // Arrays so routes can spread them: router.post('/', ...guards.manage, handler).
     // Who is in each group: utils/roles.ts.
-    manage: [authenticated, requireRole(...MANAGER_ROLES)] as RequestHandler[],
-    oversee: [authenticated, requireRole(...OVERSEER_ROLES)] as RequestHandler[],
-    products: [authenticated, requireRole(...PRODUCT_EDITOR_ROLES)] as RequestHandler[],
-    staff: [authenticated, requireRole(...SELLER_ROLES)] as RequestHandler[],
+    manage: [authenticated, requirePower('manage')] as RequestHandler[],
+    oversee: [authenticated, requirePower('oversee')] as RequestHandler[],
+    products: [authenticated, requirePower('products')] as RequestHandler[],
+    staff: [authenticated, requirePower('sell')] as RequestHandler[],
     /** The money side: the books, VAT, bills, invoices, expenses and reports; the accountant too. */
-    books: [authenticated, requireRole(...BOOKKEEPER_ROLES)] as RequestHandler[],
-    filing: [authenticated, requireRole(...FILING_ROLES)] as RequestHandler[],
+    books: [authenticated, requirePower('books')] as RequestHandler[],
+    filing: [authenticated, requirePower('filing')] as RequestHandler[],
     /** Hand-written entries in the books: managers and the accountant. */
-    entries: [authenticated, requireRole(...ENTRY_WRITER_ROLES)] as RequestHandler[],
+    entries: [authenticated, requirePower('entries')] as RequestHandler[],
     /** The customer list: the counter (for tabs) and the accountant. */
-    customers: [authenticated, requireRole(...CUSTOMER_READER_ROLES)] as RequestHandler[],
+    customers: [authenticated, requirePower('customers')] as RequestHandler[],
     /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
-    documents: [authenticated, requireRole(...CUSTOMER_READER_ROLES)] as RequestHandler[],
+    documents: [authenticated, requirePower('documents')] as RequestHandler[],
     developer: [authenticated, requireRole('developer')] as RequestHandler[],
   };
 
@@ -457,6 +450,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     reportsRepository,
     reportsService,
     exportService,
+    permissionService,
     settingsService,
     counterService,
     writeOffService,

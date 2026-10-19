@@ -33,7 +33,8 @@ import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
 import { MissingTaxGroup, clearArticlesJob, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
-import { NumberSheet, PaySheet, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { changeFor, EMPTY_PAY, type PayDraft } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { type StoredLine, useBaskets } from './counter/useBaskets';
@@ -102,6 +103,7 @@ export function CounterPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<number | null>(null);
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
+  const [payDraft, setPayDraft] = useState<PayDraft>(EMPTY_PAY);
   const [printNote, setPrintNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [refundNumber, setRefundNumber] = useState<string | null>(null);
   const [finderQuery, setFinderQuery] = useState('');
@@ -306,6 +308,7 @@ export function CounterPage() {
   const startPanel = (next: Panel) => {
     if (['quantity', 'price', 'discount', 'remove'].includes(next ?? '') && !selected) return complain(t.counter.pickLine);
     if ((next === 'pay' || next === 'cancel') && !hasLines) return complain(t.counter.addFirst);
+    if (next === 'pay') setPayDraft(EMPTY_PAY);
     setPanel(next);
   };
   function newBasket() {
@@ -319,6 +322,14 @@ export function CounterPage() {
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
   keyHandler.current = (event: KeyboardEvent) => {
     if (document.querySelector('dialog[open]')) return;
+    // Taking the money: the pay keys have the keyboard; Esc goes back to the basket.
+    if (panel === 'pay') {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closePanel();
+      }
+      return;
+    }
     const shortcuts: Record<string, () => void> = {
       F2: () => startPanel('quantity'),
       F3: () => {
@@ -423,11 +434,12 @@ export function CounterPage() {
           )}
           {counterOnly(user.role) ? (
             <>
-              <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/">
-                {t.staff.nav.home}
+              {/* On a phone these two shrink to their icons, so the printer's state keeps its room. */}
+              <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/" aria-label={t.staff.nav.home} title={t.staff.nav.home}>
+                <span className="counter__bar-label">{t.staff.nav.home}</span>
               </ButtonLink>
-              <Button size="sm" variant="ghost" icon={SignOut} onClick={() => void logout()}>
-                {t.counter.logOut}
+              <Button size="sm" variant="ghost" icon={SignOut} onClick={() => void logout()} aria-label={t.counter.logOut} title={t.counter.logOut}>
+                <span className="counter__bar-label">{t.counter.logOut}</span>
               </Button>
             </>
           ) : (
@@ -587,11 +599,15 @@ export function CounterPage() {
               </span>
               <span className="counter-total__amount">{formatMoney(total)}</span>
             </div>
+            {panel === 'pay' && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((customer) => String(customer.id) === payDraft.customerId)?.name ?? null} />}
           </div>
 
         </section>
 
         <section className="counter-side" aria-label={t.counter.keys}>
+          {panel === 'pay' ? (
+            <PayPanel total={total} customers={customers.data} draft={payDraft} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
+          ) : (
           <div className="counter-keys">
             <CounterKey
               icon={MagnifyingGlass}
@@ -640,6 +656,7 @@ export function CounterPage() {
               <span className="counter-pay__amount">{formatMoney(total)}</span>
             </Button>
           </div>
+          )}
         </section>
       </main>
 
@@ -741,7 +758,6 @@ export function CounterPage() {
         onClose={closePanel}
         onAdd={(product) => add(product)}
       />
-      <PaySheet open={panel === 'pay'} total={total} customers={customers.data} onClose={closePanel} onPay={pay} />
       <RefundSheet
         open={panel === 'refund'}
         initialNumber={refundNumber}
@@ -783,5 +799,26 @@ function CounterKey({ icon, label, hotkey, disabled, title, onClick }: { icon: I
         </kbd>
       )}
     </Button>
+  );
+}
+
+/** Under the total while paying: what the customer gave and the change, or how they pay. */
+function PaidRows({ draft, total, customerName }: { draft: PayDraft; total: number; customerName: string | null }) {
+  const t = useT();
+  const cash = changeFor(draft, total);
+  if (draft.paidBy === 'card') return <p className="counter-paid counter-paid--note">{t.counter.paidByCard}</p>;
+  if (draft.paidBy === 'tab') return <p className="counter-paid counter-paid--note">{customerName ? t.counter.onTabOf(customerName) : t.counter.pickCustomer}</p>;
+  const short = cash !== null && cash.change < 0;
+  return (
+    <dl className="counter-paid" aria-live="polite">
+      <div className="counter-paid__row">
+        <dt>{t.counter.paid}</dt>
+        <dd>{cash ? formatMoney(cash.given) : '—'}</dd>
+      </div>
+      <div className={short ? 'counter-paid__row counter-paid__row--change counter-paid__row--short' : 'counter-paid__row counter-paid__row--change'}>
+        <dt>{short ? t.counter.short(formatMoney(-cash.change)) : t.counter.change}</dt>
+        <dd>{cash && !short ? formatMoney(cash.change) : '—'}</dd>
+      </div>
+    </dl>
   );
 }

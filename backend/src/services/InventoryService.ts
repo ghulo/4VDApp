@@ -6,7 +6,7 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { getStockAlert, isLowStock } from './inventory/stockAlerts.js';
 import { toIsoOrNull } from './mappers.js';
-import { OVERSEER_ROLES } from '../utils/roles.js';
+import { rolesWith } from '../utils/roles.js';
 
 export interface InventoryItemDto {
   productId: number;
@@ -196,7 +196,7 @@ export async function applyStockChange(
     after: result.after,
     reorderLevel: change.reorderLevel,
   });
-  if (alert) await repos.notifications.createForRoles(OVERSEER_ROLES, alert);
+  if (alert) await repos.notifications.createForRoles(rolesWith('oversee'), alert);
   return result;
 }
 

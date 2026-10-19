@@ -8,7 +8,7 @@ import type { SupplierBillRepository } from '../repositories/SupplierBillReposit
 import type { TabRepository } from '../repositories/TabRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
-import { OVERSEER_ROLES } from '../utils/roles.js';
+import { rolesWith } from '../utils/roles.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import type { DateRange } from './reports/calculations.js';
 import type { CarwashService } from './CarwashService.js';
@@ -211,7 +211,7 @@ export class CashCountService {
     if (result.difference !== null && !isMatch(result.difference)) {
       const { difference, expected, counted } = result;
       await this.transactions.run((repos) =>
-        repos.notifications.createForRoles(OVERSEER_ROLES, {
+        repos.notifications.createForRoles(rolesWith('oversee'), {
           type: NOTIFICATION_TYPES.CASH_DIFFERENCE,
           write: (t) => ({
             title: t.cashDifferenceTitle({ place: input.place, carwash: carwashName, difference }),

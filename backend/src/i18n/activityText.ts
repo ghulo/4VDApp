@@ -16,6 +16,8 @@ interface Words {
 }
 
 type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
+type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents';
+type RoleChange = { role: Role; power: RolePower; on: boolean };
 type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite';
 export type ProductField =
   | 'name'
@@ -215,6 +217,11 @@ const en = {
   sold: (p: Units & { total: number; discount: number | null; customer: string | null; onTab: boolean }, w: Words) =>
     `Sold ${p.quantity} × ${p.product} for ${w.money(p.total)}${p.discount ? ` with ${p.discount}% rabat` : ''}${p.customer ? (p.onTab ? ` on ${p.customer}'s tab` : ` to ${p.customer}`) : ''}`,
 
+  rolesChanged: (p: { changes: RoleChange[]; pages: number }) =>
+    `Changed what roles may do: ${[
+      ...p.changes.map((change) => `${EN_ROLE[change.role]} ${change.on ? 'may now' : 'may no longer'} ${EN_POWER[change.power]}`),
+      ...(p.pages > 0 ? [`${p.pages} menu ${p.pages === 1 ? 'page' : 'pages'}`] : []),
+    ].join('; ')}`,
   settingsChanged: (p: { changes: SettingChange[] }, w: Words) => `Changed ${p.changes.map((change) => enSetting(change, w)).join(' and ')}`,
 
   countStarted: (p: { scope: string | null }) => `Started a stock count of ${p.scope ?? 'the whole shop'}`,
@@ -293,6 +300,18 @@ const SQ_MONTHS = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik
 const SQ_ON: Record<QuestionOn['kind'], string> = { bill: 'faturën', document: 'faturën e shitjes', entry: 'regjistrimin' };
 
 const EN_ROLE: Record<Role, string> = { developer: 'developer', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family', accountant: 'accountant' };
+const EN_POWER: Record<RolePower, string> = {
+  sell: 'sell',
+  oversee: 'see costs, reports and activity and decide requests',
+  products: 'add and edit products',
+  manage: 'change stock, people and settings',
+  books: 'read the books, VAT, bills and reports',
+  filing: 'file VAT',
+  reopen: 'reopen a filed month',
+  entries: 'write entries in the books',
+  customers: 'see customers',
+  documents: 'open invoices',
+};
 const EN_REASON: Record<string, string> = { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' };
 const EN_EXPENSE: Record<string, string> = {
   rent: 'rent',
@@ -390,6 +409,18 @@ export type Say = { [K in Key]: Parameters<Templates[K]>[0] extends undefined ? 
 export type Said = Say | { text: string };
 
 const SQ_ROLE: Record<Role, string> = { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' };
+const SQ_POWER: Record<RolePower, string> = {
+  sell: 'shesë',
+  oversee: 'shohë kostot, raportet dhe aktivitetin dhe vendosë për kërkesat',
+  products: 'shtojë dhe ndryshojë produktet',
+  manage: 'ndryshojë stokun, njerëzit dhe cilësimet',
+  books: 'lexojë librat, TVSH-në, faturat dhe raportet',
+  filing: 'deklarojë TVSH-në',
+  reopen: 'rihapë një muaj të deklaruar',
+  entries: 'shkruajë regjistrime në libra',
+  customers: 'shohë klientët',
+  documents: 'hapë faturat',
+};
 const SQ_REASON: Record<string, string> = { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' };
 const SQ_EXPENSE: Record<string, string> = {
   rent: 'qiraja',
@@ -643,6 +674,11 @@ const sq: Templates = {
   sold: (p, w) =>
     `Shiti ${p.quantity} × ${p.product} për ${w.money(p.total)}${p.discount ? ` me ${p.discount}% rabat` : ''}${p.customer ? (p.onTab ? ` në borxhin e ${p.customer}` : ` te ${p.customer}`) : ''}`,
 
+  rolesChanged: (p) =>
+    `Ndryshoi çfarë mund të bëjnë rolet: ${[
+      ...p.changes.map((change) => `${SQ_ROLE[change.role]} ${change.on ? 'tani mund të' : 'nuk mund më të'} ${SQ_POWER[change.power]}`),
+      ...(p.pages > 0 ? [`${p.pages} faqe të menysë`] : []),
+    ].join('; ')}`,
   settingsChanged: (p, w) => `Ndryshoi ${p.changes.map((change) => sqSetting(change, w)).join(' dhe ')}`,
 
   countStarted: (p) => `Nisi numërimin e stokut të ${sqScope(p.scope)}`,

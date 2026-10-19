@@ -87,7 +87,7 @@
     left: 0;
     z-index: 20;
     display: block;
-    padding: var(--space-1) var(--space-2) calc(var(--space-1) + env(safe-area-inset-bottom));
+    padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
     border-top: 1px solid var(--line);
     background: var(--glass-bg-strong);
     backdrop-filter: var(--glass-filter);
@@ -101,16 +101,43 @@
     flex: 1;
     flex-direction: column;
     justify-content: center;
-    gap: 2px;
-    min-height: 56px;
+    gap: var(--space-1);
+    min-height: 60px;
     padding: 0;
     font-size: var(--text-xs);
+    font-weight: 500;
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab:hover {
+    background: transparent;
+  }
+
+  /* The icon sits on a small key; the current tab's key is raised and clay-tinted, like the sidebar's current item. */
+  .staff-app__bottom-tabs .staff-tabs__tab svg {
+    box-sizing: content-box;
+    padding: var(--space-1) var(--space-4);
+    border-radius: var(--radius-pill);
+    transition: background-color 160ms ease, transform 120ms ease;
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab:hover svg {
+    background: var(--surface-sunk);
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab:active svg {
+    transform: scale(0.94);
   }
 
   .staff-app__bottom-tabs .staff-tabs__tab.active {
     background: transparent;
     box-shadow: none;
     color: var(--brand);
+    font-weight: 600;
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab.active svg {
+    background: var(--tint);
+    box-shadow: var(--shadow-raise);
   }
 }
 

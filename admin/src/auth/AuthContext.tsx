@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { authApi, meApi } from '../services/api';
+import { authApi, meApi, permissionsApi } from '../services/api';
+import { DEFAULT_PERMISSIONS, setPermissions } from './permissions';
 import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
 import { disablePush, reregisterPush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
@@ -8,6 +9,11 @@ import { activeCatalogue, useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 import { canUseDashboard } from './roles';
 import { languageAfterSignIn, takeSignInPick } from '../i18n/signInLanguage';
+
+/** What each role may do, read before the screens draw; the usual rules if it can't be read. */
+async function loadPermissions(): Promise<void> {
+  setPermissions(await permissionsApi.get().catch(() => DEFAULT_PERMISSIONS));
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() =>
@@ -23,7 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     authApi
       .me()
-      .then((user) => {
+      .then(async (user) => {
+        await loadPermissions();
         setLanguage(user.language);
         setState({ status: 'signedIn', user });
       })
@@ -58,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const user = await authApi.login(email, password);
+    await loadPermissions();
     if (!canUseDashboard(user.role)) {
       await authApi.logout();
       throw new Error(activeCatalogue().auth.dashboardOnly);
@@ -73,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const adoptSession = useCallback(async (result: LoginResult): Promise<'signedIn' | 'notAdmin'> => {
     tokenStore.save(result.token, result.refreshToken);
+    await loadPermissions();
     if (!canUseDashboard(result.user.role)) {
       await authApi.logout().catch(() => undefined);
       return 'notAdmin';

@@ -2,7 +2,7 @@ import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import { LANGUAGES } from '../i18n/language.js';
 import { messages, type ServerMessages } from '../i18n/messages.js';
 import type { NotificationRepository } from '../repositories/NotificationRepository.js';
-import { OVERSEER_ROLES } from '../utils/roles.js';
+import { rolesWith } from '../utils/roles.js';
 import { zonedHour } from '../utils/zonedDates.js';
 import { CLOSING_HOUR } from './AttentionService.js';
 import type { DailySummaryService } from './DailySummaryService.js';
@@ -34,7 +34,7 @@ export class DayClosedAlert {
         const t = messages[language];
         summaries.set(t, (await this.dailySummaryService.compose(now, t)).message);
       }
-      await this.notifications.createForRoles([...OVERSEER_ROLES], {
+      await this.notifications.createForRoles(rolesWith('oversee'), {
         type: NOTIFICATION_TYPES.DAY_CLOSED,
         write: (t) => ({ title: t.dayClosedTitle, message: summaries.get(t)! }),
         link: `/day?date=${day.day}`,

@@ -29,10 +29,10 @@ export function StaffLayout() {
         const TabIcon = tab.icon;
         const active = current === tab.to;
         return (
-          <NavLink key={tab.to} to={tab.to} className={active ? 'staff-tabs__tab active' : 'staff-tabs__tab'} aria-current={active ? 'page' : undefined} end={tab.to === '/'}>
+          <Link key={tab.to} to={tab.to} className={active ? 'staff-tabs__tab active' : 'staff-tabs__tab'} aria-current={active ? 'page' : undefined}>
             <TabIcon size={22} weight={active ? 'fill' : 'regular'} aria-hidden="true" />
             <span>{t.staff.nav[tab.key]}</span>
-          </NavLink>
+          </Link>
         );
       })}
     </nav>

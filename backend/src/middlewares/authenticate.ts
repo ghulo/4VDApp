@@ -3,6 +3,7 @@ import type { UserRole } from '../database/types.js';
 import { ForbiddenError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { toPublicUser } from '../services/mappers.js';
+import { hasPower, type Power, rolesWith } from '../utils/roles.js';
 import { extractBearerToken, verifyAccessToken } from '../utils/tokens.js';
 
 /**
@@ -44,6 +45,17 @@ export function requireRole(...allowedRoles: UserRole[]): RequestHandler {
     if (!req.user) throw new UnauthorizedError();
     if (!allowedRoles.includes(req.user.role)) {
       throw new ForbiddenError(`This action requires the ${allowedRoles.join(' or ')} role`);
+    }
+    next();
+  };
+}
+
+/** Must run after requireAuth. Reads who holds `power` at the time of the request, so changes in Settings → Roles apply at once. */
+export function requirePower(power: Power): RequestHandler {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) throw new UnauthorizedError();
+    if (!hasPower(req.user.role, power)) {
+      throw new ForbiddenError(`This action requires the ${rolesWith(power).join(' or ')} role`);
     }
     next();
   };

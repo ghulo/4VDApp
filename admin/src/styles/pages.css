@@ -5421,3 +5421,78 @@ fieldset.report-sections {
     transition: none;
   }
 }
+
+/* ---------- Settings → Roles ---------- */
+
+.roles-panel {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.roles-grid__scroll {
+  position: relative;
+  overflow-x: auto;
+}
+
+.roles-grid th.roles-grid__role,
+.roles-grid__cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.roles-grid__what {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 220px;
+  text-align: start;
+  font-weight: 400;
+}
+
+.roles-grid__title {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.roles-grid__cell input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--brand);
+}
+
+.roles-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.roles-history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roles-history__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.roles-history__row:first-child {
+  border-top: none;
+}
+
+.roles-history__text {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.roles-history__empty {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--ink-muted);
+}

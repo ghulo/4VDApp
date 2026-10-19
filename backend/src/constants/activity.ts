@@ -58,6 +58,7 @@ export const ACTIVITY_ACTIONS = [
   'count.line_approved',
   'count.line_rejected',
   'settings.updated',
+  'roles.updated',
   'shop.wiped',
   'promotion.created',
   'promotion.ended',

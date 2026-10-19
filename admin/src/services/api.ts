@@ -1,4 +1,5 @@
 import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
+import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
   PartnerDetails,
@@ -720,6 +721,24 @@ export const settingsApi = {
   wipePreview: async () => (await apiRequest<WipeReport>('/settings/wipe-preview')).data,
   /** Deletes all test data; `confirm` has to be the typed phrase. */
   wipe: async (confirm: string) => (await apiRequest<WipeReport>('/settings/wipe', { method: 'POST', body: { confirm } })).data,
+};
+
+/** A change to what roles may do, newest first in Settings → Roles. */
+export interface RoleHistoryEntry {
+  id: number;
+  at: string;
+  by: string | null;
+  changes: Array<{ role: UserRole; power: Power; on: boolean }>;
+  pages: number;
+}
+
+export const permissionsApi = {
+  get: async () => (await apiRequest<Permissions>('/permissions')).data,
+  /** Developer only. */
+  save: async (input: { powers: Partial<Grants>; pages: Permissions['pages'] }) =>
+    (await apiRequest<Permissions>('/permissions', { method: 'PUT', body: input })).data,
+  history: async () => (await apiRequest<RoleHistoryEntry[]>('/permissions/history')).data,
+  restore: async (id: number) => (await apiRequest<Permissions>(`/permissions/history/${id}/restore`, { method: 'POST' })).data,
 };
 
 export const returnsApi = {

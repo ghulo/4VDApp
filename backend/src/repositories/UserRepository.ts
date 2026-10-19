@@ -1,7 +1,6 @@
 import type { DatabaseClient } from '../database/connection.js';
 import type { Language } from '../i18n/language.js';
 import type { NewUserRow, UserRole, UserRow, UserUpdate } from '../database/types.js';
-import { OVERSEER_ROLES } from '../utils/roles.js';
 
 export interface UserListFilters {
   role?: UserRole;

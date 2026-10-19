@@ -44,7 +44,11 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.
   app.use('/health', healthRoutes);
-  app.use('/api', identifyRequester(config.jwtSecret), createApiRateLimiter(), createApiRoutes(container));
+  // Public pages also hide costs by role, so the rules from Settings → Roles are read before any API request.
+  const loadPermissions: express.RequestHandler = (_req, _res, next) => {
+    container.permissionService.ensureLoaded().then(() => next(), next);
+  };
+  app.use('/api', identifyRequester(config.jwtSecret), loadPermissions, createApiRateLimiter(), createApiRoutes(container));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

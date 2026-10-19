@@ -610,30 +610,85 @@
   gap: var(--space-2);
 }
 
-.counter-change {
+/* Under the total while paying: what was given, and the change in large green figures. */
+.counter-paid {
   display: grid;
   gap: var(--space-1);
-  padding: var(--space-4);
-  border-radius: var(--radius-panel);
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.counter-paid--note {
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-align: end;
+}
+
+.counter-paid__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.counter-paid__row dt {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.counter-paid__row dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-paid__row--change {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
   background: var(--ok-soft);
+}
+
+.counter-paid__row--change dt,
+.counter-paid__row--change dd {
   color: var(--ok);
 }
 
-.counter-change--short {
+.counter-paid__row--change dd {
+  font-size: var(--text-figure);
+}
+
+.counter-paid__row--short {
   background: var(--danger-soft);
+}
+
+.counter-paid__row--short dt,
+.counter-paid__row--short dd {
   color: var(--danger);
 }
 
-.counter-change__label {
-  margin: 0;
-  font-weight: 600;
+/* The pay keys take the place of the till keys. */
+.counter-pay-panel {
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
 }
 
-.counter-change__amount {
-  margin: 0;
-  font-size: var(--text-figure);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.counter-pay-panel__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.counter-pay-panel__record {
+  flex: 1;
+  height: 56px;
+}
+
+.counter-pay-panel__actions > .button:first-child {
+  height: 56px;
 }
 
 /* How to give the change back: notes as paper slips, coins as round tokens. */
@@ -835,8 +890,10 @@
 /* ---------- Narrow screens: the keys under the tape ---------- */
 
 @media (max-width: 999px) {
+  /* Rows as tall as their content: spare height stays below the keys, not inside the tape. */
   .counter__main {
     grid-template-columns: minmax(0, 1fr);
+    align-content: start;
   }
 }
 
@@ -850,17 +907,46 @@
     gap: var(--space-4);
   }
 
+  .counter__bar-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* A keypad: three across, the icon over its name, so nine keys fill three even rows. */
   .counter-keys {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .counter-key {
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    height: 64px;
+    padding: 0 var(--space-1);
+    font-size: var(--text-xs);
+  }
+
+  .counter-key > span {
+    max-width: 100%;
+    white-space: nowrap;
   }
 
   .counter-key__hotkey {
     display: none;
   }
 
-
+  /* The tape is as tall as its lines, so there is no empty paper above the total. */
   .counter-tape {
-    min-height: 200px;
+    flex: none;
+    min-height: 0;
+  }
+
+  .counter-lines {
+    flex: none;
   }
 }
 

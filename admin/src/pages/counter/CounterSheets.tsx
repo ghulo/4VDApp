@@ -1,4 +1,4 @@
-import { Printer } from '@phosphor-icons/react';
+import { ArrowLeft, Printer } from '@phosphor-icons/react';
 import { type FormEvent, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
 import { Button, Field, Sheet } from '../../components/ui';
@@ -7,6 +7,7 @@ import type { Customer } from '../../services/types';
 import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
+import { changeFor, type PayDraft } from './payDraft';
 import type { Unprinted } from './useFiscalPrinter';
 
 /** "7,5" or "7.5" as a number; NaN when it isn't one. */
@@ -147,30 +148,25 @@ export interface Payment {
 interface PayProps {
   total: number;
   customers: Customer[] | undefined;
+  draft: PayDraft;
+  onChange: (draft: PayDraft) => void;
   onPay: (payment: Payment) => Promise<void>;
+  onBack: () => void;
 }
 
-/** Taking the money: cash (with the change and how to give it), card on the bank's terminal, or on a customer's tab. */
-export function PaySheet({ open, onClose, ...form }: PayProps & { open: boolean; onClose: () => void }) {
+/**
+ * Taking the money, in place of the till keys: cash (with the change and how to
+ * give it), card on the bank's terminal, or on a customer's tab. The receipt
+ * beside it shows what was paid and the change as it is typed.
+ */
+export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: PayProps) {
   const t = useT();
-  return (
-    <Sheet open={open} onClose={onClose} title={t.counter.payTitle(formatMoney(form.total))}>
-      <PayForm {...form} />
-    </Sheet>
-  );
-}
-
-function PayForm({ total, customers, onPay }: PayProps) {
-  const t = useT();
-  const [paidBy, setPaidBy] = useState<Payment['paidBy']>('cash');
-  const [tendered, setTendered] = useState('');
-  const [customerId, setCustomerId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const given = parseAmount(tendered);
-  const change = Number.isFinite(given) ? Math.round((given - total) * 100) / 100 : null;
-  const short = change !== null && change < 0;
-  const blocked = (paidBy === 'tab' && customerId === '') || (paidBy === 'cash' && short);
+  const cash = changeFor(draft, total);
+  const short = cash !== null && cash.change < 0;
+  const blocked = (draft.paidBy === 'tab' && draft.customerId === '') || short;
+  const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -179,9 +175,9 @@ function PayForm({ total, customers, onPay }: PayProps) {
     setError(null);
     try {
       await onPay({
-        paidBy,
-        tendered: paidBy === 'cash' && Number.isFinite(given) ? given : null,
-        customerId: paidBy === 'tab' ? Number(customerId) : null,
+        paidBy: draft.paidBy,
+        tendered: cash ? cash.given : null,
+        customerId: draft.paidBy === 'tab' ? Number(draft.customerId) : null,
       });
     } catch (failure) {
       setError(errorMessage(failure));
@@ -190,63 +186,61 @@ function PayForm({ total, customers, onPay }: PayProps) {
   }
 
   return (
-    <form className="counter-form" onSubmit={submit}>
+    <form className="counter-form counter-pay-panel" onSubmit={submit} aria-label={t.counter.payTitle(formatMoney(total))}>
       <Segmented
         label={t.counter.paidBy}
-        value={paidBy}
-        onChange={setPaidBy}
+        value={draft.paidBy}
+        onChange={(paidBy) => set({ paidBy })}
         options={[
           { value: 'cash', label: t.counter.cash },
           { value: 'card', label: t.counter.card },
           { value: 'tab', label: t.counter.tab },
         ]}
       />
-      {paidBy === 'cash' && (
+      {draft.paidBy === 'cash' && (
         <>
           <Field label={t.counter.tendered}>
             <input
               className="counter-number"
               inputMode="decimal"
               autoComplete="off"
+              autoFocus
               placeholder={total.toFixed(2)}
-              value={tendered}
-              onChange={(event) => setTendered(event.target.value)}
+              value={draft.tendered}
+              onChange={(event) => set({ tendered: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') onBack();
+              }}
             />
           </Field>
           <div className="counter-notes" role="group" aria-label={t.counter.tendered}>
-            <Button size="sm" onClick={() => setTendered(total.toFixed(2))}>
+            <Button size="sm" onClick={() => set({ tendered: total.toFixed(2) })}>
               {t.counter.exact}
             </Button>
             {likelyNotes(total).map((note) => (
-              <Button key={note} size="sm" onClick={() => setTendered(String(note))}>
+              <Button key={note} size="sm" onClick={() => set({ tendered: String(note) })}>
                 {formatMoney(note)}
               </Button>
             ))}
           </div>
-          {change !== null && (
-            <div className={short ? 'counter-change counter-change--short' : 'counter-change'} aria-live="polite">
-              <p className="counter-change__label">{short ? t.counter.short(formatMoney(-change)) : t.counter.giveBack}</p>
-              {!short && <p className="counter-change__amount">{formatMoney(change)}</p>}
-              {!short && change > 0 && (
-                <ul className="counter-coach" aria-label={t.counter.coach}>
-                  {changeIn(change).map((piece) => (
-                    <li key={piece.value} className={piece.value >= 5 ? 'counter-coach__piece counter-coach__piece--note' : 'counter-coach__piece'}>
-                      {t.counter.coachNote(piece.count, formatMoney(piece.value))}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+          {cash && !short && cash.change > 0 && (
+            <ul className="counter-coach" aria-label={t.counter.coach}>
+              {changeIn(cash.change).map((piece) => (
+                <li key={piece.value} className={piece.value >= 5 ? 'counter-coach__piece counter-coach__piece--note' : 'counter-coach__piece'}>
+                  {t.counter.coachNote(piece.count, formatMoney(piece.value))}
+                </li>
+              ))}
+            </ul>
           )}
         </>
       )}
-      {paidBy === 'card' && <p className="counter-hint">{t.counter.cardHint}</p>}
-      {paidBy === 'tab' &&
+      {draft.paidBy === 'card' && <p className="counter-hint">{t.counter.cardHint}</p>}
+      {draft.paidBy === 'tab' &&
         (customers && customers.length === 0 ? (
           <p className="counter-hint">{t.counter.noCustomers}</p>
         ) : (
           <Field label={t.counter.customer}>
-            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+            <select value={draft.customerId} onChange={(event) => set({ customerId: event.target.value })}>
               <option value="">{t.counter.pickCustomer}</option>
               {customers?.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -261,8 +255,11 @@ function PayForm({ total, customers, onPay }: PayProps) {
           {error}
         </p>
       )}
-      <div className="form-actions">
-        <Button variant="primary" type="submit" wide loading={busy} disabled={blocked}>
+      <div className="counter-pay-panel__actions">
+        <Button variant="ghost" icon={ArrowLeft} onClick={onBack} title="Esc">
+          {t.counter.backToBasket}
+        </Button>
+        <Button variant="primary" type="submit" loading={busy} disabled={blocked} className="counter-pay-panel__record">
           {t.counter.recordSale(formatMoney(total))}
         </Button>
       </div>

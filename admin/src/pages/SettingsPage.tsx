@@ -1,4 +1,4 @@
-import { Books, CashRegister, Desktop, Drop, RocketLaunch, Scales, Storefront, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, Desktop, Drop, RocketLaunch, Scales, ShieldCheck, Storefront, Warning } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
@@ -6,6 +6,7 @@ import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
 import { CounterSettingsPanel } from '../components/CounterSettingsPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
+import { RolesPanel } from '../components/RolesPanel';
 import { ThisComputerPanel } from '../components/ThisComputerPanel';
 import { desktopBridge } from '../desktop/desktopSetup';
 import { WipeDataPanel } from '../components/WipeDataPanel';
@@ -97,6 +98,7 @@ export function SettingsPage() {
           // The developer's own tools come last: the shop's settings are what the owner opens this page for.
           ...(isDeveloper
             ? [
+                { id: 'roles', label: t.permissions.title, icon: ShieldCheck, content: <RolesPanel /> },
                 {
                   id: 'launch',
                   label: t.launch.title,

@@ -7,7 +7,7 @@ import type { PublicUser } from '../types/auth.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { hashPassword } from '../utils/password.js';
-import { canHandOut, canManage, MANAGER_ROLES } from '../utils/roles.js';
+import { canHandOut, canManage, rolesWith } from '../utils/roles.js';
 import { toMoneyOrNull, toPublicUser } from './mappers.js';
 import type { Say, UserChange } from '../i18n/activityText.js';
 
@@ -177,7 +177,7 @@ export class UserService {
           : 'This is the only developer left. Make someone else a developer first.',
       );
     }
-    if (leaves(canManage) && (await this.userRepository.countActive(MANAGER_ROLES)) <= 1) {
+    if (leaves(canManage) && (await this.userRepository.countActive(rolesWith('manage'))) <= 1) {
       throw new ConflictError(
         isSelf
           ? "You're the only admin. Make someone else an admin first."

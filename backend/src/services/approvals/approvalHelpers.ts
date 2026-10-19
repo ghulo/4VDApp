@@ -2,7 +2,7 @@ import { ConflictError } from '../../errors/httpErrors.js';
 import { NOTIFICATION_TYPES } from '../../constants/notifications.js';
 import type { NotificationSubject } from '../../repositories/NotificationRepository.js';
 import type { TransactionalRepositories } from '../../repositories/TransactionManager.js';
-import { OVERSEER_ROLES } from '../../utils/roles.js';
+import { rolesWith } from '../../utils/roles.js';
 import type { ApprovalKind, ServerMessages } from '../../i18n/messages.js';
 
 /** Tell every admin something is waiting in the Approvals inbox. */
@@ -12,7 +12,7 @@ export function notifyAdminsOfPending(
   subject: NotificationSubject,
   message: (t: ServerMessages) => string,
 ) {
-  return repos.notifications.createForRoles(OVERSEER_ROLES, {
+  return repos.notifications.createForRoles(rolesWith('oversee'), {
     type: NOTIFICATION_TYPES.APPROVAL,
     subject,
     write: (t) => ({ title: t.pendingTitle(kind), message: message(t) }),

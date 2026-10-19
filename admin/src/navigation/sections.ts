@@ -19,6 +19,7 @@ import {
   Wallet,
   type Icon,
 } from '@phosphor-icons/react';
+import { pageRoles } from '../auth/permissions';
 import { canManage, canOversee } from '../auth/roles';
 import type { Catalogue } from '../i18n/en';
 import type { UserRole } from '../services/types';
@@ -155,8 +156,13 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   },
 ];
 
-/** Whether this person sees the menu item or tab: the accountant sees only the money side. */
-export function shownTo(role: UserRole, item: { managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
+/** Whether this person sees the menu item or tab: as chosen in Settings → Roles, else the accountant sees only the money side. */
+export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
+  return role === 'developer' || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
+}
+
+/** The usual rule, before any change in Settings → Roles. */
+export function usuallyShownTo(role: UserRole, item: { managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
   if (role === 'accountant') return Boolean(item.accountant);
   return (!item.managersOnly || canManage(role)) && (!item.overseersOnly || canOversee(role));
 }

@@ -93,6 +93,24 @@ describe('finding a receipt to give something back', () => {
   });
 });
 
+describe('the counter shelf', () => {
+  it('hands over every product on sale in one answer, without costs', async () => {
+    const hidden = await createTestProduct(context, adminToken, { name: 'Old stock', isActive: false, price: 2 });
+    const tiered = await createTestProduct(context, adminToken, { name: 'Apa 0.5L', price: 0.5, bulkPricingTiers: [{ quantity: 6, price: 0.4 }] });
+    const shelf = await api().get('/api/counter/shelf').set(auth(employeeToken));
+    expect(shelf.status).toBe(200);
+    const ids = shelf.body.data.map((product: { id: number }) => product.id);
+    expect(ids).toEqual(expect.arrayContaining([productId, tiered]));
+    expect(ids).not.toContain(hidden);
+    const water = shelf.body.data.find((product: { id: number }) => product.id === tiered);
+    expect(water.bulkPricingTiers).toEqual([{ quantity: 6, price: 0.4 }]);
+    expect(water.stock.quantity).toBe(10);
+    expect(water.otherBarcodes).toEqual([]);
+    expect(shelf.body.data.every((product: Record<string, unknown>) => !('costPrice' in product))).toBe(true);
+    expect((await api().get('/api/counter/shelf')).status).toBe(401);
+  });
+});
+
 describe('counter settings', () => {
   it("starts from the printer's TREFIN set-up and lets a manager change it", async () => {
     const defaults = await api().get('/api/counter/settings').set(auth(employeeToken));

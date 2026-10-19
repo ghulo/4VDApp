@@ -3,13 +3,15 @@ import type { Container } from '../container.js';
 import { createCounterController } from '../controllers/counterController.js';
 
 /** The counter: everyone who sells reads its settings and records what happened; the people who run the shop set it up and read the report. */
-export function createCounterRoutes({ counterService, guards }: Container): Router {
-  const controller = createCounterController(counterService);
+export function createCounterRoutes({ counterService, productService, guards }: Container): Router {
+  const controller = createCounterController(counterService, productService);
   const router = Router();
 
   router.get('/settings', ...guards.staff, controller.settings);
   router.put('/settings', ...guards.manage, controller.updateSettings);
   router.post('/events', ...guards.staff, controller.record);
+  // The whole shelf in one answer, so the till starts at once.
+  router.get('/shelf', ...guards.staff, controller.shelf);
   router.get('/today', ...guards.staff, controller.today);
   // Anyone at the counter finds a receipt to give something back, whoever sold it.
   router.get('/receipts', ...guards.staff, controller.receipts);

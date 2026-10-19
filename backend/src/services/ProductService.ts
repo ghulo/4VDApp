@@ -116,6 +116,20 @@ export class ProductService {
     };
   }
 
+  /**
+   * Every product on sale with its stock, deals and barcodes, in one answer,
+   * for the Counter to scan against without asking again. No costs: the till
+   * never shows them.
+   */
+  async shelf(): Promise<ProductDto[]> {
+    const products = await this.productRepository.findShelf();
+    const [tiersByProduct, promotions] = await Promise.all([
+      this.pricingTierRepository.findByProductIds(products.map((product) => product.id)),
+      this.promotionRepository.findRunning(new Date()),
+    ]);
+    return products.map((product) => this.toDto(product, tiersByProduct.get(product.id) ?? [], promotions, false));
+  }
+
   async getById(id: number, viewerRole: UserRole | undefined): Promise<ProductDto> {
     const isAdmin = canOversee(viewerRole);
     const product = await this.productRepository.findById(id, isAdmin);

@@ -119,6 +119,11 @@ export class ProductRepository {
     return { products, total: Number(count.total) };
   }
 
+  /** Every product on sale, by name: the Counter's shelf in one go. */
+  findShelf(): Promise<ProductRecord[]> {
+    return this.baseQuery(false).select(this.columns).select(otherBarcodes).orderBy('p.name').orderBy('p.id').execute();
+  }
+
   findById(id: number, includeInactive: boolean): Promise<ProductRecord | undefined> {
     return this.baseQuery(includeInactive).select(this.columns).select(otherBarcodes).where('p.id', '=', id).executeTakeFirst();
   }

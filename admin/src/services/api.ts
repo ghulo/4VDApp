@@ -397,13 +397,8 @@ export const counterApi = {
   receipts: async (number?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number } })).data,
   people: async (period: { from: string; to: string }) => (await apiRequest<CounterPerson[]>('/counter/people', { query: period })).data,
   events: async (period: { from: string; to: string; userId?: number; source?: RecordSource }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
-  /** Every product on sale, a hundred at a time, for the Counter's shelf. */
-  async products(): Promise<Product[]> {
-    const first = await productsApi.list({ page: 1, limit: 100 });
-    const pages = Math.ceil(first.meta.total / 100);
-    const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, index) => productsApi.list({ page: index + 2, limit: 100 })));
-    return [first, ...rest].flatMap((page) => page.items).filter((product) => product.isActive);
-  },
+  /** Every product on sale, in one answer, for the Counter's shelf. */
+  products: async () => (await apiRequest<Product[]>('/counter/shelf')).data,
 };
 
 export const analyticsApi = {

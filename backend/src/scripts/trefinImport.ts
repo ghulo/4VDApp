@@ -18,6 +18,8 @@ import {
   trefinBills,
   trefinDeletedReceipts,
   trefinInvoiceHeaders,
+  trefinJournal,
+  trefinMoneyLines,
   trefinStockDocuments,
   type TrefinHistory,
   type TrefinPartner,
@@ -94,6 +96,11 @@ export interface TrefinImportReport {
     /** TREFIN's starting stocks, corrections and counts, and their lines. */
     stockDocuments: number;
     stockLines: number;
+    /** Payments at TREFIN's cash desk and bank. */
+    moneyLines: number;
+    /** TREFIN's journal as read-only entries in Books, and their lines. */
+    journalEntries: number;
+    journalLines: number;
   };
   revenue: number;
   firstSale: string | null;
@@ -681,6 +688,53 @@ export async function importTrefin(
         stockLines += lines.length;
       }
 
+      // Payments at TREFIN's cash desk and bank: in each place's book, never in a balance.
+      const moneyLines = data.history ? trefinMoneyLines(data.history) : [];
+      for (let i = 0; i < moneyLines.length; i += BATCH) {
+        await trx
+          .insertInto('trefin_money_lines')
+          .values(
+            moneyLines.slice(i, i + BATCH).map((line) => {
+              const partner = line.partnerKey ? byKey.get(line.partnerKey) : undefined;
+              const supplierId = partner && line.kind !== 'customer_payment' ? (supplierIds.get(partner) ?? null) : null;
+              const customerId = partner && line.kind === 'customer_payment' ? (customerIds.get(partner) ?? null) : null;
+              return {
+                trefin_ref: line.ref.slice(0, 80),
+                place: line.place,
+                bank_name: line.bankName?.slice(0, 120) ?? null,
+                moved_on: line.day,
+                kind: line.kind,
+                number: line.number?.slice(0, 40) ?? null,
+                amount: line.amount,
+                supplier_id: supplierId,
+                customer_id: customerId,
+                party_name: (partner?.name ?? line.partnerName)?.slice(0, 200) ?? null,
+                document: line.document?.slice(0, 120) ?? null,
+                account: line.account?.slice(0, 10) ?? null,
+                description: line.description,
+              };
+            }),
+          )
+          .execute();
+      }
+
+      // TREFIN's journal: read-only "before 4VD" entries in Books.
+      const journal = data.history ? trefinJournal(data.history) : [];
+      let journalLines = 0;
+      for (let i = 0; i < journal.length; i += BATCH) {
+        const batch = journal.slice(i, i + BATCH);
+        const ids = await trx
+          .insertInto('trefin_journal_entries')
+          .values(batch.map((entry) => ({ trefin_ref: entry.ref.slice(0, 120), dated: entry.day, kind: entry.kind, reference: entry.reference?.slice(0, 80) ?? null, source: entry.db })))
+          .returning('id')
+          .execute();
+        const lines = batch.flatMap((entry, n) =>
+          entry.lines.map((line) => ({ entry_id: ids[n]!.id, dated: entry.day, account: line.account.slice(0, 10), party: line.party?.slice(0, 200) ?? null, debit: line.debit, credit: line.credit })),
+        );
+        for (let j = 0; j < lines.length; j += BATCH) await trx.insertInto('trefin_journal_lines').values(lines.slice(j, j + BATCH)).execute();
+        journalLines += lines.length;
+      }
+
       const created = {
         categories: newCategories,
         products: productIds.size,
@@ -697,6 +751,9 @@ export async function importTrefin(
         deletedReceipts: deleted.length,
         stockDocuments: stockDocuments.length,
         stockLines,
+        moneyLines: moneyLines.length,
+        journalEntries: journal.length,
+        journalLines,
       };
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${TREFIN_IMPORTED_KEY}, to_jsonb(now()::text), now())

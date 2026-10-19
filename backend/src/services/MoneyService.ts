@@ -64,6 +64,25 @@ export interface PlaceBookDto {
   moneyOut: number;
   closing: number;
   lines: BookLineDto[];
+  /** TREFIN's payments here in the period: history, in no balance or total. */
+  trefin: TrefinMoneyLineDto[];
+}
+
+export interface TrefinMoneyLineDto {
+  id: number;
+  day: string;
+  kind: 'supplier_payment' | 'customer_payment' | 'bank_payment';
+  number: string | null;
+  /** Money in above zero, money out below. */
+  amount: number;
+  supplier: { id: number; name: string } | null;
+  customer: { id: number; name: string } | null;
+  partyName: string | null;
+  /** The bill or invoice paid. */
+  document: string | null;
+  account: string | null;
+  description: string | null;
+  bankName: string | null;
 }
 
 export interface MoveInput {
@@ -335,7 +354,53 @@ export class MoneyService {
       else moneyOut = roundMoney(moneyOut - line.amount);
       return { ...line, balance };
     });
-    return { place, from: start, to: period.to, opening, moneyIn, moneyOut, closing: balance, lines: withBalance };
+    return { place, from: start, to: period.to, opening, moneyIn, moneyOut, closing: balance, lines: withBalance, trefin: await this.trefinLines(place, period) };
+  }
+
+  /** TREFIN's cash desk payments go to the shop's till, its bank's to the main bank account. */
+  private async trefinLines(place: PlaceDto, period: { from: string; to: string }): Promise<TrefinMoneyLineDto[]> {
+    const side = place.kind === 'till' && place.carwashId === null ? 'till' : place.kind === 'bank' && place.isDefault ? 'bank' : null;
+    if (!side) return [];
+    const rows = await this.db
+      .selectFrom('trefin_money_lines as m')
+      .leftJoin('suppliers as s', 's.id', 'm.supplier_id')
+      .leftJoin('customers as c', 'c.id', 'm.customer_id')
+      .select([
+        'm.id',
+        sql<string>`to_char(m.moved_on, 'YYYY-MM-DD')`.as('day'),
+        'm.kind',
+        'm.number',
+        'm.amount',
+        'm.supplier_id',
+        's.name as supplier_name',
+        'm.customer_id',
+        'c.name as customer_name',
+        'm.party_name',
+        'm.document',
+        'm.account',
+        'm.description',
+        'm.bank_name',
+      ])
+      .where('m.place', '=', side)
+      .where('m.moved_on', '>=', period.from)
+      .where('m.moved_on', '<=', period.to)
+      .orderBy('m.moved_on')
+      .orderBy('m.id')
+      .execute();
+    return rows.map((row) => ({
+      id: row.id,
+      day: row.day,
+      kind: row.kind,
+      number: row.number,
+      amount: Number(row.amount),
+      supplier: row.supplier_id !== null && row.supplier_name ? { id: row.supplier_id, name: row.supplier_name } : null,
+      customer: row.customer_id !== null && row.customer_name ? { id: row.customer_id, name: row.customer_name } : null,
+      partyName: row.party_name,
+      document: row.document,
+      account: row.account,
+      description: row.description,
+      bankName: row.bank_name,
+    }));
   }
 
   /** A new bank account or safe, with its own account in the books. */

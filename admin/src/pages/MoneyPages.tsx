@@ -9,6 +9,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Segmented } from '../components/BillLines';
 import { MoveForm, PlaceSelect, placeInSentence, placeName, useMoneyRefresh, usePlaces } from '../components/MoneyParts';
 import { Pagination } from '../components/Pagination';
+import { SourceFilter, TrefinTag } from '../components/TrefinParts';
 import { PeriodPicker } from '../components/PeriodPicker';
 import {
   Badge,
@@ -43,6 +44,8 @@ import {
   type MoneyPlace,
   type MoneyPlaceKind,
   type PlaceBookLine,
+  type RecordSource,
+  type TrefinMoneyLine,
   type StatementLayout,
 } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -318,7 +321,24 @@ function PlaceHeader({ place, places, view }: { place: MoneyPlace; places: Money
 
 /* ---------- One place's book ---------- */
 
-type BookRow = PlaceBookLine & { opening?: boolean };
+/** A line of the book; TREFIN's payments ride along with `trefin` set and count in no balance. */
+type BookRow = PlaceBookLine & { opening?: boolean; trefin?: TrefinMoneyLine };
+
+const trefinRow = (line: TrefinMoneyLine): BookRow => ({
+  day: line.day,
+  kind: 'takings',
+  refId: line.id,
+  amount: line.amount,
+  balance: 0,
+  party: null,
+  otherPlace: null,
+  detail: null,
+  bills: null,
+  billId: null,
+  note: null,
+  count: null,
+  trefin: line,
+});
 
 /** Every movement in and out of one place, with a running balance: the cash book of a till, the safe or a bank account. */
 export function PlaceBookPage() {
@@ -333,6 +353,7 @@ export function PlaceBookPage() {
   const book = useQuery({ queryKey: ['money', 'book', id, days], queryFn: () => moneyApi.book(id, days), placeholderData: keepPreviousData, enabled: Boolean(place) });
   const refresh = useMoneyRefresh();
   const [confirming, setConfirming] = useState<number | null>(null);
+  const [source, setSource] = useState<RecordSource | undefined>();
   const remove = useMutation({ mutationFn: (moveId: number) => moneyApi.voidMove(moveId), onSuccess: () => { setConfirming(null); refresh(); } });
   const download = useMutation({ mutationFn: () => moneyApi.downloadBook(id, days, language) });
 
@@ -340,7 +361,8 @@ export function PlaceBookPage() {
   if (places.isError) return <ErrorNotice error={places.error} onRetry={() => places.refetch()} />;
   if (!place) return <EmptyState title={t.money.notFound} action={<Link to="/money">{t.money.back}</Link>} />;
   const writes = canOversee(role);
-  const lines = book.data?.lines ?? [];
+  const trefinLines = book.data?.trefin ?? [];
+  const lines: BookRow[] = [...(source === 'trefin' ? [] : (book.data?.lines ?? [])), ...(source === '4vd' ? [] : trefinLines.map(trefinRow))].sort((a, b) => a.day.localeCompare(b.day));
   const opening: BookRow = {
     day: book.data?.from ?? days.from,
     kind: 'takings',
@@ -357,7 +379,7 @@ export function PlaceBookPage() {
     opening: true,
   };
   const pageLines = lines.slice((page - 1) * BOOK_PAGE, page * BOOK_PAGE);
-  const rows: BookRow[] = page === 1 ? [opening, ...pageLines] : pageLines;
+  const rows: BookRow[] = page === 1 && source !== 'trefin' ? [opening, ...pageLines] : pageLines;
   const setPage = (next: number) =>
     setParams((current) => {
       const updated = new URLSearchParams(current);
@@ -380,12 +402,13 @@ export function PlaceBookPage() {
       <DataTable<BookRow>
         caption={t.money.bookCaption(placeName(t, place))}
         rows={book.isPending ? [] : rows}
-        rowKey={(row) => (row.opening ? 'opening' : `${row.kind}-${row.refId ?? row.day}-${row.amount}`)}
+        rowKey={(row) => (row.opening ? 'opening' : row.trefin ? `trefin-${row.trefin.id}` : `${row.kind}-${row.refId ?? row.day}-${row.amount}`)}
         density="compact"
         rowClassName={(row) => (row.opening ? 'books-row--opening' : row.kind === 'count' ? 'money-row--count' : undefined)}
         toolbar={
           <div className="toolbar">
             <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+            {(trefinLines.length > 0 || source) && <SourceFilter value={source} onChange={setSource} />}
             <div className="toolbar__end">
               <Button variant="ghost" size="sm" icon={FileXls} loading={download.isPending} disabled={download.isPending} onClick={() => download.mutate()}>
                 {download.isPending ? t.common.downloading : t.money.downloadBook}
@@ -396,16 +419,28 @@ export function PlaceBookPage() {
         empty={<EmptyState title={book.isPending ? t.common.loading : t.money.nothingMoved} />}
         columns={[
           { header: t.money.date, className: 'books-date', cell: (row) => formatBookDay(row.day) },
-          { header: t.money.what, title: true, className: 'books-kind table__dock-hide', cell: (row) => (row.opening ? '' : row.kind === 'supplier' && !row.party ? t.money.expenseKind : t.money.lineKinds[row.kind]) },
-          { header: t.money.details, className: 'books-description', cell: (row) => (row.opening ? <span className="books-entry__kind">{t.money.openingRow}</span> : <LineDetails row={row} />) },
+          { header: t.money.what, title: true, className: 'books-kind table__dock-hide', cell: (row) =>
+              row.opening ? '' : row.trefin ? (
+                <>
+                  {t.fromTrefin.moneyKinds[row.trefin.kind]} <TrefinTag />
+                </>
+              ) : row.kind === 'supplier' && !row.party ? (
+                t.money.expenseKind
+              ) : (
+                t.money.lineKinds[row.kind]
+              ),
+          },
+          { header: t.money.details, className: 'books-description', cell: (row) =>
+              row.opening ? <span className="books-entry__kind">{t.money.openingRow}</span> : row.trefin ? <TrefinLineDetails line={row.trefin} /> : <LineDetails row={row} />,
+          },
           { header: t.money.moneyIn, align: 'end', cell: (row) => (row.amount > 0 ? formatMoney(row.amount) : '') },
           { header: t.money.moneyOut, align: 'end', cell: (row) => (row.amount < 0 ? formatMoney(-row.amount) : '') },
-          { header: t.money.balance, align: 'end', cell: (row) => (row.kind === 'count' && !row.opening ? '' : formatMoney(row.balance)) },
+          { header: t.money.balance, align: 'end', cell: (row) => ((row.kind === 'count' && !row.opening) || row.trefin ? '' : formatMoney(row.balance)) },
           {
             header: <span className="visually-hidden">{t.money.actions}</span>,
             align: 'end',
             cell: (row) =>
-              writes && row.kind === 'move' && row.refId !== null && !row.opening ? (
+              writes && row.kind === 'move' && row.refId !== null && !row.opening && !row.trefin ? (
                 confirming === row.refId ? (
                   <span className="money-confirm">
                     <Button size="sm" variant="danger" loading={remove.isPending} disabled={remove.isPending} onClick={() => remove.mutate(row.refId!)}>
@@ -425,7 +460,7 @@ export function PlaceBookPage() {
               ),
           },
         ]}
-        totals={book.data && lines.length > 0 ? [t.money.totals, '', '', formatMoney(book.data.moneyIn), formatMoney(book.data.moneyOut), formatMoney(book.data.closing), ''] : undefined}
+        totals={book.data && (book.data.lines.length > 0) && source !== 'trefin' ? [t.money.totals, '', '', formatMoney(book.data.moneyIn), formatMoney(book.data.moneyOut), formatMoney(book.data.closing), ''] : undefined}
         footer={
           <>
             {(remove.isError || download.isError) && (
@@ -437,6 +472,29 @@ export function PlaceBookPage() {
           </>
         }
       />
+    </>
+  );
+}
+
+/** Who TREFIN paid or was paid by, and for what. */
+function TrefinLineDetails({ line }: { line: TrefinMoneyLine }) {
+  const t = useT();
+  const name = line.customer ? (
+    <Link to={`/customers/${line.customer.id}`}>{line.customer.name}</Link>
+  ) : line.supplier ? (
+    <Link to={`/suppliers/${line.supplier.id}`}>{line.supplier.name}</Link>
+  ) : (
+    line.partyName
+  );
+  const what = line.document ?? line.description;
+  return (
+    <>
+      {name}
+      {name && what && ' · '}
+      {what}
+      {(line.number || line.account) && (
+        <span className="table__secondary">{[line.number, line.account && t.fromTrefin.account(line.account), line.bankName].filter(Boolean).join(' · ')}</span>
+      )}
     </>
   );
 }

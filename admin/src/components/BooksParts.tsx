@@ -12,6 +12,7 @@ import { EXPENSE_CATEGORIES, type AccountLinkKey, type BooksPeriod, type EntrySo
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatMoney } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
+import { TrefinTag } from './TrefinParts';
 import { Badge, Button, ButtonLink, DataTable, MenuButton, Section } from './ui';
 
 /** "4 Oct 2026" for a "2026-10-04" day, without any time zone moving it. */
@@ -19,7 +20,8 @@ export const formatBookDay = (day: string) =>
   formatDateWith(new Date(`${day}T00:00:00Z`), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** What wrote an entry, in words: "Sale", "Supplier bill", "Written by hand". */
-export function kindLabel(t: Catalogue, entry: { kind: string; source: string | null }): string {
+export function kindLabel(t: Catalogue, entry: { kind: string; source: string | null; trefin?: { kind: string } }): string {
+  if (entry.trefin) return t.fromTrefin.journalKinds[entry.trefin.kind] ?? t.fromTrefin.journalKinds.other!;
   if (entry.kind === 'reversal') return t.books.kinds.reversal;
   // A hand-written entry has no source; the year's closing and TM payments are manual entries that say what wrote them.
   if (entry.source === null) return t.books.kinds.manual;
@@ -151,7 +153,7 @@ export function EntryView({ entry, onReversed }: { entry: LedgerEntry; onReverse
       <p className="books-entry__head">
         <span className="books-entry__kind">{kindLabel(t, entry)}</span>
         <span className="table__secondary">{formatBookDay(entry.date)}</span>
-        <EntryBadges entry={entry} />
+        {entry.trefin ? <TrefinTag /> : <EntryBadges entry={entry} />}
       </p>
       <p className="books-entry__what">{entry.description}</p>
       {entry.warning && <p className="notice notice--warn">{warningText(t, entry.warning)}</p>}
@@ -161,7 +163,11 @@ export function EntryView({ entry, onReversed }: { entry: LedgerEntry; onReverse
           {t.books.openDocument}
         </ButtonLink>
       )}
-      <p className="field-hint">{entry.kind === 'auto' ? t.books.autoHint : entry.createdBy && t.books.writtenBy(entry.createdBy)}</p>
+      {entry.trefin ? (
+        <p className="field-hint">{t.fromTrefin.journalNote}</p>
+      ) : (
+        <p className="field-hint">{entry.kind === 'auto' ? t.books.autoHint : entry.createdBy && t.books.writtenBy(entry.createdBy)}</p>
+      )}
       {canReverse && (
         <div className="books-entry__reverse">
           <p className="field-hint">{t.books.reverseHint}</p>
@@ -200,7 +206,8 @@ export function EntryById({ id, onOpen }: { id: number; onOpen: (id: number) => 
   return (
     <>
       <EntryView entry={entry.data} onReversed={(reversal) => onOpen(reversal.id)} />
-      <QuestionsCard kind="entry" id={id} />
+      {/* TREFIN's entries (below zero) are history: no questions on them. */}
+      {id > 0 && <QuestionsCard kind="entry" id={id} />}
     </>
   );
 }

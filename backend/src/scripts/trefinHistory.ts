@@ -52,6 +52,12 @@ export interface TrefinHistory {
   stockMoves: Record<string, Row[]>;
   /** tblInventari_INV of each database: stock counts. */
   stockCounts: Record<string, Row[]>;
+  /** tblArka_Pagesat of each database: bills paid and invoices collected at the cash desk or a bank. */
+  payments: Record<string, Row[]>;
+  /** tblArka_Ekstrakti of each database: bank statements' lines. */
+  bankLines: Record<string, Row[]>;
+  /** tblDitari of each database: the journal (tblDitariTMP is a scratch copy, left out). */
+  journal: Record<string, Row[]>;
 }
 
 /** A small RFC 4180 reader: quoted fields, doubled quotes, commas and line breaks inside quotes, a BOM. */
@@ -112,6 +118,9 @@ export function readTrefinHistory(dir: string): TrefinHistory | undefined {
     deletedSaleLines: each('tblShitje_Detaje_Delete'),
     stockMoves: each('tblInventari_Detaje'),
     stockCounts: each('tblInventari_INV'),
+    payments: each('tblArka_Pagesat'),
+    bankLines: each('tblArka_Ekstrakti'),
+    journal: each('tblDitari'),
   };
 }
 
@@ -534,4 +543,172 @@ export function trefinStockDocuments(history: TrefinHistory): TrefinStockDocumen
     }
   }
   return [...documents.values()].sort((a, b) => a.dated.localeCompare(b.dated) || a.ref.localeCompare(b.ref));
+}
+
+/** TREFIN's own cash desk partner; any other "cash desk" on a payment is a bank. */
+const CASH_DESK = '699999';
+
+/** A payment at TREFIN's cash desk or bank. */
+export interface TrefinMoneyLine {
+  ref: string;
+  place: 'till' | 'bank';
+  bankName: string | null;
+  /** "YYYY-MM-DD". */
+  day: string;
+  kind: 'supplier_payment' | 'customer_payment' | 'bank_payment';
+  number: string | null;
+  /** Money in above zero, money out below. */
+  amount: number;
+  /** "<database>/<partner code>", to find the merged supplier or customer. */
+  partnerKey: string | null;
+  partnerName: string | null;
+  document: string | null;
+  account: string | null;
+  description: string | null;
+}
+
+/**
+ * Bills TREFIN paid (PFF) and invoices it collected (APK), and its bank
+ * statements' lines (EB, all of them payments out: taxes, pensions, bank
+ * fees; TREFIN's debit/credit mark on them was used both ways). A newer
+ * database repeats an older one's payments: each is taken once.
+ */
+export function trefinMoneyLines(history: TrefinHistory): TrefinMoneyLine[] {
+  const lines = new Map<string, TrefinMoneyLine>();
+  for (const db of TREFIN_DATABASES) {
+    const partners = new Map((history.partners[db] ?? []).map((row) => [clean(row.NrKlient), clean(row.EmerKlient)]));
+    const bankOf = (code: string) => (code && code !== CASH_DESK ? partners.get(code) || null : null);
+    const party = (code: string) => (code && !GENERIC_PARTNERS.has(code) ? { partnerKey: `${db}/${code}`, partnerName: partners.get(code) || null } : { partnerKey: null, partnerName: null });
+    for (const row of history.payments[db] ?? []) {
+      const type = clean(row.LlojDok);
+      if (type !== 'PFF' && type !== 'APK') continue;
+      const amount = money(num(row.Vlera));
+      const twin = `${type}|${clean(row.NrFatura)}|${day(row.Data)}|${amount}|${clean(row.NrKlient)}`;
+      if (lines.has(twin)) continue;
+      const text = clean(row.Pershkrimi);
+      lines.set(twin, {
+        ref: `${db}/${clean(row.NrRen)}`,
+        place: clean(row.NrArka) === CASH_DESK ? 'till' : 'bank',
+        bankName: bankOf(clean(row.NrArka)),
+        day: day(row.Data),
+        kind: type === 'PFF' ? 'supplier_payment' : 'customer_payment',
+        number: filled(row.NrFatura),
+        amount: type === 'PFF' ? -amount : amount,
+        ...party(clean(row.NrKlient)),
+        document: text.includes(':') ? text.slice(text.indexOf(':') + 1).trim() || null : null,
+        account: null,
+        description: null,
+      });
+    }
+    for (const row of history.bankLines[db] ?? []) {
+      const amount = money(num(row.Vlera));
+      const twin = `EB|${clean(row.NrFatura)}|${day(row.Data)}|${clean(row.NrPrint)}|${amount}`;
+      if (lines.has(twin) || amount === 0) continue;
+      lines.set(twin, {
+        ref: `${db}/${clean(row.NrRen)}/${clean(row.NrPrint)}`,
+        place: 'bank',
+        bankName: bankOf(clean(row.NrArka)),
+        day: day(row.Data),
+        kind: 'bank_payment',
+        number: filled(row.NrFatura),
+        amount: -amount,
+        ...party(clean(row.NrKlient)),
+        document: null,
+        account: filled(row.NrLlog),
+        description: clean(row.Pershkrimi_I) || null,
+      });
+    }
+  }
+  // The 2023 backup sometimes gave two payments one number: each keeps its own ref.
+  const refs = new Map<string, number>();
+  for (const line of lines.values()) {
+    const seen = refs.get(line.ref) ?? 0;
+    refs.set(line.ref, seen + 1);
+    if (seen > 0) line.ref = `${line.ref}#${seen + 1}`;
+  }
+  return [...lines.values()].sort((a, b) => a.day.localeCompare(b.day) || a.ref.localeCompare(b.ref));
+}
+
+/** TREFIN's journal document types, as words the dashboard translates. */
+const JOURNAL_KINDS: Record<string, string> = {
+  KUP: 'receipts',
+  APK: 'cash_in',
+  FBM: 'bill',
+  FBS: 'service_bill',
+  FBI: 'import_bill',
+  IMM: 'equipment',
+  KB: 'supplier_return',
+  PFF: 'bill_paid',
+  EB: 'bank',
+  FSM: 'invoice',
+  EKS: 'export_invoice',
+  GJF: 'opening',
+  MBY: 'year_end',
+};
+/** Receipts and the cash they brought in: one entry per day, as 4VD posts its takings. */
+const DAILY_KINDS = new Set(['KUP', 'APK']);
+
+/** An entry of TREFIN's journal. */
+export interface TrefinJournalEntry {
+  ref: string;
+  db: string;
+  /** "YYYY-MM-DD". */
+  day: string;
+  kind: string;
+  reference: string | null;
+  lines: Array<{ account: string; party: string | null; debit: number; credit: number }>;
+}
+
+/**
+ * TREFIN's journal, small enough to read: a newer database repeats an older
+ * one's documents (the same type, day and lines), so each is taken once; a
+ * day's receipts and a day's cash collected make one entry each; and every
+ * entry's lines are summed per account and supplier or customer (TREFIN
+ * writes a line per product), lines of 0 left out.
+ */
+export function trefinJournal(history: TrefinHistory): TrefinJournalEntry[] {
+  const seen = new Set<string>();
+  const entries = new Map<string, TrefinJournalEntry>();
+  const cents = (value: number) => Math.round(value * 100);
+  for (const db of TREFIN_DATABASES) {
+    const partners = new Map((history.partners[db] ?? []).map((row) => [clean(row.NrKlient), clean(row.EmerKlient)]));
+    const documents = new Map<string, Row[]>();
+    for (const row of history.journal[db] ?? []) {
+      const key = `${clean(row.LlojDok)}|${clean(row.NrRen)}|${day(row.Data)}`;
+      const rows = documents.get(key);
+      if (rows) rows.push(row);
+      else documents.set(key, [row]);
+    }
+    for (const [key, rows] of documents) {
+      const [type = '', number = '', date = ''] = key.split('|');
+      const signature = `${type}|${date}|${rows.map((row) => `${clean(row.NrLlog)}:${cents(num(row.Debi))}:${cents(num(row.Kredi))}`).sort().join(',')}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      const daily = DAILY_KINDS.has(type);
+      const ref = daily ? `${type}/${date}` : `${db}/${type}/${number}/${date}`;
+      const entry = entries.get(ref) ?? { ref, db, day: date, kind: JOURNAL_KINDS[type] ?? 'other', reference: daily ? null : filled(rows[0]!.NrRef), lines: [] };
+      for (const row of rows) {
+        const code = clean(row.NrKlient);
+        const party = !daily && partners.has(code) && !GENERIC_PARTNERS.has(code) && code !== CASH_DESK ? partners.get(code) || null : null;
+        const account = clean(row.NrLlog);
+        if (!account) continue;
+        const line = entry.lines.find((other) => other.account === account && other.party === party);
+        if (line) {
+          line.debit += num(row.Debi);
+          line.credit += num(row.Kredi);
+        } else entry.lines.push({ account, party, debit: num(row.Debi), credit: num(row.Kredi) });
+      }
+      entries.set(ref, entry);
+    }
+  }
+  return [...entries.values()]
+    .map((entry) => ({
+      ...entry,
+      lines: entry.lines
+        .map((line) => ({ ...line, debit: money(line.debit), credit: money(line.credit) }))
+        .filter((line) => line.debit !== 0 || line.credit !== 0)
+        .sort((a, b) => b.debit - a.debit || a.account.localeCompare(b.account)),
+    }))
+    .filter((entry) => entry.lines.length > 0)
+    .sort((a, b) => a.day.localeCompare(b.day) || a.ref.localeCompare(b.ref));
 }

@@ -771,12 +771,13 @@ export const booksApi = {
   addAccount: async (input: AccountInput) => (await apiRequest<LedgerAccount>('/books/accounts', { method: 'POST', body: input })).data,
   updateAccount: async (id: number, input: Partial<AccountInput & { archived: boolean }>) =>
     (await apiRequest<LedgerAccount>(`/books/accounts/${id}`, { method: 'PATCH', body: input })).data,
-  card: async (id: number, period: BooksPeriod, corrections: boolean) =>
-    (await apiRequest<AccountCard>(`/books/accounts/${id}/card`, { query: { ...period, corrections } })).data,
+  card: async (id: number, period: BooksPeriod, corrections: boolean, source?: RecordSource) =>
+    (await apiRequest<AccountCard>(`/books/accounts/${id}/card`, { query: { ...period, corrections, source } })).data,
   trialBalance: async (period: BooksPeriod) => (await apiRequest<TrialBalance>('/books/trial-balance', { query: { ...period } })).data,
-  journal: (query: BooksPeriod & { page: number; search?: string; corrections: boolean }) =>
+  journal: (query: BooksPeriod & { page: number; search?: string; corrections: boolean; source?: RecordSource }) =>
     paginated<LedgerEntry>('/books/journal', { limit: 25, ...query }),
-  entry: async (id: number) => (await apiRequest<LedgerEntry>(`/books/entries/${id}`)).data,
+  /** An entry by its number; below zero, an entry of TREFIN's journal. */
+  entry: async (id: number) => (await apiRequest<LedgerEntry>(id < 0 ? `/books/trefin-entries/${-id}` : `/books/entries/${id}`)).data,
   /** The entries one document wrote, oldest first. */
   entriesFor: async (source: EntrySource, id: number) => (await apiRequest<LedgerEntry[]>('/books/entries', { query: { source, id } })).data,
   addEntry: async (input: ManualEntryInput) => (await apiRequest<LedgerEntry>('/books/entries', { method: 'POST', body: input })).data,

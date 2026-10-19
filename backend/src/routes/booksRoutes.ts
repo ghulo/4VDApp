@@ -20,6 +20,7 @@ export function createBooksRoutes({ booksService, openingService, statementsServ
   router.get('/entries', ...guards.books, controller.entriesFor);
   router.post('/entries', ...guards.entries, controller.addEntry);
   router.get('/entries/:id', ...guards.books, controller.entry);
+  router.get('/trefin-entries/:id', ...guards.books, controller.trefinEntry);
   router.post('/entries/:id/reverse', ...guards.entries, controller.reverseEntry);
   router.get('/trial-balance.xlsx', ...guards.books, controller.exportTrialBalance);
   router.get('/journal.xlsx', ...guards.books, controller.exportJournal);

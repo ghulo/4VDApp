@@ -84,6 +84,7 @@ function sample(): TrefinExport {
 const EACH = { MARKET_2025: [], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] };
 const noSalesHistory = { saleInvoices: EACH, deletedSales: EACH, deletedSaleLines: EACH };
 const noStockHistory = { stockMoves: EACH, stockCounts: EACH };
+const noMoneyHistory = { payments: EACH, bankLines: EACH, journal: EACH };
 const emptyHistory = () => ({
   partners: EACH,
   products: { MARKET_2025: new Map(), MARKET_2022: new Map(), MARKET_2022_FINAL_2023_05_26: new Map() },
@@ -94,6 +95,7 @@ const emptyHistory = () => ({
   deleteLog: EACH,
   ...noSalesHistory,
   ...noStockHistory,
+  ...noMoneyHistory,
 });
 
 const count = async (table: 'products' | 'sales' | 'suppliers' | 'customers' | 'product_duplicate_flags') =>
@@ -211,6 +213,7 @@ describe('importTrefin', () => {
       deleteLog: { MARKET_2025: [{ NrRen: '30', LlojDok: 'FBM', DataDelete: '2025-06-02 09:15:00', EmerUser: 'Administratori', EmerKlient: 'BEL-KOS SH.P.K.' }], MARKET_2022: [], MARKET_2022_FINAL_2023_05_26: [] },
       ...noSalesHistory,
       ...noStockHistory,
+      ...noMoneyHistory,
     };
     data.sales.push(line('K-23-00000009', '339', '1', '1.00', { source_db: 'MARKET_2022', barcode: '8600000000001', product_name: 'Twix 50g', sale_date: '2024-05-04' }));
 
@@ -361,6 +364,113 @@ describe('importTrefin', () => {
     // History only: the stock is still what TREFIN said it was on the day of the export.
     expect(stock.quantity).toBe(12);
     expect((await request(context.app).get('/api/stock-counts/trefin/999999').set(auth)).status).toBe(404);
+  });
+
+  it("should list TREFIN's cash desk payments in the till's book without changing its balance", async () => {
+    const data = sample();
+    const pff = { NrRen: '36586', NrFatura: 'PFF-24-000001', LlojDok: 'PFF', Data: '2024-05-10 00:00:00', Pershkrimi: 'Pagesa e Faturës: 1-2/13989', NrArka: '699999', NrKlient: '700005', Vlera: '80' };
+    data.history = {
+      ...emptyHistory(),
+      // MARKET_2025 repeats MARKET_2022's payment: it is taken once.
+      payments: {
+        ...EACH,
+        MARKET_2025: [
+          pff,
+          { NrRen: '40000', NrFatura: 'APK-23-000001', LlojDok: 'APK', Data: '2023-11-09 00:00:00', Pershkrimi: 'Arkëtimi i Faturës: FSM-23-000001', NrArka: '699999', NrKlient: '700110', Vlera: '112' },
+        ],
+        MARKET_2022: [{ ...pff, NrRen: '1200' }],
+      },
+      bankLines: { ...EACH, MARKET_2025: [{ NrRen: '48066', NrFatura: 'EB-24-000001', NrArka: '699999', Data: '2024-06-08 00:00:00', DebiKredi: 'Debi', NrLlog: '6530', NrKlient: '700091', Pershkrimi_I: 'CM 5 2024', Vlera: '60', NrPrint: '1' }] },
+    };
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ moneyLines: 3 });
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    const places = (await request(context.app).get('/api/money/places').set(auth)).body.data as Array<{ id: number; kind: string; carwashId: number | null }>;
+    const till = places.find((place) => place.kind === 'till' && place.carwashId === null)!;
+    const book = (await request(context.app).get(`/api/money/places/${till.id}/book?from=2023-01-01&to=2024-12-31`).set(auth)).body.data as {
+      lines: unknown[];
+      closing: number;
+      trefin: Array<Record<string, unknown>>;
+    };
+    expect(book.trefin.map((line) => [line.day, line.kind, line.amount, line.document])).toEqual([
+      ['2023-11-09', 'customer_payment', 112, 'FSM-23-000001'],
+      ['2024-05-10', 'supplier_payment', -80, '1-2/13989'],
+    ]);
+    expect(book.trefin[0]!.customer).toMatchObject({ name: 'Restaurant Vikendi SH.P.K.' });
+    expect(book.trefin[1]!.supplier).toMatchObject({ name: 'BEL-KOS SH.P.K.' });
+    // History only: nothing in the till's own lines or balance.
+    expect(book.lines.filter((line) => (line as { kind: string }).kind !== 'takings')).toEqual([]);
+    const bank = await context.db.selectFrom('trefin_money_lines').select(['place', 'amount', 'account']).where('kind', '=', 'bank_payment').executeTakeFirstOrThrow();
+    expect(bank).toEqual({ place: 'bank', amount: '-60.00', account: '6530' });
+  });
+
+  it("should show TREFIN's journal in Books as entries before 4VD that count in no balance", async () => {
+    const data = sample();
+    const receipt = (nr: string, amount: string) => [
+      { LlojDok: 'KUP', NrRen: nr, Data: '2024-03-02 00:00:00', NrLlog: '1230', NrKlient: '700001', Debi: amount, Kredi: '0', NrRef: `K-24-${nr}` },
+      { LlojDok: 'KUP', NrRen: nr, Data: '2024-03-02 00:00:00', NrLlog: '4000', NrKlient: '700001', Debi: '0', Kredi: amount, NrRef: `K-24-${nr}` },
+    ];
+    const bill = [
+      { LlojDok: 'FBM', NrRen: '77', Data: '2024-03-05 00:00:00', NrLlog: '1340', NrKlient: '700005', Debi: '30', Kredi: '0', NrRef: '1-2/13989' },
+      { LlojDok: 'FBM', NrRen: '77', Data: '2024-03-05 00:00:00', NrLlog: '1340', NrKlient: '700005', Debi: '20', Kredi: '0', NrRef: '1-2/13989' },
+      { LlojDok: 'FBM', NrRen: '77', Data: '2024-03-05 00:00:00', NrLlog: '2000', NrKlient: '700005', Debi: '0', Kredi: '50', NrRef: '1-2/13989' },
+    ];
+    data.history = {
+      ...emptyHistory(),
+      partners: { ...EACH, MARKET_2025: [{ NrKlient: '700005', EmerKlient: 'BEL-KOS SH.P.K.' }] },
+      journal: {
+        ...EACH,
+        // A day's two receipts make one entry; MARKET_2022 repeats the bill under another number: taken once.
+        MARKET_2025: [...receipt('1', '10'), ...receipt('2', '5.5'), ...bill],
+        MARKET_2022: bill.map((row) => ({ ...row, NrRen: '9' })),
+      },
+    };
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ journalEntries: 2, journalLines: 4 });
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    type Entry = { id: number; date: string; description: string; trefin?: { kind: string }; lines: Array<{ accountNumber: string; debit: number; credit: number; memo: string | null }> };
+    const response = (await request(context.app).get('/api/books/journal?from=2024-01-01&to=2024-12-31&source=trefin').set(auth)).body;
+    const journal = { entries: response.data as Entry[] };
+    expect(response.meta.total).toBe(2);
+    expect(journal.entries.map((entry) => [entry.date, entry.trefin?.kind, entry.description])).toEqual([
+      ['2024-03-05', 'bill', '1-2/13989'],
+      ['2024-03-02', 'receipts', ''],
+    ]);
+    expect(journal.entries.every((entry) => entry.id < 0)).toBe(true);
+    const one = (await request(context.app).get(`/api/books/trefin-entries/${-journal.entries[0]!.id}`).set(auth)).body.data as Entry;
+    expect(one).toMatchObject({ id: journal.entries[0]!.id, trefin: { kind: 'bill', source: 'MARKET_2025' } });
+    expect((await request(context.app).get('/api/books/trefin-entries/999999').set(auth)).status).toBe(404);
+    expect(journal.entries[0]!.lines.map((line) => [line.accountNumber, line.debit, line.credit, line.memo])).toEqual([
+      ['1340', 50, 0, 'BEL-KOS SH.P.K.'],
+      ['2000', 0, 50, 'BEL-KOS SH.P.K.'],
+    ]);
+    expect(journal.entries[1]!.lines.map((line) => [line.accountNumber, line.debit, line.credit])).toEqual([
+      ['1230', 15.5, 0],
+      ['4000', 0, 15.5],
+    ]);
+    const own = (await request(context.app).get('/api/books/journal?from=2024-01-01&to=2024-12-31&source=4vd').set(auth)).body.data as Entry[];
+    expect(own.filter((entry) => entry.trefin)).toEqual([]);
+
+    const accounts = (await request(context.app).get('/api/books/accounts').set(auth)).body.data as Array<{ id: number; number: string }>;
+    const sales = accounts.find((account) => account.number === '4000')!;
+    const card = (await request(context.app).get(`/api/books/accounts/${sales.id}/card?from=2024-01-01&to=2024-12-31&source=trefin`).set(auth)).body.data as {
+      closing: number;
+      lines: Array<{ credit: number; trefin?: { kind: string } }>;
+    };
+    expect(card.lines.map((line) => [line.credit, line.trefin?.kind])).toEqual([[15.5, 'receipts']]);
+    expect(card.closing).toBe(-15.5);
+    // History only: with TREFIN's lines shown too, 4VD's own balance stays the same.
+    const cardOf = async (source: string) => (await request(context.app).get(`/api/books/accounts/${sales.id}/card?from=2024-01-01&to=2024-12-31${source ? `&source=${source}` : ''}`).set(auth)).body.data as { closing: number; lines: unknown[] };
+    const ownCard = await cardOf('4vd');
+    const both = await cardOf('');
+    expect(both.closing).toBe(ownCard.closing);
+    expect(both.lines).toHaveLength(ownCard.lines.length + 1);
   });
 
   it('should refuse a shop that already has products, and a second import', async () => {

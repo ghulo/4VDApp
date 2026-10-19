@@ -9,7 +9,7 @@ import {
 import type { DatabaseClient } from '../database/connection.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
-import { type AccountRecord, BooksRepository, type CardLineRecord, type EntryRecord, type LineRecord } from '../repositories/BooksRepository.js';
+import { type AccountRecord, BooksRepository, type CardLineRecord, type EntryRecord, type LineRecord, type TrefinEntryRecord } from '../repositories/BooksRepository.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { BOOKS_START_KEY, BooksPoster, insertLines, reverseEntry } from './books/BooksPoster.js';
 import { checkoutKeySql } from './books/postingRules.js';
@@ -65,7 +65,20 @@ export interface EntryDto {
   total: number;
   lines: EntryLineDto[];
   target: EntryTarget | null;
+  /** Set on an entry of TREFIN's journal (its id is below zero): history, in no 4VD balance. */
+  trefin?: TrefinEntryMark;
 }
+
+/** What TREFIN's entry was ('receipts', 'bill', ...: a word the dashboard translates) and its document number. */
+export interface TrefinEntryMark {
+  kind: string;
+  reference: string | null;
+  /** Which TREFIN database. */
+  source?: string;
+}
+
+/** Who sees which entries: 4VD's own, TREFIN's history, or both. */
+export type BooksSource = 'both' | '4vd' | 'trefin';
 
 export interface TrialBalanceRow {
   accountId: number;
@@ -95,6 +108,8 @@ export interface CardLineDto {
   balance: number;
   correction: boolean;
   target: EntryTarget | null;
+  /** A line of TREFIN's journal: its balance runs over TREFIN's lines only. */
+  trefin?: TrefinEntryMark;
 }
 
 export interface Period {
@@ -300,9 +315,47 @@ export class BooksService {
     id: number,
     period: Period,
     withCorrections: boolean,
+    source: BooksSource = '4vd',
   ): Promise<{ account: AccountDto; opening: number; closing: number; debit: number; credit: number; lines: CardLineDto[] }> {
     const account = (await this.accounts()).find((row) => row.id === id);
     if (!account) throw new NotFoundError(`Account ${id} does not exist`);
+    const trefin = source === '4vd' ? null : await this.trefinCard(account.number, period);
+    if (source === 'trefin') return { account, ...trefin! };
+    const own = await this.ownCard(id, period, withCorrections);
+    return { account, ...own, lines: trefin ? [...trefin.lines, ...own.lines] : own.lines };
+  }
+
+  /** An account's lines in TREFIN's journal, with a balance over TREFIN's lines only. */
+  private async trefinCard(number: string, period: Period) {
+    const [opening, records] = await Promise.all([this.repository.trefinBalanceBefore(number, period.from), this.repository.trefinCardLines(number, period.from, period.to)]);
+    let running = opening;
+    const lines = records.map((record): CardLineDto => {
+      const debit = Number(record.debit);
+      const credit = Number(record.credit);
+      running = roundMoney(running + debit - credit);
+      return {
+        entryId: -record.entry_id,
+        date: record.dated,
+        kind: 'auto',
+        source: null,
+        description: record.reference ?? '',
+        warning: null,
+        party: null,
+        memo: record.party,
+        debit,
+        credit,
+        balance: running,
+        correction: false,
+        target: null,
+        trefin: { kind: record.kind, reference: record.reference },
+      };
+    });
+    const debit = roundMoney(lines.reduce((sum, line) => sum + line.debit, 0));
+    const credit = roundMoney(lines.reduce((sum, line) => sum + line.credit, 0));
+    return { opening, closing: roundMoney(opening + debit - credit), debit, credit, lines };
+  }
+
+  private async ownCard(id: number, period: Period, withCorrections: boolean): Promise<{ opening: number; closing: number; debit: number; credit: number; lines: CardLineDto[] }> {
     const [opening, records] = await Promise.all([
       this.repository.balanceBefore(id, period.from),
       this.repository.cardLines(id, period.from, period.to, withCorrections),
@@ -331,7 +384,7 @@ export class BooksService {
     const debit = roundMoney(lines.reduce((sum, line) => sum + line.debit, 0));
     const credit = roundMoney(lines.reduce((sum, line) => sum + line.credit, 0));
     // Hidden corrections cancel out, so the closing balance is the same either way.
-    return { account, opening, closing: roundMoney(opening + debit - credit), debit, credit, lines };
+    return { opening, closing: roundMoney(opening + debit - credit), debit, credit, lines };
   }
 
   /** Every line of every account in the period, for the general ledger download. */
@@ -340,10 +393,60 @@ export class BooksService {
     return this.repository.allLines(period.from, period.to);
   }
 
-  async journal(filters: Period & { search: string | null; withCorrections: boolean; limit: number; offset: number }): Promise<{ entries: EntryDto[]; total: number }> {
+  /**
+   * A page of the journal, newest first. With TREFIN's entries too, they come
+   * after 4VD's (they are all older), so one page can hold both.
+   */
+  async journal(filters: Period & { search: string | null; withCorrections: boolean; limit: number; offset: number; source?: BooksSource }): Promise<{ entries: EntryDto[]; total: number }> {
     await this.poster.sync();
-    const { entries, total } = await this.repository.journal(filters);
-    return { entries: await this.withLines(entries), total };
+    const source = filters.source ?? '4vd';
+    const own = source === 'trefin' ? { entries: [], total: 0 } : await this.repository.journal(filters);
+    if (source === '4vd') return { entries: await this.withLines(own.entries), total: own.total };
+    const trefin = await this.repository.trefinJournal({
+      ...filters,
+      offset: Math.max(0, filters.offset - own.total),
+      limit: filters.limit - own.entries.length,
+    });
+    return { entries: [...(await this.withLines(own.entries)), ...(await this.trefinEntries(trefin.entries))], total: own.total + trefin.total };
+  }
+
+  /** TREFIN's entries in the shape of 4VD's, ids below zero; each line names 4VD's account with the same number. */
+  private async trefinEntries(records: TrefinEntryRecord[]): Promise<EntryDto[]> {
+    if (records.length === 0) return [];
+    const [lines, accounts] = await Promise.all([
+      this.repository.trefinLinesOf(records.map((record) => record.id)),
+      this.db.selectFrom('ledger_accounts').select(['id', 'number', 'name']).execute(),
+    ]);
+    const byNumber = new Map(accounts.map((account) => [account.number, account]));
+    return records.map((record) => {
+      const entryLines: EntryLineDto[] = lines
+        .filter((line) => line.entry_id === record.id)
+        .map((line) => ({
+          accountId: byNumber.get(line.account)?.id ?? 0,
+          accountNumber: line.account,
+          accountName: byNumber.get(line.account)?.name ?? line.account,
+          debit: Number(line.debit),
+          credit: Number(line.credit),
+          party: null,
+          memo: line.party,
+        }));
+      return {
+        id: -record.id,
+        date: record.dated,
+        kind: 'auto',
+        source: null,
+        description: record.reference ?? '',
+        warning: null,
+        reversesId: null,
+        reversed: false,
+        createdBy: null,
+        createdAt: `${record.dated}T12:00:00.000Z`,
+        total: roundMoney(entryLines.reduce((sum, line) => sum + line.debit, 0)),
+        lines: entryLines,
+        target: null,
+        trefin: { kind: record.kind, reference: record.reference, source: record.source },
+      };
+    });
   }
 
   async entry(id: number): Promise<EntryDto> {
@@ -351,6 +454,13 @@ export class BooksService {
     const record = await this.repository.findEntry(id);
     if (!record) throw new NotFoundError(`Entry ${id} does not exist`);
     return (await this.withLines([record]))[0]!;
+  }
+
+  /** One entry of TREFIN's journal, by its own number (shown below zero next to 4VD's). */
+  async trefinEntry(id: number): Promise<EntryDto> {
+    const record = await this.repository.findTrefinEntry(id);
+    if (!record) throw new NotFoundError(`TREFIN entry ${id} does not exist`);
+    return (await this.trefinEntries([record]))[0]!;
   }
 
   /** The entries a document posted, reversals included, oldest first. */

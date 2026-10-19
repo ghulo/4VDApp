@@ -6,7 +6,7 @@ import { type BooksLanguage, cardSheet, journalSheet, ledgerSheet, trialBalanceS
 import { sendSuccess } from '../utils/apiResponse.js';
 import { type Sheet, sheetToXlsx } from '../utils/spreadsheet.js';
 import { exportTimeZoneSchema } from '../validators/reportValidators.js';
-import { calendarDaySchema, DEFAULT_PAGE_SIZE, idParamsSchema, idSchema, MAX_PAGE_SIZE, parseInput } from '../validators/validate.js';
+import { calendarDaySchema, DEFAULT_PAGE_SIZE, recordSourceSchema, idParamsSchema, idSchema, MAX_PAGE_SIZE, parseInput } from '../validators/validate.js';
 
 const periodSchema = z
   .object({ from: calendarDaySchema, to: calendarDaySchema })
@@ -22,12 +22,13 @@ const journalSchema = z.intersection(
   z.object({
     search: z.string().trim().max(100).optional(),
     corrections: flag,
+    source: recordSourceSchema.optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   }),
 );
 
-const cardSchema = z.intersection(periodSchema, z.object({ corrections: flag }));
+const cardSchema = z.intersection(periodSchema, z.object({ corrections: flag, source: recordSourceSchema.optional() }));
 
 const accountNumber = z.string().trim().regex(/^\d{3,10}$/, 'must be 3 to 10 digits, like 6240');
 const accountFields = {
@@ -128,8 +129,8 @@ export function createBooksController(booksService: BooksService) {
 
     async card(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      const { from, to, corrections } = parseInput(cardSchema, req.query);
-      sendSuccess(res, await booksService.accountCard(id, { from, to }, corrections));
+      const { from, to, corrections, source } = parseInput(cardSchema, req.query);
+      sendSuccess(res, await booksService.accountCard(id, { from, to }, corrections, source ?? 'both'));
     },
 
     async trialBalance(req: Request, res: Response): Promise<void> {
@@ -137,14 +138,19 @@ export function createBooksController(booksService: BooksService) {
     },
 
     async journal(req: Request, res: Response): Promise<void> {
-      const { from, to, search, corrections, page, limit } = parseInput(journalSchema, req.query);
-      const result = await booksService.journal({ from, to, search: search || null, withCorrections: corrections, limit, offset: (page - 1) * limit });
+      const { from, to, search, corrections, source, page, limit } = parseInput(journalSchema, req.query);
+      const result = await booksService.journal({ from, to, search: search || null, withCorrections: corrections, limit, offset: (page - 1) * limit, source: source ?? 'both' });
       sendSuccess(res, result.entries, { meta: { page, limit, total: result.total } });
     },
 
     async entry(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await booksService.entry(id));
+    },
+
+    async trefinEntry(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await booksService.trefinEntry(id));
     },
 
     async entriesFor(req: Request, res: Response): Promise<void> {

@@ -21,6 +21,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
+import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import {
   Badge,
   Button,
@@ -49,6 +50,7 @@ import {
   type CashFlowActivity,
   type LedgerAccount,
   type LedgerEntry,
+  type RecordSource,
   type TrialBalanceRow,
 } from '../services/types';
 import { todayIso } from '../utils/bills';
@@ -90,7 +92,7 @@ function useEntryInspector(initial: number | null = null) {
     setShownId(id);
   }, []);
   const inspector = (
-    <Inspector open={openId !== null} onClose={() => setOpenId(null)} title={shownId ? t.books.entryTitle(shownId) : t.books.title}>
+    <Inspector open={openId !== null} onClose={() => setOpenId(null)} title={shownId ? (shownId < 0 ? t.fromTrefin.entryTitle : t.books.entryTitle(shownId)) : t.books.title}>
       {openId !== null && <EntryById key={openId} id={openId} onOpen={open} />}
     </Inspector>
   );
@@ -274,10 +276,11 @@ export function BooksJournalPage() {
   const page = Number(params.get('page') ?? 1);
   const search = params.get('q') ?? '';
   const corrections = params.get('corrections') === '1';
+  const source = sourceFrom(params);
   const { period, from, to, range, days, changePeriod } = useBooksPeriod();
   const entries = useQuery({
-    queryKey: ['books', 'journal', { ...days, page, search, corrections }],
-    queryFn: () => booksApi.journal({ ...days, page, search: search || undefined, corrections }),
+    queryKey: ['books', 'journal', { ...days, page, search, corrections, source }],
+    queryFn: () => booksApi.journal({ ...days, page, search: search || undefined, corrections, source }),
     placeholderData: keepPreviousData,
   });
   const settings = useQuery({ queryKey: ['books', 'settings'], queryFn: booksApi.settings });
@@ -334,6 +337,7 @@ export function BooksJournalPage() {
                 <div className="toolbar">
                   <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
                   <SearchInput value={search} onChange={onSearch} label={t.books.searchPlaceholder} />
+                  <SourceFilter value={source} onChange={(next) => update({ source: next ?? '' })} />
                   <label className="toggle" title={t.books.correctionsHint}>
                     <input type="checkbox" checked={corrections} onChange={(event) => update({ corrections: event.target.checked ? '1' : '' })} />
                     {t.books.corrections}
@@ -355,11 +359,21 @@ export function BooksJournalPage() {
                   cell: (entry) => (
                     <>
                       {formatBookDay(entry.date)}
-                      {filed.has(entry.date.slice(0, 7)) && <FiledStamp />}
+                      {!entry.trefin && filed.has(entry.date.slice(0, 7)) && <FiledStamp />}
                     </>
                   ),
                 },
-                { header: t.books.what, title: true, className: 'books-kind', cell: (entry) => kindLabel(t, entry) },
+                {
+                  header: t.books.what,
+                  title: true,
+                  className: 'books-kind',
+                  cell: (entry) => (
+                    <>
+                      {kindLabel(t, entry)}
+                      {entry.trefin && <> <TrefinTag /></>}
+                    </>
+                  ),
+                },
                 { header: t.books.descriptionColumn, className: 'books-description', cell: (entry) => entry.description },
                 {
                   header: t.nav.tabs.accounts,
@@ -374,11 +388,16 @@ export function BooksJournalPage() {
                 {
                   header: <span className="visually-hidden">{t.books.openColumn}</span>,
                   align: 'end',
-                  cell: (entry) => (
-                    <Button size="sm" variant="ghost" aria-label={t.books.open(entry.id)} onClick={() => open(entry.id)}>
-                      #{entry.id}
-                    </Button>
-                  ),
+                  cell: (entry) =>
+                    entry.trefin ? (
+                      <Button size="sm" variant="ghost" aria-label={t.fromTrefin.open} onClick={() => open(entry.id)}>
+                        {t.fromTrefin.openShort}
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" aria-label={t.books.open(entry.id)} onClick={() => open(entry.id)}>
+                        #{entry.id}
+                      </Button>
+                    ),
                 },
               ]}
               footer={<Pagination meta={entries.data.meta} onPageChange={(next) => update({ page: String(next) })} itemLabel={t.books.entriesWord} />}
@@ -852,10 +871,11 @@ export function AccountCardPage() {
   const [params, setParams] = useSearchParams();
   const corrections = params.get('corrections') === '1';
   const page = Number(params.get('page') ?? 1);
+  const source = sourceFrom(params);
   const { period, from, to, days, changePeriod } = useBooksPeriod();
   const card = useQuery({
-    queryKey: ['books', 'card', accountId, days, corrections],
-    queryFn: () => booksApi.card(accountId, days, corrections),
+    queryKey: ['books', 'card', accountId, days, corrections, source],
+    queryFn: () => booksApi.card(accountId, days, corrections, source),
     placeholderData: keepPreviousData,
   });
   const accounts = useAccounts();
@@ -865,7 +885,17 @@ export function AccountCardPage() {
   if (card.isPending) return <Loading />;
   if (card.isError) return <ErrorNotice error={card.error} onRetry={() => card.refetch()} />;
   const { account } = card.data;
-  const keptSearch = search.replace(/[?&](corrections|page)=[^&]*/g, '').replace(/^&/, '?');
+  const keptSearch = search.replace(/[?&](corrections|page|source)=[^&]*/g, '').replace(/^&/, '?');
+  const setSource = (next: RecordSource | undefined) =>
+    setParams((current) => {
+      const updated = new URLSearchParams(current);
+      if (next) updated.set('source', next);
+      else updated.delete('source');
+      updated.delete('page');
+      return updated;
+    });
+  // With both, the balances on top are 4VD's, so TREFIN's lines show none of their own.
+  const mixed = source === undefined;
   const pageLines = card.data.lines.slice((page - 1) * CARD_PAGE, page * CARD_PAGE);
   const opening: CardRow[] = [
     {
@@ -941,6 +971,7 @@ export function AccountCardPage() {
             toolbar={
               <div className="toolbar">
                 <PeriodPicker compact period={period} from={from} to={to} onChange={changePeriod} periods={BOOKS_PERIOD_KEYS} />
+                <SourceFilter value={source} onChange={setSource} />
                 <label className="toggle" title={t.books.correctionsHint}>
                   <input
                     type="checkbox"
@@ -964,7 +995,18 @@ export function AccountCardPage() {
             }
             columns={[
               { header: t.books.date, className: 'books-date', cell: (row) => formatBookDay(row.date) },
-              { header: t.books.what, title: true, className: 'books-kind table__dock-hide', cell: (row) => !row.opening && kindLabel(t, row) },
+              {
+                header: t.books.what,
+                title: true,
+                className: 'books-kind table__dock-hide',
+                cell: (row) =>
+                  !row.opening && (
+                    <>
+                      {kindLabel(t, row)}
+                      {row.trefin && <> <TrefinTag /></>}
+                    </>
+                  ),
+              },
               {
                 header: t.books.descriptionColumn,
                 className: 'books-description',
@@ -980,13 +1022,17 @@ export function AccountCardPage() {
               },
               { header: t.books.debit, align: 'end', cell: (row) => (row.debit ? formatMoney(row.debit) : '') },
               { header: t.books.credit, align: 'end', cell: (row) => (row.credit ? formatMoney(row.credit) : '') },
-              { header: t.books.balance, align: 'end', cell: (row) => formatBalance(t, row.balance) },
+              { header: t.books.balance, align: 'end', cell: (row) => (mixed && row.trefin ? '' : formatBalance(t, row.balance)) },
               {
                 header: <span className="visually-hidden">{t.books.openColumn}</span>,
                 align: 'end',
                 cell: (row) =>
                   row.opening ? (
                     ''
+                  ) : row.trefin ? (
+                    <Button size="sm" variant="ghost" aria-label={t.fromTrefin.open} onClick={() => open(row.entryId)}>
+                      {t.fromTrefin.openShort}
+                    </Button>
                   ) : (
                     <Button size="sm" variant="ghost" aria-label={t.books.open(row.entryId)} onClick={() => open(row.entryId)}>
                       #{row.entryId}

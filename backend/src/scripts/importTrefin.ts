@@ -44,6 +44,8 @@ async function main(): Promise<void> {
     console.log(`  invoices         ${created.invoices}  (TREFIN's own, over its sales; to look at only)`);
     console.log(`  deleted receipts ${created.deletedReceipts}  (deleted in TREFIN; in Reports → Counter)`);
     console.log(`  stock documents  ${created.stockDocuments}  (${created.stockLines} lines: starting stock, corrections, counts; in Stock counts)`);
+    console.log(`  payments         ${created.moneyLines}  (TREFIN's cash desk and bank; in Money, each place's book)`);
+    console.log(`  journal entries  ${created.journalEntries}  (${created.journalLines} lines; read-only in Books, before 4VD)`);
     console.log('\nWorth knowing:');
     for (const [what, n] of Object.entries(report.notes)) console.log(`  ${String(n).padStart(6)}  ${what}`);
     console.log(`\nTook ${((Date.now() - started) / 1000).toFixed(1)}s.`);

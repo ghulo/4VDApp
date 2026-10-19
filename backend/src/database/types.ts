@@ -1114,6 +1114,9 @@ export interface Database {
   trefin_deleted_receipts: TrefinDeletedReceiptsTable;
   trefin_stock_documents: TrefinStockDocumentsTable;
   trefin_stock_lines: TrefinStockLinesTable;
+  trefin_money_lines: TrefinMoneyLinesTable;
+  trefin_journal_entries: TrefinJournalEntriesTable;
+  trefin_journal_lines: TrefinJournalLinesTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1177,6 +1180,44 @@ export interface TrefinStockLinesTable {
   quantity: ColumnType<string, number, number>;
   counted: ColumnType<string | null, number | null, number | null>;
   unit_cost: ColumnType<string | null, number | null, number | null>;
+}
+
+/** A payment from TREFIN's cash desk or bank, kept to look at (see migration 049). */
+export interface TrefinMoneyLinesTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  place: 'till' | 'bank';
+  bank_name: string | null;
+  moved_on: ColumnType<string, string, string>;
+  kind: 'supplier_payment' | 'customer_payment' | 'bank_payment';
+  number: string | null;
+  amount: ColumnType<string, number, number>;
+  supplier_id: number | null;
+  customer_id: number | null;
+  party_name: string | null;
+  document: string | null;
+  account: string | null;
+  description: string | null;
+}
+
+/** An entry of TREFIN's journal, kept to look at in Books (see migration 050). */
+export interface TrefinJournalEntriesTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  dated: ColumnType<string, string, string>;
+  kind: string;
+  reference: string | null;
+  source: string;
+}
+
+export interface TrefinJournalLinesTable {
+  id: Generated<number>;
+  entry_id: number;
+  dated: ColumnType<string, string, string>;
+  account: string;
+  party: string | null;
+  debit: ColumnType<string, number, number>;
+  credit: ColumnType<string, number, number>;
 }
 
 export interface TrefinReceiptLine {

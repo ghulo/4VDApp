@@ -52,6 +52,14 @@ export interface LineRecord {
   memo: string | null;
 }
 
+export interface TrefinEntryRecord {
+  id: number;
+  dated: string;
+  kind: string;
+  reference: string | null;
+  source: string;
+}
+
 export interface CardLineRecord extends LineRecord {
   entry_date: string;
   kind: LedgerEntryKind;
@@ -171,6 +179,57 @@ export class BooksRepository {
   private entryColumns() {
     return sql`e.id, ${entryDay} as entry_date, e.kind, e.source_key, e.description, e.warning, e.reverses_id, e.reversed_at,
       u.name as created_by_name, e.created_at`;
+  }
+
+  /** A page of TREFIN's journal entries in the period, newest first: its document number or an account's number finds them. */
+  async trefinJournal(filters: { from: string; to: string; search: string | null; limit: number; offset: number }) {
+    const pattern = filters.search ? `%${filters.search.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+    const where = sql`e.dated between ${filters.from}::date and ${filters.to}::date
+      and (${pattern}::text is null or e.reference ilike ${pattern}
+        or exists (select 1 from trefin_journal_lines l where l.entry_id = e.id and (l.account = ${filters.search} or l.party ilike ${pattern})))`;
+    const [page, count] = await Promise.all([
+      sql<TrefinEntryRecord>`
+        select e.id, to_char(e.dated, 'YYYY-MM-DD') as dated, e.kind, e.reference, e.source from trefin_journal_entries e
+        where ${where} order by e.dated desc, e.id desc limit ${filters.limit} offset ${filters.offset}
+      `.execute(this.db),
+      sql<{ total: string }>`select count(*) as total from trefin_journal_entries e where ${where}`.execute(this.db),
+    ]);
+    return { entries: page.rows, total: Number(count.rows[0]?.total ?? 0) };
+  }
+
+  async findTrefinEntry(id: number): Promise<TrefinEntryRecord | undefined> {
+    const { rows } = await sql<TrefinEntryRecord>`
+      select id, to_char(dated, 'YYYY-MM-DD') as dated, kind, reference, source from trefin_journal_entries where id = ${id}
+    `.execute(this.db);
+    return rows[0];
+  }
+
+  async trefinLinesOf(entryIds: number[]) {
+    if (entryIds.length === 0) return [];
+    return this.db.selectFrom('trefin_journal_lines').select(['entry_id', 'account', 'party', 'debit', 'credit']).where('entry_id', 'in', entryIds).orderBy('id').execute();
+  }
+
+  /** What TREFIN's journal had on an account before a day. */
+  async trefinBalanceBefore(account: string, from: string): Promise<number> {
+    const { rows } = await sql<{ balance: string }>`
+      select coalesce(sum(debit - credit), 0) as balance from trefin_journal_lines where account = ${account} and dated < ${from}::date
+    `.execute(this.db);
+    return Number(rows[0]?.balance ?? 0);
+  }
+
+  /** One account's lines in TREFIN's journal in the period, oldest first. */
+  trefinCardLines(account: string, from: string, to: string) {
+    return this.db
+      .selectFrom('trefin_journal_lines as l')
+      .innerJoin('trefin_journal_entries as e', 'e.id', 'l.entry_id')
+      .select(['l.id', 'e.id as entry_id', sql<string>`to_char(l.dated, 'YYYY-MM-DD')`.as('dated'), 'e.kind', 'e.reference', 'l.party', 'l.debit', 'l.credit'])
+      .where('l.account', '=', account)
+      .where('l.dated', '>=', from)
+      .where('l.dated', '<=', to)
+      .orderBy('l.dated')
+      .orderBy('e.id')
+      .orderBy('l.id')
+      .execute();
   }
 
   /** A page of entries in the period, newest first. */

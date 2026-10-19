@@ -1589,6 +1589,15 @@ export interface LedgerEntry {
   total: number;
   lines: EntryLine[];
   target: EntryTarget | null;
+  /** Set on an entry of TREFIN's journal (its id is below zero): history, in no 4VD balance. */
+  trefin?: TrefinEntryMark;
+}
+
+/** What a TREFIN journal entry was: a word key ('receipts', 'bill', ...), its document number and its database. */
+export interface TrefinEntryMark {
+  kind: string;
+  reference: string | null;
+  source?: string;
 }
 
 export interface TrialBalanceRow {
@@ -1630,6 +1639,8 @@ export interface CardLine {
   balance: number;
   correction: boolean;
   target: EntryTarget | null;
+  /** A line of TREFIN's journal: its balance runs over TREFIN's lines only. */
+  trefin?: TrefinEntryMark;
 }
 
 export interface AccountCard {
@@ -1850,6 +1861,25 @@ export interface PlaceBook {
   moneyOut: number;
   closing: number;
   lines: PlaceBookLine[];
+  /** TREFIN's payments here in the period: history, in no balance or total. */
+  trefin: TrefinMoneyLine[];
+}
+
+export interface TrefinMoneyLine {
+  id: number;
+  day: string;
+  kind: 'supplier_payment' | 'customer_payment' | 'bank_payment';
+  number: string | null;
+  /** Money in above zero, money out below. */
+  amount: number;
+  supplier: { id: number; name: string } | null;
+  customer: { id: number; name: string } | null;
+  partyName: string | null;
+  /** The bill or invoice paid. */
+  document: string | null;
+  account: string | null;
+  description: string | null;
+  bankName: string | null;
 }
 
 export interface MoveInput {

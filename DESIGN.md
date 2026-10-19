@@ -431,6 +431,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | What the shop drawer should have in it now (overseers only) | **The drawer should hold** | **Arka duhet të ketë** | expected cash, theoretical balance |
 | A person's 4-6 digit number, only for the Counter | **Counter PIN** | **PIN-i i arkës** | passcode, operator code |
 | Handing the till to someone else with their PIN | **Switch person** | **Ndrro personin** | change cashier, operator login |
+| A sale made without internet, kept on the PC until it is sent | **Waiting to send** | **Pret të dërgohet** | offline queue, pending sync |
 | An owner's PIN allowing a rabat over the limit, once | **Ask the owner** (they press **Allow**) | **Pyet pronarin** (**Lejo**) | manager override, supervisor approval |
 | The shop's end-of-day steps | **Close the day** | **Mbyll ditën** *(confirm)* | Z report |
 | One person's end-of-day steps | **End your shift** | **Mbyll turnin** | |

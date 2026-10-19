@@ -1,4 +1,5 @@
 import {
+  ArrowClockwise,
   ArrowCounterClockwise,
   ArrowLeft,
   ArrowSquareOut,
@@ -26,7 +27,7 @@ import {
   X,
   type Icon,
 } from '@phosphor-icons/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { canOversee, counterOnly } from '../auth/roles';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
@@ -53,6 +54,8 @@ import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
+import { isNetworkFailure, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
+import { useWaitingSales } from './counter/useWaitingSales';
 
 type Panel =
   | 'find'
@@ -76,6 +79,9 @@ type Panel =
 
 /** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
 interface LastSale {
+  /** The key made at Pay. */
+  key: string;
+  /** 0 while a sale made offline waits to be sent. */
   documentId: number;
   number: string;
   total: number;
@@ -104,7 +110,10 @@ const toGram = (amount: number) => Math.round(amount * 1000) / 1000;
 
 const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now - time) / 60_000));
 
-/** Whether the browser can reach the internet, kept up to date. */
+/** How long Pay waits for the server before the sale waits on the PC instead. */
+const PAY_TIMEOUT_MS = 12_000;
+
+/** Whether the browser says it is connected, kept up to date. */
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => navigator.onLine);
   useEffect(() => {
@@ -132,7 +141,10 @@ export function CounterPage() {
   const user = useCurrentUser();
   const { logout, adoptSession } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
-  const online = useOnline();
+  const connected = useOnline();
+  // Connected but the server didn't answer (Wi-Fi up, internet down): the Counter works as offline until it answers again.
+  const [unreachable, setUnreachable] = useState(false);
+  const online = connected && !unreachable;
 
   const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
@@ -199,7 +211,8 @@ export function CounterPage() {
     setAsk({ percent: roundMoney(percent), apply });
     setPanel('approve');
   };
-  const canAsk = !canOversee(user.role);
+  // An owner's yes needs the server, so not offline.
+  const canAsk = !canOversee(user.role) && online;
   const switchPeople = useQuery({ queryKey: ['counter', 'pin-people', user.id], queryFn: () => counterApi.pinPeople(false), enabled: panel === 'switch' });
   const approvers = useQuery({ queryKey: ['counter', 'approvers', user.id], queryFn: () => counterApi.pinPeople(true), enabled: panel === 'approve' });
 
@@ -317,6 +330,7 @@ export function CounterPage() {
     };
     const documentNumber = documentNumberFromScan(code);
     if (documentNumber && !priceCheck) {
+      if (!online) return complain(t.counter.offlineNoRefund);
       setRefundNumber(documentNumber);
       return setPanel('refund');
     }
@@ -376,44 +390,112 @@ export function CounterPage() {
   }
 
   // ---- Paying and printing ----
-  const sell = useMutation({
-    mutationFn: (payment: Payment) =>
-      salesApi.recordBasket({
-        items: lines.map((line) => {
-          const discount = roundMoney(line.percent);
-          return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
-        }),
-        notes: null,
-        ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
-        ...(payment.paidBy === 'split' && payment.cardAmount !== null && { cardAmount: payment.cardAmount }),
-        ...(approval && lines.some((line) => roundMoney(line.percent) > discountLimit) && { rabatApproval: approval.token }),
-        ...(payment.paidBy === 'tab' && payment.customerId !== null && { customerId: payment.customerId, paidNow: false }),
-        // A customer picked with F5 who pays now: the sale goes on their record, not their tab.
-        ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
-      }),
+  /** The basket as the server takes it. */
+  const basketBody = (payment: Payment): QueuedSale['body'] => ({
+    items: lines.map((line) => {
+      const discount = roundMoney(line.percent);
+      return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
+    }),
+    notes: null,
+    ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
+    ...(payment.paidBy === 'split' && payment.cardAmount !== null && { cardAmount: payment.cardAmount }),
+    ...(approval && lines.some((line) => roundMoney(line.percent) > discountLimit) && { rabatApproval: approval.token }),
+    ...(payment.paidBy === 'tab' && payment.customerId !== null && { customerId: payment.customerId, paidNow: false }),
+    // A customer picked with F5 who pays now: the sale goes on their record, not their tab.
+    ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
   });
 
-  async function pay(payment: Payment) {
-    const basketId = current.id;
-    const result = await sell.mutateAsync(payment);
+  const refreshAfterSale = () => {
     for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money']) {
       void queryClient.invalidateQueries({ queryKey: [key] });
     }
     void today.refetch();
+  };
+
+  const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);
+  // While the server can't be reached and nothing waits to be sent, ask it every half minute whether it is back.
+  useEffect(() => {
+    if (!unreachable || !connected) return;
+    const timer = window.setInterval(() => {
+      void counterApi.today().then(
+        () => setUnreachable(false),
+        () => undefined,
+      );
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [unreachable, connected]);
+
+  // Sales made without internet: sent once it is back, each keeping the receipt that printed for it.
+  const waiting = useWaitingSales(connected, user.id, setReached, (sent) => {
+    for (const { sale, result } of sent) {
+      if (sale.receipt?.printed && sale.receipt.fiscalNo) void documentsApi.setFiscalReceipt(result.invoice.id, sale.receipt.fiscalNo).catch(() => undefined);
+      if (sale.receipt && !sale.receipt.printed) {
+        printer.keepUnprinted({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at: sale.at, text: sale.receipt.text, reason: sale.receipt.reason });
+        void record([{ kind: 'print_failed', documentId: result.invoice.id, reason: sale.receipt.reason.slice(0, 200) }]);
+      }
+      setLastSale((last) => (last?.key === sale.key ? { ...last, documentId: result.invoice.id, number: result.invoice.number } : last));
+    }
+    refreshAfterSale();
+  });
+
+  async function pay(payment: Payment) {
+    const basketId = current.id;
+    // Made now, so a sale sent twice (the answer got lost) is recorded once.
+    const key = newSaleKey();
+    const body = basketBody(payment);
+    if (payment.paidBy === 'tab' && !online) throw new Error(t.counter.offlineNoTab);
+    let result: Awaited<ReturnType<typeof salesApi.recordBasket>> | null = null;
+    if (online) {
+      try {
+        // Straight to the server: a query-library mutation would pause, not fail, when the browser says offline.
+        result = await withTimeout(salesApi.recordBasket({ ...body, clientKey: key }), PAY_TIMEOUT_MS);
+      } catch (error) {
+        // The internet went just now: the sale waits like any other made offline.
+        if (payment.paidBy === 'tab' || !isNetworkFailure(error)) throw error;
+        setUnreachable(true);
+      }
+    }
+    const at = new Date().toISOString();
+    const sold = result
+      ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
+      : { total, documentId: 0, number: t.counter.waitingToSend };
+    if (result) refreshAfterSale();
+    else {
+      waiting.add({ key, at, userId: user.id, body, total, receipt: null });
+      // This PC's shelf loses what was sold, so the next basket can't sell it again.
+      const soldNow = new Map(lines.map((line) => [line.productId, line.quantity]));
+      queryClient.setQueryData<Product[]>(['products', 'counter-shelf'], (shelf) =>
+        shelf?.map((product) => {
+          const gone = soldNow.get(product.id);
+          return gone === undefined ? product : { ...product, stock: { ...product.stock, quantity: Math.max(0, toGram(product.stock.quantity - gone)) } };
+        }),
+      );
+    }
+    const receiptLines = result
+      ? result.sales.map((sale) => {
+          const product = byId.get(sale.productId);
+          return { product: { id: sale.productId, sku: product?.sku ?? null, name: sale.productName, vatRate: product?.vatRate ?? 18 }, unitPrice: sale.pricePerUnit, quantity: sale.quantity };
+        })
+      : lines.map((line) => ({
+          product: { id: line.productId, sku: line.product?.sku ?? null, name: line.product?.name ?? line.name, vatRate: line.product?.vatRate ?? 18 },
+          unitPrice: line.unitPrice,
+          quantity: line.quantity,
+        }));
     closeBasket(basketId);
     setPanel(null);
     setSelectedId(null);
     setFlash(null);
     const card = payment.paidBy === 'split' ? (payment.cardAmount ?? 0) : 0;
-    const change = payment.tendered !== null ? roundMoney(payment.tendered - (result.total - card)) : null;
+    const change = payment.tendered !== null ? roundMoney(payment.tendered - (sold.total - card)) : null;
     const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
-    say(t.counter.sold(formatMoney(result.total), result.invoice.number));
-    display(change !== null && change > 0 ? displayFor.change(change) : displayFor.thanks(result.total));
+    say(result ? t.counter.sold(formatMoney(sold.total), sold.number) : t.counter.soldOffline(formatMoney(sold.total)));
+    display(change !== null && change > 0 ? displayFor.change(change) : displayFor.thanks(sold.total));
     const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab';
     setLastSale({
-      documentId: result.invoice.id,
-      number: result.invoice.number,
-      total: result.total,
+      key,
+      documentId: sold.documentId,
+      number: sold.number,
+      total: sold.total,
       paidBy: payment.paidBy,
       tendered: payment.tendered,
       change,
@@ -423,19 +505,15 @@ export function CounterPage() {
       fiscalNo: null,
     });
     focusScan();
-    if (!willPrint || !settings.data) return;
+    if (!willPrint || !settings.data) {
+      if (!result) waiting.printed(key, null);
+      return;
+    }
 
     let text: string;
     try {
       text = receiptJob({
-        lines: result.sales.map((sale) => {
-          const product = byId.get(sale.productId);
-          return {
-            product: { id: sale.productId, sku: product?.sku ?? null, name: sale.productName, vatRate: product?.vatRate ?? 18 },
-            unitPrice: sale.pricePerUnit,
-            quantity: sale.quantity,
-          };
-        }),
+        lines: receiptLines,
         footer: settings.data.receiptFooter,
         taxGroups: settings.data.printer.taxGroups,
         // Card and Cash + card print as cash, as the shop's receipts always have; the printer's change is the cash change.
@@ -446,11 +524,29 @@ export function CounterPage() {
       });
     } catch (error) {
       const reason = error instanceof MissingTaxGroup ? t.counter.printer.noTaxGroup(error.rate) : errorMessage(error);
-      return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at: new Date().toISOString(), text: '', reason });
+      if (result) return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason });
+      waiting.printed(key, { text: '', printed: false, fiscalNo: null, reason });
+      return offlinePrinted(key, { ok: false, message: reason });
     }
-    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at: new Date().toISOString(), text, reason: '' };
+    if (!result) {
+      // Offline the fiscal receipt still prints at once; 4VD's invoice number comes when the sale is sent.
+      const printed = await printer.send(`4VD-OFF-${key.slice(0, 8)}`, text);
+      waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message });
+      return offlinePrinted(key, printed);
+    }
+    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '' };
     const printed = await printer.send(`4VD-${result.invoice.number}`, text);
     await afterPrint(item, printed, false);
+  }
+
+  /** How an offline sale's receipt came out, on screen (Not printed takes it once the sale is sent). */
+  function offlinePrinted(key: string, printed: PrintResult) {
+    setLastSale((sale) => (sale?.key === key ? { ...sale, print: printed.ok ? 'printed' : 'failed', fiscalNo: printed.ok ? printed.receiptNo : null } : sale));
+    setPrintNote(
+      printed.ok
+        ? { ok: true, text: printed.receiptNo ? t.counter.printer.printed(printed.receiptNo) : t.counter.printer.printedNoNumber }
+        : { ok: false, text: printed.message },
+    );
   }
 
   function printFailed(item: Unprinted) {
@@ -517,6 +613,7 @@ export function CounterPage() {
     startPanel('find');
   };
   const openRefund = () => {
+    if (!online) return complain(t.counter.offlineNoRefund);
     setRefundNumber(null);
     startPanel('refund');
   };
@@ -832,9 +929,20 @@ export function CounterPage() {
 
         <section className="counter-side" aria-label={t.counter.keys}>
           {panel === 'pay' ? (
-            <PayPanel total={total} customers={customers.data} draft={payDraft} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
+            <PayPanel total={total} customers={customers.data} draft={payDraft} offline={!online} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
           ) : (
             <>
+              {waiting.refused.length > 0 && (
+                <div className="counter-opening counter-refused" role="alert">
+                  <p>
+                    <strong>{t.counter.refusedTitle(waiting.refused.length)}</strong> {waiting.refused[0]!.refused}
+                  </p>
+                  <p>{t.counter.refusedHint}</p>
+                  <Button size="sm" icon={ArrowClockwise} disabled={!online} onClick={waiting.retry}>
+                    {t.counter.refusedRetry}
+                  </Button>
+                </div>
+              )}
               {needsOpening && (
                 <div className="counter-opening">
                   <p>
@@ -868,7 +976,7 @@ export function CounterPage() {
                 <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
                 <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
-                <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled} onClick={openRefund} />
+                <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled || !online} onClick={openRefund} />
               </KeyGroup>
 
               <KeyGroup title={t.counter.groups.till} quiet>
@@ -916,9 +1024,18 @@ export function CounterPage() {
           <LegendKey keys="+ −" label={t.counter.legendKeys.nudge} />
         </ul>
         <div className="counter-status__right">
-          <p className={online ? 'counter-status__net' : 'counter-status__net counter-status__net--off'} role="status">
+          <p
+            className={online ? (waiting.waiting.length > 0 ? 'counter-status__net counter-status__net--sending' : 'counter-status__net') : 'counter-status__net counter-status__net--off'}
+            role="status"
+          >
             {online ? <WifiHigh size={14} weight="bold" aria-hidden="true" /> : <WifiSlash size={14} weight="bold" aria-hidden="true" />}
-            {online ? t.counter.online : t.counter.offline}
+            {online
+              ? waiting.waiting.length > 0
+                ? t.counter.sending(waiting.waiting.length)
+                : t.counter.online
+              : waiting.waiting.length > 0
+                ? t.counter.offlineWaiting(waiting.waiting.length)
+                : t.counter.offline}
           </p>
           <p className="counter-status__clock">
             <span>{formatDate(clock)}</span>
@@ -1047,6 +1164,8 @@ export function CounterPage() {
         submit={t.counter.takeOver}
         onClose={closePanel}
         onSubmit={async (userId, pin) => {
+          // Sales made offline go first, so each is recorded as the person who made it.
+          await waiting.flush();
           const result = await counterApi.switchTo({ userId, pin });
           closePanel();
           await adoptSession(result);
@@ -1278,7 +1397,7 @@ function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
           </div>
         )}
       </dl>
-      {canOpen && (
+      {canOpen && sale.documentId > 0 && (
         <ButtonLink size="sm" variant="ghost" icon={ArrowSquareOut} to={`/documents/${sale.documentId}`} title={t.counter.copyHint}>
           {t.counter.openInvoice}
         </ButtonLink>

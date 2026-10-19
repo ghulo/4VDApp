@@ -84,6 +84,12 @@ export class InventoryRepository {
    * the database refuse to go below zero even if two people adjust the same
    * product at the same moment. Returns undefined when that would happen.
    */
+  /** What is on the shelf now, locked until the transaction ends. */
+  async onHandForUpdate(productId: number): Promise<number> {
+    const row = await this.db.selectFrom('inventory').select('quantity_on_hand').where('product_id', '=', productId).forUpdate().executeTakeFirst();
+    return row?.quantity_on_hand ?? 0;
+  }
+
   async applyDelta(productId: number, delta: number): Promise<{ before: number; after: number } | undefined> {
     const row = await this.db
       .updateTable('inventory')

@@ -164,6 +164,8 @@ interface PayProps {
   total: number;
   customers: Customer[] | undefined;
   draft: PayDraft;
+  /** No internet: the sale waits on this PC, so a tab (which needs the customer's balance) is off. */
+  offline?: boolean;
   onChange: (draft: PayDraft) => void;
   onPay: (payment: Payment) => Promise<void>;
   onBack: () => void;
@@ -174,7 +176,7 @@ interface PayProps {
  * give it), card on the bank's terminal, part of each, or on a customer's tab. The receipt
  * beside it shows what was paid and the change as it is typed.
  */
-export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: PayProps) {
+export function PayPanel({ total, customers, draft, offline = false, onChange, onPay, onBack }: PayProps) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -182,7 +184,7 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
   const split = splitFor(draft, total);
   const due = cashDue(draft, total);
   const short = cash !== null && cash.change < 0;
-  const blocked = (draft.paidBy === 'tab' && draft.customerId === '') || short || (draft.paidBy === 'split' && !split?.valid);
+  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline)) || short || (draft.paidBy === 'split' && !split?.valid);
   const takesCash = draft.paidBy === 'cash' || (draft.paidBy === 'split' && split?.valid === true);
   const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
 
@@ -214,9 +216,10 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
           { value: 'cash', label: t.counter.cash },
           { value: 'card', label: t.counter.card },
           { value: 'split', label: t.counter.split },
-          { value: 'tab', label: t.counter.tab },
+          ...(offline && draft.paidBy !== 'tab' ? [] : [{ value: 'tab' as const, label: t.counter.tab }]),
         ]}
       />
+      {offline && <p className="field-hint">{t.counter.offlinePay}</p>}
       {draft.paidBy === 'split' && (
         <>
           <Field

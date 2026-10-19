@@ -3,6 +3,7 @@ import { en, type ServerMessages } from '../i18n/messages.js';
 import { canOversee, canReadBooks, canSell } from '../utils/roles.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { BillScanRepository } from '../repositories/BillScanRepository.js';
+import type { OfflineShortfallRepository } from '../repositories/OfflineShortfallRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
 import type { CashCountService } from './CashCountService.js';
 import type { DayService } from './DayService.js';
@@ -20,7 +21,7 @@ const CASH_CHECK_DAYS = 30;
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'tm_due' | 'question';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -95,6 +96,7 @@ export class AttentionService {
     private readonly vat: VatService,
     private readonly threads: ThreadService,
     private readonly years: YearService,
+    private readonly shortfalls: OfflineShortfallRepository,
     private readonly timeZone: string,
   ) {}
 
@@ -112,13 +114,14 @@ export class AttentionService {
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
   private async overseer(role: UserRole, t: ServerMessages, now: Date): Promise<TodoItem[]> {
-    const [approvals, insights, cash, day, scans, duplicates] = await Promise.all([
+    const [approvals, insights, cash, day, scans, duplicates, shortfalls] = await Promise.all([
       this.approvalService.summary(),
       this.insightsService.list(now, t),
       this.cashCountService.unchecked(CASH_CHECK_DAYS, now),
       this.closingDay(role, now),
       this.billScans.findWaiting(),
       this.duplicates.countOpen(),
+      this.shortfalls.open(),
     ]);
     const items: TodoItem[] = [];
     if (approvals.total > 0) {
@@ -154,6 +157,18 @@ export class AttentionService {
         verb: 'markChecked',
         to: `/day?date=${count.day}`,
         cashCountId: count.id,
+      });
+    }
+    for (const shortfall of shortfalls) {
+      items.push({
+        key: `offline_shortfall:${shortfall.productId}`,
+        kind: 'offline_shortfall',
+        severity: 'check',
+        title: t.todo.shortfallTitle(shortfall.productName),
+        detail: t.todo.shortfallDetail(shortfall.shortBy),
+        verb: 'look',
+        to: `/inventory/${shortfall.productId}`,
+        productId: shortfall.productId,
       });
     }
     if (duplicates > 0) {

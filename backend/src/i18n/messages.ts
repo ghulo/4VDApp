@@ -90,6 +90,9 @@ export interface ServerMessages {
     shiftDetail: string;
     duplicatesTitle: (count: number) => string;
     duplicatesDetail: string;
+    /** An offline Counter sale sold more than 4VD thought was on the shelf. */
+    shortfallTitle: (product: string) => string;
+    shortfallDetail: (shortBy: number) => string;
     /** month "2026-09"; the return is due on day 20 of the month after. */
     vatDueTitle: (month: string) => string;
     vatDueDetail: (late: boolean) => string;
@@ -356,6 +359,8 @@ export const en: ServerMessages = {
     shiftDetail: 'Count your drawer and enter the takings before you go.',
     duplicatesTitle: (count) => `${count} ${count === 1 ? 'product may be' : 'products may be'} listed twice`,
     duplicatesDetail: 'Merge each pair or keep both, so stock and sales add up in one place.',
+    shortfallTitle: (product) => `Count ${product}`,
+    shortfallDetail: (shortBy) => `Sold offline at the Counter: ${shortBy} more than 4VD had in stock, so stock was set to 0. Count the shelf.`,
     vatDueTitle: (month) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} VAT is due by 20 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'The day to file has passed. File it with ATK, then mark the month as filed.' : 'Check the figures, file them with ATK, then mark the month as filed.'),
     tmDueTitle: ({ quarter, year, due }) => `Profit tax for Q${quarter} ${year} is due by ${Number(due.slice(8, 10))} ${EN_MONTH[Number(due.slice(5, 7)) - 1]}`,
@@ -643,6 +648,8 @@ export const sq: ServerMessages = {
     shiftDetail: 'Numëro arkën dhe fut të ardhurat para se të ikësh.',
     duplicatesTitle: (count) => `${count === 1 ? 'Një produkt mund të jetë' : `${count} produkte mund të jenë`} dy herë në listë`,
     duplicatesDetail: 'Bashkoji ose mbaji të dyja, që stoku dhe shitjet të mblidhen në një vend.',
+    shortfallTitle: (product) => `Numëro ${product}`,
+    shortfallDetail: (shortBy) => `U shit pa internet në arkë: ${shortBy} më shumë se sa kishte 4VD në stok, prandaj stoku u vu 0. Numëro raftin.`,
     vatDueTitle: (month) => `TVSH-ja e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]} duhet deklaruar deri më 20 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'Afati ka kaluar. Deklaroje në ATK, pastaj shëno muajin si të deklaruar.' : 'Kontrollo shifrat, deklaroji në ATK, pastaj shëno muajin si të deklaruar.'),
     tmDueTitle: ({ quarter, year, due }) => `Tatimi në fitim për TM${quarter} ${year} duhet paguar deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,

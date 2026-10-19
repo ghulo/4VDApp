@@ -73,6 +73,16 @@ export interface RefreshTokensTable {
   created_at: CreatedAt;
 }
 
+export interface OfflineShortfallsTable {
+  id: Generated<number>;
+  product_id: number;
+  sale_id: number | null;
+  short_by: number;
+  sold_by: number | null;
+  sold_at: Date;
+  created_at: Generated<Date>;
+}
+
 export interface PinAttemptsTable {
   id: Generated<number>;
   user_id: number | null;
@@ -851,6 +861,8 @@ export interface DocumentsTable {
   due_date: ColumnType<string | null, string | null | undefined, never>;
   /** Of an invoice paid at the till, the part paid by card on the bank's terminal (a split payment); null otherwise. */
   card_amount: ColumnType<string | null, number | null | undefined, never>;
+  /** The key the Counter gave the sale at Pay, so a sale sent twice is recorded once. */
+  client_key: ColumnType<string | null, string | null | undefined, never>;
   /** "<database>/<document id>" on an invoice TREFIN issued: history only, see migration 047. */
   trefin_ref: ColumnType<string | null, string | null | undefined, never>;
 }
@@ -1088,6 +1100,7 @@ export interface Database {
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
   pin_attempts: PinAttemptsTable;
+  offline_shortfalls: OfflineShortfallsTable;
   rabat_approvals: RabatApprovalsTable;
   categories: CategoriesTable;
   products: ProductsTable;

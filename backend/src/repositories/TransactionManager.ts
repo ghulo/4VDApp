@@ -30,6 +30,7 @@ import { VatMonthRepository } from './VatMonthRepository.js';
 import { MoneyRepository } from './MoneyRepository.js';
 import { CounterRepository } from './CounterRepository.js';
 import { PinRepository } from './PinRepository.js';
+import { OfflineShortfallRepository } from './OfflineShortfallRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -64,6 +65,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     money: new MoneyRepository(db),
     counter: new CounterRepository(db),
     pins: new PinRepository(db),
+    shortfalls: new OfflineShortfallRepository(db),
   };
 }
 

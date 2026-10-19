@@ -86,6 +86,8 @@ export interface NewDocument {
   paymentMethod: DocumentPaymentMethod;
   /** Split payment: the part of a till invoice paid by card. */
   cardAmount?: number | null;
+  /** The key the Counter gave the sale at Pay. */
+  clientKey?: string | null;
   dueDate: string | null;
   lines: NewDocumentLine[];
 }
@@ -166,6 +168,20 @@ export class DocumentRepository {
     };
   }
 
+  /** The invoice the Counter already sent with this key, and the sales on it. */
+  async findByClientKey(key: string): Promise<{ id: number; number: string; saleIds: number[] } | undefined> {
+    const document = await this.db.selectFrom('documents').select(['id', 'number']).where('client_key', '=', key).executeTakeFirst();
+    if (!document) return undefined;
+    const lines = await this.db
+      .selectFrom('document_lines')
+      .select('sale_id')
+      .where('document_id', '=', document.id)
+      .where('sale_id', 'is not', null)
+      .orderBy('id')
+      .execute();
+    return { ...document, saleIds: lines.map((line) => line.sale_id!) };
+  }
+
   async create(document: NewDocument): Promise<number> {
     const { id } = await this.db
       .insertInto('documents')
@@ -183,6 +199,7 @@ export class DocumentRepository {
         total: document.total,
         payment_method: document.paymentMethod,
         card_amount: document.cardAmount ?? null,
+        client_key: document.clientKey ?? null,
         due_date: document.dueDate,
       })
       .returning('id')

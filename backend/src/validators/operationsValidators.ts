@@ -56,6 +56,14 @@ export const basketSchema = z
     cardAmount: z.number().positive().max(10_000_000).multipleOf(0.01).optional(),
     /** An owner's one-time yes to a rabat over the limit, from the Counter. */
     rabatApproval: z.string().uuid().optional(),
+    /** The key the Counter gave the sale at Pay: sent twice, it is recorded once. */
+    clientKey: z.string().uuid().optional(),
+    /** Made offline at the Counter: when, so it is recorded at that time. */
+    soldAt: isoDate.transform((value) => new Date(value)).optional(),
+  })
+  .refine((basket) => basket.soldAt === undefined || basket.clientKey !== undefined, {
+    message: 'a sale made offline needs its key',
+    path: ['soldAt'],
   })
   .refine((basket) => basket.cardAmount === undefined || (basket.paidBy !== 'card' && !(basket.customerId !== undefined && !basket.paidNow)), {
     message: 'only a sale paid now in cash can have a card part',

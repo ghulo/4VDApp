@@ -389,6 +389,10 @@ export const salesApi = {
     cardAmount?: number;
     /** An owner's one-time yes to a rabat over the limit. */
     rabatApproval?: string;
+    /** Made at Pay: a sale sent twice is recorded once. */
+    clientKey?: string;
+    /** A sale the Counter made offline: when it was made (ISO). */
+    soldAt?: string;
   }) =>
     (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>

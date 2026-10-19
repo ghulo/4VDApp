@@ -112,7 +112,7 @@ export class DocumentService {
   /** The invoice for a checkout: one line per sale. */
   async invoiceSales(
     repos: TransactionalRepositories,
-    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean; cardAmount?: number },
+    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean; cardAmount?: number; clientKey?: string },
   ): Promise<DocumentRef> {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
@@ -134,7 +134,7 @@ export class DocumentService {
     if (cardAmount !== null && cardAmount >= roundMoney(lines.reduce((sum, line) => sum + line.total, 0))) {
       throw new ValidationError('The card part must be less than the total; for all of it, pay by card');
     }
-    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod, cardAmount });
+    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod, cardAmount, clientKey: p.clientKey ?? null });
   }
 
   /**
@@ -182,6 +182,7 @@ export class DocumentService {
       issuedBy: number;
       paymentMethod: DocumentPaymentMethod;
       cardAmount?: number | null;
+      clientKey?: string | null;
     },
   ): Promise<DocumentRef> {
     const today = zonedDay(new Date(), this.timeZone);

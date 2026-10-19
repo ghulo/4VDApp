@@ -15,6 +15,7 @@ import { SettingsService } from './services/SettingsService.js';
 import { CounterService } from './services/CounterService.js';
 import { CounterPinService } from './services/CounterPinService.js';
 import { PinRepository } from './repositories/PinRepository.js';
+import { OfflineShortfallRepository } from './repositories/OfflineShortfallRepository.js';
 import { CounterRepository } from './repositories/CounterRepository.js';
 import { WriteOffRepository } from './repositories/WriteOffRepository.js';
 import { WriteOffService } from './services/WriteOffService.js';
@@ -282,6 +283,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     vatService,
     threadService,
     yearService,
+    new OfflineShortfallRepository(db),
     config.shopTimeZone,
   );
   const dailySummaryService = new DailySummaryService(

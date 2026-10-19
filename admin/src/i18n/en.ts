@@ -3891,6 +3891,7 @@ export const en = {
     countHint: (opening: string) => `Every note and coin, the ${opening} opening cash too.`,
     countNote: 'Note (optional)',
     countSave: 'Save the count',
+    amountNeeded: 'Type the amount in euros, like 85.50.',
     countSavedBlind: 'Drawer counted. The owner sees how it came out.',
     countSaved: (result: string) => `Drawer counted: ${result}`,
     countAgain: 'Counted already today. Saving replaces that count.',

@@ -3869,6 +3869,7 @@ export const sq: Catalogue = {
     countHint: (opening: string) => `Çdo kartëmonedhë dhe monedhë, edhe keshi i fillimit prej ${opening}.`,
     countNote: 'Shënim (opsional)',
     countSave: 'Ruaj numërimin',
+    amountNeeded: 'Shkruaj shumën në euro, p.sh. 85,50.',
     countSavedBlind: 'Arka u numërua. Pronari e sheh si doli.',
     countSaved: (result: string) => `Arka u numërua: ${result}`,
     countAgain: 'U numërua sot. Ruajtja e zëvendëson atë numërim.',

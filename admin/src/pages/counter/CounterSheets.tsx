@@ -502,7 +502,7 @@ function CountForm({ opening, countedToday, onSave }: CountProps) {
   async function submit(event: FormEvent) {
     event.preventDefault();
     const counted = parseAmount(text);
-    if (!Number.isFinite(counted) || counted < 0) return setError(t.counter.reasonNeeded);
+    if (!Number.isFinite(counted) || counted < 0) return setError(t.counter.amountNeeded);
     setBusy(true);
     try {
       await onSave(Math.round(counted * 100) / 100, note.trim() || null);
@@ -518,6 +518,7 @@ function CountForm({ opening, countedToday, onSave }: CountProps) {
       <Field label={t.counter.countLabel} hint={t.counter.countHint(formatMoney(opening))} error={error ?? undefined}>
         <input
           className="counter-number"
+          name="counted"
           inputMode="decimal"
           aria-invalid={error ? true : undefined}
           autoComplete="off"
@@ -529,11 +530,11 @@ function CountForm({ opening, countedToday, onSave }: CountProps) {
         />
       </Field>
       <Field label={t.counter.countNote}>
-        <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
+        <input name="note" autoComplete="off" maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
       {countedToday && <p className="field-hint">{t.counter.countAgain}</p>}
       <div className="form-actions">
-        <Button variant="primary" type="submit" loading={busy} disabled={text.trim() === ''}>
+        <Button variant="primary" type="submit" loading={busy}>
           {t.counter.countSave}
         </Button>
       </div>

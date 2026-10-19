@@ -302,7 +302,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                   <div className="field-row">
                     <label className="field">
                       <span className="field__label">{t.productForm.unit}</span>
-                      <select value={draft.unit} onChange={(event) => update('unit', event.target.value as ProductUnit)}>
+                      <select name="unit" value={draft.unit} onChange={(event) => update('unit', event.target.value as ProductUnit)}>
                         <option value="piece">{t.productForm.units.piece}</option>
                         <option value="kg">{t.productForm.units.kg}</option>
                       </select>
@@ -317,7 +317,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                           pattern="[0-9]{1,5}"
                           maxLength={5}
                           value={draft.scalePlu}
-                          onChange={(event) => update('scalePlu', event.target.value.replace(/D/g, ''))}
+                          onChange={(event) => update('scalePlu', event.target.value.replace(/\D/g, ''))}
                         />
                         <span className="field__hint">{t.productForm.scalePluHint}</span>
                       </label>

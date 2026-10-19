@@ -334,7 +334,7 @@ export class ReportsRepository {
         where s.undone_at is null and s.sale_date >= ${range.startDate} and s.sale_date < ${range.endDate}
         union all
         select 'Return', r.decided_at, p.name, p.sku, -r.quantity,
-               round(r.refund_amount / r.quantity, 2), -r.refund_amount, s.unit_cost, u.name, r.notes,
+               round(r.refund_amount / r.quantity::numeric, 2), -r.refund_amount, s.unit_cost, u.name, r.notes,
                r.id
         from returns r
         join sales s on s.id = r.sale_id

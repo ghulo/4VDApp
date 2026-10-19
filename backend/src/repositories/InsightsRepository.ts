@@ -61,7 +61,7 @@ export class InsightsRepository {
   }): Promise<UnusualSaleRow[]> {
     const result = await sql<UnusualSaleRow>`
       select s.id as sale_id, p.id as product_id, p.name as product_name, s.quantity_sold, s.sale_date,
-             u.name as sold_by_name, round(baseline.usual, 1) as usual_quantity
+             u.name as sold_by_name, round(baseline.usual::numeric, 1) as usual_quantity
       from sales s
       join products p on p.id = s.product_id
       left join users u on u.id = s.sold_by

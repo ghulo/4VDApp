@@ -217,6 +217,7 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
               inputMode="decimal"
               autoComplete="off"
               autoFocus
+              name="card-part"
               aria-invalid={split && !split.valid ? true : undefined}
               value={draft.card}
               onChange={(event) => set({ card: event.target.value })}
@@ -225,7 +226,7 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
               }}
             />
           </Field>
-          {split?.valid && <p className="counter-split-due">{t.counter.cashToTake(formatMoney(due))}</p>}
+          {split?.valid && <p className="counter-split-due" role="status">{t.counter.cashToTake(formatMoney(due))}</p>}
         </>
       )}
       {takesCash && (
@@ -235,6 +236,7 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
               className="counter-number"
               inputMode="decimal"
               autoComplete="off"
+              name="tendered"
               autoFocus={draft.paidBy === 'cash'}
               placeholder={due.toFixed(2)}
               value={draft.tendered}

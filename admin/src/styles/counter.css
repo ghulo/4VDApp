@@ -23,6 +23,7 @@
   min-height: var(--topbar-h);
   padding: var(--space-2) var(--space-5);
   border-bottom: 1px solid var(--line);
+  background: var(--light-raise), var(--surface);
 }
 
 .counter__brand {
@@ -52,7 +53,16 @@
   gap: var(--space-2);
 }
 
-/* The printer's state, always in words; colour only backs them up. */
+/* Between what the till depends on (internet, printer) and what you can do. */
+.counter__divider {
+  width: 1px;
+  height: var(--space-5);
+  margin-inline: var(--space-1);
+  background: var(--line);
+}
+
+/* The internet's and the printer's state, always in words, sitting into the
+   bar; at rest only the icon has colour, and only trouble colours the words. */
 .counter-printer {
   display: inline-flex;
   align-items: center;
@@ -60,33 +70,36 @@
   height: var(--control-h-sm);
   margin: 0;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-  background: var(--surface);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink);
   font-size: var(--text-sm);
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.counter-printer--ok {
+.counter-printer--ok svg {
   color: var(--ok);
-  background: var(--ok-soft);
-  box-shadow: inset 0 0 0 1px var(--ok);
 }
 
-.counter-printer--warn {
-  color: var(--warn);
-  background: var(--warn-soft);
-  box-shadow: inset 0 0 0 1px var(--warn);
-}
-
-.counter-printer--busy {
+.counter-printer--busy svg {
   color: var(--info);
-  background: var(--info-soft);
-  box-shadow: inset 0 0 0 1px var(--info);
 }
 
 .counter-printer--quiet {
   color: var(--ink-muted);
+}
+
+.counter-printer--warn {
+  color: var(--warn);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--warn);
+}
+
+.counter-printer--danger {
+  color: var(--danger);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--danger);
+  font-weight: 600;
 }
 
 .counter__main {
@@ -1066,6 +1079,7 @@
 
 /* ---------- The status bar ---------- */
 
+/* A footer strip: sunk paper, every shortcut as a small key, then the day and time. */
 .counter-status {
   display: flex;
   align-items: center;
@@ -1073,7 +1087,8 @@
   gap: var(--space-2) var(--space-5);
   padding: var(--space-2) var(--space-5);
   border-top: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
   color: var(--ink-muted);
   font-size: var(--text-xs);
 }
@@ -1081,7 +1096,7 @@
 .counter-status__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1) var(--space-4);
+  gap: var(--space-2) var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1094,14 +1109,20 @@
   white-space: nowrap;
 }
 
+/* A keycap: paper standing on a solid edge, like the till keys. */
 .counter-status__legend kbd {
-  padding: 0 var(--space-1);
+  min-width: var(--space-5);
+  padding: 1px var(--space-1);
   border-radius: var(--radius-stamp);
-  background: var(--bg);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 1px 0 var(--line-strong);
   color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
 }
 
 .counter-status__right {
@@ -1109,32 +1130,6 @@
   flex-shrink: 0;
   align-items: center;
   gap: var(--space-4);
-}
-
-.counter-status__net {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin: 0;
-  color: var(--ok);
-  font-weight: 500;
-}
-
-.counter-status__net--off {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-small);
-  background: var(--danger-soft);
-  color: var(--danger);
-  font-weight: 600;
-}
-
-/* Back online with sales still to send. */
-.counter-status__net--sending {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-small);
-  background: var(--warn-soft);
-  color: var(--warn);
-  font-weight: 600;
 }
 
 .counter-refused {
@@ -1151,6 +1146,7 @@
 
 .counter-status__clock time {
   color: var(--ink);
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 

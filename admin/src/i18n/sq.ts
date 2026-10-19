@@ -3923,7 +3923,7 @@ export const sq: Catalogue = {
       refund: 'Kthim',
       newBasket: 'Shportë e re',
       pay: 'Paguaj',
-      priceCheck: 'Çmimi',
+      priceCheck: 'Shiko çmimin',
       remove: 'Hiq',
       lines: 'Rreshti',
       nudge: 'Sasia ±1',

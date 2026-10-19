@@ -729,6 +729,22 @@ export function CounterPage() {
           </div>
         </div>
         <div className="counter__status">
+          {/* The two things the till depends on, side by side: the internet and the printer. */}
+          <p
+            className={online ? (waiting.waiting.length > 0 ? 'counter-printer counter-printer--warn' : 'counter-printer counter-printer--ok') : 'counter-printer counter-printer--danger'}
+            role="status"
+          >
+            {online ? <WifiHigh size={16} weight="bold" aria-hidden="true" /> : <WifiSlash size={16} weight="bold" aria-hidden="true" />}
+            <span>
+              {online
+                ? waiting.waiting.length > 0
+                  ? t.counter.sending(waiting.waiting.length)
+                  : t.counter.online
+                : waiting.waiting.length > 0
+                  ? t.counter.offlineWaiting(waiting.waiting.length)
+                  : t.counter.offline}
+            </span>
+          </p>
           <p className={`counter-printer counter-printer--${printerTone}`} role="status" title={printerHint}>
             {printer.busy ? (
               <CircleNotch size={16} weight="bold" className="button__spinner" aria-hidden="true" />
@@ -742,6 +758,7 @@ export function CounterPage() {
               {t.counter.notPrinted(printer.unprinted.length)}
             </Button>
           )}
+          <span className="counter__divider" aria-hidden="true" />
           <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
             <span className="counter__bar-label">{t.counter.switchKey}</span>
           </Button>
@@ -1024,19 +1041,6 @@ export function CounterPage() {
           <LegendKey keys="+ −" label={t.counter.legendKeys.nudge} />
         </ul>
         <div className="counter-status__right">
-          <p
-            className={online ? (waiting.waiting.length > 0 ? 'counter-status__net counter-status__net--sending' : 'counter-status__net') : 'counter-status__net counter-status__net--off'}
-            role="status"
-          >
-            {online ? <WifiHigh size={14} weight="bold" aria-hidden="true" /> : <WifiSlash size={14} weight="bold" aria-hidden="true" />}
-            {online
-              ? waiting.waiting.length > 0
-                ? t.counter.sending(waiting.waiting.length)
-                : t.counter.online
-              : waiting.waiting.length > 0
-                ? t.counter.offlineWaiting(waiting.waiting.length)
-                : t.counter.offline}
-          </p>
           <p className="counter-status__clock">
             <span>{formatDate(clock)}</span>
             <time dateTime={clock}>{formatTime(clock)}</time>

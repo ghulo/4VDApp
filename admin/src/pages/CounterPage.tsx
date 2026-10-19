@@ -845,9 +845,13 @@ export function CounterPage() {
                       focusScan();
                     }}
                   >
-                    <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
+                    <span className="counter-basket__head">
+                      <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
+                      <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
+                    </span>
                     <span className="counter-basket__meta">
-                      {basket.lines.length > 0 ? formatMoney(basketTotal) : '—'} · {t.counter.age(minutes)}
+                      {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ` : ''}
+                      {t.counter.age(minutes)}
                     </span>
                   </button>
                 );
@@ -951,10 +955,12 @@ export function CounterPage() {
             <>
               {waiting.refused.length > 0 && (
                 <div className="counter-opening counter-refused" role="alert">
-                  <p>
-                    <strong>{t.counter.refusedTitle(waiting.refused.length)}</strong> {waiting.refused[0]!.refused}
-                  </p>
-                  <p>{t.counter.refusedHint}</p>
+                  <WarningCircle size={20} weight="bold" aria-hidden="true" />
+                  <div className="counter-opening__text">
+                    <p className="counter-opening__title">{t.counter.refusedTitle(waiting.refused.length)}</p>
+                    <p>{waiting.refused[0]!.refused}</p>
+                    <p>{t.counter.refusedHint}</p>
+                  </div>
                   <Button size="sm" icon={ArrowClockwise} disabled={!online} onClick={waiting.retry}>
                     {t.counter.refusedRetry}
                   </Button>
@@ -962,10 +968,12 @@ export function CounterPage() {
               )}
               {needsOpening && (
                 <div className="counter-opening">
-                  <p>
-                    <strong>{t.counter.openingMissing}</strong> {t.counter.openingMissingHint}
-                  </p>
-                  <Button size="sm" icon={Coins} disabled={!keysEnabled} onClick={() => startPanel('opening')}>
+                  <Coins size={20} weight="bold" aria-hidden="true" />
+                  <div className="counter-opening__text">
+                    <p className="counter-opening__title">{t.counter.openingMissing}</p>
+                    <p>{t.counter.openingMissingHint}</p>
+                  </div>
+                  <Button size="sm" variant="secondary" icon={Coins} disabled={!keysEnabled} onClick={() => startPanel('opening')}>
                     {t.counter.openingKey}
                   </Button>
                 </div>
@@ -1427,8 +1435,8 @@ function ShiftCard({
     <section className="counter-card">
       <h2 className="counter-group__title">{t.counter.shift}</h2>
       <p className="counter-card__lead">
-        <span>{t.counter.shiftReceipts(mine.receipts)}</span>
         <strong>{formatMoney(mine.total)}</strong>
+        <span>{t.counter.shiftReceipts(mine.receipts)}</span>
       </p>
       <dl className="counter-card__rows">
         <div>
@@ -1445,23 +1453,31 @@ function ShiftCard({
             <dd>{formatMoney(mine.tab)}</dd>
           </div>
         )}
-        <div className="counter-card__quiet">
-          <dt>{t.counter.cashToday}</dt>
-          <dd>{formatMoney(cashToday)}</dd>
-        </div>
-        {drawer && (
-          <>
-            <div>
-              <dt>{t.counter.openingRow}</dt>
-              <dd>{drawer.opening === null ? t.counter.notCounted : formatMoney(drawer.opening)}</dd>
-            </div>
-            <div>
-              <dt>{t.counter.shouldHold}</dt>
-              <dd>{formatMoney(drawer.shouldHold)}</dd>
-            </div>
-          </>
-        )}
       </dl>
+      {/* The shared drawer, apart from the person's own day: sunk into the card. */}
+      <div className="counter-card__drawer">
+        <h3 className="counter-card__subtitle">{t.counter.drawerTitle}</h3>
+        <dl className="counter-card__rows">
+          <div>
+            <dt>{t.counter.cashToday}</dt>
+            <dd>{formatMoney(cashToday)}</dd>
+          </div>
+          {drawer && (
+            <>
+              <div>
+                <dt>{t.counter.openingRow}</dt>
+                <dd className={drawer.opening === null ? 'counter-card__warn' : undefined}>
+                  {drawer.opening === null ? t.counter.notCounted : formatMoney(drawer.opening)}
+                </dd>
+              </div>
+              <div className="counter-card__total">
+                <dt>{t.counter.shouldHold}</dt>
+                <dd>{formatMoney(drawer.shouldHold)}</dd>
+              </div>
+            </>
+          )}
+        </dl>
+      </div>
     </section>
   );
 }

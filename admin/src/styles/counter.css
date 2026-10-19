@@ -257,11 +257,14 @@
 }
 
 .counter-basket {
+  position: relative;
   display: grid;
   flex-shrink: 0;
   gap: 2px;
+  min-width: 148px;
   min-height: 52px;
   padding: var(--space-1) var(--space-3);
+  align-content: center;
   border: 0;
   border-radius: var(--radius-small);
   background: var(--light-raise), var(--surface);
@@ -285,18 +288,47 @@
   outline-offset: 2px;
 }
 
+/* The basket at the till: pressed in, with the orange tick the sidebar uses. */
 .counter-basket[aria-pressed='true'] {
   background: var(--fill);
   color: var(--ink);
   box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--line-strong);
 }
 
+.counter-basket[aria-pressed='true']::before {
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  content: '';
+}
+
+.counter-basket__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .counter-basket__name {
   font-size: var(--text-sm);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.counter-basket__total {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .counter-basket__meta {
+  color: var(--ink-muted);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1026,12 +1058,51 @@
   justify-content: space-between;
   gap: var(--space-3);
   margin: 0;
+  color: var(--ink-muted);
   font-size: var(--text-sm);
 }
 
 .counter-card__lead strong {
+  color: var(--ink);
   font-size: var(--text-lg);
   font-variant-numeric: tabular-nums;
+}
+
+/* The drawer everyone shares, sunk into the card under the person's own day. */
+.counter-card__drawer {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.counter-card__subtitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.counter-card__rows .counter-card__warn {
+  color: var(--warn);
+}
+
+.counter-card__rows > .counter-card__total {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
+}
+
+.counter-card__total dt {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.counter-card__total dd {
+  font-size: var(--text-base);
 }
 
 .counter-card__mono {
@@ -1133,7 +1204,10 @@
 }
 
 .counter-refused {
-  background: var(--danger-soft);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--danger);
+}
+
+.counter-refused > svg {
   color: var(--danger);
 }
 
@@ -1241,6 +1315,12 @@
 
   .counter-status {
     padding: var(--space-2) var(--space-4);
+  }
+
+  /* The callout's key drops under its words. */
+  .counter-opening > .button {
+    grid-column: 2;
+    justify-self: start;
   }
 
   /* The table keeps product, quantity, price, total and stock. */
@@ -1754,19 +1834,40 @@
 }
 
 /* Before the first sale: the opening cash still wants counting. */
+/* Before the first sale: the opening cash still wants counting. A callout on
+   sunk paper in ink, like the Counter's other messages; the icon carries the colour. */
 .counter-opening {
   display: grid;
-  gap: var(--space-2);
-  justify-items: start;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
   padding: var(--space-3);
   border-radius: var(--radius-small);
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink);
   font-size: var(--text-sm);
+}
+
+.counter-opening > svg {
+  align-self: start;
+  margin-top: 1px;
+  color: var(--warn);
+}
+
+.counter-opening__text {
+  display: grid;
+  gap: 2px;
 }
 
 .counter-opening p {
   margin: 0;
+  color: var(--ink-muted);
+}
+
+.counter-opening .counter-opening__title {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* Switch person and Ask the owner: one row per person with a PIN. */

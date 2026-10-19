@@ -82,10 +82,11 @@
   display: none;
 }
 
+/* The menu scrolls in its own box, so the tick sits on that box's left edge. */
 .sidebar__nav[data-pill]::before {
   position: absolute;
   top: 0;
-  left: -12px;
+  left: 0;
   width: 3px;
   height: max(0px, calc(var(--pill-h, 0px) - 16px));
   transform: translateY(calc(var(--pill-y, 0px) + 8px));
@@ -93,10 +94,6 @@
   background: var(--accent);
   pointer-events: none;
   content: '';
-}
-
-.app--collapsed .sidebar__nav[data-pill]::before {
-  left: -8px;
 }
 
 /* ---------- Swiping a panel away (useSwipeToDismiss) ---------- */
@@ -148,6 +145,12 @@
       width var(--spring-time) var(--spring),
       height var(--spring-time) var(--spring),
       opacity var(--fast) var(--ease);
+  }
+
+  /* In the menu the orange tick follows the pill a beat behind, so the move
+     reads as the mark travelling to the new page. */
+  .sidebar__nav[data-pill='live']::before {
+    transition-delay: calc(var(--fast) / 3);
   }
 
   /* ---------- The side sheet: in from the right, back out to the right ---------- */

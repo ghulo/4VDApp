@@ -407,6 +407,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Part of a sale on the card terminal, the rest in cash | **Cash + card** (the card part: **On the card**) | **Kesh + kartelë** (**Me kartelë**) | split payment, mixed tender |
 | The printer's small screen facing the buyer | **Customer display** | **Ekrani për klientin** | pole display, VFD |
 | The beep and buzz after a scan | **Scan sounds** | **Tingujt e skanimit** | audio feedback |
+| How a product is sold: whole pieces, or weighed with a kilo price | **Sold by** (**The piece** / **The kilo (weighed)**) | **Shitet me** (**Copë** / **Kilogram (peshohet)**) | unit of measure, UoM |
+| The product's number in the shop scale, printed in its labels | **Scale number** | **Numri në peshore** | PLU |
 | A buyer the Counter doesn't know | **Walk-in customer** | **Klient pa emër** | anonymous, guest |
 | Finishing a sale | **Record sale · €X** | **Regjistro shitjen · €X** *(confirm)* | Checkout |
 | One customer's purchase | **sale** | **shitje** | transaction |
@@ -425,6 +427,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Someone you sell to | **customer** | **klient** | client |
 | Counting a drawer's money | **cash count**; action **Count the drawer** | **numërimi i arkës**; **Numëro arkën** *(confirm)* | cash check, close the drawer |
 | Money a drawer starts with | **float** | (keep current SQ) | |
+| The cash counted into the drawer before the first sale (the day's real float) | **Opening cash** | **Keshi i fillimit** | opening float, starting balance |
+| What the shop drawer should have in it now (overseers only) | **The drawer should hold** | **Arka duhet të ketë** | expected cash, theoretical balance |
 | The shop's end-of-day steps | **Close the day** | **Mbyll ditën** *(confirm)* | Z report |
 | One person's end-of-day steps | **End your shift** | **Mbyll turnin** | |
 | Broken, lost or stolen stock | **damage or loss** | **dëmtim ose humbje** | write-off (except in accountant exports) |

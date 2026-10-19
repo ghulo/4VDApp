@@ -55,6 +55,27 @@ export class CashCountRepository {
       .execute();
   }
 
+  /** The opening cash counted into each drawer on `day`. */
+  async openingsOn(day: string): Promise<Array<{ place: CashPlace; carwash_id: number | null; amount: string; opened_by_name: string | null; opened_at: Date }>> {
+    return this.db
+      .selectFrom('cash_openings as o')
+      .leftJoin('users as u', 'u.id', 'o.opened_by')
+      .select(['o.place', 'o.carwash_id', 'o.amount', 'u.name as opened_by_name', 'o.opened_at'])
+      .where('o.day', '=', day)
+      .execute();
+  }
+
+  /** Counting the opening cash again the same day replaces it. */
+  async saveOpening(entry: { place: CashPlace; carwashId: number | null; day: string; amount: number; openedBy: number }): Promise<void> {
+    await this.db
+      .insertInto('cash_openings')
+      .values({ place: entry.place, carwash_id: entry.carwashId, day: entry.day, amount: entry.amount, opened_by: entry.openedBy })
+      .onConflict((conflict) =>
+        conflict.constraint('cash_openings_drawer_day_key').doUpdateSet({ amount: entry.amount, opened_by: entry.openedBy, opened_at: new Date() }),
+      )
+      .execute();
+  }
+
   /** Counting the same drawer twice on one day replaces the first count. Returns the row's id. */
   async save(entry: { place: CashPlace; carwashId: number | null; day: string; float: number; counted: number; note: string | null; countedBy: number }): Promise<number> {
     const row = await this.db

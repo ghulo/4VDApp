@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { CashCountService } from '../services/CashCountService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { canOversee } from '../utils/roles.js';
-import { cashCountSchema } from '../validators/cashCountValidators.js';
+import { cashCountSchema, cashOpeningSchema } from '../validators/cashCountValidators.js';
 import { reportRangeSchema } from '../validators/reportValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
@@ -15,6 +15,10 @@ export function createCashCountController(cashCountService: CashCountService) {
 
     async today(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await cashCountService.today());
+    },
+
+    async open(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await cashCountService.open(parseInput(cashOpeningSchema, req.body), req.user!.id), { statusCode: 201, message: 'Opening cash saved' });
     },
 
     async check(req: Request, res: Response): Promise<void> {

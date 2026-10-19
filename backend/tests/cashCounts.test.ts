@@ -25,6 +25,34 @@ async function sell(price: number, quantity: number) {
 const listToday = async (token = adminToken) =>
   (await request(context.app).get('/api/cash-counts').set(auth(token)).query({ startDate: today(), endDate: today() })).body.data;
 
+describe('opening cash', () => {
+  it('should start the day from the counted opening cash, and show what the drawer should hold only to overseers', async () => {
+    const employeeToken = await loginAs(context, 'employee');
+    const opened = await request(context.app).post('/api/cash-counts/opening').set(auth(employeeToken)).send({ place: 'shop', amount: 80 });
+    expect(opened.status).toBe(201);
+    expect(opened.body.data[0]).toMatchObject({ place: 'shop', float: 80, opening: { amount: 80 }, countedAt: null });
+
+    await sell(20, 3); // €60 of cash sales.
+    const forOwner = await request(context.app).get('/api/counter/today').set(auth(adminToken));
+    expect(forOwner.body.data.drawer).toEqual({ opening: 80, shouldHold: 140 });
+    expect((await request(context.app).get('/api/counter/today').set(auth(employeeToken))).body.data.drawer).toBeNull();
+
+    // The evening count starts from the opening cash, not the €50 float in Settings.
+    await request(context.app).post('/api/cash-counts').set(auth(employeeToken)).send({ place: 'shop', counted: 140 });
+    expect((await listToday())[0]).toMatchObject({ float: 80, expected: 60, difference: 0 });
+    const activity = await context.db.selectFrom('activity_log').select('action').where('action', '=', 'cash.opened').execute();
+    expect(activity).toHaveLength(1);
+  });
+
+  it('should replace the opening cash when it is counted again', async () => {
+    await request(context.app).post('/api/cash-counts/opening').set(auth(adminToken)).send({ place: 'shop', amount: 40 });
+    const again = await request(context.app).post('/api/cash-counts/opening').set(auth(adminToken)).send({ place: 'shop', amount: 45.5 });
+    expect(again.body.data[0].opening.amount).toBe(45.5);
+    expect(await context.db.selectFrom('cash_openings').select('id').execute()).toHaveLength(1);
+    expect((await request(context.app).post('/api/cash-counts/opening').set(auth(adminToken)).send({ place: 'shop', amount: -1 })).status).toBe(400);
+  });
+});
+
 describe('end-of-day cash check', () => {
   it('should take the float off the count and compare the rest with the day\'s sales', async () => {
     await sell(20, 3); // €60 of sales; the default shop float is €50.
@@ -42,8 +70,8 @@ describe('end-of-day cash check', () => {
 
     const before = await request(context.app).get('/api/cash-counts/today').set(auth(employeeToken));
     expect(before.body.data).toEqual([
-      { place: 'shop', carwashId: null, name: null, float: 50, countedBy: null, countedAt: null },
-      { place: 'carwash', carwashId: 1, name: 'Carwash', float: 0, countedBy: null, countedAt: null },
+      { place: 'shop', carwashId: null, name: null, float: 50, opening: null, countedBy: null, countedAt: null },
+      { place: 'carwash', carwashId: 1, name: 'Carwash', float: 0, opening: null, countedBy: null, countedAt: null },
     ]);
     const response = await request(context.app).post('/api/cash-counts').set(auth(employeeToken)).send({ place: 'shop', counted: 70.2 });
 

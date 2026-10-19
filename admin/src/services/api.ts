@@ -569,6 +569,9 @@ export const carwashApi = {
 export const cashApi = {
   list: async (range: ReportRange) => (await apiRequest<CashCount[]>('/cash-counts', { query: { ...range } })).data,
   today: async () => (await apiRequest<CashPlaceToday[]>('/cash-counts/today')).data,
+  /** The cash counted into a drawer at the start of the day; returns today's drawers. */
+  open: async (input: { place: CashPlace; carwashId?: number; amount: number }) =>
+    (await apiRequest<CashPlaceToday[]>('/cash-counts/opening', { method: 'POST', body: input })).data,
   /** Someone looked at a count's difference, so it leaves the To do list. */
   check: async (id: number) => {
     await apiRequest(`/cash-counts/${id}/check`, { method: 'POST' });

@@ -1,11 +1,13 @@
 import type { Request, Response } from 'express';
+import type { CashCountService } from '../services/CashCountService.js';
 import type { CounterService } from '../services/CounterService.js';
 import type { ProductService } from '../services/ProductService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
+import { canOversee } from '../utils/roles.js';
 import { counterEventsQuerySchema, counterReceiptsQuerySchema, counterEventsSchema, counterReportSchema, counterSettingsSchema } from '../validators/counterValidators.js';
 import { parseInput } from '../validators/validate.js';
 
-export function createCounterController(counterService: CounterService, productService: ProductService) {
+export function createCounterController(counterService: CounterService, productService: ProductService, cashCountService: CashCountService) {
   return {
     async settings(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await counterService.settings());
@@ -25,7 +27,10 @@ export function createCounterController(counterService: CounterService, productS
     },
 
     async today(req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await counterService.today(req.user!.id));
+      const user = req.user!;
+      // Only the people who check the money see what the drawer should hold: staff count blind.
+      const [today, drawer] = await Promise.all([counterService.today(user.id), canOversee(user.role) ? cashCountService.shopDrawerNow() : null]);
+      sendSuccess(res, { ...today, drawer });
     },
 
     async receipts(req: Request, res: Response): Promise<void> {

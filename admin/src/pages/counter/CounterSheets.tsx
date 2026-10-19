@@ -470,3 +470,73 @@ function CustomerForm({ customers, current, onPick }: { customers: Customer[] | 
     </div>
   );
 }
+
+interface CountProps {
+  /** What the drawer started with today. */
+  opening: number;
+  /** Already counted today: saving replaces it. */
+  countedToday: boolean;
+  onSave: (counted: number, note: string | null) => Promise<void>;
+}
+
+/**
+ * The drawer count, blind: the person counts every note and coin and never
+ * sees what 4VD expects. The owner sees how it came out.
+ */
+export function CountSheet({ open, onClose, ...form }: CountProps & { open: boolean; onClose: () => void }) {
+  const t = useT();
+  return (
+    <Sheet open={open} onClose={onClose} title={t.counter.countTitle}>
+      <CountForm {...form} />
+    </Sheet>
+  );
+}
+
+function CountForm({ opening, countedToday, onSave }: CountProps) {
+  const t = useT();
+  const [text, setText] = useState('');
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const counted = parseAmount(text);
+    if (!Number.isFinite(counted) || counted < 0) return setError(t.counter.reasonNeeded);
+    setBusy(true);
+    try {
+      await onSave(Math.round(counted * 100) / 100, note.trim() || null);
+    } catch (problem) {
+      setError(errorMessage(problem));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="counter-form" onSubmit={submit}>
+      <Field label={t.counter.countLabel} hint={t.counter.countHint(formatMoney(opening))} error={error ?? undefined}>
+        <input
+          className="counter-number"
+          inputMode="decimal"
+          aria-invalid={error ? true : undefined}
+          autoComplete="off"
+          value={text}
+          onChange={(event) => {
+            setText(event.target.value);
+            setError(null);
+          }}
+        />
+      </Field>
+      <Field label={t.counter.countNote}>
+        <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
+      </Field>
+      {countedToday && <p className="field-hint">{t.counter.countAgain}</p>}
+      <div className="form-actions">
+        <Button variant="primary" type="submit" loading={busy} disabled={text.trim() === ''}>
+          {t.counter.countSave}
+        </Button>
+      </div>
+    </form>
+  );
+}

@@ -302,6 +302,18 @@ export class MoneyRepository {
     return new Map(rows.map((row) => [row.carwash_id, row.id]));
   }
 
+  /** Money moved into (+) or out of (−) each till on `day` so far, by carwash (null for the shop). */
+  async tillMovesOn(day: string): Promise<Map<number | null, number>> {
+    const { rows } = await sql<{ carwash_id: number | null; net: string }>`
+      select p.carwash_id, sum(case when m.to_place_id = p.id then m.amount else -m.amount end) as net
+      from money_places p
+      join money_moves m on m.day = ${day}::date and m.voided_at is null and (m.from_place_id = p.id or m.to_place_id = p.id)
+      where p.kind = 'till'
+      group by p.carwash_id
+    `.execute(this.db);
+    return new Map(rows.map((row) => [row.carwash_id, Number(row.net)]));
+  }
+
   /** For each cash count in the days, the money moved into (+) or out of (−) its till that day before it was counted. */
   async movesBeforeCounts(from: string, to: string): Promise<Map<number, number>> {
     const { rows } = await sql<{ id: number; net: string }>`

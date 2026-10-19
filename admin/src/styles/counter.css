@@ -1770,3 +1770,19 @@
   color: var(--ink-muted);
   font-size: var(--text-xs);
 }
+
+/* Before the first sale: the opening cash still wants counting. */
+.counter-opening {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--text-sm);
+}
+
+.counter-opening p {
+  margin: 0;
+}

@@ -20,3 +20,13 @@ export const cashCountSchema = z.object({
   message: "the shop's drawer doesn't belong to a carwash",
   path: ['carwashId'],
 });
+
+export const cashOpeningSchema = z.object({
+  place: z.enum(['shop', 'carwash']),
+  carwashId: idSchema.optional(),
+  /** Every note and coin in the drawer before the first sale. */
+  amount: money,
+}).refine((input) => input.place === 'carwash' || input.carwashId === undefined, {
+  message: "the shop's drawer doesn't belong to a carwash",
+  path: ['carwashId'],
+});

@@ -105,6 +105,8 @@ const en = {
   cashDifferenceChecked: () => 'Checked a cash difference',
   cashCounted: (p: { counted: number; drawer: string | null; float: number }, w: Words) =>
     `Counted ${w.money(p.counted)} in the ${p.drawer ? `${p.drawer} carwash` : 'shop'} drawer (float ${w.money(p.float)})`,
+  cashOpened: (p: { amount: number; drawer: string | null }, w: Words) =>
+    `Counted ${w.money(p.amount)} opening cash into the ${p.drawer ? `${p.drawer} carwash` : 'shop'} drawer`,
 
   categoryAdded: (p: { name: string }) => `Added category ${p.name}`,
   categoryEdited: (p: { name: string }) => `Edited category ${p.name}`,
@@ -575,6 +577,7 @@ const sq: Templates = {
 
   cashDifferenceChecked: () => 'Kontrolloi një diferencë në arkë',
   cashCounted: (p, w) => `Numëroi ${w.money(p.counted)} në arkën e ${p.drawer ? `lavazhit ${p.drawer}` : 'dyqanit'} (kusuri ${w.money(p.float)})`,
+  cashOpened: (p, w) => `Numëroi ${w.money(p.amount)} kesh fillimi në arkën e ${p.drawer ? `lavazhit ${p.drawer}` : 'dyqanit'}`,
 
   categoryAdded: (p) => `Shtoi kategorinë ${p.name}`,
   categoryEdited: (p) => `Ndryshoi kategorinë ${p.name}`,

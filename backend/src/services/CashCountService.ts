@@ -47,8 +47,16 @@ export interface CashPlaceToday {
   /** The carwash's name; null for the shop. */
   name: string | null;
   float: number;
+  /** The cash counted into the drawer at the start of the day; null until someone does. */
+  opening: { amount: number; by: string | null; at: string } | null;
   countedBy: string | null;
   countedAt: string | null;
+}
+
+/** For overseers at the Counter: the shop drawer's opening cash and what it should hold now. */
+export interface DrawerNow {
+  opening: number | null;
+  shouldHold: number;
 }
 
 const isMatch = (difference: number) => Math.abs(difference) < CASH_TOLERANCE;
@@ -131,8 +139,9 @@ export class CashCountService {
 
   /** Each drawer and whether it was counted on `day` (blind: no expected amount). */
   async drawersOn(day: string): Promise<CashPlaceToday[]> {
-    const [rows, settings, carwashes] = await Promise.all([
+    const [rows, openings, settings, carwashes] = await Promise.all([
       this.cashCountRepository.findBetween(day, day),
+      this.cashCountRepository.openingsOn(day),
       this.settingsService.get(),
       this.carwashService.carwashes(),
     ]);
@@ -142,10 +151,12 @@ export class CashCountService {
     ];
     return drawers.map((drawer) => {
       const row = rows.find((count) => count.place === drawer.place && count.carwash_id === drawer.carwashId);
+      const opening = openings.find((entry) => entry.place === drawer.place && entry.carwash_id === drawer.carwashId);
       return {
         ...drawer,
-        // Once counted, the float that drawer really started with today.
-        float: row ? Number(row.float_amount) : drawer.float,
+        // Once counted, the float that drawer really started with today; before that, its opening cash.
+        float: row ? Number(row.float_amount) : opening ? Number(opening.amount) : drawer.float,
+        opening: opening ? { amount: Number(opening.amount), by: opening.opened_by_name, at: opening.opened_at.toISOString() } : null,
         countedBy: row?.counted_by_name ?? null,
         countedAt: row?.counted_at.toISOString() ?? null,
       };
@@ -183,8 +194,9 @@ export class CashCountService {
   ): Promise<CashCountDto> {
     const day = zonedDay(now, this.timeZone);
     const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
-    // Usually the float from Settings; whoever counts can say the drawer started with something else today.
-    const float = input.float ?? (carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop);
+    // The opening cash counted this morning, else the float from Settings; whoever counts can say the drawer started with something else today.
+    const opening = (await this.cashCountRepository.openingsOn(day)).find((entry) => entry.place === input.place && entry.carwash_id === (carwash?.id ?? null));
+    const float = input.float ?? (opening ? Number(opening.amount) : carwash ? carwash.cashFloat : (await this.settingsService.get()).cashFloatShop);
     const carwashName = carwash ? ((await this.carwashService.displayNames()).get(carwash.id) ?? null) : null;
     const id = await this.transactions.run(async (repos) => {
       const countId = await repos.cashCounts.save({
@@ -221,6 +233,48 @@ export class CashCountService {
       );
     }
     return result;
+  }
+
+  /** The cash counted into a drawer before the first sale; counting it again the same day replaces it. Returns today's drawers. */
+  async open(input: { place: CashPlace; carwashId?: number; amount: number }, actorId: number, now = new Date()): Promise<CashPlaceToday[]> {
+    const day = zonedDay(now, this.timeZone);
+    const carwash = input.place === 'carwash' ? await this.carwashService.resolve(input.carwashId) : null;
+    await this.transactions.run(async (repos) => {
+      await repos.cashCounts.saveOpening({ place: input.place, carwashId: carwash?.id ?? null, day, amount: input.amount, openedBy: actorId });
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'cash.opened',
+        entityType: 'cash_count',
+        entityId: null,
+        say: { key: 'cashOpened', params: { amount: input.amount, drawer: carwash ? carwash.name : null } },
+        details: { place: input.place, carwashId: carwash?.id ?? null, day, amount: input.amount },
+      });
+    });
+    return this.drawersOn(day);
+  }
+
+  /**
+   * What the shop drawer should hold right now: its opening cash (else the
+   * usual float), plus today's cash takings and tab payments, less card sales,
+   * suppliers paid from it and money moved out. Only for overseers.
+   */
+  async shopDrawerNow(now = new Date()): Promise<DrawerNow> {
+    const day = zonedDay(now, this.timeZone);
+    const [openings, settings, shop, tabs, supplierPayments, tills, moves, card] = await Promise.all([
+      this.cashCountRepository.openingsOn(day),
+      this.settingsService.get(),
+      this.reportsRepository.shopRevenueByDay(day, day, this.timeZone),
+      this.tabRepository.drawerEffectByDay(day, day, this.timeZone),
+      this.billRepository.drawerPaymentsByDay(day, day),
+      this.moneyRepository.tills(),
+      this.moneyRepository.tillMovesOn(day),
+      this.moneyRepository.cardSalesByDay(day, day, this.timeZone),
+    ]);
+    const opening = openings.find((entry) => entry.place === 'shop');
+    const float = opening ? Number(opening.amount) : settings.cashFloatShop;
+    const takings = (shop.get(day) ?? 0) + (tabs.get(day) ?? 0) - (card.get(day) ?? 0);
+    const paidOut = supplierPayments.get(`${tills.get(null)}|${day}`) ?? 0;
+    return { opening: opening ? Number(opening.amount) : null, shouldHold: roundMoney(float + takings - paidOut + (moves.get(null) ?? 0)) };
   }
 
   /** Lines for the owner's daily summary: how each drawer came out today. */

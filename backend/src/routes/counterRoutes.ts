@@ -3,8 +3,8 @@ import type { Container } from '../container.js';
 import { createCounterController } from '../controllers/counterController.js';
 
 /** The counter: everyone who sells reads its settings and records what happened; the people who run the shop set it up and read the report. */
-export function createCounterRoutes({ counterService, productService, guards }: Container): Router {
-  const controller = createCounterController(counterService, productService);
+export function createCounterRoutes({ counterService, productService, cashCountService, guards }: Container): Router {
+  const controller = createCounterController(counterService, productService, cashCountService);
   const router = Router();
 
   router.get('/settings', ...guards.staff, controller.settings);

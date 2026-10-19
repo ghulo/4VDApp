@@ -1075,6 +1075,8 @@ export interface CashPlaceToday {
   /** The carwash's name; null for the shop. */
   name: string | null;
   float: number;
+  /** The cash counted into the drawer at the start of the day; null until someone does. */
+  opening: { amount: number; by: string | null; at: string } | null;
   countedBy: string | null;
   countedAt: string | null;
 }
@@ -2101,6 +2103,8 @@ export interface CounterToday {
   mine: { receipts: number; total: number; cash: number; card: number; tab: number };
   /** Cash everyone took at the till today. */
   cashToday: number;
+  /** For overseers only: the shop drawer's opening cash and what it should hold now. Null for staff (counts stay blind). */
+  drawer: { opening: number | null; shouldHold: number } | null;
 }
 
 /** A receipt found to give something back, with what is left to return on each line. */

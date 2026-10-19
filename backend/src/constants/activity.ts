@@ -69,6 +69,7 @@ export const ACTIVITY_ACTIONS = [
   'carwash.recorded',
   'carwash.removed',
   'cash.counted',
+  'cash.opened',
   'cash.checked',
   'expense.added',
   'expense.removed',

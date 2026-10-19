@@ -3,9 +3,11 @@ import {
   ArrowLeft,
   ArrowSquareOut,
   Barcode,
+  Calculator,
   CashRegister,
   CheckCircle,
   CircleNotch,
+  Coins,
   HandCoins,
   Hash,
   MagnifyingGlass,
@@ -33,7 +35,7 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Button, ButtonLink } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
+import { cashApi, counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { CounterEventInput, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatTime } from '../utils/format';
@@ -41,7 +43,8 @@ import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, 
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
-import { CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { CASH_TOLERANCE } from '../components/CashCount';
+import { CountSheet, CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
@@ -64,6 +67,8 @@ type Panel =
   | 'refund'
   | 'z'
   | 'unprinted'
+  | 'opening'
+  | 'count'
   | null;
 
 /** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
@@ -131,6 +136,10 @@ export function CounterPage() {
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
+  // The shop drawer today: its opening cash and whether it was counted (never what 4VD expects).
+  const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
+  const shopDrawer = cash.data?.find((drawer) => drawer.place === 'shop') ?? null;
+  const needsOpening = shopDrawer !== null && shopDrawer.opening === null && shopDrawer.countedAt === null;
   const expiries = useQuery({ queryKey: ['expiry', 'upcoming'], queryFn: expiryApi.upcoming, staleTime: 5 * 60_000 });
   const [panel, setPanel] = useState<Panel>(null);
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
@@ -799,6 +808,16 @@ export function CounterPage() {
             <PayPanel total={total} customers={customers.data} draft={payDraft} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
           ) : (
             <>
+              {needsOpening && (
+                <div className="counter-opening">
+                  <p>
+                    <strong>{t.counter.openingMissing}</strong> {t.counter.openingMissingHint}
+                  </p>
+                  <Button size="sm" icon={Coins} disabled={!keysEnabled} onClick={() => startPanel('opening')}>
+                    {t.counter.openingKey}
+                  </Button>
+                </div>
+              )}
               <Button variant="primary" className="counter-pay" disabled={!hasLines} onClick={() => startPanel('pay')} title="F9 · Enter" aria-keyshortcuts="F9">
                 <span className="counter-pay__label">
                   {t.counter.pay}
@@ -840,13 +859,15 @@ export function CounterPage() {
                   title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
                   onClick={() => startPanel('z')}
                 />
+                <CounterKey icon={Coins} label={t.counter.openingKey} disabled={!keysEnabled || !shopDrawer} onClick={() => startPanel('opening')} />
+                <CounterKey icon={Calculator} label={t.counter.countKey} disabled={!keysEnabled || !shopDrawer} onClick={() => startPanel('count')} />
                 {settings.data?.drawerConnected && (
                   <CounterKey icon={CashRegister} label={t.counter.openDrawer} disabled={!keysEnabled} onClick={() => startPanel('drawer')} />
                 )}
               </KeyGroup>
 
               {lastSale && <LastSaleCard sale={lastSale} canOpen={canOversee(user.role)} />}
-              {today.data && <ShiftCard mine={today.data.mine} cashToday={today.data.cashToday} />}
+              {today.data && <ShiftCard mine={today.data.mine} cashToday={today.data.cashToday} drawer={today.data.drawer} />}
             </>
           )}
         </section>
@@ -1016,6 +1037,39 @@ export function CounterPage() {
           closePanel();
         }}
       />
+      <NumberSheet
+        open={panel === 'opening'}
+        title={t.counter.openingTitle}
+        label={t.counter.openingLabel}
+        hint={t.counter.openingHint(formatMoney(shopDrawer?.float ?? 0))}
+        initial={shopDrawer?.opening ? String(shopDrawer.opening.amount) : ''}
+        onClose={closePanel}
+        check={() => null}
+        onApply={(amount) => {
+          const rounded = Math.round(amount * 100) / 100;
+          closePanel();
+          cashApi
+            .open({ place: 'shop', amount: rounded })
+            .then((drawers) => {
+              queryClient.setQueryData(['cash', 'today'], drawers);
+              void queryClient.invalidateQueries({ queryKey: ['counter', 'today'] });
+              say(t.counter.openingSaved(formatMoney(rounded)));
+            })
+            .catch((error: unknown) => complain(errorMessage(error)));
+        }}
+      />
+      <CountSheet
+        open={panel === 'count'}
+        opening={shopDrawer?.opening?.amount ?? shopDrawer?.float ?? 0}
+        countedToday={Boolean(shopDrawer?.countedAt)}
+        onClose={closePanel}
+        onSave={async (counted, note) => {
+          const result = await cashApi.count({ place: 'shop', counted, note, float: shopDrawer?.opening?.amount ?? shopDrawer?.float ?? 0 });
+          for (const key of [['cash'], ['counter', 'today'], ['activity'], ['notifications']]) void queryClient.invalidateQueries({ queryKey: key });
+          closePanel();
+          say(result ? t.counter.countSaved(differenceText(result.difference, t.cash)) : t.counter.countSavedBlind);
+        }}
+      />
       <ZSheet
         open={panel === 'z'}
         lastZ={today.data?.lastZ ?? null}
@@ -1158,7 +1212,15 @@ function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
 }
 
 /** What the person at the till sold today, and the cash everyone took. */
-function ShiftCard({ mine, cashToday }: { mine: { receipts: number; total: number; cash: number; card: number; tab: number }; cashToday: number }) {
+function ShiftCard({
+  mine,
+  cashToday,
+  drawer,
+}: {
+  mine: { receipts: number; total: number; cash: number; card: number; tab: number };
+  cashToday: number;
+  drawer: { opening: number | null; shouldHold: number } | null;
+}) {
   const t = useT();
   return (
     <section className="counter-card">
@@ -1186,6 +1248,18 @@ function ShiftCard({ mine, cashToday }: { mine: { receipts: number; total: numbe
           <dt>{t.counter.cashToday}</dt>
           <dd>{formatMoney(cashToday)}</dd>
         </div>
+        {drawer && (
+          <>
+            <div>
+              <dt>{t.counter.openingRow}</dt>
+              <dd>{drawer.opening === null ? t.counter.notCounted : formatMoney(drawer.opening)}</dd>
+            </div>
+            <div>
+              <dt>{t.counter.shouldHold}</dt>
+              <dd>{formatMoney(drawer.shouldHold)}</dd>
+            </div>
+          </>
+        )}
       </dl>
     </section>
   );
@@ -1272,4 +1346,11 @@ function PaidRows({ draft, total, customerName }: { draft: PayDraft; total: numb
       </div>
     </dl>
   );
+}
+
+/** How a count came out, in words, for whoever may see it. */
+function differenceText(difference: number | null, words: { matches: string; nothingToCompare: string; short: (amount: string) => string; over: (amount: string) => string }): string {
+  if (difference === null) return words.nothingToCompare;
+  if (Math.abs(difference) < CASH_TOLERANCE) return words.matches;
+  return difference < 0 ? words.short(formatMoney(-difference)) : words.over(formatMoney(difference));
 }

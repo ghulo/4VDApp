@@ -355,6 +355,17 @@ export interface CarwashDaysTable {
 }
 
 /** One end-of-day count of a drawer. `day` is a calendar date in shop time. */
+export interface CashOpeningsTable {
+  id: Generated<number>;
+  place: 'shop' | 'carwash';
+  /** Which carwash; null for the shop. */
+  carwash_id: number | null;
+  day: ColumnType<string, string, string>;
+  amount: Decimal;
+  opened_by: number | null;
+  opened_at: ColumnType<Date, Date | undefined, Date>;
+}
+
 export interface CashCountsTable {
   id: Generated<number>;
   place: 'shop' | 'carwash';
@@ -1075,6 +1086,7 @@ export interface Database {
   carwashes: CarwashesTable;
   carwash_days: CarwashDaysTable;
   cash_counts: CashCountsTable;
+  cash_openings: CashOpeningsTable;
   assistant_chats: AssistantChatsTable;
   assistant_messages: AssistantMessagesTable;
   bill_repeats: BillRepeatsTable;

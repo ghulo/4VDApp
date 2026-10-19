@@ -1,5 +1,5 @@
 /* 4VD design tokens: Cloudflare's structure with a printed, editorial finish
-   (see DESIGN.md, "Calm shop"). Ink on ivory paper; amber (#f2a516) for the brand, the
+   (see DESIGN.md, "Calm shop"). Ink on ivory paper; amber (#f5b11e) for the brand, the
    one main action per screen and where you are; status colours come as a strong colour plus a
    faint tint. The theme script in index.html always sets
    data-theme, so these two blocks are the only place colours are defined.
@@ -18,10 +18,10 @@
   --brand-ink: #ffffff;
   --brand-soft: #f8ecd4;
   --accent: #b57400;
-  --cta: #f2a516;
-  --cta-hover: #f5b53f;
+  --cta: #f5b11e;
+  --cta-hover: #f7c14f;
   --cta-ink: #1c0f08;
-  --tint: rgb(242 165 22 / 0.16);
+  --tint: rgb(245 177 30 / 0.16);
   --ok: #2f6b3f;
   --ok-soft: #e7efe3;
   --warn: #9a3f0d;
@@ -70,11 +70,11 @@
   --brand: #f5b53f;
   --brand-ink: #1a120e;
   --brand-soft: #3a2a0e;
-  --accent: #f2a516;
-  --cta: #f2a516;
-  --cta-hover: #f5b53f;
+  --accent: #f5b11e;
+  --cta: #f5b11e;
+  --cta-hover: #f7c14f;
   --cta-ink: #1c0f08;
-  --tint: rgb(242 165 22 / 0.16);
+  --tint: rgb(245 177 30 / 0.16);
   --ok: #7ccf8e;
   --ok-soft: #13291a;
   --warn: #f59a62;

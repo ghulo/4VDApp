@@ -2,11 +2,11 @@
 name: 4VD
 description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on ivory paper with oat panels, one amber brand colour, tactile keys and the shop at sunrise.
 colors:
-  amber: "#f2a516"
-  amber-hover: "#f5b53f"
+  amber: "#f5b11e"
+  amber-hover: "#f7c14f"
   amber-edge: "#b57400"
   amber-text: "#8a5300"
-  amber-tint: "rgb(242 165 22 / 0.16)"
+  amber-tint: "rgb(245 177 30 / 0.16)"
   pillar-ink: "#1c0f08"
   ivory-canvas: "#f0eee6"
   paper: "#faf9f5"
@@ -478,16 +478,16 @@ colours are earthy and quiet, always with words.
 - **Hairline** `#e0dbcf` / `#3a3834` and **Strong Hairline** `#cbc3b3` / `#4a4843`.
 
 ### Amber (brand)
-4VD's own colour (chosen 2026-10-19), a warm yellow-orange.
-- **Amber** `#f2a516` (both themes): the logo, the sunrise, **the one primary key
+4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
+- **Amber** `#f5b11e` (both themes): the logo, the sunrise, **the one primary key
   per screen** and progress toward a goal. On a dark screen it also marks the
   current menu item and small marks.
 - **Amber Mark** `#b57400` (light only): small marks on paper (the menu tick,
-  rings, dots), because bright amber reaches only 2:1 on ivory; 3.6:1 here.
+  rings, dots), because bright amber reaches only 1.8:1 on ivory; 3.6:1 here.
 - **Amber Text** `#8a5300` / `#f5b53f` on **Amber Tint** (16%): the current
   menu item's label and fill, and any amber words. Amber itself is never text
   on paper.
-- Text on amber is **Pillar Ink** `#1c0f08` (white fails contrast: 2:1).
+- Text on amber is **Pillar Ink** `#1c0f08` (white fails contrast: 1.9:1).
 
 ### Status (earthy, quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.

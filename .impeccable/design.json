@@ -7,7 +7,7 @@
       "amber": {
         "role": "primary",
         "displayName": "Amber",
-        "canonical": "#f2a516"
+        "canonical": "#f5b11e"
       },
       "amber-hover": {
         "role": "primary",
@@ -27,7 +27,7 @@
       "amber-tint": {
         "role": "primary",
         "displayName": "Amber Tint",
-        "canonical": "rgb(242 165 22 / 0.16)"
+        "canonical": "rgb(245 177 30 / 0.16)"
       },
       "pillar-ink": {
         "role": "neutral",
@@ -332,7 +332,7 @@
       "refersTo": "button-primary",
       "description": "The one main action per screen: a amber key on its edge; flat Sunk Paper when disabled, spinner beside the label when busy.",
       "html": "<button class=\"ds-btn-primary\">Sell</button> <button class=\"ds-btn-primary\" disabled>Sell</button>",
-      "css": ".ds-btn-primary { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #f2a516; color: #1c0f08; font: 600 15px 'Hanken Grotesk', system-ui, sans-serif; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 2px 0 #b57400, 0 2px 6px rgb(20 20 19 / 0.1); cursor: pointer; } .ds-btn-primary:not(:disabled):hover { background: #f5b53f; } .ds-btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: 0 0 0 #b57400, 0 1px 2px rgb(20 20 19 / 0.12); } .ds-btn-primary:disabled { background: #e8e4da; color: #5e5d59; box-shadow: inset 0 0 0 1px #e0dbcf; cursor: not-allowed; }"
+      "css": ".ds-btn-primary { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: #f5b11e; color: #1c0f08; font: 600 15px 'Hanken Grotesk', system-ui, sans-serif; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4), 0 2px 0 #b57400, 0 2px 6px rgb(20 20 19 / 0.1); cursor: pointer; } .ds-btn-primary:not(:disabled):hover { background: #f7c14f; } .ds-btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: 0 0 0 #b57400, 0 1px 2px rgb(20 20 19 / 0.12); } .ds-btn-primary:disabled { background: #e8e4da; color: #5e5d59; box-shadow: inset 0 0 0 1px #e0dbcf; cursor: not-allowed; }"
     },
     {
       "name": "Secondary Button",
@@ -356,7 +356,7 @@
       "refersTo": "nav-item-current",
       "description": "Grouped sidebar: the current item has the Amber Tint fill, Amber Text label and a 3px amber marker; counts are ink pills.",
       "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link ds-nav-link--current\" href=\"#\" aria-current=\"page\">Overview</a><a class=\"ds-nav-link\" href=\"#\">Inbox <span class=\"ds-nav-count\">2</span></a><a class=\"ds-nav-link\" href=\"#\">Stock</a></nav>",
-      "css": ".ds-nav { display: grid; gap: 2px; width: 232px; font: 500 15px 'Hanken Grotesk', system-ui, sans-serif; } .ds-nav-link { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border-radius: 8px; color: #5e5d59; text-decoration: none; } .ds-nav-link:hover { background: #e3dacc; } .ds-nav-link--current { background: rgb(242 165 22 / 0.16); color: #8a5300; box-shadow: inset 3px 0 0 #f2a516; } .ds-nav-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: #141413; color: #faf9f5; font-size: 12px; text-align: center; }"
+      "css": ".ds-nav { display: grid; gap: 2px; width: 232px; font: 500 15px 'Hanken Grotesk', system-ui, sans-serif; } .ds-nav-link { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border-radius: 8px; color: #5e5d59; text-decoration: none; } .ds-nav-link:hover { background: #e3dacc; } .ds-nav-link--current { background: rgb(245 177 30 / 0.16); color: #8a5300; box-shadow: inset 3px 0 0 #f5b11e; } .ds-nav-count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: #141413; color: #faf9f5; font-size: 12px; text-align: center; }"
     },
     {
       "name": "Status Stamp",
@@ -404,7 +404,7 @@
     "overview": "4VD is two apps for one family shop and its carwashes (4VD = \"4 Vëllezërit Dacaj\", the four Dacaj brothers): the dashboard to run the shop and the team app to sell at the counter. They are one product with one language and one look.\n\nInk on ivory paper with oat panels, one amber brand colour, tactile keys and the shop at sunrise. Structure, data and interaction are crisp and modern (Cloudflare's dashboard, SBB's rigour); paper, a serif for titles, rubber stamps and the sunrise are the vintage finish (anthropic.com's calm). Calm at rest, clear when touched.",
     "keyCharacteristics": [
       "Ink on ivory paper; raised cards, inset fields and tactile keys (never flat), one soft light from above, never a coloured gradient.",
-      "One amber voice (`#f2a516`): the logo, the sunrise, the one primary key per screen, progress and the current menu item.",
+      "One amber voice (`#f5b11e`): the logo, the sunrise, the one primary key per screen, progress and the current menu item.",
       "Source Serif 4 only for page titles and the day's headline; Hanken Grotesk for everything else, every figure tabular; monospace capitals for stamps and spec labels.",
       "Status colours are earthy and quiet (sage, ochre, brick, slate) and always come with words; data is drawn in ink.",
       "Tables stand on the page under a heading, never inside a card. Zero is said in words; big sums drop their cents.",

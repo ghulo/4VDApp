@@ -52,7 +52,7 @@ const dark: typeof light = {
   brand: '#f5b53f',
   brandInk: '#1a120e',
   brandSoft: '#3a2a0e',
-  accent: '#f2a516',
+  accent: '#f5b11e',
   warn: '#f59a62',
   warnSoft: '#36200f',
   danger: '#ff8f80',
@@ -79,7 +79,7 @@ function withAliases(palette: typeof light) {
     ...palette,
     // The main action: solid amber with near-black text, the same in both
     // themes, so the one thing to do on a screen always stands out.
-    cta: '#f2a516',
+    cta: '#f5b11e',
     ctaInk: '#1c0f08',
     // A chosen chip or option: ink too.
     selected: palette.ink,

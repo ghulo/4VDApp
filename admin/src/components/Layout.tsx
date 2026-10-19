@@ -84,6 +84,11 @@ function FullLayout() {
     setDrawerOpen(false);
   }
 
+  // On a short screen the menu scrolls: keep the page you are on in view.
+  useEffect(() => {
+    sidebar.current?.querySelector('.sidebar__link.active')?.scrollIntoView({ block: 'nearest' });
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!drawerOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {

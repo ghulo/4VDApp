@@ -1411,8 +1411,7 @@ input.switch:focus-visible {
    DATE / CATEGORY rows on anthropic.com. Only short labels, never sentences. */
 .table thead th,
 .stat__label,
-.metric__label,
-.sidebar__group-label {
+.metric__label {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 500;

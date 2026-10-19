@@ -189,6 +189,13 @@
         "numeric-alignment"
       ],
       "reason": "The Counter basket's Code column holds barcodes and SKUs (LGT-LAMP-BRS, 3830009876543): identifiers read left to right, not amounts to compare."
+    },
+    {
+      "selector": ".sidebar:not(.sidebar--open), .sidebar:not(.sidebar--open) *",
+      "rules": [
+        "viewport-bounds"
+      ],
+      "reason": "On phones the closed menu drawer waits off-screen to the left and slides in when opened; it is hidden from view, not cut off."
     }
   ]
 }

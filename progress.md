@@ -245,7 +245,9 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
   - [x] Run one VAT month next to TREFIN and compare the books and VAT return line by line (Books → Next to TREFIN + `npm run compare:trefin`; the real month is run with the accountant after the first month on 4VD)
 
 **B. Used, or needed soon**
-- [ ] 7. Financial statements: balance sheet, income statement, changes in equity, cash flow; year close and carry-over; quarterly tax instalments (TM)
+- [x] 7. Financial statements: balance sheet, income statement, changes in equity, cash flow; year close and carry-over; quarterly tax instalments (TM)
+  - Books → Statements: the four statements for any period, read "For you" (plain words, big figures that open their accounts), "Official" (account numbers, another period beside) or "For the bank" (by group, printed with the business details and signature lines); Excel and PDF; a balanced check
+  - Books → Year: profit tax (10%, 4VD sh.p.k.) by quarter with its deadline, Mark as paid from a till, the safe or a bank account, a To do while one is due; Close the year (profit tax 8900/2350, everything into 3400 on 31 Dec, the year locked), reopen with a reason. To confirm with the accountant: each TM is the tax on the profit so far minus the larger of the earlier quarters' tax and what was paid; the year closes straight into 3400; profit counts from the books' start day
 - [ ] 8. Sales documents: invoice types (goods, services, export, fixed-asset sale), pro-forma and offer, delivery note, credit note, return; agent, carrier and payment terms on invoices; customer balances and late payments
 - [ ] 9. Products and prices: wholesale and retail price each with its margin, price calculation from cost, price import from Excel, price lists, extra barcodes with pack size and pack price, units (kg and so on), stock in and out documents
 - [ ] 10. Customers and suppliers as one "partner": fiscal and VAT number, several addresses, discount and bonus %, credit limit, bank account, look-up in the ATK register

@@ -228,7 +228,7 @@ export function StaffProductPage() {
         </div>
 
         <Card title={t.staff.products.writeOffTitle} id="write-off" className={opened === 'writeOff' ? 'staff-focus' : undefined}>
-          <WriteOffForm productId={item.id} inStock={item.stock.quantity} />
+          <WriteOffForm productId={item.id} inStock={item.stock.quantity} unit={item.unit} />
         </Card>
       </div>
     </>

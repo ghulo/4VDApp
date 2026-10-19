@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { returnsApi } from '../services/api';
 import type { ReturnCondition, Sale } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney } from '../utils/format';
+import { formatMoney, inGrams } from '../utils/format';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
 
@@ -11,14 +11,16 @@ import { useT } from '../i18n/useT';
 export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: string) => void }) {
   const queryClient = useQueryClient();
   const t = useT();
-  const left = sale.quantity - sale.returnedQuantity;
+  const left = Math.round((sale.quantity - sale.returnedQuantity) * 1000) / 1000;
+  // A sale in part units was sold by the kilo, so part of it can come back.
+  const byKg = !Number.isInteger(sale.quantity) || !Number.isInteger(left);
   const [quantity, setQuantity] = useState(String(left));
   const [condition, setCondition] = useState<ReturnCondition>('resellable');
   const [refund, setRefund] = useState('');
   const [notes, setNotes] = useState('');
 
   const units = Number(quantity);
-  const isQuantityValid = Number.isInteger(units) && units >= 1 && units <= left;
+  const isQuantityValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= left;
   const paid = Math.round(units * sale.pricePerUnit * 100) / 100;
   const refundAmount = refund === '' ? paid : Number(refund);
   const isRefundValid = refundAmount >= 0 && refundAmount <= paid;
@@ -55,10 +57,10 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
           <span className="field__label">{t.returnForm.unitsBack}</span>
           <input
             type="number"
-            inputMode="numeric"
-            min={1}
+            inputMode={byKg ? 'decimal' : 'numeric'}
+            min={byKg ? 0.001 : 1}
             max={left}
-            step={1}
+            step={byKg ? 0.001 : 1}
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
           />

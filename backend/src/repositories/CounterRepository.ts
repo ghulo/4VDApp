@@ -206,7 +206,7 @@ export class CounterRepository {
     if (receipts.length === 0) return { receipts, lines: [] };
     const { rows: lines } = await sql<CounterReceiptLineRow>`
       select l.document_id, s.id as sale_id, s.product_id, l.product_name, s.quantity_sold as quantity, s.price_per_unit, s.sale_date,
-        coalesce((select sum(r.quantity) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null), 0)::int as returned_quantity,
+        coalesce((select sum(r.quantity) from returns r where r.sale_id = s.id and r.status in ('pending', 'approved') and r.undone_at is null), 0)::float8 as returned_quantity,
         s.undone_at is not null as undone
       from document_lines l join sales s on s.id = l.sale_id
       where l.document_id in (${sql.join(receipts.map((receipt) => receipt.id))}) and l.return_id is null

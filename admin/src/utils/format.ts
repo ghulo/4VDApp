@@ -126,3 +126,18 @@ export function groupByDay<T>(rows: T[], at: (row: T) => string): Array<{ day: s
   }
   return groups;
 }
+
+/** A quantity in its unit: whole pieces as they are, kilos to the gram ("0.775 kg", in Albanian "0,775 kg"). */
+export function formatQuantity(quantity: number, unit: 'piece' | 'kg' = 'piece'): string {
+  if (unit === 'piece') return String(quantity);
+  const kilos =
+    current === 'sq'
+      ? albanianNumber(quantity, 3).replace(/,?0+$/, '')
+      : cached('kg', () => new Intl.NumberFormat('en-IE', { maximumFractionDigits: 3 })).format(quantity);
+  return `${kilos}${String.fromCharCode(160)}kg`;
+}
+
+/** True when a quantity is kept to the gram (at most 3 decimals), as kilo products are. */
+export function inGrams(quantity: number): boolean {
+  return Number.isFinite(quantity) && Math.abs(quantity * 1000 - Math.round(quantity * 1000)) < 1e-6;
+}

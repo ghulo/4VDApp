@@ -23,6 +23,16 @@ export const MAX_PAGE_SIZE = 100;
 
 export const idSchema = z.coerce.number().int().positive();
 
+/**
+ * How many of a product: whole pieces, or kilos to the gram (three decimals).
+ * Whether a product may have part of one is its unit's business, checked
+ * where stock changes (applyStockChange).
+ */
+export const quantitySchema = (max: number) => z.number().positive().max(max).multipleOf(0.001, 'a quantity has at most three decimals (grams)');
+
+/** A count or a level that may be 0. */
+export const stockLevelSchema = (max: number) => z.number().min(0).max(max).multipleOf(0.001, 'a quantity has at most three decimals (grams)');
+
 /** A calendar day like "2026-10-04" that really exists (no 31 February). */
 export const calendarDaySchema = z
   .string()

@@ -45,6 +45,7 @@ import { CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, Unprin
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
+import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
@@ -89,6 +90,9 @@ interface Alarm {
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
+/** Kilos are kept to the gram; pieces stay whole. */
+const toGram = (amount: number) => Math.round(amount * 1000) / 1000;
 
 const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now - time) / 60_000));
 
@@ -216,7 +220,7 @@ export function CounterPage() {
       else alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.stockTodo });
       return false;
     }
-    const next = Math.min(already + quantity, stock);
+    const next = toGram(Math.min(already + quantity, stock));
     setLines((now) =>
       now.some((line) => line.productId === product.id)
         ? now.map((line) => (line.productId === product.id ? { ...line, quantity: next } : line))
@@ -227,7 +231,7 @@ export function CounterPage() {
     setLastSale(null);
     setChecked(null);
     setPrintNote((note) => (note?.ok ? null : note));
-    if (next < already + quantity) {
+    if (next < toGram(already + quantity)) {
       alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.partTodo(next) });
       return false;
     }
@@ -298,6 +302,19 @@ export function CounterPage() {
       shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
       shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower);
     if (exact) return take(exact);
+    // A label from the shop scale: the product by its scale number, the weight in the code.
+    const label = readScaleLabel(code);
+    if (label) {
+      const weighed =
+        shelf.find((product) => product.unit === 'kg' && product.scalePlu === label.plu) ??
+        shelf.find((product) => product.unit === 'kg' && product.scalePlu === null && product.sku === String(label.plu));
+      if (weighed) {
+        if (priceCheck) return take(weighed);
+        return sound(add(weighed, label.kg) ? 'ok' : 'fail');
+      }
+      alarmFor(t.counter.alarm.noScalePlu(label.plu), { title: t.counter.alarm.noScalePlu(label.plu), detail: code, todo: t.counter.alarm.noScalePluTodo });
+      return sound('fail');
+    }
     const named = shelf.filter((product) => product.name.toLowerCase().includes(lower));
     if (named.length === 1) return take(named[0]!);
     if (named.length > 1) {
@@ -316,12 +333,13 @@ export function CounterPage() {
     const product = byId.get(productId);
     const capped = product ? Math.min(quantity, product.stock.quantity) : quantity;
     if (product && capped < quantity) complain(t.counter.noMore(product.name, product.stock.quantity));
-    setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(1, capped) } : line)));
+    const least = product?.unit === 'kg' ? 0.001 : 1;
+    setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(least, toGram(capped)) } : line)));
   }
 
   function nudge(step: 1 | -1) {
     if (!selected) return;
-    if (step === -1 && selected.quantity === 1) return setPanel('remove');
+    if (step === -1 && selected.quantity - 1 < (selected.product?.unit === 'kg' ? 0.001 : 1)) return setPanel('remove');
     setQuantity(selected.productId, selected.quantity + step);
   }
 
@@ -866,10 +884,10 @@ export function CounterPage() {
           <NumberSheet
             open={panel === 'quantity'}
             title={t.counter.setQuantity(selected.product?.name ?? selected.name)}
-            label={t.counter.quantity}
+            label={selected.product?.unit === 'kg' ? `${t.counter.quantity} (kg)` : t.counter.quantity}
             initial={String(selected.quantity)}
-            whole
-            check={(value) => (value < 1 ? t.counter.reasonNeeded : null)}
+            whole={selected.product?.unit !== 'kg'}
+            check={(value) => (value < (selected.product?.unit === 'kg' ? 0.001 : 1) ? t.counter.reasonNeeded : null)}
             onClose={closePanel}
             onApply={(value) => {
               setQuantity(selected.productId, value);

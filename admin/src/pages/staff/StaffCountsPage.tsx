@@ -9,6 +9,7 @@ import { categoriesApi, stockCountsApi } from '../../services/api';
 import type { StockCount, StockCountSummary } from '../../services/types';
 import { teamApi } from '../../services/teamApi';
 import { errorMessage } from '../../utils/errors';
+import { inGrams } from '../../utils/format';
 
 const COUNTS_KEY = ['stock-counts'];
 
@@ -185,7 +186,8 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
 
   const uncounted = count.totals.products - count.totals.counted;
   const amount = Number(value);
-  const canSave = value !== '' && Number.isInteger(amount) && amount >= 0;
+  // Kilo products are counted to the gram; the server refuses part pieces.
+  const canSave = value !== '' && inGrams(amount) && amount >= 0;
 
   function saveLine(event: FormEvent) {
     event.preventDefault();
@@ -236,7 +238,7 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
         <Field label={t.staff.counts.onShelf}>
           <span className="staff-stepper">
             <Button icon={Minus} aria-label={t.staff.counts.less} disabled={!canSave || amount <= 0} onClick={() => setValue(String(Math.max(0, amount - 1)))} />
-            <input type="number" inputMode="numeric" min={0} step={1} value={value} onChange={(event) => setValue(event.target.value)} autoFocus />
+            <input type="number" inputMode="decimal" min={0} step="any" value={value} onChange={(event) => setValue(event.target.value)} autoFocus />
             <Button icon={Plus} aria-label={t.staff.counts.more} onClick={() => setValue(String((canSave ? amount : 0) + 1))} />
           </span>
         </Field>

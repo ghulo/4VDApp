@@ -20,6 +20,8 @@ const product = (patch: Partial<Product>): Product => ({
   stock: { quantity: 50, reorderLevel: 5, isInStock: true, isLowStock: false },
   bulkPricingTiers: [],
   promotion: null,
+  unit: 'piece',
+  scalePlu: null,
   createdAt: '',
   updatedAt: '',
   ...patch,

@@ -87,16 +87,17 @@ export class InventoryRepository {
   async applyDelta(productId: number, delta: number): Promise<{ before: number; after: number } | undefined> {
     const row = await this.db
       .updateTable('inventory')
-      .set((eb) => ({
-        quantity_on_hand: eb('quantity_on_hand', '+', delta),
+      .set({
+        // Kilos are kept to the gram, so sums never drift (0.1 + 0.2).
+        quantity_on_hand: sql<number>`round((quantity_on_hand + ${delta})::numeric, 3)::float8`,
         updated_at: new Date(),
         ...(delta > 0 && { last_restocked_at: new Date() }),
-      }))
+      })
       .where('product_id', '=', productId)
-      .where(sql<boolean>`quantity_on_hand + ${delta} >= 0`)
+      .where(sql<boolean>`round((quantity_on_hand + ${delta})::numeric, 3) >= 0`)
       .returning('quantity_on_hand')
       .executeTakeFirst();
-    return row ? { before: row.quantity_on_hand - delta, after: row.quantity_on_hand } : undefined;
+    return row ? { before: Math.round((row.quantity_on_hand - delta) * 1000) / 1000, after: row.quantity_on_hand } : undefined;
   }
 
   async setReorderLevel(productId: number, reorderLevel: number): Promise<void> {

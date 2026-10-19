@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { periodSchema } from './moneyValidators.js';
-import { idSchema, optionalText, recordSourceSchema, trimmedString } from './validate.js';
+import { idSchema, optionalText, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
 
 /** The printer's tax group for one VAT rate (Datecs groups 1-8); null when not set yet. */
 const taxGroup = z.number().int().min(1).max(8).nullable();
@@ -21,8 +21,8 @@ const withReason = trimmedString(200);
 
 /** What happened at the counter; a line, basket or drawer always says why. */
 const eventSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('line_removed'), productId: idSchema, quantity: z.number().int().min(1).max(1_000_000), amount: z.number().min(0), reason: withReason }),
-  z.object({ kind: z.literal('basket_cancelled'), amount: z.number().min(0), quantity: z.number().int().min(1).max(1_000_000), reason: withReason }),
+  z.object({ kind: z.literal('line_removed'), productId: idSchema, quantity: quantitySchema(1_000_000), amount: z.number().min(0), reason: withReason }),
+  z.object({ kind: z.literal('basket_cancelled'), amount: z.number().min(0), quantity: quantitySchema(1_000_000), reason: withReason }),
   z.object({ kind: z.literal('drawer_opened'), reason: withReason }),
   z.object({ kind: z.literal('print_failed'), documentId: idSchema.optional(), reason: optionalText(200) }),
   z.object({ kind: z.literal('reprinted'), documentId: idSchema }),

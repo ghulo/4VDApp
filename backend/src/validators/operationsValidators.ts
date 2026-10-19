@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
-import { booleanQuerySchema, idSchema, optionalText, paginationSchema, recordSourceSchema, trimmedString } from './validate.js';
+import { booleanQuerySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -25,7 +25,7 @@ export const endDateQuery = isoDate.transform((value) =>
 
 export const recordSaleSchema = z.object({
   productId: idSchema,
-  quantity: z.number().int().min(1).max(1_000_000),
+  quantity: quantitySchema(1_000_000),
   notes: optionalText(1000),
   saleDate: isoDate.transform((value) => new Date(value)).optional(),
   /** The registered customer it was for. Goes on their tab unless `paidNow`. */
@@ -40,7 +40,7 @@ export const basketSchema = z
       .array(
         z.object({
           productId: idSchema,
-          quantity: z.number().int().min(1).max(1_000_000),
+          quantity: quantitySchema(1_000_000),
           // 0 means no rabat; two decimals at most, like the stored percent.
           discountPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
         }),

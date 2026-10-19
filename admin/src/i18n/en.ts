@@ -566,7 +566,7 @@ export const en = {
     noInvoices: 'Nothing bought under their name yet.',
     addHint: 'Only for someone who wants to be named: a firm that needs invoices, a regular with a tab, or anyone who asks.',
     howPaid: 'How paid',
-    paidAt: { till: 'Paid at the till', account: 'On their tab' },
+    paidAt: { till: 'Paid at the till', account: 'On their tab', card: 'Paid by card' },
     boughtThisMonth: 'Bought this month',
     boughtThisMonthHint: 'Registered customers only',
     creditHeld: 'Credit you hold',
@@ -1035,6 +1035,10 @@ export const en = {
     details: 'Details',
   },
   productForm: {
+    unit: 'Sold by',
+    units: { piece: 'The piece', kg: 'The kilo (weighed)' },
+    scalePlu: 'Scale number',
+    scalePluHint: 'The number (PLU) this product has on the shop scale. Its labels then scan straight into the basket.',
     addProduct: 'Add product',
     promotionNow: (percent: number) => `−${percent}% now`,
     onPromotion: (p: { name: string; percent: number; price: string; until: string }) =>
@@ -3653,7 +3657,10 @@ export const en = {
     notFound: (code: string) => `Nothing matches "${code}". Check the barcode, or find the product on the shelf.`,
     outOfStock: (name: string) => `${name} is out of stock.`,
     noMore: (name: string, stock: number) => `Only ${stock} ${name} on the shelf.`,
+    perKg: '/kg',
     alarm: {
+      noScalePlu: (plu: number) => `No product has scale number ${plu}`,
+      noScalePluTodo: 'Nothing went in the basket. A manager gives the product its scale number on its page (Sold by the kilo).',
       notFound: 'Unknown barcode',
       notFoundTodo: 'Nothing went in the basket. Scan it again, or press F3 and find the product by name.',
       outOfStock: 'Out of stock',

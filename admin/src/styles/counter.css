@@ -1763,3 +1763,10 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* "/kg" after a weighed product's price. */
+.counter-row__unit {
+  margin-left: 2px;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}

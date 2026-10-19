@@ -75,6 +75,10 @@ export interface Product {
   /** What a business pays, with VAT; null: the shelf price. */
   wholesalePrice: number | null;
   costPrice?: number | null;
+  /** Sold by the piece, or by the kilo (prices per kg, quantities to the gram). */
+  unit: ProductUnit;
+  /** The number the shop scale prints in its labels; null when it isn't weighed there. */
+  scalePlu: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion, with the price it gives for one unit. */
@@ -82,6 +86,8 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ProductUnit = 'piece' | 'kg';
 
 export interface ProductInput {
   name: string;
@@ -99,6 +105,8 @@ export interface ProductInput {
   bulkPricingTiers: PricingTier[];
   stock?: number;
   reorderLevel?: number;
+  unit?: ProductUnit;
+  scalePlu?: number | null;
 }
 
 export interface InventoryItem {

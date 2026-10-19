@@ -177,6 +177,10 @@ export async function applyStockChange(
     reorderLevel: number;
   },
 ): Promise<{ before: number; after: number }> {
+  // Part of a piece is never sold, counted or written off; kilos go to the gram.
+  if (!Number.isInteger(change.delta) && (await repos.products.unitOf(change.productId)) !== 'kg') {
+    throw new ValidationError(`${change.productName} is sold by the piece: use a whole number, not ${change.delta}`);
+  }
   const result = await repos.inventory.applyDelta(change.productId, change.delta);
   if (!result) {
     throw new ValidationError(`Not enough stock of ${change.productName} to remove ${Math.abs(change.delta)}`);

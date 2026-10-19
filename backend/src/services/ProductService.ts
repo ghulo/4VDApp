@@ -1,5 +1,5 @@
 import { DEFAULT_REORDER_LEVEL, SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import type { UserRole } from '../database/types.js';
+import type { ProductUnit, UserRole } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CategoryRepository } from '../repositories/CategoryRepository.js';
 import type { PricingTierRepository } from '../repositories/PricingTierRepository.js';
@@ -43,6 +43,10 @@ export interface ProductDto {
   wholesalePrice: number | null;
   /** Only included for admins. */
   costPrice?: number | null;
+  /** Sold by the piece, or by the kilo (prices per kg, quantities to the gram). */
+  unit: ProductUnit;
+  /** The number the shop scale prints in its labels. */
+  scalePlu: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion for this product, with the price it gives for one unit. */
@@ -70,6 +74,10 @@ export interface ProductInput {
   wholesalePrice?: number | null;
   /** Replaces every tier when given; leaves them unchanged when undefined (updates only). */
   bulkPricingTiers?: PricingTier[];
+  /** Left out keeps it (by the piece for a new product). */
+  unit?: ProductUnit;
+  /** The scale's number; left out keeps it. Only a kilo product has one. */
+  scalePlu?: number | null;
 }
 
 export interface NewProductInput extends ProductInput {
@@ -84,6 +92,14 @@ export interface ProductQuery extends PageRequest {
 }
 
 const SKU_TAKEN_MESSAGE = (sku: string) => `Another product already uses SKU "${sku}"`;
+const PLU_TAKEN_MESSAGE = (plu: number) => `Another product already has scale number ${plu}`;
+
+/** Which product field a unique violation is about. */
+function takenError(error: unknown, input: ProductInput): ConflictError | null {
+  if (isUniqueViolation(error, 'products_scale_plu_unique') && input.scalePlu) return new ConflictError(PLU_TAKEN_MESSAGE(input.scalePlu));
+  if (isUniqueViolation(error) && input.sku) return new ConflictError(SKU_TAKEN_MESSAGE(input.sku));
+  return null;
+}
 
 export class ProductService {
   constructor(
@@ -266,6 +282,7 @@ export class ProductService {
   /** `logExtra` is added to the logged details (an approved request names who asked). */
   async create(input: NewProductInput, createdBy: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     await this.ensureCategoryExists(input.categoryId);
+    if (input.unit !== 'kg' && !Number.isInteger(input.stock)) throw new ValidationError(`stock: ${input.name} is sold by the piece, so its stock is a whole number`);
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? []);
 
     try {
@@ -294,8 +311,7 @@ export class ProductService {
       });
       return this.getById(productId, 'admin');
     } catch (error) {
-      if (isUniqueViolation(error) && input.sku) throw new ConflictError(SKU_TAKEN_MESSAGE(input.sku));
-      throw error;
+      throw takenError(error, input) ?? error;
     }
   }
 
@@ -307,6 +323,9 @@ export class ProductService {
     const existing = await this.productRepository.findById(id, true);
     if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
     await this.ensureCategoryExists(input.categoryId);
+    if (input.unit === 'piece' && existing.unit === 'kg' && !Number.isInteger(existing.quantity_on_hand ?? 0)) {
+      throw new ValidationError(`${existing.name} has ${existing.quantity_on_hand} kg in stock; count it to whole pieces before selling it by the piece`);
+    }
 
     const existingTiers = await this.pricingTierRepository.findByProductId(id);
     // If the price changed but tiers were not sent, the existing tiers must
@@ -346,8 +365,7 @@ export class ProductService {
         }
       });
     } catch (error) {
-      if (isUniqueViolation(error) && input.sku) throw new ConflictError(SKU_TAKEN_MESSAGE(input.sku));
-      throw error;
+      throw takenError(error, input) ?? error;
     }
     return this.getById(id, 'admin');
   }
@@ -388,6 +406,9 @@ export class ProductService {
       vatExempt,
       originCountry,
       wholesalePrice: input.wholesalePrice,
+      unit: input.unit,
+      // A product sold by the piece is never weighed on the scale.
+      scalePlu: input.unit === 'piece' ? null : input.scalePlu,
     };
   }
 
@@ -416,6 +437,8 @@ export class ProductService {
       category: { id: product.category_id, name: product.category_name },
       price,
       wholesalePrice: toMoneyOrNull(product.wholesale_price),
+      unit: product.unit,
+      scalePlu: product.scale_plu,
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
       stock: {
         quantity,

@@ -148,6 +148,8 @@ export interface CategoriesTable {
   deleted_at: Date | null;
 }
 
+export type ProductUnit = 'piece' | 'kg';
+
 export interface ProductsTable {
   id: Generated<number>;
   name: string;
@@ -167,6 +169,10 @@ export interface ProductsTable {
   origin_country: string | null;
   /** What a business pays, with VAT; null: the shelf price. */
   wholesale_price: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  /** Sold by the piece or by the kilo (prices per kg, quantities to the gram). */
+  unit: Generated<ProductUnit>;
+  /** The number the shop scale prints in its labels. */
+  scale_plu: ColumnType<number | null, number | null | undefined, number | null>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;

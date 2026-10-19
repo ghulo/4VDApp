@@ -3,12 +3,12 @@ import { type FormEvent, useState } from 'react';
 import { writeOffsApi } from '../services/api';
 import { WRITE_OFF_REASONS, type WriteOffReason } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney } from '../utils/format';
+import { formatMoney, inGrams } from '../utils/format';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
-export function WriteOffForm({ productId, inStock }: { productId: number; inStock: number }) {
+export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: 'piece' | 'kg' }) {
   const queryClient = useQueryClient();
   const t = useT();
   const [quantity, setQuantity] = useState('');
@@ -16,8 +16,9 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
   const [notes, setNotes] = useState('');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
+  const byKg = unit === 'kg' || !Number.isInteger(inStock);
   const units = Number(quantity);
-  const isValid = Number.isInteger(units) && units >= 1 && units <= inStock;
+  const isValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= inStock;
 
   const mutation = useMutation({
     mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null }),
@@ -46,10 +47,10 @@ export function WriteOffForm({ productId, inStock }: { productId: number; inStoc
           <span className="field__label">{t.writeOff.howMany}</span>
           <input
             type="number"
-            inputMode="numeric"
-            min={1}
+            inputMode={byKg ? 'decimal' : 'numeric'}
+            min={byKg ? 0.001 : 1}
             max={inStock}
-            step={1}
+            step={byKg ? 0.001 : 1}
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
           />

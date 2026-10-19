@@ -3,7 +3,7 @@ import { money } from './catalogValidators.js';
 import { BILL_LINE_KINDS, CUSTOMS_PAID_METHODS, WITHHOLDING_TYPES } from '../constants/bills.js';
 import { EXPENSE_PLACES } from '../constants/expenses.js';
 import { SUPPLIER_PAYMENT_METHODS } from '../database/types.js';
-import { calendarDaySchema, idSchema, nuiSchema, recordSourceSchema } from './validate.js';
+import { calendarDaySchema, idSchema, nuiSchema, quantitySchema, recordSourceSchema, stockLevelSchema } from './validate.js';
 import { partnerDetailsShape } from './partnerDetails.js';
 
 const optional = (max: number) =>
@@ -45,7 +45,7 @@ export const newOrderSchema = z.object({
     .array(
       z.object({
         productId: idSchema,
-        quantity: z.number().int().min(1).max(100_000),
+        quantity: quantitySchema(100_000),
         unitCost: money.nullish().transform((value) => value ?? null),
       }),
     )
@@ -58,7 +58,7 @@ export const receiveOrderSchema = z.object({
     .array(
       z.object({
         lineId: idSchema,
-        receivedQuantity: z.number().int().min(0).max(100_000),
+        receivedQuantity: stockLevelSchema(100_000),
         unitCost: money.nullish().transform((value) => value ?? null),
         /** When what came expires, for products that go off. */
         expiresOn: calendarDaySchema.nullish().transform((value) => value ?? null),
@@ -96,7 +96,7 @@ const unitPriceSchema = z.number().nonnegative().max(1_000_000).transform((value
 export const billLineSchema = z.object({
   kind: z.enum(BILL_LINE_KINDS),
   productId: idSchema.nullish(),
-  quantity: z.number().int().min(1).max(100_000).nullish(),
+  quantity: quantitySchema(100_000).nullish(),
   unitPrice: unitPriceSchema.nullish(),
   category: z.string().trim().max(32).nullish(),
   description: optional(300),

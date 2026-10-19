@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MANUAL_STOCK_REASONS } from '../constants/stock.js';
 import { VAT_RATES } from '../services/documents/vat.js';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
-import { booleanQuerySchema, idSchema, optionalText, paginationSchema, trimmedString } from './validate.js';
+import { booleanQuerySchema, idSchema, optionalText, paginationSchema, stockLevelSchema, trimmedString } from './validate.js';
 
 const MAX_PRICE = 99_999_999.99;
 const MAX_STOCK_CHANGE = 1_000_000;
@@ -56,6 +56,10 @@ const productFields = {
     .optional(),
   /** Exempt from VAT, with a 0% rate. */
   vatExempt: z.boolean().optional(),
+  /** Sold by the piece or by the kilo; left out keeps it (by the piece for a new product). */
+  unit: z.enum(['piece', 'kg']).optional(),
+  /** The number the shop scale prints in its labels (1-99999); null clears it, left out keeps it. */
+  scalePlu: z.number().int().min(1).max(99_999).nullable().optional(),
   /** ISO code of the country it comes from; null clears it, left out keeps it. */
   originCountry: z
     .string()
@@ -84,7 +88,7 @@ export const setBarcodeSchema = z.object({
 
 export const createProductSchema = z.object({
   ...productFields,
-  stock: z.number().int().min(0).max(MAX_STOCK_CHANGE).default(0),
+  stock: stockLevelSchema(MAX_STOCK_CHANGE).default(0),
   reorderLevel: z.number().int().min(0).max(MAX_STOCK_CHANGE).optional(),
 });
 
@@ -113,7 +117,7 @@ export const stockAdjustmentSchema = z
   .object({
     quantity: z
       .number()
-      .int()
+      .multipleOf(0.001, 'a quantity has at most three decimals (grams)')
       .min(-MAX_STOCK_CHANGE)
       .max(MAX_STOCK_CHANGE)
       .refine((value) => value !== 0, 'quantity cannot be 0')

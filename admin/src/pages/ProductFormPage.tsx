@@ -8,7 +8,7 @@ import { shrinkPhoto } from '../utils/shrinkPhoto';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { assistantApi, categoriesApi, productsApi } from '../services/api';
-import { type Category, type PriceChange, type Product, type ProductInput, VAT_RATES, type VatRate } from '../services/types';
+import { type Category, type PriceChange, type Product, type ProductInput, type ProductUnit, VAT_RATES, type VatRate } from '../services/types';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { Button, ButtonLink, Card, DataTable, PageHeader } from '../components/ui';
 import { Camera } from '@phosphor-icons/react';
@@ -43,6 +43,9 @@ interface ProductDraft {
   stock: string;
   reorderLevel: string;
   tiers: TierDraft[];
+  unit: ProductUnit;
+  /** The scale's number for it, as typed; '' when none. */
+  scalePlu: string;
 }
 
 let nextTierKey = 1;
@@ -72,6 +75,8 @@ function toDraft(product?: Product): ProductDraft {
     isActive: product?.isActive ?? true,
     stock: '0',
     reorderLevel: '10',
+    unit: product?.unit ?? 'piece',
+    scalePlu: product?.scalePlu != null ? String(product.scalePlu) : '',
     tiers: (product?.bulkPricingTiers ?? []).map((tier) => ({
       key: nextTierKey++,
       quantity: String(tier.quantity),
@@ -97,6 +102,8 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
     bulkPricingTiers: draft.tiers
       .filter((tier) => tier.quantity !== '' && tier.price !== '')
       .map((tier) => ({ quantity: Number(tier.quantity), price: Number(tier.price) })),
+    unit: draft.unit,
+    scalePlu: draft.unit === 'kg' && draft.scalePlu.trim() !== '' ? Number(draft.scalePlu) : null,
     ...(isNew && { stock: Number(draft.stock || 0), reorderLevel: Number(draft.reorderLevel || 0) }),
   };
 }
@@ -292,6 +299,30 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     </label>
                   </div>
                   <CountryField value={draft.originCountry} onChange={(code) => update('originCountry', code)} />
+                  <div className="field-row">
+                    <label className="field">
+                      <span className="field__label">{t.productForm.unit}</span>
+                      <select value={draft.unit} onChange={(event) => update('unit', event.target.value as ProductUnit)}>
+                        <option value="piece">{t.productForm.units.piece}</option>
+                        <option value="kg">{t.productForm.units.kg}</option>
+                      </select>
+                    </label>
+                    {draft.unit === 'kg' && (
+                      <label className="field">
+                        <span className="field__label">{t.productForm.scalePlu}</span>
+                        <input
+                          name="scale-plu"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          pattern="[0-9]{1,5}"
+                          maxLength={5}
+                          value={draft.scalePlu}
+                          onChange={(event) => update('scalePlu', event.target.value.replace(/D/g, ''))}
+                        />
+                        <span className="field__hint">{t.productForm.scalePluHint}</span>
+                      </label>
+                    )}
+                  </div>
                   <label className="field">
                     <span className="field__label">{t.productForm.description}</span>
                     <textarea
@@ -423,8 +454,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         <input
                           type="number"
                           min={0}
-                          step={1}
-                          inputMode="numeric"
+                          step={draft.unit === 'kg' ? 0.001 : 1}
+                          inputMode={draft.unit === 'kg' ? 'decimal' : 'numeric'}
                           value={draft.stock}
                           onChange={(event) => update('stock', event.target.value)}
                         />

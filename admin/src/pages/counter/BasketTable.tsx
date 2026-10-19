@@ -1,7 +1,7 @@
 import { Hourglass, User } from '@phosphor-icons/react';
 import { useEffect, useRef } from 'react';
 import { useT } from '../../i18n/useT';
-import { formatMoney } from '../../utils/format';
+import { formatMoney, formatQuantity } from '../../utils/format';
 import type { BasketSummary, CounterLine, PriceReason } from './basketMath';
 
 interface TableProps {
@@ -50,7 +50,8 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
           {lines.map((line, index) => {
             const product = line.product;
             const isSelected = line.productId === selectedId;
-            const left = product ? product.stock.quantity - line.quantity : null;
+            const unit = product?.unit ?? 'piece';
+            const left = product ? Math.round((product.stock.quantity - line.quantity) * 1000) / 1000 : null;
             const stockTone = left === null ? '' : left <= 0 ? ' counter-stock--out' : product && left <= product.stock.reorderLevel ? ' counter-stock--low' : '';
             const days = expiry.get(line.productId);
             const name = product?.name ?? line.name;
@@ -92,7 +93,7 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
                     </span>
                   )}
                 </td>
-                <td className="counter-table__num counter-table__qty">{line.quantity}</td>
+                <td className="counter-table__num counter-table__qty">{formatQuantity(line.quantity, unit)}</td>
                 <td className="counter-table__num">
                   {product && line.unitPrice < product.price && (
                     <span className="counter-row__was">
@@ -101,12 +102,13 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
                     </span>
                   )}
                   {formatMoney(line.unitPrice)}
+                  {unit === 'kg' && <span className="counter-row__unit">{t.counter.perKg}</span>}
                 </td>
                 <td className="counter-table__num counter-table__rabat">{line.percent > 0 ? `${line.percent}%` : '–'}</td>
                 <td className="counter-table__num counter-table__vat">{product ? `${product.vatExempt ? 0 : product.vatRate}%` : '–'}</td>
                 <td className="counter-table__num counter-table__total">{formatMoney(line.total)}</td>
                 <td className={`counter-table__num counter-table__left${stockTone}`} title={left === null ? undefined : t.counter.stockAfter(left)}>
-                  {left ?? '–'}
+                  {left === null ? '–' : formatQuantity(left, unit)}
                 </td>
               </tr>
             );

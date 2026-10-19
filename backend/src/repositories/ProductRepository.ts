@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import type { ProductUnit } from '../database/types.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 
 export interface ProductFilters {
@@ -26,6 +27,10 @@ export interface ProductData {
   originCountry: string | null;
   /** What a business pays, with VAT; left out keeps it (none for a new product). */
   wholesalePrice?: number | null;
+  /** Left out keeps it (by the piece for a new product). */
+  unit?: ProductUnit;
+  /** The scale's number for it; left out keeps it. */
+  scalePlu?: number | null;
 }
 
 /** A product joined with its category name and stock, as the API needs it. */
@@ -47,6 +52,8 @@ export interface ProductRecord {
   vat_exempt: boolean;
   origin_country: string | null;
   wholesale_price: string | null;
+  unit: ProductUnit;
+  scale_plu: number | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -90,6 +97,8 @@ export class ProductRepository {
     'p.vat_exempt',
     'p.origin_country',
     'p.wholesale_price',
+    'p.unit',
+    'p.scale_plu',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -122,6 +131,11 @@ export class ProductRepository {
   /** Every product on sale, by name: the Counter's shelf in one go. */
   findShelf(): Promise<ProductRecord[]> {
     return this.baseQuery(false).select(this.columns).select(otherBarcodes).orderBy('p.name').orderBy('p.id').execute();
+  }
+
+  /** By the piece or by the kilo; undefined when the product doesn't exist. */
+  async unitOf(id: number): Promise<ProductUnit | undefined> {
+    return (await this.db.selectFrom('products').select('unit').where('id', '=', id).executeTakeFirst())?.unit;
   }
 
   findById(id: number, includeInactive: boolean): Promise<ProductRecord | undefined> {
@@ -159,6 +173,8 @@ export class ProductRepository {
         vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
         wholesale_price: data.wholesalePrice ?? null,
+        unit: data.unit ?? 'piece',
+        scale_plu: data.scalePlu ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -181,6 +197,8 @@ export class ProductRepository {
         vat_exempt: data.vatExempt,
         origin_country: data.originCountry,
         ...(data.wholesalePrice !== undefined && { wholesale_price: data.wholesalePrice }),
+        ...(data.unit !== undefined && { unit: data.unit }),
+        ...(data.scalePlu !== undefined && { scale_plu: data.scalePlu }),
         updated_at: new Date(),
       })
       .where('id', '=', id)

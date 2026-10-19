@@ -156,6 +156,9 @@ export class StockCountService {
         throw new ValidationError(`That product is not part of the count of ${scopeLabel(count)}`);
       }
       const product = (await repos.products.findById(productId, true))!;
+      if (product.unit !== 'kg' && !Number.isInteger(counted)) {
+        throw new ValidationError(`${product.name} is sold by the piece, so count it in whole pieces`);
+      }
       await repos.stockCounts.upsertLine({
         countId: id,
         productId,

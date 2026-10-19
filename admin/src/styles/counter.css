@@ -372,7 +372,17 @@
   background: var(--danger-soft);
   color: var(--danger);
   text-align: center;
+  overflow-y: auto;
   animation: counter-alarm-in 120ms ease-out;
+}
+
+.counter-alarm > * {
+  flex-shrink: 0;
+}
+
+/* On a phone the basket is short: the alarm still needs room for its words and key. */
+.counter-tape:has(.counter-alarm) {
+  min-height: 320px;
 }
 
 .counter-alarm__title {

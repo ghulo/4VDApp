@@ -40,7 +40,7 @@ import { useT } from '../i18n/useT';
 import { cashApi, counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { CounterEventInput, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatMoney, formatTime } from '../utils/format';
+import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
 import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
@@ -1108,6 +1108,7 @@ export function CounterPage() {
           <ReasonSheet
             open={panel === 'remove'}
             title={t.counter.removeTitle(selected.product?.name ?? selected.name)}
+            summary={`${formatQuantity(selected.quantity, selected.product?.unit)} × ${formatMoney(selected.unitPrice)} = ${formatMoney(selected.total)}`}
             reasons={['scannedTwice', 'changedMind', 'wrongProduct']}
             confirm={t.counter.confirmRemove}
             onClose={closePanel}
@@ -1188,6 +1189,7 @@ export function CounterPage() {
       <ReasonSheet
         open={panel === 'cancel'}
         title={t.counter.cancelTitle}
+        summary={t.counter.cancelSummary(summary.products, formatMoney(total))}
         reasons={['leftWithout', 'changedMind']}
         confirm={t.counter.confirmCancel}
         onClose={closePanel}

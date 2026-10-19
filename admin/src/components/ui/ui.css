@@ -1595,6 +1595,27 @@ input.switch:focus-visible {
   }
 }
 
+/* A short yes-or-no question (take a line out, cancel a basket): a card in
+   the middle of the screen, as tall as its content. */
+.sheet--center {
+  inset: 0;
+  width: min(440px, calc(100vw - 2 * var(--space-4)));
+  height: fit-content;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+}
+
+.sheet--center .sheet__panel {
+  height: auto;
+  max-height: inherit;
+  border-radius: var(--radius-panel);
+}
+
+.sheet--center .sheet__head {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
 /* A heading row over a run of rows, e.g. one per day: date on the left, totals on the right. */
 .table .table__group th {
   padding-block: var(--space-2);

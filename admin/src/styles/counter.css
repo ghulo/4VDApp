@@ -604,6 +604,8 @@
 }
 
 .counter-row__pick {
+  /* A hit area the size of a small key, though it reads as the product name. */
+  min-height: var(--control-h-sm);
   padding: 0;
   border: 0;
   background: none;
@@ -1379,34 +1381,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.counter-reasons {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.counter-reason {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--control-h);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-small);
-  box-shadow: inset 0 0 0 1px var(--line);
-  cursor: pointer;
-}
-
-.counter-reason:hover {
-  background: var(--surface-sunk);
-}
-
-.counter-reason:has(input:checked) {
-  background: var(--fill);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-}
-
 .counter-notes {
   display: flex;
   flex-wrap: wrap;
@@ -1857,4 +1831,53 @@
   color: var(--ink-muted);
   font-size: var(--text-sm);
   font-weight: 400;
+}
+
+/* Take a line out, cancel the basket, open the drawer: a centred question;
+   each reason is a numbered key that answers it at once. */
+.counter-confirm {
+  gap: var(--space-3);
+}
+
+.counter-confirm__prompt {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.counter-confirm__reasons {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* One row per reason on every screen size: the number, then the words. */
+.counter-confirm__reason {
+  justify-content: flex-start;
+  gap: var(--space-3);
+  min-height: calc(var(--control-h) + var(--space-2));
+  text-align: left;
+}
+
+.counter-confirm__reason[aria-expanded='true'] {
+  background: var(--info-soft);
+  color: var(--info);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--info);
+}
+
+.counter-confirm__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-stamp);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.counter-confirm__back {
+  justify-content: flex-end;
 }

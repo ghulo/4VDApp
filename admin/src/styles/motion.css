@@ -182,6 +182,29 @@
     }
   }
 
+  /* The centred question rises a little and fades in, and back. */
+  .sheet--center {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    transition:
+      display var(--fast) allow-discrete,
+      overlay var(--fast) allow-discrete,
+      opacity var(--fast) var(--ease),
+      transform var(--spring-time) var(--spring);
+  }
+
+  .sheet--center[open] {
+    opacity: 1;
+    transform: none;
+  }
+
+  @starting-style {
+    .sheet--center[open] {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
   /* ---------- Data grows in once ---------- */
 
   .bar-list__bar {

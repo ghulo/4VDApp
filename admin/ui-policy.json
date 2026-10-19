@@ -135,11 +135,11 @@
       "reason": "The Counter bar, till tape and keys are raised paper lit from above by --light-raise (DESIGN.md 8, Light), a white wash that only lightens the paper, so the tool cannot read a background. The text is --ink and --ink-muted on --surface or --fill, which src/theme/contrast.test.ts checks pass 4.5:1."
     },
     {
-      "selector": ".sheet__description",
+      "selector": ".sheet__description, .sheet--center .sheet__title",
       "rules": [
         "text-contrast"
       ],
-      "reason": "The sheet panel is lit by the same light gradient, so the tool cannot read it. The text is --ink-muted on --surface, which src/theme/contrast.test.ts checks passes 4.5:1."
+      "reason": "The sheet panel is lit by the same light gradient, and the centred question rises in over the page, so the tool cannot read its background. The text is --ink and --ink-muted on --surface, which src/theme/contrast.test.ts checks pass 4.5:1."
     },
     {
       "selector": ".sheet .field__hint, .sheet .field-hint",
@@ -182,6 +182,13 @@
         "content-clipping"
       ],
       "reason": "On a phone the Counter bar keys (Switch person, Home, Log out) shrink to their icons: the label is hidden on purpose the visually-hidden way (1px, clip-path), and each button keeps its aria-label and title."
+    },
+    {
+      "selector": ".counter-table__code",
+      "rules": [
+        "numeric-alignment"
+      ],
+      "reason": "The Counter basket's Code column holds barcodes and SKUs (LGT-LAMP-BRS, 3830009876543): identifiers read left to right, not amounts to compare."
     }
   ]
 }

@@ -24,6 +24,8 @@ export interface CounterSettings {
   drawerConnected: boolean;
   /** A beep when a scan adds a product and a low buzz when it fails. */
   scanSounds: boolean;
+  /** The printer's customer display shows each product, the total and the change. */
+  customerDisplay: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export const DEFAULT_COUNTER_SETTINGS: CounterSettings = {
   printer: { enabled: false, taxGroups: { '18': 5, '16': null, '8': 4, '0': null } },
   drawerConnected: false,
   scanSounds: true,
+  customerDisplay: true,
 };
 
 export interface CounterPersonDto {
@@ -118,6 +121,7 @@ export class CounterService {
       },
       drawerConnected: stored?.drawerConnected ?? DEFAULT_COUNTER_SETTINGS.drawerConnected,
       scanSounds: stored?.scanSounds ?? DEFAULT_COUNTER_SETTINGS.scanSounds,
+      customerDisplay: stored?.customerDisplay ?? DEFAULT_COUNTER_SETTINGS.customerDisplay,
     };
   }
 

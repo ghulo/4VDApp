@@ -2069,6 +2069,8 @@ export interface CounterSettings {
   drawerConnected: boolean;
   /** A beep when a scan adds a product and a low buzz when it fails. */
   scanSounds: boolean;
+  /** The printer's customer display shows each product, the total and the change. */
+  customerDisplay: boolean;
 }
 
 export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';

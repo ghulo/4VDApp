@@ -14,6 +14,7 @@ export const counterSettingsSchema = z.object({
   drawerConnected: z.boolean(),
   // Older Windows apps send settings without it: sounds stay on.
   scanSounds: z.boolean().default(true),
+  customerDisplay: z.boolean().default(true),
 });
 
 const withReason = trimmedString(200);

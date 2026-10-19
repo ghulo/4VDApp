@@ -3878,6 +3878,8 @@ export const sq: Catalogue = {
     group: (n: number) => `Grupi ${n}`,
     drawer: 'Shfaq tastin Hap arkën',
     drawerHint: 'Shfaq tastin Hap arkën, që shënon çdo herë që arka hapet pa shitje, me arsyen. 4VD ende nuk e hap arkën vetë.',
+    display: 'Ekrani për klientin',
+    displayHint: 'Ekrani i vogël i printerit që sheh klienti tregon çdo produkt me çmimin, totalin kur paguan, pastaj kusurin. Vetëm kur Printo kuponë fiskalë është ndezur.',
     sounds: 'Tingujt e skanimit',
     soundsHint: 'Një bip i shkurtër kur skanimi shton një produkt, dhe një zhurmë e ulët kur nuk e shton (barkod i panjohur, pa stok, më shumë se sa ka rafti).',
     saved: 'Cilësimet e Arkës u ruajtën.',

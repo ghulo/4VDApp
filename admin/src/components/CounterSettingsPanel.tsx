@@ -117,6 +117,16 @@ function CounterSettingsForm({ initial }: { initial: CounterSettings }) {
             onChange={(event) => change({ ...draft, drawerConnected: event.target.checked })}
           />
         </SettingRow>
+        <SettingRow title={t.counterSettings.display} description={t.counterSettings.displayHint}>
+          <input
+            type="checkbox"
+            role="switch"
+            className="switch"
+            aria-label={t.counterSettings.display}
+            checked={draft.customerDisplay}
+            onChange={(event) => change({ ...draft, customerDisplay: event.target.checked })}
+          />
+        </SettingRow>
         <SettingRow title={t.counterSettings.sounds} description={t.counterSettings.soundsHint}>
           <input
             type="checkbox"

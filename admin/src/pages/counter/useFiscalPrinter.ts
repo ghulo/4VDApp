@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Catalogue } from '../../i18n/en';
+import { displayJob } from '../../utils/fiscalReceipt';
 
 /** Whether this screen can print: only from the Windows app, with F-Link running beside it. */
 export type PrinterReach = 'checking' | 'off' | 'browser' | 'oldApp' | 'noFolder' | 'notRunning' | 'ready';
@@ -99,10 +100,32 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
     [bridge, status, t],
   );
 
+  /*
+   * The customer display: only the newest two lines matter. A scan while the
+   * last one is still on its way replaces what waits, so a fast scanner never
+   * builds a queue in front of the next receipt. Failures stay quiet.
+   */
+  const waiting = useRef<string | null>(null);
+  const show = useCallback(
+    (lines: [string, string]) => {
+      if (!enabled || !bridge?.fiscalSend) return;
+      const first = waiting.current === null;
+      waiting.current = displayJob(lines[0], lines[1]);
+      if (!first) return;
+      const run = async () => {
+        const text = waiting.current;
+        waiting.current = null;
+        if (text) await bridge.fiscalSend!({ name: '4VD-D', text }).catch(() => undefined);
+      };
+      queue.current = queue.current.then(run, run);
+    },
+    [bridge, enabled],
+  );
+
   const keepUnprinted = useCallback((item: Unprinted) => {
     setUnprinted((now) => [item, ...now.filter((other) => other.documentId !== item.documentId)]);
   }, []);
   const forget = useCallback((documentId: number) => setUnprinted((now) => now.filter((item) => item.documentId !== documentId)), []);
 
-  return { reach, path: status.data?.path ?? 'C:\\TEMP', busy, send, unprinted, keepUnprinted, forget, recheck: () => status.refetch() };
+  return { reach, path: status.data?.path ?? 'C:\\TEMP', busy, send, show, unprinted, keepUnprinted, forget, recheck: () => status.refetch() };
 }

@@ -37,7 +37,7 @@ import { counterApi, customersApi, documentsApi, expiryApi, productsApi, salesAp
 import type { CounterEventInput, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatTime } from '../utils/format';
-import { MissingTaxGroup, clearArticlesJob, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
+import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -151,6 +151,14 @@ export function CounterPage() {
   const total = summary.total;
   const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
 
+  // The printer's customer display, unless Settings → Counter turned it off.
+  const display = useCallback(
+    (text: [string, string]) => {
+      if (settings.data?.customerDisplay !== false) printer.show(text);
+    },
+    [settings.data?.customerDisplay, printer],
+  );
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = lines.find((line) => line.productId === selectedId) ?? lines[lines.length - 1] ?? null;
   const [scan, setScan] = useState('');
@@ -236,6 +244,21 @@ export function CounterPage() {
     setProblem(null);
     setNotice(null);
   }
+
+  // Each product as it goes in: its name and price on the customer display.
+  const flashKey = flash?.key;
+  useEffect(() => {
+    if (flashKey === undefined) return;
+    const line = lines.find((one) => one.productId === flash?.id);
+    if (line) display(displayFor.item(line.product?.name ?? line.name, line.quantity, line.unitPrice, line.total));
+    // Only a new scan shows; a price change on the line waits for the next one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flashKey]);
+  // Paying: the total.
+  useEffect(() => {
+    if (panel === 'pay') display(displayFor.total(total));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel]);
 
   // "Sell it" on a product page opens the Counter with ?add=<product id>: put one in the basket once the shelf is in.
   const [params, setParams] = useSearchParams();
@@ -334,6 +357,7 @@ export function CounterPage() {
     const change = payment.tendered !== null ? roundMoney(payment.tendered - (result.total - card)) : null;
     const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
     say(t.counter.sold(formatMoney(result.total), result.invoice.number));
+    display(change !== null && change > 0 ? displayFor.change(change) : displayFor.thanks(result.total));
     const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab';
     setLastSale({
       documentId: result.invoice.id,

@@ -76,5 +76,32 @@ export const zReportJob = (shopName: string) =>
 /** After the Z: clear the printer's article list, so tomorrow's prices go in fresh. */
 export const clearArticlesJob = () => [line('O', 'ALL'), ''].join('\r\n');
 
-/** Two lines on the customer display: what was just scanned, or the change to give back. */
-export const displayJob = (top: string, bottom: string) => [line('E', printerName(top).slice(0, 20), printerName(bottom).slice(0, 20)), ''].join('\r\n');
+/** The customer display is two lines of 20 characters. */
+export const DISPLAY_WIDTH = 20;
+
+/** One display line: no field separators, spaces kept (they line figures up), cut to the width. */
+const displayText = (text: string) => text.replace(/[;\r\n]+/g, ' ').slice(0, DISPLAY_WIDTH);
+
+/** A word on the left and an amount on the right of one 20-character line. */
+export function displayRow(left: string, right: string): string {
+  const room = DISPLAY_WIDTH - right.length - 1;
+  if (room < 1) return right.slice(-DISPLAY_WIDTH);
+  return `${left.slice(0, room).padEnd(room)} ${right}`;
+}
+
+/** Two lines on the customer display: what was just scanned, the total, or the change to give back. */
+export const displayJob = (top: string, bottom: string) => [line('E', displayText(top), displayText(bottom)), ''].join('\r\n');
+
+/*
+ * What the customer reads, in Albanian like the receipt: the product just
+ * scanned and its price, the total while paying, then the change.
+ */
+export const displayFor = {
+  item: (name: string, count: number, unitPrice: number, lineTotal: number): [string, string] => [
+    printerName(name).slice(0, DISPLAY_WIDTH),
+    count === 1 ? displayRow('', money(unitPrice)) : displayRow(`${quantity(count)} x ${money(unitPrice)}`, money(lineTotal)),
+  ],
+  total: (total: number): [string, string] => ['TOTALI', displayRow('EUR', money(total))],
+  change: (change: number): [string, string] => ['KUSURI', displayRow('EUR', money(change))],
+  thanks: (total: number): [string, string] => ['FALEMINDERIT!', displayRow('PAGUAR', money(total))],
+};

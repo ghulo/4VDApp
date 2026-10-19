@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MissingTaxGroup, clearArticlesJob, pluFor, printerName, receiptJob, xReportJob, zReportJob } from './fiscalReceipt';
+import { MissingTaxGroup, clearArticlesJob, displayFor, displayJob, displayRow, pluFor, printerName, receiptJob, xReportJob, zReportJob } from './fiscalReceipt';
 
 const groups = { '18': 5, '16': null, '8': 4, '0': null };
 const milka = { id: 7, sku: '1483', name: 'Milka Oreo', vatRate: 18 as const };
@@ -49,5 +49,25 @@ describe('fiscal receipts', () => {
     expect(xReportJob()).toBe('X,1,______,_,__;\r\n');
     expect(zReportJob('4VD SH.P.K.')).toContain('Z,1,______,_,__;\r\n');
     expect(clearArticlesJob()).toBe('O,1,______,_,__;ALL\r\n');
+  });
+});
+
+describe('the customer display', () => {
+  it('shows the product just scanned and its price, lined up in 20 characters', () => {
+    expect(displayFor.item('Milka Oreo', 1, 1.5, 1.5)).toEqual(['Milka Oreo', '                1.50']);
+    expect(displayFor.item('Coca-Cola Zero 0.33L kanaçe', 3, 0.8, 2.4)).toEqual(['Coca-Cola Zero 0.33L', '3 x 0.80        2.40']);
+    expect(displayFor.item('Bukë', 2, 0.4, 0.8)[1]).toHaveLength(20);
+  });
+
+  it('shows the total while paying, then the change', () => {
+    expect(displayFor.total(12.3)).toEqual(['TOTALI', 'EUR            12.30']);
+    expect(displayFor.change(7.7)).toEqual(['KUSURI', 'EUR             7.70']);
+    expect(displayFor.thanks(5)).toEqual(['FALEMINDERIT!', 'PAGUAR          5.00']);
+  });
+
+  it('writes one E line, keeping the spaces that line the figures up', () => {
+    expect(displayJob('TOTALI', 'EUR            12.30').split('\r\n')).toEqual(['E,1,______,_,__;TOTALI;EUR            12.30', '']);
+    expect(displayJob('a;b', 'x'.repeat(30))).toBe(`E,1,______,_,__;a b;${'x'.repeat(20)}\r\n`);
+    expect(displayRow('EUR', '123456789012345678901')).toBe('23456789012345678901');
   });
 });

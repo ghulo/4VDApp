@@ -3900,6 +3900,8 @@ export const en = {
     group: (n: number) => `Group ${n}`,
     drawer: 'Show the Open drawer key',
     drawerHint: 'Shows the Open drawer key, which notes each time the drawer opens without a sale, with the reason. 4VD doesn’t open the drawer by itself yet.',
+    display: 'Customer display',
+    displayHint: 'The printer’s small display facing the customer shows each product and its price, the total while paying, then the change. Only with Print fiscal receipts on.',
     sounds: 'Scan sounds',
     soundsHint: 'A short beep when a scan adds a product, and a low buzz when it doesn’t (unknown barcode, out of stock, more than the shelf holds).',
     saved: 'Counter settings saved.',

@@ -165,15 +165,14 @@
   /* Motion: quick and soft, never bouncy (the behaviours live in
      styles/motion.css). Anything that moves, both ways, rides --spring over
      --spring-time: Apple's critically damped spring (response 0.34s, no
-     overshoot), half-way at 90ms, 90% there at 210ms, settled at 500ms.
+     overshoot), half-way at 50ms, 90% there at 120ms, settled at 280ms.
      Colour and hover changes are --fast on --ease; a press is --instant.
      A swipe hands its finger speed to --ease (useSwipeToDismiss). */
   --spring: linear(0, 0.015 2%, 0.053 4%, 0.107 6%, 0.169 8%, 0.236 10%, 0.304 12%, 0.403 15%, 0.495 18%, 0.577 21%, 0.671 25%, 0.764 30%, 0.833 35%, 0.883 40%, 0.93 47%, 0.962 55%, 0.983 65%, 0.995 80%, 1);
-  --spring-time: 500ms;
+  --spring-time: 280ms;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --instant: 100ms;
   --fast: 150ms;
-  --stagger: 40ms;
 }
 
 /* Phones: bigger controls for thumbs, like SBB's element sizes (44px minimum). */

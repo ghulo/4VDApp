@@ -781,11 +781,11 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 - Motion: Apple's fluid motion, quiet; entrances inside
   `prefers-reduced-motion: no-preference`, and base.css stops every
   transition under reduce. One vocabulary in `admin/src/styles/motion.css`:
-  - Anything that moves rides `--spring` over `--spring-time` (500ms): a
-    critically damped spring (response 0.34s, no overshoot, half-way at 90ms),
+  - Anything that moves rides `--spring` over `--spring-time` (280ms): a
+    critically damped spring (no overshoot, half-way at 50ms),
     the same in and out. Colour/hover is `--fast` 150ms on `--ease`.
-  - Pages: sections rise in (6px, fade) one after another, `--stagger` 40ms,
-    first six. Reuse `.rise` (one element) and `.rise-group` (its children).
+  - Pages show at once: no entrance animation on pages or their sections,
+    so moving around never waits on motion.
   - Selection glides: the chosen segment of every segmented track and the
     current sidebar item (with its orange tick) are one highlight that slides
     to the next choice (`selectionPills.ts`, no per-screen code).
@@ -796,7 +796,7 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
     project the flick to decide close or stay, starting at the finger's speed.
     Vertical drags still scroll; fields stay free for text selection.
   - Keys sink into their edge on press. Charts grow in once from their base.
-    Errors and empty pages rise in; "Loading" waits 300ms. Light/dark
+    "Loading" waits 300ms, so a quick answer never flashes it. Light/dark
     cross-fades.
   - Only `transform` and `opacity` move (plus the highlight's size). No
     bounce, looping motion or parallax.

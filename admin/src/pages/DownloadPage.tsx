@@ -67,7 +67,7 @@ export function DownloadPage() {
       </header>
 
       <main className="download__main">
-        <section className="download__hero rise-group" aria-labelledby="download-title">
+        <section className="download__hero" aria-labelledby="download-title">
           <div className="download__intro">
             <p className="download__kicker">{t.kicker}</p>
             <h1 id="download-title" className="download__title">
@@ -108,7 +108,7 @@ export function DownloadPage() {
           </div>
         </section>
 
-        <section className="download__more rise-group">
+        <section className="download__more">
           <section className="card download__warning" aria-labelledby="download-warning">
             <span className="icon-chip" aria-hidden="true">
               <ShieldCheck size={20} />

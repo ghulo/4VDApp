@@ -6,18 +6,9 @@
    transition and animation; the entrances sit inside no-preference.
 
    Reusable pieces:
-   .rise              one element rises in when it appears
-   .rise-group        its children rise in one after another (first six stagger)
    selectionPills.ts  the selected segment or sidebar item is one highlight
                       that slides to the next choice
    useSwipeToDismiss  a phone panel follows the finger and can be flicked away */
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
 
 @keyframes fade {
   from {
@@ -133,45 +124,9 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* ---------- Arriving ---------- */
-
-  /* A page's sections rise in one after another when it opens; groups of
-     cards inside do the same. Dialogs are left alone: they have their own. */
-  .main__frame > :not(dialog),
-  .rise,
-  .rise-group > *,
-  .metric-grid > *,
-  .count-cards > * {
-    animation: rise var(--spring-time) var(--spring) backwards;
-    animation-delay: calc(var(--rise-step, 0) * var(--stagger));
-  }
-
-  :is(.main__frame, .rise-group, .metric-grid, .count-cards) > :nth-child(2) {
-    --rise-step: 1;
-  }
-
-  :is(.main__frame, .rise-group, .metric-grid, .count-cards) > :nth-child(3) {
-    --rise-step: 2;
-  }
-
-  :is(.main__frame, .rise-group, .metric-grid, .count-cards) > :nth-child(4) {
-    --rise-step: 3;
-  }
-
-  :is(.main__frame, .rise-group, .metric-grid, .count-cards) > :nth-child(5) {
-    --rise-step: 4;
-  }
-
-  :is(.main__frame, .rise-group, .metric-grid, .count-cards) > :nth-child(n + 6) {
-    --rise-step: 5;
-  }
-
-  /* News the page gives back: problems, empty pages. */
-  .notice,
-  .form-error,
-  .empty-state {
-    animation: rise var(--spring-time) var(--spring) backwards;
-  }
+  /* ---------- Arriving ----------
+     Pages and their sections show at once: no entrance, so moving around
+     4VD never waits on an animation. */
 
   /* "Loading" only shows when loading is slow enough to notice, so a quick
      answer never flashes it. */

@@ -2081,6 +2081,12 @@ export type CounterEventInput =
 export interface CounterToday {
   lastZ: { at: string; by: string | null } | null;
   lastX: { at: string; by: string | null } | null;
+  /** The number the next receipt will most likely get (another till can take it first). */
+  nextReceipt: string;
+  /** What the person at the till sold today, by how it was paid. */
+  mine: { receipts: number; total: number; cash: number; card: number; tab: number };
+  /** Cash everyone took at the till today. */
+  cashToday: number;
 }
 
 /** A receipt found to give something back, with what is left to return on each line. */

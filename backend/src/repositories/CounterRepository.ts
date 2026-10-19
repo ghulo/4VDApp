@@ -71,6 +71,17 @@ export class CounterRepository {
   }
 
   /** The last time each of the printer's reports ran, with who ran it. */
+  /** The number the next invoice of this year will get, without taking it (the counter shows it before paying). */
+  async nextInvoiceNumber(year: number): Promise<number> {
+    const row = await this.db
+      .selectFrom('document_numbers')
+      .select('last_number')
+      .where('kind', '=', 'invoice')
+      .where('year', '=', year)
+      .executeTakeFirst();
+    return (row?.last_number ?? 0) + 1;
+  }
+
   async lastReport(kind: 'x_report' | 'z_report'): Promise<{ created_at: Date; user_name: string | null } | undefined> {
     return this.db
       .selectFrom('counter_events as e')

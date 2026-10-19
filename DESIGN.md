@@ -402,6 +402,9 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | What the fiscal printer prints for a sale | **receipt** | **kupon** | invoice (that is the numbered A4 document) |
 | The printer's running and closing totals | **X report** · **Z report** (Counter keys only) | **Raporti X** · **Raporti Z** | Close the day (that is the shop's own steps) |
 | Giving money back for a returned line | **refund** | **kthim** | return receipt, storno |
+| Seeing a price at the Counter without selling | **Price check** (F10) | **Kontrollo çmimin** (key: **Shiko çmimin**) | price lookup, PLU |
+| One rabat on every line of a basket | **Basket rabat** | **Rabat i shportës** | discount, cart discount |
+| A buyer the Counter doesn't know | **Walk-in customer** | **Klient pa emër** | anonymous, guest |
 | Finishing a sale | **Record sale · €X** | **Regjistro shitjen · €X** *(confirm)* | Checkout |
 | One customer's purchase | **sale** | **shitje** | transaction |
 | One product within a sale | **line** | **rresht** | |

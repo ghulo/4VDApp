@@ -371,3 +371,69 @@ export function UnprintedSheet({
     </Sheet>
   );
 }
+
+/** F5: who is buying. A walk-in by default; a registered customer puts the sale on their record. */
+export function CustomerSheet({
+  open,
+  customers,
+  current,
+  onClose,
+  onPick,
+}: {
+  open: boolean;
+  customers: Customer[] | undefined;
+  current: number | null;
+  onClose: () => void;
+  onPick: (customer: Customer | null) => void;
+}) {
+  const t = useT();
+  return (
+    <Sheet open={open} onClose={onClose} title={t.counter.customerTitle} description={t.counter.customerHint}>
+      <CustomerForm customers={customers} current={current} onPick={onPick} />
+    </Sheet>
+  );
+}
+
+function CustomerForm({ customers, current, onPick }: { customers: Customer[] | undefined; current: number | null; onPick: (customer: Customer | null) => void }) {
+  const t = useT();
+  const [query, setQuery] = useState('');
+  const words = query.trim().toLowerCase();
+  const shown = (customers ?? []).filter((customer) => customer.name.toLowerCase().includes(words));
+  return (
+    <div className="counter-form">
+      <Field label={t.counter.customerSearch}>
+        <input
+          name="customer-search"
+          autoFocus
+          autoComplete="off"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && shown.length > 0) {
+              event.preventDefault();
+              onPick(shown[0]!);
+            }
+          }}
+        />
+      </Field>
+      <ul className="counter-customers">
+        {words === '' && (
+          <li>
+            <button type="button" className="counter-customers__item" aria-pressed={current === null} onClick={() => onPick(null)}>
+              {t.counter.walkIn}
+            </button>
+          </li>
+        )}
+        {shown.map((customer) => (
+          <li key={customer.id}>
+            <button type="button" className="counter-customers__item" aria-pressed={current === customer.id} onClick={() => onPick(customer)}>
+              {customer.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {customers && customers.length === 0 && <p className="counter-hint">{t.counter.noCustomers}</p>}
+      {customers && customers.length > 0 && shown.length === 0 && <p className="counter-hint">{t.counter.noCustomerMatch}</p>}
+    </div>
+  );
+}

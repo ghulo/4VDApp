@@ -677,6 +677,8 @@ export const ordersApi = {
 };
 
 export const expiryApi = {
+  /** Dates coming up soon or already passed, for every product. */
+  upcoming: async () => (await apiRequest<ExpiryDate[]>('/expiry')).data,
   forProduct: async (productId: number) => (await apiRequest<ExpiryDate[]>('/expiry', { query: { productId } })).data,
   add: async (input: { productId: number; quantity: number; expiresOn: string; note: string | null }) =>
     (await apiRequest<ExpiryDate>('/expiry', { method: 'POST', body: input })).data,

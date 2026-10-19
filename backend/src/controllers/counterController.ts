@@ -19,8 +19,8 @@ export function createCounterController(counterService: CounterService) {
       sendSuccess(res, null, { statusCode: 201 });
     },
 
-    async today(_req: Request, res: Response): Promise<void> {
-      sendSuccess(res, await counterService.today());
+    async today(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await counterService.today(req.user!.id));
     },
 
     async receipts(req: Request, res: Response): Promise<void> {

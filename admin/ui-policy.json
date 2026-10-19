@@ -154,6 +154,20 @@
         "text-contrast"
       ],
       "reason": "The download page cards, the printer check and the welcome choice cards are raised panels lit by --light-raise (DESIGN.md 8, Light), so the tool cannot read their background. Their text is --ink and --ink-muted on --surface (or --tint), which src/theme/contrast.test.ts checks pass 4.5:1."
+    },
+    {
+      "selector": ".counter-pay__amount",
+      "rules": [
+        "font-size"
+      ],
+      "reason": "The Counter's Pay key shows the amount to pay at the figure size (28px, on the type scale), so the person at the till reads it from a step away. The key's label stays at 15px."
+    },
+    {
+      "selector": ".counter-status__legend kbd",
+      "rules": [
+        "text-contrast"
+      ],
+      "reason": "The arrow and plus/minus keys in the Counter's shortcut legend are symbols, so contrast can't be measured; they use the same ink on paper as the lettered keys beside them, which pass."
     }
   ]
 }

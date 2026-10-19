@@ -7,14 +7,20 @@ export interface StoredLine {
   productId: number;
   name: string;
   quantity: number;
-  /** Rabat in percent, as typed ("7,5"); blank is none. */
+  /** Rabat in percent, as typed ("7,5"); blank is none (the basket's rabat, if any, applies). */
   discount: string;
+  /** The rabat came from typing a new price (F6), so the line says "Price changed". */
+  priceSet?: boolean;
 }
 
 export interface Basket {
   id: string;
   startedAt: number;
   lines: StoredLine[];
+  /** The registered customer buying; none is a walk-in. */
+  customerId?: number | null;
+  /** Rabat in percent on every line that has none of its own; blank is none. */
+  discount?: string;
 }
 
 const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
@@ -60,6 +66,11 @@ export function useBaskets(userId: number) {
     }));
   }, []);
 
+  /** Change the basket at the till: its customer or its rabat. */
+  const update = useCallback((patch: Pick<Basket, 'customerId' | 'discount'>) => {
+    setState((now) => ({ ...now, baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, ...patch } : basket)) }));
+  }, []);
+
   /** Park this basket and start another; false when five are open already. */
   const open = useCallback((): boolean => {
     // An empty basket is reused rather than a second one opened.
@@ -88,5 +99,5 @@ export function useBaskets(userId: number) {
     });
   }, []);
 
-  return { baskets: state.baskets, current, setLines, open, select, close };
+  return { baskets: state.baskets, current, setLines, update, open, select, close };
 }

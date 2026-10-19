@@ -1,19 +1,25 @@
 import {
   ArrowCounterClockwise,
   ArrowLeft,
+  ArrowSquareOut,
   Barcode,
   CashRegister,
   CheckCircle,
   CircleNotch,
   HandCoins,
+  Hash,
   MagnifyingGlass,
   Percent,
   Plus,
   Printer,
+  SealPercent,
   SignOut,
   Tag,
   Trash,
+  User,
   WarningCircle,
+  WifiHigh,
+  WifiSlash,
   X,
   type Icon,
 } from '@phosphor-icons/react';
@@ -27,33 +33,46 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Button, ButtonLink } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { counterApi, customersApi, documentsApi, productsApi, salesApi, settingsApi } from '../services/api';
+import { counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { CounterEventInput, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatMoney } from '../utils/format';
+import { formatDate, formatMoney, formatTime } from '../utils/format';
 import { MissingTaxGroup, clearArticlesJob, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
-import { NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { priceLine, summarise } from './counter/basketMath';
+import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
+import { CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
-import { type StoredLine, useBaskets } from './counter/useBaskets';
+import { useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 
-type Panel = 'find' | 'quantity' | 'price' | 'discount' | 'remove' | 'cancel' | 'drawer' | 'pay' | 'refund' | 'z' | 'unprinted' | null;
+type Panel =
+  | 'find'
+  | 'quantity'
+  | 'price'
+  | 'discount'
+  | 'basketRabat'
+  | 'customer'
+  | 'remove'
+  | 'cancel'
+  | 'drawer'
+  | 'pay'
+  | 'refund'
+  | 'z'
+  | 'unprinted'
+  | null;
 
-interface Line extends StoredLine {
-  product: Product | undefined;
-  unitPrice: number;
-  total: number;
-}
-
-/** What the tape shows after a sale: the invoice, the change, and the printer's receipt number once it prints. */
+/** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
 interface LastSale {
   documentId: number;
   number: string;
   total: number;
+  paidBy: Payment['paidBy'];
+  tendered: number | null;
   change: number | null;
+  customerName: string | null;
   print: 'printing' | 'printed' | 'failed' | 'none';
   fiscalNo: string | null;
 }
@@ -63,11 +82,27 @@ const isTyping = (target: EventTarget | null) =>
 
 const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now - time) / 60_000));
 
+/** Whether the browser can reach the internet, kept up to date. */
+function useOnline(): boolean {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
+  return online;
+}
+
 /**
  * The Counter: a full-screen till for the shop PC. The barcode scanner works
- * at once, wherever the focus is; every product is on the shelf beside the
- * basket; up to five baskets wait side by side; paying records the sale and
- * prints the fiscal receipt through the Windows app.
+ * at once, wherever the focus is; the basket is a line table with every
+ * price, rabat, VAT and stock figure; up to five baskets wait side by side;
+ * paying records the sale and prints the fiscal receipt through the Windows app.
  */
 export function CounterPage() {
   const t = useT();
@@ -75,43 +110,55 @@ export function CounterPage() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
+  const online = useOnline();
 
   const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
+  const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
+  const expiries = useQuery({ queryKey: ['expiry', 'upcoming'], queryFn: expiryApi.upcoming, staleTime: 5 * 60_000 });
   const [panel, setPanel] = useState<Panel>(null);
-  const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list, enabled: panel === 'pay' });
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
-  const { baskets, current, setLines, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
+  const { baskets, current, setLines, update: updateBasket, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
 
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
   const byId = useMemo(() => new Map((products.data ?? []).map((product) => [product.id, product])), [products.data]);
+  // Days to the soonest date still on the shelf, per product.
+  const expiry = useMemo(() => {
+    const soonest = new Map<number, number>();
+    for (const date of expiries.data ?? []) {
+      if (date.remaining <= 0) continue;
+      const known = soonest.get(date.productId);
+      if (known === undefined || date.daysLeft < known) soonest.set(date.productId, date.daysLeft);
+    }
+    return soonest;
+  }, [expiries.data]);
 
-  const lines: Line[] = current.lines.map((line) => {
-    const product = byId.get(line.productId);
-    const unitPrice = product ? afterDiscount(unitPriceFor(product, line.quantity), parsePercent(line.discount)) : 0;
-    return { ...line, product, unitPrice, total: roundMoney(unitPrice * line.quantity) };
-  });
-  const total = roundMoney(lines.reduce((sum, line) => sum + line.total, 0));
-  const units = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const basketRabat = current.discount ?? '';
+  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat));
+  const summary = summarise(lines);
+  const total = summary.total;
+  const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = lines.find((line) => line.productId === selectedId) ?? lines[lines.length - 1] ?? null;
   const [scan, setScan] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [lastAdded, setLastAdded] = useState<number | null>(null);
+  const [flash, setFlash] = useState<{ id: number; key: number } | null>(null);
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
   const [payDraft, setPayDraft] = useState<PayDraft>(EMPTY_PAY);
   const [printNote, setPrintNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [refundNumber, setRefundNumber] = useState<string | null>(null);
   const [finderQuery, setFinderQuery] = useState('');
+  const [priceCheck, setPriceCheck] = useState(false);
+  const [checked, setChecked] = useState<Product | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
-  // Baskets show how long their customer has waited.
+  // The clock in the status bar, and how long each basket's customer has waited.
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -143,14 +190,23 @@ export function CounterPage() {
         : [...now, { productId: product.id, name: product.name, quantity: next, discount: '' }],
     );
     setSelectedId(product.id);
-    setLastAdded(product.id);
+    setFlash((was) => ({ id: product.id, key: (was?.key ?? 0) + 1 }));
     setLastSale(null);
+    setChecked(null);
     setPrintNote((note) => (note?.ok ? null : note));
     if (next < already + quantity) complain(t.counter.noMore(product.name, stock));
     else {
       setProblem(null);
       setNotice(null);
     }
+  }
+
+  /** Price check: show the product, put nothing in the basket. */
+  function showCheck(product: Product) {
+    setPriceCheck(false);
+    setChecked(product);
+    setProblem(null);
+    setNotice(null);
   }
 
   // "Sell it" on a product page opens the Counter with ?add=<product id>: put one in the basket once the shelf is in.
@@ -172,8 +228,9 @@ export function CounterPage() {
     const code = codeFromScan(multiplied ? multiplied[2]! : raw);
     setScan('');
     if (!code) return;
+    const take = (product: Product) => (priceCheck ? showCheck(product) : add(product, quantity));
     const documentNumber = documentNumberFromScan(code);
-    if (documentNumber) {
+    if (documentNumber && !priceCheck) {
       setRefundNumber(documentNumber);
       return setPanel('refund');
     }
@@ -182,15 +239,15 @@ export function CounterPage() {
     const exact =
       shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
       shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower);
-    if (exact) return add(exact, quantity);
+    if (exact) return take(exact);
     const named = shelf.filter((product) => product.name.toLowerCase().includes(lower));
-    if (named.length === 1) return add(named[0]!, quantity);
+    if (named.length === 1) return take(named[0]!);
     if (named.length > 1) {
       setFinderQuery(code);
       return setPanel('find');
     }
     try {
-      add(await productsApi.byBarcode(code), quantity);
+      take(await productsApi.byBarcode(code));
     } catch {
       complain(t.counter.notFound(code));
     }
@@ -213,13 +270,15 @@ export function CounterPage() {
   const sell = useMutation({
     mutationFn: (payment: Payment) =>
       salesApi.recordBasket({
-        items: current.lines.map((line) => {
-          const discount = roundMoney(parsePercent(line.discount));
+        items: lines.map((line) => {
+          const discount = roundMoney(line.percent);
           return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
         }),
         notes: null,
         ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
         ...(payment.paidBy === 'tab' && payment.customerId !== null && { customerId: payment.customerId, paidNow: false }),
+        // A customer picked with F5 who pays now: the sale goes on their record, not their tab.
+        ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
       }),
   });
 
@@ -229,14 +288,26 @@ export function CounterPage() {
     for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money']) {
       void queryClient.invalidateQueries({ queryKey: [key] });
     }
+    void today.refetch();
     closeBasket(basketId);
     setPanel(null);
     setSelectedId(null);
-    setLastAdded(null);
+    setFlash(null);
     const change = payment.tendered !== null ? roundMoney(payment.tendered - result.total) : null;
+    const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
     say(t.counter.sold(formatMoney(result.total), result.invoice.number));
     const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab';
-    setLastSale({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, change, print: willPrint ? 'printing' : 'none', fiscalNo: null });
+    setLastSale({
+      documentId: result.invoice.id,
+      number: result.invoice.number,
+      total: result.total,
+      paidBy: payment.paidBy,
+      tendered: payment.tendered,
+      change,
+      customerName: buyer?.name ?? null,
+      print: willPrint ? 'printing' : 'none',
+      fiscalNo: null,
+    });
     focusScan();
     if (!willPrint || !settings.data) return;
 
@@ -308,7 +379,7 @@ export function CounterPage() {
   const startPanel = (next: Panel) => {
     if (['quantity', 'price', 'discount', 'remove'].includes(next ?? '') && !selected) return complain(t.counter.pickLine);
     if ((next === 'pay' || next === 'cancel') && !hasLines) return complain(t.counter.addFirst);
-    if (next === 'pay') setPayDraft(EMPTY_PAY);
+    if (next === 'pay') setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
     setPanel(next);
   };
   function newBasket() {
@@ -317,6 +388,19 @@ export function CounterPage() {
     setLastSale(null);
     focusScan();
   }
+  function togglePriceCheck() {
+    setChecked(null);
+    setPriceCheck((on) => !on);
+    focusScan();
+  }
+  const openFinder = () => {
+    setFinderQuery('');
+    startPanel('find');
+  };
+  const openRefund = () => {
+    setRefundNumber(null);
+    startPanel('refund');
+  };
 
   // The scanner types like a keyboard: any key pressed outside a field goes to the scan box.
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
@@ -332,23 +416,26 @@ export function CounterPage() {
     }
     const shortcuts: Record<string, () => void> = {
       F2: () => startPanel('quantity'),
-      F3: () => {
-        setFinderQuery('');
-        startPanel('find');
-      },
+      F3: openFinder,
       F4: () => startPanel('discount'),
+      // F5 would reload the page; at the till it picks the customer.
+      F5: () => startPanel('customer'),
       F6: () => startPanel('price'),
-      F7: () => {
-        setRefundNumber(null);
-        startPanel('refund');
-      },
+      F7: openRefund,
       F8: newBasket,
       F9: () => startPanel('pay'),
+      F10: togglePriceCheck,
     };
     const shortcut = shortcuts[event.key];
     if (shortcut) {
       event.preventDefault();
       return shortcut();
+    }
+    if (event.key === 'Escape' && (priceCheck || checked)) {
+      event.preventDefault();
+      setPriceCheck(false);
+      setChecked(null);
+      return;
     }
     if (isTyping(event.target) && event.target !== scanRef.current) return;
     const scanEmpty = scanRef.current?.value === '';
@@ -374,7 +461,7 @@ export function CounterPage() {
   function handleScanKey(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (scan.trim() === '') return hasLines ? startPanel('pay') : undefined;
+      if (scan.trim() === '') return hasLines && !priceCheck ? startPanel('pay') : undefined;
       return void handleScan(scan);
     }
     if (scan === '' && (event.key === '+' || event.key === '-')) {
@@ -402,8 +489,10 @@ export function CounterPage() {
   const printerHint =
     printer.reach === 'off' ? t.counter.printer.offHint : printer.reach === 'browser' ? t.counter.printer.browserHint : printer.reach === 'notRunning' ? t.counter.printer.notRunningHint : undefined;
 
-  const lastProduct = lastAdded !== null ? byId.get(lastAdded) : undefined;
-  const lowStockLeft = lastProduct ? lastProduct.stock.quantity - (current.lines.find((line) => line.productId === lastProduct.id)?.quantity ?? 0) : null;
+  // "6*" typed and waiting for the scan: say so, so nobody wonders why six went in.
+  const pending = /^(\d{1,4})\s*[*xX]$/.exec(scan.trim());
+  const pendingCount = pending ? Math.max(1, Number(pending[1])) : null;
+  const clock = new Date(now).toISOString();
 
   return (
     <div className="counter">
@@ -452,124 +541,130 @@ export function CounterPage() {
 
       <main className="counter__main">
         <section className="counter-till" aria-label={t.counter.title}>
-          <div className="counter-scan">
-            <label className="counter-scan__field">
-              <Barcode size={22} aria-hidden="true" />
-              <span className="visually-hidden">{t.counter.scan}</span>
-              <input
-                ref={scanRef}
-                autoFocus
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={`${t.counter.scan}…`}
-                aria-describedby="counter-scan-hint"
-                value={scan}
-                onChange={(event) => {
-                  setScan(event.target.value);
-                  setProblem(null);
-                }}
-                onKeyDown={handleScanKey}
-              />
-            </label>
-            {/* On a phone there's no USB scanner: the camera reads the code instead. */}
-            <span className="counter-scan__camera">
-              <CameraScanButton iconOnly onScan={(code) => void handleScan(code)} />
-            </span>
-            <p id="counter-scan-hint" className="counter-hint">
-              {t.counter.scanHint}
-            </p>
-            <div aria-live="polite" className="counter-scan__messages">
-              {problem && (
-                <p className="counter-message counter-message--problem" role="alert">
-                  <WarningCircle size={16} weight="bold" aria-hidden="true" />
-                  {problem}
-                </p>
-              )}
-              {printNote && (
-                <p className={printNote.ok ? 'counter-message counter-message--ok' : 'counter-message counter-message--problem'} role="status">
-                  {printNote.ok ? <CheckCircle size={16} weight="bold" aria-hidden="true" /> : <WarningCircle size={16} weight="bold" aria-hidden="true" />}
-                  {printNote.text}
-                </p>
-              )}
-              {notice && !problem && (
-                <p className="counter-message counter-message--ok">
-                  <CheckCircle size={16} weight="bold" aria-hidden="true" />
-                  {notice}
-                </p>
-              )}
+          <div className="counter-toolbar">
+            <div className="counter-scan">
+              <label className={priceCheck ? 'counter-scan__field counter-scan__field--check' : 'counter-scan__field'}>
+                {priceCheck ? <Tag size={22} aria-hidden="true" /> : <Barcode size={22} aria-hidden="true" />}
+                <span className="visually-hidden">{priceCheck ? t.counter.priceCheck : t.counter.scan}</span>
+                <input
+                  ref={scanRef}
+                  name="code"
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={priceCheck ? `${t.counter.priceCheck}…` : `${t.counter.scan}…`}
+                  aria-describedby="counter-scan-hint"
+                  value={scan}
+                  onChange={(event) => {
+                    setScan(event.target.value);
+                    setProblem(null);
+                  }}
+                  onKeyDown={handleScanKey}
+                />
+                {pendingCount !== null && (
+                  <span className="counter-chip counter-chip--accent" role="status">
+                    {t.counter.multiplier(pendingCount)}
+                  </span>
+                )}
+                {priceCheck && (
+                  <button type="button" className="counter-chip counter-chip--button" onClick={togglePriceCheck}>
+                    {t.counter.priceCheckOff}
+                    <kbd aria-hidden="true">Esc</kbd>
+                  </button>
+                )}
+              </label>
+              {/* On a phone there's no USB scanner: the camera reads the code instead. */}
+              <span className="counter-scan__camera">
+                <CameraScanButton iconOnly onScan={(code) => void handleScan(code)} />
+              </span>
+              <p id="counter-scan-hint" className="visually-hidden">
+                {priceCheck ? t.counter.priceCheckOn : t.counter.scanHint}
+              </p>
+            </div>
+
+            <div className="counter-baskets" role="group" aria-label={t.counter.baskets}>
+              {baskets.map((basket, index) => {
+                const basketTotal = roundMoney(
+                  basket.lines.reduce((sum, line) => {
+                    const product = byId.get(line.productId);
+                    const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
+                    return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
+                  }, 0),
+                );
+                const minutes = minutesSince(basket.startedAt, now);
+                return (
+                  <button
+                    key={basket.id}
+                    type="button"
+                    className="counter-basket"
+                    aria-pressed={basket.id === current.id}
+                    onClick={() => {
+                      selectBasket(basket.id);
+                      setSelectedId(null);
+                      focusScan();
+                    }}
+                  >
+                    <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
+                    <span className="counter-basket__meta">
+                      {basket.lines.length > 0 ? formatMoney(basketTotal) : '—'} · {t.counter.age(minutes)}
+                    </span>
+                  </button>
+                );
+              })}
+              <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} title="F8" aria-keyshortcuts="F8">
+                {t.counter.newBasket}
+              </Button>
             </div>
           </div>
 
-          <div className="counter-baskets" role="group" aria-label={t.counter.baskets}>
-            {baskets.map((basket, index) => {
-              const basketTotal = roundMoney(
-                basket.lines.reduce((sum, line) => {
-                  const product = byId.get(line.productId);
-                  return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), parsePercent(line.discount)) * line.quantity : 0);
-                }, 0),
-              );
-              const minutes = minutesSince(basket.startedAt, now);
-              return (
-                <button
-                  key={basket.id}
-                  type="button"
-                  className="counter-basket"
-                  aria-pressed={basket.id === current.id}
-                  onClick={() => {
-                    selectBasket(basket.id);
-                    setSelectedId(null);
-                    focusScan();
-                  }}
-                >
-                  <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
-                  <span className="counter-basket__meta">
-                    {basket.lines.length > 0 ? formatMoney(basketTotal) : '—'} · {t.counter.age(minutes)}
-                  </span>
-                </button>
-              );
-            })}
-            <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} title="F8">
-              {t.counter.newBasket}
-            </Button>
+          <div aria-live="polite" className="counter-messages">
+            {priceCheck && (
+              <p className="counter-message counter-message--info" role="status">
+                <Tag size={16} weight="bold" aria-hidden="true" />
+                {t.counter.priceCheckOn}
+              </p>
+            )}
+            {problem && (
+              <p className="counter-message counter-message--problem" role="alert">
+                <WarningCircle size={16} weight="bold" aria-hidden="true" />
+                {problem}
+              </p>
+            )}
+            {printNote && (
+              <p className={printNote.ok ? 'counter-message counter-message--ok' : 'counter-message counter-message--problem'} role="status">
+                {printNote.ok ? <CheckCircle size={16} weight="bold" aria-hidden="true" /> : <WarningCircle size={16} weight="bold" aria-hidden="true" />}
+                {printNote.text}
+              </p>
+            )}
+            {notice && !problem && (
+              <p className="counter-message counter-message--ok">
+                <CheckCircle size={16} weight="bold" aria-hidden="true" />
+                {notice}
+              </p>
+            )}
           </div>
 
           <div className="counter-tape">
-            {lastProduct && lowStockLeft !== null && (
-              <p className={lowStockLeft <= lastProduct.stock.reorderLevel ? 'counter-last counter-last--low' : 'counter-last'}>
-                <span className="counter-last__kicker">{t.counter.lastScanned}</span>
-                <span className="counter-last__name">{lastProduct.name}</span>
-                <span className="counter-last__stock">
-                  {lowStockLeft <= lastProduct.stock.reorderLevel ? t.counter.lowStock(lowStockLeft) : t.counter.stockLeft(lowStockLeft)}
-                </span>
-              </p>
-            )}
+            <SaleHead
+              customerName={customer?.name ?? null}
+              nextReceipt={today.data?.nextReceipt ?? null}
+              startedAt={formatTime(new Date(current.startedAt).toISOString())}
+              basketRabat={parsePercent(basketRabat)}
+              onCustomer={() => startPanel('customer')}
+            />
+            {checked && <PriceCheckCard product={checked} days={expiry.get(checked.id)} onClose={() => setChecked(null)} />}
             {hasLines ? (
-              <ol className="counter-lines" aria-label={t.counter.lines}>
-                {lines.map((line) => {
-                  const percent = parsePercent(line.discount);
-                  const isSelected = selected?.productId === line.productId;
-                  return (
-                    <li key={line.productId}>
-                      <button
-                        type="button"
-                        className="counter-line"
-                        aria-pressed={isSelected}
-                        onClick={() => {
-                          setSelectedId(line.productId);
-                          focusScan();
-                        }}
-                      >
-                        <span className="counter-line__name">{line.product?.name ?? line.name}</span>
-                        <span className="counter-line__total">{formatMoney(line.total)}</span>
-                        <span className="counter-line__detail">
-                          {line.quantity} × {formatMoney(line.unitPrice)}
-                          {percent > 0 && <span className="counter-line__rabat"> · {t.counter.rabat(`${percent}%`)}</span>}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
+              <BasketTable
+                lines={lines}
+                selectedId={selected?.productId ?? null}
+                flashId={flash?.id ?? null}
+                flashKey={flash?.key ?? 0}
+                expiry={expiry}
+                onSelect={(productId) => {
+                  setSelectedId(productId);
+                  focusScan();
+                }}
+              />
             ) : lastSale ? (
               <div className="counter-sold">
                 <p className="counter-sold__number">{lastSale.number}</p>
@@ -586,79 +681,103 @@ export function CounterPage() {
                 {lastSale.print === 'printing' && <p className="counter-hint">{t.counter.printer.printing}</p>}
               </div>
             ) : (
-              <div className="counter-empty">
-                <Barcode size={32} aria-hidden="true" className="counter-empty__icon" />
-                <p className="counter-empty__title">{t.counter.empty}</p>
-                <p className="counter-hint">{t.counter.emptyHint}</p>
-              </div>
+              !checked && (
+                <div className="counter-empty">
+                  <Barcode size={32} aria-hidden="true" className="counter-empty__icon" />
+                  <p className="counter-empty__title">{t.counter.empty}</p>
+                  <p className="counter-hint">{t.counter.emptyHint}</p>
+                </div>
+              )
             )}
-            <div className="counter-total">
-              <span className="counter-total__label">
-                {t.counter.total}
-                {hasLines && <span className="counter-total__count"> · {t.counter.items(units)}</span>}
-              </span>
-              <span className="counter-total__amount">{formatMoney(total)}</span>
-            </div>
-            {panel === 'pay' && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((customer) => String(customer.id) === payDraft.customerId)?.name ?? null} />}
+            {hasLines && <BasketSummaryFoot summary={summary} />}
+            {panel === 'pay' && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((one) => String(one.id) === payDraft.customerId)?.name ?? null} />}
           </div>
-
         </section>
 
         <section className="counter-side" aria-label={t.counter.keys}>
           {panel === 'pay' ? (
             <PayPanel total={total} customers={customers.data} draft={payDraft} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
           ) : (
-          <div className="counter-keys">
-            <CounterKey
-              icon={MagnifyingGlass}
-              label={t.counter.search}
-              hotkey="F3"
-              disabled={!keysEnabled}
-              onClick={() => {
-                setFinderQuery('');
-                startPanel('find');
-              }}
-            />
-            <CounterKey icon={Tag} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled || !selected} onClick={() => startPanel('quantity')} />
-            <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled || !selected} onClick={() => startPanel('price')} />
-            <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled || !selected} onClick={() => startPanel('discount')} />
-            <CounterKey icon={Trash} label={t.counter.remove} hotkey="Del" disabled={!keysEnabled || !selected} onClick={() => startPanel('remove')} />
-            <CounterKey
-              icon={ArrowCounterClockwise}
-              label={t.counter.refund}
-              hotkey="F7"
-              disabled={!keysEnabled}
-              onClick={() => {
-                setRefundNumber(null);
-                startPanel('refund');
-              }}
-            />
-            <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
-            <CounterKey
-              icon={Printer}
-              label={t.counter.xReport}
-              disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
-              title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
-              onClick={() => void runReport('x')}
-            />
-            <CounterKey
-              icon={Printer}
-              label={t.counter.zReport}
-              disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
-              title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
-              onClick={() => startPanel('z')}
-            />
-            {settings.data?.drawerConnected && (
-              <CounterKey icon={CashRegister} label={t.counter.openDrawer} disabled={!keysEnabled} onClick={() => startPanel('drawer')} />
-            )}
-            <Button variant="primary" className="counter-pay" disabled={!hasLines} onClick={() => startPanel('pay')} title="F9 · Enter">
-              <span>{t.counter.pay}</span>
-              <span className="counter-pay__amount">{formatMoney(total)}</span>
-            </Button>
-          </div>
+            <>
+              <Button variant="primary" className="counter-pay" disabled={!hasLines} onClick={() => startPanel('pay')} title="F9 · Enter" aria-keyshortcuts="F9">
+                <span className="counter-pay__label">
+                  {t.counter.pay}
+                  <kbd className="counter-pay__hotkey" aria-hidden="true">
+                    F9
+                  </kbd>
+                </span>
+                <span className="counter-pay__amount">{formatMoney(total)}</span>
+              </Button>
+
+              <KeyGroup title={selected ? `${t.counter.groups.line} · ${selected.product?.name ?? selected.name}` : t.counter.noLine}>
+                <CounterKey icon={Hash} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled || !selected} onClick={() => startPanel('quantity')} />
+                <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled || !selected} onClick={() => startPanel('price')} />
+                <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled || !selected} onClick={() => startPanel('discount')} />
+                <CounterKey icon={Trash} label={t.counter.remove} hotkey="Del" disabled={!keysEnabled || !selected} onClick={() => startPanel('remove')} />
+              </KeyGroup>
+
+              <KeyGroup title={t.counter.groups.sale}>
+                <CounterKey icon={MagnifyingGlass} label={t.counter.search} hotkey="F3" disabled={!keysEnabled} onClick={openFinder} />
+                <CounterKey icon={User} label={t.counter.customer} hotkey="F5" disabled={!keysEnabled} onClick={() => startPanel('customer')} />
+                <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
+                <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
+                <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
+                <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled} onClick={openRefund} />
+              </KeyGroup>
+
+              <KeyGroup title={t.counter.groups.till} quiet>
+                <CounterKey
+                  icon={Printer}
+                  label={t.counter.xReport}
+                  disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
+                  title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
+                  onClick={() => void runReport('x')}
+                />
+                <CounterKey
+                  icon={Printer}
+                  label={t.counter.zReport}
+                  disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
+                  title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
+                  onClick={() => startPanel('z')}
+                />
+                {settings.data?.drawerConnected && (
+                  <CounterKey icon={CashRegister} label={t.counter.openDrawer} disabled={!keysEnabled} onClick={() => startPanel('drawer')} />
+                )}
+              </KeyGroup>
+
+              {lastSale && <LastSaleCard sale={lastSale} canOpen={canOversee(user.role)} />}
+              {today.data && <ShiftCard mine={today.data.mine} cashToday={today.data.cashToday} />}
+            </>
           )}
         </section>
       </main>
+
+      <footer className="counter-status">
+        <ul className="counter-status__legend" aria-label={t.counter.legend}>
+          <LegendKey keys="F2" label={t.counter.legendKeys.quantity} />
+          <LegendKey keys="F3" label={t.counter.legendKeys.search} />
+          <LegendKey keys="F4" label={t.counter.legendKeys.rabat} />
+          <LegendKey keys="F5" label={t.counter.legendKeys.customer} />
+          <LegendKey keys="F6" label={t.counter.legendKeys.price} />
+          <LegendKey keys="F7" label={t.counter.legendKeys.refund} />
+          <LegendKey keys="F8" label={t.counter.legendKeys.newBasket} />
+          <LegendKey keys="F9" label={t.counter.legendKeys.pay} />
+          <LegendKey keys="F10" label={t.counter.legendKeys.priceCheck} />
+          <LegendKey keys="Del" label={t.counter.legendKeys.remove} />
+          <LegendKey keys="↑ ↓" label={t.counter.legendKeys.lines} />
+          <LegendKey keys="+ −" label={t.counter.legendKeys.nudge} />
+        </ul>
+        <div className="counter-status__right">
+          <p className={online ? 'counter-status__net' : 'counter-status__net counter-status__net--off'} role="status">
+            {online ? <WifiHigh size={14} weight="bold" aria-hidden="true" /> : <WifiSlash size={14} weight="bold" aria-hidden="true" />}
+            {online ? t.counter.online : t.counter.offline}
+          </p>
+          <p className="counter-status__clock">
+            <span>{formatDate(clock)}</span>
+            <time dateTime={clock}>{formatTime(clock)}</time>
+          </p>
+        </div>
+      </footer>
 
       {selected && (
         <>
@@ -684,7 +803,7 @@ export function CounterPage() {
             check={(value) => (value > discountLimit ? t.counter.discountTooHigh(discountLimit) : null)}
             onClose={closePanel}
             onApply={(value) => {
-              setLines((now) => now.map((line) => (line.productId === selected.productId ? { ...line, discount: value > 0 ? String(roundMoney(value)) : '' } : line)));
+              setLines((now) => now.map((line) => (line.productId === selected.productId ? { ...line, discount: value > 0 ? String(roundMoney(value)) : '', priceSet: false } : line)));
               closePanel();
             }}
           />
@@ -704,7 +823,9 @@ export function CounterPage() {
               onApply={(value) => {
                 const shelfPrice = unitPriceFor(selected.product!, selected.quantity);
                 const percent = shelfPrice > 0 ? roundMoney((1 - value / shelfPrice) * 100) : 0;
-                setLines((now) => now.map((line) => (line.productId === selected.productId ? { ...line, discount: percent > 0 ? String(percent) : '' } : line)));
+                setLines((now) =>
+                  now.map((line) => (line.productId === selected.productId ? { ...line, discount: percent > 0 ? String(percent) : '', priceSet: percent > 0 } : line)),
+                );
                 closePanel();
               }}
             />
@@ -724,6 +845,30 @@ export function CounterPage() {
           />
         </>
       )}
+      <NumberSheet
+        open={panel === 'basketRabat'}
+        title={t.counter.basketRabatTitle}
+        label={`${t.counter.basketRabat} %`}
+        hint={t.counter.basketRabatHint(discountLimit)}
+        initial={basketRabat}
+        check={(value) => (value > discountLimit ? t.counter.discountTooHigh(discountLimit) : null)}
+        onClose={closePanel}
+        onApply={(value) => {
+          updateBasket({ discount: value > 0 ? String(roundMoney(value)) : '' });
+          closePanel();
+        }}
+      />
+      <CustomerSheet
+        open={panel === 'customer'}
+        customers={customers.data}
+        current={current.customerId ?? null}
+        onClose={closePanel}
+        onPick={(picked) => {
+          updateBasket({ customerId: picked?.id ?? null });
+          if (picked) say(t.counter.customerPicked(picked.name));
+          closePanel();
+        }}
+      />
       <ReasonSheet
         open={panel === 'cancel'}
         title={t.counter.cancelTitle}
@@ -731,7 +876,7 @@ export function CounterPage() {
         confirm={t.counter.confirmCancel}
         onClose={closePanel}
         onConfirm={async (reason) => {
-          await counterApi.record([{ kind: 'basket_cancelled', quantity: Math.max(1, units), amount: total, reason }]);
+          await counterApi.record([{ kind: 'basket_cancelled', quantity: Math.max(1, summary.pieces), amount: total, reason }]);
           closeBasket(current.id);
           setSelectedId(null);
           closePanel();
@@ -756,7 +901,11 @@ export function CounterPage() {
         onRetry={() => products.refetch()}
         initialQuery={finderQuery}
         onClose={closePanel}
-        onAdd={(product) => add(product)}
+        onAdd={(product) => {
+          if (!priceCheck) return add(product);
+          showCheck(product);
+          closePanel();
+        }}
       />
       <RefundSheet
         open={panel === 'refund'}
@@ -789,9 +938,33 @@ export function CounterPage() {
 }
 
 /** A till key: an icon, its name and the keyboard key that does the same. */
-function CounterKey({ icon, label, hotkey, disabled, title, onClick }: { icon: Icon; label: string; hotkey?: string; disabled?: boolean; title?: string; onClick: () => void }) {
+function CounterKey({
+  icon,
+  label,
+  hotkey,
+  disabled,
+  title,
+  pressed,
+  onClick,
+}: {
+  icon: Icon;
+  label: string;
+  hotkey?: string;
+  disabled?: boolean;
+  title?: string;
+  pressed?: boolean;
+  onClick: () => void;
+}) {
   return (
-    <Button className="counter-key" icon={icon} disabled={disabled} title={title} aria-keyshortcuts={hotkey === 'Del' ? 'Delete' : hotkey} onClick={onClick}>
+    <Button
+      className="counter-key"
+      icon={icon}
+      disabled={disabled}
+      title={title}
+      aria-pressed={pressed}
+      aria-keyshortcuts={hotkey === 'Del' ? 'Delete' : hotkey}
+      onClick={onClick}
+    >
       <span>{label}</span>
       {hotkey && (
         <kbd className="counter-key__hotkey" aria-hidden="true">
@@ -799,6 +972,148 @@ function CounterKey({ icon, label, hotkey, disabled, title, onClick }: { icon: I
         </kbd>
       )}
     </Button>
+  );
+}
+
+/** Keys that act on the same thing, under a small heading. */
+function KeyGroup({ title, quiet, children }: { title: string; quiet?: boolean; children: React.ReactNode }) {
+  return (
+    <section className={quiet ? 'counter-group counter-group--quiet' : 'counter-group'}>
+      <h2 className="counter-group__title">{title}</h2>
+      <div className="counter-keys">{children}</div>
+    </section>
+  );
+}
+
+function LegendKey({ keys, label }: { keys: string; label: string }) {
+  return (
+    <li>
+      <kbd>{keys}</kbd>
+      {label}
+    </li>
+  );
+}
+
+/** The sale just made: its receipt, how it was paid and the change, and whether it printed. */
+function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
+  const t = useT();
+  return (
+    <section className="counter-card">
+      <h2 className="counter-group__title">{t.counter.lastSale}</h2>
+      <p className="counter-card__lead">
+        <span className="counter-card__mono">{sale.number}</span>
+        <strong>{formatMoney(sale.total)}</strong>
+      </p>
+      <dl className="counter-card__rows">
+        <div>
+          <dt>{t.counter.paidBy}</dt>
+          <dd>{t.counter.paidWith[sale.paidBy]}</dd>
+        </div>
+        {sale.customerName && (
+          <div>
+            <dt>{t.counter.customer}</dt>
+            <dd>{sale.customerName}</dd>
+          </div>
+        )}
+        {sale.tendered !== null && (
+          <div>
+            <dt>{t.counter.tendered}</dt>
+            <dd>{formatMoney(sale.tendered)}</dd>
+          </div>
+        )}
+        {sale.change !== null && sale.change > 0 && (
+          <div className="counter-card__strong">
+            <dt>{t.counter.change}</dt>
+            <dd>{formatMoney(sale.change)}</dd>
+          </div>
+        )}
+        {sale.print !== 'none' && (
+          <div>
+            <dt>{t.counter.printer.label}</dt>
+            <dd className={sale.print === 'failed' ? 'counter-card__bad' : undefined}>
+              {sale.print === 'printing'
+                ? t.counter.printer.printing
+                : sale.print === 'failed'
+                  ? t.counter.printer.failed
+                  : sale.fiscalNo
+                    ? t.counter.fiscalNo(sale.fiscalNo)
+                    : t.counter.printer.printedNoNumber}
+            </dd>
+          </div>
+        )}
+      </dl>
+      {canOpen && (
+        <ButtonLink size="sm" variant="ghost" icon={ArrowSquareOut} to={`/documents/${sale.documentId}`} title={t.counter.copyHint}>
+          {t.counter.openInvoice}
+        </ButtonLink>
+      )}
+    </section>
+  );
+}
+
+/** What the person at the till sold today, and the cash everyone took. */
+function ShiftCard({ mine, cashToday }: { mine: { receipts: number; total: number; cash: number; card: number; tab: number }; cashToday: number }) {
+  const t = useT();
+  return (
+    <section className="counter-card">
+      <h2 className="counter-group__title">{t.counter.shift}</h2>
+      <p className="counter-card__lead">
+        <span>{t.counter.shiftReceipts(mine.receipts)}</span>
+        <strong>{formatMoney(mine.total)}</strong>
+      </p>
+      <dl className="counter-card__rows">
+        <div>
+          <dt>{t.counter.shiftCash}</dt>
+          <dd>{formatMoney(mine.cash)}</dd>
+        </div>
+        <div>
+          <dt>{t.counter.shiftCard}</dt>
+          <dd>{formatMoney(mine.card)}</dd>
+        </div>
+        {mine.tab > 0 && (
+          <div>
+            <dt>{t.counter.shiftTab}</dt>
+            <dd>{formatMoney(mine.tab)}</dd>
+          </div>
+        )}
+        <div className="counter-card__quiet">
+          <dt>{t.counter.cashToday}</dt>
+          <dd>{formatMoney(cashToday)}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+/** Price check: a product's price, deals and stock, without putting it in the basket. */
+function PriceCheckCard({ product, days, onClose }: { product: Product; days: number | undefined; onClose: () => void }) {
+  const t = useT();
+  const price = unitPriceFor(product, 1);
+  return (
+    <section className="counter-check" aria-label={t.counter.priceCheckTitle}>
+      <div className="counter-check__main">
+        <p className="counter-check__kicker">{t.counter.priceCheckTitle}</p>
+        <p className="counter-check__name">{product.name}</p>
+        <p className="counter-check__meta">
+          {product.barcode ?? product.sku ?? ''}
+          {product.barcode || product.sku ? ' · ' : ''}
+          {t.counter.stockLeft(product.stock.quantity)}
+          {days !== undefined && ` · ${t.counter.expires(days)}`}
+        </p>
+        {product.promotion && price < product.price && <p className="counter-check__deal">{t.counter.reason.promotion(product.promotion.name)}</p>}
+        {product.bulkPricingTiers.map((tier) => (
+          <p key={tier.quantity} className="counter-check__deal">
+            {t.counter.bulkFrom(tier.quantity, formatMoney(tier.price))}
+          </p>
+        ))}
+        <p className="counter-hint">{t.counter.priceCheckNothing}</p>
+      </div>
+      <div className="counter-check__price">
+        {price < product.price && <s className="counter-row__was">{formatMoney(product.price)}</s>}
+        <span>{formatMoney(price)}</span>
+      </div>
+      <Button size="sm" variant="ghost" icon={X} onClick={onClose} aria-label={t.counter.priceCheckOff} title="Esc" />
+    </section>
   );
 }
 

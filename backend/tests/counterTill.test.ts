@@ -156,6 +156,15 @@ describe('what happens at the counter', () => {
 
     const today = (await api().get('/api/counter/today').set(auth(employeeToken))).body.data;
     expect(today).toMatchObject({ lastZ: { by: 'Test employee' }, lastX: null });
+    // The till shows the next receipt's number and the person's own day; cash counts everyone's.
+    const year = day().slice(0, 4);
+    expect(today).toMatchObject({ nextReceipt: `F-${year}-000003`, mine: { receipts: 2, total: 40, cash: 20, card: 20, tab: 0 }, cashToday: 20 });
+    await sell({}, adminToken);
+    expect((await api().get('/api/counter/today').set(auth(adminToken))).body.data).toMatchObject({
+      nextReceipt: `F-${year}-000004`,
+      mine: { receipts: 1, total: 20, cash: 20 },
+      cashToday: 40,
+    });
 
     const activity = (await api().get('/api/activity?page=1').set(auth())).body.data.map((entry: { summary: string }) => entry.summary);
     expect(activity).toEqual(expect.arrayContaining(['Opened the drawer without a sale: Change for a €50 note', "Ran the fiscal printer's Z report (closes the fiscal day)"]));

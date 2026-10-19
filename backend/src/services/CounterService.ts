@@ -81,6 +81,12 @@ export interface CounterReceiptDto {
 export interface CounterTodayDto {
   lastZ: { at: string; by: string | null } | null;
   lastX: { at: string; by: string | null } | null;
+  /** The number the next receipt will most likely get (another till can take it first). */
+  nextReceipt: string;
+  /** What the person asking sold today, by how it was paid. */
+  mine: { receipts: number; total: number; cash: number; card: number; tab: number };
+  /** Cash everyone took at the till today. */
+  cashToday: number;
 }
 
 /**
@@ -163,11 +169,36 @@ export class CounterService {
     });
   }
 
-  /** When the printer's X and Z reports last ran, so the counter can warn before a second Z. */
-  async today(): Promise<CounterTodayDto> {
-    const [z, x] = await Promise.all([this.counterRepository.lastReport('z_report'), this.counterRepository.lastReport('x_report')]);
+  /**
+   * The counter's day so far: when the printer's X and Z reports last ran (so
+   * it can warn before a second Z), the next receipt's number, and what the
+   * person at the till sold today.
+   */
+  async today(userId: number, now = new Date()): Promise<CounterTodayDto> {
+    const day = zonedDay(now, this.timeZone);
+    const year = Number(day.slice(0, 4));
+    const [z, x, next, people] = await Promise.all([
+      this.counterRepository.lastReport('z_report'),
+      this.counterRepository.lastReport('x_report'),
+      this.counterRepository.nextInvoiceNumber(year),
+      this.counterRepository.people(day, day, this.timeZone),
+    ]);
     const shape = (row: typeof z) => (row ? { at: row.created_at.toISOString(), by: row.user_name } : null);
-    return { lastZ: shape(z), lastX: shape(x) };
+    const me = people.find((row) => row.user_id === userId);
+    return {
+      lastZ: shape(z),
+      lastX: shape(x),
+      // Numbered the way DocumentService numbers invoices.
+      nextReceipt: `F-${year}-${String(next).padStart(6, '0')}`,
+      mine: {
+        receipts: me?.sales ?? 0,
+        total: Number(me?.sold ?? 0),
+        cash: Number(me?.cash ?? 0),
+        card: Number(me?.card ?? 0),
+        tab: Number(me?.tab ?? 0),
+      },
+      cashToday: roundMoney(people.reduce((sum, row) => sum + Number(row.cash ?? 0), 0)),
+    };
   }
 
   /** Today's receipts, or the one with this number (scanned from its barcode), with what is left to give back. */

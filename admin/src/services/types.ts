@@ -2065,6 +2065,8 @@ export interface CounterSettings {
   };
   /** The drawer is wired to the printer, so 4VD can open it. */
   drawerConnected: boolean;
+  /** A beep when a scan adds a product and a low buzz when it fails. */
+  scanSounds: boolean;
 }
 
 export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report';

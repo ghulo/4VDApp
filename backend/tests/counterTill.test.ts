@@ -100,8 +100,9 @@ describe('counter settings', () => {
       receiptFooter: 'Ju faleminderit!',
       printer: { enabled: false, taxGroups: { '18': 5, '16': null, '8': 4, '0': null } },
       drawerConnected: false,
+      scanSounds: true,
     });
-    const changed = { receiptFooter: 'Faleminderit, ju presim sërish!', printer: { enabled: true, taxGroups: { '18': 5, '16': 3, '8': 4, '0': 1 } }, drawerConnected: true };
+    const changed = { receiptFooter: 'Faleminderit, ju presim sërish!', printer: { enabled: true, taxGroups: { '18': 5, '16': 3, '8': 4, '0': 1 } }, drawerConnected: true, scanSounds: false };
     expect((await api().put('/api/counter/settings').set(auth(employeeToken)).send(changed)).status).toBe(403);
     const saved = await api().put('/api/counter/settings').set(auth()).send(changed);
     expect(saved.status).toBe(200);

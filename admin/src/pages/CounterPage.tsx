@@ -45,6 +45,7 @@ import { CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, Unprin
 import { changeFor, EMPTY_PAY, type PayDraft } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
+import { playScanSound } from './counter/scanSound';
 import { useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 
@@ -178,11 +179,19 @@ export function CounterPage() {
     [],
   );
 
-  /** Put one or more of a product in the basket, never more than the shelf holds. */
-  function add(product: Product, quantity = 1) {
+  /** The beep or the buzz after a scan, unless Settings → Counter turned them off. */
+  const sound = (kind: 'ok' | 'fail') => {
+    if (settings.data?.scanSounds !== false) playScanSound(kind);
+  };
+
+  /** Put one or more of a product in the basket, never more than the shelf holds. False when not all of them went in. */
+  function add(product: Product, quantity = 1): boolean {
     const already = current.lines.find((line) => line.productId === product.id)?.quantity ?? 0;
     const stock = product.stock.quantity;
-    if (stock <= already) return complain(stock === 0 ? t.counter.outOfStock(product.name) : t.counter.noMore(product.name, stock));
+    if (stock <= already) {
+      complain(stock === 0 ? t.counter.outOfStock(product.name) : t.counter.noMore(product.name, stock));
+      return false;
+    }
     const next = Math.min(already + quantity, stock);
     setLines((now) =>
       now.some((line) => line.productId === product.id)
@@ -194,11 +203,13 @@ export function CounterPage() {
     setLastSale(null);
     setChecked(null);
     setPrintNote((note) => (note?.ok ? null : note));
-    if (next < already + quantity) complain(t.counter.noMore(product.name, stock));
-    else {
-      setProblem(null);
-      setNotice(null);
+    if (next < already + quantity) {
+      complain(t.counter.noMore(product.name, stock));
+      return false;
     }
+    setProblem(null);
+    setNotice(null);
+    return true;
   }
 
   /** Price check: show the product, put nothing in the basket. */
@@ -228,7 +239,13 @@ export function CounterPage() {
     const code = codeFromScan(multiplied ? multiplied[2]! : raw);
     setScan('');
     if (!code) return;
-    const take = (product: Product) => (priceCheck ? showCheck(product) : add(product, quantity));
+    const take = (product: Product) => {
+      if (priceCheck) {
+        showCheck(product);
+        return sound('ok');
+      }
+      sound(add(product, quantity) ? 'ok' : 'fail');
+    };
     const documentNumber = documentNumberFromScan(code);
     if (documentNumber && !priceCheck) {
       setRefundNumber(documentNumber);
@@ -250,6 +267,7 @@ export function CounterPage() {
       take(await productsApi.byBarcode(code));
     } catch {
       complain(t.counter.notFound(code));
+      sound('fail');
     }
   }
 
@@ -902,7 +920,7 @@ export function CounterPage() {
         initialQuery={finderQuery}
         onClose={closePanel}
         onAdd={(product) => {
-          if (!priceCheck) return add(product);
+          if (!priceCheck) return void add(product);
           showCheck(product);
           closePanel();
         }}

@@ -22,6 +22,8 @@ export interface CounterSettings {
   };
   /** The drawer is plugged into the printer, so 4VD can open it. */
   drawerConnected: boolean;
+  /** A beep when a scan adds a product and a low buzz when it fails. */
+  scanSounds: boolean;
 }
 
 /**
@@ -32,6 +34,7 @@ export const DEFAULT_COUNTER_SETTINGS: CounterSettings = {
   receiptFooter: 'Ju faleminderit!',
   printer: { enabled: false, taxGroups: { '18': 5, '16': null, '8': 4, '0': null } },
   drawerConnected: false,
+  scanSounds: true,
 };
 
 export interface CounterPersonDto {
@@ -112,6 +115,7 @@ export class CounterService {
         taxGroups: { ...DEFAULT_COUNTER_SETTINGS.printer.taxGroups, ...stored?.printer?.taxGroups },
       },
       drawerConnected: stored?.drawerConnected ?? DEFAULT_COUNTER_SETTINGS.drawerConnected,
+      scanSounds: stored?.scanSounds ?? DEFAULT_COUNTER_SETTINGS.scanSounds,
     };
   }
 

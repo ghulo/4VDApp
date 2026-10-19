@@ -12,6 +12,8 @@ export const counterSettingsSchema = z.object({
     taxGroups: z.object({ '18': taxGroup, '16': taxGroup, '8': taxGroup, '0': taxGroup }),
   }),
   drawerConnected: z.boolean(),
+  // Older Windows apps send settings without it: sounds stay on.
+  scanSounds: z.boolean().default(true),
 });
 
 const withReason = trimmedString(200);

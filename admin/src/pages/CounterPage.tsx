@@ -35,7 +35,7 @@ import { useSearchParams } from 'react-router';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
 import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
-import { Button, ButtonLink } from '../components/ui';
+import { Badge, Button, ButtonLink } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { cashApi, counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { CounterEventInput, Product } from '../services/types';
@@ -849,7 +849,7 @@ export function CounterPage() {
               </p>
             )}
             {problem && (
-              <p className="counter-message counter-message--problem" role="alert">
+              <p className={alarm ? 'visually-hidden' : 'counter-message counter-message--problem'} role="alert">
                 <WarningCircle size={16} weight="bold" aria-hidden="true" />
                 {problem}
               </p>
@@ -1471,16 +1471,17 @@ function ScanAlarm({ alarm, onClose }: { alarm: Alarm; onClose: () => void }) {
   const t = useT();
   return (
     <div className="counter-alarm">
-      <WarningCircle size={56} weight="fill" aria-hidden="true" className="counter-alarm__icon" />
-      <p className="counter-alarm__title">{alarm.title}</p>
-      <p className="counter-alarm__detail">{alarm.detail}</p>
-      <p className="counter-alarm__todo">{alarm.todo}</p>
-      <Button variant="secondary" onClick={onClose} aria-keyshortcuts="Escape">
-        {t.counter.alarm.ok}
-        <kbd className="counter-key__hotkey" aria-hidden="true">
-          Esc
-        </kbd>
-      </Button>
+      <div className="counter-alarm__card">
+        <Badge tone="danger">{alarm.title}</Badge>
+        <p className="counter-alarm__detail">{alarm.detail}</p>
+        <p className="counter-alarm__todo">{alarm.todo}</p>
+        <Button variant="secondary" onClick={onClose} aria-keyshortcuts="Escape">
+          {t.counter.alarm.ok}
+          <kbd className="counter-key__hotkey" aria-hidden="true">
+            Esc
+          </kbd>
+        </Button>
+      </div>
     </div>
   );
 }

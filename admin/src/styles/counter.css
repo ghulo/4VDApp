@@ -154,9 +154,7 @@
 
 /* Price check: the box itself says nothing will be sold. */
 .counter-scan__field--check {
-  background: var(--info-soft);
-  box-shadow: inset 0 0 0 2px var(--info);
-  color: var(--info);
+  box-shadow: inset 0 0 0 1px var(--info), var(--shadow-inset);
 }
 
 .counter-scan__field input {
@@ -322,18 +320,22 @@
   margin-top: 1px;
 }
 
-.counter-message--ok {
-  background: var(--ok-soft);
+/* Callouts sit into the page on sunk paper, in ink; the status colour is the icon's. */
+.counter-message {
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink);
+}
+
+.counter-message--ok svg {
   color: var(--ok);
 }
 
-.counter-message--info {
-  background: var(--info-soft);
+.counter-message--info svg {
   color: var(--info);
 }
 
-.counter-message--problem {
-  background: var(--danger-soft);
+.counter-message--problem svg {
   color: var(--danger);
 }
 
@@ -356,28 +358,31 @@
   }
 }
 
-/* A scan that failed takes over the basket in red until the next scan or Esc. */
+/* A scan that failed covers the basket until the next scan or Esc: the
+   basket sinks back and one raised card says what happened, with a danger
+   stamp and a danger hairline, in the same words and keys as everywhere else. */
 .counter-alarm {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-6);
-  border: 3px solid var(--danger);
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
   border-radius: inherit;
-  background: var(--danger-soft);
-  color: var(--danger);
-  text-align: center;
+  background: var(--surface-sunk);
   overflow-y: auto;
-  animation: counter-alarm-in 120ms ease-out;
 }
 
-.counter-alarm > * {
-  flex-shrink: 0;
+.counter-alarm__card {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  width: min(100%, 32rem);
+  padding: var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise), inset 0 0 0 1px var(--danger);
+  animation: counter-alarm-in var(--fast) var(--ease);
 }
 
 /* On a phone the basket is short: the alarm still needs room for its words and key. */
@@ -385,38 +390,31 @@
   min-height: 320px;
 }
 
-.counter-alarm__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-headline);
-  font-weight: 600;
-  line-height: 1.1;
-}
-
+/* What was scanned, as a figure, so it can be checked against the label. */
 .counter-alarm__detail {
   margin: 0;
+  color: var(--ink);
   font-size: var(--text-figure);
   font-weight: 600;
-  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 .counter-alarm__todo {
-  max-width: 36rem;
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-lg);
-  color: var(--ink);
+  margin: 0 0 var(--space-1);
+  color: var(--ink-muted);
 }
 
 @keyframes counter-alarm-in {
   from {
-    transform: scale(0.98);
+    transform: translateY(4px);
     opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .counter-alarm {
+  .counter-alarm__card {
     animation: none;
   }
 }

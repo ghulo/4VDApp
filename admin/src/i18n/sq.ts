@@ -2046,6 +2046,18 @@ export const sq: Catalogue = {
     pagesChanged: (count) => `${count} faqe të menysë`,
     putBack: 'Ktheje',
   },
+  viewAs: {
+    title: 'Shiko 4VD si një rol',
+    hint: 'Shiko përreth si do ta shihte dikush me atë rol: menynë, faqet dhe vetëm atë që i lejohet. Asgjë nuk ruhet ndërsa shikon.',
+    viewAs: (role: string) => `Shiko si ${role}`,
+    barLabel: 'Duke parë si një rol tjetër',
+    seeing: (role: string) => `Po e sheh 4VD si ${role}`,
+    nothingSavedShort: 'Shiko lirshëm: asgjë që bën nuk ruhet.',
+    nothingSaved: 'Po e sheh 4VD si një rol tjetër, ndaj asgjë nuk ruhet. Ndalo shikimin për të bërë ndryshime.',
+    switch: 'Ndrysho rolin',
+    stop: 'Ndalo shikimin',
+    saveFirst: 'Ruaji ndryshimet më parë, që pamja t’i tregojë.',
+  },
   settings: {
     title: 'Cilësimet',
     description: 'Të dhënat e dyqanit, kur një kthim duhet të presë për ty, dhe sa poshtë mund ta çojë një ofertë çmimin.',

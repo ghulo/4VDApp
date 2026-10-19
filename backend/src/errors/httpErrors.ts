@@ -32,6 +32,13 @@ export class ForbiddenError extends AppError {
   }
 }
 
+/** The developer is looking at 4VD as another role: they can look around, but nothing is saved. */
+export class ViewingAsError extends AppError {
+  constructor(role: string) {
+    super(`You are viewing 4VD as ${role}: nothing is saved while you look around`, 403, 'VIEWING_AS');
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(message: string) {
     super(message, 404, 'NOT_FOUND');

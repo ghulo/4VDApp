@@ -8,6 +8,7 @@ import { applyTheme } from '../theme/theme';
 import { activeCatalogue, useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 import { canUseDashboard } from './roles';
+import { forgetViewAs, readViewAs } from './viewAs';
 import { languageAfterSignIn, takeSignInPick } from '../i18n/signInLanguage';
 
 /** What each role may do, read before the screens draw; the usual rules if it can't be read. */
@@ -94,15 +95,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     // The next person to use this browser shouldn't get the owner's alerts.
     await disablePush().catch(() => undefined);
+    forgetViewAs();
     await authApi.logout().catch(() => undefined);
     setState({ status: 'signedOut' });
   }, []);
 
   const updateUser = useCallback((user: User) => setState({ status: 'signedIn', user }), []);
 
-  const value = useMemo(
-    () => ({ state, login, logout, adoptSession, updateUser }),
-    [state, login, logout, adoptSession, updateUser],
-  );
+  const value = useMemo(() => {
+    // The developer previewing another role: every screen draws as that role (the API answers as it too).
+    const viewingAs = state.status === 'signedIn' && state.user.role === 'developer' ? readViewAs() : null;
+    const shown: AuthState = viewingAs && state.status === 'signedIn' ? { status: 'signedIn', user: { ...state.user, role: viewingAs } } : state;
+    return { state: shown, viewingAs, login, logout, adoptSession, updateUser };
+  }, [state, login, logout, adoptSession, updateUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

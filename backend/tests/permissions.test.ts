@@ -99,3 +99,33 @@ describe('roles and what they may do', () => {
     expect(response.body.data.powers.reopen).toEqual(['developer', 'accountant']);
   });
 });
+
+describe('viewing 4VD as another role', () => {
+  const asRole = (role: string, token = developerToken) => ({ ...auth(token), 'X-View-As': role });
+
+  it('should answer the developer as the role they look at', async () => {
+    expect((await request(context.app).get('/api/activity').set(auth(developerToken))).status).toBe(200);
+
+    const response = await request(context.app).get('/api/activity').set(asRole('employee'));
+
+    expect(response.status).toBe(403);
+  });
+
+  it('should save nothing while looking around', async () => {
+    const productId = await createTestProduct(context, developerToken);
+
+    const response = await request(context.app).post('/api/sales').set(asRole('owner')).send({ productId, quantity: 1 });
+
+    expect(response.status).toBe(403);
+    expect(response.body.error).toBe('VIEWING_AS');
+  });
+
+  it('should ignore the header from anyone but the developer', async () => {
+    const employeeToken = await loginAs(context, 'employee');
+
+    const response = await request(context.app).get('/api/activity').set(asRole('admin', employeeToken));
+
+    expect(response.status).toBe(403);
+    expect(response.body.error).toBe('FORBIDDEN');
+  });
+});

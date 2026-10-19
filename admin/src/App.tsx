@@ -23,6 +23,7 @@ import { ButtonLink } from './components/ui';
 import { useT } from './i18n/useT';
 import { useCurrentUser } from './auth/useAuth';
 import { staffLayout } from './auth/roles';
+import { ViewAsBar } from './components/ViewAsBar';
 
 /** Loads a page's code only when someone first opens it, so the first visit stays light. */
 function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) {
@@ -148,6 +149,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <BrowserRouter>
+              <ViewAsBar />
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />

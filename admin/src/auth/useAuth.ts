@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { LoginResult, User } from '../services/types';
+import type { LoginResult, User, UserRole } from '../services/types';
 
 export type AuthState =
   | { status: 'loading' }
@@ -8,6 +8,8 @@ export type AuthState =
 
 export interface AuthContextValue {
   state: AuthState;
+  /** The role the developer is previewing (Settings → Roles → View as); state.user already has it. */
+  viewingAs: UserRole | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */

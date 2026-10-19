@@ -1,3 +1,4 @@
+import { readViewAs } from '../auth/viewAs';
 import type { PaginationMeta } from './types';
 
 /** Shape every backend endpoint returns (backend/src/types/api.ts). */
@@ -84,6 +85,8 @@ interface RequestOptions {
   /** A file sent as-is (e.g. a photo), instead of JSON. */
   file?: Blob;
   query?: Record<string, string | number | boolean | undefined>;
+  /** Ask as the signed-in person, even while the developer views 4VD as another role. */
+  asMyself?: boolean;
 }
 
 async function send(path: string, options: RequestOptions): Promise<Response> {
@@ -96,6 +99,8 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
     'Content-Type': options.file ? options.file.type || 'application/octet-stream' : 'application/json',
   };
   if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
+  const viewAs = options.asMyself ? null : readViewAs();
+  if (viewAs) headers['X-View-As'] = viewAs;
 
   try {
     return await fetch(url, {

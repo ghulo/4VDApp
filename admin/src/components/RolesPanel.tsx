@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { POWERS, type Grants, type Permissions, type Power, setPermissions } from '../auth/permissions';
+import { Eye } from '@phosphor-icons/react';
+import { VIEWABLE_ROLES, startViewingAs } from '../auth/viewAs';
 import { useT } from '../i18n/useT';
 import { NAV_GROUPS, usuallyShownTo } from '../navigation/sections';
 import { permissionsApi } from '../services/api';
@@ -56,6 +58,17 @@ function RolesForm({ initial }: { initial: Permissions }) {
 
   return (
     <div className="roles-panel">
+      <Card title={t.viewAs.title} description={t.viewAs.hint}>
+        <div className="roles-panel__view-as">
+          {VIEWABLE_ROLES.map((role) => (
+            <Button key={role} variant="secondary" icon={Eye} disabled={changed} onClick={() => startViewingAs(role)}>
+              {t.viewAs.viewAs(t.common.roles[role])}
+            </Button>
+          ))}
+        </div>
+        {changed && <p className="roles-panel__view-as-note">{t.viewAs.saveFirst}</p>}
+      </Card>
+
       <Card title={t.permissions.powersTitle} description={t.permissions.powersHint} flush>
         <RoleTable
           caption={t.permissions.powersTitle}

@@ -2064,6 +2064,18 @@ export const en = {
     pagesChanged: (count: number) => `${count} menu ${count === 1 ? 'page' : 'pages'}`,
     putBack: 'Put back',
   },
+  viewAs: {
+    title: 'See 4VD as a role',
+    hint: 'Look around as someone with that role would: their menu, their pages, only what they may see. Nothing is saved while you look.',
+    viewAs: (role: string) => `View as ${role}`,
+    barLabel: 'Viewing as another role',
+    seeing: (role: string) => `You’re seeing 4VD as ${role}`,
+    nothingSavedShort: 'Look around freely: nothing you do is saved.',
+    nothingSaved: 'You’re viewing 4VD as another role, so nothing is saved. Stop viewing to make changes.',
+    switch: 'Switch role',
+    stop: 'Stop viewing',
+    saveFirst: 'Save your changes first, so the preview shows them.',
+  },
   settings: {
     title: 'Settings',
     description: "Your shop's details, when a return has to wait for you, and how low a promotion may take a price.",

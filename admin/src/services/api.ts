@@ -157,13 +157,13 @@ export const authApi = {
   },
 
   async me(): Promise<User> {
-    return (await apiRequest<User>('/auth/me')).data;
+    return (await apiRequest<User>('/auth/me', { asMyself: true })).data;
   },
 
   async logout(): Promise<void> {
     const refreshToken = tokenStore.refresh ?? undefined;
     try {
-      await apiRequest('/auth/logout', { method: 'POST', body: { refreshToken } });
+      await apiRequest('/auth/logout', { method: 'POST', body: { refreshToken }, asMyself: true });
     } finally {
       // Log out locally even if the server is unreachable.
       tokenStore.clear();

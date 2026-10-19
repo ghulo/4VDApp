@@ -3,6 +3,8 @@ import type { Language } from '../i18n/language';
 import type {
   PartnerDetails,
   RecordSource,
+  Offer,
+  OfferDetail,
   TrefinStockDocument,
   TrefinStockDocumentDetail,
   TestDelivery,
@@ -338,6 +340,11 @@ export interface DocumentListQuery {
   endDate?: string;
   source?: RecordSource;
 }
+
+export const offersApi = {
+  list: (query: { page: number; search?: string }) => paginated<Offer>('/offers', { limit: 25, ...query }),
+  get: async (id: number) => (await apiRequest<OfferDetail>(`/offers/${id}`)).data,
+};
 
 export const documentsApi = {
   async list(query: DocumentListQuery) {
@@ -688,7 +695,7 @@ export const exportsApi = {
 };
 
 export const activityApi = {
-  list: (query: { page: number; userId?: number; action?: string; exclude?: string; search?: string; limit?: number }) =>
+  list: (query: { page: number; userId?: number; action?: string; exclude?: string; search?: string; limit?: number; source?: RecordSource }) =>
     paginated<ActivityEntry>('/activity', { limit: 30, ...query }),
   undo: async (id: number, note: string) =>
     (await apiRequest<ActivityEntry>(`/activity/${id}/undo`, { method: 'POST', body: note ? { note } : {} })).data,

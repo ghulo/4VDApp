@@ -73,6 +73,7 @@ export const sq: Catalogue = {
       categories: 'Kategori',
       history: 'Historiku',
       invoices: 'Faturat',
+      offers: 'Ofertat',
       cash: 'Numërimet e arkës',
       carwash: 'Lavazhi',
       report: 'Ditor dhe javor',
@@ -471,6 +472,25 @@ export const sq: Catalogue = {
     dayTotal: (count, amount) => `${count} ${count === 1 ? 'shitje' : 'shitje'} · ${amount}`,
     returnedBadge: 'Kthyer',
     partReturnedBadge: 'Kthyer pjesërisht',
+  },
+  offers: {
+    title: 'Ofertat',
+    titleOf: (number) => `Oferta ${number}`,
+    description: 'Oferta çmimesh të shtypura për një blerës para se të blejë. Këto erdhën nga TREFIN.',
+    search: 'Numri i ofertës, blerësi ose produkti',
+    number: 'Oferta',
+    noNumber: 'Pa numër',
+    day: 'Data',
+    customer: 'Blerësi',
+    lines: 'Produktet',
+    quantity: 'Sasia',
+    price: 'Çmimi',
+    total: 'Totali',
+    items: 'oferta',
+    none: 'Ende pa oferta',
+    noneHint: 'Ofertat e TREFIN shfaqen këtu pasi të sillet historia e tij.',
+    noneMatch: 'Asnjë ofertë nuk përputhet',
+    trefinNote: 'Nga historia e TREFIN, për t\'u parë. Oferta nuk është shitje: nuk ndryshoi stokun, paratë apo librat.',
   },
   documents: {
     title: 'Faturat',
@@ -2976,6 +2996,13 @@ export const sq: Catalogue = {
     cardNote: 'Rreshtat e TREFIN kanë gjendjen e tyre, vetëm mbi rreshtat e TREFIN.',
     open: 'Hap regjistrimin nga TREFIN',
     openShort: 'Hap',
+    activity: (verb, what, subject) => {
+      const thing = ({ receipt: 'kuponin', invoice: 'faturën', product: 'produktin', prices: 'listën e çmimeve', bill: 'faturën e blerjes', supplier_return: 'kthimin e mallit', partner: 'furnitorin ose blerësin', expense: 'llojin e shpenzimit', payment: 'pagesën', stock: 'gjendjen fillestare', count: 'numërimin e stokut', equipment: 'pajisjen', user: 'përdoruesin', settings: 'cilësimet' } as Record<string, string>)[what] ?? what;
+      if (verb === 'login') return 'U kyç në TREFIN';
+      const done = ({ created: 'Shtoi', updated: 'Ndryshoi', deleted: 'Fshiu', closed: 'Mbylli' } as Record<string, string>)[verb] ?? 'Ndryshoi';
+      return subject ? `${done} ${thing} ${subject}` : `${done} ${thing}`;
+    },
+    someone: 'Dikush në TREFIN',
   },
   partner: {
     details: 'Të dhënat',

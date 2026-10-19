@@ -74,6 +74,7 @@ export const en = {
       categories: 'Categories',
       history: 'History',
       invoices: 'Invoices',
+      offers: 'Offers',
       cash: 'Cash counts',
       carwash: 'Carwash',
       report: 'Daily & weekly',
@@ -478,6 +479,25 @@ export const en = {
     dayTotal: (count: number, amount: string) => `${count} ${count === 1 ? 'sale' : 'sales'} · ${amount}`,
     returnedBadge: 'Returned',
     partReturnedBadge: 'Part returned',
+  },
+  offers: {
+    title: 'Offers',
+    titleOf: (number: string) => `Offer ${number}`,
+    description: 'Price quotes printed for a customer before they buy. These came from TREFIN.',
+    search: 'Offer number, customer or product',
+    number: 'Offer',
+    noNumber: 'No number',
+    day: 'Date',
+    customer: 'Customer',
+    lines: 'Products',
+    quantity: 'Quantity',
+    price: 'Price',
+    total: 'Total',
+    items: 'offers',
+    none: 'No offers yet',
+    noneHint: "TREFIN's offers show here once its history is brought over.",
+    noneMatch: 'No offers match',
+    trefinNote: "From TREFIN's history, here to look at. An offer isn't a sale: it changed no stock, money or books.",
   },
   documents: {
     title: 'Invoices',
@@ -2997,6 +3017,14 @@ export const en = {
     cardNote: "TREFIN's lines have their own balance, over TREFIN's lines only.",
     open: 'Open the entry from TREFIN',
     openShort: 'Open',
+    /** A line of TREFIN's activity log as a sentence: "Added bill 1-2/13989". */
+    activity: (verb: string, what: string, subject: string | null) => {
+      const thing = ({ receipt: 'receipt', invoice: 'invoice', product: 'product', prices: 'price list', bill: 'bill', supplier_return: 'goods return', partner: 'supplier or customer', expense: 'expense type', payment: 'payment', stock: 'opening stock', count: 'stock count', equipment: 'equipment', user: 'user', settings: 'settings' } as Record<string, string>)[what] ?? what;
+      if (verb === 'login') return 'Signed in to TREFIN';
+      const done = ({ created: 'Added', updated: 'Changed', deleted: 'Deleted', closed: 'Closed' } as Record<string, string>)[verb] ?? 'Changed';
+      return subject ? `${done} ${thing} ${subject}` : `${done} ${thing}`;
+    },
+    someone: 'Someone in TREFIN',
   },
   partner: {
     details: 'Details',

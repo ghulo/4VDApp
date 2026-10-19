@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ACTIVITY_ENTITY_TYPES } from '../constants/activity.js';
-import { idSchema, paginationSchema } from './validate.js';
+import { idSchema, paginationSchema, recordSourceSchema } from './validate.js';
 
 export const undoBodySchema = z.object({
   note: z.string().trim().max(500).optional(),
@@ -22,6 +22,8 @@ export const activityQuerySchema = paginationSchema.extend({
   exclude: actionList.optional(),
   // Words to find in what changed: "vase", "Fresh Foods".
   search: z.string().trim().max(100).optional(),
+  // 4VD's own entries, TREFIN's activity log, or (left out) both.
+  source: recordSourceSchema.optional(),
 });
 
 /** The newest entry the developer was shown, so a restore never acts on a changed record. */

@@ -46,6 +46,8 @@ async function main(): Promise<void> {
     console.log(`  stock documents  ${created.stockDocuments}  (${created.stockLines} lines: starting stock, corrections, counts; in Stock counts)`);
     console.log(`  payments         ${created.moneyLines}  (TREFIN's cash desk and bank; in Money, each place's book)`);
     console.log(`  journal entries  ${created.journalEntries}  (${created.journalLines} lines; read-only in Books, before 4VD)`);
+    console.log(`  offers           ${created.offers}  (price quotes; Sell → Sales → Offers)`);
+    console.log(`  activity         ${created.activity}  (TREFIN's activity log; in Activity)`);
     console.log('\nWorth knowing:');
     for (const [what, n] of Object.entries(report.notes)) console.log(`  ${String(n).padStart(6)}  ${what}`);
     console.log(`\nTook ${((Date.now() - started) / 1000).toFixed(1)}s.`);

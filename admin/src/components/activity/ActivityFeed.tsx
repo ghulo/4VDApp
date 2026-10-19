@@ -23,6 +23,7 @@ import { useT } from '../../i18n/useT';
 import type { ActivityEntry, TeamMember } from '../../services/types';
 import { dayHeading, formatDateTime, formatTime, groupByDay } from '../../utils/format';
 import { Avatar } from '../Avatar';
+import { TrefinTag } from '../TrefinParts';
 import { Button } from '../ui';
 import { UndoConfirm } from './UndoConfirm';
 
@@ -159,7 +160,8 @@ export function ActivityFeed({ entries, people, hidePerson, headingLevel: Headin
               const KindIcon = ICONS[entry.action.split('.')[0] ?? ''] ?? Gear;
               const link = linkFor(entry);
               const undone = entry.undo?.state === 'undone';
-              const summary = undone ? <s className="activity-undo__struck">{entry.summary}</s> : entry.summary;
+              const text = entry.trefin ? t.fromTrefin.activity(entry.trefin.verb, entry.trefin.what, entry.trefin.subject) : entry.summary;
+              const summary = undone ? <s className="activity-undo__struck">{text}</s> : text;
               return (
                 <li key={entry.id} className={`activity-feed__row${undone ? ' activity-feed__row--undone' : ''}`}>
                   <span className="activity-feed__icon" aria-hidden="true">
@@ -177,7 +179,11 @@ export function ActivityFeed({ entries, people, hidePerson, headingLevel: Headin
                     <span className="activity-feed__meta">
                       {!hidePerson && (
                         <>
-                          {entry.user ? (
+                          {entry.trefin ? (
+                            <span className="activity-feed__person">
+                              {entry.trefin.person ?? t.fromTrefin.someone} <TrefinTag />
+                            </span>
+                          ) : entry.user ? (
                             <Link to={`/people/${entry.user.id}`} className="activity-feed__person">
                               <Avatar name={entry.user.name} url={avatars.get(entry.user.id) ?? null} size={24} />
                               {entry.user.name}

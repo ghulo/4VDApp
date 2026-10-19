@@ -12,6 +12,9 @@ export const WIPE_PHRASE = 'wipe 4vd.app';
  * (children before the rows they point at).
  */
 const EMPTIED = [
+  'trefin_activity',
+  'trefin_offer_lines',
+  'trefin_offers',
   'trefin_journal_lines',
   'trefin_journal_entries',
   'trefin_money_lines',

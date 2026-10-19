@@ -46,6 +46,16 @@ export interface ActivityRecord {
   undo_note: string | null;
 }
 
+/** A line of TREFIN's activity log (migration 051). */
+export interface TrefinActivityRecord {
+  id: number;
+  done_at: Date;
+  person: string | null;
+  action: string;
+  what: string;
+  subject: string | null;
+}
+
 export class ActivityLogRepository {
   constructor(private readonly db: DatabaseClient) {}
 
@@ -110,6 +120,27 @@ export class ActivityLogRepository {
       query.select((eb) => eb.fn.countAll<string>().as('total')).executeTakeFirstOrThrow(),
     ]);
     return { entries, total: Number(count.total) };
+  }
+
+  /** A page of TREFIN's activity log, newest first, with the same action and word filters as 4VD's own. */
+  async findTrefin(filters: Pick<ActivityFilters, 'actions' | 'excludeActions' | 'search' | 'limit' | 'offset'>) {
+    const matches = (action: string) => (action.includes('.') ? sql`t.action = ${action}` : sql`t.action like ${`${action}.%`}`);
+    const conditions = [sql`true`];
+    if (filters.actions && filters.actions.length > 0) conditions.push(sql`(${sql.join(filters.actions.map(matches), sql` or `)})`);
+    for (const action of filters.excludeActions ?? []) conditions.push(sql`not ${matches(action)}`);
+    for (const word of filters.search?.trim().split(/\s+/).filter(Boolean) ?? []) {
+      const pattern = `%${word.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      conditions.push(sql`(t.subject ilike ${pattern} or t.person ilike ${pattern})`);
+    }
+    const where = sql.join(conditions, sql` and `);
+    const [page, count] = await Promise.all([
+      sql<TrefinActivityRecord>`
+        select t.id, t.done_at, t.person, t.action, t.what, t.subject from trefin_activity t
+        where ${where} order by t.done_at desc, t.id desc limit ${filters.limit} offset ${filters.offset}
+      `.execute(this.db),
+      sql<{ total: string }>`select count(*) as total from trefin_activity t where ${where}`.execute(this.db),
+    ]);
+    return { entries: page.rows, total: Number(count.rows[0]?.total ?? 0) };
   }
 
   /**

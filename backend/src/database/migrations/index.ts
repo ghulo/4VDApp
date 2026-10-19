@@ -49,6 +49,7 @@ import * as trefinSales from './047_trefin_sales.js';
 import * as trefinStock from './048_trefin_stock.js';
 import * as trefinMoney from './049_trefin_money.js';
 import * as trefinJournal from './050_trefin_journal.js';
+import * as trefinOffersActivity from './051_trefin_offers_activity.js';
 import * as statements from './052_statements.js';
 
 /**
@@ -108,5 +109,6 @@ export const migrations: Record<string, Migration> = {
   '048_trefin_stock': trefinStock,
   '049_trefin_money': trefinMoney,
   '050_trefin_journal': trefinJournal,
+  '051_trefin_offers_activity': trefinOffersActivity,
   '052_statements': statements,
 };

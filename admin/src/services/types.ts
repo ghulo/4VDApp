@@ -942,6 +942,24 @@ export interface RestorePlan {
   changes: FieldChange[];
 }
 
+/** An offer: a price quote printed for a customer before they buy. So far only TREFIN's. */
+export interface Offer {
+  id: number;
+  number: string | null;
+  /** "YYYY-MM-DD". */
+  day: string;
+  customer: { id: number; name: string } | null;
+  partyName: string | null;
+  total: number;
+  lineCount: number;
+  /** Which TREFIN database. */
+  source: string;
+}
+
+export interface OfferDetail extends Offer {
+  lines: Array<{ productId: number | null; productName: string; quantity: number; unitPrice: number; total: number }>;
+}
+
 export interface ActivityEntry {
   id: number;
   action: string;
@@ -955,6 +973,8 @@ export interface ActivityEntry {
   user: { id: number; name: string } | null;
   /** Null for entries that can't be undone. */
   undo: UndoInfo | null;
+  /** Set on a line of TREFIN's activity log (its id is below zero). */
+  trefin?: { what: string; verb: string; subject: string | null; person: string | null };
 }
 
 export type UndoKind =

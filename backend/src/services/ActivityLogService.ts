@@ -1,6 +1,6 @@
 import type { UserRole } from '../database/types.js';
 import { NotFoundError } from '../errors/httpErrors.js';
-import type { ActivityFilters, ActivityLogRepository, ActivityRecord } from '../repositories/ActivityLogRepository.js';
+import type { ActivityFilters, ActivityLogRepository, ActivityRecord, TrefinActivityRecord } from '../repositories/ActivityLogRepository.js';
 import type { UndoRepository } from '../repositories/UndoRepository.js';
 import type { DocumentRepository } from '../repositories/DocumentRepository.js';
 import type { ActivityEntityType } from '../constants/activity.js';
@@ -29,7 +29,10 @@ interface FieldChange {
 /** Who is looking; sentences are written in their language (English when not known). */
 type Viewer = { id: number; role: UserRole; language?: Language };
 
-export interface ActivityQuery extends PageRequest, Omit<ActivityFilters, 'limit' | 'offset'> {}
+export interface ActivityQuery extends PageRequest, Omit<ActivityFilters, 'limit' | 'offset'> {
+  /** 4VD's own entries, TREFIN's activity log, or both (the default). */
+  source?: 'both' | '4vd' | 'trefin';
+}
 
 /** Plenty for one record; a product with years of stock changes shows its newest. */
 const HISTORY_LIMIT = 300;
@@ -58,17 +61,33 @@ export class ActivityLogService {
 
   /** A page of entries, each with its undo state as `viewer` sees it. */
   async list(query: ActivityQuery, viewer: Viewer) {
-    const { entries, total } = await this.activityLogRepository.findMany({
-      userId: query.userId,
-      entityType: query.entityType,
-      entityId: query.entityId,
+    const offset = toOffset(query);
+    // TREFIN's log names no 4VD person or record, so a filter by either shows 4VD's own only.
+    const source = query.userId || query.entityType || query.entityId ? '4vd' : (query.source ?? 'both');
+    const own =
+      source === 'trefin'
+        ? { entries: [], total: 0 }
+        : await this.activityLogRepository.findMany({
+            userId: query.userId,
+            entityType: query.entityType,
+            entityId: query.entityId,
+            actions: query.actions,
+            excludeActions: query.excludeActions,
+            search: query.search,
+            limit: query.limit,
+            offset,
+          });
+    const items = await this.toDtos(own.entries, viewer);
+    if (source === '4vd') return { items, meta: toPaginationMeta(query, own.total) };
+    // TREFIN's log is older than 4VD's own, so it comes after it, page by page.
+    const trefin = await this.activityLogRepository.findTrefin({
       actions: query.actions,
       excludeActions: query.excludeActions,
       search: query.search,
-      limit: query.limit,
-      offset: toOffset(query),
+      offset: Math.max(0, offset - own.total),
+      limit: query.limit - own.entries.length,
     });
-    return { items: await this.toDtos(entries, viewer), meta: toPaginationMeta(query, total) };
+    return { items: [...items, ...trefin.entries.map(toTrefinDto)], meta: toPaginationMeta(query, own.total + trefin.total) };
   }
 
   async get(id: number, viewer: Viewer) {
@@ -120,4 +139,24 @@ export class ActivityLogService {
       return [{ changedAt: entry.created_at.toISOString(), changedBy: entry.user_name, price, costPrice }];
     });
   }
+}
+
+const TREFIN_VERBS: Record<string, string> = { created: 'Added', updated: 'Changed', deleted: 'Deleted', closed: 'Closed', login: 'Signed in' };
+
+/** A line of TREFIN's log in the shape of 4VD's entries (its id below zero); the dashboard writes the sentence from `trefin`. */
+function toTrefinDto(record: TrefinActivityRecord) {
+  const verb = record.action.split('.')[1] ?? 'updated';
+  return {
+    id: -record.id,
+    action: record.action,
+    entityType: null,
+    entityId: null,
+    summary: [TREFIN_VERBS[verb] ?? 'Changed', verb === 'login' ? '' : record.what, record.subject ?? ''].filter(Boolean).join(' '),
+    details: null,
+    changes: [],
+    createdAt: record.done_at.toISOString(),
+    user: null,
+    undo: null,
+    trefin: { what: record.what, verb, subject: record.subject, person: record.person },
+  };
 }

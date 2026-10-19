@@ -473,6 +473,65 @@ describe('importTrefin', () => {
     expect(both.lines).toHaveLength(ownCard.lines.length + 1);
   });
 
+  it("should bring TREFIN's offers to the Offers page and its activity log to Activity, people by name only", async () => {
+    const data = sample();
+    const offer = { NrRen: '1485', NrFatura: 'OF-22-00000001', Data: '2022-05-03 00:00:00', LlojDok: 'OF', NrKlient: '700001', Totali: '2.6' };
+    const lines = [
+      { NrFatura: 'OF-22-00000001', NrArt: '339', Sasia: '2', Cmimi: '0', CmimiBTVSH: '0.5', Totali: '1' },
+      { NrFatura: 'OF-22-00000001', NrArt: '679', Sasia: '1', Cmimi: '0', CmimiBTVSH: '1.6', Totali: '1.6' },
+    ];
+    const log = (at: string, type: string, number: string, action: string, user = '1') => ({ Krijuar: at, LlojDok: type, NrFatura: number, Veprim: action, NrUser: user });
+    data.history = emptyHistory();
+    data.extras = {
+      // The newer database repeats the offer: taken once.
+      offers: { ...EACH, MARKET_2025: [offer], MARKET_2022: [{ ...offer, NrRen: '9' }] },
+      offerLines: { ...EACH, MARKET_2025: lines, MARKET_2022: lines },
+      activity: [
+        log('2024-05-10 09:30:00', 'FBM', '1-2/13989', 'Regjistrim'),
+        log('2024-05-10 09:00:00', 'Kyçje', 'Kyçje', 'Kyçje'),
+        log('2024-05-11 10:00:00', 'Mall', 'Golden Eagle 0.25L', 'Ndryshim', '2'),
+        // MasterDB1 copies MasterDB, and a wrong clock on the PC: both left out.
+        log('2024-05-10 09:30:00', 'FBM', '1-2/13989', 'Regjistrim'),
+        log('2043-10-14 00:01:35', 'KUP', 'K-43-1', 'Regjistrim'),
+      ],
+      users: new Map([['1', 'Administratori']]),
+    };
+
+    const report = await importTrefin(context.db, data, { apply: true, timeZone: TZ });
+
+    expect(report.created).toMatchObject({ offers: 1, activity: 3 });
+    const token = await loginAs(context, 'admin');
+    const auth = { Authorization: `Bearer ${token}` };
+    const offers = (await request(context.app).get('/api/offers').set(auth)).body;
+    expect(offers.meta.total).toBe(1);
+    expect(offers.data[0]).toMatchObject({ number: 'OF-22-00000001', day: '2022-05-03', customer: null, total: 2.6, lineCount: 2 });
+    const detail = (await request(context.app).get(`/api/offers/${offers.data[0].id}`).set(auth)).body.data as { lines: Array<Record<string, unknown>> };
+    expect(detail.lines.map((one) => [one.productName, one.quantity, one.unitPrice, one.total])).toEqual([
+      ['Golden Eagle 0.25L', 2, 0.5, 1],
+      ['Marlboro Gold', 1, 1.6, 1.6],
+    ]);
+    expect((await request(context.app).get('/api/offers?search=marlboro').set(auth)).body.meta.total).toBe(1);
+    expect((await request(context.app).get('/api/offers/999999').set(auth)).status).toBe(404);
+
+    type Entry = { id: number; action: string; trefin?: { what: string; verb: string; subject: string | null; person: string | null } };
+    const activity = (await request(context.app).get('/api/activity?source=trefin').set(auth)).body.data as Entry[];
+    expect(activity.map((entry) => [entry.action, entry.trefin?.subject, entry.trefin?.person])).toEqual([
+      ['product.updated', 'Golden Eagle 0.25L', null],
+      ['bill.created', '1-2/13989', 'Administratori'],
+      ['auth.login', null, 'Administratori'],
+    ]);
+    expect(activity.every((entry) => entry.id < 0)).toBe(true);
+    // The kind filters work on TREFIN's lines too, and a person filter shows 4VD's own only.
+    const logins = (await request(context.app).get('/api/activity?source=trefin&exclude=auth').set(auth)).body.data as Entry[];
+    expect(logins.map((entry) => entry.action)).toEqual(['product.updated', 'bill.created']);
+    const found = (await request(context.app).get('/api/activity?source=trefin&search=13989%20administratori').set(auth)).body.data as Entry[];
+    expect(found.map((entry) => entry.action)).toEqual(['bill.created']);
+    const both = (await request(context.app).get('/api/activity?action=bill').set(auth)).body.data as Entry[];
+    expect(both.filter((entry) => entry.trefin).map((entry) => entry.trefin?.subject)).toEqual(['1-2/13989']);
+    const own = (await request(context.app).get('/api/activity?source=4vd').set(auth)).body.data as Entry[];
+    expect(own.filter((entry) => entry.trefin)).toEqual([]);
+  });
+
   it('should refuse a shop that already has products, and a second import', async () => {
     const token = await loginAs(context, 'admin');
     await createTestProduct(context, token);

@@ -24,6 +24,7 @@ import {
   type TrefinHistory,
   type TrefinPartner,
 } from './trefinHistory.js';
+import { readTrefinExtras, type TrefinExtras, trefinActivity, trefinOffers } from './trefinOffersActivity.js';
 
 /** What has to be typed to really import, so it can't happen by accident. */
 export const IMPORT_PHRASE = 'import trefin';
@@ -72,6 +73,8 @@ export interface TrefinExport {
   categories: Map<string, string>;
   /** The raw tables of every database: partners, purchases, old product names. Missing in an older export. */
   history?: TrefinHistory;
+  /** TREFIN's offers and activity log (absent in an older export). */
+  extras?: TrefinExtras;
 }
 
 export interface TrefinImportReport {
@@ -101,6 +104,10 @@ export interface TrefinImportReport {
     /** TREFIN's journal as read-only entries in Books, and their lines. */
     journalEntries: number;
     journalLines: number;
+    /** TREFIN's offers (price quotes), on the Offers page. */
+    offers: number;
+    /** TREFIN's activity log, in Activity. */
+    activity: number;
   };
   revenue: number;
   firstSale: string | null;
@@ -132,6 +139,7 @@ export function readTrefinExport(dir: string): TrefinExport {
     duplicates: load('duplicates'),
     categories: readCategoryFile(dir),
     history: readTrefinHistory(dir),
+    extras: readTrefinExtras(dir),
   };
 }
 
@@ -735,6 +743,52 @@ export async function importTrefin(
         journalLines += lines.length;
       }
 
+      // TREFIN's offers: price quotes, look-only on the Offers page.
+      const offers = data.extras && data.history ? trefinOffers(data.extras, data.history.partners) : [];
+      for (const offer of offers) {
+        const partner = offer.partnerKey ? byKey.get(offer.partnerKey) : undefined;
+        const { id } = await trx
+          .insertInto('trefin_offers')
+          .values({
+            trefin_ref: offer.ref.slice(0, 80),
+            number: offer.number?.slice(0, 40) ?? null,
+            offered_on: offer.day,
+            customer_id: partner ? (customerIds.get(partner) ?? null) : null,
+            party_name: offer.partnerName?.slice(0, 200) ?? null,
+            total: offer.total,
+            source: offer.db,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const products = data.history!.products[offer.db];
+        const lines = [];
+        for (const line of offer.lines) {
+          const known = products?.get(line.code);
+          const productId = (await productFor({ db: offer.db, code: line.code, barcode: known?.barcode ?? '', name: known?.name ?? '', price: line.unitPrice })) ?? null;
+          const name = known?.name || (productId === null ? '' : ((await trx.selectFrom('products').select('name').where('id', '=', productId).executeTakeFirst())?.name ?? ''));
+          lines.push({ offer_id: id, product_id: productId, product_name: (name || `TREFIN code ${line.code}`).slice(0, 200), quantity: line.quantity, unit_price: line.unitPrice, total: line.total });
+        }
+        if (lines.length > 0) await trx.insertInto('trefin_offer_lines').values(lines).execute();
+      }
+
+      // TREFIN's activity log: in Activity, people by name only.
+      const activity = data.extras ? trefinActivity(data.extras, new Date().toISOString().slice(0, 10)) : { lines: [], wrongClock: 0 };
+      for (let i = 0; i < activity.wrongClock; i++) note("lines of TREFIN's activity log with an impossible date (the PC's clock), left out");
+      for (let i = 0; i < activity.lines.length; i += BATCH) {
+        await trx
+          .insertInto('trefin_activity')
+          .values(
+            activity.lines.slice(i, i + BATCH).map((line) => ({
+              done_at: saleMoment(line.at.slice(0, 10), line.at.slice(11, 19), options.timeZone),
+              person: line.person?.slice(0, 80) ?? null,
+              action: line.action,
+              what: line.what,
+              subject: line.subject?.slice(0, 200) ?? null,
+            })),
+          )
+          .execute();
+      }
+
       const created = {
         categories: newCategories,
         products: productIds.size,
@@ -754,6 +808,8 @@ export async function importTrefin(
         moneyLines: moneyLines.length,
         journalEntries: journal.length,
         journalLines,
+        offers: offers.length,
+        activity: activity.lines.length,
       };
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${TREFIN_IMPORTED_KEY}, to_jsonb(now()::text), now())

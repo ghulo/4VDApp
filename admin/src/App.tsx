@@ -42,6 +42,8 @@ const ReportsPage = lazyPage(() => import('./pages/ReportsPage'), 'ReportsPage')
 const SalesPage = lazyPage(() => import('./pages/SalesPage'), 'SalesPage');
 const DocumentDetailPage = lazyPage(() => import('./pages/DocumentDetailPage'), 'DocumentDetailPage');
 const DocumentsPage = lazyPage(() => import('./pages/DocumentsPage'), 'DocumentsPage');
+const OffersPage = lazyPage(() => import('./pages/OffersPage'), 'OffersPage');
+const OfferDetailPage = lazyPage(() => import('./pages/OffersPage'), 'OfferDetailPage');
 const BillDetailPage = lazyPage(() => import('./pages/BillDetailPage'), 'BillDetailPage');
 const ScanCheckPage = lazyPage(() => import('./pages/ScanCheckPage'), 'ScanCheckPage');
 const BillsPage = lazyPage(() => import('./pages/BillsPage'), 'BillsPage');
@@ -175,8 +177,10 @@ function App() {
                     <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
                       <Route path="sales" element={<SalesPage />} />
                       <Route path="documents" element={<DocumentsPage />} />
+                      <Route path="offers" element={<OffersPage />} />
                     </Route>
                     <Route path="documents/:id" element={<DocumentDetailPage />} />
+                    <Route path="offers/:id" element={<OfferDetailPage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
                       <Route path="day" element={<DayPage />} />
                       <Route path="cash" element={<CashPage />} />

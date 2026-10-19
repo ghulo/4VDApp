@@ -20,6 +20,7 @@ import { ReturnRepository } from './repositories/ReturnRepository.js';
 import { ReturnService } from './services/ReturnService.js';
 import { StockCountRepository } from './repositories/StockCountRepository.js';
 import { StockCountService } from './services/StockCountService.js';
+import { OfferService } from './services/OfferService.js';
 import { ApprovalRepository } from './repositories/ApprovalRepository.js';
 import { ApprovalService } from './services/ApprovalService.js';
 import { AnalyticsService } from './services/AnalyticsService.js';
@@ -211,6 +212,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
+  const offerService = new OfferService(db);
   const approvalService = new ApprovalService(new ApprovalRepository(db));
   const promotionService = new PromotionService(promotionRepository, settingsService, transactions, config.shopTimeZone);
   const undoService = new UndoService(
@@ -460,6 +462,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     writeOffService,
     returnService,
     stockCountService,
+    offerService,
     approvalService,
     undoService,
     recordRestoreService,

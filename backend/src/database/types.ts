@@ -1117,6 +1117,9 @@ export interface Database {
   trefin_money_lines: TrefinMoneyLinesTable;
   trefin_journal_entries: TrefinJournalEntriesTable;
   trefin_journal_lines: TrefinJournalLinesTable;
+  trefin_offers: TrefinOffersTable;
+  trefin_offer_lines: TrefinOfferLinesTable;
+  trefin_activity: TrefinActivityTable;
 }
 
 export type OpeningLineKind = 'place' | 'stock' | 'supplier' | 'customer' | 'account';
@@ -1208,6 +1211,38 @@ export interface TrefinJournalEntriesTable {
   kind: string;
   reference: string | null;
   source: string;
+}
+
+/** One of TREFIN's offers (price quotes), on the Offers page (see migration 051). */
+export interface TrefinOffersTable {
+  id: Generated<number>;
+  trefin_ref: string;
+  number: string | null;
+  offered_on: ColumnType<string, string, string>;
+  customer_id: number | null;
+  party_name: string | null;
+  total: ColumnType<string, number, number>;
+  source: string;
+}
+
+export interface TrefinOfferLinesTable {
+  id: Generated<number>;
+  offer_id: number;
+  product_id: number | null;
+  product_name: string;
+  quantity: ColumnType<string, number, number>;
+  unit_price: ColumnType<string, number, number>;
+  total: ColumnType<string, number, number>;
+}
+
+/** A line of TREFIN's activity log, in Activity. */
+export interface TrefinActivityTable {
+  id: Generated<number>;
+  done_at: Date;
+  person: string | null;
+  action: string;
+  what: string;
+  subject: string | null;
 }
 
 export interface TrefinJournalLinesTable {

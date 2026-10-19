@@ -7,6 +7,7 @@ import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
+import { SourceFilter, sourceFrom } from '../components/TrefinParts';
 import { EmptyState, PageHeader } from '../components/ui';
 import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
@@ -34,16 +35,18 @@ export function ActivityPage() {
   // Old links named a single prefix ("kind=stock"); any value still filters.
   const action = params.get('kind') ?? '';
   const search = params.get('search') ?? '';
+  const source = sourceFrom(params);
 
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
   const activity = useQuery({
-    queryKey: ['activity', { page, userId, action, search }],
+    queryKey: ['activity', { page, userId, action, search, source }],
     queryFn: () =>
       activityApi.list({
         page,
         userId,
         action: action || undefined,
         search: search || undefined,
+        source,
         // Logins and issued invoices (one per checkout) would crowd the timeline; each has its own place.
         exclude: action === '' ? 'auth,document.issued' : undefined,
       }),
@@ -67,14 +70,17 @@ export function ActivityPage() {
     [setParams],
   );
   const onSearch = useCallback((value: string) => updateParams({ search: value }), [updateParams]);
-  const filtered = Boolean(userId || action || search);
+  const filtered = Boolean(userId || action || search || source);
 
   return (
     <>
       <PageHeader wide title={t.activity.title} description={t.activity.description} />
 
       <div className="card activity-filters">
-        <SearchInput value={search} onChange={onSearch} label={t.activity.search} />
+        <div className="toolbar">
+          <SearchInput value={search} onChange={onSearch} label={t.activity.search} />
+          <SourceFilter value={source} onChange={(next) => updateParams({ source: next ?? '' })} />
+        </div>
         <div className="chip-row" role="radiogroup" aria-label={t.activity.person}>
           <button type="button" role="radio" aria-checked={!userId} className="chip" onClick={() => updateParams({ userId: '' })}>
             {t.activity.everyone}

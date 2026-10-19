@@ -83,7 +83,7 @@ describe('Google sign-in', () => {
     const unlinked = await request(context.app).delete('/api/me/google').set(auth);
     const after = await request(context.app).get('/api/me/security').set(auth);
 
-    expect(security.body.data).toEqual({ hasPassword: true, googleEmail: 'ana@example.com' });
+    expect(security.body.data).toEqual({ hasPassword: true, googleEmail: 'ana@example.com', hasPin: false });
     expect(unlinked.status).toBe(200);
     expect(after.body.data.googleEmail).toBeNull();
   });

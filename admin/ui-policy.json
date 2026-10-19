@@ -142,11 +142,11 @@
       "reason": "The sheet panel is lit by the same light gradient, so the tool cannot read it. The text is --ink-muted on --surface, which src/theme/contrast.test.ts checks passes 4.5:1."
     },
     {
-      "selector": ".sheet .field__hint",
+      "selector": ".sheet .field__hint, .sheet .field-hint",
       "rules": [
         "text-contrast"
       ],
-      "reason": "A field's hint inside a sheet (the Counter's opening cash and drawer count) sits on the same gradient-lit sheet panel, so the tool cannot read it. The text is --ink-muted on --surface, which src/theme/contrast.test.ts checks passes 4.5:1."
+      "reason": "A field's hint or a short note inside a sheet (the Counter's opening cash, drawer count and PIN sheets) sits on the same gradient-lit sheet panel, so the tool cannot read it. The text is --ink-muted on --surface, which src/theme/contrast.test.ts checks passes 4.5:1."
     },
     {
       "selector": ".sheet__close",
@@ -175,6 +175,13 @@
         "text-contrast"
       ],
       "reason": "The arrow and plus/minus keys in the Counter's shortcut legend are symbols, so contrast can't be measured; they use the same ink on paper as the lettered keys beside them, which pass."
+    },
+    {
+      "selector": ".counter__bar-label",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On a phone the Counter bar keys (Switch person, Home, Log out) shrink to their icons: the label is hidden on purpose the visually-hidden way (1px, clip-path), and each button keeps its aria-label and title."
     }
   ]
 }

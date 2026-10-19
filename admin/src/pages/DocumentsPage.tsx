@@ -57,7 +57,7 @@ export function DocumentsPage() {
 
   return (
     <>
-      <PageHeader wide title={t.nav.items.sales} description={t.documents.description} />
+      <PageHeader title={t.nav.items.sales} description={t.documents.description} />
       {documents.isPending && <Loading />}
       {documents.isError && <ErrorNotice error={documents.error} onRetry={() => documents.refetch()} />}
       {documents.data && (

@@ -274,8 +274,8 @@
 .page-header {
   display: grid;
   gap: var(--space-2);
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--line);
 }
 
@@ -344,7 +344,7 @@
   margin-top: var(--space-1);
   max-width: 68ch;
   color: var(--ink-muted);
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
 }
 
 .page-header__actions {
@@ -1839,24 +1839,13 @@ input.switch:focus-visible {
   }
 }
 
-/* ---------- Work pages: wide header, dense ledger rows, docked records ----------
-   Pages full of rows (books, sales, stock) read like a ledger on a desk: a
-   slimmer header, one toolbar holding every filter, rows close together, a
-   real totals row, and the opened record beside the list on wide screens. */
-
-.page-header--wide {
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-}
-
-.page-header--wide .page-header__description {
-  font-size: var(--text-base);
-}
-
-/* Ledger rows: tables on a wide work page, or asked for with density="compact". */
+/* ---------- Ledger rows ----------
+   Every page reads like the books on a desk: a slim header, one toolbar holding
+   every filter, rows close together, and the opened record beside the list on
+   wide screens. */
 @media (min-width: 600px) {
-  :is(.data-table--compact, .main__frame:has(.page-header--wide) .data-table) .table th,
-  :is(.data-table--compact, .main__frame:has(.page-header--wide) .data-table) .table td {
+  .data-table .table th,
+  .data-table .table td {
     padding-block: var(--space-2);
   }
 }

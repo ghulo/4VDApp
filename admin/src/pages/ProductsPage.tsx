@@ -93,7 +93,7 @@ export function ProductsPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
         title={t.nav.items.stock}
         description={t.products.description}
         actions={

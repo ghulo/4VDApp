@@ -17,18 +17,13 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** Small things next to the title, like a status badge. */
   meta?: ReactNode;
-  /**
-   * A work page full of rows (books, sales, products): the page uses the whole
-   * screen width instead of the reading column.
-   */
-  wide?: boolean;
 }
 
 /** The top of every page: where you are, what it is, what you can do. */
-export function PageHeader({ title, description, crumbs, actions, meta, wide }: PageHeaderProps) {
+export function PageHeader({ title, description, crumbs, actions, meta }: PageHeaderProps) {
   const t = useT();
   return (
-    <header className={wide ? 'page-header page-header--wide' : 'page-header'}>
+    <header className="page-header">
       {crumbs && crumbs.length > 0 && (
         <nav aria-label={t.common.breadcrumb} className="crumbs">
           <ol>

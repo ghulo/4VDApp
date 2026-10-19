@@ -290,7 +290,7 @@
 }
 
 .main__frame {
-  max-width: var(--frame-reading);
+  max-width: var(--frame-wide);
   min-height: 100%;
   margin: 0 auto;
   padding: var(--space-6) var(--space-7) var(--space-7);
@@ -868,7 +868,3 @@
   font-size: var(--text-sm);
 }
 
-/* Work pages (a wide PageHeader) use the whole desk: books, sales, stock lists. */
-.main__frame:has(.page-header--wide) {
-  max-width: var(--frame-wide);
-}

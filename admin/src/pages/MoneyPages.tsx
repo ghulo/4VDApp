@@ -273,7 +273,6 @@ function PlaceHeader({ place, places, view }: { place: MoneyPlace; places: Money
   return (
     <>
       <PageHeader
-        wide
         title={placeName(t, place)}
         description={description}
         crumbs={[{ label: t.nav.items.money, to: '/money' }]}

@@ -129,7 +129,7 @@ export function CustomersPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
         title={t.customers.title}
         description={t.customers.description}
         actions={

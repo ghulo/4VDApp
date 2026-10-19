@@ -43,7 +43,7 @@ export function OffersPage() {
 
   return (
     <>
-      <PageHeader wide title={t.nav.items.sales} description={t.offers.description} />
+      <PageHeader title={t.nav.items.sales} description={t.offers.description} />
       {offers.isPending && <Loading />}
       {offers.isError && <ErrorNotice error={offers.error} onRetry={() => offers.refetch()} />}
       {offers.data && (

@@ -39,7 +39,7 @@ export function DuplicatesPage() {
 
   return (
     <>
-      <PageHeader wide title={t.nav.items.duplicates} description={t.duplicates.description} crumbs={[{ to: '/products', label: t.nav.items.stock }]} />
+      <PageHeader title={t.nav.items.duplicates} description={t.duplicates.description} crumbs={[{ to: '/products', label: t.nav.items.stock }]} />
 
       {pairs.isError && <ErrorNotice error={pairs.error} onRetry={() => pairs.refetch()} />}
       <DataTable<DuplicatePair>

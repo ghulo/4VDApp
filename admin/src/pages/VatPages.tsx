@@ -116,7 +116,6 @@ export function VatPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.tabs.vat}
         description={t.vat.description}
         meta={data && data.month === month && <MonthStamp data={data} />}
@@ -818,7 +817,6 @@ function VatBookPage({ kind }: { kind: BookKind }) {
   return (
     <>
       <PageHeader
-        wide
         title={title}
         description={kind === 'sales' ? w.salesDescription(formatMonth(month)) : w.purchaseDescription(formatMonth(month))}
         meta={vat.data && vat.data.month === month && <MonthStamp data={vat.data} />}

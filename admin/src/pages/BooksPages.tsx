@@ -142,7 +142,7 @@ export function BooksBalancesPage() {
 
   return (
     <>
-      <PageHeader wide title={t.nav.items.books} description={t.books.description(range.label)} />
+      <PageHeader title={t.nav.items.books} description={t.books.description(range.label)} />
       {balances.isPending && <Loading />}
       {balances.isError && <ErrorNotice error={balances.error} onRetry={() => balances.refetch()} />}
       {balances.data && (
@@ -308,7 +308,6 @@ export function BooksJournalPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.tabs.journal}
         description={t.books.journalDescription(range.label)}
         actions={
@@ -635,7 +634,6 @@ export function BooksAccountsPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.tabs.accounts}
         description={t.books.accountsDescription}
         actions={
@@ -928,7 +926,6 @@ export function AccountCardPage() {
   return (
     <>
       <PageHeader
-        wide
         title={`${account.number} ${account.name}`}
         description={`${t.books.classes[account.accountClass]} · ${account.group}`}
         crumbs={[

@@ -74,7 +74,7 @@ export function ActivityPage() {
 
   return (
     <>
-      <PageHeader wide title={t.activity.title} description={t.activity.description} />
+      <PageHeader title={t.activity.title} description={t.activity.description} />
 
       <div className="card activity-filters">
         <div className="toolbar">

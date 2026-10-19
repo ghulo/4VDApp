@@ -155,7 +155,6 @@ export function StatementsPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.tabs.statements}
         description={w.description[view]}
         actions={
@@ -623,7 +622,7 @@ export function YearPage() {
 
   return (
     <>
-      <PageHeader wide title={t.nav.tabs.year} description={w.description} />
+      <PageHeader title={t.nav.tabs.year} description={w.description} />
       <ChipChoice
         className="statements-years"
         label={w.yearLabel}

@@ -35,7 +35,7 @@ export function StockCountsPage() {
 
   return (
     <>
-      <PageHeader wide title={t.counts.title} description={t.counts.description} actions={<StartCountForm />} />
+      <PageHeader title={t.counts.title} description={t.counts.description} actions={<StartCountForm />} />
       {counts.isPending && <Loading />}
       {counts.isError && <ErrorNotice error={counts.error} onRetry={() => counts.refetch()} />}
       {counts.data && counts.data.length === 0 && trefin.data?.length === 0 && (

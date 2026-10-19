@@ -340,15 +340,16 @@ Rules:
 Every page starts with the shared **PageHeader**: breadcrumb (detail pages) or
 section tabs (tab groups), serif title, one-line description (max 68ch),
 actions on the right with **at most one primary**. No page invents its own title
-block. Then one of these shapes:
+block. Every page uses the same frame: up to 1600px wide (`--frame-wide`),
+a slim header (16px under it, 12px padding, 15px description) and ledger rows
+in every table, so the frame never jumps between pages. Text inside keeps its
+own reading width (descriptions 68ch, card hints 60ch). Then one of these shapes:
 
 - **List page**: header (primary "Add …" / "New …") → toolbar (search,
   filters) → table → pagination. **No create form on top of a list.** Adding
   opens a form page (or a panel for a few fields).
 - **Work page** (a list page you work through: Books, Sales, Stock, Bills,
-  Expenses, Customers, Suppliers, Activity…): `PageHeader wide`, which widens
-  the frame to 1600px and tightens the header. Rows are ledger rows (8px cells).
-  Figures, if any, are a slim strip (`StatGrid compact`). **One command bar**:
+  Expenses, Customers, Suppliers, Activity…). Figures, if any, are a slim strip (`StatGrid compact`). **One command bar**:
   the table's toolbar holds the period (`PeriodPicker compact`), search and
   filters on the left and downloads in `.toolbar__end` on the right; several
   downloads share one `MenuButton`. Money columns end in a **totals row**
@@ -527,8 +528,8 @@ looked cold and generic on ivory.
 ### Layout
 - 4px grid: 4, 8, 12, 16, 24, 32, 48.
 - Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
-  content column max 1120px (`--frame-reading`), 1600px on work pages
-  (`--frame-wide`, 3.8); page padding 32/48 desktop, 32/24 under 1100px,
+  content column max 1600px on every page (`--frame-wide`, 3.8; the Windows
+  app's own download and welcome pages keep 1120px, `--frame-reading`); page padding 32/48 desktop, 32/24 under 1100px,
   24/16 under 900px. Sections stack 16px apart.
 - Controls 36px (30px small) on desktop, **44px (36px small) under 900px**.
   Team app: keys and fields **48px**, small keys **36px**; every tap area is at
@@ -652,8 +653,8 @@ browser's native date input.
 ### 10.4 Tables (DataTable)
 Every table is a `DataTable`: framed surface, optional toolbar and footer strips,
 12px cells (16px at the edges), spec-label headers, hairline rows, sunk hover,
-numbers right-aligned and tabular and never wrapped, ARIA table roles. On work
-pages (3.8) or with `density="compact"` rows are ledger rows: 8px cells. A
+numbers right-aligned and tabular and never wrapped, ARIA table roles. On
+desktop every table has ledger rows: 8px cells (3.8). A
 **totals row** (`totals`, one cell per column) closes money columns: strong
 hairline above, Oat, 600 weight; a trial balance puts its **Balanced** stamp
 (ok) there, or **Off by …** (danger). The row whose record is open in an

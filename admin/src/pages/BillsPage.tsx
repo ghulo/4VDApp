@@ -71,7 +71,6 @@ export function BillsPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.items.suppliers}
         description={t.bills.description}
         actions={

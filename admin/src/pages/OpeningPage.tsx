@@ -89,7 +89,6 @@ export function OpeningPage() {
   return (
     <>
       <PageHeader
-        wide
         title={o.title}
         meta={posted && <Badge tone="ok">{o.posted}</Badge>}
         description={posted && day ? o.postedDescription(day) : day ? o.description(day) : o.noStartDescription}

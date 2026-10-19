@@ -102,7 +102,6 @@ export function TrefinComparePage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.tabs.trefin}
         description={c.description}
         meta={data?.loaded && (open === 0 ? <Badge tone="ok">{c.stamp.done}</Badge> : <Badge tone="warn">{c.stamp.open(open)}</Badge>)}

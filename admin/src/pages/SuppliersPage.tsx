@@ -44,7 +44,7 @@ export function SuppliersPage() {
 
   return (
     <>
-      <PageHeader wide
+      <PageHeader
         title={t.suppliers.title}
         description={t.suppliers.description}
         actions={

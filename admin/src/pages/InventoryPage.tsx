@@ -102,7 +102,6 @@ export function InventoryPage() {
   return (
     <>
       <PageHeader
-        wide
         title={t.nav.items.stock}
         description={t.inventory.description}
         actions={

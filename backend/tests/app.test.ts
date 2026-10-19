@@ -3,8 +3,9 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { loadConfig } from '../src/config/env.js';
 import { createDatabase } from '../src/database/connection.js';
+import { setupTestApp } from './helpers/testApp.js';
 
-// These tests never reach the database; the client only connects on first query.
+// The health check never reaches the database; the client only connects on first query.
 const testConfig = loadConfig({
   NODE_ENV: 'test',
   DATABASE_URL: 'postgresql://test:test@localhost:5432/unused_test',
@@ -27,8 +28,11 @@ describe('GET /health', () => {
 });
 
 describe('unknown routes', () => {
+  // Every /api request reads the Settings → Roles rules first, so this one needs the test database.
   it('should return 404 in the standard error format', async () => {
-    const response = await request(app).get('/api/does-not-exist');
+    const context = await setupTestApp();
+    const response = await request(context.app).get('/api/does-not-exist');
+    await context.db.destroy();
 
     expect(response.status).toBe(404);
     expect(response.body).toMatchObject({

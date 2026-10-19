@@ -30,6 +30,8 @@ export interface DocumentRecord {
   total: string;
   fiscal_receipt_no: string | null;
   payment_method: DocumentPaymentMethod;
+  /** Split payment: the part of a till invoice paid by card. */
+  card_amount: string | null;
   /** "YYYY-MM-DD", for invoices paid on account. */
   due_date: string | null;
   /** Set on an invoice TREFIN issued: history only. */
@@ -82,6 +84,8 @@ export interface NewDocument {
   vatTotal: number;
   total: number;
   paymentMethod: DocumentPaymentMethod;
+  /** Split payment: the part of a till invoice paid by card. */
+  cardAmount?: number | null;
   dueDate: string | null;
   lines: NewDocumentLine[];
 }
@@ -178,6 +182,7 @@ export class DocumentRepository {
         vat_total: document.vatTotal,
         total: document.total,
         payment_method: document.paymentMethod,
+        card_amount: document.cardAmount ?? null,
         due_date: document.dueDate,
       })
       .returning('id')
@@ -229,6 +234,7 @@ export class DocumentRepository {
         'd.total',
         'd.fiscal_receipt_no',
         'd.payment_method',
+        'd.card_amount',
         sql<string | null>`to_char(d.due_date, 'YYYY-MM-DD')`.as('due_date'),
         'd.trefin_ref',
       ]);

@@ -102,8 +102,9 @@ export class CounterRepository {
     const { rows } = await sql<CounterPersonRow>`
       with sold as (
         select d.issued_by as user_id, count(*)::int as sales, sum(d.total) as sold,
-          coalesce(sum(d.total) filter (where d.payment_method = 'till'), 0) as cash,
-          coalesce(sum(d.total) filter (where d.payment_method = 'card'), 0) as card,
+          -- A split payment counts its card part as card and the rest as cash.
+          coalesce(sum(d.total - coalesce(d.card_amount, 0)) filter (where d.payment_method = 'till'), 0) as cash,
+          coalesce(sum(case when d.payment_method = 'card' then d.total else coalesce(d.card_amount, 0) end) filter (where d.payment_method in ('card', 'till')), 0) as card,
           coalesce(sum(d.total) filter (where d.payment_method = 'account'), 0) as tab
         from documents d
         where d.kind = 'invoice' and d.issued_by is not null and ${inDays(sql.ref('d.issued_at'), from, to, timeZone)}
@@ -193,7 +194,7 @@ export class CounterRepository {
     let query = this.db
       .selectFrom('documents as d')
       .leftJoin('users as u', 'u.id', 'd.issued_by')
-      .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.fiscal_receipt_no', 'u.name as issued_by_name'])
+      .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.card_amount', 'd.fiscal_receipt_no', 'u.name as issued_by_name'])
       .where('d.kind', '=', 'invoice')
       // Nothing is given back from TREFIN's invoices here.
       .where('d.trefin_ref', 'is', null)
@@ -221,6 +222,7 @@ export interface CounterReceiptRow {
   issued_at: Date;
   total: string;
   payment_method: string;
+  card_amount: string | null;
   fiscal_receipt_no: string | null;
   issued_by_name: string | null;
 }

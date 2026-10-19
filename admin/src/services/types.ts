@@ -240,7 +240,9 @@ export interface SalesDocument extends DocumentRef {
   total: number;
   fiscalReceiptNo: string | null;
   /** Paid at the till, or on the customer's account (their tab). */
-  paymentMethod: 'till' | 'account';
+  paymentMethod: 'till' | 'account' | 'card';
+  /** Split payment: the part of a till invoice paid by card; the rest was cash. */
+  cardAmount: number | null;
   /** "YYYY-MM-DD": when an invoice on account is due. */
   dueDate: string | null;
   /** An invoice TREFIN issued: history, to look at only. */
@@ -2097,7 +2099,8 @@ export interface CounterReceipt {
   number: string;
   issuedAt: string;
   total: number;
-  paidBy: 'cash' | 'card' | 'tab';
+  paidBy: 'cash' | 'card' | 'tab' | 'split';
+  cardAmount: number | null;
   fiscalReceiptNo: string | null;
   soldBy: string | null;
   lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;

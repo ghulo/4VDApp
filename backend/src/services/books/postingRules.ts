@@ -188,10 +188,12 @@ export class PostingRules {
     const gross = roundMoney([...grossByRate.values()].reduce((sum, value) => sum + value, 0));
     const charged = roundMoney(rows.reduce((sum, row) => sum + Number(row.charged), 0));
     // Paid by card on the bank's terminal: the money reaches the bank, not the drawer.
-    const byCard =
-      key[0] === 'i' &&
-      (await this.db.selectFrom('documents').select('payment_method').where('id', '=', Number(key.slice(1))).executeTakeFirst())?.payment_method === 'card';
-    entry.debit(byCard ? { accountId: this.places.defaultBank } : this.till, gross - charged);
+    // A split payment sends its card part to the bank and the rest to the drawer.
+    const paid = roundMoney(gross - charged);
+    const invoice =
+      key[0] === 'i' ? await this.db.selectFrom('documents').select(['payment_method', 'card_amount']).where('id', '=', Number(key.slice(1))).executeTakeFirst() : undefined;
+    const byCard = invoice?.payment_method === 'card' ? paid : Math.min(paid, Math.max(0, Number(invoice?.card_amount ?? 0)));
+    entry.debit({ accountId: this.places.defaultBank }, byCard).debit(this.till, roundMoney(paid - byCard));
     for (const [rate, rateGross] of grossByRate) {
       const vat = vatOf(rateGross, rate);
       entry.credit('revenue', rateGross - vat).credit('vat_out', vat);

@@ -75,7 +75,9 @@ export interface CounterReceiptDto {
   number: string;
   issuedAt: string;
   total: number;
-  paidBy: 'cash' | 'card' | 'tab';
+  /** 'split': part on the card terminal (`cardAmount`), the rest cash. */
+  paidBy: 'cash' | 'card' | 'tab' | 'split';
+  cardAmount: number | null;
   fiscalReceiptNo: string | null;
   soldBy: string | null;
   lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;
@@ -215,7 +217,8 @@ export class CounterService {
       number: receipt.number,
       issuedAt: receipt.issued_at.toISOString(),
       total: Number(receipt.total),
-      paidBy: receipt.payment_method === 'card' ? 'card' : receipt.payment_method === 'account' ? 'tab' : 'cash',
+      paidBy: receipt.payment_method === 'card' ? 'card' : receipt.payment_method === 'account' ? 'tab' : receipt.card_amount !== null ? 'split' : 'cash',
+      cardAmount: receipt.card_amount === null ? null : Number(receipt.card_amount),
       fiscalReceiptNo: receipt.fiscal_receipt_no,
       soldBy: receipt.issued_by_name,
       lines: lines

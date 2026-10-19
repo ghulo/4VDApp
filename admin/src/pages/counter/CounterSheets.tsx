@@ -7,7 +7,7 @@ import type { Customer } from '../../services/types';
 import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
-import { changeFor, type PayDraft } from './payDraft';
+import { cashDue, changeFor, type PayDraft, splitFor } from './payDraft';
 import type { Unprinted } from './useFiscalPrinter';
 
 /** "7,5" or "7.5" as a number; NaN when it isn't one. */
@@ -140,9 +140,12 @@ function NumberForm({ label, hint, initial, whole, check, onApply }: NumberProps
 }
 
 export interface Payment {
-  paidBy: 'cash' | 'card' | 'tab';
+  /** 'split': part on the card terminal (`cardAmount`), the rest cash. */
+  paidBy: 'cash' | 'card' | 'tab' | 'split';
+  /** The cash the customer handed over. */
   tendered: number | null;
   customerId: number | null;
+  cardAmount: number | null;
 }
 
 interface PayProps {
@@ -156,7 +159,7 @@ interface PayProps {
 
 /**
  * Taking the money, in place of the till keys: cash (with the change and how to
- * give it), card on the bank's terminal, or on a customer's tab. The receipt
+ * give it), card on the bank's terminal, part of each, or on a customer's tab. The receipt
  * beside it shows what was paid and the change as it is typed.
  */
 export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: PayProps) {
@@ -164,8 +167,11 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cash = changeFor(draft, total);
+  const split = splitFor(draft, total);
+  const due = cashDue(draft, total);
   const short = cash !== null && cash.change < 0;
-  const blocked = (draft.paidBy === 'tab' && draft.customerId === '') || short;
+  const blocked = (draft.paidBy === 'tab' && draft.customerId === '') || short || (draft.paidBy === 'split' && !split?.valid);
+  const takesCash = draft.paidBy === 'cash' || (draft.paidBy === 'split' && split?.valid === true);
   const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
 
   async function submit(event: FormEvent) {
@@ -178,6 +184,7 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
         paidBy: draft.paidBy,
         tendered: cash ? cash.given : null,
         customerId: draft.paidBy === 'tab' ? Number(draft.customerId) : null,
+        cardAmount: draft.paidBy === 'split' && split ? split.card : null,
       });
     } catch (failure) {
       setError(errorMessage(failure));
@@ -194,18 +201,42 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
         options={[
           { value: 'cash', label: t.counter.cash },
           { value: 'card', label: t.counter.card },
+          { value: 'split', label: t.counter.split },
           { value: 'tab', label: t.counter.tab },
         ]}
       />
-      {draft.paidBy === 'cash' && (
+      {draft.paidBy === 'split' && (
+        <>
+          <Field
+            label={t.counter.onCard}
+            hint={split && !split.valid ? undefined : t.counter.onCardHint}
+            error={split && !split.valid ? t.counter.onCardWrong(formatMoney(total)) : undefined}
+          >
+            <input
+              className="counter-number"
+              inputMode="decimal"
+              autoComplete="off"
+              autoFocus
+              aria-invalid={split && !split.valid ? true : undefined}
+              value={draft.card}
+              onChange={(event) => set({ card: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') onBack();
+              }}
+            />
+          </Field>
+          {split?.valid && <p className="counter-split-due">{t.counter.cashToTake(formatMoney(due))}</p>}
+        </>
+      )}
+      {takesCash && (
         <>
           <Field label={t.counter.tendered}>
             <input
               className="counter-number"
               inputMode="decimal"
               autoComplete="off"
-              autoFocus
-              placeholder={total.toFixed(2)}
+              autoFocus={draft.paidBy === 'cash'}
+              placeholder={due.toFixed(2)}
               value={draft.tendered}
               onChange={(event) => set({ tendered: event.target.value })}
               onKeyDown={(event) => {
@@ -214,10 +245,10 @@ export function PayPanel({ total, customers, draft, onChange, onPay, onBack }: P
             />
           </Field>
           <div className="counter-notes" role="group" aria-label={t.counter.tendered}>
-            <Button size="sm" onClick={() => set({ tendered: total.toFixed(2) })}>
+            <Button size="sm" onClick={() => set({ tendered: due.toFixed(2) })}>
               {t.counter.exact}
             </Button>
-            {likelyNotes(total).map((note) => (
+            {likelyNotes(due).map((note) => (
               <Button key={note} size="sm" onClick={() => set({ tendered: String(note) })}>
                 {formatMoney(note)}
               </Button>

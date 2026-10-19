@@ -1,4 +1,4 @@
-import { ConflictError, ForbiddenError, NotFoundError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../database/types.js';
 import type { Language } from '../i18n/language.js';
 import type { DocumentLineRecord, DocumentRecord, DocumentRepository, NewDocumentLine } from '../repositories/DocumentRepository.js';
@@ -54,6 +54,8 @@ export interface DocumentDto {
   fiscalReceiptNo: string | null;
   /** Paid at the till, or on the customer's account (their tab). */
   paymentMethod: DocumentPaymentMethod;
+  /** Split payment: the part of a till invoice paid by card; the rest was cash. */
+  cardAmount: number | null;
   /** "YYYY-MM-DD": when an invoice on account is due. */
   dueDate: string | null;
   /** An invoice TREFIN issued: history to look at, never changed here. */
@@ -110,7 +112,7 @@ export class DocumentService {
   /** The invoice for a checkout: one line per sale. */
   async invoiceSales(
     repos: TransactionalRepositories,
-    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean },
+    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean; cardAmount?: number },
   ): Promise<DocumentRef> {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
@@ -127,7 +129,12 @@ export class DocumentService {
     });
     const buyer = p.customerId === null ? null : ((await repos.documents.customerParty(p.customerId)) ?? null);
     const paymentMethod = p.customerId !== null && p.onAccount ? 'account' : p.byCard ? 'card' : 'till';
-    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod });
+    const cardAmount = paymentMethod === 'till' && p.cardAmount ? roundMoney(p.cardAmount) : null;
+    // Split payment: the card pays part, cash the rest. A card paying it all is a card sale.
+    if (cardAmount !== null && cardAmount >= roundMoney(lines.reduce((sum, line) => sum + line.total, 0))) {
+      throw new ValidationError('The card part must be less than the total; for all of it, pay by card');
+    }
+    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod, cardAmount });
   }
 
   /**
@@ -174,6 +181,7 @@ export class DocumentService {
       reason: string | null;
       issuedBy: number;
       paymentMethod: DocumentPaymentMethod;
+      cardAmount?: number | null;
     },
   ): Promise<DocumentRef> {
     const today = zonedDay(new Date(), this.timeZone);
@@ -304,6 +312,7 @@ function toDto(record: DocumentRecord): DocumentDto {
     total: toMoney(record.total),
     fiscalReceiptNo: record.fiscal_receipt_no,
     paymentMethod: record.payment_method,
+    cardAmount: toMoneyOrNull(record.card_amount),
     dueDate: record.due_date,
     fromTrefin: record.trefin_ref !== null,
   };

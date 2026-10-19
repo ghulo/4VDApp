@@ -51,6 +51,7 @@ import * as trefinMoney from './049_trefin_money.js';
 import * as trefinJournal from './050_trefin_journal.js';
 import * as trefinOffersActivity from './051_trefin_offers_activity.js';
 import * as statements from './052_statements.js';
+import * as splitPayment from './053_split_payment.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -111,4 +112,5 @@ export const migrations: Record<string, Migration> = {
   '050_trefin_journal': trefinJournal,
   '051_trefin_offers_activity': trefinOffersActivity,
   '052_statements': statements,
+  '053_split_payment': splitPayment,
 };

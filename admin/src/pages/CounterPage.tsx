@@ -42,7 +42,7 @@ import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CustomerSheet, NumberSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
-import { changeFor, EMPTY_PAY, type PayDraft } from './counter/payDraft';
+import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { playScanSound } from './counter/scanSound';
@@ -73,6 +73,8 @@ interface LastSale {
   paidBy: Payment['paidBy'];
   tendered: number | null;
   change: number | null;
+  /** Cash + card: the part on the card terminal. */
+  cardAmount: number | null;
   customerName: string | null;
   print: 'printing' | 'printed' | 'failed' | 'none';
   fiscalNo: string | null;
@@ -310,6 +312,7 @@ export function CounterPage() {
         }),
         notes: null,
         ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
+        ...(payment.paidBy === 'split' && payment.cardAmount !== null && { cardAmount: payment.cardAmount }),
         ...(payment.paidBy === 'tab' && payment.customerId !== null && { customerId: payment.customerId, paidNow: false }),
         // A customer picked with F5 who pays now: the sale goes on their record, not their tab.
         ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
@@ -327,7 +330,8 @@ export function CounterPage() {
     setPanel(null);
     setSelectedId(null);
     setFlash(null);
-    const change = payment.tendered !== null ? roundMoney(payment.tendered - result.total) : null;
+    const card = payment.paidBy === 'split' ? (payment.cardAmount ?? 0) : 0;
+    const change = payment.tendered !== null ? roundMoney(payment.tendered - (result.total - card)) : null;
     const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
     say(t.counter.sold(formatMoney(result.total), result.invoice.number));
     const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab';
@@ -338,6 +342,7 @@ export function CounterPage() {
       paidBy: payment.paidBy,
       tendered: payment.tendered,
       change,
+      cardAmount: payment.paidBy === 'split' ? card : null,
       customerName: buyer?.name ?? null,
       print: willPrint ? 'printing' : 'none',
       fiscalNo: null,
@@ -358,7 +363,11 @@ export function CounterPage() {
         }),
         footer: settings.data.receiptFooter,
         taxGroups: settings.data.printer.taxGroups,
-        payment: payment.paidBy === 'card' ? { by: 'card' } : { by: 'cash', tendered: payment.tendered },
+        // Card and Cash + card print as cash, as the shop's receipts always have; the printer's change is the cash change.
+        payment:
+          payment.paidBy === 'card'
+            ? { by: 'card' }
+            : { by: 'cash', tendered: payment.tendered === null ? null : roundMoney(payment.tendered + card) },
       });
     } catch (error) {
       const reason = error instanceof MissingTaxGroup ? t.counter.printer.noTaxGroup(error.rate) : errorMessage(error);
@@ -1064,6 +1073,12 @@ function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
             <dd>{sale.customerName}</dd>
           </div>
         )}
+        {sale.cardAmount !== null && (
+          <div>
+            <dt>{t.counter.cardPart}</dt>
+            <dd>{formatMoney(sale.cardAmount)}</dd>
+          </div>
+        )}
         {sale.tendered !== null && (
           <div>
             <dt>{t.counter.tendered}</dt>
@@ -1193,11 +1208,18 @@ function PriceCheckCard({ product, days, onClose }: { product: Product; days: nu
 function PaidRows({ draft, total, customerName }: { draft: PayDraft; total: number; customerName: string | null }) {
   const t = useT();
   const cash = changeFor(draft, total);
+  const split = splitFor(draft, total);
   if (draft.paidBy === 'card') return <p className="counter-paid counter-paid--note">{t.counter.paidByCard}</p>;
   if (draft.paidBy === 'tab') return <p className="counter-paid counter-paid--note">{customerName ? t.counter.onTabOf(customerName) : t.counter.pickCustomer}</p>;
   const short = cash !== null && cash.change < 0;
   return (
     <dl className="counter-paid" aria-live="polite">
+      {draft.paidBy === 'split' && (
+        <div className="counter-paid__row">
+          <dt>{t.counter.cardPart}</dt>
+          <dd>{split?.valid ? formatMoney(split.card) : '—'}</dd>
+        </div>
+      )}
       <div className="counter-paid__row">
         <dt>{t.counter.paid}</dt>
         <dd>{cash ? formatMoney(cash.given) : '—'}</dd>

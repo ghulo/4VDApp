@@ -129,6 +129,8 @@ export function DocumentDetailPage() {
 
 function paymentText(doc: SalesDocumentDetail, t: ReturnType<typeof useT>): string {
   if (doc.kind === 'credit_note') return doc.paymentMethod === 'account' ? t.documents.creditedToAccount : t.documents.refundedAtTill;
+  if (doc.paymentMethod === 'card') return t.documents.paidByCard;
+  if (doc.paymentMethod === 'till' && doc.cardAmount !== null) return t.documents.paidSplit(formatMoney(doc.cardAmount), formatMoney(doc.total - doc.cardAmount));
   if (doc.paymentMethod === 'till') return t.documents.paidAtTill;
   // Noon, so the day never slips across midnight in any time zone nearby.
   return doc.dueDate ? t.documents.onAccount(formatDate(`${doc.dueDate}T12:00:00`)) : t.documents.onAccountNoDue;

@@ -88,12 +88,23 @@ export interface RuleFields {
 }
 
 /** The places money is kept and the moves between them. */
-/** Each day's sales paid by card (the bank's terminal), by the day they were sold. */
+/**
+ * Each day's sales paid by card (the bank's terminal), by the day they were
+ * sold, with the card part of split payments (never more than what is left of
+ * that sale once lines are undone).
+ */
 export const cardSalesSql = (timeZone: string) => sql`
-  select (s.sale_date at time zone ${timeZone})::date as day, sum(s.total_amount) as amount
-  from sales s join document_lines dl on dl.sale_id = s.id join documents d on d.id = dl.document_id
-  where d.kind = 'invoice' and d.payment_method = 'card' and s.undone_at is null
-  group by 1
+  select day, sum(amount) as amount from (
+    select (s.sale_date at time zone ${timeZone})::date as day, s.total_amount as amount
+    from sales s join document_lines dl on dl.sale_id = s.id join documents d on d.id = dl.document_id
+    where d.kind = 'invoice' and d.payment_method = 'card' and s.undone_at is null
+    union all
+    select min((s.sale_date at time zone ${timeZone})::date), least(d.card_amount, sum(s.total_amount))
+    from documents d join document_lines dl on dl.document_id = d.id join sales s on s.id = dl.sale_id
+    where d.kind = 'invoice' and d.card_amount is not null and s.undone_at is null
+    group by d.id, d.card_amount
+  ) c
+  group by day
 `;
 
 export class MoneyRepository {

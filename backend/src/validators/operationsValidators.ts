@@ -52,6 +52,12 @@ export const basketSchema = z
     paidNow: z.boolean().optional(),
     /** How money paid now came in: cash into the drawer (the default), or a card on the bank's terminal. */
     paidBy: z.enum(['cash', 'card']).optional(),
+    /** Split payment: this much went on the card terminal and the rest was cash. */
+    cardAmount: z.number().positive().max(10_000_000).multipleOf(0.01).optional(),
+  })
+  .refine((basket) => basket.cardAmount === undefined || (basket.paidBy !== 'card' && !(basket.customerId !== undefined && !basket.paidNow)), {
+    message: 'only a sale paid now in cash can have a card part',
+    path: ['cardAmount'],
   })
   .refine((basket) => !(basket.paidBy === 'card' && basket.customerId !== undefined && !basket.paidNow), {
     message: 'a sale on a tab is not paid by card',

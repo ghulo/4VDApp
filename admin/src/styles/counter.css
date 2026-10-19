@@ -1745,3 +1745,11 @@
   color: var(--danger);
   font-weight: 600;
 }
+
+/* Cash + card: what the cash still has to cover once the card has taken its part. */
+.counter-split-due {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

@@ -73,6 +73,8 @@ export interface BasketInput {
   paidNow?: boolean;
   /** Money paid now: cash into the drawer (the default) or a card on the bank's terminal. */
   paidBy?: 'cash' | 'card';
+  /** Split payment: this much on the card terminal, the rest in cash. */
+  cardAmount?: number;
 }
 
 export interface SaleQuery extends PageRequest {
@@ -177,7 +179,7 @@ export class SalesService {
       for (const item of input.items) {
         saleIds.push(await this.recordInTransaction(repos, { ...item, notes: input.notes, customerId: input.customerId, paidNow: input.paidNow }, soldBy));
       }
-      const invoice = await this.documents.invoiceSales(repos, { saleIds, customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy, byCard: input.paidBy === 'card' });
+      const invoice = await this.documents.invoiceSales(repos, { saleIds, customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy, byCard: input.paidBy === 'card', cardAmount: input.cardAmount });
       return { saleIds, invoice };
     });
     const sales = (await Promise.all(saleIds.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));

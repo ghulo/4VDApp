@@ -805,6 +805,8 @@ export interface DocumentsTable {
   /** Paid at the till, or on the customer's account (their tab), then due by `due_date`. */
   payment_method: ColumnType<DocumentPaymentMethod, DocumentPaymentMethod | undefined, never>;
   due_date: ColumnType<string | null, string | null | undefined, never>;
+  /** Of an invoice paid at the till, the part paid by card on the bank's terminal (a split payment); null otherwise. */
+  card_amount: ColumnType<string | null, number | null | undefined, never>;
   /** "<database>/<document id>" on an invoice TREFIN issued: history only, see migration 047. */
   trefin_ref: ColumnType<string | null, string | null | undefined, never>;
 }

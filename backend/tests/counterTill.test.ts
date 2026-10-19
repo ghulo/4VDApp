@@ -70,6 +70,38 @@ describe('paying at the counter by card', () => {
   });
 });
 
+describe('part cash, part card', () => {
+  it('puts the card part in the bank and the rest in the drawer', async () => {
+    const split = await sell({ cardAmount: 12.5 });
+    expect(split.status).toBe(201);
+    const invoiceId = split.body.data.invoice.id;
+    const invoice = (await api().get(`/api/documents/${invoiceId}`).set(auth())).body.data;
+    expect(invoice).toMatchObject({ paymentMethod: 'till', cardAmount: 12.5, total: 20 });
+    expect(await entryLines(invoiceId)).toEqual(expect.arrayContaining(['1110 Dr 7.5', '1120 Dr 12.5']));
+
+    const places = (await api().get('/api/money/places').set(auth())).body.data as Array<{ id: number; kind: string; carwashId: number | null; isDefault: boolean }>;
+    const till = places.find((place) => place.kind === 'till' && place.carwashId === null)!;
+    const bank = places.find((place) => place.kind === 'bank' && place.isDefault)!;
+    const book = async (id: number) =>
+      (await api().get(`/api/money/places/${id}/book?${PERIOD}`).set(auth())).body.data.lines.map((line: { kind: string; amount: number }) => [line.kind, line.amount]);
+    expect(await book(till.id)).toEqual([['takings', 7.5]]);
+    expect(await book(bank.id)).toEqual([['card', 12.5]]);
+
+    const me = (await api().get('/api/counter/today').set(auth(employeeToken))).body.data.mine;
+    expect(me).toMatchObject({ receipts: 1, total: 20, cash: 7.5, card: 12.5 });
+    const receipt = (await api().get(`/api/counter/receipts?number=${split.body.data.invoice.number}`).set(auth(employeeToken))).body.data[0];
+    expect(receipt).toMatchObject({ paidBy: 'split', cardAmount: 12.5 });
+  });
+
+  it('refuses a card part of the whole total, with a card sale, or on a tab', async () => {
+    expect((await sell({ cardAmount: 20 })).status).toBe(400);
+    expect((await sell({ cardAmount: 5, paidBy: 'card' })).status).toBe(400);
+    const customer = (await api().post('/api/customers').set(auth()).send({ name: 'Arben' })).body.data;
+    expect((await sell({ cardAmount: 5, customerId: customer.id, paidNow: false }, adminToken)).status).toBe(400);
+    expect((await sell({ cardAmount: 5, customerId: customer.id, paidNow: true }, adminToken)).status).toBe(201);
+  });
+});
+
 describe('finding a receipt to give something back', () => {
   it("lists today's receipts and finds one by its number, with what is left to give back", async () => {
     const first = (await sell({ paidBy: 'card' })).body.data;

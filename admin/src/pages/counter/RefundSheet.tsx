@@ -19,7 +19,7 @@ import { codeFromScan } from '../../utils/scanLinks';
 export function RefundSheet({ open, initialNumber, onClose, onDone }: { open: boolean; initialNumber: string | null; onClose: () => void; onDone: (message: string) => void }) {
   const t = useT();
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.refundTitle} description={t.counter.refundHint}>
+    <Sheet open={open} onClose={onClose} title={t.counter.refundTitle} description={t.counter.refundHint} placement="center" wide>
       <RefundForm initialNumber={initialNumber} onDone={onDone} />
     </Sheet>
   );

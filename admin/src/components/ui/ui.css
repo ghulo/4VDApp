@@ -1616,6 +1616,27 @@ input.switch:focus-visible {
   padding-bottom: 0;
 }
 
+/* Only the body scrolls when the card meets the screen's edge. */
+.sheet--center .sheet__body {
+  min-height: 0;
+}
+
+/* Searching or picking from a list (products, customers, a receipt's lines):
+   wider, and one steady height so the card doesn't jump as the list changes. */
+.sheet--wide {
+  width: min(640px, calc(100vw - 2 * var(--space-4)));
+  height: min(640px, calc(100dvh - 2 * var(--space-4)));
+}
+
+.sheet--wide .sheet__panel {
+  height: 100%;
+}
+
+.sheet--wide .sheet__head {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
 /* A heading row over a run of rows, e.g. one per day: date on the left, totals on the right. */
 .table .table__group th {
   padding-block: var(--space-2);

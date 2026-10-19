@@ -24,7 +24,7 @@ interface FinderProps {
 export function ProductFinder({ open, onClose, ...form }: FinderProps & { open: boolean; onClose: () => void }) {
   const t = useT();
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.findTitle} description={t.counter.findHint}>
+    <Sheet open={open} onClose={onClose} title={t.counter.findTitle} description={t.counter.findHint} placement="center" wide>
       <FinderForm {...form} />
     </Sheet>
   );

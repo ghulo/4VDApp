@@ -152,7 +152,7 @@ interface NumberProps {
 /** One number for the chosen line: how many, the price, or the rabat. */
 export function NumberSheet({ open, title, onClose, ...form }: NumberProps & { open: boolean; title: string; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title={title}>
+    <Sheet open={open} onClose={onClose} title={title} placement="center">
       <NumberForm {...form} />
     </Sheet>
   );
@@ -379,7 +379,7 @@ interface ZProps {
 export function ZSheet({ open, onClose, ...form }: ZProps & { open: boolean; onClose: () => void }) {
   const t = useT();
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.zConfirm} description={t.counter.zHint}>
+    <Sheet open={open} onClose={onClose} title={t.counter.zConfirm} description={t.counter.zHint} placement="center">
       <ZForm {...form} />
     </Sheet>
   );
@@ -434,7 +434,7 @@ export function UnprintedSheet({
   const t = useT();
   const [printing, setPrinting] = useState<number | null>(null);
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.notPrintedTitle} description={t.counter.notPrintedHint}>
+    <Sheet open={open} onClose={onClose} title={t.counter.notPrintedTitle} description={t.counter.notPrintedHint} placement="center" wide>
       {items.length === 0 ? (
         <p className="counter-hint">{t.counter.nothingUnprinted}</p>
       ) : (
@@ -491,7 +491,7 @@ export function CustomerSheet({
 }) {
   const t = useT();
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.customerTitle} description={t.counter.customerHint}>
+    <Sheet open={open} onClose={onClose} title={t.counter.customerTitle} description={t.counter.customerHint} placement="center" wide>
       <CustomerForm customers={customers} current={current} onPick={onPick} />
     </Sheet>
   );
@@ -556,7 +556,7 @@ interface CountProps {
 export function CountSheet({ open, onClose, ...form }: CountProps & { open: boolean; onClose: () => void }) {
   const t = useT();
   return (
-    <Sheet open={open} onClose={onClose} title={t.counter.countTitle}>
+    <Sheet open={open} onClose={onClose} title={t.counter.countTitle} placement="center">
       <CountForm {...form} />
     </Sheet>
   );
@@ -627,7 +627,7 @@ interface PinProps {
  */
 export function PinSheet({ open, title, description, onClose, ...form }: PinProps & { open: boolean; title: string; description: string; onClose: () => void }) {
   return (
-    <Sheet open={open} onClose={onClose} title={title} description={description}>
+    <Sheet open={open} onClose={onClose} title={title} description={description} placement="center">
       <PinForm {...form} />
     </Sheet>
   );

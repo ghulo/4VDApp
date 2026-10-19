@@ -11,6 +11,8 @@ interface SheetProps {
   description?: ReactNode;
   /** 'center': a short yes-or-no question in the middle of the screen, not a form from the side. */
   placement?: 'side' | 'center';
+  /** Centred, for a list to search or pick from: wider, and one steady height while the list changes. */
+  wide?: boolean;
   children: ReactNode;
 }
 
@@ -20,7 +22,7 @@ interface SheetProps {
  * dialog keeps focus inside, closes on Esc and returns focus afterwards. The
  * form inside starts fresh each time the panel opens.
  */
-export function Sheet({ open, onClose, title, description, placement = 'side', children }: SheetProps) {
+export function Sheet({ open, onClose, title, description, placement = 'side', wide = false, children }: SheetProps) {
   const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
@@ -62,7 +64,7 @@ export function Sheet({ open, onClose, title, description, placement = 'side', c
   return (
     <dialog
       ref={ref}
-      className={placement === 'center' ? 'sheet sheet--center' : 'sheet'}
+      className={placement === 'center' ? (wide ? 'sheet sheet--center sheet--wide' : 'sheet sheet--center') : 'sheet'}
       aria-labelledby={headingId}
       onClose={onClose}
       // The dialog itself is only hit outside the panel: on the dimmed backdrop.

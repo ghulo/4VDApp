@@ -404,6 +404,9 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Giving money back for a returned line | **refund** | **kthim** | return receipt, storno |
 | Seeing a price at the Counter without selling | **Price check** (F10) | **Kontrollo çmimin** (key: **Shiko çmimin**) | price lookup, PLU |
 | One rabat on every line of a basket | **Basket rabat** | **Rabat i shportës** | discount, cart discount |
+| Part of a sale on the card terminal, the rest in cash | **Cash + card** (the card part: **On the card**) | **Kesh + kartelë** (**Me kartelë**) | split payment, mixed tender |
+| The printer's small screen facing the buyer | **Customer display** | **Ekrani për klientin** | pole display, VFD |
+| The beep and buzz after a scan | **Scan sounds** | **Tingujt e skanimit** | audio feedback |
 | A buyer the Counter doesn't know | **Walk-in customer** | **Klient pa emër** | anonymous, guest |
 | Finishing a sale | **Record sale · €X** | **Regjistro shitjen · €X** *(confirm)* | Checkout |
 | One customer's purchase | **sale** | **shitje** | transaction |

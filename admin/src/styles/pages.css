@@ -1870,6 +1870,9 @@ form.product-form > .form-actions {
   line-height: 1;
 }
 
+.avatar--initials::before {
+  content: attr(data-initials);
+}
 
 
 .user-row__name {

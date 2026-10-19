@@ -1481,8 +1481,10 @@ input.switch:focus-visible {
     white-space: nowrap;
   }
 
+  /* The pill row sits on the bare page: an opaque tint keeps the clay text readable. */
   .settings-nav__link[aria-current] {
     border-color: transparent;
+    background: var(--brand-soft);
   }
 
   .settings-section {

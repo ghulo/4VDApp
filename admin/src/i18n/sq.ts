@@ -3170,7 +3170,10 @@ export const sq: Catalogue = {
     yearLabel: 'Viti',
     tm: {
       title: 'Tatimi në fitim sipas tremujorëve',
-      description: (rate: string) => `4VD sh.p.k. paguan ${rate} të fitimit, një pjesë pas çdo tremujori, deri më 15 të muajit pasues.`,
+      description: {
+        lastYear: (share: string, previous: string) => `Sipas ligjit, çdo tremujor paguhet një e katërta e 110% të tatimit në fitim të vitit të kaluar (${previous}): ${share}, deri më 15 pas tremujorit.`,
+        estimate: 'Vitin e kaluar s’pati tatim në fitim (viti i parë, ose humbje), ndaj çdo tremujor llogaritet nga fitimi i këtij viti deri tani, me 10%, dhe paguhet deri më 15 pas tremujorit.',
+      },
       startsLate: (day: string) => `Librat fillojnë më ${day}, ndaj fitimi para asaj dite nuk llogaritet.`,
       status: {
         later: 'Ende pa filluar',
@@ -3179,6 +3182,7 @@ export const sq: Catalogue = {
         nothing: 'Asgjë për të paguar',
         due: (day: string) => `Për t’u paguar deri më ${day}`,
         late: (day: string) => `Me vonesë, afati ishte ${day}`,
+        before: 'Para 4VD',
       },
       quarter: (n: number) => `Tremujori ${n}`,
       startsOn: (day: string) => `Fillon më ${day}.`,
@@ -3195,6 +3199,20 @@ export const sq: Catalogue = {
       takeBack: 'Anuloje',
       takeBackConfirm: 'Po, anuloje',
       markPaid: 'Shëno si të paguar',
+      beforeWords: 'Paguar kur dyqani punonte me TREFIN.',
+      lastYearTax: 'Tatimi në fitim i vitit të kaluar',
+      share: '110% e tij, një e katërta',
+      basis: {
+        title: 'Mbi çka bazohen këstet',
+        description: 'Dy shifra që 4VD s’i di vetë. Të dyja vijnë nga kontabilisti.',
+        previousTax: 'Tatimi në fitim i vitit të kaluar',
+        previousTaxHint: 'Nga deklarata vjetore e vitit të kaluar. Shkruaj 0 për një vit me humbje; lëre bosh nëse ende s’e di.',
+        fromClosed: (year: number, amount: string) => `${amount}, nga viti ${year} i mbyllur në 4VD.`,
+        profitBefore: (day: string) => `Fitimi i këtij viti para ${day}`,
+        profitBeforeHint: 'Nga TREFIN, nga 1 janari deri në ditën kur fillojnë librat e 4VD. Llogaritet për tatimin e vitit, por nuk regjistrohet. Humbja shkruhet me minus.',
+        save: 'Ruaj',
+        saved: 'U ruajt',
+      },
     },
     pay: {
       title: (quarter: number, year: number) => `Tatimi në fitim, tremujori ${quarter} ${year}`,
@@ -3220,6 +3238,9 @@ export const sq: Catalogue = {
       leftToPay: 'Mbetet për t’u paguar',
       overpaid: 'Paguar tepër',
       intoRetained: 'Fitimi i mbajtur (në 3400)',
+      booksProfit: 'Fitimi në librat e 4VD',
+      profitBeforeBooks: 'Fitimi para 4VD (nga TREFIN)',
+      payRestBy: (day: string) => `Paguaj pjesën që mbetet me deklaratën vjetore, deri më ${day}.`,
       what: (year: number) => [
         `Tatimi në fitim regjistrohet më 31 dhjetor ${year} (8900 ndaj 2350).`,
         `Çdo llogari të ardhurash dhe shpenzimesh shkon në zero, dhe fitimi kalon në 3400.`,

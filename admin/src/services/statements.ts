@@ -83,7 +83,7 @@ export interface StatementByKind {
   equity: EquityChanges;
 }
 
-export type QuarterStatus = 'later' | 'running' | 'due' | 'late' | 'paid' | 'nothing';
+export type QuarterStatus = 'later' | 'running' | 'due' | 'late' | 'paid' | 'nothing' | 'before';
 
 export interface Instalment {
   id: number;
@@ -113,6 +113,13 @@ export type CloseBlocker = 'not_over' | 'earlier_open' | 'empty';
 export interface BookYear {
   year: number;
   rate: number;
+  /** 'last_year': a quarter of 110% of last year's tax (the law's rule); 'estimate': from this year's profit (first year, or a loss last year). */
+  method: 'last_year' | 'estimate';
+  previousTax: number | null;
+  previousTaxSource: 'closed' | 'typed' | null;
+  share: number | null;
+  /** Profit this year before the books start, typed from TREFIN. */
+  profitBefore: number;
   startsInYear: string | null;
   quarters: Quarter[];
   paid: number;
@@ -122,7 +129,9 @@ export interface BookYear {
     earlierOpen: number | null;
     unfiledMonths: string[];
     profitBeforeTax: number;
+    booksProfit: number;
     suggestedTax: number;
+    finalDue: string;
     canReopen: boolean;
   };
 }
@@ -151,6 +160,8 @@ export const statementsApi = {
   reopen: async (year: number, reason: string) => (await apiRequest<BookYear>(`/books/year/${year}/reopen`, { method: 'POST', body: { reason } })).data,
   pay: async (year: number, input: { quarter: number; amount: number; day: string; placeId: number; note?: string | null }) =>
     (await apiRequest<BookYear>(`/books/year/${year}/instalments`, { method: 'POST', body: input })).data,
+  setInputs: async (year: number, input: { previousTax: number | null; profitBefore: number | null }) =>
+    (await apiRequest<BookYear>(`/books/year/${year}/inputs`, { method: 'PUT', body: input })).data,
   undo: async (id: number) => (await apiRequest<BookYear>(`/books/instalments/${id}`, { method: 'DELETE' })).data,
 };
 

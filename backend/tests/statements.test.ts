@@ -207,6 +207,30 @@ describe('quarterly profit tax (TM)', () => {
     expect(lineOf(after.sections, (line) => line.number === '2350')).toBeUndefined();
   });
 
+  it("follows last year's tax once there is one: each quarter a quarter of 110% of it (Law 06/L-105)", async () => {
+    await sellOn(`${LAST}-02-10`);
+    expect((await yearView(LAST)).method).toBe('estimate');
+
+    // Last year's tax from the annual return, and profit made before the books start (still in TREFIN).
+    expect((await api().put(`/api/books/year/${LAST}/inputs`).set(auth(employeeToken)).send({ previousTax: 100, profitBefore: 500 })).status).toBe(403);
+    const saved = await api().put(`/api/books/year/${LAST}/inputs`).set(auth(accountantToken)).send({ previousTax: 100, profitBefore: 500 });
+    expect(saved.status).toBe(200);
+    const view = saved.body.data;
+    expect(view).toMatchObject({ method: 'last_year', previousTax: 100, previousTaxSource: 'typed', share: 27.5, profitBefore: 500 });
+    expect(view.quarters.map((quarter: { suggested: number }) => quarter.suggested)).toEqual([27.5, 27.5, 27.5, 27.5]);
+    // The year-end tax counts the whole year: €24.75 in the books plus €500 before them.
+    expect(view.close).toMatchObject({ booksProfit: 24.75, profitBeforeTax: 524.75, suggestedTax: 52.48, finalDue: `${THIS}-03-31` });
+
+    // A year with a loss pays nothing on last year's tax: back to the estimate.
+    const loss = await api().put(`/api/books/year/${LAST}/inputs`).set(auth(accountantToken)).send({ previousTax: 0, profitBefore: null });
+    expect(loss.body.data).toMatchObject({ method: 'estimate', share: null, profitBefore: 0 });
+
+    // Once a year is closed in 4VD, the next follows its tax by itself.
+    await api().post(`/api/books/year/${LAST}/close`).set(auth(accountantToken)).send({ tax: 40 });
+    expect(await yearView(THIS)).toMatchObject({ method: 'last_year', previousTax: 40, previousTaxSource: 'closed', share: 11 });
+    expect((await api().put(`/api/books/year/${LAST}/inputs`).set(auth(accountantToken)).send({ previousTax: 1, profitBefore: null })).status).toBe(409);
+  });
+
   it('sets the instalments against the year-end tax when the year closes', async () => {
     await sellOn(`${LAST}-02-10`);
     const safe = await safeId();

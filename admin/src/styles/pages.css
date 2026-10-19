@@ -5316,6 +5316,7 @@ fieldset.report-sections {
 .year-close__figures dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .year-quarter__total {

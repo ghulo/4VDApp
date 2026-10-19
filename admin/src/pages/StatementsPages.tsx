@@ -590,7 +590,7 @@ const MONTHS_OF = (quarter: Quarter, language: string) => {
   return `${format(quarter.from)} – ${format(quarter.to)}`;
 };
 
-const STATUS_TONE: Record<Quarter['status'], Tone> = { later: 'neutral', running: 'info', due: 'warn', late: 'danger', paid: 'ok', nothing: 'neutral' };
+const STATUS_TONE: Record<Quarter['status'], Tone> = { later: 'neutral', running: 'info', due: 'warn', late: 'danger', paid: 'ok', nothing: 'neutral', before: 'neutral' };
 
 /** Which year the page shows: from the address, else this one. */
 function useYearParam(): [number, (year: number) => void] {
@@ -635,19 +635,23 @@ export function YearPage() {
       {view.isError && <ErrorNotice error={view.error} onRetry={() => view.refetch()} />}
       {view.data && (
         <div className="year-page" aria-busy={view.isFetching}>
-          <Section title={w.tm.title} description={w.tm.description(formatPercent(view.data.rate))}>
-            {view.data.startsInYear && (
-              <p className="notice" role="note">
-                {w.tm.startsLate(formatBookDay(view.data.startsInYear))}
-              </p>
-            )}
+          <Section
+            title={w.tm.title}
+            description={
+              view.data.method === 'last_year'
+                ? w.tm.description.lastYear(formatMoney(view.data.share ?? 0), formatMoney(view.data.previousTax ?? 0))
+                : w.tm.description.estimate
+            }
+          >
             <div className="year-quarters">
               {view.data.quarters.map((quarter) => (
-                <QuarterCard key={quarter.quarter} year={view.data.year} quarter={quarter} earlier={Math.max(view.data.quarters[quarter.quarter - 2]?.tax ?? 0, quarter.paidBefore)} canPay={canPayTax(role) && !view.data.close.closed} onPay={() => setPaying(quarter)} />
+                <QuarterCard key={quarter.quarter} year={view.data.year} quarter={quarter} share={view.data.share} previousTax={view.data.previousTax} earlier={Math.max(view.data.quarters[quarter.quarter - 2]?.tax ?? 0, quarter.paidBefore)} canPay={canPayTax(role) && !view.data.close.closed} onPay={() => setPaying(quarter)} />
               ))}
             </div>
           </Section>
-          <CloseYear data={view.data} canClose={canCloseYear(role)} />
+          <TaxBasis data={view.data} canEdit={canPayTax(role) && !view.data.close.closed} />
+          {/* A new suggestion (after the figures above change) starts the tax field again. */}
+          <CloseYear key={view.data.close.suggestedTax} data={view.data} canClose={canCloseYear(role)} />
         </div>
       )}
       <Sheet open={paying !== null} onClose={() => setPaying(null)} title={paying ? w.pay.title(paying.quarter, year) : w.tm.title} description={w.pay.description}>
@@ -657,7 +661,23 @@ export function YearPage() {
   );
 }
 
-function QuarterCard({ year, quarter, earlier, canPay, onPay }: { year: number; quarter: Quarter; earlier: number; canPay: boolean; onPay: () => void }) {
+function QuarterCard({
+  year,
+  quarter,
+  share,
+  previousTax,
+  earlier,
+  canPay,
+  onPay,
+}: {
+  year: number;
+  quarter: Quarter;
+  share: number | null;
+  previousTax: number | null;
+  earlier: number;
+  canPay: boolean;
+  onPay: () => void;
+}) {
   const t = useT();
   const w = t.year.tm;
   const { language } = useLanguage();
@@ -683,8 +703,28 @@ function QuarterCard({ year, quarter, earlier, canPay, onPay }: { year: number; 
       description={MONTHS_OF(quarter, language)}
       actions={<Badge tone={STATUS_TONE[quarter.status]}>{status}</Badge>}
     >
-      {quarter.status === 'later' ? (
+      {quarter.status === 'before' ? (
+        <p className="year-quarter__words">{w.beforeWords}</p>
+      ) : quarter.status === 'later' ? (
         <p className="year-quarter__words">{w.startsOn(formatBookDay(quarter.from))}</p>
+      ) : share !== null ? (
+        <>
+          <dl className="year-quarter__figures">
+            <div>
+              <dt>{w.lastYearTax}</dt>
+              <dd>{formatMoney(previousTax ?? 0)}</dd>
+            </div>
+            <div>
+              <dt>{w.share}</dt>
+              <dd>{formatMoney(share)}</dd>
+            </div>
+          </dl>
+          <p className="year-quarter__total">
+            <span>{quarter.instalment ? w.paid : w.toPay}</span>
+            <strong>{formatMoney(toPay ?? share)}</strong>
+          </p>
+          {!quarter.instalment && <p className="year-quarter__due">{w.dueBy(formatBookDay(quarter.due))}</p>}
+        </>
       ) : (
         <>
           <dl className="year-quarter__figures">
@@ -817,6 +857,74 @@ function PayForm({ year, quarter, onDone }: { year: number; quarter: Quarter; on
   );
 }
 
+/** Last year's tax (from the annual return, unless 4VD closed that year) and the profit made in TREFIN before the books start. */
+function TaxBasis({ data, canEdit }: { data: BookYear; canEdit: boolean }) {
+  const t = useT();
+  const w = t.year.tm.basis;
+  const queryClient = useQueryClient();
+  const typed = data.previousTaxSource === 'typed' ? String(data.previousTax) : '';
+  const [previousTax, setPreviousTax] = useState(typed);
+  const [profitBefore, setProfitBefore] = useState(data.profitBefore ? String(data.profitBefore) : '');
+  const save = useMutation({
+    mutationFn: () =>
+      statementsApi.setInputs(data.year, {
+        previousTax: data.previousTaxSource === 'closed' ? data.previousTax : previousTax.trim() === '' ? null : Number(previousTax),
+        profitBefore: profitBefore.trim() === '' ? null : Number(profitBefore),
+      }),
+    onSuccess: (next) => {
+      queryClient.setQueryData(['books', 'year', data.year], next);
+      queryClient.invalidateQueries({ queryKey: ['attention'] });
+    },
+  });
+  const changed = previousTax !== typed || profitBefore !== (data.profitBefore ? String(data.profitBefore) : '');
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    save.mutate();
+  }
+
+  return (
+    <Card title={w.title} description={w.description}>
+      <form className="settings-form" onSubmit={handleSubmit}>
+        <div className="field-row">
+          {data.previousTaxSource === 'closed' ? (
+            <div className="field">
+              <span className="field__label">{w.previousTax}</span>
+              <p className="year-quarter__words">{w.fromClosed(data.year - 1, formatMoney(data.previousTax ?? 0))}</p>
+            </div>
+          ) : (
+            <Field label={w.previousTax} hint={w.previousTaxHint}>
+              <input name="previousTax" autoComplete="off" type="number" inputMode="decimal" min={0} step={0.01} disabled={!canEdit} value={previousTax} onChange={(event) => setPreviousTax(event.target.value)} />
+            </Field>
+          )}
+          {data.startsInYear && (
+            <Field label={w.profitBefore(formatBookDay(data.startsInYear))} hint={w.profitBeforeHint}>
+              <input name="profitBefore" autoComplete="off" type="number" inputMode="decimal" step={0.01} disabled={!canEdit} value={profitBefore} onChange={(event) => setProfitBefore(event.target.value)} />
+            </Field>
+          )}
+        </div>
+        {save.isError && (
+          <p className="form-error" role="alert">
+            {errorMessage(save.error)}
+          </p>
+        )}
+        {canEdit && (
+          <div className="form-actions">
+            <Button type="submit" variant="primary" disabled={!changed || save.isPending} loading={save.isPending}>
+              {w.save}
+            </Button>
+            {save.isSuccess && !changed && (
+              <span className="field__hint" role="status">
+                {w.saved}
+              </span>
+            )}
+          </div>
+        )}
+      </form>
+    </Card>
+  );
+}
+
 function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
   const t = useT();
   const w = t.year.close;
@@ -840,7 +948,8 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
   });
   const taxValue = Number(tax) || 0;
   const left = taxValue - data.paid;
-  const net = close.profitBeforeTax - taxValue;
+  // Only the books' own profit moves into 3400; what TREFIN made before them is counted for the tax alone.
+  const net = close.booksProfit - taxValue;
 
   if (close.closed) {
     return (
@@ -865,7 +974,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
           </div>
           <div>
             <dt>{w.intoRetained}</dt>
-            <dd>{formatMoney(close.closed.profit - close.closed.tax)}</dd>
+            <dd>{formatMoney(close.booksProfit - close.closed.tax)}</dd>
           </div>
         </dl>
         <div className="year-close__actions">
@@ -889,6 +998,18 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
   return (
     <Card className="year-close" title={w.title(year)} description={w.description}>
       <dl className="year-close__figures">
+        {cents(data.profitBefore) !== 0 && (
+          <>
+            <div>
+              <dt>{w.booksProfit}</dt>
+              <dd>{formatMoney(close.booksProfit)}</dd>
+            </div>
+            <div>
+              <dt>{w.profitBeforeBooks}</dt>
+              <dd>{formatMoney(data.profitBefore)}</dd>
+            </div>
+          </>
+        )}
         <div>
           <dt>{w.profitBeforeTax}</dt>
           <dd>{formatMoney(close.profitBeforeTax)}</dd>
@@ -923,6 +1044,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
           {w.taxHint}
         </p>
       )}
+      {left > 0 && <p className="year-close__why">{w.payRestBy(formatBookDay(close.finalDue))}</p>}
       <ul className="year-close__what">
         {w.what(year).map((line) => (
           <li key={line}>{line}</li>

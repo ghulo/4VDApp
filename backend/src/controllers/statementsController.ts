@@ -41,6 +41,12 @@ const payBody = z.object({
   note: z.string().max(300).nullish(),
 });
 
+const inputsBody = z.object({
+  previousTax: z.coerce.number().min(0).max(100_000_000).nullable(),
+  // A loss before the books start is a negative profit.
+  profitBefore: z.coerce.number().min(-100_000_000).max(100_000_000).nullable(),
+});
+
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export function createStatementsController(statements: StatementsService, years: YearService, db: DatabaseClient) {
@@ -102,6 +108,11 @@ export function createStatementsController(statements: StatementsService, years:
       const { year } = parseInput(yearParams, req.params);
       const { quarter, ...input } = parseInput(payBody, req.body);
       sendSuccess(res, await years.pay(year, quarter, input, req.user!), { statusCode: 201, message: 'Instalment saved' });
+    },
+
+    async inputs(req: Request, res: Response): Promise<void> {
+      const { year } = parseInput(yearParams, req.params);
+      sendSuccess(res, await years.setInputs(year, parseInput(inputsBody, req.body), req.user!), { message: 'Saved' });
     },
 
     async undo(req: Request, res: Response): Promise<void> {

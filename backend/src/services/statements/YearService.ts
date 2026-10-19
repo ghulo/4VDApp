@@ -14,17 +14,25 @@ import { CLOSING_PREFIX, type StatementsService } from './StatementsService.js';
 
 /**
  * 4VD SH.P.K. pays corporate income tax: 10% of the year's profit (Law
- * 06/L-105). Default until the accountant says otherwise (handoff.md): each
- * quarter's instalment is the tax on the profit so far this year, less what
- * earlier quarters paid or still owe; the accountant can type another amount.
+ * 06/L-105). A business over €30,000 a year pays it ahead each quarter, by the
+ * 15th after the quarter: a quarter of 110% of last year's tax. In its first
+ * year, or after a year with a loss, it estimates from this year's profit
+ * instead. What is left after the four instalments is paid with the annual
+ * return by 31 March. The accountant can always pay another amount.
  */
 export const PROFIT_TAX_RATE = 0.1;
 /** Each quarter's instalment is due by the 15th of the month after it. */
 export const TM_DUE_DAY = 15;
 export const PROFIT_TAX_KEY = 'profit_tax:';
 export const TM_KEY = 'tm:';
+/** The two figures 4VD can't know: last year's tax (from the annual return) and profit made before the books start (still in TREFIN). */
+export const TAX_INPUTS_KEY = 'profit_tax_year:';
+/** Instalments on last year's tax are 110% of it, in four parts. */
+export const LAST_YEAR_FACTOR = 1.1;
 
-export type QuarterStatus = 'later' | 'running' | 'due' | 'late' | 'paid' | 'nothing';
+export type QuarterStatus = 'later' | 'running' | 'due' | 'late' | 'paid' | 'nothing' | 'before';
+/** 'last_year': a quarter of 110% of last year's tax; 'estimate': from this year's profit (first year, or last year had no tax). */
+export type TmMethod = 'last_year' | 'estimate';
 
 export interface InstalmentDto {
   id: number;
@@ -57,6 +65,14 @@ export interface QuarterDto {
 export interface YearDto {
   year: number;
   rate: number;
+  method: TmMethod;
+  /** Last year's profit tax, from 4VD's closed year or typed from the annual return; null when not known. */
+  previousTax: number | null;
+  previousTaxSource: 'closed' | 'typed' | null;
+  /** Each quarter's part when it follows last year's tax. */
+  share: number | null;
+  /** Profit this year before the books start (typed, from TREFIN); counted for the tax, never posted. */
+  profitBefore: number;
   /** The books' first day when it falls in this year: profit before it isn't in 4VD. */
   startsInYear: string | null;
   quarters: QuarterDto[];
@@ -68,8 +84,12 @@ export interface YearDto {
     earlierOpen: number | null;
     /** VAT months of the year not marked as filed: a warning, not a blocker. */
     unfiledMonths: string[];
+    /** Profit before tax for the whole year: the books' plus profitBefore. */
     profitBeforeTax: number;
+    booksProfit: number;
     suggestedTax: number;
+    /** The rest of the year's tax is paid with the annual return. */
+    finalDue: string;
     canReopen: boolean;
   };
 }
@@ -144,10 +164,28 @@ export class YearService {
     }));
   }
 
+  /** What the year's instalments are based on: last year's tax when there was one, else an estimate from this year's profit. */
+  private async basis(year: number): Promise<{ method: TmMethod; previousTax: number | null; previousTaxSource: 'closed' | 'typed' | null; share: number | null; profitBefore: number }> {
+    const [closed, typed] = await Promise.all([
+      this.db.selectFrom('book_years').select('tax').where('year', '=', year - 1).executeTakeFirst(),
+      this.db.selectFrom('settings').select('value').where('key', '=', `${TAX_INPUTS_KEY}${year}`).executeTakeFirst(),
+    ]);
+    const inputs = (typed?.value ?? {}) as { previousTax?: number | null; profitBefore?: number | null };
+    const previousTax = closed ? Number(closed.tax) : typeof inputs.previousTax === 'number' ? inputs.previousTax : null;
+    const method: TmMethod = previousTax !== null && previousTax > 0 ? 'last_year' : 'estimate';
+    return {
+      method,
+      previousTax,
+      previousTaxSource: closed ? 'closed' : previousTax !== null ? 'typed' : null,
+      share: method === 'last_year' ? roundMoney((previousTax! * LAST_YEAR_FACTOR) / 4) : null,
+      profitBefore: typeof inputs.profitBefore === 'number' ? inputs.profitBefore : 0,
+    };
+  }
+
   /** The year's four instalments and whether it can be closed. */
   async year(year: number, actorRole: UserRole, now = new Date()): Promise<YearDto> {
     const today = zonedDay(now, this.timeZone);
-    const [startDay, instalments] = await Promise.all([this.poster.startDay(), this.instalments(year)]);
+    const [startDay, instalments, basis] = await Promise.all([this.poster.startDay(), this.instalments(year), this.basis(year)]);
     const quarters: QuarterDto[] = [];
     let paidBefore = 0;
     let taxBefore = 0;
@@ -156,20 +194,25 @@ export class YearService {
       const due = quarterDue(year, quarter);
       const instalment = instalments.find((row) => row.quarter === quarter) ?? null;
       const started = today >= from;
-      const profit = started ? await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: today < to ? today : to }) : null;
+      // A quarter over before the books start was paid while the shop used TREFIN.
+      const beforeBooks = startDay !== null && to < startDay;
+      const booksProfit = started && !beforeBooks ? await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: today < to ? today : to }) : null;
+      const profit = booksProfit === null ? null : roundMoney(booksProfit + basis.profitBefore);
       const tax = profit === null ? null : taxOn(profit);
-      const suggested = tax === null ? null : instalmentFor(tax, taxBefore, paidBefore);
+      const suggested = !started || beforeBooks ? null : basis.share ?? instalmentFor(tax ?? 0, taxBefore, paidBefore);
       const status: QuarterStatus = instalment
         ? 'paid'
-        : !started
-          ? 'later'
-          : today <= to
-            ? 'running'
-            : suggested === 0
-              ? 'nothing'
-              : today <= due
-                ? 'due'
-                : 'late';
+        : beforeBooks
+          ? 'before'
+          : !started
+            ? 'later'
+            : today <= to
+              ? 'running'
+              : suggested === 0
+                ? 'nothing'
+                : today <= due
+                  ? 'due'
+                  : 'late';
       quarters.push({ quarter, from, to, due, status, profit, tax, paidBefore, suggested, instalment: instalment && { ...instalment } });
       paidBefore = roundMoney(paidBefore + (instalment?.amount ?? 0));
       taxBefore = tax ?? taxBefore;
@@ -177,14 +220,30 @@ export class YearService {
     return {
       year,
       rate: PROFIT_TAX_RATE,
+      ...basis,
       startsInYear: startDay && startDay > `${year}-01-01` && startDay <= `${year}-12-31` ? startDay : null,
       quarters,
       paid: paidBefore,
-      close: await this.closeView(year, actorRole, today),
+      close: await this.closeView(year, actorRole, today, basis.profitBefore),
     };
   }
 
-  private async closeView(year: number, actorRole: UserRole, today: string): Promise<YearDto['close']> {
+  /** Save last year's tax and the profit made before the books start, as typed by the accountant (null clears one). */
+  async setInputs(year: number, input: { previousTax: number | null; profitBefore: number | null }, actor: { id: number; role: UserRole }, now = new Date()): Promise<YearDto> {
+    if (await this.db.selectFrom('book_years').select('year').where('year', '=', year).executeTakeFirst()) {
+      throw new ConflictError(`${year} is closed. Reopen it to change what its profit tax is based on.`);
+    }
+    if ((input.previousTax ?? 0) < 0) throw new ValidationError("Last year's tax can't be below zero; type 0 for a year with a loss.");
+    const value = JSON.stringify({ previousTax: input.previousTax === null ? null : roundMoney(input.previousTax), profitBefore: input.profitBefore === null ? null : roundMoney(input.profitBefore) });
+    await this.db
+      .insertInto('settings')
+      .values({ key: `${TAX_INPUTS_KEY}${year}`, value, updated_by: actor.id, updated_at: new Date() })
+      .onConflict((conflict) => conflict.column('key').doUpdateSet({ value, updated_by: actor.id, updated_at: new Date() }))
+      .execute();
+    return this.year(year, actor.role, now);
+  }
+
+  private async closeView(year: number, actorRole: UserRole, today: string, profitBefore: number): Promise<YearDto['close']> {
     const record = await this.db
       .selectFrom('book_years as y')
       .leftJoin('users as u', 'u.id', 'y.closed_by')
@@ -209,7 +268,9 @@ export class YearService {
     if (first !== null && first <= year) {
       for (let month = startMonth; month <= lastMonth; month++) if (!filedMonths.has(`${year}-${pad(month)}`)) unfiledMonths.push(`${year}-${pad(month)}`);
     }
-    const profitBeforeTax = record ? Number(record.profit) : await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: `${year}-12-31` });
+    const booksProfit = await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: `${year}-12-31` });
+    // Once closed, the year's profit is what was taxed; before, the books' profit plus what TREFIN made before them.
+    const profitBeforeTax = record ? Number(record.profit) : roundMoney(booksProfit + profitBefore);
     return {
       closed: record ? {
         at: record.closed_at.toISOString(),
@@ -223,7 +284,9 @@ export class YearService {
       earlierOpen,
       unfiledMonths: record ? [] : unfiledMonths,
       profitBeforeTax,
+      booksProfit,
       suggestedTax: taxOn(profitBeforeTax),
+      finalDue: `${year + 1}-03-31`,
       canReopen: Boolean(record) && !later && canReopen(actorRole),
     };
   }
@@ -262,7 +325,7 @@ export class YearService {
   async close(year: number, input: { tax?: number }, actor: { id: number; role: UserRole }, now = new Date()): Promise<YearDto> {
     if (!canReopen(actor.role)) throw new ForbiddenError('Only the accountant or the owner can close a year');
     await this.poster.sync();
-    const view = await this.closeView(year, actor.role, zonedDay(now, this.timeZone));
+    const view = await this.closeView(year, actor.role, zonedDay(now, this.timeZone), (await this.basis(year)).profitBefore);
     if (view.closed) throw new ConflictError(`${year} is already closed.`);
     if (view.blockers.includes('not_over')) throw new ValidationError(`${year} isn't over yet. A year can be closed from 1 January of the next.`);
     if (view.blockers.includes('earlier_open')) throw new ValidationError(`Close ${view.earlierOpen} first: years close in order.`);
@@ -428,12 +491,16 @@ export class YearService {
     ]);
     for (const year of [thisYear - 1, thisYear]) {
       if (`${year}-12-31` < start || closed.some((row) => row.year === year)) continue;
+      const basis = await this.basis(year);
+      // Profit so far, with what TREFIN made before the books start.
+      const profitTo = async (day: string) => (await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: day })) + basis.profitBefore;
       for (const quarter of [1, 2, 3, 4]) {
         const { to } = quarterRange(year, quarter);
         if (to >= today || to < start || paid.some((row) => row.year === year && row.quarter === quarter)) continue;
         const paidBefore = paid.filter((row) => row.year === year && row.quarter < quarter).reduce((sum, row) => sum + Number(row.amount), 0);
-        const taxBefore = quarter === 1 ? 0 : taxOn(await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: quarterRange(year, quarter - 1).to }));
-        const amount = instalmentFor(taxOn(await this.statements.profitBeforeTax({ from: `${year}-01-01`, to })), taxBefore, paidBefore);
+        const amount =
+          basis.share ??
+          instalmentFor(taxOn(await profitTo(to)), quarter === 1 ? 0 : taxOn(await profitTo(quarterRange(year, quarter - 1).to)), paidBefore);
         const due = quarterDue(year, quarter);
         if (amount > 0) out.push({ year, quarter, due, amount, late: today > due });
       }

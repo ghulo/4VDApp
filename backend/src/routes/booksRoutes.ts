@@ -46,6 +46,7 @@ export function createBooksRoutes({ booksService, openingService, statementsServ
   router.post('/year/:year/close', ...guards.books, statements.close);
   router.post('/year/:year/reopen', ...guards.books, statements.reopen);
   router.post('/year/:year/instalments', ...guards.filing, statements.pay);
+  router.put('/year/:year/inputs', ...guards.filing, statements.inputs);
   router.delete('/instalments/:id', ...guards.filing, statements.undo);
 
   return router;

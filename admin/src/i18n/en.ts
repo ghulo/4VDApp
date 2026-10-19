@@ -3192,7 +3192,10 @@ export const en = {
     yearLabel: 'Year',
     tm: {
       title: 'Profit tax by quarter',
-      description: (rate: string) => `4VD sh.p.k. pays ${rate} of its profit, a part after every quarter, by the 15th of the next month.`,
+      description: {
+        lastYear: (share: string, previous: string) => `By law each quarter is a quarter of 110% of last year’s profit tax (${previous}): ${share}, paid by the 15th after the quarter.`,
+        estimate: 'There was no profit tax last year (a first year, or a loss), so each quarter is worked out from this year’s profit so far, at 10%, and paid by the 15th after the quarter.',
+      },
       startsLate: (day: string) => `The books start on ${day}, so profit before that day isn’t counted.`,
       status: {
         later: 'Not started',
@@ -3201,6 +3204,7 @@ export const en = {
         nothing: 'Nothing to pay',
         due: (day: string) => `Due by ${day}`,
         late: (day: string) => `Late, was due ${day}`,
+        before: 'Before 4VD',
       },
       quarter: (n: number) => `Quarter ${n}`,
       startsOn: (day: string) => `Starts on ${day}.`,
@@ -3217,6 +3221,20 @@ export const en = {
       takeBack: 'Take back',
       takeBackConfirm: 'Yes, take it back',
       markPaid: 'Mark as paid',
+      beforeWords: 'Paid while the shop used TREFIN.',
+      lastYearTax: 'Last year’s profit tax',
+      share: '110% of it, a quarter',
+      basis: {
+        title: 'What the instalments follow',
+        description: 'Two figures 4VD can’t know by itself. Both come from the accountant.',
+        previousTax: 'Last year’s profit tax',
+        previousTaxHint: 'From last year’s annual return. Type 0 for a year with a loss; leave it empty if you don’t know it yet.',
+        fromClosed: (year: number, amount: string) => `${amount}, from ${year} closed in 4VD.`,
+        profitBefore: (day: string) => `Profit this year before ${day}`,
+        profitBeforeHint: 'From TREFIN, 1 January up to the day 4VD’s books start. It counts for the year’s tax but isn’t posted. A loss is a minus figure.',
+        save: 'Save',
+        saved: 'Saved',
+      },
     },
     pay: {
       title: (quarter: number, year: number) => `Profit tax, quarter ${quarter} ${year}`,
@@ -3242,6 +3260,9 @@ export const en = {
       leftToPay: 'Left to pay',
       overpaid: 'Paid too much',
       intoRetained: 'Profit kept (into 3400)',
+      booksProfit: 'Profit in 4VD’s books',
+      profitBeforeBooks: 'Profit before 4VD (from TREFIN)',
+      payRestBy: (day: string) => `Pay what is left with the annual return, by ${day}.`,
       what: (year: number) => [
         `Profit tax is posted on 31 Dec ${year} (8900 against 2350).`,
         `Every income and cost account goes to zero, and the profit moves into 3400.`,

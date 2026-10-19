@@ -1,7 +1,7 @@
 {
-  "name": "4VD Dashboard",
+  "name": "4VD",
   "short_name": "4VD",
-  "description": "The owner's dashboard for 4VD: stock, sales and the team",
+  "description": "4VD: the shop, its stock, sales, money and team",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

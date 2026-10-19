@@ -21,7 +21,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { canOversee, counterOnly } from '../auth/roles';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
+import { useSearchParams } from 'react-router';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
+import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Button, ButtonLink } from '../components/ui';
 import { useT } from '../i18n/useT';
@@ -148,6 +150,18 @@ export function CounterPage() {
       setNotice(null);
     }
   }
+
+  // "Sell it" on a product page opens the Counter with ?add=<product id>: put one in the basket once the shelf is in.
+  const [params, setParams] = useSearchParams();
+  const addId = Number(params.get('add'));
+  useEffect(() => {
+    if (!addId || !products.data) return;
+    const product = byId.get(addId);
+    setParams({}, { replace: true });
+    if (product) add(product);
+    // add() reads the current basket; running once per ?add= is what matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addId, products.data]);
 
   /** Enter in the scan box: a scanner always sends it after the code. "6*" first sells six. */
   async function handleScan(raw: string) {
@@ -408,9 +422,14 @@ export function CounterPage() {
             </Button>
           )}
           {counterOnly(user.role) ? (
-            <Button size="sm" variant="ghost" icon={SignOut} onClick={() => void logout()}>
-              {t.counter.logOut}
-            </Button>
+            <>
+              <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/">
+                {t.staff.nav.home}
+              </ButtonLink>
+              <Button size="sm" variant="ghost" icon={SignOut} onClick={() => void logout()}>
+                {t.counter.logOut}
+              </Button>
+            </>
           ) : (
             <ButtonLink size="sm" variant="ghost" icon={ArrowLeft} to="/sales">
               {t.counter.back}
@@ -440,6 +459,10 @@ export function CounterPage() {
                 onKeyDown={handleScanKey}
               />
             </label>
+            {/* On a phone there's no USB scanner: the camera reads the code instead. */}
+            <span className="counter-scan__camera">
+              <CameraScanButton iconOnly onScan={(code) => void handleScan(code)} />
+            </span>
             <p id="counter-scan-hint" className="counter-hint">
               {t.counter.scanHint}
             </p>

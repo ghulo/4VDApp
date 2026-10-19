@@ -193,7 +193,8 @@ export class AttentionService {
         title: t.todo.shiftTitle(day.total - day.done),
         detail: t.todo.shiftDetail,
         verb: 'endShift',
-        to: '/day',
+        // The staff layout's own End your shift page.
+        to: '/shift',
       },
     ];
   }

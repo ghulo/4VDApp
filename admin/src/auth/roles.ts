@@ -11,8 +11,10 @@ export const canOversee = (role: UserRole): boolean => canManage(role) || role =
 export const canEditProducts = canOversee;
 /** The money side: the books, VAT, bills, invoices, expenses and reports. The accountant too. */
 export const canReadBooks = (role: UserRole): boolean => canOversee(role) || role === 'accountant';
-/** Sees only the Counter in the dashboard: the people who sell but don't run the shop. */
+/** The people who sell but don't run the shop: they get the simple staff 4VD (Home, Products, Sell, Account). */
 export const counterOnly = (role: UserRole): boolean => role === 'employee';
+/** Uses the staff layout: bottom tabs and only the counter's own pages. */
+export const staffLayout = counterOnly;
 /** Sell at the Counter: everyone who sells in the team app too. */
 export const canSell = (role: UserRole): boolean => canOversee(role) || counterOnly(role);
 /** Use the dashboard at all: whoever oversees the business, the accountant, and employees for the Counter. */

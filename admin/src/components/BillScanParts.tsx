@@ -31,7 +31,8 @@ async function toPage(file: File) {
 }
 
 /** Pick the photos or PDF of a supplier bill and send them to be read; opens the check page after. */
-export function ScanBillForm({ onDone }: { onDone: () => void }) {
+/** `openCheck` goes on to the check page; the counter staff send it to the owner instead (it shows under their requests). */
+export function ScanBillForm({ onDone, openCheck = true }: { onDone: () => void; openCheck?: boolean }) {
   const t = useT();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -42,7 +43,7 @@ export function ScanBillForm({ onDone }: { onDone: () => void }) {
     onSuccess: (receipt) => {
       for (const key of ['bill-scans', 'attention']) queryClient.invalidateQueries({ queryKey: [key] });
       onDone();
-      navigate(`/bills/scans/${receipt.id}`);
+      if (openCheck) navigate(`/bills/scans/${receipt.id}`);
     },
   });
 

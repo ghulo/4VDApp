@@ -943,3 +943,29 @@
   color: var(--danger);
   font-weight: 600;
 }
+
+/* The camera key beside the scan box: for phones and tablets, which have no
+   USB scanner. The shop PC keeps the whole row for the scanner. */
+.counter-scan {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-2);
+}
+
+.counter-scan > :not(.counter-scan__field, .counter-scan__camera) {
+  grid-column: 1 / -1;
+}
+
+.counter-scan__camera {
+  display: none;
+}
+
+.counter-scan__camera .button {
+  width: 56px;
+  height: 56px;
+}
+
+@media (max-width: 999px), (pointer: coarse) {
+  .counter-scan__camera {
+    display: block;
+  }
+}

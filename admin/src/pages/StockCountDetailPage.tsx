@@ -8,7 +8,7 @@ import type { StockCount, StockCountLine } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatHeadlineMoney, formatMoney, formatSignedQuantity } from '../utils/format';
 import { EntriesPanel } from '../components/BooksParts';
-import { Button, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
+import { Button, ButtonLink, Card, DataTable, PageHeader, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 
 const AFFECTED_QUERIES = ['stock-counts', 'approvals', 'inventory', 'products', 'reports', 'activity'];
@@ -62,9 +62,14 @@ export function StockCountDetailPage() {
         actions={
           <>
             {data.status === 'open' && (
-              <Button variant="danger-text" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-                {t.counts.cancelCount}
-              </Button>
+              <>
+                <Button variant="danger-text" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
+                  {t.counts.cancelCount}
+                </Button>
+                <ButtonLink to={`/counts/${data.id}/count`} variant="primary">
+                  {t.staff.counts.count}
+                </ButtonLink>
+              </>
             )}
             {data.status === 'submitted' && (data.totals.pending ?? 0) > 0 && (
               <Button variant="primary" onClick={() => applyAll.mutate()} disabled={applyAll.isPending} loading={applyAll.isPending}>

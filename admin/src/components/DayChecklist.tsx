@@ -17,7 +17,16 @@ import { Button, ButtonLink, Card, SettingRow } from './ui';
  * day's expenses added, requests answered. Each step still to do carries the
  * one click that does it. Nothing is ever locked.
  */
-export function DayChecklist({ day, onCountDrawer }: { day: ShopDay; onCountDrawer: (drawer: string) => void }) {
+export function DayChecklist({
+  day,
+  onCountDrawer,
+  onEnterCarwash,
+}: {
+  day: ShopDay;
+  onCountDrawer: (drawer: string) => void;
+  /** Enter takings right here (the staff's End your shift); otherwise managers go to the Carwash page. */
+  onEnterCarwash?: (carwashId: number) => void;
+}) {
   const t = useT();
   const { role } = useCurrentUser();
   const queryClient = useQueryClient();
@@ -61,7 +70,16 @@ export function DayChecklist({ day, onCountDrawer }: { day: ShopDay; onCountDraw
                 done={step.done}
                 description={step.done ? t.dayClose.carwashEntered : t.dayClose.carwashMissing}
               >
-                {canManage(role) && (
+                {onEnterCarwash ? (
+                  isToday && (
+                    <Button
+                      aria-label={`${t.dayClose.enterCarwash}: ${t.dayClose.carwash(placeName(step))}`}
+                      onClick={() => onEnterCarwash(step.carwashId)}
+                    >
+                      {t.dayClose.enterCarwash}
+                    </Button>
+                  )
+                ) : canManage(role) && (
                   <ButtonLink
                     to={`/carwash?carwash=${step.carwashId}&day=${day.day}`}
                     variant="secondary"

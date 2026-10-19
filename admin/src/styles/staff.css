@@ -1,0 +1,556 @@
+/* The staff frame and its pages: what the team app was, inside the dashboard.
+   Phones first: four tabs along the bottom, big rows for the thumb. */
+
+/* ---------- Frame ---------- */
+
+.staff-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.staff-app__top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 56px;
+}
+
+.staff-app__wide-tabs {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+}
+
+.staff-app__main {
+  flex: 1;
+}
+
+.staff-app__main .main__frame {
+  max-width: 760px;
+}
+
+.staff-app__bottom-tabs {
+  display: none;
+}
+
+.staff-tabs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.staff-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-small);
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.staff-tabs__tab:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.staff-tabs__tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.staff-tabs__tab.active {
+  background: var(--surface);
+  box-shadow: var(--key-shine-paper), 0 0 0 1px var(--line);
+  color: var(--ink);
+}
+
+@media (max-width: 760px) {
+  .staff-app__wide-tabs {
+    display: none;
+  }
+
+  .staff-app__top .topbar__end {
+    margin-left: auto;
+  }
+
+  .staff-app__main .main__frame {
+    padding: var(--space-5) var(--space-4) calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .staff-app__bottom-tabs {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: block;
+    padding: var(--space-1) var(--space-2) calc(var(--space-1) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-filter);
+  }
+
+  .staff-app__bottom-tabs .staff-tabs {
+    justify-content: space-around;
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 56px;
+    padding: 0;
+    font-size: var(--text-xs);
+  }
+
+  .staff-app__bottom-tabs .staff-tabs__tab.active {
+    background: transparent;
+    box-shadow: none;
+    color: var(--brand);
+  }
+}
+
+/* ---------- Camera scanner ---------- */
+
+.camera-view {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--surface-sunk);
+}
+
+.camera-view__video {
+  display: block;
+  width: 100%;
+  height: min(60vh, 320px);
+  object-fit: cover;
+}
+
+.camera-view__hint {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.camera-view__hint--problem {
+  color: var(--danger);
+}
+
+/* ---------- Shared page pieces ---------- */
+
+.staff-muted {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.staff-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.staff-section__title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+/* A raised list of big tappable rows. */
+.staff-rows {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
+  list-style: none;
+}
+
+.staff-rows > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.staff-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-4);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.staff-row:hover,
+button.staff-row:hover {
+  background: var(--surface-sunk);
+}
+
+.staff-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+button.staff-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.staff-row__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.staff-row__grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-row__clip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-row__title {
+  font-weight: 600;
+}
+
+.staff-row__hint,
+.staff-row__time {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.staff-row__time {
+  flex: none;
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-row__value {
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-row__value--out {
+  color: var(--danger);
+}
+
+.staff-row__caret {
+  flex: none;
+  color: var(--ink-muted);
+}
+
+/* Stock state as a small printed square; the words beside it carry the meaning. */
+.staff-signal {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--warn);
+}
+
+.staff-signal--out {
+  background: var(--danger);
+}
+
+/* ---------- Home ---------- */
+
+.staff-home {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.staff-home__hero {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.staff-today {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: calc(var(--space-6) * -1 + var(--space-3));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.staff-today:hover {
+  box-shadow: var(--shadow-raise-hover);
+}
+
+.staff-today:active {
+  box-shadow: var(--shadow-inset);
+}
+
+.staff-today:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.staff-today__art {
+  flex: none;
+  width: 64px;
+}
+
+.staff-today__text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+}
+
+.staff-today__headline {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.staff-today__detail {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.staff-today__detail--ok {
+  color: var(--ok);
+}
+
+.staff-target {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: calc(var(--space-6) * -1 + var(--space-3));
+}
+
+.staff-target__track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.staff-target__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+.staff-target__fill--done {
+  background: var(--ok);
+}
+
+.staff-jobs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.staff-job {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-height: 132px;
+  padding: var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--fill);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.staff-job:hover {
+  background: var(--surface-sunk);
+}
+
+.staff-job:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.staff-job__title {
+  margin-top: var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.staff-job__detail {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Pages ---------- */
+
+.staff-page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.staff-figure {
+  margin: 0;
+  font-size: var(--text-figure);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-row__caret--open {
+  transform: rotate(180deg);
+}
+
+.staff-sale-lines {
+  display: grid;
+  padding: 0 var(--space-4) var(--space-3);
+  background: var(--bg);
+}
+
+.staff-sale-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-1) 0;
+}
+
+.staff-sale-line + .staff-sale-line {
+  border-top: 1px solid var(--line);
+}
+
+.staff-sale-lines__print {
+  padding-top: var(--space-2);
+}
+
+/* ---------- Products ---------- */
+
+.staff-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--info-soft);
+  color: var(--info);
+  font-weight: 600;
+}
+
+.staff-product {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.staff-product__facts {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+/* The form Home's "Damage or loss" or "Expiry date" came for. */
+.staff-focus {
+  scroll-margin-top: 72px;
+}
+
+.staff-focus > .card,
+.card.staff-focus {
+  box-shadow: var(--shadow-raise), 0 0 0 2px var(--brand);
+}
+
+/* ---------- New product ---------- */
+
+.staff-inline {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.staff-inline > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-photo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.staff-photo__preview {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-small);
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.staff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+/* ---------- Counting ---------- */
+
+.staff-count-progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.staff-count-progress .staff-target__track {
+  grid-column: 1 / -1;
+}
+
+.staff-count-name {
+  margin: var(--space-1) 0;
+  font-family: var(--font-display);
+  font-size: var(--text-figure);
+  line-height: 1.15;
+}
+
+.staff-stepper {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.staff-stepper > input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-figure);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.staff-count-finish {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.staff-row--undone {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.staff-receive-line {
+  margin: 0;
+  padding: var(--space-3) 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}

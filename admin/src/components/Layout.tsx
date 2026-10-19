@@ -16,6 +16,8 @@ import { Button } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
 import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
+import { staffLayout } from '../auth/roles';
+import { StaffLayout } from './StaffLayout';
 
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -30,8 +32,14 @@ function readCollapsed(): boolean {
   }
 }
 
-/** The signed-in frame: a top bar, the sidebar (a drawer on phones) and the page. */
+/** The signed-in frame: the full dashboard, or the simple staff one for the counter staff. */
 export function Layout() {
+  const { role } = useCurrentUser();
+  return staffLayout(role) ? <StaffLayout /> : <FullLayout />;
+}
+
+/** The full frame: a top bar, the sidebar (a drawer on phones) and the page. */
+function FullLayout() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const togglePalette = useCallback(() => setPaletteOpen((open) => !open), []);
   useShortcuts(togglePalette);

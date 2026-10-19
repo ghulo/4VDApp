@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ComponentType } from 'react';
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
@@ -22,6 +22,7 @@ import { OverviewPage } from './pages/OverviewPage';
 import { ButtonLink } from './components/ui';
 import { useT } from './i18n/useT';
 import { useCurrentUser } from './auth/useAuth';
+import { staffLayout } from './auth/roles';
 
 /** Loads a page's code only when someone first opens it, so the first visit stays light. */
 function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) {
@@ -91,6 +92,19 @@ const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
 const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
 const WelcomePage = lazyPage(() => import('./pages/WelcomePage'), 'WelcomePage');
 const DownloadPage = lazyPage(() => import('./pages/DownloadPage'), 'DownloadPage');
+const StaffHomePage = lazyPage(() => import('./pages/staff/StaffHomePage'), 'StaffHomePage');
+const MySalesPage = lazyPage(() => import('./pages/staff/MySalesPage'), 'MySalesPage');
+const EndShiftPage = lazyPage(() => import('./pages/staff/EndShiftPage'), 'EndShiftPage');
+const StaffProductsPage = lazyPage(() => import('./pages/staff/StaffProductsPage'), 'StaffProductsPage');
+const StaffProductPage = lazyPage(() => import('./pages/staff/StaffProductsPage'), 'StaffProductPage');
+const ScanLinkPage = lazyPage(() => import('./pages/staff/StaffProductsPage'), 'ScanLinkPage');
+const NewProductPage = lazyPage(() => import('./pages/staff/NewProductPage'), 'NewProductPage');
+const DeliveriesPage = lazyPage(() => import('./pages/staff/DeliveriesPage'), 'DeliveriesPage');
+const StaffTabsPage = lazyPage(() => import('./pages/staff/StaffTabsPage'), 'StaffTabsPage');
+const StaffTabPage = lazyPage(() => import('./pages/staff/StaffTabsPage'), 'StaffTabPage');
+const StaffCountsPage = lazyPage(() => import('./pages/staff/StaffCountsPage'), 'StaffCountsPage');
+const StaffCountPage = lazyPage(() => import('./pages/staff/StaffCountsPage'), 'StaffCountPage');
+const ScanBillPage = lazyPage(() => import('./pages/staff/ScanBillPage'), 'ScanBillPage');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,10 +128,17 @@ function NotFoundPage() {
   );
 }
 
-/** The Overview, or for the accountant (who sees only the money side) the VAT page. */
+/** The Overview; the staff's own Home; or for the accountant (who sees only the money side) the VAT page. */
 function HomePage() {
   const { role } = useCurrentUser();
+  if (staffLayout(role)) return <StaffHomePage />;
   return role === 'accountant' ? <Navigate to="/books/vat" replace /> : <OverviewPage />;
+}
+
+/** One address, two pages: the staff layout's simple one, or the full dashboard's. */
+function ByLayout({ staff, full }: { staff: ReactNode; full: ReactNode }) {
+  const { role } = useCurrentUser();
+  return staffLayout(role) ? staff : full;
 }
 
 function App() {
@@ -155,6 +176,16 @@ function App() {
                     }
                   >
                     <Route index element={<HomePage />} />
+                    <Route path="my-sales" element={<MySalesPage />} />
+                    <Route path="shift" element={<EndShiftPage />} />
+                    <Route path="catalog" element={<StaffProductsPage />} />
+                    <Route path="catalog/:id" element={<StaffProductPage />} />
+                    <Route path="scan/:code" element={<ScanLinkPage />} />
+                    <Route path="new-product" element={<NewProductPage />} />
+                    <Route path="deliveries" element={<DeliveriesPage />} />
+                    <Route path="scan-bill" element={<ScanBillPage />} />
+                    <Route path="tabs/:id" element={<StaffTabPage />} />
+                    <Route path="counts/:id/count" element={<StaffCountPage />} />
                     <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>
                       <Route path="inbox" element={<InboxPage />} />
                       <Route path="inbox/updates" element={<UpdatesPage />} />
@@ -214,7 +245,7 @@ function App() {
                     <Route path="customers" element={<CustomersPage />} />
                     <Route path="customers/:id" element={<CustomerDetailPage />} />
                     <Route path="customers/:id/statement" element={<CustomerStatementPage />} />
-                    <Route path="tabs" element={<TabsRedirect />} />
+                    <Route path="tabs" element={<ByLayout staff={<StaffTabsPage />} full={<TabsRedirect />} />} />
                     <Route element={<SectionTabs tabs={SECTIONS.buy} labelKey="suppliers" />}>
                       <Route path="suppliers" element={<SuppliersPage />} />
                       <Route path="orders" element={<OrdersPage />} />
@@ -228,9 +259,9 @@ function App() {
                     <Route path="bills/:id" element={<BillDetailPage />} />
                     <Route path="people" element={<UsersPage />} />
                     <Route path="people/:id" element={<PersonPage />} />
-                    <Route path="counts" element={<StockCountsPage />} />
+                    <Route path="counts" element={<ByLayout staff={<StaffCountsPage />} full={<StockCountsPage />} />} />
                     <Route path="counts/trefin/:id" element={<TrefinStockPage />} />
-                    <Route path="counts/:id" element={<StockCountDetailPage />} />
+                    <Route path="counts/:id" element={<ByLayout staff={<StaffCountPage />} full={<StockCountDetailPage />} />} />
                     <Route path="promotions" element={<PromotionsPage />} />
                     <Route path="promotions/:id" element={<PromotionDetailPage />} />
                     <Route path="ask" element={<AskPage />} />

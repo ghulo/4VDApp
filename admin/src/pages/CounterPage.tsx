@@ -78,6 +78,13 @@ interface LastSale {
   fiscalNo: string | null;
 }
 
+/** A scan that went wrong, shown big over the basket until the next scan or Esc. */
+interface Alarm {
+  title: string;
+  detail: string;
+  todo: string;
+}
+
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
@@ -146,6 +153,7 @@ export function CounterPage() {
   const selected = lines.find((line) => line.productId === selectedId) ?? lines[lines.length - 1] ?? null;
   const [scan, setScan] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
+  const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [flash, setFlash] = useState<{ id: number; key: number } | null>(null);
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
@@ -171,6 +179,11 @@ export function CounterPage() {
     setNotice(null);
     setProblem(text);
   };
+  /** A failed scan: the small line for screen readers, and the big red sheet nobody can miss. */
+  const alarmFor = (text: string, next: Alarm) => {
+    complain(text);
+    setAlarm(next);
+  };
 
   const focusScan = useCallback(() => scanRef.current?.focus({ preventScroll: true }), []);
 
@@ -189,7 +202,8 @@ export function CounterPage() {
     const already = current.lines.find((line) => line.productId === product.id)?.quantity ?? 0;
     const stock = product.stock.quantity;
     if (stock <= already) {
-      complain(stock === 0 ? t.counter.outOfStock(product.name) : t.counter.noMore(product.name, stock));
+      if (stock === 0) alarmFor(t.counter.outOfStock(product.name), { title: t.counter.alarm.outOfStock, detail: product.name, todo: t.counter.alarm.stockTodo });
+      else alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.stockTodo });
       return false;
     }
     const next = Math.min(already + quantity, stock);
@@ -204,9 +218,10 @@ export function CounterPage() {
     setChecked(null);
     setPrintNote((note) => (note?.ok ? null : note));
     if (next < already + quantity) {
-      complain(t.counter.noMore(product.name, stock));
+      alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.partTodo(next) });
       return false;
     }
+    setAlarm(null);
     setProblem(null);
     setNotice(null);
     return true;
@@ -238,6 +253,7 @@ export function CounterPage() {
     const quantity = multiplied ? Math.max(1, Number(multiplied[1])) : 1;
     const code = codeFromScan(multiplied ? multiplied[2]! : raw);
     setScan('');
+    setAlarm(null);
     if (!code) return;
     const take = (product: Product) => {
       if (priceCheck) {
@@ -266,7 +282,7 @@ export function CounterPage() {
     try {
       take(await productsApi.byBarcode(code));
     } catch {
-      complain(t.counter.notFound(code));
+      alarmFor(t.counter.notFound(code), { title: t.counter.alarm.notFound, detail: code, todo: t.counter.alarm.notFoundTodo });
       sound('fail');
     }
   }
@@ -395,6 +411,7 @@ export function CounterPage() {
   const hasLines = lines.length > 0;
   const canPrint = printer.reach === 'ready' || printer.reach === 'notRunning' || printer.reach === 'noFolder' || printer.reach === 'checking';
   const startPanel = (next: Panel) => {
+    setAlarm(null);
     if (['quantity', 'price', 'discount', 'remove'].includes(next ?? '') && !selected) return complain(t.counter.pickLine);
     if ((next === 'pay' || next === 'cancel') && !hasLines) return complain(t.counter.addFirst);
     if (next === 'pay') setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
@@ -448,6 +465,11 @@ export function CounterPage() {
     if (shortcut) {
       event.preventDefault();
       return shortcut();
+    }
+    if (event.key === 'Escape' && alarm) {
+      event.preventDefault();
+      setAlarm(null);
+      return;
     }
     if (event.key === 'Escape' && (priceCheck || checked)) {
       event.preventDefault();
@@ -663,6 +685,15 @@ export function CounterPage() {
           </div>
 
           <div className="counter-tape">
+            {alarm && (
+              <ScanAlarm
+                alarm={alarm}
+                onClose={() => {
+                  setAlarm(null);
+                  focusScan();
+                }}
+              />
+            )}
             <SaleHead
               customerName={customer?.name ?? null}
               nextReceipt={today.data?.nextReceipt ?? null}
@@ -1100,6 +1131,29 @@ function ShiftCard({ mine, cashToday }: { mine: { receipts: number; total: numbe
         </div>
       </dl>
     </section>
+  );
+}
+
+/**
+ * A scan that didn't work, over the whole basket in red: what went wrong and
+ * what to do. The small message line above says the same for screen readers,
+ * so this sheet isn't announced again.
+ */
+function ScanAlarm({ alarm, onClose }: { alarm: Alarm; onClose: () => void }) {
+  const t = useT();
+  return (
+    <div className="counter-alarm">
+      <WarningCircle size={56} weight="fill" aria-hidden="true" className="counter-alarm__icon" />
+      <p className="counter-alarm__title">{alarm.title}</p>
+      <p className="counter-alarm__detail">{alarm.detail}</p>
+      <p className="counter-alarm__todo">{alarm.todo}</p>
+      <Button variant="secondary" onClick={onClose} aria-keyshortcuts="Escape">
+        {t.counter.alarm.ok}
+        <kbd className="counter-key__hotkey" aria-hidden="true">
+          Esc
+        </kbd>
+      </Button>
+    </div>
   );
 }
 

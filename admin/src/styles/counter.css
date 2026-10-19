@@ -339,6 +339,7 @@
 
 /* The basket: one raised sheet holding the sale's header, the table and the summary. */
 .counter-tape {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -352,6 +353,61 @@
 @media (min-width: 1000px) {
   .counter-tape {
     min-height: 0;
+  }
+}
+
+/* A scan that failed takes over the basket in red until the next scan or Esc. */
+.counter-alarm {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: 3px solid var(--danger);
+  border-radius: inherit;
+  background: var(--danger-soft);
+  color: var(--danger);
+  text-align: center;
+  animation: counter-alarm-in 120ms ease-out;
+}
+
+.counter-alarm__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.counter-alarm__detail {
+  margin: 0;
+  font-size: var(--text-figure);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.counter-alarm__todo {
+  max-width: 36rem;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+@keyframes counter-alarm-in {
+  from {
+    transform: scale(0.98);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counter-alarm {
+    animation: none;
   }
 }
 

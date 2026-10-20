@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { settingsApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, Field } from './ui';
 
 /** Typed to confirm, same as the server and the wipe script. */
@@ -41,9 +41,7 @@ export function WipeDataPanel() {
   return (
     <Card id="wipe-data" className="card--danger" title={t.wipe.title} description={t.wipe.description}>
       {wipe.isSuccess && !open && (
-        <p className="form-success" role="status">
-          {t.wipe.done}
-        </p>
+        <SavedToast message={t.wipe.done} />
       )}
       {!open ? (
         <div className="form-actions">

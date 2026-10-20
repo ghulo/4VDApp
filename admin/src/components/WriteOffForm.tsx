@@ -6,6 +6,7 @@ import { errorMessage } from '../utils/errors';
 import { formatMoney, inGrams } from '../utils/format';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
+import { SavedToast } from './Feedback';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
 export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: 'piece' | 'kg' }) {
@@ -76,9 +77,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
         </p>
       )}
       {savedMessage && (
-        <p className="form-success" role="status">
-          {savedMessage}
-        </p>
+        <SavedToast message={savedMessage} />
       )}
       <Button type="submit" disabled={!isValid || mutation.isPending} variant="danger" loading={mutation.isPending}>
         {t.writeOff.writeOff}

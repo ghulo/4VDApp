@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { errorMessage } from '../utils/errors';
-import { Button, Skeleton } from './ui';
+import { Button, Skeleton, useToast } from './ui';
 import { useT } from '../i18n/useT';
 
 export { EmptyState } from './ui';
@@ -26,4 +27,19 @@ export function Loading({ label }: { label?: string }) {
       {label}
     </p>
   );
+}
+
+/**
+ * "Saved" and other news after an action, as a toast in the corner: shown
+ * once each time this mounts, so put it where the old "Saved" words were.
+ */
+export function SavedToast({ message }: { message: string }) {
+  const toast = useToast();
+  const shown = useRef(false);
+  useEffect(() => {
+    if (shown.current) return;
+    shown.current = true;
+    toast({ title: message });
+  }, [toast, message]);
+  return null;
 }

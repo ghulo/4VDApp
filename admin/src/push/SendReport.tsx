@@ -4,6 +4,7 @@ import { fullReportsApi } from '../services/api';
 import type { ReportKind } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { type PushHere, turnOnHere } from './browserPush';
+import { SavedToast } from '../components/Feedback';
 
 /** Sends a report to yourself now, turning alerts on in this browser first if they're off. */
 export function useSendReport() {
@@ -36,9 +37,7 @@ export function SendReportResult({ send }: { send: ReturnType<typeof useSendRepo
   const here = send.data;
   return (
     <>
-      <span className="form-success" role="status">
-        {here === 'on' ? t.fullReport.sent : t.fullReport.sentNotHere}
-      </span>{' '}
+      <SavedToast message={here === 'on' ? t.fullReport.sent : t.fullReport.sentNotHere} />{' '}
       {here !== 'on' && (
         <span className="form-error" role="alert">
           {here === 'blocked' ? t.push.blocked : here === 'unsupported' ? t.push.unsupported : here === 'noKeys' ? t.push.noKeys : t.push.declined}

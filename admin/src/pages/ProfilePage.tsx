@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { Avatar } from '../components/Avatar';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
 import { Badge, Button, Card, Field, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
@@ -30,9 +30,7 @@ function Result({ error, success }: { error: unknown; success: string | null }) 
     );
   }
   return success ? (
-    <span className="form-success" role="status">
-      {success}
-    </span>
+    <SavedToast message={success} />
   ) : null;
 }
 

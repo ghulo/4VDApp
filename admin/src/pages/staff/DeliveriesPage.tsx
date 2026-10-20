@@ -1,7 +1,7 @@
 import { Truck } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { ErrorNotice, Loading } from '../../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../../components/Feedback';
 import { Button, Card, DateField, EmptyState, PageHeader } from '../../components/ui';
 import { useT } from '../../i18n/useT';
 import { DELIVERIES_KEY, type Delivery, teamApi } from '../../services/teamApi';
@@ -25,9 +25,7 @@ export function DeliveriesPage() {
       <PageHeader title={t.staff.deliveries.title} crumbs={[{ label: t.staff.nav.home, to: '/' }]} />
       <div className="staff-page">
         {done && (
-          <p className="form-success" role="status">
-            {done}
-          </p>
+          <SavedToast message={done} />
         )}
         {deliveries.isPending && <Loading />}
         {deliveries.isError && <ErrorNotice error={deliveries.error} onRetry={() => deliveries.refetch()} />}

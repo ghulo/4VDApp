@@ -9,7 +9,7 @@ import { permissionsApi } from '../services/api';
 import type { UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime } from '../utils/format';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card } from './ui';
 
 const KEY = ['permissions'];
@@ -113,9 +113,7 @@ function RolesForm({ initial }: { initial: Permissions }) {
           {t.permissions.reset}
         </Button>
         {saved && !changed && (
-          <p className="form-success" role="status">
-            {t.permissions.saved}
-          </p>
+          <SavedToast message={t.permissions.saved} />
         )}
         {save.isError && (
           <p className="form-error" role="alert">

@@ -6,7 +6,7 @@ import { useT } from '../i18n/useT';
 import { fullReportsApi } from '../services/api';
 import { REPORT_SECTIONS, type ReportSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, SettingRow } from './ui';
 
 const KEY = ['report-settings'];
@@ -63,9 +63,7 @@ function ReportSettingsForm({ initial }: { initial: ReportSettings }) {
               </span>
             )}
             {save.isSuccess && !changed && (
-              <span className="form-success" role="status">
-                {t.reportSettings.saved}
-              </span>
+              <SavedToast message={t.reportSettings.saved} />
             )}
             <Button type="submit" variant={changed ? 'primary' : 'secondary'} disabled={!changed || draft.sections.length === 0 || save.isPending} loading={save.isPending}>
               {t.common.save}

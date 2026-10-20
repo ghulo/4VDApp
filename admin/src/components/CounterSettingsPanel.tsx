@@ -4,7 +4,7 @@ import { useT } from '../i18n/useT';
 import { counterApi } from '../services/api';
 import type { CounterSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, SettingRow } from './ui';
 
 const RATES = ['18', '8', '16', '0'] as const;
@@ -54,9 +54,7 @@ function CounterSettingsForm({ initial }: { initial: CounterSettings }) {
               </span>
             )}
             {saved && !save.isError && (
-              <span className="form-success" role="status">
-                {t.counterSettings.saved}
-              </span>
+              <SavedToast message={t.counterSettings.saved} />
             )}
             <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!hasChanges || save.isPending} loading={save.isPending}>
               {t.settings.saveChanges}

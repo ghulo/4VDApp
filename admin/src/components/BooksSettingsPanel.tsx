@@ -5,7 +5,7 @@ import { booksApi } from '../services/api';
 import { ACCOUNT_CLASSES, ACCOUNT_LINK_KEYS, type AccountLinkKey, type BooksSettings, type LedgerAccount } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { linkLabel } from './BooksParts';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, DateField, Field } from './ui';
 
 /** When the books start, and which account each kind of movement goes to. */
@@ -65,9 +65,7 @@ function BooksSettingsForm({ initial, accounts }: { initial: BooksSettings; acco
               </p>
             )}
             {save.isSuccess && (
-              <p className="form-success" role="status">
-                {s.saved}
-              </p>
+              <SavedToast message={s.saved} />
             )}
             <Button type="submit" variant="primary" disabled={(!startChanged && changedLinks.length === 0) || save.isPending} loading={save.isPending}>
               {s.save}

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExpiryCard } from '../components/ExpiryCard';
 import { type FormEvent, useId, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { EmptyState, ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { StockTag } from '../components/StockTag';
 import { WriteOffForm } from '../components/WriteOffForm';
@@ -247,9 +247,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
           </p>
         )}
         {savedMessage && (
-          <p className="form-success" role="status">
-            {savedMessage}
-          </p>
+          <SavedToast message={savedMessage} />
         )}
 
         <Button type="submit" disabled={!hasChange || mutation.isPending} variant="primary" loading={mutation.isPending}>

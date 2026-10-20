@@ -6,7 +6,7 @@ import { settingsApi } from '../services/api';
 import type { LaunchStep } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, ButtonLink, Card } from './ui';
 
 /** What's left before the real shop starts. Worked out on the server, so it ticks off by itself. */
@@ -132,9 +132,7 @@ function TestEmail() {
       )}
       {test.data &&
         (test.data.sent ? (
-          <p className="form-success" role="status">
-            {t.launch.actions.testEmailSent(test.data.to)}
-          </p>
+          <SavedToast message={t.launch.actions.testEmailSent(test.data.to)} />
         ) : (
           <p className="form-error" role="alert">
             {test.data.reason}

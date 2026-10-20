@@ -2,7 +2,7 @@ import { Link, useSearchParams } from 'react-router';
 import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { ExportMenu } from '../components/ExportMenu';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
@@ -205,9 +205,7 @@ function ExpenseForm() {
         </p>
       )}
       {add.isSuccess && (
-        <p className="form-success" role="status">
-          {t.expenses.saved}
-        </p>
+        <SavedToast message={t.expenses.saved} />
       )}
       <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
         {t.expenses.save}

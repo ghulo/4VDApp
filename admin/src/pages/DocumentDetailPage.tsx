@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { PrintDocumentButton } from '../components/PrintDocumentButton';
 import { Badge, Button, Card, DataTable, Field, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
@@ -202,9 +202,7 @@ function FiscalReceiptCard({ document }: { document: SalesDocumentDetail }) {
         </p>
       )}
       {saved && (
-        <p className="form-success" role="status">
-          {document.fiscalReceiptNo ? t.documents.fiscalSaved(document.fiscalReceiptNo) : t.documents.fiscalCleared}
-        </p>
+        <SavedToast message={document.fiscalReceiptNo ? t.documents.fiscalSaved(document.fiscalReceiptNo) : t.documents.fiscalCleared} />
       )}
     </Card>
   );

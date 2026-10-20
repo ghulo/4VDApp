@@ -11,7 +11,7 @@ import { ThisComputerPanel } from '../components/ThisComputerPanel';
 import { desktopBridge } from '../desktop/desktopSetup';
 import { WipeDataPanel } from '../components/WipeDataPanel';
 import { useCurrentUser } from '../auth/useAuth';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { Button, Card, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
 import { settingsApi } from '../services/api';
 import type { AppSettings } from '../services/types';
@@ -188,9 +188,7 @@ function SettingsForm({ initial }: { initial: AppSettings }) {
               </span>
             )}
             {saved && !save.isError && (
-              <span className="form-success" role="status">
-                {t.settings.saved}
-              </span>
+              <SavedToast message={t.settings.saved} />
             )}
             <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!isValid || save.isPending} loading={save.isPending}>
               {t.settings.saveChanges}

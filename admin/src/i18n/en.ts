@@ -884,6 +884,10 @@ export const en = {
     hoursHint: 'Revenue by hour of the day, all days together.',
     hourTip: (from: string, to: string, amount: string, sales: number) =>
       `${from}–${to}: ${amount} from ${sales} ${sales === 1 ? 'sale' : 'sales'}`,
+    busyHours: 'Busy hours',
+    busyHoursHint: 'Average revenue in each hour of each weekday. Stronger amber is busier.',
+    busyTip: (day: string, from: string, to: string, amount: string, sales: number) =>
+      `${day} ${from}–${to}: ${amount} on average, ${sales} ${sales === 1 ? 'sale' : 'sales'} in all`,
     byCategory: 'Revenue by category',
     share: (percent: string) => `${percent} of revenue`,
     topProducts: 'Top products',

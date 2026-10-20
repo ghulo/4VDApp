@@ -5,7 +5,7 @@ import { businessApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
 import type { Business } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, Field, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
@@ -126,9 +126,7 @@ function BusinessForm({ initial }: { initial: Business }) {
               </span>
             )}
             {save.isSuccess && (
-              <span className="form-success" role="status">
-                {t.settings.saved}
-              </span>
+              <SavedToast message={t.settings.saved} />
             )}
             <Button type="submit" variant={hasChanges ? 'primary' : 'secondary'} disabled={!name.trim() || !isNui(nui) || !ibanOk || save.isPending} loading={save.isPending}>
               {t.business.save}

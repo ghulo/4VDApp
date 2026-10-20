@@ -1,7 +1,7 @@
 import { CaretDown } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ErrorNotice, Loading } from '../../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../../components/Feedback';
 import { PrintDocumentButton } from '../../components/PrintDocumentButton';
 import { ReturnForm } from '../../components/ReturnForm';
 import { Button, Card, PageHeader, Sheet } from '../../components/ui';
@@ -66,9 +66,7 @@ export function MySalesPage() {
         </Card>
 
         {message && (
-          <p className="form-success" role="status">
-            {message}
-          </p>
+          <SavedToast message={message} />
         )}
 
         <section className="staff-section">

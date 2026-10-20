@@ -2,7 +2,7 @@ import { Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
+import { EmptyState, ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { BasketForm } from '../components/BasketForm';
 import { ReturnForm } from '../components/ReturnForm';
 import { Pagination } from '../components/Pagination';
@@ -170,9 +170,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   return (
     <Section title={t.sales.history}>
       {returnMessage && (
-        <p className="form-success" role="status">
-          {returnMessage}
-        </p>
+        <SavedToast message={returnMessage} />
       )}
       {sales.isPending && <Loading />}
       {sales.isError && <ErrorNotice error={sales.error} onRetry={() => sales.refetch()} />}

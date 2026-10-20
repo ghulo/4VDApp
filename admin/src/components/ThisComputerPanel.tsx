@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { Segmented } from './BillLines';
-import { ErrorNotice, Loading } from './Feedback';
+import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, SettingRow } from './ui';
 import { useDesktopSetup, useSaveDesktopSetup } from '../desktop/desktopSetup';
 import { useT } from '../i18n/useT';
@@ -29,9 +29,7 @@ export function ThisComputerPanel() {
             </span>
           )}
           {save.isSuccess && (
-            <span className="form-success" role="status">
-              {t.saved}
-            </span>
+            <SavedToast message={t.saved} />
           )}
           <span className="this-computer__version">{t.version(current.version)}</span>
         </>

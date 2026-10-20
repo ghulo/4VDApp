@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router';
 import { Drop } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { canManage } from '../auth/roles';
@@ -209,9 +209,7 @@ function TakingsForm({ start, days }: { start: CarwashDay | null; days: CarwashD
         </p>
       )}
       {savedDay && (
-        <p className="form-success" role="status">
-          {t.carwash.saved(formatDay(savedDay))}
-        </p>
+        <SavedToast message={t.carwash.saved(formatDay(savedDay))} />
       )}
       <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
         {t.carwash.save}

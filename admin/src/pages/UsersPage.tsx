@@ -6,7 +6,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { ActivityFeed } from '../components/activity/ActivityFeed';
 import { Avatar } from '../components/Avatar';
 import { DeviceList } from '../components/DeviceList';
-import { ErrorNotice, Loading } from '../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
 import { activityApi, cashApi, invitesApi, reportsApi, usersApi, writeOffsApi } from '../services/api';
 import { useT } from '../i18n/useT';
@@ -290,9 +290,7 @@ function InviteForm() {
         </p>
       )}
       {invite.isSuccess && (
-        <p className="form-success" role="status">
-          {t.people.inviteSent(invite.data.data.email)}
-        </p>
+        <SavedToast message={t.people.inviteSent(invite.data.data.email)} />
       )}
       <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary" loading={invite.isPending}>
         {t.people.sendInvite}
@@ -416,9 +414,7 @@ function AddUserForm() {
         </p>
       )}
       {savedMessage && (
-        <p className="form-success" role="status">
-          {savedMessage}
-        </p>
+        <SavedToast message={savedMessage} />
       )}
       <Button type="submit" disabled={create.isPending} variant="primary">
         {t.people.add}
@@ -728,9 +724,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
         </p>
       )}
       {saved && !update.isError && (
-        <p className="form-success" role="status">
-          {saved}
-        </p>
+        <SavedToast message={saved} />
       )}
     </Card>
   );

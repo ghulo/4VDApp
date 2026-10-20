@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { useLocation } from 'react-router';
 import { CountForm } from '../../components/CashCount';
 import { DayChecklist } from '../../components/DayChecklist';
-import { ErrorNotice, Loading } from '../../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../../components/Feedback';
 import { Button, Field, PageHeader, Sheet } from '../../components/ui';
 import { useT } from '../../i18n/useT';
 import { teamApi } from '../../services/teamApi';
@@ -95,9 +95,7 @@ function TakingsFields(props: { carwashId: number; name: string | null; day: str
   if (save.isSuccess && total !== null) {
     return (
       <div className="staff-page">
-        <p className="form-success" role="status">
-          {t.staff.carwash.saved(formatMoney(total), name)}
-        </p>
+        <SavedToast message={t.staff.carwash.saved(formatMoney(total), name)} />
         <Button variant="primary" onClick={onDone}>
           {t.staff.done}
         </Button>

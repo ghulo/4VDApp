@@ -2,7 +2,7 @@ import { AddressBook, CaretRight } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { ErrorNotice, Loading } from '../../components/Feedback';
+import { ErrorNotice, Loading, SavedToast } from '../../components/Feedback';
 import { SearchInput } from '../../components/SearchInput';
 import { Badge, Button, Card, EmptyState, Field, PageHeader } from '../../components/ui';
 import { useT } from '../../i18n/useT';
@@ -99,9 +99,7 @@ export function StaffTabPage() {
         </Card>
 
         {paid && (
-          <p className="form-success" role="status">
-            {paid}
-          </p>
+          <SavedToast message={paid} />
         )}
         {owed > 0 && (
           <Card title={t.staff.tabs.pay}>

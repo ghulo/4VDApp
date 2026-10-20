@@ -196,6 +196,35 @@
         "viewport-bounds"
       ],
       "reason": "On phones the closed menu drawer waits off-screen to the left and slides in when opened; it is hidden from view, not cut off."
+    },
+    {
+      "selector": ".visually-hidden *",
+      "rules": [
+        "content-clipping",
+        "font-size"
+      ],
+      "reason": "Words inside a visually-hidden block (a chart's figures as a list for screen readers) are hidden on purpose, like the block itself."
+    },
+    {
+      "selector": ".steps__name",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On a phone the Steps bar shows only the current step's name; the others are hidden the visually-hidden way (1px, clip-path) and stay readable to screen readers. Steps you can go back to show their name in a tooltip."
+    },
+    {
+      "selector": ".calendar__grid *",
+      "rules": [
+        "numeric-alignment"
+      ],
+      "reason": "Calendar days are dates laid out in a month grid, read across the week; they are not amounts in a column to compare."
+    },
+    {
+      "selector": ".calendar__item",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On a phone each planned thing in a calendar day is drawn as a 6px dot and its words are pushed out of sight on purpose; the day key still reads them out."
     }
   ]
 }

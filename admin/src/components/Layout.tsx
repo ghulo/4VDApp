@@ -12,7 +12,7 @@ import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
-import { Button, MenuButton } from './ui';
+import { Button, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
 import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
@@ -116,17 +116,19 @@ function FullLayout() {
   return (
     <div className={collapsed ? 'app app--collapsed' : 'app'}>
       <header className={scrolled ? 'topbar topbar--glass' : 'topbar'}>
-        <button
-          ref={menuButton}
-          type="button"
-          className="button button--ghost button--icon topbar__menu"
-          aria-label={t.nav.openMenu}
-          aria-expanded={drawerOpen}
-          aria-controls="sidebar"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <List size={20} aria-hidden="true" />
-        </button>
+        <Tooltip label={t.nav.openMenu} side="bottom">
+          <button
+            ref={menuButton}
+            type="button"
+            className="button button--ghost button--icon topbar__menu"
+            aria-label={t.nav.openMenu}
+            aria-expanded={drawerOpen}
+            aria-controls="sidebar"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <List size={20} aria-hidden="true" />
+          </button>
+        </Tooltip>
         <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
           <LogoMark size={28} />
           <span className="topbar__name">4VD</span>
@@ -141,10 +143,10 @@ function FullLayout() {
             </Link>
           </>
         )}
-        <button type="button" className="topbar__search" onClick={() => setPaletteOpen(true)}>
+        <button type="button" className="topbar__search" aria-label={`${t.nav.search} ${isMac ? '⌘' : 'Ctrl'} K`} onClick={() => setPaletteOpen(true)}>
           <MagnifyingGlass size={16} aria-hidden="true" />
           <span className="topbar__search-label">{t.nav.search}</span>
-          <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
+          <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
         </button>
         <div className="topbar__end">
           <ThemeSwitch persist compact />
@@ -210,16 +212,17 @@ function FullLayout() {
             </div>
           ))}
         </nav>
-        <button
-          type="button"
-          className="sidebar__collapse"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? t.nav.expand : t.nav.collapseMenu}
-          title={collapsed ? t.nav.expand : t.nav.collapseMenu}
-        >
-          {collapsed ? <CaretDoubleRight size={16} aria-hidden="true" /> : <CaretDoubleLeft size={16} aria-hidden="true" />}
-          <span className="sidebar__label">{t.nav.collapse}</span>
-        </button>
+        <Tooltip label={collapsed ? t.nav.expand : t.nav.collapseMenu} side="top">
+          <button
+            type="button"
+            className="sidebar__collapse"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? t.nav.expand : t.nav.collapseMenu}
+          >
+            {collapsed ? <CaretDoubleRight size={16} aria-hidden="true" /> : <CaretDoubleLeft size={16} aria-hidden="true" />}
+            <span className="sidebar__label">{t.nav.collapse}</span>
+          </button>
+        </Tooltip>
       </aside>
 
       <main className="main">

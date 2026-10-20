@@ -2,6 +2,7 @@ import { CircleNotch, type Icon } from '@phosphor-icons/react';
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Link } from 'react-router';
 import { buttonClass, type ButtonVariant } from './buttonClass';
+import { Tooltip } from './Tooltip';
 
 interface Look {
   variant?: ButtonVariant;
@@ -36,7 +37,7 @@ type ButtonProps = Look &
 /** Primary for the one main action, secondary for the rest, ghost for quiet ones, danger to destroy. */
 export function Button({ variant, size, icon, wide, loading, className, type = 'button', children, disabled, ...rest }: ButtonProps) {
   const iconOnly = Boolean(icon) && children === undefined;
-  return (
+  const key = (
     <button
       type={type}
       className={[buttonClass({ variant, size, iconOnly, wide }), className].filter(Boolean).join(' ')}
@@ -49,6 +50,9 @@ export function Button({ variant, size, icon, wide, loading, className, type = '
       </Contents>
     </button>
   );
+  // A key that shows only an icon shows its name on hover and focus.
+  const name = rest['aria-label'];
+  return iconOnly && name ? <Tooltip label={name}>{key}</Tooltip> : key;
 }
 
 type ButtonLinkProps = Look & AnchorHTMLAttributes<HTMLAnchorElement> & { to: string };
@@ -56,11 +60,13 @@ type ButtonLinkProps = Look & AnchorHTMLAttributes<HTMLAnchorElement> & { to: st
 /** A link that looks like a button, for actions that open another page. */
 export function ButtonLink({ variant, size, icon, to, className, children, ...rest }: ButtonLinkProps) {
   const iconOnly = Boolean(icon) && children === undefined;
-  return (
+  const link = (
     <Link to={to} className={[buttonClass({ variant, size, iconOnly }), className].filter(Boolean).join(' ')} {...rest}>
       <Contents icon={icon} size={size}>
         {children}
       </Contents>
     </Link>
   );
+  const name = rest['aria-label'];
+  return iconOnly && name ? <Tooltip label={name}>{link}</Tooltip> : link;
 }

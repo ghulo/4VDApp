@@ -120,7 +120,25 @@
   transition: none;
 }
 
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  /* Floating labels and panels fade in; a toast rises into its corner. */
+  .tooltip:popover-open,
+  .popover:popover-open,
+  .combobox__list:popover-open {
+    animation: fade var(--fast) var(--ease);
+  }
+
+  .toast {
+    animation: rise var(--spring-time) var(--spring);
+  }
+
   /* ---------- Arriving ----------
      Pages and their sections show at once: no entrance, so moving around
      4VD never waits on an animation. */

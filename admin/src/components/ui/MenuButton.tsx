@@ -2,6 +2,7 @@ import { CaretDown, type Icon } from '@phosphor-icons/react';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from './Button';
 import type { ButtonVariant } from './buttonClass';
+import { Tooltip } from './Tooltip';
 
 export interface MenuItem {
   label: string;
@@ -86,9 +87,11 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
   return (
     <div className="menu-button" ref={rootRef}>
       {face ? (
-        <button ref={keyRef} type="button" className={faceClassName} aria-label={label} title={label} {...keyProps}>
-          {face}
-        </button>
+        <Tooltip label={label} side="bottom">
+          <button ref={keyRef} type="button" className={faceClassName} aria-label={label} {...keyProps}>
+            {face}
+          </button>
+        </Tooltip>
       ) : (
         <Button ref={keyRef} variant={variant} size={size} icon={icon} loading={loading} {...keyProps}>
           {label}

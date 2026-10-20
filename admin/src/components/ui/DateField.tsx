@@ -1,6 +1,7 @@
 import { CalendarBlank } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../../i18n/useT';
+import { Tooltip } from './Tooltip';
 
 /** "2026-10-13" as "13/10/2026": day, month, year in both languages (DESIGN.md 10.6). */
 export function isoToDayMonthYear(iso: string): string {
@@ -87,9 +88,11 @@ export function DateField({ value, onChange, min, max, required, disabled, 'aria
           onChange(dayMonthYearToIso(event.target.value) ?? '');
         }}
       />
-      <button type="button" className="date-field__calendar" aria-label={t.common.pickDate} title={t.common.pickDate} disabled={disabled} onClick={openCalendar}>
-        <CalendarBlank size={18} aria-hidden="true" />
-      </button>
+      <Tooltip label={t.common.pickDate}>
+        <button type="button" className="date-field__calendar" aria-label={t.common.pickDate} disabled={disabled} onClick={openCalendar}>
+          <CalendarBlank size={18} aria-hidden="true" />
+        </button>
+      </Tooltip>
       <input
         ref={calendar}
         type="date"

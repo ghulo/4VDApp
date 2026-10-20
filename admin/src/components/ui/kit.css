@@ -1,0 +1,1047 @@
+/* The newer kit pieces (DESIGN.md 10.12): floating labels and panels, the
+   combobox, keycaps, toasts, steps, skeletons, the extra charts, the board
+   and the calendar. Tokens only. */
+
+/* ---------- Floating panels (tooltip, popover, combobox list) ----------
+   Each is a `popover` element in the top layer, placed by floating.ts. The
+   browser's own popover look (centred, bordered) is reset here. */
+
+.tooltip,
+.popover,
+.combobox__list {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  border: 0;
+  overflow: visible;
+}
+
+.tooltip-anchor {
+  display: contents;
+}
+
+/* An ink label with paper words, like a chart's figure on hover. */
+.tooltip {
+  max-inline-size: 280px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-segment);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.tooltip:popover-open {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tooltip .tooltip__key {
+  border-color: color-mix(in srgb, var(--surface) 30%, transparent);
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.popover {
+  min-inline-size: 240px;
+  max-inline-size: min(360px, calc(100vw - var(--space-4)));
+  padding: var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+}
+
+.popover__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.popover > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Combobox ---------- */
+
+.combobox__box {
+  position: relative;
+}
+
+.combobox__input {
+  inline-size: 100%;
+  padding-inline-end: var(--space-6);
+}
+
+.combobox__caret {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--space-3);
+  color: var(--ink-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.combobox__list {
+  max-block-size: 280px;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+}
+
+.combobox__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-block-size: var(--control-h);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-segment);
+  cursor: pointer;
+}
+
+.combobox__option--active {
+  background: var(--surface-sunk);
+}
+
+.combobox__option[aria-selected='true'] {
+  font-weight: 600;
+}
+
+.combobox__name {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.combobox__hint {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+
+.combobox__empty {
+  padding: var(--space-3);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Keycaps ----------
+   Every <kbd> is a cap (base.css); Kbd groups several into one shortcut. */
+
+kbd.kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.kbd--sm kbd {
+  padding: 0 var(--space-1);
+  line-height: 16px;
+}
+
+/* ---------- Toasts ---------- */
+
+.toasts {
+  position: fixed;
+  inset-block-end: var(--space-5);
+  inset-inline-end: var(--space-5);
+  z-index: 60;
+  pointer-events: none;
+}
+
+.toasts__list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toast {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: min(380px, calc(100vw - var(--space-6)));
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  pointer-events: auto;
+}
+
+.toast--ok .toast__icon {
+  color: var(--ok);
+}
+
+.toast--info .toast__icon {
+  color: var(--info);
+}
+
+.toast--danger .toast__icon {
+  color: var(--danger);
+}
+
+.toast__title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.toast__detail {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.toast__action,
+.toast__close {
+  min-block-size: var(--control-h-sm);
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.toast__action {
+  padding: 0 var(--space-2);
+  color: var(--brand);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.toast__close {
+  display: grid;
+  place-items: center;
+  inline-size: var(--control-h-sm);
+  color: var(--ink-muted);
+}
+
+.toast__action:hover,
+.toast__close:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .toasts {
+    inset-inline: var(--space-4);
+    inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+
+  .toasts__list {
+    align-items: stretch;
+  }
+
+  .toast {
+    inline-size: auto;
+  }
+
+  /* Above the staff layout's tab bar. */
+  body:has(.staff-app__bottom-tabs) .toasts {
+    inset-block-end: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- Steps ---------- */
+
+.steps__count {
+  display: none;
+  margin: 0 0 var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.steps__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps__step {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.steps__step:last-child {
+  flex: none;
+}
+
+.steps__step:not(:last-child)::after {
+  flex: 1;
+  min-inline-size: var(--space-4);
+  block-size: 1px;
+  background: var(--line-strong);
+  content: '';
+}
+
+.steps__step--done:not(:last-child)::after {
+  background: var(--ink);
+}
+
+.steps__mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.steps__name {
+  white-space: nowrap;
+}
+
+.steps__step--current {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.steps__step--current .steps__mark {
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--cta);
+}
+
+.steps__step--done {
+  color: var(--ink);
+}
+
+.steps__step--done .steps__mark {
+  background: var(--ink);
+  box-shadow: none;
+  color: var(--surface);
+}
+
+.steps__back {
+  display: inline-flex;
+  min-inline-size: var(--control-h-sm);
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--control-h-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.steps__back:hover .steps__name {
+  text-decoration: underline;
+}
+
+@media (max-width: 599px) {
+  .steps__count {
+    display: block;
+  }
+
+  .steps__step:not(.steps__step--current) .steps__name {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Skeleton ----------
+   Sunk paper in the shape of what is coming; still, no shimmer. */
+
+.skeleton {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.skeleton__bar {
+  display: block;
+  block-size: var(--space-3);
+  border-radius: var(--radius-stamp);
+  background: var(--surface-sunk);
+}
+
+.skeleton--table {
+  gap: 0;
+}
+
+.skeleton__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.skeleton__bar--figure {
+  flex: none;
+  inline-size: 64px;
+}
+
+/* ---------- Area chart ---------- */
+
+.area-chart {
+  margin: 0;
+}
+
+.area-chart__plot {
+  position: relative;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: var(--radius-stamp);
+}
+
+.area-chart__plot:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: var(--space-1);
+}
+
+.area-chart__plot svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.area-chart__grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.area-chart__fill {
+  fill: color-mix(in srgb, var(--data-line) 16%, transparent);
+}
+
+.area-chart__line {
+  fill: none;
+  stroke: var(--data-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.area-chart__rule {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 1px;
+  background: var(--line-strong);
+  pointer-events: none;
+}
+
+.area-chart__dot {
+  position: absolute;
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  margin: calc(var(--space-3) / -2) 0 0 calc(var(--space-3) / -2);
+  border-radius: var(--radius-pill);
+  background: var(--data-line);
+  box-shadow: 0 0 0 2px var(--surface);
+  pointer-events: none;
+}
+
+.area-chart__tip {
+  position: absolute;
+  inset-block-end: calc(100% + var(--space-1));
+  z-index: 2;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-segment);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.area-chart__tip--start {
+  transform: none;
+}
+
+.area-chart__tip--end {
+  transform: translateX(-100%);
+}
+
+.area-chart__axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-1);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Donut ---------- */
+
+.donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.donut__ring {
+  position: relative;
+  flex: none;
+  inline-size: 160px;
+  block-size: 160px;
+}
+
+.donut__ring svg {
+  inline-size: 100%;
+  block-size: 100%;
+  transform: rotate(-90deg);
+}
+
+.donut__track,
+.donut__slice {
+  fill: none;
+  stroke-width: 14;
+}
+
+.donut__track {
+  stroke: var(--surface-sunk);
+}
+
+.donut__slice {
+  transition: opacity var(--fast) var(--ease);
+}
+
+.donut__slice--dim {
+  opacity: 0.25;
+}
+
+.donut__total {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  text-align: center;
+}
+
+.donut__figure {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.donut__caption {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.donut__legend {
+  flex: 1 1 220px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.donut__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--control-h);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+
+.donut__row:last-child {
+  border-bottom: 0;
+}
+
+.donut__swatch {
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  border-radius: var(--radius-stamp);
+}
+
+.donut__value,
+.donut__share {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.donut__share {
+  min-inline-size: 5ch;
+  color: var(--ink-muted);
+}
+
+/* ---------- Heatmap ---------- */
+
+.heatmap {
+  margin: 0;
+}
+
+/* Its own width never widens the card: a wide grid scrolls inside it. */
+.heatmap__scroll {
+  position: relative;
+  overflow-x: auto;
+  contain: inline-size;
+}
+
+.heatmap__grid {
+  inline-size: 100%;
+  min-inline-size: 560px;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.heatmap__grid th {
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.heatmap__row {
+  inline-size: 48px;
+  padding-inline-end: var(--space-2);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.heatmap__column {
+  block-size: var(--space-5);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.heatmap__cell {
+  padding: 0;
+}
+
+.heatmap__fill {
+  display: block;
+  block-size: var(--space-5);
+  border-radius: var(--radius-stamp);
+}
+
+.heatmap__cell:hover .heatmap__fill {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.heatmap__key {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.heatmap__swatch {
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  border-radius: var(--radius-stamp);
+}
+
+/* ---------- Funnel ---------- */
+
+.funnel {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.funnel__row,
+.funnel__lost {
+  display: grid;
+  grid-template-columns: minmax(96px, 160px) minmax(0, 1fr) minmax(64px, auto);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.funnel__row {
+  min-block-size: var(--control-h);
+}
+
+.funnel__lost {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.funnel__lost span {
+  grid-column: 2;
+}
+
+.funnel__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.funnel__track {
+  block-size: var(--space-5);
+  overflow: hidden;
+  border-radius: var(--radius-stamp);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.funnel__bar {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--radius-stamp);
+  background: var(--data-3);
+}
+
+.funnel__value {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 599px) {
+  .funnel__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .funnel__track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .funnel__lost {
+    grid-template-columns: 1fr;
+  }
+
+  .funnel__lost span {
+    grid-column: 1;
+  }
+}
+
+/* ---------- Board ---------- */
+
+.board {
+  position: relative;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-4);
+}
+
+.board__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-block-size: 200px;
+  padding: var(--space-3);
+  border-radius: var(--radius-panel);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  transition: box-shadow var(--fast) var(--ease);
+}
+
+.board__column--over {
+  box-shadow: var(--shadow-inset), inset 0 0 0 2px var(--focus);
+}
+
+.board__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--space-1) var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.board__count {
+  min-inline-size: var(--space-5);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.board__cards {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.board__card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+  cursor: grab;
+  transition:
+    box-shadow var(--fast) var(--ease),
+    opacity var(--fast) var(--ease);
+}
+
+.board__card:hover {
+  box-shadow: var(--shadow-raise-hover);
+}
+
+.board__card--lifted {
+  opacity: 0.5;
+}
+
+.board__card .menu-button {
+  justify-self: end;
+}
+
+.board__empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  /* A column at a time, side by side, snapping as you swipe. */
+  .board {
+    grid-auto-columns: minmax(260px, 85%);
+    padding-block-end: var(--space-2);
+    overflow-x: auto;
+    contain: inline-size;
+    scroll-snap-type: x mandatory;
+  }
+
+  .board__column {
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------- Calendar ---------- */
+
+.calendar__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.calendar__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.calendar__title::first-letter {
+  text-transform: uppercase;
+}
+
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.calendar__grid {
+  inline-size: 100%;
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  table-layout: fixed;
+}
+
+.calendar__grid th {
+  padding: 0 var(--space-2) var(--space-1);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-align: start;
+}
+
+.calendar__grid td {
+  padding: 0;
+  vertical-align: top;
+}
+
+.calendar__day {
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  inline-size: 100%;
+  min-block-size: 88px;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.calendar__day:hover {
+  background: var(--surface-sunk);
+}
+
+.calendar__day--outside {
+  background: transparent;
+  color: var(--ink-muted);
+}
+
+.calendar__day--selected {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.calendar__number {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-start;
+  min-inline-size: var(--space-5);
+  block-size: var(--space-5);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Today wears amber: "where you are". */
+.calendar__day--today .calendar__number {
+  background: var(--cta);
+  color: var(--cta-ink);
+}
+
+.calendar__items {
+  display: grid;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.calendar__item {
+  overflow: hidden;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-stamp);
+  background: var(--surface-sunk);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar__item--late {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.calendar__more {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 599px) {
+  .calendar__grid {
+    border-spacing: 2px;
+  }
+
+  .calendar__grid th {
+    padding-inline: 0;
+    text-align: center;
+  }
+
+  .calendar__day {
+    align-items: center;
+    min-block-size: var(--control-h);
+    padding: var(--space-1) 0;
+  }
+
+  .calendar__number {
+    align-self: center;
+  }
+
+  /* On a phone each planned thing is a dot. */
+  .calendar__items {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .calendar__item {
+    inline-size: 6px;
+    block-size: 6px;
+    padding: 0;
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    text-indent: 100%;
+  }
+
+  .calendar__item--late {
+    background: var(--danger);
+  }
+
+  .calendar__more {
+    display: none;
+  }
+}
+
+/* ---------- The /kit page ---------- */
+
+.kit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kit-row--gap {
+  margin-top: var(--space-4);
+}
+
+.kit-note {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.kit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: var(--space-4);
+}

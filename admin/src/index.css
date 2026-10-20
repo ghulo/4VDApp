@@ -5,6 +5,7 @@
 @import './styles/base.css';
 @import './styles/decor.css';
 @import './components/ui/ui.css';
+@import './components/ui/kit.css';
 @import './styles/shell.css';
 @import './styles/pages.css';
 @import './styles/team.css';

@@ -338,3 +338,91 @@ describe('DateField', () => {
     expect(html).toContain('tabindex="-1"');
   });
 });
+
+describe('newer kit pieces', () => {
+  it('should float a panel below its anchor, or above when there is no room below', async () => {
+    const { placeFloating } = await import('./floating');
+    const view = { width: 1000, height: 800 };
+    expect(placeFloating({ top: 100, left: 100, width: 40, height: 40 }, { width: 100, height: 50 }, view)).toEqual({ top: 146, left: 70, side: 'bottom' });
+    expect(placeFloating({ top: 760, left: 100, width: 40, height: 30 }, { width: 100, height: 50 }, view).side).toBe('top');
+    // Never past the window's edge.
+    expect(placeFloating({ top: 100, left: 980, width: 20, height: 20 }, { width: 200, height: 50 }, view).left).toBe(792);
+  });
+
+  it('should match options without accents, names that start with the words first', async () => {
+    const { matchOptions } = await import('./Combobox');
+    const options = [
+      { value: '1', label: 'Arta Çlirimi' },
+      { value: '2', label: 'Çlirim Berisha', hint: '044 1' },
+      { value: '3', label: 'Blerim' },
+    ];
+    expect(matchOptions(options, 'clirim').map((option) => option.value)).toEqual(['2', '1']);
+    expect(matchOptions(options, '044').map((option) => option.value)).toEqual(['2']);
+    expect(matchOptions(options, '  ')).toHaveLength(3);
+  });
+
+  it('should scale area points to the top value, with an outlier on the edge', async () => {
+    const { areaPoints } = await import('./AreaChart');
+    expect(areaPoints([0, 5, 10])).toEqual([
+      { x: 0, y: 1 },
+      { x: 0.5, y: 0.5 },
+      { x: 1, y: 0 },
+    ]);
+    expect(areaPoints([10, 12, 100])[2]!.y).toBe(0);
+    expect(areaPoints([])).toEqual([]);
+  });
+
+  it('should keep the four biggest donut slices and add up the rest as Other', async () => {
+    const { donutSlices } = await import('./DonutChart');
+    const slices = [1, 2, 3, 4, 5, 6, 0].map((value) => ({ key: value, label: String(value), value, display: String(value) }));
+    const shown = donutSlices(slices, 'Other', String);
+    expect(shown.map((slice) => slice.label)).toEqual(['6', '5', '4', '3', 'Other']);
+    expect(shown[4]!.value).toBe(3);
+  });
+
+  it('should work out heat levels and funnel drop-offs', async () => {
+    const { heatLevel } = await import('./Heatmap');
+    const { funnelSteps } = await import('./FunnelChart');
+    expect([heatLevel(0, 10), heatLevel(5, 10), heatLevel(20, 10), heatLevel(3, 0)]).toEqual([0, 0.5, 1, 0]);
+    expect(
+      funnelSteps([
+        { key: 1, label: 'Made', value: 40, display: '' },
+        { key: 2, label: 'Yes', value: 30, display: '' },
+        { key: 3, label: 'Paid', value: 0, display: '' },
+      ]),
+    ).toEqual([
+      { share: 1, lost: null },
+      { share: 0.75, lost: 0.25 },
+      { share: 0, lost: 1 },
+    ]);
+  });
+
+  it('should lay out a month Monday first and move by months without spilling over', async () => {
+    const { addMonths, monthGrid } = await import('./Calendar');
+    const weeks = monthGrid('2026-10-21');
+    expect(weeks).toHaveLength(6);
+    expect(weeks[0]![0]).toBe('2026-09-28');
+    expect(weeks[0]![3]).toBe('2026-10-01');
+    expect(addMonths('2026-01-31', 1)).toBe('2026-02-28');
+    expect(addMonths('2026-01-15', -1)).toBe('2025-12-15');
+  });
+
+  it('should link an icon-only button to a tooltip with its name', () => {
+    const html = render(<Button icon={Plus} aria-label="Add a product" />);
+    const id = /data-ui-tooltip="([^"]+)"/.exec(html)?.[1];
+    expect(id).toBeTruthy();
+    expect(html).toContain(`id="${id}" role="tooltip"`);
+    expect(html).toContain('Add a product</span>');
+    expect(render(<Button icon={Plus}>Add</Button>)).not.toContain('role="tooltip"');
+  });
+
+  it('should draw shortcuts as keycaps and steps with the current one marked', async () => {
+    const { Kbd, Steps, Skeleton } = await import('./index');
+    expect(render(<Kbd keys={['Ctrl', 'K']} />)).toBe('<kbd class="kbd"><kbd>Ctrl</kbd><kbd>K</kbd></kbd>');
+    const steps = render(<Steps label="Delivery" steps={['Basket', 'Delivery', 'Done']} current={1} />);
+    expect(steps).toContain('Step 2 of 3');
+    expect(steps).toContain('steps__step--done');
+    expect(steps).toContain('aria-current="step"');
+    expect(render(<Skeleton rows={2} />).match(/skeleton__bar/g)).toHaveLength(2);
+  });
+});

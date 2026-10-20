@@ -4101,6 +4101,22 @@ export const en = {
     csvFile: 'CSV, for other software',
     total: 'Total',
   },
+  kit: {
+    noMatch: 'Nothing matches. Check the spelling or type less.',
+    notifications: 'Notifications',
+    dismiss: 'Dismiss',
+    stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+    other: 'Other',
+    heatLess: 'Less',
+    heatMore: 'More',
+    dropped: (share: string) => `${share} dropped off`,
+    nothingHere: 'Nothing here yet.',
+    moveTo: 'Move to',
+    today: 'Today',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    more: (n: number) => `+${n} more`,
+  },
   desktop: {
     welcome: {
       steps: 'Setting up this computer',

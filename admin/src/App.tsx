@@ -19,7 +19,7 @@ import {
   VerifyEmailPage,
 } from './pages/AccountPages';
 import { OverviewPage } from './pages/OverviewPage';
-import { ButtonLink } from './components/ui';
+import { ButtonLink, ToastProvider } from './components/ui';
 import { useT } from './i18n/useT';
 import { useCurrentUser } from './auth/useAuth';
 import { staffLayout } from './auth/roles';
@@ -92,6 +92,7 @@ const PersonPage = lazyPage(() => import('./pages/UsersPage'), 'PersonPage');
 const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
 const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
 const WelcomePage = lazyPage(() => import('./pages/WelcomePage'), 'WelcomePage');
+const KitPage = lazyPage(() => import('./pages/KitPage'), 'KitPage');
 const DownloadPage = lazyPage(() => import('./pages/DownloadPage'), 'DownloadPage');
 const StaffHomePage = lazyPage(() => import('./pages/staff/StaffHomePage'), 'StaffHomePage');
 const MySalesPage = lazyPage(() => import('./pages/staff/MySalesPage'), 'MySalesPage');
@@ -147,135 +148,138 @@ function App() {
     <I18nProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <BrowserRouter>
-              <ViewAsBar />
-              <Suspense fallback={<Loading />}>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-                  <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
-                  <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
-                  <Route path="/invite/:token" element={<AcceptInvitePage />} />
-                  {/* The Windows app: its download page, open to anyone, and its first-run welcome. */}
-                  <Route path="/download" element={<DownloadPage />} />
-                  <Route path="/welcome" element={<WelcomePage />} />
-                  {/* The Counter fills the screen: no menu, no top bar. */}
-                  <Route
-                    path="/counter"
-                    element={
-                      <RequireAuth>
-                        <CounterPage />
-                      </RequireAuth>
-                    }
-                  />
-                  <Route
-                    element={
-                      <RequireAuth>
-                        <Layout />
-                      </RequireAuth>
-                    }
-                  >
-                    <Route index element={<HomePage />} />
-                    <Route path="my-sales" element={<MySalesPage />} />
-                    <Route path="shift" element={<EndShiftPage />} />
-                    <Route path="catalog" element={<StaffProductsPage />} />
-                    <Route path="catalog/:id" element={<StaffProductPage />} />
-                    <Route path="scan/:code" element={<ScanLinkPage />} />
-                    <Route path="new-product" element={<NewProductPage />} />
-                    <Route path="deliveries" element={<DeliveriesPage />} />
-                    <Route path="scan-bill" element={<ScanBillPage />} />
-                    <Route path="tabs/:id" element={<StaffTabPage />} />
-                    <Route path="counts/:id/count" element={<StaffCountPage />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>
-                      <Route path="inbox" element={<InboxPage />} />
-                      <Route path="inbox/updates" element={<UpdatesPage />} />
+          <ToastProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <ViewAsBar />
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                    <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+                    <Route path="/confirm-email/:token" element={<ConfirmEmailChangePage />} />
+                    <Route path="/invite/:token" element={<AcceptInvitePage />} />
+                    {/* The Windows app: its download page, open to anyone, and its first-run welcome. */}
+                    <Route path="/download" element={<DownloadPage />} />
+                    <Route path="/welcome" element={<WelcomePage />} />
+                    {/* The Counter fills the screen: no menu, no top bar. */}
+                    <Route
+                      path="/counter"
+                      element={
+                        <RequireAuth>
+                          <CounterPage />
+                        </RequireAuth>
+                      }
+                    />
+                    <Route
+                      element={
+                        <RequireAuth>
+                          <Layout />
+                        </RequireAuth>
+                      }
+                    >
+                      <Route index element={<HomePage />} />
+                      <Route path="my-sales" element={<MySalesPage />} />
+                      <Route path="shift" element={<EndShiftPage />} />
+                      <Route path="catalog" element={<StaffProductsPage />} />
+                      <Route path="catalog/:id" element={<StaffProductPage />} />
+                      <Route path="scan/:code" element={<ScanLinkPage />} />
+                      <Route path="new-product" element={<NewProductPage />} />
+                      <Route path="deliveries" element={<DeliveriesPage />} />
+                      <Route path="kit" element={<KitPage />} />
+                      <Route path="scan-bill" element={<ScanBillPage />} />
+                      <Route path="tabs/:id" element={<StaffTabPage />} />
+                      <Route path="counts/:id/count" element={<StaffCountPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.inbox} labelKey="inbox" />}>
+                        <Route path="inbox" element={<InboxPage />} />
+                        <Route path="inbox/updates" element={<UpdatesPage />} />
+                      </Route>
+                      <Route path="approvals" element={<Navigate to="/inbox" replace />} />
+                      <Route path="alerts" element={<Navigate to="/inbox/updates" replace />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.stock} labelKey="stock" />}>
+                        <Route path="inventory" element={<InventoryPage />} />
+                        <Route path="products" element={<ProductsPage />} />
+                        <Route path="categories" element={<CategoriesPage />} />
+                      </Route>
+                      <Route path="inventory/duplicates" element={<DuplicatesPage />} />
+                      <Route path="inventory/:productId" element={<OldStockPageRedirect />} />
+                      <Route path="products/new" element={<ProductFormPage />} />
+                      <Route path="products/:id" element={<ProductPage />}>
+                        <Route index element={<ProductStockTab />} />
+                        <Route path="details" element={<ProductFormPage />} />
+                      </Route>
+                      <Route path="labels" element={<LabelsPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
+                        <Route path="sales" element={<SalesPage />} />
+                        <Route path="documents" element={<DocumentsPage />} />
+                        <Route path="offers" element={<OffersPage />} />
+                      </Route>
+                      <Route path="documents/:id" element={<DocumentDetailPage />} />
+                      <Route path="offers/:id" element={<OfferDetailPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
+                        <Route path="day" element={<DayPage />} />
+                        <Route path="cash" element={<CashPage />} />
+                        <Route path="carwash" element={<CarwashPage />} />
+                      </Route>
+                      <Route path="expenses" element={<ExpensesPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.books} labelKey="books" />}>
+                        <Route path="books" element={<BooksBalancesPage />} />
+                        <Route path="books/journal" element={<BooksJournalPage />} />
+                        <Route path="books/accounts" element={<BooksAccountsPage />} />
+                        <Route path="books/opening" element={<OpeningPage />} />
+                        <Route path="books/vat" element={<VatPage />} />
+                        <Route path="books/sales-book" element={<SalesBookPage />} />
+                        <Route path="books/purchase-book" element={<PurchaseBookPage />} />
+                        <Route path="books/statements" element={<FinancialStatementsPage />} />
+                        <Route path="books/year" element={<YearPage />} />
+                        <Route path="books/trefin" element={<TrefinComparePage />} />
+                      </Route>
+                      <Route path="books/accounts/:id" element={<AccountCardPage />} />
+                      <Route path="money" element={<MoneyPage />} />
+                      <Route path="money/:id" element={<PlaceBookPage />} />
+                      <Route path="money/:id/statement" element={<StatementPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
+                        <Route path="report" element={<ReportPage />} />
+                        <Route path="reports" element={<ReportsPage view="figures" />} />
+                        <Route path="reports/team" element={<ReportsPage view="team" />} />
+                        <Route path="reports/counter" element={<ReportsPage view="counter" />} />
+                        <Route path="reports/profit" element={<ReportsPage view="profit" />} />
+                        <Route path="reports/downloads" element={<ReportsPage view="downloads" />} />
+                      </Route>
+                      <Route path="customers" element={<CustomersPage />} />
+                      <Route path="customers/:id" element={<CustomerDetailPage />} />
+                      <Route path="customers/:id/statement" element={<CustomerStatementPage />} />
+                      <Route path="tabs" element={<ByLayout staff={<StaffTabsPage />} full={<TabsRedirect />} />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.buy} labelKey="suppliers" />}>
+                        <Route path="suppliers" element={<SuppliersPage />} />
+                        <Route path="orders" element={<OrdersPage />} />
+                        <Route path="bills" element={<BillsPage />} />
+                      </Route>
+                      <Route path="suppliers/:id" element={<SupplierDetailPage />} />
+                      <Route path="orders/new" element={<NewOrderPage />} />
+                      <Route path="orders/:id" element={<OrderDetailPage />} />
+                      <Route path="bills/new" element={<NewBillPage />} />
+                      <Route path="bills/scans/:id" element={<ScanCheckPage />} />
+                      <Route path="bills/:id" element={<BillDetailPage />} />
+                      <Route path="people" element={<UsersPage />} />
+                      <Route path="people/:id" element={<PersonPage />} />
+                      <Route path="counts" element={<ByLayout staff={<StaffCountsPage />} full={<StockCountsPage />} />} />
+                      <Route path="counts/trefin/:id" element={<TrefinStockPage />} />
+                      <Route path="counts/:id" element={<ByLayout staff={<StaffCountPage />} full={<StockCountDetailPage />} />} />
+                      <Route path="promotions" element={<PromotionsPage />} />
+                      <Route path="promotions/:id" element={<PromotionDetailPage />} />
+                      <Route path="ask" element={<AskPage />} />
+                      <Route path="settings/:section?" element={<SettingsPage />} />
+                      <Route path="profile/:section?" element={<ProfilePage />} />
+                      <Route path="activity" element={<ActivityPage />} />
+                      <Route path="*" element={<NotFoundPage />} />
                     </Route>
-                    <Route path="approvals" element={<Navigate to="/inbox" replace />} />
-                    <Route path="alerts" element={<Navigate to="/inbox/updates" replace />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.stock} labelKey="stock" />}>
-                      <Route path="inventory" element={<InventoryPage />} />
-                      <Route path="products" element={<ProductsPage />} />
-                      <Route path="categories" element={<CategoriesPage />} />
-                    </Route>
-                    <Route path="inventory/duplicates" element={<DuplicatesPage />} />
-                    <Route path="inventory/:productId" element={<OldStockPageRedirect />} />
-                    <Route path="products/new" element={<ProductFormPage />} />
-                    <Route path="products/:id" element={<ProductPage />}>
-                      <Route index element={<ProductStockTab />} />
-                      <Route path="details" element={<ProductFormPage />} />
-                    </Route>
-                    <Route path="labels" element={<LabelsPage />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
-                      <Route path="sales" element={<SalesPage />} />
-                      <Route path="documents" element={<DocumentsPage />} />
-                      <Route path="offers" element={<OffersPage />} />
-                    </Route>
-                    <Route path="documents/:id" element={<DocumentDetailPage />} />
-                    <Route path="offers/:id" element={<OfferDetailPage />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
-                      <Route path="day" element={<DayPage />} />
-                      <Route path="cash" element={<CashPage />} />
-                      <Route path="carwash" element={<CarwashPage />} />
-                    </Route>
-                    <Route path="expenses" element={<ExpensesPage />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.books} labelKey="books" />}>
-                      <Route path="books" element={<BooksBalancesPage />} />
-                      <Route path="books/journal" element={<BooksJournalPage />} />
-                      <Route path="books/accounts" element={<BooksAccountsPage />} />
-                      <Route path="books/opening" element={<OpeningPage />} />
-                      <Route path="books/vat" element={<VatPage />} />
-                      <Route path="books/sales-book" element={<SalesBookPage />} />
-                      <Route path="books/purchase-book" element={<PurchaseBookPage />} />
-                      <Route path="books/statements" element={<FinancialStatementsPage />} />
-                      <Route path="books/year" element={<YearPage />} />
-                      <Route path="books/trefin" element={<TrefinComparePage />} />
-                    </Route>
-                    <Route path="books/accounts/:id" element={<AccountCardPage />} />
-                    <Route path="money" element={<MoneyPage />} />
-                    <Route path="money/:id" element={<PlaceBookPage />} />
-                    <Route path="money/:id/statement" element={<StatementPage />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.reports} labelKey="reports" />}>
-                      <Route path="report" element={<ReportPage />} />
-                      <Route path="reports" element={<ReportsPage view="figures" />} />
-                      <Route path="reports/team" element={<ReportsPage view="team" />} />
-                      <Route path="reports/counter" element={<ReportsPage view="counter" />} />
-                      <Route path="reports/profit" element={<ReportsPage view="profit" />} />
-                      <Route path="reports/downloads" element={<ReportsPage view="downloads" />} />
-                    </Route>
-                    <Route path="customers" element={<CustomersPage />} />
-                    <Route path="customers/:id" element={<CustomerDetailPage />} />
-                    <Route path="customers/:id/statement" element={<CustomerStatementPage />} />
-                    <Route path="tabs" element={<ByLayout staff={<StaffTabsPage />} full={<TabsRedirect />} />} />
-                    <Route element={<SectionTabs tabs={SECTIONS.buy} labelKey="suppliers" />}>
-                      <Route path="suppliers" element={<SuppliersPage />} />
-                      <Route path="orders" element={<OrdersPage />} />
-                      <Route path="bills" element={<BillsPage />} />
-                    </Route>
-                    <Route path="suppliers/:id" element={<SupplierDetailPage />} />
-                    <Route path="orders/new" element={<NewOrderPage />} />
-                    <Route path="orders/:id" element={<OrderDetailPage />} />
-                    <Route path="bills/new" element={<NewBillPage />} />
-                    <Route path="bills/scans/:id" element={<ScanCheckPage />} />
-                    <Route path="bills/:id" element={<BillDetailPage />} />
-                    <Route path="people" element={<UsersPage />} />
-                    <Route path="people/:id" element={<PersonPage />} />
-                    <Route path="counts" element={<ByLayout staff={<StaffCountsPage />} full={<StockCountsPage />} />} />
-                    <Route path="counts/trefin/:id" element={<TrefinStockPage />} />
-                    <Route path="counts/:id" element={<ByLayout staff={<StaffCountPage />} full={<StockCountDetailPage />} />} />
-                    <Route path="promotions" element={<PromotionsPage />} />
-                    <Route path="promotions/:id" element={<PromotionDetailPage />} />
-                    <Route path="ask" element={<AskPage />} />
-                    <Route path="settings/:section?" element={<SettingsPage />} />
-                    <Route path="profile/:section?" element={<ProfilePage />} />
-                    <Route path="activity" element={<ActivityPage />} />
-                    <Route path="*" element={<NotFoundPage />} />
-                  </Route>
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </AuthProvider>
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </AuthProvider>
+          </ToastProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </I18nProvider>

@@ -538,9 +538,13 @@ The canvas weave is faint (1.2% light, 1% dark).
 - **The Amber Rule.** Amber means brand and "act here". **One amber key per
   screen** (a phone screen's bottom bar counts: if the Sell tab key is visible,
   the screen's own main action is a secondary key unless it *is* selling).
-  Links, badges, charts and counts are never amber.
-- **The Ink Data Rule.** Data is drawn in ink: series in Muted Ink, the active
-  bar or point in Ink. Up/down changes use OK/Danger words, not just colour.
+  Links, badges and counts are never amber.
+- **Data in amber steps** (changed 2026-10-20: grey charts felt dull). The
+  newer charts (area, donut, heatmap, funnel) draw in the amber scale through
+  `--data-1`…`--data-5`, `--data-heat` and `--data-line`, strongest step for
+  the biggest value. The older ones (DayBars, ColumnChart, BarList, mini
+  graphs) are still ink; move them over when touching them. Up/down changes
+  use OK/Danger words, not just colour.
 - **No second accent.** Status colours are for status only.
 - **Colour never carries meaning alone**; words always do.
 
@@ -733,7 +737,7 @@ phones a stamp sits **above** its text, not in a side column (`Badge`).
 - Every number that can change in place or sit in a column is tabular.
 
 ### 10.7 Charts
-- Ink rule (section 6). Bars with softly rounded tops, smooth lines over a 12%
+- Amber data steps (section 6). Bars with softly rounded tops, smooth lines over a 12%
   flat fill, hairline grid, an ink tooltip with paper text, "Show as table".
 - **One outlier must not flatten the rest**: when the top value is more than 4×
   the next highest, cap the axis, draw the capped bar to the top with a break
@@ -793,6 +797,19 @@ key); narrower, it is a Sheet. Long names in its tables wrap.
 `MenuButton` is a quiet key with a caret that opens a short list of related
 actions (a page's downloads): Float shadow, 36px rows, arrow keys, Home/End,
 Esc returns to the key, a click away closes it.
+
+### 10.12 Newer kit pieces (2026-10-20, ideas from SakaniUI, our own code)
+All in `admin/src/components/ui`, styles in `kit.css`, shown on `/kit` (managers only, not in the menu).
+- **Tooltip**: an ink label for icon-only keys, on hover (400ms) and keyboard focus, gone on Esc. An icon-only `Button` with an aria-label gets one by itself. Linked by `data-ui-tooltip`; a `popover`, so never clipped.
+- **Popover**: a small panel from a key for a few controls or an explanation (not a form: Sheet; not actions: MenuButton). Float shadow, Esc or a click away closes, focus returns.
+- **Combobox**: type to narrow a long list (customers, suppliers); ignores accents ("cl" finds Çlirim); arrows, Enter, Esc.
+- **Toast** (`useToast`): a short message after an action, bottom corner (bottom middle on phones), 5s, 9s with Undo, held while pointed at. Problems to fix stay on the page.
+- **Kbd**: keycaps; every `<kbd>` is a cap.
+- **Steps**: done ticked in ink, current with an amber ring, next quiet; phones show "Step 2 of 4".
+- **Skeleton**: still sunk-paper lines or table rows (no shimmer). `Loading` without a label draws it.
+- **AreaChart, DonutChart (5 parts, rest is Other), Heatmap (a real table), FunnelChart**: amber data steps.
+- **Board**: columns of cards; drag on a computer, "Move to" everywhere.
+- **Calendar**: a Monday-first month, arrows/Page keys, today in amber, dots on phones.
 
 ### 10.11 Navigation
 Sidebar rows 34px (44px in the drawer): line icon + 500 label in Muted Ink;

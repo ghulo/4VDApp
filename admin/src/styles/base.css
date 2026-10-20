@@ -158,15 +158,22 @@ input[type='radio'] {
   box-shadow: none;
 }
 
+/* A keycap: paper on a slightly heavier bottom edge, like the Counter's keys. */
 kbd {
+  display: inline-block;
+  min-inline-size: 20px;
   padding: 0 5px;
   border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
   border-radius: var(--radius-stamp);
   background: var(--surface);
+  box-shadow: var(--key-shine-paper);
   color: var(--ink-muted);
   font: inherit;
   font-size: var(--text-xs);
+  font-weight: 500;
   line-height: 18px;
+  text-align: center;
 }
 
 @media (prefers-reduced-motion: reduce) {

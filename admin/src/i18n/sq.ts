@@ -4078,6 +4078,22 @@ export const sq: Catalogue = {
     csvFile: 'CSV, për programe të tjera',
     total: 'Gjithsej',
   },
+  kit: {
+    noMatch: 'Asgjë nuk përputhet. Kontrollo shkrimin ose shkruaj më pak.',
+    notifications: 'Njoftimet',
+    dismiss: 'Hiqe',
+    stepOf: (n, total) => `Hapi ${n} nga ${total}`,
+    other: 'Të tjera',
+    heatLess: 'Më pak',
+    heatMore: 'Më shumë',
+    dropped: (share) => `${share} humbën`,
+    nothingHere: 'Ende asgjë këtu.',
+    moveTo: 'Kalo te',
+    today: 'Sot',
+    previousMonth: 'Muaji i kaluar',
+    nextMonth: 'Muaji tjetër',
+    more: (n) => `+${n} të tjera`,
+  },
   desktop: {
     welcome: {
       steps: 'Përgatitja e këtij kompjuteri',

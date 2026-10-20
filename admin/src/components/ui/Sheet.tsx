@@ -2,6 +2,7 @@ import { X } from '@phosphor-icons/react';
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { Tooltip } from './Tooltip';
 import { useSwipeToDismiss } from './useSwipeToDismiss';
 
 interface SheetProps {
@@ -78,9 +79,11 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
             </h2>
             {description && <p className="sheet__description">{description}</p>}
           </div>
-          <button type="button" className="sheet__close" aria-label={t.common.close} onClick={onClose}>
-            <X size={20} aria-hidden="true" />
-          </button>
+          <Tooltip label={t.common.close} side="bottom">
+            <button type="button" className="sheet__close" aria-label={t.common.close} onClick={onClose}>
+              <X size={20} aria-hidden="true" />
+            </button>
+          </Tooltip>
         </div>
         <div className="sheet__body">{shown && <Fragment key={opening}>{children}</Fragment>}</div>
       </div>

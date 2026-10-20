@@ -62,6 +62,7 @@ export function LoginPage() {
           <input
             type="email"
             autoComplete="username"
+            spellCheck={false}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required

@@ -6,7 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
-import { Badge, Button, Card, Field, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
+import { Badge, Button, Card, Field, PageHeader, RemoveButton, SettingRow, SettingsLayout } from '../components/ui';
 import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { User } from '../services/types';
@@ -150,9 +150,9 @@ function DetailsPanel({ user }: { user: User }) {
             {user.avatarUrl ? t.profile.change : t.profile.addPhoto}
           </Button>
           {user.avatarUrl && (
-            <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
+            <RemoveButton size="md" confirm={t.common.yesRemove} pending={remove.isPending} onConfirm={() => remove.mutate()}>
               {t.profile.remove}
-            </Button>
+            </RemoveButton>
           )}
         </SettingRow>
         <div className="setting-row setting-row--fields">
@@ -274,7 +274,7 @@ function SecurityPanel({ user }: { user: User }) {
         >
           <div className="field-row">
             <Field label={t.profile.newEmail}>
-              <input type="email" autoComplete="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} />
+              <input type="email" autoComplete="email" spellCheck={false} value={newEmail} onChange={(event) => setNewEmail(event.target.value)} />
             </Field>
             {hasPassword && (
               <Field label={t.profile.yourPassword}>

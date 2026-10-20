@@ -72,10 +72,10 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
       </label>
       <div className="field-row">
         <Field label={t.orders.phone}>
-          <input type="tel" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <input type="tel" autoComplete="off" maxLength={40} value={phone} onChange={(event) => setPhone(event.target.value)} />
         </Field>
         <Field label={t.orders.email}>
-          <input type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
+          <input type="email" autoComplete="off" spellCheck={false} maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} />
         </Field>
       </div>
       <Field label={t.suppliers.withholding} hint={t.suppliers.withholdingHint}>

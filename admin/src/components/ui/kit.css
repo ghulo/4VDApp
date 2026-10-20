@@ -90,6 +90,7 @@
   max-block-size: 280px;
   padding: var(--space-1);
   overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
   border-radius: var(--radius-small);
   background: var(--surface);
@@ -158,7 +159,7 @@ kbd.kbd {
   position: fixed;
   inset-block-end: var(--space-5);
   inset-inline-end: var(--space-5);
-  z-index: 60;
+  z-index: var(--z-toast);
   pointer-events: none;
 }
 

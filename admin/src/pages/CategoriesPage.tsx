@@ -4,7 +4,7 @@ import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { errorMessage } from '../utils/errors';
 import { categoriesApi } from '../services/api';
 import type { Category } from '../services/types';
-import { Button, Card, PageHeader } from '../components/ui';
+import { Button, Card, PageHeader, RemoveButton } from '../components/ui';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
 
@@ -127,13 +127,15 @@ function CategoryRow({ category }: { category: Category }) {
         <Button onClick={() => setIsEditing(true)}>
           {t.categories.rename}
         </Button>
-        <Button
-          variant="danger-text" disabled={productCount> 0 || remove.isPending}
-          title={productCount > 0 ? t.categories.moveFirst : undefined}
-          onClick={() => remove.mutate()}
-        >
-          {t.categories.delete}
-        </Button>
+        {productCount > 0 ? (
+          <Button variant="danger-text" disabled title={t.categories.moveFirst}>
+            {t.categories.delete}
+          </Button>
+        ) : (
+          <RemoveButton size="md" confirm={t.common.yesDelete} pending={remove.isPending} onConfirm={() => remove.mutate()}>
+            {t.categories.delete}
+          </RemoveButton>
+        )}
       </span>
       {remove.isError && (
         <p className="form-error" role="alert">

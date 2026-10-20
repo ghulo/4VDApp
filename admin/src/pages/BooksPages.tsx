@@ -58,6 +58,7 @@ import { errorMessage } from '../utils/errors';
 import { formatHeadlineMoney, formatMoney } from '../utils/format';
 import { BOOKS_PERIOD_KEYS, periodDays } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const CLASS_ORDER = (accountClass: AccountClass) => ACCOUNT_CLASSES.indexOf(accountClass);
 const cents = (amount: number) => Math.round(amount * 100);
@@ -468,6 +469,7 @@ function ManualEntryForm({ startDay, onSaved }: { startDay: string | null; onSav
   };
   const bothSides = (line: LineDraft) => Number(line.debit) > 0 && Number(line.credit) > 0;
   const hasAmount = (line: LineDraft) => Number(line.debit) > 0 || Number(line.credit) > 0;
+  useWarnBeforeLeaving((description.trim() !== '' || lines.some((line) => hasAmount(line) || line.accountId !== '')) && !save.isPending && !save.isSuccess);
   const filled = lines.filter((line) => line.accountId !== '' && hasAmount(line) && !bothSides(line));
   const debits = filled.reduce((sum, line) => sum + (Number(line.debit) || 0), 0);
   const credits = filled.reduce((sum, line) => sum + (Number(line.credit) || 0), 0);

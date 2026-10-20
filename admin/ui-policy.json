@@ -11,6 +11,7 @@
     12,
     13,
     15,
+    16,
     17,
     28,
     32,
@@ -63,6 +64,13 @@
     "dark"
   ],
   "exceptions": [
+    {
+      "selector": ".skip-link",
+      "rules": [
+        "viewport-bounds"
+      ],
+      "reason": "The skip link waits just above the screen and slides in when Tab reaches it (WCAG 2.4.1 bypass blocks)."
+    },
     {
       "selector": ".visually-hidden",
       "rules": [

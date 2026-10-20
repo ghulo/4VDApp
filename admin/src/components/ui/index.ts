@@ -28,6 +28,7 @@ export { FunnelChart, type FunnelStage } from './FunnelChart';
 export { Heatmap } from './Heatmap';
 export { Kbd } from './Kbd';
 export { Popover } from './Popover';
+export { RemoveButton } from './RemoveButton';
 export { Skeleton } from './Skeleton';
 export { Steps } from './Steps';
 export { ToastProvider, useToast, type ToastInput } from './Toast';

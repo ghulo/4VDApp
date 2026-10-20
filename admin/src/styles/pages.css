@@ -21,7 +21,7 @@
   align-items: start;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1000px) {
   .split {
     grid-template-columns: 1fr;
   }
@@ -667,6 +667,7 @@ form.product-form > .form-actions {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
 }
 
@@ -841,7 +842,7 @@ form.product-form > .form-actions {
   margin-top: var(--space-4);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .login {
     grid-template-columns: 1fr;
   }
@@ -1151,7 +1152,7 @@ form.product-form > .form-actions {
   margin-top: var(--space-2);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .approval-row--product {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -4316,7 +4317,7 @@ fieldset.report-sections {
   max-width: 60ch;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .duplicate-review__sides {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -5260,7 +5261,7 @@ fieldset.report-sections {
   gap: var(--space-5);
 }
 
-@media (min-width: 960px) {
+@media (min-width: 1000px) {
   .statements-pair {
     grid-template-columns: 1fr 1fr;
   }

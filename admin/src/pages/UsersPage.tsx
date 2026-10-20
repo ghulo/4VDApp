@@ -259,7 +259,7 @@ function InviteForm() {
       <div className="field-row">
         <label className="field">
           <span className="field__label">{t.people.theirEmail}</span>
-          <input type="email" required autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <input type="email" required autoComplete="off" spellCheck={false} value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
         <label className="field">
           <span className="field__label">{t.people.role}</span>
@@ -381,7 +381,7 @@ function AddUserForm() {
         </label>
         <label className="field">
           <span className="field__label">{t.people.email}</span>
-          <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
+          <input type="email" autoComplete="off" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} />
         </label>
       </div>
       <div className="field-row">

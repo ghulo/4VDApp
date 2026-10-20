@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, PageHeader, RemoveButton, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -423,9 +423,9 @@ function PhotoCard({ bill, writes }: { bill: SupplierBill; writes: boolean }) {
             {src ? t.bills.replacePhoto : t.bills.addPhoto}
           </Button>
           {src && (
-            <Button size="sm" variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
+            <RemoveButton confirm={t.bills.confirmRemove} pending={remove.isPending} onConfirm={() => remove.mutate()}>
               {t.bills.remove}
-            </Button>
+            </RemoveButton>
           )}
         </>
         )
@@ -433,7 +433,7 @@ function PhotoCard({ bill, writes }: { bill: SupplierBill; writes: boolean }) {
     >
       {src ? (
         <a href={src} target="_blank" rel="noreferrer" className="bill-photo">
-          <img src={src} alt={t.bills.photoAlt(bill.supplier?.name ?? t.bills.noSupplier)} />
+          <img src={src} alt={t.bills.photoAlt(bill.supplier?.name ?? t.bills.noSupplier)} width={360} height={480} />
         </a>
       ) : (
         <p className="field-hint">{t.bills.noPhoto}</p>

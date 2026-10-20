@@ -5,7 +5,7 @@ import { expiryApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
-import { Badge, Button, Card, DateField, Field } from './ui';
+import { Badge, Button, Card, DateField, Field, RemoveButton } from './ui';
 
 /** Same as the server: warnings start a week ahead, urgent in the last two days. */
 const WARNING_DAYS = 7;
@@ -72,14 +72,16 @@ export function ExpiryCard({ productId }: { productId: number }) {
                 ) : null}
                 {row.note && <span className="table__secondary">{row.note}</span>}
               </span>
-              <Button
+              <RemoveButton
+                size="md"
                 variant="ghost"
-                disabled={clear.isPending}
+                pending={clear.isPending}
                 aria-label={t.expiry.dealtWithLabel(formatDay(row.expiresOn))}
-                onClick={() => clear.mutate(row.id)}
+                confirm={t.expiry.confirmDealtWith}
+                onConfirm={() => clear.mutate(row.id)}
               >
                 {t.expiry.dealtWith}
-              </Button>
+              </RemoveButton>
             </li>
           ))}
         </ul>

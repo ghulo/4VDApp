@@ -568,7 +568,7 @@ function Pages({ scan }: { scan: BillScan }) {
                   PDF
                 </span>
               ) : (
-                <img src={mediaSrc(page.url) ?? undefined} alt="" loading="lazy" />
+                <img src={mediaSrc(page.url) ?? undefined} alt="" loading="lazy" width={300} height={400} />
               )}
             </a>
           </li>

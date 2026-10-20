@@ -18,6 +18,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { HistoryCard } from '../components/HistoryCard';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 /** Form fields are kept as strings so half-typed numbers like "12." don't get mangled. */
 interface TierDraft {
@@ -196,6 +197,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
       navigate(isNew ? `/products/${saved.id}` : '/products', { replace: isNew });
     },
   });
+
+  const [startDraft] = useState(draft);
+  const changed = photo !== null || JSON.stringify(draft) !== JSON.stringify(startDraft);
+  useWarnBeforeLeaving(changed && !save.isPending && !save.isSuccess);
 
   const remove = useMutation({
     mutationFn: () => productsApi.remove(product!.id),

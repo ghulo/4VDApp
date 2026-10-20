@@ -10,6 +10,7 @@ import { ordersApi, productsApi, reportsApi, suppliersApi } from '../services/ap
 import type { Supplier } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 interface DraftLine {
   productId: number;
@@ -122,6 +123,7 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
       navigate(`/orders/${order.id}`);
     },
   });
+  useWarnBeforeLeaving((extra.length > 0 || Object.keys(edits).length > 0 || note.trim() !== '') && !create.isPending && !create.isSuccess);
 
   function change(productId: number, patch: Partial<DraftLine>) {
     setEdits((current) => ({ ...current, [productId]: { ...current[productId], ...patch } }));

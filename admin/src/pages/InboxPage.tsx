@@ -1,7 +1,7 @@
 import { Bell, ChartBar, Checks, type Icon, Money, Package, Tray } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { PendingDecisions } from '../components/PendingDecisions';
@@ -112,7 +112,10 @@ function AlertList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<AlertFilter>('all');
+  // The filter lives in the address (?show=…), so Back and a shared link keep it.
+  const [params, setParams] = useSearchParams();
+  const filter: AlertFilter = ALERT_FILTERS.some((option) => option.key === params.get('show')) ? (params.get('show') as AlertFilter) : 'all';
+  const setFilter = (next: AlertFilter) => setParams((current) => { const copy = new URLSearchParams(current); if (next === 'all') copy.delete('show'); else copy.set('show', next); return copy; }, { replace: true });
   const types = ALERT_FILTERS.find((option) => option.key === filter)?.types;
   const alerts = useQuery({
     queryKey: ['notifications', { page, types }],

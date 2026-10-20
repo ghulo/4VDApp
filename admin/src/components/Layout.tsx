@@ -18,6 +18,7 @@ import { useT } from '../i18n/useT';
 import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
 import { staffLayout } from '../auth/roles';
 import { StaffLayout } from './StaffLayout';
+import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -46,6 +47,7 @@ function FullLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const location = useLocation();
+  useFocusOnRouteChange();
   const navigate = useNavigate();
   const t = useT();
 
@@ -115,6 +117,7 @@ function FullLayout() {
 
   return (
     <div className={collapsed ? 'app app--collapsed' : 'app'}>
+      <SkipLink />
       <header className={scrolled ? 'topbar topbar--glass' : 'topbar'}>
         <Tooltip label={t.nav.openMenu} side="bottom">
           <button
@@ -225,7 +228,7 @@ function FullLayout() {
         </Tooltip>
       </aside>
 
-      <main className="main">
+      <main className="main" id={MAIN_ID} tabIndex={-1}>
         <div className="main__frame">
           <ErrorBoundary key={location.pathname}>
             <Suspense fallback={<Loading />}>

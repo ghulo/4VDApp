@@ -10,6 +10,7 @@
     'top top'
     'side main';
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app--collapsed {
@@ -22,7 +23,7 @@
   grid-area: top;
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -136,6 +137,7 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
   padding: var(--space-4) 0 0;
   border-right: 1px solid var(--line);
   background: var(--surface);
@@ -380,9 +382,10 @@
   .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    z-index: 40;
+    z-index: var(--z-drawer);
     width: min(300px, 85vw);
     height: 100vh;
+    height: 100dvh;
     transform: translateX(-105%);
     transition: transform var(--spring-time) var(--spring);
     box-shadow: var(--shadow-float);
@@ -435,7 +438,7 @@
   .drawer-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 30;
+    z-index: var(--z-menu);
     background: rgb(20 20 19 / 0.3);
     backdrop-filter: blur(2px);
     opacity: 0;
@@ -677,7 +680,7 @@
 .palette-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-palette);
   display: grid;
   justify-items: center;
   align-items: start;
@@ -783,6 +786,7 @@
   align-content: center;
   gap: var(--space-3);
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--ink-muted);
 }
 
@@ -882,7 +886,7 @@
   position: fixed;
   bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   left: 50%;
-  z-index: 40;
+  z-index: var(--z-drawer);
   display: flex;
   align-items: center;
   gap: var(--space-3);

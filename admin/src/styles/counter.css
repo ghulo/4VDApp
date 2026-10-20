@@ -2137,7 +2137,7 @@
   text-align: center;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .counter-finder-foot__keys {
     display: none;
   }
@@ -2348,7 +2348,7 @@
   text-align: right;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .counter-invoices__item {
     grid-template-columns: minmax(0, 1fr) auto;
   }

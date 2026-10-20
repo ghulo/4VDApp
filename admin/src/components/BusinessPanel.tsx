@@ -6,7 +6,7 @@ import { mediaSrc } from '../services/apiClient';
 import type { Business } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
-import { Button, Card, Field, SettingRow } from './ui';
+import { Button, Card, Field, RemoveButton, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 import { HistoryCard } from './HistoryCard';
@@ -159,9 +159,9 @@ function BusinessForm({ initial }: { initial: Business }) {
             {logo ? t.profile.change : t.business.addLogo}
           </Button>
           {logo && (
-            <Button variant="danger-text" disabled={remove.isPending} onClick={() => remove.mutate()}>
+            <RemoveButton size="md" confirm={t.common.yesRemove} pending={remove.isPending} onConfirm={() => remove.mutate()}>
               {t.profile.remove}
-            </Button>
+            </RemoveButton>
           )}
         </SettingRow>
         <div className="setting-row setting-row--fields">
@@ -176,7 +176,7 @@ function BusinessForm({ initial }: { initial: Business }) {
           </Field>
           <div className="field-row">
             <Field label={t.profile.phone}>
-              <input type="tel" maxLength={50} value={phone} onChange={(event) => setPhone(event.target.value)} />
+              <input type="tel" autoComplete="off" maxLength={50} value={phone} onChange={(event) => setPhone(event.target.value)} />
             </Field>
             <Field label={t.business.timeZone}>
               <select value={timeZone} onChange={(event) => setTimeZone(event.target.value)}>

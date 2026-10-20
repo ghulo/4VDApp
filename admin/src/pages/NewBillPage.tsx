@@ -21,6 +21,7 @@ import { addDaysIso, capitalise, type DraftLine, emptyLine, isLineDone, joinPart
 import { errorMessage } from '../utils/errors';
 import { formatMoney, formatPercent } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const PREVIEW_DEBOUNCE_MS = 300;
 /** Same cap as the server: every month has a 28th. */
@@ -151,13 +152,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
 
   // Reloading or closing the tab asks first once something is typed, so a long bill isn't lost.
   const typed = number.trim() !== '' || lines.some((line) => line.product !== null || line.unitPrice !== '' || line.amount !== '' || line.description !== '');
-  const guard = typed && !create.isPending && !create.isSuccess;
-  useEffect(() => {
-    if (!guard) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [guard]);
+  useWarnBeforeLeaving(typed && !create.isPending && !create.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

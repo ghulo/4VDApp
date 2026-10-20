@@ -174,6 +174,8 @@
   --text-figure-lg: 2.25rem;
   --text-headline: 2rem;
   --text-hero: 4.5rem;
+  /* What you type into a field. 16px on phones, or iPhones zoom the page in on focus. */
+  --text-field: var(--text-base);
 
   /* 4px grid. */
   --space-1: 4px;
@@ -195,6 +197,17 @@
 
   /* Page frames: the reading column for forms and hubs, the wide desk for pages full of rows. */
   --topbar-h: 56px;
+
+  /* Layers, lowest first. Small numbers (1-5) inside one component stay local. */
+  --z-sticky: 20;
+  --z-menu: 30;
+  --z-drawer: 40;
+  --z-palette: 50;
+  --z-toast: 60;
+
+  /* Breakpoints (media queries cannot read variables, so this is the list to use):
+     600 phone, 760 small tablet, 900 phone layout, 1000 and 1100 docked panels,
+     1280 Counter, 1440 wide desk. A min-width pairs with the step + 1 (or 599/999/1279 max). */
   --frame-reading: 1120px;
   --frame-wide: 1600px;
   /* A record docked beside its list (wide screens). */
@@ -217,6 +230,7 @@
 @media (max-width: 900px) {
   :root {
     --control-h: 44px;
-    --control-h-sm: 36px;
+    --control-h-sm: 44px;
+    --text-field: 1rem;
   }
 }

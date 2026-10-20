@@ -206,6 +206,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
           aria-expanded="true"
           aria-controls="palette-results"
           aria-activedescendant={results[active] ? `palette-${results[active]!.id}` : undefined}
+          aria-label={t.palette.placeholder}
+          autoComplete="off"
+          spellCheck={false}
           placeholder={t.palette.placeholder}
           value={query}
           onChange={(event) => {

@@ -7,7 +7,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { formatBookDay } from '../components/BooksParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { placeName } from '../components/MoneyParts';
-import { Badge, Button, ButtonLink, DataTable, EmptyState, Field, PageHeader, Sheet, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, DataTable, EmptyState, Field, PageHeader, RemoveButton, Sheet, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { booksApi, moneyApi } from '../services/api';
 import { ACCOUNT_CLASSES, type OpeningBalances, type OpeningLine, type OpeningLineKind, TYPED_OPENING_SOURCES } from '../services/types';
@@ -190,9 +190,9 @@ export function OpeningPage() {
                     <span className="opening-check">
                       <ConfirmButton t={t} line={row} locked={locked} pending={confirm.isPending} onToggle={(confirmed) => confirm.mutate({ ids: [row.id], confirmed })} />
                       {!locked && row.kind === 'account' && (
-                        <Button size="sm" variant="danger-text" aria-label={o.removeLabel(lineName(t, row))} loading={remove.isPending && remove.variables === row.id} onClick={() => remove.mutate(row.id)}>
+                        <RemoveButton aria-label={o.removeLabel(lineName(t, row))} confirm={t.common.yesRemove} pending={remove.isPending && remove.variables === row.id} onConfirm={() => remove.mutate(row.id)}>
                           {o.remove}
-                        </Button>
+                        </RemoveButton>
                       )}
                     </span>
                   ),

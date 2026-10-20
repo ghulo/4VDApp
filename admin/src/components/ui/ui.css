@@ -524,7 +524,7 @@
   gap: var(--space-2);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .setting-row {
     grid-template-columns: 1fr;
   }
@@ -1478,13 +1478,13 @@ input.switch:focus-visible {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1000px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .metric-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1682,6 +1682,7 @@ input.switch:focus-visible {
 .sheet__body {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-5);
 }
 
@@ -2139,7 +2140,7 @@ input.switch:focus-visible {
   position: absolute;
   top: calc(100% + var(--space-1));
   right: 0;
-  z-index: 30;
+  z-index: var(--z-menu);
   min-width: 240px;
   margin: 0;
   padding: var(--space-1);

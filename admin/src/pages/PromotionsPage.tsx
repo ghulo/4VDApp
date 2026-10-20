@@ -11,6 +11,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPromotionDay } from '../utils/format';
 import { Badge, Button, ButtonLink, Card, DataTable, DateField, EmptyState, Field, MetricCard, MetricGrid, PageHeader, Sheet, StatGrid, StatTile, type Tone } from '../components/ui';
 import { useT } from '../i18n/useT';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const STATUS_TONE: Record<PromotionStatus, Tone> = {
   scheduled: 'info',
@@ -303,6 +304,8 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
   const lines = percentValid && target !== '' ? (preview.data ?? []) : [];
   const tooLow = lines.filter((line) => line.tooLow).length;
 
+  const typed = name !== (from?.name ?? '') || percentOff !== (from ? String(from.percentOff) : '') || target !== (from ? targetOf(from) : '');
+
   const create = useMutation({
     mutationFn: () => promotionsApi.create({ name: name.trim(), percentOff: percent, ...targetInput, ...dates }),
     onSuccess: (created) => {
@@ -310,6 +313,7 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
       onDone(created);
     },
   });
+  useWarnBeforeLeaving(typed && !create.isPending && !create.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

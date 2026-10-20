@@ -10,6 +10,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
 import { Button } from './ui';
+import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
 /**
  * The staff frame: what the team app was, inside the dashboard. A slim top
@@ -20,6 +21,7 @@ export function StaffLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const location = useLocation();
+  useFocusOnRouteChange();
   const t = useT();
   const current = staffTabFor(location.pathname);
 
@@ -40,6 +42,7 @@ export function StaffLayout() {
 
   return (
     <div className="staff-app">
+      <SkipLink />
       <header className="topbar staff-app__top">
         <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
           <LogoMark size={28} />
@@ -54,7 +57,7 @@ export function StaffLayout() {
           <Button variant="ghost" icon={SignOut} aria-label={t.nav.logOut} title={t.nav.logOut} onClick={logout} />
         </div>
       </header>
-      <main className="main staff-app__main">
+      <main className="main staff-app__main" id={MAIN_ID} tabIndex={-1}>
         <div className="main__frame">
           <ErrorBoundary key={location.pathname}>
             <Suspense fallback={<Loading />}>

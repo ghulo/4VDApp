@@ -13,6 +13,7 @@ import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
 import { PrintDocumentButton } from './PrintDocumentButton';
 import { Button, ButtonLink, Combobox, Field } from './ui';
+import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const SUGGESTIONS = 6;
 
@@ -135,6 +136,8 @@ export function BasketForm() {
   const total = roundMoney(lines.reduce((sum, line) => sum + priceOf(line) * line.quantity, 0));
   const paidAmount = Number(paid);
   const change = paid.trim() !== '' && paidAmount >= total ? roundMoney(paidAmount - total) : null;
+
+  useWarnBeforeLeaving(lines.length > 0);
 
   const record = useMutation({
     mutationFn: () =>

@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
         <form onSubmit={handleSubmit} noValidate>
           <label className="field">
             <span className="field__label">{t.auth.email}</span>
-            <input type="email" autoComplete="email" required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input type="email" autoComplete="email" spellCheck={false} required autoFocus value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <FormError error={send.error} />
           <Button type="submit" disabled={!email.trim() || send.isPending} variant="primary" wide loading={send.isPending}>

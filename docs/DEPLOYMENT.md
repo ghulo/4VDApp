@@ -39,12 +39,12 @@
 
 | Address | What | Where |
 |---|---|---|
-| `dashboard.4vd.app` | The owner's dashboard (`admin/`) | Cloudflare Workers (static assets) |
-| `app.4vd.app` | The team app, built for browsers (`mobile/`) | Cloudflare Workers (static assets) |
+| `4vd.app` | The dashboard (`admin/`), the only app | Cloudflare Workers (static assets) |
+| `dashboard.4vd.app`, `app.4vd.app` | Old addresses: a Redirect Rule sends them to `4vd.app`, path kept | Cloudflare Rules |
 | `api.4vd.app` | The API and background jobs (`backend/`) | Render (`render.yaml`) |
 | PostgreSQL | The data | Render |
 
-The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The front ends' addresses are in `admin/.env.production` and `mobile/.env.production` (public, not secrets), and `public/_headers` keeps the alerts service worker from being cached. Why the API isn't on Cloudflare: it needs PostgreSQL, always-on background jobs (alerts, emails, daily summary) and native image resizing; moving it means a rewrite (worth revisiting for SaaS, one Durable Object per shop).
+The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The dashboard's addresses are in `admin/.env.production` (public, not secrets), and `public/_headers` keeps the alerts service worker from being cached. Why the API isn't on Cloudflare: it needs PostgreSQL, always-on background jobs (alerts, emails, daily summary) and native image resizing; moving it means a rewrite (worth revisiting for SaaS, one Durable Object per shop).
 
 **1. API on Render** (already running from `render.yaml`)
 1. Render → `4vd-api` → **Settings → Custom Domains → Add Custom Domain** → `api.4vd.app`. Render shows a target like `fourvd-api.onrender.com`.
@@ -57,15 +57,13 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 2. Project name `4vd-dashboard` (must match the `name` in `admin/wrangler.jsonc`).
 3. Build command `npm ci && npm run build`. Deploy command `npx wrangler deploy`. Preview command `npx wrangler versions upload`.
 4. **Advanced settings**: Path (root directory) `admin`; build variable `NODE_VERSION` = `22`. Deploy.
-5. Worker → **Settings → Domains & Routes → Add → Custom domain** → `dashboard.4vd.app`. Cloudflare adds the DNS record itself.
+5. The custom domains `4vd.app` and `dashboard.4vd.app` come from `routes` in `admin/wrangler.jsonc`; Cloudflare adds the DNS records itself. A custom domain can't be added while another Worker or a DNS record already holds that name.
 
-**3. Team app on Cloudflare Workers** (`mobile/wrangler.jsonc`)
-Same as the dashboard, with: project name `4vd-app`, path `mobile`, build command `npm ci && npx expo export --platform web --output-dir dist`, `NODE_VERSION` = `22`, custom domain `app.4vd.app`.
+**3. Old addresses** (the team app `app.4vd.app` was retired on 2026-10-20; printed QR labels still point at `app.4vd.app/scan/...`)
+Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *is in* `dashboard.4vd.app` `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. Both names need a proxied (orange) DNS record: `dashboard.4vd.app` has one from the dashboard Worker, `app.4vd.app` from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied).
 
 **4. Check everything**
-Open `https://dashboard.4vd.app`, log in, switch a page or two. Open `https://app.4vd.app` on a phone and log in.
-
-**5. Optional: `4vd.app` itself** redirects to the team app for now: Cloudflare → **DNS → Add record** `A`, Name `@`, IPv4 `192.0.2.1`, **Proxied (orange)**; then **Rules → Redirect Rules → Create**: when hostname equals `4vd.app`, redirect to `https://app.4vd.app` (301, keep path off).
+Open `https://4vd.app`, log in, switch a page or two. `https://dashboard.4vd.app/download` and `https://app.4vd.app/scan/123` must land on the same paths at `4vd.app`.
 
 **6. Real emails (Resend)**
 1. resend.com → **Domains → Add Domain** → `4vd.app`, region EU. Use its **Auto configure with Cloudflare** button (or copy its records into Cloudflare DNS, all DNS only).
@@ -73,7 +71,7 @@ Open `https://dashboard.4vd.app`, log in, switch a page or two. Open `https://ap
 3. Render → `4vd-api` → **Environment**: `RESEND_API_KEY` = the key, `EMAIL_FROM` = `4VD <hello@4vd.app>`. Save (it redeploys).
 
 **7. Google sign-in (optional)**
-Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID** → Web application. Authorised JavaScript origins: `https://dashboard.4vd.app` and `https://app.4vd.app`. Copy the client ID into `GOOGLE_CLIENT_ID` on `4vd-api`.
+Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID** → Web application. Authorised JavaScript origins: `https://4vd.app` (keep `https://dashboard.4vd.app` until every PC has moved). Copy the client ID into `GOOGLE_CLIENT_ID` on `4vd-api`.
 
 **8. Before real use**
 - Render → `4vd-api` → **Upgrade** to Starter (always on, so alerts and the daily summary go out), and upgrade `4vd-db` to a paid plan. Then change `plan:` in `render.yaml` to match (ask Claude), or the Blueprint may put them back.

@@ -1,6 +1,6 @@
 # Render Blueprint: the API and its database (see docs/DEPLOYMENT.md).
-# The dashboard and the team app are hosted on Cloudflare Pages instead
-# (dashboard.4vd.app and app.4vd.app); the API is api.4vd.app.
+# The dashboard is hosted on Cloudflare Workers instead
+# (the dashboard at 4vd.app); the API is api.4vd.app.
 # The API redeploys by itself when backend/ changes on main, once the GitHub checks pass.
 
 services:
@@ -27,9 +27,9 @@ services:
         value: Europe/Budapest
       # Links in emails (invites, password resets) open these.
       - key: DASHBOARD_URL
-        value: https://dashboard.4vd.app
+        value: https://4vd.app
       - key: TEAM_APP_URL
-        value: https://app.4vd.app
+        value: https://4vd.app
       # Optional: real emails (otherwise they're only printed to the log), and Google sign-in.
       - key: RESEND_API_KEY
         sync: false
@@ -37,9 +37,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # Both front ends (on Cloudflare), comma-separated.
+      # The dashboard, plus its old addresses, comma-separated.
       - key: CORS_ORIGINS
-        value: https://dashboard.4vd.app,https://app.4vd.app
+        value: https://4vd.app,https://dashboard.4vd.app,https://app.4vd.app
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
       - key: ANTHROPIC_API_KEY
         sync: false

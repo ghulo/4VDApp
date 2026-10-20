@@ -2,7 +2,8 @@ import { TEAM_APP_URL } from '../auth/finishSignIn';
 
 /**
  * A product's QR code holds a link into the team app, so any phone camera
- * can open the product: https://app.4vd.app/scan/2000000000039. Same rules
+ * can open the product: https://4vd.app/scan/2000000000039 (older labels say app.4vd.app,
+ * which redirects here). Same rules
  * as the team app's utils/scanLinks.ts.
  */
 const SCAN_PATH = /\/scan\/([^/?#]+)/;

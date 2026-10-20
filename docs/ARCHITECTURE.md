@@ -9,7 +9,7 @@ A short map of the code as it is. Product and design rules live in `DESIGN.md`; 
 | `backend/` | Express 5 + TypeScript API on Postgres, queries through Kysely, input checked with zod |
 | `admin/` | The dashboard: React + Vite, plain CSS on the tokens in `admin/src/styles/tokens.css`. Owners get the full menu, employees `StaffLayout`, the till is `/counter` |
 | `desktop/` | Electron shell for the shop PC: loads the dashboard, prints fiscal receipts through F-Link, updates itself from GitHub Releases |
-| `landing/` | Cloudflare Worker for 4vd.app (only redirects) |
+| `admin/wrangler.jsonc` | Serves the dashboard at 4vd.app; dashboard.4vd.app and app.4vd.app redirect there (Cloudflare rule) |
 | `mobile/` | Retired Expo team app, kept for reference only |
 
 ## Backend: one request

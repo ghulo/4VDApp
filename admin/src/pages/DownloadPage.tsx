@@ -44,7 +44,7 @@ async function latestRelease(): Promise<Release> {
 const megabytes = (bytes: number, language: string) =>
   new Intl.NumberFormat(language, { style: 'unit', unit: 'megabyte', maximumFractionDigits: 0 }).format(bytes / 1_000_000);
 
-/** dashboard.4vd.app/download: what the Windows app is, the installer, and how to install it. Open without signing in. */
+/** 4vd.app/download: what the Windows app is, the installer, and how to install it. Open without signing in. */
 export function DownloadPage() {
   const t = useT().download;
   const { language } = useLanguage();

@@ -159,7 +159,7 @@ files. Where anything else disagrees with this file, this file wins.
 
 ## 1. What 4VD is
 
-One app, the **dashboard** (`dashboard.4vd.app`), for one family shop and its
+One app, the **dashboard** (`4vd.app`), for one family shop and its
 carwashes (4VD = "4 Vëllezërit Dacaj", the four Dacaj brothers). It shows each
 person the layout that fits their job:
 

@@ -3,7 +3,7 @@
 Stock, sales, money and books for the Dacaj family's shop and carwashes, built to replace TREFIN (the old till and accounting program) and later to be sold as a product.
 
 ## What's in it
-- **Dashboard** (`admin/`, dashboard.4vd.app): the one app. Owners and admins get the full back office (stock, buying, sales, money, VAT and books, people, reports, Excel exports). Employees get a phone-style layout (Home, Products, Sell, Account). The accountant sees only the money side.
+- **Dashboard** (`admin/`, 4vd.app): the one app. Owners and admins get the full back office (stock, buying, sales, money, VAT and books, people, reports, Excel exports). Employees get a phone-style layout (Home, Products, Sell, Account). The accountant sees only the money side.
 - **Counter** (`/counter` in the dashboard): the full-screen till, scanner first, with fiscal receipts on the shop's Datecs printer.
 - **4VD for Windows** (`desktop/`): an Electron app for the shop PC that runs the dashboard and talks to the fiscal printer. Download it from the dashboard's `/download` page.
 - **API** (`backend/`): Express + TypeScript on PostgreSQL.

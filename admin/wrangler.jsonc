@@ -1,10 +1,14 @@
-// Cloudflare Workers (static assets) config for the dashboard: dashboard.4vd.app.
+// Cloudflare Workers (static assets) config for the dashboard: 4vd.app.
 // Cloudflare builds with `npm ci && npm run build`, then `npx wrangler deploy` uploads dist/.
 {
   "name": "4vd-dashboard",
   "compatibility_date": "2026-10-01",
-  // The address it answers on; Cloudflare creates the DNS record and certificate.
-  "routes": [{ "pattern": "dashboard.4vd.app", "custom_domain": true }],
+  // The addresses it answers on; Cloudflare creates the DNS records and certificates.
+  // dashboard.4vd.app is the old address: a Cloudflare Redirect Rule sends it to 4vd.app.
+  "routes": [
+    { "pattern": "4vd.app", "custom_domain": true },
+    { "pattern": "dashboard.4vd.app", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     // Every page is handled by the app itself, so unknown paths load index.html.

@@ -57,7 +57,7 @@ const SANS = "'Hanken Grotesk',Helvetica,Arial,sans-serif";
 const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
 const MONO = "ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace";
 /** The mark on its ivory tile, drawn by brand/make_icons.mjs and served by the dashboard. */
-const LOGO_URL = 'https://dashboard.4vd.app/email-logo.png';
+const LOGO_URL = 'https://4vd.app/email-logo.png';
 /** Apple Mail and iOS load the real fonts; the rest fall back to Helvetica and Georgia. */
 const FONTS_URL = 'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500&display=swap';
 /** Raise: cards rest just above the canvas. */

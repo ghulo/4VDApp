@@ -196,6 +196,11 @@
   text-decoration-color: currentColor;
 }
 
+/* Standing alone in a chart header it is a key, so it gets a key's height to tap. */
+.chart__header .text-button {
+  min-block-size: var(--control-h-sm);
+}
+
 .text-button:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1305,6 +1310,8 @@ input.switch:focus-visible {
 }
 
 .metric__more {
+  position: relative;
+  z-index: 1;
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -1334,6 +1341,8 @@ input.switch:focus-visible {
 }
 
 .metric__value {
+  /* Tight tracking pulls the last digit past the box; a hair of room keeps it whole. */
+  padding-inline-end: 0.06em;
   font-size: var(--text-figure);
   font-weight: 600;
   line-height: 1.15;
@@ -1473,13 +1482,19 @@ input.switch:focus-visible {
   }
 }
 
-@media (max-width: 1000px) {
+/* The grid counts its own room, not the screen's (a sidebar or a docked record
+   takes width too): four across needs room for a figure like €244,048 per card. */
+.metric-grid-room {
+  container-type: inline-size;
+}
+
+@container (max-width: 760px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 600px) {
+@container (max-width: 300px) {
   .metric-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1813,6 +1828,8 @@ input.switch:focus-visible {
 .bar-list__track {
   display: block;
   block-size: 12px;
+  border-radius: 0 4px 4px 0;
+  background: var(--amber-track);
 }
 
 .bar-list__bar {
@@ -1820,6 +1837,7 @@ input.switch:focus-visible {
   block-size: 100%;
   border-radius: 0 4px 4px 0;
   background: var(--chart-series);
+  box-shadow: var(--bar-depth);
 }
 
 /* Below zero reads as a loss: hatched, so the meaning never rests on colour alone. */
@@ -1886,6 +1904,7 @@ input.switch:focus-visible {
   inline-size: 100%;
   border-radius: 4px 4px 0 0;
   background: var(--chart-series);
+  box-shadow: var(--bar-depth);
   transition: background var(--fast) var(--ease);
 }
 

@@ -205,7 +205,8 @@
   height: 9px;
   border: 2px solid var(--surface);
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--cta);
+  box-shadow: var(--amber-key);
 }
 
 .alert-feed__icon--low_stock,

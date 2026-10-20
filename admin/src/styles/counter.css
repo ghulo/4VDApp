@@ -205,7 +205,7 @@
 .counter-chip--accent {
   background: var(--tint);
   color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--cta);
+  box-shadow: inset 0 1px 0 var(--amber-lip), inset 0 0 0 1px var(--amber-mark);
 }
 
 .counter-chip--button {
@@ -302,7 +302,8 @@
   left: 0;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: var(--accent);
+  background: var(--cta);
+  box-shadow: inset -1px 0 0 var(--amber-mark);
   content: '';
 }
 
@@ -638,10 +639,11 @@
 .counter-row--selected td,
 .counter-row--selected:hover td {
   background: var(--tint);
+  box-shadow: inset 0 -1px 0 var(--amber-rim);
 }
 
 .counter-row--selected td:first-child {
-  box-shadow: inset 3px 0 0 var(--cta);
+  box-shadow: inset 2px 0 0 var(--cta), inset 4px 0 0 var(--amber-mark), inset 0 -1px 0 var(--amber-rim);
 }
 
 .counter-row__pick {
@@ -819,8 +821,9 @@
   min-width: min(360px, 100%);
   padding: var(--space-4) var(--space-6) var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--cta);
-  box-shadow: var(--shadow-raise);
+  /* The change to hand back, as one big amber key: lit top, deeper foot, standing on its edge. */
+  background: var(--amber-face);
+  box-shadow: var(--key-shine), 0 3px 0 var(--cta-edge), var(--shadow-raise);
   color: var(--cta-ink);
 }
 
@@ -1393,7 +1396,7 @@
 .counter-customers__item[aria-pressed='true'] {
   background: var(--tint);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--cta), inset 0 0 0 1px var(--line-strong);
+  box-shadow: inset 2px 0 0 var(--cta), inset 4px 0 0 var(--amber-mark), inset 0 1px 0 var(--amber-lip), inset 0 0 0 1px var(--amber-rim);
 }
 
 /* ---------- Narrower screens ---------- */
@@ -1478,7 +1481,7 @@
   }
 
   .counter-row--selected td.counter-table__product {
-    box-shadow: inset 3px 0 0 var(--cta);
+    box-shadow: inset 2px 0 0 var(--cta), inset 4px 0 0 var(--amber-mark), inset 0 -1px 0 var(--amber-rim);
   }
 
   .counter-head__facts {
@@ -2015,7 +2018,7 @@
 
 .counter-finder__item[aria-selected='true'] {
   background: var(--tint);
-  box-shadow: inset 3px 0 0 var(--cta);
+  box-shadow: inset 2px 0 0 var(--cta), inset 4px 0 0 var(--amber-mark), inset 0 0 0 1px var(--amber-rim);
 }
 
 .counter-finder__item--out {
@@ -2557,7 +2560,7 @@
 .counter-person[aria-pressed='true'] {
   background: var(--tint);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--cta), inset 0 0 0 1px var(--line-strong);
+  box-shadow: inset 2px 0 0 var(--cta), inset 4px 0 0 var(--amber-mark), inset 0 1px 0 var(--amber-lip), inset 0 0 0 1px var(--amber-rim);
 }
 
 .counter-person:disabled {

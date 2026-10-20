@@ -99,5 +99,9 @@ function ChangeArrow({ direction }: { direction: keyof typeof ARROWS }) {
 
 /** Metric cards in a grid: large cards take two columns, everything stacks on a phone. */
 export function MetricGrid({ children }: { children: ReactNode }) {
-  return <div className="metric-grid">{children}</div>;
+  return (
+    <div className="metric-grid-room">
+      <div className="metric-grid">{children}</div>
+    </div>
+  );
 }

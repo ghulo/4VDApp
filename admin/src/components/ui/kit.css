@@ -330,8 +330,8 @@ kbd.kbd {
 }
 
 .steps__step--current .steps__mark {
-  background: var(--surface);
-  box-shadow: 0 0 0 2px var(--cta);
+  background: var(--tint);
+  box-shadow: 0 0 0 2px var(--cta), 0 0 0 3px var(--amber-mark);
 }
 
 .steps__step--done {
@@ -722,6 +722,7 @@ kbd.kbd {
   block-size: 100%;
   border-radius: var(--radius-stamp);
   background: var(--data-3);
+  box-shadow: var(--bar-depth);
 }
 
 .funnel__value {
@@ -948,7 +949,8 @@ kbd.kbd {
 
 /* Today wears amber: "where you are". */
 .calendar__day--today .calendar__number {
-  background: var(--cta);
+  background: var(--amber-face);
+  box-shadow: var(--amber-key);
   color: var(--cta-ink);
 }
 

@@ -91,7 +91,8 @@
   height: max(0px, calc(var(--pill-h, 0px) - 16px));
   transform: translateY(calc(var(--pill-y, 0px) + 8px));
   border-radius: 0 2px 2px 0;
-  background: var(--accent);
+  background: var(--cta);
+  box-shadow: inset -1px 0 0 var(--amber-mark);
   pointer-events: none;
   content: '';
 }

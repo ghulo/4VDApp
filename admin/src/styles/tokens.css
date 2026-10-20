@@ -46,6 +46,12 @@
   --amber-lip: rgb(255 255 255 / 0.8);
   --amber-mark: var(--amber-450);
   --amber-track: var(--amber-100);
+  /* A small amber fill (a tick, a dot, a progress bar) as a tiny key: lit top, deeper foot. */
+  --amber-key: inset 0 1px 0 rgb(255 255 255 / 0.5), inset 0 -1px 0 var(--amber-mark);
+  /* A big amber panel's face: the key's three shades top to bottom. */
+  --amber-face: linear-gradient(180deg, var(--cta-top), var(--cta) 45%, var(--cta-low));
+  /* Chart bars: light on the top edge, a shade at the foot, so bars stand like blocks. */
+  --bar-depth: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(22 25 27 / 0.12);
   --ok: var(--green-700);
   --ok-soft: var(--green-100);
   --warn: var(--orange-700);
@@ -119,6 +125,9 @@
   --amber-lip: rgb(255 255 255 / 0.05);
   --amber-mark: var(--amber-400);
   --amber-track: var(--amber-950);
+  --amber-key: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 var(--amber-600);
+  --amber-face: linear-gradient(180deg, var(--cta-top), var(--cta) 45%, var(--cta-low));
+  --bar-depth: inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(0 0 0 / 0.3);
   /* Status words take the full-colour 500 step: the pale 400s read as candy beside the amber. */
   --ok: var(--green-500);
   --ok-soft: var(--green-900);

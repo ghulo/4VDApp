@@ -49,8 +49,8 @@
 
 .welcome__dots li.is-current {
   width: 24px;
-  background: var(--accent);
-  box-shadow: none;
+  background: var(--cta);
+  box-shadow: var(--amber-key);
 }
 
 .welcome__count {

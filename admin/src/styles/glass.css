@@ -6,8 +6,7 @@
    brightness boost, no sheen), a hairline on the side that meets the content
    and a faint highlight along the top. Never cards, tables or forms. */
 .topbar--glass,
-.palette,
-.login__moment {
+.palette {
   background: var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-filter);
   backdrop-filter: var(--glass-filter);
@@ -31,15 +30,6 @@
   backdrop-filter: blur(2px);
 }
 
-/* The sign-in panes are thinner glass, so the amber tile glows through them. */
-.login__moment {
-  border: 0;
-  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
-  -webkit-backdrop-filter: blur(12px) saturate(1.6);
-  backdrop-filter: blur(12px) saturate(1.6);
-  box-shadow: var(--glass-highlight), var(--glass-shadow);
-}
-
 /* On phones the menu slides over the page as a pane of glass. */
 @media (max-width: 900px) {
   .sidebar {
@@ -56,7 +46,6 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .topbar--glass,
   .palette,
-  .login__moment,
   .sidebar {
     background: var(--surface);
   }
@@ -65,7 +54,6 @@
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .topbar--glass,
   .palette,
-  .login__moment,
   .sidebar {
     background: var(--surface);
     -webkit-backdrop-filter: none;

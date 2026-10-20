@@ -22,6 +22,7 @@ export const en = {
     },
     headline: 'Your shop, your stock and your team in one place.',
     smallPrint: '4VD is named for the four Dacaj brothers.',
+    today: 'A morning at the shop',
   },
   teamApp: {
     ready: 'Your account is ready. 4VD for the team lives in the app.',

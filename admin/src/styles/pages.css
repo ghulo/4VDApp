@@ -640,54 +640,62 @@ form.product-form > .form-actions {
   letter-spacing: -0.03em;
 }
 
-/* The words up top; behind them the mark, large and tilted, sinking off the
-   panel's bottom-left corner, and the shop moments down the right, clear of
-   it. Sized from the panel itself (container units), so the tile never grows
-   into the cards on a tall or wide screen. */
+/* Reads top to bottom: the wordmark, the mark with what 4VD is, then a
+   morning at the shop as a tidy feed. */
 .login__story {
   overflow: hidden;
-  container-type: size;
-  justify-content: flex-start;
 }
 
-.login__words {
-  position: relative;
-  z-index: 2;
-  margin-top: var(--space-6);
+.login__hero {
+  display: grid;
+  gap: var(--space-2);
 }
 
-.login__scene {
-  --tile: min(68cqw, 46cqh);
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-/* The drawing is 2.5 tiles wide (the tile is 96 of its 240 units, starting at
-   72); placed so the tile's left edge sits 0.12 tiles off the panel and its
-   foot 0.14 tiles below it, then tilted about the tile's middle. */
+/* The drawing is 2.5 tiles wide with the tile starting 30% in; pulled left
+   and up so the tile itself lines up with the words. */
 .login__art {
-  position: absolute;
-  left: calc(var(--tile) * -0.87);
-  bottom: calc(var(--tile) * -0.417);
-  width: calc(var(--tile) * 2.5);
-  rotate: -9deg;
-  transform-origin: 50% 47%;
+  width: 380px;
+  margin: -20px 0 var(--space-2) -114px;
+}
+
+.login__today {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.login__today-title {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.login__feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
 }
 
 .login__moment {
-  position: absolute;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-small);
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  border-top: 1px solid var(--line);
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  white-space: nowrap;
-  backdrop-filter: blur(2px);
+}
+
+.login__moment:first-child {
+  border-top: 0;
+}
+
+.login__moment-time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .login__moment strong {
@@ -697,7 +705,6 @@ form.product-form > .form-actions {
 }
 
 .login__moment > svg {
-  flex: none;
   margin-top: 2px;
 }
 
@@ -713,68 +720,40 @@ form.product-form > .form-actions {
   color: var(--ok);
 }
 
-/* A loose, staggered column down the right, in the band between the words
-   and the tile. */
-.login__moment--a {
-  top: 34%;
-  right: 8%;
-}
-
-.login__moment--b {
-  top: 43%;
-  right: 2%;
-}
-
-.login__moment--d {
-  top: 52%;
-  right: 12%;
-}
-
-/* Further back and out of focus: the depth of field. */
-.login__moment--c {
-  top: 39%;
-  right: 46%;
-  scale: 0.88;
-  filter: blur(1.4px);
-  opacity: 0.6;
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .login__moment {
-    animation:
-      moment-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both,
-      moment-drift 7s ease-in-out 0.6s infinite alternate;
+    animation: moment-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .login__moment--b {
-    animation-delay: 0.12s, 1.4s;
+  .login__moment:nth-child(2) {
+    animation-delay: 0.08s;
   }
 
-  .login__moment--c {
-    animation-delay: 0.24s, 2.6s;
+  .login__moment:nth-child(3) {
+    animation-delay: 0.16s;
   }
 
-  .login__moment--d {
-    animation-delay: 0.36s, 0.9s;
+  .login__moment:nth-child(4) {
+    animation-delay: 0.24s;
   }
 }
 
 @keyframes moment-in {
   from {
     opacity: 0;
-    translate: 0 8px;
+    translate: 0 6px;
   }
 }
 
-/* A slow breath, a few pixels: the panes float, they don't bounce. */
-@keyframes moment-drift {
-  to {
-    translate: 0 -5px;
+/* Short screens keep the words and leave the feed out. */
+@media (max-height: 760px) {
+  .login__today {
+    display: none;
   }
 }
 
 .login__headline {
-  max-width: 22ch;
+  max-width: 18ch;
   font-family: var(--font-display);
   font-size: clamp(var(--text-figure), 3.2vw, var(--text-figure-lg));
   font-weight: 500;
@@ -832,36 +811,15 @@ form.product-form > .form-actions {
     border-bottom: 1px solid var(--line);
   }
 
-  /* On a phone the drawing stays, smaller and without the floating cards. */
-  .login__scene {
-    min-height: 0;
-  }
-
-  /* On a phone: no tilt or crop, just the mark, small, above the form. */
-  .login__story {
-    container-type: normal;
-  }
-
-  .login__scene {
-    position: relative;
-    inset: auto;
-    display: grid;
-    place-items: center;
-  }
-
+  /* On a phone: the mark, small, above the form; nothing else. */
   .login__art {
-    position: static;
     width: min(300px, 80%);
-    rotate: none;
+    margin: -24px auto 0;
   }
 
-  .login__words {
-    display: none;
-  }
-
-  .login__moment,
   .login__headline,
-  .login__small-print {
+  .login__small-print,
+  .login__today {
     display: none;
   }
 }
@@ -5615,8 +5573,8 @@ fieldset.report-sections {
 
 /* ---------- Sign-in: the noise field ---------- */
 
-/* Amber dots sized by drifting Perlin noise, filling the form side and fading
-   away in the middle, so they frame the form and never sit under it. */
+/* Perlin noise as a topographic map in fine amber dots, filling the form side
+   and fading away in the middle, so it frames the form and never sits under it. */
 .login__side {
   position: relative;
   overflow: hidden;
@@ -5633,9 +5591,9 @@ fieldset.report-sections {
   width: 100%;
   height: 100%;
   color: var(--accent);
-  opacity: 0.35;
+  opacity: 0.5;
   pointer-events: none;
-  mask-image: radial-gradient(closest-side, transparent 55%, #000 100%);
+  mask-image: radial-gradient(closest-side, transparent 45%, #000 95%);
 }
 
 @media (max-width: 900px) {

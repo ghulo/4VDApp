@@ -43,15 +43,20 @@ function noise(x: number, y: number, z: number): number {
   );
 }
 
-/** Space between dots, in CSS pixels. */
-const GAP = 14;
+/** Space between dots, in CSS pixels, and each dot's radius. */
+const GAP = 5;
+const DOT = 0.75;
 /** How big the noise's features are: smaller is broader. */
-const SCALE = 0.0065;
+const SCALE = 0.0042;
+/** Contour lines per unit of noise, and how thick each line is (0 to 1). */
+const LEVELS = 9;
+const LINE = 0.16;
 
 /**
- * Decoration for the sign-in page's form side: a field of amber dots, each
- * sized by Perlin noise that drifts slowly, like a halftone print of moving
- * weather. Still for people who ask for less motion, idle while hidden.
+ * Decoration for the sign-in page's form side: Perlin noise drawn as a
+ * topographic map in fine amber dots. Dots fall only along the contour lines,
+ * every fourth line a little stronger, like an index contour. Still: drawn
+ * once, and again when the panel changes size.
  */
 export function NoiseField() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -59,58 +64,36 @@ export function NoiseField() {
     const canvas = ref.current;
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return undefined;
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let width = 0;
-    let height = 0;
 
-    const resize = () => {
+    const draw = () => {
       const ratio = window.devicePixelRatio || 1;
-      width = canvas.clientWidth;
-      height = canvas.clientHeight;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    };
-
-    const draw = (time: number) => {
       context.clearRect(0, 0, width, height);
       context.fillStyle = getComputedStyle(canvas).color;
-      // Two octaves: broad swells with finer grain riding on them.
       for (let y = GAP / 2; y < height; y += GAP) {
         for (let x = GAP / 2; x < width; x += GAP) {
-          const n = noise(x * SCALE, y * SCALE, time) * 0.75 + noise(x * SCALE * 2.3, y * SCALE * 2.3, time * 1.6) * 0.25;
-          const radius = Math.max(0, (n + 0.15) * 0.9) * (GAP / 2);
-          if (radius < 0.35) continue;
+          // Two octaves: broad hills with a little finer grain on them.
+          const n = noise(x * SCALE, y * SCALE, 0.5) + noise(x * SCALE * 2.7, y * SCALE * 2.7, 3.1) * 0.22;
+          const level = (n + 1.3) * LEVELS;
+          const along = level - Math.floor(level);
+          if (along > LINE) continue;
+          const index = Math.floor(level) % 4 === 0;
+          context.globalAlpha = index ? 1 : 0.55;
           context.beginPath();
-          context.arc(x, y, Math.min(radius, GAP / 2 - 1), 0, Math.PI * 2);
+          context.arc(x, y, index ? DOT * 1.25 : DOT, 0, Math.PI * 2);
           context.fill();
         }
       }
     };
 
-    resize();
-    draw(0);
-    const observer = new ResizeObserver(() => {
-      resize();
-      if (still) draw(0);
-    });
+    draw();
+    const observer = new ResizeObserver(draw);
     observer.observe(canvas);
-    if (still) return () => observer.disconnect();
-
-    let id = 0;
-    let last = 0;
-    const loop = (now: number) => {
-      id = requestAnimationFrame(loop);
-      // 30 frames a second is plenty for a slow drift; skip work while hidden by the layout.
-      if (now - last < 33 || canvas.offsetParent === null) return;
-      last = now;
-      draw(now / 9000);
-    };
-    id = requestAnimationFrame(loop);
-    return () => {
-      cancelAnimationFrame(id);
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, []);
   return <canvas ref={ref} className="noise-field" aria-hidden="true" />;
 }

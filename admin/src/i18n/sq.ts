@@ -18,6 +18,7 @@ export const sq: Catalogue = {
     },
     headline: 'Dyqani yt, stoku yt dhe ekipi yt në një vend.',
     smallPrint: '4VD mban emrin e katër vëllezërve Dacaj.',
+    today: 'Një mëngjes në dyqan',
   },
   teamApp: {
     ready: 'Llogaria jote është gati. 4VD për ekipin është në aplikacion.',

@@ -1886,6 +1886,12 @@
 }
 
 /* Products (F3): one row per product, the chosen one marked like a basket line. */
+/* The Products card is wider and taller than other list cards: names, codes and prices sit on one line. */
+.sheet--wide:has(.counter-finder-form) {
+  width: min(960px, calc(100vw - 2 * var(--space-4)));
+  height: min(760px, calc(100dvh - 2 * var(--space-4)));
+}
+
 /* The F3 Products card: a big search on top, the list in the middle (the only
    part that scrolls), and the keys along the foot. */
 .counter-finder-form {

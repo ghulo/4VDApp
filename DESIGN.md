@@ -528,6 +528,9 @@ show depth in its own colour instead of one flat yellow. Never a coloured glow o
 | `--amber-lip` | white 80% | white 5% | top light on a tinted surface |
 | `--amber-mark` | 450 | 400 | the deeper half of edge marks, bar feet |
 | `--amber-track` | 100 | 950 | the well a progress bar runs in |
+| `--amber-key` | lip + 450 foot | lip + 600 foot | small amber fills: ticks, dots, progress bars, today |
+| `--amber-face` | 350 → 400 → 450 | same | big amber panels (the Counter's change box) |
+| `--bar-depth` | light top, shaded foot | same | chart bars, so they stand like blocks |
 
 Where you are = tint + lip + rim + raise; a selected row = tint, a two-shade edge
 mark (400 over 450) and a rim under it; progress = an amber key in an amber well.

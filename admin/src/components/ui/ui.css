@@ -1217,9 +1217,11 @@ input.switch:focus-visible {
   stop-color: var(--cta-top);
 }
 
+/* A light top settling into the full amber, only faintly see-through at the
+   foot: more and dark pages show through as brown. */
 .shop-sunrise__face-foot {
-  stop-color: var(--cta-top);
-  stop-opacity: 0.72;
+  stop-color: var(--cta);
+  stop-opacity: 0.9;
 }
 
 .shop-sunrise__tick,
@@ -1232,7 +1234,7 @@ input.switch:focus-visible {
 
 .shop-sunrise__tick-shadow {
   stroke: var(--glass-deep);
-  opacity: 0.45;
+  opacity: 0.3;
 }
 
 .shop-sunrise__frost-top {

@@ -34,7 +34,7 @@ export function ShopSunrise() {
 
       <g className="shop-sunrise__rise">
         <rect className="shop-sunrise__tile" x="72" y="18" width="96" height="96" rx="27" fill={`url(#${ids.face})`} />
-        <path className="shop-sunrise__tick-shadow" d={tick} transform="translate(0 4)" filter={`url(#${ids.near})`} />
+        <path className="shop-sunrise__tick-shadow" d={tick} transform="translate(0 3)" filter={`url(#${ids.near})`} />
         <path className="shop-sunrise__tick" d={tick} stroke={`url(#${ids.frost})`} />
       </g>
     </svg>

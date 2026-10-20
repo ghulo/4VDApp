@@ -939,3 +939,33 @@
     bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
+
+/* ---------- Rows that scroll sideways ---------- */
+
+/* Tabs and filter tracks that run past the edge on a phone fade out on the
+   right, so it's clear there is more to scroll to. The fade follows the
+   scroll and is gone at the end; a row that fits never fades. */
+@property --scroll-edge {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes scroll-edge {
+  from {
+    --scroll-edge: var(--space-6);
+  }
+
+  to {
+    --scroll-edge: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .section-tabs,
+  .segmented--chips {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-edge)), transparent);
+    animation: scroll-edge linear both;
+    animation-timeline: scroll(self inline);
+  }
+}

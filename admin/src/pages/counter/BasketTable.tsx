@@ -144,7 +144,8 @@ export function SaleHead({
 }: {
   customerName: string | null;
   nextReceipt: string | null;
-  startedAt: string;
+  /** Null until the first product is in: an empty basket has no sale to time. */
+  startedAt: string | null;
   basketRabat: number;
   onCustomer: () => void;
 }) {
@@ -173,7 +174,7 @@ export function SaleHead({
           </div>
         )}
       </dl>
-      <p className="counter-head__started">{t.counter.startedAt(startedAt)}</p>
+      {startedAt && <p className="counter-head__started">{t.counter.startedAt(startedAt)}</p>}
     </div>
   );
 }

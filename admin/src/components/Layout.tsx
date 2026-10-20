@@ -1,7 +1,7 @@
-import { CaretDoubleLeft, CaretDoubleRight, List, MagnifyingGlass, SignOut, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, List, MagnifyingGlass, SignOut, UserCircle, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
@@ -12,7 +12,7 @@ import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
-import { Button } from './ui';
+import { Button, MenuButton } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
 import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
@@ -46,6 +46,7 @@ function FullLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const t = useT();
 
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -147,10 +148,16 @@ function FullLayout() {
         </button>
         <div className="topbar__end">
           <ThemeSwitch persist compact />
-          <NavLink to="/profile" className="topbar__user" aria-label={t.nav.yourProfile(user.name)}>
-            <Avatar name={user.name} url={user.avatarUrl} size={28} />
-          </NavLink>
-          <Button variant="ghost" icon={SignOut} aria-label={t.nav.logOut} title={t.nav.logOut} onClick={logout} />
+          {/* Log out sits behind the avatar: a key of its own beside it was one stray click from signing out. */}
+          <MenuButton
+            label={t.nav.yourProfile(user.name)}
+            face={<Avatar name={user.name} url={user.avatarUrl} size={28} />}
+            faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
+            items={[
+              { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },
+              { label: t.nav.logOut, icon: SignOut, onSelect: logout },
+            ]}
+          />
         </div>
       </header>
 

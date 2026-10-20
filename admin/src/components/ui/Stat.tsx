@@ -36,7 +36,13 @@ interface StatTileProps {
   to?: string;
 }
 
-export function StatTile({ label, value, words, hint, tone = 'default', to, named }: StatTileProps) {
+/** 0, "0", "€0.00", "0,00 €": a figure that is nothing. */
+const ZERO = /^[^\d]*0(?:[.,]0+)?[^\d]*$/;
+const isZero = (value: ReactNode) => value === 0 || (typeof value === 'string' && ZERO.test(value.trim()));
+
+export function StatTile({ label, value, words: givenWords, hint, tone = 'default', to, named }: StatTileProps) {
+  // A zero says nothing happened: it steps back like a sentence would, instead of a big 0.
+  const words = givenWords || (isZero(value) ? String(value) : undefined);
   const body = (
     <>
       <span className={named ? 'stat__label stat__label--name' : 'stat__label'}>

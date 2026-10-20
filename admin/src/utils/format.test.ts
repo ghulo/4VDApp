@@ -9,13 +9,19 @@ describe('formatHeadlineMoney', () => {
     expect(formatHeadlineMoney(999.5)).toBe('€999.50');
     expect(formatHeadlineMoney(-1200.2)).toBe('-€1,200');
   });
+
+  it('should never show a negative zero', () => {
+    expect(formatHeadlineMoney(-0)).toBe('€0.00');
+    expect(formatMoney(-0.001)).toBe('€0.00');
+  });
 });
 
 describe('formatTimes', () => {
   it('should say a rise as a multiple', () => {
     expect(formatTimes(4)).toBe('5×');
     expect(formatTimes(3.25)).toBe('4.3×');
-    expect(formatTimes(62.4)).toBe('63×');
+    expect(formatTimes(8.2)).toBe('9.2×');
+    expect(formatTimes(62.4)).toBe('10×+');
   });
 });
 

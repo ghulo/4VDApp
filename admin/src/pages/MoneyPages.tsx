@@ -138,7 +138,8 @@ function PlaceTile({ place }: { place: MoneyPlace }) {
         : place.isDefault && place.kind !== 'till'
           ? t.money.main
           : undefined;
-  const hint = [words, place.account?.number, place.iban && formatIban(place.iban)].filter(Boolean).join(' · ') || undefined;
+  // Account numbers (1110…) are the accountant's words: they live in Books, not on the owner's tiles.
+  const hint = [words, place.iban && formatIban(place.iban)].filter(Boolean).join(' · ') || undefined;
   return (
     <StatTile
       named

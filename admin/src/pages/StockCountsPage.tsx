@@ -75,6 +75,8 @@ export function StockCountsPage() {
             caption={t.counts.finished}
             rows={finished}
             rowKey={(row) => row.key}
+            // A cancelled count counted nothing: it stays listed but steps back.
+            rowClassName={(row) => (row.count?.status === 'cancelled' ? 'table__row--muted' : undefined)}
             empty={<EmptyState title={t.counts.none} />}
             columns={[
               {

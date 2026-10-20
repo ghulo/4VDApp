@@ -15,16 +15,22 @@ function cached<T extends Intl.NumberFormat | Intl.DateTimeFormat>(key: string, 
   return cache.get(key) as T;
 }
 
-export const formatMoney = (amount: number) =>
-  current === 'sq'
+/** An amount that rounds to zero cents is zero, so a sum like -0.001 never shows as "-€0.00". */
+const cents = (amount: number) => (Math.abs(amount) < 0.005 ? 0 : amount);
+
+export const formatMoney = (raw: number) => {
+  const amount = cents(raw);
+  return current === 'sq'
     ? albanianMoney(amount)
     : cached('money', () => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' })).format(amount);
+};
 
 /**
  * Money as a headline figure (metric cards, the day's sentence): from €1,000
  * up the cents are dropped ("€240,769"), smaller amounts keep them.
  */
-export const formatHeadlineMoney = (amount: number) => {
+export const formatHeadlineMoney = (raw: number) => {
+  const amount = cents(raw);
   if (Math.abs(amount) < 1000) return formatMoney(amount);
   return current === 'sq'
     ? `${albanianNumber(Math.round(amount), 0)}${String.fromCharCode(160)}€`
@@ -47,8 +53,12 @@ export const formatCompactMoney = (amount: number) =>
 /** A rise above this (+300%, four times as much) reads as noise in percent, so it's said as "5×". */
 export const MUCH_MORE = 3;
 
-/** A rise as a multiple: 0.5 → "1.5×", 4 → "5×", 62.4 → "63×" ("1,5×" in Albanian). */
+/** From ten times up the exact multiple is noise (a quiet month before), so it reads "10×+". */
+const TIMES_CAP = 10;
+
+/** A rise as a multiple: 0.5 → "1.5×", 4 → "5×", 62.4 → "10×+" ("1,5×" in Albanian). */
 export const formatTimes = (change: number) => {
+  if (1 + change >= TIMES_CAP) return `${TIMES_CAP}×+`;
   const times = 1 + change;
   const digits = times < 10 ? 1 : 0;
   const text =

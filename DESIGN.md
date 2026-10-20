@@ -556,8 +556,8 @@ The canvas weave is faint (1.2% light, 1% dark).
   for card titles; Label 13px/600 for field labels; Caption 12px/600.
 - **Labels** (table headers, figure labels, sidebar group names, kickers):
   plain body text, 13px/500 in Muted Ink, sentence case, no icon. Monospace
-  capitals made the app read as AI-made (2026-10-20); only stamps (badges) and
-  codes keep monospace. Never a sentence, never a button.
+  capitals made the app read as AI-made (2026-10-20); only codes (SKUs,
+  account numbers, receipt numbers) keep monospace. Never a sentence, never a button.
 - **Page subtitles**: none by default. A page keeps one only when it says
   something you would otherwise ask (a period, a record's number and date, "These
   came from TREFIN"); generic "this page shows..." lines are gone.
@@ -721,8 +721,10 @@ title cell first in 600 weight, then "column name: value" lines. An empty table
 shows an empty state instead of headers.
 
 ### 10.5 Stamps (badges)
-Like a rubber stamp: 22px, monospace capitals 11px, 0.06em, 1px outline in the
-status colour, 3px corners, no fill. Tones: ok, warn, danger, info, neutral, ink.
+A small status word: 22px, Hanken 12px/600 in sentence case ("Finished", not
+"FINISHED"), the status colour on its soft tint, 6px corners, no outline.
+Tones: ok, warn, danger, info, neutral, ink. Monospace capitals made the app
+read as AI-made (2026-10-20), so stamps no longer use them.
 Severity stamps: **Urgent** (danger), **Check** (warn), **Idea** (info). On
 phones a stamp sits **above** its text, not in a side column. Dashboard `Badge`
 and team-app `Stamp` are the same stamp.

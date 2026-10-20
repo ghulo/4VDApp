@@ -305,7 +305,8 @@ function RemoveExpense({ expense }: { expense: Expense }) {
           </Button>
         </>
       ) : (
-        <Button variant="danger-text" aria-label={t.expenses.removeLabel(what)} onClick={() => setConfirming(true)}>
+        // Quiet until asked: red on every row made the table read like a list of errors. The confirm step is red.
+        <Button variant="ghost" aria-label={t.expenses.removeLabel(what)} onClick={() => setConfirming(true)}>
           {t.expenses.remove}
         </Button>
       )}
@@ -358,7 +359,7 @@ function RecurringTable({ rules }: { rules: RecurringExpense[] }) {
                   header: <span className="visually-hidden">{t.expenses.stop}</span>,
                   cell: (row: RecurringExpense) => (
                     <Button
-                      variant="danger-text"
+                      variant="ghost"
                       disabled={stop.isPending}
                       aria-label={t.expenses.stopLabel(row.category ? t.expenses.categories[row.category] : t.expenses.aBill)}
                       onClick={() => stop.mutate(row.id)}

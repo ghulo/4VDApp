@@ -1,3 +1,4 @@
+import { ImageSquare } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { businessApi } from '../services/api';
@@ -5,7 +6,6 @@ import { mediaSrc } from '../services/apiClient';
 import type { Business } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading } from './Feedback';
-import { LogoMark } from './LogoMark';
 import { Button, Card, Field, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
@@ -148,7 +148,14 @@ function BusinessForm({ initial }: { initial: Business }) {
             )
           }
         >
-          {logo ? <img className="business-logo" src={mediaSrc(logo)!} alt="" width={72} height={72} /> : <LogoMark size={48} />}
+          {/* No logo yet: an empty frame, not 4VD's own mark, which looked like a logo was already set. */}
+          {logo ? (
+            <img className="business-logo" src={mediaSrc(logo)!} alt="" width={72} height={72} />
+          ) : (
+            <span className="business-logo business-logo--empty" aria-hidden="true">
+              <ImageSquare size={22} />
+            </span>
+          )}
           <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pickLogo} />
           <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()} loading={upload.isPending}>
             {logo ? t.profile.change : t.business.addLogo}

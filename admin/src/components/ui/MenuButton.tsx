@@ -1,5 +1,5 @@
 import { CaretDown, type Icon } from '@phosphor-icons/react';
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from './Button';
 import type { ButtonVariant } from './buttonClass';
 
@@ -17,17 +17,32 @@ interface MenuButtonProps {
   size?: 'md' | 'sm';
   /** While the chosen item runs: the key shows a spinner and stays shut. */
   loading?: boolean;
+  /** Draws the key as this instead of a button with the label (e.g. your avatar); the label then names it for screen readers. */
+  face?: ReactNode;
+  faceClassName?: string;
 }
 
 /**
  * A key that opens a short list of related actions, like the downloads of a
  * page. Arrow keys move through the list, Esc closes it and returns to the key.
  */
-export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading }: MenuButtonProps) {
+export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName }: MenuButtonProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const keyRef = useRef<HTMLButtonElement>(null);
+  const keyProps = {
+    'aria-haspopup': 'menu' as const,
+    'aria-expanded': open,
+    'aria-controls': open ? menuId : undefined,
+    onClick: () => setOpen((was) => !was),
+    onKeyDown: (event: KeyboardEvent) => {
+      if (event.key === 'ArrowDown' && !open) {
+        event.preventDefault();
+        setOpen(true);
+      }
+    },
+  };
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
@@ -70,26 +85,16 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
 
   return (
     <div className="menu-button" ref={rootRef}>
-      <Button
-        ref={keyRef}
-        variant={variant}
-        size={size}
-        icon={icon}
-        loading={loading}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((was) => !was)}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowDown' && !open) {
-            event.preventDefault();
-            setOpen(true);
-          }
-        }}
-      >
-        {label}
-        <CaretDown size={12} weight="bold" aria-hidden="true" />
-      </Button>
+      {face ? (
+        <button ref={keyRef} type="button" className={faceClassName} aria-label={label} title={label} {...keyProps}>
+          {face}
+        </button>
+      ) : (
+        <Button ref={keyRef} variant={variant} size={size} icon={icon} loading={loading} {...keyProps}>
+          {label}
+          <CaretDown size={12} weight="bold" aria-hidden="true" />
+        </Button>
+      )}
       {open && (
         <ul id={menuId} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
           {items.map((item, index) => {

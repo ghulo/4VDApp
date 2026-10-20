@@ -861,8 +861,8 @@ export function CounterPage() {
                       <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
                     </span>
                     <span className="counter-basket__meta">
-                      {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ` : ''}
-                      {t.counter.age(minutes)}
+                      {/* An empty basket has no sale yet, so no age either. */}
+                      {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ${t.counter.age(minutes)}` : t.counter.basketReady}
                     </span>
                   </button>
                 );
@@ -913,7 +913,7 @@ export function CounterPage() {
             <SaleHead
               customerName={customer?.name ?? null}
               nextReceipt={today.data?.nextReceipt ?? null}
-              startedAt={formatTime(new Date(current.startedAt).toISOString())}
+              startedAt={current.lines.length > 0 ? formatTime(new Date(current.startedAt).toISOString()) : null}
               basketRabat={parsePercent(basketRabat)}
               onCustomer={() => startPanel('customer')}
             />

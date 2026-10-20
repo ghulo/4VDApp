@@ -205,8 +205,9 @@ describe('MetricCard', () => {
   it('should say a huge rise as a multiple, never just "much more"', () => {
     const html = render(<MetricCard label="Revenue" value="€100" change={770.9} />);
 
-    expect(html).toContain('772×');
-    expect(html).toContain('772× as much as the period before');
+    // From ten times up the exact multiple is noise, so it reads "10×+".
+    expect(html).toContain('10×+');
+    expect(html).toContain('10×+ as much as the period before');
     expect(html).not.toContain('%');
   });
 

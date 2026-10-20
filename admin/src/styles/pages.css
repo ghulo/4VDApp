@@ -142,16 +142,14 @@
 }
 
 .stock-hero__warning {
+  /* A stamp, like .badge: a plain word on a soft tint. */
   align-self: flex-start;
   padding: var(--space-1) var(--space-2);
-  border: 1px solid currentColor;
-  border-radius: var(--radius-stamp);
+  border-radius: var(--radius-segment);
+  background: var(--warn-soft);
   color: var(--warn);
-  font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 
@@ -421,18 +419,15 @@
 
 /* The severity reads like a badge: tinted fill, strong text. */
 .attention__severity {
-  /* A stamp, like .badge: monospace capitals in a squared outline. */
+  /* A stamp, like .badge: a plain word on a soft tint. */
   justify-self: start;
   padding: 0 var(--space-2);
-  border: 1px solid currentColor;
-  border-radius: var(--radius-stamp);
+  border-radius: var(--radius-segment);
+  background: var(--info-soft);
   color: var(--info);
-  font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
   line-height: 20px;
-  text-transform: uppercase;
 }
 
 .attention__row--urgent {
@@ -440,10 +435,12 @@
 }
 
 .attention__row--urgent .attention__severity {
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .attention__row--check .attention__severity {
+  background: var(--warn-soft);
   color: var(--warn);
 }
 
@@ -2175,6 +2172,15 @@ form.product-form > .form-actions {
   height: 48px;
 }
 
+.business-logo--empty {
+  display: inline-grid;
+  place-items: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+}
+
 /* ---------- Lists inside cards ---------- */
 
 /* A list of rows (categories, people, alerts). On its own it is framed like a
@@ -2434,10 +2440,8 @@ form.product-form > .form-actions {
 
 .basket__total-label {
   color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .basket__total-amount {
@@ -2722,6 +2726,14 @@ form.product-form > .form-actions {
   gap: var(--space-3);
   align-items: center;
   min-width: 0;
+}
+
+/* Once any row in a list has a photo, rows without one keep its room, so the
+   names stay in one straight column instead of one row jutting out. */
+:is(table, ul):has(.product-photo--sm) .product-cell:not(:has(.product-photo))::before {
+  content: '';
+  flex: none;
+  width: 40px;
 }
 
 .product-cell__text {
@@ -3149,10 +3161,8 @@ form.product-form > .form-actions {
 .report-stock dt {
   margin-bottom: var(--space-1);
   color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .report-stock dd {
@@ -3841,10 +3851,8 @@ fieldset.report-sections {
 
 .statement__table th {
   color: var(--ink-muted);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .statement__table .statement__number {

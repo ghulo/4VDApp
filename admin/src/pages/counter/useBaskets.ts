@@ -79,7 +79,12 @@ export function useBaskets(userId: number) {
   const setLines = useCallback((update: (lines: StoredLine[]) => StoredLine[]) => {
     setState((now) => ({
       ...now,
-      baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, lines: update(basket.lines) } : basket)),
+      baskets: now.baskets.map((basket) => {
+        if (basket.id !== now.current) return basket;
+        const lines = update(basket.lines);
+        // A sale starts with its first product, not when the empty basket was opened (maybe last night).
+        return basket.lines.length === 0 && lines.length > 0 ? { ...basket, lines, startedAt: Date.now() } : { ...basket, lines };
+      }),
     }));
   }, []);
 

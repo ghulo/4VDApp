@@ -275,7 +275,7 @@ export function AskPage() {
                   disabled={question.trim().length < 3 || ask.isPending || gone}
                 />
               </div>
-              <p className="field-hint">{t.ask.answeredBy(status.data?.provider ?? 'AI')}</p>
+              <p className="field-hint">{t.ask.answeredBy(assistantName(status.data?.provider))}</p>
             </form>
           </section>
         </div>
@@ -309,4 +309,12 @@ function Message({ message }: { message: AssistantMessage }) {
       </div>
     </li>
   );
+}
+
+/** The assistant by its everyday name ("Claude"), never the raw model id the server reports. */
+function assistantName(provider: string | null | undefined): string {
+  if (!provider) return 'AI';
+  if (/anthropic|claude/i.test(provider)) return 'Claude';
+  if (/gemini|google/i.test(provider)) return 'Gemini';
+  return 'AI';
 }

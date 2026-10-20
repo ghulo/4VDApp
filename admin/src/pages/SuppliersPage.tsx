@@ -159,7 +159,7 @@ export function SuppliersPage() {
               align: 'end',
               cell: (row) => {
                 const overdue = owedBy.get(row.id)?.overdue ?? 0;
-                return overdue > 0 ? <Badge tone="danger">{formatMoney(overdue)}</Badge> : '–';
+                return overdue > 0 ? <span className="amount--danger">{formatMoney(overdue)}</span> : '–';
               },
             },
             {

@@ -216,27 +216,32 @@ export function InventoryPage() {
                   return value === null ? '–' : formatMoney(value);
                 },
               },
-              {
-                header: t.inventory.reorder,
-                align: 'end',
-                cell: (row) =>
-                  row.suggestedOrder > 0 ? (
-                    canManage(role) ? (
-                      <ButtonLink
-                        size="sm"
-                        icon={ShoppingCart}
-                        to={orderLink(row, usual.data?.[row.productId])}
-                        aria-label={t.inventory.orderLabel(row.suggestedOrder, row.productName)}
-                      >
-                        {`${t.inventory.order} ${row.suggestedOrder}`}
-                      </ButtonLink>
-                    ) : (
-                      row.suggestedOrder
-                    )
-                  ) : (
-                    '–'
-                  ),
-              },
+              // A column of dashes says nothing: it shows only when something needs ordering.
+              ...(rows.some((row) => row.suggestedOrder > 0)
+                ? [
+                  {
+                    header: t.inventory.reorder,
+                    align: 'end' as const,
+                    cell: (row: ReorderSuggestion) =>
+                      row.suggestedOrder > 0 ? (
+                        canManage(role) ? (
+                          <ButtonLink
+                            size="sm"
+                            icon={ShoppingCart}
+                            to={orderLink(row, usual.data?.[row.productId])}
+                            aria-label={t.inventory.orderLabel(row.suggestedOrder, row.productName)}
+                          >
+                            {`${t.inventory.order} ${row.suggestedOrder}`}
+                          </ButtonLink>
+                        ) : (
+                          row.suggestedOrder
+                        )
+                      ) : (
+                        '–'
+                      ),
+                  },
+                  ]
+                : []),
               {
                 header: t.inventory.lastRestocked,
                 className: 'table__phone-hide',

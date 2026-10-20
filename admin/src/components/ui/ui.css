@@ -171,6 +171,14 @@
   text-underline-offset: 3px;
 }
 
+/* On phones a text link gets a thumb-sized hit area (about 40px tall) without
+   moving the words: padding on an inline link grows only what you can tap. */
+@media (max-width: 599px) {
+  .text-link {
+    padding-block: var(--space-3);
+  }
+}
+
 .text-button {
   padding: 0;
   border: 0;
@@ -962,21 +970,18 @@
 /* ---------- Badge ---------- */
 
 .badge {
-  /* A rubber stamp on a stock ticket: monospace capitals in a squared outline,
-     no tinted fill. The colour names the state; the word carries it. */
+  /* A small status word in sentence case on a soft tint of its colour.
+     Monospace capitals read as AI-made, so stamps are plain words now. */
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: 22px;
-  padding: 0 6px;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-stamp);
-  font-family: var(--font-mono);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-segment);
+  background: var(--surface-sunk);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
   line-height: 1;
-  text-transform: uppercase;
   white-space: nowrap;
 }
 
@@ -985,22 +990,32 @@
 }
 
 .badge--ok {
+  background: var(--ok-soft);
   color: var(--ok);
 }
 
 .badge--warn {
+  background: var(--warn-soft);
   color: var(--warn);
 }
 
 .badge--danger {
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
 .badge--info {
+  background: var(--info-soft);
   color: var(--info);
 }
 
-/* Roles and promotions: an ink stamp, so clay stays for the brand. */
+/* An amount that is late or short, in a table cell: red words, no stamp. */
+.amount--danger {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Roles and promotions: ink on the sunk paper, so amber stays for the brand. */
 .badge--brand {
   color: var(--ink);
 }

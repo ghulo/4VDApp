@@ -1090,15 +1090,10 @@
   margin-bottom: var(--space-2);
 }
 
+/* The job's line icon, plain beside the words' colour: no chip behind it. */
 .empty-state__icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: var(--space-1);
-  border-radius: var(--radius-small);
-  background: var(--fill);
-  color: var(--ink);
+  display: block;
+  color: var(--ink-muted);
 }
 
 /* ---------- Switch (a checkbox with role="switch") ---------- */

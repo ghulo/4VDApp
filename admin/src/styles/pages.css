@@ -3815,7 +3815,7 @@ fieldset.report-sections {
 
 .record-restore__warning {
   padding: var(--space-2) var(--space-3);
-  border-left: 3px solid var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   border-radius: var(--radius-small);
   background: var(--danger-soft);
 }

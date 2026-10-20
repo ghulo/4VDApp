@@ -9,18 +9,6 @@
 .alert-feed__icon,
 .activity-feed__icon,
 .device-list__icon,
-.place-list__icon {
-  display: inline-grid;
-  flex: none;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-small);
-  background: var(--fill);
-  box-shadow: var(--key-shine-paper), 0 0 0 1px var(--line);
-  color: var(--ink-muted);
-}
-
 /* ---------- Day groups (Updates, Activity) ---------- */
 
 .day-group + .day-group {
@@ -486,7 +474,6 @@
   border-top: 0;
 }
 
-.place-list__row--archived .place-list__icon,
 .place-list__row--archived .place-list__text {
   opacity: 0.6;
 }

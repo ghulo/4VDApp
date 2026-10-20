@@ -9,7 +9,7 @@ interface EmptyStateProps {
   action?: ReactNode;
   /** Draws the shop at sunrise above the words, for big empty pages. */
   art?: boolean;
-  /** The job's icon above the words, in a soft chip, for lists of that job. */
+  /** The job's line icon above the words, for lists of that job. */
   icon?: Icon;
 }
 
@@ -24,7 +24,7 @@ export function EmptyState({ title, children, action, art, icon: JobIcon }: Empt
       )}
       {JobIcon && !art && (
         <span className="empty-state__icon" aria-hidden="true">
-          <JobIcon size={22} />
+          <JobIcon size={24} />
         </span>
       )}
       <p className="empty-state__title">{title}</p>

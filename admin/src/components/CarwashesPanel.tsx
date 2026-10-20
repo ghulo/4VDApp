@@ -1,4 +1,4 @@
-import { Drop, PencilSimple, Plus } from '@phosphor-icons/react';
+import { PencilSimple, Plus } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useT } from '../i18n/useT';
@@ -40,9 +40,6 @@ export function CarwashesPanel() {
         <ul className="place-list">
           {carwashes.data.map((carwash) => (
             <li key={carwash.id} className={`place-list__row${carwash.archived ? ' place-list__row--archived' : ''}`}>
-              <span className="place-list__icon" aria-hidden="true">
-                <Drop size={18} />
-              </span>
               <span className="place-list__text">
                 <span className="place-list__name">{carwash.name}</span>
                 <span className="place-list__meta">{t.carwashes.floatIs(formatMoney(carwash.cashFloat))}</span>

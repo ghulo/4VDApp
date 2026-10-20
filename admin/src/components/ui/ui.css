@@ -635,6 +635,7 @@
   padding: var(--space-3);
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+  font-variant-numeric: tabular-nums;
 }
 
 .table tbody tr:last-child td {
@@ -1933,14 +1934,13 @@ input.switch:focus-visible {
   }
 }
 
-/* The row whose record is open beside the list: clay marks where you are, as in the menu. */
+/* The row whose record is open beside the list: an amber wash and edge mark where you are, as in the menu and on the Counter. */
 .table tbody tr.table__row--selected td {
-  background: var(--surface-sunk);
-  box-shadow: 1px 0 0 var(--surface-sunk);
+  background: var(--tint);
 }
 
 .table tbody tr.table__row--selected td:first-child {
-  box-shadow: inset 3px 0 0 var(--accent), 1px 0 0 var(--surface-sunk);
+  box-shadow: inset 3px 0 0 var(--cta);
 }
 
 /* Figures as one slim strip over a ledger. */

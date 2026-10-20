@@ -1,48 +1,48 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on ivory paper with oat panels, one amber brand colour, tactile keys and the shop at sunrise.
+description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the shop at sunrise.
 colors:
   amber: "#f5b11e"
-  amber-hover: "#f7c14f"
-  amber-edge: "#b57400"
-  amber-text: "#8a5300"
+  amber-hover: "#fecf80"
+  amber-edge: "#a77606"
+  amber-text: "#775304"
   amber-tint: "rgb(245 177 30 / 0.16)"
-  pillar-ink: "#1c0f08"
-  ivory-canvas: "#f0eee6"
-  paper: "#faf9f5"
-  sunk-paper: "#e8e4da"
-  oat: "#e3dacc"
-  ink: "#141413"
-  ink-muted: "#5e5d59"
-  hairline: "#e0dbcf"
-  hairline-strong: "#cbc3b3"
-  ok: "#2f6b3f"
-  ok-soft: "#e7efe3"
-  warn: "#9a3f0d"
-  warn-soft: "#f8e6da"
-  danger: "#b0302a"
-  danger-soft: "#f8e5e1"
-  info: "#3d5670"
-  info-soft: "#e6ebf0"
-  focus: "#141413"
-  night-canvas: "#151413"
-  night-paper: "#252421"
-  night-sunk: "#0f0e0d"
-  night-oat: "#2e2d29"
-  night-ink: "#f3f1ea"
-  night-muted: "#b0ada4"
-  night-hairline: "#3a3834"
-  night-hairline-strong: "#4a4843"
-  night-amber-text: "#f5b53f"
-  night-amber-edge: "#a86c00"
-  night-ok: "#7ccf8e"
-  night-ok-soft: "#13291a"
-  night-warn: "#f59a62"
-  night-warn-soft: "#36200f"
-  night-danger: "#ff8f80"
-  night-danger-soft: "#3a1713"
-  night-info: "#8fb8e8"
-  night-info-soft: "#142235"
+  pillar-ink: "#100f0e"
+  ivory-canvas: "#f2f0ec"
+  paper: "#faf8f4"
+  sunk-paper: "#e6e4e0"
+  oat: "#d9d7d3"
+  ink: "#191817"
+  ink-muted: "#5c5b57"
+  hairline: "#e6e4e0"
+  hairline-strong: "#d9d7d3"
+  ok: "#386743"
+  ok-soft: "#e2f7e5"
+  warn: "#894529"
+  warn-soft: "#feece5"
+  danger: "#8d3e47"
+  danger-soft: "#feebeb"
+  info: "#3e5e7e"
+  info-soft: "#e6f2ff"
+  focus: "#775304"
+  night-canvas: "#100f0e"
+  night-paper: "#191817"
+  night-sunk: "#080706"
+  night-oat: "#2f2e2a"
+  night-ink: "#faf8f4"
+  night-muted: "#bfbdb9"
+  night-hairline: "#2f2e2a"
+  night-hairline-strong: "#464541"
+  night-amber-text: "#f5b11e"
+  night-amber-edge: "#a77606"
+  night-ok: "#99cda3"
+  night-ok-soft: "#253127"
+  night-warn: "#f8a788"
+  night-warn-soft: "#3c2821"
+  night-danger: "#fda0a7"
+  night-danger-soft: "#3d2728"
+  night-info: "#9dc2e9"
+  night-info-soft: "#262f38"
   night-focus: "#faf9f5"
 typography:
   headline:
@@ -464,50 +464,77 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 
 ## 6. Colour
 
-Warm neutrals carry everything; one amber marks brand, action and place; status
-colours are earthy and quiet, always with words.
+Near-neutral paper and ink carry everything; one amber marks brand, action and
+place; status colours are quiet, always with words. Everything comes from
+matched scales, so the colours sit at the same weight (reworked 2026-10-20: the
+old cream, brown and burnt-orange tones were picked for clay and fought the amber).
+
+### Scales
+Six ramps in `admin/src/styles/tokens.css`: **neutral, amber, green,
+red-orange, crimson, blue**, steps 50 to 990, built in OKLCH on one lightness
+ladder, so a step is equally light in every colour. Amber 400 is the brand
+`#f5b11e` itself. Screens never use a step (`var(--amber-400)`) directly, only
+the named tokens below; `src/theme/scales.test.ts` fails if they do. To change
+a colour, move its token to another step; to add a shade, take the next step.
+The team app (`mobile/src/theme.ts`) copies the same hex values.
+
+| Role | Light | Dark |
+|---|---|---|
+| Fields, wells (sunk) | neutral 200 | neutral 990 |
+| Page (canvas) | neutral 100 | neutral 975 |
+| Cards, tables, sidebar (paper) | neutral 50 | neutral 950 |
+| Oat (fill) / strong hairline | neutral 300 / 300 | neutral 900 / 800 |
+| Ink / Muted Ink | neutral 950 / 700 | neutral 50 / 400 |
+| Status words / tint | 700 / 100 | 400 / 900 |
+| Amber text, focus | amber 700 | amber 400 |
+| Amber key / hover / edge | amber 400 / 300 / 600 | same |
+
+Dark mode is near-neutral graphite, not brown, so amber is the only warm thing
+on screen; higher layers are lighter steps because shadows barely show on dark.
 
 ### Neutrals
-- **Ivory Canvas** `#f0eee6` / night `#151413`: the page.
-- **Paper** `#faf9f5` / `#252421`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e8e4da` / `#0f0e0d`: footer strips, row hover, callouts, search.
-- **Oat** `#e3dacc` / `#2e2d29` (token `fill`): feature panels (Today, team-app
+- **Canvas** `#f2f0ec` / night `#100f0e`: the page.
+- **Paper** `#faf8f4` / `#191817`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e6e4e0` / `#080706`: footer strips, row hover, callouts, search.
+- **Oat** `#d9d7d3` / `#2f2e2a` (token `fill`): feature panels (Today, team-app
   job tiles), ghost hover, segmented track.
-- **Ink** `#141413` / `#f3f1ea`: text, data, checked switches, count badges.
-- **Muted Ink** `#5e5d59` / `#b0ada4`: descriptions, labels, chart series.
-- **Hairline** `#e0dbcf` / `#3a3834` and **Strong Hairline** `#cbc3b3` / `#4a4843`.
+- **Ink** `#191817` / `#faf8f4`: text, data, checked switches, count badges.
+- **Muted Ink** `#5c5b57` / `#bfbdb9`: descriptions, labels, chart series.
+- **Hairline** `#e6e4e0` / `#2f2e2a` and **Strong Hairline** `#d9d7d3` / `#464541`.
 
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
 - **Amber** `#f5b11e` (both themes): the logo, the sunrise, **the one primary key
-  per screen** and progress toward a goal. On a dark screen it also marks the
-  current menu item and small marks.
-- **Amber Mark** `#b57400` (light only): small marks on paper (the menu tick,
-  rings, dots), because bright amber reaches only 1.8:1 on ivory; 3.6:1 here.
-- **Amber Text** `#8a5300` / `#f5b53f` on **Amber Tint** (16%): the current
-  menu item's label and fill, and any amber words. Amber itself is never text
-  on paper.
-- Text on amber is **Pillar Ink** `#1c0f08` (white fails contrast: 1.9:1).
+  per screen**, the menu tick, the selected row's edge and progress toward a goal.
+- **Amber Mark** `#a77606` (amber 600, light only): small marks on paper that
+  must reach 3:1 (rings, dots).
+- **Amber Text** `#775304` / `#f5b11e` on **Amber Tint** (16%): the current
+  menu item's label, selected rows, and any amber words. Bright amber is never
+  text on paper.
+- Text on amber is **Pillar Ink** `#100f0e` (white fails contrast: 1.9:1).
 
-### Status (earthy, quiet)
+### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
 
-| | Light | Light soft | Dark | Dark soft |
+| | Light (700) | Light soft (100) | Dark (400) | Dark soft (900) |
 |---|---|---|---|---|
-| **OK** (sage green) | `#2f6b3f` | `#e7efe3` | `#7ccf8e` | `#13291a` |
-| **Warn** (burnt orange) | `#9a3f0d` | `#f8e6da` | `#f59a62` | `#36200f` |
-| **Danger** (brick) | `#b0302a` | `#f8e5e1` | `#ff8f80` | `#3a1713` |
-| **Info** (slate) | `#3d5670` | `#e6ebf0` | `#8fb8e8` | `#142235` |
+| **OK** (green) | `#386743` | `#e2f7e5` | `#99cda3` | `#253127` |
+| **Warn** (red-orange) | `#894529` | `#feece5` | `#f8a788` | `#3c2821` |
+| **Danger** (crimson) | `#8d3e47` | `#feebeb` | `#fda0a7` | `#3d2728` |
+| **Info** (blue) | `#3e5e7e` | `#e6f2ff` | `#9dc2e9` | `#262f38` |
 
 All four pass 4.5:1 on paper, canvas and oat in both themes and on their own
-soft tint (checked 2026-10-10; `admin/src/theme/contrast.test.ts` must keep
-passing). They replace the old bright Tailwind-style status colours, which
-looked cold and generic on ivory. Warn moved from ochre to burnt orange when
-the brand became amber, so a warning never reads as the brand.
+soft tint (`admin/src/theme/contrast.test.ts` must keep passing). Warn is
+red-orange and danger crimson so neither reads as the brand.
+
+### Crisp depth
+Cards stay raised (never flat) but crisp: a 1px hairline edge and a white top
+lip draw the outline, and the shadow is short and tight instead of a wide blur.
+The canvas weave is faint (1.2% light, 1% dark).
 
 ### Focus
-- **Focus ring = Ink** (`#141413` light, `#faf9f5` dark), 2px, offset 2px. It
-  reaches 15:1 on canvas; it stands off the control on paper, so it shows beside an amber key too. There are no cool blue
+- **Focus ring = Amber Text** (`#775304` light, `#f5b11e` dark), 2px, offset 2px,
+  standing off the control on paper (5:1 and more). There are no cool blue
   accents anywhere in the interface.
 
 ### Colour rules
@@ -678,7 +705,7 @@ desktop every table has ledger rows: 8px cells (3.8). A
 **totals row** (`totals`, one cell per column) closes money columns: strong
 hairline above, Oat, 600 weight; a trial balance puts its **Balanced** stamp
 (ok) there, or **Off by …** (danger). The row whose record is open in an
-Inspector is marked like the menu: Oat with a 3px Amber bar on its first cell
+Inspector is marked like the menu: Amber Tint with a 3px Amber bar on its first cell
 (`table__row--selected`); columns that can wait while it is open take
 `table__dock-hide`. Under 600px rows stack:
 title cell first in 600 weight, then "column name: value" lines. An empty table

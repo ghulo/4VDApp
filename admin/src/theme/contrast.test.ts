@@ -5,12 +5,25 @@ import { contrastRatio } from './contrast';
 // Normalise Windows line endings so the selectors below match either way.
 const css = stylesheet.replace(/\r\n/g, '\n');
 
-/** The `--name: #hex` pairs inside the first block that starts with `selector`. */
-function tokens(selector: string): Record<string, string> {
+function block(selector: string): string {
   const start = css.indexOf(selector);
   if (start === -1) throw new Error(`No ${selector} block in tokens.css`);
-  const block = css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start));
-  return Object.fromEntries([...block.matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{6})/g)].map((match) => [match[1], match[2]]));
+  return css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start));
+}
+
+/** The colour scales (`--amber-400: #f5b11e`) the theme blocks point at. */
+const SCALES = Object.fromEntries(
+  [...block(':root {\n  --neutral-').matchAll(/--([a-z]+-\d+):\s*(#[0-9a-fA-F]{6})/g)].map((match) => [match[1], match[2]]),
+);
+
+/** The `--name` colours inside the first block that starts with `selector`, as hex, following `var(--scale-step)`. */
+function tokens(selector: string): Record<string, string> {
+  return Object.fromEntries(
+    [...block(selector).matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{6}|var\(--([a-z]+-\d+)\))/g)].map((match) => [
+      match[1],
+      match[3] ? SCALES[match[3]] : match[2],
+    ]),
+  );
 }
 
 const THEMES = {

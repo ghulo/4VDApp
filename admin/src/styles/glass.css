@@ -31,8 +31,12 @@
   backdrop-filter: blur(2px);
 }
 
+/* The sign-in panes are thinner glass, so the amber tile glows through them. */
 .login__moment {
   border: 0;
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
   box-shadow: var(--glass-highlight), var(--glass-shadow);
 }
 

@@ -619,7 +619,7 @@ form.product-form > .form-actions {
   background: var(--bg);
 }
 
-/* The story side: the shop at sunrise on sunk paper, a dashed rail on the edge. */
+/* The story side: the 4VD mark on sunk paper, a clean hairline on the edge. */
 .login__story {
   position: relative;
   display: flex;
@@ -627,7 +627,7 @@ form.product-form > .form-actions {
   justify-content: space-between;
   gap: var(--space-6);
   padding: var(--space-7);
-  border-right: 1px dashed var(--line-strong);
+  border-right: 1px solid var(--line);
   background-color: var(--surface-sunk);
 }
 
@@ -640,8 +640,8 @@ form.product-form > .form-actions {
   letter-spacing: -0.03em;
 }
 
-/* The drawing with shop moments floating around it. The story panel clips
-   the cards that run off its edge, like Cloudflare's dashed notification cards. */
+/* The mark with shop moments as glass panes around it. The story panel clips
+   whatever runs off its edge. */
 .login__story {
   overflow: hidden;
 }
@@ -655,8 +655,18 @@ form.product-form > .form-actions {
   min-height: 380px;
 }
 
+/* One stage, the drawing's own shape, so the cards keep their place against
+   the tile at any panel height. Never narrower than the cards need, so they
+   overlap the tile's edges but never the tick. */
+.login__stage {
+  position: relative;
+  width: max(100%, 460px);
+  max-width: 600px;
+  aspect-ratio: 240 / 140;
+}
+
 .login__art {
-  width: min(560px, 100%);
+  width: 100%;
 }
 
 .login__moment {
@@ -697,53 +707,76 @@ form.product-form > .form-actions {
   color: var(--ok);
 }
 
+/* Each pane overlaps a corner of the tile, so the amber shows through the glass. */
 .login__moment--a {
-  top: 6%;
-  left: -12px;
+  top: 4%;
+  left: 2%;
+  z-index: 2;
 }
 
 .login__moment--b {
-  top: 18%;
-  right: -28px;
+  top: 44%;
+  right: 0;
+  z-index: 2;
 }
 
+/* Further back and out of focus: the depth of field. */
 .login__moment--c {
-  bottom: 3%;
-  left: 4%;
+  bottom: 2%;
+  left: 0;
+  z-index: 0;
+  scale: 0.9;
+  filter: blur(1.2px);
+  opacity: 0.7;
 }
 
 .login__moment--d {
-  bottom: 2%;
-  right: 4%;
+  bottom: -6%;
+  right: 12%;
+  z-index: 2;
+}
+
+.login__stage .login__art {
+  position: relative;
+  z-index: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .login__moment {
-    animation: moment-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation:
+      moment-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both,
+      moment-drift 7s ease-in-out 0.6s infinite alternate;
   }
 
   .login__moment--b {
-    animation-delay: 0.12s;
+    animation-delay: 0.12s, 1.4s;
   }
 
   .login__moment--c {
-    animation-delay: 0.24s;
+    animation-delay: 0.24s, 2.6s;
   }
 
   .login__moment--d {
-    animation-delay: 0.36s;
+    animation-delay: 0.36s, 0.9s;
   }
 }
 
 @keyframes moment-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    translate: 0 8px;
+  }
+}
+
+/* A slow breath, a few pixels: the panes float, they don't bounce. */
+@keyframes moment-drift {
+  to {
+    translate: 0 -5px;
   }
 }
 
 .login__headline {
-  max-width: 18ch;
+  max-width: 22ch;
   font-family: var(--font-display);
   font-size: clamp(var(--text-figure), 3.2vw, var(--text-figure-lg));
   font-weight: 500;
@@ -798,7 +831,7 @@ form.product-form > .form-actions {
   .login__story {
     padding: var(--space-4);
     border-right: 0;
-    border-bottom: 1px dashed var(--line-strong);
+    border-bottom: 1px solid var(--line);
   }
 
   /* On a phone the drawing stays, smaller and without the floating cards. */
@@ -806,7 +839,7 @@ form.product-form > .form-actions {
     min-height: 0;
   }
 
-  .login__art {
+  .login__stage {
     width: min(300px, 80%);
   }
 

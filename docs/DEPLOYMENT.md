@@ -40,7 +40,7 @@
 | Address | What | Where |
 |---|---|---|
 | `4vd.app` | The dashboard (`admin/`), the only app | Cloudflare Workers (static assets) |
-| `dashboard.4vd.app`, `app.4vd.app` | Old addresses: a Redirect Rule sends them to `4vd.app`, path kept | Cloudflare Rules |
+| `app.4vd.app` | Old team app address on printed QR labels: a Redirect Rule sends it to `4vd.app`, path kept | Cloudflare Rules |
 | `api.4vd.app` | The API and background jobs (`backend/`) | Render (`render.yaml`) |
 | PostgreSQL | The data | Render |
 
@@ -57,13 +57,13 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 2. Project name `4vd-dashboard` (must match the `name` in `admin/wrangler.jsonc`).
 3. Build command `npm ci && npm run build`. Deploy command `npx wrangler deploy`. Preview command `npx wrangler versions upload`.
 4. **Advanced settings**: Path (root directory) `admin`; build variable `NODE_VERSION` = `22`. Deploy.
-5. The custom domains `4vd.app` and `dashboard.4vd.app` come from `routes` in `admin/wrangler.jsonc`; Cloudflare adds the DNS records itself. A custom domain can't be added while another Worker or a DNS record already holds that name.
+5. The custom domain `4vd.app` comes from `routes` in `admin/wrangler.jsonc`; Cloudflare adds the DNS records itself. A custom domain can't be added while another Worker or a DNS record already holds that name.
 
 **3. Old addresses** (the team app `app.4vd.app` was retired on 2026-10-20; printed QR labels still point at `app.4vd.app/scan/...`)
-Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *is in* `dashboard.4vd.app` `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. Both names need a proxied (orange) DNS record: `dashboard.4vd.app` has one from the dashboard Worker, `app.4vd.app` from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied).
+Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *equals* `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. The name needs a proxied (orange) DNS record: it has one from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied). The old dashboard name `dashboard.4vd.app` was removed completely on 2026-10-20, so links to it no longer work.
 
 **4. Check everything**
-Open `https://4vd.app`, log in, switch a page or two. `https://dashboard.4vd.app/download` and `https://app.4vd.app/scan/123` must land on the same paths at `4vd.app`.
+Open `https://4vd.app`, log in, switch a page or two. `https://app.4vd.app/scan/123` must land on the same paths at `4vd.app`.
 
 **6. Real emails (Resend)**
 1. resend.com → **Domains → Add Domain** → `4vd.app`, region EU. Use its **Auto configure with Cloudflare** button (or copy its records into Cloudflare DNS, all DNS only).
@@ -71,7 +71,7 @@ Open `https://4vd.app`, log in, switch a page or two. `https://dashboard.4vd.app
 3. Render → `4vd-api` → **Environment**: `RESEND_API_KEY` = the key, `EMAIL_FROM` = `4VD <hello@4vd.app>`. Save (it redeploys).
 
 **7. Google sign-in (optional)**
-Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID** → Web application. Authorised JavaScript origins: `https://4vd.app` (keep `https://dashboard.4vd.app` until every PC has moved). Copy the client ID into `GOOGLE_CLIENT_ID` on `4vd-api`.
+Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID** → Web application. Authorised JavaScript origins: `https://4vd.app`. Copy the client ID into `GOOGLE_CLIENT_ID` on `4vd-api`.
 
 **8. Before real use**
 - Render → `4vd-api` → **Upgrade** to Starter (always on, so alerts and the daily summary go out), and upgrade `4vd-db` to a paid plan. Then change `plan:` in `render.yaml` to match (ask Claude), or the Blueprint may put them back.

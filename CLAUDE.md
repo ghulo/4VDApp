@@ -13,7 +13,7 @@
 ## Layout
 - `backend/`: Express 5 + TypeScript API on Postgres (Kysely, zod). Docker container `four-vd-app-postgres`; DB `four_vd_app`, tests use `four_vd_app_test`. How it fits together: `docs/ARCHITECTURE.md`.
 - `admin/`: the dashboard (React + Vite, plain CSS on tokens). It is the only app in use: owners get the full dashboard, employees a phone-style layout (`StaffLayout`), the Counter is `/counter`.
-- `desktop/`: the Electron Windows app (fiscal printer through F-Link, updates from GitHub Releases). The dashboard lives at 4vd.app (`admin/wrangler.jsonc`); dashboard.4vd.app and app.4vd.app redirect there by a Cloudflare rule.
+- `desktop/`: the Electron Windows app (fiscal printer through F-Link, updates from GitHub Releases). The dashboard lives at 4vd.app (`admin/wrangler.jsonc`); app.4vd.app (old QR labels) redirects there by a Cloudflare rule. dashboard.4vd.app no longer exists.
 - `mobile/`: the old Expo team app, retired since 2026-10-20. Don't change it unless the user asks.
 - `progress.md`: the task list (tick items as they're done). `DESIGN.md`: the rulebook for logic, words and look. `PRODUCT.md`: who it's for.
 

@@ -1,7 +1,0 @@
-// 4vd.app itself has no page; every visit is sent to the dashboard.
-{
-  "name": "4vd-site",
-  "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./public", "not_found_handling": "404-page" },
-  "routes": [{ "pattern": "4vd.app", "custom_domain": true }]
-}

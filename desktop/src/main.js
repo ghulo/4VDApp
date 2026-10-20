@@ -10,6 +10,11 @@ const setupStore = require('./setup.js');
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://dashboard.4vd.app/';
 const DASHBOARD_ORIGIN = new URL(DASHBOARD_URL).origin;
+// The dashboard is moving from dashboard.4vd.app to 4vd.app (the old address
+// redirects there), so both count as the dashboard: pages, links and printing.
+const DASHBOARD_ORIGINS = app.isPackaged
+  ? ['https://4vd.app', 'https://dashboard.4vd.app']
+  : [DASHBOARD_ORIGIN];
 // Google's sign-in opens its own small window; everything else leaves for the browser.
 const GOOGLE_SIGN_IN = 'https://accounts.google.com';
 
@@ -119,7 +124,7 @@ function handleKeys(event, input) {
 }
 
 function isDashboard(url) {
-  return url.startsWith(DASHBOARD_ORIGIN + '/') || url === DASHBOARD_ORIGIN;
+  return DASHBOARD_ORIGINS.some((origin) => url.startsWith(origin + '/') || url === origin);
 }
 
 function createWindow() {

@@ -817,41 +817,97 @@
   }
 }
 
-/* ---------- Stat grid ---------- */
-
-/* Cells share hairlines, like Cloudflare's feature grids. */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+/* ---------- Stat grid ----------
+   One raised panel of figures, split by hairlines that the cells draw
+   themselves, so a spot with no figure is never painted. The column count
+   comes from how many figures there are (data-count) and how wide the room is
+   (the wrapper is a size container), so every row is full: 4 figures sit 4, or
+   2 + 2; 3 sit 3, or one per row; 5 sit 5, or 2 + 2 + 1 with the last across;
+   6 sit 6, 3 + 3 or 2 + 2 + 2. */
+.stat-grid-room {
+  container-type: inline-size;
   margin-bottom: var(--space-4);
-  border: 1px solid var(--line);
+}
+
+.stat-grid {
+  --cols: 4;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   border-radius: var(--radius-panel);
-  background: var(--line);
+  background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
-  gap: 1px;
   overflow: hidden;
 }
 
-.stat {
-  display: grid;
-  align-content: start;
-  gap: var(--space-1);
-  padding: var(--space-4) var(--space-5);
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
+.stat-grid[data-count='1'] { --cols: 1; }
+.stat-grid[data-count='2'] { --cols: 2; }
+.stat-grid[data-count='3'] { --cols: 3; }
+.stat-grid[data-count='5'] { --cols: 5; }
+.stat-grid[data-count='6'] { --cols: 6; }
+
+@container (max-width: 760px) {
+  .stat-grid[data-count='4'],
+  .stat-grid[data-count='5'] { --cols: 2; }
+  .stat-grid[data-count='6'] { --cols: 3; }
+  .stat-grid[data-count='5'] > :last-child { grid-column: 1 / -1; }
+}
+
+@container (max-width: 520px) {
+  .stat-grid[data-count='3'] { --cols: 1; }
+  .stat-grid[data-count='6'] { --cols: 2; }
+}
+
+@container (max-width: 320px) {
+  .stat-grid[data-count] { --cols: 1; }
+  .stat-grid[data-count='5'] > :last-child { grid-column: auto; }
 }
 
 .stat {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+  color: var(--ink);
+  text-decoration: none;
+  /* A hairline on the left and top of every cell. On the panel's outer edge
+     they fall outside it and are clipped, so only the lines between show. */
+  box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line);
   transition: background-color var(--fast) var(--ease);
 }
 
-.stat--link:hover {
-  background: var(--surface-sunk);
+/* A figure that opens its page says so: an arrow by the label on hover and focus. */
+.stat--link .stat__label::after {
+  content: '→';
+  margin-inline-start: auto;
+  color: var(--ink-muted);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.stat--link:hover,
+.stat--link:focus-visible {
+  background: color-mix(in srgb, var(--surface-sunk) 50%, transparent);
+}
+
+.stat--link:hover .stat__label::after,
+.stat--link:focus-visible .stat__label::after {
+  opacity: 1;
+  transform: none;
+}
+
+.stat--link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-small);
 }
 
 .stat__label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
   color: var(--ink-muted);
@@ -859,6 +915,7 @@
 }
 
 .stat__value {
+  margin-top: var(--space-1);
   font-size: var(--text-figure);
   font-weight: 600;
   line-height: 1.15;
@@ -870,6 +927,7 @@
 .stat__words {
   display: flex;
   align-items: center;
+  margin-top: var(--space-1);
   min-height: calc(var(--text-figure) * 1.15);
   color: var(--ink-muted);
   font-size: var(--text-base);
@@ -888,13 +946,17 @@
   color: var(--danger);
 }
 
-/* Nothing to report ("None low"): the tile sits back in grey so the real figures lead. */
-.stat--quiet {
-  background: color-mix(in srgb, var(--surface-sunk) 55%, var(--surface));
+/* Nothing to report ("None low"): the same paper (a darker cell looked broken),
+   with the explaining line dropped so the real figures lead. */
+.stat--quiet .stat__hint {
+  display: none;
 }
 
-.stat--quiet .stat__words {
-  font-size: var(--text-sm);
+@media (prefers-reduced-motion: reduce) {
+  .stat--link .stat__label::after {
+    transform: none;
+    transition: none;
+  }
 }
 
 /* ---------- Badge ---------- */
@@ -1701,12 +1763,6 @@ input.switch:focus-visible {
   text-transform: none;
 }
 
-/* Phones: figures two by two instead of one tall column. */
-@media (max-width: 599px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 /* ---------- Charts: bar list and columns ----------
    One series each, drawn in --chart-series (ink, not clay: clay means "act here"). */
@@ -1954,10 +2010,6 @@ input.switch:focus-visible {
 }
 
 /* Figures as one slim strip over a ledger. */
-.stat-grid--compact {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-}
-
 .stat-grid--compact .stat {
   padding: var(--space-3) var(--space-4);
 }

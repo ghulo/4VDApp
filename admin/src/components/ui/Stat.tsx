@@ -1,10 +1,21 @@
 import type { Icon } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
-/** Figures side by side in cells that share their borders. */
+/**
+ * Figures side by side on one panel, split by hairlines. The column count
+ * follows how many figures there are and the room there is, so rows always
+ * fill: never 3 + 1 with an empty corner (see .stat-grid in ui.css).
+ */
 export function StatGrid({ children, compact }: { children: ReactNode; /** One slim strip of figures over a ledger, instead of tall tiles. */ compact?: boolean }) {
-  return <div className={compact ? 'stat-grid stat-grid--compact' : 'stat-grid'}>{children}</div>;
+  const count = Children.toArray(children).length;
+  return (
+    <div className="stat-grid-room">
+      <div className={compact ? 'stat-grid stat-grid--compact' : 'stat-grid'} data-count={Math.min(count, 6)}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 interface StatTileProps {

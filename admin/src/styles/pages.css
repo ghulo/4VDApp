@@ -3022,7 +3022,7 @@ form.product-form > .form-actions {
   break-inside: avoid;
 }
 
-.report .stat-grid {
+.report .stat-grid-room {
   margin-bottom: var(--space-3);
 }
 

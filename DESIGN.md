@@ -7,13 +7,13 @@ colors:
   amber-edge: "#a37801"
   amber-text: "#745504"
   amber-tint: "rgb(245 183 26 / 0.16)"
-  pillar-ink: "#0a1114"
+  pillar-ink: "#0d1012"
   ivory-canvas: "#edf1f3"
   paper: "#f5f9fb"
   sunk-paper: "#e1e5e7"
   oat: "#d4d8da"
-  ink: "#121A1D"
-  ink-muted: "#565c5f"
+  ink: "#16191B"
+  ink-muted: "#585b5e"
   hairline: "#e1e5e7"
   hairline-strong: "#d4d8da"
   ok: "#386743"
@@ -25,14 +25,14 @@ colors:
   info: "#3e5e7e"
   info-soft: "#e6f2ff"
   focus: "#745504"
-  night-canvas: "#0a1114"
-  night-paper: "#121A1D"
-  night-sunk: "#03080B"
-  night-oat: "#272f33"
+  night-canvas: "#0d1012"
+  night-paper: "#16191B"
+  night-sunk: "#050809"
+  night-oat: "#2b2e30"
   night-ink: "#f5f9fb"
   night-muted: "#bbbec0"
-  night-hairline: "#272f33"
-  night-hairline-strong: "#3E464B"
+  night-hairline: "#2b2e30"
+  night-hairline-strong: "#424648"
   night-amber-text: "#f5b71a"
   night-amber-edge: "#a37801"
   night-ok: "#99cda3"
@@ -489,18 +489,18 @@ The team app (`mobile/src/theme.ts`) copies the same hex values.
 | Amber text, focus | amber 700 | amber 400 |
 | Amber key / hover / edge | amber 400 / 300 / 600 | same |
 
-Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 230, measured from photos 2026-10-20), so amber is the only warm thing
+Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 230, measured from photos 2026-10-20; kept faint, chroma 0.005–0.006, because the photos read bluer than the paint), so amber is the only warm thing
 on screen; higher layers are lighter steps because shadows barely show on dark.
 
 ### Neutrals
-- **Canvas** `#edf1f3` / night `#0a1114`: the page.
-- **Paper** `#f5f9fb` / `#121A1D`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e1e5e7` / `#03080B`: footer strips, row hover, callouts, search.
-- **Oat** `#d4d8da` / `#272f33` (token `fill`): feature panels (Today, team-app
+- **Canvas** `#edf1f3` / night `#0d1012`: the page.
+- **Paper** `#f5f9fb` / `#16191B`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e1e5e7` / `#050809`: footer strips, row hover, callouts, search.
+- **Oat** `#d4d8da` / `#2b2e30` (token `fill`): feature panels (Today, team-app
   job tiles), ghost hover, segmented track.
-- **Ink** `#121A1D` / `#f5f9fb`: text, data, checked switches, count badges.
-- **Muted Ink** `#565c5f` / `#bbbec0`: descriptions, labels, chart series.
-- **Hairline** `#e1e5e7` / `#272f33` and **Strong Hairline** `#d4d8da` / `#3E464B`.
+- **Ink** `#16191B` / `#f5f9fb`: text, data, checked switches, count badges.
+- **Muted Ink** `#585b5e` / `#bbbec0`: descriptions, labels, chart series.
+- **Hairline** `#e1e5e7` / `#2b2e30` and **Strong Hairline** `#d4d8da` / `#424648`.
 
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
@@ -511,7 +511,7 @@ on screen; higher layers are lighter steps because shadows barely show on dark.
 - **Amber Text** `#745504` / `#f5b71a` on **Amber Tint** (16%): the current
   menu item's label, selected rows, and any amber words. Bright amber is never
   text on paper.
-- Text on amber is **Pillar Ink** `#0a1114` (white fails contrast: 1.9:1).
+- Text on amber is **Pillar Ink** `#0d1012` (white fails contrast: 1.9:1).
 
 ### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.

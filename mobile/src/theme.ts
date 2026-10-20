@@ -9,8 +9,8 @@ const light = {
   surface: '#f5f9fb',
   surfaceSunk: '#e1e5e7',
   fill: '#d4d8da',
-  ink: '#121A1D',
-  inkMuted: '#565c5f',
+  ink: '#16191B',
+  inkMuted: '#585b5e',
   line: '#e1e5e7',
   lineStrong: '#d4d8da',
   brand: '#745504',
@@ -28,10 +28,10 @@ const light = {
   focus: '#745504',
   // Depth: panels rest above the canvas, fields sit into it, buttons stand on
   // a darker edge like a key and press down into it.
-  raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(18, 26, 29, 0.09), 0 1px 1px rgba(18, 26, 29, 0.05), 0 2px 4px -1px rgba(18, 26, 29, 0.07)',
-  inset: 'inset 0 0 0 1px rgba(18, 26, 29, 0.07), inset 0 1px 2px rgba(18, 26, 29, 0.08)',
-  keyDrop: '0 1px 2px rgba(18, 26, 29, 0.12), 0 2px 4px -1px rgba(18, 26, 29, 0.08)',
-  keyDropPressed: '0 1px 1px rgba(18, 26, 29, 0.12)',
+  raise: 'inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(22, 25, 27, 0.09), 0 1px 1px rgba(22, 25, 27, 0.05), 0 2px 4px -1px rgba(22, 25, 27, 0.07)',
+  inset: 'inset 0 0 0 1px rgba(22, 25, 27, 0.07), inset 0 1px 2px rgba(22, 25, 27, 0.08)',
+  keyDrop: '0 1px 2px rgba(22, 25, 27, 0.12), 0 2px 4px -1px rgba(22, 25, 27, 0.08)',
+  keyDropPressed: '0 1px 1px rgba(22, 25, 27, 0.12)',
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.4)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.9)',
   ctaEdge: '#a37801',
@@ -41,16 +41,16 @@ const light = {
 };
 
 const dark: typeof light = {
-  background: '#0a1114',
-  surface: '#121A1D',
-  surfaceSunk: '#03080B',
-  fill: '#272f33',
+  background: '#0d1012',
+  surface: '#16191B',
+  surfaceSunk: '#050809',
+  fill: '#2b2e30',
   ink: '#f5f9fb',
   inkMuted: '#bbbec0',
-  line: '#272f33',
-  lineStrong: '#3E464B',
+  line: '#2b2e30',
+  lineStrong: '#424648',
   brand: '#f5b71a',
-  brandInk: '#0a1114',
+  brandInk: '#0d1012',
   brandSoft: '#352d1c',
   accent: '#f5b71a',
   warn: '#f8a788',
@@ -69,7 +69,7 @@ const dark: typeof light = {
   keyShine: 'inset 0 1px 0 rgba(255, 255, 255, 0.3)',
   keyShinePaper: 'inset 0 1px 0 rgba(255, 255, 255, 0.12)',
   ctaEdge: '#a37801',
-  glassBg: 'rgba(18, 26, 29, 0.74)',
+  glassBg: 'rgba(22, 25, 27, 0.74)',
   glassHighlight: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
 };
 
@@ -80,7 +80,7 @@ function withAliases(palette: typeof light) {
     // The main action: solid amber with near-black text, the same in both
     // themes, so the one thing to do on a screen always stands out.
     cta: '#f5b71a',
-    ctaInk: '#0a1114',
+    ctaInk: '#0d1012',
     // A chosen chip or option: ink too.
     selected: palette.ink,
     onSelected: palette.surface,

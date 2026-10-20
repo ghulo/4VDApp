@@ -1389,6 +1389,8 @@ export interface SalesPatterns {
   hours: Array<{ hour: number } & PatternFigures>;
   /** Monday (1) to Sunday (7); `days` is how many of that weekday the range holds. */
   weekdays: Array<{ weekday: number; days: number; averageRevenue: number } & PatternFigures>;
+  /** weekHours[weekday − 1][hour], Monday first: totals for the range. */
+  weekHours: Array<Array<{ revenue: number; salesCount: number }>>;
 }
 
 /** What the AI read off a supplier's bill; anything it couldn't read is null. */

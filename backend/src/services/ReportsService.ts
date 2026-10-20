@@ -69,6 +69,8 @@ export interface SalesPatterns {
   hours: Array<{ hour: number } & PatternFigures>;
   /** Monday (1) to Sunday (7); `days` is how many of that weekday the range holds. */
   weekdays: Array<{ weekday: number; days: number; averageRevenue: number } & PatternFigures>;
+  /** weekHours[weekday − 1][hour]: Monday first, every hour, for "busy hours" (totals; divide by that weekday's `days` for an average). */
+  weekHours: Array<Array<{ revenue: number; salesCount: number }>>;
 }
 
 export interface ReorderRow {
@@ -229,6 +231,12 @@ export class ReportsService {
         const days = weekdayCount(weekday);
         return { weekday, days, ...totals, averageRevenue: days === 0 ? 0 : roundMoney(totals.revenue / days) };
       }),
+      weekHours: Array.from({ length: 7 }, (_, index) =>
+        Array.from({ length: 24 }, (_, hour) => {
+          const { revenue, salesCount } = figures(rows.weekHours.find((row) => row.weekday === index + 1 && row.hour === hour));
+          return { revenue, salesCount };
+        }),
+      ),
     };
   }
 

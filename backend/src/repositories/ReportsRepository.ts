@@ -53,6 +53,7 @@ export interface PatternRows {
   days: Array<PatternRow & { day: string }>;
   hours: Array<PatternRow & { hour: number }>;
   weekdays: Array<PatternRow & { weekday: number }>;
+  weekHours: Array<PatternRow & { weekday: number; hour: number }>;
 }
 
 export interface VelocityRow {
@@ -201,8 +202,8 @@ export class ReportsRepository {
   }
 
   /**
-   * Sales per shop day, and per hour of the day and day of the week (Monday
-   * is 1), in `timeZone`; for one seller when `soldBy` is given.
+   * Sales per shop day, per hour of the day, per day of the week (Monday
+   * is 1) and per hour of each weekday, in `timeZone`; for one seller when `soldBy` is given.
    */
   async patterns(range: DateRange, timeZone: string, soldBy?: number): Promise<PatternRows> {
     const sellerFilter = soldBy === undefined ? sql`` : sql`and l.sold_by = ${soldBy}`;
@@ -217,7 +218,7 @@ export class ReportsRepository {
       coalesce(sum(units), 0) as units_sold,
       count(*) filter (where return_id is null) as sales_count
     `;
-    const [days, hours, weekdays] = await Promise.all([
+    const [days, hours, weekdays, weekHours] = await Promise.all([
       sql<PatternRow & { day: string }>`
         with l as (${ledger}) select to_char(local_at::date, 'YYYY-MM-DD') as day, ${figures} from l group by 1
       `.execute(this.db),
@@ -227,8 +228,12 @@ export class ReportsRepository {
       sql<PatternRow & { weekday: number }>`
         with l as (${ledger}) select extract(isodow from local_at)::int as weekday, ${figures} from l group by 1
       `.execute(this.db),
+      sql<PatternRow & { weekday: number; hour: number }>`
+        with l as (${ledger})
+        select extract(isodow from local_at)::int as weekday, extract(hour from local_at)::int as hour, ${figures} from l group by 1, 2
+      `.execute(this.db),
     ]);
-    return { days: days.rows, hours: hours.rows, weekdays: weekdays.rows };
+    return { days: days.rows, hours: hours.rows, weekdays: weekdays.rows, weekHours: weekHours.rows };
   }
 
   async monthlyTarget(userId: number): Promise<number | null> {

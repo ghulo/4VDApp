@@ -9,7 +9,7 @@ import { useSalesSeries } from '../components/useSalesSeries';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { RevenueChart } from '../components/RevenueChart';
-import { CategoriesCard, PatternCards, TopProductsCard, usePatterns } from '../components/SalesPatterns';
+import { BusyHoursCard, CategoriesCard, PatternCards, TopProductsCard, usePatterns } from '../components/SalesPatterns';
 import { analyticsApi, exportsApi, reportsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import { errorMessage } from '../utils/errors';
@@ -107,6 +107,7 @@ export function ReportsPage({ view }: { view: ReportsView }) {
         <CategoriesCard range={rangeKey} />
         <TopProductsCard range={rangeKey} />
       </div>
+      <BusyHoursCard range={rangeKey} />
       <Leaderboard range={rangeKey} />
     </>
   );

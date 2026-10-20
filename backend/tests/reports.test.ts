@@ -199,6 +199,12 @@ describe('GET /api/reports/patterns', () => {
     // March 2026 has five Tuesdays.
     expect(all.weekdays[1]).toMatchObject({ revenue: 200, days: 5, averageRevenue: 40 });
     expect(all.weekdays.reduce((sum: number, row: { days: number }) => sum + row.days, 0)).toBe(all.days.length);
+    // Tuesday 13:00 and Wednesday 15:00 in the weekday-by-hour grid.
+    expect(all.weekHours).toHaveLength(7);
+    expect(all.weekHours[1]).toHaveLength(24);
+    expect(all.weekHours[1][13]).toEqual({ revenue: 200, salesCount: 1 });
+    expect(all.weekHours[2][15]).toEqual({ revenue: 100, salesCount: 1 });
+    expect(all.weekHours[2][13]).toEqual({ revenue: 0, salesCount: 0 });
 
     const employee = (await request(context.app).get(`/api/reports/team?${MARCH}`).set(auth(adminToken))).body.data[0].userId as number;
     const theirs = await patterns(`&userId=${employee}`);

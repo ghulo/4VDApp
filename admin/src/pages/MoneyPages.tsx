@@ -79,7 +79,7 @@ export function MoneyPage() {
     <>
       <PageHeader
         title={t.nav.items.money}
-        description={t.money.description}
+       
         meta={<span className="money-total">{t.money.altogether(formatMoney(total))}</span>}
         actions={
           writes && (

@@ -1456,7 +1456,7 @@ function ShiftCard({
       </dl>
       {/* The shared drawer, apart from the person's own day: sunk into the card. */}
       <div className="counter-card__drawer">
-        <h3 className="counter-card__subtitle">{t.counter.drawerTitle}</h3>
+        <h3 className="counter-card__subtitle">{t.counter.drawerBoxTitle}</h3>
         <dl className="counter-card__rows">
           <div>
             <dt>{t.counter.cashToday}</dt>

@@ -54,7 +54,7 @@ export function OrdersPage() {
     <>
       <PageHeader
         title={t.nav.items.suppliers}
-        description={t.orders.description}
+       
         actions={
           manager && (
             <ButtonLink to={supplierId ? `/orders/new?supplier=${supplierId}` : '/orders/new'} variant="primary" icon={Plus}>

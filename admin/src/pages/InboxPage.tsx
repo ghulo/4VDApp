@@ -36,7 +36,7 @@ export function InboxPage() {
 
   return (
     <>
-      <PageHeader title={t.inbox.title} description={t.inbox.description} />
+      <PageHeader title={t.inbox.title} />
       {attention.isPending && <Loading />}
       {attention.isError && <ErrorNotice error={attention.error} onRetry={() => attention.refetch()} />}
       {attention.data && todo.length === 0 && <AllClear />}
@@ -101,7 +101,7 @@ export function UpdatesPage() {
   const t = useT();
   return (
     <>
-      <PageHeader title={t.inbox.title} description={t.inbox.updatesDescription} />
+      <PageHeader title={t.inbox.title} />
       <AlertList />
     </>
   );

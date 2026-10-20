@@ -10,7 +10,7 @@
  * slides in from the corner when a page opens.
  */
 const GROUPS: { group: string; chosen: string }[] = [
-  { group: '.segmented:not(.segmented--chips)', chosen: ":scope > [aria-checked='true']" },
+  { group: '.segmented', chosen: ":scope > [aria-checked='true']" },
   { group: '.sidebar__nav', chosen: '.sidebar__link.active' },
 ];
 

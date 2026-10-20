@@ -42,7 +42,7 @@ export function ProfilePage() {
   const user = useCurrentUser();
   return (
     <>
-      <PageHeader title={t.profile.title} description={t.profile.descriptionShort} />
+      <PageHeader title={t.profile.title} />
       <section className="profile-hero" aria-label={t.profile.you}>
         <Avatar name={user.name} url={user.avatarUrl} size={64} />
         <div className="profile-hero__text">

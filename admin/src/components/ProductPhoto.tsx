@@ -8,10 +8,12 @@ interface ProductPhotoProps {
   size?: 'sm' | 'lg';
 }
 
-/** A product's photo, square, with a box drawing when there is none or it fails to load. */
+/** A product's photo, square. Without one, the large size shows a box drawing and the small (list) size shows nothing. */
 export function ProductPhoto({ src, size = 'sm' }: ProductPhotoProps) {
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const url = src && src !== brokenSrc ? (src.startsWith('blob:') ? src : mediaSrc(src)) : null;
+  // In a list a product without a photo shows just its name: an empty box on every row is noise.
+  if (!url && size === 'sm') return null;
   return (
     <span className={`product-photo product-photo--${size}`}>
       {url ? (

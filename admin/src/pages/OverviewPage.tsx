@@ -112,7 +112,6 @@ function OverviewHero() {
           {t.nav.items.overview} · {formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
         <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
-        <p className="overview-hero__description">{t.overview.description}</p>
         {user.role !== 'owner' && (
           <div className="overview-hero__actions">
             <ButtonLink to="/sales?new=1" variant="primary" icon={Receipt}>

@@ -635,7 +635,7 @@ export function BooksAccountsPage() {
     <>
       <PageHeader
         title={t.nav.tabs.accounts}
-        description={t.books.accountsDescription}
+       
         actions={
           canManage(role) && (
             <Button variant="primary" icon={Plus} onClick={() => setAdding(true)}>

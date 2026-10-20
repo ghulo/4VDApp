@@ -34,7 +34,7 @@ export function SettingsPage() {
     <>
       <PageHeader
         title={t.settings.title}
-        description={t.settings.description}
+       
       />
       <SettingsLayout
         base="/settings"

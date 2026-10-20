@@ -72,7 +72,7 @@ export function BillsPage() {
     <>
       <PageHeader
         title={t.nav.items.suppliers}
-        description={t.bills.description}
+       
         actions={
           writes && (
           <>

@@ -95,7 +95,7 @@ export function ProductsPage() {
     <>
       <PageHeader
         title={t.nav.items.stock}
-        description={t.products.description}
+       
         actions={
           <>
             <ButtonLink to="/labels" icon={Barcode}>

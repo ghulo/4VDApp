@@ -16,7 +16,7 @@ export function CategoriesPage() {
     <>
       <PageHeader
         title={t.nav.items.stock}
-        description={t.categories.description}
+       
       />
 
       <ManagersOnly note={t.categories.managersOnly}>

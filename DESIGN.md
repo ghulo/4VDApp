@@ -554,10 +554,19 @@ The canvas weave is faint (1.2% light, 1% dark).
   tables, controls or card titles.
 - **Hanken Grotesk**: everything else. Body 15px (0.9375rem); Title 17px/600
   for card titles; Label 13px/600 for field labels; Caption 12px/600.
-- **Spec labels**: monospace capitals, 12px, 0.06em tracking, for table headers,
-  metric labels, sidebar group names, stamps and the team-app date kicker. Never
-  a sentence, never a button. These are the only capitals allowed.
-- **Figures**: Hanken 600, 28px (36px on a large metric card), tabular.
+- **Labels** (table headers, figure labels, sidebar group names, kickers):
+  plain body text, 13px/500 in Muted Ink, sentence case, no icon. Monospace
+  capitals made the app read as AI-made (2026-10-20); only stamps (badges) and
+  codes keep monospace. Never a sentence, never a button.
+- **Page subtitles**: none by default. A page keeps one only when it says
+  something you would otherwise ask (a period, a record's number and date, "These
+  came from TREFIN"); generic "this page shows..." lines are gone.
+- **Figures**: Hanken 600, 28px (36px on a large metric card), tabular. A figure
+  tile with nothing to report ("None low") sits back in grey (`stat--quiet`);
+  tiles have no icons.
+- **Lists**: a product with no photo shows just its name (no empty box); long
+  cell sentences become short values ("189 days ↓") with the sentence on hover
+  and for screen readers.
 - **The scale is closed**: 12 / 13 / 15 / 17 / 28 / 32 px (36px large figure)
   plus the display clamp and the one stock hero number on a product page
   (`--text-hero`, 72px). Dashboard tokens: `--text-xs` … `--text-lg`,
@@ -773,13 +782,13 @@ and Save with the reason it waits ("Line 2 is not finished."). Returns and
 credits start from the bill, in a side panel, with its lines filled in.
 
 **Filter chips** (what a page or list shows: every list filter, every period
-picker, Daily / Weekly on Reports, invoice kind, which carwash): each choice is
-its own raised pill (`.chip`, or `.segmented--chips` on a segmented control),
-control height, Paper lit from above with a bright top line, a hairline and the
-key's soft drop; the chosen one is pressed into the page (Oat, inset shadow,
-Ink label). A filter dropdown beside them (supplier, category, sort, compare)
-is the same raised pill. Counts of 0 are hidden. On phones a chip row scrolls
-sideways in one line. The period is always `PeriodPicker`, on its own row under
+picker, Daily / Weekly on Reports, invoice kind, which carwash): one segmented
+control (`.segmented`; `.segmented--chips` is the old name for the same): a
+sunk Oat track, the chosen option raised on it in Paper and gliding to the next
+choice. Loose round pills read as AI-made (2026-10-20). A filter dropdown beside
+it (supplier, category, sort, compare) is a small raised key with the 8px
+corner, the same height. Counts of 0 are hidden. On phones a long track scrolls
+sideways in one line. A lone toggle is a `.chip`: a raised key, 8px corner. The period is always `PeriodPicker`, on its own row under
 the page header (in the board head on Analytics); on a work page (3.8) it is
 `PeriodPicker compact`, a dropdown inside the table's toolbar. Form and settings choices
 (how paid, add/remove, theme, language, a view switch inside a card) keep the

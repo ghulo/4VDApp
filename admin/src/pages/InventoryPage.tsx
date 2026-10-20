@@ -103,7 +103,7 @@ export function InventoryPage() {
     <>
       <PageHeader
         title={t.nav.items.stock}
-        description={t.inventory.description}
+       
         actions={
           <ButtonLink to="/labels" icon={Barcode}>
             {t.barcodes.printLabel}
@@ -206,7 +206,7 @@ export function InventoryPage() {
               },
               {
                 header: t.inventory.runsOutIn,
-                cell: (row) => <span className={runwayClass(row)}>{describeRunway(t, row)}</span>,
+                cell: (row) => <Runway row={row} />,
               },
               {
                 header: t.inventory.value,
@@ -306,6 +306,23 @@ function runwayClass(row: ReorderSuggestion): string | undefined {
   if (row.quantity <= 0) return 'runway runway--out';
   if (isSoon(row)) return 'runway runway--soon';
   return undefined;
+}
+
+/** How long the stock lasts, kept to one line: "189 days ↓", with the full sentence on hover and for screen readers. */
+function Runway({ row }: { row: ReorderSuggestion }) {
+  const t = useT();
+  const sentence = describeRunway(t, row);
+  if (row.quantity <= 0 || row.daysLeft === null || row.daysLeft === 0) return <span className={runwayClass(row)}>{sentence}</span>;
+  const arrow = row.trend === 'rising' ? '↑' : row.trend === 'falling' ? '↓' : null;
+  return (
+    <span className={runwayClass(row)} title={sentence}>
+      <span aria-hidden="true">
+        {t.inventory.daysLeft(row.daysLeft)}
+        {arrow && <span className="runway__trend">{arrow}</span>}
+      </span>
+      <span className="visually-hidden">{sentence}</span>
+    </span>
+  );
 }
 
 function describeRunway(t: Catalogue, row: ReorderSuggestion): string {

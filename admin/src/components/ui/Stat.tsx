@@ -18,24 +18,25 @@ interface StatTileProps {
    */
   words?: ReactNode;
   hint?: ReactNode;
+  /** Kept so screens can still pass one; tiles no longer draw it (a label needs no picture). */
   icon?: Icon;
   tone?: 'default' | 'warn' | 'danger';
   /** Makes the whole tile a link to the page behind the figure. */
   to?: string;
 }
 
-export function StatTile({ label, value, words, hint, icon: IconComponent, tone = 'default', to, named }: StatTileProps) {
+export function StatTile({ label, value, words, hint, tone = 'default', to, named }: StatTileProps) {
   const body = (
     <>
       <span className={named ? 'stat__label stat__label--name' : 'stat__label'}>
-        {IconComponent && <IconComponent size={16} aria-hidden="true" />}
         {label}
       </span>
       {words ? <span className="stat__words">{words}</span> : <span className="stat__value">{value}</span>}
       {hint && <span className="stat__hint">{hint}</span>}
     </>
   );
-  const className = `stat stat--${tone}`;
+  // A tile that only says "None low" steps back, so the real figures stand out.
+  const className = words ? `stat stat--${tone} stat--quiet` : `stat stat--${tone}`;
   return to ? (
     <Link to={to} className={`${className} stat--link`}>
       {body}

@@ -1,4 +1,4 @@
-import { Coins, Drop, MoonStars, Package, Receipt } from '@phosphor-icons/react';
+import { ChartLine, ClipboardText, Coins, Drop, FileArrowDown, MoonStars, Package, Receipt } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -15,6 +15,7 @@ import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MOR
 import { ButtonLink, Card, DayBars, ShopSunrise, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
+import { shownTo } from '../navigation/sections';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Days in the Today card's dot strip. */
@@ -41,13 +42,11 @@ export function OverviewPage() {
     <>
       <OverviewHero />
 
+      <QuickActions />
+
       <AttentionPanel />
 
-      {/* The day as one panel: the sentence and the last 30 days, then the figures under a hairline. */}
-      <section className="today-panel" aria-label={t.overview.todaySoFar}>
-        <TodayCard />
-        <TodayFigures lowCount={lowCount} />
-      </section>
+      <TodayFigures lowCount={lowCount} />
 
       <SetupGuide />
 
@@ -99,8 +98,9 @@ function greeting(t: ReturnType<typeof useT>, hour: number): string {
 }
 
 /**
- * The top of the morning page: the date, a greeting and the day's main action,
- * with the shop at sunrise (the 4VD mark's scene) standing on the page's rule.
+ * The shop front: the date and a greeting, the day's takings so far with the
+ * last 30 days, and the shop at sunrise (the 4VD mark's scene) standing on the
+ * panel's floor. The first thing anyone sees when they open 4VD.
  */
 function OverviewHero() {
   const t = useT();
@@ -109,23 +109,37 @@ function OverviewHero() {
   const firstName = user.name.split(' ')[0] || user.name;
   return (
     <header className="overview-hero">
+      <div className="overview-hero__text">
+        <p className="overview-hero__kicker">{formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
+        <TodayCard />
+      </div>
       <div className="overview-hero__art">
         <ShopSunrise />
       </div>
-      <div className="overview-hero__text">
-        <p className="overview-hero__kicker">
-          {t.nav.items.overview} · {formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
-        <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
-      </div>
-      {user.role !== 'owner' && (
-        <div className="overview-hero__actions">
-          <ButtonLink to="/sales?new=1" variant="primary" icon={Receipt}>
-            {t.sales.record}
-          </ButtonLink>
-        </div>
-      )}
     </header>
+  );
+}
+
+/** The jobs people open 4VD for, one press away, each only for those who may do it. */
+function QuickActions() {
+  const t = useT();
+  const user = useCurrentUser();
+  const actions = [
+    user.role !== 'owner' && shownTo(user.role, { to: '/sales' }) && { to: '/sales?new=1', label: t.sales.record, icon: Receipt, primary: true },
+    shownTo(user.role, { to: '/suppliers', accountant: true }) && { to: '/bills/new', label: t.overview.actionBill, icon: FileArrowDown },
+    shownTo(user.role, { to: '/counts' }) && { to: '/counts', label: t.overview.actionCount, icon: ClipboardText },
+    shownTo(user.role, { to: '/report', accountant: true }) && { to: '/report', label: t.nav.items.reports, icon: ChartLine },
+  ].filter((action) => action !== false);
+  if (actions.length === 0) return null;
+  return (
+    <nav className="quick-actions" aria-label={t.overview.actionsLabel}>
+      {actions.map((action) => (
+        <ButtonLink key={action.to} to={action.to} variant={action.primary ? 'primary' : 'secondary'} icon={action.icon}>
+          {action.label}
+        </ButtonLink>
+      ))}
+    </nav>
   );
 }
 

@@ -157,23 +157,29 @@
 
 /* ---------- Overview hero ---------- */
 
-/* The top of the morning page: the date, a greeting and the main action on the
-   left; the shop at sunrise, the 4VD mark's scene, standing on the page rule. */
-/* One row: the shop at sunrise as the page's mark, the date and greeting,
-   and the day's main action on the right. */
+/* The shop front: one large raised panel. On the left the date, the greeting
+   and the day so far with its 30 days of bars; on the right the shop at
+   sunrise, standing on the panel's floor. */
 .overview-hero {
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--line);
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 26vw, 340px);
+  align-items: end;
+  gap: var(--space-6);
+  margin-bottom: var(--space-4);
+  padding: var(--space-6) var(--space-6) 0;
+  border-radius: var(--radius-panel);
+  background: var(--sheen), var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+  overflow: hidden;
 }
 
 .overview-hero__text {
   display: grid;
-  gap: 2px;
+  align-content: start;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-bottom: var(--space-6);
 }
 
 .overview-hero__kicker {
@@ -184,76 +190,34 @@
 
 .overview-hero__title {
   font-family: var(--font-display);
-  font-size: var(--text-figure);
+  font-size: var(--text-figure-lg);
   font-weight: 500;
   line-height: 1.1;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 
-.overview-hero__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-/* The scene's ground sits on the page rule, so the shop stands on the line:
-   pull the drawing down by the part under its ground (17 of 240 units),
-   whose own horizon lines would only repeat the rule. */
+/* The shop stands on the panel's floor: the part of the drawing under its
+   ground (20 units, 8.4% of its width) is cut off by the panel's edge. */
 .overview-hero__art {
-  width: 72px;
+  align-self: end;
+  margin-bottom: -8.4%;
 }
 
 .overview-hero .shop-sunrise__horizon {
   display: none;
 }
 
-/* Phones: the greeting and To do come first; the shop stays small beside the
-   greeting on the same rule instead of pushing everything down. */
-@media (max-width: 599px) {
-  .overview-hero {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--space-3);
-  }
+/* ---------- Today (inside the hero) ---------- */
 
-  .overview-hero__art {
-    width: 52px;
-  }
-
-  .overview-hero__actions {
-    grid-column: 1 / -1;
-  }
-}
-
-/* ---------- Today (Overview) ---------- */
-
-/* The day as one raised panel: on top, an oat band with the serif sentence
-   and the last 30 days as bars; under a hairline, the day's figures on paper. */
-.today-panel {
-  margin-bottom: var(--space-5);
-  border-radius: var(--radius-panel);
-  background: var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise);
-  overflow: hidden;
-}
-
-.today-panel .stat-grid-room {
-  margin-bottom: 0;
-}
-
-.today-panel .stat-grid {
-  border-top: 1px solid var(--line);
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-}
-
+/* The day so far under the greeting, set apart by a hairline: a serif
+   sentence, how it compares with last week, and the last 30 days as bars. */
 .today {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
-  align-items: center;
-  gap: var(--space-5);
-  padding: var(--space-5);
-  background: var(--sheen), var(--fill);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
 }
 
 .today .day-bars__base {
@@ -261,11 +225,11 @@
 }
 
 .today .day-bars__break {
-  fill: var(--fill);
+  fill: var(--surface);
 }
 
 .today__headline {
-  max-width: 28ch;
+  max-width: 30ch;
   font-family: var(--font-display);
   font-size: var(--text-figure);
   font-weight: 500;
@@ -282,31 +246,77 @@
 
 .today__text {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* The last 30 days as slim bars, the latest in ink. */
 .today__dots {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  max-width: 420px;
   margin: 0;
 }
 
 .today__dots figcaption {
   color: var(--ink-muted);
   font-size: var(--text-sm);
-  text-align: right;
 }
 
-@media (max-width: 1100px) {
-  .today {
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+/* ---------- Quick actions ---------- */
+
+/* The jobs people open 4VD for, as a row of keys under the shop front. */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+/* Tablets: the drawing steps back so the day keeps its room. */
+@media (max-width: 1000px) {
+  .overview-hero {
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-5) 0;
+  }
+
+  .overview-hero__text {
+    padding-bottom: var(--space-5);
   }
 }
 
-@media (max-width: 760px) {
-  .today {
-    grid-template-columns: 1fr;
+/* Phones: the shop sits small in the top corner beside the greeting, and the
+   keys share the width two by two. */
+@media (max-width: 599px) {
+  .overview-hero {
+    display: block;
+    padding: var(--space-4) var(--space-4) 0;
+  }
+
+  .overview-hero__text {
+    padding-bottom: var(--space-4);
+  }
+
+  .overview-hero__title {
+    padding-right: 84px;
+    font-size: var(--text-figure);
+  }
+
+  .overview-hero__kicker {
+    padding-right: 84px;
+  }
+
+  .overview-hero__art {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 72px;
+    margin: 0;
+  }
+
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -108,7 +108,7 @@
 
 .choice-card:has(input:checked) {
   background: var(--tint);
-  box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-inset);
+  box-shadow: inset 0 0 0 2px var(--amber-mark), inset 0 3px 0 var(--amber-lip), var(--shadow-inset);
 }
 
 .choice-card:has(input:focus-visible) {

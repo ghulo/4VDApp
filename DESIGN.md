@@ -515,6 +515,23 @@ on screen; higher layers are lighter steps because shadows barely show on dark.
   text on paper.
 - Text on amber is **Pillar Ink** `#0d1012` (white fails contrast: 1.9:1).
 
+#### Amber depth
+Amber has half steps (150, 250, 350, 450, 550, 650, 850, 925) so one amber thing can
+show depth in its own colour instead of one flat yellow. Never a coloured glow or wash.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--cta-top` / `--cta` / `--cta-low` | 350 / 400 / 450 | same | the key: lit top, body, foot (edge 600) |
+| `--amber-wash` | 50 | 975 | hover in amber places (section tabs) |
+| `--tint` | 150 | 925 | where you are, selected rows, checked choices |
+| `--amber-rim` | 250 | 850 | the hairline round a tinted surface |
+| `--amber-lip` | white 80% | white 5% | top light on a tinted surface |
+| `--amber-mark` | 450 | 400 | the deeper half of edge marks, bar feet |
+| `--amber-track` | 100 | 950 | the well a progress bar runs in |
+
+Where you are = tint + lip + rim + raise; a selected row = tint, a two-shade edge
+mark (400 over 450) and a rim under it; progress = an amber key in an amber well.
+
 ### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
 

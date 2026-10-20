@@ -11,7 +11,7 @@
    use these; screens use the named tokens (src/theme/scales.test.ts keeps it so). */
 :root {
   --neutral-50: #f5f9fc; --neutral-100: #eef2f5; --neutral-200: #e3e7ea; --neutral-300: #d5dadc; --neutral-400: #b7bbbe; --neutral-500: #989c9e; --neutral-600: #787c7f; --neutral-700: #595d5f; --neutral-800: #45484a; --neutral-900: #2b2e31; --neutral-950: #16191b; --neutral-975: #0d1012; --neutral-990: #050709;
-  --amber-50: #fef8ea; --amber-100: #fdf1d4; --amber-200: #f9e4b6; --amber-300: #f6d58e; --amber-400: #f5b71a; --amber-500: #ca8f04; --amber-600: #a66f02; --amber-700: #7f5101; --amber-800: #653e00; --amber-900: #3e290f; --amber-950: #221709; --amber-975: #150e06; --amber-990: #090603;
+  --amber-50: #fef8ea; --amber-100: #fdf1d4; --amber-150: #fbebc5; --amber-200: #f9e4b6; --amber-250: #f7dda2; --amber-300: #f6d58e; --amber-350: #f5c662; --amber-400: #f5b71a; --amber-450: #e0a310; --amber-500: #ca8f04; --amber-550: #b87f03; --amber-600: #a66f02; --amber-650: #926002; --amber-700: #7f5101; --amber-800: #653e00; --amber-850: #51330a; --amber-900: #3e290f; --amber-925: #30200c; --amber-950: #221709; --amber-975: #150e06; --amber-990: #090603;
   --green-50: #f1fcf4; --green-100: #e4f8e8; --green-200: #d0f0d7; --green-300: #b6e7c2; --green-400: #71d38f; --green-500: #49b46e; --green-600: #0f944c; --green-700: #016732; --green-800: #17552e; --green-900: #1b3422; --green-950: #101d13; --green-975: #09120c; --green-990: #040705;
   --orange-50: #fff6f3; --orange-100: #ffeee6; --orange-200: #ffdfcf; --orange-300: #ffcdb4; --orange-400: #ff9f6f; --orange-500: #ec7531; --orange-600: #c55602; --orange-700: #953f00; --orange-800: #733207; --orange-900: #432516; --orange-950: #25150c; --orange-975: #170d08; --orange-990: #0a0504;
   --red-50: #fff6f5; --red-100: #ffedeb; --red-200: #ffddda; --red-300: #ffcbc5; --red-400: #ff9b93; --red-500: #f76560; --red-600: #d53c3d; --red-700: #a71f25; --red-800: #792826; --red-900: #46211f; --red-950: #271311; --red-975: #180b0a; --red-990: #0b0505;
@@ -34,10 +34,18 @@
   --accent: var(--amber-600);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
-  /* The foot of the amber key: a third of the way to amber 500, so the key reads as a rounded, lit cap. */
-  --cta-low: color-mix(in oklab, var(--amber-400), var(--amber-500) 35%);
+  /* The amber key in three shades: a lit top (350), full amber (400), a deeper foot (450). */
+  --cta-top: var(--amber-350);
+  --cta-low: var(--amber-450);
   --cta-ink: var(--neutral-975);
-  --tint: rgb(245 183 26 / 0.16);
+  /* Amber depth for "where you are" and selected things: a solid wash, a rim one shade
+     deeper, a lit top lip, and a mark for edges and bars. Hover uses the quieter wash. */
+  --tint: var(--amber-150);
+  --amber-wash: var(--amber-50);
+  --amber-rim: var(--amber-250);
+  --amber-lip: rgb(255 255 255 / 0.8);
+  --amber-mark: var(--amber-450);
+  --amber-track: var(--amber-100);
   --ok: var(--green-700);
   --ok-soft: var(--green-100);
   --warn: var(--orange-700);
@@ -101,10 +109,16 @@
   --accent: var(--amber-400);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
-  /* The foot of the amber key: a third of the way to amber 500, so the key reads as a rounded, lit cap. */
-  --cta-low: color-mix(in oklab, var(--amber-400), var(--amber-500) 35%);
+  --cta-top: var(--amber-350);
+  --cta-low: var(--amber-450);
   --cta-ink: var(--neutral-975);
-  --tint: rgb(245 183 26 / 0.14);
+  /* Dark amber surfaces climb 975 (hover) → 925 (selected) with an 850 rim. */
+  --tint: var(--amber-925);
+  --amber-wash: var(--amber-975);
+  --amber-rim: var(--amber-850);
+  --amber-lip: rgb(255 255 255 / 0.05);
+  --amber-mark: var(--amber-400);
+  --amber-track: var(--amber-950);
   /* Status words take the full-colour 500 step: the pale 400s read as candy beside the amber. */
   --ok: var(--green-500);
   --ok-soft: var(--green-900);

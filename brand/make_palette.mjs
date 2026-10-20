@@ -34,8 +34,20 @@ neutral[950] = '#16191b';
 // Amber: 400 is the brand and stays exact. Darker steps turn towards gold-brown
 // (hue 83 → 66) so amber text reads warm, never olive.
 const amberHue = { 50: 88, 100: 87, 200: 86, 300: 85, 400: 83, 500: 79, 600: 75, 700: 72, 800: 70, 900: 70, 950: 70, 975: 70, 990: 70 };
-const amber = Object.fromEntries(STEPS.map((s) => [s, fromOklch(L[s], (s <= 300 ? 0.2 : 0.16) * CURVE[s] * (s >= 500 ? 1.05 : 1), amberHue[s])]));
+const amberAt = (s) => fromOklch(L[s], (s <= 300 ? 0.2 : 0.16) * CURVE[s] * (s >= 500 ? 1.05 : 1), amberHue[s]);
+// Amber gets half steps too, for depth: a lit lip, a rim and a deeper foot on the
+// same surface (150 selected wash, 250 rim, 350 key top, 450 key foot, 850/925 dark surfaces).
+const HALF = [150, 250, 350, 450, 550, 650, 850, 925];
+const amber = Object.fromEntries(STEPS.map((s) => [s, amberAt(s)]));
 amber[400] = '#f5b71a';
+// Each half step sits halfway between its two neighbours in OKLCH, so 350 is as vivid as the
+// steps around it (the key's lit top) and 450 is the key's foot.
+for (const h of HALF) {
+  const lo = Math.max(...STEPS.filter((s) => s < h)), hi = Math.min(...STEPS.filter((s) => s > h));
+  const [l1, c1, h1] = toOklch(amber[lo]), [l2, c2, h2] = toOklch(amber[hi]);
+  amber[h] = fromOklch((l1 + l2) / 2, (c1 + c2) / 2, (h1 + h2) / 2);
+}
+
 
 const scales = {
   neutral,
@@ -46,7 +58,7 @@ const scales = {
   blue: ramp(250, 0.14),    // info: the anthracite's own blue, turned up
 };
 
-const out = Object.entries(scales).map(([name, r]) => '  ' + STEPS.map((s) => `--${name}-${s}: ${r[s]};`).join(' ')).join('\n');
+const out = Object.entries(scales).map(([name, r]) => '  ' + Object.keys(r).map(Number).sort((x, y) => x - y).map((s) => `--${name}-${s}: ${r[s]};`).join(' ')).join('\n');
 console.log(out);
 
 const report = (label, a, b) => console.error(label.padEnd(34), a, 'on', b, contrast(a, b).toFixed(2));

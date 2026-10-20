@@ -138,7 +138,7 @@
 
   .staff-app__bottom-tabs .staff-tabs__tab.active svg {
     background: var(--tint);
-    box-shadow: var(--shadow-raise);
+    box-shadow: inset 0 1px 0 var(--amber-lip), inset 0 0 0 1px var(--amber-rim), var(--shadow-raise);
   }
 }
 

@@ -25,6 +25,10 @@ app.userAgentFallback = app.userAgentFallback.replace(/\s(Electron|4vd-desktop|4
 // Windows 11's own thin scrollbars, which float over the page instead of taking a strip of it.
 app.commandLine.appendSwitch('enable-features', 'FluentScrollbar,FluentOverlayScrollbar');
 
+// The same id the installer gives its shortcuts, so a pinned 4VD and the open
+// window are one icon on the taskbar and in Start.
+app.setAppUserModelId('app.4vd.desktop');
+
 if (!app.requestSingleInstanceLock()) app.quit();
 
 let win = null;

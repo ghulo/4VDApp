@@ -20,7 +20,7 @@
 }
 
 /* Room for the minimise, maximise and close buttons Windows draws on the right. */
-[data-shell='desktop'] .topbar {
+[data-shell='desktop'] :is(.topbar, .counter__bar) {
   padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + var(--space-3));
 }
 

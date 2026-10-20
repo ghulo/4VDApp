@@ -32,3 +32,20 @@
   LangString fvdOpen ${LANG_ENGLISH} "Open 4VD"
   LangString fvdOpen ${LANG_ALBANIAN} "Hap 4VD"
 !macroend
+
+; electron-builder recreates shortcuts on an update only if they are still there,
+; so a PC that lost them (or never had them) stayed without. The Start menu entry
+; always comes back; the desktop one only on a real install, so deleting it sticks.
+!macro customInstall
+  ${ifNot} ${FileExists} "$newStartMenuLink"
+    CreateShortCut "$newStartMenuLink" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+    ClearErrors
+    WinShell::SetLnkAUMI "$newStartMenuLink" "${APP_ID}"
+  ${endIf}
+  ${ifNot} ${isUpdated}
+  ${andIfNot} ${FileExists} "$newDesktopLink"
+    CreateShortCut "$newDesktopLink" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
+    ClearErrors
+    WinShell::SetLnkAUMI "$newDesktopLink" "${APP_ID}"
+  ${endIf}
+!macroend

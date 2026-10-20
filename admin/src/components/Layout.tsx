@@ -146,17 +146,21 @@ function FullLayout() {
             </Link>
           </>
         )}
-        <button type="button" className="topbar__search" aria-label={`${t.nav.search} ${isMac ? '⌘' : 'Ctrl'} K`} onClick={() => setPaletteOpen(true)}>
-          <MagnifyingGlass size={16} aria-hidden="true" />
-          <span className="topbar__search-label">{t.nav.search}</span>
-          <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
-        </button>
+        <Tooltip label={t.nav.search} shortcut={isMac ? '⌘ K' : 'Ctrl K'} side="bottom">
+          <button type="button" className="topbar__search" aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'} onClick={() => setPaletteOpen(true)}>
+            <MagnifyingGlass size={16} aria-hidden="true" />
+            <span className="topbar__search-label">{t.nav.search}</span>
+            <span aria-hidden="true">
+              <Kbd keys={[isMac ? '⌘' : 'Ctrl', 'K']} />
+            </span>
+          </button>
+        </Tooltip>
         <div className="topbar__end">
           <ThemeSwitch persist compact />
           {/* Log out sits behind the avatar: a key of its own beside it was one stray click from signing out. */}
           <MenuButton
             label={t.nav.yourProfile(user.name)}
-            face={<Avatar name={user.name} url={user.avatarUrl} size={28} />}
+            face={<Avatar name={user.name} url={user.avatarUrl} size={30} />}
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             items={[
               { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },

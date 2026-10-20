@@ -360,10 +360,19 @@
 
   .topbar__slash,
   .topbar__shop,
-  .topbar__search-label,
   .topbar__search kbd,
   .topbar .segmented {
     display: none;
+  }
+
+  /* The key shows only its magnifier; the word stays for screen readers. */
+  .topbar__search-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .topbar__search {
@@ -503,7 +512,7 @@
 }
 
 .segmented--icons .segmented__option {
-  width: 28px;
+  width: var(--control-h-sm);
   padding: 0;
   justify-content: center;
 }

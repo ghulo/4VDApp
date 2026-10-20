@@ -65,6 +65,13 @@
   ],
   "exceptions": [
     {
+      "selector": ".topbar__search-label",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On phones the search key shows only its magnifier; the word is clipped on purpose so screen readers still name the key."
+    },
+    {
       "selector": ".skip-link",
       "rules": [
         "viewport-bounds"

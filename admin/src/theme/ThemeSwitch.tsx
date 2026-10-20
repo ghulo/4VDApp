@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth';
 import { meApi } from '../services/api';
 import { type ThemePreference, useThemePreference } from './theme';
 import { useT } from '../i18n/useT';
+import { Tooltip } from '../components/ui/Tooltip';
 
 const OPTIONS: Array<{ value: ThemePreference; key: 'light' | 'dark' | 'auto'; icon: Icon }> = [
   { value: 'light', key: 'light', icon: Sun },
@@ -38,20 +39,26 @@ export function ThemeSwitch({ className = '', persist = false, compact = false }
       {OPTIONS.map((option) => {
         const OptionIcon = option.icon;
         const label = t.theme[option.key];
-        return (
+        const key = (
           <button
             key={option.value}
             type="button"
             role="radio"
             aria-checked={preference === option.value}
             aria-label={compact ? label : undefined}
-            title={compact ? label : undefined}
             className="segmented__option"
             onClick={() => choose(option.value)}
           >
             <OptionIcon size={14} weight={preference === option.value ? 'fill' : 'regular'} aria-hidden="true" />
             {!compact && label}
           </button>
+        );
+        return compact ? (
+          <Tooltip key={option.value} label={label} side="bottom">
+            {key}
+          </Tooltip>
+        ) : (
+          key
         );
       })}
     </div>

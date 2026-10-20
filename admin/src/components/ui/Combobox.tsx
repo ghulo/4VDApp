@@ -42,6 +42,10 @@ interface ComboboxProps {
   disabled?: boolean;
   /** How many matches to list at most; the rest are reached by typing more. */
   limit?: number;
+  /** The form won't send until one is picked (typed words alone don't count). */
+  required?: boolean;
+  /** Empties the field after each pick, for adding one item after another. */
+  resetAfterPick?: boolean;
 }
 
 /**
@@ -49,7 +53,7 @@ interface ComboboxProps {
  * supplier, a product): the list narrows as you type, ignoring accents,
  * arrow keys walk it, Enter picks, Esc puts back the last choice.
  */
-export function Combobox({ label, options, value, onChange, placeholder, hint, error, disabled, limit = 50 }: ComboboxProps) {
+export function Combobox({ label, options, value, onChange, placeholder, hint, error, disabled, limit = 50, required, resetAfterPick }: ComboboxProps) {
   const t = useT();
   const id = useId();
   const listId = `${id}-list`;
@@ -72,13 +76,15 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
   const matches = useMemo(() => matchOptions(options, typed).slice(0, limit), [options, typed, limit]);
 
   useEffect(() => setPopover(listRef.current, open), [open]);
+  // Typed words that match nothing chosen don't fill a required field.
+  useEffect(() => inputRef.current?.setCustomValidity(required && !value ? t.kit.pickFromList : ''), [required, value, t]);
   useEffect(() => {
     listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [active]);
 
   const pick = (option: ComboOption) => {
     onChange(option.value);
-    setQuery(option.label);
+    setQuery(resetAfterPick ? '' : option.label);
     setOpen(false);
   };
 
@@ -117,6 +123,7 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
           aria-activedescendant={open && matches[active] ? `${id}-option-${active}` : undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
+          aria-required={required || undefined}
           autoComplete="off"
           placeholder={placeholder}
           disabled={disabled}
@@ -132,7 +139,7 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
           onKeyDown={onKeyDown}
           onBlur={() => {
             setOpen(false);
-            setQuery(chosen?.label ?? '');
+            setQuery(resetAfterPick ? '' : (chosen?.label ?? ''));
           }}
         />
         <CaretDown className="combobox__caret" size={14} weight="bold" aria-hidden="true" />

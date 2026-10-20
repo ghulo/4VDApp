@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, Combobox, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billScansApi, categoriesApi, suppliersApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -284,19 +284,15 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
 
         <Card>
           <div className="field-row">
-            <Field
+            <Combobox
               label={t.scans.supplier}
               hint={scan.supplier ? t.scans.supplierBy[scan.supplier.matchedBy] : reading.supplier.name ? t.scans.supplierOnBill(reading.supplier.name) : t.scans.supplierMissing}
-            >
-              <select required value={scan.supplier?.id ?? ''} onChange={(event) => onSupplier(event.target.value)}>
-                <option value="">{t.scans.chooseSupplier}</option>
-                {suppliers.data?.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+              placeholder={t.scans.chooseSupplier}
+              required
+              value={scan.supplier ? String(scan.supplier.id) : ''}
+              onChange={onSupplier}
+              options={(suppliers.data ?? []).map((supplier) => ({ value: String(supplier.id), label: supplier.name, hint: supplier.nui ?? supplier.phone ?? undefined }))}
+            />
             {scan.supplier && (
               <Field label={t.scans.order} hint={scan.openOrders.length > 0 ? t.scans.orderHint : undefined}>
                 <select value={orderId} onChange={(event) => setOrderId(event.target.value)}>

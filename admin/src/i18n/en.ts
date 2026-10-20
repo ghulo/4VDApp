@@ -4103,6 +4103,7 @@ export const en = {
   },
   kit: {
     noMatch: 'Nothing matches. Check the spelling or type less.',
+    pickFromList: 'Pick one from the list.',
     notifications: 'Notifications',
     dismiss: 'Dismiss',
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,

@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
+import { Button, ButtonLink, Card, Combobox, DataTable, EmptyState, Field, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { ordersApi, productsApi, reportsApi, suppliersApi } from '../services/api';
 import type { Supplier } from '../services/types';
@@ -145,16 +145,15 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
     <form className="product-layout" onSubmit={handleSubmit}>
       <div className="product-layout__main">
         <Card>
-          <Field label={t.orders.supplier} hint={supplier ? [supplier.phone, supplier.email].filter(Boolean).join(' · ') || undefined : undefined}>
-            <select required value={supplierId} onChange={(event) => setSupplierId(event.target.value)}>
-              <option value="">{t.orders.chooseSupplier}</option>
-              {suppliers.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <Combobox
+            label={t.orders.supplier}
+            hint={supplier ? [supplier.phone, supplier.email].filter(Boolean).join(' · ') || undefined : undefined}
+            placeholder={t.orders.chooseSupplier}
+            required
+            value={supplierId}
+            onChange={setSupplierId}
+            options={suppliers.map((row) => ({ value: String(row.id), label: row.name, hint: row.nui ?? row.phone ?? undefined }))}
+          />
         </Card>
 
         <Card
@@ -226,18 +225,17 @@ function NewOrderForm({ suppliers, onOrder }: { suppliers: Supplier[]; onOrder: 
             />
           )}
           <div className="buy-add-line">
-            <Field label={t.orders.addProduct}>
-              <select value="" disabled={products.isPending} onChange={(event) => addProduct(event.target.value)}>
-                <option value="">{t.orders.chooseProduct}</option>
-                {products.data?.items
-                  .filter((product) => !lines.some((line) => line.productId === product.id))
-                  .map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name}
-                    </option>
-                  ))}
-              </select>
-            </Field>
+            <Combobox
+              label={t.orders.addProduct}
+              placeholder={t.orders.chooseProduct}
+              disabled={products.isPending}
+              value=""
+              resetAfterPick
+              onChange={(id) => id && addProduct(id)}
+              options={(products.data?.items ?? [])
+                .filter((product) => !lines.some((line) => line.productId === product.id))
+                .map((product) => ({ value: String(product.id), label: product.name, hint: product.barcode ?? undefined }))}
+            />
           </div>
         </Card>
       </div>

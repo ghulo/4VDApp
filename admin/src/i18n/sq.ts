@@ -4080,6 +4080,7 @@ export const sq: Catalogue = {
   },
   kit: {
     noMatch: 'Asgjë nuk përputhet. Kontrollo shkrimin ose shkruaj më pak.',
+    pickFromList: 'Zgjidh një nga lista.',
     notifications: 'Njoftimet',
     dismiss: 'Hiqe',
     stepOf: (n, total) => `Hapi ${n} nga ${total}`,

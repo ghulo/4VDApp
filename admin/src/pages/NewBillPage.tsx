@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { BillLines, Segmented } from '../components/BillLines';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PlaceSelect, usePlaces, usualPlace } from '../components/MoneyParts';
-import { Badge, Button, Card, DateField, Field, PageHeader } from '../components/ui';
+import { Badge, Button, Card, Combobox, DateField, Field, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billsApi, suppliersApi } from '../services/api';
 import {
@@ -175,7 +175,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
     <form className="product-layout" onSubmit={handleSubmit} noValidate>
       <div className="product-layout__main">
         <Card title={t.billForm.who}>
-          <Field
+          <Combobox
             label={t.bills.supplier}
             hint={
               supplier?.usualKind
@@ -186,16 +186,11 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
                   )
                 : undefined
             }
-          >
-            <select value={supplierId} onChange={(event) => chooseSupplier(event.target.value)}>
-              <option value="">{t.billForm.noSupplier}</option>
-              {suppliers.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+            placeholder={t.billForm.noSupplier}
+            value={supplierId}
+            onChange={chooseSupplier}
+            options={suppliers.map((row) => ({ value: String(row.id), label: row.name, hint: row.nui ?? row.phone ?? undefined }))}
+          />
           {abroad && (
             <p className="bill-abroad">
               <Badge tone="info">{t.billForm.abroadStamp}</Badge>

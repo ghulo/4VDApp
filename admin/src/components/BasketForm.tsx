@@ -12,7 +12,7 @@ import { formatMoney, formatPercent } from '../utils/format';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { EmptyState, ErrorNotice, Loading } from './Feedback';
 import { PrintDocumentButton } from './PrintDocumentButton';
-import { Button, ButtonLink, Field } from './ui';
+import { Button, ButtonLink, Combobox, Field } from './ui';
 
 const SUGGESTIONS = 6;
 
@@ -312,16 +312,14 @@ export function BasketForm() {
           <input type="number" inputMode="decimal" min={0} step={0.01} value={paid} onChange={(event) => setPaid(event.target.value)} disabled={owing} />
         </Field>
         {customers.data && customers.data.length > 0 && (
-          <Field label={t.tabs.customer} hint={customerId ? undefined : t.tabs.anonymousHint}>
-            <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
-              <option value="">{t.tabs.anonymous}</option>
-              {customers.data.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <Combobox
+            label={t.tabs.customer}
+            hint={customerId ? undefined : t.tabs.anonymousHint}
+            placeholder={t.tabs.anonymous}
+            value={customerId}
+            onChange={setCustomerId}
+            options={customers.data.map((customer) => ({ value: String(customer.id), label: customer.name, hint: customer.phone ?? undefined }))}
+          />
         )}
       </div>
       {customerId && (

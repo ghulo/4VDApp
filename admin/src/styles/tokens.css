@@ -146,8 +146,9 @@
 }
 
 :root {
-  /* Data is drawn in ink, so amber keeps meaning "act here". */
-  --chart-series: var(--ink-muted);
+  /* Data is drawn in amber steps (DESIGN.md 6): the series, and the bar or point picked out. */
+  --chart-series: var(--data-3);
+  --chart-strong: var(--data-1);
 
   /* Older names still used by page styles; they follow the tokens above. */
   --concrete: var(--bg);

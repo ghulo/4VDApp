@@ -935,7 +935,7 @@ form.product-form > .form-actions {
 }
 
 .chart__bar--active {
-  fill: var(--ink);
+  fill: var(--chart-strong);
 }
 
 .chart__plot:focus-visible {

@@ -542,8 +542,9 @@ The canvas weave is faint (1.2% light, 1% dark).
 - **Data in amber steps** (changed 2026-10-20: grey charts felt dull). The
   newer charts (area, donut, heatmap, funnel) draw in the amber scale through
   `--data-1`…`--data-5`, `--data-heat` and `--data-line`, strongest step for
-  the biggest value. The older ones (DayBars, ColumnChart, BarList, mini
-  graphs) are still ink; move them over when touching them. Up/down changes
+  the biggest value. The older charts (DayBars, ColumnChart, BarList,
+  mini graphs, the revenue chart) follow through `--chart-series` (step 3)
+  and `--chart-strong` (step 1) for the bar or point picked out. Up/down changes
   use OK/Danger words, not just colour.
 - **No second accent.** Status colours are for status only.
 - **Colour never carries meaning alone**; words always do.

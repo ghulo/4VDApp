@@ -1255,7 +1255,7 @@ input.switch:focus-visible {
 }
 
 .day-bars__bar--latest {
-  fill: var(--ink);
+  fill: var(--chart-strong);
 }
 
 /* One hairline the bars stand on, so quiet days read as calm, not broken. */
@@ -1399,7 +1399,7 @@ input.switch:focus-visible {
 
 .metric__line {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--data-line);
   stroke-width: 1.75;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -1780,7 +1780,7 @@ input.switch:focus-visible {
 
 
 /* ---------- Charts: bar list and columns ----------
-   One series each, drawn in --chart-series (ink, not clay: clay means "act here"). */
+   One series each, drawn in --chart-series (an amber step, DESIGN.md 6). */
 
 .bar-list {
   display: grid;
@@ -1889,16 +1889,16 @@ input.switch:focus-visible {
   display: block;
   inline-size: 100%;
   border-radius: 4px 4px 0 0;
-  background: color-mix(in srgb, var(--chart-series) 55%, transparent);
+  background: var(--chart-series);
   transition: background var(--fast) var(--ease);
 }
 
 .column-chart__bar--top {
-  background: color-mix(in srgb, var(--ink) 80%, transparent);
+  background: var(--chart-strong);
 }
 
 .column-chart__slot:hover .column-chart__bar {
-  background: var(--ink);
+  background: var(--chart-strong);
 }
 
 .column-chart__tip {

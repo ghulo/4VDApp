@@ -1225,7 +1225,8 @@ input.switch:focus-visible {
 }
 
 .shop-sunrise__tick,
-.shop-sunrise__tick-shadow {
+.shop-sunrise__tick-shadow,
+.shop-sunrise__tick-contact {
   fill: none;
   stroke-width: 14;
   stroke-linecap: round;
@@ -1234,7 +1235,14 @@ input.switch:focus-visible {
 
 .shop-sunrise__tick-shadow {
   stroke: var(--glass-deep);
-  opacity: 0.3;
+  opacity: 0.32;
+}
+
+/* Ambient occlusion: dark right at the edge, gone within a couple of pixels. */
+.shop-sunrise__tick-contact {
+  stroke: var(--glass-deep);
+  stroke-width: 15;
+  opacity: 0.38;
 }
 
 .shop-sunrise__frost-top {

@@ -1,0 +1,618 @@
+/* The Counter as a till roll (/counter-preview, a look-only test). The basket
+   is the receipt being printed: a strip of paper in the middle of the till,
+   light in both themes, with the total once at its foot in the display serif.
+   Everything around it stays quiet; amber is only on Pay and the picked line. */
+
+.cp {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--light-canvas), var(--weave-image), var(--bg);
+  color: var(--ink);
+}
+
+/* ---------- Top bar ---------- */
+
+.cp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--topbar-h);
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--light-raise), var(--surface);
+}
+
+.cp-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cp-bar__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.cp-bar__who {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.cp-bar__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-segment);
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.cp-chip--ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.cp-bar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* ---------- Till ---------- */
+
+.cp-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  min-height: 0;
+}
+
+.cp-roll-side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-4) var(--space-5) 0;
+}
+
+.cp-scan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cp-scan {
+  display: flex;
+  flex: 1 1 320px;
+  align-items: center;
+  gap: var(--space-2);
+  height: 52px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-inset), 0 0 0 2px var(--cta);
+  color: var(--ink-muted);
+}
+
+.cp-scan input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.cp-scan input:focus {
+  outline: none;
+}
+
+.cp-baskets {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.cp-basket {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cp-basket:hover {
+  background: var(--tint);
+  color: var(--ink);
+}
+
+.cp-basket[aria-pressed='true'] {
+  background: var(--surface);
+  box-shadow: var(--shadow-raise);
+  color: var(--ink);
+}
+
+.cp-basket:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.cp-basket__sum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tray the roll feeds into: the paper comes up from the bottom edge. */
+.cp-tray {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+  padding-bottom: var(--space-4);
+  overflow: hidden;
+}
+
+/* ---------- The receipt ---------- */
+
+.cp-roll {
+  --tear: 10px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(100%, 440px);
+  min-height: 0;
+  /* As long as the sale, up to the tray: longer sales scroll inside. */
+  max-height: 100%;
+  padding: var(--space-5) var(--space-5) calc(var(--space-4) + var(--tear));
+  background: var(--receipt);
+  color: var(--receipt-ink);
+  box-shadow: var(--shadow-raise);
+  /* A torn foot, like the printer's cutter: a row of little teeth. */
+  mask:
+    linear-gradient(#000, #000) top / 100% calc(100% - var(--tear)) no-repeat,
+    conic-gradient(from 135deg at 50% 0, #000 90deg, transparent 0) bottom / calc(var(--tear) * 2) var(--tear) repeat-x;
+}
+
+.cp-roll__head {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--receipt-line);
+}
+
+.cp-roll__customer {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(var(--space-2) * -1);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--receipt-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cp-roll__customer:hover {
+  background: var(--tint);
+}
+
+.cp-roll__customer:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.cp-roll kbd {
+  border-color: var(--receipt-line);
+  background: transparent;
+  color: var(--receipt-muted);
+}
+
+.cp-roll__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--receipt-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-roll__empty {
+  display: grid;
+  min-height: 200px;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--receipt-muted);
+}
+
+.cp-roll__lines {
+  min-height: 0;
+  margin: 0 calc(var(--space-2) * -1);
+  padding: var(--space-2) 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+}
+
+/* A line reads like the printer prints it: the name and its total on one
+   line, how it was worked out under it. */
+.cp-line__button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  row-gap: 2px;
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cp-line__button:hover {
+  background: var(--tint);
+}
+
+.cp-line__button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* The picked line: an amber mark down its edge, like a highlighter on paper. */
+.cp-line__button[aria-pressed='true'] {
+  background: var(--tint);
+  box-shadow: inset 3px 0 0 var(--cta);
+}
+
+.cp-line__name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-line__sum {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.cp-line__how,
+.cp-line__rabat {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--receipt-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-line__vat {
+  color: var(--receipt-muted);
+}
+
+/* The one motion: a new line feeds out of the printer onto the roll. */
+@media (prefers-reduced-motion: no-preference) {
+  .cp-line--fresh {
+    animation: cp-feed 260ms var(--ease) both;
+  }
+}
+
+@keyframes cp-feed {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.cp-roll__foot {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--receipt-line);
+}
+
+.cp-roll__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-roll__facts div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.cp-roll__facts dt {
+  color: var(--receipt-muted);
+}
+
+.cp-roll__facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* The total, said once, set like the figure at the foot of a printed receipt. */
+.cp-roll__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--receipt-ink);
+}
+
+.cp-roll__total span {
+  font-weight: 600;
+}
+
+.cp-roll__total strong {
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Keys ---------- */
+
+.cp-keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  border-left: 1px solid var(--line);
+  background: var(--light-raise), var(--surface);
+}
+
+/* Pay: the biggest key, ink words on the lit amber cap. The amount is on the
+   receipt, so the key only says what it does. */
+.cp-pay {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  min-height: 88px;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: linear-gradient(180deg, var(--cta), var(--cta-low));
+  box-shadow: var(--key-shine), 0 2px 0 var(--cta-edge), var(--key-drop);
+  color: var(--cta-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cp-pay:hover:not(:disabled) {
+  background: var(--cta-hover);
+}
+
+.cp-pay:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--key-shine), 0 1px 0 var(--cta-edge), var(--key-drop-pressed);
+}
+
+.cp-pay:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.cp-pay:disabled {
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.cp-pay__word {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-figure);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.cp-pay kbd {
+  border-color: currentColor;
+  background: transparent;
+  color: inherit;
+  font-family: var(--font-body);
+}
+
+.cp-pay__how {
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.cp-hint {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-small);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.cp-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cp-group__title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-group__title strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cp-group__keys {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.cp-key {
+  justify-content: flex-start;
+  min-width: 0;
+  height: 44px;
+}
+
+.cp-key kbd {
+  margin-left: auto;
+}
+
+.cp-cancel {
+  justify-self: start;
+}
+
+.cp-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.cp-day__label {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.cp-day__sum {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-day__sum span {
+  margin-left: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* The Till menu opens upward from the foot of the keys. */
+.cp-day .menu {
+  top: auto;
+  bottom: calc(100% + var(--space-1));
+}
+
+/* ---------- Status bar ---------- */
+
+.cp-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.cp-status__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cp-status__clock {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Smaller screens ---------- */
+
+@media (max-width: 1000px) {
+  .cp-main {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-roll-side {
+    padding-bottom: var(--space-4);
+  }
+
+  .cp-tray {
+    overflow: visible;
+  }
+
+  .cp-roll {
+    max-height: none;
+  }
+
+  .cp-keys {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .cp-status__keys {
+    display: none;
+  }
+}

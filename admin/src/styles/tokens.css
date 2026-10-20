@@ -37,6 +37,11 @@
   /* The foot of the amber key: a third of the way to amber 500, so the key reads as a rounded, lit cap. */
   --cta-low: color-mix(in oklab, var(--amber-400), var(--amber-500) 35%);
   --cta-ink: var(--neutral-975);
+  /* Till-roll paper for the Counter receipt: light in both themes, like the real roll. */
+  --receipt: var(--neutral-50);
+  --receipt-ink: var(--neutral-950);
+  --receipt-muted: var(--neutral-700);
+  --receipt-line: var(--neutral-300);
   --tint: rgb(245 183 26 / 0.16);
   --ok: var(--green-700);
   --ok-soft: var(--green-100);
@@ -96,6 +101,11 @@
   /* The foot of the amber key: a third of the way to amber 500, so the key reads as a rounded, lit cap. */
   --cta-low: color-mix(in oklab, var(--amber-400), var(--amber-500) 35%);
   --cta-ink: var(--neutral-975);
+  /* The roll stays paper in the dark, a step down so it doesn't glare. */
+  --receipt: var(--neutral-100);
+  --receipt-ink: var(--neutral-950);
+  --receipt-muted: var(--neutral-700);
+  --receipt-line: var(--neutral-300);
   --tint: rgb(245 183 26 / 0.14);
   --ok: var(--green-400);
   --ok-soft: var(--green-900);

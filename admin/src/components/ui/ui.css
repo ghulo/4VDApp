@@ -1217,11 +1217,43 @@ input.switch:focus-visible {
   stop-color: var(--cta-top);
 }
 
-/* A light top settling into the full amber, only faintly see-through at the
-   foot: more and dark pages show through as brown. */
+/* Faintly see-through, but never so much that a dark page turns it brown. */
 .shop-sunrise__face-foot {
   stop-color: var(--cta);
-  stop-opacity: 0.9;
+  stop-opacity: 0.88;
+}
+
+.shop-sunrise__edge {
+  fill: none;
+  stroke: var(--cta-low);
+  stroke-width: 7;
+  opacity: 0.55;
+}
+
+/* A soft frost where the light enters, top-left: no hard gloss band. */
+.shop-sunrise__sheen-on {
+  stop-color: rgb(255 255 255 / 0.32);
+}
+
+.shop-sunrise__sheen-off {
+  stop-color: rgb(255 255 255 / 0);
+}
+
+.shop-sunrise__rim {
+  fill: none;
+  stroke-width: 1;
+}
+
+.shop-sunrise__rim-top {
+  stop-color: rgb(255 255 255 / 0.6);
+}
+
+.shop-sunrise__rim-mid {
+  stop-color: rgb(255 255 255 / 0.08);
+}
+
+.shop-sunrise__rim-foot {
+  stop-color: rgb(255 255 255 / 0.3);
 }
 
 .shop-sunrise__tick,

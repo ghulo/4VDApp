@@ -15,6 +15,7 @@ import {
   Percent,
   Plus,
   Printer,
+  Receipt,
   SealPercent,
   SignOut,
   Tag,
@@ -48,6 +49,7 @@ import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable'
 import { CASH_TOLERANCE } from '../components/CashCount';
 import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
+import { InvoicesSheet } from './counter/InvoicesSheet';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
@@ -59,6 +61,7 @@ import { useWaitingSales } from './counter/useWaitingSales';
 
 type Panel =
   | 'find'
+  | 'invoices'
   | 'quantity'
   | 'price'
   | 'discount'
@@ -638,6 +641,7 @@ export function CounterPage() {
       return;
     }
     const shortcuts: Record<string, () => void> = {
+      F1: () => startPanel('invoices'),
       F2: () => startPanel('quantity'),
       F3: openFinder,
       F4: () => startPanel('discount'),
@@ -1002,6 +1006,7 @@ export function CounterPage() {
                 <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
                 <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
+                <CounterKey icon={Receipt} label={t.counter.invoicesKey} hotkey="F1" disabled={!keysEnabled || !online} onClick={() => startPanel('invoices')} />
                 <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled || !online} onClick={openRefund} />
               </KeyGroup>
 
@@ -1036,6 +1041,7 @@ export function CounterPage() {
 
       <footer className="counter-status">
         <ul className="counter-status__legend" aria-label={t.counter.legend}>
+          <LegendKey keys="F1" label={t.counter.legendKeys.invoices} />
           <LegendKey keys="F2" label={t.counter.legendKeys.quantity} />
           <LegendKey keys="F3" label={t.counter.legendKeys.search} />
           <LegendKey keys="F4" label={t.counter.legendKeys.rabat} />
@@ -1236,6 +1242,18 @@ export function CounterPage() {
           if (!priceCheck) return void add(product);
           showCheck(product);
           closePanel();
+        }}
+      />
+      <InvoicesSheet
+        open={panel === 'invoices'}
+        onClose={closePanel}
+        online={online}
+        canOpen={canOversee(user.role)}
+        unprinted={printer.unprinted}
+        onPrintAgain={(item) => void printAgain(item)}
+        onRefund={(number) => {
+          setRefundNumber(number);
+          setPanel('refund');
         }}
       />
       <RefundSheet

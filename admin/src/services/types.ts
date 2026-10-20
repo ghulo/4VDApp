@@ -2119,6 +2119,7 @@ export interface CounterReceipt {
   cardAmount: number | null;
   fiscalReceiptNo: string | null;
   soldBy: string | null;
+  customerName: string | null;
   lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;
 }
 

@@ -122,6 +122,8 @@ describe('finding a receipt to give something back', () => {
       }),
     ]);
     expect((await api().get('/api/counter/receipts?number=F-1999-000001').set(auth(employeeToken))).body.data).toEqual([]);
+    expect((await api().get('/api/counter/receipts?day=1999-01-01').set(auth(employeeToken))).body.data).toEqual([]);
+    expect((await api().get('/api/counter/receipts?day=yesterday').set(auth(employeeToken))).status).toBe(400);
   });
 });
 

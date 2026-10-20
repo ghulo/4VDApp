@@ -194,12 +194,13 @@ export class CounterRepository {
     let query = this.db
       .selectFrom('documents as d')
       .leftJoin('users as u', 'u.id', 'd.issued_by')
-      .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.card_amount', 'd.fiscal_receipt_no', 'u.name as issued_by_name'])
+      .leftJoin('customers as c', 'c.id', 'd.customer_id')
+      .select(['d.id', 'd.number', 'd.issued_at', 'd.total', 'd.payment_method', 'd.card_amount', 'd.fiscal_receipt_no', 'u.name as issued_by_name', 'c.name as customer_name'])
       .where('d.kind', '=', 'invoice')
       // Nothing is given back from TREFIN's invoices here.
       .where('d.trefin_ref', 'is', null)
       .orderBy('d.issued_at', 'desc')
-      .limit(60);
+      .limit(300);
     if (p.number !== undefined) query = query.where(sql<boolean>`upper(d.number) = upper(${p.number})`);
     if (p.day !== undefined) query = query.where(sql<boolean>`(d.issued_at at time zone ${p.timeZone})::date = ${p.day}::date`);
     const receipts = await query.execute();
@@ -225,6 +226,7 @@ export interface CounterReceiptRow {
   card_amount: string | null;
   fiscal_receipt_no: string | null;
   issued_by_name: string | null;
+  customer_name: string | null;
 }
 
 export interface CounterReceiptLineRow {

@@ -37,7 +37,10 @@ export const counterReportSchema = periodSchema;
 export const counterEventsQuerySchema = z.intersection(periodSchema, z.object({ userId: idSchema.optional(), source: recordSourceSchema.optional() }));
 
 /** An invoice number as printed under its barcode ("INV-26-000123"). */
-export const counterReceiptsQuerySchema = z.object({ number: z.string().trim().min(1).max(40).optional() });
+export const counterReceiptsQuerySchema = z.object({
+  number: z.string().trim().min(1).max(40).optional(),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
 
 export type CounterSettingsInput = z.output<typeof counterSettingsSchema>;
 export type CounterEventInput = z.output<typeof eventSchema>;

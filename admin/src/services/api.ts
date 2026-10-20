@@ -407,7 +407,7 @@ export const counterApi = {
   },
   today: async () => (await apiRequest<CounterToday>('/counter/today')).data,
   /** Today's receipts, or the one with this number. */
-  receipts: async (number?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number } })).data,
+  receipts: async (number?: string, day?: string) => (await apiRequest<CounterReceipt[]>('/counter/receipts', { query: { number, day } })).data,
   people: async (period: { from: string; to: string }) => (await apiRequest<CounterPerson[]>('/counter/people', { query: period })).data,
   events: async (period: { from: string; to: string; userId?: number; source?: RecordSource }) => (await apiRequest<CounterEvent[]>('/counter/events', { query: period })).data,
   /** Who can take over this Counter with a PIN; `approvers` lists only owners and admins (for a rabat). */

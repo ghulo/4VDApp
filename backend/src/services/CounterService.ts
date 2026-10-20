@@ -83,6 +83,7 @@ export interface CounterReceiptDto {
   cardAmount: number | null;
   fiscalReceiptNo: string | null;
   soldBy: string | null;
+  customerName: string | null;
   lines: Array<{ saleId: number; productId: number; productName: string; quantity: number; pricePerUnit: number; saleDate: string; returnedQuantity: number; undone: boolean }>;
 }
 
@@ -212,9 +213,10 @@ export class CounterService {
   }
 
   /** Today's receipts, or the one with this number (scanned from its barcode), with what is left to give back. */
-  async receipts(p: { number?: string }, now = new Date()): Promise<CounterReceiptDto[]> {
+  /** One day's invoices (today unless a day is given), or the one with this number. */
+  async receipts(p: { number?: string; day?: string }, now = new Date()): Promise<CounterReceiptDto[]> {
     const { receipts, lines } = await this.counterRepository.receipts(
-      p.number !== undefined ? { number: p.number, timeZone: this.timeZone } : { day: zonedDay(now, this.timeZone), timeZone: this.timeZone },
+      p.number !== undefined ? { number: p.number, timeZone: this.timeZone } : { day: p.day ?? zonedDay(now, this.timeZone), timeZone: this.timeZone },
     );
     return receipts.map((receipt) => ({
       id: receipt.id,
@@ -225,6 +227,7 @@ export class CounterService {
       cardAmount: receipt.card_amount === null ? null : Number(receipt.card_amount),
       fiscalReceiptNo: receipt.fiscal_receipt_no,
       soldBy: receipt.issued_by_name,
+      customerName: receipt.customer_name,
       lines: lines
         .filter((line) => line.document_id === receipt.id)
         .map((line) => ({

@@ -765,39 +765,172 @@
   font-weight: 600;
 }
 
-/* Just sold: the invoice, the change, and the printer's stamp once it prints. */
+/* Paid: a big tick, the change to give back as the largest thing on screen,
+   and the receipt with the printer's answer. The next scan clears it. */
 .counter-sold {
   display: grid;
   flex: 1 1 auto;
   place-content: center;
   justify-items: center;
-  gap: var(--space-2);
-  padding: var(--space-5) var(--space-4);
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-4);
   text-align: center;
 }
 
-.counter-sold__number {
+.counter-sold__head {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.counter-sold__tick {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.counter-sold__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-headline);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.counter-sold__how {
   margin: 0;
   color: var(--ink-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  letter-spacing: 0.06em;
-}
-
-.counter-sold__total {
-  margin: 0;
-  font-size: var(--text-figure);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.counter-sold__change {
-  margin: 0;
   font-size: var(--text-lg);
 }
 
-.counter-sold__change strong {
+.counter-sold__how strong {
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+/* The change: what the cashier must not get wrong, so it is the loudest thing here. */
+.counter-sold__change {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  min-width: min(360px, 100%);
+  padding: var(--space-4) var(--space-6) var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--cta);
+  box-shadow: var(--shadow-raise);
+  color: var(--cta-ink);
+}
+
+.counter-sold__change p {
+  margin: 0;
+}
+
+.counter-sold__change-label {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.counter-sold__change-amount {
+  font-size: var(--text-hero);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.counter-sold__change-note {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-sold__exact {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.counter-sold__receipt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px dashed var(--line-strong);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.counter-sold__receipt .counter-stamp {
+  margin: 0;
+}
+
+.counter-sold__number {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.counter-sold__printing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.counter-sold__offline {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.counter-sold__next {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .counter-sold__head,
+  .counter-sold__change {
+    animation: counter-sold-in var(--spring-time) var(--spring) both;
+  }
+
+  .counter-sold__change {
+    animation-delay: 60ms;
+  }
+
+  .counter-sold__tick {
+    animation: counter-tick-in var(--spring-time) var(--spring) both;
+  }
+}
+
+@keyframes counter-sold-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes counter-tick-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
 }
 
 /* The printer's receipt number, as a rubber stamp. */
@@ -1753,21 +1886,120 @@
 }
 
 /* Products (F3): one row per product, the chosen one marked like a basket line. */
+/* The F3 Products card: a big search on top, the list in the middle (the only
+   part that scrolls), and the keys along the foot. */
+.counter-finder-form {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  height: 100%;
+  min-height: 0;
+}
+
+.counter-finder-top {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.counter-search--big {
+  height: 48px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  gap: var(--space-3);
+}
+
+.counter-search--big input {
+  font-size: var(--text-lg);
+}
+
+.counter-search__clear {
+  display: grid;
+  place-items: center;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.counter-search__clear:hover {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.counter-search__clear:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.counter-finder-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.counter-finder-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.counter-finder-chip:hover {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.counter-finder-chip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.counter-finder-chip[aria-pressed='true'] {
+  background: var(--ink);
+  box-shadow: none;
+  color: var(--surface);
+}
+
+.counter-finder-chip__count {
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
 .counter-finder {
   display: grid;
+  align-content: start;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
   list-style: none;
   border-radius: var(--radius-small);
+  background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
-  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .counter-finder__item {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name side'
+    'meta side';
+  align-items: center;
+  gap: 2px var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--line);
   cursor: pointer;
 }
@@ -1787,18 +2019,54 @@
 }
 
 .counter-finder__name {
+  grid-area: name;
+  overflow: hidden;
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counter-finder__name mark {
+  border-radius: 2px;
+  background: none;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--cta);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.counter-finder__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  grid-area: meta;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.counter-finder__code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-finder__side {
+  display: grid;
+  grid-area: side;
+  justify-items: end;
+  gap: 2px;
 }
 
 .counter-finder__price {
+  font-size: var(--text-lg);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-.counter-finder__meta {
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
+.counter-finder__item--out .counter-finder__price {
+  text-decoration: line-through;
 }
 
 .counter-finder__stock {
@@ -1816,6 +2084,58 @@
 .counter-finder__stock--out {
   color: var(--danger);
   font-weight: 600;
+}
+
+.counter-finder__added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--ok);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.counter-finder-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.counter-finder-foot p {
+  margin: 0;
+}
+
+.counter-finder-foot__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.counter-finder-foot kbd {
+  display: inline-block;
+  min-width: var(--space-5);
+  margin-right: 2px;
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-stamp);
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 1px 0 var(--line-strong);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .counter-finder-foot__keys {
+    display: none;
+  }
 }
 
 /* Cash + card: what the cash still has to cover once the card has taken its part. */

@@ -93,6 +93,10 @@ interface LastSale {
   customerName: string | null;
   print: 'printing' | 'printed' | 'failed' | 'none';
   fiscalNo: string | null;
+  products: number;
+  pieces: number;
+  /** Sold without internet: it waits on this PC to be sent. */
+  offline: boolean;
 }
 
 /** A scan that went wrong, shown big over the basket until the next scan or Esc. */
@@ -503,6 +507,9 @@ export function CounterPage() {
       customerName: buyer?.name ?? null,
       print: willPrint ? 'printing' : 'none',
       fiscalNo: null,
+      products: summary.products,
+      pieces: summary.pieces,
+      offline: !result,
     });
     focusScan();
     if (!willPrint || !settings.data) {
@@ -920,20 +927,14 @@ export function CounterPage() {
                 }}
               />
             ) : lastSale ? (
-              <div className="counter-sold">
-                <p className="counter-sold__number">{lastSale.number}</p>
-                <p className="counter-sold__total">{formatMoney(lastSale.total)}</p>
-                {lastSale.change !== null && lastSale.change > 0 && (
-                  <p className="counter-sold__change">
-                    {t.counter.giveBack} <strong>{formatMoney(lastSale.change)}</strong>
-                  </p>
-                )}
-                {lastSale.print === 'printed' && (
-                  <p className="counter-stamp">{lastSale.fiscalNo ? t.counter.fiscalNo(lastSale.fiscalNo) : t.counter.printer.printedNoNumber}</p>
-                )}
-                {lastSale.print === 'failed' && <p className="counter-stamp counter-stamp--failed">{t.counter.printer.failed}</p>}
-                {lastSale.print === 'printing' && <p className="counter-hint">{t.counter.printer.printing}</p>}
-              </div>
+              <PaidScreen
+                sale={lastSale}
+                unprinted={printer.unprinted.find((item) => item.documentId === lastSale.documentId) ?? null}
+                onPrintAgain={(item) => {
+                  setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printing' } : sale));
+                  void printAgain(item);
+                }}
+              />
             ) : (
               !checked && (
                 <div className="counter-empty">
@@ -1354,6 +1355,75 @@ function LegendKey({ keys, label }: { keys: string; label: string }) {
       <kbd>{keys}</kbd>
       {label}
     </li>
+  );
+}
+
+/**
+ * The moment a sale is paid: a big tick, the change to give back as the largest
+ * thing on screen, and the receipt with the printer's answer. The next scan clears it.
+ */
+function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprinted: Unprinted | null; onPrintAgain: (item: Unprinted) => void }) {
+  const t = useT();
+  const p = t.counter.paidScreen;
+  const how =
+    sale.paidBy === 'tab' && sale.customerName
+      ? t.counter.onTabOf(sale.customerName)
+      : sale.paidBy === 'split' && sale.cardAmount !== null
+        ? p.split(formatMoney(sale.cardAmount))
+        : t.counter.paidWith[sale.paidBy];
+  const cashDue = roundMoney(sale.total - (sale.cardAmount ?? 0));
+  return (
+    <div className="counter-sold" key={sale.key}>
+      <div className="counter-sold__head">
+        <span className="counter-sold__tick" aria-hidden="true">
+          <CheckCircle size={44} weight="fill" />
+        </span>
+        <p className="counter-sold__title">{p.title}</p>
+        <p className="counter-sold__how">
+          {how} · <strong>{formatMoney(sale.total)}</strong>
+        </p>
+      </div>
+
+      {sale.change !== null && sale.change > 0 ? (
+        <div className="counter-sold__change">
+          <p className="counter-sold__change-label">{t.counter.giveBack}</p>
+          <p className="counter-sold__change-amount">{formatMoney(sale.change)}</p>
+          {sale.tendered !== null && <p className="counter-sold__change-note">{p.gaveOf(formatMoney(sale.tendered), formatMoney(cashDue))}</p>}
+        </div>
+      ) : (
+        sale.tendered !== null && <p className="counter-sold__exact">{p.exact}</p>
+      )}
+
+      <div className="counter-sold__receipt">
+        <span className="counter-sold__number">{sale.number}</span>
+        <span>{p.items(sale.products, sale.pieces)}</span>
+        {sale.print === 'printing' && (
+          <span className="counter-sold__printing">
+            <CircleNotch size={14} weight="bold" className="button__spinner" aria-hidden="true" />
+            {t.counter.printer.printing}
+          </span>
+        )}
+        {sale.print === 'printed' && (
+          <span className="counter-stamp">{sale.fiscalNo ? t.counter.fiscalNo(sale.fiscalNo) : t.counter.printer.printedNoNumber}</span>
+        )}
+        {sale.print === 'failed' && (
+          <>
+            <span className="counter-stamp counter-stamp--failed">{t.counter.printer.failed}</span>
+            {unprinted?.text && (
+              <Button size="sm" icon={Printer} onClick={() => onPrintAgain(unprinted)}>
+                {p.printAgain}
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+
+      {sale.offline && <p className="counter-sold__offline">{p.offline}</p>}
+      <p className="counter-sold__next">
+        <Barcode size={16} aria-hidden="true" />
+        {p.next}
+      </p>
+    </div>
   );
 }
 

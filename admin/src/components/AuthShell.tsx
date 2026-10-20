@@ -2,6 +2,7 @@ import { Bell, ClipboardText, Receipt, SealCheck, type Icon } from '@phosphor-ic
 import type { ReactNode } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
+import { NoiseField } from './NoiseField';
 import { Wordmark } from './LogoMark';
 import { ShopSunrise } from './ui';
 import type { Catalogue } from '../i18n/en';
@@ -9,7 +10,7 @@ import { useT } from '../i18n/useT';
 
 type MomentKey = keyof Catalogue['shell']['moments'];
 
-/** Moments from a shop day as panes of glass around the mark; "returned" sits further back, out of focus. */
+/** Moments from a shop day as panes of glass down the right, clear of the mark; "returned" sits further back, out of focus. */
 const MOMENTS: Array<{ icon: Icon; tone: 'accent' | 'warn' | 'ok'; key: MomentKey; at: string }> = [
   { icon: Receipt, tone: 'accent', key: 'sale', at: 'login__moment--a' },
   { icon: Bell, tone: 'warn', key: 'lowStock', at: 'login__moment--b' },
@@ -27,28 +28,28 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           <Wordmark height={34} />
           <span className="visually-hidden">4VD</span>
         </p>
-        <div className="login__scene" aria-hidden="true">
-          <div className="login__stage">
-            <div className="login__art">
-              <ShopSunrise />
-            </div>
-            {MOMENTS.map(({ icon: MomentIcon, tone, key, at }) => (
-              <div key={at} className={`login__moment login__moment--${tone} ${at}`}>
-                <MomentIcon size={16} weight="bold" />
-                <span>
-                  <strong>{t.shell.moments[key].title}</strong>
-                  <span>{t.shell.moments[key].detail}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
+        <div className="login__words">
           <p className="login__headline">{t.shell.headline}</p>
           <p className="login__small-print">{t.shell.smallPrint}</p>
         </div>
+        {/* Behind the words: the mark, large and tilted, sinking off the bottom-left corner. */}
+        <div className="login__scene" aria-hidden="true">
+          <div className="login__art">
+            <ShopSunrise />
+          </div>
+          {MOMENTS.map(({ icon: MomentIcon, tone, key, at }) => (
+            <div key={at} className={`login__moment login__moment--${tone} ${at}`}>
+              <MomentIcon size={16} weight="bold" />
+              <span>
+                <strong>{t.shell.moments[key].title}</strong>
+                <span>{t.shell.moments[key].detail}</span>
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
       <div className="login__side">
+        <NoiseField />
         <div className="login__card">
           <h1 className="login__title">{title}</h1>
           {subtitle && <p className="login__subtitle">{subtitle}</p>}

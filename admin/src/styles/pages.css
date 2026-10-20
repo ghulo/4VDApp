@@ -640,33 +640,39 @@ form.product-form > .form-actions {
   letter-spacing: -0.03em;
 }
 
-/* The mark with shop moments as glass panes around it. The story panel clips
-   whatever runs off its edge. */
+/* The words up top; behind them the mark, large and tilted, sinking off the
+   panel's bottom-left corner, and the shop moments down the right, clear of
+   it. Sized from the panel itself (container units), so the tile never grows
+   into the cards on a tall or wide screen. */
 .login__story {
   overflow: hidden;
+  container-type: size;
+  justify-content: flex-start;
+}
+
+.login__words {
+  position: relative;
+  z-index: 2;
+  margin-top: var(--space-6);
 }
 
 .login__scene {
-  position: relative;
-  flex: 1;
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-  min-height: 380px;
+  --tile: min(68cqw, 46cqh);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-/* One stage, the drawing's own shape, so the cards keep their place against
-   the tile at any panel height. Never narrower than the cards need, so they
-   overlap the tile's edges but never the tick. */
-.login__stage {
-  position: relative;
-  width: max(100%, 460px);
-  max-width: 600px;
-  aspect-ratio: 240 / 140;
-}
-
+/* The drawing is 2.5 tiles wide (the tile is 96 of its 240 units, starting at
+   72); placed so the tile's left edge sits 0.12 tiles off the panel and its
+   foot 0.14 tiles below it, then tilted about the tile's middle. */
 .login__art {
-  width: 100%;
+  position: absolute;
+  left: calc(var(--tile) * -0.87);
+  bottom: calc(var(--tile) * -0.417);
+  width: calc(var(--tile) * 2.5);
+  rotate: -9deg;
+  transform-origin: 50% 47%;
 }
 
 .login__moment {
@@ -707,38 +713,30 @@ form.product-form > .form-actions {
   color: var(--ok);
 }
 
-/* Each pane overlaps a corner of the tile, so the amber shows through the glass. */
+/* A loose, staggered column down the right, in the band between the words
+   and the tile. */
 .login__moment--a {
-  top: 4%;
-  left: 2%;
-  z-index: 2;
+  top: 34%;
+  right: 8%;
 }
 
 .login__moment--b {
-  top: 44%;
-  right: 0;
-  z-index: 2;
+  top: 43%;
+  right: 2%;
+}
+
+.login__moment--d {
+  top: 52%;
+  right: 12%;
 }
 
 /* Further back and out of focus: the depth of field. */
 .login__moment--c {
-  bottom: 2%;
-  left: 0;
-  z-index: 0;
-  scale: 0.9;
-  filter: blur(1.2px);
-  opacity: 0.7;
-}
-
-.login__moment--d {
-  bottom: -6%;
-  right: 12%;
-  z-index: 2;
-}
-
-.login__stage .login__art {
-  position: relative;
-  z-index: 1;
+  top: 39%;
+  right: 46%;
+  scale: 0.88;
+  filter: blur(1.4px);
+  opacity: 0.6;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -839,8 +837,26 @@ form.product-form > .form-actions {
     min-height: 0;
   }
 
-  .login__stage {
+  /* On a phone: no tilt or crop, just the mark, small, above the form. */
+  .login__story {
+    container-type: normal;
+  }
+
+  .login__scene {
+    position: relative;
+    inset: auto;
+    display: grid;
+    place-items: center;
+  }
+
+  .login__art {
+    position: static;
     width: min(300px, 80%);
+    rotate: none;
+  }
+
+  .login__words {
+    display: none;
   }
 
   .login__moment,
@@ -5595,4 +5611,35 @@ fieldset.report-sections {
   margin: 0;
   padding: var(--space-4);
   color: var(--ink-muted);
+}
+
+/* ---------- Sign-in: the noise field ---------- */
+
+/* Amber dots sized by drifting Perlin noise, filling the form side and fading
+   away in the middle, so they frame the form and never sit under it. */
+.login__side {
+  position: relative;
+  overflow: hidden;
+}
+
+.login__card {
+  position: relative;
+  z-index: 1;
+}
+
+.noise-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--accent);
+  opacity: 0.35;
+  pointer-events: none;
+  mask-image: radial-gradient(closest-side, transparent 55%, #000 100%);
+}
+
+@media (max-width: 900px) {
+  .noise-field {
+    display: none;
+  }
 }

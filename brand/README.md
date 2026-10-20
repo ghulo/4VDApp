@@ -12,7 +12,7 @@ bigger. It uses the same shapes as the sign-in drawing.
 
 - Use `logo-mark.svg` on its own for icons, favicons and small spaces.
 - Use `logo-full.svg` (mark + "4VD") where there is room for the name.
-- Keep the mark's colours: ink `#141413`, amber `#F5B11E`, ivory `#FAF9F5`.
+- Keep the mark's colours: ink `#141413`, amber `#F5B71A`, ivory `#FAF9F5`.
 - Don't stretch it, outline it, add shadows, or tell the four-brothers story
   in the interface. It's there for people who ask.
 - The app icons are drawn from the SVG: run `node brand/make_icons.mjs` after

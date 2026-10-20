@@ -2,20 +2,20 @@
 name: 4VD
 description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the shop at sunrise.
 colors:
-  amber: "#f5b11e"
-  amber-hover: "#fecf80"
-  amber-edge: "#a77606"
-  amber-text: "#775304"
-  amber-tint: "rgb(245 177 30 / 0.16)"
-  pillar-ink: "#100f0e"
-  ivory-canvas: "#f2f0ec"
-  paper: "#faf8f4"
-  sunk-paper: "#e6e4e0"
-  oat: "#d9d7d3"
-  ink: "#191817"
-  ink-muted: "#5c5b57"
-  hairline: "#e6e4e0"
-  hairline-strong: "#d9d7d3"
+  amber: "#f5b71a"
+  amber-hover: "#ffd073"
+  amber-edge: "#a37801"
+  amber-text: "#745504"
+  amber-tint: "rgb(245 183 26 / 0.16)"
+  pillar-ink: "#0a1114"
+  ivory-canvas: "#edf1f3"
+  paper: "#f5f9fb"
+  sunk-paper: "#e1e5e7"
+  oat: "#d4d8da"
+  ink: "#121A1D"
+  ink-muted: "#565c5f"
+  hairline: "#e1e5e7"
+  hairline-strong: "#d4d8da"
   ok: "#386743"
   ok-soft: "#e2f7e5"
   warn: "#894529"
@@ -24,17 +24,17 @@ colors:
   danger-soft: "#feebeb"
   info: "#3e5e7e"
   info-soft: "#e6f2ff"
-  focus: "#775304"
-  night-canvas: "#100f0e"
-  night-paper: "#191817"
-  night-sunk: "#080706"
-  night-oat: "#2f2e2a"
-  night-ink: "#faf8f4"
-  night-muted: "#bfbdb9"
-  night-hairline: "#2f2e2a"
-  night-hairline-strong: "#464541"
-  night-amber-text: "#f5b11e"
-  night-amber-edge: "#a77606"
+  focus: "#745504"
+  night-canvas: "#0a1114"
+  night-paper: "#121A1D"
+  night-sunk: "#03080B"
+  night-oat: "#272f33"
+  night-ink: "#f5f9fb"
+  night-muted: "#bbbec0"
+  night-hairline: "#272f33"
+  night-hairline-strong: "#3E464B"
+  night-amber-text: "#f5b71a"
+  night-amber-edge: "#a37801"
   night-ok: "#99cda3"
   night-ok-soft: "#253127"
   night-warn: "#f8a788"
@@ -464,7 +464,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 
 ## 6. Colour
 
-Near-neutral paper and ink carry everything; one amber marks brand, action and
+Cool blue-grey paper and anthracite ink (the carwash canopy) carry everything; one amber marks brand, action and
 place; status colours are quiet, always with words. Everything comes from
 matched scales, so the colours sit at the same weight (reworked 2026-10-20: the
 old cream, brown and burnt-orange tones were picked for clay and fought the amber).
@@ -473,7 +473,7 @@ old cream, brown and burnt-orange tones were picked for clay and fought the ambe
 Six ramps in `admin/src/styles/tokens.css`: **neutral, amber, green,
 red-orange, crimson, blue**, steps 50 to 990, built in OKLCH on one lightness
 ladder, so a step is equally light in every colour. Amber 400 is the brand
-`#f5b11e` itself. Screens never use a step (`var(--amber-400)`) directly, only
+`#f5b71a` itself. Screens never use a step (`var(--amber-400)`) directly, only
 the named tokens below; `src/theme/scales.test.ts` fails if they do. To change
 a colour, move its token to another step; to add a shade, take the next step.
 The team app (`mobile/src/theme.ts`) copies the same hex values.
@@ -489,29 +489,29 @@ The team app (`mobile/src/theme.ts`) copies the same hex values.
 | Amber text, focus | amber 700 | amber 400 |
 | Amber key / hover / edge | amber 400 / 300 / 600 | same |
 
-Dark mode is near-neutral graphite, not brown, so amber is the only warm thing
+Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 230, measured from photos 2026-10-20), so amber is the only warm thing
 on screen; higher layers are lighter steps because shadows barely show on dark.
 
 ### Neutrals
-- **Canvas** `#f2f0ec` / night `#100f0e`: the page.
-- **Paper** `#faf8f4` / `#191817`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e6e4e0` / `#080706`: footer strips, row hover, callouts, search.
-- **Oat** `#d9d7d3` / `#2f2e2a` (token `fill`): feature panels (Today, team-app
+- **Canvas** `#edf1f3` / night `#0a1114`: the page.
+- **Paper** `#f5f9fb` / `#121A1D`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e1e5e7` / `#03080B`: footer strips, row hover, callouts, search.
+- **Oat** `#d4d8da` / `#272f33` (token `fill`): feature panels (Today, team-app
   job tiles), ghost hover, segmented track.
-- **Ink** `#191817` / `#faf8f4`: text, data, checked switches, count badges.
-- **Muted Ink** `#5c5b57` / `#bfbdb9`: descriptions, labels, chart series.
-- **Hairline** `#e6e4e0` / `#2f2e2a` and **Strong Hairline** `#d9d7d3` / `#464541`.
+- **Ink** `#121A1D` / `#f5f9fb`: text, data, checked switches, count badges.
+- **Muted Ink** `#565c5f` / `#bbbec0`: descriptions, labels, chart series.
+- **Hairline** `#e1e5e7` / `#272f33` and **Strong Hairline** `#d4d8da` / `#3E464B`.
 
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
-- **Amber** `#f5b11e` (both themes): the logo, the sunrise, **the one primary key
+- **Amber** `#f5b71a` (both themes): the logo, the sunrise, **the one primary key
   per screen**, the menu tick, the selected row's edge and progress toward a goal.
-- **Amber Mark** `#a77606` (amber 600, light only): small marks on paper that
+- **Amber Mark** `#a37801` (amber 600, light only): small marks on paper that
   must reach 3:1 (rings, dots).
-- **Amber Text** `#775304` / `#f5b11e` on **Amber Tint** (16%): the current
+- **Amber Text** `#745504` / `#f5b71a` on **Amber Tint** (16%): the current
   menu item's label, selected rows, and any amber words. Bright amber is never
   text on paper.
-- Text on amber is **Pillar Ink** `#100f0e` (white fails contrast: 1.9:1).
+- Text on amber is **Pillar Ink** `#0a1114` (white fails contrast: 1.9:1).
 
 ### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
@@ -533,7 +533,7 @@ lip draw the outline, and the shadow is short and tight instead of a wide blur.
 The canvas weave is faint (1.2% light, 1% dark).
 
 ### Focus
-- **Focus ring = Amber Text** (`#775304` light, `#f5b11e` dark), 2px, offset 2px,
+- **Focus ring = Amber Text** (`#745504` light, `#f5b71a` dark), 2px, offset 2px,
   standing off the control on paper (5:1 and more). There are no cool blue
   accents anywhere in the interface.
 

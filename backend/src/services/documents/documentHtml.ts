@@ -119,7 +119,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
 <style>
   :root {
     --ink: #141413; --ink-muted: #5e5d59; --hairline: #e0dbcf; --hairline-strong: #cbc3b3;
-    --clay: #f5b11e; --clay-text: #8a5300; --sunk: #f0eee6; --warn: #9a3f0d; --warn-soft: #f8e6da;
+    --clay: #f5b71a; --clay-text: #8a5300; --sunk: #f0eee6; --warn: #9a3f0d; --warn-soft: #f8e6da;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
   }
   /*

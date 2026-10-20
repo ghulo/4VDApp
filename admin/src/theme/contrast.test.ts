@@ -11,7 +11,7 @@ function block(selector: string): string {
   return css.slice(css.indexOf('{', start) + 1, css.indexOf('}', start));
 }
 
-/** The colour scales (`--amber-400: #f5b11e`) the theme blocks point at. */
+/** The colour scales (`--amber-400: #f5b71a`) the theme blocks point at. */
 const SCALES = Object.fromEntries(
   [...block(':root {\n  --neutral-').matchAll(/--([a-z]+-\d+):\s*(#[0-9a-fA-F]{6})/g)].map((match) => [match[1], match[2]]),
 );

@@ -48,7 +48,7 @@ const NIGHT: typeof C = {
   danger: '#ff8f80',
   info: '#8fb8e8',
 };
-const CLAY = '#f5b11e';
+const CLAY = '#f5b71a';
 const CLAY_HOVER = '#f7c14f';
 const CLAY_EDGE = '#b57400';
 /** Text on amber: white fails contrast. */

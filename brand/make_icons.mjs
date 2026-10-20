@@ -5,19 +5,19 @@ import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const sharp = createRequire(new URL('../backend/package.json', import.meta.url))('sharp');
-const IVORY = '#FAF9F5';
+const AMBER = '#F5B71A';
 const mark = readFileSync(new URL('./logo-mark.svg', import.meta.url), 'utf8');
-// The tile has a hairline edge so it shows on ivory; icons the phone frames itself drop it.
-const TILE = '<rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="#FAF9F5" stroke="#E3DACC"/>';
+// The mark is a solid amber tile (since 2026-10-20: the ivory one faded among other icons).
+const TILE = '<rect width="64" height="64" rx="14" fill="#F5B71A"/>';
 if (!mark.includes(TILE)) throw new Error('logo-mark.svg changed its tile; update make_icons.mjs');
 
 // Phone home screens round the corners themselves, so those icons fill the square.
-const square = mark.replace(TILE, '<rect width="64" height="64" fill="#FAF9F5"/>');
-// Android lays the mark over its own background, so that one has no tile at all.
+const square = mark.replace(TILE, '<rect width="64" height="64" fill="#F5B71A"/>');
+// Maskable and splash icons lay the drawing on their own background, so they have no tile.
 const bare = mark.replace(TILE, '');
 // Android's themed icon keeps only the shape, so it gets the ink parts alone (no sun or stripes).
-const inkOnly = bare.replace(/\s*<circle[^>]*\/>/, '').replace(/\s*<rect[^>]*fill="#FAF9F5"\/>/g, '');
-if (inkOnly.includes('#F5B71A') || inkOnly.includes('#FAF9F5')) throw new Error('could not strip the sun from logo-mark.svg');
+const inkOnly = bare.replace(/\s*<circle[^>]*\/>/, '').replace(/\s*<rect[^>]*height="1\.[48]" fill="#F5B71A"\/>/g, '');
+if (inkOnly.includes('#F5B71A') || inkOnly.includes('#FFD073')) throw new Error('could not strip the sun from logo-mark.svg');
 
 const fileIn = (app, path) => new URL(`../${app}/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const out = (path) => fileIn('mobile', path);
@@ -31,36 +31,22 @@ async function render(svg, size, padding = 0) {
     .composite([{ input: art, gravity: 'centre' }]);
 }
 
-const onIvory = (image) => image.flatten({ background: IVORY });
-
-// The dashboard's icons are the same mark inverted (ink tile, ivory shop, same
-// clay sun), so its home-screen icon and tab never get mixed up with the team app's.
-const INK = '#141413';
-const invert = (svg) =>
-  svg
-    .replaceAll('#FAF9F5', '@ivory@')
-    .replaceAll(INK, '#FAF9F5')
-    .replaceAll('@ivory@', INK)
-    .replace('stroke="#E3DACC"', 'stroke="#30302E"')
-    .replace('on an ivory tile', 'inverted on an ink tile for the dashboard');
-
-// Home-screen icons for both web apps: the team app on ivory, the dashboard inverted.
-for (const [app, tile] of [['mobile', (svg) => svg], ['admin', invert]]) {
-  await (await render(tile(square), 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
-  await (await render(tile(square), 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
-  await (await render(tile(square), 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
-  await (await render(tile(bare), 512, 0.06))
-    .flatten({ background: app === 'admin' ? INK : IVORY })
-    .png()
-    .toFile(fileIn(app, 'public/icon-maskable-512.png'));
+// Home-screen icons for the dashboard (and the retired team app, kept in step).
+for (const app of ['mobile', 'admin']) {
+  await (await render(square, 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
+  await (await render(square, 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
+  await (await render(square, 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
+  await (await render(bare, 512, 0.06)).flatten({ background: AMBER }).png().toFile(fileIn(app, 'public/icon-maskable-512.png'));
 }
-writeFileSync(fileIn('admin', 'public/favicon.svg'), invert(mark));
+writeFileSync(fileIn('admin', 'public/favicon.svg'), mark);
 // The emails show the mark at 48px; drawn at 3x for sharp phone screens. Served from the dashboard.
 await (await render(mark, 144)).png().toFile(fileIn('admin', 'public/email-logo.png'));
+// The Windows app's icon: taskbar, Start menu, installer.
+await (await render(mark, 512)).png().toFile(fileIn('desktop', 'src/icon.png'));
 await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));
 await (await render(square, 1024)).png().toFile(out('assets/icon.png'));
 await (await render(bare, 1024, 0.1)).png().toFile(out('assets/android-icon-foreground.png'));
-await sharp({ create: { width: 1024, height: 1024, channels: 3, background: IVORY } }).png().toFile(out('assets/android-icon-background.png'));
+await sharp({ create: { width: 1024, height: 1024, channels: 3, background: AMBER } }).png().toFile(out('assets/android-icon-background.png'));
 // Every drawn pixel in white; Android tints it to the phone's theme.
 await (await render(inkOnly, 1024, 0.1))
   .ensureAlpha()

@@ -31,6 +31,8 @@ export const en = {
   google: {
     couldNotLoad: 'Google sign-in could not load',
     couldNotLoadHint: "Google sign-in couldn't load. Use your email and password.",
+    signIn: 'Sign in with Google',
+    continueWith: 'Continue with Google',
   },
   nav: {
     groups: { today: 'Today', sell: 'Sell', stock: 'Stock', buy: 'Buy', money: 'Money', team: 'Team' },

@@ -27,6 +27,8 @@ export const sq: Catalogue = {
   google: {
     couldNotLoad: 'Hyrja me Google nuk u ngarkua',
     couldNotLoadHint: 'Hyrja me Google nuk u ngarkua. Përdor emailin dhe fjalëkalimin.',
+    signIn: 'Hyr me Google',
+    continueWith: 'Vazhdo me Google',
   },
   nav: {
     groups: { today: 'Sot', sell: 'Shitja', stock: 'Stoku', buy: 'Blerja', money: 'Paratë', team: 'Ekipi' },

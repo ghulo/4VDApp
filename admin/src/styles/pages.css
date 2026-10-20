@@ -2011,8 +2011,54 @@ form.product-form > .form-actions {
   border-top: 1px solid var(--line);
 }
 
+/* A 4VD secondary key with Google's own button lying invisibly on top of it
+   (GoogleButton.tsx), so it looks like the rest of the form but Google still
+   takes the click. The key shows the frame's hover and focus. */
+.google-sign-in__key {
+  position: relative;
+  border-radius: var(--radius-small);
+}
+
+.google-sign-in__face {
+  pointer-events: none;
+}
+
+.google-sign-in__mark {
+  flex: none;
+}
+
 .google-sign-in__button {
-  min-height: 44px;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.01;
+}
+
+.google-sign-in__button > * {
+  transform-origin: 0 0;
+}
+
+.google-sign-in__key:hover .google-sign-in__face {
+  --ring: color-mix(in srgb, var(--line-strong) 55%, var(--ink-muted));
+}
+
+.google-sign-in__key:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.google-sign-in__key[aria-busy='true'] .google-sign-in__face {
+  color: var(--ink-muted);
+}
+
+.google-sign-in__key[data-disabled] .google-sign-in__face {
+  background: var(--surface-sunk);
+  color: var(--ink-muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.google-sign-in__key[data-disabled] .google-sign-in__button {
+  display: none;
 }
 
 

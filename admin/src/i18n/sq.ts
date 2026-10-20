@@ -1989,7 +1989,7 @@ export const sq: Catalogue = {
       'Cakto ditën kur fillojnë librat (Cilësimet → Librat), ekzekuto npm run opening:trefin -- <dosja e eksportit> për të mbushur shifrat, pastaj numëro arkat, shkruaj gjendjen e bankës dhe konfirmo çdo rresht me kontabilistin.',
     shopDetailsHow: 'Adresa, telefoni dhe NUI futen te Dyqani yt, pjesa e parë këtu.',
     ownerHow: 'Butoni hap formën e ftesës me rolin Pronar të zgjedhur. Ai sheh gjithçka dhe vendos për kërkesat.',
-    teamHow: 'Butoni hap formën e ftesës me rolin Punonjës të zgjedhur. Ata përdorin aplikacionin e ekipit te app.4vd.app.',
+    teamHow: 'Butoni hap formën e ftesës me rolin Punonjës të zgjedhur. Ata hyjnë te 4vd.app.',
     teamCount: (count: number) => `${count} punonjës deri tani.`,
     reportsHow: 'Janë aktive, përveç nëse pronari i ka fikur të dyja te Raportet e tua në faqen e Profilit.',
     emailsHow:

@@ -2007,7 +2007,7 @@ export const en = {
       'Set the day the books start (Settings → Books), run npm run opening:trefin -- <export folder> to fill the figures, then count the tills, type the bank balance and confirm every line with the accountant.',
     shopDetailsHow: 'The address, phone and NUI go in Your shop, the first section here.',
     ownerHow: 'The button opens the invite form with the Owner role chosen. He sees everything and decides requests.',
-    teamHow: 'The button opens the invite form with the Employee role chosen. They use the team app at app.4vd.app.',
+    teamHow: 'The button opens the invite form with the Employee role chosen. They sign in at 4vd.app.',
     teamCount: (count: number) => `${count} ${count === 1 ? 'employee' : 'employees'} so far.`,
     reportsHow: 'They are on unless the owner switched both off under Your reports on their Profile page.',
     emailsHow:

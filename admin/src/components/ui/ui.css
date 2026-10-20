@@ -76,17 +76,18 @@
   color: var(--ink-muted);
 }
 
-/* The one clay thing on a screen, lit from the top, with near-black text so it stays readable. */
+/* The one amber thing on a screen, a lit cap: pale at the top, full amber through the middle,
+   deeper at the foot, standing on its darker edge. Near-black text stays readable on all of it. */
 .button--primary {
   --edge: var(--cta-edge);
   --shine: var(--key-shine);
-  background: linear-gradient(180deg, var(--cta-hover), var(--cta) 60%);
+  background: linear-gradient(180deg, var(--cta-hover), var(--cta) 45%, var(--cta-low));
   color: var(--cta-ink);
   font-weight: 600;
 }
 
 .button--primary:not(:disabled):hover {
-  background: linear-gradient(180deg, var(--cta-hover), var(--cta-hover) 20%, var(--cta) 85%);
+  background: linear-gradient(180deg, var(--cta-hover), var(--cta-hover) 15%, var(--cta) 70%, var(--cta-low));
 }
 
 /* Secondary: paper with a hairline ring on a hairline edge. "quiet" is the old name. */

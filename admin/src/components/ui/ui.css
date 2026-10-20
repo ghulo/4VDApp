@@ -1214,11 +1214,11 @@ input.switch:focus-visible {
 /* Glass icon (ShopSunrise), the iOS 26 way: calm colour, frosted glyph, soft
    depth. The tile thins out a little towards its foot. Same in both themes. */
 .shop-sunrise__face-top {
-  stop-color: var(--cta);
+  stop-color: var(--cta-top);
 }
 
 .shop-sunrise__face-foot {
-  stop-color: var(--cta);
+  stop-color: var(--cta-top);
   stop-opacity: 0.72;
 }
 
@@ -1232,15 +1232,15 @@ input.switch:focus-visible {
 
 .shop-sunrise__tick-shadow {
   stroke: var(--glass-deep);
-  opacity: 0.28;
+  opacity: 0.45;
 }
 
 .shop-sunrise__frost-top {
-  stop-color: rgb(255 255 255 / 0.95);
+  stop-color: rgb(255 255 255);
 }
 
 .shop-sunrise__frost-foot {
-  stop-color: rgb(255 255 255 / 0.72);
+  stop-color: rgb(255 255 255 / 0.88);
 }
 
 /* The one moment: the tile settles into the wall when the drawing appears. */

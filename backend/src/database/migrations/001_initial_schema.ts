@@ -4,7 +4,7 @@ import { type Kysely, sql } from 'kysely';
  * V1 schema, with these deliberate changes:
  * - TIMESTAMPTZ instead of TIMESTAMP so every time is stored as UTC
  * - deleted_at on users, categories and products (soft delete, see
- *   docs/ENGINEERING_RULES.md)
+ *   docs/ARCHITECTURE.md)
  * - CHECK constraints so the database itself rejects negative stock/prices
  * - refresh_tokens (needed for logout and token rotation)
  * - favorites (the wishlist feature in the README)

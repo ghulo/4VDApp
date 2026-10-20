@@ -134,7 +134,7 @@ components:
 
 # 4VD Rulebook
 
-This is the single rulebook for how 4VD works, reads and looks, in **both apps**.
+This is the single rulebook for how 4VD works, reads and looks.
 It covers the product logic (what goes where and why), the words, and the visual
 design. `PRODUCT.md` says who the users are; `brand/README.md` covers the logo
 files. Where anything else disagrees with this file, this file wins.
@@ -146,33 +146,31 @@ files. Where anything else disagrees with this file, this file wins.
   a rule, check it there. Never copy an existing screen as the pattern if that
   screen is listed as a gap.
 - **Words in bold in the glossary (section 5) are fixed.** Use them exactly, in
-  English and Albanian, in both apps. Don't invent synonyms.
-- **Tokens live in code:** dashboard `admin/src/styles/tokens.css`, team app
-  `mobile/src/theme.ts`. Change both together, and keep the frontmatter of this
-  file in step. No hard-coded colours, sizes, radii or shadows in screens.
-- **Build from the kits:** dashboard `admin/src/components/ui` (section 10),
-  team app `mobile/src/components/ui.tsx`, `print.tsx`, `inputs.tsx`.
+  English and Albanian, everywhere. Don't invent synonyms.
+- **Tokens live in code:** `admin/src/styles/tokens.css`. Keep the frontmatter
+  of this file in step. No hard-coded colours, sizes, radii or shadows in screens.
+- **Build from the kit:** `admin/src/components/ui` (section 10).
 - **Every UI change** keeps both themes, both languages (EN and SQ catalogues in
-  `admin/src/i18n` and `mobile/src/i18n`), and all states (section 9).
-- **After a big feature:** screenshot at 375px and 1440px, light and dark, then
-  run the accessibility and web-guidelines passes (see `CLAUDE.md`).
+  `admin/src/i18n`), and all states (section 9).
+- **After a big feature:** run lint:ui (375px and 1440px, light and dark) and
+  the accessibility and web-guidelines passes (see `CLAUDE.md`).
 - **Changing a rule:** agree it with the owner in chat, then edit this file in
   the same change as the code. Remove a gap from section 13 when it is closed.
 
 ## 1. What 4VD is
 
-Two apps for one family shop and its carwashes (4VD = "4 Vëllezërit Dacaj", the
-four Dacaj brothers):
+One app, the **dashboard** (`dashboard.4vd.app`), for one family shop and its
+carwashes (4VD = "4 Vëllezërit Dacaj", the four Dacaj brothers). It shows each
+person the layout that fits their job:
 
-| | **Dashboard** (`dashboard.4vd.app`) | **Team app** (`app.4vd.app`, phones) |
-|---|---|---|
-| Who | the operator, the owner, admins | employees and family at the counter |
-| Job | run the shop: stock, buying, money, people, decisions, reports | sell, look up, report what happened, close the shift |
-| Scene | shop computer in the morning, phone when away | phone in one hand, a customer waiting |
-| Tech | React + plain CSS on tokens | Expo React Native, also runs as a website |
+| | **Full dashboard** | **Staff layout** (phone-style) | **Counter** (`/counter`) |
+|---|---|---|---|
+| Who | the developer, the owner, admins, the accountant (money side only) | employees and family | whoever is at the till |
+| Job | run the shop: stock, buying, money, books, people, decisions, reports | sell, look up, report what happened, close the shift | sell fast with a scanner and print the fiscal receipt |
+| Scene | shop computer in the morning, phone when away | phone in one hand, a customer waiting | the shop PC, in the Windows app (`desktop/`) |
 
-They are one product with one language and one look. A person who uses both must
-never wonder whether two words, colours or buttons mean the same thing.
+Tech: React + Vite with plain CSS on tokens. The old Expo team app (`mobile/`,
+`app.4vd.app`) was retired on 2026-10-20; its features live in the staff layout.
 
 ## 2. Principles
 
@@ -230,10 +228,11 @@ Rules:
   Customers, Suppliers, Expenses, Reports and Books. They land on VAT. The team
   app turns them away at sign-in.
 
-### 3.2 Team app tabs
+### 3.2 Staff layout tabs
 
-Target: **Home · Products · Sell · Account** (bottom bar, Sell in the middle as
-the one amber key).
+Employees get `StaffLayout` (`admin/src/components/StaffLayout.tsx`,
+`admin/src/navigation/staff.ts`): **Home · Products · Sell · Account** in a
+bottom bar, Sell (the Counter) as the one amber key. No books, costs or settings.
 
 - **Home**: the day in one sentence, then *what's next* (section 3.3), then jobs.
 - **Products**: browse and search; a **Favourites** filter chip shows the
@@ -251,7 +250,7 @@ Home's jobs, in this order:
 ### 3.3 What needs attention: To do vs Updates
 
 There is **one source** of "what needs attention", shared by the Inbox badge, the
-Inbox page, the Overview, the Today card and team-app Home. Two kinds of item,
+Inbox page, the Overview, the Today card and the staff Home. Two kinds of item,
 never mixed:
 
 **To do**: something someone must act on. It is *worked out from the current
@@ -289,9 +288,9 @@ Rules:
   dashboard's **Day** page shows one date: the close-the-day checklist, each
   drawer's cash count, carwash takings and expenses, with a date picker. History
   across dates lives in the Cash counts and Carwash tabs and in Reports.
-- **The shift** is one person's part of the day. **End your shift** in the team
-  app walks through the same steps for the places that person closes.
-- The steps are defined **once** and both apps read them: cash counted per
+- **The shift** is one person's part of the day. **End your shift** in the staff
+  layout walks through the same steps for the places that person closes.
+- The steps are defined **once** on the server and every page reads them: cash counted per
   drawer, carwash takings per place, expenses added or "No expenses today",
   requests answered. Nothing gets locked; anything can be corrected later.
 - Steps show as status (done / to do), not as checkboxes, unless tapping the row
@@ -372,7 +371,7 @@ own reading width (descriptions 68ch, card hints 60ch). Then one of these shapes
   small sunrise) → Get 4VD ready (while unfinished) → Needs restocking → link
   to Reports.
 
-The team app follows the same ideas on a phone: a serif title, one primary
+The staff layout follows the same ideas on a phone: a serif title, one primary
 action, a full-width primary key at the bottom of forms.
 
 ## 4. Voice
@@ -392,7 +391,6 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Thing | English | Albanian | Never say |
 |---|---|---|---|
 | The web app for running the shop | **dashboard** | **paneli** | website, admin, back office |
-| The phone app for staff | **team app** | **aplikacioni i ekipit** | mobile app |
 | Something the shop sells | **product** | **produkt** | item, article |
 | How many are on the shelf | **stock** | **stoku** | inventory |
 | The page of stock levels | **On the shelf** | **Në raft** | |
@@ -444,7 +442,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Happened, for information | **Updates** | **Njoftimet** | alerts |
 | Who did what, when | **Activity** | **Aktiviteti** | log |
 | Carwash takings | **carwash** (Lavazhi) + **change** (Këmbimi) | **Lavazhi** + **Këmbimi** | car wash |
-| The person account screen | **Account** | **Llogaria** | Me, Profile (team app) |
+| The person account screen | **Account** | **Llogaria** | Me, Profile |
 | The shop's accounting | **Books** | **Librat** *(confirm)* | ledger, accounting |
 | One record in the books | **entry** | **regjistrim** *(confirm)* | journal entry, posting, voucher |
 | The two sides of an entry | **Debit** / **Credit** (short **Dr** / **Cr**) | **Debi** / **Kredi** (short **D** / **K**) *(confirm)* | |
@@ -476,7 +474,6 @@ ladder, so a step is equally light in every colour. Amber 400 is the brand
 `#f5b71a` itself. Screens never use a step (`var(--amber-400)`) directly, only
 the named tokens below; `src/theme/scales.test.ts` fails if they do. To change
 a colour, move its token to another step; to add a shade, take the next step.
-The team app (`mobile/src/theme.ts`) copies the same hex values.
 
 | Role | Light | Dark |
 |---|---|---|
@@ -496,7 +493,7 @@ on screen; higher layers are lighter steps because shadows barely show on dark.
 - **Canvas** `#edf1f3` / night `#0d1012`: the page.
 - **Paper** `#f5f9fb` / `#16191B`: cards, tables, sidebar, fields.
 - **Sunk Paper** `#e1e5e7` / `#050809`: footer strips, row hover, callouts, search.
-- **Oat** `#d4d8da` / `#2b2e30` (token `fill`): feature panels (Today, team-app
+- **Oat** `#d4d8da` / `#2b2e30` (token `fill`): feature panels (Today, staff
   job tiles), ghost hover, segmented track.
 - **Ink** `#16191B` / `#f5f9fb`: text, data, checked switches, count badges.
 - **Muted Ink** `#585b5e` / `#bbbec0`: descriptions, labels, chart series.
@@ -571,13 +568,9 @@ The canvas weave is faint (1.2% light, 1% dark).
   plus the display clamp and the one stock hero number on a product page
   (`--text-hero`, 72px). Dashboard tokens: `--text-xs` … `--text-lg`,
   `--text-figure`, `--text-figure-lg`, `--text-headline`, `--text-hero`.
-  No 14px, no 20px one-offs. The team app has the same scale as named tokens in
-  `theme.ts` (`type.caption`, `type.label`, `type.body`, `type.title`,
-  `type.figure`, `type.headline`), never raw `fontSize` numbers. On the phone the
-  Headline is 28px (the display clamp's floor), and text fields stay at 16px
-  (`type.input`) so iPhone Safari doesn't zoom in when one is tapped.
+  No 14px, no 20px one-offs. On the phone the Headline is 28px (the display clamp's floor), and text
+  fields stay at 16px so iPhone Safari doesn't zoom in when one is tapped.
 - Weights: 400, 500, 600 only (700 only in the wordmark and count badges).
-- In `theme.ts`, `fonts.display` means **the serif**, as on the dashboard.
 
 ## 8. Layout, surfaces and depth
 
@@ -587,9 +580,7 @@ The canvas weave is faint (1.2% light, 1% dark).
   content column max 1600px on every page (`--frame-wide`, 3.8; the Windows
   app's own download and welcome pages keep 1120px, `--frame-reading`); page padding 32/48 desktop, 32/24 under 1100px,
   24/16 under 900px. Sections stack 16px apart.
-- Controls 36px (30px small) on desktop, **44px (36px small) under 900px**.
-  Team app: keys and fields **48px**, small keys **36px**; every tap area is at
-  least 44px.
+- Controls 36px (30px small) on desktop, **44px (36px small) under 900px**. Every tap area on a phone is at least 44px.
 
 ### Two kinds of surface
 - **Raised card** (Paper + Raise shadow, 16px corners): things you work in:
@@ -598,7 +589,7 @@ The canvas weave is faint (1.2% light, 1% dark).
   table inside a card** (no box in a box): a section is a heading plus a table.
 - **Flat**: page header, toolbar, history headings sit on the canvas. A table's
   heading is a `Section` (heading on the canvas, then the table), never a `Card`.
-- **Feature panel** (Oat + Sheen): the Today strip and team-app job tiles only.
+- **Feature panel** (Oat + Sheen): the Today strip and staff Home job tiles only.
 
 ### Depth vocabulary (the only shadows allowed)
 - **Raise**: cards and panels rest just above the canvas.
@@ -628,7 +619,7 @@ gradients in screens: use these tokens.
 ### 8.1 Glass (clean and purposeful)
 Glass is for **chrome that floats over moving content**, so you can see the page
 pass underneath. Allowed only on: the dashboard top bar, the Ctrl K palette, the
-phone menu drawer, the team-app tab bar, sticky phone action bars, and the
+phone menu drawer, the staff tab bar, sticky phone action bars, and the
 sign-in moment cards. Never on cards, tables, forms or anything that holds
 reading text at rest.
 
@@ -646,7 +637,7 @@ One recipe, everywhere:
 - **Fallback**: solid Paper when blur is unsupported, under
   `prefers-reduced-transparency`, `prefers-contrast: more`, and on Android.
 - Tokens: `--glass-bg`, `--glass-bg-strong`, `--glass-edge`, `--glass-highlight`,
-  `--glass-filter`; the team app mirrors them (expo-blur on iOS and web).
+  `--glass-filter`.
 
 ## 9. States (required everywhere)
 
@@ -666,7 +657,7 @@ data view has **loading, empty, error**.
 ### 10.1 Buttons (tactile keys, refined)
 Buttons behave like keyboard keys: they stand on a solid edge and press down into
 it. Refinements over the first version: thinner edge, softer drop, no lift on
-hover (less jumpy in dense rows), the same recipe in both apps.
+hover (less jumpy in dense rows).
 
 | Variant | Face | Edge | Use |
 |---|---|---|---|
@@ -683,16 +674,15 @@ hover (less jumpy in dense rows), the same recipe in both apps.
 - **Focus**: Ink ring 2px, offset 2px (section 6).
 - **Disabled**: flat (no edge, no drop), Sunk Paper face with a 1px Hairline ring
   and Muted Ink text, so it still reads as a button. Never 50% opacity.
-- **Loading** (`loading` on `Button` in both apps): a spinner in place of the
+- **Loading** (`loading` on `Button`): a spinner in place of the
   icon (or before the label), the label stays, the key can't be pressed twice.
   Never swap the label for "Saving…".
-- Sizes: 36px (30px small) desktop; 44px (36px small) phones; team app 48px
-  (`size="small"` 36px). Padding 14px; icon
+- Sizes: 36px (30px small) desktop; 44px (36px small) phones. Padding 14px; icon
   16px with 6px gap; label 15px/500 (primary 600).
 - **A row of actions shares one style**, apart from one primary. Never mix a
   raised key with bare text buttons in the same row.
 - Width: buttons hug their label on desktop. Full width only at the bottom of a
-  phone form or the team-app basket.
+  phone form or the Counter basket.
 
 ### 10.2 Links
 Ink, underlined at 40% with a 3px offset, full underline on hover. Table title
@@ -726,8 +716,7 @@ A small status word: 22px, Hanken 12px/600 in sentence case ("Finished", not
 Tones: ok, warn, danger, info, neutral, ink. Monospace capitals made the app
 read as AI-made (2026-10-20), so stamps no longer use them.
 Severity stamps: **Urgent** (danger), **Check** (warn), **Idea** (info). On
-phones a stamp sits **above** its text, not in a side column. Dashboard `Badge`
-and team-app `Stamp` are the same stamp.
+phones a stamp sits **above** its text, not in a side column (`Badge`).
 
 ### 10.6 Numbers, money and dates
 - **Money in tables and forms**: always cents (`€1,200.00`).
@@ -759,12 +748,12 @@ and team-app `Stamp` are the same stamp.
 The shelf count over the app's progress bar (the same inset track as sales
 against a target): full at four times the reorder level, so the alert point is a
 quarter along; the fill is the stock colour (fine, low, out). 6px in lists, 8px
-under the big number on a product page. The same in both apps. Fine stock is
+under the big number on a product page. Fine stock is
 quiet (number and bar only); low and out add their stamp.
 
 ### 10.9 Product photo
 Square, 40px with 8px corners in lists, 112px with 16px in forms. With no photo,
-**both apps** show the same placeholder: Sunk Paper with a Hairline ring and the
+show the placeholder: Sunk Paper with a Hairline ring and the
 line box icon (not a letter).
 
 ### 10.10 Segmented controls
@@ -794,7 +783,7 @@ sideways in one line. A lone toggle is a `.chip`: a raised key, 8px corner. The 
 the page header (in the board head on Analytics); on a work page (3.8) it is
 `PeriodPicker compact`, a dropdown inside the table's toolbar. Form and settings choices
 (how paid, add/remove, theme, language, a view switch inside a card) keep the
-track. In the team app, `Chip` in `CatalogScreen` follows the same recipe.
+track.
 
 ### 10.11a Inspector and menu button
 `Inspector` shows one record opened from a list: at 1440px and wider it docks
@@ -812,25 +801,21 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 11. The printed finish (vintage, used sparingly)
 
-- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`,
-  `mobile/src/components/print.tsx`): the mascot. Sign-in, team-app Home's Today
-  panel, the dashboard's Overview hero, big empty pages, nowhere else. It is
+- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`): the mascot. Sign-in, the
+  Overview hero, big empty pages, nowhere else. It is
   **never larger than the information beside it**: up to 360px in the Overview
   hero (standing on the page rule), 240px in empty states, 560px on sign-in. Hidden from screen readers;
   the sun rises once, off under reduced motion.
 - **No paper grain**: the noise overlay was removed (2026-10-12); the canvas
   is clean ivory with only the faint pillar weave.
-- **The canvas** (both apps, behind every page): the mark's **four pillars**
+- **The canvas** (behind every page): the mark's **four pillars**
   woven very faintly across it (two staggered groups of four strokes per 72px
   tile; Ink at 3.5% light, 2.5% dark). No corner watermark (tried: one more
-  thing to look at). Tokens `--weave-image` on the dashboard;
-  `CanvasTexture` / `texture` in the team app. On the dashboard, off under more
-  contrast and in print.
-- **Rules**: a hairline under page titles; one double rule under the team app's
-  masthead only.
+  thing to look at). Token `--weave-image`; off under more contrast and in print.
+- **Rules**: a hairline under page titles.
 - **Icon chips**: line icons in a 44px soft chip (Paper on Oat, Oat on Paper).
 - **Block meters**: only the monthly target (20 blocks) and stock tags (10).
-- **Receipt feel for the basket** (team app Sell, dashboard Sell): lines in
+- **Receipt feel for the basket** (the Counter and Sell): lines in
   tabular figures, a dashed tear line above the total, the total in Figure type.
 - Never dither or texture data, icons, tables or forms.
 
@@ -864,10 +849,10 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 - Screen readers: ARIA labels match the visible words; a badge's label says what
   it counts ("3 to do").
 
-## 13. Built vs target (known gaps, 2026-10-13)
+## 13. Built vs target (known gaps, checked 2026-10-20)
 
 Each item is a rule above that the code doesn't follow yet. Fix it when touching
-that area; remove it from this list when done. The UI audit (docs/UI_AUDIT.md)
+that area; remove it from this list when done. The UI audit (`docs/archive/UI_AUDIT.md`)
 closed the earlier gaps (words, date fields, dashboard receipt).
 
 1. **Albanian numbers group from five digits**: "1578 €" sits above

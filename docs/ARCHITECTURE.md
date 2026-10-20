@@ -1,374 +1,44 @@
-# 4VD App - Architecture & Design Patterns
+# How 4VD fits together
 
-## Architecture Overview
+A short map of the code as it is. Product and design rules live in `DESIGN.md`; who it's for in `PRODUCT.md`; hosting in `docs/DEPLOYMENT.md`.
 
-### Clean Architecture / Layered Architecture
+## Pieces
 
-```
-┌─────────────────────────────────────────┐
-│         Presentation Layer              │
-│    (Routes, Controllers, Views)         │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│       Business Logic Layer              │
-│    (Services, Use Cases, Validators)    │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│     Data Access Layer                   │
-│    (Repositories, ORM, Database)        │
-└──────────────────┬──────────────────────┘
-                   │
-┌──────────────────▼──────────────────────┐
-│     Database & External Services        │
-│    (PostgreSQL, File Storage, APIs)     │
-└─────────────────────────────────────────┘
-```
+| Folder | What it is |
+|---|---|
+| `backend/` | Express 5 + TypeScript API on Postgres, queries through Kysely, input checked with zod |
+| `admin/` | The dashboard: React + Vite, plain CSS on the tokens in `admin/src/styles/tokens.css`. Owners get the full menu, employees `StaffLayout`, the till is `/counter` |
+| `desktop/` | Electron shell for the shop PC: loads the dashboard, prints fiscal receipts through F-Link, updates itself from GitHub Releases |
+| `landing/` | Cloudflare Worker for 4vd.app (only redirects) |
+| `mobile/` | Retired Expo team app, kept for reference only |
 
-**Benefits:**
-- Clear separation of concerns
-- Easy to test (mock at each layer)
-- Scalable as business logic grows
-- Easy to change implementations (swap repos, services, etc.)
+## Backend: one request
 
----
+`routes/` → middleware (`authenticate.ts`: who is asking, `requireRole` / `requirePower`) → `controllers/` (read the request, validate with `validators/`, call one service, answer with `sendSuccess` from `utils/apiResponse.ts`) → `services/` (the business rules) → `repositories/` (SQL through Kysely, nothing else).
 
-## Backend Architecture
+- **Wiring:** `container.ts` creates every repository and service once and passes them in through constructors. Tests build their own container with fakes (push, email, Google).
+- **Errors:** throw an `AppError` subclass from `errors/httpErrors.ts` (`ValidationError`, `NotFoundError`, `ForbiddenError`…); `middlewares/errorHandler.ts` turns it into `{ success: false, error, message }`. Anything else is logged and answered as a plain 500; logged errors also email the developers (at most hourly, `ErrorAlertService`).
+- **Answers** always look like `{ success, data, message, error, meta? }`.
+- **Roles:** `developer`, `admin`, `owner`, `employee`, `family`, `accountant` (`database/types.ts`). What each may do is a grid of powers the developer edits in Settings → Roles (`PermissionService`, read on every request through `utils/roles.ts`). "View as" answers as another role and saves nothing.
+- **History:** every change that matters writes an Activity entry with from/to details (`ActivityLogService`); `services/undo/` reverses them. Deleted records are soft-deleted (`deleted_at`).
+- **Money and VAT:** selling prices are VAT-inclusive (whether costs are net or gross is still being settled with the accountant); sums go through `roundMoney` (`utils/money.ts`); sales and bills post to the books (`services/books/`). A filed VAT month is locked (`services/vat/periodLock.ts`, `assertMonthsOpen`): nothing dated in it may change until it is reopened with a reason.
+- **Dates:** stored as `TIMESTAMPTZ` (UTC); "the day" is worked out in the shop's time zone (`utils/zonedDates.ts`).
+- **Background work:** `server.ts` runs timers for the daily summary and push alerts; AI calls (bill reading, categorising, Ask) live in `services/ai/` and need `ANTHROPIC_API_KEY`.
 
-### Directory Structure (Best Practices)
-```
-backend/src/
-├── config/           # Environment loading and validation
-├── constants/        # App-wide constants (rate limits, stock reasons, activity actions)
-├── controllers/      # Request handlers: parse input, call a service, send the response
-├── database/         # Kysely connection, table types and migrations
-├── errors/           # Custom HTTP error classes
-├── middlewares/      # Auth, rate limiting, error handling
-├── repositories/     # Data access (Kysely queries)
-├── routes/           # API route definitions and role guards
-├── scripts/          # migrate and seed commands
-├── services/         # Business logic
-├── types/            # Shared TypeScript types
-├── utils/            # Helpers (CSV, logging, tokens, passwords)
-├── validators/       # Zod input schemas
-├── app.ts            # Express app setup
-├── container.ts      # Wires repositories, services and guards together
-└── server.ts         # Starts the HTTP server
-```
+## Database
 
-### Key Layers
+- Migrations are numbered TypeScript files in `backend/src/database/migrations/` (`NNN_name.ts`, each with `up` and `down`). Add the next number; never edit one that has run. `npm run migrate` / `npm run migrate:down`.
+- Local Postgres runs in Docker (`four-vd-app-postgres`). App DB `four_vd_app`, test DB `four_vd_app_test`.
+- The database guards itself where it can: CHECK constraints against negative stock and prices, foreign keys, unique keys.
 
-**1. Controllers** (Request → Response)
-```
-Route → Controller → Service → Repository → Database
-         ↑ Input validation
-         ↑ Parse request
-         ↑ Call service
-         ↑ Return response
-```
+## Tests
 
-**2. Services** (Business Logic)
-- All business rules live here
-- No direct database access
-- Calls repositories
-- Handles complex operations
-- Pure functions when possible
+- Backend (`backend/tests/`, vitest + supertest): mostly integration tests against `TEST_DATABASE_URL`. `tests/helpers/testApp.ts` refuses a URL without "test" in it, builds a fresh schema per file, and files run one at a time because they share the DB.
+- Dashboard (`admin/`, vitest + Testing Library): components, formatting, contrast and token rules (`src/theme/*.test.ts`).
+- `admin` `npm run lint:ui` (lintapple) checks a running dashboard against `admin/ui-policy.json`.
 
-**3. Repositories** (Data Access)
-- Only database queries here
-- Consistent query interface
-- Easy to mock for testing
-- No business logic
+## Dashboard
 
----
-
-## Design Patterns
-
-### 1. **Repository Pattern** (Data Access)
-```javascript
-// ProductRepository encapsulates all product queries
-class ProductRepository {
-  findById(id) { /* query */ }
-  findAll(filters) { /* query */ }
-  create(data) { /* insert */ }
-  update(id, data) { /* update */ }
-}
-```
-
-### 2. **Service Pattern** (Business Logic)
-```javascript
-// ProductService uses repository, no DB knowledge
-class ProductService {
-  constructor(productRepository, inventoryRepository) {
-    this.productRepo = productRepository;
-    this.inventoryRepo = inventoryRepository;
-  }
-  
-  getAvailableProducts() {
-    // Business logic here
-  }
-}
-```
-
-### 3. **Dependency Injection**
-```javascript
-// Constructor injection - loose coupling, testable
-const productService = new ProductService(
-  new ProductRepository(),
-  new InventoryRepository()
-);
-```
-
-### 4. **Strategy Pattern** (Pricing)
-```javascript
-// Different pricing strategies
-class BulkPricingStrategy {
-  calculate(basePrice, quantity) { /* bulk logic */ }
-}
-
-class SeasonalPricingStrategy {
-  calculate(basePrice, quantity) { /* seasonal logic */ }
-}
-```
-
-### 5. **Factory Pattern** (Object Creation)
-```javascript
-class PricingStrategyFactory {
-  static create(strategyType) {
-    switch(strategyType) {
-      case 'bulk': return new BulkPricingStrategy();
-      case 'seasonal': return new SeasonalPricingStrategy();
-    }
-  }
-}
-```
-
-### 6. **Observer Pattern** (Real-time Notifications)
-```javascript
-// Inventory changes → notify subscribers
-class InventoryNotifier {
-  subscribe(observer) { /* add observer */ }
-  notifyLowStock(product) { /* notify all */ }
-}
-```
-
-### 7. **Singleton Pattern** (Database Connection)
-```javascript
-class Database {
-  static instance;
-  static getInstance() {
-    if (!this.instance) this.instance = new Database();
-    return this.instance;
-  }
-}
-```
-
----
-
-## Mobile Architecture (React Native)
-
-### Directory Structure
-```
-mobile/src/
-├── screens/          # Full-screen components (LoginScreen, ProductsScreen)
-├── components/       # Reusable UI components (ProductCard, PriceDisplay)
-├── services/         # API calls, external logic
-├── hooks/            # Custom React hooks
-├── navigation/       # Navigation setup
-├── state/            # State management (Context API or Redux)
-├── utils/            # Helpers, formatters
-├── assets/           # Images, fonts
-└── App.js            # Root component
-```
-
-### State Management Pattern
-Use **Context API + Custom Hooks** for simple state, or **Redux** if complex.
-
-```javascript
-// Custom hook pattern (preferred for simplicity)
-const useProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  
-  const fetchProducts = async () => {
-    setLoading(true);
-    const data = await api.getProducts();
-    setProducts(data);
-    setLoading(false);
-  };
-  
-  return { products, loading, fetchProducts };
-};
-```
-
----
-
-## Database Design Principles
-
-1. **Normalization** - Minimize redundancy
-2. **Foreign Keys** - Maintain data integrity
-3. **Indexes** - Performance on common queries
-4. **Audit Trail** - `created_at`, `updated_at` timestamps
-5. **Soft Deletes** - Mark deleted instead of removing (optional)
-6. **Constraints** - Data validation at DB level
-
----
-
-## API Design
-
-### RESTful Principles
-- **GET** - Fetch data (safe, idempotent)
-- **POST** - Create data (not idempotent)
-- **PUT** - Full update (idempotent)
-- **PATCH** - Partial update (idempotent)
-- **DELETE** - Remove data (idempotent)
-
-### Response Format (Consistent)
-```json
-{
-  "success": true,
-  "data": { /* actual data */ },
-  "message": "Success message",
-  "error": null,
-  "meta": {
-    "page": 1,
-    "total": 100,
-    "limit": 20
-  }
-}
-```
-
-### Status Codes
-- 200 - OK
-- 201 - Created
-- 400 - Bad Request (validation error)
-- 401 - Unauthorized
-- 403 - Forbidden
-- 404 - Not Found
-- 409 - Conflict
-- 500 - Server Error
-
----
-
-## Error Handling Strategy
-
-```javascript
-// Custom error classes
-class ValidationError extends Error {
-  constructor(message) {
-    super(message);
-    this.code = 'VALIDATION_ERROR';
-    this.status = 400;
-  }
-}
-
-class NotFoundError extends Error {
-  constructor(message) {
-    super(message);
-    this.code = 'NOT_FOUND';
-    this.status = 404;
-  }
-}
-
-// Global error handler
-app.use((err, req, res, next) => {
-  const status = err.status || 500;
-  const message = err.message || 'Internal Server Error';
-  res.status(status).json({ success: false, error: message });
-});
-```
-
----
-
-## Testing Strategy
-
-### Unit Tests (Services, Utils)
-- Test business logic in isolation
-- Mock repositories
-- Fast, deterministic
-
-### Integration Tests (API Endpoints)
-- Test full flow: controller → service → repository
-- Real database (or test DB)
-- Slower but comprehensive
-
-### Test Coverage Target
-- **Minimum**: 70% coverage
-- **Critical paths** (auth, payments, inventory): 100%
-- **Services**: 80%+
-
----
-
-## Security Best Practices
-
-1. **Authentication** - JWT tokens
-2. **Authorization** - Role-based access control (RBAC)
-3. **Input Validation** - Sanitize all inputs
-4. **SQL Injection Prevention** - Use parameterized queries (ORM handles this)
-5. **CORS** - Restrict to allowed origins
-6. **Rate Limiting** - Prevent abuse
-7. **Environment Variables** - Never hardcode secrets
-8. **Password Hashing** - bcrypt or similar
-9. **HTTPS Only** - Encrypted communication
-
----
-
-## Performance Considerations
-
-1. **Database**
-   - Index frequently queried columns
-   - Avoid N+1 queries (eager load relations)
-   - Paginate large result sets
-
-2. **Caching**
-   - Cache product catalog (doesn't change often)
-   - Cache user sessions
-   - Invalidate on updates
-
-3. **API**
-   - Compress responses (gzip)
-   - Pagination for lists
-   - Lazy loading for images
-
-4. **Mobile**
-   - Lazy load lists
-   - Cache API responses
-   - Optimize bundle size
-
----
-
-## Scalability
-
-### Current Phase (MVP)
-- Single Node.js server
-- Single PostgreSQL database
-- Sufficient for team + employees
-
-### Future Growth
-- **Load Balancing** - Multiple Node servers
-- **Database Replication** - Read replicas
-- **Caching Layer** - Redis for hot data
-- **CDN** - For image delivery
-- **Message Queue** - For async tasks (notifications, reports)
-
----
-
-## Summary
-
-| Layer | Pattern | Purpose |
-|-------|---------|---------|
-| Routes | REST API | HTTP interface |
-| Controllers | Input validation | Parse & validate requests |
-| Services | Business logic | Core app logic |
-| Repositories | Data access | Database queries |
-| Models | Database schema | Data structure |
-| Middleware | Cross-cutting concerns | Auth, logging, error handling |
-| Utils | Reusable helpers | Formatting, validation |
-
-This architecture ensures:
-✅ **Maintainability** - Clear code organization  
-✅ **Testability** - Easy to test each layer  
-✅ **Scalability** - Add features without refactoring  
-✅ **Reusability** - Services/utils across endpoints  
-✅ **Professional Standards** - Industry best practicess
+- Pages in `admin/src/pages/`, shared pieces in `admin/src/components/ui/` (the kit: `Button`, `Card`, `DataTable`, `Sheet`, `Inspector`, `PageHeader`…).
+- API calls through `admin/src/services/apiClient.ts`; every string comes from the EN/SQ catalogues in `admin/src/i18n/` (tests fail on missing keys).
+- Menu: `admin/src/navigation/sections.ts`; staff tabs: `navigation/staff.ts`.

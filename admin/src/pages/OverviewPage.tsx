@@ -9,7 +9,7 @@ import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
 import { analyticsApi, inventoryApi, reportsApi } from '../services/api';
-import { TodoGroups } from '../components/TodoList';
+import { TodoList } from '../components/TodoList';
 import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MORE } from '../utils/format';
 import { ButtonLink, Card, DayBars, ShopSunrise, StatGrid, StatTile } from '../components/ui';
@@ -43,9 +43,11 @@ export function OverviewPage() {
 
       <AttentionPanel />
 
-      <TodayCard />
-
-      <TodayFigures lowCount={lowCount} />
+      {/* The day as one panel: the sentence and the last 30 days, then the figures under a hairline. */}
+      <section className="today-panel" aria-label={t.overview.todaySoFar}>
+        <TodayCard />
+        <TodayFigures lowCount={lowCount} />
+      </section>
 
       <SetupGuide />
 
@@ -107,22 +109,22 @@ function OverviewHero() {
   const firstName = user.name.split(' ')[0] || user.name;
   return (
     <header className="overview-hero">
+      <div className="overview-hero__art">
+        <ShopSunrise />
+      </div>
       <div className="overview-hero__text">
         <p className="overview-hero__kicker">
           {t.nav.items.overview} · {formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
         <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
-        {user.role !== 'owner' && (
-          <div className="overview-hero__actions">
-            <ButtonLink to="/sales?new=1" variant="primary" icon={Receipt}>
-              {t.sales.record}
-            </ButtonLink>
-          </div>
-        )}
       </div>
-      <div className="overview-hero__art">
-        <ShopSunrise />
-      </div>
+      {user.role !== 'owner' && (
+        <div className="overview-hero__actions">
+          <ButtonLink to="/sales?new=1" variant="primary" icon={Receipt}>
+            {t.sales.record}
+          </ButtonLink>
+        </div>
+      )}
     </header>
   );
 }
@@ -173,7 +175,7 @@ function TodayCard() {
   }
 
   return (
-    <section className="today" aria-label={t.overview.todaySoFar} aria-busy={today.isPending}>
+    <div className="today" aria-busy={today.isPending}>
       <div className="today__text">
         {today.isPending && <Loading />}
         {today.isError && <ErrorNotice error={today.error} onRetry={() => today.refetch()} />}
@@ -194,7 +196,7 @@ function TodayCard() {
           <figcaption>{t.overview.last30Days}</figcaption>
         </figure>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -292,7 +294,8 @@ function AttentionPanel() {
           <EmptyState title={t.todo.none}>{t.todo.noneHint}</EmptyState>
         </Card>
       )}
-      {shown.length > 0 && <TodoGroups items={shown} idPrefix="overview" level={3} />}
+      {/* One sheet, most urgent first; each row names its urgency, so the list needs no group headings here. */}
+      {shown.length > 0 && <TodoList items={shown} />}
     </section>
   );
 }

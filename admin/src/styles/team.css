@@ -90,15 +90,6 @@
   color: var(--info);
 }
 
-/* An urgent item carries a red edge down its left side. */
-.todo-row--urgent::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--danger);
-}
-
 .todo-row__text {
   display: grid;
   gap: 2px;
@@ -109,18 +100,13 @@
   font-weight: 600;
 }
 
+/* How pressing it is, as a short coloured word before the title ("Urgent"),
+   so one list can hold every kind without group headings. */
 .todo-row__severity {
   margin-right: var(--space-2);
-  padding: 0 6px;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-stamp);
   color: var(--info);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  vertical-align: 1px;
 }
 
 .todo-row--urgent .todo-row__severity {

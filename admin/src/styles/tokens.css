@@ -10,12 +10,12 @@
    words in dark). Amber 400 is the brand itself. Only the two theme blocks below
    use these; screens use the named tokens (src/theme/scales.test.ts keeps it so). */
 :root {
-  --neutral-50: #f5f9fb; --neutral-100: #edf1f3; --neutral-200: #e1e5e7; --neutral-300: #d4d8da; --neutral-400: #bbbec0; --neutral-500: #9b9fa1; --neutral-600: #7d8183; --neutral-700: #585b5e; --neutral-800: #424648; --neutral-900: #2b2e30; --neutral-950: #16191B; --neutral-975: #0d1012; --neutral-990: #050809;
-  --amber-50: #fff8ea; --amber-100: #feeed2; --amber-200: #f6e2bc; --amber-300: #ffd073; --amber-400: #f5b71a; --amber-500: #c99505; --amber-600: #a37801; --amber-700: #745504; --amber-800: #564116; --amber-900: #352d1c; --amber-950: #1d180e; --amber-975: #140f06; --amber-990: #0b0702;
-  --green-50: #edfef0; --green-100: #e2f7e5; --green-200: #d1edd6; --green-300: #bee2c4; --green-400: #99cda3; --green-500: #68b279; --green-600: #459459; --green-700: #386743; --green-800: #304d36; --green-900: #253127; --green-950: #131a15; --green-975: #0b110c; --green-990: #040905;
-  --orange-50: #fef7f4; --orange-100: #feece5; --orange-200: #ffdccf; --orange-300: #ffcab5; --orange-400: #f8a788; --orange-500: #e87c51; --orange-600: #c95a2a; --orange-700: #894529; --orange-800: #643826; --orange-900: #3c2821; --orange-950: #211511; --orange-975: #170c08; --orange-990: #0e0503;
-  --crimson-50: #fef6f7; --crimson-100: #feebeb; --crimson-200: #fedadc; --crimson-300: #fec7ca; --crimson-400: #fda0a7; --crimson-500: #ee717f; --crimson-600: #cf4e60; --crimson-700: #8d3e47; --crimson-800: #663338; --crimson-900: #3d2728; --crimson-950: #211415; --crimson-975: #180b0c; --crimson-990: #0f0405;
-  --blue-50: #f4f9fe; --blue-100: #e6f2ff; --blue-200: #d3e7fd; --blue-300: #c1dbf6; --blue-400: #9dc2e9; --blue-500: #70a3d7; --blue-600: #4f84b9; --blue-700: #3e5e7e; --blue-800: #33475c; --blue-900: #262f38; --blue-950: #14191e; --blue-975: #0b1015; --blue-990: #04080c;
+  --neutral-50: #f5f9fc; --neutral-100: #eef2f5; --neutral-200: #e3e7ea; --neutral-300: #d5dadc; --neutral-400: #b7bbbe; --neutral-500: #989c9e; --neutral-600: #787c7f; --neutral-700: #595d5f; --neutral-800: #45484a; --neutral-900: #2b2e31; --neutral-950: #16191b; --neutral-975: #0d1012; --neutral-990: #050709;
+  --amber-50: #fef8ea; --amber-100: #fdf1d4; --amber-200: #f9e4b6; --amber-300: #f6d58e; --amber-400: #f5b71a; --amber-500: #ca8f04; --amber-600: #a66f02; --amber-700: #7f5101; --amber-800: #653e00; --amber-900: #3e290f; --amber-950: #221709; --amber-975: #150e06; --amber-990: #090603;
+  --green-50: #f1fcf4; --green-100: #e4f8e8; --green-200: #d0f0d7; --green-300: #b6e7c2; --green-400: #71d38f; --green-500: #49b46e; --green-600: #0f944c; --green-700: #016732; --green-800: #17552e; --green-900: #1b3422; --green-950: #101d13; --green-975: #09120c; --green-990: #040705;
+  --orange-50: #fff6f3; --orange-100: #ffeee6; --orange-200: #ffdfcf; --orange-300: #ffcdb4; --orange-400: #ff9f6f; --orange-500: #ec7531; --orange-600: #c55602; --orange-700: #953f00; --orange-800: #733207; --orange-900: #432516; --orange-950: #25150c; --orange-975: #170d08; --orange-990: #0a0504;
+  --red-50: #fff6f5; --red-100: #ffedeb; --red-200: #ffddda; --red-300: #ffcbc5; --red-400: #ff9b93; --red-500: #f76560; --red-600: #d53c3d; --red-700: #a71f25; --red-800: #792826; --red-900: #46211f; --red-950: #271311; --red-975: #180b0a; --red-990: #0b0505;
+  --blue-50: #f4f9fe; --blue-100: #e9f3ff; --blue-200: #d4e9ff; --blue-300: #bdddff; --blue-400: #83c0ff; --blue-500: #55a0ea; --blue-600: #2c7fcb; --blue-700: #115e9f; --blue-800: #1f4a73; --blue-900: #1d2f42; --blue-950: #101a25; --blue-975: #0a1017; --blue-990: #04070a;
 }
 
 :root,
@@ -42,8 +42,8 @@
   --ok-soft: var(--green-100);
   --warn: var(--orange-700);
   --warn-soft: var(--orange-100);
-  --danger: var(--crimson-700);
-  --danger-soft: var(--crimson-100);
+  --danger: var(--red-700);
+  --danger-soft: var(--red-100);
   --info: var(--blue-700);
   --info-soft: var(--blue-100);
   --focus: var(--amber-700);
@@ -74,7 +74,7 @@
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.45);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.95);
   --cta-edge: var(--amber-600);
-  --danger-edge: var(--crimson-800);
+  --danger-edge: var(--red-800);
   --glass-bg: rgb(245 249 251 / 0.74);
   --glass-bg-strong: rgb(245 249 251 / 0.92);
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.7);
@@ -105,13 +105,14 @@
   --cta-low: color-mix(in oklab, var(--amber-400), var(--amber-500) 35%);
   --cta-ink: var(--neutral-975);
   --tint: rgb(245 183 26 / 0.14);
-  --ok: var(--green-400);
+  /* Status words take the full-colour 500 step: the pale 400s read as candy beside the amber. */
+  --ok: var(--green-500);
   --ok-soft: var(--green-900);
-  --warn: var(--orange-400);
+  --warn: var(--orange-500);
   --warn-soft: var(--orange-900);
-  --danger: var(--crimson-400);
-  --danger-soft: var(--crimson-900);
-  --info: var(--blue-400);
+  --danger: var(--red-500);
+  --danger-soft: var(--red-900);
+  --info: var(--blue-500);
   --info-soft: var(--blue-900);
   --focus: var(--amber-400);
   --data-1: var(--amber-300);
@@ -136,7 +137,7 @@
   --key-shine: inset 0 1px 0 rgb(255 255 255 / 0.3);
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.1);
   --cta-edge: var(--amber-600);
-  --danger-edge: var(--crimson-600);
+  --danger-edge: var(--red-600);
   --glass-bg: rgb(22 25 27 / 0.74);
   --glass-bg-strong: rgb(22 25 27 / 0.92);
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);

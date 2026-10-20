@@ -5,44 +5,44 @@ colors:
   amber: "#f5b71a"
   amber-hover: "#ffd073"
   amber-edge: "#a37801"
-  amber-text: "#745504"
+  amber-text: "#7f5101"
   amber-tint: "rgb(245 183 26 / 0.16)"
   pillar-ink: "#0d1012"
-  ivory-canvas: "#edf1f3"
-  paper: "#f5f9fb"
-  sunk-paper: "#e1e5e7"
-  oat: "#d4d8da"
-  ink: "#16191B"
-  ink-muted: "#585b5e"
-  hairline: "#e1e5e7"
-  hairline-strong: "#d4d8da"
-  ok: "#386743"
-  ok-soft: "#e2f7e5"
-  warn: "#894529"
-  warn-soft: "#feece5"
-  danger: "#8d3e47"
-  danger-soft: "#feebeb"
-  info: "#3e5e7e"
-  info-soft: "#e6f2ff"
-  focus: "#745504"
+  ivory-canvas: "#eef2f5"
+  paper: "#f5f9fc"
+  sunk-paper: "#e3e7ea"
+  oat: "#d5dadc"
+  ink: "#16191b"
+  ink-muted: "#595d5f"
+  hairline: "#e3e7ea"
+  hairline-strong: "#d5dadc"
+  ok: "#016732"
+  ok-soft: "#e4f8e8"
+  warn: "#953f00"
+  warn-soft: "#ffeee6"
+  danger: "#a71f25"
+  danger-soft: "#ffedeb"
+  info: "#115e9f"
+  info-soft: "#e9f3ff"
+  focus: "#7f5101"
   night-canvas: "#0d1012"
-  night-paper: "#16191B"
-  night-sunk: "#050809"
-  night-oat: "#2b2e30"
-  night-ink: "#f5f9fb"
-  night-muted: "#bbbec0"
-  night-hairline: "#2b2e30"
-  night-hairline-strong: "#424648"
+  night-paper: "#16191b"
+  night-sunk: "#050709"
+  night-oat: "#2b2e31"
+  night-ink: "#f5f9fc"
+  night-muted: "#b7bbbe"
+  night-hairline: "#2b2e31"
+  night-hairline-strong: "#45484a"
   night-amber-text: "#f5b71a"
-  night-amber-edge: "#a37801"
-  night-ok: "#99cda3"
-  night-ok-soft: "#253127"
-  night-warn: "#f8a788"
-  night-warn-soft: "#3c2821"
-  night-danger: "#fda0a7"
-  night-danger-soft: "#3d2728"
-  night-info: "#9dc2e9"
-  night-info-soft: "#262f38"
+  night-amber-edge: "#a66f02"
+  night-ok: "#49b46e"
+  night-ok-soft: "#1b3422"
+  night-warn: "#ec7531"
+  night-warn-soft: "#432516"
+  night-danger: "#f76560"
+  night-danger-soft: "#46211f"
+  night-info: "#55a0ea"
+  night-info-soft: "#1d2f42"
   night-focus: "#faf9f5"
 typography:
   headline:
@@ -465,12 +465,16 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 Cool blue-grey paper and anthracite ink (the carwash canopy) carry everything; one amber marks brand, action and
 place; status colours are quiet, always with words. Everything comes from
 matched scales, so the colours sit at the same weight (reworked 2026-10-20: the
-old cream, brown and burnt-orange tones were picked for clay and fought the amber).
+old cream, brown and burnt-orange tones were picked for clay and fought the amber;
+reworked again the same day: the status words were dusty browns and pastels that
+muddied next to the clean amber).
 
 ### Scales
 Six ramps in `admin/src/styles/tokens.css`: **neutral, amber, green,
-red-orange, crimson, blue**, steps 50 to 990, built in OKLCH on one lightness
-ladder, so a step is equally light in every colour. Amber 400 is the brand
+orange, red, blue**, steps 50 to 990, built in OKLCH on one lightness
+ladder, so a step is equally light in every colour, and on one chroma curve, so
+the status colours are equally strong (none dusty, none loud). Generator:
+`node brand/make_palette.mjs` prints the scale lines. Amber 400 is the brand
 `#f5b71a` itself. Screens never use a step (`var(--amber-400)`) directly, only
 the named tokens below; `src/theme/scales.test.ts` fails if they do. To change
 a colour, move its token to another step; to add a shade, take the next step.
@@ -482,47 +486,51 @@ a colour, move its token to another step; to add a shade, take the next step.
 | Cards, tables, sidebar (paper) | neutral 50 | neutral 950 |
 | Oat (fill) / strong hairline | neutral 300 / 300 | neutral 900 / 800 |
 | Ink / Muted Ink | neutral 950 / 700 | neutral 50 / 400 |
-| Status words / tint | 700 / 100 | 400 / 900 |
+| Status words / tint | 700 / 100 | 500 / 900 |
 | Amber text, focus | amber 700 | amber 400 |
 | Amber key / hover / edge | amber 400 / 300 / 600 | same |
 
-Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 230, measured from photos 2026-10-20; kept faint, chroma 0.005–0.006, because the photos read bluer than the paint), so amber is the only warm thing
+Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 235, measured from photos 2026-10-20; kept faint, chroma 0.006, because the photos read bluer than the paint), so amber is the only warm thing
 on screen; higher layers are lighter steps because shadows barely show on dark.
 
 ### Neutrals
-- **Canvas** `#edf1f3` / night `#0d1012`: the page.
-- **Paper** `#f5f9fb` / `#16191B`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e1e5e7` / `#050809`: footer strips, row hover, callouts, search.
-- **Oat** `#d4d8da` / `#2b2e30` (token `fill`): feature panels (Today, staff
+- **Canvas** `#eef2f5` / night `#0d1012`: the page.
+- **Paper** `#f5f9fc` / `#16191b`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e3e7ea` / `#050709`: footer strips, row hover, callouts, search.
+- **Oat** `#d5dadc` / `#2b2e31` (token `fill`): feature panels (Today, staff
   job tiles), ghost hover, segmented track.
-- **Ink** `#16191B` / `#f5f9fb`: text, data, checked switches, count badges.
-- **Muted Ink** `#585b5e` / `#bbbec0`: descriptions, labels, chart series.
-- **Hairline** `#e1e5e7` / `#2b2e30` and **Strong Hairline** `#d4d8da` / `#424648`.
+- **Ink** `#16191b` / `#f5f9fc`: text, data, checked switches, count badges.
+- **Muted Ink** `#595d5f` / `#b7bbbe`: descriptions, labels, chart series.
+- **Hairline** `#e3e7ea` / `#2b2e31` and **Strong Hairline** `#d5dadc` / `#45484a`.
 
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
 - **Amber** `#f5b71a` (both themes): the logo, the sunrise, **the one primary key
   per screen**, the menu tick, the selected row's edge and progress toward a goal.
-- **Amber Mark** `#a37801` (amber 600, light only): small marks on paper that
+- **Amber Mark** `#a66f02` (amber 600, light only): small marks on paper that
   must reach 3:1 (rings, dots).
-- **Amber Text** `#745504` / `#f5b71a` on **Amber Tint** (16%): the current
-  menu item's label, selected rows, and any amber words. Bright amber is never
+- **Amber Text** `#7f5101` / `#f5b71a` on **Amber Tint** (16%): the current
+  menu item's label (a warm gold-brown: amber's dark steps turn toward orange,
+  hue 83 → 72, so they never go olive), selected rows, and any amber words. Bright amber is never
   text on paper.
 - Text on amber is **Pillar Ink** `#0d1012` (white fails contrast: 1.9:1).
 
 ### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
 
-| | Light (700) | Light soft (100) | Dark (400) | Dark soft (900) |
+| | Light (700) | Light soft (100) | Dark (500) | Dark soft (900) |
 |---|---|---|---|---|
-| **OK** (green) | `#386743` | `#e2f7e5` | `#99cda3` | `#253127` |
-| **Warn** (red-orange) | `#894529` | `#feece5` | `#f8a788` | `#3c2821` |
-| **Danger** (crimson) | `#8d3e47` | `#feebeb` | `#fda0a7` | `#3d2728` |
-| **Info** (blue) | `#3e5e7e` | `#e6f2ff` | `#9dc2e9` | `#262f38` |
+| **OK (green, hue 152)** | `#016732` | `#e4f8e8` | `#49b46e` | `#1b3422` |
+| **Warn (signal orange, hue 47)** | `#953f00` | `#ffeee6` | `#ec7531` | `#432516` |
+| **Danger (red, hue 25)** | `#a71f25` | `#ffedeb` | `#f76560` | `#46211f` |
+| **Info (blue, hue 250)** | `#115e9f` | `#e9f3ff` | `#55a0ea` | `#1d2f42` |
 
 All four pass 4.5:1 on paper, canvas and oat in both themes and on their own
-soft tint (`admin/src/theme/contrast.test.ts` must keep passing). Warn is
-red-orange and danger crimson so neither reads as the brand.
+soft tint (`admin/src/theme/contrast.test.ts` must keep passing). The three warm
+hues are spread like road signals: amber 83 (brand), orange 47 (warn), red 25
+(danger), each at full colour so they never read as dirty versions of each other.
+Green and blue lean cool to sit with the anthracite. In dark mode the words use
+the 500 step: the pale 400s looked like candy beside the amber.
 
 ### Crisp depth
 Cards stay raised (never flat) but crisp: a 1px hairline edge and a white top

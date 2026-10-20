@@ -9,7 +9,7 @@ const sources = import.meta.glob(['../**/*.{css,ts,tsx}', '!../styles/tokens.css
   eager: true,
 }) as Record<string, string>;
 
-const SCALE = /var\(--(?:neutral|amber|green|orange|crimson|blue)-\d+\)/g;
+const SCALE = /var\(--(?:neutral|amber|green|orange|red|blue)-\d+\)/g;
 
 describe('colour scales', () => {
   it('should only be used inside tokens.css', () => {

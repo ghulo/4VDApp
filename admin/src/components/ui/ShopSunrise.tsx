@@ -1,60 +1,75 @@
 import { useId } from 'react';
 
-/** The 4VD mark's four equal pillars, spread across the shop front. */
-const PILLARS = [84, 104.33, 124.67, 145];
-
 /**
- * The shop at sunrise, in the logo's shapes: one roof, four equal pillars, a
- * clay sun rising behind them with printed-sunset stripes. Ink follows the
- * theme, so the shop is dark on paper and ivory at night.
+ * The 4VD mark drawn large and set into the wall: a recess cut into the page, and
+ * inside it the amber glass tile with the tick engraved in it. Light comes from
+ * above, so the recess is shadowed at the top and lit along its bottom lip.
  */
 export function ShopSunrise() {
-  // Every drawing on a page needs its own mask id.
+  // Every drawing on a page needs its own ids.
   const id = useId().replace(/:/g, '');
-  const maskId = `sun-stripes-${id}`;
-  const clipId = `above-ground-${id}`;
-  const glassId = `sun-glass-${id}`;
+  const recessId = `recess-${id}`;
+  const rimId = `recess-rim-${id}`;
+  const glassId = `tile-glass-${id}`;
+  const glossId = `tile-gloss-${id}`;
+  const blurId = `soft-${id}`;
   return (
     <svg className="shop-sunrise" viewBox="0 0 240 140" aria-hidden="true" focusable="false">
       <defs>
-        <clipPath id={clipId}>
-          <rect width="240" height="120" />
+        <clipPath id={recessId}>
+          <rect x="66" y="16" width="108" height="108" rx="27" />
         </clipPath>
-        <mask id={maskId}>
-          <rect width="240" height="140" fill="#fff" />
-          {/* Gaps that widen toward the ground, like a printed sunset. */}
-          <rect x="0" y="86" width="240" height="2" fill="#000" />
-          <rect x="0" y="94" width="240" height="3" fill="#000" />
-          <rect x="0" y="103" width="240" height="4" fill="#000" />
-          <rect x="0" y="112" width="240" height="5" fill="#000" />
-        </mask>
-        {/* Glass: the sun is lit from above, brighter at its crown. */}
+        {/* The recess edge: in shadow at the top, catching the light at the bottom. */}
+        <linearGradient id={rimId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="shop-sunrise__rim-dark" />
+          <stop offset="1" className="shop-sunrise__rim-light" />
+        </linearGradient>
+        {/* Amber glass, lit from above with a deeper foot. */}
         <linearGradient id={glassId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" className="shop-sunrise__glass-top" />
-          <stop offset="0.65" className="shop-sunrise__glass-base" />
+          <stop offset="0.55" className="shop-sunrise__glass-base" />
+          <stop offset="1" className="shop-sunrise__glass-foot" />
         </linearGradient>
+        <linearGradient id={glossId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" className="shop-sunrise__gloss-top" />
+          <stop offset="1" className="shop-sunrise__gloss-end" />
+        </linearGradient>
+        <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3.5" />
+        </filter>
       </defs>
-      <g clipPath={`url(#${clipId})`}>
+
+      {/* The hole in the wall. */}
+      <rect className="shop-sunrise__recess" x="66" y="16" width="108" height="108" rx="27" />
+      <g clipPath={`url(#${recessId})`}>
+        {/* The wall's own shadow falling into the top of the hole. */}
+        <rect
+          className="shop-sunrise__shade"
+          x="66"
+          y="16"
+          width="108"
+          height="108"
+          rx="27"
+          strokeWidth="12"
+          transform="translate(0 5)"
+          filter={`url(#${blurId})`}
+        />
         <g className="shop-sunrise__rise">
-          <circle className="shop-sunrise__glow" cx="120" cy="96" r="74" />
-          <circle
-            className="shop-sunrise__sun"
-            cx="120"
-            cy="96"
-            r="54"
-            fill={`url(#${glassId})`}
-            mask={`url(#${maskId})`}
+          {/* The tile's shadow on the back of the recess. */}
+          <rect className="shop-sunrise__drop" x="74" y="29" width="92" height="92" rx="21" filter={`url(#${blurId})`} />
+          <rect className="shop-sunrise__tile" x="74.5" y="24.5" width="91" height="91" rx="20.5" fill={`url(#${glassId})`} />
+          {/* Glass: a soft sheen over the top half and a bright line along the top edge. */}
+          <path
+            d="M95 26 H145 A19 19 0 0 1 164 45 V60 C140 66 100 66 76 58 V45 A19 19 0 0 1 95 26 Z"
+            fill={`url(#${glossId})`}
           />
+          <path className="shop-sunrise__glint" d="M90 26.5 H150" />
+          {/* The tick, engraved: a lit lip below the cut, then the ink. */}
+          <path className="shop-sunrise__tick-lip" d="M98.4 72.9 L112.8 90.2 L141.6 51.4" />
+          <path className="shop-sunrise__tick" d="M98.4 71.4 L112.8 88.7 L141.6 49.9" />
         </g>
       </g>
-      <path className="shop-sunrise__roof" d="M76 70 L120 42 L164 70" />
-      {PILLARS.map((x) => (
-        <rect key={x} className="shop-sunrise__shop" x={x} y="76" width="11" height="38" rx="2" />
-      ))}
-      <rect className="shop-sunrise__shop" x="74" y="113" width="92" height="7" rx="2" />
-      <rect className="shop-sunrise__shop" x="6" y="120" width="228" height="3" rx="1.5" />
-      <rect className="shop-sunrise__horizon" x="40" y="128" width="160" height="2" rx="1" />
-      <rect className="shop-sunrise__horizon shop-sunrise__horizon--far" x="76" y="134" width="88" height="2" rx="1" />
+      <rect className="shop-sunrise__rim" x="66.5" y="16.5" width="107" height="107" rx="26.5" stroke={`url(#${rimId})`} />
     </svg>
   );
 }

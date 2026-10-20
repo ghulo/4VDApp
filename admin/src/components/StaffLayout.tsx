@@ -8,7 +8,7 @@ import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
-import { LogoMark } from './LogoMark';
+import { Wordmark } from './LogoMark';
 import { Button } from './ui';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
@@ -45,8 +45,7 @@ export function StaffLayout() {
       <SkipLink />
       <header className="topbar staff-app__top">
         <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
-          <LogoMark size={28} />
-          <span className="topbar__name">4VD</span>
+          <Wordmark />
         </Link>
         <div className="staff-app__wide-tabs">{tabs}</div>
         <div className="topbar__end">

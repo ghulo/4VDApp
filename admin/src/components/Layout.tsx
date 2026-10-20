@@ -11,7 +11,7 @@ import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
-import { LogoMark } from './LogoMark';
+import { Wordmark } from './LogoMark';
 import { Button, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
@@ -133,8 +133,7 @@ function FullLayout() {
           </button>
         </Tooltip>
         <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
-          <LogoMark size={28} />
-          <span className="topbar__name">4VD</span>
+          <Wordmark />
         </Link>
         {business.data && business.data.name.trim().toUpperCase() !== '4VD' && (
           <>
@@ -180,8 +179,7 @@ function FullLayout() {
       <aside ref={sidebar} id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
         <div className="sidebar__drawer-head">
           <span className="topbar__brand">
-            <LogoMark size={28} />
-            <span className="topbar__name">4VD</span>
+            <Wordmark />
           </span>
           <Button variant="ghost" icon={X} aria-label={t.nav.closeMenu} onClick={closeDrawer} />
         </div>

@@ -15,9 +15,9 @@ if (!mark.includes(TILE)) throw new Error('logo-mark.svg changed its tile; updat
 const square = mark.replace(TILE, '<rect width="64" height="64" fill="#F5B71A"/>');
 // Maskable and splash icons lay the drawing on their own background, so they have no tile.
 const bare = mark.replace(TILE, '');
-// Android's themed icon keeps only the shape, so it gets the ink parts alone (no sun or stripes).
-const inkOnly = bare.replace(/\s*<circle[^>]*\/>/, '').replace(/\s*<rect[^>]*height="1\.[48]" fill="#F5B71A"\/>/g, '');
-if (inkOnly.includes('#F5B71A') || inkOnly.includes('#FFD073')) throw new Error('could not strip the sun from logo-mark.svg');
+// Android's themed icon keeps only the shape: the ink tick alone.
+const inkOnly = bare;
+if (inkOnly.includes('#F5B71A')) throw new Error('logo-mark.svg has amber outside its tile; update make_icons.mjs');
 
 const fileIn = (app, path) => new URL(`../${app}/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const out = (path) => fileIn('mobile', path);

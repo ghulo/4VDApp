@@ -44,10 +44,10 @@
   text-decoration: none;
 }
 
-.topbar__name {
-  font-size: var(--text-lg);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+/* The 4VD wordmark (LogoMark.tsx): letters in the text colour, the tick in amber. */
+.wordmark {
+  display: block;
+  flex: none;
 }
 
 .topbar__slash {

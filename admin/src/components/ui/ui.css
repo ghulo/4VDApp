@@ -1189,58 +1189,108 @@ input.switch:focus-visible {
   overflow: visible;
 }
 
-/* The sun is glass: lit at its crown, with a crisp rim instead of a soft edge. */
-.shop-sunrise__sun {
+/* The recess: a hole in the wall, its floor one step deeper than the page. */
+.shop-sunrise__recess {
+  fill: var(--surface-sunk);
+}
+
+.shop-sunrise__shade {
+  fill: none;
+  stroke: rgb(0 0 0 / 0.28);
+}
+
+.shop-sunrise__rim {
+  fill: none;
+  stroke-width: 1;
+}
+
+.shop-sunrise__rim-dark {
+  stop-color: rgb(0 0 0 / 0.22);
+}
+
+.shop-sunrise__rim-light {
+  stop-color: rgb(255 255 255 / 0.85);
+}
+
+[data-theme='dark'] .shop-sunrise__rim-light {
+  stop-color: rgb(255 255 255 / 0.14);
+}
+
+[data-theme='dark'] .shop-sunrise__shade {
+  stroke: rgb(0 0 0 / 0.6);
+}
+
+.shop-sunrise__drop {
+  fill: rgb(0 0 0 / 0.3);
+}
+
+/* The tile is amber glass: lit top, deeper foot, a crisp rim. */
+.shop-sunrise__tile {
   stroke: var(--cta-edge);
-  stroke-opacity: 0.35;
+  stroke-opacity: 0.55;
   stroke-width: 1;
 }
 
 .shop-sunrise__glass-top {
-  stop-color: var(--cta-hover);
+  stop-color: var(--cta-top);
 }
 
 .shop-sunrise__glass-base {
   stop-color: var(--cta);
 }
 
-.shop-sunrise__glow {
-  fill: var(--cta);
-  opacity: 0.16;
+.shop-sunrise__glass-foot {
+  stop-color: var(--cta-low);
 }
 
-.shop-sunrise__shop {
-  fill: var(--ink);
+.shop-sunrise__gloss-top {
+  stop-color: rgb(255 255 255 / 0.55);
 }
 
-.shop-sunrise__roof {
+.shop-sunrise__gloss-end {
+  stop-color: rgb(255 255 255 / 0);
+}
+
+.shop-sunrise__glint {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 7;
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* Ink on amber in both themes, cut into the glass with a lit lip below. */
+.shop-sunrise__tick,
+.shop-sunrise__tick-lip {
+  fill: none;
+  stroke-width: 11.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.shop-sunrise__horizon {
-  fill: var(--ink-muted);
-  opacity: 0.45;
+.shop-sunrise__tick {
+  stroke: var(--cta-ink);
 }
 
-.shop-sunrise__horizon--far {
-  opacity: 0.25;
+.shop-sunrise__tick-lip {
+  stroke: rgb(255 255 255 / 0.45);
 }
 
-/* The one moment: the sun comes up behind the shop when the drawing appears. */
+/* The one moment: the tile settles into the wall when the drawing appears. */
 @media (prefers-reduced-motion: no-preference) {
   .shop-sunrise__rise {
-    animation: sun-rise 1.2s var(--ease) both;
+    animation: tile-rise 1.2s var(--ease) both;
   }
 }
 
-@keyframes sun-rise {
+.shop-sunrise__rise {
+  transform-box: view-box;
+  transform-origin: 120px 70px;
+}
+
+@keyframes tile-rise {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: scale(1.06);
   }
 }
 

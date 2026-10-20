@@ -10,22 +10,26 @@ const sharp = createRequire(new URL('../../backend/package.json', import.meta.ur
 const here = (name) => new URL(`./${name}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
 // Colours from DESIGN.md.
-const CANVAS = '#f0eee6';
-const HAIRLINE = '#e0dbcf';
-const INK = '#141413';
-const MUTED = '#5e5d59';
+const CANVAS = '#eef2f5';
+const HAIRLINE = '#e3e7ea';
+const INK = '#16191b';
+const MUTED = '#595d5f';
+const TICK = '#e0a310';
 
-// The mark's drawing without its tile, so it can sit straight on the canvas.
+// The mark (amber tile and tick), inlined so it can be placed and scaled.
 const markSvg = readFileSync(new URL('../../brand/logo-mark.svg', import.meta.url), 'utf8');
-const markInner = markSvg
-  .replace(/<svg[^>]*>|<\/svg>|<!--[\s\S]*?-->/g, '')
-  .replace(/<rect x="0\.5"[^>]*\/>/, '')
-  .replace(/id="above-ground"/g, 'id="sun-clip"')
-  .replace(/url\(#above-ground\)/g, 'url(#sun-clip)')
-  .replace(/fill="#FAF9F5"/g, `fill="${CANVAS}"`);
+const markInner = markSvg.replace(/<svg[^>]*>|<\/svg>|<!--[\s\S]*?-->/g, '');
 
 function mark(x, y, size) {
   return `<g transform="translate(${x} ${y}) scale(${size / 64})">${markInner}</g>`;
+}
+
+/** The 4VD wordmark (brand/logo-full.svg) with its top-left at x, y, `height` px tall. */
+function wordmark(x, y, height, ink) {
+  return `<g transform="translate(${x} ${y}) scale(${height / 89}) translate(-28 -4)" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 15 L36 64 H88 M72 38 V85 M186 15 V85 H204 C242 85 242 15 204 15 Z" stroke="${ink}"/>
+    <path d="M106 54 L125 83 L165 12" stroke="${TICK}"/>
+  </g>`;
 }
 
 // The sidebar beside the welcome and finish pages (MUI asks for 164 × 314).
@@ -33,14 +37,14 @@ const sidebar = `<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314
   <rect width="164" height="314" fill="${CANVAS}"/>
   <rect x="163" width="1" height="314" fill="${HAIRLINE}"/>
   ${mark(22, 150, 120)}
-  <text x="82" y="292" text-anchor="middle" font-family="Hanken Grotesk, Segoe UI, sans-serif" font-weight="700" font-size="22" letter-spacing="-0.5" fill="${INK}">4VD</text>
+  ${wordmark(55.7, 276, 22, INK)}
 </svg>`;
 
 // The strip at the top of the progress page (MUI asks for 150 × 57).
 const header = `<svg xmlns="http://www.w3.org/2000/svg" width="150" height="57" viewBox="0 0 150 57">
   <rect width="150" height="57" fill="#ffffff"/>
   ${mark(96, 6, 44)}
-  <text x="92" y="36" text-anchor="end" font-family="Hanken Grotesk, Segoe UI, sans-serif" font-weight="700" font-size="18" letter-spacing="-0.4" fill="${MUTED}">4VD</text>
+  ${wordmark(53.7, 20.5, 16, MUTED)}
 </svg>`;
 
 async function writeBmp(svg, name) {

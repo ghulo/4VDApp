@@ -1,6 +1,6 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the shop at sunrise.
+description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the amber tick.
 colors:
   amber: "#f5b71a"
   amber-hover: "#ffd073"
@@ -847,15 +847,15 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 11. The printed finish (vintage, used sparingly)
 
-- **The shop at sunrise** (`admin/src/components/ui/ShopSunrise.tsx`): the mascot. Sign-in, the
+- **The big mark** (`admin/src/components/ui/ShopSunrise.tsx`): the logo's amber tile and tick drawn large as amber glass set into a recess in the wall (shadowed top, lit bottom lip, tick engraved); no sun (2026-10-20). Sign-in, the
   Overview hero, big empty pages, nowhere else. It is
   **never larger than the information beside it**: up to 360px in the Overview
   hero (standing on the page rule), 240px in empty states, 560px on sign-in. Hidden from screen readers;
-  the sun rises once, off under reduced motion.
+  the tile settles in once, off under reduced motion.
 - **No paper grain**: the noise overlay was removed (2026-10-12); the canvas
-  is clean ivory with only the faint pillar weave.
-- **The canvas** (behind every page): the mark's **four pillars**
-  woven very faintly across it (two staggered groups of four strokes per 72px
+  is clean with only the faint tick weave.
+- **The canvas** (behind every page): the logo's **tick**
+  woven very faintly across it (two staggered ticks per 72px
   tile; Ink at 3.5% light, 2.5% dark). No corner watermark (tried: one more
   thing to look at). Token `--weave-image`; off under more contrast and in print.
 - **Rules**: a hairline under page titles.

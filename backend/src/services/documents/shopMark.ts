@@ -1,18 +1,9 @@
 /**
- * The 4VD mark (brand/logo-mark.svg, the shop at sunrise), printed on documents
- * when the shop hasn't uploaded a logo of its own. Keep in step with that file.
+ * The 4VD mark (brand/logo-mark.svg, the tick), printed on documents when the shop
+ * hasn't uploaded a logo of its own. On paper it sits on an ivory tile with a hairline,
+ * so it saves toner and still prints in black and white. Keep in step with that file.
  */
 export const SHOP_MARK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs><clipPath id="above-ground"><rect width="64" height="46"/></clipPath></defs>
   <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="#FAF9F5" stroke="#E3DACC"/>
-  <circle cx="32" cy="35" r="21" fill="#F5B71A" clip-path="url(#above-ground)"/>
-  <rect x="8" y="36" width="48" height="1.4" fill="#FAF9F5"/>
-  <rect x="8" y="40" width="48" height="1.8" fill="#FAF9F5"/>
-  <path d="M16 27 L32 16 L48 27" fill="none" stroke="#141413" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="18" y="29" width="5" height="14" rx="1" fill="#141413"/>
-  <rect x="25.67" y="29" width="5" height="14" rx="1" fill="#141413"/>
-  <rect x="33.33" y="29" width="5" height="14" rx="1" fill="#141413"/>
-  <rect x="41" y="29" width="5" height="14" rx="1" fill="#141413"/>
-  <rect x="15" y="42.5" width="34" height="3.5" rx="1" fill="#141413"/>
-  <rect x="7" y="46" width="50" height="2.6" rx="1.3" fill="#141413"/>
+  <path d="M17 33 L27 45 L47 18" fill="none" stroke="#141413" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;

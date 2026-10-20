@@ -4,10 +4,10 @@
  * plain-text part. Anything a person typed is escaped before it goes into the
  * HTML. Each is written in the reader's language: pass their catalogue as `t`.
  *
- * They wear the dashboard's look: ivory canvas, raised paper cards, the serif
- * headline over a hairline, spec labels, tabular figures, stamps and the clay
- * key. Mail apps that follow dark mode (Apple Mail, iOS, Outlook.com) get the
- * charcoal theme through the classes in `DARK`.
+ * They wear the dashboard's look: cool paper canvas, raised cards, the serif
+ * headline over a hairline, plain labels, tabular figures, tinted badges and the
+ * amber key. Mail apps that follow dark mode (Apple Mail, iOS, Outlook.com) get the
+ * graphite theme through the classes in `DARK`.
  */
 
 import { en, type ServerMessages } from '../../i18n/messages.js';
@@ -21,47 +21,59 @@ export interface EmailContent {
 
 /** The dashboard's tokens (admin/src/styles/tokens.css), written out: email apps can't read its CSS. */
 const C = {
-  canvas: '#f0eee6',
-  paper: '#faf9f5',
-  sunk: '#e8e4da',
-  oat: '#e3dacc',
-  ink: '#141413',
-  muted: '#5e5d59',
-  line: '#e0dbcf',
-  clayText: '#8a5300',
-  ok: '#2f6b3f',
-  warn: '#86500c',
-  danger: '#b0302a',
-  info: '#3d5670',
+  canvas: '#eef2f5',
+  paper: '#f5f9fc',
+  sunk: '#e3e7ea',
+  tint: '#fbebc5',
+  rim: '#f7dda2',
+  ink: '#16191b',
+  muted: '#595d5f',
+  line: '#e3e7ea',
+  accent: '#a66f02',
+  bar: '#f7dda2',
+  ok: '#016732',
+  warn: '#953f00',
+  danger: '#a71f25',
+  info: '#115e9f',
+  okSoft: '#e4f8e8',
+  warnSoft: '#ffeee6',
+  dangerSoft: '#ffedeb',
+  infoSoft: '#e9f3ff',
 };
 const NIGHT: typeof C = {
-  canvas: '#151413',
-  paper: '#252421',
-  sunk: '#0f0e0d',
-  oat: '#2e2d29',
-  ink: '#f3f1ea',
-  muted: '#b0ada4',
-  line: '#3a3834',
-  clayText: '#f5b53f',
-  ok: '#7ccf8e',
-  warn: '#f0b45a',
-  danger: '#ff8f80',
-  info: '#8fb8e8',
+  canvas: '#0d1012',
+  paper: '#16191b',
+  sunk: '#050709',
+  tint: '#30200c',
+  rim: '#51330a',
+  ink: '#f5f9fc',
+  muted: '#b7bbbe',
+  line: '#2b2e31',
+  accent: '#f5b71a',
+  bar: '#653e00',
+  ok: '#49b46e',
+  warn: '#ec7531',
+  danger: '#f76560',
+  info: '#55a0ea',
+  okSoft: '#1b3422',
+  warnSoft: '#432516',
+  dangerSoft: '#46211f',
+  infoSoft: '#1d2f42',
 };
-const CLAY = '#f5b71a';
-const CLAY_HOVER = '#f7c14f';
-const CLAY_EDGE = '#b57400';
+/** The amber key: brand amber with a lit top and a deeper foot, like the dashboard's main button. */
+const AMBER = '#f5b71a';
+const AMBER_TOP = '#f5c662';
+const AMBER_EDGE = '#a66f02';
 /** Text on amber: white fails contrast. */
-const PILLAR_INK = '#1c0f08';
+const AMBER_INK = '#0d1012';
 const SANS = "'Hanken Grotesk',Helvetica,Arial,sans-serif";
 const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
-const MONO = "ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace";
-/** The mark on its ivory tile, drawn by brand/make_icons.mjs and served by the dashboard. */
-const LOGO_URL = 'https://4vd.app/email-logo.png?v=2';
+/** The tick on its amber tile, drawn by brand/make_icons.mjs and served by the dashboard. Same in light and dark. */
+const LOGO_URL = 'https://4vd.app/email-logo.png?v=3';
 /** Apple Mail and iOS load the real fonts; the rest fall back to Helvetica and Georgia. */
 const FONTS_URL = 'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500&display=swap';
 /** Raise: cards rest just above the canvas. */
-const RAISE = 'box-shadow:0 1px 2px rgba(20,20,19,0.06),0 4px 14px rgba(20,20,19,0.06)';
+const RAISE = 'box-shadow:0 1px 2px rgba(22,25,27,0.06),0 4px 14px rgba(22,25,27,0.06)';
 
 const TONES = ['ok', 'warn', 'danger', 'info'] as const;
 const toneColor = (tone: Tone) => (tone === 'neutral' ? C.muted : C[tone]);
@@ -73,15 +85,14 @@ function darkRules(scope: string): string {
     rule('.bg-canvas', `background:${NIGHT.canvas}!important`),
     rule('.bg-paper', `background:${NIGHT.paper}!important;border-color:${NIGHT.line}!important`),
     rule('.bg-sunk', `background:${NIGHT.sunk}!important;border-color:${NIGHT.line}!important`),
-    rule('.bg-oat', `background:${NIGHT.oat}!important`),
+    rule('.bg-tint', `background:${NIGHT.tint}!important;border-color:${NIGHT.rim}!important`),
     rule('.ink', `color:${NIGHT.ink}!important`),
     rule('.muted', `color:${NIGHT.muted}!important`),
     rule('.line', `border-color:${NIGHT.line}!important`),
-    rule('.link', `color:${NIGHT.clayText}!important`),
-    rule('.bar', `background:${NIGHT.muted}!important`),
-    rule('.bar-top', `background:${NIGHT.ink}!important`),
+    rule('.link', `color:${NIGHT.accent}!important`),
+    rule('.bar', `background:${NIGHT.bar}!important`),
     ...TONES.map((tone) => rule(`.t-${tone}`, `color:${NIGHT[tone]}!important`)),
-    ...TONES.map((tone) => rule(`.s-${tone}`, `color:${NIGHT[tone]}!important;border-color:${NIGHT[tone]}!important`)),
+    ...TONES.map((tone) => rule(`.s-${tone}`, `color:${NIGHT[tone]}!important;background:${NIGHT[`${tone}Soft`]}!important`)),
   ].join('');
 }
 const DARK = `@media (prefers-color-scheme:dark){${darkRules('')}}${darkRules('[data-ogsc] ')}`;
@@ -101,22 +112,22 @@ const TABLE = 'role="presentation" cellpadding="0" cellspacing="0" border="0"';
 const GAP = (px: number) => `<div style="height:${px}px;font-size:0;line-height:0">&nbsp;</div>`;
 const paragraph = (html: string) => `<p class="ink" style="margin:0 0 16px;font-family:${SANS};font-size:15px;line-height:24px;color:${C.ink}">${html}</p>`;
 
-/** Monospace capitals: metric labels and kickers. The only capitals allowed. */
+/** A plain label over a figure or above a headline: small, muted, as written. */
 const specLabel = (text: string, margin = '0') =>
-  `<div class="muted" style="margin:${margin};font-family:${MONO};font-size:12px;line-height:16px;letter-spacing:0.72px;text-transform:uppercase;color:${C.muted}">${escapeHtml(text)}</div>`;
+  `<div class="muted" style="margin:${margin};font-family:${SANS};font-size:13px;line-height:18px;font-weight:500;color:${C.muted}">${escapeHtml(text)}</div>`;
 
-/** A rubber stamp: outline in the status colour, monospace capitals, no fill. */
+/** A badge: the status word on its faint tint, like the dashboard's. */
 const stamp = (text: string, tone: Tone) =>
-  `<span class="s-${tone}" style="display:inline-block;padding:3px 6px;border:1px solid ${toneColor(tone)};border-radius:3px;font-family:${MONO};font-size:11px;line-height:14px;letter-spacing:0.66px;text-transform:uppercase;white-space:nowrap;vertical-align:1px;color:${toneColor(tone)}">${escapeHtml(text)}</span>`;
+  `<span class="s-${tone}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-family:${SANS};font-size:12px;line-height:16px;font-weight:600;white-space:nowrap;vertical-align:1px;color:${toneColor(tone)};background:${tone === 'neutral' ? C.sunk : C[`${tone}Soft`]}">${escapeHtml(text)}</span>`;
 
-/** A clay key standing on its edge, like the dashboard's primary button. Outlook gets the flat clay face. */
+/** The amber key standing on its edge, like the dashboard's main button. Outlook gets the flat amber face. */
 function renderButton(t: ServerMessages, button: { label: string; link: string }): string {
   const link = escapeHtml(button.link);
   return `<table ${TABLE} style="margin:4px 0 16px"><tr>
-<td style="border-radius:10px;background-color:${CLAY};background-image:linear-gradient(${CLAY_HOVER},${CLAY} 60%);border-bottom:2px solid ${CLAY_EDGE};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(20,20,19,0.1)">
-<a href="${link}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:15px;line-height:20px;font-weight:600;color:${PILLAR_INK};text-decoration:none;border-radius:10px">${escapeHtml(button.label)}</a>
+<td style="border-radius:10px;background-color:${AMBER};background-image:linear-gradient(${AMBER_TOP},${AMBER} 60%);border-bottom:2px solid ${AMBER_EDGE};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(22,25,27,0.1)">
+<a href="${link}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:15px;line-height:20px;font-weight:600;color:${AMBER_INK};text-decoration:none;border-radius:10px">${escapeHtml(button.label)}</a>
 </td></tr></table>
-<p class="muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted}">${escapeHtml(t.email.pasteLink)}<br><a class="link" href="${link}" style="color:${C.clayText};word-break:break-all">${link}</a></p>`;
+<p class="muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted}">${escapeHtml(t.email.pasteLink)}<br><a class="link" href="${link}" style="color:${C.accent};word-break:break-all">${link}</a></p>`;
 }
 
 /** The serif page title over a hairline, with an optional spec-label kicker above it. */
@@ -134,7 +145,7 @@ const card = (inner: string, strip?: string) =>
   }
 </table>`;
 
-/** The page every email shares: the logo and name on the ivory canvas, the content, the small print. */
+/** The page every email shares: the logo and name on the canvas, the content, the small print. */
 function shell({ t, subject, preview, content }: { t: ServerMessages; subject: string; preview: string; content: string }): string {
   return `<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escapeHtml(subject)}</title>
 <link href="${FONTS_URL}" rel="stylesheet">
@@ -172,7 +183,7 @@ const unescape = (html: string) =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, '&');
 
-/** An account email: one raised card with the headline, a few lines, the clay key and the small print. */
+/** An account email: one raised card with the headline, a few lines, the amber key and the small print. */
 function letter({ t, subject, paragraphs, button, note }: Letter): string {
   return shell({
     t,
@@ -217,7 +228,7 @@ function renderRows(rows: ReportRow[]): string {
   return surface(rows.map(line).join(''));
 }
 
-/** Weekly sales per day: Muted Ink bars on a sunk track, the best day in Ink (the Ink Data Rule). */
+/** Weekly sales per day: amber bars on a sunk track, the best day in full brand amber (like the dashboard's charts). */
 function renderBars(bars: NonNullable<ReportBlock['bars']>, heading: string): string {
   const body = bars
     .map((bar, i) => {
@@ -226,7 +237,7 @@ function renderBars(bars: NonNullable<ReportBlock['bars']>, heading: string): st
       const pad = `${i === 0 ? 16 : 6}px`;
       const text = `font-family:${SANS};font-size:13px;line-height:18px;white-space:nowrap`;
       return `<tr><td class="cell muted" style="padding:${pad} 8px 0 16px;width:56px;${text};color:${C.muted}">${escapeHtml(bar.label)}</td>
-<td width="100%" style="padding:${pad} 0 0"><table ${TABLE} width="100%" class="bg-sunk" style="background:${C.sunk};border-radius:4px"><tr><td width="${width}%" class="${top ? 'bar-top' : 'bar'}" style="height:10px;font-size:0;line-height:0;border-radius:4px;background:${top ? C.ink : C.muted}">&nbsp;</td>${width < 100 ? '<td style="font-size:0;line-height:0">&nbsp;</td>' : ''}</tr></table></td>
+<td width="100%" style="padding:${pad} 0 0"><table ${TABLE} width="100%" class="bg-sunk" style="background:${C.sunk};border-radius:4px"><tr><td width="${width}%" class="${top ? '' : 'bar'}" style="height:10px;font-size:0;line-height:0;border-radius:4px;background:${top ? AMBER : C.bar}">&nbsp;</td>${width < 100 ? '<td style="font-size:0;line-height:0">&nbsp;</td>' : ''}</tr></table></td>
 <td class="cell ${top ? 'ink' : 'muted'}" style="padding:${pad} 16px 0 12px;text-align:right;${text};font-variant-numeric:tabular-nums;font-weight:${top ? 600 : 400};color:${top ? C.ink : C.muted}">${escapeHtml(bar.value)}</td></tr>`;
     })
     .join('');
@@ -324,15 +335,15 @@ export const emailTemplates = {
 
   /**
    * The daily or weekly report, laid out like its page in the dashboard: the
-   * headline, the gist on an Oat panel, metric cards, then each chosen section
-   * as a heading and a table, and the clay key to the full report.
+   * headline, the gist on an amber tint, metric cards, then each chosen section
+   * as a heading and a table, and the amber key to the full report.
    */
   report(
     input: { subject: string; headline: string; period: string; intro: string; summary: string; blocks: ReportBlock[]; link: string },
     t: ServerMessages = en,
   ): EmailContent {
     const top = `<tr><td style="padding:0 4px 24px">${headline(input.headline, input.period)}${paragraph(escapeHtml(input.intro))}
-<table ${TABLE} width="100%" class="bg-oat" style="background:${C.oat};border-radius:12px;border-bottom:2px solid ${C.line};background-image:radial-gradient(120% 140% at 0% 0%,rgba(255,255,255,0.45),rgba(255,255,255,0) 55%)"><tr><td class="ink" style="padding:14px 16px;font-family:${SANS};font-size:15px;line-height:22px;font-weight:600;color:${C.ink}">${escapeHtml(input.summary)}</td></tr></table>
+<table ${TABLE} width="100%" class="bg-tint" style="background:${C.tint};border:1px solid ${C.rim};border-radius:12px;border-collapse:separate"><tr><td class="ink" style="padding:14px 16px;font-family:${SANS};font-size:15px;line-height:22px;font-weight:600;color:${C.ink}">${escapeHtml(input.summary)}</td></tr></table>
 </td></tr>`;
     const end = `<tr><td style="padding:0">${card(renderButton(t, { label: t.report.emailButton, link: input.link }), escapeHtml(t.report.emailNote))}</td></tr>`;
     return {

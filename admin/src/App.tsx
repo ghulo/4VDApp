@@ -91,7 +91,6 @@ const TrefinStockPage = lazyPage(() => import('./pages/TrefinStockPage'), 'Trefi
 const PersonPage = lazyPage(() => import('./pages/UsersPage'), 'PersonPage');
 const UsersPage = lazyPage(() => import('./pages/UsersPage'), 'UsersPage');
 const CounterPage = lazyPage(() => import('./pages/CounterPage'), 'CounterPage');
-const CounterPreviewPage = lazyPage(() => import('./pages/CounterPreviewPage'), 'CounterPreviewPage');
 const WelcomePage = lazyPage(() => import('./pages/WelcomePage'), 'WelcomePage');
 const DownloadPage = lazyPage(() => import('./pages/DownloadPage'), 'DownloadPage');
 const StaffHomePage = lazyPage(() => import('./pages/staff/StaffHomePage'), 'StaffHomePage');
@@ -163,15 +162,6 @@ function App() {
                   <Route path="/download" element={<DownloadPage />} />
                   <Route path="/welcome" element={<WelcomePage />} />
                   {/* The Counter fills the screen: no menu, no top bar. */}
-                  {/* A look-only test of the Counter as a till roll; remove once decided. */}
-                  <Route
-                    path="/counter-preview"
-                    element={
-                      <RequireAuth>
-                        <CounterPreviewPage />
-                      </RequireAuth>
-                    }
-                  />
                   <Route
                     path="/counter"
                     element={

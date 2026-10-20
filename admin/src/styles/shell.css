@@ -196,10 +196,11 @@
   transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
+/* Where you are: a quiet grey row and the amber tick at the edge. One mark,
+   not a lit amber box as well. */
 .sidebar__link.active {
-  background: var(--tint);
-  box-shadow: inset 0 1px 0 var(--amber-lip), inset 0 0 0 1px var(--amber-rim), var(--shadow-raise);
-  color: var(--brand);
+  background: var(--fill);
+  color: var(--ink);
 }
 
 /* The orange tick on the left edge marks where you are. */

@@ -1,24 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { changeDirection, scaleTop, sparklinePaths } from './sparkline';
+import { changeDirection, scaleTop, sparkBars } from './sparkline';
 
-describe('sparklinePaths', () => {
-  it('should have nothing to draw for no data or all zeros', () => {
-    expect(sparklinePaths([])).toBeNull();
-    expect(sparklinePaths([0, 0, 0])).toBeNull();
+describe('sparkBars', () => {
+  it('should have nothing to draw for no data, all zeros or only refunds', () => {
+    expect(sparkBars([])).toBeNull();
+    expect(sparkBars([0, 0, 0])).toBeNull();
+    expect(sparkBars([-5, 0])).toBeNull();
   });
 
-  it('should curve through the midpoints across the full width and close the area at the bottom', () => {
-    const paths = sparklinePaths([0, 10, 5], 100, 50)!;
-    expect(paths.line).toBe('M0,50 L25,26.5 Q50,3 75,14.8 L100,26.5');
-    expect(paths.area).toBe('M0,50 L25,26.5 Q50,3 75,14.8 L100,26.5 L100,50 L0,50 Z');
+  it('should draw one bar per day with a sale, standing on the floor, the last one marked', () => {
+    const bars = sparkBars([0, 10, 5], 90, 53)!;
+    expect(bars).toHaveLength(2);
+    expect(bars[0]).toEqual({ x: 35.1, y: 3, width: 19.8, height: 50, latest: false });
+    expect(bars[1]).toMatchObject({ x: 65.1, height: 25, latest: true });
   });
 
-  it('should draw a single point as a flat line', () => {
-    expect(sparklinePaths([7], 100, 50)!.line).toBe('M0,3 L50,3 L100,3');
-  });
-
-  it('should keep negative days (refunds) below the zero line', () => {
-    expect(sparklinePaths([-10, 10], 100, 50)!.line).toBe('M0,50 L50,26.5 L100,3');
+  it('should keep a quiet day visible as a sliver', () => {
+    expect(sparkBars([100, 50, 1], 90, 53)![2]!.height).toBe(2);
   });
 });
 
@@ -35,9 +33,9 @@ describe('scaleTop', () => {
   });
 
   it('should keep the other days visible in a mini graph with one huge day', () => {
-    const line = sparklinePaths([0, 1000, 20, 10], 120, 50)!.line;
-    expect(line).toContain('Q40,3'); // the huge day runs to the top edge
-    expect(line).toContain('Q80,12.4'); // the 20 keeps its height instead of hugging the floor
+    const bars = sparkBars([0, 1000, 20, 10], 120, 53)!;
+    expect(bars[0]!.y).toBe(3); // the huge day runs to the top edge
+    expect(bars[1]!.height).toBe(40); // the 20 keeps its height instead of hugging the floor
   });
 });
 

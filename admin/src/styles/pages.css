@@ -155,21 +155,14 @@
 
 /* ---------- Overview hero ---------- */
 
-/* The shop front: one large raised panel. On the left the date, the greeting
-   and the day so far with its 30 days of bars; on the right the shop at
-   sunrise, standing on the panel's floor. */
+/* The shop front: one raised panel with the date, the greeting and the day so
+   far with its 30 days of bars. Sized to its words, no empty sky. */
 .overview-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(300px, 38vw, 520px);
-  align-items: end;
-  gap: var(--space-6);
   margin-bottom: var(--space-4);
-  padding: var(--space-6) var(--space-6) 0;
+  padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-panel);
   background: var(--sheen), var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
-  overflow: hidden;
 }
 
 .overview-hero__text {
@@ -177,7 +170,6 @@
   align-content: start;
   gap: var(--space-1);
   min-width: 0;
-  padding-bottom: var(--space-6);
 }
 
 .overview-hero__kicker {
@@ -195,29 +187,25 @@
   text-wrap: balance;
 }
 
-/* The shop stands on the panel's floor, large: the drawing is drawn 1.4 times
-   its column so the empty sky either side falls outside it, and the part under
-   its ground (20 of 240 units wide, so 8.4% × 1.4) is cut off by the panel's edge. */
-.overview-hero__art {
-  align-self: end;
-  margin-bottom: -11.7%;
-}
-
-.overview-hero__art .shop-sunrise {
-  width: 140%;
-  margin-inline: -20%;
-}
-
 /* ---------- Today (inside the hero) ---------- */
 
 /* The day so far under the greeting, set apart by a hairline: a serif
    sentence, how it compares with last week, and the last 30 days as bars. */
+/* Wide: the sentence on the left, the 30 days filling the right. */
 .today {
   display: grid;
-  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 440px);
+  align-items: end;
+  gap: var(--space-4) var(--space-6);
   margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--line);
+}
+
+@media (max-width: 899px) {
+  .today {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .today .day-bars__base {
@@ -253,7 +241,8 @@
 .today__dots {
   display: grid;
   gap: var(--space-1);
-  max-width: 420px;
+  width: 100%;
+  max-width: 440px;
   margin: 0;
 }
 
@@ -272,51 +261,14 @@
   margin-bottom: var(--space-6);
 }
 
-/* Tablets: the drawing steps back so the day keeps its room. */
-@media (max-width: 1000px) {
-  .overview-hero {
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: var(--space-4);
-    padding: var(--space-5) var(--space-5) 0;
-  }
-
-  .overview-hero__text {
-    padding-bottom: var(--space-5);
-  }
-}
-
-/* Phones: the shop sits small in the top corner beside the greeting, and the
-   keys share the width two by two. */
+/* Phones: a tighter panel, and the keys share the width two by two. */
 @media (max-width: 599px) {
   .overview-hero {
-    display: block;
-    padding: var(--space-4) var(--space-4) 0;
-  }
-
-  .overview-hero__text {
-    padding-bottom: var(--space-4);
+    padding: var(--space-4);
   }
 
   .overview-hero__title {
-    padding-right: 84px;
     font-size: var(--text-figure);
-  }
-
-  .overview-hero__kicker {
-    padding-right: 84px;
-  }
-
-  .overview-hero__art {
-    position: absolute;
-    top: var(--space-3);
-    right: var(--space-3);
-    width: 72px;
-    margin: 0;
-  }
-
-  .overview-hero__art .shop-sunrise {
-    width: 100%;
-    margin: 0;
   }
 
   .quick-actions {
@@ -1806,8 +1758,8 @@ form.product-form > .form-actions {
     display: block;
     padding: var(--space-2);
     border-radius: var(--radius-panel);
-    background: var(--light-raise), var(--surface);
-    box-shadow: var(--shadow-raise);
+    background: var(--surface);
+    box-shadow: var(--shadow-float);
   }
 
   .ask-chats {
@@ -3004,7 +2956,7 @@ form.product-form > .form-actions {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-small);
   background: var(--surface);
-  box-shadow: var(--shadow-raise);
+  box-shadow: var(--shadow-float);
   overflow: hidden;
 }
 

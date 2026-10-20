@@ -3,7 +3,7 @@ import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
 import { formatPercent, formatTimes, MUCH_MORE } from '../../utils/format';
-import { changeDirection, SPARK_HEIGHT, SPARK_WIDTH, sparklinePaths } from './sparkline';
+import { changeDirection, SPARK_HEIGHT, SPARK_WIDTH, sparkBars } from './sparkline';
 
 const ARROWS = { up: ArrowUpRight, down: ArrowDownRight, flat: ArrowRight } as const;
 
@@ -24,14 +24,14 @@ interface MetricCardProps {
 
 /**
  * One figure on an analytics board: the number, which way it moved against
- * the period before, and a mini graph of how it got there: a crisp line over
- * a soft fill. With no data it shows a flat baseline and "No data" instead of an empty box.
+ * the period before, and a mini graph of how it got there: one bar per day.
+ * With no data it shows a bare floor and "No data" instead of an empty box.
  */
 export function MetricCard({ label, value, change, series, large, to, hint }: MetricCardProps) {
   const t = useT();
   const headingId = useId();
   const direction = change === undefined ? undefined : changeDirection(change);
-  const paths = series ? sparklinePaths(series) : null;
+  const bars = series ? sparkBars(series) : null;
   const muchMore = change !== undefined && change !== null && change > MUCH_MORE;
 
   return (
@@ -63,22 +63,18 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
             </span>
           </span>
         )}
-        {/* Nothing the period before: say so, rather than a percent of zero. */}
-        {direction === null && (
-          <span className="metric__change metric__change--flat">
-            <span className="metric__change-shown" aria-hidden="true">
-              {t.analytics.noneBefore}
-            </span>
-            <span className="visually-hidden">{t.analytics.noneBeforeLong}</span>
-          </span>
-        )}
+        {/* Nothing the period before: no badge to see (it said the same on every card),
+            but screen readers still hear why there's no percent. */}
+        {direction === null && <span className="visually-hidden">{t.analytics.noneBeforeLong}</span>}
       </p>
       {hint && <p className="metric__hint">{hint}</p>}
       {series &&
-        (paths ? (
+        (bars ? (
           <svg className="metric__graph" viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-            <path className="metric__area" d={paths.area} />
-            <path className="metric__line" d={paths.line} vectorEffect="non-scaling-stroke" />
+            <path className="metric__baseline" d={`M0,${SPARK_HEIGHT - 0.5} H${SPARK_WIDTH}`} vectorEffect="non-scaling-stroke" />
+            {bars.map((bar) => (
+              <rect key={bar.x} className={bar.latest ? 'metric__bar metric__bar--latest' : 'metric__bar'} x={bar.x} y={bar.y} width={bar.width} height={bar.height} />
+            ))}
           </svg>
         ) : (
           <div className="metric__empty">

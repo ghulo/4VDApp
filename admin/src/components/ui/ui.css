@@ -337,6 +337,16 @@
   min-width: 0;
 }
 
+/* With section tabs under the title, the tabs' own line closes the header. */
+.page-header--tabs {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.page-header--tabs .section-tabs {
+  margin: var(--space-2) 0 0;
+}
+
 .page-header__title-row {
   display: flex;
   flex-wrap: wrap;
@@ -541,20 +551,21 @@
 
 /* ---------- Data table ---------- */
 
+/* A tray set into the page, like a card. */
 .data-table {
   margin-bottom: var(--space-4);
-  border: 1px solid var(--line);
   border-radius: var(--radius-panel);
-  background: var(--surface);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
   overflow: hidden;
 }
 
 /* The card is the paper: a table inside it paints nothing, so it can't square off the card's corners. */
 .card .data-table {
   margin: 0;
-  border: 0;
   border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 .data-table__toolbar {
@@ -717,6 +728,17 @@
 
 .table td a:has(.stock-tag) {
   text-decoration: none;
+}
+
+/* A plain link in a cell (an invoice number, a supplier) reads as the value it
+   is; the underline comes on hover, so a column of links isn't a column of underlines. */
+.table td a:not([class]) {
+  text-decoration: none;
+}
+
+.table td a:not([class]):hover,
+.table td a:not([class]):focus-visible {
+  text-decoration: underline;
 }
 
 /* Phones: a stacking table shows each row as a small block. The title cell
@@ -1189,90 +1211,36 @@ input.switch:focus-visible {
   overflow: visible;
 }
 
-/* The recess: a hole in the wall, its floor one step deeper than the page. */
-.shop-sunrise__recess {
-  fill: var(--surface-sunk);
-}
-
-.shop-sunrise__shade {
-  fill: none;
-  stroke: rgb(0 0 0 / 0.28);
-}
-
-.shop-sunrise__rim {
-  fill: none;
-  stroke-width: 1;
-}
-
-.shop-sunrise__rim-dark {
-  stop-color: rgb(0 0 0 / 0.22);
-}
-
-.shop-sunrise__rim-light {
-  stop-color: rgb(255 255 255 / 0.85);
-}
-
-[data-theme='dark'] .shop-sunrise__rim-light {
-  stop-color: rgb(255 255 255 / 0.14);
-}
-
-[data-theme='dark'] .shop-sunrise__shade {
-  stroke: rgb(0 0 0 / 0.6);
-}
-
-.shop-sunrise__drop {
-  fill: rgb(0 0 0 / 0.3);
-}
-
-/* The tile is amber glass: lit top, deeper foot, a crisp rim. */
-.shop-sunrise__tile {
-  stroke: var(--cta-edge);
-  stroke-opacity: 0.55;
-  stroke-width: 1;
-}
-
-.shop-sunrise__glass-top {
-  stop-color: var(--cta-top);
-}
-
-.shop-sunrise__glass-base {
+/* Glass icon (ShopSunrise), the iOS 26 way: calm colour, frosted glyph, soft
+   depth. The tile thins out a little towards its foot. Same in both themes. */
+.shop-sunrise__face-top {
   stop-color: var(--cta);
 }
 
-.shop-sunrise__glass-foot {
-  stop-color: var(--cta-low);
+.shop-sunrise__face-foot {
+  stop-color: var(--cta);
+  stop-opacity: 0.72;
 }
 
-.shop-sunrise__gloss-top {
-  stop-color: rgb(255 255 255 / 0.55);
-}
-
-.shop-sunrise__gloss-end {
-  stop-color: rgb(255 255 255 / 0);
-}
-
-.shop-sunrise__glint {
-  fill: none;
-  stroke: rgb(255 255 255 / 0.9);
-  stroke-width: 1;
-  stroke-linecap: round;
-}
-
-/* Ink on amber in both themes, cut into the glass with a lit lip below. */
 .shop-sunrise__tick,
-.shop-sunrise__tick-lip {
+.shop-sunrise__tick-shadow {
   fill: none;
-  stroke-width: 11.5;
+  stroke-width: 14;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.shop-sunrise__tick {
-  stroke: var(--cta-ink);
+.shop-sunrise__tick-shadow {
+  stroke: var(--glass-deep);
+  opacity: 0.28;
 }
 
-.shop-sunrise__tick-lip {
-  stroke: rgb(255 255 255 / 0.45);
+.shop-sunrise__frost-top {
+  stop-color: rgb(255 255 255 / 0.95);
+}
+
+.shop-sunrise__frost-foot {
+  stop-color: rgb(255 255 255 / 0.72);
 }
 
 /* The one moment: the tile settles into the wall when the drawing appears. */
@@ -1290,7 +1258,7 @@ input.switch:focus-visible {
 @keyframes tile-rise {
   from {
     opacity: 0;
-    transform: scale(1.06);
+    transform: translateY(6px);
   }
 }
 
@@ -1332,7 +1300,7 @@ input.switch:focus-visible {
   grid-template-rows: auto auto 1fr;
   gap: var(--space-1);
   min-width: 0;
-  padding: var(--space-4) var(--space-4) 0;
+  padding: var(--space-4);
   /* Paper resting above the canvas, like the other cards. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
@@ -1435,35 +1403,28 @@ input.switch:focus-visible {
   font-size: var(--text-sm);
 }
 
+/* One bar per day inside the card's padding, standing on a hairline. Square
+   bars only: the drawing stretches to the card, so nothing round goes in it. */
 .metric__graph {
   display: block;
   align-self: end;
-  /* Edge to edge along the bottom of the card. */
-  width: calc(100% + 2 * var(--space-4));
-  height: 56px;
-  margin: var(--space-3) calc(-1 * var(--space-4)) 0;
-  overflow: visible;
+  width: 100%;
+  height: 36px;
+  margin-top: var(--space-3);
 }
 
-/* A flat, faint fill under the line: nothing in it can stretch out of shape. */
-.metric__area {
+.metric__bar {
   fill: var(--chart-series);
-  opacity: 0.12;
 }
 
-.metric__line {
-  fill: none;
-  stroke: var(--data-line);
-  stroke-width: 1.75;
-  stroke-linejoin: round;
-  stroke-linecap: round;
+.metric__bar--latest {
+  fill: var(--chart-strong);
 }
 
 .metric__baseline {
   fill: none;
   stroke: var(--line-strong);
   stroke-width: 1;
-  stroke-dasharray: 3 4;
 }
 
 .metric__empty {
@@ -1474,13 +1435,8 @@ input.switch:focus-visible {
 
 .metric__no-data {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  translate: -50% -25%;
-  padding: 2px var(--space-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
+  bottom: var(--space-2);
+  left: 0;
   color: var(--ink-muted);
   font-size: var(--text-xs);
   white-space: nowrap;
@@ -1795,11 +1751,14 @@ input.switch:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
-/* A heading row over a run of rows, e.g. one per day: date on the left, totals on the right. */
+/* A heading row over a run of rows, e.g. one per day: date on the left, totals
+   on the right. A subheading on the paper with room above it, not a dark band:
+   bands on every day made the list a stack of stripes. */
 .table .table__group th {
-  padding-block: var(--space-2);
+  padding-block: var(--space-4) var(--space-2);
   border-top: 1px solid var(--line);
-  background: var(--surface-sunk);
+  border-bottom: 0;
+  background: none;
   color: var(--ink);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -1811,7 +1770,7 @@ input.switch:focus-visible {
 }
 
 .table tbody .table__group:hover th {
-  background: var(--surface-sunk);
+  background: none;
 }
 
 .table__row--clickable {
@@ -2153,8 +2112,8 @@ input.switch:focus-visible {
   max-height: calc(100dvh - var(--topbar-h) - var(--space-6));
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
-  background: var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
   overflow: hidden;
 }
 

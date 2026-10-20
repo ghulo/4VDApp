@@ -39,7 +39,6 @@ export function SalesPage() {
     <>
       <PageHeader
         title={t.nav.items.sales}
-       
         actions={
           user.role !== 'owner' && user.role !== 'accountant' && (
             <Button variant="primary" icon={Receipt} onClick={() => setRecording(true)}>
@@ -92,7 +91,6 @@ function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>
           series={points.map((point) => (point.salesCount > 0 ? point.revenue / point.salesCount : 0))}
         />
       </MetricGrid>
-      <p className="field-hint">{t.sales.wholeShop}</p>
     </section>
   );
 }

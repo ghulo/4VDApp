@@ -12,7 +12,7 @@ import { analyticsApi, inventoryApi, reportsApi } from '../services/api';
 import { TodoList } from '../components/TodoList';
 import { useAttention } from '../utils/useAttention';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatTimes, MUCH_MORE } from '../utils/format';
-import { ButtonLink, Card, DayBars, ShopSunrise, StatGrid, StatTile } from '../components/ui';
+import { ButtonLink, Card, DayBars, StatGrid, StatTile } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
 import { shownTo } from '../navigation/sections';
@@ -98,9 +98,9 @@ function greeting(t: ReturnType<typeof useT>, hour: number): string {
 }
 
 /**
- * The shop front: the date and a greeting, the day's takings so far with the
- * last 30 days, and the shop at sunrise (the 4VD mark's scene) standing on the
- * panel's floor. The first thing anyone sees when they open 4VD.
+ * The shop front: the date and a greeting, then the day's takings so far with
+ * the last 30 days. No picture: the figures are the point, and the logo
+ * already sits in the corner. The first thing anyone sees when they open 4VD.
  */
 function OverviewHero() {
   const t = useT();
@@ -113,9 +113,6 @@ function OverviewHero() {
         <p className="overview-hero__kicker">{formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
         <TodayCard />
-      </div>
-      <div className="overview-hero__art">
-        <ShopSunrise />
       </div>
     </header>
   );

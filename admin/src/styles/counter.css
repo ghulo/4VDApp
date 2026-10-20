@@ -426,8 +426,8 @@
   width: min(100%, 32rem);
   padding: var(--space-5);
   border-radius: var(--radius-panel);
-  background: var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise), inset 0 0 0 1px var(--danger);
+  background: var(--surface);
+  box-shadow: var(--shadow-float), inset 0 0 0 1px var(--danger);
   animation: counter-alarm-in var(--fast) var(--ease);
 }
 

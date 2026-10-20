@@ -9,6 +9,18 @@
 .alert-feed__icon,
 .activity-feed__icon,
 .device-list__icon,
+.place-list__icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-small);
+  background: var(--fill);
+  box-shadow: var(--key-shine-paper), 0 0 0 1px var(--line);
+  color: var(--ink-muted);
+}
+
 /* ---------- Day groups (Updates, Activity) ---------- */
 
 .day-group + .day-group {
@@ -63,19 +75,10 @@
 
 /* ---------- To do ---------- */
 
+/* Only what can't wait is coloured; the rest stay grey, so red means something. */
 .todo-row--urgent .todo-row__icon {
   background: var(--danger-soft);
   color: var(--danger);
-}
-
-.todo-row--check .todo-row__icon {
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-
-.todo-row--idea .todo-row__icon {
-  background: var(--info-soft);
-  color: var(--info);
 }
 
 .todo-row__text {
@@ -88,21 +91,12 @@
   font-weight: 600;
 }
 
-/* How pressing it is, as a short coloured word before the title ("Urgent"),
-   so one list can hold every kind without group headings. */
+/* "Urgent" before the title, in red: the only stamp a mixed list shows. */
 .todo-row__severity {
   margin-right: var(--space-2);
-  color: var(--info);
+  color: var(--danger);
   font-size: var(--text-sm);
   font-weight: 600;
-}
-
-.todo-row--urgent .todo-row__severity {
-  color: var(--danger);
-}
-
-.todo-row--check .todo-row__severity {
-  color: var(--warn);
 }
 
 .todo-row__detail {

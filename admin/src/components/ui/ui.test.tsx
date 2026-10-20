@@ -214,7 +214,8 @@ describe('MetricCard', () => {
   it('should say when there was nothing the period before', () => {
     const html = render(<MetricCard label="Revenue" value="€100" change={null} />);
 
-    expect(html).toContain('None before');
+    expect(html).toContain('nothing in the period before');
+    expect(html).not.toContain('None before');
     expect(html).not.toContain('%');
   });
 });

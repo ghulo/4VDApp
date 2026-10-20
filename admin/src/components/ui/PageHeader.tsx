@@ -1,7 +1,8 @@
 import { CaretRight } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { useSectionTabs } from './tabsSlot';
 
 export interface Crumb {
   label: string;
@@ -19,11 +20,12 @@ interface PageHeaderProps {
   meta?: ReactNode;
 }
 
-/** The top of every page: where you are, what it is, what you can do. */
+/** The top of every page: where you are, what it is, what you can do, and the section's tabs under the title. */
 export function PageHeader({ title, description, crumbs, actions, meta }: PageHeaderProps) {
   const t = useT();
+  const tabs = useSectionTabs(useId());
   return (
-    <header className="page-header">
+    <header className={tabs ? 'page-header page-header--tabs' : 'page-header'}>
       {crumbs && crumbs.length > 0 && (
         <nav aria-label={t.common.breadcrumb} className="crumbs">
           <ol>
@@ -47,6 +49,7 @@ export function PageHeader({ title, description, crumbs, actions, meta }: PageHe
         </div>
         {actions && <div className="page-header__actions">{actions}</div>}
       </div>
+      {tabs}
     </header>
   );
 }

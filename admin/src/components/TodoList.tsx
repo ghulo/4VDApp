@@ -106,7 +106,8 @@ function TodoRow({ item, showSeverity }: { item: TodoItem; showSeverity: boolean
       </span>
       <span className="todo-row__text">
         <span className="todo-row__title">
-          {showSeverity ? (
+          {/* Only "Urgent" is stamped: four "Check"s in a row is noise. */}
+          {showSeverity && item.severity === 'urgent' ? (
             <span className="todo-row__severity">{t.todo.severity[item.severity]}</span>
           ) : (
             <span className="visually-hidden">{t.todo.severity[item.severity]}: </span>

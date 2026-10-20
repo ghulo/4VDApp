@@ -33,30 +33,36 @@ export function scaleTop(values: number[]): { top: number; outlier: number | nul
   return { top: first, outlier: null };
 }
 
+/** One bar of a mini graph, in drawing units. */
+export interface SparkBar {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  latest: boolean;
+}
+
 /**
- * SVG paths for a mini graph of `values`, oldest first: a smooth line, and
- * the area under it down to the bottom edge. The curve bends through the
- * midpoints between days, so it never overshoots a real value. Null when there's nothing to draw
- * (no points, or every point is zero), so the card can say "No data".
+ * A mini graph of `values`, oldest first, as one bar per day standing on the
+ * bottom edge: each bar is a real day, so nothing is drawn between them that
+ * didn't happen (a smoothed line turned one sale into a hill). Days with
+ * nothing (or refunds) leave the floor bare; quiet days keep a sliver. An
+ * outlier runs to the top so the rest keep their shape. Null when every day
+ * is empty, so the card can say "No data".
  */
-export function sparklinePaths(values: number[], width = SPARK_WIDTH, height = SPARK_HEIGHT): { line: string; area: string } | null {
-  if (values.length === 0 || values.every((value) => value === 0)) return null;
-  // One point is drawn as a flat line across the card.
-  const raw = values.length === 1 ? [values[0]!, values[0]!] : values;
-  // An outlier is drawn at the top edge, so the other days keep their shape.
-  const { top } = scaleTop(raw);
-  const series = raw.map((value) => Math.min(value, top));
-  const max = Math.max(...series);
-  const min = Math.min(0, ...series);
-  const span = max - min || 1;
-  const step = width / (series.length - 1);
-  const points = series.map((value, index) => [round(index * step), round(PAD + (height - PAD) * (1 - (value - min) / span))] as const);
-  const mid = (a: readonly [number, number], b: readonly [number, number]) => `${round((a[0] + b[0]) / 2)},${round((a[1] + b[1]) / 2)}`;
-  const curves = points.slice(1, -1).map((point, index) => `Q${point[0]},${point[1]} ${mid(point, points[index + 2]!)}`);
-  const [first, second, last] = [points[0]!, points[1]!, points.at(-1)!];
-  const line = [`M${first[0]},${first[1]}`, `L${mid(first, second)}`, ...curves, `L${last[0]},${last[1]}`].join(' ');
-  const area = `${line} L${points.at(-1)![0]},${height} L${points[0]![0]},${height} Z`;
-  return { line, area };
+export function sparkBars(values: number[], width = SPARK_WIDTH, height = SPARK_HEIGHT): SparkBar[] | null {
+  if (!values.some((value) => value > 0)) return null;
+  const { top } = scaleTop(values);
+  const slot = width / values.length;
+  // A gap of a third of the slot, but never wider than the bars get thin.
+  const barWidth = round(Math.max(1, slot * 0.66));
+  const bars: SparkBar[] = [];
+  values.forEach((value, index) => {
+    if (value <= 0) return;
+    const barHeight = round(Math.max(2, Math.min(1, value / top) * (height - PAD)));
+    bars.push({ x: round(index * slot + (slot - barWidth) / 2), y: round(height - barHeight), width: barWidth, height: barHeight, latest: index === values.length - 1 });
+  });
+  return bars;
 }
 
 /** Which way a change points; null when there's nothing to compare with. */

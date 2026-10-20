@@ -163,7 +163,7 @@
 .overview-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(220px, 26vw, 340px);
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 38vw, 520px);
   align-items: end;
   gap: var(--space-6);
   margin-bottom: var(--space-4);
@@ -197,11 +197,17 @@
   text-wrap: balance;
 }
 
-/* The shop stands on the panel's floor: the part of the drawing under its
-   ground (20 units, 8.4% of its width) is cut off by the panel's edge. */
+/* The shop stands on the panel's floor, large: the drawing is drawn 1.4 times
+   its column so the empty sky either side falls outside it, and the part under
+   its ground (20 of 240 units wide, so 8.4% × 1.4) is cut off by the panel's edge. */
 .overview-hero__art {
   align-self: end;
-  margin-bottom: -8.4%;
+  margin-bottom: -11.7%;
+}
+
+.overview-hero__art .shop-sunrise {
+  width: 140%;
+  margin-inline: -20%;
 }
 
 .overview-hero .shop-sunrise__horizon {
@@ -275,7 +281,7 @@
 /* Tablets: the drawing steps back so the day keeps its room. */
 @media (max-width: 1000px) {
   .overview-hero {
-    grid-template-columns: minmax(0, 1fr) 180px;
+    grid-template-columns: minmax(0, 1fr) 260px;
     gap: var(--space-4);
     padding: var(--space-5) var(--space-5) 0;
   }
@@ -311,6 +317,11 @@
     top: var(--space-3);
     right: var(--space-3);
     width: 72px;
+    margin: 0;
+  }
+
+  .overview-hero__art .shop-sunrise {
+    width: 100%;
     margin: 0;
   }
 

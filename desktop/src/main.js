@@ -8,10 +8,10 @@ const fiscal = require('./fiscal.js');
 const setupStore = require('./setup.js');
 
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
-const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://dashboard.4vd.app/';
+const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://4vd.app/';
 const DASHBOARD_ORIGIN = new URL(DASHBOARD_URL).origin;
-// The dashboard is moving from dashboard.4vd.app to 4vd.app (the old address
-// redirects there), so both count as the dashboard: pages, links and printing.
+// The dashboard moved from dashboard.4vd.app to 4vd.app on 2026-10-20. The old
+// name still counts as the dashboard until it is gone: pages, links and printing.
 const DASHBOARD_ORIGINS = app.isPackaged
   ? ['https://4vd.app', 'https://dashboard.4vd.app']
   : [DASHBOARD_ORIGIN];

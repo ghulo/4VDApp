@@ -22,7 +22,7 @@ if (WORDS[language]) {
 // Offline: try again on a click, when the connection comes back, or every ten seconds.
 const button = document.getElementById('retry');
 if (button) {
-  const retry = params.get('retry') || 'https://dashboard.4vd.app/';
+  const retry = params.get('retry') || 'https://4vd.app/';
   const go = () => {
     button.disabled = true;
     location.href = retry;

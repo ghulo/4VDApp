@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { AppConfig } from '../config/env.js';
-import { UnauthorizedError } from '../errors/httpErrors.js';
+import { AppError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -51,7 +51,8 @@ export class AuthService {
       throw new UnauthorizedError('Email or password is incorrect');
     }
     if (!user.email_verified_at) {
-      throw new UnauthorizedError('Confirm your email first: use the link we sent you');
+      // Its own code, so the sign-in page can say it in the reader's language and offer the link again.
+      throw new AppError('Confirm your email first: use the link we sent you', 401, 'EMAIL_NOT_CONFIRMED');
     }
     return this.startSession(user, device);
   }

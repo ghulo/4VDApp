@@ -92,6 +92,7 @@ describe('email verification', () => {
 
     expect(blocked.status).toBe(401);
     expect(blocked.body.message).toContain('Confirm your email');
+    expect(blocked.body.error).toBe('EMAIL_NOT_CONFIRMED');
     expect(link).toMatch(/\/verify-email\//);
     expect(verified.status).toBe(200);
     expect((await login('ana@example.com')).status).toBe(200);

@@ -1073,6 +1073,76 @@
   font-weight: 500;
 }
 
+/* A password: the eye key sits inside the field, the Caps Lock warning under it. */
+.password-field__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.password-field__top .text-link {
+  font-size: var(--text-sm);
+}
+
+.password-field__box {
+  display: grid;
+}
+
+.password-field__box > * {
+  grid-area: 1 / 1;
+}
+
+.password-field__box > input {
+  padding-right: var(--control-h);
+}
+
+.password-field__box > :last-child {
+  justify-self: end;
+  align-self: center;
+}
+
+.password-field__eye {
+  display: grid;
+  place-items: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: 0;
+  border-radius: var(--radius-small);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.password-field__eye:hover {
+  color: var(--ink);
+}
+
+.password-field__eye:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
+}
+
+.password-field__eye:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.password-field__caps {
+  color: var(--warn);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* Empty, it takes no room but stays in place to be read out when it fills. */
+.password-field__caps:empty {
+  display: contents;
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
 .field--narrow {
   max-width: 220px;
 }

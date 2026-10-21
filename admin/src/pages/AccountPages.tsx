@@ -10,7 +10,7 @@ import { accountApi } from '../services/api';
 import { useLanguage, useT } from '../i18n/useT';
 import { hasSavedLanguage } from '../i18n/language';
 import { errorMessage } from '../utils/errors';
-import { Button } from '../components/ui';
+import { Button, PasswordField } from '../components/ui';
 
 const MIN_PASSWORD_LENGTH = 8;
 function BackToLogin() {
@@ -94,18 +94,15 @@ export function ResetPasswordPage() {
         </>
       ) : (
         <form onSubmit={handleSubmit} noValidate>
-          <label className="field">
-            <span className="field__label">{t.auth.newPassword}</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              minLength={MIN_PASSWORD_LENGTH}
-              required
-              autoFocus
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+          <PasswordField
+            label={t.auth.newPassword}
+            autoComplete="new-password"
+            minLength={MIN_PASSWORD_LENGTH}
+            required
+            autoFocus
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
           <FormError error={reset.error} />
           <Button type="submit"
            
@@ -230,18 +227,15 @@ export function AcceptInvitePage() {
               <span className="field__label">{t.auth.yourName}</span>
               <input autoComplete="name" required maxLength={255} autoFocus value={name} onChange={(event) => setName(event.target.value)} />
             </label>
-            <label className="field">
-              <span className="field__label">{t.auth.choosePassword}</span>
-              <input
-                type="password"
-                autoComplete="new-password"
-                minLength={MIN_PASSWORD_LENGTH}
-                required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              <span className="field-hint">{t.auth.atLeast(MIN_PASSWORD_LENGTH)}</span>
-            </label>
+            <PasswordField
+              label={t.auth.choosePassword}
+              hint={t.auth.atLeast(MIN_PASSWORD_LENGTH)}
+              autoComplete="new-password"
+              minLength={MIN_PASSWORD_LENGTH}
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
             <FormError error={accept.error ?? google.error} />
             <Button type="submit"
              

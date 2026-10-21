@@ -15,6 +15,10 @@ const CONTOURS = 8;
 const LINE = 0.2;
 /** One sweep of the scan beam from top to bottom, in seconds. */
 const SCAN_PERIOD = 11;
+/** Frames a second it may draw at, fastest first; the PC drops a step when it can't keep up. */
+const FRAME_RATES = [60, 30];
+/** Frames measured before deciding (the first ones are slow while the browser warms up). */
+const SETTLE_FRAMES = 90;
 /** Cars keep to roads near the top and the bottom, clear of the form; the third is further back. */
 const LANES = [0.1, 0.93, 0.85];
 
@@ -473,14 +477,31 @@ export function ShopDrift() {
     let frame = 0;
     let last = 0;
     let time = 0;
+    // Never faster than 60 a second (fast screens would draw it twice as often for nothing).
+    // When a frame takes most of its time, drop to 30; still too slow, stand still, so typing stays quick.
+    let rate = 0;
+    let tooSlow = false;
+    let cost = 0;
+    let measured = 0;
     const tick = (now: number) => {
+      frame = requestAnimationFrame(tick);
+      const gap = 1000 / FRAME_RATES[rate]!;
+      if (last && now - last < gap - 2) return;
       const dt = Math.min(0.05, (now - (last || now)) / 1000);
       last = now;
       time += dt;
       const scanY = ((time / SCAN_PERIOD) % 1) * (height + 60) - 30;
+      const started = performance.now();
       step(dt, time, scanY);
       draw(dt, time, scanY);
-      frame = requestAnimationFrame(tick);
+      cost = cost * 0.9 + (performance.now() - started) * 0.1;
+      if (++measured < SETTLE_FRAMES || cost < gap * 0.6) return;
+      measured = 0;
+      if (rate < FRAME_RATES.length - 1) rate++;
+      else {
+        tooSlow = true;
+        cancelAnimationFrame(frame);
+      }
     };
 
     const resize = () => {
@@ -506,7 +527,7 @@ export function ShopDrift() {
       makeStamps();
       mapField();
       if (first || movers.length === 0) place();
-      if (still) draw(0, 0, -100);
+      if (still || tooSlow) draw(0, time, -100);
       else if (frame === 0) {
         last = 0;
         frame = requestAnimationFrame(tick);

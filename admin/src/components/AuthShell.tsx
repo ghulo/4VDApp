@@ -1,12 +1,14 @@
 import { Bell, ClipboardText, Receipt, SealCheck, type Icon } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { lazy, type ReactNode, Suspense } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
-import { ShopDrift } from './ShopDrift';
 import { Wordmark } from './LogoMark';
 import { ShopSunrise } from './ui';
 import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
+
+/** The moving shop loads after the form, so the form is there at once. */
+const ShopDrift = lazy(async () => ({ default: (await import('./ShopDrift')).ShopDrift }));
 
 type MomentKey = keyof Catalogue['shell']['moments'];
 
@@ -53,7 +55,9 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
         </div>
       </section>
       <div className="login__side">
-        <ShopDrift />
+        <Suspense fallback={null}>
+          <ShopDrift />
+        </Suspense>
         <div className="login__card">
           <h1 className="login__title">{title}</h1>
           {subtitle && <p className="login__subtitle">{subtitle}</p>}

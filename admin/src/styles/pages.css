@@ -651,103 +651,205 @@ form.product-form > .form-actions {
   gap: var(--space-2);
 }
 
-/* The drawing is 2.5 tiles wide with the tile starting 30% in; pulled left
-   and up so the tile itself lines up with the words. */
-.login__art {
-  width: 380px;
-  margin: -20px 0 var(--space-2) -114px;
+/* The till: a receipt printing out of an anthracite printer, its torn top
+   fading into the panel. Paper sits low, so the newest line is by the slot. */
+.till {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+  width: min(320px, 100%);
+  margin-inline: auto;
 }
 
-.login__today {
-  display: grid;
-  gap: var(--space-2);
+.till__paper-room {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 0;
+  margin-bottom: -10px;
+  padding: var(--space-4) var(--space-4) 0;
+  overflow: hidden;
+  filter: var(--paper-drop);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%);
 }
 
-.login__today-title {
-  color: var(--ink-muted);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-
-.login__feed {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-radius: var(--radius-panel);
-  background: var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise);
-}
-
-.login__moment {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--line);
-  color: var(--ink-muted);
-  font-size: var(--text-sm);
-}
-
-.login__moment:first-child {
-  border-top: 0;
-}
-
-.login__moment-time {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.login__moment strong {
-  display: block;
+/* A zigzag top where the last receipt was torn off. */
+.till__paper {
+  --tooth: 7px;
+  padding: calc(var(--tooth) + var(--space-3)) var(--space-4) calc(10px + var(--space-2));
+  background: var(--surface);
   color: var(--ink);
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  mask:
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(var(--tooth) * 2) var(--tooth) repeat-x,
+    linear-gradient(#000 0 0) bottom / 100% calc(100% - var(--tooth)) no-repeat;
 }
 
-.login__moment > svg {
-  margin-top: 2px;
+.till__row {
+  display: grid;
+  grid-template-rows: 1fr;
 }
 
-.login__moment--accent > svg {
-  color: var(--accent);
+.till__ink {
+  min-height: 0;
+  overflow: hidden;
 }
 
-.login__moment--warn > svg {
-  color: var(--warn);
+.till__row--shop .till__ink,
+.till__row--number .till__ink,
+.till__row--thanks .till__ink {
+  display: grid;
+  justify-items: center;
+  color: var(--ink-muted);
+  text-align: center;
 }
 
-.login__moment--ok > svg {
-  color: var(--ok);
+.till__row--shop strong {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  letter-spacing: 0.2em;
+}
+
+.till__row--rule .till__ink {
+  margin: var(--space-2) 0;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.till__row--item .till__ink,
+.till__row--total .till__ink,
+.till__row--cash .till__ink,
+.till__row--change .till__ink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  padding: 2px var(--space-1);
+  margin-inline: calc(var(--space-1) * -1);
+  border-radius: var(--radius-stamp);
+}
+
+.till__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.till__each {
+  grid-column: 1 / -1;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.till__row--total .till__ink {
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.till__row--cash .till__ink,
+.till__row--change .till__ink {
+  color: var(--ink-muted);
+}
+
+.till__row--thanks .till__ink {
+  margin-top: var(--space-2);
+}
+
+/* The printer: a raised anthracite key with the paper slot and a ready light. */
+.till__printer {
+  position: relative;
+  z-index: 1;
+  height: 30px;
+  border-radius: var(--radius-small) var(--radius-small) var(--radius-panel) var(--radius-panel);
+  background: var(--till-body);
+  box-shadow: var(--key-shine), var(--shadow-float);
+}
+
+.till__slot {
+  position: absolute;
+  top: 7px;
+  right: var(--space-5);
+  left: var(--space-5);
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--till-slot);
+}
+
+.till__light {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ok);
+  opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .login__moment {
-    animation: moment-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Each line feeds out of the slot (the paper rises) and its ink comes in as a few raster passes. */
+  .till__row {
+    animation: till-feed 0.3s var(--ease) both;
   }
 
-  .login__moment:nth-child(2) {
-    animation-delay: 0.08s;
+  .till__ink {
+    animation: till-ink 0.24s steps(4) both;
   }
 
-  .login__moment:nth-child(3) {
-    animation-delay: 0.16s;
+  .till__row--beeped .till__ink {
+    animation:
+      till-ink 0.24s steps(4) both,
+      till-beep 1.8s var(--ease) both;
   }
 
-  .login__moment:nth-child(4) {
-    animation-delay: 0.24s;
+  .till__printer--busy .till__light {
+    animation: till-blink 0.5s steps(2) infinite;
+  }
+
+  .till__paper--torn {
+    animation: till-tear 0.85s var(--ease) both;
   }
 }
 
-@keyframes moment-in {
+@keyframes till-feed {
   from {
-    opacity: 0;
-    translate: 0 6px;
+    grid-template-rows: 0fr;
   }
 }
 
-/* Short screens keep the words and leave the feed out. */
-@media (max-height: 760px) {
-  .login__today {
+@keyframes till-ink {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes till-beep {
+  from {
+    background: var(--tint);
+  }
+}
+
+@keyframes till-blink {
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes till-tear {
+  to {
+    opacity: 0;
+    translate: 0 -48px;
+    rotate: -3deg;
+  }
+}
+
+/* Short screens: the till goes before the words do. */
+@media (max-height: 600px) {
+  .till {
     display: none;
   }
 }
@@ -811,15 +913,9 @@ form.product-form > .form-actions {
     border-bottom: 1px solid var(--line);
   }
 
-  /* On a phone: the mark, small, above the form; nothing else. */
-  .login__art {
-    width: min(300px, 80%);
-    margin: -24px auto 0;
-  }
-
-  .login__headline,
-  .login__small-print,
-  .login__today {
+  /* On a phone: the mark above the form; nothing else. */
+  .login__hero,
+  .till {
     display: none;
   }
 }

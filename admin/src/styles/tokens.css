@@ -75,6 +75,10 @@
   --data-line: var(--amber-600);
   --weave-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg stroke='%2316191b' stroke-opacity='0.012'%3E%3Cpath d='M9 17 L12.5 20.5 L19 12 M45 53 L48.5 56.5 L55 48' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E");
   --shadow-float: 0 0 0 1px rgb(22 25 27 / 0.1), 0 2px 4px rgb(22 25 27 / 0.06), 0 12px 28px -6px rgb(22 25 27 / 0.16);
+  /* The sign-in till: its paper casts a shadow through its torn edge (a filter), on an anthracite printer. */
+  --paper-drop: drop-shadow(0 0 0.5px rgb(22 25 27 / 0.25)) drop-shadow(0 6px 10px rgb(22 25 27 / 0.1));
+  --till-body: var(--neutral-900);
+  --till-slot: var(--neutral-990);
   /* Depth: cards and panels are set into the page, like trays cut into it. The
      cut's top wall throws a short shadow inside, a hairline draws the edge, and
      the page's lip below catches the light. Buttons still stand up like keys;
@@ -154,6 +158,9 @@
   --data-line: var(--amber-400);
   --weave-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg stroke='%23f5f9fb' stroke-opacity='0.01'%3E%3Cpath d='M9 17 L12.5 20.5 L19 12 M45 53 L48.5 56.5 L55 48' fill='none' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E");
   --shadow-float: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 36px rgb(0 0 0 / 0.55);
+  --paper-drop: drop-shadow(0 0 0.5px rgb(255 255 255 / 0.18)) drop-shadow(0 8px 14px rgb(0 0 0 / 0.5));
+  --till-body: var(--neutral-800);
+  --till-slot: var(--neutral-990);
   --shadow-raise: inset 0 0 0 1px rgb(255 255 255 / 0.045), inset 0 1px 0 rgb(0 0 0 / 0.55), inset 0 4px 10px -2px rgb(0 0 0 / 0.55), 0 1px 0 rgb(255 255 255 / 0.06);
   /* Set into the page: a tray sits a step darker than the paper, shaded under
      its top wall, so it reads as cut in rather than standing on the page. */

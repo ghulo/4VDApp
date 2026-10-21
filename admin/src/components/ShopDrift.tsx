@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { fbm, hash, noise } from '../utils/perlin';
 import { drawBarcode, drawCar, drawCart, drawReceipt, type Shade } from './shopDriftArt';
+import { SCAN_EVENT } from '../utils/shopScan';
 
 /** One dot every GAP CSS pixels: the noise and everything in it share this grid. */
 const GAP = 4;
@@ -385,6 +386,7 @@ export function ShopDrift() {
         if (mover.kind === 'barcode' && onBeam && !mover.scanned) {
           mover.flash = 1;
           ripples.push({ x: mover.x, y: mover.y, age: 0, strength: 0.6 * mover.depth });
+          window.dispatchEvent(new Event(SCAN_EVENT));
         }
         mover.scanned = onBeam;
       }

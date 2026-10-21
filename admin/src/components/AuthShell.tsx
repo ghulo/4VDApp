@@ -2,7 +2,6 @@ import { Bell, ClipboardText, Receipt, SealCheck, type Icon } from '@phosphor-ic
 import type { ReactNode } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
-import { NoiseField } from './NoiseField';
 import { ShopDrift } from './ShopDrift';
 import { Wordmark } from './LogoMark';
 import { ShopSunrise } from './ui';
@@ -54,7 +53,6 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
         </div>
       </section>
       <div className="login__side">
-        <NoiseField />
         <ShopDrift />
         <div className="login__card">
           <h1 className="login__title">{title}</h1>

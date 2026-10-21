@@ -40,3 +40,22 @@ export function noise(x: number, y: number, z: number): number {
     lerp(v, lerp(u, grad(p[AA + 1]!, x, y, z - 1), grad(p[BA + 1]!, x - 1, y, z - 1)), lerp(u, grad(p[AB + 1]!, x, y - 1, z - 1), grad(p[BB + 1]!, x - 1, y - 1, z - 1))),
   );
 }
+
+/** Octaves of noise added up: broad shapes with finer detail on them. */
+export function fbm(x: number, y: number, z: number, octaves: number): number {
+  let total = 0;
+  let amplitude = 1;
+  let frequency = 1;
+  for (let octave = 0; octave < octaves; octave++) {
+    total += noise(x * frequency, y * frequency, z) * amplitude;
+    amplitude *= 0.45;
+    frequency *= 2;
+  }
+  return total;
+}
+
+/** A steady pseudo-random number in 0..1 for a grid point, the same on every visit. */
+export function hash(x: number, y: number): number {
+  const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return h - Math.floor(h);
+}

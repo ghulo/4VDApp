@@ -5585,18 +5585,7 @@ fieldset.report-sections {
   z-index: 1;
 }
 
-.noise-field {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  color: var(--accent);
-  opacity: 0.6;
-  pointer-events: none;
-  mask-image: radial-gradient(closest-side, transparent 38%, #000 85%);
-}
-
-/* The shop swimming through the noise: carts, cars and their soap, receipts, barcodes. */
+/* The noise map with the shop moving through it (ShopDrift): carts, cars and their soap, receipts, barcodes. */
 .shop-drift {
   position: absolute;
   inset: 0;
@@ -5604,11 +5593,10 @@ fieldset.report-sections {
   height: 100%;
   color: var(--accent);
   pointer-events: none;
-  mask-image: radial-gradient(closest-side, transparent 30%, #000 70%);
+  mask-image: radial-gradient(closest-side, transparent 34%, #000 78%);
 }
 
 @media (max-width: 900px) {
-  .noise-field,
   .shop-drift {
     display: none;
   }

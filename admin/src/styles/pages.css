@@ -5591,7 +5591,7 @@ fieldset.report-sections {
   width: 100%;
   height: 100%;
   color: var(--accent);
-  opacity: 0.6;
+  opacity: 0.7;
   pointer-events: none;
   mask-image: radial-gradient(closest-side, transparent 38%, #000 85%);
 }

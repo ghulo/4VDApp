@@ -5596,8 +5596,20 @@ fieldset.report-sections {
   mask-image: radial-gradient(closest-side, transparent 38%, #000 85%);
 }
 
+/* The shop swimming through the noise: carts, cars and their soap, receipts, barcodes. */
+.shop-drift {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--accent);
+  pointer-events: none;
+  mask-image: radial-gradient(closest-side, transparent 30%, #000 70%);
+}
+
 @media (max-width: 900px) {
-  .noise-field {
+  .noise-field,
+  .shop-drift {
     display: none;
   }
 }

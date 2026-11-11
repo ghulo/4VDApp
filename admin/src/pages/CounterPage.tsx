@@ -5,6 +5,7 @@ import {
   ArrowSquareOut,
   Barcode,
   Calculator,
+  CaretDown,
   CashRegister,
   CheckCircle,
   CircleNotch,
@@ -36,7 +37,7 @@ import { useSearchParams } from 'react-router';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
 import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
-import { Badge, Button, ButtonLink } from '../components/ui';
+import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { cashApi, counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { CounterEventInput, Product } from '../services/types';
@@ -726,11 +727,29 @@ export function CounterPage() {
   const pendingCount = pending ? Math.max(1, Number(pending[1])) : null;
   const clock = new Date(now).toISOString();
 
+  // Reports and the drawer are needed once or twice a day, so they live in one menu in the bar.
+  const reportsReady = keysEnabled && canPrint && printer.reach !== 'off';
+  const tillItems: MenuItem[] = [
+    ...(reportsReady
+      ? [
+          { label: t.counter.xReport, icon: Printer, onSelect: () => void runReport('x') },
+          { label: t.counter.zReport, icon: Printer, onSelect: () => startPanel('z') },
+        ]
+      : []),
+    ...(keysEnabled && shopDrawer
+      ? [
+          { label: t.counter.openingKey, icon: Coins, onSelect: () => startPanel('opening') },
+          { label: t.counter.countKey, icon: Calculator, onSelect: () => startPanel('count') },
+        ]
+      : []),
+    ...(keysEnabled && settings.data?.drawerConnected ? [{ label: t.counter.openDrawer, icon: CashRegister, onSelect: () => startPanel('drawer') }] : []),
+  ];
+
   return (
     <div className="counter">
       <header className="counter__bar">
         <div className="counter__brand">
-          <LogoMark size={40} />
+          <LogoMark size={32} />
           <div>
             <h1 className="visually-hidden">{t.counter.title}</h1>
             <p className="counter__title" aria-hidden="true">
@@ -738,6 +757,43 @@ export function CounterPage() {
             </p>
             <p className="counter__who">{t.counter.signedInAs(user.name)}</p>
           </div>
+        </div>
+        <div className="counter-baskets" role="group" aria-label={t.counter.baskets}>
+          {baskets.map((basket, index) => {
+            const basketTotal = roundMoney(
+              basket.lines.reduce((sum, line) => {
+                const product = byId.get(line.productId);
+                const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
+                return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
+              }, 0),
+            );
+            const minutes = minutesSince(basket.startedAt, now);
+            return (
+              <button
+                key={basket.id}
+                type="button"
+                className="counter-basket"
+                aria-pressed={basket.id === current.id}
+                onClick={() => {
+                  selectBasket(basket.id);
+                  setSelectedId(null);
+                  focusScan();
+                }}
+              >
+                <span className="counter-basket__head">
+                  <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
+                  <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
+                </span>
+                <span className="counter-basket__meta">
+                  {/* An empty basket has no sale yet, so no age either. */}
+                  {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ${t.counter.age(minutes)}` : t.counter.basketReady}
+                </span>
+              </button>
+            );
+          })}
+          <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} title="F8" aria-keyshortcuts="F8">
+            {t.counter.newBasket}
+          </Button>
         </div>
         <div className="counter__status">
           {/* The two things the till depends on, side by side: the internet and the printer. */}
@@ -770,6 +826,7 @@ export function CounterPage() {
             </Button>
           )}
           <span className="counter__divider" aria-hidden="true" />
+          {tillItems.length > 0 && <MenuButton label={t.counter.groups.till} icon={CashRegister} items={tillItems} />}
           <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
             <span className="counter__bar-label">{t.counter.switchKey}</span>
           </Button>
@@ -788,6 +845,9 @@ export function CounterPage() {
               {t.counter.back}
             </ButtonLink>
           )}
+          <time className="counter__clock" dateTime={clock} title={formatDate(clock)}>
+            {formatTime(clock)}
+          </time>
         </div>
       </header>
 
@@ -834,43 +894,6 @@ export function CounterPage() {
               </p>
             </div>
 
-            <div className="counter-baskets" role="group" aria-label={t.counter.baskets}>
-              {baskets.map((basket, index) => {
-                const basketTotal = roundMoney(
-                  basket.lines.reduce((sum, line) => {
-                    const product = byId.get(line.productId);
-                    const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
-                    return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
-                  }, 0),
-                );
-                const minutes = minutesSince(basket.startedAt, now);
-                return (
-                  <button
-                    key={basket.id}
-                    type="button"
-                    className="counter-basket"
-                    aria-pressed={basket.id === current.id}
-                    onClick={() => {
-                      selectBasket(basket.id);
-                      setSelectedId(null);
-                      focusScan();
-                    }}
-                  >
-                    <span className="counter-basket__head">
-                      <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
-                      <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
-                    </span>
-                    <span className="counter-basket__meta">
-                      {/* An empty basket has no sale yet, so no age either. */}
-                      {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ${t.counter.age(minutes)}` : t.counter.basketReady}
-                    </span>
-                  </button>
-                );
-              })}
-              <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} title="F8" aria-keyshortcuts="F8">
-                {t.counter.newBasket}
-              </Button>
-            </div>
           </div>
 
           <div aria-live="polite" className="counter-messages">
@@ -948,12 +971,21 @@ export function CounterPage() {
                 </div>
               )
             )}
-            {hasLines && <BasketSummaryFoot summary={summary} />}
+            {hasLines && (
+              <p className="counter-tape__keys">
+                <span>
+                  <kbd>↑ ↓</kbd> {t.counter.legendKeys.lines}
+                </span>
+                <span>
+                  <kbd>+ −</kbd> {t.counter.legendKeys.nudge}
+                </span>
+              </p>
+            )}
             {panel === 'pay' && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((one) => String(one.id) === payDraft.customerId)?.name ?? null} />}
           </div>
         </section>
 
-        <section className="counter-side" aria-label={t.counter.keys}>
+        <aside className="counter-side" aria-label={t.counter.keys}>
           {panel === 'pay' ? (
             <PayPanel total={total} customers={customers.data} draft={payDraft} offline={!online} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
           ) : (
@@ -983,17 +1015,17 @@ export function CounterPage() {
                   </Button>
                 </div>
               )}
+              {/* Like the foot of a receipt, right above the key that takes the money. */}
+              <BasketSummaryFoot summary={summary} />
               <Button variant="primary" className="counter-pay" disabled={!hasLines} onClick={() => startPanel('pay')} title="F9 · Enter" aria-keyshortcuts="F9">
-                <span className="counter-pay__label">
-                  {t.counter.pay}
-                  <kbd className="counter-pay__hotkey" aria-hidden="true">
-                    F9
-                  </kbd>
-                </span>
-                <span className="counter-pay__amount">{formatMoney(total)}</span>
+                <span>{t.counter.pay}</span>
+                <span className="visually-hidden">{formatMoney(total)}</span>
+                <kbd className="counter-pay__hotkey" aria-hidden="true">
+                  F9
+                </kbd>
               </Button>
 
-              <KeyGroup title={selected ? `${t.counter.groups.line} · ${selected.product?.name ?? selected.name}` : t.counter.noLine}>
+              <KeyGroup line title={selected ? `${t.counter.groups.line} · ${selected.product?.name ?? selected.name}` : t.counter.noLine}>
                 <CounterKey icon={Hash} label={t.counter.quantity} hotkey="F2" disabled={!keysEnabled || !selected} onClick={() => startPanel('quantity')} />
                 <CounterKey icon={HandCoins} label={t.counter.price} hotkey="F6" disabled={!keysEnabled || !selected} onClick={() => startPanel('price')} />
                 <CounterKey icon={Percent} label={t.counter.discount} hotkey="F4" disabled={!keysEnabled || !selected} onClick={() => startPanel('discount')} />
@@ -1010,58 +1042,15 @@ export function CounterPage() {
                 <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled || !online} onClick={openRefund} />
               </KeyGroup>
 
-              <KeyGroup title={t.counter.groups.till} quiet>
-                <CounterKey
-                  icon={Printer}
-                  label={t.counter.xReport}
-                  disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
-                  title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
-                  onClick={() => void runReport('x')}
-                />
-                <CounterKey
-                  icon={Printer}
-                  label={t.counter.zReport}
-                  disabled={!keysEnabled || !canPrint || printer.reach === 'off'}
-                  title={printer.reach === 'off' ? t.counter.reportNeedsPrinter : undefined}
-                  onClick={() => startPanel('z')}
-                />
-                <CounterKey icon={Coins} label={t.counter.openingKey} disabled={!keysEnabled || !shopDrawer} onClick={() => startPanel('opening')} />
-                <CounterKey icon={Calculator} label={t.counter.countKey} disabled={!keysEnabled || !shopDrawer} onClick={() => startPanel('count')} />
-                {settings.data?.drawerConnected && (
-                  <CounterKey icon={CashRegister} label={t.counter.openDrawer} disabled={!keysEnabled} onClick={() => startPanel('drawer')} />
-                )}
-              </KeyGroup>
-
-              {lastSale && <LastSaleCard sale={lastSale} canOpen={canOversee(user.role)} />}
-              {today.data && <ShiftCard mine={today.data.mine} cashToday={today.data.cashToday} drawer={today.data.drawer} />}
+              <div className="counter-side__foot">
+                {lastSale && <LastSaleCard sale={lastSale} canOpen={canOversee(user.role)} />}
+                {today.data && <ShiftCard mine={today.data.mine} cashToday={today.data.cashToday} drawer={today.data.drawer} />}
+              </div>
             </>
           )}
-        </section>
+        </aside>
       </main>
 
-      <footer className="counter-status">
-        <ul className="counter-status__legend" aria-label={t.counter.legend}>
-          <LegendKey keys="F1" label={t.counter.legendKeys.invoices} />
-          <LegendKey keys="F2" label={t.counter.legendKeys.quantity} />
-          <LegendKey keys="F3" label={t.counter.legendKeys.search} />
-          <LegendKey keys="F4" label={t.counter.legendKeys.rabat} />
-          <LegendKey keys="F5" label={t.counter.legendKeys.customer} />
-          <LegendKey keys="F6" label={t.counter.legendKeys.price} />
-          <LegendKey keys="F7" label={t.counter.legendKeys.refund} />
-          <LegendKey keys="F8" label={t.counter.legendKeys.newBasket} />
-          <LegendKey keys="F9" label={t.counter.legendKeys.pay} />
-          <LegendKey keys="F10" label={t.counter.legendKeys.priceCheck} />
-          <LegendKey keys="Del" label={t.counter.legendKeys.remove} />
-          <LegendKey keys="↑ ↓" label={t.counter.legendKeys.lines} />
-          <LegendKey keys="+ −" label={t.counter.legendKeys.nudge} />
-        </ul>
-        <div className="counter-status__right">
-          <p className="counter-status__clock">
-            <span>{formatDate(clock)}</span>
-            <time dateTime={clock}>{formatTime(clock)}</time>
-          </p>
-        </div>
-      </footer>
 
       {selected && (
         <>
@@ -1358,21 +1347,12 @@ function CounterKey({
 }
 
 /** Keys that act on the same thing, under a small heading. */
-function KeyGroup({ title, quiet, children }: { title: string; quiet?: boolean; children: React.ReactNode }) {
+function KeyGroup({ title, line, children }: { title: string; line?: boolean; children: React.ReactNode }) {
   return (
-    <section className={quiet ? 'counter-group counter-group--quiet' : 'counter-group'}>
+    <section className={line ? 'counter-group counter-group--line' : 'counter-group'}>
       <h2 className="counter-group__title">{title}</h2>
       <div className="counter-keys">{children}</div>
     </section>
-  );
-}
-
-function LegendKey({ keys, label }: { keys: string; label: string }) {
-  return (
-    <li>
-      <kbd>{keys}</kbd>
-      {label}
-    </li>
   );
 }
 
@@ -1449,12 +1429,13 @@ function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprint
 function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
   const t = useT();
   return (
-    <section className="counter-card">
-      <h2 className="counter-group__title">{t.counter.lastSale}</h2>
-      <p className="counter-card__lead">
+    <details className="counter-card">
+      <summary className="counter-card__summary">
+        <span className="counter-card__title">{t.counter.lastSale}</span>
         <span className="counter-card__mono">{sale.number}</span>
         <strong>{formatMoney(sale.total)}</strong>
-      </p>
+        <CaretDown size={14} weight="bold" aria-hidden="true" className="counter-card__caret" />
+      </summary>
       <dl className="counter-card__rows">
         <div>
           <dt>{t.counter.paidBy}</dt>
@@ -1504,7 +1485,7 @@ function LastSaleCard({ sale, canOpen }: { sale: LastSale; canOpen: boolean }) {
           {t.counter.openInvoice}
         </ButtonLink>
       )}
-    </section>
+    </details>
   );
 }
 
@@ -1520,12 +1501,13 @@ function ShiftCard({
 }) {
   const t = useT();
   return (
-    <section className="counter-card">
-      <h2 className="counter-group__title">{t.counter.shift}</h2>
-      <p className="counter-card__lead">
-        <strong>{formatMoney(mine.total)}</strong>
+    <details className="counter-card">
+      <summary className="counter-card__summary">
+        <span className="counter-card__title">{t.counter.shift}</span>
         <span>{t.counter.shiftReceipts(mine.receipts)}</span>
-      </p>
+        <strong>{formatMoney(mine.total)}</strong>
+        <CaretDown size={14} weight="bold" aria-hidden="true" className="counter-card__caret" />
+      </summary>
       <dl className="counter-card__rows">
         <div>
           <dt>{t.counter.shiftCash}</dt>
@@ -1566,7 +1548,7 @@ function ShiftCard({
           )}
         </dl>
       </div>
-    </section>
+    </details>
   );
 }
 

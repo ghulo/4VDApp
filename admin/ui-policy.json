@@ -178,25 +178,32 @@
       "reason": "The download page cards, the printer check and the welcome choice cards are raised panels lit by --light-raise (DESIGN.md 8, Light), so the tool cannot read their background. Their text is --ink and --ink-muted on --surface (or --tint), which src/theme/contrast.test.ts checks pass 4.5:1."
     },
     {
-      "selector": ".counter-pay__amount",
+      "selector": ".counter-foot__amount",
       "rules": [
         "font-size"
       ],
-      "reason": "The Counter's Pay key shows the amount to pay at the figure size (28px, on the type scale), so the person at the till reads it from a step away. The key's label stays at 15px."
+      "reason": "The Counter's To pay figure above the Pay key is at the large figure size (on the type scale), so the person at the till reads it from a step away."
     },
     {
-      "selector": ".counter-status__legend kbd",
+      "selector": ".counter-tape__keys kbd",
       "rules": [
         "text-contrast"
       ],
       "reason": "The arrow and plus/minus keys in the Counter's shortcut legend are symbols, so contrast can't be measured; they use the same ink on paper as the lettered keys beside them, which pass."
     },
     {
-      "selector": ".counter__bar-label",
+      "selector": ".counter__bar-label, .counter-basket__meta, .counter-printer span",
       "rules": [
         "content-clipping"
       ],
-      "reason": "On a phone the Counter bar keys (Switch person, Home, Log out) shrink to their icons: the label is hidden on purpose the visually-hidden way (1px, clip-path), and each button keeps its aria-label and title."
+      "reason": "On a phone the Counter bar keys (Switch person, Home, Log out) shrink to their icons: the label is hidden on purpose the visually-hidden way (1px, clip-path), and each button keeps its aria-label and title. The same way, a basket tab's line count and age, and on laptops the internet and printer words beside their icons, are read out rather than shown (trouble always shows its words)."
+    },
+    {
+      "selector": ".counter__status > .button",
+      "rules": [
+        "icon-button-tooltip"
+      ],
+      "reason": "On a phone the Counter bar keys (Switch person, Home, Log out) show only their icon; each has an aria-label and a title, and on wider screens the label is shown beside the icon."
     },
     {
       "selector": ".counter-table__code",

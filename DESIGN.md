@@ -580,8 +580,10 @@ The canvas weave is faint (1.2% light, 1% dark).
   use OK/Danger words, not just colour.
 - **The accent: cobalt, used rarely** (added 2026-11-11). Amber and anthracite are the
   pair; cobalt is amber's opposite on the colour wheel, so a little of it makes the pair
-  pop. Its jobs only: the focus ring, switches and ticks that are on, a plain link inside
-  a sentence, text selection, and Info (the same blue). Never big areas, never buttons,
+  pop. Its jobs only: count badges and unread dots (solid cobalt pill, `--accent-key`), the
+  chosen filter (cobalt words and a 2px cobalt foot; a lone chip turns cobalt tint), the focus
+  ring, switches and ticks that are on, a plain link inside a sentence, text selection, and
+  Info / Idea (the same blue). Up and down changes stay OK/Danger. Never big areas, never buttons,
   never charts (those stay amber). Tokens `--accent`, `--accent-ink`, `--accent-soft`.
 - Status colours are for status only.
 - **Colour never carries meaning alone**; words always do.

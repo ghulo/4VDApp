@@ -58,7 +58,7 @@
 .segmented[data-pill]::after {
   border-radius: var(--radius-segment);
   background: var(--surface);
-  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
+  box-shadow: 0 0 0 1px var(--line-strong), inset 0 -2px 0 var(--accent), var(--key-drop-pressed);
 }
 
 .segmented[data-pill] .segmented__option[aria-checked='true'] {

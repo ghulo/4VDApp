@@ -34,6 +34,9 @@
   --accent: var(--blue-600);
   --accent-ink: var(--blue-700);
   --accent-soft: var(--blue-100);
+  /* A count badge or unread dot: a solid cobalt pill with light figures. */
+  --accent-key: var(--blue-700);
+  --accent-key-ink: var(--neutral-50);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   /* The amber key in three shades: a lit top (350), full amber (400), a deeper foot (450). */
@@ -125,6 +128,8 @@
   --accent: var(--blue-500);
   --accent-ink: var(--blue-400);
   --accent-soft: var(--blue-900);
+  --accent-key: var(--blue-500);
+  --accent-key-ink: var(--neutral-975);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   --cta-top: var(--amber-350);

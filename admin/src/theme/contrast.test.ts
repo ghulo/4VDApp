@@ -51,6 +51,8 @@ const PAIRS: Array<[string, string, number]> = [
   ['ink', 'tint', 4.5],
   ['ink', 'amber-wash', 4.5],
   ['accent', 'surface', 3],
+  ['accent-ink', 'accent-soft', 4.5],
+  ['accent-key-ink', 'accent-key', 4.5],
   ['danger', 'surface', 4.5],
   ['ok', 'ok-soft', 4.5],
   ['warn', 'warn-soft', 4.5],

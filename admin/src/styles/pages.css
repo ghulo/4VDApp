@@ -1435,8 +1435,10 @@ form.product-form > .form-actions {
   min-inline-size: 20px;
   padding: 0 var(--space-1);
   border-radius: var(--radius-pill);
-  background: var(--fill);
+  background: var(--accent-key);
+  color: var(--accent-key-ink);
   font-size: var(--text-xs);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3394,8 +3396,8 @@ fieldset.report-sections {
 }
 
 .segmented__option[aria-checked='true'] .segmented__count {
-  background: var(--fill);
-  color: var(--ink);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
 /* ---------- Analytics ---------- */

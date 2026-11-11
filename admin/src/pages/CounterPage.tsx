@@ -856,7 +856,9 @@ export function CounterPage() {
           <div className="counter-toolbar">
             <div className="counter-scan">
               <label className={priceCheck ? 'counter-scan__field counter-scan__field--check' : 'counter-scan__field'}>
-                {priceCheck ? <Tag size={22} aria-hidden="true" /> : <Barcode size={22} aria-hidden="true" />}
+                <span className="counter-scan__icon" aria-hidden="true">
+                  {priceCheck ? <Tag size={24} weight="bold" /> : <Barcode size={24} weight="bold" />}
+                </span>
                 <span className="visually-hidden">{priceCheck ? t.counter.priceCheck : t.counter.scan}</span>
                 <input
                   ref={scanRef}
@@ -877,6 +879,11 @@ export function CounterPage() {
                   <span className="counter-chip counter-chip--accent" role="status">
                     {t.counter.multiplier(pendingCount)}
                   </span>
+                )}
+                {scan.trim() !== '' && pendingCount === null && (
+                  <kbd className="counter-scan__enter" aria-hidden="true">
+                    Enter
+                  </kbd>
                 )}
                 {priceCheck && (
                   <button type="button" className="counter-chip counter-chip--button" onClick={togglePriceCheck}>

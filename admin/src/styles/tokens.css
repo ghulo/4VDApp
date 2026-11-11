@@ -10,12 +10,12 @@
    words in dark). Amber 400 is the brand itself. Only the two theme blocks below
    use these; screens use the named tokens (src/theme/scales.test.ts keeps it so). */
 :root {
-  --neutral-50: #f5f9fc; --neutral-100: #eef2f5; --neutral-200: #e3e7ea; --neutral-300: #d5dadc; --neutral-400: #b7bbbe; --neutral-500: #989c9e; --neutral-600: #787c7f; --neutral-700: #595d5f; --neutral-800: #45484a; --neutral-900: #2b2e31; --neutral-950: #16191b; --neutral-975: #0d1012; --neutral-990: #050709;
+  --neutral-50: #f5f9fc; --neutral-100: #eef2f5; --neutral-200: #e3e7ea; --neutral-300: #d5dadc; --neutral-400: #b8bbbd; --neutral-500: #999c9e; --neutral-600: #7a7c7e; --neutral-700: #5a5c5e; --neutral-800: #464849; --neutral-900: #2d2e2f; --neutral-950: #191a1a; --neutral-975: #0f1010; --neutral-990: #060707;
   --amber-50: #fef8ea; --amber-100: #fdf1d4; --amber-150: #fbebc5; --amber-200: #f9e4b6; --amber-250: #f7dda2; --amber-300: #f6d58e; --amber-350: #f5c662; --amber-400: #f5b71a; --amber-450: #e0a310; --amber-500: #ca8f04; --amber-550: #b87f03; --amber-600: #a66f02; --amber-650: #926002; --amber-700: #7f5101; --amber-800: #653e00; --amber-850: #51330a; --amber-900: #3e290f; --amber-925: #30200c; --amber-950: #221709; --amber-975: #150e06; --amber-990: #090603;
   --green-50: #f1fcf4; --green-100: #e4f8e8; --green-200: #d0f0d7; --green-300: #b6e7c2; --green-400: #71d38f; --green-500: #49b46e; --green-600: #0f944c; --green-700: #016732; --green-800: #17552e; --green-900: #1b3422; --green-950: #101d13; --green-975: #09120c; --green-990: #040705;
   --orange-50: #fff6f3; --orange-100: #ffeee6; --orange-200: #ffdfcf; --orange-300: #ffcdb4; --orange-400: #ff9f6f; --orange-500: #ec7531; --orange-600: #c55602; --orange-700: #953f00; --orange-800: #733207; --orange-900: #432516; --orange-950: #25150c; --orange-975: #170d08; --orange-990: #0a0504;
   --red-50: #fff6f5; --red-100: #ffedeb; --red-200: #ffddda; --red-300: #ffcbc5; --red-400: #ff9b93; --red-500: #f76560; --red-600: #d53c3d; --red-700: #a71f25; --red-800: #792826; --red-900: #46211f; --red-950: #271311; --red-975: #180b0a; --red-990: #0b0505;
-  --blue-50: #f4f9fe; --blue-100: #e9f3ff; --blue-200: #d4e9ff; --blue-300: #bdddff; --blue-400: #83c0ff; --blue-500: #55a0ea; --blue-600: #2c7fcb; --blue-700: #115e9f; --blue-800: #1f4a73; --blue-900: #1d2f42; --blue-950: #101a25; --blue-975: #0a1017; --blue-990: #04070a;
+  --blue-50: #f5f9ff; --blue-100: #ecf2fe; --blue-200: #dae7fe; --blue-300: #c7daff; --blue-400: #98baff; --blue-500: #6797ff; --blue-600: #3c71f0; --blue-700: #2551bf; --blue-800: #254387; --blue-900: #1e2d4c; --blue-950: #11192a; --blue-975: #0a0f1a; --blue-990: #04060c;
 }
 
 :root,
@@ -31,7 +31,9 @@
   --brand: var(--amber-700);
   --brand-ink: #ffffff;
   --brand-soft: var(--amber-100);
-  --accent: var(--amber-600);
+  --accent: var(--blue-600);
+  --accent-ink: var(--blue-700);
+  --accent-soft: var(--blue-100);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   /* The amber key in three shades: a lit top (350), full amber (400), a deeper foot (450). */
@@ -62,7 +64,7 @@
   --danger-soft: var(--red-100);
   --info: var(--blue-700);
   --info-soft: var(--blue-100);
-  --focus: var(--amber-700);
+  --focus: var(--blue-600);
   /* Data in the brand: amber steps for charts, strongest first (DESIGN.md 10.7). */
   --data-1: var(--amber-700);
   --data-2: var(--amber-500);
@@ -120,7 +122,9 @@
   --brand: var(--amber-400);
   --brand-ink: var(--neutral-975);
   --brand-soft: var(--amber-900);
-  --accent: var(--amber-400);
+  --accent: var(--blue-500);
+  --accent-ink: var(--blue-400);
+  --accent-soft: var(--blue-900);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   --cta-top: var(--amber-350);
@@ -143,9 +147,9 @@
   --warn-soft: var(--orange-900);
   --danger: var(--red-500);
   --danger-soft: var(--red-900);
-  --info: var(--blue-500);
+  --info: var(--blue-400);
   --info-soft: var(--blue-900);
-  --focus: var(--amber-400);
+  --focus: var(--blue-500);
   --data-1: var(--amber-300);
   --data-2: var(--amber-400);
   --data-3: var(--amber-500);
@@ -172,8 +176,8 @@
   --key-shine-paper: inset 0 1px 0 rgb(255 255 255 / 0.1);
   --cta-edge: var(--amber-600);
   --danger-edge: var(--red-600);
-  --glass-bg: rgb(22 25 27 / 0.74);
-  --glass-bg-strong: rgb(22 25 27 / 0.92);
+  --glass-bg: rgb(25 26 26 / 0.74);
+  --glass-bg-strong: rgb(25 26 26 / 0.92);
   --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.06);
   --glass-filter: blur(16px) saturate(1.4);
   --glass-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 36px rgb(0 0 0 / 0.55);

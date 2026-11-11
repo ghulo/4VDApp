@@ -1222,7 +1222,7 @@ input.switch::after {
 }
 
 input.switch:checked {
-  background: var(--ink);
+  background: var(--accent);
 }
 
 input.switch:checked::after {

@@ -26,7 +26,7 @@ const C = {
   sunk: '#e3e7ea',
   tint: '#fbebc5',
   rim: '#f7dda2',
-  ink: '#16191b',
+  ink: '#191a1a',
   muted: '#595d5f',
   line: '#e3e7ea',
   accent: '#a66f02',
@@ -41,14 +41,14 @@ const C = {
   infoSoft: '#e9f3ff',
 };
 const NIGHT: typeof C = {
-  canvas: '#0d1012',
-  paper: '#16191b',
-  sunk: '#050709',
+  canvas: '#0f1010',
+  paper: '#191a1a',
+  sunk: '#060707',
   tint: '#30200c',
   rim: '#51330a',
   ink: '#f5f9fc',
   muted: '#b7bbbe',
-  line: '#2b2e31',
+  line: '#2d2e2f',
   accent: '#f5b71a',
   bar: '#653e00',
   ok: '#49b46e',
@@ -65,7 +65,7 @@ const AMBER = '#f5b71a';
 const AMBER_TOP = '#f5c662';
 const AMBER_EDGE = '#a66f02';
 /** Text on amber: white fails contrast. */
-const AMBER_INK = '#0d1012';
+const AMBER_INK = '#0f1010';
 const SANS = "'Hanken Grotesk',Helvetica,Arial,sans-serif";
 const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
 /** The family home on its amber tile, drawn by brand/make_icons.mjs and served by the dashboard. Same in light and dark. */

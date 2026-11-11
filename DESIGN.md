@@ -22,17 +22,19 @@ colors:
   warn-soft: "#ffeee6"
   danger: "#a71f25"
   danger-soft: "#ffedeb"
-  info: "#115e9f"
-  info-soft: "#e9f3ff"
-  focus: "#7f5101"
-  night-canvas: "#0d1012"
-  night-paper: "#16191b"
-  night-sunk: "#050709"
-  night-oat: "#2b2e31"
+  info: "#2551bf"
+  info-soft: "#ecf2fe"
+  accent: "#3c71f0"
+  accent-ink: "#2551bf"
+  focus: "#3c71f0"
+  night-canvas: "#0f1010"
+  night-paper: "#191a1a"
+  night-sunk: "#060707"
+  night-oat: "#2d2e2f"
   night-ink: "#f5f9fc"
-  night-muted: "#b7bbbe"
-  night-hairline: "#2b2e31"
-  night-hairline-strong: "#45484a"
+  night-muted: "#b8bbbd"
+  night-hairline: "#2d2e2f"
+  night-hairline-strong: "#464849"
   night-amber-text: "#f5b71a"
   night-amber-edge: "#a66f02"
   night-ok: "#49b46e"
@@ -41,9 +43,11 @@ colors:
   night-warn-soft: "#432516"
   night-danger: "#f76560"
   night-danger-soft: "#46211f"
-  night-info: "#55a0ea"
-  night-info-soft: "#1d2f42"
-  night-focus: "#faf9f5"
+  night-info: "#98baff"
+  night-info-soft: "#1e2d4c"
+  night-accent: "#6797ff"
+  night-accent-ink: "#98baff"
+  night-focus: "#6797ff"
 typography:
   headline:
     fontFamily: "Source Serif 4, Georgia, Times New Roman, serif"
@@ -487,21 +491,22 @@ a colour, move its token to another step; to add a shade, take the next step.
 | Oat (fill) / strong hairline | neutral 300 / 300 | neutral 900 / 800 |
 | Ink / Muted Ink | neutral 950 / 700 | neutral 50 / 400 |
 | Status words / tint | 700 / 100 | 500 / 900 |
-| Amber text, focus | amber 700 | amber 400 |
+| Amber text | amber 700 | amber 400 |
+| Accent (switches, ticks, focus) / accent text, info | blue 600 / 700 | blue 500 / 400 |
 | Amber key / hover / edge | amber 400 / 300 / 600 | same |
 
-Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 235, measured from photos 2026-10-20; kept faint, chroma 0.006, because the photos read bluer than the paint), so amber is the only warm thing
+Neutrals are the cool blue-grey anthracite of the carwash canopy (hue 235, measured from photos 2026-10-20; kept faint, chroma 0.006, because the photos read bluer than the paint). The dark steps fade to almost no colour (0.0035 at 700 down to 0.0015 at 990): the same chroma reads far stronger near black, and at 0.007 the dark theme looked blue (2026-11-11), so amber is the only warm thing
 on screen; higher layers are lighter steps because shadows barely show on dark.
 
 ### Neutrals
-- **Canvas** `#eef2f5` / night `#0d1012`: the page.
-- **Paper** `#f5f9fc` / `#16191b`: cards, tables, sidebar, fields.
-- **Sunk Paper** `#e3e7ea` / `#050709`: footer strips, row hover, callouts, search.
-- **Oat** `#d5dadc` / `#2b2e31` (token `fill`): feature panels (Today, staff
+- **Canvas** `#eef2f5` / night `#0f1010`: the page.
+- **Paper** `#f5f9fc` / `#191a1a`: cards, tables, sidebar, fields.
+- **Sunk Paper** `#e3e7ea` / `#060707`: footer strips, row hover, callouts, search.
+- **Oat** `#d5dadc` / `#2d2e2f` (token `fill`): feature panels (Today, staff
   job tiles), ghost hover, segmented track.
-- **Ink** `#16191b` / `#f5f9fc`: text, data, checked switches, count badges.
-- **Muted Ink** `#595d5f` / `#b7bbbe`: descriptions, labels, chart series.
-- **Hairline** `#e3e7ea` / `#2b2e31` and **Strong Hairline** `#d5dadc` / `#45484a`.
+- **Ink** `#191a1a` / `#f5f9fc`: text, data, count badges.
+- **Muted Ink** `#5a5c5e` / `#b8bbbd`: descriptions, labels, chart series.
+- **Hairline** `#e3e7ea` / `#2d2e2f` and **Strong Hairline** `#d5dadc` / `#464849`.
 
 ### Amber (brand)
 4VD's own colour (chosen 2026-10-19), a warm yellow-orange a touch yellower than the firm's circle.
@@ -558,9 +563,8 @@ lip draw the outline, and the shadow is short and tight instead of a wide blur.
 The canvas weave is faint (1.2% light, 1% dark).
 
 ### Focus
-- **Focus ring = Amber Text** (`#745504` light, `#f5b71a` dark), 2px, offset 2px,
-  standing off the control on paper (5:1 and more). There are no cool blue
-  accents anywhere in the interface.
+- **Focus ring = Cobalt** (`#3c71f0` light, `#6797ff` dark), 2px, offset 2px,
+  standing off the control on paper (3:1 and more). It shows clearly on an amber key too.
 
 ### Colour rules
 - **The Amber Rule.** Amber means brand and "act here". **One amber key per
@@ -574,7 +578,12 @@ The canvas weave is faint (1.2% light, 1% dark).
   mini graphs, the revenue chart) follow through `--chart-series` (step 3)
   and `--chart-strong` (step 1) for the bar or point picked out. Up/down changes
   use OK/Danger words, not just colour.
-- **No second accent.** Status colours are for status only.
+- **The accent: cobalt, used rarely** (added 2026-11-11). Amber and anthracite are the
+  pair; cobalt is amber's opposite on the colour wheel, so a little of it makes the pair
+  pop. Its jobs only: the focus ring, switches and ticks that are on, a plain link inside
+  a sentence, text selection, and Info (the same blue). Never big areas, never buttons,
+  never charts (those stay amber). Tokens `--accent`, `--accent-ink`, `--accent-soft`.
+- Status colours are for status only.
 - **Colour never carries meaning alone**; words always do.
 
 ## 7. Type

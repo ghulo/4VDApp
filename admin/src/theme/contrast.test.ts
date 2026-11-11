@@ -71,6 +71,10 @@ const PAIRS: Array<[string, string, number]> = [
   ['info', 'fill', 4.5],
   // The danger key: paper words on danger.
   ['surface', 'danger', 4.5],
+  // Cobalt, the one accent: links in sentences, and switches and ticks that are on.
+  ['accent-ink', 'surface', 4.5],
+  ['accent-ink', 'bg', 4.5],
+  ['accent', 'surface', 3],
   ['focus', 'surface', 3],
   ['focus', 'bg', 3],
   // No ring sits on the amber key itself: every focus outline stands 2-3px off

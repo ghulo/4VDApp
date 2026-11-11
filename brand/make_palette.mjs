@@ -27,9 +27,10 @@ const CURVE = { 50: 0.1, 100: 0.2, 200: 0.32, 300: 0.48, 400: 0.9, 500: 0.95, 60
 const ramp = (hue, peak, lift = {}) =>
   Object.fromEntries(STEPS.map((s) => [s, fromOklch(L[s] + (lift[s] ?? 0), peak * CURVE[s], hue)]));
 
-const neutral = Object.fromEntries(STEPS.map((s) => [s, fromOklch(L[s], s >= 900 ? 0.007 : 0.006, 235)]));
-// Neutral 950 stays the ink of the logo.
-neutral[950] = '#16191b';
+// The same chroma reads far stronger near black, so the dark steps fade to almost none:
+// at 0.007 the dark theme looked blue (2026-11-11). Paper stays faintly cool.
+const NEUTRAL_C = { 50: 0.006, 100: 0.006, 200: 0.006, 300: 0.006, 400: 0.005, 500: 0.0045, 600: 0.004, 700: 0.0035, 800: 0.003, 900: 0.0025, 950: 0.002, 975: 0.002, 990: 0.0015 };
+const neutral = Object.fromEntries(STEPS.map((s) => [s, fromOklch(L[s], NEUTRAL_C[s], 235)]));
 
 // Amber: 400 is the brand and stays exact. Darker steps turn towards gold-brown
 // (hue 83 → 66) so amber text reads warm, never olive.
@@ -55,7 +56,7 @@ const scales = {
   green: ramp(152, 0.15, { 700: -0.025 }), // green looks lighter than it measures, so its word step sits a touch lower   // ok: a cool, clean green that sits with the anthracite
   orange: ramp(47, 0.175),   // warn: signal orange, halfway between amber and red
   red: ramp(25, 0.19),     // danger: a true red, not pink
-  blue: ramp(250, 0.14),    // info: the anthracite's own blue, turned up
+  blue: ramp(264, 0.2),     // cobalt: the one accent (amber's opposite) and info
 };
 
 const out = Object.entries(scales).map(([name, r]) => '  ' + Object.keys(r).map(Number).sort((x, y) => x - y).map((s) => `--${name}-${s}: ${r[s]};`).join(' ')).join('\n');

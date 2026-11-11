@@ -56,7 +56,7 @@ const scales = {
   green: ramp(152, 0.15, { 700: -0.025 }), // green looks lighter than it measures, so its word step sits a touch lower   // ok: a cool, clean green that sits with the anthracite
   orange: ramp(47, 0.175),   // warn: signal orange, halfway between amber and red
   red: ramp(25, 0.19),     // danger: a true red, not pink
-  blue: ramp(264, 0.2),     // cobalt: the one accent (amber's opposite) and info
+  blue: ramp(250, 0.14),    // info: the anthracite's own blue, turned up
 };
 
 const out = Object.entries(scales).map(([name, r]) => '  ' + Object.keys(r).map(Number).sort((x, y) => x - y).map((s) => `--${name}-${s}: ${r[s]};`).join(' ')).join('\n');

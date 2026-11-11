@@ -15,7 +15,7 @@
   --green-50: #f1fcf4; --green-100: #e4f8e8; --green-200: #d0f0d7; --green-300: #b6e7c2; --green-400: #71d38f; --green-500: #49b46e; --green-600: #0f944c; --green-700: #016732; --green-800: #17552e; --green-900: #1b3422; --green-950: #101d13; --green-975: #09120c; --green-990: #040705;
   --orange-50: #fff6f3; --orange-100: #ffeee6; --orange-200: #ffdfcf; --orange-300: #ffcdb4; --orange-400: #ff9f6f; --orange-500: #ec7531; --orange-600: #c55602; --orange-700: #953f00; --orange-800: #733207; --orange-900: #432516; --orange-950: #25150c; --orange-975: #170d08; --orange-990: #0a0504;
   --red-50: #fff6f5; --red-100: #ffedeb; --red-200: #ffddda; --red-300: #ffcbc5; --red-400: #ff9b93; --red-500: #f76560; --red-600: #d53c3d; --red-700: #a71f25; --red-800: #792826; --red-900: #46211f; --red-950: #271311; --red-975: #180b0a; --red-990: #0b0505;
-  --blue-50: #f5f9ff; --blue-100: #ecf2fe; --blue-200: #dae7fe; --blue-300: #c7daff; --blue-400: #98baff; --blue-500: #6797ff; --blue-600: #3c71f0; --blue-700: #2551bf; --blue-800: #254387; --blue-900: #1e2d4c; --blue-950: #11192a; --blue-975: #0a0f1a; --blue-990: #04060c;
+  --blue-50: #f4f9fe; --blue-100: #e9f3ff; --blue-200: #d4e9ff; --blue-300: #bdddff; --blue-400: #83c0ff; --blue-500: #55a0ea; --blue-600: #2c7fcb; --blue-700: #115e9f; --blue-800: #1f4a73; --blue-900: #1d2f42; --blue-950: #101a25; --blue-975: #0a1017; --blue-990: #04070a;
 }
 
 :root,
@@ -31,12 +31,7 @@
   --brand: var(--amber-700);
   --brand-ink: #ffffff;
   --brand-soft: var(--amber-100);
-  --accent: var(--blue-600);
-  --accent-ink: var(--blue-700);
-  --accent-soft: var(--blue-100);
-  /* A count badge or unread dot: a solid cobalt pill with light figures. */
-  --accent-key: var(--blue-700);
-  --accent-key-ink: var(--neutral-50);
+  --accent: var(--amber-600);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   /* The amber key in three shades: a lit top (350), full amber (400), a deeper foot (450). */
@@ -67,7 +62,7 @@
   --danger-soft: var(--red-100);
   --info: var(--blue-700);
   --info-soft: var(--blue-100);
-  --focus: var(--blue-600);
+  --focus: var(--amber-700);
   /* Data in the brand: amber steps for charts, strongest first (DESIGN.md 10.7). */
   --data-1: var(--amber-700);
   --data-2: var(--amber-500);
@@ -125,11 +120,7 @@
   --brand: var(--amber-400);
   --brand-ink: var(--neutral-975);
   --brand-soft: var(--amber-900);
-  --accent: var(--blue-500);
-  --accent-ink: var(--blue-400);
-  --accent-soft: var(--blue-900);
-  --accent-key: var(--blue-500);
-  --accent-key-ink: var(--neutral-975);
+  --accent: var(--amber-400);
   --cta: var(--amber-400);
   --cta-hover: var(--amber-300);
   --cta-top: var(--amber-350);
@@ -152,9 +143,9 @@
   --warn-soft: var(--orange-900);
   --danger: var(--red-500);
   --danger-soft: var(--red-900);
-  --info: var(--blue-400);
+  --info: var(--blue-500);
   --info-soft: var(--blue-900);
-  --focus: var(--blue-500);
+  --focus: var(--amber-400);
   --data-1: var(--amber-300);
   --data-2: var(--amber-400);
   --data-3: var(--amber-500);

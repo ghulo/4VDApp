@@ -234,8 +234,8 @@
   min-width: 20px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--accent-key);
-  color: var(--accent-key-ink);
+  background: var(--ink);
+  color: var(--surface);
   font-size: var(--text-xs);
   font-weight: 700;
   line-height: 20px;
@@ -506,8 +506,8 @@
 
 .segmented__option[aria-checked='true'] {
   background: var(--surface);
-  color: var(--accent-ink);
-  box-shadow: 0 0 0 1px var(--line-strong), inset 0 -2px 0 var(--accent), var(--key-drop-pressed);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line-strong), var(--key-drop-pressed);
 }
 
 .segmented--small .segmented__option {
@@ -562,9 +562,9 @@
 }
 
 .chip[aria-checked='true'] {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--accent);
+  background: var(--fill);
+  color: var(--ink);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--line-strong);
 }
 
 .chip:focus-visible,

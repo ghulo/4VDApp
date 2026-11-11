@@ -7,15 +7,17 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const sharp = createRequire(new URL('../backend/package.json', import.meta.url))('sharp');
 const AMBER = '#F5B71A';
 const mark = readFileSync(new URL('./logo-mark.svg', import.meta.url), 'utf8');
-// The mark is a solid amber tile (since 2026-10-20: the ivory one faded among other icons).
-const TILE = '<rect width="64" height="64" rx="14" fill="#F5B71A"/>';
-if (!mark.includes(TILE)) throw new Error('logo-mark.svg changed its tile; update make_icons.mjs');
+// The mark is the hand-drawn home (path "house") on a soft amber tile (path "tile").
+const TILE = mark.match(/<path id="tile"[^>]*\/>/)?.[0];
+const VIEWBOX = mark.match(/viewBox="([^"]+)"/)?.[1].split(' ').map(Number);
+if (!TILE || !VIEWBOX) throw new Error('logo-mark.svg changed its tile or viewBox; update make_icons.mjs');
+const [vx, vy, vw, vh] = VIEWBOX;
 
 // Phone home screens round the corners themselves, so those icons fill the square.
-const square = mark.replace(TILE, '<rect width="64" height="64" fill="#F5B71A"/>');
+const square = mark.replace(TILE, `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="#F5B71A"/>`);
 // Maskable and splash icons lay the drawing on their own background, so they have no tile.
 const bare = mark.replace(TILE, '');
-// Android's themed icon keeps only the shape: the ink tick alone.
+// Android's themed icon keeps only the shape: the ink house alone.
 const inkOnly = bare;
 if (inkOnly.includes('#F5B71A')) throw new Error('logo-mark.svg has amber outside its tile; update make_icons.mjs');
 
@@ -25,7 +27,7 @@ const out = (path) => fileIn('mobile', path);
 /** Renders `svg` at `size` px; `padding` is the share of each side left empty (maskable icons get cropped). */
 async function render(svg, size, padding = 0) {
   const inner = Math.round(size * (1 - 2 * padding));
-  const art = await sharp(Buffer.from(svg), { density: Math.ceil((inner / 64) * 72 * 2) }).resize(inner, inner).png().toBuffer();
+  const art = await sharp(Buffer.from(svg), { density: Math.ceil((inner / vw) * 72 * 2) }).resize(inner, inner).png().toBuffer();
   if (padding === 0) return sharp(art);
   return sharp({ create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite([{ input: art, gravity: 'centre' }]);
@@ -39,8 +41,8 @@ for (const app of ['mobile', 'admin']) {
   await (await render(bare, 512, 0.06)).flatten({ background: AMBER }).png().toFile(fileIn(app, 'public/icon-maskable-512.png'));
 }
 writeFileSync(fileIn('admin', 'public/favicon.svg'), mark);
-// The emails show the mark at 48px; drawn at 3x for sharp phone screens. Served from the dashboard.
-await (await render(mark, 144)).png().toFile(fileIn('admin', 'public/email-logo.png'));
+// The emails show the mark at 64px; drawn at 3x for sharp phone screens. Served from the dashboard.
+await (await render(mark, 192)).png().toFile(fileIn('admin', 'public/email-logo.png'));
 // The Windows app's icon: taskbar, Start menu, installer.
 await (await render(mark, 512)).png().toFile(fileIn('desktop', 'src/icon.png'));
 await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));

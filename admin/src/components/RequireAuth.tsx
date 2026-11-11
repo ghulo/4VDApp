@@ -14,7 +14,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (state.status === 'loading') {
     return (
       <div className="splash" role="status">
-        <LogoMark size={40} />
+        <LogoMark size={96} />
         <span>{t.common.restoringSession}</span>
       </div>
     );

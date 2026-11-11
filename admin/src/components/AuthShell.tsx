@@ -1,7 +1,7 @@
 import { lazy, type ReactNode, Suspense } from 'react';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
-import { Wordmark } from './LogoMark';
+import { LogoMark } from './LogoMark';
 import { LoginReceipt } from './LoginReceipt';
 import { useT } from '../i18n/useT';
 
@@ -15,7 +15,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
     <div className="login">
       <section className="login__story" aria-label="4VD">
         <p className="login__mark">
-          <Wordmark height={34} />
+          <LogoMark size={152} />
           <span className="visually-hidden">4VD</span>
         </p>
         {/* Top to bottom: who we are, what it is, and the till printing a sale. */}

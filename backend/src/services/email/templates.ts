@@ -68,8 +68,8 @@ const AMBER_EDGE = '#a66f02';
 const AMBER_INK = '#0d1012';
 const SANS = "'Hanken Grotesk',Helvetica,Arial,sans-serif";
 const SERIF = "'Source Serif 4',Georgia,'Times New Roman',serif";
-/** The tick on its amber tile, drawn by brand/make_icons.mjs and served by the dashboard. Same in light and dark. */
-const LOGO_URL = 'https://4vd.app/email-logo.png?v=3';
+/** The family home on its amber tile, drawn by brand/make_icons.mjs and served by the dashboard. Same in light and dark. */
+const LOGO_URL = 'https://4vd.app/email-logo.png?v=5';
 /** Apple Mail and iOS load the real fonts; the rest fall back to Helvetica and Georgia. */
 const FONTS_URL = 'https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500&display=swap';
 /** Raise: cards rest just above the canvas. */
@@ -145,7 +145,7 @@ const card = (inner: string, strip?: string) =>
   }
 </table>`;
 
-/** The page every email shares: the logo and name on the canvas, the content, the small print. */
+/** The page every email shares: the logo on the canvas, the content, the small print. */
 function shell({ t, subject, preview, content }: { t: ServerMessages; subject: string; preview: string; content: string }): string {
   return `<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escapeHtml(subject)}</title>
 <link href="${FONTS_URL}" rel="stylesheet">
@@ -155,8 +155,7 @@ function shell({ t, subject, preview, content }: { t: ServerMessages; subject: s
 <table ${TABLE} width="100%" class="bg-canvas" style="background:${C.canvas}"><tr><td align="center" style="padding:32px 12px 40px">
 <table ${TABLE} width="100%" style="max-width:600px">
 <tr><td style="padding:0 4px 24px"><table ${TABLE}><tr>
-<td style="vertical-align:middle"><img src="${LOGO_URL}" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:40px;border-radius:10px"></td>
-<td class="ink" style="vertical-align:middle;padding-left:12px;font-family:${SANS};font-size:22px;line-height:28px;font-weight:700;letter-spacing:-0.6px;color:${C.ink}">4VD</td>
+<td style="vertical-align:middle"><img src="${LOGO_URL}" width="64" height="64" alt="4VD" style="display:block;border:0;width:64px;height:64px"></td>
 </tr></table></td></tr>
 <tr><td>${content}</td></tr>
 <tr><td class="muted" style="padding:24px 8px 0;font-family:${SANS};font-size:12px;line-height:18px;color:${C.muted}">${escapeHtml(t.email.footer)}<br><a class="muted" href="https://4vd.app" style="color:${C.muted}">4vd.app</a></td></tr>

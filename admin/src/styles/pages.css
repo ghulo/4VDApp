@@ -158,6 +158,9 @@
 /* The shop front: one raised panel with the date, the greeting and the day so
    far with its 30 days of bars. Sized to its words, no empty sky. */
 .overview-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
   margin-bottom: var(--space-4);
   padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-panel);
@@ -166,6 +169,7 @@
 }
 
 .overview-hero__text {
+  flex: 1;
   display: grid;
   align-content: start;
   gap: var(--space-1);
@@ -185,6 +189,23 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
   text-wrap: balance;
+}
+
+/* The logo, big, at the hero's right: the one place it is shown large inside the app. */
+.overview-hero__mark {
+  flex: none;
+  line-height: 0;
+}
+
+.overview-hero__mark .logo-mark {
+  width: clamp(112px, 13vw, 176px);
+  height: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overview-hero__mark {
+    animation: tile-rise 1.2s var(--ease) both;
+  }
 }
 
 /* ---------- Today (inside the hero) ---------- */
@@ -264,7 +285,13 @@
 /* Phones: a tighter panel, and the keys share the width two by two. */
 @media (max-width: 599px) {
   .overview-hero {
+    align-items: flex-start;
+    gap: var(--space-3);
     padding: var(--space-4);
+  }
+
+  .overview-hero__mark .logo-mark {
+    width: 64px;
   }
 
   .overview-hero__title {

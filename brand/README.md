@@ -5,27 +5,29 @@ family shop after them.
 
 ## The logo
 
-Chosen 2026-10-20. It says who we are, not what we sell, so it still fits if 4VD grows
-beyond the shop.
+Chosen 2026-11-11 (replaced the tick, which read as "done" and said nothing about care).
+4VD treats customers like family, so the mark is a home.
 
-- **The wordmark** (`logo-full.svg`, `Wordmark` in `admin/src/components/LogoMark.tsx`):
-  an open 4, the V drawn as a tick, a D. One stroke weight with round ends. The tick
-  means "done right, you can count on us". Letters in ink (light text on dark), the tick
-  in amber. Used in the dashboard's top bar, sign-in and the download page.
-- **The mark** (`logo-mark.svg`, `LogoMark`): the tick alone, ink on a solid amber
-  tile. The tile makes it read the same on light and dark. Used for app icons, the
-  favicon, the Windows app, emails, the Counter bar and the loading screen. Printed
-  documents use an ivory tile instead (`backend/src/services/documents/shopMark.ts`).
-- Don't put the tick mark right next to the wordmark: that's two ticks in a row.
+- **The mark** (`logo-mark.svg`, `LogoMark` in `admin/src/components/LogoMark.tsx`): a
+  hand-drawn house, four equal arched doorways (the four brothers, nobody bigger) under
+  one soft roof with a chimney, on a gentle ground line, on a soft amber tile. Ink on
+  amber, the same on light and dark. Traced from `logo-source.webp` (the image the user
+  chose), so the hand-drawn wobble is on purpose: don't straighten it.
+  The paths live in `admin/src/components/logoPaths.ts` for the dashboard, and in
+  `backend/src/services/documents/shopMark.ts` (ivory tile, for print).
+- **No letters** (2026-11-11): the mark stands alone everywhere, no "4VD" beside it; it
+  replaced the wordmark. Sizes: 46px in the top bar, 128px on sign-in, 96px while
+  signing in, 40px on the Counter.
 - Keep the colours: ink `#141413`, amber `#F5B71A`. Don't stretch it, outline it or add shadows.
 - The app icons and the email logo are drawn from the SVG: run `node brand/make_icons.mjs`
   after changing it (needs `npm install` in `backend/` for sharp), then
   `node desktop/build/make_installer_art.mjs` for the installer pictures. Copy
-  `logo-mark.svg` to `desktop/src/mark.svg`. Then bump `?v=` on the icon links in
-  `admin/index.html` and `admin/public/manifest.json` (and `?v=` on `LOGO_URL` in
+  `logo-mark.svg` to `desktop/src/mark.svg` and update `logoPaths.ts` and `shopMark.ts`.
+  Then bump `?v=` on the icon links in `admin/index.html` and
+  `admin/public/manifest.json` (and `?v=` on `LOGO_URL` in
   `backend/src/services/email/templates.ts`), or browsers keep showing the old icon.
   The script also redraws the retired team app's icons; leave those out of commits.
-- The shop-at-sunrise drawing (`ShopSunrise`) is an illustration, not the logo.
+- `ShopSunrise` draws the mark large (sign-in, empty pages).
 
 ## Look, colours and type
 

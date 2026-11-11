@@ -262,11 +262,11 @@ describe('Badge, StatTile and EmptyState', () => {
     expect(html).toContain('role="alert"');
   });
 
-  it('should draw the logo tile with its tick, hidden from screen readers', () => {
+  it('should draw the logo tile with its house, hidden from screen readers', () => {
     const html = render(<ShopSunrise />);
 
     expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain('class="shop-sunrise__tick"');
+    expect(html).toContain('class="shop-sunrise__house"');
     expect(html).toContain('class="shop-sunrise__tile"');
   });
 });

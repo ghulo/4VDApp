@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="28 4 213 89" role="img" aria-label="4VD">
-  <!-- The 4VD wordmark: an open 4, the V drawn as a tick, a D. One stroke weight with round
-       ends. Ink letters, amber tick; on dark, swap the ink for #F5F9FC (the tick stays amber). -->
-  <g fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M58 15 L36 64 H88 M72 38 V85 M186 15 V85 H204 C242 85 242 15 204 15 Z" stroke="#141413"/>
-    <path d="M106 54 L125 83 L165 12" stroke="#E0A310"/>
-  </g>
-</svg>

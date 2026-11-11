@@ -2,7 +2,7 @@ import { DeviceMobile, DownloadSimple, ShieldCheck } from '@phosphor-icons/react
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { TEAM_APP_URL } from '../auth/finishSignIn';
-import { Wordmark } from '../components/LogoMark';
+import { LogoMark } from '../components/LogoMark';
 import { buttonClass } from '../components/ui';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { useLanguage, useT } from '../i18n/useT';
@@ -58,7 +58,7 @@ export function DownloadPage() {
     <div className="download">
       <header className="download__bar">
         <Link to="/" className="download__brand" translate="no">
-          <Wordmark />
+          <LogoMark size={40} />
           <span className="visually-hidden">4VD</span>
         </Link>
         <Link to="/login" className={buttonClass({ variant: 'secondary', size: 'sm' })}>

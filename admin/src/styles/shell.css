@@ -40,12 +40,15 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: var(--space-1);
+  margin-left: calc(var(--space-1) * -1);
+  border-radius: var(--radius-small);
   color: var(--ink);
   text-decoration: none;
 }
 
-/* The 4VD wordmark (LogoMark.tsx): letters in the text colour, the tick in amber. */
-.wordmark {
+/* The 4VD logo (LogoMark.tsx): the family home on its own, no letters. */
+.logo-mark {
   display: block;
   flex: none;
 }

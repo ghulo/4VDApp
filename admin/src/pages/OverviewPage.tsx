@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
 import { useDayChecklist } from '../utils/useDayChecklist';
+import { LogoMark } from '../components/LogoMark';
 import { ProductPhoto } from '../components/ProductPhoto';
 import { StockTag } from '../components/StockTag';
 import { SetupGuide } from '../setup/SetupGuide';
@@ -113,6 +114,9 @@ function OverviewHero() {
         <p className="overview-hero__kicker">{formatDateWith(now, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         <h1 className="overview-hero__title">{t.overview.greeting(greeting(t, now.getHours()), firstName)}</h1>
         <TodayCard />
+      </div>
+      <div className="overview-hero__mark">
+        <LogoMark size={176} />
       </div>
     </header>
   );

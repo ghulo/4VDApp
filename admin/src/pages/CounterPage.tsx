@@ -730,7 +730,7 @@ export function CounterPage() {
     <div className="counter">
       <header className="counter__bar">
         <div className="counter__brand">
-          <LogoMark size={28} />
+          <LogoMark size={40} />
           <div>
             <h1 className="visually-hidden">{t.counter.title}</h1>
             <p className="counter__title" aria-hidden="true">

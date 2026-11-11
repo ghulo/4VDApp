@@ -136,7 +136,8 @@ describe('GET /api/reports/summary', () => {
 
   it('should include sales late on a date-only end date', async () => {
     const productId = await createProduct();
-    await sell(adminToken, productId, 1, '2026-03-31T22:30:00Z');
+    // 23:30 on 31 March in the shop (UTC+2).
+    await sell(adminToken, productId, 1, '2026-03-31T21:30:00Z');
 
     const response = await request(context.app).get(`/api/reports/summary?${MARCH}`).set(auth(adminToken));
 

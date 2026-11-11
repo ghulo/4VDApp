@@ -64,13 +64,13 @@ describe('CSV exports', () => {
     expect(response.text).toContain('\r\n2026-09-01 00:30,Night Lamp,');
   });
 
-  it('should write Excel-friendly UTC dates when no timezone is given, and reject unknown ones', async () => {
+  it('should write dates in shop time (Europe/Budapest) when no timezone is given, and reject unknown ones', async () => {
     await createAndSell('Oak Chair', 2);
 
-    const utc = await download('/api/exports/sales.csv?startDate=2026-03-01&endDate=2026-03-31');
+    const shop = await download('/api/exports/sales.csv?startDate=2026-03-01&endDate=2026-03-31');
     const unknown = await download('/api/exports/sales.csv?startDate=2026-03-01&endDate=2026-03-31&tz=Mars/Olympus');
 
-    expect(utc.text).toContain('\r\n2026-03-10 12:00,Oak Chair,');
+    expect(shop.text).toContain('\r\n2026-03-10 13:00,Oak Chair,');
     expect(unknown.status).toBe(400);
   });
 

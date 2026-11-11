@@ -2,23 +2,30 @@ import { z } from 'zod';
 import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
+import { addDays, startOfDay } from '../utils/zonedDates.js';
 import { booleanQuerySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'must be a date like 2026-10-01');
 
-/** "2026-10-01" as a start means the very beginning of that day (UTC). */
-export const startDateQuery = isoDate.transform((value) => new Date(value));
+/**
+ * A date without a time is a day on the shop's clock, not in UTC: "1 November"
+ * starts at 23:00 UTC on 31 October in winter (22:00 in summer). Read from the
+ * environment because validators get no config; it was checked at startup.
+ */
+export const shopTimeZone = () => process.env.SHOP_TIME_ZONE || 'Europe/Budapest';
+
+/** "2026-10-01" as a start means the very beginning of that day in shop time. */
+export const startDateQuery = isoDate.transform((value) => (DATE_ONLY.test(value) ? startOfDay(value, shopTimeZone()) : new Date(value)));
 
 /**
  * "2026-10-31" as an end date means "up to and including the 31st", so a
- * date without a time is pushed to the start of the next day (ranges are
+ * date without a time is pushed to the start of the next shop day (ranges are
  * end-exclusive internally).
  */
 export const endDateQuery = isoDate.transform((value) =>
-  DATE_ONLY.test(value) ? new Date(new Date(value).getTime() + MS_PER_DAY) : new Date(value),
+  DATE_ONLY.test(value) ? startOfDay(addDays(value, 1), shopTimeZone()) : new Date(value),
 );
 
 // ---------- Sales ----------

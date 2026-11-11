@@ -1,14 +1,16 @@
 import { calendarDaySchema, idSchema } from './validate.js';
 import { REPORT_SECTIONS } from '../services/reports/ReportBuilder.js';
 import { z } from 'zod';
-import { endDateQuery, startDateQuery } from './operationsValidators.js';
+import { endDateQuery, shopTimeZone, startDateQuery } from './operationsValidators.js';
 
 const MAX_RANGE_DAYS = 366;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 
 // A full year of dates (e.g. 1 Jan to 1 Jan, end pushed to the next midnight)
-// is 366 days, or 367 only across a leap day, so no extra allowance is needed.
-const isWithinMaxRange = (start: Date, end: Date) => end.getTime() - start.getTime() <= MAX_RANGE_DAYS * MS_PER_DAY;
+// is 366 days, or 367 only across a leap day. Shop days are 23 or 25 hours on
+// clock-change nights, so one hour of slack.
+const isWithinMaxRange = (start: Date, end: Date) => end.getTime() - start.getTime() <= MAX_RANGE_DAYS * MS_PER_DAY + MS_PER_HOUR;
 
 export const reportRangeSchema = z
   .object({
@@ -63,9 +65,9 @@ function isKnownTimeZone(timeZone: string): boolean {
   }
 }
 
-/** The admin's IANA timezone (e.g. Europe/Dublin), used to name files and write dates in exports. */
+/** The admin's IANA timezone (e.g. Europe/Dublin), used to name files and write dates in exports; the shop's own when not sent. */
 export const exportTimeZoneSchema = z.object({
-  tz: z.string().max(64).refine(isKnownTimeZone, 'tz must be a timezone like Europe/Dublin').default('UTC'),
+  tz: z.string().max(64).refine(isKnownTimeZone, 'tz must be a timezone like Europe/Dublin').default(shopTimeZone),
 });
 
 export const askAssistantSchema = z.object({

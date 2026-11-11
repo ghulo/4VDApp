@@ -123,7 +123,7 @@ describe('reports with returns and losses', () => {
     const csv = await api().get(`/api/exports/sales.csv?${APRIL}`).set(auth(adminToken));
 
     expect(csv.text.split('\r\n')[0]).toContain(',Type');
-    expect(csv.text).toContain('\r\n2026-04-05 12:00,Oak Chair,,-1,100,-100,60,-40,Test admin,,Return');
+    expect(csv.text).toContain('\r\n2026-04-05 14:00,Oak Chair,,-1,100,-100,60,-40,Test admin,,Return');
   });
 
   it('should no longer accept Damage as a manual stock reason', async () => {

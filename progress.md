@@ -66,6 +66,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 - [ ] 20. Cash forecast: what the shop will have in 30 days, from bills due and normal takings
 - [ ] 21. All four businesses in one view, each with its own books
 - [ ] 22. Digital receipts by SMS or Viber, and loyalty by phone number (replaces the loyalty cards in step 15)
+- [ ] 23. 4VD as a full Windows program: the Counter keeps selling with no internet (a local copy of products and prices, sales sent on when it's back), opens full screen and starts with Windows, and talks straight to the printer, drawer, scanner and scale. Same account and data as 4vd.app; phones keep using 4vd.app from the home screen (agreed 2026-11-12)
 
 **C. In TREFIN but unused here (build after A and B)**
 - [ ] 12. Fixed assets register and depreciation

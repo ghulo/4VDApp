@@ -35,6 +35,8 @@ export interface SectionTab {
   keepSearch?: boolean;
   /** The accountant sees it (they see only the money side). */
   accountant?: boolean;
+  /** Opened now and then (setup, year end): it waits under the row's More, unless it is the page you are on. */
+  rare?: boolean;
 }
 
 export interface NavItem {
@@ -85,14 +87,14 @@ export const SECTIONS = {
   books: [
     { to: '/books', key: 'balances', keepSearch: true, accountant: true },
     { to: '/books/journal', key: 'journal', keepSearch: true, accountant: true },
-    { to: '/books/accounts', key: 'accounts', accountant: true },
-    { to: '/books/opening', key: 'opening', accountant: true },
+    { to: '/books/accounts', key: 'accounts', accountant: true, rare: true },
+    { to: '/books/opening', key: 'opening', accountant: true, rare: true },
     { to: '/books/vat', key: 'vat', accountant: true },
     { to: '/books/sales-book', key: 'salesBook', accountant: true },
     { to: '/books/purchase-book', key: 'purchaseBook', accountant: true },
     { to: '/books/statements', key: 'statements', accountant: true },
-    { to: '/books/year', key: 'year', accountant: true },
-    { to: '/books/trefin', key: 'trefin', accountant: true },
+    { to: '/books/year', key: 'year', accountant: true, rare: true },
+    { to: '/books/trefin', key: 'trefin', accountant: true, rare: true },
   ],
   reports: [
     { to: '/report', key: 'report', accountant: true },
@@ -100,7 +102,7 @@ export const SECTIONS = {
     { to: '/reports/team', key: 'team', keepSearch: true },
     { to: '/reports/counter', key: 'counter', keepSearch: true },
     { to: '/reports/profit', key: 'profit', keepSearch: true, accountant: true },
-    { to: '/reports/downloads', key: 'downloads', keepSearch: true, accountant: true },
+    { to: '/reports/downloads', key: 'downloads', keepSearch: true, accountant: true, rare: true },
   ],
 } satisfies Record<string, SectionTab[]>;
 
@@ -155,6 +157,26 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     ],
   },
 ];
+
+const ALL_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
+const itemsAt = (paths: string[]) => paths.flatMap((path) => ALL_ITEMS.filter((item) => item.to === path));
+
+/**
+ * The owner looks at how the shop is doing and answers requests; they don't run
+ * it day to day. Their menu shows those pages, and the rest waits under More.
+ * Null: the whole menu, grouped (everyone else).
+ */
+export function mainItemsFor(role: UserRole): NavItem[] | null {
+  if (role !== 'owner') return null;
+  return itemsAt(['/', '/inbox', '/sales', '/inventory', '/report', '/ask']).filter((item) => shownTo(role, item));
+}
+
+/** The bar along the bottom on a phone: the first four of these the person may open; Menu opens the rest. */
+export function phoneTabsFor(role: UserRole): NavItem[] {
+  return itemsAt(['/', '/inbox', '/sales', '/inventory', '/books'])
+    .filter((item) => shownTo(role, item))
+    .slice(0, 4);
+}
 
 /** Whether this person sees the menu item or tab: as chosen in Settings → Roles, else the accountant sees only the money side. */
 export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {

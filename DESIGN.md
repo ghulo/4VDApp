@@ -609,7 +609,11 @@ The canvas weave is faint (1.2% light, 1% dark).
 
 ### Layout
 - 4px grid: 4, 8, 12, 16, 24, 32, 48.
-- Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
+- Dashboard: 56px top bar; 232px sidebar (60px collapsed; under 900px a bar along
+  the bottom holds the four most used pages and Menu, which opens the sidebar as a
+  drawer); the owner's sidebar shows Overview, To do, Sales, Stock, Reports and Ask,
+  with the rest under More. A tab row keeps setup and year-end tabs (`rare`) under
+  More at its end;
   content column max 1600px on every page (`--frame-wide`, 3.8; the Windows
   app's own download and welcome pages keep 1120px, `--frame-reading`); page padding 32/48 desktop, 32/24 under 1100px,
   24/16 under 900px.

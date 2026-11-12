@@ -124,6 +124,9 @@ export const sq: Catalogue = {
     expand: 'Zgjero menunë',
     collapseMenu: 'Palos menunë',
     collapse: 'Palos',
+    more: 'Më shumë',
+    menuTab: 'Menyja',
+    quickBar: 'Faqet kryesore',
   },
   push: {
     title: 'Njoftime',

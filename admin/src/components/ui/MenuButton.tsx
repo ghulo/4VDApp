@@ -21,13 +21,15 @@ interface MenuButtonProps {
   /** Draws the key as this instead of a button with the label (e.g. your avatar); the label then names it for screen readers. */
   face?: ReactNode;
   faceClassName?: string;
+  /** A face that already shows its words needs no tooltip repeating them. */
+  tooltip?: boolean;
 }
 
 /**
  * A key that opens a short list of related actions, like the downloads of a
  * page. Arrow keys move through the list, Esc closes it and returns to the key.
  */
-export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName }: MenuButtonProps) {
+export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName, tooltip = true }: MenuButtonProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -86,7 +88,11 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
 
   return (
     <div className="menu-button" ref={rootRef}>
-      {face ? (
+      {face && !tooltip ? (
+        <button ref={keyRef} type="button" className={faceClassName} {...keyProps}>
+          {face}
+        </button>
+      ) : face ? (
         <Tooltip label={label} side="bottom">
           <button ref={keyRef} type="button" className={faceClassName} aria-label={label} {...keyProps}>
             {face}

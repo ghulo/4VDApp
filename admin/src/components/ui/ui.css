@@ -1557,6 +1557,14 @@ input.switch:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  /* On a phone the period chips scroll inside their strip instead of widening the page. */
+  min-width: 0;
+  max-width: 100%;
+}
+
+.board-head__controls > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .board-head__controls .toolbar {

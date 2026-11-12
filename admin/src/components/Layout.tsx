@@ -1,4 +1,4 @@
-import { CaretDoubleLeft, CaretDoubleRight, List, MagnifyingGlass, SignOut, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, MagnifyingGlass, SignOut, UserCircle, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -15,8 +15,9 @@ import { LogoMark } from './LogoMark';
 import { Button, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
-import { isCurrent, NAV_GROUPS, shownTo } from '../navigation/sections';
+import { isCurrent, mainItemsFor, NAV_GROUPS, type NavItem, phoneTabsFor, shownTo } from '../navigation/sections';
 import { staffLayout } from '../auth/roles';
+import type { UserRole } from '../services/types';
 import { StaffLayout } from './StaffLayout';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
@@ -24,13 +25,29 @@ import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 const COLLAPSED_KEY = '4vd.sidebar.collapsed';
+const MORE_KEY = '4vd.sidebar.more';
 
-function readCollapsed(): boolean {
+function readYes(key: string): boolean {
   try {
-    return localStorage.getItem(COLLAPSED_KEY) === 'yes';
+    return localStorage.getItem(key) === 'yes';
   } catch {
     return false;
   }
+}
+
+function saveYes(key: string, yes: boolean) {
+  try {
+    localStorage.setItem(key, yes ? 'yes' : 'no');
+  } catch {
+    // Blocked storage: remembered for this visit only.
+  }
+}
+
+/** Whether the page is one of those under the owner's More. */
+function underMore(role: UserRole, pathname: string): boolean {
+  const main = mainItemsFor(role);
+  if (!main) return false;
+  return NAV_GROUPS.some((group) => group.items.some((item) => shownTo(role, item) && !main.includes(item) && isCurrent(item, pathname)));
 }
 
 /** The signed-in frame: the full dashboard, or the simple staff one for the counter staff. */
@@ -51,19 +68,32 @@ function FullLayout() {
   const navigate = useNavigate();
   const t = useT();
 
-  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [collapsed, setCollapsed] = useState(() => readYes(COLLAPSED_KEY));
+  const [moreOpen, setMoreOpen] = useState(() => readYes(MORE_KEY) || underMore(user.role, location.pathname));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   function toggleCollapsed() {
     const next = !collapsed;
     setCollapsed(next);
-    try {
-      localStorage.setItem(COLLAPSED_KEY, next ? 'yes' : 'no');
-    } catch {
-      // Blocked storage: remembered for this visit only.
-    }
+    saveYes(COLLAPSED_KEY, next);
   }
+
+  function toggleMore() {
+    setMoreOpen(!moreOpen);
+    saveYes(MORE_KEY, !moreOpen);
+  }
+
+  // The menu: everything, grouped by the job; or, for the owner, the pages they
+  // look at, with the rest under More.
+  const groups = NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => shownTo(user.role, item)) })).filter(
+    (group) => group.items.length > 0,
+  );
+  const mainItems = mainItemsFor(user.role);
+  const restGroups = mainItems
+    ? groups.map((group) => ({ ...group, items: group.items.filter((item) => !mainItems.includes(item)) })).filter((group) => group.items.length > 0)
+    : groups;
+  const showRest = !mainItems || moreOpen;
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
@@ -85,6 +115,8 @@ function FullLayout() {
   if (location.pathname !== lastPath) {
     setLastPath(location.pathname);
     setDrawerOpen(false);
+    // A page under More opens More, so the menu shows where you are.
+    if (underMore(user.role, location.pathname)) setMoreOpen(true);
   }
 
   // On a short screen the menu scrolls: keep the page you are on in view.
@@ -115,23 +147,37 @@ function FullLayout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const navLink = (item: NavItem) => {
+    const count = item.badge === 'inbox' ? inboxCount : 0;
+    const ItemIcon = item.icon;
+    const label = t.nav.items[item.key];
+    const current = isCurrent(item, location.pathname);
+    return (
+      <Link
+        key={item.to}
+        to={item.to}
+        className={current ? 'sidebar__link active' : 'sidebar__link'}
+        aria-current={current ? 'page' : undefined}
+        title={collapsed ? label : undefined}
+      >
+        <ItemIcon size={18} className="sidebar__icon" aria-hidden="true" />
+        <span className="sidebar__label">{label}</span>
+        {count > 0 && (
+          <>
+            <span className="sidebar__badge" aria-hidden="true">
+              {count}
+            </span>
+            <span className="visually-hidden">{t.nav.waiting(count)}</span>
+          </>
+        )}
+      </Link>
+    );
+  };
+
   return (
     <div className={collapsed ? 'app app--collapsed' : 'app'}>
       <SkipLink />
       <header className={scrolled ? 'topbar topbar--glass' : 'topbar'}>
-        <Tooltip label={t.nav.openMenu} side="bottom">
-          <button
-            ref={menuButton}
-            type="button"
-            className="button button--ghost button--icon topbar__menu"
-            aria-label={t.nav.openMenu}
-            aria-expanded={drawerOpen}
-            aria-controls="sidebar"
-            onClick={() => setDrawerOpen(true)}
-          >
-            <List size={20} aria-hidden="true" />
-          </button>
-        </Tooltip>
         <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
           <LogoMark size={36} />
         </Link>
@@ -184,38 +230,31 @@ function FullLayout() {
           <Button variant="ghost" icon={X} aria-label={t.nav.closeMenu} onClick={closeDrawer} />
         </div>
         <nav className="sidebar__nav" aria-label={t.nav.main}>
-          {NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => shownTo(user.role, item)) }))
-            .filter((group) => group.items.length > 0)
-            .map((group) => (
-            <div key={group.key} className="sidebar__group">
-              <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
-              {group.items.map((item) => {
-                const count = item.badge === 'inbox' ? inboxCount : 0;
-                const ItemIcon = item.icon;
-                const label = t.nav.items[item.key];
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={isCurrent(item, location.pathname) ? 'sidebar__link active' : 'sidebar__link'}
-                    aria-current={isCurrent(item, location.pathname) ? 'page' : undefined}
-                    title={collapsed ? label : undefined}
-                  >
-                    <ItemIcon size={18} className="sidebar__icon" aria-hidden="true" />
-                    <span className="sidebar__label">{label}</span>
-                    {count > 0 && (
-                      <span
-                        className="sidebar__badge"
-                        aria-label={t.nav.waiting(count)}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+          {mainItems && <div className="sidebar__group">{mainItems.map(navLink)}</div>}
+          {mainItems && (
+            <button
+              type="button"
+              className={showRest ? 'sidebar__link sidebar__more sidebar__more--open' : 'sidebar__link sidebar__more'}
+              aria-expanded={showRest}
+              aria-controls={showRest ? 'sidebar-more' : undefined}
+              title={collapsed ? t.nav.more : undefined}
+              onClick={toggleMore}
+            >
+              <DotsThree size={18} weight="bold" className="sidebar__icon" aria-hidden="true" />
+              <span className="sidebar__label">{t.nav.more}</span>
+              <CaretDown size={12} weight="bold" className="sidebar__more-caret" aria-hidden="true" />
+            </button>
+          )}
+          {showRest && (
+            <div id="sidebar-more" className="sidebar__rest">
+              {restGroups.map((group) => (
+                <div key={group.key} className="sidebar__group">
+                  <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
+                  {group.items.map(navLink)}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </nav>
         <Tooltip label={collapsed ? t.nav.expand : t.nav.collapseMenu} side="top">
           <button
@@ -239,6 +278,44 @@ function FullLayout() {
           </ErrorBoundary>
         </div>
       </main>
+      {/* On a phone: the pages used most along the bottom, in thumb reach; Menu opens the rest. */}
+      <nav className="tab-bar" aria-label={t.nav.quickBar}>
+        {phoneTabsFor(user.role).map((item) => {
+          const TabIcon = item.icon;
+          const current = isCurrent(item, location.pathname);
+          const count = item.badge === 'inbox' ? inboxCount : 0;
+          return (
+            <Link key={item.to} to={item.to} className={current ? 'tab-bar__tab active' : 'tab-bar__tab'} aria-current={current ? 'page' : undefined}>
+              <span className="tab-bar__icon">
+                <TabIcon size={22} weight={current ? 'fill' : 'regular'} aria-hidden="true" />
+                {count > 0 && (
+                  <>
+                    <span className="tab-bar__badge" aria-hidden="true">
+                      {count}
+                    </span>
+                    <span className="visually-hidden">{t.nav.waiting(count)}</span>
+                  </>
+                )}
+              </span>
+              <span>{t.nav.items[item.key]}</span>
+            </Link>
+          );
+        })}
+        <button
+          ref={menuButton}
+          type="button"
+          className={drawerOpen ? 'tab-bar__tab active' : 'tab-bar__tab'}
+          aria-label={t.nav.openMenu}
+          aria-expanded={drawerOpen}
+          aria-controls="sidebar"
+          onClick={() => setDrawerOpen(true)}
+        >
+          <span className="tab-bar__icon">
+            <List size={22} aria-hidden="true" />
+          </span>
+          <span aria-hidden="true">{t.nav.menuTab}</span>
+        </button>
+      </nav>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );

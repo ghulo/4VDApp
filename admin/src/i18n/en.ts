@@ -128,6 +128,9 @@ export const en = {
     expand: 'Expand the menu',
     collapseMenu: 'Collapse the menu',
     collapse: 'Collapse',
+    more: 'More',
+    menuTab: 'Menu',
+    quickBar: 'Main pages',
   },
   push: {
     title: 'Alerts',

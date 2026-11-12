@@ -157,7 +157,7 @@ kbd.kbd {
 
 .toasts {
   position: fixed;
-  inset-block-end: var(--space-5);
+  inset-block-end: calc(var(--space-5) + var(--bottom-bar-h, 0px));
   inset-inline-end: var(--space-5);
   z-index: var(--z-toast);
   pointer-events: none;

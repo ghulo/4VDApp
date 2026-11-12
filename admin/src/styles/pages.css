@@ -523,7 +523,7 @@
    scrolls: a sticky glass bar (DESIGN.md 8.1). */
 form.product-form > .form-actions {
   position: sticky;
-  bottom: 0;
+  bottom: var(--bottom-bar-h, 0px);
   z-index: 4;
   margin: 0 calc(-1 * var(--space-2));
   padding: var(--space-3) var(--space-2);
@@ -1815,7 +1815,7 @@ form.product-form > .form-actions {
 
 .ask-composer {
   position: sticky;
-  bottom: 0;
+  bottom: var(--bottom-bar-h, 0px);
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-6) var(--space-4);

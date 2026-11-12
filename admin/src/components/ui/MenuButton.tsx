@@ -7,6 +7,8 @@ import { Tooltip } from './Tooltip';
 export interface MenuItem {
   label: string;
   icon?: Icon;
+  /** The key that does the same, shown at the end of the line. */
+  shortcut?: string;
   onSelect: () => void;
 }
 
@@ -116,6 +118,7 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
                   }}
                   type="button"
                   role="menuitem"
+                  aria-keyshortcuts={item.shortcut}
                   tabIndex={-1}
                   className="menu__item"
                   onClick={() => {
@@ -125,6 +128,11 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
                 >
                   {ItemIcon && <ItemIcon size={16} aria-hidden="true" />}
                   {item.label}
+                  {item.shortcut && (
+                    <kbd className="menu__shortcut" aria-hidden="true">
+                      {item.shortcut}
+                    </kbd>
+                  )}
                 </button>
               </li>
             );

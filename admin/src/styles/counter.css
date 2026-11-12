@@ -631,9 +631,16 @@
 }
 
 .counter-table td {
-  padding: var(--space-2) var(--space-3);
+  /* Read from arm's length while a customer waits: roomier rows, and the
+     product, quantity, price and total a step up from body text. */
+  padding: var(--space-3);
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
+}
+
+.counter-table .counter-row__pick,
+.counter-table td.counter-table__num:not(.counter-table__rabat, .counter-table__vat, .counter-table__left) {
+  font-size: var(--text-lg);
 }
 
 .counter-table .counter-table__num {
@@ -662,7 +669,7 @@
 }
 
 .counter-table td.counter-table__total {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .counter-table td:last-child,
@@ -1206,6 +1213,11 @@
 }
 
 /* The chosen line's four keys: one row, the icon over its name, the shortcut in the corner. */
+/* An odd one out at the end (Cancel the basket) takes the whole row, so no gap is left beside it. */
+.counter-group:not(.counter-group--line) .counter-key:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 .counter-group--line .counter-keys {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -1561,7 +1573,9 @@
     padding-left: var(--space-3);
   }
 
-  .counter-table td.counter-table__qty {
+  .counter-table td.counter-table__qty,
+  .counter-table .counter-row__pick,
+  .counter-table td.counter-table__num:not(.counter-table__rabat, .counter-table__vat, .counter-table__left) {
     font-size: var(--text-base);
   }
 
@@ -1576,6 +1590,10 @@
   /* A keypad: three across, the icon over its name. */
   .counter-keys {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .counter-group:not(.counter-group--line) .counter-key:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 
   .counter-key {

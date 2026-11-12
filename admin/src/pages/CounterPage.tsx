@@ -729,7 +729,14 @@ export function CounterPage() {
 
   // Reports and the drawer are needed once or twice a day, so they live in one menu in the bar.
   const reportsReady = keysEnabled && canPrint && printer.reach !== 'off';
+  // So do the day's invoices and refunds: jobs between customers, not during a sale (F1 and F7 still open them).
   const tillItems: MenuItem[] = [
+    ...(keysEnabled && online
+      ? [
+          { label: t.counter.invoicesKey, icon: Receipt, shortcut: 'F1', onSelect: () => startPanel('invoices') },
+          { label: t.counter.refund, icon: ArrowCounterClockwise, shortcut: 'F7', onSelect: openRefund },
+        ]
+      : []),
     ...(reportsReady
       ? [
           { label: t.counter.xReport, icon: Printer, onSelect: () => void runReport('x') },
@@ -1045,8 +1052,6 @@ export function CounterPage() {
                 <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
                 <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
-                <CounterKey icon={Receipt} label={t.counter.invoicesKey} hotkey="F1" disabled={!keysEnabled || !online} onClick={() => startPanel('invoices')} />
-                <CounterKey icon={ArrowCounterClockwise} label={t.counter.refund} hotkey="F7" disabled={!keysEnabled || !online} onClick={openRefund} />
               </KeyGroup>
 
               <div className="counter-side__foot">

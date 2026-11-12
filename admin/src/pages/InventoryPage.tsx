@@ -313,11 +313,22 @@ function runwayClass(row: ReorderSuggestion): string | undefined {
   return undefined;
 }
 
+/** The server's forecast stops at a year (forecast.ts MAX_FORECAST_DAYS). */
+const YEAR_OR_MORE = 365;
+
 /** How long the stock lasts, kept to one line: "189 days ↓", with the full sentence on hover and for screen readers. */
 function Runway({ row }: { row: ReorderSuggestion }) {
   const t = useT();
   const sentence = describeRunway(t, row);
   if (row.quantity <= 0 || row.daysLeft === null || row.daysLeft === 0) return <span className={runwayClass(row)}>{sentence}</span>;
+  // The forecast stops counting at a year, so 365 means "longer": say that, not a number that looks exact.
+  if (row.daysLeft >= YEAR_OR_MORE) {
+    return (
+      <span className={runwayClass(row)} title={sentence}>
+        {t.inventory.overYear}
+      </span>
+    );
+  }
   const arrow = row.trend === 'rising' ? '↑' : row.trend === 'falling' ? '↓' : null;
   return (
     <span className={runwayClass(row)} title={sentence}>
@@ -334,6 +345,7 @@ function describeRunway(t: Catalogue, row: ReorderSuggestion): string {
   if (row.quantity <= 0) return t.inventory.soldOutNow;
   if (row.daysLeft === null) return t.inventory.noRecentSales;
   if (row.daysLeft === 0) return t.inventory.today;
+  if (row.daysLeft >= YEAR_OR_MORE) return t.inventory.overYearLong;
   const trend = row.trend === 'rising' ? t.inventory.faster : row.trend === 'falling' ? t.inventory.slower : '';
   return t.inventory.about(row.daysLeft, trend);
 }

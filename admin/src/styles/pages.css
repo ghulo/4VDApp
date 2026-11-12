@@ -191,14 +191,16 @@
   text-wrap: balance;
 }
 
-/* The logo, big, at the hero's right: the one place it is shown large inside the app. */
+/* The logo at the hero's right, the one place it is shown larger inside the app.
+   Kept below the greeting's weight: the day's news leads, the logo signs it. */
 .overview-hero__mark {
   flex: none;
+  align-self: flex-start;
   line-height: 0;
 }
 
 .overview-hero__mark .logo-mark {
-  width: clamp(112px, 13vw, 176px);
+  width: clamp(72px, 7vw, 104px);
   height: auto;
 }
 

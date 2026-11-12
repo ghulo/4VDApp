@@ -1822,6 +1822,8 @@ export const sq: Catalogue = {
     slower: ', po shitet më ngadalë',
     about: (days, trend) => `Rreth ${days} ditë${trend}`,
     daysLeft: (days) => `${days} ditë`,
+    overYear: 'Mbi një vit',
+    overYearLong: 'Mjafton për më shumë se një vit me këtë ritëm',
     sku: (sku) => `SKU ${sku}`,
     onShelf: 'Në raft',
     outWarning: 'Mbaroi stoku',

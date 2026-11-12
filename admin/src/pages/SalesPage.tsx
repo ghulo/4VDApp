@@ -75,7 +75,7 @@ function PeriodSummary({ range }: { range: Parameters<typeof reportsApi.summary>
 
   return (
     <section className="sales-summary" aria-label={t.sales.period} aria-busy={summary.isFetching}>
-      <MetricGrid>
+      <MetricGrid title={t.sales.period}>
         <MetricCard
           label={t.sales.revenue}
           value={formatHeadlineMoney(current.revenue)}

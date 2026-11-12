@@ -116,7 +116,7 @@ function OverviewHero() {
         <TodayCard />
       </div>
       <div className="overview-hero__mark">
-        <LogoMark size={176} />
+        <LogoMark size={104} />
       </div>
     </header>
   );

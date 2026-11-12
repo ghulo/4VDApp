@@ -30,7 +30,7 @@ export function ProductStockTab() {
   const item = query.data;
   return (
     <>
-      <ExpiryCard productId={item.productId} />
+      <ExpiryCard productId={item.productId} place="top" />
 
       <div className="split">
         <Card title={t.inventory.onShelf}>
@@ -53,6 +53,8 @@ export function ProductStockTab() {
 
         <StockHistoryCard item={item} />
       </div>
+
+      <ExpiryCard productId={item.productId} place="end" />
     </>
   );
 }

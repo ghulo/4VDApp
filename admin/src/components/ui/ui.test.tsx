@@ -296,6 +296,21 @@ describe('Badge, StatTile and EmptyState', () => {
     expect(html).toMatch(/<label class="field[^"]*">/);
     expect(html).toContain('Shown in emails.');
     expect(html).toContain('role="alert"');
+    expect(html).toContain('aria-invalid="true"');
+    const describedBy = /aria-describedby="([^"]+)"/.exec(html)?.[1].split(' ') ?? [];
+    expect(describedBy).toHaveLength(2);
+    for (const id of describedBy) expect(html).toContain(`id="${id}"`);
+  });
+
+  it('should leave a field without hint or error untouched', () => {
+    const html = render(
+      <Field label="Shop name">
+        <input />
+      </Field>,
+    );
+
+    expect(html).not.toContain('aria-describedby');
+    expect(html).not.toContain('aria-invalid');
   });
 
   it('should draw the logo tile with its house, hidden from screen readers', () => {

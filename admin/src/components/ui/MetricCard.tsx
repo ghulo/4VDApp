@@ -96,9 +96,10 @@ function ChangeArrow({ direction }: { direction: keyof typeof ARROWS }) {
 }
 
 /** Metric cards in a grid: large cards take two columns, everything stacks on a phone. */
-export function MetricGrid({ children }: { children: ReactNode }) {
+export function MetricGrid({ children, title }: { children: ReactNode; /** A heading for screen readers, where the figures sit right under the page title (the cards' own labels are h3). */ title?: string }) {
   return (
     <div className="metric-grid-room">
+      {title && <h2 className="visually-hidden">{title}</h2>}
       <div className="metric-grid">{children}</div>
     </div>
   );

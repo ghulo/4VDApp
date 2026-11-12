@@ -1,6 +1,6 @@
-import { SignOut } from '@phosphor-icons/react';
+import { SignOut, UserCircle } from '@phosphor-icons/react';
 import { Suspense } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { STAFF_TABS, staffTabFor } from '../navigation/staff';
@@ -9,7 +9,7 @@ import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
-import { Button } from './ui';
+import { MenuButton } from './ui';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
 /**
@@ -21,6 +21,7 @@ export function StaffLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   useFocusOnRouteChange();
   const t = useT();
   const current = staffTabFor(location.pathname);
@@ -50,10 +51,16 @@ export function StaffLayout() {
         <div className="staff-app__wide-tabs">{tabs}</div>
         <div className="topbar__end">
           <ThemeSwitch persist compact />
-          <NavLink to="/profile" className="topbar__user" aria-label={t.nav.yourProfile(user.name)}>
-            <Avatar name={user.name} url={user.avatarUrl} size={28} />
-          </NavLink>
-          <Button variant="ghost" icon={SignOut} aria-label={t.nav.logOut} title={t.nav.logOut} onClick={logout} />
+          {/* Log out sits behind the avatar, as in the full dashboard: a key of its own beside it was one stray tap from signing out. */}
+          <MenuButton
+            label={t.nav.yourProfile(user.name)}
+            face={<Avatar name={user.name} url={user.avatarUrl} size={28} />}
+            faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
+            items={[
+              { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },
+              { label: t.nav.logOut, icon: SignOut, onSelect: logout },
+            ]}
+          />
         </div>
       </header>
       <main className="main staff-app__main" id={MAIN_ID} tabIndex={-1}>

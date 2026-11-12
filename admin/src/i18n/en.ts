@@ -1841,6 +1841,8 @@ export const en = {
     slower: ', selling slower',
     about: (days: number, trend: string) => `About ${days} ${days === 1 ? 'day' : 'days'}${trend}`,
     daysLeft: (days: number) => `${days} ${days === 1 ? 'day' : 'days'}`,
+    overYear: 'Over a year',
+    overYearLong: 'Lasts more than a year at this pace',
     sku: (sku: string) => `SKU ${sku}`,
     onShelf: 'On the shelf',
     outWarning: 'Out of stock',

@@ -15,7 +15,13 @@ const formatDay = (day: string) =>
   formatDateWith(new Date(`${day}T00:00:00Z`), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** When this product's stock expires, and marking it dealt with. */
-export function ExpiryCard({ productId }: { productId: number }) {
+/**
+ * A product's expiry dates. Split in two on the product page: with dates it is
+ * a card at the top (place="top"), where a date running out can't be missed;
+ * with none it is a quiet key under the stock cards (place="end") instead of a
+ * stray link above them. Without a place it shows whichever case applies.
+ */
+export function ExpiryCard({ productId, place }: { productId: number; place?: 'top' | 'end' }) {
   const t = useT();
   const queryClient = useQueryClient();
   const expiry = useQuery({ queryKey: ['expiry', productId], queryFn: () => expiryApi.forProduct(productId) });
@@ -45,6 +51,9 @@ export function ExpiryCard({ productId }: { productId: number }) {
   }
 
   const hasDates = (expiry.data?.length ?? 0) > 0;
+  // Each place shows only its own case; both read the same cached list.
+  if (place === 'top' && !hasDates && !expiry.isError) return null;
+  if (place === 'end' && (hasDates || expiry.isPending || expiry.isError)) return null;
   if (!hasDates && !adding && !expiry.isPending && !expiry.isError) {
     return (
       <div className="form-actions">

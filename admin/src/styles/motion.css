@@ -149,6 +149,24 @@
     animation: fade var(--spring-time) var(--spring) 300ms backwards;
   }
 
+  /* While it waits, a slow wave runs down the placeholder, one piece a beat
+     after the other, so a slow answer never looks frozen. The one loop in
+     4VD: opacity only, and gone under reduced motion. */
+  .skeleton [style*='--i'] {
+    animation: skeleton-wave 1.8s ease-in-out infinite;
+    animation-delay: calc(300ms + var(--i) * 110ms);
+  }
+
+  @keyframes skeleton-wave {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+
   .palette-backdrop,
   .column-chart__slot:hover .column-chart__tip {
     animation: fade var(--fast) var(--ease);

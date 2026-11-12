@@ -140,6 +140,7 @@ export function KitPage() {
             <Loading />
           </Card>
         </div>
+        <Skeleton kind="page" rows={3} />
       </Section>
 
       <Section title="Charts">

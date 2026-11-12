@@ -849,7 +849,7 @@ All in `admin/src/components/ui`, styles in `kit.css`, shown on `/kit` (managers
 - **Toast** (`useToast`): a short message after an action, bottom corner (bottom middle on phones), 5s, 9s with Undo, held while pointed at. Problems to fix stay on the page.
 - **Kbd**: keycaps; every `<kbd>` is a cap.
 - **Steps**: done ticked in ink, current with an amber ring, next quiet; phones show "Step 2 of 4".
-- **Skeleton**: still sunk-paper lines or table rows (no shimmer). `Loading` without a label draws it.
+- **Skeleton**: the shape of what is coming, as grooves set into the page (sunk paper + `--shadow-inset`): lines in a card or sheet, two-line rows with a figure in a table or under a page header, and title + figure strip + table tray when the whole page waits. `Loading` without a label draws it and picks the shape from where it sits.
 - **AreaChart, DonutChart (5 parts, rest is Other), Heatmap (a real table), FunnelChart**: amber data steps.
 - **Board**: columns of cards; drag on a computer, "Move to" everywhere.
 - **Calendar**: a Monday-first month, arrows/Page keys, today in amber, dots on phones.
@@ -899,10 +899,10 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
     project the flick to decide close or stay, starting at the finger's speed.
     Vertical drags still scroll; fields stay free for text selection.
   - Keys sink into their edge on press. Charts grow in once from their base.
-    "Loading" waits 300ms, so a quick answer never flashes it. Light/dark
+    "Loading" waits 300ms, so a quick answer never flashes it; then a slow wave (opacity, 1.8s, a beat per row) runs down the skeleton so a slow answer never looks frozen. Light/dark
     cross-fades.
   - Only `transform` and `opacity` move (plus the highlight's size). No
-    bounce, looping motion or parallax.
+    bounce, parallax or looping motion (the loading wave is the one loop).
 - WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
 - Keyboard: every action reachable, visible focus, one tab stop per chart
   (arrows walk the data), dialogs trap focus and return it.

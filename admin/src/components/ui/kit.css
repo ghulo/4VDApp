@@ -379,21 +379,48 @@ kbd.kbd {
 }
 
 /* ---------- Skeleton ----------
-   Sunk paper in the shape of what is coming; still, no shimmer. */
+   The shape of what is coming, set into the page like an empty mould: each
+   bar is a groove (sunk paper, shaded under its lip, as fields are). A whole
+   page waiting gets its title, a figure strip and a table tray. The wave
+   down the pieces lives in motion.css. */
 
-.skeleton {
+.skeleton__shape {
   display: grid;
   gap: var(--space-3);
 }
 
 .skeleton__bar {
   display: block;
-  block-size: var(--space-3);
+  block-size: 10px;
   border-radius: var(--radius-stamp);
   background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
 }
 
-.skeleton--table {
+.skeleton__bar--meta {
+  block-size: 8px;
+  opacity: 0.65;
+}
+
+.skeleton__bar--figure {
+  flex: none;
+  inline-size: 56px;
+}
+
+.skeleton__bar--title {
+  block-size: 26px;
+  inline-size: min(280px, 60%);
+  border-radius: var(--radius-small);
+}
+
+.skeleton__bar--number {
+  block-size: 22px;
+  inline-size: 64%;
+  border-radius: var(--radius-small);
+}
+
+.skeleton--table .skeleton__shape,
+.skeleton__panel {
   gap: 0;
 }
 
@@ -402,13 +429,61 @@ kbd.kbd {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
-  padding-block: var(--space-3);
+  padding-block: var(--space-4);
   border-bottom: 1px solid var(--line);
 }
 
-.skeleton__bar--figure {
-  flex: none;
-  inline-size: 64px;
+.skeleton__row:last-child {
+  border-bottom: 0;
+}
+
+.skeleton__stack {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* ----- A whole page ----- */
+
+.skeleton--page {
+  padding-top: 0;
+}
+
+.skeleton--page .skeleton__shape {
+  gap: var(--gap-block);
+}
+
+.skeleton__head {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.skeleton__tiles,
+.skeleton__panel {
+  display: grid;
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.skeleton__tiles {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  overflow: hidden;
+}
+
+/* Hairlines between the figures, as the real strip draws them. */
+.skeleton__tile {
+  display: grid;
+  gap: var(--space-3);
+  margin: -1px 0 0 -1px;
+  padding: var(--space-4) var(--inset-panel);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.skeleton__panel {
+  padding-inline: var(--inset-panel);
 }
 
 /* ---------- Area chart ---------- */

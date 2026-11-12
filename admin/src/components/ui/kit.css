@@ -754,7 +754,7 @@ kbd.kbd {
 
 /* ---------- Board ---------- */
 
-.board {
+.kanban {
   position: relative;
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
@@ -762,7 +762,7 @@ kbd.kbd {
   gap: var(--space-4);
 }
 
-.board__column {
+.kanban__column {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -774,11 +774,11 @@ kbd.kbd {
   transition: box-shadow var(--fast) var(--ease);
 }
 
-.board__column--over {
+.kanban__column--over {
   box-shadow: var(--shadow-inset), inset 0 0 0 2px var(--focus);
 }
 
-.board__heading {
+.kanban__heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -788,7 +788,7 @@ kbd.kbd {
   font-weight: 600;
 }
 
-.board__count {
+.kanban__count {
   min-inline-size: var(--space-5);
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
@@ -799,7 +799,7 @@ kbd.kbd {
   text-align: center;
 }
 
-.board__cards {
+.kanban__cards {
   display: grid;
   gap: var(--space-2);
   margin: 0;
@@ -807,7 +807,7 @@ kbd.kbd {
   list-style: none;
 }
 
-.board__card {
+.kanban__card {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
@@ -820,19 +820,19 @@ kbd.kbd {
     opacity var(--fast) var(--ease);
 }
 
-.board__card:hover {
+.kanban__card:hover {
   box-shadow: var(--shadow-raise-hover);
 }
 
-.board__card--lifted {
+.kanban__card--lifted {
   opacity: 0.5;
 }
 
-.board__card .menu-button {
+.kanban__card .menu-button {
   justify-self: end;
 }
 
-.board__empty {
+.kanban__empty {
   margin: 0;
   padding: var(--space-4) var(--space-2);
   color: var(--ink-muted);
@@ -842,7 +842,7 @@ kbd.kbd {
 
 @media (max-width: 900px) {
   /* A column at a time, side by side, snapping as you swipe. */
-  .board {
+  .kanban {
     grid-auto-columns: minmax(260px, 85%);
     padding-block-end: var(--space-2);
     overflow-x: auto;
@@ -850,7 +850,7 @@ kbd.kbd {
     scroll-snap-type: x mandatory;
   }
 
-  .board__column {
+  .kanban__column {
     scroll-snap-align: start;
   }
 }

@@ -30,7 +30,9 @@ interface MetricCardProps {
 export function MetricCard({ label, value, change, series, large, to, hint }: MetricCardProps) {
   const t = useT();
   const headingId = useId();
-  const direction = change === undefined ? undefined : changeDirection(change);
+  // Down to nothing is always "↘100%", which says no more than the €0 beside it
+  // and reads as an alarm on a quiet day, so no badge.
+  const direction = change === undefined || change === -1 ? undefined : changeDirection(change);
   const bars = series ? sparkBars(series) : null;
   const muchMore = change !== undefined && change !== null && change > MUCH_MORE;
 

@@ -1,5 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
-import { Children, type ReactNode } from 'react';
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 /**
@@ -8,13 +8,55 @@ import { Link } from 'react-router';
  * fill: never 3 + 1 with an empty corner (see .stat-grid in ui.css).
  */
 export function StatGrid({ children, compact }: { children: ReactNode; /** One slim strip of figures over a ledger, instead of tall tiles. */ compact?: boolean }) {
-  const count = Children.toArray(children).length;
+  const tiles = Children.toArray(children);
+  // Two or more tiles that only say "None low", "Nothing out" fold into one cell
+  // of short lines, so the strip is about the figures that are there.
+  const quiet = tiles.filter(isQuietTile);
+  const fold = quiet.length >= 2;
+  const figures = fold ? tiles.filter((tile) => !quiet.includes(tile as ReactElement<StatTileProps>)) : tiles;
+  const cells = figures.length + (fold ? 1 : 0);
+  const className = ['stat-grid', compact && 'stat-grid--compact', fold && figures.length === 0 && 'stat-grid--all-quiet'].filter(Boolean).join(' ');
   return (
     <div className="stat-grid-room">
-      <div className={compact ? 'stat-grid stat-grid--compact' : 'stat-grid'} data-count={Math.min(count, 6)}>
-        {children}
+      <div className={className} data-count={Math.min(cells, 6)}>
+        {figures}
+        {fold && <QuietTiles tiles={quiet} />}
       </div>
     </div>
+  );
+}
+
+function isQuietTile(node: ReturnType<typeof Children.toArray>[number]): node is ReactElement<StatTileProps> {
+  if (!isValidElement<StatTileProps>(node) || node.type !== StatTile) return false;
+  const { tone = 'default', words, value } = node.props;
+  return tone === 'default' && Boolean(words || isZero(value));
+}
+
+/** The quiet tiles as one cell: a line each, label then what it says; a tile with a page keeps its link. */
+function QuietTiles({ tiles }: { tiles: Array<ReactElement<StatTileProps>> }) {
+  return (
+    <ul className="stat stat-quiet">
+      {tiles.map((tile) => {
+        const { label, words, value, to } = tile.props;
+        const body = (
+          <>
+            <span className="stat-quiet__label">{label}</span>
+            <span className="stat-quiet__words">{words || String(value)}</span>
+          </>
+        );
+        return (
+          <li key={tile.key ?? label}>
+            {to ? (
+              <Link to={to} className="stat-quiet__row stat-quiet__row--link">
+                {body}
+              </Link>
+            ) : (
+              <span className="stat-quiet__row">{body}</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -47,14 +47,14 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
   };
 
   return (
-    <div className="board" role="region" aria-label={label}>
+    <div className="kanban" role="region" aria-label={label}>
       {columns.map((column) => {
         const inColumn = cards.filter((card) => card.column === column.key);
-        const headingId = `board-${column.key}`;
+        const headingId = `kanban-${column.key}`;
         return (
           <section
             key={column.key}
-            className={over === column.key ? 'board__column board__column--over' : 'board__column'}
+            className={over === column.key ? 'kanban__column kanban__column--over' : 'kanban__column'}
             aria-labelledby={headingId}
             onDragOver={(event) => {
               if (!dragging) return;
@@ -66,18 +66,18 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
             }}
             onDrop={(event) => drop(event, column.key)}
           >
-            <h3 id={headingId} className="board__heading">
+            <h3 id={headingId} className="kanban__heading">
               {column.title}
-              <span className="board__count">{inColumn.length}</span>
+              <span className="kanban__count">{inColumn.length}</span>
             </h3>
             {inColumn.length === 0 ? (
-              <p className="board__empty">{emptyText ?? t.kit.nothingHere}</p>
+              <p className="kanban__empty">{emptyText ?? t.kit.nothingHere}</p>
             ) : (
-              <ul className="board__cards">
+              <ul className="kanban__cards">
                 {inColumn.map((card) => (
                   <li
                     key={card.key}
-                    className={dragging === card.key ? 'board__card board__card--lifted' : 'board__card'}
+                    className={dragging === card.key ? 'kanban__card kanban__card--lifted' : 'kanban__card'}
                     draggable
                     onDragStart={(event) => {
                       event.dataTransfer.setData('text/plain', card.key);
@@ -89,7 +89,7 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
                       setOver(null);
                     }}
                   >
-                    <div className="board__content">{card.content}</div>
+                    <div className="kanban__content">{card.content}</div>
                     <MenuButton
                       label={t.kit.moveTo}
                       icon={ArrowRight}

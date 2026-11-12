@@ -612,7 +612,17 @@ The canvas weave is faint (1.2% light, 1% dark).
 - Dashboard: 56px top bar; 232px sidebar (60px collapsed; a drawer under 900px);
   content column max 1600px on every page (`--frame-wide`, 3.8; the Windows
   app's own download and welcome pages keep 1120px, `--frame-reading`); page padding 32/48 desktop, 32/24 under 1100px,
-  24/16 under 900px. Sections stack 16px apart.
+  24/16 under 900px.
+- **Rhythm: tight inside, generous between.** Blocks on a page (a figure strip,
+  a table, a card) sit `--gap-block` apart (32px, 24px on phones); a section
+  with its own heading sits `--gap-section` apart (48px, 32px on phones). Inside a
+  block, keep the 4-16px steps. Text sits `--inset-panel` (24px, 16px on phones)
+  from a panel's side, the same in tables, toolbars, figure strips and cards, so
+  their left edges line up. One even 16px everywhere made every page read as one
+  crowded stack (review 2026-11-12).
+- **Quiet figures fold.** Two or more tiles that only say "None low", "Nothing
+  out" become one cell of short lines (StatGrid does it), and a change badge is
+  left off when a figure dropped to nothing ("↘100%" says no more than the €0).
 - Controls 36px (30px small) on desktop, **44px (36px small) under 900px**. Every tap area on a phone is at least 44px.
 
 ### Two kinds of surface

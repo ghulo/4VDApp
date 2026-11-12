@@ -220,6 +220,13 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
+  /* Page rhythm: blocks on a page (a figure strip, a table, a card) sit a block
+     apart; a new section with its own heading sits further. Inside a block,
+     things keep the tight steps above, so what belongs together reads together. */
+  --gap-block: var(--space-6);
+  --gap-section: var(--space-7);
+  /* How far text sits from a panel's side (tables, toolbars, figure strips, cards). */
+  --inset-panel: var(--space-5);
 
   --control-h: 36px;
   --control-h-sm: 30px;
@@ -267,5 +274,14 @@
     --control-h: 44px;
     --control-h-sm: 44px;
     --text-field: 1rem;
+  }
+}
+
+/* Phones: the same rhythm one step tighter, so a screen still holds a block and a half. */
+@media (max-width: 600px) {
+  :root {
+    --gap-block: var(--space-5);
+    --gap-section: var(--space-6);
+    --inset-panel: var(--space-4);
   }
 }

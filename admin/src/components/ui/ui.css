@@ -288,7 +288,7 @@
 .page-header {
   display: grid;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--line);
 }
@@ -380,7 +380,7 @@
 /* ---------- Card and setting row ---------- */
 
 .card {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--gap-block);
   /* Paper resting just above the ivory canvas. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
@@ -394,7 +394,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5) 0;
+  padding: var(--space-5) var(--inset-panel) 0;
 }
 
 .card__heading {
@@ -419,7 +419,7 @@
 }
 
 .card__body {
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-4) var(--inset-panel) var(--space-5);
 }
 
 /* ---------- Section: a heading on the canvas over a table or list ---------- */
@@ -427,7 +427,7 @@
 .section {
   /* A bare heading needs more air above it than a card edge does. */
   padding-top: var(--space-2);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--gap-section);
 }
 
 .section > .data-table:last-child {
@@ -440,7 +440,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .section__title {
@@ -553,7 +553,7 @@
 
 /* A tray set into the page, like a card. */
 .data-table {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--gap-block);
   border-radius: var(--radius-panel);
   background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
@@ -573,7 +573,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--inset-panel);
   border-bottom: 1px solid var(--line);
 }
 
@@ -620,7 +620,7 @@
 }
 
 .data-table__footer {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--inset-panel);
   border-top: 1px solid var(--line);
 }
 
@@ -678,12 +678,12 @@
 
 .table th:first-child,
 .table td:first-child {
-  padding-left: var(--space-4);
+  padding-left: var(--inset-panel);
 }
 
 .table th:last-child,
 .table td:last-child {
-  padding-right: var(--space-4);
+  padding-right: var(--inset-panel);
 }
 
 .table__numeric,
@@ -861,7 +861,7 @@
    6 sit 6, 3 + 3 or 2 + 2 + 2. */
 .stat-grid-room {
   container-type: inline-size;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--gap-block);
 }
 
 .stat-grid {
@@ -889,6 +889,8 @@
 
 @container (max-width: 520px) {
   .stat-grid[data-count='3'] { --cols: 1; }
+  /* A figure beside the folded quiet lines: the lines need the whole width. */
+  .stat-grid[data-count='2']:has(> .stat-quiet) { --cols: 1; }
   .stat-grid[data-count='6'] { --cols: 2; }
 }
 
@@ -903,7 +905,7 @@
   align-content: start;
   gap: 2px;
   min-width: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--inset-panel);
   color: var(--ink);
   text-decoration: none;
   /* A hairline on the left and top of every cell. On the panel's outer edge
@@ -985,6 +987,62 @@
    with the explaining line dropped so the real figures lead. */
 .stat--quiet .stat__hint {
   display: none;
+}
+
+/* Two or more of those fold into one cell of short lines (StatGrid), so the
+   panel is about the figures there are. With no figures at all it is one
+   slim line across. */
+.stat-quiet {
+  align-content: center;
+  gap: var(--space-1);
+  margin: 0;
+  list-style: none;
+}
+
+.stat-quiet__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.stat-quiet__label {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.stat-quiet__words {
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.stat-quiet__row--link {
+  border-radius: var(--radius-small);
+  transition: color var(--fast) var(--ease);
+}
+
+.stat-quiet__row--link:hover .stat-quiet__words,
+.stat-quiet__row--link:focus-visible .stat-quiet__words {
+  color: var(--ink);
+}
+
+.stat-quiet__row--link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.stat-grid--all-quiet .stat-quiet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  padding-block: var(--space-3);
+}
+
+.stat-grid--all-quiet .stat-quiet__row {
+  justify-content: flex-start;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1329,8 +1387,8 @@ input.switch:focus-visible {
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--space-4);
+  margin-bottom: var(--gap-block);
 }
 
 .metric {

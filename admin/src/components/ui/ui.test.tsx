@@ -218,6 +218,13 @@ describe('MetricCard', () => {
     expect(html).not.toContain('None before');
     expect(html).not.toContain('%');
   });
+
+  it('should leave the badge off when a figure dropped to nothing', () => {
+    const html = render(<MetricCard label="Revenue" value="€0.00" change={-1} />);
+
+    expect(html).not.toContain('metric__change');
+    expect(html).not.toContain('%');
+  });
 });
 
 describe('Badge, StatTile and EmptyState', () => {
@@ -236,6 +243,35 @@ describe('Badge, StatTile and EmptyState', () => {
     expect(html).toContain('€120.00');
     expect(html).toContain('Sold today');
     expect(html).toMatch(/<a [^>]*href="\/sales"/);
+  });
+
+  it('should fold two or more quiet tiles into one cell of lines and keep their links', () => {
+    const html = render(
+      <StatGrid>
+        <StatTile label="Stock value" value="€12,499" />
+        <StatTile label="Low stock" value={0} words="None low" to="/inventory?status=low" />
+        <StatTile label="Out of stock" value={0} words="Nothing out" />
+      </StatGrid>,
+    );
+
+    expect(html).toContain('data-count="2"');
+    expect(html).toContain('stat-quiet');
+    expect(html).toContain('None low');
+    expect(html).toContain('href="/inventory?status=low"');
+    expect(html).not.toContain('stat--quiet');
+  });
+
+  it('should keep a single quiet tile, or a warning one, as a tile', () => {
+    const html = render(
+      <StatGrid>
+        <StatTile label="Stock value" value="€12,499" />
+        <StatTile label="Low stock" value={0} words="None low" />
+        <StatTile label="Late bills" value={0} words="Check them" tone="warn" />
+      </StatGrid>,
+    );
+
+    expect(html).not.toContain('stat-quiet');
+    expect(html).toContain('data-count="3"');
   });
 
   it('should show the empty state title, body and action', () => {

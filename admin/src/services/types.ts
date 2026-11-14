@@ -901,10 +901,15 @@ export interface Customer extends PartnerDetails {
   nui: string | null;
   phone: string | null;
   note: string | null;
+  /** The owner lets them take goods and pay later, up to `creditLimit`. */
+  payLater: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   discountPercent: number | null;
   balance: number;
+  /** What is past the day they promised to pay, and the earliest such day ("YYYY-MM-DD"). */
+  lateAmount: number;
+  lateSince: string | null;
   /** When the oldest unpaid charge was made; null when nothing is owed. */
   owingSince: string | null;
   lastPaymentAt: string | null;
@@ -952,8 +957,84 @@ export interface RestorePlan {
   changes: FieldChange[];
 }
 
-/** An offer: a price quote printed for a customer before they buy. So far only TREFIN's. */
+export type OfferStatus = 'open' | 'sold' | 'declined';
+
+/** A price quote made in 4VD. */
 export interface Offer {
+  id: number;
+  number: string;
+  at: string;
+  /** "YYYY-MM-DD". */
+  validUntil: string;
+  status: OfferStatus;
+  /** Still open, but past its day. */
+  expired: boolean;
+  customer: { id: number; name: string } | null;
+  name: string;
+  phone: string | null;
+  note: string | null;
+  total: number;
+  lineCount: number;
+  sale: { id: number; number: string } | null;
+  by: string | null;
+}
+
+export interface OfferDetail extends Offer {
+  lines: Array<{ productId: number; productName: string; quantity: number; unitPrice: number; shelfPrice: number; total: number }>;
+  saving: number;
+}
+
+export type DeliveryStatus = 'waiting' | 'on_the_way' | 'delivered';
+
+/** A sale taken to the customer's door. */
+export interface Delivery {
+  id: number;
+  invoice: { id: number; number: string };
+  customerId: number | null;
+  name: string;
+  phone: string | null;
+  address: string;
+  /** "YYYY-MM-DD"; the window "HH:MM". */
+  day: string;
+  timeFrom: string | null;
+  timeTo: string | null;
+  note: string | null;
+  total: number;
+  toCollect: number;
+  status: DeliveryStatus;
+  late: boolean;
+  takenBy: { id: number; name: string } | null;
+  deliveredBy: string | null;
+  deliveredAt: string | null;
+  collected: number | null;
+  lastFailure: string | null;
+  failures: number;
+  lines: Array<{ productName: string; quantity: number }>;
+}
+
+/** A sale taken to the customer, as the Counter sends it. */
+export interface DeliveryInput {
+  name: string;
+  phone: string | null;
+  address: string;
+  day: string;
+  timeFrom: string | null;
+  timeTo: string | null;
+  note: string | null;
+  payment: 'shop' | 'door';
+  paidNow?: number;
+}
+
+export interface PayLaterApproval {
+  token: string;
+  by: string;
+  customerId: number;
+  amount: number;
+  expiresAt: string;
+}
+
+/** An offer from TREFIN, to look at. */
+export interface TrefinOffer {
   id: number;
   number: string | null;
   /** "YYYY-MM-DD". */
@@ -966,7 +1047,7 @@ export interface Offer {
   source: string;
 }
 
-export interface OfferDetail extends Offer {
+export interface TrefinOfferDetail extends TrefinOffer {
   lines: Array<{ productId: number | null; productName: string; quantity: number; unitPrice: number; total: number }>;
 }
 

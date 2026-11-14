@@ -21,3 +21,11 @@ export const rabatApprovalSchema = z.object({
   percent: z.number().positive().max(100).multipleOf(0.01),
   basketId: z.string().min(1).max(64),
 });
+
+export const payLaterApprovalSchema = z.object({
+  userId: idSchema,
+  pin,
+  customerId: idSchema,
+  amount: z.number().positive().max(1_000_000).multipleOf(0.01),
+  basketId: z.string().min(1).max(64),
+});

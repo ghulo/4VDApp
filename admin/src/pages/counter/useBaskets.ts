@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RabatApproval } from '../../services/types';
+import type { DeliveryInput, PayLaterApproval, RabatApproval } from '../../services/types';
 
 export const MAX_BASKETS = 5;
 
@@ -12,6 +12,8 @@ export interface StoredLine {
   discount: string;
   /** The rabat came from typing a new price (F6), so the line says "Price changed". */
   priceSet?: boolean;
+  /** Sold at the price an offer gave the customer; the rabat keys leave it alone. */
+  offerPrice?: number;
 }
 
 export interface Basket {
@@ -24,6 +26,13 @@ export interface Basket {
   discount?: string;
   /** An owner's yes to a rabat over the limit, for this basket and the person who asked. */
   approval?: RabatApproval;
+  /** The offer this basket sells (each line at its offered price), and its number. */
+  offerId?: number | null;
+  offerNumber?: string | null;
+  /** "Deliver it": where and when, and whether the rest is collected at the door. */
+  delivery?: DeliveryInput | null;
+  /** An owner's yes to this customer paying later, for this basket. */
+  payLater?: PayLaterApproval | null;
 }
 
 const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
@@ -89,7 +98,7 @@ export function useBaskets(userId: number) {
   }, []);
 
   /** Change the basket at the till: its customer or its rabat. */
-  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval'>>) => {
+  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater'>>) => {
     setState((now) => ({ ...now, baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, ...patch } : basket)) }));
   }, []);
 

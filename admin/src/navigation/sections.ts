@@ -73,6 +73,7 @@ export const SECTIONS = {
     { to: '/sales', key: 'history', accountant: true },
     { to: '/documents', key: 'invoices', accountant: true },
     { to: '/offers', key: 'offers', accountant: true },
+    { to: '/to-deliver', key: 'toDeliver' },
   ],
   day: [
     { to: '/day', key: 'close' },
@@ -120,7 +121,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     key: 'sell',
     items: [
       { to: '/counter', key: 'counter', icon: CashRegister },
-      { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents', '/offers'], accountant: true },
+      { to: '/sales', key: 'sales', icon: Receipt, also: ['/documents', '/offers', '/to-deliver'], accountant: true },
       { to: '/customers', key: 'customers', icon: AddressBook, accountant: true },
       { to: '/promotions', key: 'promotions', icon: Percent },
     ],

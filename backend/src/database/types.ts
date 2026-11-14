@@ -87,7 +87,7 @@ export interface PinAttemptsTable {
   id: Generated<number>;
   user_id: number | null;
   device_id: string;
-  purpose: 'switch' | 'rabat';
+  purpose: 'switch' | 'rabat' | 'pay_later';
   ok: boolean;
   at: CreatedAt;
 }
@@ -97,7 +97,11 @@ export interface RabatApprovalsTable {
   approved_by: number;
   asked_by: number;
   basket_id: string;
-  percent: Decimal;
+  /** A bigger rabat (`percent`), or a pay-later sale for `customer_id` up to `amount`. */
+  purpose: Generated<'rabat' | 'pay_later'>;
+  percent: ColumnType<string | null, number | null | undefined, never>;
+  customer_id: ColumnType<number | null, number | null | undefined, never>;
+  amount: ColumnType<string | null, number | null | undefined, never>;
   expires_at: Date;
   used_at: Date | null;
   created_at: CreatedAt;
@@ -502,6 +506,8 @@ export interface CustomersTable {
   /** The most they may owe on their tab, and their usual discount, as TREFIN had them. */
   credit_limit: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  /** The owner lets them take goods and pay later, up to `credit_limit` (none: no cap). */
+  pay_later: Generated<boolean>;
   archived_at: Date | null;
   created_by: number | null;
   created_at: CreatedAt;
@@ -509,6 +515,72 @@ export interface CustomersTable {
 
 /** A charge adds to what's owed; a payment (money in) or a refund (a return) takes it off. */
 export type TabEntryKind = 'charge' | 'payment' | 'refund';
+
+export type OfferStatus = 'open' | 'sold' | 'declined';
+
+/** A price quote made in 4VD; TREFIN's are in `trefin_offers`. */
+export interface OffersTable {
+  id: Generated<number>;
+  number: string;
+  customer_id: number | null;
+  /** A buyer who isn't in the customer list: just a typed name and phone. */
+  party_name: string | null;
+  party_phone: string | null;
+  note: string | null;
+  /** "YYYY-MM-DD". */
+  valid_until: ColumnType<string, string, string>;
+  status: Generated<OfferStatus>;
+  total: Decimal;
+  /** The invoice the customer's yes became. */
+  sale_document_id: number | null;
+  decided_at: Date | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface OfferLinesTable {
+  id: Generated<number>;
+  offer_id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  /** The price offered for one, VAT included; `shelf_price` is what it cost on the shelf that day. */
+  unit_price: Decimal;
+  shelf_price: Decimal;
+  total: Decimal;
+}
+
+export type DeliveryStatus = 'waiting' | 'on_the_way' | 'delivered';
+
+/** A sale taken to the customer's door. */
+export interface CustomerDeliveriesTable {
+  id: Generated<number>;
+  document_id: number;
+  customer_id: number | null;
+  name: string;
+  phone: string | null;
+  address: string;
+  /** "YYYY-MM-DD"; the window is "HH:MM" or none. */
+  deliver_on: ColumnType<string, string, string>;
+  time_from: string | null;
+  time_to: string | null;
+  note: string | null;
+  total: Decimal;
+  /** What is still to be paid at the door. */
+  to_collect: Decimal;
+  status: Generated<DeliveryStatus>;
+  taken_by: number | null;
+  taken_at: Date | null;
+  delivered_by: number | null;
+  delivered_at: Date | null;
+  collected: Decimal | null;
+  payment_entry_id: number | null;
+  /** Why the last try didn't reach them. */
+  last_failure: string | null;
+  failures: Generated<number>;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
 
 export interface TabEntriesTable {
   id: Generated<number>;
@@ -979,7 +1051,7 @@ export interface MoneyPlacesTable {
   created_at: CreatedAt;
 }
 
-export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report' | 'rabat_allowed' | 'person_switched';
+export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report' | 'rabat_allowed' | 'person_switched' | 'pay_later_allowed';
 
 /** Something that happened at the counter other than a sale, by person (the counter report). */
 export interface CounterEventsTable {
@@ -1136,6 +1208,9 @@ export interface Database {
   no_expense_days: NoExpenseDaysTable;
   customers: CustomersTable;
   tab_entries: TabEntriesTable;
+  offers: OffersTable;
+  offer_lines: OfferLinesTable;
+  customer_deliveries: CustomerDeliveriesTable;
   suppliers: SuppliersTable;
   purchase_orders: PurchaseOrdersTable;
   purchase_order_lines: PurchaseOrderLinesTable;

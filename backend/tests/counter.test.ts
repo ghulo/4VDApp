@@ -90,6 +90,7 @@ describe('basket checkout', () => {
     const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1.2, stock: 10 });
     const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 10 });
     const customer = (await request(context.app).post('/api/customers').set(auth(employeeToken)).send({ name: 'Arben' })).body.data.id;
+    await context.db.updateTable('customers').set({ pay_later: true }).where('id', '=', customer).execute();
 
     await request(context.app)
       .post('/api/sales/basket')

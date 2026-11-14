@@ -6,9 +6,10 @@ import { createPortal } from 'react-dom';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PlaceSelect, SpreadList, placeInSentence, spread, usePlaces, usualPlace } from '../components/MoneyParts';
-import { canManage } from '../auth/roles';
+import { canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
+import { whatsappLink } from '../utils/whatsapp';
 import { businessApi, customersApi, documentsApi } from '../services/api';
 import type { Customer, CustomerDetail, CustomerKind, TabEntry } from '../services/types';
 import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
@@ -36,12 +37,8 @@ import { todayIso } from '../utils/bills';
 import { HistoryCard } from '../components/HistoryCard';
 import { PartnerDetailFields, PartnerFacts, hasDetails, usePartnerDraft } from '../components/PartnerDetails';
 
-/** Same as the server: tabs unpaid this long need a reminder. */
-const OVERDUE_DAYS = 30;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-const isOverdue = (customer: Customer) =>
-  customer.owingSince !== null && Date.now() - Date.parse(customer.owingSince) >= OVERDUE_DAYS * MS_PER_DAY;
+/** Late: something is past the day they promised to pay (the server works it out). */
+const isOverdue = (customer: Customer) => customer.lateAmount > 0;
 
 const FILTERS = ['all', 'owes', 'overdue', 'business'] as const;
 type Filter = (typeof FILTERS)[number];
@@ -62,18 +59,6 @@ const compare: Record<Sort, (a: Customer, b: Customer) => number> = {
   name: byName,
 };
 
-/**
- * A WhatsApp chat with the message already written, or null when the number
- * can't be read. Local Kosovo numbers ("044 123 456") get the +383 prefix.
- */
-function whatsappLink(phone: string, text: string): string | null {
-  let digits = phone.replace(/[^\d+]/g, '');
-  if (digits.startsWith('+')) digits = digits.slice(1);
-  else if (digits.startsWith('00')) digits = digits.slice(2);
-  else if (digits.startsWith('0')) digits = `383${digits.slice(1)}`;
-  if (!/^\d{8,15}$/.test(digits)) return null;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-}
 
 /** Old tab links (/tabs?customer=7) open the customer's own page. */
 export function TabsRedirect() {
@@ -154,7 +139,7 @@ export function CustomersPage() {
             to={filterLink('owes')}
           />
           <StatTile
-            label={t.tabs.overdue(OVERDUE_DAYS)}
+            label={t.customers.lateTile}
             value={count('overdue')}
             tone={count('overdue') > 0 ? 'warn' : 'default'}
             to={filterLink('overdue')}
@@ -279,6 +264,10 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
   const [phone, setPhone] = useState(customer?.phone ?? '');
   const [note, setNote] = useState(customer?.note ?? '');
   const details = usePartnerDraft(customer ?? null);
+  const { role } = useCurrentUser();
+  // Who may pay later, and how much, is the owner's call.
+  const decides = canOversee(role);
+  const [payLater, setPayLater] = useState(customer?.payLater ?? false);
   const [creditLimit, setCreditLimit] = useState(customer?.creditLimit != null ? String(customer.creditLimit) : '');
   const [discount, setDiscount] = useState(customer?.discountPercent != null ? String(customer.discountPercent) : '');
   const numberOrNull = (value: string) => (value.trim() === '' ? null : Number(value.replace(',', '.')));
@@ -291,7 +280,7 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
         phone: phone.trim() || null,
         note: note.trim() || null,
         ...details.values(),
-        creditLimit: numberOrNull(creditLimit),
+        ...(decides && { payLater, creditLimit: numberOrNull(creditLimit) }),
         discountPercent: numberOrNull(discount),
       };
       return customer ? customersApi.update(customer.id, input) : customersApi.create(input);
@@ -340,10 +329,22 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
       <Field label={t.tabs.note}>
         <input maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
+      {decides && (
+        <fieldset className="pay-later-fields">
+          <legend className="field__label">{t.customers.payLaterTitle}</legend>
+          <label className="toggle">
+            <input type="checkbox" checked={payLater} onChange={(event) => setPayLater(event.target.checked)} />
+            {t.customers.payLater}
+          </label>
+          <p className="field-hint">{payLater ? t.customers.payLaterOn : t.customers.payLaterOff}</p>
+          {payLater && (
+            <Field label={t.partner.creditLimit} hint={t.customers.limitHint}>
+              <input type="number" min={0} step="0.01" inputMode="decimal" value={creditLimit} onChange={(event) => setCreditLimit(event.target.value)} />
+            </Field>
+          )}
+        </fieldset>
+      )}
       <div className="field-row">
-        <Field label={t.partner.creditLimit}>
-          <input type="number" min={0} step="0.01" inputMode="decimal" value={creditLimit} onChange={(event) => setCreditLimit(event.target.value)} />
-        </Field>
         <Field label={t.partner.discountPercent}>
           <input type="number" min={0} max={100} step="0.01" inputMode="decimal" value={discount} onChange={(event) => setDiscount(event.target.value)} />
         </Field>
@@ -374,7 +375,15 @@ export function CustomerDetailPage() {
   const data = customer.data;
   const reminder =
     data.phone && data.balance > 0 && business.data
-      ? whatsappLink(data.phone, t.customers.reminderText(data.name, formatMoney(data.balance), business.data.name))
+      ? whatsappLink(
+          data.phone,
+          [
+            t.customers.reminderText(data.name, formatMoney(data.balance), business.data.name),
+            ...data.openItems.map((item) =>
+              [item.number ?? t.customers.onTheTab, formatMoney(item.left), item.dueDate && t.customers.dueOn(formatDate(`${item.dueDate}T12:00:00`))].filter(Boolean).join(' · '),
+            ),
+          ].join('\n'),
+        )
       : null;
 
   return (
@@ -413,7 +422,13 @@ export function CustomerDetailPage() {
         <StatTile
           label={t.customers.owes}
           value={data.balance > 0 ? formatMoney(data.balance) : data.balance < 0 ? t.tabs.credit(formatMoney(-data.balance)) : t.tabs.settled}
-          hint={data.owingSince ? `${t.tabs.owingSince}: ${formatDate(data.owingSince)}` : undefined}
+          hint={
+            data.lateAmount > 0 && data.lateSince
+              ? t.customers.lateHint(formatMoney(data.lateAmount), formatDate(`${data.lateSince}T12:00:00`))
+              : data.owingSince
+                ? `${t.tabs.owingSince}: ${formatDate(data.owingSince)}`
+                : undefined
+          }
           tone={isOverdue(data) ? 'warn' : 'default'}
         />
         <StatTile label={t.customers.spentThisYear} value={formatHeadlineMoney(data.spentThisYear)} hint={t.customers.spentInAll(formatMoney(data.spent))} />
@@ -448,12 +463,14 @@ export function CustomerDetailPage() {
 
       <InvoicesCard customerId={data.id} />
 
-      {(hasDetails(data) || data.creditLimit != null || data.discountPercent != null) && (
+      {(hasDetails(data) || data.payLater || data.discountPercent != null) && (
         <Card title={t.partner.details}>
           <PartnerFacts
             partner={data}
             extra={[
-              ...(data.creditLimit != null ? [{ label: t.partner.creditLimit, value: t.partner.creditLimitShort(formatMoney(data.creditLimit)) }] : []),
+              ...(data.payLater
+                ? [{ label: t.customers.payLaterTitle, value: data.creditLimit != null ? t.partner.creditLimitShort(formatMoney(data.creditLimit)) : t.customers.noLimit }]
+                : []),
               ...(data.discountPercent != null ? [{ label: t.partner.discountPercent, value: t.partner.discountShort(data.discountPercent) }] : []),
             ]}
           />

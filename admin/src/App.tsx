@@ -46,6 +46,10 @@ const DocumentDetailPage = lazyPage(() => import('./pages/DocumentDetailPage'), 
 const DocumentsPage = lazyPage(() => import('./pages/DocumentsPage'), 'DocumentsPage');
 const OffersPage = lazyPage(() => import('./pages/OffersPage'), 'OffersPage');
 const OfferDetailPage = lazyPage(() => import('./pages/OffersPage'), 'OfferDetailPage');
+const NewOfferPage = lazyPage(() => import('./pages/OffersPage'), 'NewOfferPage');
+const TrefinOffersPage = lazyPage(() => import('./pages/OffersPage'), 'TrefinOffersPage');
+const TrefinOfferDetailPage = lazyPage(() => import('./pages/OffersPage'), 'TrefinOfferDetailPage');
+const ToDeliverPage = lazyPage(() => import('./pages/ToDeliverPage'), 'ToDeliverPage');
 const BillDetailPage = lazyPage(() => import('./pages/BillDetailPage'), 'BillDetailPage');
 const ScanCheckPage = lazyPage(() => import('./pages/ScanCheckPage'), 'ScanCheckPage');
 const BillsPage = lazyPage(() => import('./pages/BillsPage'), 'BillsPage');
@@ -214,8 +218,12 @@ function App() {
                         <Route path="sales" element={<SalesPage />} />
                         <Route path="documents" element={<DocumentsPage />} />
                         <Route path="offers" element={<OffersPage />} />
+                        <Route path="to-deliver" element={<ToDeliverPage />} />
                       </Route>
                       <Route path="documents/:id" element={<DocumentDetailPage />} />
+                      <Route path="offers/new" element={<NewOfferPage />} />
+                      <Route path="offers/history" element={<TrefinOffersPage />} />
+                      <Route path="offers/history/:id" element={<TrefinOfferDetailPage />} />
                       <Route path="offers/:id" element={<OfferDetailPage />} />
                       <Route element={<SectionTabs tabs={SECTIONS.day} labelKey="day" />}>
                         <Route path="day" element={<DayPage />} />

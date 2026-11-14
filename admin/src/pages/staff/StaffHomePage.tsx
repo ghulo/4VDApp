@@ -20,7 +20,7 @@ import { ErrorNotice } from '../../components/Feedback';
 import { TodoList } from '../../components/TodoList';
 import { Badge, ShopSunrise } from '../../components/ui';
 import { useT } from '../../i18n/useT';
-import { customersApi, inventoryApi, stockCountsApi } from '../../services/api';
+import { customersApi, deliveriesApi, inventoryApi, stockCountsApi, TO_DELIVER_KEY } from '../../services/api';
 import { checkoutSummary, DELIVERIES_KEY, dayRange, MY_SALES_KEY, monthRange, teamApi } from '../../services/teamApi';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatTime } from '../../utils/format';
 import { useAttention } from '../../utils/useAttention';
@@ -57,6 +57,8 @@ export function StaffHomePage() {
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const requests = useQuery({ queryKey: ['approvals', 'mine'], queryFn: teamApi.myRequests });
   const deliveries = useQuery({ queryKey: DELIVERIES_KEY, queryFn: teamApi.deliveries });
+  const toDeliver = useQuery({ queryKey: TO_DELIVER_KEY, queryFn: deliveriesApi.list });
+  const outgoing = (toDeliver.data ?? []).filter((delivery) => delivery.status !== 'delivered');
   const lowStock = useQuery({ queryKey: ['inventory', 'low', LOW_STOCK_SHOWN], queryFn: () => inventoryApi.list({ page: 1, lowStock: true, limit: LOW_STOCK_SHOWN }) });
   const attention = useAttention();
 
@@ -142,6 +144,9 @@ export function StaffHomePage() {
         {/* Only while something is on its way, so Home stays calm the rest of the time. */}
         {(deliveries.data?.length ?? 0) > 0 && (
           <JobTile to="/deliveries" icon={Truck} title={t.staff.home.deliveries} detail={t.staff.home.deliveriesWaiting(deliveries.data!.length)} />
+        )}
+        {outgoing.length > 0 && (
+          <JobTile to="/to-deliver" icon={Truck} title={t.toDeliver.title} detail={outgoing.some((delivery) => delivery.late) ? t.toDeliver.late : t.toDeliver.count(outgoing.length)} />
         )}
       </div>
 

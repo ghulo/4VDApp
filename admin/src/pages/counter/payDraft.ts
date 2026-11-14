@@ -7,9 +7,11 @@ export interface PayDraft {
   customerId: string;
   /** Cash + card: the part the bank's terminal takes. */
   card: string;
+  /** Paying later: the day they promised ("YYYY-MM-DD"); blank is the shop's usual terms. */
+  dueDate: string;
 }
 
-export const EMPTY_PAY: PayDraft = { paidBy: 'cash', tendered: '', customerId: '', card: '' };
+export const EMPTY_PAY: PayDraft = { paidBy: 'cash', tendered: '', customerId: '', card: '', dueDate: '' };
 
 const cents = (amount: number) => Math.round(amount * 100) / 100;
 

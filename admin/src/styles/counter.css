@@ -2712,3 +2712,16 @@
 .counter-confirm__back {
   justify-content: flex-end;
 }
+
+/* A delivery paid at the door: only the part paid now is taken here. */
+.counter-door {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.counter-door svg {
+  flex: none;
+  margin-top: 0.2em;
+  color: var(--amber-mark);
+}

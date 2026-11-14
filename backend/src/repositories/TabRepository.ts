@@ -12,6 +12,8 @@ export interface CustomerFields extends Partial<PartnerDetails> {
   note: string | null;
   creditLimit?: number | null;
   discountPercent?: number | null;
+  /** The owner lets them pay later (up to `creditLimit`). Left out: kept as it is. */
+  payLater?: boolean;
 }
 
 export interface CustomerRecord extends PartnerDetails {
@@ -23,6 +25,7 @@ export interface CustomerRecord extends PartnerDetails {
   note: string | null;
   credit_limit: string | null;
   discount_percent: string | null;
+  pay_later: boolean;
   archived_at: Date | null;
   created_at: Date;
 }
@@ -36,6 +39,7 @@ const CUSTOMER_COLUMNS = [
   'note',
   'credit_limit',
   'discount_percent',
+  'pay_later',
   'archived_at',
   'created_at',
   ...PARTNER_DETAIL_COLUMNS,
@@ -49,6 +53,7 @@ const customerRow = (input: CustomerFields) => ({
   note: input.note,
   ...(input.creditLimit !== undefined && { credit_limit: input.creditLimit }),
   ...(input.discountPercent !== undefined && { discount_percent: input.discountPercent }),
+  ...(input.payLater !== undefined && { pay_later: input.payLater }),
   ...partnerDetailRow(input),
 });
 

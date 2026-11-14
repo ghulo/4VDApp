@@ -72,6 +72,14 @@ const en = {
   pinRemoved: () => 'Removed their Counter PIN',
   pinLocked: (p: { name: string }) => `Too many wrong PINs for ${p.name}: locked for 15 minutes`,
   rabatAllowed: (p: { percent: number; seller: string }) => `Allowed ${p.percent}% rabat for ${p.seller} at the Counter`,
+  payLaterAllowed: (p: { name: string; amount: number; seller: string }, w: Words) =>
+    `Let ${p.name} pay ${w.money(p.amount)} later (${p.seller} at the Counter)`,
+  offerMade: (p: { number: string; name: string; total: number }, w: Words) => `Made offer ${p.number} for ${p.name}, ${w.money(p.total)}`,
+  offerDeclined: (p: { number: string; name: string }) => `Marked offer ${p.number} for ${p.name} as turned down`,
+  deliveryTaken: (p: { number: string; name: string }) => `Took ${p.number} out to deliver to ${p.name}`,
+  deliveryDone: (p: { number: string; name: string; collected: number }, w: Words) =>
+    `Delivered ${p.number} to ${p.name}${p.collected > 0 ? ` and collected ${w.money(p.collected)}` : ''}`,
+  deliveryMissed: (p: { number: string; name: string; reason: string }) => `Couldn't deliver ${p.number} to ${p.name}: ${p.reason}`,
 
   billScanned: (p: { supplier: string | null; lines: number }) =>
     `Scanned a bill${p.supplier ? ` from ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
@@ -554,6 +562,12 @@ const sq: Templates = {
   pinRemoved: () => 'Hoqi PIN-in e arkës',
   pinLocked: (p) => `Shumë PIN të gabuar për ${p.name}: bllokuar për 15 minuta`,
   rabatAllowed: (p) => `Lejoi ${p.percent}% rabat për ${p.seller} te Arka`,
+  payLaterAllowed: (p, w) => `Lejoi ${p.name} të paguajë ${w.money(p.amount)} më vonë (${p.seller} te Arka)`,
+  offerMade: (p, w) => `Bëri ofertën ${p.number} për ${p.name}, ${w.money(p.total)}`,
+  offerDeclined: (p) => `Shënoi ofertën ${p.number} për ${p.name} si të refuzuar`,
+  deliveryTaken: (p) => `Mori ${p.number} për ta dërguar te ${p.name}`,
+  deliveryDone: (p, w) => `Dërgoi ${p.number} te ${p.name}${p.collected > 0 ? ` dhe mblodhi ${w.money(p.collected)}` : ''}`,
+  deliveryMissed: (p) => `Nuk e dërgoi dot ${p.number} te ${p.name}: ${p.reason}`,
 
   billScanned: (p) => `Skanoi një faturë${p.supplier ? ` nga ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   billScanConfirmed: (p) =>

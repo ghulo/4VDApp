@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { UnauthorizedError } from '../errors/httpErrors.js';
 import type { CounterPinService } from '../services/CounterPinService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { pinPeopleQuerySchema, rabatApprovalSchema, setPinSchema, switchSchema } from '../validators/pinValidators.js';
+import { payLaterApprovalSchema, pinPeopleQuerySchema, rabatApprovalSchema, setPinSchema, switchSchema } from '../validators/pinValidators.js';
 import { parseInput } from '../validators/validate.js';
 import { deviceOf } from './authController.js';
 
@@ -30,6 +30,10 @@ export function createCounterPinController(pins: CounterPinService) {
 
     async allowRabat(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await pins.allowRabat(actor(req), parseInput(rabatApprovalSchema, req.body)), { statusCode: 201, message: 'Rabat allowed' });
+    },
+
+    async allowPayLater(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await pins.allowPayLater(actor(req), parseInput(payLaterApprovalSchema, req.body)), { statusCode: 201, message: 'Pay later allowed' });
     },
   };
 }

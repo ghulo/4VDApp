@@ -112,7 +112,7 @@ export class DocumentService {
   /** The invoice for a checkout: one line per sale. */
   async invoiceSales(
     repos: TransactionalRepositories,
-    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean; cardAmount?: number; clientKey?: string },
+    p: { saleIds: number[]; customerId: number | null; onAccount: boolean; issuedBy: number; byCard?: boolean; cardAmount?: number; clientKey?: string; dueDate?: string },
   ): Promise<DocumentRef> {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
@@ -134,7 +134,7 @@ export class DocumentService {
     if (cardAmount !== null && cardAmount >= roundMoney(lines.reduce((sum, line) => sum + line.total, 0))) {
       throw new ValidationError('The card part must be less than the total; for all of it, pay by card');
     }
-    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod, cardAmount, clientKey: p.clientKey ?? null });
+    return this.issue(repos, { kind: 'invoice', lines, customerId: p.customerId, buyer, correctsId: null, reason: null, issuedBy: p.issuedBy, paymentMethod, cardAmount, clientKey: p.clientKey ?? null, dueDate: p.dueDate });
   }
 
   /**
@@ -183,13 +183,15 @@ export class DocumentService {
       paymentMethod: DocumentPaymentMethod;
       cardAmount?: number | null;
       clientKey?: string | null;
+      /** On account: the day the customer promised to pay; the shop's payment terms when left out. */
+      dueDate?: string;
     },
   ): Promise<DocumentRef> {
     const today = zonedDay(new Date(), this.timeZone);
     const year = Number(today.slice(0, 4));
     // An invoice on account is due after the shop's payment terms; anything paid at the till is settled already.
     const dueDate =
-      p.kind === 'invoice' && p.paymentMethod === 'account' ? addDays(today, (await this.settings.get()).paymentTermsDays) : null;
+      p.kind === 'invoice' && p.paymentMethod === 'account' ? (p.dueDate ?? addDays(today, (await this.settings.get()).paymentTermsDays)) : null;
     const sequence = await repos.documents.nextNumber(p.kind, year);
     const number = `${PREFIX[p.kind]}-${year}-${String(sequence).padStart(6, '0')}`;
     const sum = (pick: (line: NewDocumentLine) => number) => roundMoney(p.lines.reduce((total, line) => total + pick(line), 0));

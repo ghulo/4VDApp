@@ -31,6 +31,7 @@ import { MoneyRepository } from './MoneyRepository.js';
 import { CounterRepository } from './CounterRepository.js';
 import { PinRepository } from './PinRepository.js';
 import { OfflineShortfallRepository } from './OfflineShortfallRepository.js';
+import { SalesDocumentRepository } from './SalesDocumentRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -65,6 +66,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     money: new MoneyRepository(db),
     counter: new CounterRepository(db),
     pins: new PinRepository(db),
+    salesDocs: new SalesDocumentRepository(db),
     shortfalls: new OfflineShortfallRepository(db),
   };
 }

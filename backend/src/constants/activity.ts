@@ -74,6 +74,12 @@ export const ACTIVITY_ACTIONS = [
   'pin.removed',
   'pin.locked',
   'counter.rabat_allowed',
+  'counter.pay_later_allowed',
+  'offer.made',
+  'offer.declined',
+  'delivery.taken',
+  'delivery.delivered',
+  'delivery.missed',
   'cash.checked',
   'expense.added',
   'expense.removed',
@@ -120,5 +126,5 @@ export const ACTIVITY_ACTIONS = [
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

@@ -6,6 +6,12 @@ import type {
   RecordSource,
   Offer,
   OfferDetail,
+  OfferStatus,
+  TrefinOffer,
+  TrefinOfferDetail,
+  Delivery,
+  DeliveryInput,
+  PayLaterApproval,
   TrefinStockDocument,
   TrefinStockDocumentDetail,
   TestDelivery,
@@ -348,8 +354,31 @@ export interface DocumentListQuery {
 }
 
 export const offersApi = {
-  list: (query: { page: number; search?: string }) => paginated<Offer>('/offers', { limit: 25, ...query }),
+  list: (query: { page: number; search?: string; status?: OfferStatus }) => paginated<Offer>('/offers', { limit: 25, ...query }),
   get: async (id: number) => (await apiRequest<OfferDetail>(`/offers/${id}`)).data,
+  create: async (input: {
+    customerId: number | null;
+    partyName: string | null;
+    partyPhone: string | null;
+    note: string | null;
+    validUntil: string | null;
+    lines: Array<{ productId: number; quantity: number; unitPrice: number }>;
+  }) => (await apiRequest<OfferDetail>('/offers', { method: 'POST', body: input })).data,
+  decline: async (id: number) => (await apiRequest<OfferDetail>(`/offers/${id}/decline`, { method: 'POST' })).data,
+  /** TREFIN's offers, to look at. */
+  history: (query: { page: number; search?: string }) => paginated<TrefinOffer>('/offers/history', { limit: 25, ...query }),
+  historyGet: async (id: number) => (await apiRequest<TrefinOfferDetail>(`/offers/history/${id}`)).data,
+};
+
+/** The sales to take to the customer's door, as one cached list. */
+export const TO_DELIVER_KEY = ['deliveries', 'out'] as const;
+
+export const deliveriesApi = {
+  list: async () => (await apiRequest<Delivery[]>('/deliveries')).data,
+  lastAddress: async (customerId: number) => (await apiRequest<{ address: string; phone: string | null } | null>('/deliveries/last-address', { query: { customerId } })).data,
+  take: async (id: number) => (await apiRequest<Delivery>(`/deliveries/${id}/take`, { method: 'POST' })).data,
+  delivered: async (id: number, collected: number) => (await apiRequest<Delivery>(`/deliveries/${id}/delivered`, { method: 'POST', body: { collected } })).data,
+  missed: async (id: number, input: { reason: string; day: string | null }) => (await apiRequest<Delivery>(`/deliveries/${id}/missed`, { method: 'POST', body: input })).data,
 };
 
 export const documentsApi = {
@@ -379,9 +408,16 @@ export const salesApi = {
     return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
   recordBasket: async (input: {
-    items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
+    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
     notes: string | null;
     customerId?: number;
+    /** On a tab: the day the customer promised to pay. */
+    dueDate?: string;
+    /** An owner's one-time yes to this pay-later sale. */
+    payLaterApproval?: string;
+    /** The offer this sale sells, at its prices. */
+    offerId?: number;
+    delivery?: DeliveryInput;
     paidNow?: boolean;
     /** At the Counter: card money goes to the bank, not the drawer. */
     paidBy?: 'cash' | 'card';
@@ -417,6 +453,9 @@ export const counterApi = {
   /** An owner or admin allows a rabat over the limit on one basket. */
   allowRabat: async (input: { userId: number; pin: string; percent: number; basketId: string }) =>
     (await apiRequest<RabatApproval>('/counter/rabat-approvals', { method: 'POST', body: input })).data,
+  /** An owner or admin lets one basket go on a customer's tab, over their limit or when they aren't let pay later. */
+  allowPayLater: async (input: { userId: number; pin: string; customerId: number; amount: number; basketId: string }) =>
+    (await apiRequest<PayLaterApproval>('/counter/pay-later-approvals', { method: 'POST', body: input })).data,
   /** Every product on sale, in one answer, for the Counter's shelf. */
   products: async () => (await apiRequest<Product[]>('/counter/shelf')).data,
 };

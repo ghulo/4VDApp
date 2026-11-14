@@ -23,6 +23,7 @@ export function createCounterRoutes({ counterService, counterPinService, product
   router.get('/pin-people', ...guards.staff, pins.people);
   router.post('/switch', ...guards.staff, pins.switchTo);
   router.post('/rabat-approvals', ...guards.staff, pins.allowRabat);
+  router.post('/pay-later-approvals', ...guards.staff, pins.allowPayLater);
 
   return router;
 }

@@ -502,16 +502,16 @@ describe('importTrefin', () => {
     expect(report.created).toMatchObject({ offers: 1, activity: 3 });
     const token = await loginAs(context, 'admin');
     const auth = { Authorization: `Bearer ${token}` };
-    const offers = (await request(context.app).get('/api/offers').set(auth)).body;
+    const offers = (await request(context.app).get('/api/offers/history').set(auth)).body;
     expect(offers.meta.total).toBe(1);
     expect(offers.data[0]).toMatchObject({ number: 'OF-22-00000001', day: '2022-05-03', customer: null, total: 2.6, lineCount: 2 });
-    const detail = (await request(context.app).get(`/api/offers/${offers.data[0].id}`).set(auth)).body.data as { lines: Array<Record<string, unknown>> };
+    const detail = (await request(context.app).get(`/api/offers/history/${offers.data[0].id}`).set(auth)).body.data as { lines: Array<Record<string, unknown>> };
     expect(detail.lines.map((one) => [one.productName, one.quantity, one.unitPrice, one.total])).toEqual([
       ['Golden Eagle 0.25L', 2, 0.5, 1],
       ['Marlboro Gold', 1, 1.6, 1.6],
     ]);
-    expect((await request(context.app).get('/api/offers?search=marlboro').set(auth)).body.meta.total).toBe(1);
-    expect((await request(context.app).get('/api/offers/999999').set(auth)).status).toBe(404);
+    expect((await request(context.app).get('/api/offers/history?search=marlboro').set(auth)).body.meta.total).toBe(1);
+    expect((await request(context.app).get('/api/offers/history/999999').set(auth)).status).toBe(404);
 
     type Entry = { id: number; action: string; trefin?: { what: string; verb: string; subject: string | null; person: string | null } };
     const activity = (await request(context.app).get('/api/activity?source=trefin').set(auth)).body.data as Entry[];

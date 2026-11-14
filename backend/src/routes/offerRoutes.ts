@@ -31,12 +31,12 @@ const offerSchema = z
 
 /**
  * Offers (price quotes). Made in 4VD: the owner's side makes and turns them
- * down; the counter opens one to sell it. TREFIN's are under /history, look-only.
+ * down (the accountant sees them); the counter opens one to sell it. TREFIN's are under /history, look-only.
  */
 export function createOfferRoutes({ offerService, salesDocumentService, guards }: Container): Router {
   const router = Router();
 
-  router.get('/', ...guards.oversee, async (req: Request, res: Response) => {
+  router.get('/', ...guards.books, async (req: Request, res: Response) => {
     const { search, ...query } = parseInput(mineSchema, req.query);
     const { items, meta } = await salesDocumentService.listOffers({ ...query, search: search || undefined });
     sendSuccess(res, items, { meta });

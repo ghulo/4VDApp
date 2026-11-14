@@ -1,9 +1,10 @@
-import { ArrowLeft, LockKey, Printer } from '@phosphor-icons/react';
+import { ArrowLeft, LockKey, Printer, Truck } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
-import { Button, Field, Sheet } from '../../components/ui';
+import { Button, DateField, Field, Sheet } from '../../components/ui';
 import { useT } from '../../i18n/useT';
-import type { Customer, PinPerson } from '../../services/types';
+import type { Customer, DeliveryInput, PayLaterApproval, PinPerson } from '../../services/types';
+import { todayIso } from '../../utils/bills';
 import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
@@ -213,6 +214,8 @@ export interface Payment {
   tendered: number | null;
   customerId: number | null;
   cardAmount: number | null;
+  /** Paying later: the day they promised; null is the shop's usual terms. */
+  dueDate?: string | null;
 }
 
 interface PayProps {
@@ -224,6 +227,18 @@ interface PayProps {
   onChange: (draft: PayDraft) => void;
   onPay: (payment: Payment) => Promise<void>;
   onBack: () => void;
+  /** Owners and admins put anyone on the tab; others need the customer let pay later, within their limit, or an owner's yes. */
+  canDecide?: boolean;
+  payLater?: PayLaterApproval | null;
+  onAskOwner?: (customer: Customer) => void;
+  /** A delivery whose rest is collected at the door: only the part paid now is taken, in cash. */
+  door?: DeliveryInput | null;
+}
+
+/** Whether this customer may put `total` on their tab without asking the owner. */
+export function mayPayLater(customer: Customer, total: number, approval: PayLaterApproval | null | undefined): boolean {
+  if (approval && approval.customerId === customer.id && approval.amount >= total && Date.parse(approval.expiresAt) > Date.now()) return true;
+  return customer.payLater && (customer.creditLimit === null || customer.balance + total <= customer.creditLimit + 0.001);
 }
 
 /**
@@ -231,16 +246,21 @@ interface PayProps {
  * give it), card on the bank's terminal, part of each, or on a customer's tab. The receipt
  * beside it shows what was paid and the change as it is typed.
  */
-export function PayPanel({ total, customers, draft, offline = false, onChange, onPay, onBack }: PayProps) {
+export function PayPanel({ total: saleTotal, customers, draft: given, offline = false, onChange, onPay, onBack, canDecide = false, payLater, onAskOwner, door = null }: PayProps) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // At the door: only the part paid now is taken here, and only in cash.
+  const total = door ? (door.paidNow ?? 0) : saleTotal;
+  const draft: PayDraft = door ? { ...given, paidBy: 'cash' } : given;
   const cash = changeFor(draft, total);
   const split = splitFor(draft, total);
   const due = cashDue(draft, total);
   const short = cash !== null && cash.change < 0;
-  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline)) || short || (draft.paidBy === 'split' && !split?.valid);
-  const takesCash = draft.paidBy === 'cash' || (draft.paidBy === 'split' && split?.valid === true);
+  const onTab = draft.paidBy === 'tab' ? (customers?.find((one) => String(one.id) === draft.customerId) ?? null) : null;
+  const needsOwner = onTab !== null && !canDecide && !mayPayLater(onTab, saleTotal, payLater);
+  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid);
+  const takesCash = (draft.paidBy === 'cash' && total > 0) || (draft.paidBy === 'split' && split?.valid === true);
   const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
 
   async function submit(event: FormEvent) {
@@ -253,6 +273,7 @@ export function PayPanel({ total, customers, draft, offline = false, onChange, o
         paidBy: draft.paidBy,
         tendered: cash ? cash.given : null,
         customerId: draft.paidBy === 'tab' ? Number(draft.customerId) : null,
+        dueDate: draft.paidBy === 'tab' && draft.dueDate ? draft.dueDate : null,
         cardAmount: draft.paidBy === 'split' && split ? split.card : null,
       });
     } catch (failure) {
@@ -262,7 +283,13 @@ export function PayPanel({ total, customers, draft, offline = false, onChange, o
   }
 
   return (
-    <form className="counter-form counter-pay-panel" onSubmit={submit} aria-label={t.counter.payTitle(formatMoney(total))}>
+    <form className="counter-form counter-pay-panel" onSubmit={submit} aria-label={t.counter.payTitle(formatMoney(saleTotal))}>
+      {door ? (
+        <p className="counter-split-due counter-door" role="status">
+          <Truck size={18} weight="bold" aria-hidden="true" />
+          {total > 0 ? t.counter.doorTake(formatMoney(total), formatMoney(saleTotal - total)) : t.counter.doorNothing(formatMoney(saleTotal))}
+        </p>
+      ) : (
       <Segmented
         label={t.counter.paidBy}
         value={draft.paidBy}
@@ -274,6 +301,7 @@ export function PayPanel({ total, customers, draft, offline = false, onChange, o
           ...(offline && draft.paidBy !== 'tab' ? [] : [{ value: 'tab' as const, label: t.counter.tab }]),
         ]}
       />
+      )}
       {offline && <p className="field-hint">{t.counter.offlinePay}</p>}
       {draft.paidBy === 'split' && (
         <>
@@ -353,6 +381,31 @@ export function PayPanel({ total, customers, draft, offline = false, onChange, o
             </select>
           </Field>
         ))}
+      {draft.paidBy === 'tab' && onTab && (
+        <>
+          <Field label={t.counter.promisedDay} hint={t.counter.promisedHint}>
+            <DateField value={draft.dueDate} min={todayIso()} onChange={(value) => set({ dueDate: value ?? '' })} />
+          </Field>
+          {needsOwner && (
+            <div className="counter-opening" role="status">
+              <LockKey size={20} weight="bold" aria-hidden="true" />
+              <div className="counter-opening__text">
+                <p className="counter-opening__title">{t.counter.payLaterNeedsOwner(onTab.name)}</p>
+                <p>
+                  {onTab.payLater && onTab.creditLimit !== null
+                    ? t.counter.payLaterLimit(formatMoney(onTab.creditLimit), formatMoney(onTab.balance))
+                    : t.counter.payLaterNotLet}
+                </p>
+              </div>
+              {onAskOwner && !offline && (
+                <Button size="sm" variant="secondary" icon={LockKey} onClick={() => onAskOwner(onTab)}>
+                  {t.counter.askOwner}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -363,7 +416,7 @@ export function PayPanel({ total, customers, draft, offline = false, onChange, o
           {t.counter.backToBasket}
         </Button>
         <Button variant="primary" type="submit" loading={busy} disabled={blocked} className="counter-pay-panel__record">
-          {t.counter.recordSale(formatMoney(total))}
+          {t.counter.recordSale(formatMoney(saleTotal))}
         </Button>
       </div>
     </form>

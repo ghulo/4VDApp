@@ -131,6 +131,8 @@ function reasonText(t: ReturnType<typeof useT>, reason: PriceReason): string {
       return t.counter.reason.promotion(reason.name);
     case 'bulk':
       return t.counter.reason.bulk(reason.from);
+    case 'offer':
+      return t.counter.reason.offer;
   }
 }
 
@@ -140,6 +142,8 @@ export function SaleHead({
   nextReceipt,
   startedAt,
   basketRabat,
+  offerNumber = null,
+  delivery = null,
   onCustomer,
 }: {
   customerName: string | null;
@@ -147,6 +151,9 @@ export function SaleHead({
   /** Null until the first product is in: an empty basket has no sale to time. */
   startedAt: string | null;
   basketRabat: number;
+  /** The offer this basket sells, and where it is going ("Tue 18 Nov, 10:00–12:00"). */
+  offerNumber?: string | null;
+  delivery?: string | null;
   onCustomer: () => void;
 }) {
   const t = useT();
@@ -161,6 +168,18 @@ export function SaleHead({
         </kbd>
       </button>
       <dl className="counter-head__facts">
+        {offerNumber && (
+          <div className="counter-head__fact counter-head__fact--rabat">
+            <dt>{t.counter.offerFact}</dt>
+            <dd className="counter-head__mono">{offerNumber}</dd>
+          </div>
+        )}
+        {delivery && (
+          <div className="counter-head__fact counter-head__fact--rabat">
+            <dt>{t.counter.deliveryFact}</dt>
+            <dd>{delivery}</dd>
+          </div>
+        )}
         {basketRabat > 0 && (
           <div className="counter-head__fact counter-head__fact--rabat">
             <dt>{t.counter.basketRabat}</dt>

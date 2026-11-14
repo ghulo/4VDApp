@@ -8,7 +8,8 @@ export type PriceReason =
   | { kind: 'rabat'; percent: number }
   | { kind: 'basketRabat'; percent: number }
   | { kind: 'promotion'; name: string }
-  | { kind: 'bulk'; from: number };
+  | { kind: 'bulk'; from: number }
+  | { kind: 'offer' };
 
 export interface CounterLine extends StoredLine {
   product: Product | undefined;
@@ -43,6 +44,13 @@ export function priceLine(line: StoredLine, product: Product | undefined, basket
   const percent = own > 0 ? own : basket;
   if (!product) return { ...line, product, listPrice: 0, unitPrice: 0, total: 0, percent, reasons: [], vat: 0 };
 
+  // An offer's price is what the customer was promised: no rabat, promotion or bulk price on top.
+  if (line.offerPrice !== undefined) {
+    const total = roundMoney(line.offerPrice * line.quantity);
+    const rate = product.vatExempt ? 0 : product.vatRate;
+    const listPrice = Math.max(product.price, line.offerPrice);
+    return { ...line, product, listPrice, unitPrice: line.offerPrice, total, percent: 0, reasons: [{ kind: 'offer' }], vat: roundMoney((total * rate) / (100 + rate)) };
+  }
   const listPrice = unitPriceFor(product, line.quantity);
   const unitPrice = afterDiscount(listPrice, percent);
   const total = roundMoney(unitPrice * line.quantity);

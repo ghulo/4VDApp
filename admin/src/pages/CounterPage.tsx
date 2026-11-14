@@ -21,6 +21,7 @@ import {
   SignOut,
   Tag,
   Trash,
+  Truck,
   User,
   UsersThree,
   WarningCircle,
@@ -39,8 +40,8 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { cashApi, counterApi, customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
-import type { CounterEventInput, Product } from '../services/types';
+import { cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
 import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
@@ -51,6 +52,7 @@ import { CASH_TOLERANCE } from '../components/CashCount';
 import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { InvoicesSheet } from './counter/InvoicesSheet';
+import { DeliverSheet } from './counter/DeliverSheet';
 import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
@@ -79,6 +81,8 @@ type Panel =
   | 'count'
   | 'switch'
   | 'approve'
+  | 'approvePayLater'
+  | 'deliver'
   | null;
 
 /** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
@@ -222,7 +226,9 @@ export function CounterPage() {
   // An owner's yes needs the server, so not offline.
   const canAsk = !canOversee(user.role) && online;
   const switchPeople = useQuery({ queryKey: ['counter', 'pin-people', user.id], queryFn: () => counterApi.pinPeople(false), enabled: panel === 'switch' });
-  const approvers = useQuery({ queryKey: ['counter', 'approvers', user.id], queryFn: () => counterApi.pinPeople(true), enabled: panel === 'approve' });
+  const approvers = useQuery({ queryKey: ['counter', 'approvers', user.id], queryFn: () => counterApi.pinPeople(true), enabled: panel === 'approve' || panel === 'approvePayLater' });
+  // A customer waiting for the owner's yes to pay later.
+  const [askLater, setAskLater] = useState<Customer | null>(null);
 
   // The clock in the status bar, and how long each basket's customer has waited.
   useEffect(() => {
@@ -321,6 +327,31 @@ export function CounterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addId, products.data]);
 
+  // "Sell it at the Counter" on an offer opens ?offer=<id>: its lines at the offered prices, in a basket of their own.
+  const offerId = Number(params.get('offer'));
+  useEffect(() => {
+    if (!offerId || !products.data) return;
+    setParams({}, { replace: true });
+    let gone = false;
+    void offersApi.get(offerId).then(
+      (offer) => {
+        if (gone) return;
+        if (offer.status !== 'open') return complain(t.counter.offerGone(offer.number));
+        if (current.lines.length > 0 && !openBasket()) return complain(t.counter.fullBaskets);
+        setLines(() => offer.lines.map((line) => ({ productId: line.productId, name: line.productName, quantity: line.quantity, discount: '', offerPrice: line.unitPrice })));
+        updateBasket({ customerId: offer.customer?.id ?? null, offerId: offer.id, offerNumber: offer.number, discount: '' });
+        setLastSale(null);
+        say(t.counter.offerLoaded(offer.number));
+      },
+      (error: unknown) => !gone && complain(errorMessage(error)),
+    );
+    return () => {
+      gone = true;
+    };
+    // Runs once per ?offer=; the basket functions read the latest state themselves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offerId, products.data]);
+
   /** Enter in the scan box: a scanner always sends it after the code. "6*" first sells six. */
   async function handleScan(raw: string) {
     const multiplied = /^(\d{1,4})\s*[*xX]\s*(.+)$/.exec(raw.trim());
@@ -402,9 +433,14 @@ export function CounterPage() {
   const basketBody = (payment: Payment): QueuedSale['body'] => ({
     items: lines.map((line) => {
       const discount = roundMoney(line.percent);
+      if (line.offerPrice !== undefined) return { productId: line.productId, quantity: line.quantity, offerPrice: line.offerPrice };
       return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
     }),
     notes: null,
+    ...(current.offerId && { offerId: current.offerId }),
+    ...(current.delivery && { delivery: current.delivery }),
+    ...(payment.paidBy === 'tab' && payment.dueDate && { dueDate: payment.dueDate }),
+    ...(payment.paidBy === 'tab' && current.payLater && current.payLater.customerId === payment.customerId && { payLaterApproval: current.payLater.token }),
     ...(payment.paidBy === 'card' && { paidBy: 'card' as const }),
     ...(payment.paidBy === 'split' && payment.cardAmount !== null && { cardAmount: payment.cardAmount }),
     ...(approval && lines.some((line) => roundMoney(line.percent) > discountLimit) && { rabatApproval: approval.token }),
@@ -452,6 +488,8 @@ export function CounterPage() {
     const key = newSaleKey();
     const body = basketBody(payment);
     if (payment.paidBy === 'tab' && !online) throw new Error(t.counter.offlineNoTab);
+    if (current.delivery && !online) throw new Error(t.counter.offlineNoDelivery);
+    const delivered = current.delivery ?? null;
     let result: Awaited<ReturnType<typeof salesApi.recordBasket>> | null = null;
     if (online) {
       try {
@@ -459,7 +497,7 @@ export function CounterPage() {
         result = await withTimeout(salesApi.recordBasket({ ...body, clientKey: key }), PAY_TIMEOUT_MS);
       } catch (error) {
         // The internet went just now: the sale waits like any other made offline.
-        if (payment.paidBy === 'tab' || !isNetworkFailure(error)) throw error;
+        if (payment.paidBy === 'tab' || delivered || !isNetworkFailure(error)) throw error;
         setUnreachable(true);
       }
     }
@@ -467,8 +505,11 @@ export function CounterPage() {
     const sold = result
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
       : { total, documentId: 0, number: t.counter.waitingToSend };
-    if (result) refreshAfterSale();
-    else {
+    if (result) {
+      refreshAfterSale();
+      if (delivered) void queryClient.invalidateQueries({ queryKey: TO_DELIVER_KEY });
+      if (current.offerId) void queryClient.invalidateQueries({ queryKey: ['offers'] });
+    } else {
       waiting.add({ key, at, userId: user.id, body, total, receipt: null });
       // This PC's shelf loses what was sold, so the next basket can't sell it again.
       const soldNow = new Map(lines.map((line) => [line.productId, line.quantity]));
@@ -498,7 +539,8 @@ export function CounterPage() {
     const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
     say(result ? t.counter.sold(formatMoney(sold.total), sold.number) : t.counter.soldOffline(formatMoney(sold.total)));
     display(change !== null && change > 0 ? displayFor.change(change) : displayFor.thanks(sold.total));
-    const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab';
+    // Like a tab, a sale paid at the door prints no receipt here: the money isn't all in yet.
+    const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab' && delivered?.payment !== 'door';
     setLastSale({
       key,
       documentId: sold.documentId,
@@ -771,6 +813,7 @@ export function CounterPage() {
               basket.lines.reduce((sum, line) => {
                 const product = byId.get(line.productId);
                 const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
+                if (line.offerPrice !== undefined) return sum + line.offerPrice * line.quantity;
                 return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
               }, 0),
             );
@@ -952,6 +995,8 @@ export function CounterPage() {
               nextReceipt={today.data?.nextReceipt ?? null}
               startedAt={current.lines.length > 0 ? formatTime(new Date(current.startedAt).toISOString()) : null}
               basketRabat={parsePercent(basketRabat)}
+              offerNumber={current.offerNumber ?? null}
+              delivery={current.delivery ? deliveryWhen(current.delivery) : null}
               onCustomer={() => startPanel('customer')}
             />
             {checked && <PriceCheckCard product={checked} days={expiry.get(checked.id)} onClose={() => setChecked(null)} />}
@@ -1001,7 +1046,22 @@ export function CounterPage() {
 
         <aside className="counter-side" aria-label={t.counter.keys}>
           {panel === 'pay' ? (
-            <PayPanel total={total} customers={customers.data} draft={payDraft} offline={!online} onChange={setPayDraft} onPay={pay} onBack={closePanel} />
+            <PayPanel
+              total={total}
+              customers={customers.data}
+              draft={payDraft}
+              offline={!online}
+              onChange={setPayDraft}
+              onPay={pay}
+              onBack={closePanel}
+              canDecide={canOversee(user.role)}
+              payLater={current.payLater}
+              onAskOwner={(asked) => {
+                setAskLater(asked);
+                setPanel('approvePayLater');
+              }}
+              door={current.delivery?.payment === 'door' ? current.delivery : null}
+            />
           ) : (
             <>
               {waiting.refused.length > 0 && (
@@ -1051,6 +1111,7 @@ export function CounterPage() {
                 <CounterKey icon={User} label={t.counter.customer} hotkey="F5" disabled={!keysEnabled} onClick={() => startPanel('customer')} />
                 <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
+                <CounterKey icon={Truck} label={current.delivery ? t.counter.deliveryKeyOn : t.counter.deliverKey} pressed={Boolean(current.delivery)} disabled={!keysEnabled || !hasLines || !online} onClick={() => startPanel('deliver')} />
                 <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
               </KeyGroup>
 
@@ -1174,6 +1235,38 @@ export function CounterPage() {
           setAsk(null);
           closePanel();
           say(t.counter.rabatAllowed(allowed.by, `${allowed.percent}%`));
+        }}
+      />
+      <PinSheet
+        open={panel === 'approvePayLater'}
+        title={t.counter.askOwner}
+        description={askLater ? t.counter.payLaterAskHint(askLater.name, formatMoney(total)) : ''}
+        people={approvers.data}
+        nobody={t.counter.noApprover}
+        submit={t.counter.allow}
+        onClose={() => {
+          setAskLater(null);
+          setPanel('pay');
+        }}
+        onSubmit={async (userId, pin) => {
+          if (!askLater) return;
+          const allowed = await counterApi.allowPayLater({ userId, pin, customerId: askLater.id, amount: total, basketId: current.id });
+          updateBasket({ payLater: allowed });
+          setAskLater(null);
+          setPanel('pay');
+          say(t.counter.payLaterAllowed(allowed.by, askLater.name));
+        }}
+      />
+      <DeliverSheet
+        open={panel === 'deliver'}
+        total={total}
+        customer={customer}
+        current={current.delivery ?? null}
+        onClose={closePanel}
+        onSave={(delivery) => {
+          updateBasket({ delivery });
+          if (delivery) say(t.counter.deliverySet(delivery.name, deliveryWhen(delivery)));
+          closePanel();
         }}
       />
       <PinSheet
@@ -1653,4 +1746,10 @@ function differenceText(difference: number | null, words: { matches: string; not
   if (difference === null) return words.nothingToCompare;
   if (Math.abs(difference) < CASH_TOLERANCE) return words.matches;
   return difference < 0 ? words.short(formatMoney(-difference)) : words.over(formatMoney(difference));
+}
+
+/** When a delivery goes: its day, and the window when there is one. */
+function deliveryWhen(delivery: { day: string; timeFrom: string | null; timeTo: string | null }): string {
+  const slot = delivery.timeFrom || delivery.timeTo ? [delivery.timeFrom, delivery.timeTo].filter(Boolean).join('–') : null;
+  return [formatDate(`${delivery.day}T12:00:00`), slot].filter(Boolean).join(', ');
 }

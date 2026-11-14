@@ -27,9 +27,13 @@ const product = (patch: Partial<Product>): Product => ({
   ...patch,
 });
 
-const line = (patch: { quantity?: number; discount?: string; priceSet?: boolean } = {}) => ({ productId: 1, name: 'x', quantity: 1, discount: '', ...patch });
+const line = (patch: { quantity?: number; discount?: string; priceSet?: boolean; offerPrice?: number } = {}) => ({ productId: 1, name: 'x', quantity: 1, discount: '', ...patch });
 
 describe('pricing a counter line', () => {
+  it('sells an offer line at its offered price, whatever rabat the basket has', () => {
+    expect(priceLine(line({ quantity: 3, offerPrice: 8.4 }), product({ price: 10 }), '5')).toMatchObject({ listPrice: 10, unitPrice: 8.4, total: 25.2, percent: 0, reasons: [{ kind: 'offer' }] });
+  });
+
   it('sells at the shelf price with no reason', () => {
     expect(priceLine(line({ quantity: 2 }), product({ price: 1.5 }), '')).toMatchObject({ listPrice: 1.5, unitPrice: 1.5, total: 3, percent: 0, reasons: [] });
   });

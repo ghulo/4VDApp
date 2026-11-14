@@ -133,10 +133,10 @@ function DeliveryCard({ delivery, onDone }: { delivery: Delivery; onDone: (messa
               {t.toDeliver.take}
             </Button>
           )}
-          <Button size="sm" variant="primary" onClick={() => setStep('delivered')} aria-expanded={step === 'delivered'}>
+          <Button size="sm" variant="primary" onClick={() => setStep('delivered')} aria-expanded={step === 'delivered'} aria-controls={`deliver-form-${delivery.id}`}>
             {t.toDeliver.markDelivered}
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setStep('missed')} aria-expanded={step === 'missed'}>
+          <Button size="sm" variant="ghost" onClick={() => setStep('missed')} aria-expanded={step === 'missed'} aria-controls={`deliver-form-${delivery.id}`}>
             {t.toDeliver.notDelivered}
           </Button>
         </div>
@@ -185,7 +185,7 @@ function DeliveredForm({ delivery, onDone, onCancel }: { delivery: Delivery; onD
   }
 
   return (
-    <form className="to-deliver__form" onSubmit={submit}>
+    <form id={`deliver-form-${delivery.id}`} className="to-deliver__form" onSubmit={submit}>
       {delivery.toCollect > 0 && (
         <Field label={t.toDeliver.collected} hint={amount < delivery.toCollect && !wrong ? t.toDeliver.restOnTab(formatMoney(delivery.toCollect - amount)) : t.toDeliver.collectedHint} error={wrong ?? undefined}>
           <input name="collected" inputMode="decimal" autoComplete="off" autoFocus aria-invalid={wrong ? true : undefined} value={collected} onChange={(event) => setCollected(event.target.value)} />
@@ -222,7 +222,7 @@ function MissedForm({ delivery, onDone, onCancel }: { delivery: Delivery; onDone
   }
 
   return (
-    <form className="to-deliver__form" onSubmit={submit}>
+    <form id={`deliver-form-${delivery.id}`} className="to-deliver__form" onSubmit={submit}>
       <div className="chip-row" role="group" aria-label={t.toDeliver.why}>
         {t.toDeliver.reasons.map((text) => (
           <button key={text} type="button" className="chip" aria-pressed={reason === text} onClick={() => setReason(text)}>
@@ -231,7 +231,7 @@ function MissedForm({ delivery, onDone, onCancel }: { delivery: Delivery; onDone
         ))}
       </div>
       <Field label={t.toDeliver.why} error={tried && !reason.trim() ? t.toDeliver.needWhy : undefined}>
-        <input name="reason" autoComplete="off" maxLength={300} aria-invalid={tried && !reason.trim() ? true : undefined} value={reason} onChange={(event) => setReason(event.target.value)} />
+        <input name="reason" autoComplete="off" autoFocus maxLength={300} aria-invalid={tried && !reason.trim() ? true : undefined} value={reason} onChange={(event) => setReason(event.target.value)} />
       </Field>
       <Field label={t.toDeliver.newDay} hint={t.toDeliver.newDayHint}>
         <DateField value={day} min={todayIso()} onChange={(value) => setDay(value ?? '')} />

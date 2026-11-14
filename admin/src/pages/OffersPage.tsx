@@ -100,9 +100,9 @@ export function OffersPage() {
           toolbar={
             <div className="toolbar">
               <SearchInput value={search} onChange={onSearch} label={t.offers.search} />
-              <div className="chip-row" role="radiogroup" aria-label={t.offers.status}>
+              <div className="chip-row" role="group" aria-label={t.offers.status}>
                 {STATUSES.map((value) => (
-                  <button key={value || 'all'} type="button" role="radio" className="chip" aria-checked={status === value} onClick={() => update({ status: value })}>
+                  <button key={value || 'all'} type="button" className="chip" aria-pressed={status === value} onClick={() => update({ status: value })}>
                     {value ? t.offers.statuses[value] : t.offers.all}
                   </button>
                 ))}

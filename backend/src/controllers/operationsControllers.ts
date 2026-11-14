@@ -45,7 +45,7 @@ export function createSalesController(salesService: SalesService) {
 
     async record(req: Request, res: Response): Promise<void> {
       const input = parseInput(recordSaleSchema, req.body);
-      const sale = await salesService.record(input, req.user!.id);
+      const sale = await salesService.record(input, req.user!);
       sendSuccess(res, sale, { statusCode: 201, message: 'Sale recorded' });
     },
 

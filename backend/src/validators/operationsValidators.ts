@@ -3,7 +3,7 @@ import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
 import { USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { addDays, startOfDay } from '../utils/zonedDates.js';
-import { booleanQuerySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
+import { booleanQuerySchema, calendarDaySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -40,6 +40,23 @@ export const recordSaleSchema = z.object({
   paidNow: z.boolean().optional(),
 });
 
+const time = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'must be a time like 14:30');
+
+/** Where and when a sale is taken to the customer, and whether the money is paid at the door. */
+export const deliverySchema = z
+  .object({
+    name: z.string().trim().min(1, 'who is it for?').max(200),
+    phone: z.string().trim().max(40).nullish().transform((value) => value || null),
+    address: z.string().trim().min(3, 'where should it go?').max(400),
+    day: calendarDaySchema,
+    timeFrom: time.nullish().transform((value) => value ?? null),
+    timeTo: time.nullish().transform((value) => value ?? null),
+    note: z.string().trim().max(500).nullish().transform((value) => value || null),
+    payment: z.enum(['shop', 'door']),
+    paidNow: z.number().min(0).max(10_000_000).multipleOf(0.01).optional(),
+  })
+  .refine((delivery) => !delivery.timeFrom || !delivery.timeTo || delivery.timeFrom < delivery.timeTo, { message: 'the window ends before it starts', path: ['timeTo'] });
+
 /** Several products sold together. Each product once; the quantity says how many. */
 export const basketSchema = z
   .object({
@@ -50,6 +67,8 @@ export const basketSchema = z
           quantity: quantitySchema(1_000_000),
           // 0 means no rabat; two decimals at most, like the stored percent.
           discountPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
+          /** The price for one agreed in the basket's offer. */
+          offerPrice: z.number().min(0).max(10_000_000).multipleOf(0.01).optional(),
         }),
       )
       .min(1, 'add at least one product')
@@ -67,6 +86,12 @@ export const basketSchema = z
     clientKey: z.string().uuid().optional(),
     /** Made offline at the Counter: when, so it is recorded at that time. */
     soldAt: isoDate.transform((value) => new Date(value)).optional(),
+    /** On a tab: the day the customer promised to pay. */
+    dueDate: calendarDaySchema.optional(),
+    /** An owner's one-time yes to this pay-later sale, from the Counter. */
+    payLaterApproval: z.string().uuid().optional(),
+    offerId: idSchema.optional(),
+    delivery: deliverySchema.optional(),
   })
   .refine((basket) => basket.soldAt === undefined || basket.clientKey !== undefined, {
     message: 'a sale made offline needs its key',

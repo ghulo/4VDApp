@@ -8,9 +8,8 @@ import { formatEuro, roundMoney } from '../utils/money.js';
 import { startOfDay, zonedDay } from '../utils/zonedDates.js';
 import { assertMonthsOpen } from './vat/periodLock.js';
 
-/** A tab unpaid this long shows up in "Needs your attention". */
+/** Charges on no invoice (so no promised day) count as late after this long. */
 export const OVERDUE_DAYS = 30;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface CustomerDto extends PartnerDetails {
   id: number;
@@ -20,6 +19,8 @@ export interface CustomerDto extends PartnerDetails {
   nui: string | null;
   phone: string | null;
   note: string | null;
+  /** The owner lets them take goods and pay later, up to `creditLimit`. */
+  payLater: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   discountPercent: number | null;
@@ -28,6 +29,9 @@ export interface CustomerDto extends PartnerDetails {
   /** When the oldest charge still unpaid was made (payments pay off the oldest first); null when nothing is owed. */
   owingSince: string | null;
   lastPaymentAt: string | null;
+  /** What is past its promised day, and the earliest such day ("YYYY-MM-DD"); 0 and null when nobody is late. */
+  lateAmount: number;
+  lateSince: string | null;
   archived: boolean;
   /** Everything they bought (tab or paid at the till), returns taken off. */
   spent: number;
@@ -179,7 +183,31 @@ function summarise(entries: TabEntryRecord[]) {
 
 const NO_PURCHASES: PurchaseTotals = { spent: 0, spentThisYear: 0, purchases: 0, lastPurchaseAt: null };
 
-function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[], bought: PurchaseTotals = NO_PURCHASES): CustomerDto {
+/** The open items past their promised day: an invoice's due date, or `OVERDUE_DAYS` after a charge on no invoice. */
+export function lateOf(items: OpenItemDto[], today: string): { lateAmount: number; lateSince: string | null } {
+  let lateAmount = 0;
+  let lateSince: string | null = null;
+  for (const item of items) {
+    const due = item.dueDate ?? addDays(item.date.slice(0, 10), OVERDUE_DAYS);
+    if (due >= today) continue;
+    lateAmount = roundMoney(lateAmount + item.left);
+    if (lateSince === null || due < lateSince) lateSince = due;
+  }
+  return { lateAmount, lateSince };
+}
+
+function addDays(day: string, days: number): string {
+  const date = new Date(`${day}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function toCustomerDto(
+  customer: CustomerRecord,
+  entries: TabEntryRecord[],
+  bought: PurchaseTotals = NO_PURCHASES,
+  late: { lateAmount: number; lateSince: string | null } = { lateAmount: 0, lateSince: null },
+): CustomerDto {
   const { balance, owingSince, lastPaymentAt } = summarise(entries);
   return {
     id: customer.id,
@@ -196,11 +224,14 @@ function toCustomerDto(customer: CustomerRecord, entries: TabEntryRecord[], boug
     iban: customer.iban,
     contactPerson: customer.contactPerson,
     mobile: customer.mobile,
+    payLater: customer.pay_later,
     creditLimit: customer.credit_limit === null ? null : Number(customer.credit_limit),
     discountPercent: customer.discount_percent === null ? null : Number(customer.discount_percent),
     balance,
     owingSince: owingSince?.toISOString() ?? null,
     lastPaymentAt: lastPaymentAt?.toISOString() ?? null,
+    lateAmount: late.lateAmount,
+    lateSince: late.lateSince,
     archived: customer.archived_at !== null,
     spent: roundMoney(bought.spent),
     spentThisYear: roundMoney(bought.spentThisYear),
@@ -237,12 +268,22 @@ export class TabService {
   }
 
   /** Everyone with a tab, most owed first, then by name. */
-  async list(): Promise<CustomerDto[]> {
+  async list(now = new Date()): Promise<CustomerDto[]> {
     const customers = await this.tabRepository.findCustomers();
     const ids = customers.map((customer) => customer.id);
-    const [entries, bought] = await Promise.all([this.tabRepository.findEntries(ids), this.tabRepository.purchaseTotals(this.yearStart(), ids)]);
+    const [entries, bought, invoices, allocations] = await Promise.all([
+      this.tabRepository.findEntries(ids),
+      this.tabRepository.purchaseTotals(this.yearStart(), ids),
+      this.tabRepository.chargeInvoices(ids),
+      this.tabRepository.allocations(ids),
+    ]);
+    const today = zonedDay(now, this.timeZone);
     return customers
-      .map((customer) => toCustomerDto(customer, entries.filter((entry) => entry.customer_id === customer.id), bought.get(customer.id)))
+      .map((customer) => {
+        const own = entries.filter((entry) => entry.customer_id === customer.id);
+        const items = openItemsOf(own, invoices, allocations.filter((allocation) => allocation.customer_id === customer.id));
+        return toCustomerDto(customer, own, bought.get(customer.id), lateOf(items, today));
+      })
       .sort((a, b) => b.balance - a.balance || a.name.localeCompare(b.name));
   }
 
@@ -256,10 +297,11 @@ export class TabService {
       this.tabRepository.chargeInvoices([id]),
       this.tabRepository.allocations([id]),
     ]);
+    const openItems = openItemsOf(entries, invoices, allocations);
     return {
-      ...toCustomerDto(customer, entries, bought.get(id)),
+      ...toCustomerDto(customer, entries, bought.get(id), lateOf(openItems, zonedDay(new Date(), this.timeZone))),
       entries: [...entries].reverse().map(toEntryDto),
-      openItems: openItemsOf(entries, invoices, allocations),
+      openItems,
       topProducts,
     };
   }
@@ -348,12 +390,9 @@ export class TabService {
     return this.detail(customerId);
   }
 
-  /** Tabs with a charge unpaid for `OVERDUE_DAYS` or more, oldest first. */
+  /** Customers with something past the day they promised to pay, the longest late first. */
   async overdue(now = new Date()): Promise<CustomerDto[]> {
-    const cutoff = now.getTime() - OVERDUE_DAYS * MS_PER_DAY;
-    return (await this.list())
-      .filter((customer) => customer.owingSince !== null && new Date(customer.owingSince).getTime() <= cutoff)
-      .sort((a, b) => a.owingSince!.localeCompare(b.owingSince!));
+    return (await this.list(now)).filter((customer) => customer.lateAmount > 0).sort((a, b) => a.lateSince!.localeCompare(b.lateSince!));
   }
 }
 

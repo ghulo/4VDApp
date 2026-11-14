@@ -1,9 +1,10 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
-import { ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { receivePayment } from './TabService.js';
 import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
-import { roundMoney } from '../utils/money.js';
-import { zonedDay } from '../utils/zonedDates.js';
+import { formatEuro, roundMoney } from '../utils/money.js';
+import { addDays, zonedDay } from '../utils/zonedDates.js';
 import { assertMonthsOpen } from './vat/periodLock.js';
 import { type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import type { UserRole } from '../database/types.js';
@@ -70,11 +71,28 @@ export interface RecordSaleInput {
   discountPercent?: number;
   /** Made offline at the Counter: the shelf may have had less than 4VD thought, so stock goes to 0 instead of refusing. */
   offline?: boolean;
+  /** The price for one agreed in an offer: used as it is, instead of the shelf price and rabat. */
+  fixedPrice?: number;
+}
+
+/** A sale taken to the customer: where and when, and whether the money is paid in the shop or at the door. */
+export interface DeliveryInput {
+  name: string;
+  phone: string | null;
+  address: string;
+  /** "YYYY-MM-DD"; the window is "HH:MM", or none. */
+  day: string;
+  timeFrom: string | null;
+  timeTo: string | null;
+  note: string | null;
+  /** 'shop': paid in full now, the usual way. 'door': the rest is collected at the door (`paidNow` in cash now, maybe 0). */
+  payment: 'shop' | 'door';
+  paidNow?: number;
 }
 
 export interface BasketInput {
   /** `discountPercent`: rabat on that line; employees may give up to the shop's limit. */
-  items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
+  items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
   notes: string | null;
   /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
@@ -89,6 +107,13 @@ export interface BasketInput {
   clientKey?: string;
   /** A sale the Counter made offline: when it was made. It is recorded at that time, and may sell past stock. */
   soldAt?: Date;
+  /** On a customer's tab: the day they promised to pay ("YYYY-MM-DD"); the shop's payment terms when left out. */
+  dueDate?: string;
+  /** An owner's one-time yes (Counter PIN) to putting this sale on the customer's tab. */
+  payLaterApproval?: string;
+  /** The offer the customer said yes to: lines with `offerPrice` sell at the offered price, and the offer is marked sold. */
+  offerId?: number;
+  delivery?: DeliveryInput;
 }
 
 export interface SaleQuery extends PageRequest {
@@ -161,14 +186,25 @@ export class SalesService {
    * promotion when that is cheaper) and take the units out of stock. Both happen together or not at all, so
    * stock and sales history can never disagree.
    */
-  async record(input: RecordSaleInput, soldBy: number): Promise<SaleDto> {
+  async record(input: RecordSaleInput, seller: number | { id: number; role: UserRole }): Promise<SaleDto> {
+    const soldBy = typeof seller === 'number' ? seller : seller.id;
     if (input.saleDate && input.saleDate.getTime() > Date.now()) {
       throw new ValidationError('saleDate cannot be in the future');
     }
 
     const saleId = await this.transactions.run(async (repos) => {
       const id = await this.recordInTransaction(repos, input, soldBy);
-      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy });
+      // A seed or script passes only an id: it acts for the owner.
+      if (typeof seller !== 'number' && input.customerId !== undefined && !input.paidNow) {
+        const sale = await repos.sales.findById(id);
+        await this.checkPayLater(repos, seller, input.customerId, Number(sale!.total_amount));
+      }
+      // Entered after the fact: due the shop's payment terms after the day it was sold, not after today.
+      const dueDate =
+        input.saleDate && input.customerId !== undefined && !input.paidNow
+          ? addDays(zonedDay(input.saleDate, this.timeZone), (await this.settings.get()).paymentTermsDays)
+          : undefined;
+      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy, dueDate });
       return id;
     });
 
@@ -189,6 +225,14 @@ export class SalesService {
       const sent = await this.alreadySent(input.clientKey);
       if (sent) return sent;
     }
+    if (input.items.some((item) => item.offerPrice !== undefined) && input.offerId === undefined) throw new ValidationError('An offered price needs its offer');
+    const delivery = input.delivery;
+    const atDoor = delivery?.payment === 'door';
+    if (delivery && input.soldAt) throw new ValidationError('A delivery needs the internet: record it once it is back');
+    const today = zonedDay(new Date(), this.timeZone);
+    if (input.dueDate !== undefined && input.dueDate < today) throw new ValidationError('The day they promise to pay can’t be before today');
+    if (delivery && delivery.day < today) throw new ValidationError('Pick today or a later day for the delivery');
+    if (atDoor && (input.paidBy === 'card' || input.cardAmount)) throw new ValidationError('Money taken now for a delivery is cash; the rest is collected at the door');
     const largest = Math.max(0, ...input.items.map((item) => item.discountPercent ?? 0));
     let needsApproval = false;
     if (largest > 0 && !canOversee(seller.role)) {
@@ -204,25 +248,57 @@ export class SalesService {
         if (needsApproval && !(await repos.pins.consumeApproval(input.rabatApproval!, seller.id, largest))) {
           throw new ForbiddenError('The owner’s yes to this rabat has run out or was used already. Ask again.');
         }
+        const offerPrices = await this.offerPrices(repos, input);
+        // Paid at the door: the sale goes on the customer's tab (a new one from the delivery's name when there is none) until it is collected.
+        let customerId = input.customerId;
+        if (delivery && atDoor && customerId === undefined) {
+          customerId = await repos.tabs.createCustomer({
+            name: delivery.name,
+            kind: 'person',
+            nui: null,
+            phone: delivery.phone,
+            note: null,
+            address: delivery.address,
+            createdBy: soldBy,
+          });
+        }
+        const paidNow = atDoor ? false : input.paidNow;
         const saleIds: number[] = [];
         for (const item of input.items) {
+          const { offerPrice, ...rest } = item;
           saleIds.push(
             await this.recordInTransaction(
               repos,
-              { ...item, notes: input.notes, customerId: input.customerId, paidNow: input.paidNow, saleDate, offline: Boolean(input.soldAt) },
+              {
+                ...rest,
+                ...(offerPrice !== undefined && { fixedPrice: offerPrices.get(item.productId) }),
+                notes: input.notes,
+                customerId,
+                paidNow,
+                saleDate,
+                offline: Boolean(input.soldAt),
+              },
               soldBy,
             ),
           );
         }
+        const sold = await Promise.all(saleIds.map((id) => repos.sales.findById(id)));
+        const total = roundMoney(sold.reduce((sum, sale) => sum + Number(sale!.total_amount), 0));
+        if (customerId !== undefined && !paidNow && !atDoor) await this.checkPayLater(repos, seller, customerId, total, input.payLaterApproval);
         const invoice = await this.documents.invoiceSales(repos, {
           saleIds,
-          customerId: input.customerId ?? null,
-          onAccount: !input.paidNow,
+          customerId: customerId ?? null,
+          onAccount: !paidNow,
           issuedBy: soldBy,
           byCard: input.paidBy === 'card',
           cardAmount: input.cardAmount,
           clientKey: input.clientKey,
+          dueDate: delivery && atDoor ? delivery.day : input.dueDate,
         });
+        if (input.offerId !== undefined && !(await repos.salesDocs.decideOffer(input.offerId, 'sold', invoice.id))) {
+          throw new ConflictError('That offer was sold or turned down already');
+        }
+        if (delivery) await this.addDelivery(repos, { delivery, customerId: customerId ?? null, total, invoiceId: invoice.id, soldBy });
         return { saleIds, invoice };
       });
     } catch (error) {
@@ -232,6 +308,88 @@ export class SalesService {
       throw error;
     }
     return this.basketResult(recorded.saleIds, recorded.invoice);
+  }
+
+  /** The offered price of each product the basket sells from the offer; the offer must still be open and offer it at that price. */
+  private async offerPrices(repos: TransactionalRepositories, input: BasketInput): Promise<Map<number, number>> {
+    const prices = new Map<number, number>();
+    if (input.offerId === undefined) return prices;
+    const offer = await repos.salesDocs.findOffer(input.offerId);
+    if (!offer) throw new NotFoundError(`Offer ${input.offerId} does not exist`);
+    if (offer.status !== 'open') throw new ConflictError(`Offer ${offer.number} was ${offer.status === 'sold' ? 'sold' : 'turned down'} already`);
+    const lines = await repos.salesDocs.offerLines(offer.id);
+    for (const item of input.items) {
+      if (item.offerPrice === undefined) continue;
+      const line = lines.find((candidate) => candidate.product_id === item.productId);
+      if (!line || roundMoney(Number(line.unit_price)) !== roundMoney(item.offerPrice)) {
+        throw new ValidationError(`Offer ${offer.number} doesn't offer that price for this product`);
+      }
+      prices.set(item.productId, Number(line.unit_price));
+    }
+    return prices;
+  }
+
+  /**
+   * Only the owner's side decides who pays later. Anyone else may put a sale on
+   * a tab only for a customer the owner let pay later, within their limit, or
+   * with the owner's one-time yes (Counter PIN).
+   */
+  private async checkPayLater(
+    repos: TransactionalRepositories,
+    seller: { id: number; role: UserRole },
+    customerId: number,
+    total: number,
+    approval?: string,
+  ): Promise<void> {
+    if (canOversee(seller.role)) return;
+    const customer = await repos.tabs.findCustomer(customerId);
+    if (!customer) throw new NotFoundError(`Customer ${customerId} does not exist`);
+    const limit = customer.credit_limit === null ? null : Number(customer.credit_limit);
+    // The sale is on the tab already (inside this transaction), so the balance includes it.
+    const balance = await repos.tabs.balance(customerId);
+    if (customer.pay_later && (limit === null || balance <= limit)) return;
+    if (approval && (await repos.pins.consumePayLater(approval, seller.id, customerId, total))) return;
+    if (approval) throw new ForbiddenError('The owner’s yes to paying later has run out or was for less. Ask again.');
+    throw new ForbiddenError(
+      customer.pay_later
+        ? `${customer.name} may owe at most ${formatEuro(limit!)}; with this sale they would owe ${formatEuro(balance)}. Ask the owner.`
+        : `${customer.name} isn't let pay later yet. Ask the owner.`,
+    );
+  }
+
+  private async addDelivery(
+    repos: TransactionalRepositories,
+    p: { delivery: DeliveryInput; customerId: number | null; total: number; invoiceId: number; soldBy: number },
+  ): Promise<void> {
+    const { delivery } = p;
+    const paidNow = delivery.payment === 'door' ? roundMoney(delivery.paidNow ?? 0) : p.total;
+    if (delivery.payment === 'door' && paidNow >= p.total) {
+      throw new ValidationError(`Paid now must be less than ${formatEuro(p.total)}; for all of it, choose Paid in the shop`);
+    }
+    if (delivery.payment === 'door' && paidNow > 0) {
+      await receivePayment(
+        repos,
+        p.customerId!,
+        { amount: paidNow, note: 'Paid in the shop, before delivery', allocations: [{ documentId: p.invoiceId, amount: paidNow }] },
+        p.soldBy,
+        this.timeZone,
+        new Date(),
+      );
+    }
+    await repos.salesDocs.createDelivery({
+      documentId: p.invoiceId,
+      customerId: p.customerId,
+      name: delivery.name,
+      phone: delivery.phone,
+      address: delivery.address,
+      deliverOn: delivery.day,
+      timeFrom: delivery.timeFrom,
+      timeTo: delivery.timeTo,
+      note: delivery.note,
+      total: p.total,
+      toCollect: roundMoney(p.total - paidNow),
+      createdBy: p.soldBy,
+    });
   }
 
   private async alreadySent(clientKey: string): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef } | undefined> {
@@ -258,8 +416,13 @@ export class SalesService {
       bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
     );
     // Rabat comes off the price the customer would otherwise pay (bulk price or promotion included).
-    const discountPercent = input.discountPercent ? input.discountPercent : null;
-    const pricePerUnit = discountPercent === null ? listedPrice : roundMoney(listedPrice * (1 - discountPercent / 100));
+    let discountPercent = input.discountPercent ? input.discountPercent : null;
+    let pricePerUnit = discountPercent === null ? listedPrice : roundMoney(listedPrice * (1 - discountPercent / 100));
+    // An offered price is kept to the cent; the rabat it makes is recorded for the reports.
+    if (input.fixedPrice !== undefined) {
+      pricePerUnit = roundMoney(input.fixedPrice);
+      discountPercent = pricePerUnit < listedPrice && listedPrice > 0 ? Math.round((1 - pricePerUnit / listedPrice) * 10000) / 100 : null;
+    }
 
     const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
     if (input.customerId !== undefined && (!customer || customer.archived_at)) {

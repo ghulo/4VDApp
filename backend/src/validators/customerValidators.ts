@@ -23,6 +23,8 @@ export const customerSchema = z
     /** Left out: kept as it is; null: none. */
     creditLimit: money.refine((value) => value > 0, 'must be more than 0').nullish(),
     discountPercent: z.number().gt(0).max(100).nullish(),
+    /** Left out: kept as it is. Only the owner's side may change it (and the limit). */
+    payLater: z.boolean().optional(),
   })
   .refine((input) => input.kind === 'person' || Boolean(input.nui), { path: ['nui'], message: 'a business needs its NUI' })
   .transform((input) => ({ ...input, nui: input.kind === 'business' ? input.nui! : null }));

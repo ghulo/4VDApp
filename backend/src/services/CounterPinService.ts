@@ -27,6 +27,14 @@ export interface PinPersonDto {
   locked: boolean;
 }
 
+export interface PayLaterApprovalDto {
+  token: string;
+  by: string;
+  customerId: number;
+  amount: number;
+  expiresAt: string;
+}
+
 export interface RabatApprovalDto {
   token: string;
   by: string;
@@ -112,7 +120,7 @@ export class CounterPinService {
     const owner = await this.check(deviceId, input, 'rabat', (row) => canOversee(row.role), now);
     const token = randomUUID();
     const expiresAt = new Date(now.getTime() + APPROVAL_MINUTES * 60_000);
-    await this.pins.createApproval({ id: token, approvedBy: owner.id, askedBy: actor.id, basketId: input.basketId, percent: input.percent, expiresAt });
+    await this.pins.createApproval({ id: token, purpose: 'rabat', approvedBy: owner.id, askedBy: actor.id, basketId: input.basketId, percent: input.percent, expiresAt });
     await this.counter.create([{ kind: 'rabat_allowed', userId: actor.id, productId: null, quantity: null, amount: null, reason: `${owner.name} · ${input.percent}%`, documentId: null }]);
     await this.activity.create({
       userId: owner.id,
@@ -125,11 +133,47 @@ export class CounterPinService {
     return { token, by: owner.name, percent: input.percent, expiresAt: expiresAt.toISOString() };
   }
 
+  /** An owner or admin lets this basket go on a customer's tab (over their limit, or for someone not let pay later), once, for a few minutes. */
+  async allowPayLater(
+    actor: CounterActor,
+    input: { userId: number; pin: string; customerId: number; amount: number; basketId: string },
+    now = new Date(),
+  ): Promise<PayLaterApprovalDto> {
+    const deviceId = await this.refreshTokens.deviceOf(actor.sessionId);
+    const customerName = await this.pins.customerName(input.customerId);
+    if (customerName === undefined) throw new NotFoundError(`Customer ${input.customerId} does not exist`);
+    const owner = await this.check(deviceId, input, 'pay_later', (row) => canOversee(row.role), now);
+    const token = randomUUID();
+    const expiresAt = new Date(now.getTime() + APPROVAL_MINUTES * 60_000);
+    await this.pins.createApproval({
+      id: token,
+      purpose: 'pay_later',
+      approvedBy: owner.id,
+      askedBy: actor.id,
+      basketId: input.basketId,
+      customerId: input.customerId,
+      amount: input.amount,
+      expiresAt,
+    });
+    await this.counter.create([
+      { kind: 'pay_later_allowed', userId: actor.id, productId: null, quantity: null, amount: input.amount, reason: `${owner.name} · ${customerName}`, documentId: null },
+    ]);
+    await this.activity.create({
+      userId: owner.id,
+      action: 'counter.pay_later_allowed',
+      entityType: 'customer',
+      entityId: input.customerId,
+      say: { key: 'payLaterAllowed', params: { name: customerName, amount: input.amount, seller: actor.name } },
+      details: { amount: input.amount, sellerId: actor.id, basketId: input.basketId },
+    });
+    return { token, by: owner.name, customerId: input.customerId, amount: input.amount, expiresAt: expiresAt.toISOString() };
+  }
+
   /** The locks, then the PIN itself; every PIN typed is recorded. */
   private async check(
     deviceId: string,
     input: { userId: number; pin: string },
-    purpose: 'switch' | 'rabat',
+    purpose: 'switch' | 'rabat' | 'pay_later',
     allowed: (row: PinPersonRow) => boolean,
     now: Date,
   ): Promise<PinPersonRow> {

@@ -42,7 +42,7 @@ export class PinRepository {
     return Number(row.failures);
   }
 
-  async recordAttempt(attempt: { userId: number; deviceId: string; purpose: 'switch' | 'rabat'; ok: boolean }): Promise<void> {
+  async recordAttempt(attempt: { userId: number; deviceId: string; purpose: 'switch' | 'rabat' | 'pay_later'; ok: boolean }): Promise<void> {
     await this.db
       .insertInto('pin_attempts')
       .values({ user_id: attempt.userId, device_id: attempt.deviceId, purpose: attempt.purpose, ok: attempt.ok })
@@ -57,7 +57,12 @@ export class PinRepository {
       .execute();
   }
 
-  async createApproval(approval: { id: string; approvedBy: number; askedBy: number; basketId: string; percent: number; expiresAt: Date }): Promise<void> {
+  async createApproval(
+    approval: { id: string; approvedBy: number; askedBy: number; basketId: string; expiresAt: Date } & (
+      | { purpose: 'rabat'; percent: number }
+      | { purpose: 'pay_later'; customerId: number; amount: number }
+    ),
+  ): Promise<void> {
     await this.db
       .insertInto('rabat_approvals')
       .values({
@@ -65,10 +70,34 @@ export class PinRepository {
         approved_by: approval.approvedBy,
         asked_by: approval.askedBy,
         basket_id: approval.basketId,
-        percent: approval.percent,
+        purpose: approval.purpose,
+        percent: approval.purpose === 'rabat' ? approval.percent : null,
+        customer_id: approval.purpose === 'pay_later' ? approval.customerId : null,
+        amount: approval.purpose === 'pay_later' ? approval.amount : null,
         expires_at: approval.expiresAt,
       })
       .execute();
+  }
+
+  async customerName(id: number): Promise<string | undefined> {
+    return (await this.db.selectFrom('customers').select('name').where('id', '=', id).executeTakeFirst())?.name;
+  }
+
+  /** Use an owner's yes to a pay-later sale once: by who asked, in time, for this customer and no more than allowed. */
+  async consumePayLater(id: string, askedBy: number, customerId: number, amount: number): Promise<{ approvedBy: number } | undefined> {
+    const row = await this.db
+      .updateTable('rabat_approvals')
+      .set({ used_at: new Date() })
+      .where('id', '=', id)
+      .where('purpose', '=', 'pay_later')
+      .where('asked_by', '=', askedBy)
+      .where('customer_id', '=', customerId)
+      .where('used_at', 'is', null)
+      .where('expires_at', '>', new Date())
+      .where(sql<boolean>`amount >= ${amount}`)
+      .returning('approved_by')
+      .executeTakeFirst();
+    return row ? { approvedBy: row.approved_by } : undefined;
   }
 
   /**
@@ -80,6 +109,7 @@ export class PinRepository {
       .updateTable('rabat_approvals')
       .set({ used_at: new Date() })
       .where('id', '=', id)
+      .where('purpose', '=', 'rabat')
       .where('asked_by', '=', askedBy)
       .where('used_at', 'is', null)
       .where('expires_at', '>', new Date())

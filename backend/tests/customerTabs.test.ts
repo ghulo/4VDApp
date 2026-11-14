@@ -21,6 +21,8 @@ const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/B
 
 async function openTab(name = 'Arben', token = employeeToken): Promise<number> {
   const response = await request(context.app).post('/api/customers').set(auth(token)).send({ name, phone: '044 123 456' });
+  // The owner lets them pay later (only the owner's side can).
+  await context.db.updateTable('customers').set({ pay_later: true }).where('id', '=', response.body.data.id).execute();
   return response.body.data.id;
 }
 
@@ -148,7 +150,7 @@ describe('customer tabs', () => {
     const tabs = insights.filter((insight) => insight.kind === 'tab_overdue');
 
     expect(tabs).toHaveLength(1);
-    expect(tabs[0]).toMatchObject({ customerId: arben, productId: null, title: 'Arben owes €40.00 on their tab' });
+    expect(tabs[0]).toMatchObject({ customerId: arben, productId: null, title: 'Arben is late paying €40.00' });
   });
 
   it('should count a registered customer paying at the till as their purchase, without touching their tab', async () => {

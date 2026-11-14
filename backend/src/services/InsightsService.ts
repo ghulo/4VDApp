@@ -4,7 +4,7 @@ import { roundMoney } from '../utils/money.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
 import { dayMonth } from '../i18n/language.js';
 import type { ReportsService } from './ReportsService.js';
-import { OVERDUE_DAYS, type TabService } from './TabService.js';
+import type { TabService } from './TabService.js';
 import { EXPIRY_URGENT_DAYS, type ExpiryService } from './ExpiryService.js';
 import { BILL_DUE_SOON_DAYS, type SupplierBillService } from './SupplierBillService.js';
 
@@ -159,8 +159,8 @@ export class InsightsService {
       insights.push({
         kind: 'tab_overdue',
         severity: 'warning',
-        title: t.insight.tabOverdueTitle({ name: customer.name, amount: customer.balance }),
-        detail: t.insight.tabOverdueDetail({ days: Math.floor((now.getTime() - Date.parse(customer.owingSince!)) / MS_PER_DAY), minimum: OVERDUE_DAYS }),
+        title: t.insight.tabOverdueTitle({ name: customer.name, amount: customer.lateAmount }),
+        detail: t.insight.tabOverdueDetail({ days: Math.max(1, Math.floor((now.getTime() - Date.parse(`${customer.lateSince!}T12:00:00Z`)) / MS_PER_DAY)) }),
         productId: null,
         customerId: customer.id,
       });

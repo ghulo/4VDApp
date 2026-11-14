@@ -329,13 +329,14 @@ export function CounterPage() {
 
   // "Sell it at the Counter" on an offer opens ?offer=<id>: its lines at the offered prices, in a basket of their own.
   const offerId = Number(params.get('offer'));
+  const offersTaken = useRef(new Set<number>());
   useEffect(() => {
-    if (!offerId || !products.data) return;
+    if (!offerId || !products.data || offersTaken.current.has(offerId)) return;
+    offersTaken.current.add(offerId);
     setParams({}, { replace: true });
-    let gone = false;
+    // Clearing ?offer= runs this again with no id, so the answer is not thrown away on cleanup.
     void offersApi.get(offerId).then(
       (offer) => {
-        if (gone) return;
         if (offer.status !== 'open') return complain(t.counter.offerGone(offer.number));
         if (current.lines.length > 0 && !openBasket()) return complain(t.counter.fullBaskets);
         setLines(() => offer.lines.map((line) => ({ productId: line.productId, name: line.productName, quantity: line.quantity, discount: '', offerPrice: line.unitPrice })));
@@ -343,11 +344,8 @@ export function CounterPage() {
         setLastSale(null);
         say(t.counter.offerLoaded(offer.number));
       },
-      (error: unknown) => !gone && complain(errorMessage(error)),
+      (error: unknown) => complain(errorMessage(error)),
     );
-    return () => {
-      gone = true;
-    };
     // Runs once per ?offer=; the basket functions read the latest state themselves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerId, products.data]);

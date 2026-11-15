@@ -13,9 +13,9 @@ import { isUniqueViolation } from '../utils/databaseErrors.js';
 import type { DocumentRef, DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
-import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import type { SettingsService } from './SettingsService.js';
-import { bestPromotionFor, priceWithPromotion } from './pricing/promotions.js';
+import { bestPromotionFor } from './pricing/promotions.js';
+import { listPrice } from './pricing/salePrice.js';
 import type { RecordSource } from '../validators/validate.js';
 import { readRules } from './shopRules.js';
 
@@ -33,6 +33,8 @@ export interface SaleDto {
   notes: string | null;
   /** The old till's receipt number, on sales imported from it. */
   receiptNo: string | null;
+  /** Sold at the wholesale price. */
+  wholesale: boolean;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
   /** The newest invoice the sale is on; null for sales from before documents. */
@@ -74,6 +76,8 @@ export interface RecordSaleInput {
   offline?: boolean;
   /** The price for one agreed in an offer: used as it is, instead of the shelf price and rabat. */
   fixedPrice?: number;
+  /** Wholesale prices on or off for this sale; left out: what the customer pays. */
+  wholesale?: boolean;
 }
 
 /** A sale taken to the customer: where and when, and whether the money is paid in the shop or at the door. */
@@ -98,6 +102,8 @@ export interface BasketInput {
   /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
   paidNow?: boolean;
+  /** Wholesale prices on or off for this sale; left out: what the customer pays. */
+  wholesale?: boolean;
   /** Money paid now: cash into the drawer (the default) or a card on the bank's terminal. */
   paidBy?: 'cash' | 'card';
   /** Split payment: this much on the card terminal, the rest in cash. */
@@ -194,6 +200,7 @@ export class SalesService {
     }
 
     const saleId = await this.transactions.run(async (repos) => {
+      if (typeof seller !== 'number') await assertMayWholesale(repos, seller.role, input.customerId, input.wholesale);
       const id = await this.recordInTransaction(repos, input, soldBy);
       // A seed or script passes only an id: it acts for the owner.
       if (typeof seller !== 'number' && input.customerId !== undefined && !input.paidNow) {
@@ -263,6 +270,7 @@ export class SalesService {
             createdBy: soldBy,
           });
         }
+        await assertMayWholesale(repos, seller.role, customerId, input.wholesale);
         const paidNow = atDoor ? false : input.paidNow;
         const saleIds: number[] = [];
         for (const item of input.items) {
@@ -278,6 +286,7 @@ export class SalesService {
                 paidNow,
                 saleDate,
                 offline: Boolean(input.soldAt),
+                wholesale: input.wholesale,
               },
               soldBy,
             ),
@@ -418,14 +427,21 @@ export class SalesService {
     const product = await repos.products.findById(input.productId, false);
     if (!product) throw new NotFoundError(`Product ${input.productId} does not exist or is hidden`);
 
-    const basePrice = toMoney(product.base_price);
+    const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
+    if (input.customerId !== undefined && (!customer || customer.archived_at)) {
+      throw new NotFoundError(`Customer ${input.customerId} does not exist or their tab is closed`);
+    }
     const tiers = await repos.pricingTiers.findByProductId(product.id);
     const promotions = await repos.promotions.findRunning(input.saleDate ?? new Date());
-    const { pricePerUnit: listedPrice, promotionId } = priceWithPromotion(
-      basePrice,
-      calculateUnitPrice(basePrice, tiers, input.quantity),
-      bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
-    );
+    const priced = listPrice({
+      shelfPrice: toMoney(product.base_price),
+      wholesalePrice: toMoneyOrNull(product.wholesale_price),
+      wholesale: input.wholesale ?? customer?.pays_wholesale ?? false,
+      tiers,
+      quantity: input.quantity,
+      promotion: bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
+    });
+    const { pricePerUnit: listedPrice, promotionId } = priced;
     // Rabat comes off the price the customer would otherwise pay (bulk price or promotion included).
     let discountPercent = input.discountPercent ? input.discountPercent : null;
     let pricePerUnit = discountPercent === null ? listedPrice : roundMoney(listedPrice * (1 - discountPercent / 100));
@@ -433,11 +449,6 @@ export class SalesService {
     if (input.fixedPrice !== undefined) {
       pricePerUnit = roundMoney(input.fixedPrice);
       discountPercent = pricePerUnit < listedPrice && listedPrice > 0 ? Math.round((1 - pricePerUnit / listedPrice) * 10000) / 100 : null;
-    }
-
-    const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
-    if (input.customerId !== undefined && (!customer || customer.archived_at)) {
-      throw new NotFoundError(`Customer ${input.customerId} does not exist or their tab is closed`);
     }
 
     const id = await repos.sales.create({
@@ -451,6 +462,7 @@ export class SalesService {
       priceBeforeDiscount: discountPercent === null ? null : listedPrice,
       notes: input.notes,
       saleDate: input.saleDate,
+      wholesale: priced.wholesale,
     });
     // Offline, the shelf decided: what 4VD didn't know about is taken to 0 and asked to be counted.
     let taken = input.quantity;
@@ -521,7 +533,19 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     saleDate: sale.sale_date.toISOString(),
     notes: sale.notes,
     receiptNo: sale.receipt_no,
+    wholesale: sale.wholesale,
     returnedQuantity: Number(sale.returned_quantity),
     invoice: sale.invoice_id === null ? null : { id: sale.invoice_id, number: sale.invoice_number! },
   };
+}
+
+/**
+ * Wholesale prices switched on for one sale go below the shelf price, like a
+ * rabat: only the owner's side may do it, unless the customer pays wholesale anyway.
+ */
+async function assertMayWholesale(repos: TransactionalRepositories, role: UserRole, customerId: number | undefined, wholesale: boolean | undefined): Promise<void> {
+  if (wholesale !== true || canOversee(role)) return;
+  const customer = customerId === undefined ? undefined : await repos.tabs.findCustomer(customerId);
+  if (customer?.pays_wholesale) return;
+  throw new ForbiddenError('Only the owner or an admin can sell at wholesale prices to this customer');
 }

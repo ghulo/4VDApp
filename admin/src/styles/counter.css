@@ -597,6 +597,27 @@
   font-family: var(--font-mono);
 }
 
+/* Shelf or wholesale prices: the value itself is the switch (owner's side only). */
+.counter-head__switch {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.counter-head__switch:hover {
+  border-color: var(--line-strong);
+}
+
+.counter-head__switch:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .counter-head__started {
   margin: 0;
   color: var(--ink-muted);

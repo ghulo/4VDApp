@@ -363,16 +363,21 @@ export async function importTrefin(
         const inserted = await trx
           .insertInto('customers')
           .values(
-            customers.map((p) => ({
+            customers.map((p) => {
+              const business = Boolean(p.nui || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(p.name));
+              return {
               name: p.name.slice(0, 120),
-              kind: p.nui || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(p.name) ? ('business' as const) : ('person' as const),
+              kind: business ? ('business' as const) : ('person' as const),
+              // Businesses pay TREFIN's invoice (wholesale) price, as they did there.
+              pays_wholesale: business,
               nui: p.nui,
               phone: (p.phone ?? p.mobile)?.slice(0, 40) ?? null,
               note: partnerNote(p, { label: 'They owed us', value: p.theyOwe }),
               ...partnerDetails(p),
               credit_limit: p.creditLimit,
               discount_percent: p.discountPercent,
-            })),
+              };
+            }),
           )
           .returning('id')
           .execute();

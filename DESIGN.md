@@ -401,6 +401,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | The printer's running and closing totals | **X report** · **Z report** (Counter keys only) | **Raporti X** · **Raporti Z** | Close the day (that is the shop's own steps) |
 | Giving money back for a returned line | **refund** | **kthim** | return receipt, storno |
 | Seeing a price at the Counter without selling | **Price check** (F10) | **Kontrollo çmimin** (key: **Shiko çmimin**) | price lookup, PLU |
+| The price businesses pay, set per product (never above the shelf price) | **wholesale price**; a customer **Pays wholesale prices** (on for new businesses); at the Counter **Prices: Shelf / Wholesale** | **çmim me shumicë**; **Paguan çmime me shumicë**; **Çmimet: Në raft / Me shumicë** *(confirm)* | invoice price, price list, tier |
+| A lower price from a quantity up | **bulk price** (Bulk price from 6) | **çmim për sasi** (Çmim për sasi nga 6) *(confirm)* | wholesale (that is the business price) |
 | One rabat on every line of a basket | **Basket rabat** | **Rabat i shportës** | discount, cart discount |
 | Part of a sale on the card terminal, the rest in cash | **Cash + card** (the card part: **On the card**) | **Kesh + kartelë** (**Me kartelë**) | split payment, mixed tender |
 | The printer's small screen facing the buyer | **Customer display** | **Ekrani për klientin** | pole display, VFD |

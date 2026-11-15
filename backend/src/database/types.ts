@@ -281,6 +281,8 @@ export interface SalesTable {
   undo_note: string | null;
   /** The old till's receipt number on sales imported from it; its lines are one checkout. */
   receipt_no: ColumnType<string | null, string | null | undefined, string | null>;
+  /** Sold at the wholesale price (the customer pays it, or it was switched on for the sale). */
+  wholesale: Generated<boolean>;
 }
 
 /** Two products that look like the same item, for someone to merge or keep apart. */
@@ -527,6 +529,8 @@ export interface CustomersTable {
   discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   /** The owner lets them take goods and pay later, up to `credit_limit` (none: no cap). */
   pay_later: Generated<boolean>;
+  /** They pay the wholesale price instead of the shelf price (step 9). */
+  pays_wholesale: Generated<boolean>;
   /** The bonus they earn on a year's purchases, in percent; null: none. */
   bonus_percent: ColumnType<string | null, number | null | undefined, number | null>;
   archived_at: Date | null;

@@ -21,6 +21,8 @@ export interface CustomerDto extends PartnerDetails {
   note: string | null;
   /** The owner lets them take goods and pay later, up to `creditLimit`. */
   payLater: boolean;
+  /** They pay the wholesale price instead of the shelf price. */
+  paysWholesale: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   /** The bonus they earn on a year's purchases, in percent; null: none. */
@@ -227,6 +229,7 @@ function toCustomerDto(
     contactPerson: customer.contactPerson,
     mobile: customer.mobile,
     payLater: customer.pay_later,
+    paysWholesale: customer.pays_wholesale,
     creditLimit: customer.credit_limit === null ? null : Number(customer.credit_limit),
     discountPercent: customer.discount_percent === null ? null : Number(customer.discount_percent),
     bonusPercent: customer.bonus_percent === null ? null : Number(customer.bonus_percent),

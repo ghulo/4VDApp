@@ -131,6 +131,8 @@ function reasonText(t: ReturnType<typeof useT>, reason: PriceReason): string {
       return t.counter.reason.promotion(reason.name);
     case 'bulk':
       return t.counter.reason.bulk(reason.from);
+    case 'wholesale':
+      return t.counter.reason.wholesale;
     case 'offer':
       return t.counter.reason.offer;
   }
@@ -144,6 +146,8 @@ export function SaleHead({
   basketRabat,
   offerNumber = null,
   delivery = null,
+  wholesale = false,
+  onWholesale,
   onCustomer,
 }: {
   customerName: string | null;
@@ -154,6 +158,9 @@ export function SaleHead({
   /** The offer this basket sells, and where it is going ("Tue 18 Nov, 10:00–12:00"). */
   offerNumber?: string | null;
   delivery?: string | null;
+  /** The sale is at wholesale prices; `onWholesale` switches them (only the owner's side gets it). */
+  wholesale?: boolean;
+  onWholesale?: () => void;
   onCustomer: () => void;
 }) {
   const t = useT();
@@ -178,6 +185,26 @@ export function SaleHead({
           <div className="counter-head__fact counter-head__fact--rabat">
             <dt>{t.counter.deliveryFact}</dt>
             <dd>{delivery}</dd>
+          </div>
+        )}
+        {(wholesale || onWholesale) && (
+          <div className={wholesale ? 'counter-head__fact counter-head__fact--rabat' : 'counter-head__fact'}>
+            <dt>{t.counter.pricesFact}</dt>
+            <dd>
+              {onWholesale ? (
+                <button
+                  type="button"
+                  className="counter-head__switch"
+                  aria-pressed={wholesale}
+                  title={t.counter.switchPrices(wholesale ? t.counter.shelfPrices : t.counter.wholesalePrices)}
+                  onClick={onWholesale}
+                >
+                  {wholesale ? t.counter.wholesalePrices : t.counter.shelfPrices}
+                </button>
+              ) : (
+                t.counter.wholesalePrices
+              )}
+            </dd>
           </div>
         )}
         {basketRabat > 0 && (

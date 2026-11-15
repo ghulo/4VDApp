@@ -21,6 +21,7 @@ export function createCustomerController(tabService: TabService) {
       // Who may pay later, and how much, is the owner's call: the counter opens a tab without it.
       if (!canOversee(req.user!.role)) {
         delete input.payLater;
+        delete input.paysWholesale;
         delete input.creditLimit;
         delete input.bonusPercent;
       }

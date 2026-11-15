@@ -78,3 +78,18 @@ describe("the basket's summary", () => {
     });
   });
 });
+
+// The same cases as the server's tests/wholesale.test.ts ("the price list rules").
+describe('wholesale prices at the Counter', () => {
+  const juice = (patch: Partial<Product> = {}) => product({ price: 2, wholesalePrice: 1.6, bulkPricingTiers: [{ quantity: 10, price: 1.5 }], ...patch });
+  it('charges the wholesale price only when asked, and never more than the shelf price', () => {
+    expect(priceLine(line(), juice(), '')).toMatchObject({ unitPrice: 2, reasons: [] });
+    expect(priceLine(line(), juice(), '', true)).toMatchObject({ unitPrice: 1.6, reasons: [{ kind: 'wholesale' }] });
+    expect(priceLine(line(), juice({ wholesalePrice: 2.4 }), '', true)).toMatchObject({ unitPrice: 2, reasons: [] });
+    expect(priceLine(line(), juice({ wholesalePrice: null }), '', true)).toMatchObject({ unitPrice: 2 });
+  });
+  it('lets a lower bulk price or promotion win over the price level', () => {
+    expect(priceLine(line({ quantity: 10 }), juice(), '', true)).toMatchObject({ unitPrice: 1.5, reasons: [{ kind: 'bulk', from: 10 }] });
+    expect(priceLine(line(), juice({ promotion: { id: 1, name: 'Half', percentOff: 50, price: 1, endsAt: '' } as Product['promotion'] }), '', true)).toMatchObject({ unitPrice: 1 });
+  });
+});

@@ -184,6 +184,8 @@ export interface Sale {
   notes: string | null;
   /** The old till's receipt number, on sales imported from it. */
   receiptNo: string | null;
+  /** Sold at the wholesale price. */
+  wholesale?: boolean;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
   /** The newest invoice the sale is on; null for sales from before invoices. */
@@ -906,6 +908,8 @@ export interface Customer extends PartnerDetails {
   note: string | null;
   /** The owner lets them take goods and pay later, up to `creditLimit`. */
   payLater: boolean;
+  /** They pay the wholesale price instead of the shelf price. */
+  paysWholesale: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   discountPercent: number | null;

@@ -31,6 +31,8 @@ export const endDateQuery = isoDate.transform((value) =>
 // ---------- Sales ----------
 
 export const recordSaleSchema = z.object({
+  /** Wholesale price on or off for this sale; left out: what the customer pays. */
+  wholesale: z.boolean().optional(),
   productId: idSchema,
   quantity: quantitySchema(1_000_000),
   notes: optionalText(1000),
@@ -76,6 +78,8 @@ export const basketSchema = z
     notes: optionalText(1000),
     customerId: idSchema.optional(),
     paidNow: z.boolean().optional(),
+    /** Wholesale prices on (true) or off (false) for this sale; left out: what the customer pays. */
+    wholesale: z.boolean().optional(),
     /** How money paid now came in: cash into the drawer (the default), or a card on the bank's terminal. */
     paidBy: z.enum(['cash', 'card']).optional(),
     /** Split payment: this much went on the card terminal and the rest was cash. */

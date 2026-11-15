@@ -57,7 +57,7 @@ import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
-import { useBaskets } from './counter/useBaskets';
+import { type Basket, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 import { isNetworkFailure, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import { useWaitingSales } from './counter/useWaitingSales';
@@ -186,10 +186,13 @@ export function CounterPage() {
   }, [expiries.data]);
 
   const basketRabat = current.discount ?? '';
-  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat));
+  const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
+  // Wholesale prices: what the customer pays, unless the owner's side switched this basket.
+  const wholesaleOf = (basket: Basket) => basket.wholesale ?? customers.data?.find((one) => one.id === basket.customerId)?.paysWholesale ?? false;
+  const wholesale = wholesaleOf(current);
+  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat, wholesale));
   const summary = summarise(lines);
   const total = summary.total;
-  const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
 
   // The printer's customer display, unless Settings → Counter turned it off.
   const display = useCallback(
@@ -436,6 +439,8 @@ export function CounterPage() {
       return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
     }),
     notes: null,
+    // Always said, so the server charges what the Counter showed.
+    wholesale,
     ...(current.offerId && { offerId: current.offerId }),
     ...(current.delivery && { delivery: current.delivery }),
     ...(payment.paidBy === 'tab' && payment.dueDate && { dueDate: payment.dueDate }),
@@ -813,7 +818,7 @@ export function CounterPage() {
                 const product = byId.get(line.productId);
                 const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
                 if (line.offerPrice !== undefined) return sum + line.offerPrice * line.quantity;
-                return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
+                return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity, wholesaleOf(basket)), percent) * line.quantity : 0);
               }, 0),
             );
             const minutes = minutesSince(basket.startedAt, now);
@@ -996,6 +1001,8 @@ export function CounterPage() {
               basketRabat={parsePercent(basketRabat)}
               offerNumber={current.offerNumber ?? null}
               delivery={current.delivery ? deliveryWhen(current.delivery) : null}
+              wholesale={wholesale}
+              onWholesale={canOversee(user.role) && current.offerId == null ? () => updateBasket({ wholesale: !wholesale }) : undefined}
               onCustomer={() => startPanel('customer')}
             />
             {checked && <PriceCheckCard product={checked} days={expiry.get(checked.id)} onClose={() => setChecked(null)} />}
@@ -1293,7 +1300,7 @@ export function CounterPage() {
         current={current.customerId ?? null}
         onClose={closePanel}
         onPick={(picked) => {
-          updateBasket({ customerId: picked?.id ?? null });
+          updateBasket({ customerId: picked?.id ?? null, wholesale: null });
           if (picked) say(t.counter.customerPicked(picked.name));
           closePanel();
         }}

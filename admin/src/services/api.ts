@@ -438,6 +438,8 @@ export const salesApi = {
     items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
     notes: string | null;
     customerId?: number;
+    /** Wholesale prices on or off for this sale; left out: what the customer pays. */
+    wholesale?: boolean;
     /** On a tab: the day the customer promised to pay. */
     dueDate?: string;
     /** An owner's one-time yes to this pay-later sale. */
@@ -708,6 +710,7 @@ export interface CustomerInput extends Partial<PartnerDetails> {
   creditLimit?: number | null;
   discountPercent?: number | null;
   payLater?: boolean;
+  paysWholesale?: boolean;
   bonusPercent?: number | null;
 }
 

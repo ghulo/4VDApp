@@ -1,4 +1,5 @@
 import { CashRegister, FileText, Plus, Printer, WhatsappLogo, X } from '@phosphor-icons/react';
+import { levelPriceFor } from '../components/BasketForm';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -191,7 +192,10 @@ export function NewOfferPage() {
   function addProduct(value: string) {
     const product = products.data?.find((item) => item.id === Number(value));
     if (!product || lines.some((line) => line.productId === product.id)) return;
-    setLines((current) => [...current, { productId: product.id, name: product.name, shelfPrice: product.price, quantity: '1', price: product.price.toFixed(2) }]);
+    // A customer who pays wholesale starts from their wholesale price.
+    const wholesale = customers.data?.find((one) => String(one.id) === customerId)?.paysWholesale ?? false;
+    const start = levelPriceFor(product, wholesale);
+    setLines((current) => [...current, { productId: product.id, name: product.name, shelfPrice: start, quantity: '1', price: start.toFixed(2) }]);
   }
   const change = (productId: number, patch: Partial<DraftLine>) => setLines((current) => current.map((line) => (line.productId === productId ? { ...line, ...patch } : line)));
 

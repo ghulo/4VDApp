@@ -17,9 +17,18 @@ import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 const SUGGESTIONS = 6;
 
-/** Same rule as the server: the biggest bulk tier reached, or the promotion when that's cheaper. */
-export function unitPriceFor(product: Product, quantity: number): number {
-  const tier = product.bulkPricingTiers.reduce((price, next) => (quantity >= next.quantity ? next.price : price), product.price);
+/** The customer's price level: the shelf price, or the wholesale price (never above the shelf price). Same rule as the server's `levelPrice`. */
+export function levelPriceFor(product: Product, wholesale: boolean): number {
+  return wholesale && product.wholesalePrice !== null ? Math.min(product.price, product.wholesalePrice) : product.price;
+}
+
+/**
+ * Same rule as the server's `listPrice`: the price level, a bulk price when
+ * the quantity reaches one and it is lower, then the promotion when that's cheaper.
+ */
+export function unitPriceFor(product: Product, quantity: number, wholesale = false): number {
+  const bulk = product.bulkPricingTiers.reduce((price, next) => (quantity >= next.quantity ? next.price : price), product.price);
+  const tier = Math.min(levelPriceFor(product, wholesale), bulk);
   return product.promotion && product.promotion.price < tier ? product.promotion.price : tier;
 }
 
@@ -62,6 +71,11 @@ export function BasketForm() {
   // A named customer pays now unless the tab is picked; anonymous sales are always paid now.
   const [onTab, setOnTab] = useState(false);
   const owing = customerId !== '' && onTab;
+  // Wholesale prices: what the customer pays, unless switched for this sale (only the owner's side may switch them on).
+  const [wholesaleSwitch, setWholesaleSwitch] = useState<boolean | null>(null);
+  const buyer = customerId ? customers.data?.find((one) => String(one.id) === customerId) : undefined;
+  const wholesale = wholesaleSwitch ?? buyer?.paysWholesale ?? false;
+  const mayWholesale = canOversee(role) || Boolean(buyer?.paysWholesale);
   const [notes, setNotes] = useState('');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [invoice, setInvoice] = useState<DocumentRef | null>(null);
@@ -131,7 +145,7 @@ export function BasketForm() {
   }
 
   const priceOf = (line: { product: Product; quantity: number; discount: string }) =>
-    afterDiscount(unitPriceFor(line.product, line.quantity), parsePercent(line.discount));
+    afterDiscount(unitPriceFor(line.product, line.quantity, wholesale), parsePercent(line.discount));
   const tooMuchDiscount = lines.some((line) => parsePercent(line.discount) > discountLimit || parsePercent(line.discount) < 0);
   const total = roundMoney(lines.reduce((sum, line) => sum + priceOf(line) * line.quantity, 0));
   const paidAmount = Number(paid);
@@ -148,6 +162,7 @@ export function BasketForm() {
         }),
         notes: notes.trim() || null,
         ...(customerId && { customerId: Number(customerId), paidNow: !onTab }),
+        ...(wholesaleSwitch !== null && { wholesale: wholesaleSwitch }),
       }),
     onSuccess: (result) => {
       for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash']) {
@@ -233,7 +248,7 @@ export function BasketForm() {
               </thead>
               <tbody>
                 {lines.map((line) => {
-                  const listed = unitPriceFor(line.product, line.quantity);
+                  const listed = unitPriceFor(line.product, line.quantity, wholesale);
                   const percent = parsePercent(line.discount);
                   const each = afterDiscount(listed, percent);
                   return (
@@ -320,7 +335,10 @@ export function BasketForm() {
             hint={customerId ? undefined : t.tabs.anonymousHint}
             placeholder={t.tabs.anonymous}
             value={customerId}
-            onChange={setCustomerId}
+            onChange={(next) => {
+              setCustomerId(next);
+              setWholesaleSwitch(null);
+            }}
             options={customers.data.map((customer) => ({ value: String(customer.id), label: customer.name, hint: customer.phone ?? undefined }))}
           />
         )}
@@ -331,6 +349,24 @@ export function BasketForm() {
             {[false, true].map((option) => (
               <button key={String(option)} type="button" role="radio" aria-checked={onTab === option} className="segmented__option" onClick={() => setOnTab(option)}>
                 {option ? t.tabs.putOnTab : t.tabs.paidNow}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
+      {mayWholesale && (
+        <Field label={t.basket.prices} hint={buyer?.paysWholesale && wholesale ? t.basket.paysWholesale(buyer.name) : undefined}>
+          <div className="segmented" role="radiogroup" aria-label={t.basket.prices}>
+            {[false, true].map((option) => (
+              <button
+                key={String(option)}
+                type="button"
+                role="radio"
+                aria-checked={wholesale === option}
+                className="segmented__option"
+                onClick={() => setWholesaleSwitch(option === (buyer?.paysWholesale ?? false) ? null : option)}
+              >
+                {option ? t.basket.wholesale : t.basket.shelf}
               </button>
             ))}
           </div>

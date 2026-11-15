@@ -13,6 +13,10 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Smoothness** (on your own screen, after the next deploy)
+- [ ] The sign-in page's moving dots look the same as before but run smoothly (no longer 30 frames a second), and typing in the form stays quick
+- [ ] Scrolling a long dashboard page feels smooth under the glass top bar
+
 **Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
 - [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
 - [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it

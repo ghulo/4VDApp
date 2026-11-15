@@ -45,7 +45,8 @@ function EmailedRow({ mail, reads }: { mail: OpenBillEmail; reads: number | null
   });
   const remove = useMutation({ mutationFn: () => billEmailsApi.remove(mail.id), onSuccess: refresh });
   const name = mail.fileName ?? t.billEmail.unnamed;
-  const state = mail.status === 'failed' ? t.billEmail.failed : reads !== null ? t.billEmail.waiting(reads) : null;
+  const state =
+    mail.status === 'failed' ? (mail.error ? `${t.billEmail.failed}: ${mail.error}` : t.billEmail.failed) : reads !== null ? t.billEmail.waiting(reads) : null;
   const error = read.error ?? remove.error;
   const busy = read.isPending || remove.isPending;
 

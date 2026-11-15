@@ -8,6 +8,7 @@ const MAX_UNITS = 1_000_000;
 export const approvalListQuerySchema = z.object({ status: z.enum(APPROVAL_STATUSES).optional() });
 
 export const writeOffSchema = z.object({
+  locationId: idSchema.nullish(),
   productId: idSchema,
   quantity: quantitySchema(MAX_UNITS),
   reason: z.enum(WRITE_OFF_REASONS),
@@ -36,7 +37,7 @@ const numberFormatSchema = z.object({
 export const updateRulesSchema = z
   .object({
     numbering: z
-      .object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema, stock_in: numberFormatSchema, stock_out: numberFormatSchema })
+      .object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema, stock_in: numberFormatSchema, stock_out: numberFormatSchema, stock_move: numberFormatSchema })
       .partial()
       .optional(),
     noStockSales: z.enum(['block', 'allow']).optional(),
@@ -70,7 +71,7 @@ export const returnSchema = z.object({
   notes: optionalText(1000),
 });
 
-export const startCountSchema = z.object({ categoryId: idSchema.nullish().transform((value) => value ?? null) });
+export const startCountSchema = z.object({ categoryId: idSchema.nullish().transform((value) => value ?? null), locationId: idSchema.nullish().transform((value) => value ?? null) });
 
 export const countLineParamsSchema = z.object({ id: idSchema, productId: idSchema });
 

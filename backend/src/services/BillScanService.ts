@@ -103,6 +103,8 @@ export interface ConfirmScanInput {
   bill: BillInput;
   /** Where new products go. */
   categoryId: number | null;
+  /** Where the goods come in; left out, where goods are received. */
+  locationId?: number | null;
   lines: Array<{
     readIndex?: number;
     productId: number | null;
@@ -452,6 +454,7 @@ export class BillScanService {
         orderId,
         {
           updateCostPrices: false,
+          locationId: input.locationId ?? null,
           lines: lines.map((line) => {
             const came = received.get(line.product_id);
             return { lineId: line.id, receivedQuantity: came?.pieces ?? 0, ...(came && came.cost !== null && { unitCost: came.cost }), ...(came?.expiresOn && { expiresOn: came.expiresOn }) };
@@ -564,6 +567,7 @@ export class BillScanService {
               notes: `Scanned bill from ${supplierName} reopened`,
               adjustedBy: actorId,
               reorderLevel: product.reorder_level ?? 0,
+              locationId: done.input.locationId ?? null,
             });
           } catch (error) {
             if (error instanceof ValidationError) {

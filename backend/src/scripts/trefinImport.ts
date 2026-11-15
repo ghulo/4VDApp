@@ -3,6 +3,7 @@ import { unitFromTrefin } from '../constants/units.js';
 import path from 'node:path';
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import { placeUnlocatedStock } from '../repositories/LocationRepository.js';
 import { countryFromBarcode } from '../utils/barcodeCountry.js';
 import { startOfDay } from '../utils/zonedDates.js';
 import {
@@ -822,6 +823,8 @@ export async function importTrefin(
         offers: offers.length,
         activity: activity.lines.length,
       };
+      // All of it starts on the shop floor; storerooms are filled by moving stock.
+      await placeUnlocatedStock(trx);
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${TREFIN_IMPORTED_KEY}, to_jsonb(now()::text), now())
       `.execute(trx);

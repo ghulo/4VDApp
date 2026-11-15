@@ -8,6 +8,7 @@ export interface StockAdjustmentRecord {
   notes: string | null;
   adjustment_date: Date;
   adjusted_by_name: string | null;
+  location_name: string | null;
 }
 
 export class StockAdjustmentRepository {
@@ -19,6 +20,8 @@ export class StockAdjustmentRepository {
     reason: string;
     notes: string | null;
     adjustedBy: number | null;
+    /** Where it moved; null leaves it unknown (old rows). */
+    locationId?: number | null;
   }): Promise<void> {
     await this.db
       .insertInto('stock_adjustments')
@@ -28,6 +31,7 @@ export class StockAdjustmentRepository {
         reason: entry.reason,
         notes: entry.notes,
         adjusted_by: entry.adjustedBy,
+        location_id: entry.locationId ?? null,
       })
       .execute();
   }
@@ -36,7 +40,8 @@ export class StockAdjustmentRepository {
     return this.db
       .selectFrom('stock_adjustments as s')
       .leftJoin('users as u', 'u.id', 's.adjusted_by')
-      .select(['s.id', 's.adjustment_quantity', 's.reason', 's.notes', 's.adjustment_date', 'u.name as adjusted_by_name'])
+      .leftJoin('stock_locations as l', 'l.id', 's.location_id')
+      .select(['s.id', 's.adjustment_quantity', 's.reason', 's.notes', 's.adjustment_date', 'u.name as adjusted_by_name', 'l.name as location_name'])
       .where('s.product_id', '=', productId)
       .orderBy('s.adjustment_date', 'desc')
       .orderBy('s.id', 'desc')

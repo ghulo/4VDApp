@@ -511,6 +511,7 @@ export class SalesService {
         notes: taken < input.quantity ? `Sale #${id} (${input.offline ? 'offline, ' : ''}${roundQuantity(input.quantity - taken)} more than in stock)` : `Sale #${id}`,
         adjustedBy: soldBy,
         reorderLevel: product.reorder_level ?? 0,
+        locationId: null,
       });
     }
     const total = roundMoney(pricePerUnit * input.quantity);

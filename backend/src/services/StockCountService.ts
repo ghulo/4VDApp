@@ -38,6 +38,8 @@ export interface StockCountSummaryDto {
   startedAt: string;
   submittedAt: string | null;
   closedAt: string | null;
+  /** The location counted; null for counts from before locations. */
+  location: { id: number; name: string } | null;
 }
 
 export interface StockCountTotals {
@@ -85,19 +87,23 @@ export class StockCountService {
     private readonly transactions: TransactionManager,
   ) {}
 
-  async start(categoryId: number | null, user: PublicUser): Promise<StockCountDto> {
+  /** A count of one location (null: where the till sells from), of one category or all. */
+  async start(categoryId: number | null, user: PublicUser, locationId: number | null = null): Promise<StockCountDto> {
     const id = await this.transactions.run(async (repos) => {
       await repos.stockCounts.lockStarts();
+      const location = locationId ?? (await repos.locations.sellingId());
+      const found = await repos.locations.findById(location);
+      if (!found || found.removed_at) throw new NotFoundError(`Location ${location} does not exist`);
       if (categoryId !== null && !(await repos.categories.findById(categoryId))) {
         throw new NotFoundError(`Category ${categoryId} does not exist`);
       }
-      const overlapping = await repos.stockCounts.findOverlapping(categoryId);
+      const overlapping = await repos.stockCounts.findOverlapping(categoryId, location);
       if (overlapping) {
         throw new ConflictError(
           `A count of ${scopeLabel(overlapping)} is already ${overlapping.status === 'open' ? 'in progress' : 'waiting for approval'}. Finish that one first.`,
         );
       }
-      const id = await repos.stockCounts.create(categoryId, user.id);
+      const id = await repos.stockCounts.create(categoryId, user.id, location);
       const count = (await repos.stockCounts.findById(id))!;
       await repos.activityLog.create({
         userId: user.id,
@@ -166,7 +172,8 @@ export class StockCountService {
         countId: id,
         productId,
         counted,
-        expected: product.quantity_on_hand ?? 0,
+        // Old counts (before locations) compare with the total.
+        expected: count.location_id === null ? (product.quantity_on_hand ?? 0) : await repos.inventory.quantityAt(productId, count.location_id),
         unitCost: toMoneyOrNull(product.cost_price),
         countedBy: user.id,
       });
@@ -239,6 +246,7 @@ export class StockCountService {
           notes: `Count #${id}`,
           adjustedBy: admin.id,
           reorderLevel: product?.reorder_level ?? 0,
+          locationId: count.location_id,
         });
       } catch (error) {
         if (error instanceof ValidationError) {
@@ -333,6 +341,7 @@ function toSummaryDto(count: StockCountRecord): StockCountSummaryDto {
     startedAt: count.started_at.toISOString(),
     submittedAt: toIsoOrNull(count.submitted_at),
     closedAt: toIsoOrNull(count.closed_at),
+    location: count.location_id === null ? null : { id: count.location_id, name: count.location_name ?? 'Unknown' },
   };
 }
 

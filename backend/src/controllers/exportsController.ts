@@ -39,6 +39,7 @@ export function createExportsController(exportService: ExportService) {
     money: (req: Request, tz: string) => exportService.money(range(req), tz),
     expenses: (req: Request, tz: string) => exportService.expenses(range(req), tz),
     'stock-documents': (req: Request, tz: string) => exportService.stockDocuments(range(req), tz),
+    'stock-moves': (req: Request, tz: string) => exportService.stockMoves(range(req), tz),
     team: (req: Request, tz: string) => exportService.team(range(req), tz),
     prices: (_req: Request, tz: string) => exportService.prices(tz),
     'price-list': (req: Request, tz: string) => exportService.priceList(parseInput(priceListSchema, req.query), tz),

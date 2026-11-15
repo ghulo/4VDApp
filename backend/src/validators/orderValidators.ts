@@ -54,6 +54,7 @@ export const newOrderSchema = z.object({
 });
 
 export const receiveOrderSchema = z.object({
+  locationId: idSchema.nullish(),
   lines: z
     .array(
       z.object({
@@ -127,6 +128,7 @@ export const billFormSchema = z.object({
     .transform((value) => value ?? null),
   place: z.enum(EXPENSE_PLACES).default('shop'),
   carwashId: idSchema.nullish().transform((value) => value ?? null),
+  locationId: idSchema.nullish(),
   repeatMonthly: z.boolean().default(false),
   updateCosts: z.boolean().default(true),
   prices: z
@@ -189,6 +191,7 @@ const barcodeSchema = z
   .transform((value) => value || null);
 
 export const confirmScanSchema = z.object({
+  locationId: idSchema.nullish(),
   supplierId: idSchema,
   orderId: idSchema.nullable(),
   bill: billSchema,

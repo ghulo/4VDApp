@@ -209,6 +209,7 @@ async function approveReturn(repos: TransactionalRepositories, id: number, decid
       notes: `Return #${id}`,
       adjustedBy: decidedBy,
       reorderLevel: product?.reorder_level ?? 0,
+      locationId: null,
     });
   } else {
     const writeOff = await createWriteOffRecord(repos, {

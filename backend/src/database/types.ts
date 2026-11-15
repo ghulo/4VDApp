@@ -311,6 +311,50 @@ export interface ProductBarcodesTable {
 export type StockDocumentDirection = 'in' | 'out';
 export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given_away' | 'other';
 
+/** Where stock is kept: the shop floor, a storeroom. */
+export interface StockLocationsTable {
+  id: Generated<number>;
+  name: string;
+  /** The till sells from here. Exactly one. */
+  sells_here: Generated<boolean>;
+  /** Goods coming in go here unless another is picked. Exactly one. */
+  receives_here: Generated<boolean>;
+  created_at: CreatedAt;
+  removed_at: Date | null;
+}
+
+/** How much of a product's total is in each location. */
+export interface LocationStockTable {
+  location_id: number;
+  product_id: number;
+  quantity: Generated<number>;
+  /** Below this on the selling floor, it wants refilling from storage. */
+  shelf_minimum: ColumnType<number | null, number | null | undefined, number | null>;
+  updated_at: UpdatedAt;
+}
+
+/** Stock moved from one location to another (LV-). Never in the books. */
+export interface StockMovesTable {
+  id: Generated<number>;
+  number: string;
+  from_location_id: number;
+  to_location_id: number;
+  /** Read through to_char, so kept as text. */
+  day: string;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface StockMoveLinesTable {
+  id: Generated<number>;
+  move_id: number;
+  product_id: number;
+  quantity: number;
+}
+
 export interface StockDocumentsTable {
   id: Generated<number>;
   number: string;
@@ -323,6 +367,8 @@ export interface StockDocumentsTable {
   created_at: CreatedAt;
   voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
   voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Where the stock moved (stock_locations); null before locations existed. */
+  location_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface StockDocumentLinesTable {
@@ -403,6 +449,8 @@ export interface StockAdjustmentsTable {
   adjustment_date: ColumnType<Date, Date | undefined, never>;
   notes: string | null;
   created_at: CreatedAt;
+  /** Where the stock moved (stock_locations); null before locations existed. */
+  location_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface ProductImagesTable {
@@ -822,6 +870,8 @@ export interface WriteOffsTable extends ApprovalColumns {
   undone_at: Date | null;
   undone_by: number | null;
   undo_note: string | null;
+  /** Where the stock moved (stock_locations); null before locations existed. */
+  location_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface StockCountsTable {
@@ -833,6 +883,8 @@ export interface StockCountsTable {
   submitted_by: number | null;
   submitted_at: Date | null;
   closed_at: Date | null;
+  /** Where the stock moved (stock_locations); null before locations existed. */
+  location_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface StockCountLinesTable {
@@ -913,6 +965,8 @@ export interface SupplierBillsTable {
   brought_over: Generated<boolean>;
   /** "<database>/<document id>": a bill from TREFIN's history, only to look at (never owed, posted, counted for VAT or changed). */
   trefin_ref: Optional<string>;
+  /** Where its products came in (stock_locations). */
+  location_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -1081,7 +1135,7 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
-  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out';
+  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move';
   year: number;
   last_number: number;
 }
@@ -1409,6 +1463,10 @@ export interface Database {
   product_duplicate_flags: ProductDuplicateFlagsTable;
   product_barcodes: ProductBarcodesTable;
   stock_documents: StockDocumentsTable;
+  stock_locations: StockLocationsTable;
+  location_stock: LocationStockTable;
+  stock_moves: StockMovesTable;
+  stock_move_lines: StockMoveLinesTable;
   stock_document_lines: StockDocumentLinesTable;
   fixed_assets: FixedAssetsTable;
   depreciation_months: DepreciationMonthsTable;

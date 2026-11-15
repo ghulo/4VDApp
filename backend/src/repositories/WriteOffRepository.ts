@@ -18,6 +18,8 @@ export interface WriteOffRecord {
   decided_by_name: string | null;
   decided_at: Date | null;
   decision_note: string | null;
+  location_id: number | null;
+  location_name: string | null;
 }
 
 export interface NewWriteOff {
@@ -28,6 +30,7 @@ export interface NewWriteOff {
   returnId: number | null;
   notes: string | null;
   requestedBy: number;
+  locationId?: number | null;
 }
 
 export interface Decision {
@@ -45,6 +48,7 @@ export class WriteOffRepository {
       .innerJoin('products as p', 'p.id', 'w.product_id')
       .leftJoin('users as rq', 'rq.id', 'w.requested_by')
       .leftJoin('users as dc', 'dc.id', 'w.decided_by')
+      .leftJoin('stock_locations as loc', 'loc.id', 'w.location_id')
       .select([
         'w.id',
         'w.product_id',
@@ -62,6 +66,8 @@ export class WriteOffRepository {
         'dc.name as decided_by_name',
         'w.decided_at',
         'w.decision_note',
+        'w.location_id',
+        'loc.name as location_name',
       ]);
   }
 
@@ -77,6 +83,7 @@ export class WriteOffRepository {
         notes: writeOff.notes,
         status: 'pending',
         requested_by: writeOff.requestedBy,
+        location_id: writeOff.locationId ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();

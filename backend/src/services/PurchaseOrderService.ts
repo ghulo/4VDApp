@@ -5,6 +5,7 @@ import type { OrderBillRecord, OrderLineRecord, OrderRecord, OrderStatus, Purcha
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { applyStockChange } from './InventoryService.js';
+import { pickLocation } from './StockDocumentService.js';
 import { type BillInput, createBill } from './SupplierBillService.js';
 
 /** Received and cancelled orders kept on the page for reference. */
@@ -54,6 +55,8 @@ export interface ReceiveInput {
   updateCostPrices: boolean;
   /** The supplier's bill for this delivery, saved with it. */
   bill?: BillInput;
+  /** Where it comes in; left out, where goods are received. */
+  locationId?: number | null;
 }
 
 /** An open order for the team app, which ticks deliveries off at the counter and never sees costs. */
@@ -281,6 +284,7 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
     if (order.status !== 'open') throw new ConflictError('This order is already closed');
     const lines = await repos.orders.findLines([id]);
+    const locationId = await pickLocation(repos, input.locationId, 'in');
     const received = new Map(input.lines.map((line) => [line.lineId, line]));
     if ([...received.keys()].some((lineId) => !lines.some((line) => line.id === lineId))) {
       throw new ValidationError('One of the lines is not on this order');
@@ -303,6 +307,7 @@ export async function receiveOrder(repos: TransactionalRepositories, id: number,
         notes: `Order #${id} from ${order.supplier_name}`,
         adjustedBy: actorId,
         reorderLevel: product.reorder_level ?? 0,
+        locationId: locationId,
       });
       if (delivered?.expiresOn) {
         await repos.expiry.add({

@@ -2,8 +2,8 @@ import { ValidationError } from '../errors/httpErrors.js';
 import { DEFAULT_SHORT_DATED, type ShortDatedRules } from './pricing/shortDated.js';
 
 /** The documents 4VD numbers itself. */
-export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out';
-export const NUMBERED_KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer', 'stock_in', 'stock_out'];
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out' | 'stock_move';
+export const NUMBERED_KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer', 'stock_in', 'stock_out', 'stock_move'];
 
 /** How a number reads, like FSM-26-000001: prefix, the year in 2 or 4 digits, then the count. */
 export interface NumberFormat {
@@ -32,6 +32,8 @@ export const DEFAULT_RULES: ShopRules = {
     // Hyrje and Dalje, as Albanian books call stock in and out.
     stock_in: { prefix: 'HY', year: 'yyyy', digits: 6 },
     stock_out: { prefix: 'DA', year: 'yyyy', digits: 6 },
+    // Lëvizje (a move between locations).
+    stock_move: { prefix: 'LV', year: 'yyyy', digits: 6 },
   },
   noStockSales: 'block',
   shortDated: DEFAULT_SHORT_DATED,

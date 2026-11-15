@@ -30,6 +30,8 @@ export interface InventoryDetailDto extends InventoryItemDto {
     notes: string | null;
     adjustedBy: string | null;
     date: string;
+    /** Where it happened; null on changes from before locations. */
+    location: string | null;
   }>;
   /** Its lines in TREFIN's starting stocks, corrections and counts: history, they moved nothing here. */
   trefinHistory: Array<{
@@ -52,6 +54,8 @@ export interface StockAdjustmentInput {
   reason?: string;
   notes: string | null;
   reorderLevel?: number;
+  /** Where; null or left out is where the till sells from. */
+  locationId?: number | null;
 }
 
 export interface InventoryQuery extends PageRequest {
@@ -94,6 +98,7 @@ export class InventoryService {
         notes: adjustment.notes,
         adjustedBy: adjustment.adjusted_by_name,
         date: adjustment.adjustment_date.toISOString(),
+        location: adjustment.location_name,
       })),
       trefinHistory: trefin.map((line) => ({
         id: line.id,
@@ -144,6 +149,7 @@ export class InventoryService {
           notes: input.notes,
           adjustedBy,
           reorderLevel: input.reorderLevel ?? item.reorder_level,
+          locationId: input.locationId ?? null,
         });
         const amount = Math.abs(input.quantity);
         await repos.activityLog.create({
@@ -152,7 +158,7 @@ export class InventoryService {
           entityType: 'product',
           entityId: productId,
           say: { key: input.quantity > 0 ? 'stockAdded' : 'stockRemoved', params: { product: item.product_name, amount, reason } },
-          details: { quantity: input.quantity, reason, notes: input.notes, before, after },
+          details: { quantity: input.quantity, reason, notes: input.notes, before, after, locationId: input.locationId ?? null },
         });
       }
     });
@@ -176,24 +182,57 @@ export async function applyStockChange(
     notes: string | null;
     adjustedBy: number;
     reorderLevel: number;
+    /**
+     * Where it comes in or goes out; null is where the till sells from. What
+     * goes out is taken from here first and the rest from the other locations
+     * (the shelf had it after all), each part noted "from <location>". Only
+     * the total can run short.
+     */
+    locationId: number | null;
   },
 ): Promise<{ before: number; after: number }> {
   // Part of a piece is never sold, counted or written off; kilos go to the gram.
   if (!Number.isInteger(change.delta) && !allowsParts(await repos.products.unitOf(change.productId))) {
     throw new ValidationError(`${change.productName} is sold by the piece: use a whole number, not ${change.delta}`);
   }
-  const result = await repos.inventory.applyDelta(change.productId, change.delta);
-  if (!result) {
-    throw new ValidationError(`Not enough stock of ${change.productName} to remove ${Math.abs(change.delta)}`);
+  const locationId = change.locationId ?? (await repos.locations.sellingId());
+  const notEnough = () => new ValidationError(`Not enough stock of ${change.productName} to remove ${Math.abs(change.delta)}`);
+
+  // What each location gives (negative) or gets.
+  const parts: Array<{ locationId: number; delta: number }> = [];
+  if (change.delta >= 0) {
+    parts.push({ locationId, delta: change.delta });
+  } else {
+    const held = await repos.inventory.byLocationForUpdate(change.productId);
+    const order = [...held.filter((row) => row.location_id === locationId), ...held.filter((row) => row.location_id !== locationId).sort((a, b) => b.quantity - a.quantity)];
+    let need = -change.delta;
+    for (const row of order) {
+      if (need <= 0) break;
+      const take = roundQuantity(Math.min(row.quantity, need));
+      if (take <= 0) continue;
+      parts.push({ locationId: row.location_id, delta: -take });
+      need = roundQuantity(need - take);
+    }
+    if (need > 0) throw notEnough();
   }
 
-  await repos.stockAdjustments.create({
-    productId: change.productId,
-    quantity: change.delta,
-    reason: change.reason,
-    notes: change.notes,
-    adjustedBy: change.adjustedBy,
-  });
+  const names = parts.some((part) => part.locationId !== locationId) ? await repos.locations.names() : null;
+  let result: { before: number; after: number } | undefined;
+  for (const part of parts) {
+    const moved = await repos.inventory.applyDelta(change.productId, part.locationId, part.delta);
+    if (!moved) throw notEnough();
+    result = { before: result?.before ?? moved.before, after: moved.after };
+    const from = part.locationId === locationId ? null : `from ${names!.get(part.locationId)}`;
+    await repos.stockAdjustments.create({
+      productId: change.productId,
+      quantity: part.delta,
+      reason: change.reason,
+      notes: from ? (change.notes ? `${change.notes} (${from})` : from) : change.notes,
+      adjustedBy: change.adjustedBy,
+      locationId: part.locationId,
+    });
+  }
+  if (!result) throw notEnough();
 
   const alert = getStockAlert({
     productName: change.productName,
@@ -224,3 +263,6 @@ function toInventoryItemDto(item: InventoryRecord): InventoryItemDto {
     updatedAt: item.updated_at.toISOString(),
   };
 }
+
+/** Quantities go to the gram, so sums never drift. */
+const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;

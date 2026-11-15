@@ -1,5 +1,6 @@
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { StockDocumentExportRow } from './StockDocumentService.js';
+import type { StockMoveExportRow } from './StockMoveService.js';
 import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
 import type { PriceRow } from '../repositories/ProductRepository.js';
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
@@ -154,6 +155,18 @@ const STOCK_DOCUMENT_COLUMNS: ExportColumn<StockDocumentExportRow>[] = [
   { header: 'Voided', value: (row) => (row.voided ? 'yes' : 'no') },
 ];
 
+const STOCK_MOVE_COLUMNS: ExportColumn<StockMoveExportRow>[] = [
+  { header: 'Date', kind: 'date', value: (row) => row.day },
+  { header: 'Number', value: (row) => row.number },
+  { header: 'From', value: (row) => row.from },
+  { header: 'To', value: (row) => row.to },
+  { header: 'Product', value: (row) => row.product },
+  { header: 'Quantity', value: (row) => row.quantity },
+  { header: 'Unit', value: (row) => row.unit },
+  { header: 'Note', value: (row) => row.note },
+  { header: 'Voided', value: (row) => (row.voided ? 'yes' : 'no') },
+];
+
 /** Every calendar day from `from` to `to`, both included. */
 function eachDay(from: string, to: string): string[] {
   const days: string[] = [];
@@ -186,6 +199,7 @@ export class ExportService {
     private readonly expenseRepository: ExpenseRepository,
     private readonly priceRows: () => Promise<PriceRow[]>,
     private readonly stockDocumentLines: (from: string, to: string) => Promise<StockDocumentExportRow[]>,
+    private readonly stockMoveLines: (from: string, to: string) => Promise<StockMoveExportRow[]> = async () => [],
   ) {}
 
   /** Every product's prices, in the shape the Prices page reads back in (change the prices, upload the file). */
@@ -271,6 +285,15 @@ export class ExportService {
     return {
       basename: `4vd-stock-in-out-${from}-to-${to}`,
       sheet: { name: 'Stock in and out', subtitle: readableRange(from, to), columns: STOCK_DOCUMENT_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
+
+  async stockMoves(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = await this.stockMoveLines(from, to);
+    return {
+      basename: `4vd-stock-moves-${from}-to-${to}`,
+      sheet: { name: 'Stock moved', subtitle: readableRange(from, to), columns: STOCK_MOVE_COLUMNS, rows, totals: { inCsv: false } },
     };
   }
 

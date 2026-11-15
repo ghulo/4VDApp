@@ -12,10 +12,11 @@ export class StockDocumentRepository {
     day: string;
     note: string | null;
     createdBy: number;
+    locationId: number;
   }): Promise<number> {
     const row = await this.db
       .insertInto('stock_documents')
-      .values({ number: document.number, direction: document.direction, reason: document.reason, day: document.day, note: document.note, created_by: document.createdBy })
+      .values({ number: document.number, direction: document.direction, reason: document.reason, day: document.day, note: document.note, created_by: document.createdBy, location_id: document.locationId })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;

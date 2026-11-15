@@ -13,6 +13,7 @@ import { PurchaseOrderRepository } from './PurchaseOrderRepository.js';
 import { ExpiryRepository } from './ExpiryRepository.js';
 import { CategoryRepository } from './CategoryRepository.js';
 import { InventoryRepository } from './InventoryRepository.js';
+import { LocationRepository } from './LocationRepository.js';
 import { NotificationRepository } from './NotificationRepository.js';
 import { PricingTierRepository } from './PricingTierRepository.js';
 import { ProductRepository } from './ProductRepository.js';
@@ -43,6 +44,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     products: new ProductRepository(db),
     pricingTiers: new PricingTierRepository(db),
     inventory: new InventoryRepository(db),
+    locations: new LocationRepository(db),
     stockAdjustments: new StockAdjustmentRepository(db),
     notifications: new NotificationRepository(db),
     sales: new SalesRepository(db),

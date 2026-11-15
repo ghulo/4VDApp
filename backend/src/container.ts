@@ -52,6 +52,9 @@ import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { StockDocumentService } from './services/StockDocumentService.js';
+import { StockMoveService } from './services/StockMoveService.js';
+import { LocationService } from './services/LocationService.js';
+import { LocationRepository } from './repositories/LocationRepository.js';
 import { FixedAssetService } from './services/FixedAssetService.js';
 import { PayrollService } from './services/payroll/PayrollService.js';
 import { DayService } from './services/DayService.js';
@@ -220,7 +223,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, supplierBillService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
   const stockDocumentService = new StockDocumentService(db, transactions, config.shopTimeZone);
-  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to));
+  const stockMoveService = new StockMoveService(db, transactions, config.shopTimeZone);
+  const locationService = new LocationService(new LocationRepository(db), transactions);
+  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to), (from, to) => stockMoveService.linesBetween(from, to));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
@@ -541,6 +546,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     attentionService,
     expenseService,
     stockDocumentService,
+    stockMoveService,
+    locationService,
     fixedAssetService,
     payrollService,
     tabService,

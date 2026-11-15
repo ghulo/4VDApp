@@ -67,7 +67,16 @@ export class InventoryRepository {
     return this.baseQuery().select(this.columns).where('i.product_id', '=', productId).executeTakeFirst();
   }
 
+  /** A new product's stock record; any starting stock goes into the location that receives goods. */
   async create(productId: number, quantityOnHand: number, reorderLevel: number): Promise<void> {
+    await this.db
+      .insertInto('location_stock')
+      .values((eb) => ({
+        location_id: eb.selectFrom('stock_locations').select('id').where('receives_here', '=', true),
+        product_id: productId,
+        quantity: quantityOnHand,
+      }))
+      .execute();
     await this.db
       .insertInto('inventory')
       .values({
@@ -79,18 +88,20 @@ export class InventoryRepository {
       .execute();
   }
 
-  /**
-   * Add `delta` (negative to remove) in a single UPDATE. The WHERE clause makes
-   * the database refuse to go below zero even if two people adjust the same
-   * product at the same moment. Returns undefined when that would happen.
-   */
-  /** What is on the shelf now, locked until the transaction ends. */
+  /** What is on the shelf now (all locations), locked until the transaction ends. */
   async onHandForUpdate(productId: number): Promise<number> {
     const row = await this.db.selectFrom('inventory').select('quantity_on_hand').where('product_id', '=', productId).forUpdate().executeTakeFirst();
     return row?.quantity_on_hand ?? 0;
   }
 
-  async applyDelta(productId: number, delta: number): Promise<{ before: number; after: number } | undefined> {
+  /**
+   * Add `delta` (negative to remove) to one location and to the product's
+   * total, together. The WHERE clauses make the database refuse to go below
+   * zero in either, even if two people change the same product at the same
+   * moment. Returns the total before and after, or undefined when that would happen.
+   */
+  async applyDelta(productId: number, locationId: number, delta: number): Promise<{ before: number; after: number } | undefined> {
+    if (!(await this.changeAt(productId, locationId, delta))) return undefined;
     const row = await this.db
       .updateTable('inventory')
       .set({
@@ -104,6 +115,55 @@ export class InventoryRepository {
       .returning('quantity_on_hand')
       .executeTakeFirst();
     return row ? { before: Math.round((row.quantity_on_hand - delta) * 1000) / 1000, after: row.quantity_on_hand } : undefined;
+  }
+
+  /** Change one location only (a move between locations leaves the total alone). False when it would go below zero. */
+  async changeAt(productId: number, locationId: number, delta: number): Promise<boolean> {
+    if (delta >= 0) {
+      await this.db
+        .insertInto('location_stock')
+        .values({ location_id: locationId, product_id: productId, quantity: delta })
+        .onConflict((oc) =>
+          oc.columns(['location_id', 'product_id']).doUpdateSet({
+            quantity: sql<number>`round((location_stock.quantity + ${delta})::numeric, 3)::float8`,
+            updated_at: new Date(),
+          }),
+        )
+        .execute();
+      return true;
+    }
+    const row = await this.db
+      .updateTable('location_stock')
+      .set({ quantity: sql<number>`round((quantity + ${delta})::numeric, 3)::float8`, updated_at: new Date() })
+      .where('location_id', '=', locationId)
+      .where('product_id', '=', productId)
+      .where(sql<boolean>`round((quantity + ${delta})::numeric, 3) >= 0`)
+      .returning('quantity')
+      .executeTakeFirst();
+    return row !== undefined;
+  }
+
+  /** How much of this product each location holds, locked until the transaction ends. */
+  byLocationForUpdate(productId: number): Promise<Array<{ location_id: number; quantity: number }>> {
+    // Only this product's rows are locked, never the location itself, so other products sell on.
+    return this.db
+      .selectFrom('location_stock')
+      .select(['location_id', 'quantity'])
+      .where('product_id', '=', productId)
+      .orderBy('location_id')
+      .forUpdate()
+      .execute();
+  }
+
+  /** How much is in one location (0 when it never had any). */
+  async quantityAt(productId: number, locationId: number): Promise<number> {
+    const row = await this.db
+      .selectFrom('location_stock')
+      .select('quantity')
+      .where('product_id', '=', productId)
+      .where('location_id', '=', locationId)
+      .executeTakeFirst();
+    return row?.quantity ?? 0;
   }
 
   async setReorderLevel(productId: number, reorderLevel: number): Promise<void> {

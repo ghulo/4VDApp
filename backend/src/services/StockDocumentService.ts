@@ -3,7 +3,7 @@ import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { StockDocumentDirection, StockDocumentReason } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import type { TransactionManager } from '../repositories/TransactionManager.js';
+import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import { applyStockChange } from './InventoryService.js';
@@ -44,6 +44,9 @@ export interface StockDocumentDto {
   value: number;
   /** Lines whose product had no cost, so they add nothing to the value. */
   noCost: number;
+  /** Where the stock came in or went out; null on documents from before locations. */
+  locationId: number | null;
+  locationName: string | null;
   lines?: StockDocumentLineDto[];
 }
 
@@ -66,6 +69,8 @@ export interface NewStockDocumentInput {
   reason: StockDocumentReason;
   day: string;
   note: string | null;
+  /** Where; left out, stock in goes where goods are received and stock out leaves where the till sells. */
+  locationId?: number | null;
   /** expiresOn: a best-before date for the units coming in (stock in only). */
   lines: Array<{ productId: number; quantity: number; expiresOn?: string | null }>;
 }
@@ -160,7 +165,8 @@ export class StockDocumentService {
       const year = Number(input.day.slice(0, 4));
       const kind = numberKind(input.direction);
       const number = formatNumber((await readRules(repos.settings)).numbering[kind], year, await repos.documents.nextNumber(kind, year));
-      const documentId = await repos.stockDocuments.create({ number, direction: input.direction, reason: input.reason, day: input.day, note: input.note, createdBy: actorId });
+      const locationId = await pickLocation(repos, input.locationId, input.direction);
+      const documentId = await repos.stockDocuments.create({ number, direction: input.direction, reason: input.reason, day: input.day, note: input.note, createdBy: actorId, locationId });
       for (const line of input.lines) {
         const product = await repos.products.findById(line.productId, true);
         if (!product) throw new ValidationError(`lines: product ${line.productId} does not exist`);
@@ -173,6 +179,7 @@ export class StockDocumentService {
           notes: number,
           adjustedBy: actorId,
           reorderLevel: product.reorder_level ?? 10,
+          locationId: locationId,
         });
         const dated = Math.floor(line.quantity);
         if (input.direction === 'in' && line.expiresOn && dated > 0) {
@@ -209,6 +216,7 @@ export class StockDocumentService {
           notes: `${document.number} voided`,
           adjustedBy: actorId,
           reorderLevel: product?.reorder_level ?? 10,
+          locationId: document.locationId,
         });
       }
       await repos.activityLog.create({
@@ -228,7 +236,10 @@ export class StockDocumentService {
       .selectFrom('stock_documents as d')
       .leftJoin('users as c', 'c.id', 'd.created_by')
       .leftJoin('users as v', 'v.id', 'd.voided_by')
+      .leftJoin('stock_locations as loc', 'loc.id', 'd.location_id')
       .select([
+        'd.location_id',
+        'loc.name as location_name',
         'd.id',
         'd.number',
         'd.direction',
@@ -244,6 +255,14 @@ export class StockDocumentService {
         sql<number>`(select count(*)::int from stock_document_lines l where l.document_id = d.id and l.unit_cost is null)`.as('no_cost'),
       ]);
   }
+}
+
+/** The location picked, checked to be in use, or the default for the direction. */
+export async function pickLocation(repos: TransactionalRepositories, locationId: number | null | undefined, direction: 'in' | 'out'): Promise<number> {
+  if (locationId === null || locationId === undefined) return direction === 'in' ? repos.locations.receivingId() : repos.locations.sellingId();
+  const found = await repos.locations.findById(locationId);
+  if (!found || found.removed_at) throw new ValidationError(`locationId: location ${locationId} does not exist`);
+  return found.id;
 }
 
 type Row = Awaited<ReturnType<ReturnType<StockDocumentService['query']>['executeTakeFirstOrThrow']>>;
@@ -263,5 +282,7 @@ function toDto(row: Row): StockDocumentDto {
     lineCount: row.line_count,
     value: Number(row.value),
     noCost: row.no_cost,
+    locationId: row.location_id,
+    locationName: row.location_name,
   };
 }

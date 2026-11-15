@@ -92,6 +92,13 @@ export interface ReorderRow {
   trend: Trend | null;
   /** Null when it has never sold. */
   lastSoldAt: string | null;
+  /** How much is in each location that has some (or a shelf minimum). */
+  places: Array<{ locationId: number; quantity: number; shelfMinimum: number | null }>;
+  /**
+   * Units to bring from storage to where the till sells, to reach its shelf
+   * minimum (as many as storage has); 0 when nothing needs refilling.
+   */
+  refill: number;
 }
 
 function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
@@ -242,10 +249,13 @@ export class ReportsService {
 
   /** Every active product: when it runs out at the current pace, and how many to order. Soonest first. */
   async reorderSuggestions(now = new Date()): Promise<ReorderRow[]> {
-    const [products, sales] = await Promise.all([
+    const [products, sales, located] = await Promise.all([
       this.reportsRepository.activeProducts(),
       this.reportsRepository.salesSince(new Date(now.getTime() - FORECAST_HISTORY_DAYS * MS_PER_DAY)),
+      this.reportsRepository.locationStock(),
     ]);
+    const places = new Map<number, typeof located>();
+    for (const row of located) places.set(row.product_id, [...(places.get(row.product_id) ?? []), row]);
     const salesByProduct = new Map<number, Array<{ at: Date; units: number }>>();
     for (const sale of sales) {
       const list = salesByProduct.get(sale.product_id) ?? [];
@@ -274,6 +284,8 @@ export class ReportsService {
           timeZone: this.timeZone,
         }),
         lastSoldAt: row.last_sold_at?.toISOString() ?? null,
+        places: (places.get(row.product_id) ?? []).map((place) => ({ locationId: place.location_id, quantity: place.quantity, shelfMinimum: place.shelf_minimum })),
+        refill: refillOf(places.get(row.product_id) ?? []),
       }))
       .sort((a, b) => {
         if (a.daysLeft === null && b.daysLeft === null) return a.productName.localeCompare(b.productName);
@@ -312,4 +324,12 @@ export class ReportsService {
       })),
     };
   }
+}
+
+/** What to bring to the selling floor from storage to reach its shelf minimum, no more than storage holds. */
+function refillOf(places: Array<{ sells_here: boolean; quantity: number; shelf_minimum: number | null }>): number {
+  const floor = places.find((place) => place.sells_here);
+  if (!floor || floor.shelf_minimum === null || floor.quantity >= floor.shelf_minimum) return 0;
+  const stored = places.filter((place) => !place.sells_here).reduce((sum, place) => sum + place.quantity, 0);
+  return Math.round(Math.min(floor.shelf_minimum - floor.quantity, stored) * 1000) / 1000;
 }

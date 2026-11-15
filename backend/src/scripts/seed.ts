@@ -4,6 +4,7 @@ import { sql } from 'kysely';
 import { loadConfig } from '../config/env.js';
 import { createDatabase, type DatabaseClient } from '../database/connection.js';
 import { DocumentRepository } from '../repositories/DocumentRepository.js';
+import { placeUnlocatedStock } from '../repositories/LocationRepository.js';
 import { SalesRepository } from '../repositories/SalesRepository.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { TransactionManager } from '../repositories/TransactionManager.js';
@@ -119,6 +120,7 @@ async function seedDemoProducts(db: DatabaseClient): Promise<void> {
       }
     });
   }
+  await placeUnlocatedStock(db);
   logger.info('Demo products ready', { count: DEMO_PRODUCTS.length });
 }
 

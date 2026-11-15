@@ -41,6 +41,7 @@ export interface BillRecord {
   paid_now: boolean;
   place: ExpensePlace;
   carwash_id: number | null;
+  location_id: number | null;
   carwash_name: string | null;
   repeat_id: number | null;
   /** The VAT month it counts in when its own month was filed before it came; null: its own month. */
@@ -91,6 +92,8 @@ export interface NewBill {
   place?: ExpensePlace;
   carwashId?: number | null;
   repeatId?: number | null;
+  /** Where its products came in. */
+  locationId?: number | null;
 }
 
 export interface BillLineRecord {
@@ -188,6 +191,7 @@ export class SupplierBillRepository {
         'b.paid_now',
         'b.place',
         'b.carwash_id',
+        'b.location_id',
         'w.name as carwash_name',
         'b.repeat_id',
         'b.trefin_ref',
@@ -307,6 +311,7 @@ export class SupplierBillRepository {
         place: bill.place ?? 'shop',
         carwash_id: bill.carwashId ?? null,
         repeat_id: bill.repeatId ?? null,
+        location_id: bill.locationId ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();

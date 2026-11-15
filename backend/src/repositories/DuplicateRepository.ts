@@ -128,6 +128,14 @@ export class DuplicateRepository {
         AND NOT EXISTS (SELECT 1 FROM stock_count_lines k WHERE k.count_id = l.count_id AND k.product_id = ${keepId})
     `.execute(this.db);
 
+    // Each location's stock of the dropped product joins the kept one's there.
+    await sql`
+      INSERT INTO location_stock (location_id, product_id, quantity)
+      SELECT location_id, ${keepId}, quantity FROM location_stock WHERE product_id = ${dropId} AND quantity > 0
+      ON CONFLICT (location_id, product_id) DO UPDATE
+        SET quantity = round((location_stock.quantity + excluded.quantity)::numeric, 3)::float8, updated_at = now()
+    `.execute(this.db);
+    await sql`UPDATE location_stock SET quantity = 0, updated_at = now() WHERE product_id = ${dropId}`.execute(this.db);
     await sql`
       UPDATE inventory SET quantity_on_hand = 0, updated_at = now() WHERE product_id = ${dropId}
     `.execute(this.db);

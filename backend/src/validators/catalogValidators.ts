@@ -130,6 +130,7 @@ export const inventoryQuerySchema = paginationSchema.extend({
 
 export const stockAdjustmentSchema = z
   .object({
+    locationId: idSchema.nullish(),
     quantity: z
       .number()
       .multipleOf(0.001, 'a quantity has at most three decimals (grams)')

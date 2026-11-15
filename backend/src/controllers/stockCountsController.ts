@@ -25,8 +25,8 @@ export function createStockCountsController(stockCountService: StockCountService
     },
 
     async start(req: Request, res: Response): Promise<void> {
-      const { categoryId } = parseInput(startCountSchema, req.body ?? {});
-      sendSuccess(res, await stockCountService.start(categoryId, req.user!), { statusCode: 201, message: 'Count started' });
+      const { categoryId, locationId } = parseInput(startCountSchema, req.body ?? {});
+      sendSuccess(res, await stockCountService.start(categoryId, req.user!, locationId), { statusCode: 201, message: 'Count started' });
     },
 
     async get(req: Request, res: Response): Promise<void> {

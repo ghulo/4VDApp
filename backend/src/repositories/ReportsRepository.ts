@@ -353,4 +353,15 @@ export class ReportsRepository {
     return result.rows;
   }
 
+
+  /** Every product's stock in each location in use, with its shelf minimum there. */
+  locationStock() {
+    return this.db
+      .selectFrom('location_stock as s')
+      .innerJoin('stock_locations as l', 'l.id', 's.location_id')
+      .select(['s.product_id', 's.location_id', 'l.sells_here', 's.quantity', 's.shelf_minimum'])
+      .where('l.removed_at', 'is', null)
+      .where((eb) => eb.or([eb('s.quantity', '>', 0), eb('s.shelf_minimum', 'is not', null)]))
+      .execute();
+  }
 }

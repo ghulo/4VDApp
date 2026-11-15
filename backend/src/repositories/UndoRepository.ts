@@ -109,7 +109,7 @@ export class UndoRepository {
     return this.db
       .selectFrom('write_offs as w')
       .innerJoin('products as p', 'p.id', 'w.product_id')
-      .select(['w.id', 'w.product_id', 'p.name as product_name', 'w.quantity', 'w.status', 'w.return_id', 'w.requested_by', 'w.undone_at', 'w.undone_by'])
+      .select(['w.id', 'w.product_id', 'p.name as product_name', 'w.quantity', 'w.status', 'w.return_id', 'w.requested_by', 'w.undone_at', 'w.undone_by', 'w.location_id'])
       .where('w.id', '=', id)
       .forUpdate('w')
       .executeTakeFirst();
@@ -120,7 +120,7 @@ export class UndoRepository {
       .selectFrom('stock_count_lines as l')
       .innerJoin('stock_counts as c', 'c.id', 'l.count_id')
       .innerJoin('products as p', 'p.id', 'l.product_id')
-      .select(['l.counted_quantity', 'l.expected_quantity', 'l.status', 'c.submitted_by', 'p.name as product_name', 'l.undone_at', 'l.undone_by'])
+      .select(['l.counted_quantity', 'l.expected_quantity', 'l.status', 'c.submitted_by', 'p.name as product_name', 'l.undone_at', 'l.undone_by', 'c.location_id'])
       .where('l.count_id', '=', countId)
       .where('l.product_id', '=', productId)
       .forUpdate('l')

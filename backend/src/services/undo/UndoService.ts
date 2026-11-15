@@ -28,7 +28,7 @@ interface UndoPlan {
   /** For stock notes, e.g. "sale #12". */
   label: string;
   /** Stock change an undo applies; a restore applies the opposite. Null when stock isn't touched. */
-  stock: { productId: number; delta: number } | null;
+  stock: { productId: number; delta: number; locationId?: number | null } | null;
   /** Kind-specific refusals, checked after the hierarchy and the undone state. */
   check?: (mode: Mode) => Promise<void>;
   /**
@@ -260,7 +260,7 @@ async function planFor(
         rows: [{ table: 'write_offs', id: writeOff.id }],
         what: `${writeOff.quantity} × ${writeOff.product_name}`,
         label: `write-off #${writeOff.id}`,
-        stock: { productId: writeOff.product_id, delta: writeOff.quantity },
+        stock: { productId: writeOff.product_id, delta: writeOff.quantity, locationId: writeOff.location_id },
       };
     }
     case 'count_line': {
@@ -275,7 +275,7 @@ async function planFor(
         rows: [{ table: 'stock_count_lines', countId: target.id, productId }],
         what: line.product_name,
         label: `count #${target.id}`,
-        stock: { productId, delta: -(line.counted_quantity - line.expected_quantity) },
+        stock: { productId, delta: -(line.counted_quantity - line.expected_quantity), locationId: line.location_id },
       };
     }
     case 'stock': {
@@ -290,7 +290,7 @@ async function planFor(
         rows: [{ table: 'activity_log', id: locked.id }],
         what: `${quantity > 0 ? '+' : ''}${quantity} × ${product?.name ?? `product #${locked.entity_id}`}`,
         label: `stock change (log entry #${locked.id})`,
-        stock: { productId: locked.entity_id, delta: -quantity },
+        stock: { productId: locked.entity_id, delta: -quantity, locationId: typeof locked.details?.locationId === 'number' ? locked.details.locationId : null },
       };
     }
     default:
@@ -314,6 +314,7 @@ async function moveStock(repos: TransactionalRepositories, plan: UndoPlan, mode:
       notes: `${mode === 'undo' ? 'Undo' : 'Restore'} of ${plan.label}`,
       adjustedBy: actorId,
       reorderLevel: product.reorder_level ?? 0,
+      locationId: plan.stock!.locationId ?? null,
     });
     return { productId, stockChange: delta, before, after };
   } catch (error) {

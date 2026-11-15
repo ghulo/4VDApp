@@ -12,6 +12,7 @@ import { zonedDay } from '../utils/zonedDates.js';
 import { type BillFigures, billFigures, priceKeepingMargin } from './bills/billFigures.js';
 import { vatOf } from './books/entryBuilder.js';
 import { applyStockChange } from './InventoryService.js';
+import { pickLocation } from './StockDocumentService.js';
 import { mediaUrl } from './mappers.js';
 import type { MediaService } from './MediaService.js';
 import { validatePricingTiers } from './pricing/bulkPricing.js';
@@ -183,6 +184,8 @@ export interface NewBillInput {
   paidNow?: { method?: Exclude<SupplierPaymentMethod, 'credit'> | null; placeId?: number | null } | null;
   place?: ExpensePlace;
   carwashId?: number | null;
+  /** Where its products come in; left out, where goods are received. */
+  locationId?: number | null;
   /** Make the same bill by itself every month. */
   repeatMonthly?: boolean;
   /** Copy the products' new costs onto them (default yes). */
@@ -729,6 +732,7 @@ export async function createBill(
   const withholding = typed && input.withholdingType ? input.withholdingType : null;
   const repeatId = options.repeatId ?? (input.repeatMonthly ? await addRepeat(repos, input, plan, amount, actorId) : null);
   const carwashId = input.place === 'carwash' ? (input.carwashId ?? null) : null;
+  const locationId = typed && plan.lines.some((line) => line.product) ? await pickLocation(repos, input.locationId, 'in') : null;
 
   let id: number;
   try {
@@ -751,6 +755,7 @@ export async function createBill(
       place: input.place ?? 'shop',
       carwashId,
       repeatId,
+      locationId,
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -777,6 +782,7 @@ export async function createBill(
         notes: `Bill #${id}${who ? ` from ${who}` : ''}`,
         adjustedBy: actorId ?? 0,
         reorderLevel: product.reorder_level ?? 0,
+        locationId: locationId,
       });
       const dated = Math.floor(line.row.quantity!);
       if (line.input.expiresOn && dated > 0) {
@@ -964,6 +970,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
     withheld: plan.figures.withheld,
     place: bill.place,
     carwashId: bill.carwash_id,
+    locationId: bill.location_id,
   });
   await repos.bills.addLines(id, plan.lines.map((line) => line.row));
   await returnBillAssets(repos, id, billId, input.issuedOn);
@@ -980,6 +987,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
         notes: `Return #${id} to ${bill.supplier_name}`,
         adjustedBy: actorId,
         reorderLevel: product.reorder_level ?? 0,
+        locationId: bill.location_id,
       });
     }
   }
@@ -1007,7 +1015,7 @@ export async function voidBill(repos: TransactionalRepositories, id: number, not
   const lines = await repos.bills.findLines([id]);
   if (bill.kind === 'credit') {
     for (const payment of await repos.bills.creditPayments(id)) await repos.bills.voidPayment(payment.id, actorId, now);
-    if (bill.returns_stock) await moveStock(repos, lines, +1, `Return #${id} voided`, actorId);
+    if (bill.returns_stock) await moveStock(repos, lines, +1, `Return #${id} voided`, actorId, bill.location_id);
   } else {
     if ((await repos.bills.findCredits(id)).some((credit) => !credit.voided_at)) {
       throw new ConflictError('This bill has a return or credit. Void that first.');
@@ -1019,7 +1027,7 @@ export async function voidBill(repos: TransactionalRepositories, id: number, not
       throw new ConflictError('This bill has payments. Remove them first.');
     }
     // Stock typed on the bill came in with it; a delivery's stock stays with its order.
-    await moveStock(repos, lines.filter((line) => line.order_line_id === null), -1, `Bill #${id} voided`, actorId);
+    await moveStock(repos, lines.filter((line) => line.order_line_id === null), -1, `Bill #${id} voided`, actorId, bill.location_id);
   }
   await voidBillAssets(repos, { id, kind: bill.kind }, actorId, now);
   await repos.bills.void(id, actorId, note, now);
@@ -1033,7 +1041,7 @@ export async function voidBill(repos: TransactionalRepositories, id: number, not
   return bill;
 }
 
-async function moveStock(repos: TransactionalRepositories, lines: BillLineRecord[], sign: 1 | -1, notes: string, actorId: number) {
+async function moveStock(repos: TransactionalRepositories, lines: BillLineRecord[], sign: 1 | -1, notes: string, actorId: number, locationId: number | null) {
   for (const line of lines) {
     if (line.kind !== 'product' || !line.product_id || !line.quantity) continue;
     const product = (await repos.products.findById(line.product_id, true))!;
@@ -1045,6 +1053,7 @@ async function moveStock(repos: TransactionalRepositories, lines: BillLineRecord
       notes,
       adjustedBy: actorId,
       reorderLevel: product.reorder_level ?? 0,
+      locationId: locationId,
     });
   }
 }

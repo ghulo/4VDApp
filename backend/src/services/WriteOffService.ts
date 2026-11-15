@@ -15,6 +15,8 @@ export interface WriteOffInput {
   quantity: number;
   reason: WriteOffReason;
   notes: string | null;
+  /** Where the units are taken from; null or left out is where the till sells from. */
+  locationId?: number | null;
 }
 
 export interface WriteOffDto {
@@ -56,6 +58,7 @@ export async function createWriteOffRecord(
     returnId: input.returnId,
     notes: input.notes,
     requestedBy: input.requestedBy,
+    locationId: input.locationId ?? null,
   });
   return { id, productName: product.name };
 }
@@ -85,6 +88,7 @@ export async function approveWriteOff(
         notes: `Write-off #${id} (${writeOff.reason})`,
         adjustedBy: decidedBy,
         reorderLevel: product?.reorder_level ?? 0,
+        locationId: writeOff.location_id,
       });
     } catch (error) {
       if (error instanceof ValidationError) {

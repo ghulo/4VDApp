@@ -13,6 +13,9 @@ export interface StockCountRecord {
   submitted_by: number | null;
   submitted_at: Date | null;
   closed_at: Date | null;
+  /** The location counted; null for counts from before locations. */
+  location_id: number | null;
+  location_name: string | null;
 }
 
 /** One product in a count's scope, with its line if it has been counted. */
@@ -49,7 +52,10 @@ export class StockCountRepository {
       .selectFrom('stock_counts as sc')
       .leftJoin('categories as c', 'c.id', 'sc.category_id')
       .leftJoin('users as u', 'u.id', 'sc.started_by')
+      .leftJoin('stock_locations as loc', 'loc.id', 'sc.location_id')
       .select([
+        'sc.location_id',
+        'loc.name as location_name',
         'sc.id',
         'sc.category_id',
         'c.name as category_name',
@@ -68,19 +74,21 @@ export class StockCountRepository {
     await sql`select pg_advisory_xact_lock(${COUNT_START_LOCK})`.execute(this.db);
   }
 
-  /** Open or submitted counts whose scope overlaps: the whole shop overlaps everything. */
-  async findOverlapping(categoryId: number | null): Promise<StockCountRecord | undefined> {
-    let query = this.baseQuery().where('sc.status', 'in', ['open', 'submitted']);
+  /** Open or submitted counts of the same location whose scope overlaps: the whole shop overlaps everything. */
+  async findOverlapping(categoryId: number | null, locationId: number): Promise<StockCountRecord | undefined> {
+    let query = this.baseQuery()
+      .where('sc.status', 'in', ['open', 'submitted'])
+      .where((eb) => eb.or([eb('sc.location_id', 'is', null), eb('sc.location_id', '=', locationId)]));
     if (categoryId !== null) {
       query = query.where((eb) => eb.or([eb('sc.category_id', 'is', null), eb('sc.category_id', '=', categoryId)]));
     }
     return query.executeTakeFirst();
   }
 
-  async create(categoryId: number | null, startedBy: number): Promise<number> {
+  async create(categoryId: number | null, startedBy: number, locationId: number): Promise<number> {
     const row = await this.db
       .insertInto('stock_counts')
-      .values({ category_id: categoryId, status: 'open', started_by: startedBy })
+      .values({ category_id: categoryId, status: 'open', started_by: startedBy, location_id: locationId })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;

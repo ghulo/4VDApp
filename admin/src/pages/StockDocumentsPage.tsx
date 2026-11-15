@@ -251,6 +251,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
       <Field label={t.stockDocs.note}>
         <input maxLength={500} placeholder={t.stockDocs.notePlaceholder} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
+      {lines.length === 0 && <p className="field-hint">{t.stockDocs.needLine}</p>}
       {lines.length > 0 && (
         <p className="notice" aria-live="polite">
           {t.stockDocs.preview(direction, lines.length, formatMoney(value))}

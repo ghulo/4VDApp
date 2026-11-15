@@ -209,7 +209,7 @@ export function PricesPage() {
           </>
         }
       />
-      <input ref={fileRef} type="file" accept=".xlsx,.csv" className="visually-hidden" tabIndex={-1} aria-hidden="true" onChange={handleFile} />
+      <input ref={fileRef} type="file" accept=".xlsx,.csv" className="visually-hidden" tabIndex={-1} aria-hidden="true" aria-label={t.prices.uploadFile} onChange={handleFile} />
 
       {readFile.isError && <ErrorNotice error={readFile.error} />}
       {fileResult && <FileNotice result={fileResult} onClose={() => setFileResult(null)} />}

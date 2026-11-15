@@ -1771,7 +1771,7 @@ export type EntryKind = 'auto' | 'manual' | 'reversal';
 
 /** The page that shows the document behind an entry. */
 export interface EntryTarget {
-  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales';
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document';
   id?: number;
   search?: string;
 }
@@ -1917,7 +1917,7 @@ export interface BooksSettings {
 }
 
 /** A record whose entries can be shown. */
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'stock_doc';
 
 /** First and last day of a period, both included, as yyyy-mm-dd. */
 export interface BooksPeriod {

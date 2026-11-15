@@ -137,16 +137,21 @@ export class DocumentRepository {
    * rolled-back one gives its number back (no gaps).
    */
 /** Which kinds have documents whose numbers start with these letters. */
-  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer'>> {
+  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer' | 'stock_in' | 'stock_out'>> {
     const like = `${escapeLikePattern(prefix)}-%`;
-    const [documents, offer] = await Promise.all([
+    const [documents, offer, stock] = await Promise.all([
       this.db.selectFrom('documents').select('kind').distinct().where('number', 'like', like).execute(),
       this.db.selectFrom('offers').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
+      this.db.selectFrom('stock_documents').select('direction').distinct().where('number', 'like', like).execute(),
     ]);
-    return [...documents.map((row) => row.kind), ...(offer ? (['offer'] as const) : [])];
+    return [
+      ...documents.map((row) => row.kind),
+      ...(offer ? (['offer'] as const) : []),
+      ...stock.map((row) => (row.direction === 'in' ? ('stock_in' as const) : ('stock_out' as const))),
+    ];
   }
 
-  async nextNumber(kind: DocumentKind | 'offer', year: number): Promise<number> {
+  async nextNumber(kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out', year: number): Promise<number> {
     const row = await this.db
       .insertInto('document_numbers')
       .values({ kind, year, last_number: 1 })

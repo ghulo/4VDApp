@@ -298,6 +298,31 @@ export interface ProductBarcodesTable {
   created_at: CreatedAt;
 }
 
+export type StockDocumentDirection = 'in' | 'out';
+export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given_away' | 'other';
+
+export interface StockDocumentsTable {
+  id: Generated<number>;
+  number: string;
+  direction: StockDocumentDirection;
+  reason: StockDocumentReason;
+  /** Read through to_char, so kept as text. */
+  day: string;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface StockDocumentLinesTable {
+  id: Generated<number>;
+  document_id: number;
+  product_id: number;
+  quantity: ColumnType<number, number, number>;
+  unit_cost: ColumnType<string | null, number | null, number | null>;
+}
+
 export interface ProductDuplicateFlagsTable {
   id: Generated<number>;
   product_id: number;
@@ -975,7 +1000,7 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
-  kind: DocumentKind | 'offer';
+  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out';
   year: number;
   last_number: number;
 }
@@ -1301,6 +1326,8 @@ export interface Database {
   report_subscriptions: ReportSubscriptionsTable;
   product_duplicate_flags: ProductDuplicateFlagsTable;
   product_barcodes: ProductBarcodesTable;
+  stock_documents: StockDocumentsTable;
+  stock_document_lines: StockDocumentLinesTable;
   ledger_accounts: LedgerAccountsTable;
   ledger_links: LedgerLinksTable;
   ledger_entries: LedgerEntriesTable;

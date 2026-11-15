@@ -70,6 +70,8 @@ export function targetPath(target: EntryTarget, day: string): string {
       return `/bills/${target.id}`;
     case 'count':
       return `/counts/${target.id}`;
+    case 'stock_document':
+      return `/stock-documents/${target.id}`;
     case 'customer':
       return `/customers/${target.id}`;
     case 'product':

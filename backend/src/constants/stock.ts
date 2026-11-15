@@ -14,6 +14,7 @@ export const SYSTEM_STOCK_REASONS = {
   DELIVERY: 'Delivery',
   SUPPLIER_RETURN: 'Returned to supplier',
   MERGE: 'Merged duplicate',
+  STOCK_DOCUMENT: 'Stock document',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

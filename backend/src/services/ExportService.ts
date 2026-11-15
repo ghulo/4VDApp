@@ -1,4 +1,5 @@
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
+import type { StockDocumentExportRow } from './StockDocumentService.js';
 import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
 import type { PriceRow } from '../repositories/ProductRepository.js';
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
@@ -131,6 +132,28 @@ const EXPENSE_COLUMNS: ExportColumn<ExpenseRecord>[] = [
   { header: 'Added by', value: (row) => row.created_by_name ?? (row.recurring_id === null ? null : 'automatic') },
 ];
 
+const STOCK_DOCUMENT_REASON_WORDS: Record<StockDocumentExportRow['reason'], string> = {
+  found: 'found in stock',
+  received_free: 'received free',
+  own_use: 'used in the shop',
+  given_away: 'given away',
+  other: 'other',
+};
+
+const STOCK_DOCUMENT_COLUMNS: ExportColumn<StockDocumentExportRow>[] = [
+  { header: 'Date', kind: 'date', value: (row) => row.day },
+  { header: 'Number', value: (row) => row.number },
+  { header: 'In or out', value: (row) => (row.direction === 'in' ? 'in' : 'out') },
+  { header: 'Why', value: (row) => STOCK_DOCUMENT_REASON_WORDS[row.reason] },
+  { header: 'Product', value: (row) => row.product },
+  { header: 'Quantity', value: (row) => (row.direction === 'in' ? row.quantity : -row.quantity) },
+  { header: 'Unit', value: (row) => row.unit },
+  { header: 'Cost each', kind: 'money', value: (row) => row.unit_cost },
+  { header: 'Value at cost', kind: 'money', total: true, value: (row) => (row.voided || row.value === null ? null : row.direction === 'in' ? row.value : -row.value) },
+  { header: 'Note', value: (row) => row.note },
+  { header: 'Voided', value: (row) => (row.voided ? 'yes' : 'no') },
+];
+
 /** Every calendar day from `from` to `to`, both included. */
 function eachDay(from: string, to: string): string[] {
   const days: string[] = [];
@@ -162,6 +185,7 @@ export class ExportService {
     private readonly carwashRepository: CarwashRepository,
     private readonly expenseRepository: ExpenseRepository,
     private readonly priceRows: () => Promise<PriceRow[]>,
+    private readonly stockDocumentLines: (from: string, to: string) => Promise<StockDocumentExportRow[]>,
   ) {}
 
   /** Every product's prices, in the shape the Prices page reads back in (change the prices, upload the file). */
@@ -237,6 +261,16 @@ export class ExportService {
     return {
       basename: `4vd-expenses-${from}-to-${to}`,
       sheet: { name: 'Expenses', subtitle: readableRange(from, to), columns: EXPENSE_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
+
+  /** Stock in and out documents, one row per line; voided ones stay, marked, and count nothing. */
+  async stockDocuments(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = await this.stockDocumentLines(from, to);
+    return {
+      basename: `4vd-stock-in-out-${from}-to-${to}`,
+      sheet: { name: 'Stock in and out', subtitle: readableRange(from, to), columns: STOCK_DOCUMENT_COLUMNS, rows, totals: { inCsv: false } },
     };
   }
 

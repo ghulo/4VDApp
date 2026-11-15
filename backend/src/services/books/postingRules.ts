@@ -62,7 +62,7 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -127,6 +127,8 @@ export class PostingRules {
         return this.countLine(Number(ref));
       case 'adjustment':
         return this.adjustment(Number(ref));
+      case 'stock_doc':
+        return this.stockDocument(Number(ref));
       case 'bill':
         return this.bill(Number(ref));
       case 'payment':
@@ -302,6 +304,26 @@ export class PostingRules {
     if (!row) return null;
     const quantity = row.adjustment_quantity;
     return this.stockChange(row.day, quantity, n(row.cost_price), `${quantity > 0 ? '+' : ''}${quantity} × ${row.name}`);
+  }
+
+  /**
+   * A stock in or out document: one entry for all its lines, at the cost each
+   * line kept when saved. Its stock changes don't post by themselves (their
+   * reason isn't 'Manual adjustment'), so each movement posts once. Lines
+   * without a cost add nothing; a voided document has no entry.
+   */
+  private async stockDocument(id: number): Promise<DraftEntry | null> {
+    const document = await this.db
+      .selectFrom('stock_documents')
+      .select(['number', 'direction', sql<string>`to_char(day, 'YYYY-MM-DD')`.as('day')])
+      .where('id', '=', id)
+      .where('voided_at', 'is', null)
+      .executeTakeFirst();
+    if (!document) return null;
+    const lines = await this.db.selectFrom('stock_document_lines').select(['quantity', 'unit_cost']).where('document_id', '=', id).execute();
+    const value = roundMoney(lines.reduce((total, line) => total + (line.unit_cost === null ? 0 : roundMoney(line.quantity * Number(line.unit_cost))), 0));
+    if (value === 0) return null;
+    return this.stockChange(document.day, document.direction === 'in' ? value : -value, 1, document.number);
   }
 
   private async bill(id: number): Promise<DraftEntry | null> {

@@ -2866,6 +2866,7 @@ export const sq: Catalogue = {
       write_off: 'Dëmtim ose humbje',
       count_line: 'Numërim stoku',
       adjustment: 'Korrigjim stoku',
+      stock_doc: 'Hyrje ose dalje stoku',
       bill: 'Faturë furnitori',
       payment: 'Pagesë furnitorit',
       expense: 'Shpenzim',

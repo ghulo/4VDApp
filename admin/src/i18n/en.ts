@@ -2887,6 +2887,7 @@ export const en = {
       write_off: 'Damage or loss',
       count_line: 'Stock count',
       adjustment: 'Stock correction',
+      stock_doc: 'Stock in or out',
       bill: 'Supplier bill',
       payment: 'Paid a supplier',
       expense: 'Expense',

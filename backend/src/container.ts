@@ -51,6 +51,7 @@ import { CashCountService } from './services/CashCountService.js';
 import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
+import { StockDocumentService } from './services/StockDocumentService.js';
 import { DayService } from './services/DayService.js';
 import { AttentionService } from './services/AttentionService.js';
 import { TabRepository } from './repositories/TabRepository.js';
@@ -214,7 +215,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const expenseRepository = new ExpenseRepository(db);
   const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, supplierBillService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
-  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows());
+  const stockDocumentService = new StockDocumentService(db, transactions, config.shopTimeZone);
+  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
@@ -513,6 +515,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     dayService,
     attentionService,
     expenseService,
+    stockDocumentService,
     tabService,
     purchaseOrderService,
     supplierBillService,

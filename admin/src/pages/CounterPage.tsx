@@ -365,18 +365,19 @@ export function CounterPage() {
       }
       sound(add(product, quantity) ? 'ok' : 'fail');
     };
+    const shelf = products.data ?? [];
+    const lower = code.toLowerCase();
+    const exact =
+      shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
+      shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower);
+    // A product comes first: the shop's own number format could look like a product code.
+    if (exact) return take(exact);
     const documentNumber = documentNumberFromScan(code);
     if (documentNumber && !priceCheck) {
       if (!online) return complain(t.counter.offlineNoRefund);
       setRefundNumber(documentNumber);
       return setPanel('refund');
     }
-    const shelf = products.data ?? [];
-    const lower = code.toLowerCase();
-    const exact =
-      shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
-      shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower);
-    if (exact) return take(exact);
     // A label from the shop scale: the product by its scale number, the weight in the code.
     const label = readScaleLabel(code);
     if (label) {

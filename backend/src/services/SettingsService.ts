@@ -1,7 +1,8 @@
 import { DEFAULT_SETTINGS } from '../constants/approvals.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
-import { checkNumbering, readRules, RULE_KEYS, type ShopRules } from './shopRules.js';
+import { checkNumbering, NUMBERED_KINDS, readRules, RULE_KEYS, type ShopRules } from './shopRules.js';
+import { ValidationError } from '../errors/httpErrors.js';
 
 export interface AppSettings {
   /** Employee refunds above this many euros wait for the owner. */
@@ -62,6 +63,12 @@ export class SettingsService {
       noStockSales: input.noStockSales ?? before.noStockSales,
     };
     checkNumbering(after.numbering);
+    for (const kind of NUMBERED_KINDS) {
+      const prefix = after.numbering[kind].prefix;
+      if (prefix === before.numbering[kind].prefix) continue;
+      const other = (await this.transactions.run((repos) => repos.documents.kindsNumberedWith(prefix))).find((used) => used !== kind);
+      if (other) throw new ValidationError(`numbering: ${prefix} is already on ${other.replace('_', ' ')} numbers. Use other letters for ${kind.replace('_', ' ')}s.`);
+    }
     const changed = (Object.keys(RULE_KEYS) as Array<keyof ShopRules>).filter((name) => JSON.stringify(before[name]) !== JSON.stringify(after[name]));
     if (changed.length > 0) {
       await this.transactions.run(async (repos) => {

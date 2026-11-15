@@ -26,6 +26,14 @@ export interface RemovedExpense {
   note: string | null;
 }
 
+/** A merge of two duplicates touched this product: the one deleted by it went into the other. */
+const mergedAway = (db: DatabaseClient) =>
+  db
+    .selectFrom('product_duplicate_flags as f')
+    .select(sql<number>`1`.as('one'))
+    .where('f.resolution', '=', 'merged')
+    .where(sql<boolean>`products.id in (f.product_id, f.other_product_id)`);
+
 /** What was removed but is only marked, so it can come back. */
 export class BinRepository {
   constructor(private readonly db: DatabaseClient) {}
@@ -36,6 +44,7 @@ export class BinRepository {
         .selectFrom('products')
         .select(['id', 'name', 'barcode as detail', 'deleted_at as removed_at'])
         .where('deleted_at', '>=', since)
+        .where(({ not, exists }) => not(exists(mergedAway(this.db))))
         .execute(),
       this.db.selectFrom('suppliers').select(['id', 'name', 'nui as detail', 'archived_at as removed_at']).where('archived_at', '>=', since).execute(),
       this.db.selectFrom('customers').select(['id', 'name', 'phone as detail', 'archived_at as removed_at']).where('archived_at', '>=', since).execute(),
@@ -56,6 +65,9 @@ export class BinRepository {
       .selectFrom('bill_lines as l')
       .innerJoin('supplier_bills as b', 'b.id', 'l.bill_id')
       .where('l.kind', '=', 'cost')
+      // As the Expenses page counts them: transport on an import isn't one, and a credit can't come back as a cost.
+      .where('l.spread', '=', false)
+      .where('b.kind', '<>', 'credit')
       .where('b.paid_now', '=', true)
       .where('b.void_note', '=', REMOVED_EXPENSE_NOTE);
   }
@@ -83,7 +95,15 @@ export class BinRepository {
   }
 
   findRemoved(kind: 'product' | 'supplier' | 'customer', id: number): Promise<{ name: string } | undefined> {
-    if (kind === 'product') return this.db.selectFrom('products').select('name').where('id', '=', id).where('deleted_at', 'is not', null).executeTakeFirst();
+    if (kind === 'product') {
+      return this.db
+        .selectFrom('products')
+        .select('name')
+        .where('id', '=', id)
+        .where('deleted_at', 'is not', null)
+        .where(({ not, exists }) => not(exists(mergedAway(this.db))))
+        .executeTakeFirst();
+    }
     const table = kind === 'supplier' ? 'suppliers' : 'customers';
     return this.db.selectFrom(table).select('name').where('id', '=', id).where('archived_at', 'is not', null).executeTakeFirst();
   }

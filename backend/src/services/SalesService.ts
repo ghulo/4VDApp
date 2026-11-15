@@ -470,7 +470,7 @@ export class SalesService {
         productName: product.name,
         delta: -taken,
         reason: SYSTEM_STOCK_REASONS.SALE,
-        notes: taken < input.quantity ? `Sale #${id} (offline, ${roundQuantity(input.quantity - taken)} more than in stock)` : `Sale #${id}`,
+        notes: taken < input.quantity ? `Sale #${id} (${input.offline ? 'offline, ' : ''}${roundQuantity(input.quantity - taken)} more than in stock)` : `Sale #${id}`,
         adjustedBy: soldBy,
         reorderLevel: product.reorder_level ?? 0,
       });

@@ -50,6 +50,14 @@ describe('numbering', () => {
     expect((await api().get('/api/counter/today').set(auth())).body.data.nextReceipt).toBe(`FSM-${String(year % 100)}-00003`);
   });
 
+  it("should refuse letters another kind already printed on its documents", async () => {
+    await sell(1);
+    await api().put('/api/settings/rules').set(auth()).send({ numbering: { invoice: { prefix: 'FSM', year: 'yyyy', digits: 6 } } });
+    const taken = await api().put('/api/settings/rules').set(auth()).send({ numbering: { credit_note: { prefix: 'F', year: 'yyyy', digits: 6 } } });
+    expect(taken.status).toBe(400);
+    expect(taken.body.message).toMatch(/already on invoice numbers/);
+  });
+
   it('should refuse two kinds with the same prefix, and let only managers change it', async () => {
     const clash = await api().put('/api/settings/rules').set(auth()).send({ numbering: { credit_note: { prefix: 'F', year: 'yyyy', digits: 6 } } });
     expect(clash.status).toBe(400);
@@ -142,5 +150,16 @@ describe('files and the recycle bin', () => {
     const expenses = (await api().get(`/api/expenses?startDate=${today()}&endDate=${today()}`).set(auth())).body.data;
     expect(JSON.stringify(expenses)).toContain('cleaning');
     expect((await api().post(`/api/bin/product/${productId}/restore`).set(auth())).status).toBe(404);
+  });
+
+  it('should leave a product merged into its duplicate out of the bin', async () => {
+    const twin = await createTestProduct(context, adminToken, { name: 'Twin', price: 10, stock: 1 });
+    await context.db.updateTable('products').set({ deleted_at: new Date() }).where('id', '=', twin).execute();
+    await context.db
+      .insertInto('product_duplicate_flags')
+      .values({ product_id: productId, other_product_id: twin, reason: 'identical name', resolved_at: new Date(), resolution: 'merged' })
+      .execute();
+    expect((await api().get('/api/bin').set(auth())).body.data).toEqual([]);
+    expect((await api().post(`/api/bin/product/${twin}/restore`).set(auth())).status).toBe(404);
   });
 });

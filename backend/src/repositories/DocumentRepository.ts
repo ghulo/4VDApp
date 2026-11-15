@@ -136,6 +136,16 @@ export class DocumentRepository {
    * the transaction ends, so two checkouts can't get the same number, and a
    * rolled-back one gives its number back (no gaps).
    */
+/** Which kinds have documents whose numbers start with these letters. */
+  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer'>> {
+    const like = `${escapeLikePattern(prefix)}-%`;
+    const [documents, offer] = await Promise.all([
+      this.db.selectFrom('documents').select('kind').distinct().where('number', 'like', like).execute(),
+      this.db.selectFrom('offers').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
+    ]);
+    return [...documents.map((row) => row.kind), ...(offer ? (['offer'] as const) : [])];
+  }
+
   async nextNumber(kind: DocumentKind | 'offer', year: number): Promise<number> {
     const row = await this.db
       .insertInto('document_numbers')

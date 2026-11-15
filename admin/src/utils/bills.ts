@@ -6,6 +6,8 @@ export interface LineProduct {
   name: string;
   vatRate: number;
   costPrice: number | null;
+  /** Has a best-before date: the line asks for it. */
+  hasBestBefore?: boolean;
 }
 
 /** One line of the bill form as it is being typed: every number a string. */
@@ -25,6 +27,8 @@ export interface DraftLine {
   /** On a return or credit: whether this line is part of it, and the most it can be. */
   include?: boolean;
   max?: number;
+  /** A product's best-before date ("YYYY-MM-DD"), or '' / left out when none was typed. */
+  expiresOn?: string;
 }
 
 /** The VAT choice for a line exempt from VAT. */
@@ -69,7 +73,15 @@ export const isLineDone = (line: DraftLine) =>
 
 export const toLineInput = (line: DraftLine): BillLineInput =>
   line.kind === 'product'
-    ? { kind: 'product', productId: line.product!.id, quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), vatRate: rateOf(line.vatRate), vatExempt: line.vatRate === EXEMPT }
+    ? {
+        kind: 'product',
+        productId: line.product!.id,
+        quantity: Number(line.quantity),
+        unitPrice: Number(line.unitPrice),
+        vatRate: rateOf(line.vatRate),
+        vatExempt: line.vatRate === EXEMPT,
+        ...(line.expiresOn && { expiresOn: line.expiresOn }),
+      }
     : { kind: line.kind, category: line.category, description: line.description.trim() || null, amount: Number(line.amount), vatRate: rateOf(line.vatRate), vatExempt: line.vatRate === EXEMPT };
 
 /** A bill's saved line as a return or credit line, at the price on the paper. */

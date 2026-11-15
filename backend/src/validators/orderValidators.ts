@@ -214,6 +214,8 @@ export const confirmScanSchema = z.object({
         updateCost: z.boolean(),
         barcode: barcodeSchema,
         updateBarcode: z.boolean(),
+        /** A best-before date for these units. */
+        expiresOn: calendarDaySchema.nullish(),
       }),
     )
     .max(500),

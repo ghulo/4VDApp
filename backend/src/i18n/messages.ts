@@ -426,7 +426,7 @@ export const en: ServerMessages = {
         : daysLeft === 0
           ? `${quantity} × ${product} expire today`
           : `${quantity} × ${product} expire in ${count(daysLeft, 'day', 'days')}`,
-    expiringDetail: 'Put them on promotion or at the front, or write them off. Then mark them as dealt with on the stock page.',
+    expiringDetail: 'Sticker them: the till sells them short-dated near the date. Once the date has passed, remove them as expired under Stock → Expiring.',
   },
 
   email: {
@@ -726,7 +726,7 @@ export const sq: ServerMessages = {
         : daysLeft === 0
           ? `${quantity} × ${product} skadojnë sot`
           : `${quantity} × ${product} skadojnë për ${count(daysLeft, 'ditë', 'ditë')}`,
-    expiringDetail: 'Vendosi në ofertë ose përpara, ose hiqi nga stoku. Pastaj shënoji si të trajtuara te faqja e stokut.',
+    expiringDetail: 'Vendosu etiketë: arka i shet me afat të shkurtër afër datës. Pasi të kalojë afati, hiqi si të skaduara te Stoku → Afati.',
   },
 
   email: {

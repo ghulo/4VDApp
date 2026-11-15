@@ -69,7 +69,10 @@ function fromInsight(insight: Insight): TodoItem {
     ? `/bills/${insight.billId}`
     : insight.customerId
       ? `/customers/${insight.customerId}`
-      : `/inventory/${insight.productId}`;
+      : // Stock → Expiring has the short-dated price and the one-tap removal.
+        insight.kind === 'expiring'
+        ? '/expiring'
+        : `/inventory/${insight.productId}`;
   return {
     key: `${insight.kind}:${insight.billId ?? insight.customerId ?? insight.productId}`,
     kind: insight.kind,

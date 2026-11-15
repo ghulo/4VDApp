@@ -17,6 +17,8 @@ export interface StockCountLineDto {
   productName: string;
   sku: string | null;
   categoryName: string;
+  /** Has a best-before date: counting it asks for the soonest one. */
+  hasBestBefore: boolean;
   /** Null until counted. */
   countedQuantity: number | null;
   status: CountLineStatus | null;
@@ -344,6 +346,7 @@ function toCountDto(count: StockCountRecord, products: CountProductRow[], showEx
       productName: row.product_name,
       sku: row.sku,
       categoryName: row.category_name,
+      hasBestBefore: row.has_best_before,
       countedQuantity: row.counted_quantity,
       status: row.status,
       decisionNote: row.decision_note,

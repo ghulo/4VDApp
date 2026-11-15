@@ -3,9 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ErrorNotice, Loading } from '../../components/Feedback';
-import { Button, Card, EmptyState, Field, PageHeader } from '../../components/ui';
+import { Button, Card, DateField, EmptyState, Field, PageHeader } from '../../components/ui';
 import { useT } from '../../i18n/useT';
-import { categoriesApi, stockCountsApi } from '../../services/api';
+import { categoriesApi, expiryApi, stockCountsApi } from '../../services/api';
 import type { StockCount, StockCountSummary } from '../../services/types';
 import { teamApi } from '../../services/teamApi';
 import { errorMessage } from '../../utils/errors';
@@ -163,6 +163,8 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
   const [index, setIndex] = useState(() => Math.max(0, nextUncounted(count, 0)));
   const line = count.lines[index]!;
   const [value, setValue] = useState(line.countedQuantity === null ? '' : String(line.countedQuantity));
+  // The soonest best-before date on the shelf, for products that have one; '' when not typed.
+  const [bestBefore, setBestBefore] = useState('');
   const [showList, setShowList] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -170,11 +172,20 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
     const next = source.lines[nextIndex]!;
     setIndex(nextIndex);
     setValue(next.countedQuantity === null ? '' : String(next.countedQuantity));
+    setBestBefore('');
     setShowList(false);
   }
 
   const save = useMutation({
-    mutationFn: () => teamApi.countLine(count.id, line.productId, Number(value)),
+    mutationFn: async () => {
+      const updated = await teamApi.countLine(count.id, line.productId, Number(value));
+      // The shelf was just counted: its date replaces the ones noted before.
+      const units = Math.floor(Number(value));
+      if (line.hasBestBefore && bestBefore && units > 0) {
+        await expiryApi.add({ productId: line.productId, quantity: units, expiresOn: bestBefore, note: null, replace: true });
+      }
+      return updated;
+    },
     onSuccess: (updated) => {
       onSaved(updated);
       const next = nextUncounted(updated, index + 1);
@@ -242,6 +253,11 @@ function Counter({ count, onSaved, onSubmitted }: { count: StockCount; onSaved: 
             <Button icon={Plus} aria-label={t.staff.counts.more} onClick={() => setValue(String((canSave ? amount : 0) + 1))} />
           </span>
         </Field>
+        {line.hasBestBefore && (
+          <Field label={t.staff.counts.bestBefore} hint={t.staff.counts.bestBeforeHint}>
+            <DateField value={bestBefore} aria-label={t.staff.counts.bestBefore} onChange={setBestBefore} />
+          </Field>
+        )}
         {save.isError && (
           <p className="form-error" role="alert">
             {errorMessage(save.error)}

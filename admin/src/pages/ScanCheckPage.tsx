@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, Combobox, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, Combobox, DateField, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billScansApi, categoriesApi, suppliersApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -33,6 +33,8 @@ interface Decision {
   barcode: string;
   price: string;
   vatRate: string;
+  /** A best-before date for these units, or ''. */
+  expiresOn?: string;
 }
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
@@ -225,6 +227,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
               updateCost: !isNew && decision.updateCost,
               barcode: read.barcode,
               updateBarcode: !isNew && decision.updateBarcode,
+              ...(!isNew && decision.expiresOn && { expiresOn: decision.expiresOn }),
             },
           ];
         }),
@@ -497,6 +500,11 @@ function ScanLine({ index, line, decision, products, onChange, onPack }: ScanLin
                 onChange={(event) => onChange({ unitCost: event.target.value })}
               />
             </Field>
+            {!isNew && products.find((product) => String(product.id) === decision.choice)?.hasBestBefore && (
+              <Field label={t.billForm.bestBefore} hint={t.billForm.bestBeforeHint}>
+                <DateField value={decision.expiresOn ?? ''} aria-label={label(t.billForm.bestBefore)} onChange={(day) => onChange({ expiresOn: day })} />
+              </Field>
+            )}
           </div>
         )}
 

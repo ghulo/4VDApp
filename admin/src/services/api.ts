@@ -1068,7 +1068,7 @@ export const threadsApi = {
 export const stockDocumentsApi = {
   list: async (range: ReportRange) => (await apiRequest<StockDocument[]>('/stock-documents', { query: { ...range } })).data,
   get: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}`)).data,
-  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number }> }) =>
+  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number; expiresOn?: string }> }) =>
     (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
   void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
 };

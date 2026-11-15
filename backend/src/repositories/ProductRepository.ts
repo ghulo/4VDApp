@@ -293,11 +293,11 @@ export class ProductRepository {
 
   /** Every live product, with just what matching a supplier's bill needs. */
   async findAllForMatching(): Promise<
-    Array<{ id: number; name: string; sku: string | null; barcode: string | null; other_barcodes: string[]; packs: ProductPack[]; cost_price: string | null; vat_rate: number }>
+    Array<{ id: number; name: string; sku: string | null; barcode: string | null; other_barcodes: string[]; packs: ProductPack[]; cost_price: string | null; vat_rate: number; has_best_before: boolean }>
   > {
     return this.db
       .selectFrom('products as p')
-      .select(['p.id', 'p.name', 'p.sku', 'p.barcode', 'p.cost_price', 'p.vat_rate'])
+      .select(['p.id', 'p.name', 'p.sku', 'p.barcode', 'p.cost_price', 'p.vat_rate', 'p.has_best_before'])
       .select(otherBarcodes)
       .select(packs)
       .where('p.deleted_at', 'is', null)

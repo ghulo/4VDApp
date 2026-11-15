@@ -58,7 +58,7 @@ export interface BillScanDto {
   openOrders: OrderDto[];
   lines: ScanLineDto[];
   /** Every product, for linking a line by hand. */
-  products: Array<{ id: number; name: string }>;
+  products: Array<{ id: number; name: string; hasBestBefore: boolean }>;
   totals: ReturnType<typeof checkTotals>;
   /** A bill from this supplier with the same number is already saved. */
   duplicateBillId: number | null;
@@ -117,6 +117,8 @@ export interface ConfirmScanInput {
     /** The barcode printed on the bill, put on the product when `updateBarcode`. */
     barcode: string | null;
     updateBarcode: boolean;
+    /** A best-before date for these units; two lines of one product keep the sooner. */
+    expiresOn?: string | null;
   }>;
 }
 
@@ -257,6 +259,7 @@ export class BillScanService {
       packs: row.packs,
       costPrice: row.cost_price === null ? null : Number(row.cost_price),
       vatRate: row.vat_rate,
+      hasBestBefore: row.has_best_before,
     }));
     const number = reading.number?.trim().toLowerCase();
     const duplicate = bills.find((bill) => bill.status !== 'void' && bill.number?.trim().toLowerCase() === number && bill.id !== scan.bill_id);
@@ -274,7 +277,7 @@ export class BillScanService {
       supplier,
       openOrders: orders.filter((order) => order.status === 'open' && order.supplier.id === supplier?.id),
       lines: reading.lines.map((line) => ({ read: line, match: matchLine(line, reading, matchable, known) })),
-      products: matchable.map((row) => ({ id: row.id, name: row.name })),
+      products: matchable.map((row) => ({ id: row.id, name: row.name, hasBestBefore: row.hasBestBefore })),
       totals: checkTotals(reading),
       duplicateBillId: duplicate?.id ?? null,
       billId: scan.bill_id,
@@ -401,7 +404,7 @@ export class BillScanService {
       // Everything changed is noted, so the developer can reopen the scan and have it put back.
       const confirmation: ScanConfirmation = { input, createdProducts: [], costs: [], barcodes: [], codes: [], order: { id: 0, created: false, lines: [], addedLineIds: [] }, received: [] };
       // Each line ends up as a product id with pieces and a cost.
-      const received = new Map<number, { pieces: number; cost: number | null }>();
+      const received = new Map<number, { pieces: number; cost: number | null; expiresOn?: string | null }>();
       for (const line of input.lines) {
         let productId = line.productId;
         if (productId === null) {
@@ -431,11 +434,12 @@ export class BillScanService {
 
         // The same product on two lines (a free extra, a second price) arrives as one, at the average cost.
         const before = received.get(productId);
-        if (!before) received.set(productId, { pieces: line.pieces, cost: line.unitCost });
+        if (!before) received.set(productId, { pieces: line.pieces, cost: line.unitCost, expiresOn: line.expiresOn ?? null });
         else {
           const pieces = before.pieces + line.pieces;
           const cost = before.cost !== null && line.unitCost !== null ? roundMoney((before.cost * before.pieces + line.unitCost * line.pieces) / pieces) : (before.cost ?? line.unitCost);
-          received.set(productId, { pieces, cost });
+          const dates = [before.expiresOn, line.expiresOn ?? null].filter((day): day is string => Boolean(day)).sort();
+          received.set(productId, { pieces, cost, expiresOn: dates[0] ?? null });
         }
       }
 
@@ -450,7 +454,7 @@ export class BillScanService {
           updateCostPrices: false,
           lines: lines.map((line) => {
             const came = received.get(line.product_id);
-            return { lineId: line.id, receivedQuantity: came?.pieces ?? 0, ...(came && came.cost !== null && { unitCost: came.cost }) };
+            return { lineId: line.id, receivedQuantity: came?.pieces ?? 0, ...(came && came.cost !== null && { unitCost: came.cost }), ...(came?.expiresOn && { expiresOn: came.expiresOn }) };
           }),
         },
         actorId,
@@ -498,7 +502,7 @@ export class BillScanService {
   private async orderFor(
     repos: TransactionalRepositories,
     input: ConfirmScanInput,
-    received: Map<number, { pieces: number; cost: number | null }>,
+    received: Map<number, { pieces: number; cost: number | null; expiresOn?: string | null }>,
     actorId: number,
   ): Promise<ScanConfirmation['order']> {
     const lines = [...received].map(([productId, came]) => ({ productId, quantity: came.pieces, unitCost: came.cost }));

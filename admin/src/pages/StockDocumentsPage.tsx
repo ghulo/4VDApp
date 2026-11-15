@@ -113,6 +113,8 @@ function DirectionBadge({ document }: { document: Pick<StockDocument, 'direction
 interface DraftLine {
   productId: number;
   quantity: string;
+  /** Stock in: a best-before date for these units, or '' / left out. */
+  expiresOn?: string;
 }
 
 /** A new document: in or out, why, the day, and its products. Shows what it will do before saving. */
@@ -163,7 +165,11 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
         reason,
         day,
         note: note.trim() || null,
-        lines: lines.map((line) => ({ productId: line.productId, quantity: Number(line.quantity.replace(',', '.')) })),
+        lines: lines.map((line) => ({
+          productId: line.productId,
+          quantity: Number(line.quantity.replace(',', '.')),
+          ...(direction === 'in' && line.expiresOn && { expiresOn: line.expiresOn }),
+        })),
       }),
     onSuccess: (document) => {
       queryClient.invalidateQueries({ queryKey: ['stock-documents'] });
@@ -242,6 +248,15 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
                     onChange={(event) => setLines((now) => now.map((one) => (one.productId === line.productId ? { ...one, quantity: event.target.value } : one)))}
                   />
                 </Field>
+                {direction === 'in' && product?.hasBestBefore && (
+                  <Field label={t.billForm.bestBefore} narrow>
+                    <DateField
+                      value={line.expiresOn ?? ''}
+                      aria-label={t.billForm.bestBeforeOf(product.name)}
+                      onChange={(day) => setLines((now) => now.map((one) => (one.productId === line.productId ? { ...one, expiresOn: day } : one)))}
+                    />
+                  </Field>
+                )}
                 <Button variant="ghost" icon={X} aria-label={t.stockDocs.removeLine(product?.name ?? '')} onClick={() => setLines((now) => now.filter((one) => one.productId !== line.productId))} />
               </li>
             );

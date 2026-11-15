@@ -94,3 +94,23 @@ describe('wholesale prices at the Counter', () => {
     expect(priceLine(line(), juice({ promotion: { id: 1, name: 'Half', percentOff: 50, price: 1, endsAt: '' } as Product['promotion'] }), '', true)).toMatchObject({ unitPrice: 1 });
   });
 });
+
+describe('short-dated units on a counter line', () => {
+  const pick = { id: 7, quantity: 1, price: 0.7, percentOff: 30 };
+
+  it('prices the stickered units at the short-dated price and the rest as usual', () => {
+    expect(priceLine({ ...line({ quantity: 3 }), shortDated: pick }, product({ price: 1 }), '')).toMatchObject({
+      unitPrice: 1,
+      shortQuantity: 1,
+      shortUnitPrice: 0.7,
+      total: 2.7,
+      reasons: [{ kind: 'shortDated', percent: 30, quantity: 1 }],
+    });
+  });
+
+  it('keeps a cheaper promotion instead, and takes the rabat off both', () => {
+    const promoted = product({ price: 1, promotion: { id: 1, name: 'Half', percentOff: 50, endsAt: '', price: 0.5 } });
+    expect(priceLine({ ...line({ quantity: 1 }), shortDated: pick }, promoted, '')).toMatchObject({ shortUnitPrice: 0.5, total: 0.5 });
+    expect(priceLine({ ...line({ quantity: 2, discount: '10' }), shortDated: pick }, product({ price: 1 }), '')).toMatchObject({ shortUnitPrice: 0.63, unitPrice: 0.9, total: 1.53 });
+  });
+});

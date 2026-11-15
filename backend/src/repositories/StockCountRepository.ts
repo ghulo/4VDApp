@@ -21,6 +21,7 @@ export interface CountProductRow {
   product_name: string;
   sku: string | null;
   category_name: string;
+  has_best_before: boolean;
   counted_quantity: number | null;
   expected_quantity: number | null;
   unit_cost: string | null;
@@ -112,7 +113,7 @@ export class StockCountRepository {
   async products(countId: number, categoryId: number | null): Promise<CountProductRow[]> {
     const scope = categoryId === null ? sql`true` : sql`p.category_id = ${categoryId}`;
     const result = await sql<CountProductRow>`
-      select p.id as product_id, p.name as product_name, p.sku, c.name as category_name,
+      select p.id as product_id, p.name as product_name, p.sku, p.has_best_before, c.name as category_name,
              l.counted_quantity, l.expected_quantity, l.unit_cost, l.status, l.decision_note
       from products p
       join categories c on c.id = p.category_id

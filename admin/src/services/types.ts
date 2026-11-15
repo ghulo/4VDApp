@@ -715,6 +715,8 @@ export interface BillLineInput {
   amount?: number | null;
   vatRate?: number | null;
   vatExempt?: boolean | null;
+  /** A product's best-before date, noted for the units on this line. */
+  expiresOn?: string | null;
 }
 
 /** The one bill form: lines, and what 4VD needs to work out the rest. */
@@ -1533,6 +1535,8 @@ export interface StockCountLine {
   productName: string;
   sku: string | null;
   categoryName: string;
+  /** Has a best-before date: counting it asks for the soonest one. */
+  hasBestBefore?: boolean;
   countedQuantity: number | null;
   status: CountLineStatus | null;
   decisionNote: string | null;
@@ -1655,7 +1659,7 @@ export interface BillScan {
   supplier: { id: number; name: string; matchedBy: 'nui' | 'name' | 'chosen' } | null;
   openOrders: PurchaseOrder[];
   lines: Array<{ read: BillReading['lines'][number]; match: ScanLineMatch }>;
-  products: Array<{ id: number; name: string }>;
+  products: Array<{ id: number; name: string; hasBestBefore?: boolean }>;
   totals: { linesTotal: number; printedTotal: number | null; adds: boolean };
   duplicateBillId: number | null;
   billId: number | null;
@@ -1708,6 +1712,7 @@ export interface ConfirmScanInput {
     updateCost: boolean;
     barcode: string | null;
     updateBarcode: boolean;
+    expiresOn?: string | null;
   }>;
 }
 

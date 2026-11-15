@@ -6,7 +6,7 @@ import { productsApi } from '../services/api';
 import { BILL_LINE_KINDS, EQUIPMENT_CATEGORIES, EXPENSE_CATEGORIES, type BillLineKind, type Supplier } from '../services/types';
 import { type DraftLine, emptyLine, EXEMPT, type LineProduct, withKind } from '../utils/bills';
 import { formatMoney } from '../utils/format';
-import { Button, Field } from './ui';
+import { Button, DateField, Field } from './ui';
 
 const VAT_RATES = ['18', '16', '8', '0', EXEMPT];
 const SEARCH_DEBOUNCE_MS = 250;
@@ -95,7 +95,7 @@ function ProductSearch({ label, onPick }: { label: string; onPick: (product: Lin
   function pick(index: number) {
     const product = items[index];
     if (!product) return;
-    onPick({ id: product.id, name: product.name, vatRate: product.vatRate, costPrice: product.costPrice ?? null });
+    onPick({ id: product.id, name: product.name, vatRate: product.vatRate, costPrice: product.costPrice ?? null, hasBestBefore: product.hasBestBefore ?? false });
     setText('');
     setActive(0);
   }
@@ -319,6 +319,11 @@ export function BillLines({ lines, onChange, abroad, supplier, sums, fromBill, l
                           onChange={(event) => set(line.key, { unitPrice: event.target.value })}
                         />
                       </Field>
+                      {line.product?.hasBestBefore && !fromBill && (
+                        <Field label={t.billForm.bestBefore} hint={t.billForm.bestBeforeHint}>
+                          <DateField value={line.expiresOn ?? ''} aria-label={t.billForm.bestBeforeOf(line.product.name)} onChange={(day) => set(line.key, { expiresOn: day })} />
+                        </Field>
+                      )}
                     </>
                   ) : (
                     <Field

@@ -345,9 +345,9 @@ export const duplicatesApi = {
 
 export const categoriesApi = {
   list: async () => (await apiRequest<Category[]>('/categories')).data,
-  create: async (input: { name: string; description: string | null }) =>
+  create: async (input: { name: string; description: string | null; shortDatedDays?: number | null }) =>
     (await apiRequest<Category>('/categories', { method: 'POST', body: input })).data,
-  update: async (id: number, input: { name: string; description: string | null }) =>
+  update: async (id: number, input: { name: string; description: string | null; shortDatedDays?: number | null }) =>
     (await apiRequest<Category>(`/categories/${id}`, { method: 'PUT', body: input })).data,
   remove: async (id: number) => {
     await apiRequest(`/categories/${id}`, { method: 'DELETE' });
@@ -451,7 +451,7 @@ export const salesApi = {
     return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
   recordBasket: async (input: {
-    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
+    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
     notes: string | null;
     customerId?: number;
     /** Wholesale prices on or off for this sale; left out: what the customer pays. */
@@ -818,13 +818,17 @@ export const ordersApi = {
 
 export const expiryApi = {
   /** Dates coming up soon or already passed, for every product. */
-  upcoming: async () => (await apiRequest<ExpiryDate[]>('/expiry')).data,
+  upcoming: async (days?: number) => (await apiRequest<ExpiryDate[]>('/expiry', { query: days ? { days } : {} })).data,
+  /** Batches a stickered unit sells cheaper from today. */
+  shortDated: async () => (await apiRequest<ExpiryDate[]>('/expiry/short-dated')).data,
   forProduct: async (productId: number) => (await apiRequest<ExpiryDate[]>('/expiry', { query: { productId } })).data,
-  add: async (input: { productId: number; quantity: number; expiresOn: string; note: string | null }) =>
+  add: async (input: { productId: number; quantity: number; expiresOn: string; note: string | null; replace?: boolean }) =>
     (await apiRequest<ExpiryDate>('/expiry', { method: 'POST', body: input })).data,
   clear: async (id: number) => {
     await apiRequest(`/expiry/${id}/clear`, { method: 'POST' });
   },
+  /** Writes off what is left as expired (an employee's waits for the owner). */
+  writeOff: async (id: number) => (await apiRequest<{ writeOffId: number; quantity: number }>(`/expiry/${id}/write-off`, { method: 'POST' })).data,
 };
 
 export const exportsApi = {
@@ -862,7 +866,7 @@ export const settingsApi = {
   get: async () => (await apiRequest<AppSettings>('/settings')).data,
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
   rules: async () => (await apiRequest<ShopRules>('/settings/rules')).data,
-  updateRules: async (input: Partial<ShopRules>) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
+  updateRules: async (input: Partial<Omit<ShopRules, 'shortDated'>> & { shortDated?: Partial<ShopRules['shortDated']> }) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
   /** Emails the signed-in developer; `sent` is false (with a `reason`) when real emails don't work yet. */

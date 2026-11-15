@@ -18,7 +18,7 @@ export interface QueuedSale {
   userId: number;
   /** The basket as the server takes it (POST /sales/basket). */
   body: {
-    items: Array<{ productId: number; quantity: number; discountPercent?: number }>;
+    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
     notes: null;
     paidBy?: 'card';
     cardAmount?: number;

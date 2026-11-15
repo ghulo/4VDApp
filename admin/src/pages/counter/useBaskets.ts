@@ -1,3 +1,4 @@
+import type { ShortDatedPick } from '../../utils/shortDated';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DeliveryInput, PayLaterApproval, RabatApproval } from '../../services/types';
 
@@ -14,6 +15,8 @@ export interface StoredLine {
   priceSet?: boolean;
   /** Sold at the price an offer gave the customer; the rabat keys leave it alone. */
   offerPrice?: number;
+  /** Stickered short-dated units the cashier tapped: this many of the line sell at the batch's price. */
+  shortDated?: ShortDatedPick;
 }
 
 export interface Basket {

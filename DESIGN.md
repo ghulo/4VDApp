@@ -442,6 +442,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | The shop's end-of-day steps | **Close the day** | **Mbyll ditën** *(confirm)* | Z report |
 | One person's end-of-day steps | **End your shift** | **Mbyll turnin** | |
 | Broken, lost or stolen stock | **damage or loss** | **dëmtim ose humbje** | write-off (except in accountant exports) |
+| The date printed on food after which it shouldn't be sold | **best-before date** (short **Best before**) | **afati** *(confirm)* | expiry date, BBD, lot |
+| Stock close to its best-before date, sold cheaper per stickered unit | **short-dated**; button **Short-dated −30%** | **me afat të shkurtër**; **Afat i shkurtër −30%** *(confirm)* | clearance, markdown, batch |
 | Counting the shelves | **stock count** | **numërim stoku** | inventory check |
 | Goods arriving from a supplier | **delivery** | **furnizim** | |
 | What the shop asks a supplier for | **order** | **porosi** | purchase order |

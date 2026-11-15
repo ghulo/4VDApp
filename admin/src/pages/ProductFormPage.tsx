@@ -48,6 +48,9 @@ interface ProductDraft {
   unit: ProductUnit;
   /** The scale's number for it, as typed; '' when none. */
   scalePlu: string;
+  hasBestBefore: boolean;
+  /** Its own short-dated window in days, as typed; '' for its category's. */
+  shortDatedDays: string;
 }
 
 let nextTierKey = 1;
@@ -79,6 +82,8 @@ function toDraft(product?: Product): ProductDraft {
     reorderLevel: '10',
     unit: product?.unit ?? 'piece',
     scalePlu: product?.scalePlu != null ? String(product.scalePlu) : '',
+    hasBestBefore: product?.hasBestBefore ?? false,
+    shortDatedDays: product?.shortDatedDays != null ? String(product.shortDatedDays) : '',
     tiers: (product?.bulkPricingTiers ?? []).map((tier) => ({
       key: nextTierKey++,
       quantity: String(tier.quantity),
@@ -106,6 +111,8 @@ function toInput(draft: ProductDraft, isNew: boolean): ProductInput {
       .map((tier) => ({ quantity: Number(tier.quantity), price: Number(tier.price) })),
     unit: draft.unit,
     scalePlu: draft.unit === 'kg' && draft.scalePlu.trim() !== '' ? Number(draft.scalePlu) : null,
+    hasBestBefore: draft.hasBestBefore,
+    shortDatedDays: draft.hasBestBefore && draft.shortDatedDays.trim() !== '' ? Number(draft.shortDatedDays) : null,
     ...(isNew && { stock: Number(draft.stock || 0), reorderLevel: Number(draft.reorderLevel || 0) }),
   };
 }
@@ -336,6 +343,26 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       </label>
                     )}
                   </div>
+                  <label className="toggle">
+                    <input type="checkbox" checked={draft.hasBestBefore} onChange={(event) => update('hasBestBefore', event.target.checked)} />
+                    {t.productForm.hasBestBefore}
+                  </label>
+                  {draft.hasBestBefore && (
+                    <label className="field">
+                      <span className="field__label">{t.productForm.shortDatedDays}</span>
+                      <input
+                        name="short-dated-days"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        pattern="[0-9]{1,2}"
+                        maxLength={2}
+                        placeholder={t.productForm.shortDatedDaysPlaceholder}
+                        value={draft.shortDatedDays}
+                        onChange={(event) => update('shortDatedDays', event.target.value.replace(/\D/g, ''))}
+                      />
+                      <span className="field__hint">{t.productForm.shortDatedDaysHint}</span>
+                    </label>
+                  )}
                   <label className="field">
                     <span className="field__label">{t.productForm.description}</span>
                     <textarea

@@ -2,6 +2,7 @@ import { afterDiscount, levelPriceFor, parsePercent, roundMoney, unitPriceFor } 
 import { allowsParts } from '../../utils/units';
 import type { Product } from '../../services/types';
 import type { StoredLine } from './useBaskets';
+import { shortDatedUnits } from '../../utils/shortDated';
 
 /** Why a line sells below its shelf price, strongest first: what the basket table writes under the name. */
 export type PriceReason =
@@ -11,7 +12,8 @@ export type PriceReason =
   | { kind: 'promotion'; name: string }
   | { kind: 'bulk'; from: number }
   | { kind: 'wholesale' }
-  | { kind: 'offer' };
+  | { kind: 'offer' }
+  | { kind: 'shortDated'; percent: number; quantity: number };
 
 export interface CounterLine extends StoredLine {
   product: Product | undefined;
@@ -19,6 +21,11 @@ export interface CounterLine extends StoredLine {
   listPrice: number;
   /** What one costs after the rabat. */
   unitPrice: number;
+  /** Stickered short-dated units in the line, and what one of them costs after the rabat (0 and null when none). */
+  shortQuantity: number;
+  shortUnitPrice: number | null;
+  /** The line before any rabat: list price, short-dated units at their price. */
+  listTotal: number;
   total: number;
   /** The rabat in percent that applies: the line's own, else the basket's. */
   percent: number;
@@ -44,20 +51,29 @@ export function priceLine(line: StoredLine, product: Product | undefined, basket
   const own = parsePercent(line.discount);
   const basket = parsePercent(basketDiscount);
   const percent = own > 0 ? own : basket;
-  if (!product) return { ...line, product, listPrice: 0, unitPrice: 0, total: 0, percent, reasons: [], vat: 0 };
+  const none = { shortQuantity: 0, shortUnitPrice: null };
+  if (!product) return { ...line, ...none, product, listPrice: 0, unitPrice: 0, listTotal: 0, total: 0, percent, reasons: [], vat: 0 };
 
   // An offer's price is what the customer was promised: no rabat, promotion or bulk price on top.
   if (line.offerPrice !== undefined) {
     const total = roundMoney(line.offerPrice * line.quantity);
     const rate = product.vatExempt ? 0 : product.vatRate;
     const listPrice = Math.max(product.price, line.offerPrice);
-    return { ...line, product, listPrice, unitPrice: line.offerPrice, total, percent: 0, reasons: [{ kind: 'offer' }], vat: roundMoney((total * rate) / (100 + rate)) };
+    return { ...line, ...none, product, listPrice, unitPrice: line.offerPrice, listTotal: total, total, percent: 0, reasons: [{ kind: 'offer' }], vat: roundMoney((total * rate) / (100 + rate)) };
   }
-  const listPrice = unitPriceFor(product, line.quantity, wholesale);
+  // Stickered short-dated units go to the server as their own line, so the rest is priced for its own quantity.
+  const shortQuantity = shortDatedUnits(line.shortDated, line.quantity);
+  const rest = line.quantity - shortQuantity;
+  const listPrice = unitPriceFor(product, rest > 0 ? rest : line.quantity, wholesale);
   const level = levelPriceFor(product, wholesale);
   const unitPrice = afterDiscount(listPrice, percent);
-  const total = roundMoney(unitPrice * line.quantity);
+  // The lowest price wins, as on the server: the short-dated one, or a cheaper bulk price or promotion.
+  const shortList = shortQuantity > 0 ? Math.min(line.shortDated!.price, unitPriceFor(product, shortQuantity, wholesale)) : null;
+  const shortUnitPrice = shortList === null ? null : afterDiscount(shortList, percent);
+  const total = roundMoney(unitPrice * rest + (shortUnitPrice ?? 0) * shortQuantity);
+  const listTotal = roundMoney(listPrice * rest + (shortList ?? 0) * shortQuantity);
   const reasons: PriceReason[] = [];
+  if (shortQuantity > 0) reasons.push({ kind: 'shortDated', percent: line.shortDated!.percentOff, quantity: shortQuantity });
   if (own > 0) reasons.push(line.priceSet ? { kind: 'priceSet' } : { kind: 'rabat', percent: own });
   else if (basket > 0) reasons.push({ kind: 'basketRabat', percent: basket });
   if (product.promotion && listPrice === product.promotion.price && listPrice < product.price) reasons.push({ kind: 'promotion', name: product.promotion.name });
@@ -68,13 +84,13 @@ export function priceLine(line: StoredLine, product: Product | undefined, basket
   }
   const rate = product.vatExempt ? 0 : product.vatRate;
   const vat = roundMoney((total * rate) / (100 + rate));
-  return { ...line, product, listPrice, unitPrice, total, percent, reasons, vat };
+  return { ...line, product, listPrice, unitPrice, shortQuantity, shortUnitPrice, listTotal, total, percent, reasons, vat };
 }
 
 /** The receipt's foot: counts, the subtotal, what the rabat took off, and the VAT in the price. */
 export function summarise(lines: CounterLine[]): BasketSummary {
   const total = roundMoney(lines.reduce((sum, line) => sum + line.total, 0));
-  const subtotal = roundMoney(lines.reduce((sum, line) => sum + line.listPrice * line.quantity, 0));
+  const subtotal = roundMoney(lines.reduce((sum, line) => sum + line.listTotal, 0));
   const byRate = new Map<number, number>();
   for (const line of lines) {
     if (!line.product || line.vat === 0) continue;

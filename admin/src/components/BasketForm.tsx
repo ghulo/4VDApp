@@ -1,12 +1,13 @@
-import { Minus, Plus, X } from '@phosphor-icons/react';
+import { Minus, Plus, Tag, X } from '@phosphor-icons/react';
+import { offersByProduct, type ShortDatedPick, shortDatedUnits, tapShortDated } from '../utils/shortDated';
 import { piecesFor } from '../utils/units';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { canOversee } from '../auth/roles';
 import { useT } from '../i18n/useT';
-import { customersApi, documentsApi, productsApi, salesApi, settingsApi } from '../services/api';
+import { customersApi, documentsApi, expiryApi, productsApi, salesApi, settingsApi } from '../services/api';
 import type { DocumentRef, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney, formatPercent } from '../utils/format';
@@ -63,7 +64,10 @@ export function BasketForm() {
   // Owners and admins give any rabat; everyone else up to the shop's limit.
   const discountLimit = canOversee(role) ? 100 : (settings.data?.employeeDiscountLimit ?? 0);
   // `discount` is the box's text, so a half-typed "7," stays as typed.
-  const [lines, setLines] = useState<Array<{ product: Product; quantity: number; discount: string }>>([]);
+  // `shortDated`: stickered short-dated units the seller tapped, sold at the batch's price.
+  const [lines, setLines] = useState<Array<{ product: Product; quantity: number; discount: string; shortDated?: ShortDatedPick }>>([]);
+  const shortDatedBatches = useQuery({ queryKey: ['expiry', 'short-dated'], queryFn: expiryApi.shortDated, staleTime: 5 * 60_000 });
+  const offers = useMemo(() => offersByProduct(shortDatedBatches.data), [shortDatedBatches.data]);
   const [discountAll, setDiscountAll] = useState('');
   const [scan, setScan] = useState('');
   const [scanError, setScanError] = useState<string | null>(null);
@@ -146,10 +150,23 @@ export function BasketForm() {
     setLines((current) => current.map((line) => ({ ...line, discount })));
   }
 
-  const priceOf = (line: { product: Product; quantity: number; discount: string }) =>
-    afterDiscount(unitPriceFor(line.product, line.quantity, wholesale), parsePercent(line.discount));
+  /** What the line costs: stickered short-dated units at their price (or a cheaper one), the rest as usual; same rule as the server. */
+  const priced = (line: { product: Product; quantity: number; discount: string; shortDated?: ShortDatedPick }) => {
+    const percent = parsePercent(line.discount);
+    const short = shortDatedUnits(line.shortDated, line.quantity);
+    const rest = line.quantity - short;
+    const listed = unitPriceFor(line.product, rest > 0 ? rest : line.quantity, wholesale);
+    const each = afterDiscount(listed, percent);
+    const shortEach = short > 0 ? afterDiscount(Math.min(line.shortDated!.price, unitPriceFor(line.product, short, wholesale)), percent) : 0;
+    return { listed, each, short, rest, shortEach, total: roundMoney(each * rest + shortEach * short) };
+  };
+  function tapShort(productId: number) {
+    const offer = offers.get(productId);
+    if (!offer) return;
+    setLines((current) => current.map((line) => (line.product.id === productId ? { ...line, shortDated: tapShortDated(line.shortDated, offer, line.quantity) } : line)));
+  }
   const tooMuchDiscount = lines.some((line) => parsePercent(line.discount) > discountLimit || parsePercent(line.discount) < 0);
-  const total = roundMoney(lines.reduce((sum, line) => sum + priceOf(line) * line.quantity, 0));
+  const total = roundMoney(lines.reduce((sum, line) => sum + priced(line).total, 0));
   const paidAmount = Number(paid);
   const change = paid.trim() !== '' && paidAmount >= total ? roundMoney(paidAmount - total) : null;
 
@@ -158,9 +175,15 @@ export function BasketForm() {
   const record = useMutation({
     mutationFn: () =>
       salesApi.recordBasket({
-        items: lines.map((line) => {
+        // Stickered short-dated units go as their own line, with their batch.
+        items: lines.flatMap((line) => {
           const discount = roundMoney(parsePercent(line.discount));
-          return { productId: line.product.id, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
+          const rabat = discount > 0 ? { discountPercent: discount } : {};
+          const { short, rest } = priced(line);
+          return [
+            ...(short > 0 && line.shortDated ? [{ productId: line.product.id, quantity: short, shortDatedId: line.shortDated.id, ...rabat }] : []),
+            ...(rest > 0 ? [{ productId: line.product.id, quantity: rest, ...rabat }] : []),
+          ];
         }),
         notes: notes.trim() || null,
         ...(customerId && { customerId: Number(customerId), paidNow: !onTab }),
@@ -250,14 +273,26 @@ export function BasketForm() {
               </thead>
               <tbody>
                 {lines.map((line) => {
-                  const listed = unitPriceFor(line.product, line.quantity, wholesale);
                   const percent = parsePercent(line.discount);
-                  const each = afterDiscount(listed, percent);
+                  const { listed, each, short, shortEach, total: lineTotal } = priced(line);
+                  const offer = offers.get(line.product.id);
                   return (
                     <tr key={line.product.id}>
                       <td>
                         {line.product.name}
                         {listed < line.product.price && <span className="table__secondary">{t.basket.cheaper}</span>}
+                        {offer && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={Tag}
+                            aria-pressed={short > 0}
+                            title={t.counter.shortDatedTapHint}
+                            onClick={() => tapShort(line.product.id)}
+                          >
+                            {short > 0 ? t.counter.reason.shortDated(short, `${offer.percentOff}%`) : t.counter.shortDatedTap(`${offer.percentOff}%`)}
+                          </Button>
+                        )}
                       </td>
                       <td data-label={t.sales.quantity}>
                         <span className="basket__stepper">
@@ -288,8 +323,9 @@ export function BasketForm() {
                         />
                       </td>
                       <td className="table__numeric" data-label={t.sales.total}>
-                        {formatMoney(roundMoney(each * line.quantity))}
+                        {formatMoney(lineTotal)}
                         <span className="table__secondary">{t.basket.each(formatMoney(each))}</span>
+                        {short > 0 && <span className="table__secondary">{t.basket.shortDatedEach(short, formatMoney(shortEach))}</span>}
                         {percent > 0 && <span className="table__secondary">{t.basket.discountOff(formatPercent(percent / 100))}</span>}
                       </td>
                       <td>

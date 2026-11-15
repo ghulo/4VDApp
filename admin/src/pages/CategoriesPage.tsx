@@ -49,10 +49,11 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone?: () =
   const invalidate = useInvalidateCategories();
   const [name, setName] = useState(category?.name ?? '');
   const [description, setDescription] = useState(category?.description ?? '');
+  const [shortDays, setShortDays] = useState(category?.shortDatedDays != null ? String(category.shortDatedDays) : '');
 
   const save = useMutation({
     mutationFn: () => {
-      const input = { name: name.trim(), description: description.trim() || null };
+      const input = { name: name.trim(), description: description.trim() || null, shortDatedDays: shortDays.trim() === '' ? null : Number(shortDays) };
       return category ? categoriesApi.update(category.id, input) : categoriesApi.create(input);
     },
     onSuccess: () => {
@@ -79,6 +80,19 @@ function CategoryForm({ category, onDone }: { category?: Category; onDone?: () =
       <label className="field">
         <span className="field__label">{t.categories.description_}</span>
         <input maxLength={1000} value={description} onChange={(event) => setDescription(event.target.value)} />
+      </label>
+      <label className="field">
+        <span className="field__label">{t.categories.shortDatedDays}</span>
+        <input
+          inputMode="numeric"
+          autoComplete="off"
+          pattern="[0-9]{1,2}"
+          maxLength={2}
+          placeholder={t.categories.shortDatedDaysPlaceholder}
+          value={shortDays}
+          onChange={(event) => setShortDays(event.target.value.replace(/[^0-9]/g, ''))}
+        />
+        <span className="field__hint">{t.categories.shortDatedDaysHint}</span>
       </label>
       <div className="category-form__actions">
         <Button type="submit" disabled={save.isPending || !name.trim()} variant="primary">

@@ -1,4 +1,5 @@
-import { Hourglass, User } from '@phosphor-icons/react';
+import { Hourglass, Tag, User } from '@phosphor-icons/react';
+import type { ShortDatedOffer } from '../../utils/shortDated';
 import { allowsParts, unitSymbol } from '../../utils/units';
 import { useEffect, useRef } from 'react';
 import { useT } from '../../i18n/useT';
@@ -14,6 +15,10 @@ interface TableProps {
   flashKey: number;
   /** Product id to days until its soonest expiry date still on the shelf. */
   expiry: Map<number, number>;
+  /** Product id to the batch a stickered unit sells cheaper from today. */
+  offers: Map<number, ShortDatedOffer>;
+  /** One more stickered unit of this line (past the last, none again). */
+  onShortDated: (productId: number) => void;
   onSelect: (productId: number) => void;
 }
 
@@ -22,7 +27,7 @@ interface TableProps {
  * price and why it differs from the shelf, the rabat, VAT, the line total and
  * what stays on the shelf. A row is picked with a click or the arrow keys.
  */
-export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSelect }: TableProps) {
+export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, offers, onShortDated, onSelect }: TableProps) {
   const t = useT();
   const selectedRow = useRef<HTMLTableRowElement>(null);
 
@@ -55,6 +60,7 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
             const left = product ? Math.round((product.stock.quantity - line.quantity) * 1000) / 1000 : null;
             const stockTone = left === null ? '' : left <= 0 ? ' counter-stock--out' : product && left <= product.stock.reorderLevel ? ' counter-stock--low' : '';
             const days = expiry.get(line.productId);
+            const offer = offers.get(line.productId);
             const name = product?.name ?? line.name;
             return (
               <tr
@@ -78,7 +84,7 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
                   >
                     {name}
                   </button>
-                  {(line.reasons.length > 0 || days !== undefined) && (
+                  {(line.reasons.length > 0 || days !== undefined || offer) && (
                     <span className="counter-row__notes">
                       {line.reasons.map((reason) => (
                         <span key={reason.kind} className={`counter-note counter-note--${reason.kind === 'priceSet' ? 'set' : 'off'}`}>
@@ -90,6 +96,21 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
                           <Hourglass size={12} weight="bold" aria-hidden="true" />
                           {t.counter.expires(days)}
                         </span>
+                      )}
+                      {offer && (
+                        <button
+                          type="button"
+                          className="counter-note counter-note--tap"
+                          aria-pressed={line.shortQuantity > 0}
+                          title={t.counter.shortDatedTapHint}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onShortDated(line.productId);
+                          }}
+                        >
+                          <Tag size={12} weight="bold" aria-hidden="true" />
+                          {t.counter.shortDatedTap(`${offer.percentOff}%`)}
+                        </button>
                       )}
                     </span>
                   )}
@@ -136,6 +157,8 @@ function reasonText(t: ReturnType<typeof useT>, reason: PriceReason): string {
       return t.counter.reason.wholesale;
     case 'offer':
       return t.counter.reason.offer;
+    case 'shortDated':
+      return t.counter.reason.shortDated(reason.quantity, `${reason.percent}%`);
   }
 }
 

@@ -45,6 +45,7 @@ import { cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, 
 import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
+import { offersByProduct, tapShortDated as nextShortDated } from '../utils/shortDated';
 import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
@@ -168,7 +169,9 @@ export function CounterPage() {
   const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
   const shopDrawer = cash.data?.find((drawer) => drawer.place === 'shop') ?? null;
   const needsOpening = shopDrawer !== null && shopDrawer.opening === null && shopDrawer.countedAt === null;
-  const expiries = useQuery({ queryKey: ['expiry', 'upcoming'], queryFn: expiryApi.upcoming, staleTime: 5 * 60_000 });
+  const expiries = useQuery({ queryKey: ['expiry', 'upcoming'], queryFn: () => expiryApi.upcoming(), staleTime: 5 * 60_000 });
+  const shortDatedBatches = useQuery({ queryKey: ['expiry', 'short-dated'], queryFn: expiryApi.shortDated, staleTime: 5 * 60_000 });
+  const offers = useMemo(() => offersByProduct(shortDatedBatches.data), [shortDatedBatches.data]);
   const [panel, setPanel] = useState<Panel>(null);
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
   const { baskets, current, setLines, update: updateBasket, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
@@ -428,6 +431,13 @@ export function CounterPage() {
     setLines((lines) => lines.map((line) => (line.productId === productId ? { ...line, discount: value > 0 ? String(roundMoney(value)) : '', priceSet: false } : line)));
   }
 
+  /** One more stickered short-dated unit on this line; past the last, none again. */
+  function tapShortDated(productId: number) {
+    const offer = offers.get(productId);
+    if (!offer) return;
+    setLines((lines) => lines.map((line) => (line.productId === productId ? { ...line, shortDated: nextShortDated(line.shortDated, offer, line.quantity) } : line)));
+  }
+
   function applyPrice(productId: number, percent: number) {
     setLines((lines) => lines.map((line) => (line.productId === productId ? { ...line, discount: percent > 0 ? String(percent) : '', priceSet: percent > 0 } : line)));
   }
@@ -435,10 +445,16 @@ export function CounterPage() {
   // ---- Paying and printing ----
   /** The basket as the server takes it. */
   const basketBody = (payment: Payment): QueuedSale['body'] => ({
-    items: lines.map((line) => {
+    // Stickered short-dated units go as their own line, with their batch.
+    items: lines.flatMap((line): QueuedSale['body']['items'] => {
       const discount = roundMoney(line.percent);
-      if (line.offerPrice !== undefined) return { productId: line.productId, quantity: line.quantity, offerPrice: line.offerPrice };
-      return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
+      if (line.offerPrice !== undefined) return [{ productId: line.productId, quantity: line.quantity, offerPrice: line.offerPrice }];
+      const rabat = discount > 0 ? { discountPercent: discount } : {};
+      const rest = roundMoney(line.quantity - line.shortQuantity);
+      return [
+        ...(line.shortQuantity > 0 && line.shortDated ? [{ productId: line.productId, quantity: line.shortQuantity, shortDatedId: line.shortDated.id, ...rabat }] : []),
+        ...(rest > 0 ? [{ productId: line.productId, quantity: rest, ...rabat }] : []),
+      ];
     }),
     notes: null,
     // Always said, so the server charges what the Counter showed.
@@ -531,11 +547,14 @@ export function CounterPage() {
           const product = byId.get(sale.productId);
           return { product: { id: sale.productId, sku: product?.sku ?? null, name: sale.productName, vatRate: product?.vatRate ?? 18 }, unitPrice: sale.pricePerUnit, quantity: sale.quantity };
         })
-      : lines.map((line) => ({
-          product: { id: line.productId, sku: line.product?.sku ?? null, name: line.product?.name ?? line.name, vatRate: line.product?.vatRate ?? 18 },
-          unitPrice: line.unitPrice,
-          quantity: line.quantity,
-        }));
+      : lines.flatMap((line) => {
+          const product = { id: line.productId, sku: line.product?.sku ?? null, name: line.product?.name ?? line.name, vatRate: line.product?.vatRate ?? 18 };
+          const rest = roundMoney(line.quantity - line.shortQuantity);
+          return [
+            ...(line.shortQuantity > 0 && line.shortUnitPrice !== null ? [{ product, unitPrice: line.shortUnitPrice, quantity: line.shortQuantity }] : []),
+            ...(rest > 0 ? [{ product, unitPrice: line.unitPrice, quantity: rest }] : []),
+          ];
+        });
     closeBasket(basketId);
     setPanel(null);
     setSelectedId(null);
@@ -1015,6 +1034,11 @@ export function CounterPage() {
                 flashId={flash?.id ?? null}
                 flashKey={flash?.key ?? 0}
                 expiry={expiry}
+                offers={offers}
+                onShortDated={(productId) => {
+                  tapShortDated(productId);
+                  focusScan();
+                }}
                 onSelect={(productId) => {
                   setSelectedId(productId);
                   focusScan();

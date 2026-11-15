@@ -141,6 +141,53 @@ function ShopRulesForm({ initial }: { initial: ShopRules }) {
             onChange={(event) => change({ ...draft, noStockSales: event.target.checked ? 'allow' : 'block' })}
           />
         </SettingRow>
+        <SettingRow title={t.rules.shortDatedDays} description={t.rules.shortDatedDaysHint}>
+          <label className="rules-format__part">
+            <span>{t.rules.days}</span>
+            <input
+              className="rules-format__prefix"
+              aria-label={t.rules.shortDatedDays}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={2}
+              required
+              value={String(draft.shortDated.days || '')}
+              onChange={(event) => change({ ...draft, shortDated: { ...draft.shortDated, days: Number(event.target.value.replace(/[^0-9]/g, '')) } })}
+            />
+          </label>
+        </SettingRow>
+        <SettingRow title={t.rules.shortDatedSteps} description={t.rules.shortDatedStepsHint}>
+          <div className="rules-format">
+            {draft.shortDated.steps.map((step, index) => (
+              <label key={index} className="rules-format__part">
+                <span>{t.rules.stepDays(step.days)}</span>
+                <input
+                  className="rules-format__prefix"
+                  aria-label={t.rules.stepPercentOf(step.days)}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={2}
+                  required
+                  value={String(step.percent || '')}
+                  onChange={(event) => {
+                    const percent = Number(event.target.value.replace(/[^0-9]/g, ''));
+                    change({ ...draft, shortDated: { ...draft.shortDated, steps: draft.shortDated.steps.map((one, at) => (at === index ? { ...one, percent } : one)) } });
+                  }}
+                />
+              </label>
+            ))}
+          </div>
+        </SettingRow>
+        <SettingRow title={t.rules.shortDatedBelowCost} description={draft.shortDated.belowCost ? t.rules.shortDatedBelowCostOn : t.rules.shortDatedBelowCostOff}>
+          <input
+            type="checkbox"
+            role="switch"
+            className="switch"
+            aria-label={t.rules.shortDatedBelowCost}
+            checked={draft.shortDated.belowCost}
+            onChange={(event) => change({ ...draft, shortDated: { ...draft.shortDated, belowCost: event.target.checked } })}
+          />
+        </SettingRow>
       </Card>
     </form>
   );

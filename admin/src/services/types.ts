@@ -50,6 +50,8 @@ export interface Category {
   id: number;
   name: string;
   description: string | null;
+  /** Days before a best-before date its products count as short-dated; null: the shop's. */
+  shortDatedDays?: number | null;
   productCount?: number;
 }
 
@@ -81,6 +83,10 @@ export interface Product {
   unit: ProductUnit;
   /** The number the shop scale prints in its labels; null when it isn't weighed there. */
   scalePlu: number | null;
+  /** Has a best-before date: the date is asked for when it comes in. */
+  hasBestBefore?: boolean;
+  /** Its own short-dated window in days; null: its category's, else the shop's. */
+  shortDatedDays?: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion, with the price it gives for one unit. */
@@ -109,6 +115,8 @@ export interface ProductInput {
   reorderLevel?: number;
   unit?: ProductUnit;
   scalePlu?: number | null;
+  hasBestBefore?: boolean;
+  shortDatedDays?: number | null;
 }
 
 export interface InventoryItem {
@@ -511,6 +519,14 @@ export interface ExpiryDate {
   daysLeft: number;
   note: string | null;
   addedBy: string | null;
+  /** Cost of one unit, when known. */
+  costEach: number | null;
+  /** What is left, at cost; null when the cost is unknown. */
+  valueAtCost: number | null;
+  /** Shelf price of one unit. */
+  price: number;
+  /** Today's price for a stickered unit; null when it isn't short-dated. */
+  shortDated: { percentOff: number; price: number } | null;
 }
 
 export interface Supplier extends PartnerDetails {
@@ -1338,6 +1354,17 @@ export interface ShopRules {
   numbering: Record<NumberedKind, NumberFormat>;
   /** 'block': only owners and admins sell past stock; 'allow': anyone, and a count is asked for. */
   noStockSales: 'block' | 'allow';
+  /** When stock counts as short-dated and how much comes off a stickered unit. */
+  shortDated: ShortDatedRules;
+}
+
+export interface ShortDatedRules {
+  /** Days before the best-before date, unless a category or product says otherwise. */
+  days: number;
+  /** Sorted most days first: this close to the date (or closer), this much off. */
+  steps: Array<{ days: number; percent: number }>;
+  /** Short-dated prices may go below cost. */
+  belowCost: boolean;
 }
 
 export type AttachmentEntity = 'bill' | 'expense' | 'document' | 'offer' | 'order' | 'customer' | 'supplier' | 'entry';

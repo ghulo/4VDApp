@@ -45,6 +45,7 @@ const StockDocumentsPage = lazyPage(() => import('./pages/StockDocumentsPage'), 
 const StockDocumentPage = lazyPage(() => import('./pages/StockDocumentsPage'), 'StockDocumentPage');
 const ReportsPage = lazyPage(() => import('./pages/ReportsPage'), 'ReportsPage');
 const SalesPage = lazyPage(() => import('./pages/SalesPage'), 'SalesPage');
+const ExpiringPage = lazyPage(() => import('./pages/ExpiringPage'), 'ExpiringPage');
 const DocumentDetailPage = lazyPage(() => import('./pages/DocumentDetailPage'), 'DocumentDetailPage');
 const DocumentsPage = lazyPage(() => import('./pages/DocumentsPage'), 'DocumentsPage');
 const OffersPage = lazyPage(() => import('./pages/OffersPage'), 'OffersPage');
@@ -212,6 +213,7 @@ function App() {
                         <Route path="prices" element={<PricesPage />} />
                         <Route path="stock-documents" element={<StockDocumentsPage />} />
                         <Route path="stock-documents/:id" element={<StockDocumentPage />} />
+                        <Route path="expiring" element={<ExpiringPage />} />
                         <Route path="categories" element={<CategoriesPage />} />
                       </Route>
                       <Route path="inventory/duplicates" element={<DuplicatesPage />} />

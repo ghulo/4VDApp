@@ -25,6 +25,8 @@ export type LineAction =
   | { kind: 'receive'; customerId: number; allocations: Array<{ documentId: number | null; amount: number }> }
   | { kind: 'linkReceipt'; entryId: number }
   | { kind: 'linkMove'; moveId: number }
+  /** A wage payment or an ATK payment (wage tax or pension) recorded in Payroll. */
+  | { kind: 'linkPayroll'; paymentId: number }
   /** A new move: money in came from the other place, money out went to it; null is the owner. */
   | { kind: 'move'; otherPlaceId: number | null }
   | { kind: 'expense'; category: string; supplierId: number | null };
@@ -34,7 +36,7 @@ export interface Suggestion {
   sure: boolean;
   reasons: Reason[];
   /** Who or what it is, for the sentence on screen. */
-  label: { supplier?: string | null; customer?: string; numbers?: string[]; placeId?: number | null; category?: string };
+  label: { supplier?: string | null; customer?: string; numbers?: string[]; placeId?: number | null; category?: string; payroll?: { kind: 'wages' | 'tax' | 'pension'; month: string } };
   ruleId: number | null;
 }
 
@@ -82,6 +84,8 @@ export interface Candidates {
   receipts: Unlinked[];
   /** Moves out of (amount below zero) or into this place, not yet on a line. */
   moves: Unlinked[];
+  /** Wage and ATK payments from this place (amount below zero), not yet on a line. */
+  payroll: Array<Unlinked & { kind: 'wages' | 'tax' | 'pension'; month: string }>;
   rules: Array<{ id: number; contains: string; direction: 'in' | 'out'; action: 'expense' | 'transfer' | 'owner'; category: string | null; supplierId: number | null; otherPlaceId: number | null }>;
   /** The shop's till, where cash deposited in the bank usually comes from. */
   shopTillId: number;
@@ -175,6 +179,16 @@ export function suggest(line: LineToMatch, candidates: Candidates): Suggestion[]
     out.push({ action: { kind: 'linkMove', moveId: record.id }, sure: false, reasons: [{ key: 'sameAmount' }, { key: 'daysApart', days }], label: { placeId: record.otherPlaceId ?? null }, ruleId: null });
   }
   if (moneyOut) {
+    const payroll = candidates.payroll.map((record) => ({ ...record, amount: Math.abs(record.amount) }));
+    const payrollMatches = unlinkedMatches(line, payroll, amount, 7);
+    for (const { record, days } of payrollMatches) {
+      const pay = record as (typeof payroll)[number];
+      // ATK's name in the text, for the tax and the pension; one payment that fits is sure enough.
+      const named = pay.kind !== 'wages' && (nameIn(text, 'ATK') || nameIn(text, 'TAK'));
+      const reasons: Reason[] = [{ key: 'sameAmount' }, { key: 'daysApart', days }];
+      if (named) reasons.push({ key: 'nameInText', name: 'ATK' });
+      out.push({ action: { kind: 'linkPayroll', paymentId: pay.id }, sure: named || payrollMatches.length === 1, reasons, label: { payroll: { kind: pay.kind, month: pay.month } }, ruleId: null });
+    }
     for (const { record, days, group } of [...unlinkedMatches(line, candidates.payments, amount, 7).map((match) => ({ ...match, group: false })), ...unlinkedMatches(line, candidates.groups, amount, 7).map((match) => ({ ...match, group: true }))]) {
       const named = nameIn(text, record.name);
       const reasons: Reason[] = [{ key: 'sameAmount' }, { key: 'daysApart', days }];

@@ -7,6 +7,7 @@ import {
   ClockCounterClockwise,
   Coins,
   Gear,
+  HandCoins,
   House,
   AddressBook,
   Storefront,
@@ -19,7 +20,7 @@ import {
   Wallet,
   type Icon,
 } from '@phosphor-icons/react';
-import { pageRoles } from '../auth/permissions';
+import { hasPower, pageRoles, type Power } from '../auth/permissions';
 import { canManage, canOversee } from '../auth/roles';
 import type { Catalogue } from '../i18n/en';
 import type { UserRole } from '../services/types';
@@ -39,6 +40,8 @@ export interface SectionTab {
   rare?: boolean;
   /** Only for those who oversee the business (managers and the owner). */
   overseersOnly?: boolean;
+  /** Only for roles with this power (Settings → Roles), like pay for the owner and the accountant. */
+  power?: Power;
 }
 
 export interface NavItem {
@@ -55,6 +58,8 @@ export interface NavItem {
   overseersOnly?: boolean;
   /** The accountant sees it (they see only the money side). */
   accountant?: boolean;
+  /** Only for roles with this power (Settings → Roles). */
+  power?: Power;
 }
 
 /**
@@ -102,6 +107,10 @@ export const SECTIONS = {
     { to: '/books/assets', key: 'assets', accountant: true },
     { to: '/books/year', key: 'year', accountant: true, rare: true },
     { to: '/books/trefin', key: 'trefin', accountant: true, rare: true },
+  ],
+  payroll: [
+    { to: '/payroll', key: 'payrollPeople', power: 'payroll', accountant: true },
+    { to: '/payroll/months', key: 'payrollMonths', power: 'payroll', accountant: true },
   ],
   reports: [
     { to: '/report', key: 'report', accountant: true },
@@ -159,6 +168,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
     key: 'team',
     items: [
       { to: '/people', key: 'people', icon: Users },
+      { to: '/payroll', key: 'payroll', icon: HandCoins, power: 'payroll', accountant: true },
       { to: '/activity', key: 'activity', icon: ClockCounterClockwise },
       { to: '/settings', key: 'settings', icon: Gear, managersOnly: true },
     ],
@@ -186,12 +196,13 @@ export function phoneTabsFor(role: UserRole): NavItem[] {
 }
 
 /** Whether this person sees the menu item or tab: as chosen in Settings → Roles, else the accountant sees only the money side. */
-export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
+export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean; power?: Power }): boolean {
   return role === 'developer' || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
 }
 
 /** The usual rule, before any change in Settings → Roles. */
-export function usuallyShownTo(role: UserRole, item: { managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean }): boolean {
+export function usuallyShownTo(role: UserRole, item: { managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean; power?: Power }): boolean {
+  if (item.power) return hasPower(role, item.power);
   if (role === 'accountant') return Boolean(item.accountant);
   return (!item.managersOnly || canManage(role)) && (!item.overseersOnly || canOversee(role));
 }

@@ -893,7 +893,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer' | 'runPayroll' | 'payAtk';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -2117,7 +2117,7 @@ export interface MoneyPlace {
   lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
 }
 
-export type PlaceBookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'count';
+export type PlaceBookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'count';
 
 export interface PlaceBookLine {
   day: string;
@@ -2258,6 +2258,7 @@ export type LineAction =
   | { kind: 'receive'; customerId: number; allocations: Array<{ documentId: number | null; amount: number }> }
   | { kind: 'linkReceipt'; entryId: number }
   | { kind: 'linkMove'; moveId: number }
+  | { kind: 'linkPayroll'; paymentId: number }
   | { kind: 'move'; otherPlaceId: number | null }
   | { kind: 'expense'; category: ExpenseCategory; supplierId: number | null };
 
@@ -2265,12 +2266,12 @@ export interface MatchSuggestion {
   action: LineAction;
   sure: boolean;
   reasons: MatchReason[];
-  label: { supplier?: string | null; customer?: string; numbers?: string[]; placeId?: number | null; category?: string };
+  label: { supplier?: string | null; customer?: string; numbers?: string[]; placeId?: number | null; category?: string; payroll?: { kind: 'wages' | 'tax' | 'pension'; month: string } };
   ruleId: number | null;
 }
 
 export type BankLineStatus = 'open' | 'done' | 'skipped';
-export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense';
+export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense' | 'payroll';
 
 export interface BankLine {
   id: number;

@@ -234,6 +234,16 @@ export const DEFAULT_ACCOUNT_LINKS = {
   profit_tax: '8900',
   profit_tax_payable: '2350',
   retained_earnings: '3400',
+  /**
+   * Payroll: a confirmed month costs gross wages ('expense:wages') and the
+   * employer's Trust pension, and owes net pay, both pension shares and the
+   * wage tax until each is paid. TREFIN's accounts; accountant question in handoff.md.
+   */
+  employer_pension: '6520',
+  wages_payable: '2100',
+  pension_payable_employer: '2200',
+  pension_payable_employee: '2210',
+  wage_tax_payable: '2310',
 } as const;
 export type AccountLinkKey = keyof typeof DEFAULT_ACCOUNT_LINKS;
 export const ACCOUNT_LINK_KEYS = Object.keys(DEFAULT_ACCOUNT_LINKS) as AccountLinkKey[];

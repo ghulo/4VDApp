@@ -1,6 +1,7 @@
 import type { UserRole } from '../database/types.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
-import { canOversee, canReadBooks, canSell } from '../utils/roles.js';
+import { canOversee, canReadBooks, canSell, hasPower } from '../utils/roles.js';
+import type { PayrollService } from './payroll/PayrollService.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { BillEmailRepository } from '../repositories/BillEmailRepository.js';
@@ -24,8 +25,8 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** How long a just-emailed bill may take to read before it shows in To do. */
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer' | 'runPayroll' | 'payAtk';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -107,6 +108,7 @@ export class AttentionService {
     private readonly timeZone: string,
     private readonly billEmails: BillEmailRepository,
     private readonly billEmailDailyReads: number,
+    private readonly payroll: PayrollService | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -117,6 +119,7 @@ export class AttentionService {
         : canSell(role)
           ? await this.counter(role, t, now)
           : [];
+    if (hasPower(role, 'payroll')) todo.push(...(await this.payrollItems(t, now)));
     todo.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return { todo, count: todo.filter((item) => item.severity !== 'idea').length };
   }
@@ -271,6 +274,39 @@ export class AttentionService {
       };
     });
     return [...vat, ...tm];
+  }
+
+  /**
+   * The payroll, for those who run it: last month to confirm once it is over
+   * (when someone is on the payroll), and what is still owed to ATK for a
+   * confirmed month, urgent after the 15th.
+   */
+  private async payrollItems(t: ServerMessages, now: Date): Promise<TodoItem[]> {
+    if (!this.payroll) return [];
+    const { toRun, owed } = await this.payroll.reminders(now);
+    const today = zonedDay(now, this.timeZone);
+    const items: TodoItem[] = toRun.map((month) => ({
+      key: `payroll_run:${month.slice(0, 7)}`,
+      kind: 'payroll_run',
+      severity: 'check',
+      title: t.todo.payrollRunTitle(month),
+      detail: t.todo.payrollRunDetail,
+      verb: 'runPayroll',
+      to: `/payroll/months?month=${month.slice(0, 7)}`,
+    }));
+    for (const month of owed) {
+      const late = today > month.dueOn;
+      items.push({
+        key: `payroll_atk:${month.month.slice(0, 7)}`,
+        kind: 'payroll_atk',
+        severity: late ? 'urgent' : 'check',
+        title: t.todo.payrollAtkTitle({ month: month.month, amount: month.amount }),
+        detail: t.todo.payrollAtkDetail(late),
+        verb: 'payAtk',
+        to: `/payroll/months?month=${month.month.slice(0, 7)}`,
+      });
+    }
+    return items;
   }
 
   /** Questions the accountant left on documents, until someone answers. */

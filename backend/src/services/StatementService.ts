@@ -25,6 +25,7 @@ import {
 } from './money/statementFile.js';
 import { createBill, payBill, voidBill } from './SupplierBillService.js';
 import { receivePayment, type TabService } from './TabService.js';
+import type { PayrollService } from './payroll/PayrollService.js';
 import { assertMonthsOpen } from './vat/periodLock.js';
 
 export type { LineAction, Reason, Suggestion } from './money/matching.js';
@@ -113,6 +114,7 @@ export class StatementService {
     private readonly transactions: TransactionManager,
     private readonly reader: StatementReader | null,
     private readonly timeZone: string,
+    private readonly payrollService: PayrollService,
   ) {}
 
   private async bank(placeId: number): Promise<PlaceRecord> {
@@ -222,7 +224,7 @@ export class StatementService {
 
   /** What 4VD has that a line could be: open bills and invoices, and payments and moves of this account no line has found yet. */
   private async candidates(placeId: number): Promise<Candidates> {
-    const [bills, items, linkedPayments, linkedGroups, linkedReceipts, linkedMoves, rules, shopTillId] = await Promise.all([
+    const [bills, items, linkedPayments, linkedGroups, linkedReceipts, linkedMoves, rules, shopTillId, linkedPayroll] = await Promise.all([
       this.billRepository.findMany({ status: 'open' }),
       this.tabService.allOpenItems(),
       this.moneyRepository.linkedRefs('payment'),
@@ -231,6 +233,7 @@ export class StatementService {
       this.moneyRepository.linkedRefs('move'),
       this.moneyRepository.rules(),
       this.moneyRepository.shopTillId(),
+      this.moneyRepository.linkedRefs('payroll'),
     ]);
     const since = sql`current_date - 180`;
     const [payments, groups, receipts, moves] = await Promise.all([
@@ -278,6 +281,7 @@ export class StatementService {
           const out = row.from_place_id === placeId;
           return { id: row.id, day: row.day, amount: out ? -Number(row.amount) : Number(row.amount), name: null, otherPlaceId: out ? row.to_place_id : row.from_place_id };
         }),
+      payroll: (await this.payrollService.unlinkedPayments(placeId, linkedPayroll)).map((row) => ({ id: row.id, day: row.day, amount: row.amount, name: null, kind: row.kind, month: row.month })),
       rules: rules
         .filter((rule) => rule.place_id === null || rule.place_id === placeId)
         .map((rule) => ({ id: rule.id, contains: rule.contains, direction: rule.direction, action: rule.action, category: rule.category, supplierId: rule.supplier_id, otherPlaceId: rule.other_place_id })),
@@ -556,9 +560,10 @@ async function confirmLine(repos: TransactionalRepositories, line: BankLineRecor
     case 'linkPayment':
     case 'linkGroup':
     case 'linkReceipt':
-    case 'linkMove': {
-      kind = action.kind === 'linkPayment' ? 'payment' : action.kind === 'linkGroup' ? 'payment_group' : action.kind === 'linkReceipt' ? 'tab_payment' : 'move';
-      ref = action.kind === 'linkPayment' ? action.paymentId : action.kind === 'linkGroup' ? action.groupId : action.kind === 'linkReceipt' ? action.entryId : action.moveId;
+    case 'linkMove':
+    case 'linkPayroll': {
+      kind = action.kind === 'linkPayment' ? 'payment' : action.kind === 'linkGroup' ? 'payment_group' : action.kind === 'linkReceipt' ? 'tab_payment' : action.kind === 'linkPayroll' ? 'payroll' : 'move';
+      ref = action.kind === 'linkPayment' || action.kind === 'linkPayroll' ? action.paymentId : action.kind === 'linkGroup' ? action.groupId : action.kind === 'linkReceipt' ? action.entryId : action.moveId;
       made = false;
       if (await repos.money.lineFor(kind, ref)) throw new ConflictError('Another statement line already has that');
       const found = kind === 'move' ? await repos.money.moveFor(ref, placeId) : await repos.money.recordFor(kind, ref);
@@ -621,6 +626,9 @@ async function removeRecord(repos: TransactionalRepositories, kind: BankLineDone
       return;
     case 'expense':
       await voidBill(repos, ref, 'Taken back from the bank statement', actorId, now);
+      return;
+    case 'payroll':
+      // Linked only, never made by a line: Payroll keeps its payments.
       return;
   }
 }

@@ -346,6 +346,10 @@ export class MoneyRepository {
         .executeTakeFirst();
       return row ? { placeId: row.place_id, amount: -Number(row.amount) } : null;
     }
+    if (kind === 'payroll') {
+      const row = await this.db.selectFrom('payroll_payments').select(['place_id', 'amount']).where('id', '=', ref).where('voided_at', 'is', null).executeTakeFirst();
+      return row ? { placeId: row.place_id, amount: -Number(row.amount) } : null;
+    }
     if (kind === 'tab_payment') {
       const row = await this.db.selectFrom('tab_entries').select(['place_id', 'amount']).where('id', '=', ref).where('kind', '=', 'payment').executeTakeFirst();
       return row ? { placeId: row.place_id, amount: Number(row.amount) } : null;

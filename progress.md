@@ -13,6 +13,14 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 13: payroll** (sign in as the owner or the accountant)
+- [ ] Team → Payroll: add a person with a gross pay, one with a net pay, one second job and one at the carwash; check each line of a month on the Months tab against the tax bands (0% to €250, 8% to €450, 10% above) and 5% + 5% pension
+- [ ] A gross under €350 for a full-time main job warns, and a person who left with leave not taken warns "add them to the last pay"
+- [ ] Change one person's gross for a month with a reason, confirm the month, then check Books: wages 6500, employer pension 6520, owed 2100/2200/2210/2310 (carwash staff left out)
+- [ ] Pay wages from the bank, then Pay ATK: two payments (tax and pension); on a bank statement each matches its own line
+- [ ] Download the declaration (Excel and CSV) and print a payslip; take a payment back, then take the month back
+- [ ] Record leave taken and a correction; the balance changes; link a person to their 4VD account and, signed in as them, see Account → Pay and leave with only their own payslips
+
 **Step 19: short-dated stock**
 - [ ] Mark a food product "Has a best-before date"; a bill line, a bill scan line and a stock-in for it show a Best before field, and the date appears under Stock → Expiring
 - [ ] Two days before the date: at the Counter the line shows "Short-dated −30%"; tap it once per stickered unit (tapping past the last undoes it); the receipt and the sale charge the lower price for those units only
@@ -142,7 +150,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 
 **C. In TREFIN but unused here (build after A and B)**
 - [x] 12. Fixed assets register and depreciation (2026-11-15): Books → Fixed assets. Equipment on a bill becomes an asset by itself, older things are typed in; each finished month posts its straight-line depreciation; selling or throwing one away posts the gain or loss and the sale VAT; a credit gives it back; the year's schedule, a check against the books and Excel. Rates and rules to confirm with the accountant (handoff.md)
-- [ ] 13. Employees and payroll: contract fields, monthly payroll with pension contributions and wage tax, payslips, the EDI payroll declaration, annual leave
+- [x] 13. Employees and payroll (2026-11-15): Team → Payroll. Each person with their contract (gross or net, second job, extra pension, shop or carwash); a month is worked out with Kosovo wage tax and Trust pension, confirmed into the books, then wages and ATK (tax and pension as two payments) are paid and matched on bank statements; payslips to print, the declaration file, annual leave, and staff see their own under Account. Defaults to confirm with the accountant (handoff.md)
 - [ ] 14. Several warehouses and transfers between them
 - [ ] 15. Loyalty cards and bonus, B2B portal for business customers
 - [ ] 16. Production (recipes, semi-finished goods), serial numbers, projects

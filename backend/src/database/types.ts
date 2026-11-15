@@ -1305,7 +1305,7 @@ export interface BankStatementsTable {
 }
 
 export type BankLineStatus = 'open' | 'done' | 'skipped';
-export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense';
+export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense' | 'payroll';
 
 export interface BankLinesTable {
   id: Generated<number>;
@@ -1433,6 +1433,12 @@ export interface Database {
   trefin_months: TrefinMonthsTable;
   book_years: BookYearsTable;
   tax_instalments: TaxInstalmentsTable;
+  employees: EmployeesTable;
+  payroll_months: PayrollMonthsTable;
+  payroll_lines: PayrollLinesTable;
+  payroll_payments: PayrollPaymentsTable;
+  payroll_payment_lines: PayrollPaymentLinesTable;
+  leave_entries: LeaveEntriesTable;
   trefin_deleted_receipts: TrefinDeletedReceiptsTable;
   trefin_stock_documents: TrefinStockDocumentsTable;
   trefin_stock_lines: TrefinStockLinesTable;
@@ -1620,4 +1626,93 @@ export interface TaxInstalmentsTable {
   created_at: ColumnType<Date, Date | undefined, Date>;
   undone_at: Date | null;
   undone_by: number | null;
+}
+
+type Day = ColumnType<string, string, string>;
+type NullableDay = ColumnType<string | null, string | null | undefined, string | null>;
+
+/** A person on the payroll (see migration 068). */
+export interface EmployeesTable {
+  id: Generated<number>;
+  user_id: number | null;
+  name: string;
+  personal_number: string | null;
+  job_title: string | null;
+  contract: Generated<'open' | 'fixed' | 'part_time'>;
+  started_on: Day;
+  contract_ends_on: NullableDay;
+  left_on: NullableDay;
+  pay_basis: Generated<'gross' | 'net'>;
+  pay_amount: Decimal;
+  secondary: Generated<boolean>;
+  non_resident: Generated<boolean>;
+  extra_pension_employee: ColumnType<string, number | string | undefined, number | string>;
+  extra_pension_employer: ColumnType<string, number | string | undefined, number | string>;
+  bank_account: string | null;
+  place: Generated<'shop' | 'carwash'>;
+  leave_days: ColumnType<string, number | string | undefined, number | string>;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface PayrollMonthsTable {
+  id: Generated<number>;
+  month: Day;
+  confirmed_by: number | null;
+  confirmed_at: CreatedAt;
+  voided_at: Date | null;
+  voided_by: number | null;
+}
+
+export interface PayrollLinesTable {
+  month_id: number;
+  employee_id: number;
+  place: 'shop' | 'carwash';
+  secondary: boolean;
+  non_resident: boolean;
+  gross: Decimal;
+  employee_rate: Decimal;
+  employer_rate: Decimal;
+  employee_pension: Decimal;
+  employer_pension: Decimal;
+  taxable: Decimal;
+  tax: Decimal;
+  net: Decimal;
+  changed_reason: string | null;
+}
+
+export type PayrollPaymentKind = 'wages' | 'tax' | 'pension';
+
+export interface PayrollPaymentsTable {
+  id: Generated<number>;
+  month_id: number;
+  kind: PayrollPaymentKind;
+  place_id: number;
+  paid_on: Day;
+  amount: Decimal;
+  carwash_amount: ColumnType<string, number | string | undefined, number | string>;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: Date | null;
+  voided_by: number | null;
+}
+
+export interface PayrollPaymentLinesTable {
+  payment_id: number;
+  employee_id: number;
+  amount: Decimal;
+}
+
+export interface LeaveEntriesTable {
+  id: Generated<number>;
+  employee_id: number;
+  kind: 'taken' | 'adjust';
+  from_day: Day;
+  to_day: Day;
+  days: Decimal;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
 }

@@ -25,6 +25,8 @@ const DIRECT_SOURCES: Record<string, string> = {
   money_moves: 'move',
   partner_offsets: 'offset',
   bonus_payouts: 'bonus',
+  payroll_months: 'payroll',
+  payroll_payments: 'payroll_pay',
 };
 
 export const BOOKS_START_KEY = 'books_start';
@@ -107,6 +109,8 @@ export class BooksPoster {
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'
         union all select 'money_moves', id from money_moves where day >= ${start}::date
+        union all select 'payroll_months', id from payroll_months where voided_at is null
+        union all select 'payroll_payments', id from payroll_payments where voided_at is null
         on conflict do nothing
       `.execute(trx);
     });

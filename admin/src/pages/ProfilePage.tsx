@@ -1,4 +1,4 @@
-import { Bell, ChartBar, Devices, LockKey, PaintBrush, UserCircle } from '@phosphor-icons/react';
+import { Bell, ChartBar, Devices, HandCoins, LockKey, PaintBrush, UserCircle } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
@@ -16,6 +16,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
 import { DeviceList, type DeviceGroup } from '../components/DeviceList';
 import { canOversee } from '../auth/roles';
+import { MyPayPanel, useOnPayroll } from './PayrollPages';
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
@@ -38,6 +39,7 @@ function Result({ error, success }: { error: unknown; success: string | null }) 
 export function ProfilePage() {
   const t = useT();
   const user = useCurrentUser();
+  const onPayroll = useOnPayroll();
   return (
     <>
       <PageHeader title={t.profile.title} />
@@ -72,6 +74,7 @@ export function ProfilePage() {
               </Card>
             ),
           },
+          ...(onPayroll ? [{ id: 'pay', label: t.payroll.mine.title, icon: HandCoins, content: <MyPayPanel /> }] : []),
           { id: 'alerts', label: t.push.title, icon: Bell, content: <PushSettingsPanel /> },
           ...(canOversee(user.role)
             ? [{ id: 'reports', label: t.reportSettings.title, icon: ChartBar, content: <ReportSettingsPanel /> }]

@@ -33,7 +33,7 @@ export interface PlaceDto {
   lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
 }
 
-export type BookLineKind = 'takings' | 'card' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'count';
+export type BookLineKind = 'takings' | 'card' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'count';
 
 export interface BookLineDto {
   day: string;
@@ -135,7 +135,7 @@ export function validIban(iban: string): boolean {
   return rest === 1;
 }
 
-const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, card: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, move: 3, count: 4 };
+const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, card: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, payroll: 2, move: 3, count: 4 };
 
 /**
  * Every movement of money into or out of every place, read from the records
@@ -189,6 +189,11 @@ const movementsSql = (timeZone: string) => sql`
     -(coalesce(b.customs_vat, 0) + coalesce(b.customs_duty, 0)), s.id, s.name, null, b.number, null, b.id, null
   from supplier_bills b left join suppliers s on s.id = b.supplier_id
   where b.voided_at is null and b.customs_paid_method is not null and coalesce(b.customs_vat, 0) + coalesce(b.customs_duty, 0) > 0
+  union all
+  -- Wages paid, and the wage tax and pension paid to ATK: the detail says which, and the month ("tax 2026-10").
+  select p.place_id, p.paid_on, 'payroll', p.id, -p.amount, null, null, null, p.kind || ' ' || to_char(pm.month, 'YYYY-MM'), null, null, p.note
+  from payroll_payments p join payroll_months pm on pm.id = p.month_id
+  where p.voided_at is null and pm.voided_at is null
   union all
   select m.from_place_id, m.day, 'move', m.id, -m.amount, null, null, m.to_place_id, null, null, null, m.note
   from money_moves m where m.voided_at is null and m.from_place_id is not null

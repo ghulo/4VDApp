@@ -155,6 +155,8 @@ export interface BillLineInput {
   vatRate?: number | null;
   /** Exempt from VAT (with a 0% rate); left out follows the rate's source like vatRate. */
   vatExempt?: boolean | null;
+  /** A product's best-before date, noted for the units on this line. */
+  expiresOn?: string | null;
 }
 
 /**
@@ -776,6 +778,10 @@ export async function createBill(
         adjustedBy: actorId ?? 0,
         reorderLevel: product.reorder_level ?? 0,
       });
+      const dated = Math.floor(line.row.quantity!);
+      if (line.input.expiresOn && dated > 0) {
+        await repos.expiry.add({ productId: product.id, quantity: dated, expiresOn: line.input.expiresOn, note: `Bill #${id}`, orderLineId: null, createdBy: actorId });
+      }
     }
     if (input.updateCosts !== false && actorId !== null) {
       const newCosts = new Map<number, number>();

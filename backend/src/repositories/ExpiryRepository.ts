@@ -13,6 +13,15 @@ export interface ExpiryRecord {
   cleared_at: Date | null;
   /** Units of the product on the shelf right now. */
   stock: number;
+  base_price: string;
+  cost_price: string | null;
+  /** The product's and its category's short-dated windows, when set. */
+  product_short_days: number | null;
+  category_short_days: number | null;
+  has_best_before: boolean;
+  /** Units sold from this batch at the short-dated price (undone sales left out). */
+  sold_short: number;
+  write_off_id: number | null;
 }
 
 export class ExpiryRepository {
@@ -24,6 +33,7 @@ export class ExpiryRepository {
       .innerJoin('products as p', 'p.id', 'x.product_id')
       .leftJoin('users as u', 'u.id', 'x.created_by')
       .leftJoin('inventory as i', 'i.product_id', 'x.product_id')
+      .innerJoin('categories as c', 'c.id', 'p.category_id')
       .select([
         'x.id',
         'x.product_id',
@@ -34,6 +44,13 @@ export class ExpiryRepository {
         'u.name as created_by_name',
         'x.cleared_at',
         sql<number>`coalesce(i.quantity_on_hand, 0)`.as('stock'),
+        'p.base_price',
+        'p.cost_price',
+        'p.short_dated_days as product_short_days',
+        'c.short_dated_days as category_short_days',
+        'p.has_best_before',
+        'x.write_off_id',
+        sql<number>`coalesce((SELECT sum(s.quantity_sold) FROM sales s WHERE s.expiry_date_id = x.id AND s.undone_at IS NULL), 0)::float8`.as('sold_short'),
       ]);
   }
 
@@ -48,7 +65,7 @@ export class ExpiryRepository {
     return this.baseQuery().where('x.id', '=', id).executeTakeFirst();
   }
 
-  async add(entry: { productId: number; quantity: number; expiresOn: string; note: string | null; orderLineId: number | null; createdBy: number }): Promise<number> {
+  async add(entry: { productId: number; quantity: number; expiresOn: string; note: string | null; orderLineId: number | null; createdBy: number | null }): Promise<number> {
     const row = await this.db
       .insertInto('expiry_dates')
       .values({
@@ -64,7 +81,12 @@ export class ExpiryRepository {
     return row.id;
   }
 
-  async clear(id: number, by: number, at: Date): Promise<void> {
-    await this.db.updateTable('expiry_dates').set({ cleared_by: by, cleared_at: at }).where('id', '=', id).execute();
+  async clear(id: number, by: number, at: Date, writeOffId: number | null = null): Promise<void> {
+    await this.db.updateTable('expiry_dates').set({ cleared_by: by, cleared_at: at, write_off_id: writeOffId }).where('id', '=', id).execute();
+  }
+
+  /** A count found the real stock: the dates noted before it no longer hold. */
+  async clearAllForProduct(productId: number, by: number, at: Date): Promise<void> {
+    await this.db.updateTable('expiry_dates').set({ cleared_by: by, cleared_at: at }).where('product_id', '=', productId).where('cleared_at', 'is', null).execute();
   }
 }

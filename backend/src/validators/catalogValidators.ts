@@ -34,6 +34,8 @@ const optionalImageUrl = z
 export const categorySchema = z.object({
   name: trimmedString(100),
   description: optionalText(1000),
+  /** Days before a best-before date its products count as short-dated (1-60); null: the shop's. Left out keeps it. */
+  shortDatedDays: z.number().int().min(1).max(60).nullable().optional(),
 });
 
 // ---------- Products ----------
@@ -61,6 +63,10 @@ const productFields = {
   unit: z.enum(PRODUCT_UNITS).optional(),
   /** The number the shop scale prints in its labels (1-99999); null clears it, left out keeps it. */
   scalePlu: z.number().int().min(1).max(99_999).nullable().optional(),
+  /** Has a best-before date: the date is asked for when it comes in. Left out keeps it. */
+  hasBestBefore: z.boolean().optional(),
+  /** Its own short-dated window (1-60 days); null: its category's. Left out keeps it. */
+  shortDatedDays: z.number().int().min(1).max(60).nullable().optional(),
   /** ISO code of the country it comes from; null clears it, left out keeps it. */
   originCountry: z
     .string()

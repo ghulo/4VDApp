@@ -3,6 +3,7 @@ import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { checkNumbering, NUMBERED_KINDS, readRules, RULE_KEYS, type ShopRules } from './shopRules.js';
 import { ValidationError } from '../errors/httpErrors.js';
+import { checkSteps } from './pricing/shortDated.js';
 
 export interface AppSettings {
   /** Employee refunds above this many euros wait for the owner. */
@@ -56,12 +57,17 @@ export class SettingsService {
   }
 
   /** The number format applies from the next number; issued ones never change. */
-  async updateRules(input: { numbering?: Partial<ShopRules['numbering']>; noStockSales?: ShopRules['noStockSales'] }, userId: number): Promise<ShopRules> {
+  async updateRules(
+    input: { numbering?: Partial<ShopRules['numbering']>; noStockSales?: ShopRules['noStockSales']; shortDated?: Partial<ShopRules['shortDated']> },
+    userId: number,
+  ): Promise<ShopRules> {
     const before = await this.rules();
     const after: ShopRules = {
       numbering: input.numbering ? { ...before.numbering, ...input.numbering } : before.numbering,
       noStockSales: input.noStockSales ?? before.noStockSales,
+      shortDated: input.shortDated ? { ...before.shortDated, ...input.shortDated } : before.shortDated,
     };
+    after.shortDated = { ...after.shortDated, steps: checkSteps(after.shortDated.steps) };
     checkNumbering(after.numbering);
     for (const kind of NUMBERED_KINDS) {
       const prefix = after.numbering[kind].prefix;
@@ -78,7 +84,7 @@ export class SettingsService {
           action: 'settings.updated',
           entityType: 'settings',
           entityId: null,
-          say: { key: 'rulesChanged', params: { numbering: changed.includes('numbering'), noStockSales: changed.includes('noStockSales') ? after.noStockSales : null } },
+          say: { key: 'rulesChanged', params: { numbering: changed.includes('numbering'), noStockSales: changed.includes('noStockSales') ? after.noStockSales : null, shortDated: changed.includes('shortDated') } },
           details: Object.fromEntries(changed.map((name) => [name, { from: before[name], to: after[name] }])),
         });
       });

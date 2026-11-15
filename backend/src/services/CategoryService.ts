@@ -7,12 +7,16 @@ export interface CategoryDto {
   id: number;
   name: string;
   description: string | null;
+  /** Days before a best-before date its products count as short-dated; null: the shop's. */
+  shortDatedDays: number | null;
   productCount?: number;
 }
 
 export interface CategoryInput {
   name: string;
   description: string | null;
+  /** Left out keeps it. */
+  shortDatedDays?: number | null;
 }
 
 export class CategoryService {
@@ -27,6 +31,7 @@ export class CategoryService {
       id: category.id,
       name: category.name,
       description: category.description,
+      shortDatedDays: category.short_dated_days,
       productCount: category.product_count,
     }));
   }
@@ -43,7 +48,7 @@ export class CategoryService {
           entityId: category.id,
           say: { key: 'categoryAdded', params: { name: category.name } },
         });
-        return { id: category.id, name: category.name, description: category.description };
+        return { id: category.id, name: category.name, description: category.description, shortDatedDays: category.short_dated_days };
       });
     } catch (error) {
       // Two admins creating the same name at once: the unique index catches it.
@@ -72,7 +77,7 @@ export class CategoryService {
               : { key: 'categoryRenamed', params: { from: existing.name, to: category.name } },
           details: { from: { name: existing.name, description: existing.description }, to: input },
         });
-        return { id: category.id, name: category.name, description: category.description };
+        return { id: category.id, name: category.name, description: category.description, shortDatedDays: category.short_dated_days };
       });
     } catch (error) {
       if (isUniqueViolation(error)) throw this.duplicateNameError(input.name);

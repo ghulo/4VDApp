@@ -40,8 +40,18 @@ export const updateRulesSchema = z
       .partial()
       .optional(),
     noStockSales: z.enum(['block', 'allow']).optional(),
+    shortDated: z
+      .object({
+        days: z.number().int().min(1).max(60),
+        steps: z.array(z.object({ days: z.number().int().min(0).max(60), percent: z.number().gt(0).max(90) })).min(1).max(10),
+        belowCost: z.boolean(),
+      })
+      .partial()
+      .optional(),
   })
-  .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined, { message: 'send numbering or noStockSales' });
+  .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined || input.shortDated !== undefined, {
+    message: 'send numbering, noStockSales or shortDated',
+  });
 
 /** Wiping everything has to be typed out, so it can't happen by a stray click. */
 export const wipeSchema = z.object({

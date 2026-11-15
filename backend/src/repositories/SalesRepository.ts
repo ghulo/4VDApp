@@ -29,6 +29,8 @@ export interface SaleRecord {
   quantity_sold: number;
   price_per_unit: string;
   discount_percent: string | null;
+  /** Sold at a short-dated price: that much off the shelf price. */
+  short_dated_percent: string | null;
   total_amount: string;
   sold_by_name: string | null;
   sale_date: Date;
@@ -95,6 +97,7 @@ export class SalesRepository {
           's.quantity_sold',
           's.price_per_unit',
           's.discount_percent',
+          's.short_dated_percent',
           's.total_amount',
           'u.name as sold_by_name',
           's.sale_date',
@@ -190,6 +193,7 @@ export class SalesRepository {
               's.quantity_sold',
               's.price_per_unit',
               's.discount_percent',
+          's.short_dated_percent',
               's.total_amount',
               'u.name as sold_by_name',
               's.sale_date',
@@ -218,6 +222,8 @@ export class SalesRepository {
     notes: string | null;
     saleDate?: Date;
     wholesale?: boolean;
+    expiryDateId?: number | null;
+    shortDatedPercent?: number | null;
   }): Promise<number> {
     const row = await this.db
       .insertInto('sales')
@@ -231,6 +237,8 @@ export class SalesRepository {
         discount_percent: sale.discountPercent ?? null,
         price_before_discount: sale.priceBeforeDiscount ?? null,
         wholesale: sale.wholesale ?? false,
+        expiry_date_id: sale.expiryDateId ?? null,
+        short_dated_percent: sale.shortDatedPercent ?? null,
         notes: sale.notes,
         ...(sale.saleDate && { sale_date: sale.saleDate }),
       })
@@ -248,6 +256,7 @@ export class SalesRepository {
         's.quantity_sold',
         's.price_per_unit',
         's.discount_percent',
+          's.short_dated_percent',
         's.total_amount',
         'u.name as sold_by_name',
         's.sale_date',

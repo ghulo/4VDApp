@@ -40,14 +40,14 @@ export class CategoryRepository {
       .executeTakeFirst();
   }
 
-  create(data: { name: string; description: string | null }): Promise<CategoryRow> {
-    return this.db.insertInto('categories').values(data).returningAll().executeTakeFirstOrThrow();
+  create(data: { name: string; description: string | null; shortDatedDays?: number | null }): Promise<CategoryRow> {
+    return this.db.insertInto('categories').values({ name: data.name, description: data.description, short_dated_days: data.shortDatedDays ?? null }).returningAll().executeTakeFirstOrThrow();
   }
 
-  update(id: number, data: { name: string; description: string | null }): Promise<CategoryRow | undefined> {
+  update(id: number, data: { name: string; description: string | null; shortDatedDays?: number | null }): Promise<CategoryRow | undefined> {
     return this.db
       .updateTable('categories')
-      .set({ ...data, updated_at: new Date() })
+      .set({ name: data.name, description: data.description, ...(data.shortDatedDays !== undefined && { short_dated_days: data.shortDatedDays }), updated_at: new Date() })
       .where('id', '=', id)
       .where('deleted_at', 'is', null)
       .returningAll()

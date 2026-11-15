@@ -11,5 +11,9 @@ export const newStockDocumentSchema = z.object({
     .max(500)
     .nullish()
     .transform((value) => value || null),
-  lines: z.array(z.object({ productId: idSchema, quantity: quantitySchema(100_000) })).min(1).max(500),
+  // expiresOn: a best-before date for the units coming in (stock in only).
+  lines: z
+    .array(z.object({ productId: idSchema, quantity: quantitySchema(100_000), expiresOn: calendarDaySchema.nullish() }))
+    .min(1)
+    .max(500),
 });

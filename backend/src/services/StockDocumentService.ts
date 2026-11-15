@@ -66,7 +66,8 @@ export interface NewStockDocumentInput {
   reason: StockDocumentReason;
   day: string;
   note: string | null;
-  lines: Array<{ productId: number; quantity: number }>;
+  /** expiresOn: a best-before date for the units coming in (stock in only). */
+  lines: Array<{ productId: number; quantity: number; expiresOn?: string | null }>;
 }
 
 const numberKind = (direction: StockDocumentDirection) => (direction === 'in' ? 'stock_in' : 'stock_out');
@@ -173,6 +174,10 @@ export class StockDocumentService {
           adjustedBy: actorId,
           reorderLevel: product.reorder_level ?? 10,
         });
+        const dated = Math.floor(line.quantity);
+        if (input.direction === 'in' && line.expiresOn && dated > 0) {
+          await repos.expiry.add({ productId: product.id, quantity: dated, expiresOn: line.expiresOn, note: number, orderLineId: null, createdBy: actorId });
+        }
       }
       await repos.activityLog.create({
         userId: actorId,

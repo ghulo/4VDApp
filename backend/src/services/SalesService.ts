@@ -16,6 +16,7 @@ import { applyStockChange } from './InventoryService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import type { SettingsService } from './SettingsService.js';
 import { bestPromotionFor } from './pricing/promotions.js';
+import { batchesLeft, shortDatedOffer } from './ExpiryService.js';
 import { listPrice } from './pricing/salePrice.js';
 import type { RecordSource } from '../validators/validate.js';
 import { readRules } from './shopRules.js';
@@ -28,6 +29,8 @@ export interface SaleDto {
   pricePerUnit: number;
   /** Rabat given at the counter, in percent; null when none. */
   discountPercent: number | null;
+  /** Sold at a short-dated price: this much off the shelf price. */
+  shortDatedPercent: number | null;
   totalAmount: number;
   soldBy: string | null;
   saleDate: string;
@@ -79,6 +82,8 @@ export interface RecordSaleInput {
   fixedPrice?: number;
   /** Wholesale prices on or off for this sale; left out: what the customer pays. */
   wholesale?: boolean;
+  /** A stickered unit from this short-dated batch (an expiry date): sold at its short-dated price when that is the lowest. */
+  shortDatedId?: number;
 }
 
 /** A sale taken to the customer: where and when, and whether the money is paid in the shop or at the door. */
@@ -98,7 +103,7 @@ export interface DeliveryInput {
 
 export interface BasketInput {
   /** `discountPercent`: rabat on that line; employees may give up to the shop's limit. */
-  items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
+  items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
   notes: string | null;
   /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
@@ -442,7 +447,25 @@ export class SalesService {
       quantity: input.quantity,
       promotion: bestPromotionFor({ id: product.id, categoryId: product.category_id }, promotions),
     });
-    const { pricePerUnit: listedPrice, promotionId } = priced;
+    let { pricePerUnit: listedPrice, promotionId } = priced;
+    // A stickered short-dated unit: its price competes with the rest, the lowest wins (discounts never stack).
+    let shortDatedPercent: number | null = null;
+    const expiryDateId = input.shortDatedId ?? null;
+    if (expiryDateId !== null) {
+      const batches = batchesLeft(await repos.expiry.findOpen({ productId: product.id }));
+      const batch = batches.find((candidate) => candidate.row.id === expiryDateId);
+      const offer = batch && shortDatedOffer(batch.row, zonedDay(input.saleDate ?? new Date(), this.timeZone), (await readRules(repos.settings)).shortDated);
+      // Offline, the shelf decided and the customer already paid: sell what it can, never refuse.
+      if (!input.offline) {
+        if (!batch || !offer) throw new ValidationError(`${product.name} is no longer sold short-dated. Take it off the basket and scan it again.`);
+        if (input.quantity > batch.remaining) throw new ValidationError(`Only ${batch.remaining} × ${product.name} are short-dated`);
+      }
+      if (offer && offer.price < listedPrice) {
+        listedPrice = offer.price;
+        promotionId = null;
+        shortDatedPercent = offer.percentOff;
+      }
+    }
     // Rabat comes off the price the customer would otherwise pay (bulk price or promotion included).
     let discountPercent = input.discountPercent ? input.discountPercent : null;
     let pricePerUnit = discountPercent === null ? listedPrice : roundMoney(listedPrice * (1 - discountPercent / 100));
@@ -464,6 +487,8 @@ export class SalesService {
       notes: input.notes,
       saleDate: input.saleDate,
       wholesale: priced.wholesale,
+      expiryDateId: input.shortDatedId === undefined ? null : input.shortDatedId,
+      shortDatedPercent,
     });
     // Offline, the shelf decided: what 4VD didn't know about is taken to 0 and asked to be counted.
     let taken = input.quantity;
@@ -508,7 +533,7 @@ export class SalesService {
       entityType: 'sale',
       entityId: id,
       say: { key: 'sold', params: { quantity: input.quantity, product: product.name, total, discount: discountPercent ? discountPercent : null, customer: customer?.name ?? null, onTab } },
-      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, customerId: customer?.id ?? null, onTab },
+      details: { productId: product.id, quantity: input.quantity, pricePerUnit, promotionId, discountPercent, shortDatedPercent, expiryDateId, customerId: customer?.id ?? null, onTab },
     });
     return id;
   }
@@ -529,6 +554,7 @@ function toSaleDto(sale: SaleRecord): SaleDto {
     quantity: sale.quantity_sold,
     pricePerUnit: toMoney(sale.price_per_unit),
     discountPercent: toMoneyOrNull(sale.discount_percent),
+    shortDatedPercent: toMoneyOrNull(sale.short_dated_percent),
     totalAmount: toMoney(sale.total_amount),
     soldBy: sale.sold_by_name,
     saleDate: sale.sale_date.toISOString(),

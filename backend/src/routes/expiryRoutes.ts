@@ -14,6 +14,8 @@ const newExpirySchema = z.object({
     .max(500)
     .nullish()
     .transform((value) => value || null),
+  // From a count: the shelf was just counted, so the dates noted before no longer hold.
+  replace: z.boolean().optional(),
 });
 
 export function createExpiryRoutes({ expiryService, guards }: Container): Router {
@@ -21,8 +23,12 @@ export function createExpiryRoutes({ expiryService, guards }: Container): Router
 
   // Staff note dates while stocking shelves; everyone who sees stock sees them.
   router.get('/', guards.authenticated, async (req: Request, res: Response) => {
-    const { productId } = parseInput(z.object({ productId: idSchema.optional() }), req.query);
-    sendSuccess(res, productId ? await expiryService.forProduct(productId) : await expiryService.upcoming());
+    const { productId, days } = parseInput(z.object({ productId: idSchema.optional(), days: z.coerce.number().int().min(1).max(90).optional() }), req.query);
+    sendSuccess(res, productId ? await expiryService.forProduct(productId) : await expiryService.upcoming(days));
+  });
+  // Batches a stickered unit sells cheaper from today: the Counter and the Sell screen offer them.
+  router.get('/short-dated', guards.authenticated, async (_req: Request, res: Response) => {
+    sendSuccess(res, await expiryService.shortDated());
   });
   router.post('/', ...guards.staff, async (req: Request, res: Response) => {
     sendSuccess(res, await expiryService.add(parseInput(newExpirySchema, req.body), req.user!.id), { statusCode: 201 });
@@ -31,6 +37,11 @@ export function createExpiryRoutes({ expiryService, guards }: Container): Router
     const { id } = parseInput(idParamsSchema, req.params);
     await expiryService.clear(id, req.user!.id);
     sendSuccess(res, null, { message: 'Marked as dealt with' });
+  });
+  // Past its date: write off what is left as expired (an employee's waits for a yes).
+  router.post('/:id/write-off', ...guards.staff, async (req: Request, res: Response) => {
+    const { id } = parseInput(idParamsSchema, req.params);
+    sendSuccess(res, await expiryService.writeOff(id, req.user!), { statusCode: 201 });
   });
 
   return router;

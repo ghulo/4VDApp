@@ -71,6 +71,8 @@ export const basketSchema = z
           discountPercent: z.number().min(0).max(100).multipleOf(0.01).optional(),
           /** The price for one agreed in the basket's offer. */
           offerPrice: z.number().min(0).max(10_000_000).multipleOf(0.01).optional(),
+          /** A stickered unit from this short-dated batch. */
+          shortDatedId: idSchema.optional(),
         }),
       )
       .min(1, 'add at least one product')
@@ -109,7 +111,8 @@ export const basketSchema = z
     message: 'a sale on a tab is not paid by card',
     path: ['paidBy'],
   })
-  .refine((basket) => new Set(basket.items.map((item) => item.productId)).size === basket.items.length, {
+  // A product may come twice only as its short-dated units and the rest (one line per batch).
+  .refine((basket) => new Set(basket.items.map((item) => `${item.productId}:${item.shortDatedId ?? ''}`)).size === basket.items.length, {
     message: 'each product can only be in the basket once',
     path: ['items'],
   });

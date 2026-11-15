@@ -31,6 +31,10 @@ export interface ProductData {
   unit?: ProductUnit;
   /** The scale's number for it; left out keeps it. */
   scalePlu?: number | null;
+  /** Has a best-before date; left out keeps it (no for a new product). */
+  hasBestBefore?: boolean;
+  /** Its own short-dated window in days; null: its category's. Left out keeps it. */
+  shortDatedDays?: number | null;
 }
 
 /** One product's prices, for the Prices page and the price file. */
@@ -75,6 +79,8 @@ export interface ProductRecord {
   wholesale_price: string | null;
   unit: ProductUnit;
   scale_plu: number | null;
+  has_best_before: boolean;
+  short_dated_days: number | null;
   quantity_on_hand: number | null;
   reorder_level: number | null;
   created_at: Date;
@@ -129,6 +135,8 @@ export class ProductRepository {
     'p.wholesale_price',
     'p.unit',
     'p.scale_plu',
+    'p.has_best_before',
+    'p.short_dated_days',
     'i.quantity_on_hand',
     'i.reorder_level',
     'p.created_at',
@@ -205,6 +213,8 @@ export class ProductRepository {
         wholesale_price: data.wholesalePrice ?? null,
         unit: data.unit ?? 'piece',
         scale_plu: data.scalePlu ?? null,
+        has_best_before: data.hasBestBefore ?? false,
+        short_dated_days: data.shortDatedDays ?? null,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -229,6 +239,8 @@ export class ProductRepository {
         ...(data.wholesalePrice !== undefined && { wholesale_price: data.wholesalePrice }),
         ...(data.unit !== undefined && { unit: data.unit }),
         ...(data.scalePlu !== undefined && { scale_plu: data.scalePlu }),
+        ...(data.hasBestBefore !== undefined && { has_best_before: data.hasBestBefore }),
+        ...(data.shortDatedDays !== undefined && { short_dated_days: data.shortDatedDays }),
         updated_at: new Date(),
       })
       .where('id', '=', id)

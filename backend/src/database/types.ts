@@ -203,6 +203,8 @@ export interface CategoriesTable {
   id: Generated<number>;
   name: string;
   description: string | null;
+  /** Days before a best-before date its products count as short-dated; null: the shop's. */
+  short_dated_days: ColumnType<number | null, number | null | undefined, number | null>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;
@@ -234,6 +236,10 @@ export interface ProductsTable {
   unit: Generated<ProductUnit>;
   /** The number the shop scale prints in its labels. */
   scale_plu: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Has a best-before date: the date is asked for when it comes in. */
+  has_best_before: Generated<boolean>;
+  /** Days before its best-before date it counts as short-dated; null: its category's, else the shop's. */
+  short_dated_days: ColumnType<number | null, number | null | undefined, number | null>;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
@@ -284,6 +290,10 @@ export interface SalesTable {
   receipt_no: ColumnType<string | null, string | null | undefined, string | null>;
   /** Sold at the wholesale price (the customer pays it, or it was switched on for the sale). */
   wholesale: Generated<boolean>;
+  /** Sold from this short-dated batch (an expiry date) at the short-dated price. */
+  expiry_date_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** The short-dated discount off the shelf price, in percent. */
+  short_dated_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
 }
 
 /** Two products that look like the same item, for someone to merge or keep apart. */
@@ -765,6 +775,8 @@ export interface ExpiryDatesTable {
   created_at: CreatedAt;
   cleared_by: number | null;
   cleared_at: Date | null;
+  /** The write-off that took what was left off the shelf. */
+  write_off_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface SettingsTable {

@@ -103,6 +103,8 @@ export const billLineSchema = z.object({
   amount: positiveMoney.nullish(),
   vatRate: vatRateSchema.nullish(),
   vatExempt: z.boolean().nullish(),
+  /** A product's best-before date ("YYYY-MM-DD"), noted for the units on this line. */
+  expiresOn: calendarDaySchema.nullish(),
 });
 
 /** The one bill form: lines of products, costs and equipment, and what 4VD needs to work out the rest. */

@@ -254,8 +254,8 @@ const en = {
     ].join('; ')}`,
   settingsChanged: (p: { changes: SettingChange[] }, w: Words) => `Changed ${p.changes.map((change) => enSetting(change, w)).join(' and ')}`,
   billSendersChanged: (p: { count: number }) => `Changed who may email bills in: ${p.count} extra ${p.count === 1 ? 'sender' : 'senders'}`,
-  rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null }) =>
-    `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
+  rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null; shortDated?: boolean }) =>
+    `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.shortDated ? ['the short-dated discounts'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
   shopPictureSet: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Added the shop's ${p.which} for invoices`,
   shopPictureRemoved: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Removed the shop's ${p.which} from invoices`,
   fileAdded: (p: { name: string }) => `Added the file ${p.name}`,
@@ -751,7 +751,7 @@ const sq: Templates = {
   settingsChanged: (p, w) => `Ndryshoi ${p.changes.map((change) => sqSetting(change, w)).join(' dhe ')}`,
   billSendersChanged: (p) => `Ndryshoi kush mund të dërgojë fatura me email: ${p.count} dërgues shtesë`,
   rulesChanged: (p) =>
-    `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
+    `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.shortDated ? ['zbritjet për mallin që i afrohet afatit'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
   shopPictureSet: (p) => `Shtoi ${SQ_PICTURE[p.which]} e dyqanit për faturat`,
   shopPictureRemoved: (p) => `Hoqi ${SQ_PICTURE[p.which]} e dyqanit nga faturat`,
   fileAdded: (p) => `Shtoi skedarin ${p.name}`,

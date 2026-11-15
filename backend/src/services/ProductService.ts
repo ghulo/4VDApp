@@ -50,6 +50,10 @@ export interface ProductDto {
   unit: ProductUnit;
   /** The number the shop scale prints in its labels. */
   scalePlu: number | null;
+  /** Has a best-before date: the date is asked for when it comes in. */
+  hasBestBefore: boolean;
+  /** Its own short-dated window in days; null: its category's, else the shop's. */
+  shortDatedDays: number | null;
   stock: { quantity: number; reorderLevel: number; isInStock: boolean; isLowStock: boolean };
   bulkPricingTiers: PricingTier[];
   /** The running promotion for this product, with the price it gives for one unit. */
@@ -81,6 +85,10 @@ export interface ProductInput {
   unit?: ProductUnit;
   /** The scale's number; left out keeps it. Only a kilo product has one. */
   scalePlu?: number | null;
+  /** Has a best-before date; left out keeps it. */
+  hasBestBefore?: boolean;
+  /** Its own short-dated window in days; null: its category's. Left out keeps it. */
+  shortDatedDays?: number | null;
 }
 
 export interface NewProductInput extends ProductInput {
@@ -435,6 +443,8 @@ export class ProductService {
       unit: input.unit,
       // Only the scale's kilo labels carry a number; left out (undefined unit) keeps what is stored.
       scalePlu: input.unit !== undefined && input.unit !== 'kg' ? null : input.scalePlu,
+      hasBestBefore: input.hasBestBefore,
+      shortDatedDays: input.shortDatedDays,
     };
   }
 
@@ -466,6 +476,8 @@ export class ProductService {
       wholesalePrice: toMoneyOrNull(product.wholesale_price),
       unit: product.unit,
       scalePlu: product.scale_plu,
+      hasBestBefore: product.has_best_before,
+      shortDatedDays: product.short_dated_days,
       ...(includeCost && { costPrice: toMoneyOrNull(product.cost_price) }),
       stock: {
         quantity,

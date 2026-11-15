@@ -241,7 +241,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const booksService = new BooksService(db, config.shopTimeZone);
   const fixedAssetService = new FixedAssetService(db, transactions, config.shopTimeZone, () => booksService.poster.sync());
   const openingService = new OpeningService(db, config.shopTimeZone);
-  const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
+  const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone, settingsService, writeOffService);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
   const moneyRepository = new MoneyRepository(db);
   const cashCountService = new CashCountService(

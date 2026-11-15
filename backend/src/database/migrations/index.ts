@@ -65,6 +65,7 @@ import * as packBarcodes from './063_pack_barcodes.js';
 import * as stockDocuments from './064_stock_documents.js';
 import * as fixedAssets from './065_fixed_assets.js';
 import * as billEmails from './066_bill_emails.js';
+import * as shortDated from './067_short_dated.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -139,4 +140,5 @@ export const migrations: Record<string, Migration> = {
   '064_stock_documents': stockDocuments,
   '065_fixed_assets': fixedAssets,
   '066_bill_emails': billEmails,
+  '067_short_dated': shortDated,
 };

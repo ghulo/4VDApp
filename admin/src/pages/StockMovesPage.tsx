@@ -157,7 +157,7 @@ function StockMoveForm({ prefill, onSaved }: { prefill: DraftLine | null; onSave
     if (!product) return null;
     if (!(quantity > 0)) return t.moves.quantityError;
     if (!allowsParts(product.unit) && !Number.isInteger(quantity)) return t.moves.wholeError;
-    if (stock.data && quantity > thereOf(line.productId)) return t.moves.moreThanThere(formatQuantity(thereOf(line.productId), product.unit), fromName);
+    if (stock.data && placesOf.has(line.productId) && quantity > thereOf(line.productId)) return t.moves.moreThanThere(formatQuantity(thereOf(line.productId), product.unit), fromName);
     return null;
   };
   const problems = lines.map(problemOf);
@@ -233,7 +233,7 @@ function StockMoveForm({ prefill, onSaved }: { prefill: DraftLine | null; onSave
               <li key={line.productId} className="stock-doc-lines__row">
                 <span className="stock-doc-lines__name">
                   {product?.name}
-                  {stock.data && <span className="table__secondary">{t.moves.there(formatQuantity(thereOf(line.productId), unit), fromName)}</span>}
+                  {placesOf.has(line.productId) && <span className="table__secondary">{t.moves.there(formatQuantity(thereOf(line.productId), unit), fromName)}</span>}
                 </span>
                 <Field label={t.moves.quantityFor(product?.name ?? '')} narrow error={problems[index] ?? undefined}>
                   <input

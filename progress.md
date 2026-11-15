@@ -13,6 +13,15 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
+- [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
+- [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it
+- [ ] On the shelf: the location filter, a shelf minimum on a product page, then Refill from storage and its Bring button opening Move stock filled in
+- [ ] A bill and an order received land in Depo; a product's page shows how much each location holds
+- [ ] A sale bigger than the floor holds takes the rest from Depo and its stock history says "(from Depo)"
+- [ ] Count only Depo, and only the shop floor; the staff phone count always counts the shop floor
+- [ ] Removing Depo is refused while it holds stock or is where goods come in, and the last location can never go
+
 **Step 13: payroll** (sign in as the owner or the accountant)
 - [ ] Team → Payroll: add a person with a gross pay, one with a net pay, one second job and one at the carwash; check each line of a month on the Months tab against the tax bands (0% to €250, 8% to €450, 10% above) and 5% + 5% pension
 - [ ] A gross under €350 for a full-time main job warns, and a person who left with leave not taken warns "add them to the last pay"
@@ -151,7 +160,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 **C. In TREFIN but unused here (build after A and B)**
 - [x] 12. Fixed assets register and depreciation (2026-11-15): Books → Fixed assets. Equipment on a bill becomes an asset by itself, older things are typed in; each finished month posts its straight-line depreciation; selling or throwing one away posts the gain or loss and the sale VAT; a credit gives it back; the year's schedule, a check against the books and Excel. Rates and rules to confirm with the accountant (handoff.md)
 - [x] 13. Employees and payroll (2026-11-15): Team → Payroll. Each person with their contract (gross or net, second job, extra pension, shop or carwash); a month is worked out with Kosovo wage tax and Trust pension, confirmed into the books, then wages and ATK (tax and pension as two payments) are paid and matched on bank statements; payslips to print, the declaration file, annual leave, and staff see their own under Account. Defaults to confirm with the accountant (handoff.md)
-- [ ] 14. Several warehouses and transfers between them
+- [x] 14. Several stock locations and moves between them (2026-11-15): add a storeroom in Settings → Stock locations; each product keeps a total plus how much each location holds. Stock → Move stock moves goods in one step (LV-, printable note, Excel/PDF, void) and never touches the books; a sale short on the floor takes the rest from storage and says so; bills, orders, scans, in and out, write-offs and counts ask which location; On the shelf filters by location and offers Refill from storage below a shelf minimum. All of it stays hidden while the shop has one location
 - [ ] 15. Loyalty cards and bonus, B2B portal for business customers
 - [ ] 16. Production (recipes, semi-finished goods), serial numbers, projects
 - [ ] 17. Yearly declarations (CD / PD)

@@ -24,6 +24,7 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Bills → Scan a bill: "Reading the bill…" shimmers, then swaps to "Ready to check" before the check opens; confirming it shows a "Bill confirmed" toast
 - [ ] VAT credit and the bank-statement rules: Save shows "Saving… → Saved"; a bank statement upload shimmers while it reads; a form that fails to save shakes its error line
 - [ ] With Windows "Show animations" off, none of the above moves and everything still shows
+- [ ] On a wide screen: charts side by side fill their cards with no empty band, four charts sit two by two, and form fields stop at a comfortable width (check a few real forms too: product, bill, settings); checkboxes are amber when ticked
 
 **Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
 - [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location

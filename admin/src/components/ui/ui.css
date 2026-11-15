@@ -1107,10 +1107,17 @@
 
 /* ---------- Field ---------- */
 
+:root {
+  /* How wide one field may grow: about 60 characters. A name or a price
+     stretched across a wide screen is hard to read and looks empty. */
+  --field-max: 36rem;
+}
+
 .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-inline-size: var(--field-max);
   margin-bottom: var(--space-4);
 }
 

@@ -494,7 +494,34 @@ kbd {
 /* ---------- Area chart ---------- */
 
 .area-chart {
+  display: flex;
+  flex-direction: column;
   margin: 0;
+}
+
+/* ---------- A chart fills its card ----------
+   Cards side by side are as tall as the tallest one in the row. A chart
+   inside grows into the room (the area chart stretches, the others sit in
+   its middle), so no card is left with an empty band at the bottom. */
+
+.card:has(> .card__body > :is(.area-chart, .donut, .funnel, .heatmap, .column-chart, .bar-list, .day-bars)) {
+  display: flex;
+  flex-direction: column;
+}
+
+.card:has(> .card__body > :is(.area-chart, .donut, .funnel, .heatmap, .column-chart, .bar-list, .day-bars)) > .card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card__body > .area-chart {
+  flex: 1;
+}
+
+.area-chart__plot {
+  flex: 1;
 }
 
 .area-chart__plot {
@@ -1127,4 +1154,11 @@ kbd {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: var(--space-4);
+}
+
+/* Four make two rows of two, never three and one left alone. */
+@media (min-width: 900px) {
+  .kit-grid:has(> :nth-child(4):last-child) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

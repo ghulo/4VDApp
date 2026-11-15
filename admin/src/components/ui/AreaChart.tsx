@@ -48,7 +48,8 @@ export function AreaChart({ points, label, height = 160 }: { points: ChartColumn
     <figure className="area-chart">
       <div
         className="area-chart__plot"
-        style={{ blockSize: height }}
+        // At least this tall; taller when its card is stretched by the row it sits in.
+        style={{ minBlockSize: height }}
         tabIndex={points.length ? 0 : undefined}
         role="group"
         aria-label={label}
@@ -72,7 +73,7 @@ export function AreaChart({ points, label, height = 160 }: { points: ChartColumn
         {spot && shown && (
           <>
             <span className="area-chart__rule" style={{ insetInlineStart: `${spot.x * 100}%` }} aria-hidden="true" />
-            <span className="area-chart__dot" style={{ insetInlineStart: `${spot.x * 100}%`, insetBlockStart: PAD + spot.y * plot }} aria-hidden="true" />
+            <span className="area-chart__dot" style={{ insetInlineStart: `${spot.x * 100}%`, insetBlockStart: `${((PAD + spot.y * plot) / height) * 100}%` }} aria-hidden="true" />
             <span
               id={tipId}
               className={`area-chart__tip${spot.x < 0.2 ? ' area-chart__tip--start' : spot.x > 0.8 ? ' area-chart__tip--end' : ''}`}

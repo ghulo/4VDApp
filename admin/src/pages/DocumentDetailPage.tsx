@@ -14,6 +14,8 @@ import { HistoryCard } from '../components/HistoryCard';
 import { QuestionsCard } from '../components/QuestionsCard';
 import { useCurrentUser } from '../auth/useAuth';
 import { TrefinTag } from '../components/TrefinParts';
+import { FilesCard } from '../components/FilesCard';
+import { canReadBooks } from '../auth/roles';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
@@ -21,7 +23,9 @@ export function DocumentDetailPage() {
   const id = Number(useParams().id);
   const document = useQuery({ queryKey: ['documents', id], queryFn: () => documentsApi.get(id) });
   // The counter matches a document to its fiscal receipt; the accountant only reads it.
-  const matchesReceipts = useCurrentUser().role !== 'accountant';
+  const { role } = useCurrentUser();
+  const matchesReceipts = role !== 'accountant';
+  const canKeepFiles = canReadBooks(role);
 
   if (document.isPending) return <Loading />;
   if (document.isError) return <ErrorNotice error={document.error} onRetry={() => document.refetch()} />;
@@ -128,6 +132,7 @@ export function DocumentDetailPage() {
       {matchesReceipts && !doc.fromTrefin && <FiscalReceiptCard document={doc} />}
       <QuestionsCard kind="document" id={doc.id} />
       {!doc.fromTrefin && <EntriesPanel source="document" id={doc.id} />}
+      {canKeepFiles && <FilesCard on="document" id={doc.id} />}
       <HistoryCard entityType="document" entityId={doc.id} />
     </>
   );

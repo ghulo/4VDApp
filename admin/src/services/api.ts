@@ -2,6 +2,11 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
+  Attachment,
+  AttachmentEntity,
+  BinItem,
+  BinKind,
+  ShopRules,
   BonusInfo,
   FirmReading,
   PartnerAddress,
@@ -267,6 +272,23 @@ export const businessApi = {
     (await apiRequest<Business>('/business', { method: 'PUT', body: changes })).data,
   uploadLogo: async (file: Blob) => (await apiRequest<Business>('/business/logo', { method: 'PUT', file })).data,
   removeLogo: async () => (await apiRequest<Business>('/business/logo', { method: 'DELETE' })).data,
+  /** The stamp or the signature printed on invoices. */
+  setPicture: async (which: 'stamp' | 'signature', file: Blob) => (await apiRequest<Business>(`/business/pictures/${which}`, { method: 'PUT', file })).data,
+  removePicture: async (which: 'stamp' | 'signature') => (await apiRequest<Business>(`/business/pictures/${which}`, { method: 'DELETE' })).data,
+};
+
+/** Files kept on a record. */
+export const filesApi = {
+  list: async (kind: AttachmentEntity, id: number) => (await apiRequest<Attachment[]>(`/files/${kind}/${id}`)).data,
+  add: async (kind: AttachmentEntity, id: number, file: File) =>
+    (await apiRequest<Attachment>(`/files/${kind}/${id}`, { method: 'POST', file, fileName: file.name })).data,
+  remove: async (id: number) => await apiRequest<null>(`/files/${id}`, { method: 'DELETE' }),
+};
+
+/** The recycle bin. */
+export const binApi = {
+  list: async () => (await apiRequest<BinItem[]>('/bin')).data,
+  restore: async (kind: BinKind, id: number) => await apiRequest<null>(`/bin/${kind}/${id}/restore`, { method: 'POST' }),
 };
 
 export const invitesApi = {
@@ -807,6 +829,8 @@ export const activityApi = {
 export const settingsApi = {
   get: async () => (await apiRequest<AppSettings>('/settings')).data,
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
+  rules: async () => (await apiRequest<ShopRules>('/settings/rules')).data,
+  updateRules: async (input: Partial<ShopRules>) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
   /** Emails the signed-in developer; `sent` is false (with a `reason`) when real emails don't work yet. */

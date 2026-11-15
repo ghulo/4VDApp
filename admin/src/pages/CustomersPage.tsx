@@ -38,6 +38,7 @@ import { todayIso } from '../utils/bills';
 import { HistoryCard } from '../components/HistoryCard';
 import { PartnerDetailFields, PartnerFacts, hasDetails, usePartnerDraft } from '../components/PartnerDetails';
 import { AddressesCard, BonusCard, PartnerLinkCard } from '../components/PartnerCards';
+import { FilesCard } from '../components/FilesCard';
 
 /** Late: something is past the day they promised to pay (the server works it out). */
 const isOverdue = (customer: Customer) => customer.lateAmount > 0;
@@ -501,6 +502,7 @@ export function CustomerDetailPage() {
       )}
 
       {canManage(role) && data.balance === 0 && !data.archived && <CloseTab customer={data} />}
+      <FilesCard on="customer" id={data.id} />
       <HistoryCard entityType="customer" entityId={data.id} />
     </>
   );

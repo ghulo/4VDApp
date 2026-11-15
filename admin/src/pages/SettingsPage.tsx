@@ -1,4 +1,6 @@
-import { Books, CashRegister, Desktop, Drop, RocketLaunch, Scales, ShieldCheck, Storefront, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warning } from '@phosphor-icons/react';
+import { BinPanel } from '../components/BinPanel';
+import { ShopRulesPanel } from '../components/ShopRulesPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
@@ -62,6 +64,16 @@ export function SettingsPage() {
             ),
           },
           {
+            id: 'numbers',
+            label: t.rules.title,
+            icon: ListNumbers,
+            content: (
+              <ManagersOnly>
+                <ShopRulesPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
             id: 'counter',
             label: t.counterSettings.title,
             icon: CashRegister,
@@ -88,6 +100,16 @@ export function SettingsPage() {
             content: (
               <ManagersOnly>
                 <BooksSettingsPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'bin',
+            label: t.bin.title,
+            icon: Trash,
+            content: (
+              <ManagersOnly>
+                <BinPanel />
               </ManagersOnly>
             ),
           },

@@ -1,4 +1,4 @@
-import { ImageSquare } from '@phosphor-icons/react';
+import { ImageSquare, PenNib, Stamp } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { businessApi } from '../services/api';
@@ -43,8 +43,76 @@ export function BusinessPanel() {
   return (
     <>
       <BusinessForm initial={business.data} />
+      <InvoicePicturesCard business={business.data} />
       <HistoryCard entityType="business" entityId={business.data.id} />
     </>
+  );
+}
+
+/** The stamp and the signature, printed where an invoice is signed. */
+function InvoicePicturesCard({ business }: { business: Business }) {
+  const t = useT();
+  return (
+    <Card title={t.business.signTitle} description={t.business.signHint}>
+      <PictureRow which="stamp" url={business.stampUrl} />
+      <PictureRow which="signature" url={business.signatureUrl} />
+    </Card>
+  );
+}
+
+function PictureRow({ which, url }: { which: 'stamp' | 'signature'; url: string | null }) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [tooBig, setTooBig] = useState(false);
+  const keep = (updated: Business) => queryClient.setQueryData(['business'], updated);
+  const upload = useMutation({ mutationFn: (file: File) => businessApi.setPicture(which, file), onSuccess: keep });
+  const remove = useMutation({ mutationFn: () => businessApi.removePicture(which), onSuccess: keep });
+  const words = t.business.pictures[which];
+  const Icon = which === 'stamp' ? Stamp : PenNib;
+
+  function pick(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    setTooBig(false);
+    if (!file) return;
+    if (file.size > MAX_LOGO_BYTES) {
+      setTooBig(true);
+      return;
+    }
+    upload.mutate(file);
+  }
+
+  return (
+    <SettingRow
+      title={words.title}
+      description={
+        tooBig || upload.isError || remove.isError ? (
+          <span className="form-error" role="alert">
+            {tooBig ? t.business.tooBig : errorMessage(upload.error ?? remove.error)}
+          </span>
+        ) : (
+          words.hint
+        )
+      }
+    >
+      {url ? (
+        <img className="business-logo business-logo--sign" src={mediaSrc(url)!} alt={words.title} width={96} height={72} />
+      ) : (
+        <span className="business-logo business-logo--empty business-logo--sign" aria-hidden="true">
+          <Icon size={22} />
+        </span>
+      )}
+      <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={pick} />
+      <Button disabled={upload.isPending} onClick={() => fileInput.current?.click()} loading={upload.isPending} aria-label={url ? `${t.profile.change}: ${words.title}` : undefined}>
+        {url ? t.profile.change : words.add}
+      </Button>
+      {url && (
+        <RemoveButton size="md" confirm={t.common.yesRemove} pending={remove.isPending} onConfirm={() => remove.mutate()}>
+          {t.profile.remove}
+        </RemoveButton>
+      )}
+    </SettingRow>
   );
 }
 

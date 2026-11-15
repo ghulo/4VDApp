@@ -19,6 +19,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 import { whatsappLink } from '../utils/whatsapp';
+import { FilesCard } from '../components/FilesCard';
 
 const dayLabel = (day: string) => formatDate(`${day}T12:00:00`);
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
@@ -515,6 +516,7 @@ export function OfferDetailPage() {
           <p>{data.note}</p>
         </Card>
       )}
+      <FilesCard on="offer" id={data.id} />
       {sheet &&
         createPortal(
           <div className="print-root" aria-hidden="true">

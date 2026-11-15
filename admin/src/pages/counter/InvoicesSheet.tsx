@@ -88,7 +88,7 @@ function InvoicesBody({ online, canOpen, unprinted, onPrintAgain, onRefund }: In
     if (shown.length === 1) return setOpenId(shown[0]!.id);
     const code = codeFromScan(text).toUpperCase();
     // A whole invoice number from another day: look it up on its own.
-    if (/^[A-Z]+-\d{4}-\d+$/.test(code)) setNumber(code);
+    if (/^[A-Z0-9]{1,6}-(\d{2}|\d{4})-\d+$/.test(code)) setNumber(code);
   }
 
   if (!online) return <p className="counter-message counter-message--problem">{v.offline}</p>;

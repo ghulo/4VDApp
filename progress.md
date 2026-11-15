@@ -14,7 +14,7 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
 **Step 18: bills by email** (after the setup in docs/DEPLOYMENT.md)
-- [ ] Forward a supplier PDF from your sign-in email to bills@4vd.app: a waiting scan "By email from …" appears under Bills and in To do, with supplier, lines, VAT and due date filled in
+- [x] Forward a supplier PDF from your sign-in email to bills@4vd.app: a waiting scan "By email from …" appears under Bills and in To do, with supplier, lines, VAT and due date filled in
 - [ ] Send a clear phone photo of a bill (no PDF): it is read too; an email with only a logo gives a "no PDF or bill photo" update
 - [ ] Forward the same PDF again in a new email: an update says it was already received, and no second scan appears
 - [ ] Settings → Bills by email: add a supplier's address or @domain; mail from them is read, mail from anyone else never shows up

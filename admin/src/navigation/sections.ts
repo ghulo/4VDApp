@@ -70,7 +70,7 @@ export const SECTIONS = {
     { to: '/inventory', key: 'shelf' },
     { to: '/products', key: 'products' },
     { to: '/prices', key: 'prices', overseersOnly: true },
-    { to: '/stock-documents', key: 'stockDocuments', overseersOnly: true },
+    { to: '/stock-documents', key: 'stockDocuments', overseersOnly: true, accountant: true },
     { to: '/categories', key: 'categories' },
   ],
   sales: [

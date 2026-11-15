@@ -323,6 +323,54 @@ export interface StockDocumentLinesTable {
   unit_cost: ColumnType<string | null, number | null, number | null>;
 }
 
+export type AssetCategory = 'furniture' | 'equipment' | 'vehicle' | 'building' | 'land' | 'intangible' | 'other';
+export type AssetDisposal = 'sold' | 'scrapped' | 'returned';
+
+export interface FixedAssetsTable {
+  id: Generated<number>;
+  name: string;
+  code: string | null;
+  category: AssetCategory;
+  /** Read through to_char, so kept as text. */
+  bought_on: string;
+  in_use_from: string;
+  cost: ColumnType<string, number, number>;
+  residual: ColumnType<string, number | undefined, number>;
+  rate: ColumnType<string, number, number>;
+  opening_depreciated: ColumnType<string, number | undefined, number>;
+  bill_line_id: number | null;
+  place: 'shop' | 'carwash';
+  note: string | null;
+  filled_through: ColumnType<string | null, string | null | undefined, string | null>;
+  disposed_on: ColumnType<string | null, string | null | undefined, string | null>;
+  disposal: ColumnType<AssetDisposal | null, AssetDisposal | null | undefined, AssetDisposal | null>;
+  sale_net: ColumnType<string | null, number | null | undefined, number | null>;
+  sale_vat_rate: ColumnType<number | null, number | null | undefined, number | null>;
+  sale_vat: ColumnType<string | null, number | null | undefined, number | null>;
+  buyer_name: ColumnType<string | null, string | null | undefined, string | null>;
+  buyer_nui: ColumnType<string | null, string | null | undefined, string | null>;
+  customer_id: ColumnType<number | null, number | null | undefined, number | null>;
+  paid_place_id: ColumnType<number | null, number | null | undefined, number | null>;
+  credit_bill_id: ColumnType<number | null, number | null | undefined, number | null>;
+  disposal_note: ColumnType<string | null, string | null | undefined, string | null>;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface DepreciationMonthsTable {
+  id: Generated<number>;
+  /** The month's first day, read through to_char. */
+  month: string;
+}
+
+export interface DepreciationLinesTable {
+  month_id: number;
+  asset_id: number;
+  amount: ColumnType<string, number, number>;
+}
+
 export interface ProductDuplicateFlagsTable {
   id: Generated<number>;
   product_id: number;
@@ -1328,6 +1376,9 @@ export interface Database {
   product_barcodes: ProductBarcodesTable;
   stock_documents: StockDocumentsTable;
   stock_document_lines: StockDocumentLinesTable;
+  fixed_assets: FixedAssetsTable;
+  depreciation_months: DepreciationMonthsTable;
+  depreciation_lines: DepreciationLinesTable;
   ledger_accounts: LedgerAccountsTable;
   ledger_links: LedgerLinksTable;
   ledger_entries: LedgerEntriesTable;

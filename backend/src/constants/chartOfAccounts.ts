@@ -57,7 +57,9 @@ export const TREFIN_ACCOUNTS: SeedAccount[] = [
   { number: '1930', name: 'Zhvlerësimi i akumuluar, Automjetet', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Zhvlerësimi i akumuluar', cashFlow: 'investing' },
   { number: '1940', name: 'Zhvlerësimi i akumuluar, Prona tjetër e zhvlerësuar', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Zhvlerësimi i akumuluar', cashFlow: 'investing' },
   { number: '1950', name: 'Zhvlerësimi i akumuluar, Ndërtesat', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Zhvlerësimi i akumuluar', cashFlow: 'investing' },
+  { number: '1960', name: 'Amortizimi i akumuluar, Pasuritë e paprekshme', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Zhvlerësimi i akumuluar', cashFlow: 'investing' },
   { number: '1970', name: 'Pasuritë tjera fikse', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Pasuritë tjera fikse', cashFlow: 'investing' },
+  { number: '1980', name: 'Pasuritë e paprekshme', accountClass: 'asset', type: 'Pasuria Themelore', group: 'Pasuritë e paprekshme', cashFlow: 'investing' },
   { number: '2000', name: 'Llogaritë e pagueshme', accountClass: 'liability', type: 'Detyrimet Afatshkurtër', group: 'Llogaritë e pagueshme', cashFlow: 'operating' },
   { number: '2050', name: 'Detyrimet ndaj doganës', accountClass: 'liability', type: 'Detyrimet Afatshkurtër', group: 'Llogaritë e pagueshme', cashFlow: 'operating' },
   { number: '2060', name: 'Akciza', accountClass: 'liability', type: 'Detyrimet Afatshkurtër', group: 'Llogaritë e pagueshme', cashFlow: 'operating' },
@@ -212,6 +214,21 @@ export const DEFAULT_ACCOUNT_LINKS = {
   'asset:vehicle': '1710',
   'asset:building': '1800',
   'asset:other': '1970',
+  'asset:land': '1850',
+  'asset:intangible': '1980',
+  /** Each kind of fixed asset's depreciation so far (land has none). */
+  'accumulated:furniture': '1910',
+  'accumulated:equipment': '1920',
+  'accumulated:vehicle': '1930',
+  'accumulated:building': '1950',
+  'accumulated:other': '1940',
+  'accumulated:intangible': '1960',
+  /** The month's depreciation of things owned, and amortisation of intangibles (software, licences). */
+  depreciation: '6150',
+  amortisation: '6040',
+  /** What selling or throwing away a fixed asset gained or lost against its value left. */
+  asset_gain: '7200',
+  asset_loss: '8200',
   withholding: '2370',
   /** The year's profit tax, below profit before tax; what is owed on it (TM paid in advance sits here too); where a closed year's profit goes. */
   profit_tax: '8900',

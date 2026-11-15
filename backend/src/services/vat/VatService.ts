@@ -159,8 +159,8 @@ export class VatService {
   async items(month: string): Promise<VatItem[]> {
     const from = firstDay(month);
     const to = addMonths(month, 1);
-    const [sales, returns, bills] = await Promise.all([this.saleItems(from, to), this.returnItems(from, to), this.billItems(from)]);
-    return [...sales, ...returns, ...bills].sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || a.ref.localeCompare(b.ref, undefined, { numeric: true }));
+    const [sales, returns, bills, assets] = await Promise.all([this.saleItems(from, to), this.returnItems(from, to), this.billItems(from), this.assetSaleItems(from, to)]);
+    return [...sales, ...returns, ...bills, ...assets].sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind) || a.ref.localeCompare(b.ref, undefined, { numeric: true }));
   }
 
   /**
@@ -222,6 +222,24 @@ export class VatService {
       item.count! += Number(row.sales);
     }
     return [...byKey.values()];
+  }
+
+  /** Fixed assets sold: a sale like any other, on the day it left. Carwash assets stay out, as in the books. */
+  private async assetSaleItems(from: string, to: string): Promise<VatItem[]> {
+    const rows = await this.db
+      .selectFrom('fixed_assets')
+      .select(['id', 'name', 'sale_net', 'sale_vat', 'sale_vat_rate', 'buyer_name', 'buyer_nui', sql<string>`to_char(disposed_on, 'YYYY-MM-DD')`.as('day')])
+      .where('disposal', '=', 'sold')
+      .where('voided_at', 'is', null)
+      .where('place', '=', 'shop')
+      .where('disposed_on', '>=', from)
+      .where('disposed_on', '<', to)
+      .execute();
+    return rows.map((row) => {
+      const boxes: Boxes = {};
+      saleBoxes(boxes, roundMoney(Number(row.sale_net) + Number(row.sale_vat)), row.sale_vat_rate ?? 0, false, 1);
+      return { kind: 'asset_sale', ref: String(row.id), date: row.day, number: row.name, party: row.buyer_name, nui: row.buyer_nui, boxes };
+    });
   }
 
   /** Approved refunds to customers: credit notes the shop issued, on the day they were approved (as the books post them). */

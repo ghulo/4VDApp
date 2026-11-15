@@ -135,9 +135,15 @@ export const ACTIVITY_ACTIONS = [
   'expense.restored',
   'stock_document.created',
   'stock_document.voided',
+  'asset.created',
+  'asset.updated',
+  'asset.split',
+  'asset.disposed',
+  'asset.disposal_undone',
+  'asset.voided',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

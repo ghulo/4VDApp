@@ -1771,7 +1771,7 @@ export type EntryKind = 'auto' | 'manual' | 'reversal';
 
 /** The page that shows the document behind an entry. */
 export interface EntryTarget {
-  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document';
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document' | 'asset' | 'assets';
   id?: number;
   search?: string;
 }

@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../../database/connection.js';
 import { roundMoney } from '../../utils/money.js';
+import { monthEnd } from '../assets/depreciation.js';
 import type { AccountLinkKey } from '../../constants/chartOfAccounts.js';
 import { type AccountLinks, type AccountRef, type DraftEntry, EntryBuilder, vatOf } from './entryBuilder.js';
 
@@ -58,11 +59,20 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  *   putting money in is capital 3000, taking it out drawings 3100.
  * - Write-off, count difference, manual stock correction: stock corrections
  *   5400 against stock 1340, at cost.
+ * - Depreciation (one entry per month, on its last day): depreciation 6150
+ *   (amortisation 6040 for intangibles) against each kind's accumulated
+ *   depreciation 1910-1960. Carwash assets stay out, like carwash bills.
+ * - A fixed asset leaving: its cost off its asset account (16xx-19xx) and its
+ *   depreciation so far off accumulated depreciation; sold, the money to the
+ *   place it reached (or the buyer's receivable 1230) and the VAT to 2340; what
+ *   is left over is a gain (7200) or a loss (8200). Given back to the supplier,
+ *   the credit bill already took the cost off, so only the depreciation it had
+ *   is taken back out of the depreciation cost.
  *
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -129,6 +139,10 @@ export class PostingRules {
         return this.adjustment(Number(ref));
       case 'stock_doc':
         return this.stockDocument(Number(ref));
+      case 'depreciation':
+        return this.depreciation(Number(ref));
+      case 'asset':
+        return this.assetDisposal(Number(ref));
       case 'bill':
         return this.bill(Number(ref));
       case 'payment':
@@ -324,6 +338,81 @@ export class PostingRules {
     const value = roundMoney(lines.reduce((total, line) => total + (line.unit_cost === null ? 0 : roundMoney(line.quantity * Number(line.unit_cost))), 0));
     if (value === 0) return null;
     return this.stockChange(document.day, document.direction === 'in' ? value : -value, 1, document.number);
+  }
+
+  /** One month's depreciation for every asset, on the month's last day. */
+  private async depreciation(monthId: number): Promise<DraftEntry | null> {
+    const month = await this.db
+      .selectFrom('depreciation_months')
+      .select(sql<string>`to_char(month, 'YYYY-MM-DD')`.as('month'))
+      .where('id', '=', monthId)
+      .executeTakeFirst();
+    if (!month) return null;
+    const day = monthEnd(month.month);
+    if (this.tooEarly(day)) return null;
+    const lines = await this.db
+      .selectFrom('depreciation_lines as l')
+      .innerJoin('fixed_assets as a', 'a.id', 'l.asset_id')
+      .select(['a.category', 'l.amount'])
+      .where('l.month_id', '=', monthId)
+      .where('a.voided_at', 'is', null)
+      .where('a.place', '=', 'shop')
+      .execute();
+    const entry = this.builder();
+    for (const line of lines) {
+      if (line.category === 'land') continue;
+      entry.debit(line.category === 'intangible' ? 'amortisation' : 'depreciation', Number(line.amount));
+      entry.credit(`accumulated:${line.category}` as AccountLinkKey, Number(line.amount));
+    }
+    return entry.build(day, month.month.slice(0, 7));
+  }
+
+  /** A fixed asset sold, thrown away or given back: takes it off the books, with any gain or loss. */
+  private async assetDisposal(id: number): Promise<DraftEntry | null> {
+    const asset = await this.db
+      .selectFrom('fixed_assets as a')
+      .leftJoin('customers as c', 'c.id', 'a.customer_id')
+      .select([
+        'a.name',
+        'a.category',
+        'a.cost',
+        'a.opening_depreciated',
+        'a.disposal',
+        'a.sale_net',
+        'a.sale_vat',
+        'a.customer_id',
+        'a.paid_place_id',
+        'a.place',
+        sql<string | null>`to_char(a.disposed_on, 'YYYY-MM-DD')`.as('disposed_on'),
+        sql<string>`(select coalesce(sum(l.amount), 0)::text from depreciation_lines l where l.asset_id = a.id)`.as('depreciated'),
+      ])
+      .where('a.id', '=', id)
+      .where('a.voided_at', 'is', null)
+      .executeTakeFirst();
+    if (!asset?.disposal || !asset.disposed_on || asset.place !== 'shop' || this.tooEarly(asset.disposed_on)) return null;
+    const posted = Number(asset.depreciated);
+    const accumulated = roundMoney(Number(asset.opening_depreciated) + posted);
+    const entry = this.builder();
+    const worn = asset.category === 'land' ? null : (`accumulated:${asset.category}` as AccountLinkKey);
+    if (asset.disposal === 'returned') {
+      // The credit bill took the cost off; the depreciation it had goes back out of the cost of depreciation.
+      if (worn) entry.debit(worn, posted).credit(asset.category === 'intangible' ? 'amortisation' : 'depreciation', posted);
+      return entry.build(asset.disposed_on, asset.name);
+    }
+    const net = asset.disposal === 'sold' ? Number(asset.sale_net ?? 0) : 0;
+    const vat = asset.disposal === 'sold' ? Number(asset.sale_vat ?? 0) : 0;
+    const cost = Number(asset.cost);
+    if (net + vat > 0) {
+      if (asset.paid_place_id !== null) entry.debit(this.to(asset.paid_place_id), net + vat);
+      else entry.debit('receivables', net + vat, { customerId: asset.customer_id });
+    }
+    entry.credit('vat_out', vat);
+    if (worn) entry.debit(worn, accumulated);
+    entry.credit(`asset:${asset.category}` as AccountLinkKey, cost);
+    const result = roundMoney(net + accumulated - cost);
+    if (result > 0) entry.credit('asset_gain', result);
+    else entry.debit('asset_loss', -result);
+    return entry.build(asset.disposed_on, asset.name);
   }
 
   private async bill(id: number): Promise<DraftEntry | null> {

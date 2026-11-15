@@ -73,7 +73,7 @@ describe('the chart of accounts', () => {
     const response = await api().get('/api/books/accounts').set(auth());
     expect(response.status).toBe(200);
     // TREFIN's 144, 4VD's 8900 for the profit tax, and a sub-account each for the safe and the carwash's till (the shop's till and the bank use 1110 and 1120).
-    expect(response.body.data).toHaveLength(147);
+    expect(response.body.data).toHaveLength(149);
     expect(response.body.data.filter((account: { number: string }) => ['1111', '1112'].includes(account.number))).toHaveLength(2);
     const stock = response.body.data.find((account: { number: string }) => account.number === '1340');
     expect(stock).toMatchObject({ name: 'Stoqet e produkteve të gatshme', accountClass: 'asset', links: ['stock'] });

@@ -44,7 +44,7 @@ export interface EntryLineDto {
 
 /** The page a document lives on, so an entry can link to it. */
 export interface EntryTarget {
-  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document';
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document' | 'asset' | 'assets';
   id?: number;
   /** For the sales page: what to search for. */
   search?: string;
@@ -123,7 +123,7 @@ export interface ManualEntryInput {
   lines: Array<{ accountId: number; debit: number; credit: number; supplierId?: number | null; customerId?: number | null; memo?: string | null }>;
 }
 
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'offset' | 'bonus' | 'stock_doc';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'offset' | 'bonus' | 'stock_doc' | 'asset' | 'depreciation';
 
 /** The balance the way people read it: debit-side accounts as debits minus credits, the others the other way. */
 export const naturalBalance = (accountClass: AccountClass, debitMinusCredit: number) =>
@@ -492,6 +492,8 @@ export class BooksService {
       else if (kind === 'bill') targets.set(key, { page: 'bill', id: Number(ref) });
       else if (kind === 'expense') targets.set(key, { page: 'expenses' });
       else if (kind === 'stock_doc') targets.set(key, { page: 'stock_document', id: Number(ref) });
+      else if (kind === 'asset') targets.set(key, { page: 'asset', id: Number(ref) });
+      else if (kind === 'depreciation') targets.set(key, { page: 'assets' });
     }
     const lookups: Array<[string, Promise<Array<{ id: number; target: number | null }>>, EntryTarget['page']]> = [];
     const payments = idsOf('payment');

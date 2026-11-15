@@ -1,4 +1,5 @@
 import { type BillKind, type BillLineKind, type CustomsPaidMethod, EQUIPMENT_CATEGORIES, WITHHOLDING_RATES, type WithholdingType } from '../constants/bills.js';
+import { addBillAssets, returnBillAssets, voidBillAssets } from './assets/billAssets.js';
 import { EXPENSE_CATEGORIES, type ExpensePlace } from '../constants/expenses.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import type { MoneyPlaceKind, SupplierPaymentMethod } from '../database/types.js';
@@ -757,6 +758,7 @@ export async function createBill(
     throw error;
   }
   await repos.bills.addLines(id, rows);
+  await addBillAssets(repos, id, actorId);
   await placeInVatMonth(repos, id, input.issuedOn);
 
   const who = supplier?.name ?? null;
@@ -958,6 +960,7 @@ export async function createCredit(repos: TransactionalRepositories, billId: num
     carwashId: bill.carwash_id,
   });
   await repos.bills.addLines(id, plan.lines.map((line) => line.row));
+  await returnBillAssets(repos, id, billId, input.issuedOn);
   await placeInVatMonth(repos, id, input.issuedOn);
   if (input.returnsStock) {
     for (const line of plan.lines) {
@@ -1012,6 +1015,7 @@ export async function voidBill(repos: TransactionalRepositories, id: number, not
     // Stock typed on the bill came in with it; a delivery's stock stays with its order.
     await moveStock(repos, lines.filter((line) => line.order_line_id === null), -1, `Bill #${id} voided`, actorId);
   }
+  await voidBillAssets(repos, { id, kind: bill.kind }, actorId, now);
   await repos.bills.void(id, actorId, note, now);
   await repos.activityLog.create({
     userId: actorId,

@@ -7,6 +7,7 @@ export interface BillScanRecord {
   media_ids: string[];
   reading: unknown;
   scanned_by_name: string | null;
+  email_from: string | null;
   scanned_at: Date;
   decided_by_name: string | null;
   decided_at: Date | null;
@@ -25,10 +26,10 @@ export interface SupplierCodeRecord {
 export class BillScanRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  async create(input: { mediaIds: string[]; reading: unknown; scannedBy: number }): Promise<number> {
+  async create(input: { mediaIds: string[]; reading: unknown; scannedBy: number | null; emailFrom?: string | null }): Promise<number> {
     const row = await this.db
       .insertInto('bill_scans')
-      .values({ media_ids: input.mediaIds, reading: JSON.stringify(input.reading), scanned_by: input.scannedBy })
+      .values({ media_ids: input.mediaIds, reading: JSON.stringify(input.reading), scanned_by: input.scannedBy, email_from: input.emailFrom ?? null })
       .returning('id')
       .executeTakeFirstOrThrow();
     return row.id;
@@ -45,6 +46,7 @@ export class BillScanRepository {
         's.media_ids',
         's.reading',
         'scanner.name as scanned_by_name',
+        's.email_from',
         's.scanned_at',
         'decider.name as decided_by_name',
         's.decided_at',

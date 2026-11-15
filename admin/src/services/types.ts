@@ -1618,6 +1618,8 @@ export interface BillScan {
   id: number;
   status: 'waiting' | 'confirmed' | 'discarded';
   scannedBy: string | null;
+  /** Set when the bill came by email: who sent it. */
+  emailFrom: string | null;
   scannedAt: string;
   decidedBy: string | null;
   decidedAt: string | null;
@@ -1641,7 +1643,26 @@ export interface WaitingScan {
   number: string | null;
   amount: number | null;
   scannedBy: string | null;
+  emailFrom: string | null;
   scannedAt: string;
+}
+
+/** A file that came by email and has no scan yet. */
+export interface OpenBillEmail {
+  id: number;
+  sender: string;
+  subject: string | null;
+  fileName: string | null;
+  fileUrl: string | null;
+  status: 'waiting' | 'failed';
+  error: string | null;
+  receivedAt: string;
+}
+
+export interface BillEmailSettings {
+  address: string;
+  dailyReads: number;
+  senders: string[];
 }
 
 export interface ConfirmScanInput {

@@ -47,6 +47,8 @@ const summaryTimer = setInterval(() => {
   const books = container.booksService.poster
     .sync()
     .catch((error) => logger.error('Posting to the books failed', { error: String(error) }));
+  // Emailed bills left waiting (the day's reads used up, or a restart) are read when there's room.
+  container.billEmailService.kick();
   const bin = container.attachmentService.purge().catch((error) => logger.error('Emptying the recycle bin failed', { error: String(error) }));
   Promise.all([report, expenses, alert, dayClosed, books, bin]).finally(() => {
     isChecking = false;

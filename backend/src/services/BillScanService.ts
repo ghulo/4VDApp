@@ -46,6 +46,8 @@ export interface BillScanDto {
   id: number;
   status: 'waiting' | 'confirmed' | 'discarded';
   scannedBy: string | null;
+  /** Set when the bill came by email: who sent it. */
+  emailFrom: string | null;
   scannedAt: string;
   decidedBy: string | null;
   decidedAt: string | null;
@@ -90,6 +92,7 @@ export interface WaitingScanDto {
   number: string | null;
   amount: number | null;
   scannedBy: string | null;
+  emailFrom: string | null;
   scannedAt: string;
 }
 
@@ -194,6 +197,26 @@ export class BillScanService {
     }
   }
 
+  /**
+   * A bill that came by email and has been read: it waits like any scan, and
+   * the people who run the shop are told. The file is already stored.
+   */
+  async createFromEmail(input: { mediaId: string; reading: BillReading; sender: string }, repos: TransactionalRepositories): Promise<number> {
+    const { reading } = input;
+    const scanId = await repos.billScans.create({ mediaIds: [input.mediaId], reading, scannedBy: null, emailFrom: input.sender });
+    await repos.activityLog.create({
+      userId: null,
+      action: 'bill.emailed',
+      entityType: 'bill_scan',
+      entityId: scanId,
+      say: { key: 'billEmailed', params: { sender: input.sender, supplier: reading.supplier.name, lines: reading.lines.length } },
+    });
+    await notifyAdminsOfPending(repos, 'bill', { type: 'bill_scan', id: scanId }, (t) =>
+      t.billEmailedPending({ sender: input.sender, supplier: reading.supplier.name, lines: reading.lines.length }),
+    );
+    return scanId;
+  }
+
   async waiting(): Promise<WaitingScanDto[]> {
     return (await this.scanRepository.findWaiting()).map((scan) => {
       const reading = parseReading(scan);
@@ -203,6 +226,7 @@ export class BillScanService {
         number: reading.number,
         amount: reading.totals.gross,
         scannedBy: scan.scanned_by_name,
+        emailFrom: scan.email_from,
         scannedAt: scan.scanned_at.toISOString(),
       };
     });
@@ -241,6 +265,7 @@ export class BillScanService {
       id: scan.id,
       status: scan.status,
       scannedBy: scan.scanned_by_name,
+      emailFrom: scan.email_from,
       scannedAt: scan.scanned_at.toISOString(),
       decidedBy: scan.decided_by_name,
       decidedAt: scan.decided_at?.toISOString() ?? null,

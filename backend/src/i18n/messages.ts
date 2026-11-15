@@ -39,6 +39,10 @@ export interface ServerMessages {
   writeOffPending: (p: { name: string; what: string }) => string;
   productPending: (p: { name: string; product: string; price: string }) => string;
   billPending: (p: { name: string; supplier: string | null; lines: number }) => string;
+  billEmailedPending: (p: { sender: string; supplier: string | null; lines: number }) => string;
+  billEmailTitle: string;
+  billEmailDuplicate: (p: { sender: string; file: string | null; day: string }) => string;
+  billEmailNoFile: (p: { sender: string; subject: string | null }) => string;
   productApproved: (product: string) => string;
   productApprovedMessage: string;
   productRejected: (product: string) => string;
@@ -82,7 +86,11 @@ export interface ServerMessages {
     requestsTitle: (count: number) => string;
     requestsDetail: string;
     billScanTitle: (supplier: string | null) => string;
-    billScanDetail: (input: { name: string | null; number: string | null }) => string;
+    billScanDetail: (input: { name: string | null; number: string | null; emailFrom?: string | null }) => string;
+    billEmailWaitingTitle: (sender: string) => string;
+    billEmailWaitingDetail: (limit: number) => string;
+    billEmailFailedTitle: (sender: string) => string;
+    billEmailFailedDetail: string;
     cashDetail: (p: { name: string | null; day: string }) => string;
     closeDayTitle: (left: number) => string;
     closeDayDetail: string;
@@ -299,6 +307,10 @@ export const en: ServerMessages = {
 
   pendingTitle: (kind) => (kind === 'bill' ? 'New bill waiting to be checked' : `New ${kind} waiting for approval`),
   productPending: ({ name, product, price }) => `${name} wants to add ${product} at ${price}.`,
+  billEmailedPending: ({ sender, supplier, lines }) => `A bill${supplier ? ` from ${supplier}` : ''} came by email from ${sender} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
+  billEmailTitle: 'Bill by email',
+  billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'A bill'} from ${sender} was already received on ${day}, so it wasn't read again.`,
+  billEmailNoFile: ({ sender, subject }) => `An email from ${sender}${subject ? ` (${subject})` : ''} had no PDF or bill photo, so nothing was added.`,
   billPending: ({ name, supplier, lines }) => `${name} scanned a bill${supplier ? ` from ${supplier}` : ''} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
   productApproved: (product) => `${product} was added to the shop`,
   productApprovedMessage: 'It can be sold now.',
@@ -351,8 +363,14 @@ export const en: ServerMessages = {
     requestsTitle: (count) => `${count} ${count === 1 ? 'request is' : 'requests are'} waiting for a decision`,
     requestsDetail: 'Approve or reject them so the team knows where they stand.',
     billScanTitle: (supplier) => (supplier ? `Check the scanned bill from ${supplier}` : 'Check a scanned bill'),
-    billScanDetail: ({ name, number }) =>
-      `${number ? `Bill ${number}, scanned` : 'Scanned'}${name ? ` by ${name}` : ''}. Confirm it to put the stock in.`,
+    billScanDetail: ({ name, number, emailFrom }) =>
+      emailFrom
+        ? `${number ? `Bill ${number}, came` : 'Came'} by email from ${emailFrom}. Confirm it to put the stock in.`
+        : `${number ? `Bill ${number}, scanned` : 'Scanned'}${name ? ` by ${name}` : ''}. Confirm it to put the stock in.`,
+    billEmailWaitingTitle: (sender) => `Read the emailed bill from ${sender}`,
+    billEmailWaitingDetail: (limit) => `Today's ${limit} bill reads by email are used up. Read it now, or it waits for tomorrow.`,
+    billEmailFailedTitle: (sender) => `The emailed bill from ${sender} couldn't be read`,
+    billEmailFailedDetail: 'Open the file and try again, or add the bill by hand.',
     cashDetail: ({ name, day }) => `${name ? `Counted by ${name}` : 'Counted'} on ${day}. Look into it, then mark it as checked.`,
     closeDayTitle: (left) => `Close the day: ${left} ${left === 1 ? 'step' : 'steps'} left`,
     closeDayDetail: 'Count the drawers, enter the carwash and add the expenses before you go.',
@@ -589,6 +607,10 @@ export const sq: ServerMessages = {
       : ({ return: 'Kthim i ri', 'write-off': 'Heqje e re nga stoku', 'stock count': 'Numërim i ri i stokut', product: 'Produkt i ri', bill: '' })[kind] +
         ' në pritje të miratimit',
   productPending: ({ name, product, price }) => `${name} do të shtojë ${product} me ${price}.`,
+  billEmailedPending: ({ sender, supplier, lines }) => `Një faturë${supplier ? ` nga ${supplier}` : ''} erdhi me email nga ${sender} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
+  billEmailTitle: 'Faturë me email',
+  billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'Një faturë'} nga ${sender} ishte marrë më ${day}, prandaj nuk u lexua sërish.`,
+  billEmailNoFile: ({ sender, subject }) => `Një email nga ${sender}${subject ? ` (${subject})` : ''} nuk kishte PDF ose foto fature, prandaj nuk u shtua asgjë.`,
   billPending: ({ name, supplier, lines }) => `${name} skanoi një faturë${supplier ? ` nga ${supplier}` : ''} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
   productApproved: (product) => `${product} u shtua në dyqan`,
   productApprovedMessage: 'Tani mund të shitet.',
@@ -641,8 +663,14 @@ export const sq: ServerMessages = {
     requestsTitle: (count) => `${count} ${count === 1 ? 'kërkesë pret' : 'kërkesa presin'} vendim`,
     requestsDetail: 'Prano ose refuzo, që ekipi ta dijë si qëndrojnë.',
     billScanTitle: (supplier) => (supplier ? `Kontrollo faturën e skanuar nga ${supplier}` : 'Kontrollo një faturë të skanuar'),
-    billScanDetail: ({ name, number }) =>
-      `${number ? `Fatura ${number}, skanuar` : 'Skanuar'}${name ? ` nga ${name}` : ''}. Konfirmoje që malli të hyjë në stok.`,
+    billScanDetail: ({ name, number, emailFrom }) =>
+      emailFrom
+        ? `${number ? `Fatura ${number}, erdhi` : 'Erdhi'} me email nga ${emailFrom}. Konfirmoje që malli të hyjë në stok.`
+        : `${number ? `Fatura ${number}, skanuar` : 'Skanuar'}${name ? ` nga ${name}` : ''}. Konfirmoje që malli të hyjë në stok.`,
+    billEmailWaitingTitle: (sender) => `Lexo faturën me email nga ${sender}`,
+    billEmailWaitingDetail: (limit) => `Leximet e sotme me email (${limit}) u mbaruan. Lexoje tani, ose pret deri nesër.`,
+    billEmailFailedTitle: (sender) => `Fatura me email nga ${sender} nuk u lexua`,
+    billEmailFailedDetail: 'Hape skedarin dhe provo sërish, ose shtoje faturën me dorë.',
     cashDetail: ({ name, day }) => `${name ? `E numëroi ${name}` : 'E numëruar'} më ${day}. Shiko çfarë ndodhi, pastaj shëno si të kontrolluar.`,
     closeDayTitle: (left) => `Mbyll ditën: ${left === 1 ? 'mbetet 1 hap' : `mbeten ${left} hapa`}`,
     closeDayDetail: 'Numëro arkat, fut lavazhin dhe shto shpenzimet para se të ikësh.',

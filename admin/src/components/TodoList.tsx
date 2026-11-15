@@ -9,6 +9,7 @@ import {
   MoonStars,
   Package,
   Receipt,
+  EnvelopeSimple,
   Scan,
   SignOut,
   Tray,
@@ -39,6 +40,7 @@ const ICONS: Record<string, Icon> = {
   close_day: MoonStars,
   end_shift: SignOut,
   bill_scan: Scan,
+  bill_email: EnvelopeSimple,
   requests: Tray,
 };
 

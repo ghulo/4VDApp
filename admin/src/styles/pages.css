@@ -3666,6 +3666,22 @@ fieldset.report-sections {
   font-variant-numeric: tabular-nums;
 }
 
+.bill-email__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.bill-email__row {
+  grid-template-columns: 1fr auto;
+}
+
+.bill-email__address {
+  font-variant-numeric: tabular-nums;
+  user-select: all;
+}
+
 .scan-add-supplier {
   display: inline-block;
   margin-top: var(--space-1);

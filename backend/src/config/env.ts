@@ -32,6 +32,13 @@ const envSchema = z.object({
     .string()
     .optional()
     .refine((value) => !value || value.length >= 20, 'must be at least 20 characters, or left empty'),
+  /** The mail Worker sends emailed bills to the API with this secret. Bills by email are off until it is set. */
+  BILL_EMAIL_TOKEN: z
+    .string()
+    .optional()
+    .refine((value) => !value || value.length >= 20, 'must be at least 20 characters, or left empty'),
+  /** The most emailed bills read by AI in one shop day; the rest wait until tomorrow or until someone reads them. */
+  BILL_EMAIL_DAILY_READS: z.coerce.number().int().min(0).default(50),
   /** Public "create your shop" sign-up. Off while 4VD serves one shop. */
   ALLOW_SIGNUP: z.enum(['true', 'false']).default('false'),
   /** Google sign-in (OAuth client ID from Google Cloud). Off when not set. */
@@ -64,6 +71,9 @@ export interface AppConfig {
   email: { resendApiKey?: string; from: string };
   /** Secret the weekly backup job sends to say it finished; unset means the app can't tell. */
   backupPingToken?: string;
+  /** Secret the mail Worker sends with emailed bills; unset switches bills by email off. */
+  billEmailToken?: string;
+  billEmailDailyReads: number;
   allowSignup: boolean;
   googleClientId?: string;
   /** Null when no AI key is set, which switches the AI helpers off. */
@@ -104,6 +114,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     teamAppUrl: env.TEAM_APP_URL.replace(/\/$/, ''),
     email: { resendApiKey: env.RESEND_API_KEY || undefined, from: env.EMAIL_FROM },
     backupPingToken: env.BACKUP_PING_TOKEN || undefined,
+    billEmailToken: env.BILL_EMAIL_TOKEN || undefined,
+    billEmailDailyReads: env.BILL_EMAIL_DAILY_READS,
     allowSignup: env.ALLOW_SIGNUP === 'true',
     googleClientId: env.GOOGLE_CLIENT_ID || undefined,
     ai: env.ANTHROPIC_API_KEY

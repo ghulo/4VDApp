@@ -1,7 +1,10 @@
 import { timingSafeEqual } from 'node:crypto';
-import { type Request, type Response, Router } from 'express';
+import { type Request, type RequestHandler, type Response, Router } from 'express';
+import type { AppConfig } from '../config/env.js';
 import type { Container } from '../container.js';
+import { z } from 'zod';
 import { UnauthorizedError } from '../errors/httpErrors.js';
+import { parseInput } from '../validators/validate.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
 const sameSecret = (given: string, expected: string) => {
@@ -11,7 +14,25 @@ const sameSecret = (given: string, expected: string) => {
 };
 
 /** Calls from our own automation (not from people), each with a shared secret. */
-export function createInternalRoutes({ config, launchService }: Container): Router {
+/** Checked before the large body is read, so nobody without the secret can make the API parse 40 MB. */
+export function billEmailTokenGuard(config: AppConfig): RequestHandler {
+  return (req, _res, next) => {
+    const given = req.header('x-bill-email-token') ?? '';
+    if (!config.billEmailToken || !sameSecret(given, config.billEmailToken)) throw new UnauthorizedError('Wrong or missing bill email token');
+    next();
+  };
+}
+
+const billEmailSchema = z.object({
+  messageId: z.string().trim().min(1).max(500),
+  from: z.string().trim().min(3).max(254),
+  subject: z.string().max(500).nullable().default(null),
+  files: z
+    .array(z.object({ name: z.string().max(500).nullable().default(null), mime: z.string().max(100), data: z.string() }))
+    .max(20),
+});
+
+export function createInternalRoutes({ config, launchService, billEmailService }: Container): Router {
   const router = Router();
 
   // The weekly backup job calls this once the encrypted copy is safely in R2.
@@ -20,6 +41,12 @@ export function createInternalRoutes({ config, launchService }: Container): Rout
     if (!config.backupPingToken || !sameSecret(given, config.backupPingToken)) throw new UnauthorizedError('Wrong or missing backup token');
     await launchService.recordBackup();
     sendSuccess(res, null, { message: 'Backup noted' });
+  });
+
+  // The mail Worker passes on emails to the bill address that passed SPF or DKIM for their sender.
+  router.post('/bill-email', billEmailTokenGuard(config), async (req: Request, res: Response) => {
+    const mail = parseInput(billEmailSchema, req.body);
+    sendSuccess(res, await billEmailService.receive(mail), { statusCode: 202, message: 'Email taken' });
   });
 
   return router;

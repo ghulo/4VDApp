@@ -11,6 +11,7 @@ import type { SupplierBill } from '../services/types';
 import { DueBadge } from '../components/BillParts';
 import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { ScanBillForm, WaitingScans } from '../components/BillScanParts';
+import { EmailedBills } from '../components/BillEmailParts';
 import { BILL_STATUS_TONE } from '../utils/bills';
 import { formatDate, formatMoney } from '../utils/format';
 
@@ -92,6 +93,7 @@ export function BillsPage() {
       </Sheet>
 
       <WaitingScans />
+      <EmailedBills />
 
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
       <DataTable<SupplierBill>

@@ -16,6 +16,7 @@ import { createBooksRoutes } from './booksRoutes.js';
 import { createMoneyRoutes } from './moneyRoutes.js';
 import { createCounterRoutes } from './counterRoutes.js';
 import { createBillScanRoutes } from './billScanRoutes.js';
+import { createBillEmailRoutes } from './billEmailRoutes.js';
 import { createProductRequestRoutes } from './productRequestRoutes.js';
 import { createOrderRoutes, createSupplierRoutes } from './orderRoutes.js';
 import { createExpiryRoutes } from './expiryRoutes.js';
@@ -87,6 +88,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/vat', createVatRoutes(container));
   router.use('/threads', createThreadRoutes(container));
   router.use('/bill-scans', createBillScanRoutes(container));
+  router.use('/bill-emails', createBillEmailRoutes(container));
   router.use('/product-requests', createProductRequestRoutes(container));
   router.use('/expiry', createExpiryRoutes(container));
   router.use('/exports', createExportsRoutes(container));

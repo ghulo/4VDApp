@@ -135,6 +135,8 @@ import type {
   ProductRequest,
   ConfirmScanInput,
   WaitingScan,
+  OpenBillEmail,
+  BillEmailSettings,
   AccountCard,
   AccountInput,
   AccountLinkKey,
@@ -621,6 +623,14 @@ export const billScansApi = {
   discard: async (id: number) => apiRequest<null>(`/bill-scans/${id}/discard`, { method: 'POST' }),
   /** Developer only: puts back everything the confirm did and makes the scan wait again. */
   reopen: async (id: number) => apiRequest<null>(`/bill-scans/${id}/reopen`, { method: 'POST' }),
+};
+
+export const billEmailsApi = {
+  open: async () => (await apiRequest<OpenBillEmail[]>('/bill-emails')).data,
+  readNow: async (id: number) => (await apiRequest<{ scanId: number | null; error: string | null }>(`/bill-emails/${id}/read`, { method: 'POST' })).data,
+  remove: async (id: number) => apiRequest<null>(`/bill-emails/${id}/remove`, { method: 'POST' }),
+  settings: async () => (await apiRequest<BillEmailSettings>('/bill-emails/settings')).data,
+  saveSenders: async (senders: string[]) => (await apiRequest<BillEmailSettings>('/bill-emails/settings', { method: 'PUT', body: { senders } })).data,
 };
 
 export const fullReportsApi = {

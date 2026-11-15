@@ -1,5 +1,6 @@
-import { Books, CashRegister, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warning } from '@phosphor-icons/react';
 import { BinPanel } from '../components/BinPanel';
+import { BillEmailPanel } from '../components/BillEmailParts';
 import { ShopRulesPanel } from '../components/ShopRulesPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -80,6 +81,16 @@ export function SettingsPage() {
             content: (
               <ManagersOnly>
                 <CounterSettingsPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'bill-email',
+            label: t.billEmail.title,
+            icon: EnvelopeSimple,
+            content: (
+              <ManagersOnly>
+                <BillEmailPanel />
               </ManagersOnly>
             ),
           },

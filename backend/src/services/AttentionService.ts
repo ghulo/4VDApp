@@ -3,6 +3,7 @@ import { en, type ServerMessages } from '../i18n/messages.js';
 import { canOversee, canReadBooks, canSell } from '../utils/roles.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { BillScanRepository } from '../repositories/BillScanRepository.js';
+import type { BillEmailRepository } from '../repositories/BillEmailRepository.js';
 import type { OfflineShortfallRepository } from '../repositories/OfflineShortfallRepository.js';
 import type { ApprovalService } from './ApprovalService.js';
 import type { CashCountService } from './CashCountService.js';
@@ -20,8 +21,11 @@ const CASH_CHECK_DAYS = 30;
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What the item's one button does; each app words it in its own language. */
+/** How long a just-emailed bill may take to read before it shows in To do. */
+const EMAIL_READ_GRACE_MS = 5 * 60_000;
+
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -98,6 +102,8 @@ export class AttentionService {
     private readonly years: YearService,
     private readonly shortfalls: OfflineShortfallRepository,
     private readonly timeZone: string,
+    private readonly billEmails: BillEmailRepository,
+    private readonly billEmailDailyReads: number,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -114,7 +120,7 @@ export class AttentionService {
 
   /** Overseers: requests, the shop's state, unchecked cash and, from closing time, the day. */
   private async overseer(role: UserRole, t: ServerMessages, now: Date): Promise<TodoItem[]> {
-    const [approvals, insights, cash, day, scans, duplicates, shortfalls] = await Promise.all([
+    const [approvals, insights, cash, day, scans, duplicates, shortfalls, emailed] = await Promise.all([
       this.approvalService.summary(),
       this.insightsService.list(now, t),
       this.cashCountService.unchecked(CASH_CHECK_DAYS, now),
@@ -122,6 +128,7 @@ export class AttentionService {
       this.billScans.findWaiting(),
       this.duplicates.countOpen(),
       this.shortfalls.open(),
+      this.billEmails.open(),
     ]);
     const items: TodoItem[] = [];
     if (approvals.total > 0) {
@@ -142,9 +149,22 @@ export class AttentionService {
         kind: 'bill_scan',
         severity: 'check',
         title: t.todo.billScanTitle(reading.supplier?.name ?? null),
-        detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null }),
+        detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null, emailFrom: scan.email_from }),
         verb: 'checkBill',
         to: `/bills/scans/${scan.id}`,
+      });
+    }
+    for (const mail of emailed) {
+      // A file that just came is being read; only one left waiting (the day's reads used up) needs someone.
+      if (mail.status === 'waiting' && now.getTime() - mail.received_at.getTime() < EMAIL_READ_GRACE_MS) continue;
+      items.push({
+        key: `bill_email:${mail.id}`,
+        kind: 'bill_email',
+        severity: 'check',
+        title: mail.status === 'failed' ? t.todo.billEmailFailedTitle(mail.sender) : t.todo.billEmailWaitingTitle(mail.sender),
+        detail: mail.status === 'failed' ? t.todo.billEmailFailedDetail : t.todo.billEmailWaitingDetail(this.billEmailDailyReads),
+        verb: 'look',
+        to: '/bills',
       });
     }
     for (const count of cash) {

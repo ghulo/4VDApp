@@ -10,6 +10,7 @@ A short map of the code as it is. Product and design rules live in `DESIGN.md`; 
 | `admin/` | The dashboard: React + Vite, plain CSS on the tokens in `admin/src/styles/tokens.css`. Owners get the full menu, employees `StaffLayout`, the till is `/counter` |
 | `desktop/` | Electron shell for the shop PC: loads the dashboard, prints fiscal receipts through F-Link, updates itself from GitHub Releases |
 | `admin/wrangler.jsonc` | Serves the dashboard at 4vd.app; app.4vd.app (old QR labels) redirects there (Cloudflare rule) |
+| `mail/` | Cloudflare Email Worker for bills@4vd.app: checks SPF/DKIM, passes supplier bills to `POST /api/internal/bill-email` (deployed by hand with wrangler) |
 | `mobile/` | Retired Expo team app, kept for reference only |
 
 ## Backend: one request

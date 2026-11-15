@@ -99,6 +99,7 @@ export const ACTIVITY_ACTIONS = [
   'order.received',
   'order.cancelled',
   'bill.scanned',
+  'bill.emailed',
   'bill.scan_confirmed',
   'bill.scan_discarded',
   'bill.scan_reopened',

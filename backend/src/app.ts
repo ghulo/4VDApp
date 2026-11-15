@@ -11,6 +11,7 @@ import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { createApiRateLimiter } from './middlewares/rateLimiter.js';
 import { healthRoutes } from './routes/healthRoutes.js';
 import { createApiRoutes } from './routes/index.js';
+import { billEmailTokenGuard } from './routes/internalRoutes.js';
 
 /**
  * Build the Express app without starting a server, so tests can exercise it
@@ -37,6 +38,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use(compression());
   // Scanned bills arrive as base64 photos or PDFs: several pages, a few MB each.
   app.use('/api/bill-scans', express.json({ limit: '40mb' }));
+  // Email Routing takes mails up to 25 MB, which is about 34 MB as base64. The secret is checked first.
+  app.use('/api/internal/bill-email', billEmailTokenGuard(config), express.json({ limit: '40mb' }));
   // Bank statements come as base64 files, up to 10 MB each.
   app.use('/api/money/places', express.json({ limit: '15mb' }));
   app.use('/api/products/prices', express.json({ limit: '15mb' }));

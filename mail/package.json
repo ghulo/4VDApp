@@ -1,0 +1,17 @@
+{
+  "name": "4vd-mail",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Email Worker for bills@4vd.app: passes supplier bills to the 4VD API.",
+  "scripts": {
+    "test": "node --test src/mail.test.js",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "postal-mime": "^4.2.1"
+  },
+  "devDependencies": {
+    "wrangler": "^4.162.0"
+  }
+}

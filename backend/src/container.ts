@@ -85,6 +85,8 @@ import { MoneyService } from './services/MoneyService.js';
 import { StatementService } from './services/StatementService.js';
 import { BillScanRepository } from './repositories/BillScanRepository.js';
 import { BillScanService } from './services/BillScanService.js';
+import { BillEmailRepository } from './repositories/BillEmailRepository.js';
+import { BillEmailService } from './services/BillEmailService.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
 import { InviteRepository } from './repositories/InviteRepository.js';
@@ -270,6 +272,12 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const dayService = new DayService(cashCountService, carwashService, expenseService, expenseRepository, approvalService, transactions, config.shopTimeZone);
   const billScanRepository = new BillScanRepository(db);
+  const billReader =
+    options.billReader !== undefined
+      ? options.billReader
+      : config.ai?.provider === 'anthropic'
+        ? new ClaudeBillReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
+        : null;
   const billScanService = new BillScanService(
     billScanRepository,
     productRepository,
@@ -278,11 +286,18 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     supplierBillService,
     mediaService,
     transactions,
-    options.billReader !== undefined
-      ? options.billReader
-      : config.ai?.provider === 'anthropic'
-        ? new ClaudeBillReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
-        : null,
+    billReader,
+    config.shopTimeZone,
+  );
+  const billEmailService = new BillEmailService(
+    new BillEmailRepository(db),
+    settingsRepository,
+    userRepository,
+    billScanService,
+    mediaService,
+    transactions,
+    billReader,
+    config.billEmailDailyReads,
     config.shopTimeZone,
   );
   const partnerService = new PartnerService(
@@ -316,6 +331,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     yearService,
     new OfflineShortfallRepository(db),
     config.shopTimeZone,
+    new BillEmailRepository(db),
+    config.billEmailDailyReads,
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -530,6 +547,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     trefinCompareService,
     threadService,
     billScanService,
+    billEmailService,
     expiryService,
     pushService,
     insightsService,

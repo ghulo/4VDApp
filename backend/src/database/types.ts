@@ -920,6 +920,27 @@ export interface BillScansTable {
   order_id: number | null;
   /** What confirming changed, so a reopen can put it back (ScanConfirmation). */
   confirmation: ColumnType<unknown, string | null | undefined, string | null>;
+  /** Set when the bill came by email: who sent it. */
+  email_from: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
+export type BillEmailStatus = 'waiting' | 'read' | 'failed' | 'duplicate' | 'removed';
+
+/** One file from an email to the shop's bill address. */
+export interface BillEmailsTable {
+  id: Generated<number>;
+  message_id: string;
+  sender: string;
+  subject: string | null;
+  file_name: string | null;
+  media_id: string | null;
+  file_hash: string;
+  status: ColumnType<BillEmailStatus, BillEmailStatus | undefined, BillEmailStatus>;
+  error: string | null;
+  scan_id: number | null;
+  first_id: number | null;
+  received_at: CreatedAt;
+  read_at: Date | null;
 }
 
 export type ProductRequestStatus = 'pending' | 'approved' | 'rejected';
@@ -1368,6 +1389,7 @@ export interface Database {
   supplier_bills: SupplierBillsTable;
   supplier_payments: SupplierPaymentsTable;
   bill_scans: BillScansTable;
+  bill_emails: BillEmailsTable;
   product_requests: ProductRequestsTable;
   day_closings: DayClosingsTable;
   supplier_product_codes: SupplierProductCodesTable;

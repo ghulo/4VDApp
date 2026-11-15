@@ -84,6 +84,8 @@ const en = {
     `Delivered ${p.number} to ${p.name}${p.collected > 0 ? ` and collected ${w.money(p.collected)}` : ''}`,
   deliveryMissed: (p: { number: string; name: string; reason: string }) => `Couldn't deliver ${p.number} to ${p.name}: ${p.reason}`,
 
+  billEmailed: (p: { sender: string; supplier: string | null; lines: number }) =>
+    `A bill${p.supplier ? ` from ${p.supplier}` : ''} came by email from ${p.sender} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
   billScanned: (p: { supplier: string | null; lines: number }) =>
     `Scanned a bill${p.supplier ? ` from ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
   billScanConfirmed: (p: { supplier: string; pieces: number; orderId: number; newProducts: number }) =>
@@ -251,6 +253,7 @@ const en = {
       ...(p.pages > 0 ? [`${p.pages} menu ${p.pages === 1 ? 'page' : 'pages'}`] : []),
     ].join('; ')}`,
   settingsChanged: (p: { changes: SettingChange[] }, w: Words) => `Changed ${p.changes.map((change) => enSetting(change, w)).join(' and ')}`,
+  billSendersChanged: (p: { count: number }) => `Changed who may email bills in: ${p.count} extra ${p.count === 1 ? 'sender' : 'senders'}`,
   rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null }) =>
     `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
   shopPictureSet: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Added the shop's ${p.which} for invoices`,
@@ -598,6 +601,7 @@ const sq: Templates = {
   deliveryDone: (p, w) => `Dërgoi ${p.number} te ${p.name}${p.collected > 0 ? ` dhe mblodhi ${w.money(p.collected)}` : ''}`,
   deliveryMissed: (p) => `Nuk e dërgoi dot ${p.number} te ${p.name}: ${p.reason}`,
 
+  billEmailed: (p) => `Një faturë${p.supplier ? ` nga ${p.supplier}` : ''} erdhi me email nga ${p.sender} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   billScanned: (p) => `Skanoi një faturë${p.supplier ? ` nga ${p.supplier}` : ''} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   billScanConfirmed: (p) =>
     `Konfirmoi faturën e skanuar nga ${p.supplier}: ${p.pieces} copë në stok me porosinë #${p.orderId}${p.newProducts > 0 ? `, ${p.newProducts} produkte të reja` : ''}`,
@@ -745,6 +749,7 @@ const sq: Templates = {
       ...(p.pages > 0 ? [`${p.pages} faqe të menysë`] : []),
     ].join('; ')}`,
   settingsChanged: (p, w) => `Ndryshoi ${p.changes.map((change) => sqSetting(change, w)).join(' dhe ')}`,
+  billSendersChanged: (p) => `Ndryshoi kush mund të dërgojë fatura me email: ${p.count} dërgues shtesë`,
   rulesChanged: (p) =>
     `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
   shopPictureSet: (p) => `Shtoi ${SQ_PICTURE[p.which]} e dyqanit për faturat`,

@@ -1,0 +1,12 @@
+// Cloudflare Email Worker for the shop's bill address, bills@4vd.app.
+// Deployed by hand from this folder with `npx wrangler deploy`. Email Routing sends the
+// address to this Worker (Cloudflare dashboard → 4vd.app → Email → Email Routing → Routing rules).
+{
+  "name": "4vd-mail",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Where the API lives. The secret BILL_EMAIL_TOKEN is set with `npx wrangler secret put BILL_EMAIL_TOKEN`.
+  "vars": { "API_URL": "https://api.4vd.app" },
+  "observability": { "enabled": true }
+}

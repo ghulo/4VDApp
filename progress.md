@@ -13,6 +13,14 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 18: bills by email** (after the setup in docs/DEPLOYMENT.md)
+- [ ] Forward a supplier PDF from your sign-in email to bills@4vd.app: a waiting scan "By email from …" appears under Bills and in To do, with supplier, lines, VAT and due date filled in
+- [ ] Send a clear phone photo of a bill (no PDF): it is read too; an email with only a logo gives a "no PDF or bill photo" update
+- [ ] Forward the same PDF again in a new email: an update says it was already received, and no second scan appears
+- [ ] Settings → Bills by email: add a supplier's address or @domain; mail from them is read, mail from anyone else never shows up
+- [ ] A mail with a faked From is dropped: `npx wrangler tail` in mail/ shows "dropped"
+- [ ] Under Bills, "Emailed, not read yet": Read now opens the scan; Remove clears it from To do
+
 **Step 12: fixed assets**
 - [ ] Books → Fixed assets: add something owned before 4VD, with its wear before the books
 - [ ] A supplier bill with an equipment line: the asset appears, and its first month posts after the month ends
@@ -116,7 +124,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 - [x] 11. Settings and safety: company details with logo, stamp and signature on invoices, numbering like FSM-26-000001, decimals, negative stock on/off; recycle bin for deleted documents; attachments on any document. Done 2026-11-15: stamp and signature pictures print on invoices; Settings → Numbers and stock sets letters, year (26 or 2026) and digits for invoices, credit notes and offers (from the next number) and whether the till sells past stock (owners and admins always can); Settings → Recycle bin puts back removed products, suppliers, customers, expenses and files for 90 days (issued invoices are never deleted); a Files card on bills, orders, suppliers, customers, invoices, offers and book entries. Decimals left out: prices are kept to the cent everywhere and kg already goes to the gram.
 
 **D. Better than anything in Kosovo** (from tills and accounting programs abroad, agreed 2026-10-16; there's no rush to switch TREFIN off, its subscription runs a couple more months)
-- [ ] 18. Bills by email: forward a supplier's PDF to the shop's bill address and it's filled in by itself (right after step 2; bill photos are read already)
+- [x] 18. Bills by email: forward a supplier's PDF to the shop's bill address and it's filled in by itself. Done 2026-11-15: bills@4vd.app → Email Worker (`mail/`; drops mail failing SPF/DKIM, not yet tried live) → a waiting bill scan in To do, checked on the scan page; senders are the team plus Settings → Bills by email; 50 reads a day, the same file twice is read once. Goes live after the setup in docs/DEPLOYMENT.md
 - [ ] 19. Short-dated stock: best-before dates, and automatic discounts a few days before expiry
 - [ ] 20. Cash forecast: what the shop will have in 30 days, from bills due and normal takings
 - [ ] 21. All four businesses in one view, each with its own books

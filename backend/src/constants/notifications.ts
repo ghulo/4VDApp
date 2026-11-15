@@ -22,6 +22,8 @@ export const NOTIFICATION_TYPES = {
   /** Each person's daily and weekly report; their report settings decide if they come, so always pushed. */
   DAILY_REPORT: 'daily_report',
   WEEKLY_REPORT: 'weekly_report',
+  /** Something about a bill that came by email: already received, or nothing to read in it. */
+  BILL_EMAIL: 'bill_email',
 } as const;
 
 /** Pushed whatever the topic switches say. */
@@ -36,6 +38,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.CASH_DIFFERENCE]: 'summary',
   [NOTIFICATION_TYPES.DAY_CLOSED]: 'summary',
   [NOTIFICATION_TYPES.UNDONE]: 'decisions',
+  [NOTIFICATION_TYPES.BILL_EMAIL]: 'approvals',
 };
 
 /** Null for notification types that are never pushed. */

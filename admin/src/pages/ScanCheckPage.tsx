@@ -156,7 +156,7 @@ export function ScanCheckPage() {
 
   return (
     <>
-      <PageHeader title={title} crumbs={crumbs} description={t.scans.description} />
+      <PageHeader title={title} crumbs={crumbs} description={(data.emailFrom ? t.scans.cameByEmail(data.emailFrom) : '') + t.scans.description} />
       {/* New matches for another supplier start the decisions over. */}
       <CheckForm key={data.supplier?.id ?? 'none'} scan={data} onSupplier={chooseSupplier} />
     </>

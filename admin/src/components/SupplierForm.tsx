@@ -4,6 +4,7 @@ import { useT } from '../i18n/useT';
 import { suppliersApi } from '../services/api';
 import { type Supplier, WITHHOLDING_RATES, WITHHOLDING_TYPES, type WithholdingType } from '../services/types';
 import { errorMessage } from '../utils/errors';
+import { type FirmFill, FirmFiller, mergeDetails } from './FirmFiller';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 import { PartnerDetailFields, usePartnerDraft } from './PartnerDetails';
 import { Button, Field } from './ui';
@@ -19,6 +20,16 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
   const [abroad, setAbroad] = useState(supplier?.abroad ?? false);
   const [withholding, setWithholding] = useState<WithholdingType | ''>(supplier?.withholdingType ?? '');
   const details = usePartnerDraft(supplier);
+  // Remounts the details so they open when a fill brings some.
+  const [filledAt, setFilledAt] = useState(0);
+  function fill(found: FirmFill) {
+    if (found.name) setName(found.name);
+    if (found.nui) setNui(found.nui);
+    if (found.phone) setPhone(found.phone);
+    if (found.email) setEmail(found.email);
+    details.setDraft(mergeDetails(details.draft, found));
+    setFilledAt(Date.now());
+  }
   const nuiOk = isNui(nui) || (abroad && nui.trim() === '');
   const save = useMutation({
     mutationFn: () => {
@@ -58,6 +69,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
       onSubmit={handleSubmit}
       aria-label={supplier ? t.orders.editLabel(supplier.name) : t.orders.addSupplier}
     >
+      {!supplier && <FirmFiller side="supplier" name={name} nui={nui} onFill={fill} />}
       <div className="field-row">
         <Field label={t.orders.supplierName}>
           <input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} />
@@ -88,7 +100,7 @@ export function SupplierForm({ supplier, onDone }: { supplier: Supplier | null; 
           ))}
         </select>
       </Field>
-      <PartnerDetailFields draft={details.draft} setDraft={details.setDraft} />
+      <PartnerDetailFields key={filledAt} draft={details.draft} setDraft={details.setDraft} />
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}

@@ -152,6 +152,15 @@ export class DocumentRepository {
     return business;
   }
 
+  /** Where an invoice's goods are taken, when it was sold with Deliver it. */
+  deliveryOf(documentId: number) {
+    return this.db
+      .selectFrom('customer_deliveries')
+      .select(['name', 'phone', 'address', sql<string>`to_char(deliver_on, 'YYYY-MM-DD')`.as('day')])
+      .where('document_id', '=', documentId)
+      .executeTakeFirst();
+  }
+
   /** What the page prints around a document today: the shop's logo and bank account. */
   async letterhead(): Promise<Letterhead> {
     const row = await this.db

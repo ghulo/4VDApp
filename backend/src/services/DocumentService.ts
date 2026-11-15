@@ -66,6 +66,8 @@ export interface DocumentDetailDto extends DocumentDto {
   lines: DocumentLineDto[];
   /** VAT per rate, highest rate first; only rates the document uses. */
   vatByRate: Array<{ rate: number; net: number; vat: number }>;
+  /** Where the goods are taken, when it was sold with Deliver it. */
+  deliverTo: { name: string; phone: string | null; address: string; day: string } | null;
 }
 
 /** Just enough to point at a document from a sale or a checkout. */
@@ -231,8 +233,8 @@ export class DocumentService {
 
   async get(id: number, viewer: PublicUser): Promise<DocumentDetailDto> {
     const record = await this.visible(id, viewer);
-    const lines = (await this.documentRepository.findLines(id)).map(toLineDto);
-    return { ...toDto(record), lines, vatByRate: vatByRate(lines) };
+    const [lines, delivery] = await Promise.all([this.documentRepository.findLines(id).then((rows) => rows.map(toLineDto)), this.documentRepository.deliveryOf(id)]);
+    return { ...toDto(record), lines, vatByRate: vatByRate(lines), deliverTo: delivery ?? null };
   }
 
   /** The A4 page, ready for a browser or the phone to print or save as PDF. */

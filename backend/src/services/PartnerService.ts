@@ -172,7 +172,7 @@ export class PartnerService {
         if (part > 0) allocations.push({ documentId: item.documentId, amount: part });
         left = roundMoney(left - part);
       }
-      const note = `Offset against ${supplier.name}'s bills`;
+      const note = `Kompensim · ${supplier.name}`;
       const entryId = await repos.tabs.addEntry({ customerId: customer.id, kind: 'credit', amount, note, saleId: null, createdBy: actor.id, occurredAt: now });
       await repos.partners.setCreditFrom(entryId, { offsetId });
       await repos.money.addAllocations(entryId, allocations);
@@ -182,7 +182,7 @@ export class PartnerService {
       for (const bill of bills) {
         if (rest <= 0) break;
         const part = roundMoney(Math.min(rest, bill.left));
-        const paymentId = await repos.bills.addPayment({ billId: bill.id, amount: part, paidOn: day, method: 'offset', placeId: null, note: `Offset against ${customer.name}'s tab`, createdBy: actor.id });
+        const paymentId = await repos.bills.addPayment({ billId: bill.id, amount: part, paidOn: day, method: 'offset', placeId: null, note: `Kompensim · ${customer.name}`, createdBy: actor.id });
         await repos.partners.setPaymentOffset(paymentId, offsetId);
         rest = roundMoney(rest - part);
       }

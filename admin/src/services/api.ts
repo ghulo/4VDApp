@@ -2,6 +2,11 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
+  BonusInfo,
+  FirmReading,
+  PartnerAddress,
+  PartnerLink,
+  PartnerMatch,
   PartnerDetails,
   RecordSource,
   Offer,
@@ -680,6 +685,8 @@ export interface CustomerInput extends Partial<PartnerDetails> {
   note: string | null;
   creditLimit?: number | null;
   discountPercent?: number | null;
+  payLater?: boolean;
+  bonusPercent?: number | null;
 }
 
 /** The partner details left out keep what is stored. */
@@ -702,6 +709,33 @@ export const customersApi = {
   pay: async (id: number, input: ReceiveInput) => (await apiRequest<CustomerDetail>(`/customers/${id}/payments`, { method: 'POST', body: input })).data,
   archive: async (id: number) => {
     await apiRequest(`/customers/${id}/archive`, { method: 'POST' });
+  },
+};
+
+type PartnerOwner = { side: 'customers' | 'suppliers'; id: number };
+export interface AddressInput {
+  label: string;
+  address: string;
+  city: string | null;
+  note: string | null;
+}
+
+export const partnersApi = {
+  lookup: async (query: { nui?: string; q?: string }) => (await apiRequest<PartnerMatch[]>('/partners/lookup', { query })).data,
+  read: async (input: { side: 'customer' | 'supplier'; text?: string; pages?: Array<{ mime: string; data: string }> }) =>
+    (await apiRequest<FirmReading>('/partners/read', { method: 'POST', body: input })).data,
+  link: async (query: { customerId?: number; supplierId?: number }) => (await apiRequest<PartnerLink>('/partners/link', { query })).data,
+  offset: async (customerId: number, input: { amount: number | null; note: string | null }) =>
+    (await apiRequest<PartnerLink>(`/partners/customers/${customerId}/offset`, { method: 'POST', body: input })).data,
+  bonus: async (customerId: number) => (await apiRequest<BonusInfo>(`/partners/customers/${customerId}/bonus`)).data,
+  payBonus: async (customerId: number, year: number) =>
+    (await apiRequest<BonusInfo>(`/partners/customers/${customerId}/bonus/${year}/pay`, { method: 'POST' })).data,
+  addresses: async (owner: PartnerOwner) => (await apiRequest<PartnerAddress[]>(`/partners/${owner.side}/${owner.id}/addresses`)).data,
+  addAddress: async (owner: PartnerOwner, input: AddressInput) =>
+    (await apiRequest<PartnerAddress>(`/partners/${owner.side}/${owner.id}/addresses`, { method: 'POST', body: input })).data,
+  updateAddress: async (id: number, input: AddressInput) => (await apiRequest<PartnerAddress>(`/partners/addresses/${id}`, { method: 'PUT', body: input })).data,
+  removeAddress: async (id: number) => {
+    await apiRequest(`/partners/addresses/${id}`, { method: 'DELETE' });
   },
 };
 

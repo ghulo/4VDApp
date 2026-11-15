@@ -278,6 +278,8 @@ export interface SalesDocumentDetail extends SalesDocument {
     total: number;
   }>;
   vatByRate: Array<{ rate: number; net: number; vat: number }>;
+  /** Where the goods are taken, when it was sold with Deliver it. */
+  deliverTo?: { name: string; phone: string | null; address: string; day: string } | null;
 }
 
 export interface Dashboard {
@@ -580,7 +582,8 @@ export interface PartnerDetails {
 }
 export type SupplierPaymentMethod = 'drawer' | 'cash' | 'bank';
 /** A payment row can also be a return or credit taken off the bill. */
-export type BillPaymentMethod = SupplierPaymentMethod | 'credit';
+/** offset: set off against what the supplier owes as a customer (kompensim). */
+export type BillPaymentMethod = SupplierPaymentMethod | 'credit' | 'offset';
 
 export interface BillLine {
   id: number;
@@ -906,6 +909,8 @@ export interface Customer extends PartnerDetails {
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   discountPercent: number | null;
+  /** The bonus they earn on a year's purchases, in percent; null: none. */
+  bonusPercent: number | null;
   balance: number;
   /** What is past the day they promised to pay, and the earliest such day ("YYYY-MM-DD"). */
   lateAmount: number;
@@ -930,8 +935,8 @@ export interface CustomerDetail extends Customer {
 
 export interface TabEntry {
   id: number;
-  /** A refund is a return taken off the tab. */
-  kind: 'charge' | 'payment' | 'refund';
+  /** A refund is a return taken off the tab; a credit takes what they owe down with no money moving (an offset or a bonus). */
+  kind: 'charge' | 'payment' | 'refund' | 'credit';
   amount: number;
   note: string | null;
   saleId: number | null;
@@ -939,6 +944,58 @@ export interface TabEntry {
   undone: boolean;
   at: string;
   by: string | null;
+}
+
+/** A customer or supplier already in 4VD, found while filling a new firm in. */
+export interface PartnerMatch extends PartnerDetails {
+  side: 'customer' | 'supplier';
+  id: number;
+  name: string;
+  kind: CustomerKind;
+  nui: string | null;
+  phone: string | null;
+  email: string | null;
+  archived: boolean;
+}
+
+/** A firm's details read off a photo or pasted text; "" where nothing was given. */
+export interface FirmReading {
+  name: string;
+  kind: CustomerKind;
+  nui: string;
+  fiscalNo: string;
+  vatNo: string;
+  businessNo: string;
+  address: string;
+  city: string;
+  phone: string;
+  mobile: string;
+  email: string;
+  iban: string;
+  contactPerson: string;
+}
+
+export interface PartnerAddress {
+  id: number;
+  label: string;
+  address: string;
+  city: string | null;
+  note: string | null;
+}
+
+/** A firm on both lists, joined by its NUI. */
+export interface PartnerLink {
+  customer: { id: number; name: string } | null;
+  supplier: { id: number; name: string } | null;
+  owesYou: number;
+  youOwe: number;
+  canOffset: number;
+  offsets: Array<{ id: number; amount: number; day: string; note: string | null; by: string | null }>;
+}
+
+export interface BonusInfo {
+  percent: number | null;
+  years: Array<{ year: number; bought: number; earned: number; paid: { amount: number; day: string } | null; canPay: boolean }>;
 }
 
 export interface FieldChange {

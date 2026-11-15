@@ -257,6 +257,7 @@ export interface ServerMessages {
     refundedAtTill: string;
     creditedToAccount: string;
     dueDate: string;
+    deliverTo: string;
     stamp: string;
   };
 }
@@ -547,6 +548,7 @@ export const en: ServerMessages = {
     refundedAtTill: 'Refunded at the till',
     creditedToAccount: 'Credited to the account',
     dueDate: 'Due by',
+    deliverTo: 'Deliver to',
     stamp: 'Stamp',
   },
 };
@@ -836,6 +838,7 @@ export const sq: ServerMessages = {
     refundedAtTill: 'Kthyer në arkë',
     creditedToAccount: 'Kreditohet në llogari',
     dueDate: 'Afati i pagesës',
+    deliverTo: 'Dërgohet në',
     stamp: 'V.V.',
   },
 };

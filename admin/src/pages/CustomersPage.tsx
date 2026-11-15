@@ -12,6 +12,7 @@ import { useT } from '../i18n/useT';
 import { whatsappLink } from '../utils/whatsapp';
 import { businessApi, customersApi, documentsApi } from '../services/api';
 import type { Customer, CustomerDetail, CustomerKind, TabEntry } from '../services/types';
+import { type FirmFill, FirmFiller, mergeDetails } from '../components/FirmFiller';
 import { cleanNui, isNui, NuiInput } from '../components/NuiInput';
 import { SearchInput } from '../components/SearchInput';
 import { errorMessage } from '../utils/errors';
@@ -36,6 +37,7 @@ import {
 import { todayIso } from '../utils/bills';
 import { HistoryCard } from '../components/HistoryCard';
 import { PartnerDetailFields, PartnerFacts, hasDetails, usePartnerDraft } from '../components/PartnerDetails';
+import { AddressesCard, BonusCard, PartnerLinkCard } from '../components/PartnerCards';
 
 /** Late: something is past the day they promised to pay (the server works it out). */
 const isOverdue = (customer: Customer) => customer.lateAmount > 0;
@@ -270,6 +272,17 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
   const [payLater, setPayLater] = useState(customer?.payLater ?? false);
   const [creditLimit, setCreditLimit] = useState(customer?.creditLimit != null ? String(customer.creditLimit) : '');
   const [discount, setDiscount] = useState(customer?.discountPercent != null ? String(customer.discountPercent) : '');
+  const [bonus, setBonus] = useState(customer?.bonusPercent != null ? String(customer.bonusPercent) : '');
+  // Remounts the details so they open when a fill brings some.
+  const [filledAt, setFilledAt] = useState(0);
+  function fill(found: FirmFill) {
+    if (found.kind) setKind(found.kind);
+    if (found.name) setName(found.name);
+    if (found.nui) setNui(found.nui);
+    if (found.phone) setPhone(found.phone);
+    details.setDraft(mergeDetails(details.draft, found));
+    setFilledAt(Date.now());
+  }
   const numberOrNull = (value: string) => (value.trim() === '' ? null : Number(value.replace(',', '.')));
   const save = useMutation({
     mutationFn: () => {
@@ -280,7 +293,7 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
         phone: phone.trim() || null,
         note: note.trim() || null,
         ...details.values(),
-        ...(decides && { payLater, creditLimit: numberOrNull(creditLimit) }),
+        ...(decides && { payLater, creditLimit: numberOrNull(creditLimit), bonusPercent: numberOrNull(bonus) }),
         discountPercent: numberOrNull(discount),
       };
       return customer ? customersApi.update(customer.id, input) : customersApi.create(input);
@@ -301,6 +314,7 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
+      {!customer && <FirmFiller side="customer" name={name} nui={nui} onFill={fill} />}
       <div className="segmented" role="radiogroup" aria-label={t.tabs.kind}>
         {KINDS.map((option) => (
           <button
@@ -348,8 +362,13 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
         <Field label={t.partner.discountPercent}>
           <input type="number" min={0} max={100} step="0.01" inputMode="decimal" value={discount} onChange={(event) => setDiscount(event.target.value)} />
         </Field>
+        {decides && (
+          <Field label={t.partner.bonusPercent} hint={t.partner.bonusHint}>
+            <input type="number" min={0} max={50} step="0.01" inputMode="decimal" value={bonus} onChange={(event) => setBonus(event.target.value)} />
+          </Field>
+        )}
       </div>
-      <PartnerDetailFields draft={details.draft} setDraft={details.setDraft} />
+      <PartnerDetailFields key={filledAt} draft={details.draft} setDraft={details.setDraft} />
       {save.isError && (
         <p className="form-error" role="alert">
           {errorMessage(save.error)}
@@ -462,8 +481,11 @@ export function CustomerDetailPage() {
       </div>
 
       <InvoicesCard customerId={data.id} />
+      {data.kind === 'business' && <PartnerLinkCard customerId={data.id} />}
+      <BonusCard customerId={data.id} />
+      <AddressesCard owner={{ side: 'customers', id: data.id }} />
 
-      {(hasDetails(data) || data.payLater || data.discountPercent != null) && (
+      {(hasDetails(data) || data.payLater || data.discountPercent != null || data.bonusPercent != null) && (
         <Card title={t.partner.details}>
           <PartnerFacts
             partner={data}
@@ -472,6 +494,7 @@ export function CustomerDetailPage() {
                 ? [{ label: t.customers.payLaterTitle, value: data.creditLimit != null ? t.partner.creditLimitShort(formatMoney(data.creditLimit)) : t.customers.noLimit }]
                 : []),
               ...(data.discountPercent != null ? [{ label: t.partner.discountPercent, value: t.partner.discountShort(data.discountPercent) }] : []),
+              ...(data.bonusPercent != null ? [{ label: t.partner.bonusPercent, value: t.partner.bonusRate(data.bonusPercent) }] : []),
             ]}
           />
         </Card>
@@ -534,6 +557,8 @@ function EntryWhat({ entry }: { entry: TabEntry }) {
         <Badge tone="ok">{t.tabs.payment}</Badge>
       ) : entry.kind === 'refund' ? (
         <Badge tone="ok">{t.tabs.refund}</Badge>
+      ) : entry.kind === 'credit' ? (
+        <Badge tone="ok">{t.tabs.creditEntry}</Badge>
       ) : (
         <Badge tone="neutral">{t.tabs.charge}</Badge>
       )}
@@ -796,7 +821,7 @@ export function CustomerStatementPage() {
             {lines.map((line) => (
               <tr key={line.id}>
                 <td>{formatDate(line.at)}</td>
-                <td>{[t.statement[line.kind], line.note].filter(Boolean).join(': ')}</td>
+                <td>{[t.statement[line.kind === 'credit' ? 'creditEntry' : line.kind], line.note].filter(Boolean).join(': ')}</td>
                 <td className="statement__number">{line.kind === 'charge' ? formatMoney(line.amount) : `−${formatMoney(line.amount)}`}</td>
                 <td className="statement__number">{formatMoney(line.balance)}</td>
               </tr>

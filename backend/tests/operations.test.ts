@@ -61,8 +61,9 @@ describe('sales', () => {
     expect(response.body.data.pricePerUnit).toBe(100);
   });
 
-  it('should refuse a sale bigger than the stock and record nothing', async () => {
-    const response = await sell(adminToken, 31);
+  it('should refuse an employee a sale bigger than the stock and record nothing', async () => {
+    // Owners and admins may sell past stock (Settings → Numbers and stock); an employee may not.
+    const response = await sell(await loginAs(context, 'employee'), 31);
     const sales = await context.db.selectFrom('sales').selectAll().execute();
 
     expect(response.status).toBe(400);

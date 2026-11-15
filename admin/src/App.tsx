@@ -30,6 +30,9 @@ function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(lo
   return lazy(async () => ({ default: (await load())[name] }));
 }
 
+const PayrollPeoplePage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollPeoplePage');
+const PayrollMonthsPage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollMonthsPage');
+const PayrollPersonPage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollPersonPage');
 const ActivityPage = lazyPage(() => import('./pages/ActivityPage'), 'ActivityPage');
 const InboxPage = lazyPage(() => import('./pages/InboxPage'), 'InboxPage');
 const UpdatesPage = lazyPage(() => import('./pages/InboxPage'), 'UpdatesPage');
@@ -284,6 +287,11 @@ function App() {
                       <Route path="bills/:id" element={<BillDetailPage />} />
                       <Route path="people" element={<UsersPage />} />
                       <Route path="people/:id" element={<PersonPage />} />
+                      <Route element={<SectionTabs tabs={SECTIONS.payroll} labelKey="payroll" />}>
+                        <Route path="payroll" element={<PayrollPeoplePage />} />
+                        <Route path="payroll/months" element={<PayrollMonthsPage />} />
+                      </Route>
+                      <Route path="payroll/people/:id" element={<PayrollPersonPage />} />
                       <Route path="counts" element={<ByLayout staff={<StaffCountsPage />} full={<StockCountsPage />} />} />
                       <Route path="counts/trefin/:id" element={<TrefinStockPage />} />
                       <Route path="counts/:id" element={<ByLayout staff={<StaffCountPage />} full={<StockCountDetailPage />} />} />

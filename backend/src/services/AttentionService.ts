@@ -292,7 +292,7 @@ export class AttentionService {
       title: t.todo.payrollRunTitle(month),
       detail: t.todo.payrollRunDetail,
       verb: 'runPayroll',
-      to: `/payroll?month=${month.slice(0, 7)}`,
+      to: `/payroll/months?month=${month.slice(0, 7)}`,
     }));
     for (const month of owed) {
       const late = today > month.dueOn;
@@ -303,7 +303,7 @@ export class AttentionService {
         title: t.todo.payrollAtkTitle({ month: month.month, amount: month.amount }),
         detail: t.todo.payrollAtkDetail(late),
         verb: 'payAtk',
-        to: `/payroll?month=${month.month.slice(0, 7)}`,
+        to: `/payroll/months?month=${month.month.slice(0, 7)}`,
       });
     }
     return items;

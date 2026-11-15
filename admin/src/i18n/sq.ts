@@ -3906,7 +3906,6 @@ export const sq: Catalogue = {
     notFound: (code: string) => `Asgjë nuk përputhet me “${code}”. Kontrollo barkodin, ose gjeje produktin në raft.`,
     outOfStock: (name: string) => `${name} ka mbaruar.`,
     noMore: (name: string, stock: number) => `Vetëm ${stock} ${name} në raft.`,
-    perKg: '/kg',
     alarm: {
       noScalePlu: (plu: number) => `Asnjë produkt s’ka numrin e peshores ${plu}`,
       noScalePluTodo: 'Asgjë nuk hyri në shportë. Menaxheri ia jep produktit numrin e peshores në faqen e tij (Shitet me kilogram).',

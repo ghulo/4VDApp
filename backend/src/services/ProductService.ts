@@ -44,7 +44,7 @@ export interface ProductDto {
   wholesalePrice: number | null;
   /** Only included for admins. */
   costPrice?: number | null;
-  /** Sold by the piece, or by the kilo (prices per kg, quantities to the gram). */
+  /** Sold by the piece, or measured: kilo, litre, metre or square metre (prices per unit, quantities to three decimals). */
   unit: ProductUnit;
   /** The number the shop scale prints in its labels. */
   scalePlu: number | null;

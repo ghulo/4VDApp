@@ -57,6 +57,19 @@ describe('products sold by the kilo', () => {
     expect((await sell([{ productId: water, quantity: 1.0001 }])).status).toBe(400);
   });
 
+  it('sells litres, metres and square metres in parts, and refuses a unit it does not know', async () => {
+    const tiles = await createTestProduct(context, adminToken, { name: 'Pllaka 30x60', price: 12, costPrice: 8, stock: 20.5, unit: 'm2' });
+    const sale = await sell([{ productId: tiles, quantity: 2.5 }]);
+    expect(sale.status).toBe(201);
+    expect(sale.body.data.total).toBe(30);
+    expect(await stockOf(context, tiles)).toBe(18);
+    const oil = await createTestProduct(context, adminToken, { name: 'Vaj motori', price: 6, stock: 10, unit: 'l' });
+    expect((await sell([{ productId: oil, quantity: 1.25 }])).status).toBe(201);
+    expect((await api().get(`/api/products/${oil}`).set(auth())).body.data).toMatchObject({ unit: 'l', stock: expect.objectContaining({ quantity: 8.75 }) });
+    const category = (await context.db.selectFrom('categories').select('id').executeTakeFirstOrThrow()).id;
+    expect((await api().post('/api/products').set(auth()).send({ name: 'Diçka', price: 1, categoryId: category, unit: 'box' })).status).toBe(400);
+  });
+
   it('gives each scale number to one product only', async () => {
     await createTestProduct(context, adminToken, { name: 'Mish viçi', price: 12, unit: 'kg', scalePlu: 7 });
     const category = (await context.db.selectFrom('categories').select('id').executeTakeFirstOrThrow()).id;

@@ -3929,7 +3929,6 @@ export const en = {
     notFound: (code: string) => `Nothing matches “${code}”. Check the barcode, or find the product on the shelf.`,
     outOfStock: (name: string) => `${name} is out of stock.`,
     noMore: (name: string, stock: number) => `Only ${stock} ${name} on the shelf.`,
-    perKg: '/kg',
     alarm: {
       noScalePlu: (plu: number) => `No product has scale number ${plu}`,
       noScalePluTodo: 'Nothing went in the basket. A manager gives the product its scale number on its page (Sold by the kilo).',

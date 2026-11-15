@@ -4023,6 +4023,35 @@ fieldset.report-sections {
   font-variant-numeric: tabular-nums;
 }
 
+/* Move stock: "Depo → Shop floor" in lists, and the two signature lines on the printed LV note. */
+.move-route {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.move-route svg {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: var(--ink-muted);
+}
+
+.statement .move-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.move-signatures span {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--ink);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
 @media (max-width: 600px) {
   .statement__title {
     text-align: start;

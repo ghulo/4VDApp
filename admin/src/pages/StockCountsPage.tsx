@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { StatusPill } from '../components/Decision';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { categoriesApi, stockCountsApi } from '../services/api';
+import { useLocations } from '../utils/useLocations';
 import type { RecordSource, StockCountListItem, TrefinStockDocument } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney } from '../utils/format';
@@ -22,6 +23,7 @@ type FinishedRow = { key: string; day: string; count: StockCountListItem; trefin
 export function StockCountsPage() {
   const t = useT();
   const counts = useQuery({ queryKey: ['stock-counts'], queryFn: stockCountsApi.list });
+  const { several } = useLocations();
   const trefin = useQuery({ queryKey: ['stock-counts', 'trefin'], queryFn: stockCountsApi.trefinList });
   const [source, setSource] = useState<RecordSource | undefined>();
   const active = counts.data?.filter((count) => count.status === 'open' || count.status === 'submitted') ?? [];
@@ -92,7 +94,7 @@ export function StockCountsPage() {
                     </>
                   ) : (
                     <Link to={`/counts/${row.count.id}`} className="table__primary-link">
-                      {row.count.category?.name ?? t.counts.wholeShop}
+                      {[row.count.category?.name ?? t.counts.wholeShop, several && row.count.location?.name].filter(Boolean).join(' · ')}
                     </Link>
                   ),
               },
@@ -120,11 +122,12 @@ export function StockCountsPage() {
 function ActiveCountCard({ count }: { count: StockCountListItem }) {
   const t = useT();
   const { counted, products, pending } = count.totals;
+  const { several } = useLocations();
   const waiting = count.status === 'submitted';
   return (
     <Link to={`/counts/${count.id}`} className="count-card">
       <span className="count-card__head">
-        <span className="count-card__title">{count.category?.name ?? t.counts.wholeShop}</span>
+        <span className="count-card__title">{[count.category?.name ?? t.counts.wholeShop, several && count.location?.name].filter(Boolean).join(' · ')}</span>
         <StatusPill status={count.status} />
       </span>
       <span className="count-card__progress">
@@ -182,9 +185,11 @@ function StartCountForm() {
   const t = useT();
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
   const [scope, setScope] = useState('');
+  const { several, locations, selling } = useLocations();
+  const [place, setPlace] = useState('');
 
   const start = useMutation({
-    mutationFn: () => stockCountsApi.start(scope === '' ? null : Number(scope)),
+    mutationFn: () => stockCountsApi.start(scope === '' ? null : Number(scope), place === '' ? null : Number(place)),
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['stock-counts'] });
       navigate(`/counts/${count.id}`);
@@ -209,6 +214,20 @@ function StartCountForm() {
             </option>
           ))}
       </select>
+      {several && (
+        <>
+          <label className="visually-hidden" htmlFor="count-location">
+            {t.locations.field}
+          </label>
+          <select id="count-location" className="setting-select" value={place || String(selling?.id ?? '')} onChange={(event) => setPlace(event.target.value)}>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
       <Button type="submit" variant="primary" icon={ClipboardText} disabled={start.isPending} loading={start.isPending}>
         {t.counts.start}
       </Button>

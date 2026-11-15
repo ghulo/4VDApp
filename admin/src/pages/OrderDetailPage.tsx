@@ -1,4 +1,5 @@
 import { Copy, Truck } from '@phosphor-icons/react';
+import { LocationSelect } from '../components/LocationSelect';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -165,6 +166,7 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
     Object.fromEntries(order.lines.map((line) => [line.id, line.unitCost === null ? '' : String(line.unitCost)])),
   );
   const [updateCosts, setUpdateCosts] = useState(false);
+  const [locationId, setLocationId] = useState<number | null>(null);
   const [expires, setExpires] = useState<Record<number, string>>({});
   const [withBill, setWithBill] = useState(false);
   const [bill, setBill] = useState(emptyBill());
@@ -173,6 +175,7 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
     mutationFn: () =>
       ordersApi.receive(order.id, {
         updateCostPrices: updateCosts,
+        locationId,
         ...(withBill && { bill: toBillInput(bill) }),
         lines: order.lines.map((line) => ({
           lineId: line.id,
@@ -258,6 +261,7 @@ function ReceiveCard({ order, onClose }: { order: PurchaseOrder; onClose: () => 
           ]}
         />
         <div className="settings-form buy-receive__options">
+          <LocationSelect coming="in" value={locationId} onChange={setLocationId} />
           <label className="toggle">
             <input type="checkbox" checked={updateCosts} onChange={(event) => setUpdateCosts(event.target.checked)} />
             {t.orders.updateCosts}

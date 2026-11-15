@@ -40,6 +40,8 @@ export interface SectionTab {
   rare?: boolean;
   /** Only for those who oversee the business (managers and the owner). */
   overseersOnly?: boolean;
+  /** Only once the shop keeps stock in more than one location. */
+  locations?: boolean;
   /** Only for roles with this power (Settings → Roles), like pay for the owner and the accountant. */
   power?: Power;
 }
@@ -76,6 +78,7 @@ export const SECTIONS = {
     { to: '/products', key: 'products' },
     { to: '/prices', key: 'prices', overseersOnly: true },
     { to: '/stock-documents', key: 'stockDocuments', overseersOnly: true, accountant: true },
+    { to: '/stock-moves', key: 'stockMoves', overseersOnly: true, locations: true },
     { to: '/expiring', key: 'expiring' },
     { to: '/categories', key: 'categories' },
   ],
@@ -144,7 +147,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'stock',
     items: [
-      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/stock-documents', '/expiring', '/categories', '/labels'] },
+      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/stock-documents', '/stock-moves', '/expiring', '/categories', '/labels'] },
       { to: '/counts', key: 'counts', icon: ClipboardText },
     ],
   },

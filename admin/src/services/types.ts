@@ -138,6 +138,8 @@ export interface StockAdjustment {
   notes: string | null;
   adjustedBy: string | null;
   date: string;
+  /** Where it happened; null on changes from before locations. */
+  location: string | null;
 }
 
 export interface InventoryDetail extends InventoryItem {
@@ -721,6 +723,8 @@ export interface BillLineInput {
 
 /** The one bill form: lines, and what 4VD needs to work out the rest. */
 export interface BillFormInput {
+  /** Where its products come in; left out, where goods are received. */
+  locationId?: number | null;
   supplierId: number | null;
   number: string | null;
   issuedOn: string;
@@ -877,6 +881,10 @@ export interface ReorderSuggestion {
   /** Last 2 weeks against the 6 before; null without enough history. */
   trend: 'rising' | 'falling' | 'steady' | null;
   lastSoldAt: string | null;
+  /** How much is in each location that has some (or a shelf minimum). */
+  places: Array<{ locationId: number; quantity: number; shelfMinimum: number | null }>;
+  /** Units to bring from storage to where the till sells, to reach its shelf minimum. */
+  refill: number;
 }
 
 export type InsightSeverity = 'urgent' | 'warning' | 'info';
@@ -1528,6 +1536,8 @@ export interface StockCountSummary {
   startedAt: string;
   submittedAt: string | null;
   closedAt: string | null;
+  /** The location counted; null for counts from before locations. */
+  location: PersonRef | null;
 }
 
 export interface StockCountLine {
@@ -1697,6 +1707,8 @@ export interface BillEmailSettings {
 }
 
 export interface ConfirmScanInput {
+  /** Where the goods come in; left out, where goods are received. */
+  locationId?: number | null;
   supplierId: number;
   orderId: number | null;
   bill: BillInput;
@@ -2548,7 +2560,50 @@ export interface StockDocument {
   /** The stock's value at cost, from the lines with a cost. */
   value: number;
   noCost: number;
+  /** Where the stock came in or went out; null on documents from before locations. */
+  locationId: number | null;
+  locationName: string | null;
   lines?: Array<{ productId: number; productName: string; unit: string; quantity: number; unitCost: number | null; value: number | null }>;
+}
+
+/** Where stock is kept: the shop floor, a storeroom. */
+export interface StockLocation {
+  id: number;
+  name: string;
+  /** The till sells from here. */
+  sellsHere: boolean;
+  /** Goods come in here unless another location is picked. */
+  receivesHere: boolean;
+  units: number;
+  products: number;
+}
+
+/** A product in one location. */
+export interface ProductLocation {
+  id: number;
+  name: string;
+  sellsHere: boolean;
+  quantity: number;
+  shelfMinimum: number | null;
+}
+
+/** Stock moved from one location to another (LV-); never in the books. */
+export interface StockMove {
+  id: number;
+  number: string;
+  fromId: number;
+  from: string;
+  toId: number;
+  to: string;
+  day: string;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  lineCount: number;
+  units: number;
+  lines?: Array<{ productId: number; productName: string; sku: string | null; unit: string; quantity: number }>;
 }
 
 export const ASSET_CATEGORIES = ['furniture', 'equipment', 'vehicle', 'building', 'land', 'intangible', 'other'] as const;

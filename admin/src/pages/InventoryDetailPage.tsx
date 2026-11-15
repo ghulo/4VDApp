@@ -6,6 +6,9 @@ import { EmptyState, ErrorNotice, Loading, SavedToast } from '../components/Feed
 import { errorMessage } from '../utils/errors';
 import { StockTag } from '../components/StockTag';
 import { WriteOffForm } from '../components/WriteOffForm';
+import { LocationSelect } from '../components/LocationSelect';
+import { ProductLocationsCard } from '../components/ProductLocationsCard';
+import { useLocations } from '../utils/useLocations';
 import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type RecordSource, type StockReason } from '../services/types';
 import { formatDate, formatDateTime, formatSignedQuantity } from '../utils/format';
@@ -54,6 +57,8 @@ export function ProductStockTab() {
         <StockHistoryCard item={item} />
       </div>
 
+      <ProductLocationsCard productId={item.productId} productName={item.productName} />
+
       <ExpiryCard productId={item.productId} place="end" />
     </>
   );
@@ -66,6 +71,7 @@ export function ProductStockTab() {
 function StockHistoryCard({ item }: { item: InventoryDetail }) {
   const t = useT();
   const [source, setSource] = useState<RecordSource | undefined>();
+  const { several } = useLocations();
   const own = source === 'trefin' ? [] : item.recentAdjustments;
   const trefin = source === '4vd' ? [] : item.trefinHistory;
   return (
@@ -86,6 +92,7 @@ function StockHistoryCard({ item }: { item: InventoryDetail }) {
               <span className="history__when">
                 {formatDateTime(adjustment.date)}
                 {adjustment.adjustedBy && <span>{adjustment.adjustedBy}</span>}
+                {several && adjustment.location && <span>{adjustment.location}</span>}
               </span>
             </li>
           ))}
@@ -121,6 +128,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState<StockReason>('Restock');
   const [notes, setNotes] = useState('');
+  const [locationId, setLocationId] = useState<number | null>(null);
   const [reorderLevel, setReorderLevel] = useState(String(item.reorderLevel));
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
@@ -156,6 +164,7 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
         quantity: direction === 'add' ? parsedAmount : -parsedAmount,
         reason,
         notes: notes.trim() || null,
+        locationId,
       }),
       ...(reorderChanged && { reorderLevel: parsedReorder }),
     });
@@ -224,6 +233,8 @@ function AdjustStockForm({ item }: { item: InventoryDetail }) {
             </select>
           </label>
         </div>
+
+        <LocationSelect coming={direction === 'add' ? 'in' : 'out'} value={locationId} onChange={setLocationId} />
 
         <label className="field">
           <span className="field__label">{t.inventory.note}</span>

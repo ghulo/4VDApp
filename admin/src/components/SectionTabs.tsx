@@ -6,6 +6,7 @@ import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { type SectionTab, shownTo } from '../navigation/sections';
 import { useCurrentUser } from '../auth/useAuth';
+import { useLocations } from '../utils/useLocations';
 import { MenuButton } from './ui';
 import { TabsSlotContext, useTabsSlotOwner } from './ui/tabsSlot';
 
@@ -21,7 +22,9 @@ export function SectionTabs({ tabs, labelKey }: { tabs: SectionTab[]; labelKey: 
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { role } = useCurrentUser();
-  const shown = tabs.filter((tab) => shownTo(role, tab));
+  const { several } = useLocations();
+  // A shop with one location never sees Move stock, unless a link brought you to it.
+  const shown = tabs.filter((tab) => shownTo(role, tab) && (!tab.locations || several || tab.to === pathname));
   const inRow = shown.filter((tab) => !tab.rare || tab.to === pathname);
   const later = shown.filter((tab) => tab.rare && tab.to !== pathname);
   const to = (tab: SectionTab) => ({ pathname: tab.to, search: tab.keepSearch ? search : '' });

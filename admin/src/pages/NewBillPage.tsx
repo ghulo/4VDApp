@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LocationSelect } from '../components/LocationSelect';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { BillLines, Segmented } from '../components/BillLines';
@@ -82,6 +83,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const payFromShopTill = places.data?.some((row) => row.id === payPlace && row.kind === 'till' && row.carwashId === null) ?? false;
   // "shop", "both" or "carwash:<id>", so each carwash has its own choice.
   const [place, setPlace] = useState('shop');
+  const [locationId, setLocationId] = useState<number | null>(null);
   const [repeatMonthly, setRepeatMonthly] = useState(false);
   // Shelf prices chosen from the price alerts, by product.
   const [prices, setPrices] = useState<Record<number, { use: boolean; price: string }>>({});
@@ -116,6 +118,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
     paidNow: pay === 'now' ? (payPlace === null ? { method: 'bank' } : { placeId: payPlace }) : null,
     place: hasCosts ? placeKind : 'shop',
     carwashId: hasCosts ? carwashId : null,
+    locationId: hasGoods ? locationId : null,
     repeatMonthly: onlyCosts && repeatMonthly,
     prices: Object.entries(prices)
       .filter(([, choice]) => choice.use && Number(choice.price) > 0)
@@ -287,6 +290,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
                 ))}
               </select>
             </Field>
+            {hasGoods && <LocationSelect coming="in" value={locationId} onChange={setLocationId} />}
             {hasCosts && (
               <Field label={t.billForm.place}>
                 <select value={place} onChange={(event) => setPlace(event.target.value)}>

@@ -1,4 +1,4 @@
-import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
 import { BinPanel } from '../components/BinPanel';
 import { BillEmailPanel } from '../components/BillEmailParts';
 import { ShopRulesPanel } from '../components/ShopRulesPanel';
@@ -7,12 +7,14 @@ import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
 import { BusinessPanel } from '../components/BusinessPanel';
 import { CarwashesPanel } from '../components/CarwashesPanel';
+import { LocationsPanel } from '../components/LocationsPanel';
 import { CounterSettingsPanel } from '../components/CounterSettingsPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
 import { RolesPanel } from '../components/RolesPanel';
 import { ThisComputerPanel } from '../components/ThisComputerPanel';
 import { desktopBridge } from '../desktop/desktopSetup';
 import { WipeDataPanel } from '../components/WipeDataPanel';
+import { canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { Button, Card, PageHeader, SettingRow, SettingsLayout } from '../components/ui';
@@ -91,6 +93,16 @@ export function SettingsPage() {
             content: (
               <ManagersOnly>
                 <BillEmailPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'locations',
+            label: t.locations.title,
+            icon: Warehouse,
+            content: (
+              <ManagersOnly can={canOversee}>
+                <LocationsPanel />
               </ManagersOnly>
             ),
           },

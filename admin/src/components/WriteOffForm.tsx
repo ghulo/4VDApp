@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { LocationSelect } from './LocationSelect';
 import type { ProductUnit } from '../services/types';
 import { allowsParts } from '../utils/units';
 import { type FormEvent, useState } from 'react';
@@ -17,6 +18,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState<WriteOffReason>('damaged');
   const [notes, setNotes] = useState('');
+  const [locationId, setLocationId] = useState<number | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const byKg = allowsParts(unit) || !Number.isInteger(inStock);
@@ -24,7 +26,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const isValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= inStock;
 
   const mutation = useMutation({
-    mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null }),
+    mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null, locationId }),
     onSuccess: (writeOff) => {
       for (const key of ['inventory', 'products', 'reports', 'activity']) queryClient.invalidateQueries({ queryKey: [key] });
       setQuantity('');
@@ -69,6 +71,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
           </select>
         </label>
       </div>
+      <LocationSelect coming="out" value={locationId} onChange={setLocationId} />
       <label className="field">
         <span className="field__label">{t.writeOff.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />

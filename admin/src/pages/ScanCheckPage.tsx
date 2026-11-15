@@ -1,4 +1,5 @@
 import { FilePdf } from '@phosphor-icons/react';
+import { LocationSelect } from '../components/LocationSelect';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -179,6 +180,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
     return scan.openOrders[0] ? String(scan.openOrders[0].id) : '';
   });
   const [categoryId, setCategoryId] = useState(() => (scan.previous?.categoryId ? String(scan.previous.categoryId) : ''));
+  const [locationId, setLocationId] = useState<number | null>(scan.previous?.locationId ?? null);
   const [discarding, setDiscarding] = useState(false);
 
   const kept = decisions.filter((decision) => decision.choice !== SKIP);
@@ -208,6 +210,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
         supplierId: scan.supplier!.id,
         orderId: orderId ? Number(orderId) : null,
         categoryId: anyNew ? Number(categoryId) : null,
+        locationId,
         bill: toBillInput(bill),
         lines: decisions.flatMap((decision, index) => {
           if (decision.choice === SKIP) return [];
@@ -331,6 +334,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
               />
             ))}
           </ol>
+          <LocationSelect coming="in" value={locationId} onChange={setLocationId} />
           {anyNew && (
             <div className="buy-add-line">
               <Field label={t.scans.category}>

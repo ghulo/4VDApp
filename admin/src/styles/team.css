@@ -488,6 +488,15 @@
   font-size: var(--text-sm);
 }
 
+/* Stock locations: the two badges and Rename drop under the name on a phone. */
+.place-list--wrap .place-list__row {
+  flex-wrap: wrap;
+}
+
+.place-list--wrap .place-list__text {
+  flex: 1 1 12rem;
+}
+
 /* ---------- Launch checklist ---------- */
 
 .checklist {

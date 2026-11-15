@@ -1,7 +1,8 @@
-import { Barcode, Package, ShoppingCart, Warning, WarningOctagon, Coins, Hourglass } from '@phosphor-icons/react';
+import { ArrowsLeftRight, Barcode, Package, ShoppingCart, Warning, WarningOctagon, Coins, Hourglass } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router';
-import { canManage } from '../auth/roles';
+import { canManage, canOversee } from '../auth/roles';
+import { useLocations } from '../utils/useLocations';
 import { useCurrentUser } from '../auth/useAuth';
 import { ExportMenu } from '../components/ExportMenu';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -20,24 +21,29 @@ const PAGE_SIZE = 20;
 /** "Running out soon": a week or less left at the current pace. */
 const SOON_DAYS = 7;
 
-const FILTERS = ['all', 'low', 'out', 'soon'] as const;
+const FILTERS = ['all', 'low', 'out', 'soon', 'refill'] as const;
 type Filter = (typeof FILTERS)[number];
 const SORTS = ['emptiest', 'soonest', 'name', 'value'] as const;
 type Sort = (typeof SORTS)[number];
 
+/** A product as the list shows it: with a location picked, `quantity` is what that location holds and `total` the whole shop's. */
+type Row = ReorderSuggestion & { total: number };
+
 type Level = 'out' | 'low' | 'ok';
-const levelOf = (row: ReorderSuggestion): Level => (row.quantity <= 0 ? 'out' : row.quantity <= row.reorderLevel ? 'low' : 'ok');
-const isSoon = (row: ReorderSuggestion) => row.quantity > 0 && row.daysLeft !== null && row.daysLeft <= SOON_DAYS;
+// Low and out are about the whole shop ("order more"), whichever location is shown.
+const levelOf = (row: Row): Level => (row.total <= 0 ? 'out' : row.total <= row.reorderLevel ? 'low' : 'ok');
+const isSoon = (row: Row) => row.total > 0 && row.daysLeft !== null && row.daysLeft <= SOON_DAYS;
 const valueOf = (row: ReorderSuggestion) => (row.costPrice === null ? null : Math.max(row.quantity, 0) * row.costPrice);
 
-const matches: Record<Filter, (row: ReorderSuggestion) => boolean> = {
+const matches: Record<Filter, (row: Row) => boolean> = {
   all: () => true,
   low: (row) => levelOf(row) === 'low',
   out: (row) => levelOf(row) === 'out',
   soon: isSoon,
+  refill: (row) => row.refill > 0,
 };
 
-const compare: Record<Sort, (a: ReorderSuggestion, b: ReorderSuggestion) => number> = {
+const compare: Record<Sort, (a: Row, b: Row) => number> = {
   // Furthest below its reorder level first, so problems are on top.
   emptiest: (a, b) => a.quantity - a.reorderLevel - (b.quantity - b.reorderLevel) || a.productName.localeCompare(b.productName),
   soonest: (a, b) => (a.daysLeft ?? Infinity) - (b.daysLeft ?? Infinity) || a.productName.localeCompare(b.productName),
@@ -61,6 +67,10 @@ export function InventoryPage() {
   const filter: Filter = FILTERS.find((key) => key === params.get('status')) ?? 'all';
   const sort: Sort = SORTS.find((key) => key === params.get('sort')) ?? 'emptiest';
   const category = params.get('category') ?? '';
+  const { several, locations } = useLocations();
+  // With one location there is nothing to pick, and no refilling from storage.
+  const place = several ? (locations.find((location) => String(location.id) === params.get('location'))?.id ?? null) : null;
+  const filters = FILTERS.filter((key) => key !== 'refill' || several);
 
   const stock = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
   // Who usually supplies each product, so Order opens with that supplier picked.
@@ -77,7 +87,14 @@ export function InventoryPage() {
     setParams(next, { replace: true });
   }
 
-  const rows = stock.data ?? [];
+  const all: Row[] = (stock.data ?? []).map((row) => ({ ...row, total: row.quantity }));
+  const rows: Row[] =
+    place === null
+      ? all
+      : all.flatMap((row) => {
+          const here = row.places.find((one) => one.locationId === place);
+          return here ? [{ ...row, quantity: here.quantity }] : [];
+        });
   const categories = [...new Map(rows.map((row) => [row.categoryId, row.categoryName])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   const shown = rows
     .filter(matches[filter])
@@ -97,7 +114,7 @@ export function InventoryPage() {
     else next.set('status', key);
     return `/inventory?${next}`;
   };
-  const narrowed = filter !== 'all' || category !== '' || search !== '';
+  const narrowed = filter !== 'all' || category !== '' || search !== '' || place !== null;
 
   return (
     <>
@@ -133,6 +150,9 @@ export function InventoryPage() {
                 tone={count('out') > 0 ? 'danger' : 'default'}
                 to={filterLink('out')}
               />
+              {several && count('refill') > 0 && (
+                <StatTile icon={ArrowsLeftRight} label={t.locations.refill} value={count('refill')} tone="warn" to={filterLink('refill')} />
+              )}
               <StatTile icon={Hourglass} label={t.inventory.soonCount} value={count('soon')} words={count('soon') === 0 && t.inventory.noneSoon} tone={count('soon') > 0 ? 'warn' : 'default'} to={filterLink('soon')} />
             </StatGrid>
           )}
@@ -145,7 +165,7 @@ export function InventoryPage() {
               <div className="toolbar">
                 <SearchInput value={params.get('search') ?? ''} onChange={(value) => updateParams({ search: value })} label={t.inventory.search} />
                 <div className="segmented segmented--small segmented--chips" role="radiogroup" aria-label={t.inventory.show}>
-                  {FILTERS.map((key) => (
+                  {filters.map((key) => (
                     <button
                       key={key}
                       type="button"
@@ -154,11 +174,21 @@ export function InventoryPage() {
                       className="segmented__option"
                       onClick={() => updateParams({ status: key === 'all' ? null : key })}
                     >
-                      {t.inventory.filters[key]}
+                      {key === 'refill' ? t.locations.refill : t.inventory.filters[key]}
                       {key !== 'all' && count(key) > 0 && <span className="segmented__count">{count(key)}</span>}
                     </button>
                   ))}
                 </div>
+                {several && (
+                  <select aria-label={t.locations.filter} value={place ?? ''} onChange={(event) => updateParams({ location: event.target.value })}>
+                    <option value="">{t.locations.all}</option>
+                    {locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select aria-label={t.inventory.category} value={category} onChange={(event) => updateParams({ category: event.target.value })}>
                   <option value="">{t.inventory.anyCategory}</option>
                   {categories.map(([id, name]) => (
@@ -216,13 +246,30 @@ export function InventoryPage() {
                   return value === null ? '–' : formatMoney(value);
                 },
               },
+              // Shown only while something on the selling floor is under its shelf minimum and storage has it.
+              ...(several && canOversee(role) && rows.some((row) => row.refill > 0)
+                ? [
+                  {
+                    header: t.locations.refill,
+                    align: 'end' as const,
+                    cell: (row: Row) =>
+                      row.refill > 0 ? (
+                        <ButtonLink size="sm" icon={ArrowsLeftRight} to={`/stock-moves?new=1&product=${row.productId}&qty=${row.refill}`} aria-label={t.locations.bringLabel(row.refill, row.productName)}>
+                          {t.locations.bring(row.refill)}
+                        </ButtonLink>
+                      ) : (
+                        '–'
+                      ),
+                  },
+                  ]
+                : []),
               // A column of dashes says nothing: it shows only when something needs ordering.
               ...(rows.some((row) => row.suggestedOrder > 0)
                 ? [
                   {
                     header: t.inventory.reorder,
                     align: 'end' as const,
-                    cell: (row: ReorderSuggestion) =>
+                    cell: (row: Row) =>
                       row.suggestedOrder > 0 ? (
                         canManage(role) ? (
                           <ButtonLink
@@ -307,8 +354,8 @@ function orderLink(row: ReorderSuggestion, supplierId: number | undefined): stri
 }
 
 /** Empty shelves read in red and a week or less of stock in amber; the words still say it. */
-function runwayClass(row: ReorderSuggestion): string | undefined {
-  if (row.quantity <= 0) return 'runway runway--out';
+function runwayClass(row: Row): string | undefined {
+  if (row.total <= 0) return 'runway runway--out';
   if (isSoon(row)) return 'runway runway--soon';
   return undefined;
 }
@@ -317,10 +364,10 @@ function runwayClass(row: ReorderSuggestion): string | undefined {
 const YEAR_OR_MORE = 365;
 
 /** How long the stock lasts, kept to one line: "189 days ↓", with the full sentence on hover and for screen readers. */
-function Runway({ row }: { row: ReorderSuggestion }) {
+function Runway({ row }: { row: Row }) {
   const t = useT();
   const sentence = describeRunway(t, row);
-  if (row.quantity <= 0 || row.daysLeft === null || row.daysLeft === 0) return <span className={runwayClass(row)}>{sentence}</span>;
+  if (row.total <= 0 || row.daysLeft === null || row.daysLeft === 0) return <span className={runwayClass(row)}>{sentence}</span>;
   // The forecast stops counting at a year, so 365 means "longer": say that, not a number that looks exact.
   if (row.daysLeft >= YEAR_OR_MORE) {
     return (
@@ -341,8 +388,8 @@ function Runway({ row }: { row: ReorderSuggestion }) {
   );
 }
 
-function describeRunway(t: Catalogue, row: ReorderSuggestion): string {
-  if (row.quantity <= 0) return t.inventory.soldOutNow;
+function describeRunway(t: Catalogue, row: Row): string {
+  if (row.total <= 0) return t.inventory.soldOutNow;
   if (row.daysLeft === null) return t.inventory.noRecentSales;
   if (row.daysLeft === 0) return t.inventory.today;
   if (row.daysLeft >= YEAR_OR_MORE) return t.inventory.overYearLong;

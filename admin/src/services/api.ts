@@ -171,6 +171,9 @@ import type {
   CounterSettings,
   CounterToday,
   StockDocument,
+  StockLocation,
+  StockMove,
+  ProductLocation,
   StockDocumentDirection,
   StockDocumentReason,
 } from './types';
@@ -366,6 +369,8 @@ export interface StockAdjustmentInput {
   reason?: StockReason;
   notes?: string | null;
   reorderLevel?: number;
+  /** Where; left out is where the till sells from. */
+  locationId?: number | null;
 }
 
 export const inventoryApi = {
@@ -810,6 +815,7 @@ export const ordersApi = {
       lines: Array<{ lineId: number; receivedQuantity: number; unitCost: number | null; expiresOn: string | null }>;
       updateCostPrices: boolean;
       bill?: BillInput;
+      locationId?: number | null;
     },
   ) =>
     (await apiRequest<PurchaseOrder>(`/orders/${id}/receive`, { method: 'POST', body: input })).data,
@@ -834,7 +840,7 @@ export const expiryApi = {
 export const exportsApi = {
   /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
   async download(
-    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents',
+    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents' | 'stock-moves',
     format: 'xlsx' | 'csv',
     range?: ReportRange,
     extra?: { level?: 'shelf' | 'wholesale'; categoryId?: number; lang?: 'en' | 'sq' },
@@ -916,7 +922,7 @@ export const productRequestsApi = {
 
 export const writeOffsApi = {
   list: async (status?: ApprovalStatus) => (await apiRequest<WriteOff[]>('/write-offs', { query: { status } })).data,
-  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null }) =>
+  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null; locationId?: number | null }) =>
     (await apiRequest<WriteOff>('/write-offs', { method: 'POST', body: input })).data,
   approve: async (id: number) => (await apiRequest<WriteOff>(`/write-offs/${id}/approve`, { method: 'POST' })).data,
   reject: async (id: number, note: string) =>
@@ -929,8 +935,8 @@ export const stockCountsApi = {
   /** TREFIN's starting stocks, corrections and counts. */
   trefinList: async () => (await apiRequest<TrefinStockDocument[]>('/stock-counts/trefin')).data,
   trefinGet: async (id: number) => (await apiRequest<TrefinStockDocumentDetail>(`/stock-counts/trefin/${id}`)).data,
-  start: async (categoryId: number | null) =>
-    (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId } })).data,
+  start: async (categoryId: number | null, locationId: number | null = null) =>
+    (await apiRequest<StockCount>('/stock-counts', { method: 'POST', body: { categoryId, locationId } })).data,
   cancel: async (id: number) => (await apiRequest<StockCount>(`/stock-counts/${id}/cancel`, { method: 'POST' })).data,
   approveLine: async (id: number, productId: number) =>
     (await apiRequest<StockCount>(`/stock-counts/${id}/lines/${productId}/approve`, { method: 'POST' })).data,
@@ -1068,9 +1074,29 @@ export const threadsApi = {
 export const stockDocumentsApi = {
   list: async (range: ReportRange) => (await apiRequest<StockDocument[]>('/stock-documents', { query: { ...range } })).data,
   get: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}`)).data,
-  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number; expiresOn?: string }> }) =>
+  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; locationId?: number | null; lines: Array<{ productId: number; quantity: number; expiresOn?: string }> }) =>
     (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
   void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
+};
+
+export const locationsApi = {
+  list: async () => (await apiRequest<StockLocation[]>('/locations')).data,
+  create: async (name: string) => (await apiRequest<StockLocation>('/locations', { method: 'POST', body: { name } })).data,
+  update: async (id: number, input: { name?: string; sellsHere?: true; receivesHere?: true }) => (await apiRequest<StockLocation>(`/locations/${id}`, { method: 'PATCH', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest<null>(`/locations/${id}`, { method: 'DELETE' });
+  },
+  forProduct: async (productId: number) => (await apiRequest<ProductLocation[]>(`/locations/products/${productId}`)).data,
+  setShelfMinimum: async (productId: number, locationId: number, minimum: number | null) =>
+    (await apiRequest<ProductLocation[]>(`/locations/products/${productId}`, { method: 'PUT', body: { locationId, minimum } })).data,
+};
+
+export const stockMovesApi = {
+  list: async (range: ReportRange) => (await apiRequest<StockMove[]>('/stock-moves', { query: { ...range } })).data,
+  get: async (id: number) => (await apiRequest<StockMove>(`/stock-moves/${id}`)).data,
+  create: async (input: { fromId: number; toId: number; day: string; note: string | null; lines: Array<{ productId: number; quantity: number }> }) =>
+    (await apiRequest<StockMove>('/stock-moves', { method: 'POST', body: input })).data,
+  void: async (id: number) => (await apiRequest<StockMove>(`/stock-moves/${id}/void`, { method: 'POST' })).data,
 };
 
 export const assetsApi = {

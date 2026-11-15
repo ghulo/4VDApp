@@ -6,6 +6,8 @@ import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { EntriesPanel } from '../components/BooksParts';
 import { ExportMenu } from '../components/ExportMenu';
+import { LocationSelect } from '../components/LocationSelect';
+import { useLocations } from '../utils/useLocations';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PeriodPicker } from '../components/PeriodPicker';
 import { Badge, Button, Card, Combobox, DataTable, DateField, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet, useToast } from '../components/ui';
@@ -127,6 +129,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
   const [reason, setReason] = useState<StockDocumentReason>('own_use');
   const [day, setDay] = useState(today);
   const [note, setNote] = useState('');
+  const [locationId, setLocationId] = useState<number | null>(null);
   const [lines, setLines] = useState<DraftLine[]>([]);
   const shelf = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const costs = useQuery({ queryKey: ['prices'], queryFn: pricesApi.list, staleTime: 60_000 });
@@ -165,6 +168,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
         reason,
         day,
         note: note.trim() || null,
+        locationId,
         lines: lines.map((line) => ({
           productId: line.productId,
           quantity: Number(line.quantity.replace(',', '.')),
@@ -218,6 +222,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
           <DateField required max={today()} value={day} onChange={(next) => setDay(next)} />
         </Field>
       </div>
+      <LocationSelect coming={direction} value={locationId} onChange={setLocationId} />
       <Combobox
         label={t.stockDocs.addProduct}
         placeholder={t.stockDocs.findProduct}
@@ -293,6 +298,7 @@ export function StockDocumentPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
+  const { several } = useLocations();
   const document = useQuery({ queryKey: ['stock-documents', 'one', Number(id)], queryFn: () => stockDocumentsApi.get(Number(id)) });
   const voiding = useMutation({
     mutationFn: () => stockDocumentsApi.void(Number(id)),
@@ -317,7 +323,7 @@ export function StockDocumentPage() {
       <PageHeader
         title={doc.number}
         crumbs={[{ to: '/stock-documents', label: t.stockDocs.title }]}
-        description={`${doc.direction === 'in' ? t.stockDocs.in : t.stockDocs.out} · ${t.stockDocs.reasons[doc.reason]} · ${formatDay(doc.day)}`}
+        description={[doc.direction === 'in' ? t.stockDocs.in : t.stockDocs.out, t.stockDocs.reasons[doc.reason], several && doc.locationName, formatDay(doc.day)].filter(Boolean).join(' · ')}
         actions={<DirectionBadge document={doc} />}
       />
       <Card title={t.stockDocs.products}>

@@ -1328,7 +1328,7 @@ export interface Business {
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
 
-export type NumberedKind = 'invoice' | 'credit_note' | 'offer';
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out';
 export interface NumberFormat {
   prefix: string;
   year: 'yy' | 'yyyy';
@@ -2461,4 +2461,26 @@ export interface PricePlan {
 export interface PriceFilePlan extends PricePlan {
   notFound: Array<{ row: number; text: string }>;
   unreadable: Array<{ row: number; text: string }>;
+}
+
+export type StockDocumentDirection = 'in' | 'out';
+export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given_away' | 'other';
+
+/** Goods in or out without a bill or a sale: numbered, moves stock, one entry at cost. */
+export interface StockDocument {
+  id: number;
+  number: string;
+  direction: StockDocumentDirection;
+  reason: StockDocumentReason;
+  day: string;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  lineCount: number;
+  /** The stock's value at cost, from the lines with a cost. */
+  value: number;
+  noCost: number;
+  lines?: Array<{ productId: number; productName: string; unit: string; quantity: number; unitCost: number | null; value: number | null }>;
 }

@@ -70,6 +70,7 @@ export const SECTIONS = {
     { to: '/inventory', key: 'shelf' },
     { to: '/products', key: 'products' },
     { to: '/prices', key: 'prices', overseersOnly: true },
+    { to: '/stock-documents', key: 'stockDocuments', overseersOnly: true },
     { to: '/categories', key: 'categories' },
   ],
   sales: [
@@ -132,7 +133,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'stock',
     items: [
-      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/categories', '/labels'] },
+      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/stock-documents', '/categories', '/labels'] },
       { to: '/counts', key: 'counts', icon: ClipboardText },
     ],
   },

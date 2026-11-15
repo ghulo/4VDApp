@@ -161,6 +161,9 @@ import type {
   CounterReceipt,
   CounterSettings,
   CounterToday,
+  StockDocument,
+  StockDocumentDirection,
+  StockDocumentReason,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -810,7 +813,7 @@ export const expiryApi = {
 export const exportsApi = {
   /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
   async download(
-    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list',
+    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents',
     format: 'xlsx' | 'csv',
     range?: ReportRange,
     extra?: { level?: 'shelf' | 'wholesale'; categoryId?: number; lang?: 'en' | 'sq' },
@@ -1041,6 +1044,14 @@ export const threadsApi = {
 };
 
 /** The Prices page: every product's prices, changes checked before they're saved, from cost or from an Excel file. */
+export const stockDocumentsApi = {
+  list: async (range: ReportRange) => (await apiRequest<StockDocument[]>('/stock-documents', { query: { ...range } })).data,
+  get: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}`)).data,
+  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number }> }) =>
+    (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
+  void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
+};
+
 export const pricesApi = {
   list: async () => (await apiRequest<PriceRow[]>('/products/prices')).data,
   plan: async (changes: PriceChangeInput[]) => (await apiRequest<PricePlan>('/products/prices/plan', { method: 'POST', body: { changes } })).data,

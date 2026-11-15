@@ -50,6 +50,7 @@ import {
 } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatMonth } from '../utils/vat';
 import { BOOKS_PERIOD_KEYS, periodDays } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
 
@@ -711,6 +712,8 @@ function suggestionText(t: Catalogue, suggestion: MatchSuggestion, moneyIn: bool
       return t.money.suggestions.linkReceipt(label.customer ?? '');
     case 'linkMove':
       return moneyIn ? t.money.suggestions.linkMoveFrom(placeInSentence(t, place(label.placeId))) : t.money.suggestions.linkMoveTo(placeInSentence(t, place(label.placeId)));
+    case 'linkPayroll':
+      return t.money.suggestions.linkPayroll(label.payroll?.kind ?? 'wages', label.payroll ? formatMonth(label.payroll.month.slice(0, 7)) : '');
     case 'move':
       if (action.otherPlaceId === null) return moneyIn ? t.money.suggestions.ownerIn : t.money.suggestions.ownerOut;
       return moneyIn ? t.money.suggestions.moveFrom(placeInSentence(t, place(action.otherPlaceId))) : t.money.suggestions.moveTo(placeInSentence(t, place(action.otherPlaceId)));

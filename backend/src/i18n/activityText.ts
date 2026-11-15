@@ -16,7 +16,7 @@ interface Words {
 }
 
 type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
-type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents';
+type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents' | 'payroll';
 type RoleChange = { role: Role; power: RolePower; on: boolean };
 type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin';
 export type ProductField =
@@ -204,6 +204,14 @@ const en = {
   assetSold: (p: { name: string; amount: number }, w: Words) => `Sold the fixed asset ${p.name} for ${w.money(p.amount)}`,
   assetScrapped: (p: { name: string }) => `Threw away the fixed asset ${p.name}`,
   assetBack: (p: { name: string }) => `Put ${p.name} back in use (undid its sale or removal)`,
+  employeeAdded: (p: { name: string }) => `Added ${p.name} to the payroll`,
+  employeeEdited: (p: { name: string }) => `Changed ${p.name}'s payroll details`,
+  payrollConfirmed: (p: { month: string; people: number; gross: number }, w: Words) => `Confirmed the payroll for ${p.month}: ${p.people === 1 ? '1 person' : `${p.people} people`}, ${w.money(p.gross)} gross`,
+  payrollUndone: (p: { month: string }) => `Took back the payroll for ${p.month}`,
+  payrollPaid: (p: { month: string; kind: 'wages' | 'tax' | 'pension'; amount: number }, w: Words) => `Paid ${w.money(p.amount)} of ${p.kind === 'wages' ? 'wages' : p.kind === 'tax' ? 'wage tax' : 'pension'} for ${p.month}`,
+  payrollPaymentUndone: (p: { month: string; amount: number }, w: Words) => `Took back a ${w.money(p.amount)} payroll payment for ${p.month}`,
+  leaveRecorded: (p: { name: string; days: number; taken: boolean }) => (p.taken ? `Recorded ${p.days} days of leave for ${p.name}` : `Corrected ${p.name}'s leave by ${p.days} days`),
+  leaveRemoved: (p: { name: string }) => `Removed a leave record of ${p.name}`,
   assetRemoved: (p: { name: string }) => `Took ${p.name} out of the fixed assets (typed in by mistake)`,
   otherBarcodeRemoved: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product}`,
   barcodeAddedFromBill: (p: { product: string; code: string; supplier: string }) => `Gave ${p.product} another barcode, ${p.code}, as on ${p.supplier}'s bill`,
@@ -347,6 +355,7 @@ const EN_POWER: Record<RolePower, string> = {
   books: 'read the books, VAT, bills and reports',
   filing: 'file VAT',
   reopen: 'reopen a filed month',
+  payroll: 'see and run the payroll',
   entries: 'write entries in the books',
   customers: 'see customers',
   documents: 'open invoices',
@@ -457,6 +466,7 @@ const SQ_POWER: Record<RolePower, string> = {
   books: 'lexojë librat, TVSH-në, faturat dhe raportet',
   filing: 'deklarojë TVSH-në',
   reopen: 'rihapë një muaj të deklaruar',
+  payroll: 'shohë dhe bëjë pagat',
   entries: 'shkruajë regjistrime në libra',
   customers: 'shohë klientët',
   documents: 'hapë faturat',
@@ -704,6 +714,14 @@ const sq: Templates = {
   assetSold: (p, w) => `Shiti pasurinë fikse ${p.name} për ${w.money(p.amount)}`,
   assetScrapped: (p) => `Hodhi pasurinë fikse ${p.name}`,
   assetBack: (p) => `E ktheu ${p.name} në përdorim (anuloi shitjen ose largimin)`,
+  employeeAdded: (p) => `Shtoi ${p.name} në listën e pagave`,
+  employeeEdited: (p) => `Ndryshoi të dhënat e pagës së ${p.name}`,
+  payrollConfirmed: (p, w) => `Konfirmoi pagat për ${p.month}: ${p.people === 1 ? '1 person' : `${p.people} persona`}, ${w.money(p.gross)} bruto`,
+  payrollUndone: (p) => `Anuloi pagat për ${p.month}`,
+  payrollPaid: (p, w) => `Pagoi ${w.money(p.amount)} ${p.kind === 'wages' ? 'paga' : p.kind === 'tax' ? 'tatim në paga' : 'kontribute pensionale'} për ${p.month}`,
+  payrollPaymentUndone: (p, w) => `Anuloi një pagesë page prej ${w.money(p.amount)} për ${p.month}`,
+  leaveRecorded: (p) => (p.taken ? `Regjistroi ${p.days} ditë pushim për ${p.name}` : `Korrigjoi pushimin e ${p.name} me ${p.days} ditë`),
+  leaveRemoved: (p) => `Hoqi një regjistrim pushimi të ${p.name}`,
   assetRemoved: (p) => `Hoqi ${p.name} nga pasuritë fikse (e shtuar gabimisht)`,
   otherBarcodeRemoved: (p) => `Hoqi barkodin ${p.code} nga ${p.product}`,
   barcodeAddedFromBill: (p) => `I dha ${p.product} edhe një barkod, ${p.code}, si në faturën e ${p.supplier}`,

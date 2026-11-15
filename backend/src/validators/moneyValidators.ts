@@ -86,6 +86,7 @@ export const lineActionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('receive'), customerId: idSchema, allocations: z.array(allocation).max(500) }),
   z.object({ kind: z.literal('linkReceipt'), entryId: idSchema }),
   z.object({ kind: z.literal('linkMove'), moveId: idSchema }),
+  z.object({ kind: z.literal('linkPayroll'), paymentId: idSchema }),
   z.object({ kind: z.literal('move'), otherPlaceId: idSchema.nullable() }),
   z.object({ kind: z.literal('expense'), category: z.enum(EXPENSE_CATEGORIES), supplierId: idSchema.nullable() }),
 ]);

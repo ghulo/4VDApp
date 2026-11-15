@@ -101,7 +101,7 @@ describe('reading a statement file', () => {
 
 describe('suggesting what a line is', () => {
   const bill = (id: number, left: number, number: string | null, issuedOn = '2026-10-01') => ({ id, supplierId: 7, supplierName: 'Viva Fresh Sh.p.k.', number, issuedOn, left });
-  const empty = { bills: [], items: [], payments: [], groups: [], receipts: [], moves: [], rules: [], shopTillId: 1 };
+  const empty = { bills: [], items: [], payments: [], groups: [], receipts: [], moves: [], payroll: [], rules: [], shopTillId: 1 };
 
   it('finds names and numbers as whole words, without legal endings', () => {
     expect(nameIn('PAGESE VIVA FRESH STORE', 'Viva Fresh Sh.p.k.')).toBe(true);
@@ -139,6 +139,19 @@ describe('suggesting what a line is', () => {
     expect(suggest({ day: '2026-10-01', text: 'Depozitë në para të gatshme', amount: 1200 }, empty)[0]).toMatchObject({ sure: false, action: { kind: 'move', otherPlaceId: 1 }, reasons: [{ key: 'depositWords' }] });
     const moves = [{ id: 9, day: '2026-09-30', amount: 1200, name: null, otherPlaceId: 1 }];
     expect(suggest({ day: '2026-10-01', text: 'Depozitë', amount: 1200 }, { ...empty, moves })[0]).toMatchObject({ sure: true, action: { kind: 'linkMove', moveId: 9 }, reasons: [{ key: 'sameAmount' }, { key: 'daysApart', days: 1 }] });
+  });
+
+  it('links the wage tax and the pension paid to ATK, each to its own line', () => {
+    const payroll = [
+      { id: 4, day: '2026-11-14', amount: -37, name: null, kind: 'tax' as const, month: '2026-10-01' },
+      { id: 5, day: '2026-11-14', amount: -100, name: null, kind: 'pension' as const, month: '2026-10-01' },
+    ];
+    expect(suggest({ day: '2026-11-15', text: 'ATK tatimi ne paga', amount: -37 }, { ...empty, payroll })[0]).toMatchObject({
+      sure: true,
+      action: { kind: 'linkPayroll', paymentId: 4 },
+      label: { payroll: { kind: 'tax', month: '2026-10-01' } },
+    });
+    expect(suggest({ day: '2026-11-15', text: 'Trusti', amount: -100 }, { ...empty, payroll })[0]).toMatchObject({ sure: true, action: { kind: 'linkPayroll', paymentId: 5 } });
   });
 
   it("receives a customer's invoice by its number", () => {

@@ -104,6 +104,11 @@ export interface ServerMessages {
     /** month "2026-09"; the return is due on day 20 of the month after. */
     vatDueTitle: (month: string) => string;
     vatDueDetail: (late: boolean) => string;
+    /** month "2026-09": wage tax and pension due on day 15 of the month after. */
+    payrollAtkTitle: (p: { month: string; amount: number }) => string;
+    payrollAtkDetail: (late: boolean) => string;
+    payrollRunTitle: (month: string) => string;
+    payrollRunDetail: string;
     /** due "2026-10-15": the quarter's profit tax instalment. */
     tmDueTitle: (p: { quarter: number; year: number; due: string }) => string;
     tmDueDetail: (p: { amount: number; late: boolean }) => string;
@@ -382,6 +387,10 @@ export const en: ServerMessages = {
     shortfallDetail: (shortBy) => `Sold ${shortBy} more than 4VD had in stock, so stock was set to 0. Count the shelf.`,
     vatDueTitle: (month) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} VAT is due by 20 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'The day to file has passed. File it with ATK, then mark the month as filed.' : 'Check the figures, file them with ATK, then mark the month as filed.'),
+    payrollAtkTitle: ({ month, amount }) => `${EN_MONTH[Number(month.slice(5, 7)) - 1]} wage tax and pension: ${new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount)} to ATK by 15 ${EN_MONTH[Number(month.slice(5, 7)) % 12]}`,
+    payrollAtkDetail: (late) => (late ? 'The day to pay has passed. Declare the payroll in EDI, pay ATK, then record the payment in Payroll.' : 'Declare the payroll in EDI, pay ATK, then record the payment in Payroll.'),
+    payrollRunTitle: (month) => `Run the ${EN_MONTH[Number(month.slice(5, 7)) - 1]} payroll`,
+    payrollRunDetail: 'Check each person’s pay and confirm it, so the wages, the tax and the pension are in the books.',
     tmDueTitle: ({ quarter, year, due }) => `Profit tax for Q${quarter} ${year} is due by ${Number(due.slice(8, 10))} ${EN_MONTH[Number(due.slice(5, 7)) - 1]}`,
     tmDueDetail: ({ amount, late }) =>
       late ? `The day has passed. Pay about ${money(amount, 'en')} to ATK, then mark it as paid.` : `About ${money(amount, 'en')} on the profit so far. Pay it to ATK, then mark it as paid.`,
@@ -682,6 +691,10 @@ export const sq: ServerMessages = {
     shortfallDetail: (shortBy) => `U shitën ${shortBy} më shumë se sa kishte 4VD në stok, prandaj stoku u vu 0. Numëro raftin.`,
     vatDueTitle: (month) => `TVSH-ja e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]} duhet deklaruar deri më 20 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
     vatDueDetail: (late) => (late ? 'Afati ka kaluar. Deklaroje në ATK, pastaj shëno muajin si të deklaruar.' : 'Kontrollo shifrat, deklaroji në ATK, pastaj shëno muajin si të deklaruar.'),
+    payrollAtkTitle: ({ month, amount }) => `Tatimi në paga dhe kontributet e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]}: ${new Intl.NumberFormat('sq-AL', { style: 'currency', currency: 'EUR' }).format(amount)} në ATK deri më 15 ${SQ_MONTH_DAY[Number(month.slice(5, 7)) % 12]}`,
+    payrollAtkDetail: (late) => (late ? 'Afati ka kaluar. Deklaroji pagat në EDI, paguaj ATK-në, pastaj regjistro pagesën te Pagat.' : 'Deklaroji pagat në EDI, paguaj ATK-në, pastaj regjistro pagesën te Pagat.'),
+    payrollRunTitle: (month) => `Bëj pagat e ${SQ_MONTH[Number(month.slice(5, 7)) - 1]}`,
+    payrollRunDetail: 'Kontrollo pagën e secilit dhe konfirmoje, që pagat, tatimi dhe kontributet të jenë në libra.',
     tmDueTitle: ({ quarter, year, due }) => `Tatimi në fitim për TM${quarter} ${year} duhet paguar deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
     tmDueDetail: ({ amount, late }) =>
       late ? `Afati ka kaluar. Paguaj rreth ${money(amount, 'sq')} në ATK, pastaj shënoje si të paguar.` : `Rreth ${money(amount, 'sq')} mbi fitimin deri tani. Paguaje në ATK, pastaj shënoje si të paguar.`,

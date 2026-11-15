@@ -53,6 +53,7 @@ import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { StockDocumentService } from './services/StockDocumentService.js';
 import { FixedAssetService } from './services/FixedAssetService.js';
+import { PayrollService } from './services/payroll/PayrollService.js';
 import { DayService } from './services/DayService.js';
 import { AttentionService } from './services/AttentionService.js';
 import { TabRepository } from './repositories/TabRepository.js';
@@ -240,6 +241,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
   const booksService = new BooksService(db, config.shopTimeZone);
   const fixedAssetService = new FixedAssetService(db, transactions, config.shopTimeZone, () => booksService.poster.sync());
+  const payrollService = new PayrollService(db, config.shopTimeZone, () => booksService.poster.sync());
   const openingService = new OpeningService(db, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone, settingsService, writeOffService);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
@@ -269,6 +271,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
         ? new ClaudeStatementReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
         : null,
     config.shopTimeZone,
+    payrollService,
   );
   const dayService = new DayService(cashCountService, carwashService, expenseService, expenseRepository, approvalService, transactions, config.shopTimeZone);
   const billScanRepository = new BillScanRepository(db);
@@ -333,6 +336,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.shopTimeZone,
     new BillEmailRepository(db),
     config.billEmailDailyReads,
+    payrollService,
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -483,6 +487,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     filing: [authenticated, requirePower('filing')] as RequestHandler[],
     /** Hand-written entries in the books: managers and the accountant. */
     entries: [authenticated, requirePower('entries')] as RequestHandler[],
+    /** Employees, pay and leave: the owner and the accountant. */
+    payroll: [authenticated, requirePower('payroll')] as RequestHandler[],
     /** The customer list: the counter (for tabs) and the accountant. */
     customers: [authenticated, requirePower('customers')] as RequestHandler[],
     /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
@@ -536,6 +542,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     expenseService,
     stockDocumentService,
     fixedAssetService,
+    payrollService,
     tabService,
     purchaseOrderService,
     supplierBillService,

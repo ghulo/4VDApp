@@ -72,7 +72,7 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus' | 'payroll' | 'payroll_pay';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -157,6 +157,10 @@ export class PostingRules {
         return this.offset(Number(ref));
       case 'bonus':
         return this.bonus(Number(ref));
+      case 'payroll':
+        return this.payroll(Number(ref));
+      case 'payroll_pay':
+        return this.payrollPayment(Number(ref));
       default:
         throw new Error(`Unknown source ${sourceKey}`);
     }
@@ -573,6 +577,82 @@ export class PostingRules {
       .debit(row.place_id === null ? this.till : this.to(row.place_id), amount)
       .credit('receivables', amount, { customerId: row.customer_id })
       .build(row.day, row.name);
+  }
+
+  /**
+   * A confirmed payroll month, on its last day: gross wages and the employer's
+   * pension cost; net pay, both pension shares and the wage tax owed until
+   * paid. Carwash staff are declared with the rest but stay out of the books,
+   * like the carwash (accountant question in handoff.md).
+   */
+  private async payroll(id: number): Promise<DraftEntry | null> {
+    const month = await this.db
+      .selectFrom('payroll_months')
+      .select([sql<string>`to_char(month, 'YYYY-MM-DD')`.as('month'), 'voided_at'])
+      .where('id', '=', id)
+      .executeTakeFirst();
+    if (!month || month.voided_at) return null;
+    const day = monthEnd(month.month);
+    if (this.tooEarly(day)) return null;
+    const lines = await this.db.selectFrom('payroll_lines').selectAll().where('month_id', '=', id).where('place', '=', 'shop').execute();
+    const sum = (key: 'gross' | 'employee_pension' | 'employer_pension' | 'tax' | 'net') => roundMoney(lines.reduce((total, line) => total + Number(line[key]), 0));
+    return this.builder()
+      .debit('expense:wages', sum('gross'))
+      .debit('employer_pension', sum('employer_pension'))
+      .credit('pension_payable_employee', sum('employee_pension'))
+      .credit('pension_payable_employer', sum('employer_pension'))
+      .credit('wage_tax_payable', sum('tax'))
+      .credit('wages_payable', sum('net'))
+      .build(day, `Pagat ${month.month.slice(5, 7)}/${month.month.slice(0, 4)}`);
+  }
+
+  /**
+   * Wages paid, or the wage tax or pension paid to ATK: what was owed goes
+   * down. The carwash staff's part leaves the books for the carwash (the
+   * owner's drawings), and posts nothing when paid from outside the books too.
+   */
+  private async payrollPayment(id: number): Promise<DraftEntry | null> {
+    const row = await this.db
+      .selectFrom('payroll_payments as p')
+      .innerJoin('payroll_months as m', 'm.id', 'p.month_id')
+      .select([
+        'p.kind',
+        'p.amount',
+        'p.carwash_amount',
+        'p.place_id',
+        'p.month_id',
+        sql<string>`to_char(p.paid_on, 'YYYY-MM-DD')`.as('paid_on'),
+        sql<string>`to_char(m.month, 'YYYY-MM-DD')`.as('month'),
+      ])
+      .where('p.id', '=', id)
+      .where('p.voided_at', 'is', null)
+      .where('m.voided_at', 'is', null)
+      .executeTakeFirst();
+    if (!row || this.tooEarly(row.paid_on)) return null;
+    const amount = Number(row.amount);
+    const carwash = Number(row.carwash_amount);
+    const shop = roundMoney(amount - carwash);
+    const entry = this.builder();
+    if (row.kind === 'wages') entry.debit('wages_payable', shop);
+    else if (row.kind === 'tax') entry.debit('wage_tax_payable', shop);
+    else {
+      // The two shares in the proportion they were owed.
+      const owed = await this.db
+        .selectFrom('payroll_lines')
+        .select([sql<string>`coalesce(sum(employee_pension), 0)`.as('employee'), sql<string>`coalesce(sum(employer_pension), 0)`.as('employer')])
+        .where('month_id', '=', row.month_id)
+        .where('place', '=', 'shop')
+        .executeTakeFirstOrThrow();
+      const employee = Number(owed.employee);
+      const total = employee + Number(owed.employer);
+      const employeePart = total > 0 ? roundMoney((shop * employee) / total) : shop;
+      entry.debit('pension_payable_employee', employeePart).debit('pension_payable_employer', roundMoney(shop - employeePart));
+    }
+    const place = this.places.byId.get(row.place_id);
+    if (place?.inBooks) entry.debit('owner_out', carwash).credit(this.from(row.place_id), amount);
+    else entry.credit('owner_in', shop);
+    const words = { wages: 'Pagat', tax: 'Tatimi në paga', pension: 'Kontributet pensionale' }[row.kind];
+    return entry.build(row.paid_on, `${words} ${row.month.slice(5, 7)}/${row.month.slice(0, 4)}`);
   }
 
   /** A set-off (kompensim): what the firm owes as a customer cancels what the shop owes it as a supplier. */

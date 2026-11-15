@@ -23,6 +23,8 @@ export interface CustomerDto extends PartnerDetails {
   payLater: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
+  /** The bonus they earn on a year's purchases, in percent; null: none. */
+  bonusPercent: number | null;
   discountPercent: number | null;
   /** What they owe now; below zero when they have credit. */
   balance: number;
@@ -139,7 +141,7 @@ export function openItemsOf(
   }
   for (const entry of entries) {
     if (entry.sale_undone || entry.kind === 'charge') continue;
-    pool = roundMoney(pool + Number(entry.amount) - (entry.kind === 'payment' ? (allocatedByPayment.get(entry.id) ?? 0) : 0));
+    pool = roundMoney(pool + Number(entry.amount) - (entry.kind === 'payment' || entry.kind === 'credit' ? (allocatedByPayment.get(entry.id) ?? 0) : 0));
   }
   for (const item of ordered) {
     if (pool <= 0) break;
@@ -227,6 +229,7 @@ function toCustomerDto(
     payLater: customer.pay_later,
     creditLimit: customer.credit_limit === null ? null : Number(customer.credit_limit),
     discountPercent: customer.discount_percent === null ? null : Number(customer.discount_percent),
+    bonusPercent: customer.bonus_percent === null ? null : Number(customer.bonus_percent),
     balance,
     owingSince: owingSince?.toISOString() ?? null,
     lastPaymentAt: lastPaymentAt?.toISOString() ?? null,

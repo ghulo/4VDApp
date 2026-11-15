@@ -66,6 +66,9 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     ...(document.fiscalReceiptNo ? [[t.fiscalReceipt, document.fiscalReceiptNo]] : []),
     [t.paymentMethod, paidHow],
     ...(document.dueDate ? [[t.dueDate, dayFormat.format(new Date(`${document.dueDate}T00:00:00Z`))]] : []),
+    ...(document.deliverTo
+      ? [[t.deliverTo, [document.deliverTo.address, dayFormat.format(new Date(`${document.deliverTo.day}T00:00:00Z`))].join(' · ')]]
+      : []),
   ]
     .map(([label, value]) => `<div><dt class="spec">${escape(label!)}</dt><dd>${escape(value!)}</dd></div>`)
     .join('');

@@ -32,6 +32,7 @@ import { CounterRepository } from './CounterRepository.js';
 import { PinRepository } from './PinRepository.js';
 import { OfflineShortfallRepository } from './OfflineShortfallRepository.js';
 import { SalesDocumentRepository } from './SalesDocumentRepository.js';
+import { PartnerRepository } from './PartnerRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -67,6 +68,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     counter: new CounterRepository(db),
     pins: new PinRepository(db),
     salesDocs: new SalesDocumentRepository(db),
+    partners: new PartnerRepository(db),
     shortfalls: new OfflineShortfallRepository(db),
   };
 }

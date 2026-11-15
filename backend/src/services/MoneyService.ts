@@ -155,7 +155,7 @@ const movementsSql = (timeZone: string) => sql`
       union all
       select (e.occurred_at at time zone ${timeZone})::date, case when e.kind = 'charge' then -e.amount else e.amount end
       from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
-      where e.kind <> 'payment' and (e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null)
+      where e.kind not in ('payment', 'credit') and (e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null)
       union all
       select day, -amount from card
     ) t group by day
@@ -178,7 +178,7 @@ const movementsSql = (timeZone: string) => sql`
   union all
   select p.place_id, p.paid_on, 'supplier', p.id, -p.amount, s.id, s.name, null, b.number, null, b.id, p.note
   from supplier_payments p join supplier_bills b on b.id = p.bill_id left join suppliers s on s.id = b.supplier_id
-  where p.voided_at is null and p.method <> 'credit' and p.group_id is null
+  where p.voided_at is null and p.method not in ('credit', 'offset') and p.group_id is null
   union all
   select min(p.place_id), min(p.paid_on), 'group', g.id, -sum(p.amount), s.id, s.name, null, null, count(*)::int, null, g.note
   from supplier_payments p join payment_groups g on g.id = p.group_id left join suppliers s on s.id = g.supplier_id

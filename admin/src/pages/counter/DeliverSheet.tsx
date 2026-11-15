@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
 import { Button, DateField, Field, Sheet } from '../../components/ui';
 import { useT } from '../../i18n/useT';
-import { deliveriesApi } from '../../services/api';
+import { deliveriesApi, partnersApi } from '../../services/api';
 import type { Customer, DeliveryInput } from '../../services/types';
 import { todayIso } from '../../utils/bills';
 import { formatMoney } from '../../utils/format';
@@ -39,6 +39,16 @@ function DeliverForm({ total, customer, current, onSave }: DeliverProps) {
     queryFn: () => deliveriesApi.lastAddress(customer!.id),
     enabled: Boolean(customer) && !current,
   });
+  // Their other addresses (a site, a warehouse) as one-press picks.
+  const saved = useQuery({
+    queryKey: ['partners', 'addresses', { side: 'customers', id: customer?.id }],
+    queryFn: () => partnersApi.addresses({ side: 'customers', id: customer!.id }),
+    enabled: Boolean(customer),
+  });
+  const picks = [
+    ...(customer?.address ? [{ key: 'main', label: t.counter.deliverMainAddress, address: [customer.address, customer.city].filter(Boolean).join(', ') }] : []),
+    ...(saved.data ?? []).map((one) => ({ key: String(one.id), label: one.label, address: [one.address, one.city].filter(Boolean).join(', ') })),
+  ];
   const [name, setName] = useState(current?.name ?? customer?.name ?? '');
   const [phone, setPhone] = useState(current?.phone ?? customer?.phone ?? '');
   const [address, setAddress] = useState(current?.address ?? customer?.address ?? '');
@@ -99,6 +109,15 @@ function DeliverForm({ total, customer, current, onSave }: DeliverProps) {
       <Field label={t.counter.deliverAddress} error={show(errors.address)}>
         <input name="deliver-address" autoComplete="off" autoFocus={Boolean(name) && !address} maxLength={300} value={address} onChange={(event) => setAddress(event.target.value)} />
       </Field>
+      {picks.length > 0 && (
+        <div className="chip-row" role="group" aria-label={t.counter.deliverSaved}>
+          {picks.map((pick) => (
+            <button key={pick.key} type="button" className="chip" aria-pressed={address === pick.address} title={pick.address} onClick={() => setAddress(pick.address)}>
+              {pick.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="field-row">
         <Field label={t.counter.deliverDay} error={show(errors.day)}>
           <DateField value={day} min={todayIso()} onChange={(value) => setDay(value ?? '')} />

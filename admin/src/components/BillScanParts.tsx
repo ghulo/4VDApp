@@ -24,7 +24,7 @@ function toBase64(blob: Blob): Promise<string> {
 }
 
 /** Photos shrink like any bill photo; a PDF goes up whole. */
-async function toPage(file: File) {
+export async function toPage(file: File) {
   if (file.type === 'application/pdf') return { mime: file.type, data: await toBase64(file) };
   const blob = await shrinkPhoto(file);
   return { mime: blob.type || file.type, data: await toBase64(blob) };

@@ -14,6 +14,8 @@ export interface CustomerFields extends Partial<PartnerDetails> {
   discountPercent?: number | null;
   /** The owner lets them pay later (up to `creditLimit`). Left out: kept as it is. */
   payLater?: boolean;
+  /** The bonus they earn on a year's purchases, in percent; null: none. Left out: kept. */
+  bonusPercent?: number | null;
 }
 
 export interface CustomerRecord extends PartnerDetails {
@@ -26,6 +28,7 @@ export interface CustomerRecord extends PartnerDetails {
   credit_limit: string | null;
   discount_percent: string | null;
   pay_later: boolean;
+  bonus_percent: string | null;
   archived_at: Date | null;
   created_at: Date;
 }
@@ -40,6 +43,7 @@ const CUSTOMER_COLUMNS = [
   'credit_limit',
   'discount_percent',
   'pay_later',
+  'bonus_percent',
   'archived_at',
   'created_at',
   ...PARTNER_DETAIL_COLUMNS,
@@ -54,6 +58,7 @@ const customerRow = (input: CustomerFields) => ({
   ...(input.creditLimit !== undefined && { credit_limit: input.creditLimit }),
   ...(input.discountPercent !== undefined && { discount_percent: input.discountPercent }),
   ...(input.payLater !== undefined && { pay_later: input.payLater }),
+  ...(input.bonusPercent !== undefined && { bonus_percent: input.bonusPercent }),
   ...partnerDetailRow(input),
 });
 
@@ -180,6 +185,7 @@ export class TabRepository {
       from tab_entries e left join sales s on s.id = e.sale_id left join returns r on r.id = e.return_id
       where ${counts}
         -- A payment that went to the bank or another place never reached the shop's till.
+        and e.kind <> 'credit'
         and (e.kind <> 'payment' or e.place_id is null or e.place_id = (select id from money_places where kind = 'till' and carwash_id is null))
         and (e.occurred_at at time zone ${timeZone})::date between ${from}::date and ${to}::date
       group by 1

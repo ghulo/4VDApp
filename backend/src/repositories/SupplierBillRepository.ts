@@ -463,7 +463,7 @@ export class SupplierBillRepository {
       .selectFrom('supplier_payments')
       .select([sql<string>`coalesce(sum(amount), 0)`.as('total'), sql<string>`count(*)`.as('count')])
       .where('voided_at', 'is', null)
-      .where('method', '!=', 'credit')
+      .where('method', 'not in', ['credit', 'offset'])
       .where('paid_on', '>=', from)
       .where('paid_on', '<=', to)
       .executeTakeFirstOrThrow();

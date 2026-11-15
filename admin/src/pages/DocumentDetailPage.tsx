@@ -104,6 +104,12 @@ export function DocumentDetailPage() {
               <dd>{paymentText(doc, t)}</dd>
             </div>
           )}
+          {doc.deliverTo && (
+            <div>
+              <dt>{t.documents.deliverTo}</dt>
+              <dd>{[doc.deliverTo.address, formatDate(`${doc.deliverTo.day}T12:00:00`)].join(' · ')}</dd>
+            </div>
+          )}
           <div>
             <dt>{t.documents.netTotal}</dt>
             <dd>{formatMoney(doc.netTotal)}</dd>

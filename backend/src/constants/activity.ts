@@ -90,6 +90,8 @@ export const ACTIVITY_ACTIONS = [
   'customer.updated',
   'customer.archived',
   'tab.paid',
+  'customer.bonus_paid',
+  'partner.offset',
   'supplier.created',
   'supplier.updated',
   'supplier.removed',

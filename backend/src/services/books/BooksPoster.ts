@@ -19,6 +19,8 @@ const DIRECT_SOURCES: Record<string, string> = {
   supplier_payments: 'payment',
   expenses: 'expense',
   money_moves: 'move',
+  partner_offsets: 'offset',
+  bonus_payouts: 'bonus',
 };
 
 export const BOOKS_START_KEY = 'books_start';

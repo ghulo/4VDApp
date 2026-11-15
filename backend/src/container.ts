@@ -72,6 +72,9 @@ import { PriceSuggestionService } from './services/PriceSuggestionService.js';
 import { type AiProvider, GeminiProvider } from './services/ai/aiProvider.js';
 import { type BillReader, ClaudeBillReader } from './services/ai/billReader.js';
 import { ClaudeStatementReader, type StatementReader } from './services/ai/statementReader.js';
+import { ClaudePartnerReader, type PartnerReader } from './services/ai/partnerReader.js';
+import { PartnerService } from './services/PartnerService.js';
+import { PartnerRepository } from './repositories/PartnerRepository.js';
 import { MoneyService } from './services/MoneyService.js';
 import { StatementService } from './services/StatementService.js';
 import { BillScanRepository } from './repositories/BillScanRepository.js';
@@ -143,6 +146,7 @@ export interface ContainerOptions {
   billReader?: BillReader | null;
   /** Tests pass a fake bank statement reader. Null switches reading PDF statements off. */
   statementReader?: StatementReader | null;
+  partnerReader?: PartnerReader | null;
 }
 
 export function createContainer(config: AppConfig, db: DatabaseClient, options: ContainerOptions = {}) {
@@ -268,6 +272,17 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
       ? options.billReader
       : config.ai?.provider === 'anthropic'
         ? new ClaudeBillReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
+        : null,
+    config.shopTimeZone,
+  );
+  const partnerService = new PartnerService(
+    new PartnerRepository(db),
+    supplierBillService,
+    transactions,
+    options.partnerReader !== undefined
+      ? options.partnerReader
+      : config.ai?.provider === 'anthropic'
+        ? new ClaudePartnerReader(config.ai.apiKey, { workspaceId: config.ai.workspaceId })
         : null,
     config.shopTimeZone,
   );
@@ -475,6 +490,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     stockCountService,
     offerService,
     salesDocumentService,
+    partnerService,
     approvalService,
     undoService,
     recordRestoreService,

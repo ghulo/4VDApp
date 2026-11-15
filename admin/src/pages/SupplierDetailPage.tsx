@@ -6,6 +6,7 @@ import { canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { DueBadge } from '../components/BillParts';
 import { hasDetails, PartnerFacts } from '../components/PartnerDetails';
+import { AddressesCard, PartnerLinkCard } from '../components/PartnerCards';
 import { SourceFilter, TrefinTag } from '../components/TrefinParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { SupplierForm } from '../components/SupplierForm';
@@ -153,6 +154,8 @@ export function SupplierDetailPage() {
           </Card>
         )
       )}
+      {supplier.nui && <PartnerLinkCard supplierId={id} />}
+      <AddressesCard owner={{ side: 'suppliers', id }} />
       <HistoryCard entityType="supplier" entityId={id} />
     </>
   );

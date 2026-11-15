@@ -5736,3 +5736,127 @@ fieldset.report-sections {
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
 }
+
+/* Partners: filling a new firm, both sides of a firm, addresses, bonus. */
+.firm-fill {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.firm-fill__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.firm-fill__title {
+  font-weight: 600;
+}
+
+.firm-fill__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.firm-fill__paste {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.firm-fill__paste .field {
+  width: 100%;
+}
+
+.firm-fill__matches,
+.partner-addresses,
+.partner-offsets,
+.partner-bonus {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.firm-fill__match,
+.partner-addresses li,
+.partner-offsets li,
+.partner-bonus li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+}
+
+.firm-fill__match > span,
+.partner-addresses li > span,
+.partner-bonus li > span:first-child {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.partner-addresses li > svg {
+  color: var(--ink-muted);
+}
+
+.firm-fill__warn {
+  color: var(--warn);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.partner-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.partner-sides dt {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.partner-sides dd {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.partner-offset {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.partner-offset .field-row {
+  width: 100%;
+}
+
+.partner-figure {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.partner-address-form {
+  width: 100%;
+  padding: var(--space-2) 0;
+}
+
+/* A saved address picked for a delivery. */
+.chip[aria-pressed='true'] {
+  background: var(--fill);
+  color: var(--ink);
+  box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--line-strong);
+}

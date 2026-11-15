@@ -9,6 +9,50 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 - [ ] Link from a product to the supplier you usually buy it from (optional)
 - [ ] Run the TREFIN import for real at launch (`npm run import:trefin`)
 
+## To test by hand
+
+The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
+
+**Step 9: products and prices**
+- [ ] Prices page: wholesale prices, mark-up, Excel download and upload
+- [ ] Pack barcodes and the new units on a product
+- [ ] Stock → In and out: a stock-in and a stock-out document, then Void
+
+**Step 10: partners**
+- [ ] Reading a partner from a photo or pasted text (needs a working ANTHROPIC_API_KEY)
+- [ ] Paying out a customer bonus
+- [ ] Deliver it: the address chips
+- [ ] The delivery line on an invoice
+
+**Step 11: settings and safety**
+- [ ] Print an invoice with the stamp and signature
+- [ ] Ring up a Counter sale after changing the number format
+- [ ] Settings → Recycle bin: bring back a product, supplier, customer, expense and file
+
+**Step 8: sales documents**
+- [ ] Offers, deliveries and pay-later as a whole
+
+**Counter (shop PC, real printer)**
+- [ ] A sale, X report and Z report on the Datecs printer
+- [ ] Paid screen after a sale
+- [ ] Scale label, opening cash and count, PIN switch and Ask the owner
+- [ ] Pull the network cable, sell, plug it back in
+- [ ] Line layout and the Till menu (F1 Invoices, F7 Refund)
+
+**Windows app**
+- [ ] Install 0.4.x on the shop PC: the installer, the welcome, the printer check, Start with Windows
+
+**Look (light and dark, phone and desktop)**
+- [ ] Employee layout (demo-employee@4vd.local)
+- [ ] Sign-in page with the till receipt
+- [ ] New logo and the glass tick
+- [ ] Amber colours and status colours
+- [ ] Overview, the sidebar's More and the phone bottom bar
+- [ ] Skeleton loading shapes
+
+**Needs real files**
+- [ ] Bank statement reader with a real Kosovo bank statement (Excel, CSV, PDF)
+
 ## Everything TREFIN does, the 4VD way (plan 2026-10-16, from the TREFIN survey)
 
 The survey is in `C:\Users\labid\Downloads\program-survey\program-survey` (SURVEY.md, REPORT.md, screenshots).

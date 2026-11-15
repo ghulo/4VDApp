@@ -32,8 +32,9 @@ import {
   useToast,
 } from '../components/ui';
 import { formatHeadlineMoney, formatMoney } from '../utils/format';
+import { KitBasics } from './kit/KitBasics';
 
-// A developer's page (/kit) showing the newer kit pieces with made-up data,
+// A developer's page (/kit) showing every kit piece with made-up data,
 // so they can be checked by eye in both themes and on a phone. Not in the menu.
 
 const CUSTOMERS = [
@@ -78,7 +79,9 @@ export function KitPage() {
   const month = day.slice(0, 7);
   return (
     <>
-      <PageHeader title="Kit" description="The newer pieces of 4VD's component kit, with made-up data." />
+      <PageHeader title="Kit" description="Every piece of 4VD's component kit, with made-up data: try a change here first." />
+
+      <KitBasics />
 
       <Section title="Tooltips and keys">
         <Card>

@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS } from '../constants/approvals.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
+import { checkNumbering, readRules, RULE_KEYS, type ShopRules } from './shopRules.js';
 
 export interface AppSettings {
   /** Employee refunds above this many euros wait for the owner. */
@@ -47,6 +48,35 @@ export class SettingsService {
       paymentTermsDays: read('paymentTermsDays'),
       employeeDiscountLimit: read('employeeDiscountLimit'),
     };
+  }
+
+  async rules(): Promise<ShopRules> {
+    return readRules(this.settingsRepository);
+  }
+
+  /** The number format applies from the next number; issued ones never change. */
+  async updateRules(input: { numbering?: Partial<ShopRules['numbering']>; noStockSales?: ShopRules['noStockSales'] }, userId: number): Promise<ShopRules> {
+    const before = await this.rules();
+    const after: ShopRules = {
+      numbering: input.numbering ? { ...before.numbering, ...input.numbering } : before.numbering,
+      noStockSales: input.noStockSales ?? before.noStockSales,
+    };
+    checkNumbering(after.numbering);
+    const changed = (Object.keys(RULE_KEYS) as Array<keyof ShopRules>).filter((name) => JSON.stringify(before[name]) !== JSON.stringify(after[name]));
+    if (changed.length > 0) {
+      await this.transactions.run(async (repos) => {
+        for (const name of changed) await repos.settings.set(RULE_KEYS[name], after[name], userId);
+        await repos.activityLog.create({
+          userId,
+          action: 'settings.updated',
+          entityType: 'settings',
+          entityId: null,
+          say: { key: 'rulesChanged', params: { numbering: changed.includes('numbering'), noStockSales: changed.includes('noStockSales') ? after.noStockSales : null } },
+          details: Object.fromEntries(changed.map((name) => [name, { from: before[name], to: after[name] }])),
+        });
+      });
+    }
+    return this.rules();
   }
 
   async update(input: Partial<AppSettings>, userId: number, logExtra?: Record<string, unknown>): Promise<AppSettings> {

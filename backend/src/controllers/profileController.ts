@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { BusinessService } from '../services/BusinessService.js';
 import type { MediaService } from '../services/MediaService.js';
 import type { ProfileService } from '../services/ProfileService.js';
-import { ValidationError } from '../errors/httpErrors.js';
+import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { businessSchema, mediaParamsSchema, profileSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
@@ -46,7 +46,23 @@ export function createProfileController(profileService: ProfileService, business
     async removeLogo(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await businessService.removeLogo(req.user!.id), { message: 'Logo removed' });
     },
+
+    async setPicture(req: Request, res: Response): Promise<void> {
+      const which = pictureOf(req);
+      sendSuccess(res, await businessService.setPicture(req.user!.id, which, uploadedImage(req)), { message: 'Picture saved' });
+    },
+
+    async removePicture(req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await businessService.removePicture(req.user!.id, pictureOf(req)), { message: 'Picture removed' });
+    },
   };
+}
+
+/** Only the stamp and the signature come by this route; the logo has its own. */
+function pictureOf(req: Request): 'stamp' | 'signature' {
+  const which = req.params.which;
+  if (which !== 'stamp' && which !== 'signature') throw new NotFoundError('There is no such picture');
+  return which;
 }
 
 export function createMediaController(mediaService: MediaService) {

@@ -17,6 +17,7 @@ import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import type { SettingsService } from './SettingsService.js';
 import { bestPromotionFor, priceWithPromotion } from './pricing/promotions.js';
 import type { RecordSource } from '../validators/validate.js';
+import { readRules } from './shopRules.js';
 
 export interface SaleDto {
   id: number;
@@ -402,6 +403,16 @@ export class SalesService {
     return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice };
   }
 
+  /**
+   * Whether a sale may go past what 4VD thinks is on the shelf: always when the
+   * shop says so, and for owners and admins even when it doesn't.
+   */
+  private async sellsPastStock(repos: TransactionalRepositories, soldBy: number): Promise<boolean> {
+    if ((await readRules(repos.settings)).noStockSales === 'allow') return true;
+    const seller = await repos.users.findById(soldBy);
+    return canOversee(seller?.role);
+  }
+
   private async recordInTransaction(repos: TransactionalRepositories, input: RecordSaleInput, soldBy: number): Promise<number> {
     await assertMonthsOpen(repos.periods, [zonedDay(input.saleDate ?? new Date(), this.timeZone)]);
     const product = await repos.products.findById(input.productId, false);
@@ -443,7 +454,7 @@ export class SalesService {
     });
     // Offline, the shelf decided: what 4VD didn't know about is taken to 0 and asked to be counted.
     let taken = input.quantity;
-    if (input.offline) {
+    if (input.offline || (await this.sellsPastStock(repos, soldBy))) {
       if (!Number.isInteger(input.quantity) && product.unit !== 'kg') {
         throw new ValidationError(`${product.name} is sold by the piece: use a whole number, not ${input.quantity}`);
       }

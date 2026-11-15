@@ -4,7 +4,7 @@ import type { MediaRepository } from '../repositories/MediaRepository.js';
 
 /** Longest side in pixels for each kind of picture. */
 // A bill photo stays big enough to read the small print.
-const SIZES = { avatar: 256, logo: 512, product: 800, bill: 1600 } as const;
+const SIZES = { avatar: 256, logo: 512, stamp: 512, signature: 512, product: 800, bill: 1600 } as const;
 export type MediaKind = keyof typeof SIZES;
 
 /**

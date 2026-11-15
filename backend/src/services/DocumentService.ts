@@ -13,6 +13,7 @@ import { renderDocumentHtml } from './documents/documentHtml.js';
 import { splitVat } from './documents/vat.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import type { SettingsService } from './SettingsService.js';
+import { formatNumber, readRules } from './shopRules.js';
 
 export interface DocumentLineDto {
   saleId: number;
@@ -97,7 +98,6 @@ export interface FollowUp {
   issuedBy: number;
 }
 
-const PREFIX: Record<DocumentKind, string> = { invoice: 'F', credit_note: 'K' };
 /**
  * Sales documents. Issuing happens inside the caller's transaction (a checkout,
  * an undo, a return), so a sale and its document are saved together or not at
@@ -195,7 +195,7 @@ export class DocumentService {
     const dueDate =
       p.kind === 'invoice' && p.paymentMethod === 'account' ? (p.dueDate ?? addDays(today, (await this.settings.get()).paymentTermsDays)) : null;
     const sequence = await repos.documents.nextNumber(p.kind, year);
-    const number = `${PREFIX[p.kind]}-${year}-${String(sequence).padStart(6, '0')}`;
+    const number = formatNumber((await readRules(repos.settings)).numbering[p.kind], year, sequence);
     const sum = (pick: (line: NewDocumentLine) => number) => roundMoney(p.lines.reduce((total, line) => total + pick(line), 0));
     const id = await repos.documents.create({
       ...p,

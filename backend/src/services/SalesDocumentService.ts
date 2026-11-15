@@ -7,6 +7,7 @@ import { toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { addDays, zonedDateTime, zonedDay } from '../utils/zonedDates.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import { receivePayment } from './TabService.js';
+import { formatNumber, readRules } from './shopRules.js';
 
 /** How long an offer stands when no day is given. */
 export const OFFER_VALID_DAYS = 14;
@@ -165,7 +166,8 @@ export class SalesDocumentService {
         });
       }
       const total = roundMoney(lines.reduce((sum, line) => sum + line.total, 0));
-      const number = await repos.salesDocs.nextOfferNumber(Number(today.slice(0, 4)));
+      const year = Number(today.slice(0, 4));
+      const number = formatNumber((await readRules(repos.settings)).numbering.offer, year, await repos.documents.nextNumber('offer', year));
       const offerId = await repos.salesDocs.createOffer({
         number,
         customerId: input.customerId,

@@ -9,6 +9,7 @@ import type { CarwashService } from './CarwashService.js';
 import type { DateRange } from './reports/calculations.js';
 import { type BillRepeatDto, createBill, type SupplierBillService, voidBill } from './SupplierBillService.js';
 
+import { REMOVED_EXPENSE_NOTE } from '../repositories/BinRepository.js';
 export { LAST_REPEAT_DAY, nextMonthDay } from './SupplierBillService.js';
 
 export interface ExpenseDto {
@@ -168,7 +169,7 @@ export class ExpenseService {
     if (!expense) throw new NotFoundError(`Expense ${id} does not exist`);
     if (!expense.paid_now) throw new ConflictError('This cost is on a bill to pay later. Open the bill to change it.');
     await this.transactions.run(async (repos) => {
-      await voidBill(repos, expense.bill_id, 'Removed from the expenses', actorId, now);
+      await voidBill(repos, expense.bill_id, REMOVED_EXPENSE_NOTE, actorId, now);
       await repos.activityLog.create({
         userId: actorId,
         action: 'expense.removed',

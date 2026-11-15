@@ -27,6 +27,8 @@ const groupIban = (iban: string) => iban.replace(/(.{4})(?=.)/g, '$1 ');
  * the stamp, and the shop and page number in the bottom margin. The number
  * is also a barcode, so scanning the paper finds the document again.
  */
+const dataUrl = (picture: { mime: string; bytes: Buffer }) => `data:${escape(picture.mime)};base64,${picture.bytes.toString('base64')}`;
+
 export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Letterhead, language: Language, timeZone: string): string {
   const t = messages[language].document;
   const eur = (amount: number) => escape(money(amount, language));
@@ -209,6 +211,8 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
   .signatures { display: grid; grid-template-columns: 1fr 22mm 1fr; gap: 10mm; align-items: end; margin-top: 10mm; break-inside: avoid; }
   .signature { border-top: 1px solid var(--hairline-strong); padding-top: 2mm; color: var(--ink-muted); font-size: 8.5pt; }
   /* Where the shop's stamp goes. */
+  img.stamp.stamp--printed { border: 0; border-radius: 0; object-fit: contain; width: 26mm; height: 26mm; }
+  .signature__ink { display: block; height: 12mm; max-width: 100%; object-fit: contain; object-position: left bottom; margin-bottom: 1mm; }
   .stamp { width: 22mm; height: 22mm; border: 1px dashed var(--hairline-strong); border-radius: 50%; display: grid; place-items: center; color: var(--ink-muted); font: 600 7.5pt var(--mono); letter-spacing: .06em; }
   .note-shop { margin-top: 6mm; padding-top: 3mm; border-top: 1px solid var(--hairline); color: var(--ink-muted); font-size: 8.5pt; text-align: center; white-space: pre-line; break-inside: avoid; }
 </style>
@@ -273,8 +277,8 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     </div>
   </div>
   <div class="signatures">
-    <div class="signature">${escape(t.signedSeller)}</div>
-    <div class="stamp">${escape(t.stamp)}</div>
+    <div class="signature">${letterhead.signature ? `<img class="signature__ink" src="${dataUrl(letterhead.signature)}" alt="">` : ''}${escape(t.signedSeller)}</div>
+    ${letterhead.stamp ? `<img class="stamp stamp--printed" src="${dataUrl(letterhead.stamp)}" alt="${escape(t.stamp)}">` : `<div class="stamp">${escape(t.stamp)}</div>`}
     <div class="signature">${escape(t.signedBuyer)}</div>
   </div>
   ${letterhead.note ? `<p class="note-shop">${escape(letterhead.note)}</p>` : ''}

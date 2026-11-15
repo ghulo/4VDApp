@@ -27,6 +27,19 @@ export const updateSettingsSchema = z
     message: 'send at least one of: refundApprovalLimit, returnWindowDays, minimumMarginPercent, cashFloatShop, paymentTermsDays, employeeDiscountLimit',
   });
 
+const numberFormatSchema = z.object({
+  prefix: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{1,6}$/, 'use 1 to 6 letters or digits'),
+  year: z.enum(['yy', 'yyyy']),
+  digits: z.number().int().min(3).max(8),
+});
+
+export const updateRulesSchema = z
+  .object({
+    numbering: z.object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema }).partial().optional(),
+    noStockSales: z.enum(['block', 'allow']).optional(),
+  })
+  .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined, { message: 'send numbering or noStockSales' });
+
 /** Wiping everything has to be typed out, so it can't happen by a stray click. */
 export const wipeSchema = z.object({
   confirm: z.literal(WIPE_PHRASE, { error: `type "${WIPE_PHRASE}" to confirm` }),

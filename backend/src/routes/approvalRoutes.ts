@@ -13,6 +13,9 @@ export function createSettingsRoutes({ settingsService, launchService, guards }:
   // Employees read the limits so the phone can say when something needs approval.
   router.get('/', ...guards.staff, controller.get);
   router.put('/', ...guards.manage, controller.update);
+  // Number format and selling past stock; the Counter reads them too.
+  router.get('/rules', ...guards.staff, controller.rules);
+  router.put('/rules', ...guards.manage, controller.updateRules);
   // What's left before the real shop starts using the app.
   router.get('/launch-checklist', ...guards.developer, controller.launchChecklist);
   // Clears the test data before launch (developer only; the phrase must be typed).

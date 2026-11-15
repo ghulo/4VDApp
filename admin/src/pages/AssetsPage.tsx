@@ -182,7 +182,15 @@ function ScheduleSection() {
   const w = t.assets.schedule;
   const { language } = useLanguage();
   const thisYear = new Date().getFullYear();
-  const [year, setYear] = useState(thisYear);
+  const [params, setParams] = useSearchParams();
+  const year = Number(params.get('year')) || thisYear;
+  const setYear = (next: number) =>
+    setParams((now) => {
+      const out = new URLSearchParams(now);
+      if (next === thisYear) out.delete('year');
+      else out.set('year', String(next));
+      return out;
+    }, { replace: true });
   const schedule = useQuery({ queryKey: ['assets', 'schedule', year], queryFn: () => assetsApi.schedule(year), placeholderData: keepPreviousData });
   const download = useMutation({ mutationFn: () => assetsApi.download({ year }, language) });
   const rows = schedule.data ?? [];
@@ -385,10 +393,10 @@ function AssetForm({ asset, onSaved }: { asset?: FixedAssetDetail; onSaved: () =
       {!editing && <p className="notice">{w.ownedHint}</p>}
       <div className="field-row">
         <Field label={w.name} error={touched ? (problems.name ?? undefined) : undefined}>
-          <input required maxLength={200} value={form.name} placeholder={w.namePlaceholder} onChange={(event) => change({ name: event.target.value })} />
+          <input required autoComplete="off" maxLength={200} value={form.name} placeholder={w.namePlaceholder} onChange={(event) => change({ name: event.target.value })} />
         </Field>
         <Field label={w.code} hint={w.codeHint}>
-          <input maxLength={60} value={form.code} onChange={(event) => change({ code: event.target.value })} />
+          <input autoComplete="off" spellCheck={false} maxLength={60} value={form.code} onChange={(event) => change({ code: event.target.value })} />
         </Field>
       </div>
       <Field label={w.kind} hint={fromBill ? w.fromBillLocked : started ? w.startedLocked : w.kindHint(DEFAULT_ASSET_RATES[form.category])}>
@@ -441,7 +449,7 @@ function AssetForm({ asset, onSaved }: { asset?: FixedAssetDetail; onSaved: () =
         </p>
       )}
       <Field label={w.note}>
-        <input maxLength={500} value={form.note} onChange={(event) => change({ note: event.target.value })} />
+        <input autoComplete="off" maxLength={500} value={form.note} onChange={(event) => change({ note: event.target.value })} />
       </Field>
       {cost > 0 && rate > 0 && residual < cost && (
         <p className="notice" aria-live="polite">
@@ -569,10 +577,10 @@ function DisposeForm({ asset, onSaved }: { asset: FixedAssetDetail; onSaved: () 
               </Field>
               <div className="field-row">
                 <Field label={w.buyer}>
-                  <input maxLength={200} value={buyerName} onChange={(event) => setBuyerName(event.target.value)} />
+                  <input autoComplete="off" maxLength={200} value={buyerName} onChange={(event) => setBuyerName(event.target.value)} />
                 </Field>
                 <Field label={w.buyerNui} hint={w.buyerNuiHint}>
-                  <input maxLength={40} inputMode="numeric" value={buyerNui} onChange={(event) => setBuyerNui(event.target.value)} />
+                  <input autoComplete="off" spellCheck={false} maxLength={40} inputMode="numeric" value={buyerNui} onChange={(event) => setBuyerNui(event.target.value)} />
                 </Field>
               </div>
             </>
@@ -580,7 +588,7 @@ function DisposeForm({ asset, onSaved }: { asset: FixedAssetDetail; onSaved: () 
         </>
       )}
       <Field label={w.note}>
-        <input maxLength={500} value={note} placeholder={kind === 'scrapped' ? w.scrappedPlaceholder : undefined} onChange={(event) => setNote(event.target.value)} />
+        <input autoComplete="off" maxLength={500} value={note} placeholder={kind === 'scrapped' ? w.scrappedPlaceholder : undefined} onChange={(event) => setNote(event.target.value)} />
       </Field>
       {(kind === 'scrapped' || amount.trim() !== '') && (
         <p className="notice" aria-live="polite">
@@ -794,7 +802,7 @@ export function AssetPage() {
           ]}
         />
         {a.plan.length > 12 && (
-          <Button variant="ghost" onClick={() => setAllMonths((now) => !now)}>
+          <Button variant="ghost" aria-expanded={allMonths} onClick={() => setAllMonths((now) => !now)}>
             {allMonths ? w.fewerMonths : w.allMonths(a.plan.length)}
           </Button>
         )}

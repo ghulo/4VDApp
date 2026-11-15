@@ -690,7 +690,7 @@ export function PayrollMonthsPage() {
       {months.isPending && <Loading />}
       {months.isError && <ErrorNotice error={months.error} onRetry={() => months.refetch()} />}
       {months.data && (confirmed ? <ConfirmedMonth key={confirmed.id} id={confirmed.id} /> : <MonthPreview key={month} month={month} />)}
-      {months.data && <HistorySection onOpen={setMonth} />}
+      {months.data && <HistorySection />}
     </>
   );
 }
@@ -810,11 +810,13 @@ function MonthPreview({ month }: { month: string }) {
   const [changing, setChanging] = useState<PayLine | null>(null);
   useWarnBeforeLeaving(changes.length > 0);
   const future = month > thisMonth();
+  // 4VD knows the wage rules from September 2024 (backend payrollRules.ts).
+  const tooEarly = month < '2024-09';
   const preview = useQuery({
     queryKey: [...PAYROLL_KEY, 'preview', month, changes],
     queryFn: () => payrollApi.preview(`${month}-01`, changes),
     placeholderData: keepPreviousData,
-    enabled: !future,
+    enabled: !future && !tooEarly,
   });
   const confirm = useMutation({
     mutationFn: () => payrollApi.confirm(`${month}-01`, changes),
@@ -826,6 +828,7 @@ function MonthPreview({ month }: { month: string }) {
   });
 
   if (future) return <p className="notice">{w.notStarted}</p>;
+  if (tooEarly) return <p className="notice">{w.noRules}</p>;
   if (preview.isPending) return <Loading />;
   if (preview.isError) return <ErrorNotice error={preview.error} onRetry={() => preview.refetch()} />;
   const p = preview.data;
@@ -1164,7 +1167,7 @@ function PayForm({ detail, kind, onSaved }: { detail: PayrollMonthDetail; kind: 
 }
 
 /** Confirmed months, newest first, with what is still to pay on each. */
-function HistorySection({ onOpen }: { onOpen: (month: string) => void }) {
+function HistorySection() {
   const t = useT();
   const w = t.payroll.months;
   const months = useQuery({ queryKey: [...PAYROLL_KEY, 'months'], queryFn: payrollApi.months });
@@ -1181,9 +1184,7 @@ function HistorySection({ onOpen }: { onOpen: (month: string) => void }) {
             header: w.pick,
             title: true,
             cell: (row) => (
-              <Button size="sm" variant="ghost" onClick={() => onOpen(row.month.slice(0, 7))}>
-                {formatMonth(row.month.slice(0, 7))}
-              </Button>
+              <Link to={`/payroll/months?month=${row.month.slice(0, 7)}`}>{formatMonth(row.month.slice(0, 7))}</Link>
             ),
           },
           { header: t.payroll.tiles.people, cell: (row) => String(row.totals.people), align: 'end', className: 'table__phone-hide' },

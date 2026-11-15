@@ -5251,7 +5251,7 @@ export const en = {
       changeGross: (name: string) => `Change ${name}’s gross this month`,
       undoChange: 'Use the contract',
       reason: 'Why',
-      reasonPlaceholder: 'Started on the 10th',
+      reasonPlaceholder: 'Started on the 10th…',
       reasonError: 'Say why, in a few words.',
       warnings: {
         belowMinimum: (minimum: string) => `Below the ${minimum} minimum wage`,

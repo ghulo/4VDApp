@@ -5224,7 +5224,7 @@ export const sq: Catalogue = {
       changeGross: (name) => `Ndrysho pagën bruto të ${name} këtë muaj`,
       undoChange: 'Sipas kontratës',
       reason: 'Pse',
-      reasonPlaceholder: 'Filloi më 10',
+      reasonPlaceholder: 'Filloi më 10…',
       reasonError: 'Thuaj pse, me pak fjalë.',
       warnings: {
         belowMinimum: (minimum) => `Nën pagën minimale ${minimum}`,

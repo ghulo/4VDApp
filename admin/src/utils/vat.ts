@@ -92,5 +92,6 @@ export function itemLink(item: VatItem): string | null {
   if (item.kind === 'invoice') return `/documents/${item.ref}`;
   if (item.kind === 'bill' || item.kind === 'credit') return `/bills/${item.ref}`;
   if (item.kind === 'till_day') return `/sales?period=custom&from=${item.ref}&to=${item.ref}`;
+  if (item.kind === 'asset_sale') return `/books/assets/${item.ref}`;
   return null;
 }

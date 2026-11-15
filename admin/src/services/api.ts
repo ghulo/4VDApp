@@ -2,6 +2,13 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
+  AssetBooksCheckRow,
+  AssetCategory,
+  AssetDisposeInput,
+  AssetInput,
+  AssetScheduleRow,
+  FixedAsset,
+  FixedAssetDetail,
   PriceChangeInput,
   PriceFilePlan,
   PricePlan,
@@ -1050,6 +1057,34 @@ export const stockDocumentsApi = {
   create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number }> }) =>
     (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
   void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
+};
+
+export const assetsApi = {
+  list: async () => (await apiRequest<FixedAsset[]>('/assets')).data,
+  get: async (id: number) => (await apiRequest<FixedAssetDetail>(`/assets/${id}`)).data,
+  suggestedOpening: async (input: { category: AssetCategory; cost: number; residual: number; rate: number | null; inUseFrom: string }) =>
+    (
+      await apiRequest<{ openingDepreciated: number }>('/assets/opening', {
+        query: { category: input.category, cost: String(input.cost), residual: String(input.residual), inUseFrom: input.inUseFrom, ...(input.rate === null ? {} : { rate: String(input.rate) }) },
+      })
+    ).data.openingDepreciated,
+  create: async (input: AssetInput) => (await apiRequest<FixedAssetDetail>('/assets', { method: 'POST', body: input })).data,
+  update: async (id: number, input: Partial<Omit<AssetInput, 'place' | 'openingDepreciated'>> & { openingDepreciated?: number }) =>
+    (await apiRequest<FixedAssetDetail>(`/assets/${id}`, { method: 'PATCH', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest<null>(`/assets/${id}`, { method: 'DELETE' });
+  },
+  split: async (id: number, pieces: number) => (await apiRequest<FixedAsset[]>(`/assets/${id}/split`, { method: 'POST', body: { pieces } })).data,
+  dispose: async (id: number, input: AssetDisposeInput) => (await apiRequest<FixedAssetDetail>(`/assets/${id}/dispose`, { method: 'POST', body: input })).data,
+  undoDisposal: async (id: number) => (await apiRequest<FixedAssetDetail>(`/assets/${id}/undo-disposal`, { method: 'POST' })).data,
+  schedule: async (year: number) => (await apiRequest<AssetScheduleRow[]>(`/assets/schedule/${year}`)).data,
+  booksCheck: async () => (await apiRequest<AssetBooksCheckRow[]>('/assets/check')).data,
+  async download(what: 'register' | { year: number }, lang: 'sq' | 'en'): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const path = what === 'register' ? '/assets/download' : `/assets/schedule/${what.year}/download`;
+    const { blob, filename } = await apiDownload(path, { lang, tz });
+    saveDownload(blob, filename ?? '4vd-fixed-assets.xlsx');
+  },
 };
 
 export const pricesApi = {

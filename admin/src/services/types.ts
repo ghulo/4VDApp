@@ -1736,6 +1736,18 @@ export const ACCOUNT_LINK_KEYS = [
   'asset:vehicle',
   'asset:building',
   'asset:other',
+  'asset:land',
+  'asset:intangible',
+  'accumulated:furniture',
+  'accumulated:equipment',
+  'accumulated:vehicle',
+  'accumulated:building',
+  'accumulated:other',
+  'accumulated:intangible',
+  'depreciation',
+  'amortisation',
+  'asset_gain',
+  'asset_loss',
   'withholding',
   'profit_tax',
   'profit_tax_payable',
@@ -1917,7 +1929,7 @@ export interface BooksSettings {
 }
 
 /** A record whose entries can be shown. */
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'stock_doc';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'stock_doc' | 'asset';
 
 /** First and last day of a period, both included, as yyyy-mm-dd. */
 export interface BooksPeriod {
@@ -1927,7 +1939,7 @@ export interface BooksPeriod {
 
 /* ---------- VAT ---------- */
 
-export type VatItemKind = 'invoice' | 'till_day' | 'return' | 'bill' | 'credit';
+export type VatItemKind = 'invoice' | 'till_day' | 'return' | 'bill' | 'credit' | 'asset_sale';
 
 /** One document as the VAT return sees it, with what it puts in each box. */
 export interface VatItem {
@@ -2483,4 +2495,111 @@ export interface StockDocument {
   value: number;
   noCost: number;
   lines?: Array<{ productId: number; productName: string; unit: string; quantity: number; unitCost: number | null; value: number | null }>;
+}
+
+export const ASSET_CATEGORIES = ['furniture', 'equipment', 'vehicle', 'building', 'land', 'intangible', 'other'] as const;
+export type AssetCategory = (typeof ASSET_CATEGORIES)[number];
+export type AssetStatus = 'in_use' | 'worn_out' | 'sold' | 'scrapped' | 'returned';
+export type AssetDisposalKind = 'sold' | 'scrapped' | 'returned';
+
+/** A year's rate for each kind, until the accountant says otherwise (the same as the server's). */
+export const DEFAULT_ASSET_RATES: Record<AssetCategory, number> = { furniture: 20, equipment: 20, vehicle: 20, building: 5, land: 0, intangible: 20, other: 10 };
+
+/** One thing in the fixed assets register. */
+export interface FixedAsset {
+  id: number;
+  name: string;
+  code: string | null;
+  category: AssetCategory;
+  boughtOn: string;
+  inUseFrom: string;
+  cost: number;
+  residual: number;
+  rate: number;
+  monthly: number;
+  openingDepreciated: number;
+  depreciated: number;
+  value: number;
+  lastMonth: string | null;
+  wornOutIn: string | null;
+  status: AssetStatus;
+  place: 'shop' | 'carwash';
+  note: string | null;
+  small: boolean;
+  bill: { id: number; number: string | null; supplier: string | null } | null;
+  disposal: {
+    kind: AssetDisposalKind;
+    day: string;
+    net: number | null;
+    vat: number | null;
+    vatRate: number | null;
+    buyer: string | null;
+    buyerNui: string | null;
+    customerId: number | null;
+    paidPlaceId: number | null;
+    creditBill: { id: number; number: string | null } | null;
+    result: number;
+    note: string | null;
+  } | null;
+}
+
+export interface FixedAssetDetail extends FixedAsset {
+  months: Array<{ month: string; amount: number }>;
+  plan: Array<{ month: string; amount: number }>;
+  canChangeStart: boolean;
+}
+
+export interface AssetInput {
+  name: string;
+  code: string | null;
+  category: AssetCategory;
+  boughtOn: string;
+  inUseFrom: string;
+  cost: number;
+  residual: number;
+  rate: number | null;
+  openingDepreciated: number | null;
+  place: 'shop' | 'carwash';
+  note: string | null;
+}
+
+export interface AssetDisposeInput {
+  kind: 'sold' | 'scrapped';
+  day: string;
+  amount: number | null;
+  vatRate: 0 | 8 | 18 | null;
+  buyerName: string | null;
+  buyerNui: string | null;
+  customerId: number | null;
+  paidPlaceId: number | null;
+  note: string | null;
+}
+
+export interface AssetScheduleRow {
+  id: number;
+  name: string;
+  code: string | null;
+  category: AssetCategory;
+  inUseFrom: string;
+  rate: number;
+  cost: number;
+  openingDepreciated: number;
+  depreciation: number;
+  openingValue: number;
+  added: number;
+  disposedValue: number;
+  closingValue: number;
+  disposal: AssetDisposalKind | null;
+  disposedOn: string | null;
+  result: number | null;
+}
+
+export interface AssetBooksCheckRow {
+  category: AssetCategory;
+  cost: number;
+  depreciated: number;
+  booksCost: number;
+  booksDepreciated: number;
+  costAccount: string;
+  depreciationAccount: string | null;
 }

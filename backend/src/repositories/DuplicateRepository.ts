@@ -157,6 +157,8 @@ export class DuplicateRepository {
     `.execute(this.db);
     const moved = await this.db.selectFrom('product_barcodes').select('barcode').where('product_id', '=', dropId).orderBy('id').execute();
     await this.db.updateTable('product_barcodes').set({ product_id: keepId }).where('product_id', '=', dropId).execute();
+    // A product sold by measure has no packs: the moved barcodes find it, one unit at a time.
+    await sql`UPDATE product_barcodes b SET pack_size = NULL FROM products k WHERE k.id = ${keepId} AND b.product_id = k.id AND k.unit <> 'piece'`.execute(this.db);
     const added = moved.map((row) => row.barcode);
     if (dropBarcode && dropBarcode !== kept.rows[0]?.barcode) {
       await this.db.insertInto('product_barcodes').values({ product_id: keepId, barcode: dropBarcode }).onConflict((oc) => oc.column('barcode').doNothing()).execute();

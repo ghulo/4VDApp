@@ -121,21 +121,19 @@ export function BarcodeCard({ product }: { product: Product }) {
               <Field
                 label={t.barcodes.packPrice}
                 hint={pack.uneven ? undefined : pack.perPiece !== null ? t.barcodes.perPiece(formatMoney(pack.perPiece)) : t.barcodes.packPriceHint}
-                error={
-                  pack.uneven && (
-                    <>
-                      {t.barcodes.unevenPack}{' '}
-                      {pack.uneven.map((price) => (
-                        <Button key={price} variant="ghost" onClick={() => setPackPrice(price.toFixed(2))}>
-                          {t.barcodes.usePrice(formatMoney(price))}
-                        </Button>
-                      ))}
-                    </>
-                  )
-                }
+                error={pack.uneven ? t.barcodes.unevenPack : undefined}
               >
                 <input type="number" min={0.01} step="0.01" inputMode="decimal" value={packPrice} onChange={(event) => setPackPrice(event.target.value)} />
               </Field>
+            </div>
+          )}
+          {canPack && onPack && pack.uneven && (
+            <div className="form-actions">
+              {pack.uneven.map((price) => (
+                <Button key={price} onClick={() => setPackPrice(price.toFixed(2))}>
+                  {t.barcodes.usePrice(formatMoney(price))}
+                </Button>
+              ))}
             </div>
           )}
           {error && (

@@ -141,7 +141,14 @@ function FullLayout() {
   // there is something underneath it to see through.
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 0);
+    // Scroll events come every frame; only the change between top and not-top needs a render.
+    let last: boolean | null = null;
+    const onScroll = () => {
+      const now = window.scrollY > 0;
+      if (now === last) return;
+      last = now;
+      setScrolled(now);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fbm, hash, noise } from '../utils/perlin';
 import { drawBarcode, drawCar, drawCart, drawReceipt, type Shade } from './shopDriftArt';
 import { SCAN_EVENT } from '../utils/shopScan';
+import { createDotRenderer } from './shopDriftGl';
 
 /** One dot every GAP CSS pixels: the noise and everything in it share this grid. */
 const GAP = 4;
@@ -16,10 +17,14 @@ const CONTOURS = 8;
 const LINE = 0.2;
 /** One sweep of the scan beam from top to bottom, in seconds. */
 const SCAN_PERIOD = 11;
-/** Frames a second it may draw at, fastest first; the PC drops a step when it can't keep up. */
-const FRAME_RATES = [60, 30];
-/** Frames measured before deciding (the first ones are slow while the browser warms up). */
-const SETTLE_FRAMES = 90;
+/**
+ * Frames a second it may draw at, fastest first; the PC drops a step when it can't keep up.
+ * On the graphics card a frame costs almost nothing, so it can follow a fast screen up to 120.
+ */
+const GPU_RATES = [120, 60, 30];
+const CPU_RATES = [60, 30];
+/** Frames drawn between checks of how it is keeping up (the first batch only warms up). */
+const CHECK_FRAMES = 120;
 /** Cars keep to roads near the top and the bottom, clear of the form; the third is further back. */
 const LANES = [0.1, 0.93, 0.85];
 
@@ -107,12 +112,24 @@ function makeBars(): number[] {
  */
 export function ShopDrift() {
   const ref = useRef<HTMLCanvasElement>(null);
+  // Drawn on the graphics card when it can; otherwise on the CPU, on a fresh canvas
+  // (one that has handed out a WebGL context can't give a 2D one).
+  const [onCard, setOnCard] = useState(true);
+  // A lost graphics context comes back on a fresh canvas.
+  const [generation, setGeneration] = useState(0);
   useEffect(() => {
     const canvas = ref.current;
-    const context = canvas?.getContext('2d');
+    if (!canvas) return undefined;
+    const gpu = onCard ? createDotRenderer(canvas) : null;
+    if (onCard && !gpu) {
+      setOnCard(false);
+      return undefined;
+    }
+    const context = gpu ? null : canvas.getContext('2d');
     const scene = document.createElement('canvas');
     const paint = scene.getContext('2d', { willReadFrequently: true });
-    if (!canvas || !context || !paint) return undefined;
+    if ((!gpu && !context) || !paint) return undefined;
+    const rates = gpu ? GPU_RATES : CPU_RATES;
     const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let width = 0;
@@ -121,7 +138,7 @@ export function ShopDrift() {
     let rows = 0;
     let ratio = 1;
     /** The frame is written straight into pixels: one buffer, one put a frame. */
-    let frameImage = context.createImageData(1, 1);
+    let frameImage = new ImageData(1, 1);
     let framePixels = new Uint32Array(0);
     /** For each brightness step, the pixels of its dot: where (from the dot's corner) and what colour. */
     let stampOffsets: Int32Array[] = [];
@@ -162,14 +179,14 @@ export function ShopDrift() {
       }
     };
 
-    // Every dot size drawn once, then copied pixel by pixel: far quicker than drawing circles.
-    const makeStamps = () => {
+    // Every dot size drawn once, side by side on one sheet: the dots are copied from it.
+    const drawSheet = () => {
       const size = Math.ceil(GAP * ratio);
       const sheet = document.createElement('canvas');
       sheet.width = size * LEVELS;
       sheet.height = size;
       const ink = sheet.getContext('2d');
-      if (!ink) return;
+      if (!ink) return null;
       ink.fillStyle = getComputedStyle(canvas).color;
       for (let level = 1; level < LEVELS; level++) {
         const light = level / (LEVELS - 1);
@@ -178,7 +195,16 @@ export function ShopDrift() {
         ink.arc(level * size + size / 2, size / 2, (0.3 + 1.15 * light) * ratio, 0, Math.PI * 2);
         ink.fill();
       }
-      const sheetPixels = new Uint32Array(ink.getImageData(0, 0, sheet.width, size).data.buffer);
+      return { size, pixels: ink.getImageData(0, 0, sheet.width, size).data };
+    };
+
+    // On the CPU each dot is copied pixel by pixel: far quicker than drawing circles.
+    const makeStamps = () => {
+      const drawn = drawSheet();
+      if (!drawn) return;
+      const { size } = drawn;
+      const sheet = { width: size * LEVELS };
+      const sheetPixels = new Uint32Array(drawn.pixels.buffer);
       stampOffsets = [];
       stampColours = [];
       for (let level = 0; level < LEVELS; level++) {
@@ -438,6 +464,14 @@ export function ShopDrift() {
       paintScene();
       const pixels = paint.getImageData(0, 0, columns, rows).data;
       const fade = Math.exp(-dt * 1.6);
+      if (gpu) {
+        for (let index = 0; index < wake.length; index++) {
+          wake[index] = Math.max(wake[index]! * fade, (pixels[index * 4 + 3]! / 255) * 0.8);
+        }
+        gpu.draw(pixels, wake, { time, scanY, pointer, ripples });
+        return;
+      }
+      if (!context) return;
       framePixels.fill(0);
       const pitch = frameImage.width;
       for (let row = 0; row < rows; row++) {
@@ -479,16 +513,64 @@ export function ShopDrift() {
     let frame = 0;
     let last = 0;
     let time = 0;
-    // Never faster than 60 a second (fast screens would draw it twice as often for nothing).
-    // When a frame takes most of its time, drop to 30; still too slow, stand still, so typing stays quick.
+    // Draw at most `rates[rate]` a second, keeping time so a 144 Hz screen still gets 120.
+    // Every CHECK_FRAMES frames, see how it keeps up: frames missing, or a frame taking most
+    // of its time on the CPU, drop a step; at the last step it stands still, so typing stays quick.
     let rate = 0;
+    let due = 0;
     let tooSlow = false;
+    let lost = false;
     let cost = 0;
-    let measured = 0;
+    let previous = 0;
+    let gaps: number[] = [];
+    let checkStart = 0;
+    let checked = 0;
+    let warm = false;
+    let strikes = 0;
+    const check = (now: number) => {
+      if (checkStart === 0) {
+        checkStart = now;
+        checked = 0;
+        gaps = [];
+        return;
+      }
+      if (++checked < CHECK_FRAMES) return;
+      // The screen's own pace: the quicker end of the gaps between its frames.
+      gaps.sort((a, b) => a - b);
+      const refresh = gaps[Math.floor(gaps.length * 0.1)] ?? 1000 / rates[rate]!;
+      const expected = Math.min(rates[rate]!, 1000 / refresh);
+      const achieved = (checked * 1000) / (now - checkStart);
+      const slow =
+        warm &&
+        (achieved < expected * 0.8 || (achieved < rates[rate]! * 0.8 && achieved < 50) || cost > (1000 / expected) * 0.6);
+      warm = true;
+      checkStart = now;
+      checked = 0;
+      gaps = [];
+      // One slow batch can be the browser busy elsewhere; two in a row means it can't keep up.
+      strikes = slow ? strikes + 1 : 0;
+      if (strikes < 2) return;
+      strikes = 0;
+      if (rate < rates.length - 1) {
+        rate++;
+        due = 0;
+      } else {
+        tooSlow = true;
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      canvas.dataset.fps = tooSlow ? 'still' : String(rates[rate]);
+    };
     const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
-      const gap = 1000 / FRAME_RATES[rate]!;
-      if (last && now - last < gap - 2) return;
+      const gap = previous ? now - previous : 0;
+      previous = now;
+      // Hidden or stalled for a while: measure afresh.
+      if (gap > 250) checkStart = 0;
+      else if (gap > 0) gaps.push(gap);
+      const every = 1000 / rates[rate]!;
+      if (due && now < due - 1) return;
+      due = due && now - due < every ? due + every : now + every;
       const dt = Math.min(0.05, (now - (last || now)) / 1000);
       last = now;
       time += dt;
@@ -497,13 +579,7 @@ export function ShopDrift() {
       step(dt, time, scanY);
       draw(dt, time, scanY);
       cost = cost * 0.9 + (performance.now() - started) * 0.1;
-      if (++measured < SETTLE_FRAMES || cost < gap * 0.6) return;
-      measured = 0;
-      if (rate < FRAME_RATES.length - 1) rate++;
-      else {
-        tooSlow = true;
-        cancelAnimationFrame(frame);
-      }
+      check(now);
     };
 
     const resize = () => {
@@ -517,21 +593,32 @@ export function ShopDrift() {
         frame = 0;
         return;
       }
+      if (lost) return;
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(height * ratio);
-      // A few spare rows and columns, so the last dots' pixels never run off the end.
-      frameImage = context.createImageData(canvas.width + 8, canvas.height + 8);
-      framePixels = new Uint32Array(frameImage.data.buffer);
       columns = Math.ceil(width / GAP);
       rows = Math.ceil(height / GAP);
       scene.width = columns;
       scene.height = rows;
-      makeStamps();
       mapField();
+      if (gpu) {
+        const grid = { width: canvas.width, height: canvas.height, ratio, columns, rows };
+        const sheet = drawSheet();
+        if (sheet) gpu.resize(grid, field, twinkle, sheet);
+      } else if (context) {
+        // A few spare rows and columns, so the last dots' pixels never run off the end.
+        frameImage = context.createImageData(canvas.width + 8, canvas.height + 8);
+        framePixels = new Uint32Array(frameImage.data.buffer);
+        makeStamps();
+      }
       if (first || movers.length === 0) place();
+      canvas.dataset.fps = still || tooSlow ? 'still' : String(rates[rate]);
       if (still || tooSlow) draw(0, time, -100);
       else if (frame === 0) {
         last = 0;
+        due = 0;
+        previous = 0;
+        checkStart = 0;
         frame = requestAnimationFrame(tick);
       }
     };
@@ -550,14 +637,27 @@ export function ShopDrift() {
     panel?.addEventListener('pointermove', onMove);
     panel?.addEventListener('pointerleave', onLeave);
 
+    // The graphics card was reset (a driver update, say): stop, and start again on a fresh canvas.
+    const onLost = (event: Event) => {
+      event.preventDefault();
+      lost = true;
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+    const onRestored = () => setGeneration((count) => count + 1);
+    canvas.addEventListener('webglcontextlost', onLost);
+    canvas.addEventListener('webglcontextrestored', onRestored);
+
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
       panel?.removeEventListener('pointermove', onMove);
       panel?.removeEventListener('pointerleave', onLeave);
     };
-  }, []);
-  return <canvas ref={ref} className="shop-drift" aria-hidden="true" />;
+  }, [onCard, generation]);
+  return <canvas key={`${onCard ? 'card' : 'cpu'}-${generation}`} ref={ref} className="shop-drift" aria-hidden="true" />;
 }

@@ -260,7 +260,16 @@ describe('ClaudeProvider', () => {
     expect(seen[0]).toMatchObject({ model: 'claude-opus-5-5', system: 'Be brief', fallbacks: 'default', messages: [{ role: 'user', content: 'Sales?' }] });
   });
 
-  it('should send Haiku a plain request, without effort or fallbacks', async () => {
+  it('should send Haiku 5.5 low effort but no fallbacks', async () => {
+    const { client, seen } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Fine.' }] });
+
+    await new ClaudeProvider('key', 'claude-haiku-5-5', { client }).generate({ instructions: '', request: 'Hi' });
+
+    expect(seen[0]).toMatchObject({ output_config: { effort: 'low' } });
+    expect(seen[0]).not.toHaveProperty('fallbacks');
+  });
+
+  it('should send Haiku 4.5 a plain request, without effort or fallbacks', async () => {
     const { client, seen } = fakeClient({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Fine.' }] });
 
     await new ClaudeProvider('key', 'claude-haiku-4-5', { client }).generate({ instructions: '', request: 'Hi' });

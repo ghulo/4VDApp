@@ -13,7 +13,10 @@ const TIMEOUT_MS = 60_000;
 export class ClaudeProvider implements AiProvider {
   readonly name: string;
   private readonly client: Anthropic;
+  /** Haiku has no server-side fallback. */
   private readonly isHaiku: boolean;
+  /** Haiku 4.5 also takes no effort setting. */
+  private readonly noEffort: boolean;
 
   constructor(
     apiKey: string,
@@ -22,6 +25,7 @@ export class ClaudeProvider implements AiProvider {
   ) {
     this.name = `Anthropic ${model}`;
     this.isHaiku = model.startsWith('claude-haiku');
+    this.noEffort = model.startsWith('claude-haiku-4');
     this.client =
       options.client ??
       new Anthropic({
@@ -38,14 +42,10 @@ export class ClaudeProvider implements AiProvider {
       response = await this.client.beta.messages.create({
         model: this.model,
         max_tokens: MAX_ANSWER_TOKENS,
-        // Haiku 4.5 accepts neither setting, so it gets a plain request.
-        ...(!this.isHaiku && {
-          // If a safety check declines, the API retries on a suitable model instead of failing.
-          betas: ['server-side-fallback-2026-07-01'],
-          fallbacks: 'default' as const,
-          // Short answers from data in front of it: low effort is plenty and keeps the cost down.
-          output_config: { effort: 'low' as const },
-        }),
+        // If a safety check declines, the API retries on a suitable model instead of failing. Haiku has no fallback.
+        ...(!this.isHaiku && { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }),
+        // Short answers from data in front of it: low effort is plenty and keeps the cost down.
+        ...(!this.noEffort && { output_config: { effort: 'low' as const } }),
         system: instructions,
         messages: [{ role: 'user', content: request }],
       });
@@ -82,7 +82,7 @@ export class ClaudeProvider implements AiProvider {
         messages: [{ role: 'user', content: request }],
         output_config: {
           format: zodOutputFormat(schema),
-          ...(!this.isHaiku && { effort: 'low' as const }),
+          ...(!this.noEffort && { effort: 'low' as const }),
         },
       });
     } catch (error) {

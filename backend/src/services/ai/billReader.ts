@@ -111,11 +111,10 @@ export interface BillReader {
 }
 
 /**
- * Opus at medium effort: invoices are dense and a misread price costs more
- * than the few cents a scan takes. Kept apart from the Ask model, which
- * answers short questions and can be cheaper.
+ * Haiku 5.5 at medium effort: about 40 times cheaper than Opus, and every line
+ * is checked by a person on the scan page before anything is saved.
  */
-const MODEL = 'claude-opus-5-5';
+const MODEL = 'claude-haiku-5-5';
 const MAX_TOKENS = 16_000;
 const TIMEOUT_MS = 120_000;
 

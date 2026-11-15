@@ -36,8 +36,8 @@ export interface PartnerReader {
   read(source: PartnerSource): Promise<PartnerReading>;
 }
 
-/** Short documents with a dozen fields: Sonnet is plenty, and cheap. */
-const MODEL = 'claude-sonnet-5-5';
+/** Short documents with a dozen fields: Haiku is plenty, and cheapest. */
+const MODEL = 'claude-haiku-5-5';
 const MAX_TOKENS = 2_000;
 const TIMEOUT_MS = 60_000;
 

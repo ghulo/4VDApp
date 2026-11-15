@@ -24,7 +24,8 @@ const wireSchema = z.object({
   ),
 });
 
-const MODEL = 'claude-opus-5-5';
+/** Haiku 5.5: cheap, and every line is matched by a person before it counts. */
+const MODEL = 'claude-haiku-5-5';
 const MAX_TOKENS = 32_000;
 const TIMEOUT_MS = 180_000;
 

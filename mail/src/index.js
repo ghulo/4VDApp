@@ -16,9 +16,9 @@ export default {
 
     const headers = parsed.headers ?? [];
     const sender = checkSender(headers, from, message.from);
+    // Shown in `npx wrangler tail`, top first: whether Cloudflare's own results sit above any the sender wrote.
+    const auth = headers.filter((h) => /authentication-results|received-spf/i.test(h.key)).map((h) => `${h.key}: ${h.value}`);
     if (!sender.ok) {
-      // Shown in `npx wrangler tail`: why a mail was dropped, and the authentication headers that arrived.
-      const auth = headers.filter((h) => /authentication-results|received-spf/i.test(h.key)).map((h) => `${h.key}: ${h.value}`);
       console.log('dropped', { from, envelope: message.from, why: sender.why, auth });
       return;
     }
@@ -34,7 +34,7 @@ export default {
         files,
       }),
     });
-    console.log('passed on', { from, via: sender.why, files: files.length, status: response.status });
+    console.log('passed on', { from, via: sender.why, files: files.length, status: response.status, auth });
     // The sender hears back only when 4VD couldn't take it, so they know to send it again.
     if (!response.ok) message.setReject('4VD could not take this bill just now. Please send it again in a few minutes.');
   },

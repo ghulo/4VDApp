@@ -18,7 +18,7 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Send a clear phone photo of a bill (no PDF): it is read too; an email with only a logo gives a "no PDF or bill photo" update
 - [ ] Forward the same PDF again in a new email: an update says it was already received, and no second scan appears
 - [ ] Settings → Bills by email: add a supplier's address or @domain; mail from them is read, mail from anyone else never shows up
-- [ ] A mail with a faked From is dropped: `npx wrangler tail` in mail/ shows "dropped"
+- [ ] A mail with a faked From, and one carrying a made-up "Authentication-Results: mx.cloudflare.net; dkim=pass…" header, are both dropped (`npx wrangler tail` in mail/; see docs/DEPLOYMENT.md step 5)
 - [ ] Under Bills, "Emailed, not read yet": Read now opens the scan; Remove clears it from To do
 
 **Step 12: fixed assets**

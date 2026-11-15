@@ -106,13 +106,19 @@ Click **Save, rebuild and deploy**. Never run `npm run vapid` again afterwards: 
 
 Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Environment** → Key `BACKUP_PING_TOKEN`, Value = that string → **Save, rebuild and deploy**. Finally GitHub → **Actions → Database backup → Run workflow**. When it goes green, the "Check the weekly backup" step in the dashboard ticks by itself and stays ticked while a backup finishes every week.
 
-*Bills by email (bills@4vd.app).* A supplier bill forwarded to bills@4vd.app is read into a waiting bill scan. Mail goes Cloudflare Email Routing → the Email Worker in `mail/` (`4vd-mail`) → `POST /api/internal/bill-email`. The Worker drops mail whose From domain fails SPF, DKIM and DMARC; the API takes only team members' sign-in emails and the senders in Settings → Bills by email. Set up once:
+*Bills by email (bills@4vd.app).* A supplier bill forwarded to bills@4vd.app is read into a waiting bill scan. Mail goes Cloudflare Email Routing → the Email Worker in `mail/` (`4vd-mail`) → `POST /api/internal/bill-email`. The Worker trusts only the topmost Authentication-Results header that names Cloudflare, and drops mail whose From domain doesn't pass DMARC, DKIM or SPF there. The API takes only team members' sign-in emails and the senders in Settings → Bills by email.
+
+**Not yet proven:** that Cloudflare always puts its own results header above any the sender wrote. If it adds none, a sender could write a fake one. So the API token goes on last, after the test in step 5. Set up once, in this order:
 
 1. Make a secret: any random 20+ character string (e.g. `openssl rand -hex 24`).
-2. Render → `4vd-api` → **Environment** → **Add Environment Variable**: Key `BILL_EMAIL_TOKEN`, Value = the secret → **Save, rebuild and deploy**. (Optional: `BILL_EMAIL_DAILY_READS`, default 50.)
-3. In `mail/`: `npm ci`, then `npx wrangler login` (once), `npx wrangler secret put BILL_EMAIL_TOKEN` (paste the same secret), then `npx wrangler deploy`.
-4. Cloudflare dashboard → **4vd.app** → **Email** → **Email Routing** → **Routing rules** → **Create address**: Custom address `bills`, Action **Send to a Worker**, Destination `4vd-mail` → **Save**. Email Routing is already on for 4vd.app, so no DNS change.
-5. Forward a bill PDF from your own sign-in email to bills@4vd.app. Watch `npx wrangler tail` in `mail/`: `passed on` means it reached the API; `dropped` lists why and which headers arrived.
+2. In `mail/`: `npm ci`, then `npx wrangler login` (once), `npx wrangler secret put BILL_EMAIL_TOKEN` (paste the secret), then `npx wrangler deploy`.
+3. Cloudflare dashboard → **4vd.app** → **Email** → **Email Routing** → **Routing rules** → **Create address**: Custom address `bills`, Action **Send to a Worker**, Destination `4vd-mail` → **Save**. Email Routing is already on for 4vd.app, so no DNS change. (These labels are from memory; the screen may word them slightly differently.)
+4. In `mail/` run `npx wrangler tail`. The API still answers 401 to everything, so nothing can be read yet.
+5. Send two test mails to bills@4vd.app:
+   - a bill PDF forwarded from your own sign-in email;
+   - a mail that carries an extra, made-up header `Authentication-Results: mx.cloudflare.net; dkim=pass header.d=gmail.com; dmarc=pass header.from=gmail.com`.
+   The tail prints the auth headers top first. Go on only if Cloudflare's own header sits above the made-up one. If it doesn't, stop: the Worker must check DKIM itself first.
+6. Render → `4vd-api` → **Environment** → **Add Environment Variable**: Key `BILL_EMAIL_TOKEN`, Value = the same secret → **Save, rebuild and deploy**. (Optional: `BILL_EMAIL_DAILY_READS`, default 50.) Forward the PDF again: `passed on … status 202`, and the scan appears under Bills.
 
 After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`); Cloudflare rebuilds the front ends on every push.
 

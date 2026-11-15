@@ -7,6 +7,8 @@ export interface ProductSnapshot {
   categoryId: number;
   price: number;
   costPrice: number | null;
+  /** Undefined means "not part of this change". */
+  wholesalePrice?: number | null;
   imageUrl: string | null;
   sku: string | null;
   isActive: boolean;
@@ -18,7 +20,7 @@ export interface ProductSnapshot {
 }
 
 /** Every field a change is checked for, in the order sentences name them. */
-const FIELDS: ProductField[] = ['name', 'description', 'categoryId', 'price', 'costPrice', 'imageUrl', 'sku', 'isActive', 'vatRate', 'vatExempt', 'originCountry', 'bulkPricingTiers'];
+const FIELDS: ProductField[] = ['name', 'description', 'categoryId', 'price', 'costPrice', 'wholesalePrice', 'imageUrl', 'sku', 'isActive', 'vatRate', 'vatExempt', 'originCountry', 'bulkPricingTiers'];
 
 type FieldChanges = Partial<Record<keyof ProductSnapshot, { from: unknown; to: unknown }>>;
 
@@ -32,7 +34,7 @@ export function describeProductChanges(
 ): { say: Say; details: FieldChanges } | null {
   const details: FieldChanges = {};
   for (const field of FIELDS) {
-    if (field === 'bulkPricingTiers' && after.bulkPricingTiers === undefined) continue;
+    if ((field === 'bulkPricingTiers' || field === 'wholesalePrice') && after[field] === undefined) continue;
     if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
       details[field] = { from: before[field], to: after[field] };
     }

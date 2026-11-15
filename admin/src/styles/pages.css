@@ -5955,3 +5955,110 @@ fieldset.report-sections {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Prices page (Stock → Prices) ---------- */
+
+/* A price and its mark-up side by side, figures lined up. */
+.price-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.price-box {
+  width: 9ch;
+  min-height: var(--control-h-sm);
+  padding: 4px 8px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-box--markup {
+  width: 7ch;
+}
+
+/* A price typed but not saved yet: the amber wash of "changed". */
+.price-box--changed {
+  border-color: var(--amber-rim);
+  background: var(--amber-wash);
+}
+
+.price-box[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.price-markup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: calc(7ch + var(--space-4));
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.prices-row--changed > td:first-child {
+  box-shadow: inset 3px 0 0 var(--amber-mark);
+}
+
+.prices-row__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+/* Save stays in reach while the list scrolls, like the product form's Save row. */
+form.prices-form > .prices-form__actions {
+  position: sticky;
+  bottom: var(--bottom-bar-h, 0px);
+  z-index: 4;
+  flex-wrap: wrap;
+  margin: var(--space-4) calc(-1 * var(--space-2)) 0;
+  padding: var(--space-3) var(--space-2);
+  border-top: 1px solid var(--line);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--glass-highlight);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+
+.prices-form__summary {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.prices-form__problem {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.prices-form__look {
+  color: var(--warn);
+}
+
+.prices-file {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.prices-file p {
+  margin: 0;
+}
+
+.prices-file__list {
+  max-height: 240px;
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 600px) {
+  .price-box {
+    font-size: var(--text-field);
+  }
+}

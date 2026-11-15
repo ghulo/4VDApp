@@ -2,6 +2,10 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
+  PriceChangeInput,
+  PriceFilePlan,
+  PricePlan,
+  PriceRow,
   Attachment,
   AttachmentEntity,
   BinItem,
@@ -805,10 +809,15 @@ export const expiryApi = {
 
 export const exportsApi = {
   /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
-  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', format: 'xlsx' | 'csv', range?: ReportRange): Promise<void> {
+  async download(
+    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list',
+    format: 'xlsx' | 'csv',
+    range?: ReportRange,
+    extra?: { level?: 'shelf' | 'wholesale'; categoryId?: number; lang?: 'en' | 'sq' },
+  ): Promise<void> {
     // The server names files and writes dates in the admin's own timezone.
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const { blob, filename } = await apiDownload(`/exports/${kind}.${format}`, { ...range, tz });
+    const { blob, filename } = await apiDownload(`/exports/${kind}.${format}`, { ...range, ...extra, tz });
     saveDownload(blob, filename ?? `4vd-${kind}.${format}`);
   },
 };
@@ -1029,4 +1038,16 @@ export const vatApi = {
 export const threadsApi = {
   get: async (kind: ThreadSubject, id: number) => (await apiRequest<Thread>(`/threads/${kind}/${id}`)).data,
   post: async (kind: ThreadSubject, id: number, body: string) => (await apiRequest<Thread>(`/threads/${kind}/${id}`, { method: 'POST', body: { body } })).data,
+};
+
+/** The Prices page: every product's prices, changes checked before they're saved, from cost or from an Excel file. */
+export const pricesApi = {
+  list: async () => (await apiRequest<PriceRow[]>('/products/prices')).data,
+  plan: async (changes: PriceChangeInput[]) => (await apiRequest<PricePlan>('/products/prices/plan', { method: 'POST', body: { changes } })).data,
+  fromCost: async (input: { productIds?: number[]; categoryId?: number; level: 'shelf' | 'wholesale'; markupPercent: number; rounding: 'exact' | 'nice' }) =>
+    (await apiRequest<PricePlan & { noCost: number }>('/products/prices/from-cost', { method: 'POST', body: input })).data,
+  readFile: async (fileName: string, data: string) =>
+    (await apiRequest<PriceFilePlan>('/products/prices/file', { method: 'POST', body: { fileName, data } })).data,
+  save: async (changes: PriceChangeInput[], source: 'editor' | 'excel' | 'fromCost') =>
+    (await apiRequest<{ changed: number }>('/products/prices', { method: 'POST', body: { changes, source } })).data,
 };

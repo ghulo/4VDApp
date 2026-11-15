@@ -37,6 +37,8 @@ export interface SectionTab {
   accountant?: boolean;
   /** Opened now and then (setup, year end): it waits under the row's More, unless it is the page you are on. */
   rare?: boolean;
+  /** Only for those who oversee the business (managers and the owner). */
+  overseersOnly?: boolean;
 }
 
 export interface NavItem {
@@ -67,6 +69,7 @@ export const SECTIONS = {
   stock: [
     { to: '/inventory', key: 'shelf' },
     { to: '/products', key: 'products' },
+    { to: '/prices', key: 'prices', overseersOnly: true },
     { to: '/categories', key: 'categories' },
   ],
   sales: [
@@ -129,7 +132,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'stock',
     items: [
-      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/categories', '/labels'] },
+      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/categories', '/labels'] },
       { to: '/counts', key: 'counts', icon: ClipboardText },
     ],
   },

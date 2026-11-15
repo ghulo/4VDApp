@@ -232,6 +232,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   const price = Number(draft.price);
   const cost = Number(draft.costPrice);
   const margin = draft.price && draft.costPrice && price > 0 ? Math.round(((price - cost) / price) * 100) : null;
+  // What is added on top of the cost (TREFIN's "Marzha"), for the shelf and the wholesale price.
+  const markup = (sell: number) => (cost > 0 ? Math.round(((sell - cost) / cost) * 1000) / 10 : null);
+  const wholesale = draft.wholesalePrice === '' ? null : Number(draft.wholesalePrice);
+  const wholesaleMarkup = wholesale !== null && Number.isFinite(wholesale) && draft.costPrice ? markup(wholesale) : null;
 
   return (
     <>
@@ -391,7 +395,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       <span className="field__hint">{t.productForm.vatHint}</span>
                     </label>
                   </div>
-                  {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
+                  {margin !== null && <p className="field-hint">{t.productForm.margin(margin, markup(price) ?? 0)}</p>}
                   {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
                   <h3 className="subheading">{t.productForm.wholesale}</h3>
@@ -405,7 +409,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       value={draft.wholesalePrice}
                       onChange={(event) => update('wholesalePrice', event.target.value)}
                     />
-                    <span className="field__hint">{t.productForm.wholesaleHint}</span>
+                    <span className="field__hint">
+                      {wholesaleMarkup !== null && `${t.productForm.wholesaleMarkup(wholesaleMarkup)} `}
+                      {t.productForm.wholesaleHint}
+                    </span>
                   </label>
 
                   <h3 className="subheading">{t.productForm.bulkPrices}</h3>

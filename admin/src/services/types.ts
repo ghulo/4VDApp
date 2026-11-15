@@ -2407,3 +2407,56 @@ export interface TrefinCompare {
   rows: TrefinCompareRow[];
   counts: { same: number; rounding: number; differs: number; explained: number };
 }
+
+/** One product's prices on the Prices page (VAT included). */
+export interface PriceRow {
+  id: number;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  otherBarcodes: string[];
+  categoryId: number;
+  categoryName: string;
+  unit: string;
+  vatRate: number;
+  isActive: boolean;
+  cost: number | null;
+  wholesalePrice: number | null;
+  price: number;
+  /** A new shelf price must stay above the cheapest bulk price. */
+  lowestBulkPrice: number | null;
+}
+
+/** New prices for one product; a price left out stays as it is. */
+export interface PriceChangeInput {
+  productId: number;
+  price?: number;
+  wholesalePrice?: number | null;
+  costPrice?: number | null;
+}
+
+export type PriceProblem = 'notFound' | 'priceZero' | 'bulkAbove';
+export type PriceWarning = 'belowCost' | 'wholesaleAboveShelf' | 'bigChange';
+
+export interface PlannedPriceChange {
+  productId: number;
+  name: string;
+  categoryName: string;
+  cost: { from: number | null; to: number | null };
+  wholesalePrice: { from: number | null; to: number | null };
+  price: { from: number; to: number };
+  markup: { price: number | null; wholesale: number | null };
+  lowestBulkPrice: number | null;
+  problems: PriceProblem[];
+  warnings: PriceWarning[];
+}
+
+export interface PricePlan {
+  changes: PlannedPriceChange[];
+  unchanged: number;
+}
+
+export interface PriceFilePlan extends PricePlan {
+  notFound: Array<{ row: number; text: string }>;
+  unreadable: Array<{ row: number; text: string }>;
+}

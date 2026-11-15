@@ -25,6 +25,7 @@ export type ProductField =
   | 'categoryId'
   | 'price'
   | 'costPrice'
+  | 'wholesalePrice'
   | 'imageUrl'
   | 'sku'
   | 'isActive'
@@ -363,6 +364,7 @@ const EN_PRODUCT_FIELD: Record<ProductField, string> = {
   categoryId: 'category',
   price: 'price',
   costPrice: 'cost price',
+  wholesalePrice: 'wholesale price',
   imageUrl: 'image',
   sku: 'SKU',
   isActive: 'visibility',
@@ -485,13 +487,14 @@ const SQ_PRODUCT_FIELD: Record<ProductField, string> = {
   categoryId: 'kategoria',
   price: 'çmimi',
   costPrice: 'çmimi i kostos',
+  wholesalePrice: 'çmimi me shumicë',
   imageUrl: 'fotoja',
   sku: 'SKU',
   isActive: 'dukshmëria',
   vatRate: 'TVSH-ja',
   vatExempt: 'lirimi nga TVSH-ja',
   originCountry: 'vendi',
-  bulkPricingTiers: 'çmimet me shumicë',
+  bulkPricingTiers: 'çmimet për sasi',
 };
 const SQ_SHOP_FIELD: Record<ShopField, string> = {
   name: 'emrin',

@@ -207,7 +207,7 @@ Grouped by the job at hand (`admin/src/navigation/sections.ts`). Target map:
 | | **Customers** | `/customers` | – |
 | | **Promotions** | `/promotions` | – |
 | | **Counter** | `/counter` | – (full screen, outside the menu frame; employees see only this page) |
-| Shelves | **Stock** | `/inventory` | On the shelf · Products · Categories |
+| Shelves | **Stock** | `/inventory` | On the shelf · Products · Prices (owner's side) · Categories |
 | | **Counts** | `/counts` | – |
 | Buy | **Suppliers** | `/suppliers` | All suppliers · Orders · Bills (Bills holds Scan a bill and the scan check page, `/bills/scans/:id`) |
 | Money | **Day** | `/day` | Close the day · Cash counts · Carwash |
@@ -403,6 +403,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Seeing a price at the Counter without selling | **Price check** (F10) | **Kontrollo çmimin** (key: **Shiko çmimin**) | price lookup, PLU |
 | The price businesses pay, set per product (never above the shelf price) | **wholesale price**; a customer **Pays wholesale prices** (on for new businesses); at the Counter **Prices: Shelf / Wholesale** | **çmim me shumicë**; **Paguan çmime me shumicë**; **Çmimet: Në raft / Me shumicë** *(confirm)* | invoice price, price list, tier |
 | A lower price from a quantity up | **bulk price** (Bulk price from 6) | **çmim për sasi** (Çmim për sasi nga 6) *(confirm)* | wholesale (that is the business price) |
+| What is added on top of the cost, in percent (cost 1.00, price 1.25: 25%) | **mark-up on cost** (Reports' **margin** is the profit's share of the price: 20% here) | **marzha mbi koston** (Raportet: **marzhi**) *(confirm)* | margin (for the cost-based figure) |
+| Stock → Prices: every product's cost, wholesale and shelf price, changed by typing, **Set from cost** or an Excel **price file** | **Prices** · **Set from cost** · **price file** · **price list** (for customers) | **Çmimet** · **Cakto nga kostoja** · **skedari i çmimeve** · **lista e çmimeve** *(confirm)* | price import, repricing |
 | One rabat on every line of a basket | **Basket rabat** | **Rabat i shportës** | discount, cart discount |
 | Part of a sale on the card terminal, the rest in cash | **Cash + card** (the card part: **On the card**) | **Kesh + kartelë** (**Me kartelë**) | split payment, mixed tender |
 | The printer's small screen facing the buyer | **Customer display** | **Ekrani për klientin** | pole display, VFD |

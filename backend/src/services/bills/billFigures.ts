@@ -1,4 +1,5 @@
 import { type BillLineKind, SELF_CHARGE_VAT_RATE, WITHHOLDING_RATES, type WithholdingType } from '../../constants/bills.js';
+import { nicePrice } from '../pricing/priceRules.js';
 import { roundMoney } from '../../utils/money.js';
 import { vatOf } from '../books/entryBuilder.js';
 
@@ -146,7 +147,5 @@ export function billFigures(input: FigureInput): BillFigures {
 export function priceKeepingMargin(oldCost: number, oldPrice: number, newCost: number): number {
   if (oldPrice <= 0 || oldCost >= oldPrice) return roundMoney(newCost);
   const margin = (oldPrice - oldCost) / oldPrice;
-  const cents = Math.ceil((newCost / (1 - margin)) * 100 - 1e-6);
-  const step = cents < 1_000 ? 5 : cents < 10_000 ? 50 : 100;
-  return (Math.ceil((cents + 1) / step) * step - 1) / 100;
+  return nicePrice(newCost / (1 - margin));
 }

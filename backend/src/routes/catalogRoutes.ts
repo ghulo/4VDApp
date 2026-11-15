@@ -4,6 +4,7 @@ import type { Container } from '../container.js';
 import { createCategoryController } from '../controllers/categoryController.js';
 import { createDuplicateController } from '../controllers/duplicateController.js';
 import { createInventoryController } from '../controllers/inventoryController.js';
+import { createPriceController } from '../controllers/priceController.js';
 import { createPricingController } from '../controllers/pricingController.js';
 import { createProductController } from '../controllers/productController.js';
 import { createPromotionController } from '../controllers/promotionController.js';
@@ -32,9 +33,17 @@ export function createDuplicateRoutes({ duplicateService, guards }: Container): 
   return router;
 }
 
-export function createProductRoutes({ productService, activityLogService, guards }: Container): Router {
+export function createProductRoutes({ productService, activityLogService, priceService, guards }: Container): Router {
   const controller = createProductController(productService, activityLogService);
+  const prices = createPriceController(priceService);
   const router = Router();
+
+  // The Prices page (before '/:id', which would take "prices" for an id).
+  router.get('/prices', ...guards.products, prices.list);
+  router.post('/prices/plan', ...guards.products, prices.plan);
+  router.post('/prices/from-cost', ...guards.products, prices.fromCost);
+  router.post('/prices/file', ...guards.products, prices.readFile);
+  router.post('/prices', ...guards.products, prices.apply);
 
   router.get('/', guards.authenticated, controller.list);
   router.get('/barcode/:barcode', guards.authenticated, controller.getByBarcode);

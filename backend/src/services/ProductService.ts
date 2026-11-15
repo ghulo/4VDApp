@@ -340,6 +340,7 @@ export class ProductService {
       categoryId: input.categoryId,
       price: input.price,
       costPrice: input.costPrice,
+      wholesalePrice: input.wholesalePrice,
       imageUrl: input.imageUrl,
       sku: input.sku,
       isActive: input.isActive,
@@ -460,13 +461,14 @@ export class ProductService {
   }
 }
 
-function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapshot {
+export function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapshot {
   return {
     name: product.name,
     description: product.description,
     categoryId: product.category_id,
     price: toMoney(product.base_price),
     costPrice: toMoneyOrNull(product.cost_price),
+    wholesalePrice: toMoneyOrNull(product.wholesale_price),
     imageUrl: product.image_url,
     sku: product.sku,
     isActive: product.is_active,

@@ -33,6 +33,25 @@ export interface ProductData {
   scalePlu?: number | null;
 }
 
+/** One product's prices, for the Prices page and the price file. */
+export interface PriceRow {
+  id: number;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  other_barcodes: string[];
+  category_id: number;
+  category_name: string;
+  unit: ProductUnit;
+  vat_rate: number;
+  cost_price: string | null;
+  wholesale_price: string | null;
+  base_price: string;
+  is_active: boolean;
+  /** The cheapest bulk price, which a new shelf price must stay above. */
+  lowest_bulk_price: string | null;
+}
+
 /** A product joined with its category name and stock, as the API needs it. */
 export interface ProductRecord {
   id: number;
@@ -205,6 +224,48 @@ export class ProductRepository {
       .where('deleted_at', 'is', null)
       .executeTakeFirst();
     return result.numUpdatedRows > 0n;
+  }
+
+  /** Every live product with what the Prices page and the price file need (hidden ones included). */
+  async priceRows(): Promise<PriceRow[]> {
+    return this.db
+      .selectFrom('products as p')
+      .innerJoin('categories as c', 'c.id', 'p.category_id')
+      .select([
+        'p.id',
+        'p.name',
+        'p.sku',
+        'p.barcode',
+        'p.category_id',
+        'c.name as category_name',
+        'p.unit',
+        'p.vat_rate',
+        'p.cost_price',
+        'p.wholesale_price',
+        'p.base_price',
+        'p.is_active',
+      ])
+      .select(otherBarcodes)
+      .select(sql<string | null>`(select min(t.price)::text from bulk_pricing_tiers t where t.product_id = p.id)`.as('lowest_bulk_price'))
+      .where('p.deleted_at', 'is', null)
+      .orderBy('p.name')
+      .orderBy('p.id')
+      .execute();
+  }
+
+  /** Changes only the prices given; left out keeps them. */
+  async setPrices(id: number, prices: { basePrice?: number; wholesalePrice?: number | null; costPrice?: number | null }): Promise<void> {
+    await this.db
+      .updateTable('products')
+      .set({
+        ...(prices.basePrice !== undefined && { base_price: prices.basePrice }),
+        ...(prices.wholesalePrice !== undefined && { wholesale_price: prices.wholesalePrice }),
+        ...(prices.costPrice !== undefined && { cost_price: prices.costPrice }),
+        updated_at: new Date(),
+      })
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .execute();
   }
 
   /** Every live product, with just what matching a supplier's bill needs. */

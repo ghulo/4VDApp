@@ -3,6 +3,13 @@ import type { ExportFile, ExportService } from '../services/ExportService.js';
 import { sheetToCsv, sheetToXlsx } from '../utils/spreadsheet.js';
 import { exportTimeZoneSchema, reportRangeSchema } from '../validators/reportValidators.js';
 import { parseInput } from '../validators/validate.js';
+import { z } from 'zod';
+
+const priceListSchema = z.object({
+  level: z.enum(['shelf', 'wholesale']).default('shelf'),
+  categoryId: z.coerce.number().int().positive().optional(),
+  lang: z.enum(['en', 'sq']).default('sq'),
+});
 
 export type ExportFormat = 'csv' | 'xlsx';
 
@@ -32,6 +39,8 @@ export function createExportsController(exportService: ExportService) {
     money: (req: Request, tz: string) => exportService.money(range(req), tz),
     expenses: (req: Request, tz: string) => exportService.expenses(range(req), tz),
     team: (req: Request, tz: string) => exportService.team(range(req), tz),
+    prices: (_req: Request, tz: string) => exportService.prices(tz),
+    'price-list': (req: Request, tz: string) => exportService.priceList(parseInput(priceListSchema, req.query), tz),
   };
   return { exports, handle };
 }

@@ -40,6 +40,7 @@ const ProductPage = lazyPage(() => import('./pages/ProductPage'), 'ProductPage')
 const InventoryPage = lazyPage(() => import('./pages/InventoryPage'), 'InventoryPage');
 const ProductFormPage = lazyPage(() => import('./pages/ProductFormPage'), 'ProductFormPage');
 const ProductsPage = lazyPage(() => import('./pages/ProductsPage'), 'ProductsPage');
+const PricesPage = lazyPage(() => import('./pages/PricesPage'), 'PricesPage');
 const ReportsPage = lazyPage(() => import('./pages/ReportsPage'), 'ReportsPage');
 const SalesPage = lazyPage(() => import('./pages/SalesPage'), 'SalesPage');
 const DocumentDetailPage = lazyPage(() => import('./pages/DocumentDetailPage'), 'DocumentDetailPage');
@@ -204,6 +205,7 @@ function App() {
                       <Route element={<SectionTabs tabs={SECTIONS.stock} labelKey="stock" />}>
                         <Route path="inventory" element={<InventoryPage />} />
                         <Route path="products" element={<ProductsPage />} />
+                        <Route path="prices" element={<PricesPage />} />
                         <Route path="categories" element={<CategoriesPage />} />
                       </Route>
                       <Route path="inventory/duplicates" element={<DuplicatesPage />} />

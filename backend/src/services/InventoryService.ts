@@ -1,4 +1,5 @@
 import { RECENT_ADJUSTMENTS_LIMIT } from '../constants/stock.js';
+import { allowsParts } from '../constants/units.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { InventoryRecord, InventoryRepository } from '../repositories/InventoryRepository.js';
 import type { StockAdjustmentRepository } from '../repositories/StockAdjustmentRepository.js';
@@ -178,7 +179,7 @@ export async function applyStockChange(
   },
 ): Promise<{ before: number; after: number }> {
   // Part of a piece is never sold, counted or written off; kilos go to the gram.
-  if (!Number.isInteger(change.delta) && (await repos.products.unitOf(change.productId)) !== 'kg') {
+  if (!Number.isInteger(change.delta) && !allowsParts(await repos.products.unitOf(change.productId))) {
     throw new ValidationError(`${change.productName} is sold by the piece: use a whole number, not ${change.delta}`);
   }
   const result = await repos.inventory.applyDelta(change.productId, change.delta);

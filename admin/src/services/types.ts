@@ -87,7 +87,7 @@ export interface Product {
   updatedAt: string;
 }
 
-export type ProductUnit = 'piece' | 'kg';
+export type ProductUnit = 'piece' | 'kg' | 'l' | 'm' | 'm2';
 
 export interface ProductInput {
   name: string;

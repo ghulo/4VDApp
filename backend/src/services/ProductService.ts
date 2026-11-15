@@ -1,4 +1,5 @@
 import { DEFAULT_REORDER_LEVEL, SYSTEM_STOCK_REASONS } from '../constants/stock.js';
+import { allowsParts } from '../constants/units.js';
 import type { ProductUnit, UserRole } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CategoryRepository } from '../repositories/CategoryRepository.js';
@@ -282,7 +283,7 @@ export class ProductService {
   /** `logExtra` is added to the logged details (an approved request names who asked). */
   async create(input: NewProductInput, createdBy: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     await this.ensureCategoryExists(input.categoryId);
-    if (input.unit !== 'kg' && !Number.isInteger(input.stock)) throw new ValidationError(`stock: ${input.name} is sold by the piece, so its stock is a whole number`);
+    if (!allowsParts(input.unit) && !Number.isInteger(input.stock)) throw new ValidationError(`stock: ${input.name} is sold by the piece, so its stock is a whole number`);
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? []);
 
     try {
@@ -323,8 +324,8 @@ export class ProductService {
     const existing = await this.productRepository.findById(id, true);
     if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
     await this.ensureCategoryExists(input.categoryId);
-    if (input.unit === 'piece' && existing.unit === 'kg' && !Number.isInteger(existing.quantity_on_hand ?? 0)) {
-      throw new ValidationError(`${existing.name} has ${existing.quantity_on_hand} kg in stock; count it to whole pieces before selling it by the piece`);
+    if (input.unit === 'piece' && allowsParts(existing.unit) && !Number.isInteger(existing.quantity_on_hand ?? 0)) {
+      throw new ValidationError(`${existing.name} has ${existing.quantity_on_hand} ${existing.unit} in stock; count it to whole pieces before selling it by the piece`);
     }
 
     const existingTiers = await this.pricingTierRepository.findByProductId(id);
@@ -408,8 +409,8 @@ export class ProductService {
       originCountry,
       wholesalePrice: input.wholesalePrice,
       unit: input.unit,
-      // A product sold by the piece is never weighed on the scale.
-      scalePlu: input.unit === 'piece' ? null : input.scalePlu,
+      // Only the scale's kilo labels carry a number; left out (undefined unit) keeps what is stored.
+      scalePlu: input.unit !== undefined && input.unit !== 'kg' ? null : input.scalePlu,
     };
   }
 

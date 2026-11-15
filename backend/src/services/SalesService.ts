@@ -1,4 +1,5 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
+import { allowsParts } from '../constants/units.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import { receivePayment } from './TabService.js';
 import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
@@ -467,7 +468,7 @@ export class SalesService {
     // Offline, the shelf decided: what 4VD didn't know about is taken to 0 and asked to be counted.
     let taken = input.quantity;
     if (input.offline || (await this.sellsPastStock(repos, soldBy))) {
-      if (!Number.isInteger(input.quantity) && product.unit !== 'kg') {
+      if (!Number.isInteger(input.quantity) && !allowsParts(product.unit)) {
         throw new ValidationError(`${product.name} is sold by the piece: use a whole number, not ${input.quantity}`);
       }
       const onHand = await repos.inventory.onHandForUpdate(product.id);

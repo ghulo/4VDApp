@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCT_UNITS } from '../constants/units.js';
 import { MANUAL_STOCK_REASONS } from '../constants/stock.js';
 import { VAT_RATES } from '../services/documents/vat.js';
 import { endDateQuery, startDateQuery } from './operationsValidators.js';
@@ -57,7 +58,7 @@ const productFields = {
   /** Exempt from VAT, with a 0% rate. */
   vatExempt: z.boolean().optional(),
   /** Sold by the piece or by the kilo; left out keeps it (by the piece for a new product). */
-  unit: z.enum(['piece', 'kg']).optional(),
+  unit: z.enum(PRODUCT_UNITS).optional(),
   /** The number the shop scale prints in its labels (1-99999); null clears it, left out keeps it. */
   scalePlu: z.number().int().min(1).max(99_999).nullable().optional(),
   /** ISO code of the country it comes from; null clears it, left out keeps it. */

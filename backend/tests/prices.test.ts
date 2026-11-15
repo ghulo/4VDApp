@@ -81,7 +81,7 @@ describe('the Prices page', () => {
     });
     expect(download.status).toBe(200);
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(download.body as Buffer);
+    await workbook.xlsx.load(download.body as never);
     const sheet = workbook.worksheets[0]!;
     let headerRow = 0;
     sheet.eachRow((row, number) => {

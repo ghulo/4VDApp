@@ -208,7 +208,8 @@ export interface CategoriesTable {
   deleted_at: Date | null;
 }
 
-export type ProductUnit = 'piece' | 'kg';
+/** Sold by the piece, or measured: by the kilo (weighed), the litre, the metre or the square metre. */
+export type ProductUnit = 'piece' | 'kg' | 'l' | 'm' | 'm2';
 
 export interface ProductsTable {
   id: Generated<number>;

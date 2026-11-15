@@ -1,4 +1,6 @@
 import { albanianDate, albanianMoney, albanianNumber } from '../i18n/albanianFormat';
+import type { ProductUnit } from '../services/types';
+import { unitSymbol } from './units';
 import type { Language } from '../i18n/language';
 
 let current: Language = 'en';
@@ -137,14 +139,14 @@ export function groupByDay<T>(rows: T[], at: (row: T) => string): Array<{ day: s
   return groups;
 }
 
-/** A quantity in its unit: whole pieces as they are, kilos to the gram ("0.775 kg", in Albanian "0,775 kg"). */
-export function formatQuantity(quantity: number, unit: 'piece' | 'kg' = 'piece'): string {
+/** A quantity in its unit: whole pieces as they are, measured ones to three decimals ("0.775 kg", "2.5 m²", in Albanian "0,775 kg"). */
+export function formatQuantity(quantity: number, unit: ProductUnit = 'piece'): string {
   if (unit === 'piece') return String(quantity);
   const kilos =
     current === 'sq'
       ? albanianNumber(quantity, 3).replace(/,?0+$/, '')
       : cached('kg', () => new Intl.NumberFormat('en-IE', { maximumFractionDigits: 3 })).format(quantity);
-  return `${kilos}${String.fromCharCode(160)}kg`;
+  return `${kilos}${String.fromCharCode(160)}${unitSymbol(unit)}`;
 }
 
 /** True when a quantity is kept to the gram (at most 3 decimals), as kilo products are. */

@@ -1173,7 +1173,7 @@ export const sq: Catalogue = {
   },
   productForm: {
     unit: 'Shitet me',
-    units: { piece: 'Copë', kg: 'Kilogram (peshohet)' },
+    units: { piece: 'Copë', kg: 'Kilogram (peshohet)', l: 'Litër', m: 'Metër', m2: 'Metër katror' },
     scalePlu: 'Numri në peshore',
     scalePluHint: 'Numri (PLU) që ka ky produkt në peshoren e dyqanit. Etiketat e saj atëherë skanohen drejt në shportë.',
     addProduct: 'Shto produkt',

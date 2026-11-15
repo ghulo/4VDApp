@@ -1184,7 +1184,7 @@ export const en = {
   },
   productForm: {
     unit: 'Sold by',
-    units: { piece: 'The piece', kg: 'The kilo (weighed)' },
+    units: { piece: 'The piece', kg: 'The kilo (weighed)', l: 'The litre', m: 'The metre', m2: 'The square metre' },
     scalePlu: 'Scale number',
     scalePluHint: 'The number (PLU) this product has on the shop scale. Its labels then scan straight into the basket.',
     addProduct: 'Add product',

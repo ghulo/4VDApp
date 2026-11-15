@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { allowsParts } from '../utils/units';
 import { BarcodeCard } from '../components/BarcodeCard';
 import { CountryFlag, useCountries } from '../components/CountryFlag';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
@@ -312,8 +313,11 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     <label className="field">
                       <span className="field__label">{t.productForm.unit}</span>
                       <select name="unit" value={draft.unit} onChange={(event) => update('unit', event.target.value as ProductUnit)}>
-                        <option value="piece">{t.productForm.units.piece}</option>
-                        <option value="kg">{t.productForm.units.kg}</option>
+                        {(['piece', 'kg', 'l', 'm', 'm2'] as const).map((unit) => (
+                          <option key={unit} value={unit}>
+                            {t.productForm.units[unit]}
+                          </option>
+                        ))}
                       </select>
                     </label>
                     {draft.unit === 'kg' && (
@@ -466,8 +470,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         <input
                           type="number"
                           min={0}
-                          step={draft.unit === 'kg' ? 0.001 : 1}
-                          inputMode={draft.unit === 'kg' ? 'decimal' : 'numeric'}
+                          step={allowsParts(draft.unit) ? 0.001 : 1}
+                          inputMode={allowsParts(draft.unit) ? 'decimal' : 'numeric'}
                           value={draft.stock}
                           onChange={(event) => update('stock', event.target.value)}
                         />

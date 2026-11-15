@@ -1,4 +1,5 @@
 import { afterDiscount, levelPriceFor, parsePercent, roundMoney, unitPriceFor } from '../../components/BasketForm';
+import { allowsParts } from '../../utils/units';
 import type { Product } from '../../services/types';
 import type { StoredLine } from './useBaskets';
 
@@ -83,7 +84,7 @@ export function summarise(lines: CounterLine[]): BasketSummary {
   return {
     products: lines.length,
     // A weighed line is one item, whatever it weighs.
-    pieces: lines.reduce((sum, line) => sum + (line.product?.unit === 'kg' ? 1 : line.quantity), 0),
+    pieces: lines.reduce((sum, line) => sum + (allowsParts(line.product?.unit) ? 1 : line.quantity), 0),
     subtotal,
     rabat: roundMoney(subtotal - total),
     total,

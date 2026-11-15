@@ -1,3 +1,4 @@
+import { allowsParts, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
   ArrowCounterClockwise,
@@ -412,13 +413,13 @@ export function CounterPage() {
     const product = byId.get(productId);
     const capped = product ? Math.min(quantity, product.stock.quantity) : quantity;
     if (product && capped < quantity) complain(t.counter.noMore(product.name, product.stock.quantity));
-    const least = product?.unit === 'kg' ? 0.001 : 1;
+    const least = allowsParts(product?.unit) ? 0.001 : 1;
     setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(least, toGram(capped)) } : line)));
   }
 
   function nudge(step: 1 | -1) {
     if (!selected) return;
-    if (step === -1 && selected.quantity - 1 < (selected.product?.unit === 'kg' ? 0.001 : 1)) return setPanel('remove');
+    if (step === -1 && selected.quantity - 1 < (allowsParts(selected.product?.unit) ? 0.001 : 1)) return setPanel('remove');
     setQuantity(selected.productId, selected.quantity + step);
   }
 
@@ -1136,10 +1137,10 @@ export function CounterPage() {
           <NumberSheet
             open={panel === 'quantity'}
             title={t.counter.setQuantity(selected.product?.name ?? selected.name)}
-            label={selected.product?.unit === 'kg' ? `${t.counter.quantity} (kg)` : t.counter.quantity}
+            label={allowsParts(selected.product?.unit) ? `${t.counter.quantity} (${unitSymbol(selected.product?.unit)})` : t.counter.quantity}
             initial={String(selected.quantity)}
-            whole={selected.product?.unit !== 'kg'}
-            check={(value) => (value < (selected.product?.unit === 'kg' ? 0.001 : 1) ? t.counter.reasonNeeded : null)}
+            whole={!allowsParts(selected.product?.unit)}
+            check={(value) => (value < (allowsParts(selected.product?.unit) ? 0.001 : 1) ? t.counter.reasonNeeded : null)}
             onClose={closePanel}
             onApply={(value) => {
               setQuantity(selected.productId, value);

@@ -1,4 +1,5 @@
 import { Hourglass, User } from '@phosphor-icons/react';
+import { allowsParts, unitSymbol } from '../../utils/units';
 import { useEffect, useRef } from 'react';
 import { useT } from '../../i18n/useT';
 import { formatMoney, formatQuantity } from '../../utils/format';
@@ -102,7 +103,7 @@ export function BasketTable({ lines, selectedId, flashId, flashKey, expiry, onSe
                     </span>
                   )}
                   {formatMoney(line.unitPrice)}
-                  {unit === 'kg' && <span className="counter-row__unit">{t.counter.perKg}</span>}
+                  {allowsParts(unit) && <span className="counter-row__unit">/{unitSymbol(unit)}</span>}
                 </td>
                 <td className="counter-table__num counter-table__rabat">{line.percent > 0 ? `${line.percent}%` : '–'}</td>
                 <td className="counter-table__num counter-table__vat">{product ? `${product.vatExempt ? 0 : product.vatRate}%` : '–'}</td>

@@ -4,6 +4,7 @@ import type { DatabaseClient } from '../../database/connection.js';
 import { type AccountLinks, type DraftEntry, fingerprintOf } from './entryBuilder.js';
 import { ensurePlaces } from '../../database/places.js';
 import { checkoutKeySql, loadPlaceAccounts, PostingRules } from './postingRules.js';
+import { depreciationDue, fillDepreciation } from '../assets/depreciation.js';
 
 /** Any number, shared by every server: only one of them posts at a time. */
 export const POSTING_LOCK = 40_839;
@@ -17,6 +18,8 @@ const DIRECT_SOURCES: Record<string, string> = {
   stock_count_lines: 'count_line',
   stock_adjustments: 'adjustment',
   stock_documents: 'stock_doc',
+  fixed_assets: 'asset',
+  depreciation_months: 'depreciation',
   supplier_payments: 'payment',
   expenses: 'expense',
   money_moves: 'move',
@@ -52,7 +55,14 @@ export class BooksPoster {
   }
 
   /** Post everything waiting. Safe to call often: with nothing queued it costs one query. */
-  async sync(): Promise<void> {
+  async sync(now = new Date()): Promise<void> {
+    // A month that just ended has depreciation to work out; it is stored, then posts with the rest below.
+    if (await depreciationDue(this.db, this.timeZone, now)) {
+      await this.db.transaction().execute(async (trx) => {
+        await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+        await fillDepreciation(trx, await this.startDay(trx), this.timeZone, now);
+      });
+    }
     const waiting = await this.db.selectFrom('ledger_queue').select('row_id').limit(1).executeTakeFirst();
     if (!waiting) return;
     await this.db.transaction().execute(async (trx) => {
@@ -91,6 +101,8 @@ export class BooksPoster {
         union all select 'stock_count_lines', id from stock_count_lines where decided_at is not null
         union all select 'stock_adjustments', id from stock_adjustments where reason = 'Manual adjustment'
         union all select 'stock_documents', id from stock_documents
+        union all select 'fixed_assets', id from fixed_assets where disposed_on is not null
+        union all select 'depreciation_months', id from depreciation_months
         union all select 'supplier_bills', id from supplier_bills where issued_on >= ${start}::date and trefin_ref is null
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'

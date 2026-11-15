@@ -36,6 +36,7 @@ import { PartnerRepository } from './PartnerRepository.js';
 import { AttachmentRepository } from './AttachmentRepository.js';
 import { BinRepository } from './BinRepository.js';
 import { StockDocumentRepository } from './StockDocumentRepository.js';
+import { AssetRepository } from './AssetRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -76,6 +77,7 @@ function createTransactionalRepositories(db: DatabaseClient) {
     bin: new BinRepository(db),
     shortfalls: new OfflineShortfallRepository(db),
     stockDocuments: new StockDocumentRepository(db),
+    assets: new AssetRepository(db),
   };
 }
 

@@ -13,6 +13,14 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 12: fixed assets**
+- [ ] Books → Fixed assets: add something owned before 4VD, with its wear before the books
+- [ ] A supplier bill with an equipment line: the asset appears, and its first month posts after the month ends
+- [ ] Sell one (paid into the till and on a customer's tab), throw one away, then Undo
+- [ ] Split a bill line of several pieces; a credit that gives one back
+- [ ] The year's depreciation and the register in Excel; Next to the books
+- [ ] An asset sale on the VAT return and the sales book
+
 **Step 9: products and prices**
 - [ ] Prices page: wholesale prices, mark-up, Excel download and upload
 - [ ] Pack barcodes and the new units on a product
@@ -113,7 +121,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 - [ ] 23. 4VD as a full Windows program: the Counter keeps selling with no internet (a local copy of products and prices, sales sent on when it's back), opens full screen and starts with Windows, and talks straight to the printer, drawer, scanner and scale. Same account and data as 4vd.app; phones keep using 4vd.app from the home screen (agreed 2026-11-12)
 
 **C. In TREFIN but unused here (build after A and B)**
-- [ ] 12. Fixed assets register and depreciation
+- [x] 12. Fixed assets register and depreciation (2026-11-15): Books → Fixed assets. Equipment on a bill becomes an asset by itself, older things are typed in; each finished month posts its straight-line depreciation; selling or throwing one away posts the gain or loss and the sale VAT; a credit gives it back; the year's schedule, a check against the books and Excel. Rates and rules to confirm with the accountant (handoff.md)
 - [ ] 13. Employees and payroll: contract fields, monthly payroll with pension contributions and wage tax, payslips, the EDI payroll declaration, annual leave
 - [ ] 14. Several warehouses and transfers between them
 - [ ] 15. Loyalty cards and bonus, B2B portal for business customers

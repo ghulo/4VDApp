@@ -52,6 +52,7 @@ import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
 import { StockDocumentService } from './services/StockDocumentService.js';
+import { FixedAssetService } from './services/FixedAssetService.js';
 import { DayService } from './services/DayService.js';
 import { AttentionService } from './services/AttentionService.js';
 import { TabRepository } from './repositories/TabRepository.js';
@@ -236,6 +237,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const purchaseOrderRepository = new PurchaseOrderRepository(db);
   const purchaseOrderService = new PurchaseOrderService(purchaseOrderRepository, transactions);
   const booksService = new BooksService(db, config.shopTimeZone);
+  const fixedAssetService = new FixedAssetService(db, transactions, config.shopTimeZone, () => booksService.poster.sync());
   const openingService = new OpeningService(db, config.shopTimeZone);
   const expiryService = new ExpiryService(new ExpiryRepository(db), transactions, config.shopTimeZone);
   const insightsService = new InsightsService(new InsightsRepository(db), reportsRepository, reportsService, tabService, expiryService, supplierBillService);
@@ -516,6 +518,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     attentionService,
     expenseService,
     stockDocumentService,
+    fixedAssetService,
     tabService,
     purchaseOrderService,
     supplierBillService,

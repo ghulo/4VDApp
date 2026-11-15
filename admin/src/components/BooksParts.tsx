@@ -37,8 +37,12 @@ export function linkLabel(t: Catalogue, key: AccountLinkKey): string {
     return t.books.expenseLink(t.expenses.categories[category]);
   }
   if (key.startsWith('asset:')) {
-    const category = key.slice('asset:'.length) as keyof Catalogue['bills']['equipmentCategories'];
-    return t.books.assetLink(t.bills.equipmentCategories[category]);
+    const category = key.slice('asset:'.length) as keyof Catalogue['assets']['categories'];
+    return t.books.assetLink(t.assets.categories[category]);
+  }
+  if (key.startsWith('accumulated:')) {
+    const category = key.slice('accumulated:'.length) as keyof Catalogue['assets']['categories'];
+    return t.books.accumulatedLink(t.assets.categories[category]);
   }
   return t.books.links[key as keyof Catalogue['books']['links']];
 }
@@ -74,6 +78,10 @@ export function targetPath(target: EntryTarget, day: string): string {
       return `/stock-documents/${target.id}`;
     case 'customer':
       return `/customers/${target.id}`;
+    case 'asset':
+      return `/books/assets/${target.id}`;
+    case 'assets':
+      return '/books/assets';
     case 'product':
       return `/products/${target.id}`;
     case 'expenses':

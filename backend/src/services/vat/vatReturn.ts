@@ -11,6 +11,7 @@ import { vatOf } from '../books/entryBuilder.js';
  * Where a figure goes, in plain terms:
  * - Sales (till days and invoices): exempt → 9, 0% → 10, 18% and the old 16%
  *   → 12/13, 8% → 14/15. Box 11 (exports) stays empty: the shop doesn't export.
+ * - A fixed asset sold: like a sale, by its VAT rate, on the day it left.
  * - A customer's return (a credit note the shop issues) lowers the VAT charged
  *   the way the form asks: 18% → 53/54, 8% → 55/56 (0% and exempt lower 10/9).
  * - Bills from suppliers in Kosovo: 18%/16% → 43/44, 8% → 45/46, equipment
@@ -78,7 +79,7 @@ export const PURCHASE_BOOK_BOXES = new Set(CLAIM_ROWS.flatMap((row) => [row.base
 
 export type Boxes = Partial<Record<number, number>>;
 
-export type VatItemKind = 'invoice' | 'till_day' | 'return' | 'bill' | 'credit';
+export type VatItemKind = 'invoice' | 'till_day' | 'return' | 'bill' | 'credit' | 'asset_sale';
 
 /** One document as the VAT return sees it. */
 export interface VatItem {

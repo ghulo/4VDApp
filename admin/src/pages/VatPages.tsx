@@ -491,7 +491,7 @@ function BoxDocuments({ items, row }: { items: VatItem[]; row: VatRowDef }) {
 function itemName(t: Catalogue, item: VatItem): string {
   const d = t.vat.documents;
   if (item.kind === 'till_day') return d.tillDay(item.count ?? 0);
-  const kind = item.kind === 'invoice' ? d.invoice : item.kind === 'return' ? d.return : item.kind === 'credit' ? d.credit : d.bill;
+  const kind = item.kind === 'invoice' ? d.invoice : item.kind === 'return' ? d.return : item.kind === 'credit' ? d.credit : item.kind === 'asset_sale' ? d.assetSale : d.bill;
   return `${kind} ${item.number ?? d.noNumber}`;
 }
 

@@ -77,6 +77,8 @@ function linkFor(entry: ActivityEntry): string | null {
       return id ? `/promotions/${id}` : null;
     case 'stock_count':
       return id ? `/counts/${id}` : null;
+    case 'asset':
+      return id ? `/books/assets/${id}` : null;
     case 'stock_document':
       return id ? `/stock-documents/${id}` : null;
     case 'user':

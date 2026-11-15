@@ -57,6 +57,9 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Amber colours and status colours
 - [ ] Overview, the sidebar's More and the phone bottom bar
 - [ ] Skeleton loading shapes
+- [ ] Polish pass: stat tiles, tables, filter chips, inset panels, charts in amber, toasts
+- [ ] Phones: the bigger small buttons don't crowd the toolbars
+- [ ] Counter: the F3 product finder and the Invoices list (F1)
 
 **Needs real files**
 - [ ] Bank statement reader with a real Kosovo bank statement (Excel, CSV, PDF)

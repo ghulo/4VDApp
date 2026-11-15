@@ -37,9 +37,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # The dashboard, plus its old addresses, comma-separated.
+      # The dashboard (comma-separated if ever more than one).
       - key: CORS_ORIGINS
-        value: https://4vd.app,https://dashboard.4vd.app,https://app.4vd.app
+        value: https://4vd.app
       # Optional: AI helpers and computer alerts. Leave empty to keep them off.
       - key: ANTHROPIC_API_KEY
         sync: false

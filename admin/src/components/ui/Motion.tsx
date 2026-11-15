@@ -1,4 +1,7 @@
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+
+/** How long a change shows before the piece settles back to plain text (just over --motion-quick). */
+const SETTLE_MS = 260;
 
 /*
  * Small moving pieces of the shared motion vocabulary (DESIGN.md 12). The
@@ -6,9 +9,20 @@ import { type CSSProperties, type ReactNode, useState } from 'react';
  * and each piece simply shows its final state.
  */
 
-/** Remembers the value shown before the current one, and counts the changes (0 on first show). */
+/**
+ * Remembers the value shown before the current one, and counts the changes
+ * (0 on first show). A moment after each change the old value is forgotten,
+ * so the piece settles back to plain text (copies and reads cleanly); a timer,
+ * not animationend, so it settles under reduced motion too.
+ */
 function useChange<T>(value: T) {
   const [state, setState] = useState({ now: value, before: value, turn: 0 });
+  const changing = !Object.is(state.now, state.before);
+  useEffect(() => {
+    if (!changing) return;
+    const timer = window.setTimeout(() => setState((was) => ({ ...was, before: was.now })), SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [changing, state.turn]);
   if (!Object.is(state.now, value)) {
     const next = { now: value, before: state.now, turn: state.turn + 1 };
     setState(next);

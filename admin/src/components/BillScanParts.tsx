@@ -1,6 +1,6 @@
 import { FilePdf, Image, X } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useT } from '../i18n/useT';
 import { billScansApi } from '../services/api';
@@ -42,15 +42,19 @@ export function ScanBillForm({ onDone, openCheck = true }: { onDone: () => void;
   const [files, setFiles] = useState<File[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const readyTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(readyTimer.current), []);
   const scan = useMutation({
     mutationFn: async () => billScansApi.scan(await Promise.all(files.map(toPage))),
     onSuccess: (receipt) => {
       for (const key of ['bill-scans', 'attention']) queryClient.invalidateQueries({ queryKey: [key] });
+      // Counter staff send it on to the owner: nothing for them to check.
+      if (!openCheck) return onDone();
       // "Reading the bill…" turns into "Ready to check" for a moment, then the check opens.
       setReady(true);
-      window.setTimeout(() => {
+      readyTimer.current = window.setTimeout(() => {
         onDone();
-        if (openCheck) navigate(`/bills/scans/${receipt.id}`);
+        navigate(`/bills/scans/${receipt.id}`);
       }, READY_MS);
     },
   });
@@ -114,7 +118,7 @@ export function ScanBillForm({ onDone, openCheck = true }: { onDone: () => void;
         </p>
       )}
       <div className="form-actions">
-        <Button variant="ghost" onClick={onDone}>
+        <Button variant="ghost" onClick={onDone} disabled={ready}>
           {t.common.cancel}
         </Button>
         <Button type="submit" variant="primary" disabled={files.length === 0 || scan.isPending || ready}>

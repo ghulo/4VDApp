@@ -362,42 +362,51 @@
 
 /* ---------- Toasts stack three deep ----------
    The newest sits in front; the older ones peek out above it, a little
-   smaller. Pointing at the stack or tabbing into it fans them out. */
+   smaller. Pointing at the stack or tabbing into it fans them out. Only
+   with a mouse: on touch screens they stay in a column, so an Undo behind
+   the newest is never out of reach. */
 
-.toasts__list {
-  display: grid;
-  justify-items: end;
-  align-items: end;
-}
+@media (hover: hover) and (pointer: fine) {
+  .toasts__list {
+    display: grid;
+    justify-items: end;
+    align-items: end;
+  }
 
-.toasts__list > .toast {
-  grid-area: 1 / 1;
-  z-index: calc(3 - var(--depth, 0));
-  transform: translateY(calc(var(--depth, 0) * -1 * var(--space-2))) scale(calc(1 - var(--depth, 0) * 0.05));
-  transform-origin: 50% 0;
-}
+  .toasts__list > .toast {
+    position: relative;
+    grid-area: 1 / 1;
+    z-index: calc(3 - var(--depth, 0));
+    transform: translateY(calc(var(--depth, 0) * -1 * var(--space-2))) scale(calc(1 - var(--depth, 0) * 0.05));
+    transform-origin: 50% 0;
+  }
 
-/* Behind the front one only the edge shows, so no half-hidden words. */
-.toasts__list > .toast[data-behind] > * {
-  opacity: 0;
-}
+  /* Behind the front one only the edge shows, so no half-hidden words. */
+  .toasts__list > .toast[data-behind] > * {
+    opacity: 0;
+  }
 
-.toasts__list:is(:hover, :focus-within) > .toast {
-  transform: translateY(calc(var(--depth, 0) * (-100% - var(--space-2))));
-}
+  .toasts__list:is(:hover, :focus-within) > .toast {
+    transform: translateY(calc(var(--depth, 0) * (-100% - var(--space-2))));
+  }
 
-.toasts__list:is(:hover, :focus-within) > .toast > * {
-  opacity: 1;
+  .toasts__list:is(:hover, :focus-within) > .toast > * {
+    opacity: 1;
+  }
+
+  /* A strip under each toast bridges the gap to the next, so the pointer
+     never falls between them and the stack doesn't flicker shut. */
+  .toasts__list > .toast::after {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: 100%;
+    block-size: var(--space-2);
+    content: '';
+  }
 }
 
 .toast[data-leaving] {
   pointer-events: none;
-}
-
-@media (max-width: 900px) {
-  .toasts__list {
-    justify-items: stretch;
-  }
 }
 
 /* ---------- Menus and floating panels open from where they hang ---------- */
@@ -416,7 +425,13 @@
 }
 
 .menu[hidden] {
+  display: none;
   pointer-events: none;
+}
+
+/* The view-as bar's menu opens upwards. */
+.view-as .menu {
+  transform-origin: bottom right;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -602,7 +617,7 @@
   /* ---------- Toasts fan out, and fade away when they go ---------- */
 
   .toasts__list > .toast {
-    transition: transform var(--spring-time) var(--spring);
+    transition: transform var(--motion-quick) var(--spring);
   }
 
   .toasts__list > .toast > * {

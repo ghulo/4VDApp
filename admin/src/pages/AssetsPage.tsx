@@ -183,7 +183,8 @@ function ScheduleSection() {
   const { language } = useLanguage();
   const thisYear = new Date().getFullYear();
   const [params, setParams] = useSearchParams();
-  const year = Number(params.get('year')) || thisYear;
+  const asked = Number(params.get('year'));
+  const year = asked >= thisYear - 2 && asked <= thisYear ? asked : thisYear;
   const setYear = (next: number) =>
     setParams((now) => {
       const out = new URLSearchParams(now);

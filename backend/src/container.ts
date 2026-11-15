@@ -51,6 +51,7 @@ import { CashCountService } from './services/CashCountService.js';
 import { MoneyRepository } from './repositories/MoneyRepository.js';
 import { ExpenseRepository } from './repositories/ExpenseRepository.js';
 import { ExpenseService } from './services/ExpenseService.js';
+import { StockDocumentService } from './services/StockDocumentService.js';
 import { DayService } from './services/DayService.js';
 import { AttentionService } from './services/AttentionService.js';
 import { TabRepository } from './repositories/TabRepository.js';
@@ -127,6 +128,7 @@ import { DuplicateService } from './services/DuplicateService.js';
 import { DuplicateRepository } from './repositories/DuplicateRepository.js';
 import { InventoryService } from './services/InventoryService.js';
 import { PricingService } from './services/PricingService.js';
+import { PriceService } from './services/PriceService.js';
 import { ProductService } from './services/ProductService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { ThreadService } from './services/ThreadService.js';
@@ -188,6 +190,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   );
   const inventoryService = new InventoryService(inventoryRepository, stockAdjustmentRepository, transactions);
   const pricingService = new PricingService(productRepository, pricingTierRepository, transactions);
+  const priceService = new PriceService(transactions, () => productRepository.priceRows());
   const settingsService = new SettingsService(settingsRepository, transactions);
   const counterService = new CounterService(new CounterRepository(db), settingsRepository, transactions, config.shopTimeZone);
   const documentRepository = new DocumentRepository(db);
@@ -212,7 +215,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const expenseRepository = new ExpenseRepository(db);
   const expenseService = new ExpenseService(expenseRepository, transactions, carwashService, supplierBillService, config.shopTimeZone);
   const reportsService = new ReportsService(reportsRepository, carwashService, expenseService, config.shopTimeZone);
-  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository);
+  const stockDocumentService = new StockDocumentService(db, transactions, config.shopTimeZone);
+  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
@@ -477,6 +481,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     productService,
     inventoryService,
     pricingService,
+    priceService,
     salesService,
     documentService,
     analyticsService,
@@ -510,6 +515,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     dayService,
     attentionService,
     expenseService,
+    stockDocumentService,
     tabService,
     purchaseOrderService,
     supplierBillService,

@@ -33,6 +33,8 @@ export interface Basket {
   delivery?: DeliveryInput | null;
   /** An owner's yes to this customer paying later, for this basket. */
   payLater?: PayLaterApproval | null;
+  /** Wholesale prices switched on or off for this basket; left out: what the customer pays. */
+  wholesale?: boolean | null;
 }
 
 const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
@@ -98,7 +100,7 @@ export function useBaskets(userId: number) {
   }, []);
 
   /** Change the basket at the till: its customer or its rabat. */
-  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater'>>) => {
+  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater' | 'wholesale'>>) => {
     setState((now) => ({ ...now, baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, ...patch } : basket)) }));
   }, []);
 

@@ -1,4 +1,5 @@
 import { CheckCircle, MagnifyingGlass, X } from '@phosphor-icons/react';
+import { allowsParts, unitSymbol } from '../../utils/units';
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { unitPriceFor } from '../../components/BasketForm';
 import { ErrorNotice, Loading } from '../../components/Feedback';
@@ -227,7 +228,7 @@ function FinderForm({ products, error, onRetry, initialQuery, onAdd }: FinderPro
                 <span className="counter-finder__side">
                   <span className="counter-finder__price">
                     {formatMoney(unitPriceFor(product, 1))}
-                    {product.unit === 'kg' && <span className="counter-row__unit">/kg</span>}
+                    {allowsParts(product.unit) && <span className="counter-row__unit">/{unitSymbol(product.unit)}</span>}
                   </span>
                   {justAdded ? (
                     <span className="counter-finder__added">

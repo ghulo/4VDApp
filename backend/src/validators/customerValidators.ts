@@ -25,6 +25,8 @@ export const customerSchema = z
     discountPercent: z.number().gt(0).max(100).nullish(),
     /** Left out: kept as it is. Only the owner's side may change it (and the limit). */
     payLater: z.boolean().optional(),
+    /** Pays the wholesale price; owner's side only. Left out: kept (a new business starts with it on). */
+    paysWholesale: z.boolean().optional(),
     /** The yearly bonus in percent; owner's side only, like payLater. */
     bonusPercent: z.number().gt(0, 'must be more than 0').max(50, 'at most 50%').multipleOf(0.01).nullish(),
   })

@@ -6,6 +6,7 @@ import { formatEuro, roundMoney } from '../utils/money.js';
 import { toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { addDays, zonedDateTime, zonedDay } from '../utils/zonedDates.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
+import { levelPrice } from './pricing/salePrice.js';
 import { receivePayment } from './TabService.js';
 import { formatNumber, readRules } from './shopRules.js';
 
@@ -145,17 +146,23 @@ export class SalesDocumentService {
     if (new Set(ids).size !== ids.length) throw new ValidationError('Each product once: change its quantity instead');
     const id = await this.transactions.run(async (repos) => {
       let name = input.partyName ?? '';
+      let wholesale = false;
       if (input.customerId !== null) {
         const customer = await repos.tabs.findCustomer(input.customerId);
         if (!customer || customer.archived_at) throw new NotFoundError(`Customer ${input.customerId} does not exist or their tab is closed`);
         name = customer.name;
+        wholesale = customer.pays_wholesale;
       }
       const tiers = await repos.pricingTiers.findByProductIds(ids);
       const lines = [];
       for (const line of input.lines) {
         const product = await repos.products.findById(line.productId, false);
         if (!product) throw new NotFoundError(`Product ${line.productId} does not exist or is hidden`);
-        const shelfPrice = calculateUnitPrice(Number(product.base_price), tiers.get(product.id) ?? [], line.quantity);
+        // What this customer would pay without the offer: their price level and the bulk price.
+        const shelfPrice = Math.min(
+          levelPrice(Number(product.base_price), product.wholesale_price === null ? null : Number(product.wholesale_price), wholesale),
+          calculateUnitPrice(Number(product.base_price), tiers.get(product.id) ?? [], line.quantity),
+        );
         lines.push({
           productId: product.id,
           productName: product.name,

@@ -25,6 +25,7 @@ export type ProductField =
   | 'categoryId'
   | 'price'
   | 'costPrice'
+  | 'wholesalePrice'
   | 'imageUrl'
   | 'sku'
   | 'isActive'
@@ -191,6 +192,10 @@ const en = {
 
   barcodeRemoved: (p: { product: string }) => `Removed the barcode of ${p.product}`,
   barcodeAdded: (p: { product: string; code: string }) => `Gave ${p.product} another barcode, ${p.code}`,
+  packBarcodeAdded: (p: { product: string; code: string; size: number }) => `Gave ${p.product} a pack barcode, ${p.code}, for ${p.size} pieces`,
+  stockInSaved: (p: { number: string; lines: number }) => `Brought stock in with ${p.number} (${p.lines === 1 ? '1 product' : `${p.lines} products`})`,
+  stockOutSaved: (p: { number: string; lines: number }) => `Took stock out with ${p.number} (${p.lines === 1 ? '1 product' : `${p.lines} products`})`,
+  stockDocumentVoided: (p: { number: string }) => `Voided ${p.number} and put the stock back`,
   otherBarcodeRemoved: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product}`,
   barcodeAddedFromBill: (p: { product: string; code: string; supplier: string }) => `Gave ${p.product} another barcode, ${p.code}, as on ${p.supplier}'s bill`,
   barcodeTakenBack: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product} (scanned bill reopened)`,
@@ -363,6 +368,7 @@ const EN_PRODUCT_FIELD: Record<ProductField, string> = {
   categoryId: 'category',
   price: 'price',
   costPrice: 'cost price',
+  wholesalePrice: 'wholesale price',
   imageUrl: 'image',
   sku: 'SKU',
   isActive: 'visibility',
@@ -485,13 +491,14 @@ const SQ_PRODUCT_FIELD: Record<ProductField, string> = {
   categoryId: 'kategoria',
   price: 'çmimi',
   costPrice: 'çmimi i kostos',
+  wholesalePrice: 'çmimi me shumicë',
   imageUrl: 'fotoja',
   sku: 'SKU',
   isActive: 'dukshmëria',
   vatRate: 'TVSH-ja',
   vatExempt: 'lirimi nga TVSH-ja',
   originCountry: 'vendi',
-  bulkPricingTiers: 'çmimet me shumicë',
+  bulkPricingTiers: 'çmimet për sasi',
 };
 const SQ_SHOP_FIELD: Record<ShopField, string> = {
   name: 'emrin',
@@ -676,6 +683,10 @@ const sq: Templates = {
 
   barcodeRemoved: (p) => `Hoqi barkodin e ${p.product}`,
   barcodeAdded: (p) => `I dha ${p.product} edhe një barkod, ${p.code}`,
+  packBarcodeAdded: (p) => `I dha ${p.product} një barkod pakoje, ${p.code}, për ${p.size} copë`,
+  stockInSaved: (p) => `Futi stok me ${p.number} (${p.lines === 1 ? '1 produkt' : `${p.lines} produkte`})`,
+  stockOutSaved: (p) => `Nxori stok me ${p.number} (${p.lines === 1 ? '1 produkt' : `${p.lines} produkte`})`,
+  stockDocumentVoided: (p) => `Anuloi ${p.number} dhe ktheu stokun`,
   otherBarcodeRemoved: (p) => `Hoqi barkodin ${p.code} nga ${p.product}`,
   barcodeAddedFromBill: (p) => `I dha ${p.product} edhe një barkod, ${p.code}, si në faturën e ${p.supplier}`,
   barcodeTakenBack: (p) => `Hoqi barkodin ${p.code} nga ${p.product} (fatura e skanuar u rihap)`,

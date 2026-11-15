@@ -1,3 +1,4 @@
+import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
   ArrowCounterClockwise,
@@ -57,7 +58,7 @@ import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
-import { useBaskets } from './counter/useBaskets';
+import { type Basket, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 import { isNetworkFailure, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import { useWaitingSales } from './counter/useWaitingSales';
@@ -186,10 +187,13 @@ export function CounterPage() {
   }, [expiries.data]);
 
   const basketRabat = current.discount ?? '';
-  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat));
+  const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
+  // Wholesale prices: what the customer pays, unless the owner's side switched this basket.
+  const wholesaleOf = (basket: Basket) => basket.wholesale ?? customers.data?.find((one) => one.id === basket.customerId)?.paysWholesale ?? false;
+  const wholesale = wholesaleOf(current);
+  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat, wholesale));
   const summary = summarise(lines);
   const total = summary.total;
-  const customer = current.customerId ? (customers.data?.find((one) => one.id === current.customerId) ?? null) : null;
 
   // The printer's customer display, unless Settings → Counter turned it off.
   const display = useCallback(
@@ -358,12 +362,13 @@ export function CounterPage() {
     setScan('');
     setAlarm(null);
     if (!code) return;
+    // A pack barcode adds the whole pack: "2*" before a pack of 6 adds 12.
     const take = (product: Product) => {
       if (priceCheck) {
         showCheck(product);
         return sound('ok');
       }
-      sound(add(product, quantity) ? 'ok' : 'fail');
+      sound(add(product, quantity * piecesFor(product, code)) ? 'ok' : 'fail');
     };
     const shelf = products.data ?? [];
     const lower = code.toLowerCase();
@@ -409,13 +414,13 @@ export function CounterPage() {
     const product = byId.get(productId);
     const capped = product ? Math.min(quantity, product.stock.quantity) : quantity;
     if (product && capped < quantity) complain(t.counter.noMore(product.name, product.stock.quantity));
-    const least = product?.unit === 'kg' ? 0.001 : 1;
+    const least = allowsParts(product?.unit) ? 0.001 : 1;
     setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(least, toGram(capped)) } : line)));
   }
 
   function nudge(step: 1 | -1) {
     if (!selected) return;
-    if (step === -1 && selected.quantity - 1 < (selected.product?.unit === 'kg' ? 0.001 : 1)) return setPanel('remove');
+    if (step === -1 && selected.quantity - 1 < (allowsParts(selected.product?.unit) ? 0.001 : 1)) return setPanel('remove');
     setQuantity(selected.productId, selected.quantity + step);
   }
 
@@ -436,6 +441,8 @@ export function CounterPage() {
       return { productId: line.productId, quantity: line.quantity, ...(discount > 0 && { discountPercent: discount }) };
     }),
     notes: null,
+    // Always said, so the server charges what the Counter showed.
+    wholesale,
     ...(current.offerId && { offerId: current.offerId }),
     ...(current.delivery && { delivery: current.delivery }),
     ...(payment.paidBy === 'tab' && payment.dueDate && { dueDate: payment.dueDate }),
@@ -813,7 +820,7 @@ export function CounterPage() {
                 const product = byId.get(line.productId);
                 const percent = parsePercent(line.discount) || parsePercent(basket.discount ?? '');
                 if (line.offerPrice !== undefined) return sum + line.offerPrice * line.quantity;
-                return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity), percent) * line.quantity : 0);
+                return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity, wholesaleOf(basket)), percent) * line.quantity : 0);
               }, 0),
             );
             const minutes = minutesSince(basket.startedAt, now);
@@ -996,6 +1003,8 @@ export function CounterPage() {
               basketRabat={parsePercent(basketRabat)}
               offerNumber={current.offerNumber ?? null}
               delivery={current.delivery ? deliveryWhen(current.delivery) : null}
+              wholesale={wholesale}
+              onWholesale={canOversee(user.role) && current.offerId == null ? () => updateBasket({ wholesale: !wholesale }) : undefined}
               onCustomer={() => startPanel('customer')}
             />
             {checked && <PriceCheckCard product={checked} days={expiry.get(checked.id)} onClose={() => setChecked(null)} />}
@@ -1129,10 +1138,10 @@ export function CounterPage() {
           <NumberSheet
             open={panel === 'quantity'}
             title={t.counter.setQuantity(selected.product?.name ?? selected.name)}
-            label={selected.product?.unit === 'kg' ? `${t.counter.quantity} (kg)` : t.counter.quantity}
+            label={allowsParts(selected.product?.unit) ? `${t.counter.quantity} (${unitSymbol(selected.product?.unit)})` : t.counter.quantity}
             initial={String(selected.quantity)}
-            whole={selected.product?.unit !== 'kg'}
-            check={(value) => (value < (selected.product?.unit === 'kg' ? 0.001 : 1) ? t.counter.reasonNeeded : null)}
+            whole={!allowsParts(selected.product?.unit)}
+            check={(value) => (value < (allowsParts(selected.product?.unit) ? 0.001 : 1) ? t.counter.reasonNeeded : null)}
             onClose={closePanel}
             onApply={(value) => {
               setQuantity(selected.productId, value);
@@ -1293,7 +1302,7 @@ export function CounterPage() {
         current={current.customerId ?? null}
         onClose={closePanel}
         onPick={(picked) => {
-          updateBasket({ customerId: picked?.id ?? null });
+          updateBasket({ customerId: picked?.id ?? null, wholesale: null });
           if (picked) say(t.counter.customerPicked(picked.name));
           closePanel();
         }}

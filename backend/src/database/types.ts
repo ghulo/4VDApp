@@ -208,7 +208,8 @@ export interface CategoriesTable {
   deleted_at: Date | null;
 }
 
-export type ProductUnit = 'piece' | 'kg';
+/** Sold by the piece, or measured: by the kilo (weighed), the litre, the metre or the square metre. */
+export type ProductUnit = 'piece' | 'kg' | 'l' | 'm' | 'm2';
 
 export interface ProductsTable {
   id: Generated<number>;
@@ -281,6 +282,8 @@ export interface SalesTable {
   undo_note: string | null;
   /** The old till's receipt number on sales imported from it; its lines are one checkout. */
   receipt_no: ColumnType<string | null, string | null | undefined, string | null>;
+  /** Sold at the wholesale price (the customer pays it, or it was switched on for the sale). */
+  wholesale: Generated<boolean>;
 }
 
 /** Two products that look like the same item, for someone to merge or keep apart. */
@@ -290,7 +293,34 @@ export interface ProductBarcodesTable {
   product_id: number;
   barcode: string;
   added_by: number | null;
+  /** A pack barcode: scanning it adds this many pieces. Null: one piece. */
+  pack_size: ColumnType<number | null, number | null | undefined, number | null>;
   created_at: CreatedAt;
+}
+
+export type StockDocumentDirection = 'in' | 'out';
+export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given_away' | 'other';
+
+export interface StockDocumentsTable {
+  id: Generated<number>;
+  number: string;
+  direction: StockDocumentDirection;
+  reason: StockDocumentReason;
+  /** Read through to_char, so kept as text. */
+  day: string;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface StockDocumentLinesTable {
+  id: Generated<number>;
+  document_id: number;
+  product_id: number;
+  quantity: ColumnType<number, number, number>;
+  unit_cost: ColumnType<string | null, number | null, number | null>;
 }
 
 export interface ProductDuplicateFlagsTable {
@@ -527,6 +557,8 @@ export interface CustomersTable {
   discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   /** The owner lets them take goods and pay later, up to `credit_limit` (none: no cap). */
   pay_later: Generated<boolean>;
+  /** They pay the wholesale price instead of the shelf price (step 9). */
+  pays_wholesale: Generated<boolean>;
   /** The bonus they earn on a year's purchases, in percent; null: none. */
   bonus_percent: ColumnType<string | null, number | null | undefined, number | null>;
   archived_at: Date | null;
@@ -968,7 +1000,7 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
-  kind: DocumentKind | 'offer';
+  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out';
   year: number;
   last_number: number;
 }
@@ -1294,6 +1326,8 @@ export interface Database {
   report_subscriptions: ReportSubscriptionsTable;
   product_duplicate_flags: ProductDuplicateFlagsTable;
   product_barcodes: ProductBarcodesTable;
+  stock_documents: StockDocumentsTable;
+  stock_document_lines: StockDocumentLinesTable;
   ledger_accounts: LedgerAccountsTable;
   ledger_links: LedgerLinksTable;
   ledger_entries: LedgerEntriesTable;

@@ -35,6 +35,7 @@ export interface SaleRecord {
   notes: string | null;
   /** The old till's receipt number, on sales imported from it. */
   receipt_no: string | null;
+  wholesale: boolean;
   /** Units returned or waiting for a return decision. */
   returned_quantity: string;
   invoice_id: number | null;
@@ -99,6 +100,7 @@ export class SalesRepository {
           's.sale_date',
           's.notes',
           's.receipt_no',
+          's.wholesale',
           returnedQuantity,
           invoiceId,
           invoiceNumber,
@@ -193,6 +195,7 @@ export class SalesRepository {
               's.sale_date',
               's.notes',
               's.receipt_no',
+              's.wholesale',
               returnedQuantity,
               invoiceId,
               invoiceNumber,
@@ -214,6 +217,7 @@ export class SalesRepository {
     priceBeforeDiscount?: number | null;
     notes: string | null;
     saleDate?: Date;
+    wholesale?: boolean;
   }): Promise<number> {
     const row = await this.db
       .insertInto('sales')
@@ -226,6 +230,7 @@ export class SalesRepository {
         promotion_id: sale.promotionId,
         discount_percent: sale.discountPercent ?? null,
         price_before_discount: sale.priceBeforeDiscount ?? null,
+        wholesale: sale.wholesale ?? false,
         notes: sale.notes,
         ...(sale.saleDate && { sale_date: sale.saleDate }),
       })
@@ -248,6 +253,7 @@ export class SalesRepository {
         's.sale_date',
         's.notes',
         's.receipt_no',
+        's.wholesale',
         returnedQuantity,
         invoiceId,
         invoiceNumber,

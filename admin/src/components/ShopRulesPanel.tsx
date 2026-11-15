@@ -7,7 +7,7 @@ import { errorMessage } from '../utils/errors';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
 import { Button, Card, SettingRow } from './ui';
 
-const KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer'];
+const KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer', 'stock_in', 'stock_out'];
 const DIGITS = [3, 4, 5, 6, 7, 8];
 
 /** "FSM-26-000001", as the next number of that kind will read. */

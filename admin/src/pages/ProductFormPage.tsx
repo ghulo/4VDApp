@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { allowsParts } from '../utils/units';
 import { BarcodeCard } from '../components/BarcodeCard';
 import { CountryFlag, useCountries } from '../components/CountryFlag';
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react';
@@ -232,6 +233,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
   const price = Number(draft.price);
   const cost = Number(draft.costPrice);
   const margin = draft.price && draft.costPrice && price > 0 ? Math.round(((price - cost) / price) * 100) : null;
+  // What is added on top of the cost (TREFIN's "Marzha"), for the shelf and the wholesale price.
+  const markup = (sell: number) => (cost > 0 ? Math.round(((sell - cost) / cost) * 1000) / 10 : null);
+  const wholesale = draft.wholesalePrice === '' ? null : Number(draft.wholesalePrice);
+  const wholesaleMarkup = wholesale !== null && Number.isFinite(wholesale) && draft.costPrice ? markup(wholesale) : null;
 
   return (
     <>
@@ -308,8 +313,11 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                     <label className="field">
                       <span className="field__label">{t.productForm.unit}</span>
                       <select name="unit" value={draft.unit} onChange={(event) => update('unit', event.target.value as ProductUnit)}>
-                        <option value="piece">{t.productForm.units.piece}</option>
-                        <option value="kg">{t.productForm.units.kg}</option>
+                        {(['piece', 'kg', 'l', 'm', 'm2'] as const).map((unit) => (
+                          <option key={unit} value={unit}>
+                            {t.productForm.units[unit]}
+                          </option>
+                        ))}
                       </select>
                     </label>
                     {draft.unit === 'kg' && (
@@ -391,7 +399,7 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       <span className="field__hint">{t.productForm.vatHint}</span>
                     </label>
                   </div>
-                  {margin !== null && <p className="field-hint">{t.productForm.margin(margin)}</p>}
+                  {margin !== null && <p className="field-hint">{t.productForm.margin(margin, markup(price) ?? 0)}</p>}
                   {!isNew && <PriceSuggestionBox productId={product.id} onUse={(price) => update('price', String(price))} />}
 
                   <h3 className="subheading">{t.productForm.wholesale}</h3>
@@ -405,7 +413,10 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                       value={draft.wholesalePrice}
                       onChange={(event) => update('wholesalePrice', event.target.value)}
                     />
-                    <span className="field__hint">{t.productForm.wholesaleHint}</span>
+                    <span className="field__hint">
+                      {wholesaleMarkup !== null && `${t.productForm.wholesaleMarkup(wholesaleMarkup)} `}
+                      {t.productForm.wholesaleHint}
+                    </span>
                   </label>
 
                   <h3 className="subheading">{t.productForm.bulkPrices}</h3>
@@ -459,8 +470,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
                         <input
                           type="number"
                           min={0}
-                          step={draft.unit === 'kg' ? 0.001 : 1}
-                          inputMode={draft.unit === 'kg' ? 'decimal' : 'numeric'}
+                          step={allowsParts(draft.unit) ? 0.001 : 1}
+                          inputMode={allowsParts(draft.unit) ? 'decimal' : 'numeric'}
                           value={draft.stock}
                           onChange={(event) => update('stock', event.target.value)}
                         />

@@ -35,7 +35,10 @@ const numberFormatSchema = z.object({
 
 export const updateRulesSchema = z
   .object({
-    numbering: z.object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema }).partial().optional(),
+    numbering: z
+      .object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema, stock_in: numberFormatSchema, stock_out: numberFormatSchema })
+      .partial()
+      .optional(),
     noStockSales: z.enum(['block', 'allow']).optional(),
   })
   .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined, { message: 'send numbering or noStockSales' });

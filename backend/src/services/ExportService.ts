@@ -1,6 +1,9 @@
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
+import type { StockDocumentExportRow } from './StockDocumentService.js';
 import type { ExpenseRecord, ExpenseRepository } from '../repositories/ExpenseRepository.js';
+import type { PriceRow } from '../repositories/ProductRepository.js';
 import type { ReportsRepository, SaleExportRow, VelocityRow } from '../repositories/ReportsRepository.js';
+import { levelPrice } from './pricing/salePrice.js';
 import { roundMoney } from '../utils/money.js';
 import type { ExportColumn, Sheet } from '../utils/spreadsheet.js';
 import { zonedDateTime, zonedDay, zonedDays } from '../utils/zonedDates.js';
@@ -32,6 +35,47 @@ const salesColumns = (timeZone: string): ExportColumn<SaleExportRow>[] => [
 ];
 
 type StockExportRow = VelocityRow & { daysLeft: number | null };
+
+const PRICE_COLUMNS: ExportColumn<PriceRow>[] = [
+  { header: 'Code', value: (row) => row.sku },
+  { header: 'Barcode', value: (row) => row.barcode },
+  { header: 'Product', value: (row) => row.name },
+  { header: 'Category', value: (row) => row.category_name },
+  { header: 'Unit', value: (row) => row.unit },
+  { header: 'VAT %', kind: 'number', value: (row) => row.vat_rate },
+  { header: 'Cost', kind: 'money', value: (row) => (row.cost_price === null ? null : Number(row.cost_price)) },
+  { header: 'Wholesale price', kind: 'money', value: (row) => (row.wholesale_price === null ? null : Number(row.wholesale_price)) },
+  { header: 'Shelf price', kind: 'money', value: (row) => Number(row.base_price) },
+];
+
+const PRICE_LIST_WORDS = {
+  en: {
+    title: 'Price list',
+    subtitle: (day: string) => `Prices on ${day}, VAT included`,
+    category: 'Category',
+    product: 'Product',
+    barcode: 'Barcode',
+    unit: 'Unit',
+    piece: 'piece',
+    shelf: 'Price',
+    wholesale: 'Wholesale price',
+    shelfFile: 'price-list',
+    wholesaleFile: 'wholesale-price-list',
+  },
+  sq: {
+    title: 'Lista e çmimeve',
+    subtitle: (day: string) => `Çmimet më ${day}, me TVSH`,
+    category: 'Kategoria',
+    product: 'Produkti',
+    barcode: 'Barkodi',
+    unit: 'Njësia',
+    piece: 'copë',
+    shelf: 'Çmimi',
+    wholesale: 'Çmimi me shumicë',
+    shelfFile: 'lista-e-cmimeve',
+    wholesaleFile: 'lista-me-shumice',
+  },
+} as const;
 
 const STOCK_COLUMNS: ExportColumn<StockExportRow>[] = [
   { header: 'Product', value: (row) => row.product_name },
@@ -88,6 +132,28 @@ const EXPENSE_COLUMNS: ExportColumn<ExpenseRecord>[] = [
   { header: 'Added by', value: (row) => row.created_by_name ?? (row.recurring_id === null ? null : 'automatic') },
 ];
 
+const STOCK_DOCUMENT_REASON_WORDS: Record<StockDocumentExportRow['reason'], string> = {
+  found: 'found in stock',
+  received_free: 'received free',
+  own_use: 'used in the shop',
+  given_away: 'given away',
+  other: 'other',
+};
+
+const STOCK_DOCUMENT_COLUMNS: ExportColumn<StockDocumentExportRow>[] = [
+  { header: 'Date', kind: 'date', value: (row) => row.day },
+  { header: 'Number', value: (row) => row.number },
+  { header: 'In or out', value: (row) => (row.direction === 'in' ? 'in' : 'out') },
+  { header: 'Why', value: (row) => STOCK_DOCUMENT_REASON_WORDS[row.reason] },
+  { header: 'Product', value: (row) => row.product },
+  { header: 'Quantity', value: (row) => (row.direction === 'in' ? row.quantity : -row.quantity) },
+  { header: 'Unit', value: (row) => row.unit },
+  { header: 'Cost each', kind: 'money', value: (row) => row.unit_cost },
+  { header: 'Value at cost', kind: 'money', total: true, value: (row) => (row.voided || row.value === null ? null : row.direction === 'in' ? row.value : -row.value) },
+  { header: 'Note', value: (row) => row.note },
+  { header: 'Voided', value: (row) => (row.voided ? 'yes' : 'no') },
+];
+
 /** Every calendar day from `from` to `to`, both included. */
 function eachDay(from: string, to: string): string[] {
   const days: string[] = [];
@@ -118,7 +184,43 @@ export class ExportService {
     private readonly reportsService: ReportsService,
     private readonly carwashRepository: CarwashRepository,
     private readonly expenseRepository: ExpenseRepository,
+    private readonly priceRows: () => Promise<PriceRow[]>,
+    private readonly stockDocumentLines: (from: string, to: string) => Promise<StockDocumentExportRow[]>,
   ) {}
+
+  /** Every product's prices, in the shape the Prices page reads back in (change the prices, upload the file). */
+  async prices(timeZone: string): Promise<ExportFile> {
+    const rows = await this.priceRows();
+    const today = zonedDay(new Date(), timeZone);
+    return {
+      basename: `4vd-prices-${today}`,
+      sheet: { name: 'Prices', subtitle: `Prices on ${readableRange(today, today)}, VAT included. Change the prices and upload the file on the Prices page.`, columns: PRICE_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
+
+  /** A list to hand to customers: the products shown in the app at one price level, by category, in their language. */
+  async priceList(input: { level: 'shelf' | 'wholesale'; categoryId?: number; lang: 'en' | 'sq' }, timeZone: string): Promise<ExportFile> {
+    const words = PRICE_LIST_WORDS[input.lang];
+    const rows = (await this.priceRows())
+      .filter((row) => row.is_active && (input.categoryId === undefined || row.category_id === input.categoryId))
+      .sort((a, b) => a.category_name.localeCompare(b.category_name) || a.name.localeCompare(b.name));
+    const today = zonedDay(new Date(), timeZone);
+    const columns: ExportColumn<PriceRow>[] = [
+      { header: words.category, value: (row) => row.category_name },
+      { header: words.product, value: (row) => row.name },
+      { header: words.barcode, value: (row) => row.barcode },
+      { header: words.unit, value: (row) => (row.unit === 'piece' ? words.piece : row.unit) },
+      {
+        header: input.level === 'wholesale' ? words.wholesale : words.shelf,
+        kind: 'money',
+        value: (row) => levelPrice(Number(row.base_price), row.wholesale_price === null ? null : Number(row.wholesale_price), input.level === 'wholesale'),
+      },
+    ];
+    return {
+      basename: `4vd-${input.level === 'wholesale' ? words.wholesaleFile : words.shelfFile}-${today}`,
+      sheet: { name: words.title, subtitle: words.subtitle(readableRange(today, today)), columns, rows, totals: { inCsv: false } },
+    };
+  }
 
   /** Money in and out per day, shop and carwash together, with a total: what the accountant asks for. */
   async money(range: DateRange, timeZone: string): Promise<ExportFile> {
@@ -159,6 +261,16 @@ export class ExportService {
     return {
       basename: `4vd-expenses-${from}-to-${to}`,
       sheet: { name: 'Expenses', subtitle: readableRange(from, to), columns: EXPENSE_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
+
+  /** Stock in and out documents, one row per line; voided ones stay, marked, and count nothing. */
+  async stockDocuments(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = await this.stockDocumentLines(from, to);
+    return {
+      basename: `4vd-stock-in-out-${from}-to-${to}`,
+      sheet: { name: 'Stock in and out', subtitle: readableRange(from, to), columns: STOCK_DOCUMENT_COLUMNS, rows, totals: { inCsv: false } },
     };
   }
 

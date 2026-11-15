@@ -129,7 +129,9 @@ describe('importTrefin', () => {
       .execute();
     expect(products[0]).toMatchObject({ sku: '339', name: 'Golden Eagle 0.25L', base_price: '0.50', cost_price: '0.40', origin_country: 'XK', quantity_on_hand: 12 });
     expect(products[1]).toMatchObject({ sku: '679', quantity_on_hand: 0 });
-    expect(products[2]).toMatchObject({ sku: '900', description: 'Unit in TREFIN: KG', quantity_on_hand: 4 });
+    // Sold by the kilo: the unit comes over and the stock keeps its grams.
+    expect(products[2]).toMatchObject({ sku: '900', description: null, quantity_on_hand: 4.6 });
+    expect((await context.db.selectFrom('products').select('unit').where('sku', '=', '900').executeTakeFirstOrThrow()).unit).toBe('kg');
     const categories = await context.db
       .selectFrom('products as p')
       .innerJoin('categories as c', 'c.id', 'p.category_id')

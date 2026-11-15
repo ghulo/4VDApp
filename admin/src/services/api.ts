@@ -2,6 +2,10 @@ import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
+  PriceChangeInput,
+  PriceFilePlan,
+  PricePlan,
+  PriceRow,
   Attachment,
   AttachmentEntity,
   BinItem,
@@ -157,6 +161,9 @@ import type {
   CounterReceipt,
   CounterSettings,
   CounterToday,
+  StockDocument,
+  StockDocumentDirection,
+  StockDocumentReason,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -211,8 +218,8 @@ export const productsApi = {
   byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
   setBarcode: async (id: number, barcode: string | null) =>
     (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
-  addBarcode: async (id: number, barcode: string) =>
-    (await apiRequest<Product>(`/products/${id}/barcodes`, { method: 'POST', body: { barcode } })).data,
+  addBarcode: async (id: number, barcode: string, pack?: { packSize: number; packPrice?: number }) =>
+    (await apiRequest<Product>(`/products/${id}/barcodes`, { method: 'POST', body: { barcode, ...pack } })).data,
   removeBarcode: async (id: number, barcode: string) =>
     (await apiRequest<Product>(`/products/${id}/barcodes/${encodeURIComponent(barcode)}`, { method: 'DELETE' })).data,
   createBarcode: async (id: number) => (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'POST' })).data,
@@ -438,6 +445,8 @@ export const salesApi = {
     items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number }>;
     notes: string | null;
     customerId?: number;
+    /** Wholesale prices on or off for this sale; left out: what the customer pays. */
+    wholesale?: boolean;
     /** On a tab: the day the customer promised to pay. */
     dueDate?: string;
     /** An owner's one-time yes to this pay-later sale. */
@@ -708,6 +717,7 @@ export interface CustomerInput extends Partial<PartnerDetails> {
   creditLimit?: number | null;
   discountPercent?: number | null;
   payLater?: boolean;
+  paysWholesale?: boolean;
   bonusPercent?: number | null;
 }
 
@@ -802,10 +812,15 @@ export const expiryApi = {
 
 export const exportsApi = {
   /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
-  async download(kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses', format: 'xlsx' | 'csv', range?: ReportRange): Promise<void> {
+  async download(
+    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents',
+    format: 'xlsx' | 'csv',
+    range?: ReportRange,
+    extra?: { level?: 'shelf' | 'wholesale'; categoryId?: number; lang?: 'en' | 'sq' },
+  ): Promise<void> {
     // The server names files and writes dates in the admin's own timezone.
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const { blob, filename } = await apiDownload(`/exports/${kind}.${format}`, { ...range, tz });
+    const { blob, filename } = await apiDownload(`/exports/${kind}.${format}`, { ...range, ...extra, tz });
     saveDownload(blob, filename ?? `4vd-${kind}.${format}`);
   },
 };
@@ -1026,4 +1041,24 @@ export const vatApi = {
 export const threadsApi = {
   get: async (kind: ThreadSubject, id: number) => (await apiRequest<Thread>(`/threads/${kind}/${id}`)).data,
   post: async (kind: ThreadSubject, id: number, body: string) => (await apiRequest<Thread>(`/threads/${kind}/${id}`, { method: 'POST', body: { body } })).data,
+};
+
+/** The Prices page: every product's prices, changes checked before they're saved, from cost or from an Excel file. */
+export const stockDocumentsApi = {
+  list: async (range: ReportRange) => (await apiRequest<StockDocument[]>('/stock-documents', { query: { ...range } })).data,
+  get: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}`)).data,
+  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; lines: Array<{ productId: number; quantity: number }> }) =>
+    (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
+  void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
+};
+
+export const pricesApi = {
+  list: async () => (await apiRequest<PriceRow[]>('/products/prices')).data,
+  plan: async (changes: PriceChangeInput[]) => (await apiRequest<PricePlan>('/products/prices/plan', { method: 'POST', body: { changes } })).data,
+  fromCost: async (input: { productIds?: number[]; categoryId?: number; level: 'shelf' | 'wholesale'; markupPercent: number; rounding: 'exact' | 'nice' }) =>
+    (await apiRequest<PricePlan & { noCost: number }>('/products/prices/from-cost', { method: 'POST', body: input })).data,
+  readFile: async (fileName: string, data: string) =>
+    (await apiRequest<PriceFilePlan>('/products/prices/file', { method: 'POST', body: { fileName, data } })).data,
+  save: async (changes: PriceChangeInput[], source: 'editor' | 'excel' | 'fromCost') =>
+    (await apiRequest<{ changed: number }>('/products/prices', { method: 'POST', body: { changes, source } })).data,
 };

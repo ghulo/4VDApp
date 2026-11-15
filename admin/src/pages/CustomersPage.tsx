@@ -271,6 +271,9 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
   // Who may pay later, and how much, is the owner's call.
   const decides = canOversee(role);
   const [payLater, setPayLater] = useState(customer?.payLater ?? false);
+  // A new business pays wholesale unless the owner says otherwise.
+  const [wholesaleChoice, setWholesaleChoice] = useState<boolean | null>(customer?.paysWholesale ?? null);
+  const paysWholesale = wholesaleChoice ?? kind === 'business';
   const [creditLimit, setCreditLimit] = useState(customer?.creditLimit != null ? String(customer.creditLimit) : '');
   const [discount, setDiscount] = useState(customer?.discountPercent != null ? String(customer.discountPercent) : '');
   const [bonus, setBonus] = useState(customer?.bonusPercent != null ? String(customer.bonusPercent) : '');
@@ -294,7 +297,7 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
         phone: phone.trim() || null,
         note: note.trim() || null,
         ...details.values(),
-        ...(decides && { payLater, creditLimit: numberOrNull(creditLimit), bonusPercent: numberOrNull(bonus) }),
+        ...(decides && { payLater, paysWholesale, creditLimit: numberOrNull(creditLimit), bonusPercent: numberOrNull(bonus) }),
         discountPercent: numberOrNull(discount),
       };
       return customer ? customersApi.update(customer.id, input) : customersApi.create(input);
@@ -357,6 +360,16 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
               <input type="number" min={0} step="0.01" inputMode="decimal" value={creditLimit} onChange={(event) => setCreditLimit(event.target.value)} />
             </Field>
           )}
+        </fieldset>
+      )}
+      {decides && (
+        <fieldset className="pay-later-fields">
+          <legend className="field__label">{t.customers.pricesTitle}</legend>
+          <label className="toggle">
+            <input type="checkbox" checked={paysWholesale} onChange={(event) => setWholesaleChoice(event.target.checked)} />
+            {t.customers.paysWholesale}
+          </label>
+          <p className="field-hint">{paysWholesale ? t.customers.paysWholesaleOn : t.customers.paysWholesaleOff}</p>
         </fieldset>
       )}
       <div className="field-row">
@@ -486,7 +499,7 @@ export function CustomerDetailPage() {
       <BonusCard customerId={data.id} />
       <AddressesCard owner={{ side: 'customers', id: data.id }} />
 
-      {(hasDetails(data) || data.payLater || data.discountPercent != null || data.bonusPercent != null) && (
+      {(hasDetails(data) || data.payLater || data.paysWholesale || data.discountPercent != null || data.bonusPercent != null) && (
         <Card title={t.partner.details}>
           <PartnerFacts
             partner={data}
@@ -494,6 +507,7 @@ export function CustomerDetailPage() {
               ...(data.payLater
                 ? [{ label: t.customers.payLaterTitle, value: data.creditLimit != null ? t.partner.creditLimitShort(formatMoney(data.creditLimit)) : t.customers.noLimit }]
                 : []),
+              ...(data.paysWholesale ? [{ label: t.customers.pricesTitle, value: t.customers.wholesaleShort }] : []),
               ...(data.discountPercent != null ? [{ label: t.partner.discountPercent, value: t.partner.discountShort(data.discountPercent) }] : []),
               ...(data.bonusPercent != null ? [{ label: t.partner.bonusPercent, value: t.partner.bonusRate(data.bonusPercent) }] : []),
             ]}

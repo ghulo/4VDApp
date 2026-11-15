@@ -103,3 +103,50 @@ describe('other barcodes', () => {
     expect(match.stamp).not.toBe('barcode');
   });
 });
+
+describe('pack barcodes', () => {
+  const api = () => request(context.app);
+
+  it('adds a pack barcode whose price becomes the bulk price for that many, and sells it', async () => {
+    const id = await redBull();
+    await api().put(`/api/products/${id}`).set(auth()).send({ name: 'Red Bull 250ml', categoryId: (await api().get(`/api/products/${id}`).set(auth())).body.data.category.id, price: 1.5 }).expect(200);
+
+    const uneven = await api().post(`/api/products/${id}/barcodes`).set(auth()).send({ barcode: '5449000000996', packSize: 6, packPrice: 8 });
+    expect(uneven.status).toBe(400);
+    expect(JSON.stringify(uneven.body)).toContain('7.98 or 8.04');
+    const tooDear = await api().post(`/api/products/${id}/barcodes`).set(auth()).send({ barcode: '5449000000996', packSize: 6, packPrice: 9.6 });
+    expect(tooDear.status).toBe(400);
+
+    const added = await api().post(`/api/products/${id}/barcodes`).set(auth()).send({ barcode: '5449000000996', packSize: 6, packPrice: 8.04 });
+    expect(added.status).toBe(200);
+    expect(added.body.data).toMatchObject({ otherBarcodes: ['5449000000996'], packs: [{ barcode: '5449000000996', size: 6 }], bulkPricingTiers: [{ quantity: 6, price: 1.34 }] });
+
+    const shelf = (await api().get('/api/counter/shelf').set(auth())).body.data;
+    expect(shelf.find((one: { id: number }) => one.id === id).packs).toEqual([{ barcode: '5449000000996', size: 6 }]);
+    const sale = await api().post('/api/sales/basket').set(auth()).send({ items: [{ productId: id, quantity: 6 }], notes: null });
+    expect(sale.status).toBe(201);
+    expect(sale.body.data.total).toBe(8.04);
+  });
+
+  it("keeps a pack barcode off the main place and off products sold by measure", async () => {
+    const id = await redBull();
+    await api().post(`/api/products/${id}/barcodes`).set(auth()).send({ barcode: '5449000000996', packSize: 24 }).expect(200);
+    expect((await api().put(`/api/products/${id}/barcode`).set(auth()).send({ barcode: '5449000000996' })).status).toBe(400);
+
+    const product = (await api().get(`/api/products/${id}`).set(auth())).body.data;
+    const toKilo = await api().put(`/api/products/${id}`).set(auth()).send({ name: product.name, categoryId: product.category.id, price: product.price, unit: 'kg' });
+    expect(toKilo.status).toBe(400);
+
+    const cheese = await createTestProduct(context, token, { name: 'Djathë', unit: 'kg' });
+    await api().put(`/api/products/${cheese}/barcode`).set(auth()).send({ barcode: '4006381333931' }).expect(200);
+    expect((await api().post(`/api/products/${cheese}/barcodes`).set(auth()).send({ barcode: '9780201379624', packSize: 6 })).status).toBe(400);
+  });
+
+  it('counts a bill line found by a pack barcode in packs', () => {
+    const product = { id: 1, name: 'Red Bull 250ml', sku: null, barcode: '9002490100070', otherBarcodes: ['5449000000996'], packs: [{ barcode: '5449000000996', size: 24 }], costPrice: 1, vatRate: 18 };
+    const reading = { pricesIncludeVat: false } as Parameters<typeof matchLine>[1];
+    const line = { name: 'RB tray', barcode: '5449000000996', code: null, quantity: 2, unitPrice: 24, unitsPerPack: null } as unknown as Parameters<typeof matchLine>[0];
+
+    expect(matchLine(line, reading, [product], new Map())).toMatchObject({ productId: 1, unitsPerPack: 24, pieces: 48, unitCost: 1 });
+  });
+});

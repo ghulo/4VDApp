@@ -25,6 +25,8 @@ export interface QueuedSale {
     customerId?: number;
     paidNow?: boolean;
     rabatApproval?: string;
+    /** Wholesale prices on or off, as the Counter showed them. */
+    wholesale?: boolean;
   };
   total: number;
   /**

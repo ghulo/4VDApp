@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ProductUnit } from '../services/types';
+import { allowsParts } from '../utils/units';
 import { type FormEvent, useState } from 'react';
 import { writeOffsApi } from '../services/api';
 import { WRITE_OFF_REASONS, type WriteOffReason } from '../services/types';
@@ -9,7 +11,7 @@ import { useT } from '../i18n/useT';
 import { SavedToast } from './Feedback';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
-export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: 'piece' | 'kg' }) {
+export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: ProductUnit }) {
   const queryClient = useQueryClient();
   const t = useT();
   const [quantity, setQuantity] = useState('');
@@ -17,7 +19,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const [notes, setNotes] = useState('');
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
-  const byKg = unit === 'kg' || !Number.isInteger(inStock);
+  const byKg = allowsParts(unit) || !Number.isInteger(inStock);
   const units = Number(quantity);
   const isValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= inStock;
 

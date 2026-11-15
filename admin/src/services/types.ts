@@ -62,6 +62,8 @@ export interface Product {
   barcode: string | null;
   /** Further barcodes that also find this product when scanned, oldest first. */
   otherBarcodes: string[];
+  /** Those printed on a pack: scanning one adds `size` pieces; its price is the bulk price for that many. */
+  packs: Array<{ barcode: string; size: number }>;
   imageUrl: string | null;
   isActive: boolean;
   category: { id: number; name: string };
@@ -87,7 +89,7 @@ export interface Product {
   updatedAt: string;
 }
 
-export type ProductUnit = 'piece' | 'kg';
+export type ProductUnit = 'piece' | 'kg' | 'l' | 'm' | 'm2';
 
 export interface ProductInput {
   name: string;
@@ -184,6 +186,8 @@ export interface Sale {
   notes: string | null;
   /** The old till's receipt number, on sales imported from it. */
   receiptNo: string | null;
+  /** Sold at the wholesale price. */
+  wholesale?: boolean;
   /** Units returned or waiting for a return decision. */
   returnedQuantity: number;
   /** The newest invoice the sale is on; null for sales from before invoices. */
@@ -906,6 +910,8 @@ export interface Customer extends PartnerDetails {
   note: string | null;
   /** The owner lets them take goods and pay later, up to `creditLimit`. */
   payLater: boolean;
+  /** They pay the wholesale price instead of the shelf price. */
+  paysWholesale: boolean;
   /** The most they may owe on their tab, and their usual discount in percent; null: none. */
   creditLimit: number | null;
   discountPercent: number | null;
@@ -1322,7 +1328,7 @@ export interface Business {
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
 
-export type NumberedKind = 'invoice' | 'credit_note' | 'offer';
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out';
 export interface NumberFormat {
   prefix: string;
   year: 'yy' | 'yyyy';
@@ -1765,7 +1771,7 @@ export type EntryKind = 'auto' | 'manual' | 'reversal';
 
 /** The page that shows the document behind an entry. */
 export interface EntryTarget {
-  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales';
+  page: 'document' | 'bill' | 'count' | 'customer' | 'product' | 'expenses' | 'sales' | 'stock_document';
   id?: number;
   search?: string;
 }
@@ -1911,7 +1917,7 @@ export interface BooksSettings {
 }
 
 /** A record whose entries can be shown. */
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'stock_doc';
 
 /** First and last day of a period, both included, as yyyy-mm-dd. */
 export interface BooksPeriod {
@@ -2402,4 +2408,79 @@ export interface TrefinCompare {
   totals: { fourVd: TrefinCompareTotals; trefin: TrefinCompareTotals };
   rows: TrefinCompareRow[];
   counts: { same: number; rounding: number; differs: number; explained: number };
+}
+
+/** One product's prices on the Prices page (VAT included). */
+export interface PriceRow {
+  id: number;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  otherBarcodes: string[];
+  categoryId: number;
+  categoryName: string;
+  unit: string;
+  vatRate: number;
+  isActive: boolean;
+  cost: number | null;
+  wholesalePrice: number | null;
+  price: number;
+  /** A new shelf price must stay above the cheapest bulk price. */
+  lowestBulkPrice: number | null;
+}
+
+/** New prices for one product; a price left out stays as it is. */
+export interface PriceChangeInput {
+  productId: number;
+  price?: number;
+  wholesalePrice?: number | null;
+  costPrice?: number | null;
+}
+
+export type PriceProblem = 'notFound' | 'priceZero' | 'bulkAbove';
+export type PriceWarning = 'belowCost' | 'wholesaleAboveShelf' | 'bigChange';
+
+export interface PlannedPriceChange {
+  productId: number;
+  name: string;
+  categoryName: string;
+  cost: { from: number | null; to: number | null };
+  wholesalePrice: { from: number | null; to: number | null };
+  price: { from: number; to: number };
+  markup: { price: number | null; wholesale: number | null };
+  lowestBulkPrice: number | null;
+  problems: PriceProblem[];
+  warnings: PriceWarning[];
+}
+
+export interface PricePlan {
+  changes: PlannedPriceChange[];
+  unchanged: number;
+}
+
+export interface PriceFilePlan extends PricePlan {
+  notFound: Array<{ row: number; text: string }>;
+  unreadable: Array<{ row: number; text: string }>;
+}
+
+export type StockDocumentDirection = 'in' | 'out';
+export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given_away' | 'other';
+
+/** Goods in or out without a bill or a sale: numbered, moves stock, one entry at cost. */
+export interface StockDocument {
+  id: number;
+  number: string;
+  direction: StockDocumentDirection;
+  reason: StockDocumentReason;
+  day: string;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  lineCount: number;
+  /** The stock's value at cost, from the lines with a cost. */
+  value: number;
+  noCost: number;
+  lines?: Array<{ productId: number; productName: string; unit: string; quantity: number; unitCost: number | null; value: number | null }>;
 }

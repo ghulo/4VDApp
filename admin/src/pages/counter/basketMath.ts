@@ -1,4 +1,5 @@
-import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../../components/BasketForm';
+import { afterDiscount, levelPriceFor, parsePercent, roundMoney, unitPriceFor } from '../../components/BasketForm';
+import { allowsParts } from '../../utils/units';
 import type { Product } from '../../services/types';
 import type { StoredLine } from './useBaskets';
 
@@ -9,6 +10,7 @@ export type PriceReason =
   | { kind: 'basketRabat'; percent: number }
   | { kind: 'promotion'; name: string }
   | { kind: 'bulk'; from: number }
+  | { kind: 'wholesale' }
   | { kind: 'offer' };
 
 export interface CounterLine extends StoredLine {
@@ -38,7 +40,7 @@ export interface BasketSummary {
 }
 
 /** A line as the Counter shows it: its prices, the reasons for them, and its VAT. */
-export function priceLine(line: StoredLine, product: Product | undefined, basketDiscount: string): CounterLine {
+export function priceLine(line: StoredLine, product: Product | undefined, basketDiscount: string, wholesale = false): CounterLine {
   const own = parsePercent(line.discount);
   const basket = parsePercent(basketDiscount);
   const percent = own > 0 ? own : basket;
@@ -51,7 +53,8 @@ export function priceLine(line: StoredLine, product: Product | undefined, basket
     const listPrice = Math.max(product.price, line.offerPrice);
     return { ...line, product, listPrice, unitPrice: line.offerPrice, total, percent: 0, reasons: [{ kind: 'offer' }], vat: roundMoney((total * rate) / (100 + rate)) };
   }
-  const listPrice = unitPriceFor(product, line.quantity);
+  const listPrice = unitPriceFor(product, line.quantity, wholesale);
+  const level = levelPriceFor(product, wholesale);
   const unitPrice = afterDiscount(listPrice, percent);
   const total = roundMoney(unitPrice * line.quantity);
   const reasons: PriceReason[] = [];
@@ -60,7 +63,8 @@ export function priceLine(line: StoredLine, product: Product | undefined, basket
   if (product.promotion && listPrice === product.promotion.price && listPrice < product.price) reasons.push({ kind: 'promotion', name: product.promotion.name });
   else if (listPrice < product.price) {
     const tier = [...product.bulkPricingTiers].reverse().find((next) => line.quantity >= next.quantity);
-    if (tier) reasons.push({ kind: 'bulk', from: tier.quantity });
+    if (tier && tier.price <= level) reasons.push({ kind: 'bulk', from: tier.quantity });
+    else if (level < product.price) reasons.push({ kind: 'wholesale' });
   }
   const rate = product.vatExempt ? 0 : product.vatRate;
   const vat = roundMoney((total * rate) / (100 + rate));
@@ -80,7 +84,7 @@ export function summarise(lines: CounterLine[]): BasketSummary {
   return {
     products: lines.length,
     // A weighed line is one item, whatever it weighs.
-    pieces: lines.reduce((sum, line) => sum + (line.product?.unit === 'kg' ? 1 : line.quantity), 0),
+    pieces: lines.reduce((sum, line) => sum + (allowsParts(line.product?.unit) ? 1 : line.quantity), 0),
     subtotal,
     rabat: roundMoney(subtotal - total),
     total,

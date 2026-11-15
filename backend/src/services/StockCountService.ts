@@ -1,4 +1,5 @@
 import type { CountLineStatus, CountStatus } from '../constants/approvals.js';
+import { allowsParts } from '../constants/units.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CountProductRow, StockCountRecord, StockCountRepository } from '../repositories/StockCountRepository.js';
@@ -156,7 +157,7 @@ export class StockCountService {
         throw new ValidationError(`That product is not part of the count of ${scopeLabel(count)}`);
       }
       const product = (await repos.products.findById(productId, true))!;
-      if (product.unit !== 'kg' && !Number.isInteger(counted)) {
+      if (!allowsParts(product.unit) && !Number.isInteger(counted)) {
         throw new ValidationError(`${product.name} is sold by the piece, so count it in whole pieces`);
       }
       await repos.stockCounts.upsertLine({

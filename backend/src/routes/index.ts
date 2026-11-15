@@ -5,6 +5,7 @@ import { createAuthRoutes } from './authRoutes.js';
 import { createCarwashRoutes } from './carwashRoutes.js';
 import { createCashCountRoutes } from './cashCountRoutes.js';
 import { createExpenseRoutes } from './expenseRoutes.js';
+import { createStockDocumentRoutes } from './stockDocumentRoutes.js';
 import { createCustomerRoutes } from './customerRoutes.js';
 import { createDayRoutes } from './dayRoutes.js';
 import { createAttentionRoutes } from './attentionRoutes.js';
@@ -71,6 +72,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/carwash', createCarwashRoutes(container));
   router.use('/cash-counts', createCashCountRoutes(container));
   router.use('/expenses', createExpenseRoutes(container));
+  router.use('/stock-documents', createStockDocumentRoutes(container));
   router.use('/day', createDayRoutes(container));
   router.use('/attention', createAttentionRoutes(container));
   router.use('/customers', createCustomerRoutes(container));

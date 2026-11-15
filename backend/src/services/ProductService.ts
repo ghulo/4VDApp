@@ -1,4 +1,5 @@
 import { DEFAULT_REORDER_LEVEL, SYSTEM_STOCK_REASONS } from '../constants/stock.js';
+import { allowsParts } from '../constants/units.js';
 import type { ProductUnit, UserRole } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { CategoryRepository } from '../repositories/CategoryRepository.js';
@@ -29,6 +30,8 @@ export interface ProductDto {
   barcode: string | null;
   /** More barcodes the same product comes under; each one finds it when scanned. */
   otherBarcodes: string[];
+  /** The other barcodes printed on a pack: scanning one adds `size` pieces. Its price is the bulk price for that many. */
+  packs: Array<{ barcode: string; size: number }>;
   imageUrl: string | null;
   isActive: boolean;
   /** Percent of VAT included in the price. */
@@ -43,7 +46,7 @@ export interface ProductDto {
   wholesalePrice: number | null;
   /** Only included for admins. */
   costPrice?: number | null;
-  /** Sold by the piece, or by the kilo (prices per kg, quantities to the gram). */
+  /** Sold by the piece, or measured: kilo, litre, metre or square metre (prices per unit, quantities to three decimals). */
   unit: ProductUnit;
   /** The number the shop scale prints in its labels. */
   scalePlu: number | null;
@@ -174,6 +177,9 @@ export class ProductService {
     if (barcode !== null) {
       const owner = await this.productRepository.findIdByBarcode(barcode);
       if (owner !== undefined && owner !== id) throw new ConflictError(`Another product already has the barcode ${barcode}`);
+      if (owner === id && (await this.productRepository.packSizeOf(id, barcode)) !== null) {
+        throw new ValidationError(`${barcode} is printed on a pack, so it can't be the main barcode that labels print`);
+      }
     }
     await this.transactions.run((repos) =>
       setProductBarcode(repos, {
@@ -191,19 +197,35 @@ export class ProductService {
    * Gives the product another barcode, for when the same item comes under more
    * than one. A product with no barcode yet takes it as its main one.
    */
-  async addBarcode(id: number, barcode: string, actorId: number): Promise<ProductDto> {
+  async addBarcode(id: number, barcode: string, actorId: number, pack?: { size: number; price: number | null }): Promise<ProductDto> {
     if (!hasValidCheckDigit(barcode)) {
       throw new ValidationError(`${barcode} isn't a valid barcode: its last digit doesn't match. Scan it again or check for a typo.`);
     }
     const product = await this.productRepository.findById(id, true);
     if (!product) throw new NotFoundError(`Product ${id} does not exist`);
+    if (pack && allowsParts(product.unit)) throw new ValidationError(`${product.name} is sold by the ${product.unit}, so it has no packs of whole pieces`);
+    if (pack && !product.barcode) throw new ValidationError(`Give ${product.name} its own barcode first: a pack barcode can't be the main one`);
     if (!product.barcode) return this.setBarcode(id, barcode, actorId);
     const owner = await this.productRepository.findIdByBarcode(barcode);
     if (owner === id) throw new ConflictError(`${product.name} already has the barcode ${barcode}`);
     if (owner !== undefined) throw new ConflictError(`Another product already has the barcode ${barcode}`);
-    await this.transactions.run((repos) =>
-      addProductBarcode(repos, { product, code: barcode, actorId, say: { key: 'barcodeAdded', params: { product: product.name, code: barcode } } }),
-    );
+    const existingTiers = await this.pricingTierRepository.findByProductId(id);
+    const tiers = pack && pack.price !== null ? withPackPrice(product, existingTiers, pack.size, pack.price) : null;
+    await this.transactions.run(async (repos) => {
+      await addProductBarcode(repos, {
+        product,
+        code: barcode,
+        actorId,
+        packSize: pack?.size ?? null,
+        say: pack ? { key: 'packBarcodeAdded', params: { product: product.name, code: barcode, size: pack.size } } : { key: 'barcodeAdded', params: { product: product.name, code: barcode } },
+      });
+      if (!tiers) return;
+      await repos.pricingTiers.replaceForProduct(id, tiers);
+      const change = describeProductChanges(toSnapshot(product, existingTiers), { ...toSnapshot(product, existingTiers), bulkPricingTiers: tiers });
+      if (change) {
+        await repos.activityLog.create({ userId: actorId, action: 'product.updated', entityType: 'product', entityId: id, say: change.say, details: { ...change.details, source: 'pack' } });
+      }
+    });
     return this.getById(id, 'admin');
   }
 
@@ -282,7 +304,7 @@ export class ProductService {
   /** `logExtra` is added to the logged details (an approved request names who asked). */
   async create(input: NewProductInput, createdBy: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     await this.ensureCategoryExists(input.categoryId);
-    if (input.unit !== 'kg' && !Number.isInteger(input.stock)) throw new ValidationError(`stock: ${input.name} is sold by the piece, so its stock is a whole number`);
+    if (!allowsParts(input.unit) && !Number.isInteger(input.stock)) throw new ValidationError(`stock: ${input.name} is sold by the piece, so its stock is a whole number`);
     const tiers = validatePricingTiers(input.price, input.bulkPricingTiers ?? []);
 
     try {
@@ -323,8 +345,11 @@ export class ProductService {
     const existing = await this.productRepository.findById(id, true);
     if (!existing) throw new NotFoundError(`Product ${id} does not exist`);
     await this.ensureCategoryExists(input.categoryId);
-    if (input.unit === 'piece' && existing.unit === 'kg' && !Number.isInteger(existing.quantity_on_hand ?? 0)) {
-      throw new ValidationError(`${existing.name} has ${existing.quantity_on_hand} kg in stock; count it to whole pieces before selling it by the piece`);
+    if (allowsParts(input.unit ?? existing.unit) && existing.packs.length > 0) {
+      throw new ValidationError(`${existing.name} has pack barcodes; remove them before selling it by the ${input.unit}`);
+    }
+    if (input.unit === 'piece' && allowsParts(existing.unit) && !Number.isInteger(existing.quantity_on_hand ?? 0)) {
+      throw new ValidationError(`${existing.name} has ${existing.quantity_on_hand} ${existing.unit} in stock; count it to whole pieces before selling it by the piece`);
     }
 
     const existingTiers = await this.pricingTierRepository.findByProductId(id);
@@ -340,6 +365,7 @@ export class ProductService {
       categoryId: input.categoryId,
       price: input.price,
       costPrice: input.costPrice,
+      wholesalePrice: input.wholesalePrice,
       imageUrl: input.imageUrl,
       sku: input.sku,
       isActive: input.isActive,
@@ -407,8 +433,8 @@ export class ProductService {
       originCountry,
       wholesalePrice: input.wholesalePrice,
       unit: input.unit,
-      // A product sold by the piece is never weighed on the scale.
-      scalePlu: input.unit === 'piece' ? null : input.scalePlu,
+      // Only the scale's kilo labels carry a number; left out (undefined unit) keeps what is stored.
+      scalePlu: input.unit !== undefined && input.unit !== 'kg' ? null : input.scalePlu,
     };
   }
 
@@ -429,6 +455,7 @@ export class ProductService {
       sku: product.sku,
       barcode: product.barcode,
       otherBarcodes: product.other_barcodes,
+      packs: product.packs,
       imageUrl: product.image_url,
       isActive: product.is_active,
       vatRate: product.vat_rate,
@@ -460,13 +487,14 @@ export class ProductService {
   }
 }
 
-function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapshot {
+export function toSnapshot(product: ProductRecord, tiers: PricingTier[]): ProductSnapshot {
   return {
     name: product.name,
     description: product.description,
     categoryId: product.category_id,
     price: toMoney(product.base_price),
     costPrice: toMoneyOrNull(product.cost_price),
+    wholesalePrice: toMoneyOrNull(product.wholesale_price),
     imageUrl: product.image_url,
     sku: product.sku,
     isActive: product.is_active,
@@ -517,9 +545,9 @@ export async function setProductBarcode(
  */
 export async function addProductBarcode(
   repos: TransactionalRepositories,
-  p: { product: { id: number; origin_country: string | null }; code: string; actorId: number; say: Say; logExtra?: Record<string, unknown> },
+  p: { product: { id: number; origin_country: string | null }; code: string; actorId: number; say: Say; packSize?: number | null; logExtra?: Record<string, unknown> },
 ): Promise<void> {
-  await repos.products.addOtherBarcode(p.product.id, p.code, p.actorId);
+  await repos.products.addOtherBarcode(p.product.id, p.code, p.actorId, p.packSize ?? null);
   const country = p.product.origin_country ? null : countryFromBarcode(p.code);
   if (country) await repos.products.setOriginCountry(p.product.id, country);
   await repos.activityLog.create({
@@ -528,6 +556,29 @@ export async function addProductBarcode(
     entityType: 'product',
     entityId: p.product.id,
     say: p.say,
-    details: { otherBarcode: p.code, ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
+    details: { otherBarcode: p.code, ...(p.packSize && { packSize: p.packSize }), ...(country && { originCountry: { from: null, to: country } }), ...p.logExtra },
   });
+}
+
+/**
+ * The bulk tiers with a pack's price as the price for that many. The pack's
+ * price must split into whole cents a piece (a sale line is pieces × a price
+ * to the cent); otherwise the nearest two that do are offered. A pack price
+ * equal to that many at the shelf price needs no tier.
+ */
+export function withPackPrice(product: { name: string; base_price: string }, tiers: PricingTier[], size: number, packPrice: number): PricingTier[] {
+  const cents = Math.round(packPrice * 100);
+  if (cents % size !== 0) {
+    const lower = Math.floor(cents / size) * size;
+    const nearest = [lower, lower + size].filter((value) => value > 0).map((value) => (value / 100).toFixed(2));
+    throw new ValidationError(`A pack of ${size} at ${(cents / 100).toFixed(2)} doesn't split into whole cents a piece; use ${nearest.join(' or ')}`);
+  }
+  const perPiece = cents / size / 100;
+  const shelf = Number(product.base_price);
+  const others = tiers.filter((tier) => tier.quantity !== size);
+  if (perPiece >= shelf) {
+    if (perPiece > shelf) throw new ValidationError(`The pack price must not be more than ${size} at the shelf price (${(shelf * size).toFixed(2)})`);
+    return validatePricingTiers(shelf, others);
+  }
+  return validatePricingTiers(shelf, [...others, { quantity: size, price: perPiece }]);
 }

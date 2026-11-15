@@ -66,7 +66,7 @@ const settingsSchema = z.object({
 });
 
 const sourceSchema = z.object({
-  source: z.enum(['bill', 'payment', 'expense', 'return', 'write_off', 'count', 'document', 'sale', 'move', 'tab_payment', 'offset', 'bonus']),
+  source: z.enum(['bill', 'payment', 'expense', 'return', 'write_off', 'count', 'document', 'sale', 'move', 'tab_payment', 'offset', 'bonus', 'stock_doc']),
   id: idSchema,
 });
 

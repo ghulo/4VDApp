@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { unitFromTrefin } from '../constants/units.js';
 import path from 'node:path';
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
@@ -241,6 +242,8 @@ export async function importTrefin(
           if (clean(p.product_type) !== 'Mall') note('products that are expenses or fixed assets in TREFIN, imported inactive');
           const unit = clean(p.unit);
           units.set(p.product_code!, unit);
+          const sold = unitFromTrefin(unit, clean(p.sold_by_scale) === 'True');
+          if (sold !== 'piece') note('products sold by a measure (kg, litre, metre, m²)');
           if (cost > 0.005) costs.set(clean(p.product_code), cost);
           if (cost > 0.005 && num(p.sale_price_incl_vat) > 0 && cost > num(p.sale_price_incl_vat) * MAX_COST_TO_PRICE) note('products whose purchase price is above the sale price (check them)');
           // TREFIN's second ("invoice") price list is what businesses pay; empty or the same as the shelf price: none.
@@ -249,7 +252,8 @@ export async function importTrefin(
           if (hasWholesale) note('products with a wholesale price (TREFIN\'s invoice price)');
           return {
             name: clean(p.name).slice(0, 255),
-            description: unit && unit !== 'Copë' ? `Unit in TREFIN: ${unit}` : null,
+            description: unit && unit !== 'Copë' && sold === 'piece' ? `Unit in TREFIN: ${unit}` : null,
+            unit: sold,
             wholesale_price: hasWholesale ? money(wholesale) : null,
             category_id: categoryIds.get(categoryOf(clean(p.product_code)))!,
             base_price: money(Math.max(0, num(p.sale_price_incl_vat))),
@@ -268,12 +272,14 @@ export async function importTrefin(
           .values(
             chunk.map((p) => {
               const stock = num(p.current_stock);
+              // A measured product keeps its part units (to the gram); a piece is rounded down.
+              const measured = unitFromTrefin(clean(p.unit), clean(p.sold_by_scale) === 'True') !== 'piece';
               if (stock < 0) note('products with negative stock, set to 0');
-              else if (!Number.isInteger(stock)) note('products with part-unit stock (kg, m²), rounded down');
+              else if (!Number.isInteger(stock) && !measured) note('products with part-unit stock sold by the piece, rounded down');
               const lastPurchase = clean(p.last_purchase_date);
               return {
                 product_id: productIds.get(clean(p.product_code))!,
-                quantity_on_hand: Math.max(0, Math.floor(stock)),
+                quantity_on_hand: Math.max(0, measured ? Math.floor(stock * 1000) / 1000 : Math.floor(stock)),
                 reorder_level: Math.max(0, Math.round(num(p.min_stock_level))),
                 last_restocked_at: lastPurchase ? startOfDay(lastPurchase, options.timeZone) : null,
               };
@@ -363,16 +369,21 @@ export async function importTrefin(
         const inserted = await trx
           .insertInto('customers')
           .values(
-            customers.map((p) => ({
+            customers.map((p) => {
+              const business = Boolean(p.nui || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(p.name));
+              return {
               name: p.name.slice(0, 120),
-              kind: p.nui || /sh\.?p\.?k|d\.o\.o|b\.i\./i.test(p.name) ? ('business' as const) : ('person' as const),
+              kind: business ? ('business' as const) : ('person' as const),
+              // Businesses pay TREFIN's invoice (wholesale) price, as they did there.
+              pays_wholesale: business,
               nui: p.nui,
               phone: (p.phone ?? p.mobile)?.slice(0, 40) ?? null,
               note: partnerNote(p, { label: 'They owed us', value: p.theyOwe }),
               ...partnerDetails(p),
               credit_limit: p.creditLimit,
               discount_percent: p.discountPercent,
-            })),
+              };
+            }),
           )
           .returning('id')
           .execute();

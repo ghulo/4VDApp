@@ -40,8 +40,9 @@ export function createProductController(productService: ProductService, activity
 
     async addBarcode(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      const { barcode } = parseInput(addBarcodeSchema, req.body);
-      sendSuccess(res, await productService.addBarcode(id, barcode, req.user!.id), { message: 'Barcode added' });
+      const { barcode, packSize, packPrice } = parseInput(addBarcodeSchema, req.body);
+      const pack = packSize ? { size: packSize, price: packPrice ?? null } : undefined;
+      sendSuccess(res, await productService.addBarcode(id, barcode, req.user!.id, pack), { message: 'Barcode added' });
     },
 
     async removeBarcode(req: Request, res: Response): Promise<void> {

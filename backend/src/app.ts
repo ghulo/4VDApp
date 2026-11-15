@@ -39,6 +39,7 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use('/api/bill-scans', express.json({ limit: '40mb' }));
   // Bank statements come as base64 files, up to 10 MB each.
   app.use('/api/money/places', express.json({ limit: '15mb' }));
+  app.use('/api/partners/read', express.json({ limit: '25mb' }));
   app.use(express.json({ limit: '1mb' }));
 
   // Health check stays outside /api and the rate limiter so uptime monitors

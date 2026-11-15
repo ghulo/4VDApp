@@ -62,7 +62,7 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -137,6 +137,10 @@ export class PostingRules {
         return this.tabPayment(Number(ref));
       case 'move':
         return this.move(Number(ref));
+      case 'offset':
+        return this.offset(Number(ref));
+      case 'bonus':
+        return this.bonus(Number(ref));
       default:
         throw new Error(`Unknown source ${sourceKey}`);
     }
@@ -428,8 +432,8 @@ export class PostingRules {
       .select(['pay.amount', 'pay.place_id', 'b.supplier_id', 'b.number', 'b.place', 's.name', sql<string>`to_char(pay.paid_on, 'YYYY-MM-DD')`.as('paid_on')])
       .where('pay.id', '=', id)
       .where('pay.voided_at', 'is', null)
-      // A credit applied to a bill posts nothing more: the return or credit posted itself.
-      .where('pay.method', '!=', 'credit')
+      // A credit applied to a bill posts nothing more: the return or credit posted itself; an offset posts its own entry.
+      .where('pay.method', 'not in', ['credit', 'offset'])
       .executeTakeFirst();
     if (!row || this.tooEarly(row.paid_on) || row.place === 'carwash') return null;
     const amount = Number(row.amount);
@@ -458,6 +462,38 @@ export class PostingRules {
       .debit(row.place_id === null ? this.till : this.to(row.place_id), amount)
       .credit('receivables', amount, { customerId: row.customer_id })
       .build(row.day, row.name);
+  }
+
+  /** A set-off (kompensim): what the firm owes as a customer cancels what the shop owes it as a supplier. */
+  private async offset(id: number): Promise<DraftEntry | null> {
+    const row = await this.db
+      .selectFrom('partner_offsets as o')
+      .innerJoin('customers as c', 'c.id', 'o.customer_id')
+      .select(['o.amount', 'o.customer_id', 'o.supplier_id', 'c.name', sql<string>`to_char(o.day, 'YYYY-MM-DD')`.as('day')])
+      .where('o.id', '=', id)
+      .executeTakeFirst();
+    if (!row || this.tooEarly(row.day)) return null;
+    const amount = Number(row.amount);
+    return this.builder()
+      .debit('payables', amount, { supplierId: row.supplier_id })
+      .credit('receivables', amount, { customerId: row.customer_id })
+      .build(row.day, `Kompensim · ${row.name}`);
+  }
+
+  /** A year's bonus given to a customer: it lowers sales (like a return) and what they owe. */
+  private async bonus(id: number): Promise<DraftEntry | null> {
+    const row = await this.db
+      .selectFrom('bonus_payouts as b')
+      .innerJoin('customers as c', 'c.id', 'b.customer_id')
+      .select(['b.amount', 'b.customer_id', 'b.year', 'c.name', sql<string>`to_char(b.day, 'YYYY-MM-DD')`.as('day')])
+      .where('b.id', '=', id)
+      .executeTakeFirst();
+    if (!row || this.tooEarly(row.day)) return null;
+    const amount = Number(row.amount);
+    return this.builder()
+      .debit('sales_returns', amount)
+      .credit('receivables', amount, { customerId: row.customer_id })
+      .build(row.day, `Bonus ${row.year} · ${row.name}`);
   }
 
   /** Money moved between places, or put in or taken out by the owner. Between two places outside the books, nothing. */

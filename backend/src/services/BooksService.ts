@@ -123,7 +123,7 @@ export interface ManualEntryInput {
   lines: Array<{ accountId: number; debit: number; credit: number; supplierId?: number | null; customerId?: number | null; memo?: string | null }>;
 }
 
-export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment';
+export type EntrySource = 'bill' | 'payment' | 'expense' | 'return' | 'write_off' | 'count' | 'document' | 'sale' | 'move' | 'tab_payment' | 'offset' | 'bonus';
 
 /** The balance the way people read it: debit-side accounts as debits minus credits, the others the other way. */
 export const naturalBalance = (accountClass: AccountClass, debitMinusCredit: number) =>
@@ -501,6 +501,11 @@ export class BooksService {
     if (adjustments.length > 0) lookups.push(['adjustment', this.db.selectFrom('stock_adjustments').select(['id', 'product_id as target']).where('id', 'in', adjustments).execute(), 'product']);
     const tabPayments = idsOf('tab_payment');
     if (tabPayments.length > 0) lookups.push(['tab_payment', this.db.selectFrom('tab_entries').select(['id', 'customer_id as target']).where('id', 'in', tabPayments).execute(), 'customer']);
+    // An offset or a bonus opens the customer it was for.
+    const offsets = idsOf('offset');
+    if (offsets.length > 0) lookups.push(['offset', this.db.selectFrom('partner_offsets').select(['id', 'customer_id as target']).where('id', 'in', offsets).execute(), 'customer']);
+    const bonuses = idsOf('bonus');
+    if (bonuses.length > 0) lookups.push(['bonus', this.db.selectFrom('bonus_payouts').select(['id', 'customer_id as target']).where('id', 'in', bonuses).execute(), 'customer']);
     const writeOffs = idsOf('write_off');
     if (writeOffs.length > 0) lookups.push(['write_off', this.db.selectFrom('write_offs').select(['id', 'product_id as target']).where('id', 'in', writeOffs).execute(), 'product']);
     const returns = idsOf('return');

@@ -508,13 +508,16 @@ export interface CustomersTable {
   discount_percent: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   /** The owner lets them take goods and pay later, up to `credit_limit` (none: no cap). */
   pay_later: Generated<boolean>;
+  /** The bonus they earn on a year's purchases, in percent; null: none. */
+  bonus_percent: ColumnType<string | null, number | null | undefined, number | null>;
   archived_at: Date | null;
   created_by: number | null;
   created_at: CreatedAt;
 }
 
 /** A charge adds to what's owed; a payment (money in) or a refund (a return) takes it off. */
-export type TabEntryKind = 'charge' | 'payment' | 'refund';
+/** credit: what they owe goes down with no money moving (an offset against their bills, or a bonus). */
+export type TabEntryKind = 'charge' | 'payment' | 'refund' | 'credit';
 
 export type OfferStatus = 'open' | 'sold' | 'declined';
 
@@ -597,6 +600,9 @@ export interface TabEntriesTable {
   place_id: ColumnType<number | null, number | null | undefined, number | null>;
   /** A balance from before the books start, brought over at launch: out of the books. */
   brought_over: Generated<boolean>;
+  /** On a credit: the offset or bonus it came from. */
+  offset_id: ColumnType<number | null, number | null | undefined, number | null>;
+  bonus_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface SuppliersTable {
@@ -857,7 +863,8 @@ export interface SupplierProductCodesTable {
 
 export const SUPPLIER_PAYMENT_METHODS = ['drawer', 'cash', 'bank'] as const;
 /** How a bill was paid: `credit` is a return or credit from the supplier applied to it. */
-export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number] | 'credit';
+/** credit: a return or credit applied; offset: set off against what the supplier owes as a customer. */
+export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number] | 'credit' | 'offset';
 
 export interface SupplierPaymentsTable {
   id: Generated<number>;
@@ -877,6 +884,42 @@ export interface SupplierPaymentsTable {
   place_id: ColumnType<number | null, number | null | undefined, number | null>;
   /** One payment over several bills. */
   group_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** On an offset: the set-off it came from. */
+  offset_id: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface PartnerAddressesTable {
+  id: Generated<number>;
+  customer_id: number | null;
+  supplier_id: number | null;
+  label: string;
+  address: string;
+  city: string | null;
+  note: string | null;
+  created_at: CreatedAt;
+}
+
+export interface PartnerOffsetsTable {
+  id: Generated<number>;
+  customer_id: number;
+  supplier_id: number;
+  amount: Decimal;
+  day: ColumnType<string, string, string>;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+export interface BonusPayoutsTable {
+  id: Generated<number>;
+  customer_id: number;
+  year: number;
+  bought: Decimal;
+  percent: Decimal;
+  amount: Decimal;
+  day: ColumnType<string, string, string>;
+  created_by: number | null;
+  created_at: CreatedAt;
 }
 
 export interface ReportSubscriptionsTable {
@@ -1211,6 +1254,9 @@ export interface Database {
   offers: OffersTable;
   offer_lines: OfferLinesTable;
   customer_deliveries: CustomerDeliveriesTable;
+  partner_addresses: PartnerAddressesTable;
+  partner_offsets: PartnerOffsetsTable;
+  bonus_payouts: BonusPayoutsTable;
   suppliers: SuppliersTable;
   purchase_orders: PurchaseOrdersTable;
   purchase_order_lines: PurchaseOrderLinesTable;

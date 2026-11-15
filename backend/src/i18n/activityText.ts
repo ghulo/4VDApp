@@ -76,6 +76,8 @@ const en = {
     `Let ${p.name} pay ${w.money(p.amount)} later (${p.seller} at the Counter)`,
   offerMade: (p: { number: string; name: string; total: number }, w: Words) => `Made offer ${p.number} for ${p.name}, ${w.money(p.total)}`,
   offerDeclined: (p: { number: string; name: string }) => `Marked offer ${p.number} for ${p.name} as turned down`,
+  partnerOffset: (p: { name: string; amount: number }, w: Words) => `Set off ${w.money(p.amount)} of ${p.name}'s tab against their bills`,
+  bonusPaid: (p: { name: string; amount: number; year: number }, w: Words) => `Paid ${p.name} their ${p.year} bonus, ${w.money(p.amount)}, on their tab`,
   deliveryTaken: (p: { number: string; name: string }) => `Took ${p.number} out to deliver to ${p.name}`,
   deliveryDone: (p: { number: string; name: string; collected: number }, w: Words) =>
     `Delivered ${p.number} to ${p.name}${p.collected > 0 ? ` and collected ${w.money(p.collected)}` : ''}`,
@@ -565,6 +567,8 @@ const sq: Templates = {
   payLaterAllowed: (p, w) => `Lejoi ${p.name} të paguajë ${w.money(p.amount)} më vonë (${p.seller} te Arka)`,
   offerMade: (p, w) => `Bëri ofertën ${p.number} për ${p.name}, ${w.money(p.total)}`,
   offerDeclined: (p) => `Shënoi ofertën ${p.number} për ${p.name} si të refuzuar`,
+  partnerOffset: (p, w) => `Kompensoi ${w.money(p.amount)} nga borxhi i ${p.name} me faturat e tyre`,
+  bonusPaid: (p, w) => `I dha ${p.name} bonusin e ${p.year}, ${w.money(p.amount)}, në llogarinë e tyre`,
   deliveryTaken: (p) => `Mori ${p.number} për ta dërguar te ${p.name}`,
   deliveryDone: (p, w) => `Dërgoi ${p.number} te ${p.name}${p.collected > 0 ? ` dhe mblodhi ${w.money(p.collected)}` : ''}`,
   deliveryMissed: (p) => `Nuk e dërgoi dot ${p.number} te ${p.name}: ${p.reason}`,

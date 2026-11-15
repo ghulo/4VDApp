@@ -57,6 +57,7 @@ import * as cashOpenings from './055_cash_openings.js';
 import * as counterPins from './056_counter_pins.js';
 import * as offlineSales from './057_offline_sales.js';
 import * as salesDocuments from './058_sales_documents.js';
+import * as partners from './059_partners.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -123,4 +124,5 @@ export const migrations: Record<string, Migration> = {
   '056_counter_pins': counterPins,
   '057_offline_sales': offlineSales,
   '058_sales_documents': salesDocuments,
+  '059_partners': partners,
 };

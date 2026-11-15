@@ -22,6 +22,7 @@ export function createCustomerController(tabService: TabService) {
       if (!canOversee(req.user!.role)) {
         delete input.payLater;
         delete input.creditLimit;
+        delete input.bonusPercent;
       }
       const customer = await tabService.create(input, req.user!.id);
       sendSuccess(res, customer, { statusCode: 201, message: 'Tab opened' });

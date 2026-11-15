@@ -287,6 +287,10 @@
      isn't the spring, because a "no" should feel like a shake of the head. */
   --motion-shake: 240ms;
   --shake-curve: cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  /* A big moment (the Counter's Paid check): pops a little past its size and
+     settles. The only overshoot in 4VD; never on everyday screens. */
+  --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pop-time: 380ms;
 }
 
 /* ---------- A figure changes: its changed digits roll in place ---------- */

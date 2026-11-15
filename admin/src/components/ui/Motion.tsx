@@ -143,3 +143,29 @@ export function SuccessCheck({ size = 20, busy = false, className }: { size?: nu
     </svg>
   );
 }
+
+/** How long a big figure waits before rolling up, so it lands after its screen has arrived. */
+const ROLL_UP_DELAY_MS = 120;
+
+/**
+ * A big figure that rolls up from zero when it first shows (the change to
+ * give back on the Paid screen). Screen readers get the real figure at once;
+ * under reduced motion it simply shows.
+ */
+export function RollUp({ value, from, className }: { value: string; from: string; className?: string }) {
+  const still = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const [shown, setShown] = useState(still ? value : from);
+  useEffect(() => {
+    if (shown === value) return;
+    const timer = window.setTimeout(() => setShown(value), ROLL_UP_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [shown, value]);
+  return (
+    <span className={className}>
+      <span className="visually-hidden">{value}</span>
+      <span aria-hidden="true">
+        <RollingNumber value={shown} />
+      </span>
+    </span>
+  );
+}

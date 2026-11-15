@@ -30,7 +30,7 @@ export { Kbd } from './Kbd';
 export { Popover } from './Popover';
 export { RemoveButton } from './RemoveButton';
 export { Skeleton } from './Skeleton';
-export { Figure, RollingNumber, ShimmerText, SuccessCheck, SwapText } from './Motion';
+export { Figure, RollingNumber, RollUp, ShimmerText, SuccessCheck, SwapText } from './Motion';
 export { shake } from './shake';
 export { Steps } from './Steps';
 export { ToastProvider, useToast, type ToastInput } from './Toast';

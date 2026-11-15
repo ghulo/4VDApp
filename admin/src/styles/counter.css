@@ -895,6 +895,7 @@
   background: var(--ok-soft);
   color: var(--ok);
   --check-ink: var(--ok-soft);
+  position: relative;
 }
 
 .counter-sold__title {
@@ -1018,8 +1019,43 @@
     animation-delay: 60ms;
   }
 
+  /* The one big moment at the Counter: the check pops in a little past its
+     size and settles, and a soft ring spreads out from it once. */
   .counter-sold__tick {
-    animation: counter-tick-in var(--spring-time) var(--spring) both;
+    animation: counter-tick-pop var(--pop-time) var(--pop) both;
+  }
+
+  .counter-sold__tick::after {
+    animation: counter-tick-ring 600ms var(--ease) 120ms both;
+  }
+}
+
+.counter-sold__tick::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ok);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  content: '';
+}
+
+@keyframes counter-tick-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes counter-tick-ring {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.9);
   }
 }
 
@@ -1027,13 +1063,6 @@
   from {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
-  }
-}
-
-@keyframes counter-tick-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
   }
 }
 

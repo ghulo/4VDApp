@@ -21,6 +21,7 @@ import {
   PageHeader,
   Popover,
   RollingNumber,
+  RollUp,
   Section,
   shake,
   ShimmerText,
@@ -70,6 +71,7 @@ export function KitPage() {
   const [total, setTotal] = useState(18.4);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [paid, setPaid] = useState(0);
   const pinRef = useRef<HTMLInputElement>(null);
   if (!canManage(role)) return <Navigate to="/" replace />;
 
@@ -144,6 +146,15 @@ export function KitPage() {
               <SwapText>{saved ? 'Saved' : 'Saving…'}</SwapText>
             </span>
             <Button size="sm" onClick={() => setSaved((now) => !now)}>Swap the words</Button>
+          </div>
+          <div className="kit-row kit-row--gap" key={paid}>
+            <span className="counter-sold__tick">
+              <SuccessCheck size={44} />
+            </span>
+            <span className="counter-sold__change-amount">
+              <RollUp value={formatMoney(14.6)} from={formatMoney(0)} />
+            </span>
+            <Button size="sm" onClick={() => setPaid((now) => now + 1)}>Paid again</Button>
           </div>
           <div className="kit-row kit-row--gap">
             <span className="field-hint">

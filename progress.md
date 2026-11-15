@@ -20,7 +20,7 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 **Small transitions** (try them all on /kit first, then in place)
 - [ ] /kit → Small transitions: the total's changed digits roll (up when it grows, down when it shrinks), Wrong PIN shakes the box, Start/Finish turns the spinner into a check, the words swap with a blur, the reading words shimmer, the Download menu opens and closes from its corner
 - [ ] /kit → Messages: press Saved three times: the toasts stack, pointing at them fans them out, the green check turns in, closing one fades it away
-- [ ] Counter: the basket total rolls as you scan, a wrong PIN shakes, the Paid screen's check turns in (on the shop PC or the demo shop, never a real sale)
+- [ ] Counter: the basket total rolls as you scan, a wrong PIN shakes, the Paid screen's check pops in with a spreading ring and the change rolls up from zero (try it first on /kit with "Paid again"; at the till only on the shop PC or the demo shop, never a real sale)
 - [ ] Bills → Scan a bill: "Reading the bill…" shimmers, then swaps to "Ready to check" before the check opens; confirming it shows a "Bill confirmed" toast
 - [ ] VAT credit and the bank-statement rules: Save shows "Saving… → Saved"; a bank statement upload shimmers while it reads; a form that fails to save shakes its error line
 - [ ] With Windows "Show animations" off, none of the above moves and everything still shows

@@ -1,4 +1,4 @@
-import { RollingNumber, SuccessCheck } from '../components/ui';
+import { RollingNumber, RollUp, SuccessCheck } from '../components/ui';
 import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
@@ -1526,7 +1526,9 @@ function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprint
       {sale.change !== null && sale.change > 0 ? (
         <div className="counter-sold__change">
           <p className="counter-sold__change-label">{t.counter.giveBack}</p>
-          <p className="counter-sold__change-amount">{formatMoney(sale.change)}</p>
+          <p className="counter-sold__change-amount">
+            <RollUp value={formatMoney(sale.change)} from={formatMoney(0)} />
+          </p>
           {sale.tendered !== null && <p className="counter-sold__change-note">{p.gaveOf(formatMoney(sale.tendered), formatMoney(cashDue))}</p>}
         </div>
       ) : (

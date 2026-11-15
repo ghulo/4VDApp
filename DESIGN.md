@@ -924,6 +924,10 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
     - Done: a ring fills and the tick turns into place (`SuccessCheck`; the
       Counter's Paid screen and every "done" toast). With `busy` it is a
       spinning arc first that turns into the check.
+    - The one big moment, the Counter's Paid screen: the check pops a little
+      past its size and settles (`--pop`, 380ms, the only overshoot in 4VD),
+      a soft ring spreads out from it once, and the change to give back rolls
+      up from zero (`RollUp`). Never on everyday screens.
     - Words that change swap with a soft blur (`SwapText`): "Saving… → Saved",
       "Reading the bill… → Ready to check".
     - While Claude reads (a bill photo, an emailed bill, a bank statement) the

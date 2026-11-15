@@ -8,7 +8,7 @@ import type { BillEmailSettings, OpenBillEmail } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime } from '../utils/format';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
-import { Button, buttonClass, Card, SettingRow } from './ui';
+import { Button, buttonClass, Card, SettingRow, ShimmerText } from './ui';
 
 /** Emailed files with no scan yet: over the day's reads, or not readable. Shown above the bills; hidden when there are none. */
 export function EmailedBills() {
@@ -55,6 +55,11 @@ function EmailedRow({ mail, reads }: { mail: OpenBillEmail; reads: number | null
       <span>
         <strong>{name}</strong>
         <span className="scan-waiting__meta">{[t.billEmail.from(mail.sender, formatDateTime(mail.receivedAt)), state].filter(Boolean).join(' · ')}</span>
+        {read.isPending && (
+          <span className="scan-waiting__meta" role="status">
+            <ShimmerText>{t.scans.reading}</ShimmerText>
+          </span>
+        )}
         {error && (
           <span className="form-error" role="alert">
             {errorMessage(error)}

@@ -106,39 +106,38 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
           <CaretDown size={12} weight="bold" aria-hidden="true" />
         </Button>
       )}
-      {open && (
-        <ul id={menuId} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
-          {items.map((item, index) => {
-            const ItemIcon = item.icon;
-            return (
-              <li key={item.label} role="none">
-                <button
-                  ref={(element) => {
-                    itemRefs.current[index] = element;
-                  }}
-                  type="button"
-                  role="menuitem"
-                  aria-keyshortcuts={item.shortcut}
-                  tabIndex={-1}
-                  className="menu__item"
-                  onClick={() => {
-                    close();
-                    item.onSelect();
-                  }}
-                >
-                  {ItemIcon && <ItemIcon size={16} aria-hidden="true" />}
-                  {item.label}
-                  {item.shortcut && (
-                    <kbd className="menu__shortcut" aria-hidden="true">
-                      {item.shortcut}
-                    </kbd>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {/* Kept in the page while shut, so it can close the way it opened. */}
+      <ul id={menuId} hidden={!open} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
+        {items.map((item, index) => {
+          const ItemIcon = item.icon;
+          return (
+            <li key={item.label} role="none">
+              <button
+                ref={(element) => {
+                  itemRefs.current[index] = element;
+                }}
+                type="button"
+                role="menuitem"
+                aria-keyshortcuts={item.shortcut}
+                tabIndex={-1}
+                className="menu__item"
+                onClick={() => {
+                  close();
+                  item.onSelect();
+                }}
+              >
+                {ItemIcon && <ItemIcon size={16} aria-hidden="true" />}
+                {item.label}
+                {item.shortcut && (
+                  <kbd className="menu__shortcut" aria-hidden="true">
+                    {item.shortcut}
+                  </kbd>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

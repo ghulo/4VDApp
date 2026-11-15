@@ -1,5 +1,5 @@
 import { Funnel, Info, PencilSimple, Trash } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -17,14 +17,20 @@ import {
   FunnelChart,
   Heatmap,
   Kbd,
+  MenuButton,
   PageHeader,
   Popover,
+  RollingNumber,
   Section,
+  shake,
+  ShimmerText,
   Skeleton,
   Steps,
+  SuccessCheck,
+  SwapText,
   useToast,
 } from '../components/ui';
-import { formatHeadlineMoney } from '../utils/format';
+import { formatHeadlineMoney, formatMoney } from '../utils/format';
 
 // A developer's page (/kit) showing the newer kit pieces with made-up data,
 // so they can be checked by eye in both themes and on a phone. Not in the menu.
@@ -61,6 +67,10 @@ export function KitPage() {
   const [step, setStep] = useState(1);
   const [cards, setCards] = useState(START_CARDS);
   const [day, setDay] = useState(() => new Date().toLocaleDateString('en-CA'));
+  const [total, setTotal] = useState(18.4);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const pinRef = useRef<HTMLInputElement>(null);
   if (!canManage(role)) return <Navigate to="/" replace />;
 
   const month = day.slice(0, 7);
@@ -110,6 +120,36 @@ export function KitPage() {
             <Button onClick={() => toast({ title: 'Bill saved', detail: 'Stock went up for 12 products.' })}>Saved</Button>
             <Button onClick={() => toast({ title: 'Product removed', tone: 'info', action: { label: 'Undo', onClick: () => toast({ title: 'Product is back' }) } })}>With Undo</Button>
             <Button onClick={() => toast({ title: 'Couldn’t print', detail: 'The printer isn’t answering. Check it is on.', tone: 'danger' })}>Problem</Button>
+          </div>
+        </Card>
+      </Section>
+
+      <Section title="Small transitions">
+        <Card>
+          <div className="kit-row kit-row--gap">
+            <span className="kit-note">
+              Total <strong><RollingNumber value={formatMoney(total)} /></strong>
+            </span>
+            <Button size="sm" onClick={() => setTotal((now) => Math.round((now + 7.65) * 100) / 100)}>Add a line</Button>
+            <Button size="sm" onClick={() => setTotal((now) => Math.max(0, Math.round((now - 7.65) * 100) / 100))}>Take one off</Button>
+          </div>
+          <div className="kit-row kit-row--gap">
+            <input ref={pinRef} className="counter-number" type="password" inputMode="numeric" aria-label="PIN" defaultValue="0000" />
+            <Button size="sm" onClick={() => shake(pinRef.current)}>Wrong PIN</Button>
+          </div>
+          <div className="kit-row kit-row--gap">
+            <SuccessCheck size={28} busy={busy} />
+            <Button size="sm" onClick={() => setBusy((now) => !now)}>{busy ? 'Finish' : 'Start'}</Button>
+            <span className="field-hint" role="status">
+              <SwapText>{saved ? 'Saved' : 'Saving…'}</SwapText>
+            </span>
+            <Button size="sm" onClick={() => setSaved((now) => !now)}>Swap the words</Button>
+          </div>
+          <div className="kit-row kit-row--gap">
+            <span className="field-hint">
+              <ShimmerText>Reading the bill… this takes up to a minute.</ShimmerText>
+            </span>
+            <MenuButton label="Download" items={[{ label: 'Excel', onSelect: () => undefined }, { label: 'PDF', onSelect: () => undefined }]} />
           </div>
         </Card>
       </Section>

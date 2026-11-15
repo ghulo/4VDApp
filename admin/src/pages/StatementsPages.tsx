@@ -24,6 +24,7 @@ import {
   StatGrid,
   StatTile,
   type Tone,
+  SwapText,
 } from '../components/ui';
 import { useCurrentUser } from '../auth/useAuth';
 import type { Catalogue } from '../i18n/en';
@@ -872,9 +873,9 @@ function TaxBasis({ data, canEdit }: { data: BookYear; canEdit: boolean }) {
             <Button type="submit" variant="primary" disabled={!changed || save.isPending} loading={save.isPending}>
               {w.save}
             </Button>
-            {save.isSuccess && !changed && (
+            {(save.isPending || (save.isSuccess && !changed)) && (
               <span className="field__hint" role="status">
-                {w.saved}
+                <SwapText>{save.isPending ? t.common.saving : w.saved}</SwapText>
               </span>
             )}
           </div>

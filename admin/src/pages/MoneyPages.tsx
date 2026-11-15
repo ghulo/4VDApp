@@ -24,6 +24,7 @@ import {
   PageHeader,
   Section,
   Sheet,
+  ShimmerText,
   StatGrid,
   StatTile,
   useNewSheet,
@@ -1013,7 +1014,7 @@ function UploadCard({ place }: { place: MoneyPlace }) {
   const done = upload.data && !upload.data.needsLayout ? upload.data : null;
   return (
     <Card title={t.money.statement.uploadTitle} description={t.money.statement.uploadHint}>
-      <Field label={t.money.statement.chooseFile} hint={upload.isPending ? t.money.statement.reading : file?.name}>
+      <Field label={t.money.statement.chooseFile} hint={upload.isPending ? <ShimmerText>{t.money.statement.reading}</ShimmerText> : file?.name}>
         <input type="file" accept=".xlsx,.csv,.txt,.pdf,application/pdf,text/csv" disabled={upload.isPending} onChange={handleFile} />
       </Field>
       {done && (

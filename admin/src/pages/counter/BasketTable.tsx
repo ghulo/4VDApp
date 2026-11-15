@@ -1,3 +1,4 @@
+import { RollingNumber } from '../../components/ui';
 import { Hourglass, Tag, User } from '@phosphor-icons/react';
 import type { ShortDatedOffer } from '../../utils/shortDated';
 import { allowsParts, unitSymbol } from '../../utils/units';
@@ -282,7 +283,9 @@ export function BasketSummaryFoot({ summary }: { summary: BasketSummary }) {
       </dl>
       <p className="counter-foot__total">
         <span className="counter-foot__total-label">{t.counter.summary.toPay}</span>
-        <span className="counter-foot__amount">{formatMoney(summary.total)}</span>
+        <span className="counter-foot__amount">
+          <RollingNumber value={formatMoney(summary.total)} />
+        </span>
       </p>
     </div>
   );

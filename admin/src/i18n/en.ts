@@ -1411,6 +1411,8 @@ export const en = {
     tooBig: (name: string) => `${name} is over 10 MB.`,
     read: 'Read the bill',
     reading: 'Reading the bill… this takes up to a minute.',
+    ready: 'Ready to check',
+    confirmedToast: 'Bill confirmed',
     waitingTitle: 'Scanned, waiting for a check',
     waitingHint: 'Nothing has gone into stock yet. Check each one and confirm it.',
     waitingRow: (p: { by: string | null; when: string; emailFrom?: string | null }) =>
@@ -4842,6 +4844,7 @@ export const en = {
     close: 'Close',
     onThisPage: 'On this page',
     save: 'Save',
+    saving: 'Saving…',
     cancel: 'Cancel',
     yesRemove: 'Yes, remove',
     yesDelete: 'Yes, delete',

@@ -1,3 +1,4 @@
+import { Figure } from './Motion';
 import type { Icon } from '@phosphor-icons/react';
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
@@ -90,7 +91,7 @@ export function StatTile({ label, value, words: givenWords, hint, tone = 'defaul
       <span className={named ? 'stat__label stat__label--name' : 'stat__label'}>
         {label}
       </span>
-      {words ? <span className="stat__words">{words}</span> : <span className="stat__value">{value}</span>}
+      {words ? <span className="stat__words">{words}</span> : <span className="stat__value"><Figure value={value} /></span>}
       {hint && <span className="stat__hint">{hint}</span>}
     </>
   );

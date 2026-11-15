@@ -1,3 +1,4 @@
+import { shake } from '../../components/ui';
 import { ArrowLeft, LockKey, Printer, Truck } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
@@ -692,18 +693,24 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const pinRef = useRef<HTMLInputElement>(null);
   const chosen = people?.find((person) => person.id === userId) ?? null;
 
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!chosen) return setError(t.counter.pickPerson);
-    if (!/^[0-9]{4,6}$/.test(pin)) return setError(t.profile.pinFormat);
+    if (!/^[0-9]{4,6}$/.test(pin)) {
+      shake(pinRef.current);
+      return setError(t.profile.pinFormat);
+    }
     setBusy(true);
     try {
       await onSubmit(chosen.id, pin);
     } catch (problem) {
       setPin('');
       setError(errorMessage(problem));
+      // A wrong PIN shakes the box, every try.
+      shake(pinRef.current);
     } finally {
       setBusy(false);
     }
@@ -735,6 +742,7 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
       </fieldset>
       <Field label={t.counter.pinLabel} hint={t.profile.pinFormat} error={error ?? undefined}>
         <input
+          ref={pinRef}
           className="counter-number"
           type="password"
           name="pin"

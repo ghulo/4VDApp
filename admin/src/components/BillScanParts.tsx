@@ -7,7 +7,10 @@ import { billScansApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { shrinkPhoto } from '../utils/shrinkPhoto';
-import { Button, ButtonLink, Card, Field } from './ui';
+import { Button, ButtonLink, Card, Field, SwapText } from './ui';
+
+/** How long "Ready to check" shows before the check page opens. */
+const READY_MS = 600;
 
 /** Matches the server's MAX_SCAN_PAGES and per-page limit. */
 const MAX_PAGES = 6;
@@ -38,12 +41,17 @@ export function ScanBillForm({ onDone, openCheck = true }: { onDone: () => void;
   const queryClient = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const scan = useMutation({
     mutationFn: async () => billScansApi.scan(await Promise.all(files.map(toPage))),
     onSuccess: (receipt) => {
       for (const key of ['bill-scans', 'attention']) queryClient.invalidateQueries({ queryKey: [key] });
-      onDone();
-      if (openCheck) navigate(`/bills/scans/${receipt.id}`);
+      // "Reading the bill…" turns into "Ready to check" for a moment, then the check opens.
+      setReady(true);
+      window.setTimeout(() => {
+        onDone();
+        if (openCheck) navigate(`/bills/scans/${receipt.id}`);
+      }, READY_MS);
     },
   });
 
@@ -100,16 +108,16 @@ export function ScanBillForm({ onDone, openCheck = true }: { onDone: () => void;
           {errorMessage(scan.error)}
         </p>
       )}
-      {scan.isPending && (
+      {(scan.isPending || ready) && (
         <p className="field-hint" role="status">
-          {t.scans.reading}
+          <SwapText shimmer={!ready}>{ready ? t.scans.ready : t.scans.reading}</SwapText>
         </p>
       )}
       <div className="form-actions">
         <Button variant="ghost" onClick={onDone}>
           {t.common.cancel}
         </Button>
-        <Button type="submit" variant="primary" disabled={files.length === 0 || scan.isPending}>
+        <Button type="submit" variant="primary" disabled={files.length === 0 || scan.isPending || ready}>
           {t.scans.read}
         </Button>
       </div>

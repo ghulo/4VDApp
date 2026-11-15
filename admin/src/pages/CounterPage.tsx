@@ -1,3 +1,4 @@
+import { RollingNumber, SuccessCheck } from '../components/ui';
 import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
@@ -860,7 +861,7 @@ export function CounterPage() {
               >
                 <span className="counter-basket__head">
                   <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
-                  <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
+                  <span className="counter-basket__total">{basket.lines.length > 0 ? <RollingNumber value={formatMoney(basketTotal)} /> : t.counter.basketEmpty}</span>
                 </span>
                 <span className="counter-basket__meta">
                   {/* An empty basket has no sale yet, so no age either. */}
@@ -1514,7 +1515,7 @@ function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprint
     <div className="counter-sold" key={sale.key}>
       <div className="counter-sold__head">
         <span className="counter-sold__tick" aria-hidden="true">
-          <CheckCircle size={44} weight="fill" />
+          <SuccessCheck size={44} />
         </span>
         <p className="counter-sold__title">{p.title}</p>
         <p className="counter-sold__how">

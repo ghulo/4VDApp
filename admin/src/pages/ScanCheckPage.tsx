@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { BillFields } from '../components/BillParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { Badge, Button, ButtonLink, Card, Combobox, DateField, EmptyState, Field, PageHeader, type Tone } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, Combobox, DateField, EmptyState, Field, PageHeader, type Tone, useToast } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { billScansApi, categoriesApi, suppliersApi } from '../services/api';
 import { mediaSrc } from '../services/apiClient';
@@ -169,6 +169,7 @@ export function ScanCheckPage() {
 function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: string) => void }) {
   const t = useT();
   const navigate = useNavigate();
+  const toast = useToast();
   const queryClient = useQueryClient();
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
@@ -237,6 +238,8 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
       }),
     onSuccess: (result) => {
       done();
+      // The toast's check turns into place as the bill opens.
+      toast({ title: t.scans.confirmedToast });
       navigate(`/bills/${result.billId}`);
     },
   });

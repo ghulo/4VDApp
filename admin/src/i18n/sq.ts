@@ -1399,6 +1399,8 @@ export const sq: Catalogue = {
     tooBig: (name) => `${name} është mbi 10 MB.`,
     read: 'Lexo faturën',
     reading: 'Duke lexuar faturën… zgjat deri në një minutë.',
+    ready: 'Gati për kontroll',
+    confirmedToast: 'Fatura u konfirmua',
     waitingTitle: 'Të skanuara, presin kontroll',
     waitingHint: 'Asgjë s’ka hyrë ende në stok. Kontrolloji një nga një dhe konfirmoji.',
     waitingRow: (p) => (p.emailFrom ? `Me email nga ${p.emailFrom}, ${p.when}` : p.by ? `Skanuar nga ${p.by}, ${p.when}` : `Skanuar ${p.when}`),
@@ -4810,6 +4812,7 @@ export const sq: Catalogue = {
     countOf: (name) => `Numërim i ${name}`,
   },
   common: {
+    saving: 'Duke ruajtur…',
     yesRemove: 'Po, hiqe',
     yesDelete: 'Po, fshije',
     dateFormat: 'dd/mm/vvvv',

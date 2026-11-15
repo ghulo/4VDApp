@@ -61,7 +61,8 @@ export function useFloating(
       if (!target || !floating) return;
       const rect = target.getBoundingClientRect();
       if (matchWidth) floating.style.minWidth = `${rect.width}px`;
-      const spot = placeFloating(rect, floating.getBoundingClientRect(), { width: window.innerWidth, height: window.innerHeight }, side, align);
+      // Its own size without the opening scale (offset sizes ignore transforms).
+      const spot = placeFloating(rect, { width: floating.offsetWidth, height: floating.offsetHeight }, { width: window.innerWidth, height: window.innerHeight }, side, align);
       floating.style.top = `${spot.top}px`;
       floating.style.left = `${spot.left}px`;
       floating.dataset.side = spot.side;

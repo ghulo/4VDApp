@@ -913,8 +913,32 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   - Keys sink into their edge on press. Charts grow in once from their base.
     "Loading" waits 300ms, so a quick answer never flashes it; then a slow wave (opacity, 1.8s, a beat per row) runs down the skeleton so a slow answer never looks frozen. Light/dark
     cross-fades.
-  - Only `transform` and `opacity` move (plus the highlight's size). No
-    bounce, parallax or looping motion (the loading wave is the one loop).
+  - Small changes are quicker: `--motion-quick` (220ms) on the spring, from the
+    pieces in `components/ui/Motion.tsx`, never written per page:
+    - A figure changes: only its changed digits roll, up when it grows, down
+      when it shrinks (`RollingNumber`; stat tiles, metric cards and the
+      Counter totals do it on their own). At rest it is plain text.
+    - An error shakes once: every `.form-error` as it appears, and a field
+      again on each wrong try (`shake()`, the Counter PIN). `--motion-shake`
+      240ms on `--shake-curve`, the one curve that isn't the spring.
+    - Done: a ring fills and the tick turns into place (`SuccessCheck`; the
+      Counter's Paid screen and every "done" toast). With `busy` it is a
+      spinning arc first that turns into the check.
+    - Words that change swap with a soft blur (`SwapText`): "Saving… → Saved",
+      "Reading the bill… → Ready to check".
+    - While Claude reads (a bill photo, an emailed bill, a bank statement) the
+      words shimmer: a soft wave of opacity runs word by word, in the text's
+      own ink (`ShimmerText`, or `SwapText shimmer`). Never a coloured sweep.
+    - Toasts stack three deep: the newest in front, older ones peek out above
+      it, smaller; pointing at the stack or tabbing into it fans them out.
+      A toast rises in sharpening from a little blur and fades away when it goes.
+    - Menus and floating panels open from the edge they hang from and close
+      the same way (scale 0.96 + fade); a tooltip fades in and goes at once;
+      the centred question grows in from the middle.
+  - Only `transform` and `opacity` move (plus the highlight's size), and a
+    small blur (`filter`, 4px at most) on small pieces like a digit, a word or
+    a toast. No bounce, parallax or looping motion, except two loops that
+    only run while 4VD waits: the loading wave and the reading shimmer.
 - WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
 - Keyboard: every action reachable, visible focus, one tab stop per chart
   (arrows walk the data), dialogs trap focus and return it.

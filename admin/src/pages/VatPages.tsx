@@ -19,6 +19,7 @@ import {
   PageHeader,
   Section,
   Sheet,
+  SwapText,
 } from '../components/ui';
 import type { Catalogue } from '../i18n/en';
 import { useLanguage, useT } from '../i18n/useT';
@@ -433,9 +434,9 @@ function TypedFigures({ data, typesCarried }: { data: VatMonth; typesCarried: bo
         <Button type="submit" loading={save.isPending} disabled={credit <= 0 && !typesCarried}>
           {t.vat.save}
         </Button>
-        {save.isSuccess && !save.isPending && (
+        {(save.isPending || save.isSuccess) && (
           <span className="field-hint" role="status">
-            {t.vat.saved}
+            <SwapText>{save.isPending ? t.common.saving : t.vat.saved}</SwapText>
           </span>
         )}
         {save.isError && (

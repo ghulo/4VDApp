@@ -1,3 +1,4 @@
+import { Figure } from './Motion';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, DotsThree } from '@phosphor-icons/react';
 import { type ReactNode, useId } from 'react';
 import { Link } from 'react-router';
@@ -49,7 +50,9 @@ export function MetricCard({ label, value, change, series, large, to, hint }: Me
         )}
       </div>
       <p className="metric__figure">
-        <span className="metric__value">{value}</span>
+        <span className="metric__value">
+          <Figure value={value} />
+        </span>
         {direction && change !== null && change !== undefined && (
           <span className={`metric__change metric__change--${direction}`}>
             <span className="metric__change-shown" aria-hidden="true">

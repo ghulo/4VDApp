@@ -119,7 +119,9 @@ export class DocumentService {
     const sales = await repos.documents.salesForDocument(p.saleIds);
     const lines = sales.map((sale) => {
       const unitPrice = toMoney(sale.price_per_unit);
-      return lineFor({ saleId: sale.id, returnId: null, productName: sale.product_name,
+      // A short-dated unit says so on the invoice and the receipt (in Albanian, like the shop's papers).
+      const productName = sale.short_dated_percent === null ? sale.product_name : `${sale.product_name.slice(0, 220)} (afat i shkurtër −${Number(sale.short_dated_percent)}%)`;
+      return lineFor({ saleId: sale.id, returnId: null, productName,
         productCode: sale.product_code,
         quantity: sale.quantity_sold,
         unitPrice,

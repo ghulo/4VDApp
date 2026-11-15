@@ -4654,6 +4654,8 @@ export const sq: Catalogue = {
     actions: 'Veprime',
     writeOff: 'Hiq si të skaduar',
     dealtWith: 'U kry',
+    writeOffOf: (product: string) => `Hiq si të skaduar: ${product}`,
+    dealtWithOf: (product: string) => `U kry: ${product}`,
     writtenOff: (quantity: number, product: string) => `${quantity} × ${product} u hoqën nga stoku si të skaduara`,
   },
   stockDocs: {

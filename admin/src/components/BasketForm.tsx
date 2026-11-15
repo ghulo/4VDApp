@@ -153,11 +153,13 @@ export function BasketForm() {
   /** What the line costs: stickered short-dated units at their price (or a cheaper one), the rest as usual; same rule as the server. */
   const priced = (line: { product: Product; quantity: number; discount: string; shortDated?: ShortDatedPick }) => {
     const percent = parsePercent(line.discount);
-    const short = shortDatedUnits(line.shortDated, line.quantity);
+    // A tapped batch that is no longer short-dated drops off the line.
+    const pick = line.shortDated && offers.get(line.product.id)?.id === line.shortDated.id ? line.shortDated : undefined;
+    const short = shortDatedUnits(pick, line.quantity);
     const rest = line.quantity - short;
     const listed = unitPriceFor(line.product, rest > 0 ? rest : line.quantity, wholesale);
     const each = afterDiscount(listed, percent);
-    const shortEach = short > 0 ? afterDiscount(Math.min(line.shortDated!.price, unitPriceFor(line.product, short, wholesale)), percent) : 0;
+    const shortEach = short > 0 ? afterDiscount(Math.min(pick!.price, unitPriceFor(line.product, short, wholesale)), percent) : 0;
     return { listed, each, short, rest, shortEach, total: roundMoney(each * rest + shortEach * short) };
   };
   function tapShort(productId: number) {
@@ -190,7 +192,7 @@ export function BasketForm() {
         ...(wholesaleSwitch !== null && { wholesale: wholesaleSwitch }),
       }),
     onSuccess: (result) => {
-      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash']) {
+      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'expiry']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       setSavedMessage(t.basket.saved(result.sales.length, formatMoney(result.total)));

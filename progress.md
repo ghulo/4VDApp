@@ -13,6 +13,15 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 19: short-dated stock**
+- [ ] Mark a food product "Has a best-before date"; a bill line, a bill scan line and a stock-in for it show a Best before field, and the date appears under Stock → Expiring
+- [ ] Two days before the date: at the Counter the line shows "Short-dated −30%"; tap it once per stickered unit (tapping past the last undoes it); the receipt and the sale charge the lower price for those units only
+- [ ] Same on the employee Sell screen
+- [ ] Settings → Shop rules: change the days and the discount steps; a category or product with its own days
+- [ ] The day after the date: To do opens Stock → Expiring; "Remove as expired" takes it off the shelf (an employee's waits for the owner) and it shows in the books as a write-off
+- [ ] A count: the Soonest best before field replaces the old dates
+- [ ] On the shop PC: what the fiscal receipt prints for a short-dated unit (same article, lower price; no separate discount line)
+
 **Step 18: bills by email** (after the setup in docs/DEPLOYMENT.md)
 - [x] Forward a supplier PDF from your sign-in email to bills@4vd.app: a waiting scan "By email from …" appears under Bills and in To do, with supplier, lines, VAT and due date filled in
 - [ ] Send a clear phone photo of a bill (no PDF): it is read too; an email with only a logo gives a "no PDF or bill photo" update
@@ -125,7 +134,7 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 
 **D. Better than anything in Kosovo** (from tills and accounting programs abroad, agreed 2026-10-16; there's no rush to switch TREFIN off, its subscription runs a couple more months)
 - [x] 18. Bills by email: forward a supplier's PDF to the shop's bill address and it's filled in by itself. Done 2026-11-15: bills@4vd.app → Email Worker (`mail/`; drops mail failing SPF/DKIM, not yet tried live) → a waiting bill scan in To do, checked on the scan page; senders are the team plus Settings → Bills by email; 50 reads a day, the same file twice is read once. Goes live after the setup in docs/DEPLOYMENT.md
-- [ ] 19. Short-dated stock: best-before dates, and automatic discounts a few days before expiry
+- [x] 19. Short-dated stock: best-before dates, and automatic discounts a few days before expiry. Done 2026-11-15: products marked "Has a best-before date" ask for it on bills, bill scans, stock-ins and counts; near the date the cashier taps "Short-dated −30%" once per stickered unit (Counter and Sell), the % grows as the date nears (Settings, per category or product), never below cost unless allowed; Stock → Expiring lists what expires in 14 days at cost, with one tap to remove expired stock as a write-off. The invoice line says "(afat i shkurtër −N%)"; the fiscal receipt shows only the lower price
 - [ ] 20. Cash forecast: what the shop will have in 30 days, from bills due and normal takings
 - [ ] 21. All four businesses in one view, each with its own books
 - [ ] 22. Digital receipts by SMS or Viber, and loyalty by phone number (replaces the loyalty cards in step 15)

@@ -110,11 +110,11 @@ export function ExpiringPage() {
                 cell: (row) => (
                   <span className="toolbar">
                     {row.daysLeft < 0 && (
-                      <Button size="sm" variant="secondary" icon={Trash} disabled={busy(row)} onClick={() => writeOff.mutate(row)}>
+                      <Button size="sm" variant="secondary" icon={Trash} disabled={busy(row)} aria-label={t.expiring.writeOffOf(row.productName)} onClick={() => writeOff.mutate(row)}>
                         {t.expiring.writeOff}
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" icon={Check} disabled={busy(row)} onClick={() => dealtWith.mutate(row)}>
+                    <Button size="sm" variant="ghost" icon={Check} disabled={busy(row)} aria-label={t.expiring.dealtWithOf(row.productName)} onClick={() => dealtWith.mutate(row)}>
                       {t.expiring.dealtWith}
                     </Button>
                   </span>

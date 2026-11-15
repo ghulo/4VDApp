@@ -4677,6 +4677,8 @@ export const en = {
     actions: 'Actions',
     writeOff: 'Remove as expired',
     dealtWith: 'Dealt with',
+    writeOffOf: (product: string) => `Remove as expired: ${product}`,
+    dealtWithOf: (product: string) => `Dealt with: ${product}`,
     writtenOff: (quantity: number, product: string) => `${quantity} × ${product} taken off the shelf as expired`,
   },
   stockDocs: {

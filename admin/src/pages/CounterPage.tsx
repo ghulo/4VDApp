@@ -194,7 +194,10 @@ export function CounterPage() {
   // Wholesale prices: what the customer pays, unless the owner's side switched this basket.
   const wholesaleOf = (basket: Basket) => basket.wholesale ?? customers.data?.find((one) => one.id === basket.customerId)?.paysWholesale ?? false;
   const wholesale = wholesaleOf(current);
-  const lines = current.lines.map((line) => priceLine(line, byId.get(line.productId), basketRabat, wholesale));
+  // A tapped batch that is no longer short-dated (sold out, or past its date) drops off the line.
+  const lines = current.lines.map((line) =>
+    priceLine(line.shortDated && offers.get(line.productId)?.id !== line.shortDated.id ? { ...line, shortDated: undefined } : line, byId.get(line.productId), basketRabat, wholesale),
+  );
   const summary = summarise(lines);
   const total = summary.total;
 
@@ -472,7 +475,7 @@ export function CounterPage() {
   });
 
   const refreshAfterSale = () => {
-    for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money']) {
+    for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money', 'expiry']) {
       void queryClient.invalidateQueries({ queryKey: [key] });
     }
     void today.refetch();

@@ -126,6 +126,8 @@ export interface SaleForDocument {
   price_before_discount: string | null;
   vat_rate: number;
   vat_exempt: boolean;
+  /** Sold at a short-dated price: that much off the shelf price. */
+  short_dated_percent: string | null;
 }
 
 export class DocumentRepository {
@@ -348,7 +350,7 @@ export class DocumentRepository {
     return this.db
       .selectFrom('sales as s')
       .innerJoin('products as p', 'p.id', 's.product_id')
-      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 's.discount_percent', 's.price_before_discount', 'p.vat_rate', 'p.vat_exempt'])
+      .select((eb) => ['s.id', 'p.name as product_name', eb.fn.coalesce('p.barcode', 'p.sku').as('product_code'), 's.quantity_sold', 's.price_per_unit', 's.discount_percent', 's.price_before_discount', 'p.vat_rate', 'p.vat_exempt', 's.short_dated_percent'])
       .where('s.id', 'in', saleIds)
       .orderBy('s.id')
       .execute();

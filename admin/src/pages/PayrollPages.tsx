@@ -329,9 +329,11 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
             ))}
         </select>
       </Field>
-      <Field label={w.place} hint={form.place === 'carwash' ? w.carwashHint : undefined}>
+      <div className="field">
+        <span className="field__label" aria-hidden="true">{w.place}</span>
         <ChipChoice label={w.place} value={form.place} options={(['shop', 'carwash'] as const).map((value) => ({ value, label: w.places[value] }))} onChange={(place) => change({ place })} />
-      </Field>
+        {form.place === 'carwash' && <span className="field__hint">{w.carwashHint}</span>}
+      </div>
 
       <h3 className="subheading">{w.contract}</h3>
       <Field label={w.contractType}>
@@ -364,7 +366,8 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
 
       <h3 className="subheading">{w.pay}</h3>
       <div className="field-row">
-        <Field label={w.payBasis} hint={form.payBasis === 'net' ? w.netHint : w.grossHint}>
+        <div className="field">
+          <span className="field__label" aria-hidden="true">{w.payBasis}</span>
           <ChipChoice
             label={w.payBasis}
             value={form.payBasis}
@@ -374,7 +377,8 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
             ]}
             onChange={(payBasis) => change({ payBasis })}
           />
-        </Field>
+          <span className="field__hint">{form.payBasis === 'net' ? w.netHint : w.grossHint}</span>
+        </div>
         <Field label={w.payAmount} error={touched ? (problems.payAmount ?? undefined) : undefined}>
           <input inputMode="decimal" required value={form.payAmount} onChange={(event) => change({ payAmount: event.target.value })} />
         </Field>
@@ -972,13 +976,12 @@ function ConfirmedMonth({ id }: { id: number }) {
             pending={undo.isPending}
             disabled={d.payments.length > 0}
             onConfirm={() => undo.mutate()}
-            aria-label={d.payments.length > 0 ? w.undoBlocked : w.undoConfirm}
           >
             {w.undo}
           </RemoveButton>
         </div>
       </div>
-      <p className="field-hint">{w.downloadHint}</p>
+      <p className="field-hint">{d.payments.length > 0 ? `${w.downloadHint} ${w.undoBlocked}` : w.downloadHint}</p>
       {error && (
         <p className="form-error" role="alert">
           {errorMessage(error)}
@@ -1141,7 +1144,7 @@ function PayForm({ detail, kind, onSaved }: { detail: PayrollMonthDetail; kind: 
               <span className="payroll-pick__amount">{formatMoney(one.amount)}</span>
             </label>
           ))}
-          {picked.size === 0 && <p className="form-error">{w.nobody}</p>}
+          {picked.size === 0 && <p className="form-error" role="alert">{w.nobody}</p>}
         </fieldset>
       )}
       {kind === 'atk' && <p className="notice">{w.atkParts(formatMoney(detail.taxLeft), formatMoney(detail.pensionLeft))}</p>}

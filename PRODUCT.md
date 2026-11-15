@@ -67,8 +67,8 @@ general enough for that, but the shop comes first whenever the two conflict.
 - Money in euros; shop time zone is configurable (Europe/Budapest by default).
 - AI helpers (Ask, price suggestions) use Claude; staff names are masked first.
 - Deployed on Render (API at api.4vd.app, with weekly backups to Cloudflare R2)
-  and Cloudflare (the dashboard at 4vd.app). The old addresses dashboard.4vd.app
-  and app.4vd.app (on printed QR labels) redirect there.
+  and Cloudflare (the dashboard at 4vd.app). The old team app address
+  app.4vd.app (on printed QR labels) redirects there.
 - The shop is VAT-registered. The Counter prints legal receipts on the shop's
   Datecs FP-700+ fiscal printer (through F-Link); 4VD also prints A4 invoices
   and labels.

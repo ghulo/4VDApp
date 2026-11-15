@@ -3,12 +3,9 @@
 {
   "name": "4vd-dashboard",
   "compatibility_date": "2026-10-01",
-  // The addresses it answers on; Cloudflare creates the DNS records and certificates.
-  // dashboard.4vd.app is the old address: a Cloudflare Redirect Rule sends it to 4vd.app.
-  "routes": [
-    { "pattern": "4vd.app", "custom_domain": true },
-    { "pattern": "dashboard.4vd.app", "custom_domain": true }
-  ],
+  // The address it answers on; Cloudflare creates the DNS record and certificate.
+  // The old name dashboard.4vd.app was removed on purpose (2026-10-20).
+  "routes": [{ "pattern": "4vd.app", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
     // Every page is handled by the app itself, so unknown paths load index.html.

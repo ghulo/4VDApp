@@ -43,8 +43,6 @@
 }
 
 .toggle > input[type='checkbox'] {
-  inline-size: calc(var(--space-4) + var(--space-1));
-  block-size: calc(var(--space-4) + var(--space-1));
   margin: calc(var(--space-1) / 2);
 }
 
@@ -1989,6 +1987,8 @@ form.product-form > .form-actions {
   border-radius: 50%;
   object-fit: cover;
   color: #ffffff;
+  /* Inside a button the browser would draw the initials in its own font. */
+  font-family: var(--font-body);
   font-weight: 600;
   line-height: 1;
 }

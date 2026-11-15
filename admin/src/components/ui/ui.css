@@ -1251,6 +1251,68 @@ input[aria-invalid='true'] {
   color: var(--ink-muted);
 }
 
+/* ---------- Checkbox ----------
+   Drawn to match the kit: an empty box is pressed into the page like a
+   field; a ticked one is a small amber key with the tick in its ink. */
+
+input[type='checkbox']:not(.switch) {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  inline-size: calc(var(--space-4) + var(--space-1) / 2);
+  block-size: calc(var(--space-4) + var(--space-1) / 2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-segment);
+  background: var(--surface);
+  box-shadow: var(--shadow-inset);
+  cursor: pointer;
+  transition:
+    background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+input[type='checkbox']:not(.switch)::before {
+  inline-size: 5px;
+  block-size: 9px;
+  margin-block-start: -2px;
+  border: solid var(--cta-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  content: '';
+}
+
+input[type='checkbox']:not(.switch):hover:not(:disabled) {
+  border-color: var(--ink-muted);
+}
+
+input[type='checkbox']:not(.switch):checked {
+  border-color: var(--cta-edge);
+  background: var(--cta);
+  box-shadow: var(--key-shine), var(--key-drop-pressed);
+}
+
+input[type='checkbox']:not(.switch):checked::before {
+  transform: rotate(45deg) scale(1);
+}
+
+input[type='checkbox']:not(.switch):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+input[type='checkbox']:not(.switch):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The tick turns in on the spring, a beat quicker than a menu. */
+  input[type='checkbox']:not(.switch)::before {
+    transition: transform var(--motion-quick) var(--spring);
+  }
+}
+
 /* ---------- Switch (a checkbox with role="switch") ---------- */
 
 input.switch {

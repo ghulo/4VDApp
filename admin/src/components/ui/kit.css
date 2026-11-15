@@ -153,6 +153,11 @@ kbd.kbd {
   line-height: 16px;
 }
 
+/* Keycaps sit on the kit's corner scale, like the segment pills. */
+kbd {
+  border-radius: var(--radius-segment);
+}
+
 /* ---------- Toasts ---------- */
 
 .toasts {

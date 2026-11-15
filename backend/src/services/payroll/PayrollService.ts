@@ -292,6 +292,11 @@ export class PayrollService {
     };
   }
 
+  /** Team accounts that can be linked to someone on the payroll: name and role only. */
+  async team(): Promise<Array<{ id: number; name: string; role: string }>> {
+    return this.db.selectFrom('users').select(['id', 'name', 'role']).where('is_active', '=', true).where('role', '!=', 'developer').orderBy('name').execute();
+  }
+
   /** The employee record linked to a team account, if any. */
   async idForUser(userId: number): Promise<number | null> {
     const row = await this.db.selectFrom('employees').select('id').where('user_id', '=', userId).executeTakeFirst();

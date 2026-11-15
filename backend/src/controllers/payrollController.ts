@@ -26,6 +26,9 @@ export function createPayrollController(service: PayrollService, timeZone: strin
     async list(_req: Request, res: Response): Promise<void> {
       sendSuccess(res, await service.list());
     },
+    async team(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await service.team());
+    },
     async get(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await service.get(id));

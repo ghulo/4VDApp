@@ -11,6 +11,7 @@ export function createPayrollRoutes({ payrollService, guards, config }: Containe
   router.get('/months/:id/payslips/:employeeId', guards.authenticated, controller.payslip);
 
   router.get('/employees', ...guards.payroll, controller.list);
+  router.get('/team', ...guards.payroll, controller.team);
   router.post('/employees', ...guards.payroll, controller.create);
   router.get('/employees/:id', ...guards.payroll, controller.get);
   router.put('/employees/:id', ...guards.payroll, controller.update);

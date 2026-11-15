@@ -84,6 +84,8 @@ interface RequestOptions {
   body?: unknown;
   /** A file sent as-is (e.g. a photo), instead of JSON. */
   file?: Blob;
+  /** The file's own name, kept with it (files on records). */
+  fileName?: string;
   query?: Record<string, string | number | boolean | undefined>;
   /** Ask as the signed-in person, even while the developer views 4VD as another role. */
   asMyself?: boolean;
@@ -101,6 +103,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
   const viewAs = options.asMyself ? null : readViewAs();
   if (viewAs) headers['X-View-As'] = viewAs;
+  if (options.fileName) headers['X-File-Name'] = encodeURIComponent(options.fileName);
 
   try {
     return await fetch(url, {

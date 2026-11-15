@@ -22,6 +22,7 @@ import { useCurrentUser } from '../auth/useAuth';
 import { canOversee } from '../auth/roles';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
+import { FilesCard } from '../components/FilesCard';
 
 
 /** What a cost or equipment line is, in words. */
@@ -143,6 +144,7 @@ export function BillDetailPage() {
           {canChange && open && <EditCard bill={b} />}
           <QuestionsCard kind="bill" id={b.id} />
           {!b.fromTrefin && <EntriesPanel source="bill" id={b.id} />}
+          <FilesCard on="bill" id={b.id} />
           <HistoryCard entityType="bill" entityId={b.id} />
         </div>
         {canChange && owes(b) && (

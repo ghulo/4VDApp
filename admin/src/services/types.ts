@@ -1313,9 +1313,48 @@ export interface Business {
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;
+  stampUrl: string | null;
+  signatureUrl: string | null;
   bankName: string | null;
   iban: string | null;
   invoiceNote: string | null;
+}
+
+export type ShopPicture = 'logo' | 'stamp' | 'signature';
+
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer';
+export interface NumberFormat {
+  prefix: string;
+  year: 'yy' | 'yyyy';
+  digits: number;
+}
+export interface ShopRules {
+  numbering: Record<NumberedKind, NumberFormat>;
+  /** 'block': only owners and admins sell past stock; 'allow': anyone, and a count is asked for. */
+  noStockSales: 'block' | 'allow';
+}
+
+export type AttachmentEntity = 'bill' | 'expense' | 'document' | 'offer' | 'order' | 'customer' | 'supplier' | 'entry';
+export interface Attachment {
+  id: number;
+  on: { kind: AttachmentEntity; id: number };
+  name: string;
+  mime: string;
+  size: number;
+  url: string;
+  addedAt: string;
+  addedBy: string | null;
+}
+
+export type BinKind = 'product' | 'supplier' | 'customer' | 'expense' | 'file';
+export interface BinItem {
+  kind: BinKind;
+  id: number;
+  name: string;
+  detail: string | null;
+  file: Attachment | null;
+  removedAt: string;
+  leavesOn: string;
 }
 
 export interface Security {

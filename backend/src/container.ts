@@ -74,6 +74,10 @@ import { type BillReader, ClaudeBillReader } from './services/ai/billReader.js';
 import { ClaudeStatementReader, type StatementReader } from './services/ai/statementReader.js';
 import { ClaudePartnerReader, type PartnerReader } from './services/ai/partnerReader.js';
 import { PartnerService } from './services/PartnerService.js';
+import { AttachmentService } from './services/AttachmentService.js';
+import { BinService } from './services/BinService.js';
+import { AttachmentRepository } from './repositories/AttachmentRepository.js';
+import { BinRepository } from './repositories/BinRepository.js';
 import { PartnerRepository } from './repositories/PartnerRepository.js';
 import { MoneyService } from './services/MoneyService.js';
 import { StatementService } from './services/StatementService.js';
@@ -286,6 +290,9 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
         : null,
     config.shopTimeZone,
   );
+  const attachmentRepository = new AttachmentRepository(db);
+  const attachmentService = new AttachmentService(attachmentRepository, mediaService, transactions);
+  const binService = new BinService(new BinRepository(db), attachmentRepository, attachmentService, expenseService, transactions);
   const vatService = new VatService(db, config.shopTimeZone);
   const trefinCompareService = new TrefinCompareService(db, vatService);
   const threadService = new ThreadService(db);
@@ -491,6 +498,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     offerService,
     salesDocumentService,
     partnerService,
+    attachmentService,
+    binService,
     approvalService,
     undoService,
     recordRestoreService,

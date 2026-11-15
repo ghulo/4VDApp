@@ -5860,3 +5860,98 @@ fieldset.report-sections {
   color: var(--ink);
   box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--line-strong);
 }
+
+/* Settings → Shop: stamp and signature are wider than the square logo. */
+.business-logo--sign {
+  width: 96px;
+}
+
+/* Settings → Numbers and stock */
+.rules-format {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+}
+.rules-format__part {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+.rules-format__prefix {
+  width: 9ch;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+.rules-sample {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+.rules-note {
+  margin: 0;
+  padding: var(--space-3) 0;
+}
+
+/* Settings → Recycle bin, and the Files card */
+.bin-list,
+.files-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bin-list__row,
+.files-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--inset-panel);
+  border-top: 1px solid var(--line);
+}
+.bin-list__row:first-child {
+  border-top: 0;
+}
+.files-list li {
+  padding-inline: 0;
+}
+.files-list li:first-child {
+  border-top: 0;
+}
+.bin-list__icon,
+.files-list__icon {
+  flex: none;
+  color: var(--ink-muted);
+}
+.bin-list__text,
+.files-list__text {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+.bin-list__text strong,
+.files-list__text a {
+  overflow-wrap: anywhere;
+}
+.bin-error {
+  padding: 0 var(--inset-panel) var(--space-3);
+}
+.files-drop {
+  border-radius: var(--radius-panel);
+  transition: box-shadow var(--fast) var(--ease);
+}
+.files-drop--over {
+  box-shadow: 0 0 0 2px var(--amber-rim);
+}
+.files-drop__hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  color: var(--ink-muted);
+}
+.bin-list__text > *,
+.files-list__text > * {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

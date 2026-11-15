@@ -5,6 +5,7 @@ import type { TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import type { CounterEventInput, CounterSettingsInput } from '../validators/counterValidators.js';
+import { formatNumber, readRules } from './shopRules.js';
 
 const SETTINGS_KEY = 'counter';
 
@@ -188,11 +189,12 @@ export class CounterService {
   async today(userId: number, now = new Date()): Promise<CounterTodayDto> {
     const day = zonedDay(now, this.timeZone);
     const year = Number(day.slice(0, 4));
-    const [z, x, next, people] = await Promise.all([
+    const [z, x, next, people, rules] = await Promise.all([
       this.counterRepository.lastReport('z_report'),
       this.counterRepository.lastReport('x_report'),
       this.counterRepository.nextInvoiceNumber(year),
       this.counterRepository.people(day, day, this.timeZone),
+      readRules(this.settingsRepository),
     ]);
     const shape = (row: typeof z) => (row ? { at: row.created_at.toISOString(), by: row.user_name } : null);
     const me = people.find((row) => row.user_id === userId);
@@ -200,7 +202,7 @@ export class CounterService {
       lastZ: shape(z),
       lastX: shape(x),
       // Numbered the way DocumentService numbers invoices.
-      nextReceipt: `F-${year}-${String(next).padStart(6, '0')}`,
+      nextReceipt: formatNumber(rules.numbering.invoice, year, next),
       mine: {
         receipts: me?.sales ?? 0,
         total: Number(me?.sold ?? 0),

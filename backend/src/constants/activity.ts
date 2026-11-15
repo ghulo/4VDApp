@@ -124,6 +124,15 @@ export const ACTIVITY_ACTIONS = [
   'counter.drawer_opened',
   'counter.x_report',
   'counter.z_report',
+  'business.picture_set',
+  'business.picture_removed',
+  'file.added',
+  'file.removed',
+  'file.restored',
+  'product.restored',
+  'supplier.restored',
+  'customer.restored',
+  'expense.restored',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

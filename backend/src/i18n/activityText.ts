@@ -239,6 +239,14 @@ const en = {
       ...(p.pages > 0 ? [`${p.pages} menu ${p.pages === 1 ? 'page' : 'pages'}`] : []),
     ].join('; ')}`,
   settingsChanged: (p: { changes: SettingChange[] }, w: Words) => `Changed ${p.changes.map((change) => enSetting(change, w)).join(' and ')}`,
+  rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null }) =>
+    `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
+  shopPictureSet: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Added the shop's ${p.which} for invoices`,
+  shopPictureRemoved: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Removed the shop's ${p.which} from invoices`,
+  fileAdded: (p: { name: string }) => `Added the file ${p.name}`,
+  fileRemoved: (p: { name: string }) => `Moved the file ${p.name} to the recycle bin`,
+  fileRestored: (p: { name: string }) => `Put the file ${p.name} back from the recycle bin`,
+  restoredFromBin: (p: { kind: 'product' | 'supplier' | 'customer' | 'expense'; name: string }) => `Put the ${p.kind} ${p.name} back from the recycle bin`,
 
   countStarted: (p: { scope: string | null }) => `Started a stock count of ${p.scope ?? 'the whole shop'}`,
   countSubmitted: (p: { scope: string | null; counted: number; different: number }) =>
@@ -557,6 +565,9 @@ function sqUserChange(name: string, change: UserChange, w: Words): string {
   }
 }
 
+const SQ_PICTURE = { logo: 'logon', stamp: 'vulën', signature: 'nënshkrimin' } as const;
+const SQ_BIN_KIND = { product: 'produktin', supplier: 'furnitorin', customer: 'klientin', expense: 'shpenzimin' } as const;
+
 const sq: Templates = {
   loggedIn: (p) =>
     `${p.name} ${{ password: 'hyri', google: 'hyri me Google', googleFirst: 'hyri me Google për herë të parë', invite: 'hyri për herë të parë', pin: 'mori arkën me PIN-in e vet' }[p.how]}`,
@@ -709,6 +720,14 @@ const sq: Templates = {
       ...(p.pages > 0 ? [`${p.pages} faqe të menysë`] : []),
     ].join('; ')}`,
   settingsChanged: (p, w) => `Ndryshoi ${p.changes.map((change) => sqSetting(change, w)).join(' dhe ')}`,
+  rulesChanged: (p) =>
+    `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
+  shopPictureSet: (p) => `Shtoi ${SQ_PICTURE[p.which]} e dyqanit për faturat`,
+  shopPictureRemoved: (p) => `Hoqi ${SQ_PICTURE[p.which]} e dyqanit nga faturat`,
+  fileAdded: (p) => `Shtoi skedarin ${p.name}`,
+  fileRemoved: (p) => `Çoi skedarin ${p.name} te koshi`,
+  fileRestored: (p) => `Ktheu skedarin ${p.name} nga koshi`,
+  restoredFromBin: (p) => `Ktheu ${SQ_BIN_KIND[p.kind]} ${p.name} nga koshi`,
 
   countStarted: (p) => `Nisi numërimin e stokut të ${sqScope(p.scope)}`,
   countSubmitted: (p) => `Dorëzoi numërimin e stokut të ${sqScope(p.scope)}: ${p.counted} të numëruar, ${p.different} ndryshe`,

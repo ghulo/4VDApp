@@ -47,7 +47,8 @@ const summaryTimer = setInterval(() => {
   const books = container.booksService.poster
     .sync()
     .catch((error) => logger.error('Posting to the books failed', { error: String(error) }));
-  Promise.all([report, expenses, alert, dayClosed, books]).finally(() => {
+  const bin = container.attachmentService.purge().catch((error) => logger.error('Emptying the recycle bin failed', { error: String(error) }));
+  Promise.all([report, expenses, alert, dayClosed, books, bin]).finally(() => {
     isChecking = false;
   });
 }, SUMMARY_CHECK_MS);

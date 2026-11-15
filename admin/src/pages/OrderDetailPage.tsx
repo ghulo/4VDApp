@@ -15,6 +15,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatDateTime, formatMoney } from '../utils/format';
 import { ORDER_STATUS_TONE } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
+import { FilesCard } from '../components/FilesCard';
 
 const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
 
@@ -109,6 +110,7 @@ export function OrderDetailPage() {
 
       {received && <OrderBillCard order={o} />}
       {manager && o.status === 'open' && !receiving && <CancelOrder order={o} />}
+      <FilesCard on="order" id={o.id} />
       <HistoryCard entityType="order" entityId={o.id} />
     </>
   );

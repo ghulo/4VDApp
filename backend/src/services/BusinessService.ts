@@ -15,6 +15,8 @@ export interface BusinessDto {
   currency: string;
   timeZone: string | null;
   logoUrl: string | null;
+  stampUrl: string | null;
+  signatureUrl: string | null;
   bankName: string | null;
   iban: string | null;
   invoiceNote: string | null;
@@ -40,12 +42,17 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   currency: business.currency,
   timeZone: business.time_zone,
   logoUrl: mediaUrl(business.logo_media_id),
+  stampUrl: mediaUrl(business.stamp_media_id),
+  signatureUrl: mediaUrl(business.signature_media_id),
   bankName: business.bank_name,
   iban: business.iban,
   invoiceNote: business.invoice_note,
 });
 
-/** The shop's own details: name, address, phone, NUI, time zone, logo and bank account. */
+export type ShopPicture = 'logo' | 'stamp' | 'signature';
+const PICTURE_COLUMN = { logo: 'logo_media_id', stamp: 'stamp_media_id', signature: 'signature_media_id' } as const;
+
+/** The shop's own details: name, address, phone, NUI, time zone, logo, stamp, signature and bank account. */
 export class BusinessService {
   constructor(
     private readonly businessRepository: BusinessRepository,
@@ -87,19 +94,43 @@ export class BusinessService {
     return toDto(updated);
   }
 
-  async setLogo(userId: number, upload: Buffer): Promise<BusinessDto> {
+  /** The logo, the stamp or the signature: a new picture replaces the old one. */
+  async setPicture(userId: number, which: ShopPicture, upload: Buffer): Promise<BusinessDto> {
     const business = await this.businessOf(userId);
-    const mediaId = await this.mediaService.store(business.id, upload, 'logo');
-    const updated = await this.businessRepository.update(business.id, { logo_media_id: mediaId });
-    await this.mediaService.remove(business.logo_media_id);
+    const mediaId = await this.mediaService.store(business.id, upload, which);
+    const updated = await this.businessRepository.update(business.id, { [PICTURE_COLUMN[which]]: mediaId });
+    await this.mediaService.remove(business[PICTURE_COLUMN[which]]);
+    await this.logPicture(userId, business.id, which, true);
     return toDto(updated);
   }
 
-  async removeLogo(userId: number): Promise<BusinessDto> {
+  async removePicture(userId: number, which: ShopPicture): Promise<BusinessDto> {
     const business = await this.businessOf(userId);
-    const updated = await this.businessRepository.update(business.id, { logo_media_id: null });
-    await this.mediaService.remove(business.logo_media_id);
+    const updated = await this.businessRepository.update(business.id, { [PICTURE_COLUMN[which]]: null });
+    await this.mediaService.remove(business[PICTURE_COLUMN[which]]);
+    await this.logPicture(userId, business.id, which, false);
     return toDto(updated);
+  }
+
+  async setLogo(userId: number, upload: Buffer): Promise<BusinessDto> {
+    return this.setPicture(userId, 'logo', upload);
+  }
+
+  async removeLogo(userId: number): Promise<BusinessDto> {
+    return this.removePicture(userId, 'logo');
+  }
+
+  /** The stamp and signature sign every invoice, so who changed them is kept. */
+  private async logPicture(userId: number, businessId: number, which: ShopPicture, added: boolean): Promise<void> {
+    if (which === 'logo') return;
+    await this.activityLog.create({
+      userId,
+      action: added ? 'business.picture_set' : 'business.picture_removed',
+      entityType: 'business',
+      entityId: businessId,
+      say: { key: added ? 'shopPictureSet' : 'shopPictureRemoved', params: { which } },
+      details: { which },
+    });
   }
 
   private async businessOf(userId: number): Promise<BusinessRow> {

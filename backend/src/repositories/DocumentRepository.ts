@@ -6,6 +6,9 @@ import { escapeLikePattern } from '../utils/databaseErrors.js';
 /** Printed around a document from the shop's current settings; the document itself never changes. */
 export interface Letterhead {
   logo: { mime: string; bytes: Buffer } | null;
+  /** The shop's stamp and the seller's signature, printed where the invoice is signed. */
+  stamp: { mime: string; bytes: Buffer } | null;
+  signature: { mime: string; bytes: Buffer } | null;
   bankName: string | null;
   iban: string | null;
   /** The shop's own words at the bottom of every invoice. */
@@ -133,7 +136,17 @@ export class DocumentRepository {
    * the transaction ends, so two checkouts can't get the same number, and a
    * rolled-back one gives its number back (no gaps).
    */
-  async nextNumber(kind: DocumentKind, year: number): Promise<number> {
+/** Which kinds have documents whose numbers start with these letters. */
+  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer'>> {
+    const like = `${escapeLikePattern(prefix)}-%`;
+    const [documents, offer] = await Promise.all([
+      this.db.selectFrom('documents').select('kind').distinct().where('number', 'like', like).execute(),
+      this.db.selectFrom('offers').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
+    ]);
+    return [...documents.map((row) => row.kind), ...(offer ? (['offer'] as const) : [])];
+  }
+
+  async nextNumber(kind: DocumentKind | 'offer', year: number): Promise<number> {
     const row = await this.db
       .insertInto('document_numbers')
       .values({ kind, year, last_number: 1 })
@@ -166,11 +179,16 @@ export class DocumentRepository {
     const row = await this.db
       .selectFrom('businesses as b')
       .leftJoin('media as m', 'm.id', 'b.logo_media_id')
+      .leftJoin('media as st', 'st.id', 'b.stamp_media_id')
+      .leftJoin('media as sg', 'sg.id', 'b.signature_media_id')
       .select(['b.bank_name', 'b.iban', 'b.invoice_note', 'm.mime', 'm.bytes'])
+      .select(['st.mime as stamp_mime', 'st.bytes as stamp_bytes', 'sg.mime as signature_mime', 'sg.bytes as signature_bytes'])
       .orderBy('b.id')
       .executeTakeFirstOrThrow();
     return {
       logo: row.mime && row.bytes ? { mime: row.mime, bytes: row.bytes } : null,
+      stamp: row.stamp_mime && row.stamp_bytes ? { mime: row.stamp_mime, bytes: row.stamp_bytes } : null,
+      signature: row.signature_mime && row.signature_bytes ? { mime: row.signature_mime, bytes: row.signature_bytes } : null,
       bankName: row.bank_name,
       iban: row.iban,
       note: row.invoice_note,

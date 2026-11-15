@@ -116,12 +116,31 @@ export interface BusinessesTable {
   currency: Generated<string>;
   time_zone: string | null;
   logo_media_id: string | null;
+  stamp_media_id: string | null;
+  signature_media_id: string | null;
   bank_name: string | null;
   iban: string | null;
   /** Printed at the bottom of every invoice: thanks, return rules. */
   invoice_note: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
+}
+
+export type AttachmentEntity = 'bill' | 'expense' | 'document' | 'offer' | 'order' | 'customer' | 'supplier' | 'entry';
+
+/** A file (PDF or photo) kept on a record; removed ones wait in the recycle bin. */
+export interface AttachmentsTable {
+  id: Generated<number>;
+  entity_type: AttachmentEntity;
+  entity_id: number;
+  media_id: string;
+  name: string;
+  mime: string;
+  size: number;
+  added_by: number | null;
+  added_at: CreatedAt;
+  removed_at: Date | null;
+  removed_by: number | null;
 }
 
 export interface MediaTable {
@@ -949,7 +968,7 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
-  kind: DocumentKind;
+  kind: DocumentKind | 'offer';
   year: number;
   last_number: number;
 }
@@ -1232,6 +1251,7 @@ export interface Database {
   push_subscriptions: PushSubscriptionsTable;
   businesses: BusinessesTable;
   media: MediaTable;
+  attachments: AttachmentsTable;
   invites: InvitesTable;
   account_tokens: AccountTokensTable;
   user_identities: UserIdentitiesTable;

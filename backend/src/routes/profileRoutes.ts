@@ -13,6 +13,8 @@ export function createBusinessRoutes({ profileService, businessService, guards }
   router.put('/', ...guards.manage, controller.updateBusiness);
   router.put('/logo', ...guards.manage, readImage, controller.setLogo);
   router.delete('/logo', ...guards.manage, controller.removeLogo);
+  router.put('/pictures/:which', ...guards.manage, readImage, controller.setPicture);
+  router.delete('/pictures/:which', ...guards.manage, controller.removePicture);
 
   return router;
 }

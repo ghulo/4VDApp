@@ -33,6 +33,8 @@ import { PinRepository } from './PinRepository.js';
 import { OfflineShortfallRepository } from './OfflineShortfallRepository.js';
 import { SalesDocumentRepository } from './SalesDocumentRepository.js';
 import { PartnerRepository } from './PartnerRepository.js';
+import { AttachmentRepository } from './AttachmentRepository.js';
+import { BinRepository } from './BinRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
@@ -69,6 +71,8 @@ function createTransactionalRepositories(db: DatabaseClient) {
     pins: new PinRepository(db),
     salesDocs: new SalesDocumentRepository(db),
     partners: new PartnerRepository(db),
+    attachments: new AttachmentRepository(db),
+    bin: new BinRepository(db),
     shortfalls: new OfflineShortfallRepository(db),
   };
 }

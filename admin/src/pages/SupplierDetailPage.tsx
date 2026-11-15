@@ -20,6 +20,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney } from '../utils/format';
 import { ORDER_STATUS_TONE, orderSummary } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
+import { FilesCard } from '../components/FilesCard';
 
 /** One supplier on one page: what is on the way, what is owed, and every order and bill. */
 export function SupplierDetailPage() {
@@ -156,6 +157,7 @@ export function SupplierDetailPage() {
       )}
       {supplier.nui && <PartnerLinkCard supplierId={id} />}
       <AddressesCard owner={{ side: 'suppliers', id }} />
+      <FilesCard on="supplier" id={id} />
       <HistoryCard entityType="supplier" entityId={id} />
     </>
   );

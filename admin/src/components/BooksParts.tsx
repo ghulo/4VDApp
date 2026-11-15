@@ -14,6 +14,7 @@ import { formatDateWith, formatMoney } from '../utils/format';
 import { ErrorNotice, Loading } from './Feedback';
 import { TrefinTag } from './TrefinParts';
 import { Badge, Button, ButtonLink, DataTable, MenuButton, Section } from './ui';
+import { FilesCard } from './FilesCard';
 
 /** "4 Oct 2026" for a "2026-10-04" day, without any time zone moving it. */
 export const formatBookDay = (day: string) =>
@@ -208,6 +209,7 @@ export function EntryById({ id, onOpen }: { id: number; onOpen: (id: number) => 
       <EntryView entry={entry.data} onReversed={(reversal) => onOpen(reversal.id)} />
       {/* TREFIN's entries (below zero) are history: no questions on them. */}
       {id > 0 && <QuestionsCard kind="entry" id={id} />}
+      {id > 0 && <FilesCard on="entry" id={id} />}
     </>
   );
 }

@@ -80,18 +80,6 @@ export class SalesDocumentRepository {
 
   // ---- Offers ----
 
-  /** The next "OF-2026-000001" for the year; the unique number stops two at once. */
-  async nextOfferNumber(year: number): Promise<string> {
-    const prefix = `OF-${year}-`;
-    const row = await this.db
-      .selectFrom('offers')
-      .select(sql<string | null>`max(number)`.as('last'))
-      .where('number', 'like', `${prefix}%`)
-      .executeTakeFirst();
-    const last = row?.last ? Number(row.last.slice(prefix.length)) : 0;
-    return `${prefix}${String(last + 1).padStart(6, '0')}`;
-  }
-
   async createOffer(input: {
     number: string;
     customerId: number | null;

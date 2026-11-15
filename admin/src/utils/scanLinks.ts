@@ -16,8 +16,8 @@ export function codeFromScan(value: string): string {
   return match ? decodeURIComponent(match[1]!) : value.trim();
 }
 
-/** An invoice or credit note number as its printed barcode reads, e.g. "F-2026-000042"; null for anything else. */
+/** An invoice or credit note number as its printed barcode reads, e.g. "F-2026-000042" or "FSM-26-000042"; null for anything else. */
 export function documentNumberFromScan(value: string): string | null {
   const text = value.trim().toUpperCase();
-  return /^[FK]-\d{4}-\d{6}$/.test(text) ? text : null;
+  return /^[A-Z0-9]{1,6}-(\d{2}|\d{4})-\d{3,9}$/.test(text) ? text : null;
 }

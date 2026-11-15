@@ -192,6 +192,7 @@ const en = {
 
   barcodeRemoved: (p: { product: string }) => `Removed the barcode of ${p.product}`,
   barcodeAdded: (p: { product: string; code: string }) => `Gave ${p.product} another barcode, ${p.code}`,
+  packBarcodeAdded: (p: { product: string; code: string; size: number }) => `Gave ${p.product} a pack barcode, ${p.code}, for ${p.size} pieces`,
   otherBarcodeRemoved: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product}`,
   barcodeAddedFromBill: (p: { product: string; code: string; supplier: string }) => `Gave ${p.product} another barcode, ${p.code}, as on ${p.supplier}'s bill`,
   barcodeTakenBack: (p: { product: string; code: string }) => `Took the barcode ${p.code} off ${p.product} (scanned bill reopened)`,
@@ -679,6 +680,7 @@ const sq: Templates = {
 
   barcodeRemoved: (p) => `Hoqi barkodin e ${p.product}`,
   barcodeAdded: (p) => `I dha ${p.product} edhe një barkod, ${p.code}`,
+  packBarcodeAdded: (p) => `I dha ${p.product} një barkod pakoje, ${p.code}, për ${p.size} copë`,
   otherBarcodeRemoved: (p) => `Hoqi barkodin ${p.code} nga ${p.product}`,
   barcodeAddedFromBill: (p) => `I dha ${p.product} edhe një barkod, ${p.code}, si në faturën e ${p.supplier}`,
   barcodeTakenBack: (p) => `Hoqi barkodin ${p.code} nga ${p.product} (fatura e skanuar u rihap)`,

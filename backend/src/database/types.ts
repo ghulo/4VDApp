@@ -293,6 +293,8 @@ export interface ProductBarcodesTable {
   product_id: number;
   barcode: string;
   added_by: number | null;
+  /** A pack barcode: scanning it adds this many pieces. Null: one piece. */
+  pack_size: ColumnType<number | null, number | null | undefined, number | null>;
   created_at: CreatedAt;
 }
 

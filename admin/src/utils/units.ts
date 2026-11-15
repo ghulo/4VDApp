@@ -18,3 +18,7 @@ export function unitSymbol(unit: ProductUnit | undefined): string {
       return '';
   }
 }
+
+/** How many pieces a scanned code adds: a pack barcode's size, else one. */
+export const piecesFor = (product: { packs?: Array<{ barcode: string; size: number }> }, code: string): number =>
+  product.packs?.find((pack) => pack.barcode === code)?.size ?? 1;

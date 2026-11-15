@@ -215,8 +215,8 @@ export const productsApi = {
   byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
   setBarcode: async (id: number, barcode: string | null) =>
     (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
-  addBarcode: async (id: number, barcode: string) =>
-    (await apiRequest<Product>(`/products/${id}/barcodes`, { method: 'POST', body: { barcode } })).data,
+  addBarcode: async (id: number, barcode: string, pack?: { packSize: number; packPrice?: number }) =>
+    (await apiRequest<Product>(`/products/${id}/barcodes`, { method: 'POST', body: { barcode, ...pack } })).data,
   removeBarcode: async (id: number, barcode: string) =>
     (await apiRequest<Product>(`/products/${id}/barcodes/${encodeURIComponent(barcode)}`, { method: 'DELETE' })).data,
   createBarcode: async (id: number) => (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'POST' })).data,

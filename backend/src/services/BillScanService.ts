@@ -230,6 +230,7 @@ export class BillScanService {
       sku: row.sku,
       barcode: row.barcode,
       otherBarcodes: row.other_barcodes,
+      packs: row.packs,
       costPrice: row.cost_price === null ? null : Number(row.cost_price),
       vatRate: row.vat_rate,
     }));

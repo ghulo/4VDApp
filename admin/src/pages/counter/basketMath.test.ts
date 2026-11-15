@@ -9,6 +9,7 @@ const product = (patch: Partial<Product>): Product => ({
   sku: null,
   barcode: '3850000000001',
   otherBarcodes: [],
+  packs: [],
   imageUrl: null,
   isActive: true,
   category: { id: 1, name: 'Pije' },

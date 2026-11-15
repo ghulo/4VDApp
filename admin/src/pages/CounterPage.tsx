@@ -1,4 +1,4 @@
-import { allowsParts, unitSymbol } from '../utils/units';
+import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
   ArrowCounterClockwise,
@@ -362,12 +362,13 @@ export function CounterPage() {
     setScan('');
     setAlarm(null);
     if (!code) return;
+    // A pack barcode adds the whole pack: "2*" before a pack of 6 adds 12.
     const take = (product: Product) => {
       if (priceCheck) {
         showCheck(product);
         return sound('ok');
       }
-      sound(add(product, quantity) ? 'ok' : 'fail');
+      sound(add(product, quantity * piecesFor(product, code)) ? 'ok' : 'fail');
     };
     const shelf = products.data ?? [];
     const lower = code.toLowerCase();

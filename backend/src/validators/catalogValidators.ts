@@ -79,7 +79,15 @@ const barcodeSchema = z
 
 export const barcodeParamsSchema = z.object({ barcode: barcodeSchema });
 
-export const addBarcodeSchema = z.object({ barcode: barcodeSchema });
+export const addBarcodeSchema = z
+  .object({
+    barcode: barcodeSchema,
+    /** A pack barcode: scanning it adds this many pieces. */
+    packSize: z.number().int().min(2).max(1000).optional(),
+    /** What the whole pack sells for; left out keeps the prices as they are. */
+    packPrice: z.number().positive().max(1_000_000).optional(),
+  })
+  .refine((body) => body.packPrice === undefined || body.packSize !== undefined, { message: 'packPrice needs packSize', path: ['packPrice'] });
 
 export const productBarcodeParamsSchema = z.object({ id: z.coerce.number().int().positive(), barcode: barcodeSchema });
 

@@ -1,4 +1,5 @@
 import { Minus, Plus, X } from '@phosphor-icons/react';
+import { piecesFor } from '../utils/units';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -86,14 +87,14 @@ export function BasketForm() {
     ? sellable.filter((product) => product.name.toLowerCase().includes(query) || product.sku?.toLowerCase().includes(query)).slice(0, SUGGESTIONS)
     : [];
 
-  function add(product: Product) {
+  function add(product: Product, pieces = 1) {
     setSavedMessage(null);
     setInvoice(null);
     setScanError(null);
     setLines((current) => {
       const existing = current.find((line) => line.product.id === product.id);
-      if (existing) return current.map((line) => (line === existing ? { ...line, quantity: Math.min(line.quantity + 1, product.stock.quantity) } : line));
-      return [...current, { product, quantity: 1, discount: discountAll }];
+      if (existing) return current.map((line) => (line === existing ? { ...line, quantity: Math.min(line.quantity + pieces, product.stock.quantity) } : line));
+      return [...current, { product, quantity: Math.min(pieces, Math.max(1, product.stock.quantity)), discount: discountAll }];
     });
     setScan('');
     scanRef.current?.focus();
@@ -117,11 +118,12 @@ export function BasketForm() {
         return setScanError(errorMessage(error));
       }
     }
-    const byBarcode = sellable.find((product) => product.barcode === code);
-    if (byBarcode) return add(byBarcode);
+    const byBarcode = sellable.find((product) => product.barcode === code || product.otherBarcodes.includes(code));
+    if (byBarcode) return add(byBarcode, piecesFor(byBarcode, code));
     if (suggestions.length === 1) return add(suggestions[0]!);
     try {
-      add(await productsApi.byBarcode(code));
+      const found = await productsApi.byBarcode(code);
+      add(found, piecesFor(found, code));
     } catch {
       if (suggestions.length === 0) setScanError(t.basket.notFound(code));
     }

@@ -61,6 +61,7 @@ import * as partners from './059_partners.js';
 import * as settingsSafety from './060_settings_safety.js';
 import * as wholesale from './061_wholesale.js';
 import * as units from './062_units.js';
+import * as packBarcodes from './063_pack_barcodes.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -131,4 +132,5 @@ export const migrations: Record<string, Migration> = {
   '060_settings_safety': settingsSafety,
   '061_wholesale': wholesale,
   '062_units': units,
+  '063_pack_barcodes': packBarcodes,
 };

@@ -8,6 +8,8 @@ export interface MatchableProduct {
   barcode: string | null;
   /** Its other barcodes; a bill printing any of them is the same product. */
   otherBarcodes?: string[];
+  /** Barcodes printed on a pack: a bill line with one counts that many pieces each. */
+  packs?: Array<{ barcode: string; size: number }>;
   costPrice: number | null;
   vatRate: number;
 }
@@ -116,7 +118,10 @@ export function matchLine(
     }
   }
 
-  const unitsPerPack = known?.unitsPerPack ?? (line.unitsPerPack && line.unitsPerPack > 1 ? Math.round(line.unitsPerPack) : 1);
+  // A line found by a pack barcode is counted in packs, unless the bill or an earlier one says otherwise.
+  const packCode = matchedBy === 'barcode' ? line.barcode : matchedBy === 'sku' ? line.code : null;
+  const pack = product?.packs?.find((one) => sameCode(one.barcode, packCode));
+  const unitsPerPack = known?.unitsPerPack ?? (line.unitsPerPack && line.unitsPerPack > 1 ? Math.round(line.unitsPerPack) : (pack?.size ?? 1));
   const unitCost = pieceCost(line, unitsPerPack, reading.pricesIncludeVat, product?.vatRate ?? 18);
   const oldCost = product && unitCost !== null && product.costPrice !== unitCost ? product.costPrice : null;
   const barcodeDiffers = Boolean(product && line.barcode && !hasBarcode(product, line.barcode));

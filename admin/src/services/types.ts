@@ -62,6 +62,8 @@ export interface Product {
   barcode: string | null;
   /** Further barcodes that also find this product when scanned, oldest first. */
   otherBarcodes: string[];
+  /** Those printed on a pack: scanning one adds `size` pieces; its price is the bulk price for that many. */
+  packs: Array<{ barcode: string; size: number }>;
   imageUrl: string | null;
   isActive: boolean;
   category: { id: number; name: string };

@@ -677,7 +677,7 @@
 }
 
 .data-table__empty {
-  padding: var(--space-6) var(--space-5);
+  padding: var(--space-6) var(--inset-panel);
 }
 
 .data-table__footer {
@@ -692,7 +692,7 @@
 }
 
 .table th {
-  padding: 10px var(--space-3);
+  padding: 0 var(--space-3);
   border-bottom: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink-muted);
@@ -717,6 +717,22 @@
   border-bottom: 0;
 }
 
+/* Column labels sit in one 36px band, the height of a control, whatever their words. */
+.table thead th {
+  height: calc(var(--space-6) + var(--space-1));
+}
+
+/* Ledger rows (Books): the same table, one step tighter, so a month of
+   lines reads as a ledger instead of a list of cards. */
+.data-table--compact .table td,
+.data-table--compact .table tbody th {
+  padding-block: var(--space-2);
+}
+
+.data-table--compact .table thead th {
+  height: var(--space-6);
+}
+
 .table td {
   padding: var(--space-3);
   border-bottom: 1px solid var(--line);
@@ -728,7 +744,8 @@
   border-bottom: 0;
 }
 
-.table td {
+.table td,
+.table tbody th {
   transition: background-color var(--fast) var(--ease);
 }
 

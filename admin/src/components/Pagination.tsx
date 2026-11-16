@@ -24,6 +24,10 @@ export function Pagination({ meta, onPageChange, itemLabel }: PaginationProps) {
           <Button size="sm" disabled={meta.page <= 1} onClick={() => onPageChange(meta.page - 1)}>
             {t.common.previous}
           </Button>
+          {/* Where you are among the pages: figures only, so it needs no words in either language. */}
+          <span className="pagination__page" aria-hidden="true">
+            {meta.page} / {pageCount}
+          </span>
           <Button size="sm" disabled={meta.page >= pageCount} onClick={() => onPageChange(meta.page + 1)}>
             {t.common.next}
           </Button>

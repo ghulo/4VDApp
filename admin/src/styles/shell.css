@@ -815,7 +815,15 @@
 
 .pagination__buttons {
   display: inline-flex;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.pagination__page {
+  min-inline-size: 5ch;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 /* ---------- Command palette ---------- */

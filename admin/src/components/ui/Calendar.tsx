@@ -66,6 +66,9 @@ export function Calendar({ label, selected, onSelect, events = [], today: givenT
   const month = selected.slice(0, 7);
   const byDay = new Map<string, CalendarEvent[]>();
   for (const event of events) byDay.set(event.date, [...(byDay.get(event.date) ?? []), event]);
+  // Which way the month just turned, so the days slide in from that side.
+  const [turned, setTurned] = useState<{ month: string; dir?: 'next' | 'previous' }>({ month });
+  if (turned.month !== month) setTurned({ month, dir: month > turned.month ? 'next' : 'previous' });
   const title = formatDateWith(new Date(`${selected}T12:00:00`), { month: 'long', year: 'numeric' });
 
   useEffect(() => {
@@ -121,7 +124,7 @@ export function Calendar({ label, selected, onSelect, events = [], today: givenT
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody key={month} className="calendar__weeks" data-dir={turned.dir}>
           {weeks.map((week) => (
             <tr key={week[0]}>
               {week.map((day) => {
@@ -152,7 +155,7 @@ export function Calendar({ label, selected, onSelect, events = [], today: givenT
                         <span className="calendar__items">
                           {items.slice(0, 2).map((item) => (
                             <span key={item.key} className={item.late ? 'calendar__item calendar__item--late' : 'calendar__item'}>
-                              {item.label}
+                              <span className="calendar__label">{item.label}</span>
                             </span>
                           ))}
                           {items.length > 2 && <span className="calendar__more">{t.kit.more(items.length - 2)}</span>}

@@ -1126,7 +1126,7 @@ kbd {
   align-items: stretch;
   gap: var(--space-1);
   inline-size: 100%;
-  min-block-size: 88px;
+  min-block-size: calc(var(--space-7) + var(--space-6));
   padding: var(--space-2);
   border: 0;
   border-radius: var(--radius-small);
@@ -1136,15 +1136,19 @@ kbd {
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  transition:
+    background var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
 }
 
 .calendar__day:hover {
   background: var(--surface-sunk);
 }
 
+/* Days of the months either side: no frame, quiet numbers. */
 .calendar__day--outside {
   background: transparent;
+  box-shadow: none;
   color: var(--ink-muted);
 }
 
@@ -1173,23 +1177,70 @@ kbd {
 
 .calendar__items {
   display: grid;
-  gap: 2px;
+  gap: calc(var(--space-1) / 2);
   min-inline-size: 0;
 }
 
+/* Each planned thing: a small ink dot and its words, like a badge's mark.
+   Only a late one is tinted, with the badges' red square. */
 .calendar__item {
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 0;
   padding: 0 var(--space-1);
   border-radius: var(--radius-stamp);
-  background: var(--surface-sunk);
   font-size: var(--text-xs);
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.calendar__item::before {
+  flex: none;
+  inline-size: calc(var(--space-1) * 1.5);
+  block-size: calc(var(--space-1) * 1.5);
+  border-radius: var(--radius-pill);
+  background: var(--ink-muted);
+  content: '';
+}
+
+.calendar__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .calendar__item--late {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+.calendar__item--late::before {
+  border-radius: 1px;
+  background: var(--danger);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A new month slides in from the side you went to. */
+  .calendar__weeks[data-dir] {
+    animation: calendar-next var(--spring-time) var(--spring);
+  }
+
+  .calendar__weeks[data-dir='previous'] {
+    animation-name: calendar-previous;
+  }
+
+  @keyframes calendar-next {
+    from {
+      opacity: 0;
+      transform: translateX(var(--space-4));
+    }
+  }
+
+  @keyframes calendar-previous {
+    from {
+      opacity: 0;
+      transform: translateX(calc(var(--space-4) * -1));
+    }
+  }
 }
 
 .calendar__more {
@@ -1199,7 +1250,7 @@ kbd {
 
 @media (max-width: 599px) {
   .calendar__grid {
-    border-spacing: 2px;
+    border-spacing: calc(var(--space-1) / 2);
   }
 
   .calendar__grid th {
@@ -1221,16 +1272,22 @@ kbd {
   .calendar__items {
     display: flex;
     justify-content: center;
-    gap: 2px;
+    gap: calc(var(--space-1) / 2);
   }
 
   .calendar__item {
-    inline-size: 6px;
-    block-size: 6px;
+    display: block;
+    overflow: hidden;
+    inline-size: calc(var(--space-1) * 1.5);
+    block-size: calc(var(--space-1) * 1.5);
     padding: 0;
     border-radius: var(--radius-pill);
     background: var(--ink);
     text-indent: 100%;
+  }
+
+  .calendar__item::before {
+    content: none;
   }
 
   .calendar__item--late {

@@ -772,20 +772,72 @@
   box-shadow: var(--shadow-raise);
 }
 
-.notice--error {
-  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-.notice--error .button {
+/* A notice with a tone: a soft tint of its colour, a hairline of it, and a
+   small icon in the full colour, the same shapes as the badges' marks
+   (triangle check, circle problem, ring note, tick fine). The words stay in
+   ink: a paragraph in orange or red is hard to read and shouts. */
+.notice:is(.notice--warn, .notice--error, .notice--info, .notice--ok) {
+  --tone: var(--ink-muted);
+  position: relative;
+  /* Room on the left for the icon, which hangs there on its own so the
+     notice's words and buttons keep their usual layout. */
+  padding-inline-start: calc(var(--space-4) + 16px + var(--space-3));
+  border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+  box-shadow: none;
   color: var(--ink);
 }
 
+.notice:is(.notice--warn, .notice--error, .notice--info, .notice--ok)::before {
+  position: absolute;
+  inset-block-start: calc(var(--space-3) + (1lh - 16px) / 2);
+  inset-inline-start: var(--space-4);
+  inline-size: 16px;
+  block-size: 16px;
+  background: var(--tone);
+  mask: var(--icon) center / contain no-repeat;
+  content: '';
+}
+
+.notice--warn {
+  --tone: var(--warn);
+  --icon: var(--icon-warn);
+  background: var(--warn-soft);
+}
+
+.notice--error {
+  --tone: var(--danger);
+  --icon: var(--icon-error);
+  background: var(--danger-soft);
+}
+
+.notice--info {
+  --tone: var(--info);
+  --icon: var(--icon-info);
+  background: var(--info-soft);
+}
+
+.notice--ok {
+  --tone: var(--ok);
+  --icon: var(--icon-ok);
+  background: var(--ok-soft);
+}
+
+/* A form's mistake: red words led by the same small circle. */
 .form-error {
   margin-bottom: var(--space-3);
   color: var(--danger);
   font-weight: 500;
+}
+
+.form-error::before {
+  display: inline-block;
+  inline-size: 16px;
+  block-size: 16px;
+  margin-inline-end: var(--space-2);
+  vertical-align: -3px;
+  background: currentColor;
+  mask: var(--icon-error) center / contain no-repeat;
+  content: '';
 }
 
 .form-success {

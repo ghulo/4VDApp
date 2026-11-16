@@ -3635,12 +3635,6 @@ fieldset.report-sections {
 
 /* ---------- Scanned supplier bills ---------- */
 
-.notice--warn {
-  border-color: color-mix(in srgb, var(--warn) 35%, transparent);
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-
 .scan-files {
   display: grid;
   gap: var(--space-2);

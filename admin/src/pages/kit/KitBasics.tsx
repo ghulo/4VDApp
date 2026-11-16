@@ -296,22 +296,40 @@ export function KitBasics() {
       <Section title="Panels">
         <Card>
           <div className="kit-row kit-row--gap">
-            <Button onClick={() => setSheet('side')}>Side sheet</Button>
+            <Button onClick={() => setSheet('side')}>Form card</Button>
             <Button onClick={() => setSheet('center')}>Centred question</Button>
           </div>
         </Card>
-        <Sheet open={sheet === 'side'} onClose={() => setSheet(null)} title="New product" description="A side sheet: in from the right, swipe it away on a phone.">
-          <Field label="Name">
-            <input defaultValue="Cement 25 kg" />
-          </Field>
-          <div className="form-actions">
-            <Button variant="ghost" onClick={() => setSheet(null)}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={() => setSheet(null)}>
-              Save
-            </Button>
-          </div>
+        <Sheet open={sheet === 'side'} onClose={() => setSheet(null)} title="New product" description="Grows out of the key that opened it; on a phone it rises from the bottom and pulls back down. Ctrl Enter saves.">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              setSheet(null);
+            }}
+          >
+            <Field label="Name">
+              <input defaultValue="Cement 25 kg" />
+            </Field>
+            <div className="field-row">
+              <Field label="Price">
+                <input inputMode="decimal" defaultValue="6.50" />
+              </Field>
+              <Field label="Cost">
+                <input inputMode="decimal" defaultValue="4.80" />
+              </Field>
+            </div>
+            <Field label="Barcode">
+              <input inputMode="numeric" defaultValue="5310000000017" />
+            </Field>
+            <div className="form-actions">
+              <Button variant="ghost" onClick={() => setSheet(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary">
+                Save
+              </Button>
+            </div>
+          </form>
         </Sheet>
         <Sheet open={sheet === 'center'} onClose={() => setSheet(null)} title="Remove this bill?" description="Stock goes back down. This can't be undone." placement="center">
           <div className="form-actions">

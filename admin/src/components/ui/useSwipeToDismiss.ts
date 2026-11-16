@@ -1,8 +1,10 @@
 import { type RefObject, useEffect, useRef } from 'react';
 
 interface SwipeOptions {
-  /** The edge the panel leaves by. */
-  side: 'left' | 'right';
+  /** The edge the panel leaves by: a side sheet or drawer sideways, a phone card down. */
+  side: 'left' | 'right' | 'bottom';
+  /** Only a drag that starts inside this (e.g. a grab handle) moves the panel, so the rest still scrolls. */
+  handle?: string;
   /** The panel's resting transform when closed, e.g. translateX(100%). */
   closed: string;
   onDismiss: () => void;
@@ -42,7 +44,7 @@ export function settleTime(distance: number, velocity: number): number {
 }
 
 /**
- * A phone panel (side sheet, menu drawer) that follows the finger sideways
+ * A phone panel (side sheet, menu drawer) that follows the finger (sideways, or down for a phone card)
  * and can be flicked away (DESIGN.md 12). Touch and pen only; the mouse keeps
  * clicks. Fields inside stay free for selecting text.
  */
@@ -60,16 +62,24 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
     let state: 'idle' | 'pending' | 'dragging' = 'idle';
     let startX = 0;
     let startY = 0;
-    let originX = 0;
+    let origin = 0;
     let history: { x: number; t: number }[] = [];
     let cleanup: number | undefined;
 
-    const sign = () => (latest.current.side === 'right' ? 1 : -1);
+    const sign = () => (latest.current.side === 'left' ? -1 : 1);
+    const vertical = () => latest.current.side === 'bottom';
+    // Where the finger is along the way the panel leaves, and how far it has to go.
+    const along = (event: PointerEvent) => (vertical() ? event.clientY : event.clientX);
+    const extent = () => (vertical() ? panel.offsetHeight : panel.offsetWidth);
+    const translate = (px: number) => (vertical() ? `translateY(${px}px)` : `translateX(${px}px)`);
     const progressTarget = () => latest.current.progressTarget?.() ?? panel;
 
     function onDown(event: PointerEvent) {
       if (!latest.current.enabled || event.pointerType === 'mouse' || !event.isPrimary) return;
-      if ((event.target as Element).closest('input, textarea, select, [contenteditable], [data-no-swipe]')) return;
+      const target = event.target as Element;
+      if (target.closest('input, textarea, select, [contenteditable], [data-no-swipe]')) return;
+      const handle = latest.current.handle;
+      if (handle && !target.closest(handle)) return;
       pointer = event.pointerId;
       state = 'pending';
       startX = event.clientX;
@@ -82,26 +92,27 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
         const dx = event.clientX - startX;
         const dy = event.clientY - startY;
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return;
-        if (Math.abs(dy) >= Math.abs(dx)) {
+        const [main, cross] = vertical() ? [dy, dx] : [dx, dy];
+        if (Math.abs(cross) >= Math.abs(main)) {
           state = 'idle'; // a scroll: leave it to the browser
           return;
         }
         state = 'dragging';
         // Track from here, so the panel doesn't jump by the slop.
-        originX = event.clientX;
+        origin = along(event);
         history = [];
         window.clearTimeout(cleanup);
         panel.setPointerCapture(event.pointerId);
         panel.style.transitionProperty = 'none';
         progressTarget().dataset.swiping = '';
       }
-      const size = panel.offsetWidth;
-      const out = (event.clientX - originX) * sign();
+      const size = extent();
+      const out = (along(event) - origin) * sign();
       const shown = out >= 0 ? out : -rubberband(-out, size);
-      panel.style.transform = `translateX(${shown * sign()}px)`;
+      panel.style.transform = translate(shown * sign());
       progressTarget().style.setProperty('--swipe', String(Math.min(1, Math.max(0, out / size))));
       const now = event.timeStamp;
-      history.push({ x: event.clientX, t: now });
+      history.push({ x: along(event), t: now });
       while (history.length > 2 && now - history[0].t > 100) history.shift();
     }
 
@@ -113,8 +124,8 @@ export function useSwipeToDismiss(ref: RefObject<HTMLElement | null>, options: S
         return;
       }
       state = 'idle';
-      const size = panel.offsetWidth;
-      const out = (event.clientX - originX) * sign();
+      const size = extent();
+      const out = (along(event) - origin) * sign();
       // Speed over the last 100ms only: a finger that stopped before lifting throws nothing.
       const recent = history.filter((point) => event.timeStamp - point.t <= 100);
       const first = recent[0];

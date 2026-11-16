@@ -1971,9 +1971,10 @@ input.switch:focus-visible {
   color: var(--ink);
 }
 
+/* No blur on the dimmed page: blurring the whole screen again on every
+   frame of the fade made the card's growth stutter. */
 .sheet::backdrop {
   background: var(--scrim);
-  backdrop-filter: blur(3px);
 }
 
 .sheet__panel {
@@ -2080,7 +2081,7 @@ input.switch:focus-visible {
 
 /* The Save key shows its shortcut as a faint keycap, where there is a keyboard. */
 @media (hover: hover) and (pointer: fine) {
-  .sheet--card .sheet__body .form-actions:last-child .button--primary[type='submit']:not(:disabled)::after {
+  .sheet--card .sheet__body .button--primary[type='submit']:not(:disabled)::after {
     content: 'Ctrl ↵' / '';
     margin-inline-start: var(--space-1);
     padding: 0 var(--space-1);

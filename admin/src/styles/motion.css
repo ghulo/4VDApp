@@ -98,11 +98,12 @@
 
 /* ---------- Swiping a panel away (useSwipeToDismiss) ---------- */
 
-/* Sideways drags are ours; up and down still scroll the panel. Set on
-   everything inside, because the browser stops reading at the nearest
-   scrolling box (the sheet's body) and at controls with their own value. */
-:is(.sheet, .sidebar),
-:is(.sheet, .sidebar) * {
+/* Sideways drags on the phone drawer are ours; up and down still scroll it.
+   Set on everything inside, because the browser stops reading at the nearest
+   scrolling box and at controls with their own value. (The phone card is
+   pulled down by its head: ui.css.) */
+.sidebar,
+.sidebar * {
   touch-action: pan-y;
 }
 
@@ -190,15 +191,40 @@
     transition-delay: calc(var(--fast) / 3);
   }
 
-  /* ---------- The side sheet: in from the right, back out to the right ---------- */
+  /* ---------- The form card: grows out of the key that opened it ---------- */
 
-  /* Out past its own width plus the gap it floats in from the edge. */
-  .sheet {
-    transform: translateX(calc(100% + var(--space-2)));
+  /* Closed, it is a small faded card on the key (--from-x/--from-y, set by
+     Sheet.tsx; the middle when opened from a link). It grows to its place as
+     it fades in, and folds back into the key the same way. */
+  /* Its own layer on the graphics card, so the growth runs smoothly even
+     while the form inside is still being drawn; a touch longer than the
+     usual spring, because it travels further. Not from tiny: text scaled up
+     from a fifth of its size shimmers as it grows. */
+  .sheet--card {
+    --card-time: calc(var(--spring-time) * 1.25);
+    opacity: 0;
+    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.5);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
     transition:
-      display var(--spring-time) allow-discrete,
-      overlay var(--spring-time) allow-discrete,
-      transform var(--spring-time) var(--spring);
+      display var(--card-time) allow-discrete,
+      overlay var(--card-time) allow-discrete,
+      opacity calc(var(--card-time) * 0.6) var(--ease),
+      transform var(--card-time) var(--spring);
+  }
+
+  /* The words come in a beat after the card, so it reads as paper unfolding. */
+  .sheet--card .sheet__head,
+  .sheet--card .sheet__body {
+    opacity: 0;
+    transition: opacity var(--fast) var(--ease);
+  }
+
+  .sheet--card[open] .sheet__head,
+  .sheet--card[open] .sheet__body {
+    opacity: 1;
+    transition-delay: calc(var(--spring-time) / 3);
+    will-change: opacity;
   }
 
   .sheet::backdrop {
@@ -209,17 +235,39 @@
       opacity var(--spring-time) var(--spring);
   }
 
-  .sheet[open] {
+  .sheet--card[open] {
+    opacity: 1;
     transform: none;
   }
 
   @starting-style {
-    .sheet[open] {
-      transform: translateX(calc(100% + var(--space-2)));
+    .sheet--card[open] {
+      opacity: 0;
+      transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.5);
+    }
+
+    .sheet--card[open] .sheet__head,
+    .sheet--card[open] .sheet__body {
+      opacity: 0;
     }
 
     .sheet[open]::backdrop {
       opacity: 0;
+    }
+  }
+
+  /* On a phone it rises from the bottom edge instead, and goes back down. */
+  @media (max-width: 600px) {
+    .sheet--card {
+      opacity: 1;
+      transform: translateY(100%);
+    }
+
+    @starting-style {
+      .sheet--card[open] {
+        opacity: 1;
+        transform: translateY(100%);
+      }
     }
   }
 

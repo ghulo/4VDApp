@@ -829,7 +829,7 @@ now decide what the bill does. Cards: Who and when · What's on the bill ·
 Customs (abroad with goods) · Paying; beside them, **What this bill does**: one
 sentence from the server's preview, the figures, any **Costs went up** alerts,
 and Save with the reason it waits ("Line 2 is not finished."). Returns and
-credits start from the bill, in a side panel, with its lines filled in.
+credits start from the bill, in a form card, with its lines filled in.
 
 **Filter chips** (what a page or list shows: every list filter, every period
 picker, Daily / Weekly on Reports, invoice kind, which carwash): one segmented
@@ -856,6 +856,7 @@ Esc returns to the key, a click away closes it.
 ### 10.12 Newer kit pieces (2026-10-20, ideas from SakaniUI, our own code)
 All in `admin/src/components/ui`, styles in `kit.css`, shown on `/kit` (managers only, not in the menu).
 - **Tooltip**: an ink label for icon-only keys, on hover (400ms) and keyboard focus, gone on Esc. An icon-only `Button` with an aria-label gets one by itself. Linked by `data-ui-tooltip`; a `popover`, so never clipped.
+- **Sheet** (form card): a form over the dimmed page on a raised card, 600px, in the middle of the screen (a phone: from the bottom edge, with a grab handle). Serif title a size under a page title, a short line under it. Forms of three or more fields show numbered steps on a dashed rail beside each field or row, the one you are in amber, one with a problem red (none on a phone). Save and Cancel sit on a sunk foot strip that stays while the form scrolls (only when they are in a `.form-actions` row, last in the form); the Save key shows a faint "Ctrl ↵" cap where there is a keyboard, and Ctrl Enter saves. `placement="center"` is the short yes-or-no question.
 - **Popover**: a small panel from a key for a few controls or an explanation (not a form: Sheet; not actions: MenuButton). Float shadow, Esc or a click away closes, focus returns.
 - **Combobox**: type to narrow a long list (customers, suppliers); ignores accents ("cl" finds Çlirim); arrows, Enter, Esc.
 - **Toast** (`useToast`): a short message after an action, bottom corner (bottom middle on phones), 5s, 9s with Undo, held while pointed at. Problems to fix stay on the page.
@@ -904,10 +905,12 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   - Selection glides: the chosen segment of every segmented track and the
     current sidebar item (with its orange tick) are one highlight that slides
     to the next choice (`selectionPills.ts`, no per-screen code).
-  - Panels leave the way they came: the side sheet in from and out to the
-    right, form still on it; the phone drawer with its backdrop.
-  - Swipe on touch (`useSwipeToDismiss`): the side sheet and phone drawer
-    follow the finger 1:1, rubber-band past the open edge, and on release
+  - Panels leave the way they came: the form card grows out of the key that
+    opened it (from the middle when opened by a link) and folds back into it,
+    its words a beat behind the paper, form still on it; on a phone it rises
+    from the bottom edge and goes back down; the phone drawer with its backdrop.
+  - Swipe on touch (`useSwipeToDismiss`): the phone drawer sideways and the
+    phone form card down by its head (grab handle) follow the finger 1:1, rubber-band past the open edge, and on release
     project the flick to decide close or stay, starting at the finger's speed.
     Vertical drags still scroll; fields stay free for text selection.
   - Keys sink into their edge on press. Charts grow in once from their base.

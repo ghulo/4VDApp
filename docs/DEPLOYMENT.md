@@ -259,8 +259,39 @@ pg_restore --no-owner --no-privileges --dbname "$EMPTY_DATABASE_URL" 4vd.dump
 #    the live database after taking a fresh copy of what's there now.
 ```
 
-Practise this once after setup, with a local database
-(`docker compose up -d`, then restore into `four_vd_app`), so it isn't new on a bad day.
+### Monthly restore check
+
+`.github/workflows/restore-check.yml` proves the steps above work, on the 2nd of
+every month (or Actions > Backup restore check > Run workflow). It takes the newest
+copy from R2, unlocks it with `BACKUP_PASSPHRASE`, restores it into a throwaway
+Postgres 17 on the GitHub runner and checks that every table came back and that
+`businesses`, `users`, `products`, `inventory`, `sales` and the migrations list
+have rows. The run summary shows the newest sale and last migration in the copy.
+It fails, and GitHub emails the repository owner, when:
+
+- there is no backup, or the newest is more than 8 days old (the weekly backup stopped);
+- the passphrase no longer opens it;
+- `pg_restore` reports any error, or a key table is missing or empty.
+
+It uses the backup secrets; nothing new to set. The live database is never touched.
+
+To run the same check by hand on a downloaded, unlocked copy (`4vd.dump`), from the
+repository folder:
+
+```bash
+docker run -d --rm --name restore-pg -e POSTGRES_PASSWORD=restore -e POSTGRES_DB=restore_check -p 5440:5432 postgres:17-alpine
+```
+
+```bash
+docker run --rm --network host -v "$PWD:/w" -w /w postgres:17-alpine sh -c 'apk add --no-cache bash >/dev/null && bash .github/scripts/restore-check.sh 4vd.dump postgresql://postgres:restore@localhost:5440/restore_check'
+```
+
+```bash
+docker stop restore-pg
+```
+
+(On Windows Docker Desktop, `--network host` may not reach the port; there, put both
+containers on one `docker network create` network and use the first one's name as the host.)
 
 ---
 
@@ -325,6 +356,7 @@ app.use('/api/', limiter);
 - [ ] Error emails reach the developer (real emails on)
 - [ ] Rate limiting enabled
 - [ ] Weekly R2 backup secrets set and one run green (see Database Backups)
+- [ ] Actions > Backup restore check run once by hand and green
 - [ ] Admin user created
 - [ ] Initial products loaded
 - [ ] Mobile API URL points to production domain

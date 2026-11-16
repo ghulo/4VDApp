@@ -2,6 +2,7 @@ import { FilePdf, FileXls, LockSimple, Plus, X } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { cardPath, formatBookDay } from '../components/BooksParts';
 import { ChipChoice } from '../components/ChipChoice';
@@ -105,6 +106,7 @@ export function DeclarationPage() {
 
 function Summary({ data }: { data: Declaration }) {
   const t = useT();
+  const { role } = useCurrentUser();
   const w = t.declaration;
   const paid = data.instalmentsTotal + (data.restPayment?.amount ?? 0);
   const status =
@@ -126,7 +128,12 @@ function Summary({ data }: { data: Declaration }) {
             {w.forms[data.form]} · {data.year}
           </h2>
           <p className="declaration__why">
-            {w.formWhy[data.form]} <Link to="/settings#shop">{w.changeForm}</Link>
+            {w.formWhy[data.form]}{canManage(role) && (
+              <>
+                {" "}
+                <Link to="/settings/shop">{w.changeForm}</Link>
+              </>
+            )}
           </p>
         </div>
         <Badge tone={STATUS_TONE[data.status]}>

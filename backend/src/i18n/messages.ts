@@ -760,9 +760,9 @@ export const sq: ServerMessages = {
     tmDueTitle: ({ quarter, year, due }) => `Tatimi në fitim për TM${quarter} ${year} duhet paguar deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
     tmDueDetail: ({ amount, late }) =>
       late ? `Afati ka kaluar. Paguaj rreth ${money(amount, 'sq')} në ATK, pastaj shënoje si të paguar.` : `Rreth ${money(amount, 'sq')} mbi fitimin deri tani. Paguaje në ATK, pastaj shënoje si të paguar.`,
-    declarationDueTitle: ({ year, form, due }) => `Dorëzo ${form} për ${year} deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
+    declarationDueTitle: ({ year, form, due }) => `Deklaro ${form} për ${year} deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
     declarationDueDetail: ({ late }) =>
-      late ? 'Afati ka kaluar. Kontrollo shifrat me kontabilistin, dorëzoje në ATK, pastaj shënoje si të dorëzuar.' : 'Shifrat vijnë nga librat. Kontrolloji me kontabilistin, dorëzoje në ATK, pastaj shënoje si të dorëzuar.',
+      late ? 'Afati ka kaluar. Kontrollo shifrat me kontabilistin, deklaroje në ATK, pastaj shënoje si të deklaruar.' : 'Shifrat vijnë nga librat. Kontrolloji me kontabilistin, deklaroje në ATK, pastaj shënoje si të deklaruar.',
     questionTitle: (on) => `Kontabilisti pyet për ${SQ_ON_TODO[on.kind]} ${on.label}`,
     questionDetail: ({ name, text }) => `${name ?? 'Kontabilisti'}: “${text}”`,
   },

@@ -6,6 +6,7 @@ import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext }
 let context: TestContext;
 let adminToken: string;
 let accountantToken: string;
+let ownerToken: string;
 let employeeToken: string;
 let productId: number;
 
@@ -25,6 +26,7 @@ beforeEach(async () => {
   await seedBooks(context.db as never);
   adminToken = await loginAs(context, 'admin');
   accountantToken = await loginAs(context, 'accountant');
+  ownerToken = await loginAs(context, 'owner');
   employeeToken = await loginAs(context, 'employee');
   productId = await createTestProduct(context, adminToken, { price: 100, costPrice: 60, stock: 50, vatRate: 18 });
   await api().put('/api/books/settings').set(auth()).send({ startDay: `${LAST}-01-01` });
@@ -41,7 +43,7 @@ const declaration = async (year = LAST, token = accountantToken) => {
   expect(response.status).toBe(200);
   return response.body.data;
 };
-const inputs = { includeCarwash: true, representation: null, donations: null, fines: 0, other: [] as Array<{ label: string; amount: number }>, earlierLosses: [] as Array<{ year: number; amount: number }> };
+const inputs = { includeCarwash: true, representation: null as number | null, donations: null as number | null, fines: 0, other: [] as Array<{ label: string; amount: number }>, earlierLosses: [] as Array<{ year: number; amount: number }> };
 const saveInputs = (changes: Partial<typeof inputs>, year = LAST) => api().put(`/api/books/declaration/${year}/inputs`).set(auth(accountantToken)).send({ ...inputs, ...changes });
 const safeId = async () => {
   const places = (await api().get('/api/money/places').set(auth())).body.data as Array<{ id: number; kind: string; isDefault: boolean }>;
@@ -158,6 +160,26 @@ describe('the yearly declaration (CD / PD)', () => {
     expect(reopened.body.data).toMatchObject({ filed: null, tax: 102.48 });
   });
 
+  it('counts the carwash staff and the carwash bills as its costs', async () => {
+    await sellOn(`${LAST}-03-10`);
+    // A carwash bill paid on the spot (an expense), outside the books.
+    const carwashId = (await context.db.selectFrom('carwashes').select('id').executeTakeFirstOrThrow()).id;
+    const expense = await api().post('/api/expenses').set(auth()).send({ day: `${LAST}-06-02`, amount: 40, category: 'water', place: 'carwash', carwashId });
+    expect(expense.status, JSON.stringify(expense.body)).toBe(201);
+    // A carwash worker on €500 gross: €525 with the employer's pension.
+    const person = await api().post('/api/payroll/employees').set(auth(ownerToken)).send({ name: 'Besnik Gashi', personalNumber: '1234567891', contract: 'open', startedOn: `${LAST}-01-01`, payBasis: 'gross', payAmount: 500, bankAccount: '1501 0000 0000 0001', place: 'carwash' });
+    expect(person.status, JSON.stringify(person.body)).toBe(201);
+    const run = await api().post(`/api/payroll/run/${LAST}-12`).set(auth(ownerToken)).send({});
+    expect(run.status, JSON.stringify(run.body)).toBe(201);
+
+    const cd = await declaration();
+    expect(cd.carwash).toMatchObject({ included: true, takings: 0, wages: 525, bills: 40 });
+    expect(cd.costs.lines.find((line: { key: string }) => line.key === 'carwash_costs').amount).toBe(565);
+    // The books hold only the shop: the sale's €24.75 profit, less the carwash.
+    expect(cd.bookProfit).toBe(-540.25);
+    expect(cd.tax).toBe(0);
+  });
+
   it('files the PD for an individual business on the personal bands, and the year page follows', async () => {
     await sellOn(`${LAST}-03-10`);
     expect((await api().put('/api/business').set(auth()).send({ legalForm: 'individual' })).status).toBe(200);
@@ -170,6 +192,9 @@ describe('the yearly declaration (CD / PD)', () => {
       [5400, null, 10, 0],
     ]);
     expect(pd.tax).toBe(161.98);
+    // The carwash belongs to the company: a PD has no carwash lines, whatever the switch says.
+    expect(pd.carwash.included).toBe(false);
+    expect(pd.income.lines.some((line: { key: string }) => line.key === 'carwash_takings')).toBe(false);
     expect((await api().get(`/api/books/year/${LAST}`).set(auth(accountantToken))).body.data.form).toBe('PD');
   });
 

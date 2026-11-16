@@ -726,7 +726,7 @@ const sq: Templates = {
     p.quarter === 0 ? `Pagoi pjesën e mbetur të tatimit për ${p.year} me deklaratën: ${w.money(p.amount)} më ${w.day(p.day)}` : `Pagoi këstin e tatimit në fitim për TM${p.quarter} ${p.year}: ${w.money(p.amount)} më ${w.day(p.day)}`,
   tmUndone: (p, w) =>
     p.quarter === 0 ? `Anuloi pagesën prej ${w.money(p.amount)} me deklaratën e ${p.year}` : `Anuloi këstin e tatimit në fitim prej ${w.money(p.amount)} për TM${p.quarter} ${p.year}`,
-  declarationFiled: (p, w) => `Shënoi deklaratën ${p.form} të ${p.year} si të dorëzuar në ATK më ${w.day(p.day)}`,
+  declarationFiled: (p, w) => `Shënoi deklaratën ${p.form} të ${p.year} si të deklaruar në ATK më ${w.day(p.day)}`,
   declarationReopened: (p) => `Rihapi deklaratën ${p.form} të ${p.year}: “${p.reason}”`,
   questionAsked: (p) => `Pyeti për ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   questionAnswered: (p) => `U përgjigj te ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,

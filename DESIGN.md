@@ -467,6 +467,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Every movement on one account | **account card** | **kartela** *(confirm)* | ledger card |
 | One month's VAT figures for ATK | **VAT return** (page **VAT**) | **deklarata e TVSH-së** (page **TVSH**) *(confirm)* | tax form, TV form |
 | A month sent to ATK and locked | **filed** (stamp **Filed**); action **Mark as filed** · **Reopen** | **deklaruar** (**Deklaruar**); **Shëno si të deklaruar** · **Rihap** *(confirm)* | closed, submitted |
+| The yearly income return to ATK | **yearly declaration** (page **Declaration**): **CD** for a company, **PD** for an individual business; **filed** like a VAT month; **Pay the rest** | **deklarata vjetore** (**CD** / **PD**); **deklaruar**; **Paguaj pjesën e mbetur** *(confirm)* | annual return, tax return |
+| Company or individual business, which decides CD or PD | **legal form**: **Company (sh.p.k., sh.a.)** · **Individual business (B.I.)** | **forma ligjore**: **Shoqëri** · **Biznes individual** *(confirm)* | entity type |
 | Every sale or purchase of a month, in ATK's columns | **sales book** · **purchase book** | **libri i shitjes** · **libri i blerjes** *(confirm)* | ledger, register |
 | A till, the safe or a bank account | **place** (page **Money**) | **vend** (page **Paratë**) *(confirm)* | account, wallet, cash box |
 | Money from one place to another, or the owner's | **Move money** | **Lëviz para** *(confirm)* | transfer, deposit, withdrawal |

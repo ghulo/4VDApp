@@ -251,7 +251,8 @@ export class DeclarationService {
     const has = (numbers: string[]) => (row: StatementLine) => row.number !== null && numbers.includes(row.number);
     const special = [...WAGE_ACCOUNTS, ...DEPRECIATION_ACCOUNTS, ...RENT_ACCOUNTS];
     const carwash = await this.carwash(year, startDay);
-    carwash.included = inputs.includeCarwash;
+    // The carwash is part of the company (4VD SH.P.K.); an individual business files without it.
+    carwash.included = form === 'CD' && inputs.includeCarwash;
 
     const incomeLines: Array<DeclarationLine<IncomeKey>> = [
       line('sales', pick(section('revenue'), () => true)),

@@ -98,7 +98,7 @@ const WORDS = {
     left: 'Mbetet për t’u paguar',
     overpaid: 'Paguar më shumë',
     due: (day: string) => `Afati ${day}`,
-    filedOn: (day: string) => `Dorëzuar më ${day}`,
+    filedOn: (day: string) => `Deklaruar më ${day}`,
     line: 'Rreshti',
     amount: 'Shuma',
     nui: 'NUI',

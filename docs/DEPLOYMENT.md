@@ -55,9 +55,16 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 **2. Dashboard on Cloudflare Workers** (`admin/wrangler.jsonc` serves `dist/` as a single-page app)
 1. Cloudflare → **Workers & Pages → Create → Import a repository** → pick the 4VD repo.
 2. Project name `4vd-dashboard` (must match the `name` in `admin/wrangler.jsonc`).
-3. Build command `npm ci && npm run build`. Deploy command `npx wrangler deploy`. Preview command `npx wrangler versions upload`.
-4. **Advanced settings**: Path (root directory) `admin`; build variable `NODE_VERSION` = `22`. Deploy.
+3. Build command `npm ci && npm run build`. Deploy command `npx wrangler versions upload` (not `deploy`: GitHub puts it live, see below). Preview command `npx wrangler versions upload`.
+4. **Advanced settings**: Path (root directory) `admin`; build variable `NODE_VERSION` = `22` (the only one: the public addresses come from `admin/.env.production`). Deploy.
 5. The custom domain `4vd.app` comes from `routes` in `admin/wrangler.jsonc`; Cloudflare adds the DNS records itself. A custom domain can't be added while another Worker or a DNS record already holds that name.
+
+**Who puts the dashboard live:** GitHub, not Cloudflare. The `deploy-dashboard` job in `.github/workflows/ci.yml` runs on a push to `main` only after every check passes, builds `admin/` and runs `wrangler deploy`. Cloudflare's own build only uploads versions (a preview link per branch), so a broken push never reaches 4vd.app. Render waits for all checks, this job included, so if the upload fails the API stays on the old version too. The job needs two repository secrets, set up once:
+1. Cloudflare dashboard → top right profile icon → **My Profile → API Tokens → Create Token** → **Edit Cloudflare Workers** → **Use template**.
+2. **Account Resources**: *Include* → your account. **Zone Resources**: *Include* → *Specific zone* → `4vd.app`. Leave the permissions as the template sets them, no IP filtering, TTL empty. **Continue to summary → Create Token**. Copy the token (shown once).
+3. Account ID: Cloudflare dashboard → **Workers & Pages** → **Account ID** on the right (also the long code in the dashboard URL).
+4. GitHub → the 4VD repo → **Settings → Secrets and variables → Actions → New repository secret**: Name `CLOUDFLARE_API_TOKEN`, Secret = the token → **Add secret**. Again: Name `CLOUDFLARE_ACCOUNT_ID`, Secret = the account ID.
+If the job fails with an authentication error (code 10000), the token is wrong or misses the `4vd.app` zone: make a new one and replace the secret, then **Actions → the failed run → Re-run failed jobs**.
 
 **3. Old addresses** (the team app `app.4vd.app` was retired on 2026-10-20; printed QR labels still point at `app.4vd.app/scan/...`)
 Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *equals* `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. The name needs a proxied (orange) DNS record: it has one from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied). The old dashboard name `dashboard.4vd.app` was removed completely on 2026-10-20, so links to it no longer work.
@@ -120,7 +127,7 @@ Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Envir
    The tail prints the auth headers top first. Go on only if Cloudflare's own header sits above the made-up one. If it doesn't, stop: the Worker must check DKIM itself first.
 6. Render → `4vd-api` → **Environment** → **Add Environment Variable**: Key `BILL_EMAIL_TOKEN`, Value = the same secret → **Save, rebuild and deploy**. (Optional: `BILL_EMAIL_DAILY_READS`, default 50.) Forward the PDF again: `passed on … status 202`, and the scan appears under Bills.
 
-After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`); Cloudflare rebuilds the front ends on every push.
+After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`), and the last check, `deploy-dashboard`, puts the dashboard live at 4vd.app. Cloudflare only builds preview versions.
 
 **Free plan caveats** (check current pricing): a free Render web service sleeps when idle, and while asleep push alerts and the daily summary don't go out; a free Render database has limited storage and may expire.
 

@@ -4,6 +4,7 @@ import { createAccountController, createSignupController } from '../controllers/
 import { createAuthController } from '../controllers/authController.js';
 import { createGoogleController } from '../controllers/googleController.js';
 import { createInviteController } from '../controllers/inviteController.js';
+import { systemRoute } from '../database/businessContext.js';
 import { createLoginRateLimiter } from '../middlewares/rateLimiter.js';
 
 export function createAuthRoutes({
@@ -24,6 +25,8 @@ export function createAuthRoutes({
   const router = Router();
   // Public links from emails share the failed-login limit, which slows guessing.
   const linkLimiter = createLoginRateLimiter();
+  // Signing in comes before anyone's business is known; each route names it once it knows the person.
+  router.use(systemRoute);
 
   router.post('/login', createLoginRateLimiter(), controller.login);
   // The code step after the password; shares the failed-login limit, which slows guessing.

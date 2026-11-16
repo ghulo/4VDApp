@@ -11,6 +11,22 @@ export interface UserListFilters {
 export class UserRepository {
   constructor(private readonly db: DatabaseClient) {}
 
+  /**
+   * The person's active membership: in `businessId` when given and still theirs,
+   * otherwise in their home business (users.business_id).
+   */
+  async membership(userId: number, homeBusinessId: number, businessId?: number): Promise<{ businessId: number; role: UserRole } | undefined> {
+    const rows = await this.db
+      .selectFrom('memberships')
+      .select(['business_id', 'role'])
+      .where('user_id', '=', userId)
+      .where('is_active', '=', true)
+      .where('business_id', 'in', [businessId ?? homeBusinessId, homeBusinessId])
+      .execute();
+    const row = rows.find((r) => r.business_id === businessId) ?? rows.find((r) => r.business_id === homeBusinessId);
+    return row && { businessId: row.business_id, role: row.role };
+  }
+
   findById(id: number): Promise<UserRow | undefined> {
     return this.db
       .selectFrom('users')

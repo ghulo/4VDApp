@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { enterBusiness } from '../database/businessContext.js';
 import jwt from 'jsonwebtoken';
 import type { AppConfig } from '../config/env.js';
 import { AppError, UnauthorizedError } from '../errors/httpErrors.js';
@@ -95,7 +96,7 @@ async startSession(
     deviceId: string = randomUUID(),
   ): Promise<LoginResult> {
     const publicUser = toPublicUser(user);
-    const tokens = await this.issueTokens(publicUser, { userAgent: device.userAgent, ip: device.ip, deviceId });
+    const tokens = await this.issueTokens(publicUser, user.business_id, { userAgent: device.userAgent, ip: device.ip, deviceId });
     // Signing in for real clears any wrong-PIN lock on the person.
     await this.userRepository.update(user.id, { last_login_at: new Date(), ...(how !== 'pin' && { pin_cleared_at: new Date() }) });
     // Logged once the session exists, so the log never shows a login that failed.
@@ -118,7 +119,7 @@ async startSession(
     if (!user || !user.is_active) throw new UnauthorizedError('Session expired, please log in again');
 
     // Same device, same session: keep its id so it stays one row in the devices list.
-    return this.issueTokens(toPublicUser(user), {
+    return this.issueTokens(toPublicUser(user), user.business_id, {
       sessionId: consumed.sessionId,
       deviceId: consumed.deviceId ?? undefined,
       userAgent: device.userAgent ?? consumed.userAgent,
@@ -140,11 +141,14 @@ async startSession(
 
   private async issueTokens(
     user: PublicUser,
+    businessId: number,
     session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null } = {},
   ): Promise<TokenPair> {
+    // From here on this request works in the person's business (the sign-in log entry, the session).
+    enterBusiness(businessId);
     const sessionId = session.sessionId ?? randomUUID();
     const token = signAccessToken(
-      { userId: user.id, email: user.email, role: user.role, sessionId },
+      { userId: user.id, email: user.email, role: user.role, sessionId, businessId },
       this.config.jwtSecret,
       this.config.jwtExpiresIn,
     );

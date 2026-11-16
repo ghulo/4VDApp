@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { DatabaseClient } from '../database/connection.js';
 import type { StatementsService } from '../services/statements/StatementsService.js';
@@ -76,7 +77,7 @@ export function createStatementsController(statements: StatementsService, years:
       const query = parseInput(downloadQuery, req.query);
       const statement = await load(kind, query);
       if (query.format === 'html') {
-        const business = await db.selectFrom('businesses').select(['name', 'nui', 'address']).orderBy('id').executeTakeFirst();
+        const business = await db.selectFrom('businesses').select(['name', 'nui', 'address']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(statementHtml(statement, query.lang, query.finish, { name: business?.name ?? '4VD', nui: business?.nui ?? null, address: business?.address ?? null }, zonedDay(new Date(), query.tz)));
         return;

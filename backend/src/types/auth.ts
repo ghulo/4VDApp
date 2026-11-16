@@ -8,6 +8,8 @@ export interface RequestIdentity {
   role: UserRole;
   /** The device session this token belongs to, so "log out other devices" can spare it. */
   sessionId?: string;
+  /** The business this session works in (a person may work for several). */
+  businessId?: number;
 }
 
 /** The user as the API exposes it. Never includes the password hash. */

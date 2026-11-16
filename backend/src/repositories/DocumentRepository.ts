@@ -172,7 +172,7 @@ export class DocumentRepository {
     const business = await this.db
       .selectFrom('businesses')
       .select(['name', 'nui', 'address', 'phone'])
-      .orderBy('id')
+      .where('id', '=', sql<number>`current_business_id()`)
       .executeTakeFirstOrThrow();
     return business;
   }

@@ -1,4 +1,5 @@
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
+import { enterBusiness } from '../database/businessContext.js';
 import { allowsParts } from '../constants/units.js';
 import type { ProductUnit } from '../database/types.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
@@ -298,6 +299,7 @@ export class PortalService {
   async requestLink(email: string, now = new Date()): Promise<void> {
     const person = await this.repository.findUserByEmail(email.trim());
     if (!person?.email) return;
+    enterBusiness(person.business_id);
     const token = generateRefreshToken();
     await this.repository.createLink(person.id, 'sign_in', hashRefreshToken(token), new Date(now.getTime() + PORTAL_SIGN_IN_MINUTES * 60 * 1000));
     const shop = await this.repository.shop();
@@ -314,6 +316,9 @@ export class PortalService {
 
   /** Spends the link and opens a session; returns the cookie's token. */
   async useLink(token: string, now = new Date()): Promise<{ token: string; expiresAt: Date }> {
+    const businessId = await this.repository.linkBusiness(hashRefreshToken(token));
+    if (businessId === undefined) throw new NotFoundError('This link no longer works. Ask the shop for a new one, or sign in with your email.');
+    enterBusiness(businessId);
     return this.transactions.run(async (repos) => {
       const used = await repos.portal.useLink(hashRefreshToken(token), now);
       if (!used) throw new NotFoundError('This link no longer works. Ask the shop for a new one, or sign in with your email.');
@@ -339,12 +344,16 @@ export class PortalService {
   async authenticate(token: string, now = new Date()): Promise<PortalPrincipal | null> {
     const record = await this.repository.findPrincipal(hashRefreshToken(token), now);
     if (!record || !record.portal_enabled || record.archived_at) return null;
+    enterBusiness(record.business_id);
     // Seen at most once a minute is enough for "last seen".
     if (!record.last_seen_at || now.getTime() - record.last_seen_at.getTime() > 60_000) await this.repository.touchSession(record.session_id, record.id, now);
     return toPrincipal(record);
   }
 
   async signOut(token: string, now = new Date()): Promise<void> {
+    const businessId = await this.repository.sessionBusiness(hashRefreshToken(token));
+    if (businessId === undefined) return;
+    enterBusiness(businessId);
     await this.repository.revokeSession(hashRefreshToken(token), now);
   }
 

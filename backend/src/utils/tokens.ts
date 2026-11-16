@@ -8,6 +8,8 @@ interface AccessTokenClaims {
   email: string;
   role: UserRole;
   sid?: string;
+  /** The business the session works in. */
+  bid?: number;
 }
 
 export function signAccessToken(identity: RequestIdentity, secret: string, expiresIn: string): string {
@@ -16,6 +18,7 @@ export function signAccessToken(identity: RequestIdentity, secret: string, expir
     email: identity.email,
     role: identity.role,
     ...(identity.sessionId && { sid: identity.sessionId }),
+    ...(identity.businessId && { bid: identity.businessId }),
   };
   return jwt.sign(claims, secret, {
     expiresIn: expiresIn as SignOptions['expiresIn'],
@@ -30,11 +33,11 @@ export function verifyAccessToken(token: string, secret: string): RequestIdentit
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     if (typeof decoded !== 'object' || decoded === null) return null;
 
-    const { userId, email, role, sid } = decoded as Partial<AccessTokenClaims>;
+    const { userId, email, role, sid, bid } = decoded as Partial<AccessTokenClaims>;
     const isValidRole = typeof role === 'string' && (USER_ROLES as readonly string[]).includes(role);
     if (typeof userId !== 'number' || typeof email !== 'string' || !isValidRole) return null;
 
-    return { userId, email, role: role as UserRole, ...(typeof sid === 'string' && { sessionId: sid }) };
+    return { userId, email, role: role as UserRole, ...(typeof sid === 'string' && { sessionId: sid }), ...(typeof bid === 'number' && { businessId: bid }) };
   } catch {
     return null;
   }

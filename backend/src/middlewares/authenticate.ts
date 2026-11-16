@@ -1,4 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { enterBusiness } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
 import { ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -57,12 +58,16 @@ export function requireAuth(userRepository: UserRepository): RequestHandler {
     const user = await userRepository.findById(req.identity.userId);
     if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
 
-    // Trust the database role over the token, in case it changed since login.
-    const viewed = viewedRole(req, user.role);
+    // The business this session works in, and the person's role there. Trust the
+    // database over the token, in case the role or the membership changed since login.
+    const membership = await userRepository.membership(user.id, user.business_id, req.identity.businessId);
+    if (!membership) throw new UnauthorizedError('Your account is no longer active');
+    enterBusiness(membership.businessId);
+    const viewed = viewedRole(req, membership.role);
     if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);
-    const role = viewed ?? user.role;
+    const role = viewed ?? membership.role;
     req.user = { ...toPublicUser(user), role };
-    req.identity = { userId: user.id, email: user.email, role, sessionId: req.identity.sessionId };
+    req.identity = { userId: user.id, email: user.email, role, sessionId: req.identity.sessionId, businessId: membership.businessId };
     next();
   };
 }

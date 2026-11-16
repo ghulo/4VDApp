@@ -8,6 +8,8 @@
  * On Render: 4vd-api -> Shell. In development: npm run wipe -- --confirm "wipe 4vd.app".
  */
 import 'dotenv/config';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
+import { defaultBusinessId } from '../database/business.js';
 import { loadConfig } from '../config/env.js';
 import { createDatabase } from '../database/connection.js';
 import { logger } from '../utils/logger.js';
@@ -21,6 +23,8 @@ function confirmed(argv: string[]): boolean {
 async function main(): Promise<void> {
   const apply = confirmed(process.argv);
   const db = createDatabase(loadConfig().databaseUrl);
+  // A one-off tool works in the shop's business (the only one so far).
+  enterBusiness(await defaultBusinessId(db));
   try {
     const report = await wipeShopData(db, { apply });
     const rows = Object.entries(report.deleted).filter(([, n]) => n > 0);
@@ -35,7 +39,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('Wipe failed; nothing was deleted', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

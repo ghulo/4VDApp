@@ -501,7 +501,7 @@ export async function importTrefin(
       const productNames = new Map(
         (invoicedIds.length > 0 ? await trx.selectFrom('products').select(['id', 'name']).where('id', 'in', invoicedIds).execute() : []).map((row) => [row.id, row.name]),
       );
-      const seller = await trx.selectFrom('businesses').select(['name', 'nui', 'address', 'phone']).orderBy('id').executeTakeFirstOrThrow();
+      const seller = await trx.selectFrom('businesses').select(['name', 'nui', 'address', 'phone']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirstOrThrow();
       for (const invoice of invoices.values()) {
         const header = headers.get(`${invoice.db}|${invoice.number}`);
         const partner = header ? byKey.get(header.customerKey) : undefined;

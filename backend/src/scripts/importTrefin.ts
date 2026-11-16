@@ -10,6 +10,8 @@
 import 'dotenv/config';
 import { loadConfig } from '../config/env.js';
 import { createDatabase } from '../database/connection.js';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
+import { defaultBusinessId } from '../database/business.js';
 import { logger } from '../utils/logger.js';
 import { IMPORT_PHRASE, importTrefin, readTrefinExport } from './trefinImport.js';
 
@@ -28,6 +30,8 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const data = readTrefinExport(dir);
   const db = createDatabase(config.databaseUrl);
+  // A one-off tool works in the shop's business (the only one so far).
+  enterBusiness(await defaultBusinessId(db));
   try {
     const started = Date.now();
     const report = await importTrefin(db, data, { apply, timeZone: config.shopTimeZone });
@@ -58,7 +62,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('TREFIN import failed; nothing was imported', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

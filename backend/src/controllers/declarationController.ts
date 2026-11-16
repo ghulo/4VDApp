@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { sql } from 'kysely';
 import { z } from 'zod';
 import type { DatabaseClient } from '../database/connection.js';
 import type { DeclarationService } from '../services/statements/DeclarationService.js';
@@ -59,7 +60,7 @@ export function createDeclarationController(declarations: DeclarationService, db
       const query = parseInput(downloadQuery, req.query);
       const data = await declarations.declaration(year);
       if (query.format === 'html') {
-        const business = await db.selectFrom('businesses').select(['name', 'nui', 'address']).orderBy('id').executeTakeFirst();
+        const business = await db.selectFrom('businesses').select(['name', 'nui', 'address']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(declarationHtml(data, query.lang, { name: business?.name ?? '4VD', nui: business?.nui ?? null, address: business?.address ?? null }, zonedDay(new Date(), query.tz)));
         return;

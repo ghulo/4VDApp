@@ -10,6 +10,8 @@
  * On Render: 4vd-api -> Shell, with node dist/scripts/openingTrefin.js instead.
  */
 import 'dotenv/config';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
+import { defaultBusinessId } from '../database/business.js';
 import { loadConfig } from '../config/env.js';
 import { createDatabase } from '../database/connection.js';
 import { BOOKS_START_KEY } from '../services/books/BooksPoster.js';
@@ -32,6 +34,8 @@ async function main(): Promise<void> {
   const apply = confirmAt !== -1 && args[confirmAt + 1] === PHRASE;
   const config = loadConfig();
   const db = createDatabase(config.databaseUrl);
+  // A one-off tool works in the shop's business (the only one so far).
+  enterBusiness(await defaultBusinessId(db));
   try {
     const start = await db.selectFrom('settings').select('value').where('key', '=', BOOKS_START_KEY).executeTakeFirst();
     if (typeof start?.value !== 'string') throw new Error('Set the day the books start first (Settings → Books).');
@@ -63,7 +67,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('Bringing the TREFIN balances over failed; nothing changed', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

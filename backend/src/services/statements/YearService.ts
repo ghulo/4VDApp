@@ -134,7 +134,7 @@ export class YearService {
 
   /** CD or PD, from the business's legal form. */
   async form(): Promise<DeclarationForm> {
-    const row = await this.db.selectFrom('businesses').select('legal_form').orderBy('id').executeTakeFirst();
+    const row = await this.db.selectFrom('businesses').select('legal_form').where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
     return formOf(row?.legal_form ?? 'company');
   }
 

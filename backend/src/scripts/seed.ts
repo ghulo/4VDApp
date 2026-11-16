@@ -1,4 +1,5 @@
 import { defaultBusinessId } from '../database/business.js';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
 import 'dotenv/config';
 import { sql } from 'kysely';
 import { loadConfig } from '../config/env.js';
@@ -177,6 +178,8 @@ async function seedDemoSales(db: DatabaseClient, timeZone: string): Promise<void
 async function main(): Promise<void> {
   const config = loadConfig();
   const db = createDatabase(config.databaseUrl);
+  // A one-off tool works in the shop's business (the only one so far).
+  enterBusiness(await defaultBusinessId(db));
   try {
     await seedCategories(db);
     await seedAdmin(db);
@@ -190,7 +193,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('Seeding failed', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

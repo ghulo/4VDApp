@@ -1,4 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
+import { enterBusiness } from '../database/businessContext.js';
+import { defaultBusinessId } from '../database/business.js';
 import { type Request, type RequestHandler, type Response, Router } from 'express';
 import type { AppConfig } from '../config/env.js';
 import type { Container } from '../container.js';
@@ -32,7 +34,7 @@ const billEmailSchema = z.object({
     .max(20),
 });
 
-export function createInternalRoutes({ config, launchService, billEmailService }: Container): Router {
+export function createInternalRoutes({ config, launchService, billEmailService, db }: Container): Router {
   const router = Router();
 
   // The weekly backup job calls this once the encrypted copy is safely in R2.
@@ -46,6 +48,8 @@ export function createInternalRoutes({ config, launchService, billEmailService }
   // The mail Worker passes on emails to the bill address that passed SPF or DKIM for their sender.
   router.post('/bill-email', billEmailTokenGuard(config), async (req: Request, res: Response) => {
     const mail = parseInput(billEmailSchema, req.body);
+    // One bill address for now; phase 5 gives each business its own and picks it from the address.
+    enterBusiness(await defaultBusinessId(db));
     sendSuccess(res, await billEmailService.receive(mail), { statusCode: 202, message: 'Email taken' });
   });
 

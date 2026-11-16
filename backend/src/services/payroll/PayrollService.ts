@@ -758,7 +758,7 @@ export class PayrollService {
   // ---------- Payslips and the declaration ----------
 
   async business(): Promise<{ name: string; nui: string | null }> {
-    const row = await this.db.selectFrom('businesses').select(['name', 'nui']).orderBy('id').executeTakeFirst();
+    const row = await this.db.selectFrom('businesses').select(['name', 'nui']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
     return { name: row?.name ?? '4VD', nui: row?.nui ?? null };
   }
 

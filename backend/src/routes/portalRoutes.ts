@@ -1,4 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { systemRoute } from '../database/businessContext.js';
 import { Router } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
@@ -91,6 +92,8 @@ export function createPortalRoutes({ portalService, config }: Container): Router
     }),
   );
   router.use(portalOriginCheck(config));
+  // Before the cookie is read nobody's business is known; signing in and the cookie check name it.
+  router.use(systemRoute);
 
   // Asking for a link: few per IP, and few per address, so nobody floods a firm's inbox.
   const linkByIp = rateLimit({

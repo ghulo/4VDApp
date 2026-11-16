@@ -9,6 +9,8 @@
  * On Render: 4vd-api -> Shell, with node dist/scripts/compareTrefin.js instead.
  */
 import 'dotenv/config';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
+import { defaultBusinessId } from '../database/business.js';
 import path from 'node:path';
 import { loadConfig } from '../config/env.js';
 import { createDatabase } from '../database/connection.js';
@@ -36,6 +38,8 @@ async function main(): Promise<void> {
   console.log(`  VAT charged ${euro(boxes[30]!)}, VAT to claim back ${euro(boxes[67]!)}`);
   const config = loadConfig();
   const db = createDatabase(config.databaseUrl);
+  // A one-off tool works in the shop's business (the only one so far).
+  enterBusiness(await defaultBusinessId(db));
   try {
     await new TrefinCompareService(db, new VatService(db, config.shopTimeZone)).load(month, items, path.basename(path.resolve(dir)), null);
     console.log('Done. Open Books → Next to TREFIN to go through the differences.\n');
@@ -44,7 +48,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('Loading the TREFIN month failed; nothing changed', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

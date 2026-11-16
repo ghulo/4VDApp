@@ -1,4 +1,5 @@
 import type { UserRole } from '../database/types.js';
+import { enterBusiness } from '../database/businessContext.js';
 import { ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
 import type { InviteRecord, InviteRepository } from '../repositories/InviteRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
@@ -165,6 +166,7 @@ export class InviteService {
    * The language the invite page was shown in wins over the invite's own.
    */
   async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
+    enterBusiness(invite.business_id);
     if (await this.userRepository.findByEmail(invite.email)) {
       throw new ConflictError(`${invite.email} already has an account. Log in instead.`);
     }

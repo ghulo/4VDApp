@@ -4,6 +4,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { AppConfig } from './config/env.js';
 import { type Container, type ContainerOptions, createContainer } from './container.js';
+import { requestContext, runAsSystem } from './database/businessContext.js';
 import type { DatabaseClient } from './database/connection.js';
 import { identifyRequester, refuseForeignOrigins } from './middlewares/authenticate.js';
 import { allowedOriginsOf } from './utils/sessionCookies.js';
@@ -48,13 +49,16 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use('/api/products/prices', express.json({ limit: '15mb' }));
   app.use('/api/partners/read', express.json({ limit: '25mb' }));
   app.use(express.json({ limit: '1mb' }));
+  // Each request gets its own business context, after the body is read (stream callbacks would lose it).
+  app.use(requestContext);
 
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.
   app.use('/health', healthRoutes);
   // Public pages also hide costs by role, so the rules from Settings → Roles are read before any API request.
   const loadPermissions: express.RequestHandler = (_req, _res, next) => {
-    container.permissionService.ensureLoaded().then(() => next(), next);
+    // Read once for the whole server (one grid for now; per business in phase 5), before anyone is known.
+    runAsSystem(() => container.permissionService.ensureLoaded()).then(() => next(), next);
   };
   // The business customers' portal: its own cookie sign-in, limits and origin check; no dashboard middleware.
   app.use('/api/portal', createPortalRoutes(container));

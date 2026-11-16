@@ -10,6 +10,7 @@ import type { DocumentKind, DocumentPaymentMethod, PortalOrderStatus } from '../
 
 export interface PortalUserRecord {
   id: number;
+  business_id: number;
   customer_id: number;
   name: string;
   email: string | null;
@@ -131,7 +132,7 @@ export interface NewPortalOrder {
   lines: NewPortalOrderLine[];
 }
 
-const USER_COLUMNS = ['u.id', 'u.customer_id', 'u.name', 'u.email', 'u.phone', 'u.language', 'u.created_at', 'u.last_seen_at'] as const;
+const USER_COLUMNS = ['u.id', 'u.business_id', 'u.customer_id', 'u.name', 'u.email', 'u.phone', 'u.language', 'u.created_at', 'u.last_seen_at'] as const;
 
 export class PortalRepository {
   constructor(private readonly db: DatabaseClient) {}
@@ -200,6 +201,18 @@ export class PortalRepository {
     // A new link replaces older unused ones of the same kind.
     await this.db.deleteFrom('portal_links').where('portal_user_id', '=', portalUserId).where('purpose', '=', purpose).where('used_at', 'is', null).execute();
     await this.db.insertInto('portal_links').values({ portal_user_id: portalUserId, purpose, token_hash: tokenHash, expires_at: expiresAt }).execute();
+  }
+
+  /** Whose business a link (still unused) belongs to: read before anyone is signed in. */
+  async linkBusiness(tokenHash: string): Promise<number | undefined> {
+    const row = await this.db.selectFrom('portal_links').select('business_id').where('token_hash', '=', tokenHash).where('used_at', 'is', null).executeTakeFirst();
+    return row?.business_id;
+  }
+
+  /** Whose business a session belongs to: read before anyone is signed in. */
+  async sessionBusiness(tokenHash: string): Promise<number | undefined> {
+    const row = await this.db.selectFrom('portal_sessions').select('business_id').where('token_hash', '=', tokenHash).executeTakeFirst();
+    return row?.business_id;
   }
 
   /** Spends a link at most once: two taps at the same moment can't both sign in. */
@@ -522,7 +535,7 @@ export class PortalRepository {
 
   /** The shop's own details, shown to customers (where to pay, whom to call). */
   async shop(): Promise<{ name: string; phone: string | null; address: string | null; bank_name: string | null; iban: string | null }> {
-    const row = await this.db.selectFrom('businesses').select(['name', 'phone', 'address', 'bank_name', 'iban']).orderBy('id').executeTakeFirst();
+    const row = await this.db.selectFrom('businesses').select(['name', 'phone', 'address', 'bank_name', 'iban']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
     return row ?? { name: '4VD', phone: null, address: null, bank_name: null, iban: null };
   }
 

@@ -1,4 +1,5 @@
 import type { DatabaseClient } from './connection.js';
+import { runAsBusiness } from './businessContext.js';
 
 const DEFAULT_BUSINESS_NAME = '4VD';
 
@@ -16,4 +17,16 @@ export async function defaultBusinessId(db: DatabaseClient): Promise<number> {
     .returning('id')
     .executeTakeFirstOrThrow();
   return created.id;
+}
+
+/**
+ * Run background work once per business, each inside its own business context,
+ * one after another. A failure in one business is logged by the caller's catch
+ * and does not stop the others.
+ */
+export async function forEachBusiness(db: DatabaseClient, work: (businessId: number) => Promise<unknown>): Promise<void> {
+  const businesses = await db.selectFrom('businesses').select('id').orderBy('id').execute();
+  for (const { id } of businesses) {
+    await runAsBusiness(id, () => work(id));
+  }
 }

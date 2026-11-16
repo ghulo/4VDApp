@@ -1,4 +1,5 @@
 import type { Kysely } from 'kysely';
+import { enterBusiness, runAsScript } from '../database/businessContext.js';
 import pg from 'pg';
 import { loadConfig } from '../config/env.js';
 import { createDatabase } from '../database/connection.js';
@@ -35,6 +36,8 @@ async function main(): Promise<void> {
   const db = createDatabase(config.databaseUrl);
   try {
     await runMigrations(db as Kysely<unknown>);
+    // A one-off tool works in the shop's business (the only one here).
+    enterBusiness(await defaultBusinessId(db));
     await seedDemoAccounts(db, config.nodeEnv);
     // Payroll needs an owner (admins can't see wages); its password is public like the demo ones.
     await db
@@ -54,7 +57,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
+runAsScript(main).catch((error: unknown) => {
   logger.error('Preparing the browser test database failed', { error: error instanceof Error ? error.message : String(error) });
   process.exit(1);
 });

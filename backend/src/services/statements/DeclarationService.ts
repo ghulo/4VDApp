@@ -236,7 +236,7 @@ export class DeclarationService {
     const [statement, form, legal, startDay, yearView] = await Promise.all([
       this.statements.incomeStatement({ from, to }),
       this.years.form(),
-      this.db.selectFrom('businesses').select('legal_form').orderBy('id').executeTakeFirst(),
+      this.db.selectFrom('businesses').select('legal_form').where('id', '=', sql<number>`current_business_id()`).executeTakeFirst(),
       this.poster.startDay(),
       this.db.selectFrom('settings').select('value').where('key', '=', `${TAX_INPUTS_KEY}${year}`).executeTakeFirst(),
     ]);

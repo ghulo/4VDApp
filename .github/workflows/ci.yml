@@ -139,12 +139,63 @@ jobs:
           node-version: 22
       - run: npm audit --audit-level=high || echo "::warning title=Windows app::npm audit found a high or critical security hole; see this step's log"
 
+  e2e:
+    name: Browser tests (money paths)
+    # A real browser drives the dashboard against its own API and its own
+    # database (never the shop's): a Counter sale, a supplier bill, a payroll
+    # month and a return, each checked in the books and the VAT month to the cent.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Throwaway values for the test run only; nothing here is a real secret.
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/four_vd_app_e2e
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            admin/package-lock.json
+            e2e/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: admin
+      - run: npm ci
+        working-directory: e2e
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: npx playwright test
+        working-directory: e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-report
+          path: e2e/playwright-report
+          retention-days: 14
+
   deploy-dashboard:
     name: Put the dashboard live (4vd.app)
     # Only after every check above passes, and only for pushes to main. Render
     # waits for all checks too, this one included, so a failed upload here also
     # holds back the API: the two stay on the same version.
-    needs: [backend, backend-image, admin, mobile, mail]
+    needs: [backend, backend-image, admin, mobile, mail, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10

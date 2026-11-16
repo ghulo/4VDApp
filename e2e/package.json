@@ -1,0 +1,14 @@
+{
+  "name": "four-vd-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "install-browser": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.9.0"
+  }
+}

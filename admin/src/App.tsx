@@ -33,6 +33,15 @@ function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(lo
 const PayrollPeoplePage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollPeoplePage');
 const PayrollMonthsPage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollMonthsPage');
 const PayrollPersonPage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollPersonPage');
+const PortalSignInPage = lazyPage(() => import('./pages/portal/PortalAuth'), 'PortalSignInPage');
+const PortalLinkPage = lazyPage(() => import('./pages/portal/PortalAuth'), 'PortalLinkPage');
+const PortalShell = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalShell');
+const PortalOrderPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalOrderPage');
+const PortalOrdersPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalOrdersPage');
+const PortalOrderDetailPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalOrderDetailPage');
+const PortalInvoicesPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalInvoicesPage');
+const PortalAccountPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalAccountPage');
+const ShopPortalOrdersPage = lazyPage(() => import('./pages/PortalOrdersPage'), 'PortalOrdersPage');
 const ActivityPage = lazyPage(() => import('./pages/ActivityPage'), 'ActivityPage');
 const InboxPage = lazyPage(() => import('./pages/InboxPage'), 'InboxPage');
 const UpdatesPage = lazyPage(() => import('./pages/InboxPage'), 'UpdatesPage');
@@ -178,6 +187,17 @@ function App() {
                     {/* The Windows app: its download page, open to anyone, and its first-run welcome. */}
                     <Route path="/download" element={<DownloadPage />} />
                     <Route path="/welcome" element={<WelcomePage />} />
+                    {/* The business customers' portal: its own sign-in and frame, never the dashboard's. */}
+                    <Route path="/portal" element={<PortalSignInPage />} />
+                    <Route path="/portal/join" element={<PortalLinkPage />} />
+                    <Route path="/portal/link" element={<PortalLinkPage />} />
+                    <Route path="/portal" element={<PortalShell />}>
+                      <Route path="order" element={<PortalOrderPage />} />
+                      <Route path="orders" element={<PortalOrdersPage />} />
+                      <Route path="orders/:id" element={<PortalOrderDetailPage />} />
+                      <Route path="invoices" element={<PortalInvoicesPage />} />
+                      <Route path="account" element={<PortalAccountPage />} />
+                    </Route>
                     {/* The Counter fills the screen: no menu, no top bar. */}
                     <Route
                       path="/counter"
@@ -236,6 +256,7 @@ function App() {
                         <Route path="documents" element={<DocumentsPage />} />
                         <Route path="offers" element={<OffersPage />} />
                         <Route path="to-deliver" element={<ToDeliverPage />} />
+                        <Route path="portal-orders" element={<ShopPortalOrdersPage />} />
                       </Route>
                       <Route path="documents/:id" element={<DocumentDetailPage />} />
                       <Route path="offers/new" element={<NewOfferPage />} />

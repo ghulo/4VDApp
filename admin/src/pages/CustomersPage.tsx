@@ -39,6 +39,7 @@ import { HistoryCard } from '../components/HistoryCard';
 import { PartnerDetailFields, PartnerFacts, hasDetails, usePartnerDraft } from '../components/PartnerDetails';
 import { AddressesCard, BonusCard, PartnerLinkCard } from '../components/PartnerCards';
 import { FilesCard } from '../components/FilesCard';
+import { PortalCard } from '../components/PortalCard';
 
 /** Late: something is past the day they promised to pay (the server works it out). */
 const isOverdue = (customer: Customer) => customer.lateAmount > 0;
@@ -496,6 +497,7 @@ export function CustomerDetailPage() {
 
       <InvoicesCard customerId={data.id} />
       {data.kind === 'business' && <PartnerLinkCard customerId={data.id} />}
+      {data.kind === 'business' && !data.archived && <PortalCard customerId={data.id} phone={data.mobile ?? data.phone} />}
       <BonusCard customerId={data.id} />
       <AddressesCard owner={{ side: 'customers', id: data.id }} />
 

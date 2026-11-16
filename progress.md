@@ -26,6 +26,17 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] With Windows "Show animations" off, none of the above moves and everything still shows
 - [ ] On a wide screen: charts side by side fill their cards with no empty band, four charts sit two by two, and form fields stop at a comfortable width (check a few real forms too: product, bill, settings); checkboxes are amber when ticked
 
+**Step 15: portal for business customers** (sign in as the owner; use a test firm, never a real customer)
+- [ ] A business customer's page → Online portal: switch it on, set a smallest order and only some categories, Save; Invite someone with a mobile → Send by WhatsApp opens a chat with the link
+- [ ] Open the link on a phone: WhatsApp's preview doesn't use it up; "Open my account" signs in; opening the same link again says it no longer works
+- [ ] Order tab: prices show with and without VAT (wholesale for a wholesale customer), out-of-stock products can still be added, the basket splits without VAT / VAT / total, below the smallest order Send stays off
+- [ ] Send an order: it appears in To do and as an alert; Sales → Online orders opens it (the customer now sees "Seen by the shop"); Accept makes an offer at the order's prices; sell it at the Counter with Deliver it on the demo shop only, and the customer follows Being prepared → On the way → Delivered
+- [ ] Orders → an old order → Order again fills the basket at today's prices; Cancel works only while it says Sent
+- [ ] Invoices: invoices and credit notes show; PDF opens the invoice with stamp and signature
+- [ ] Account: balance, due dates and late items match the customer page; the statement prints cleanly and the CSV opens in Excel
+- [ ] Switching the portal off, or removing a person, signs them out at once; the language switch (Shqip/English) sticks
+- [ ] Email sign-in: only after the Resend setup (handoff.md); asking for a link with an unknown email says the same as with a known one
+
 **Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
 - [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
 - [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it
@@ -174,6 +185,6 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 - [x] 12. Fixed assets register and depreciation (2026-11-15): Books → Fixed assets. Equipment on a bill becomes an asset by itself, older things are typed in; each finished month posts its straight-line depreciation; selling or throwing one away posts the gain or loss and the sale VAT; a credit gives it back; the year's schedule, a check against the books and Excel. Rates and rules to confirm with the accountant (handoff.md)
 - [x] 13. Employees and payroll (2026-11-15): Team → Payroll. Each person with their contract (gross or net, second job, extra pension, shop or carwash); a month is worked out with Kosovo wage tax and Trust pension, confirmed into the books, then wages and ATK (tax and pension as two payments) are paid and matched on bank statements; payslips to print, the declaration file, annual leave, and staff see their own under Account. Defaults to confirm with the accountant (handoff.md)
 - [x] 14. Several stock locations and moves between them (2026-11-15): add a storeroom in Settings → Stock locations; each product keeps a total plus how much each location holds. Stock → Move stock moves goods in one step (LV-, printable note, Excel/PDF, void) and never touches the books; a sale short on the floor takes the rest from storage and says so; bills, orders, scans, in and out, write-offs and counts ask which location; On the shelf filters by location and offers Refill from storage below a shelf minimum. All of it stays hidden while the shop has one location
-- [ ] 15. Loyalty cards and bonus, B2B portal for business customers
+- [x] 15. B2B portal for business customers (loyalty moved to step 22: loyalty by phone number replaces the cards). Done: 4vd.app/portal, firms invited by WhatsApp link see their own prices with and without VAT, order (Order again too), and read invoices, credit notes, balance and statement; orders land in To do and Sales → Online orders
 - [ ] 16. Production (recipes, semi-finished goods), serial numbers, projects
 - [ ] 17. Yearly declarations (CD / PD)

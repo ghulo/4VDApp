@@ -54,7 +54,7 @@ export function SerialEntry({ productId, billId, stockDocumentId, max, onRecorde
           spellCheck={false}
           maxLength={100}
           placeholder={t.serials.searchPlaceholder}
-          aria-describedby={hintId}
+          aria-describedby={max !== undefined ? hintId : undefined}
           disabled={full}
           value={text}
           onChange={(event) => {
@@ -64,9 +64,11 @@ export function SerialEntry({ productId, billId, stockDocumentId, max, onRecorde
           onKeyDown={handleKey}
         />
       </Field>
-      <span id={hintId} className="visually-hidden">
-        {t.serials.addHint}
-      </span>
+      {max !== undefined && (
+        <span id={hintId} className="visually-hidden">
+          {t.serials.addHint}
+        </span>
+      )}
       {list.length > 0 && (
         <ul className="serial-chips" aria-label={t.serials.entry}>
           {list.map((serial) => (

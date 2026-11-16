@@ -114,6 +114,7 @@ export const SECTIONS = {
     { to: '/books/statements', key: 'statements', accountant: true },
     { to: '/books/assets', key: 'assets', accountant: true },
     { to: '/books/year', key: 'year', accountant: true, rare: true },
+    { to: '/books/declaration', key: 'declaration', accountant: true, rare: true },
     { to: '/books/trefin', key: 'trefin', accountant: true, rare: true },
   ],
   payroll: [

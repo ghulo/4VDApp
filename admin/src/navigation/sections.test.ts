@@ -29,6 +29,6 @@ describe('phoneTabsFor', () => {
 describe('SECTIONS', () => {
   it('should keep the books row to setup and year end under More', () => {
     const rare = SECTIONS.books.filter((tab) => 'rare' in tab && tab.rare).map((tab) => tab.key);
-    expect(rare).toEqual(['accounts', 'opening', 'year', 'trefin']);
+    expect(rare).toEqual(['accounts', 'opening', 'year', 'declaration', 'trefin']);
   });
 });

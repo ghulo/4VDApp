@@ -97,6 +97,7 @@ const SalesBookPage = lazyPage(() => import('./pages/VatPages'), 'SalesBookPage'
 const PurchaseBookPage = lazyPage(() => import('./pages/VatPages'), 'PurchaseBookPage');
 const FinancialStatementsPage = lazyPage(() => import('./pages/StatementsPages'), 'StatementsPage');
 const YearPage = lazyPage(() => import('./pages/StatementsPages'), 'YearPage');
+const DeclarationPage = lazyPage(() => import('./pages/DeclarationPage'), 'DeclarationPage');
 const AssetsPage = lazyPage(() => import('./pages/AssetsPage'), 'AssetsPage');
 const AssetPage = lazyPage(() => import('./pages/AssetsPage'), 'AssetPage');
 const CustomerDetailPage = lazyPage(() => import('./pages/CustomersPage'), 'CustomerDetailPage');
@@ -291,6 +292,7 @@ function App() {
                         <Route path="books/statements" element={<FinancialStatementsPage />} />
                         <Route path="books/assets" element={<AssetsPage />} />
                         <Route path="books/year" element={<YearPage />} />
+                        <Route path="books/declaration" element={<DeclarationPage />} />
                         <Route path="books/trefin" element={<TrefinComparePage />} />
                       </Route>
                       <Route path="books/accounts/:id" element={<AccountCardPage />} />

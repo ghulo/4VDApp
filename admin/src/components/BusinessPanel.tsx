@@ -127,6 +127,7 @@ function BusinessForm({ initial }: { initial: Business }) {
   const [bankName, setBankName] = useState(initial.bankName ?? '');
   const [iban, setIban] = useState(initial.iban ?? '');
   const [invoiceNote, setInvoiceNote] = useState(initial.invoiceNote ?? '');
+  const [legalForm, setLegalForm] = useState(initial.legalForm);
   // Checked once the person leaves the box, so half-typed numbers aren't flagged.
   const [ibanLeft, setIbanLeft] = useState(false);
   const ibanOk = isIbanOrEmpty(iban);
@@ -145,6 +146,7 @@ function BusinessForm({ initial }: { initial: Business }) {
         bankName: bankName.trim() || null,
         iban: iban.trim() || null,
         invoiceNote: invoiceNote.trim() || null,
+        legalForm,
       }),
     onSuccess: keep,
   });
@@ -178,7 +180,8 @@ function BusinessForm({ initial }: { initial: Business }) {
     timeZone !== (initial.timeZone ?? '') ||
     bankName.trim() !== (initial.bankName ?? '') ||
     cleanIban(iban) !== (initial.iban ?? '') ||
-    invoiceNote.trim() !== (initial.invoiceNote ?? '');
+    invoiceNote.trim() !== (initial.invoiceNote ?? '') ||
+    legalForm !== initial.legalForm;
 
   return (
     <form onSubmit={handleSubmit}>
@@ -275,6 +278,12 @@ function BusinessForm({ initial }: { initial: Business }) {
               />
             </Field>
           </div>
+          <Field label={t.business.legalForm} hint={t.business.legalFormHint}>
+            <select name="legalForm" value={legalForm} onChange={(event) => setLegalForm(event.target.value as Business['legalForm'])}>
+              <option value="company">{t.business.legalForms.company}</option>
+              <option value="individual">{t.business.legalForms.individual}</option>
+            </select>
+          </Field>
           <Field label={t.business.invoiceNote} hint={t.business.invoiceNoteHint}>
             <textarea rows={2} maxLength={500} value={invoiceNote} onChange={(event) => setInvoiceNote(event.target.value)} />
           </Field>

@@ -600,7 +600,7 @@ export function YearPage() {
             description={
               view.data.method === 'last_year'
                 ? w.tm.description.lastYear(formatMoney(view.data.share ?? 0), formatMoney(view.data.previousTax ?? 0))
-                : w.tm.description.estimate
+                : view.data.form === 'PD' ? w.tm.description.estimatePd : w.tm.description.estimate
             }
           >
             <div className="year-quarters">
@@ -929,7 +929,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
             <dd>{formatMoney(close.closed.profit)}</dd>
           </div>
           <div>
-            <dt>{w.tax(formatPercent(data.rate))}</dt>
+            <dt>{data.form === 'PD' ? w.taxPd : w.tax(formatPercent(data.rate))}</dt>
             <dd>{formatMoney(close.closed.tax)}</dd>
           </div>
           <div>
@@ -976,7 +976,7 @@ function CloseYear({ data, canClose }: { data: BookYear; canClose: boolean }) {
         </div>
         <div>
           <dt>
-            <label htmlFor="year-close-tax">{w.tax(formatPercent(data.rate))}</label>
+            <label htmlFor="year-close-tax">{data.form === 'PD' ? w.taxPd : w.tax(formatPercent(data.rate))}</label>
           </dt>
           <dd>
             {canClose && !blocker ? (

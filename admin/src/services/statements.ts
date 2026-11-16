@@ -113,6 +113,8 @@ export type CloseBlocker = 'not_over' | 'earlier_open' | 'empty';
 export interface BookYear {
   year: number;
   rate: number;
+  /** CD: 10% profit tax; PD: the personal yearly bands. */
+  form: 'CD' | 'PD';
   /** 'last_year': a quarter of 110% of last year's tax (the law's rule); 'estimate': from this year's profit (first year, or a loss last year). */
   method: 'last_year' | 'estimate';
   previousTax: number | null;
@@ -169,3 +171,97 @@ export const statementsApi = {
 export const canCloseYear = (role: UserRole) => role === 'developer' || role === 'owner' || role === 'accountant';
 /** Who records a profit tax instalment as paid: whoever files VAT. */
 export const canPayTax = (role: UserRole) => role === 'developer' || role === 'admin' || role === 'owner' || role === 'accountant';
+
+/** The yearly income declaration (backend services/statements/DeclarationService). */
+export type DeclarationForm = 'CD' | 'PD';
+export type DeclarationIncomeKey = 'sales' | 'other_income' | 'financial_income' | 'carwash_takings';
+export type DeclarationCostKey = 'cost_of_goods' | 'wages' | 'depreciation' | 'rent' | 'running' | 'financial_costs' | 'other_costs' | 'carwash_costs';
+export type AdjustmentKey = 'representation' | 'donations' | 'fines' | 'other';
+
+export interface DeclarationAccount {
+  accountId: number;
+  number: string;
+  name: string;
+  amount: number;
+}
+
+export interface DeclarationLine<TKey extends string> {
+  key: TKey;
+  amount: number;
+  accounts: DeclarationAccount[];
+}
+
+export interface AdjustmentLine {
+  key: AdjustmentKey;
+  label: string | null;
+  amount: number;
+  suggested: number | null;
+  spent: number | null;
+  allowed: number | null;
+  overridden: boolean;
+}
+
+export interface LossLine {
+  year: number;
+  amount: number;
+  source: 'declared' | 'closed' | 'typed';
+  usedBefore: number;
+  used: number;
+}
+
+export interface DeclarationInputs {
+  includeCarwash: boolean;
+  representation: number | null;
+  donations: number | null;
+  fines: number;
+  other: Array<{ label: string; amount: number }>;
+  earlierLosses: Array<{ year: number; amount: number }>;
+}
+
+export interface Declaration {
+  year: number;
+  form: DeclarationForm;
+  legalForm: 'company' | 'individual';
+  income: { lines: Array<DeclarationLine<DeclarationIncomeKey>>; total: number };
+  costs: { lines: Array<DeclarationLine<DeclarationCostKey>>; total: number };
+  profitBeforeBooks: number;
+  startsInYear: string | null;
+  bookProfit: number;
+  carwash: { included: boolean; takings: number; wages: number; bills: number };
+  adjustments: AdjustmentLine[];
+  adjustedProfit: number;
+  losses: LossLine[];
+  lossesUsed: number;
+  taxable: number;
+  taxParts: Array<{ from: number; to: number | null; rate: number; base: number; tax: number }>;
+  tax: number;
+  due: string;
+  status: 'not_over' | 'to_file' | 'late' | 'filed';
+  inputs: DeclarationInputs;
+  instalments: Array<Instalment & { quarter: number }>;
+  instalmentsTotal: number;
+  restPayment: Instalment | null;
+  left: number;
+  closedTax: number | null;
+  filed: { on: string; at: string; by: string | null } | null;
+  changedSinceFiled: boolean;
+  liveTax: number;
+}
+
+export const declarationApi = {
+  get: async (year: number) => (await apiRequest<Declaration>(`/books/declaration/${year}`)).data,
+  setInputs: async (year: number, inputs: DeclarationInputs) => (await apiRequest<Declaration>(`/books/declaration/${year}/inputs`, { method: 'PUT', body: inputs })).data,
+  file: async (year: number, day: string) => (await apiRequest<Declaration>(`/books/declaration/${year}/file`, { method: 'POST', body: { day } })).data,
+  reopen: async (year: number, reason: string) => (await apiRequest<Declaration>(`/books/declaration/${year}/reopen`, { method: 'POST', body: { reason } })).data,
+  payRest: async (year: number, input: { amount: number; day: string; placeId: number; note?: string | null }) =>
+    (await apiRequest<Declaration>(`/books/declaration/${year}/pay`, { method: 'POST', body: input })).data,
+  page: async (year: number, lang: Language) => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return (await apiDownload(`/books/declaration/${year}/download`, { format: 'html', lang, tz })).blob.text();
+  },
+  async downloadXlsx(year: number, lang: Language): Promise<void> {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const { blob, filename } = await apiDownload(`/books/declaration/${year}/download`, { format: 'xlsx', lang, tz });
+    saveDownload(blob, filename ?? `4vd-declaration-${year}.xlsx`);
+  },
+};

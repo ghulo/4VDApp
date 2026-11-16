@@ -908,7 +908,7 @@ export interface Insight {
 
 export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** What a To do item's one button does. */
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer' | 'runPayroll' | 'payAtk';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'fileDeclaration' | 'answer' | 'runPayroll' | 'payAtk';
 
 /** Something someone must act on, worked out from the shop's state; it clears itself (DESIGN.md 3.3). */
 export interface TodoItem {
@@ -1357,6 +1357,8 @@ export interface Business {
   bankName: string | null;
   iban: string | null;
   invoiceNote: string | null;
+  /** 'company' (sh.p.k., sh.a.) files the CD; 'individual' (B.I.) files the PD. */
+  legalForm: 'company' | 'individual';
 }
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';

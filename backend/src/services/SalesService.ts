@@ -13,6 +13,7 @@ import { canOversee } from '../utils/roles.js';
 import { isUniqueViolation } from '../utils/databaseErrors.js';
 import type { DocumentRef, DocumentService } from './DocumentService.js';
 import { applyStockChange } from './InventoryService.js';
+import { sellSerials } from './SerialService.js';
 import { toMoney, toMoneyOrNull } from './mappers.js';
 import type { SettingsService } from './SettingsService.js';
 import { bestPromotionFor } from './pricing/promotions.js';
@@ -84,6 +85,8 @@ export interface RecordSaleInput {
   wholesale?: boolean;
   /** A stickered unit from this short-dated batch (an expiry date): sold at its short-dated price when that is the lowest. */
   shortDatedId?: number;
+  /** The serial numbers sold, one per unit, for a product that has them. */
+  serials?: string[];
 }
 
 /** A sale taken to the customer: where and when, and whether the money is paid in the shop or at the door. */
@@ -103,7 +106,7 @@ export interface DeliveryInput {
 
 export interface BasketInput {
   /** `discountPercent`: rabat on that line; employees may give up to the shop's limit. */
-  items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
+  items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number; serials?: string[] }>;
   notes: string | null;
   /** The registered customer it was for: on their tab, or paid at the till when `paidNow`. */
   customerId?: number;
@@ -218,7 +221,8 @@ export class SalesService {
         input.saleDate && input.customerId !== undefined && !input.paidNow
           ? addDays(zonedDay(input.saleDate, this.timeZone), (await this.settings.get()).paymentTermsDays)
           : undefined;
-      await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy, dueDate });
+      const invoice = await this.documents.invoiceSales(repos, { saleIds: [id], customerId: input.customerId ?? null, onAccount: !input.paidNow, issuedBy: soldBy, dueDate });
+      await sellSerials(repos, { productId: input.productId, quantity: input.quantity, serials: input.serials, saleId: id, documentId: invoice.id, customerId: input.customerId ?? null, soldAt: input.saleDate ?? new Date(), offline: Boolean(input.offline), timeZone: this.timeZone, actorId: soldBy });
       return id;
     });
 
@@ -280,7 +284,7 @@ export class SalesService {
         const paidNow = atDoor ? false : input.paidNow;
         const saleIds: number[] = [];
         for (const item of input.items) {
-          const { offerPrice, ...rest } = item;
+          const { offerPrice, serials: _serials, ...rest } = item;
           saleIds.push(
             await this.recordInTransaction(
               repos,
@@ -311,6 +315,9 @@ export class SalesService {
           clientKey: input.clientKey,
           dueDate: delivery && atDoor ? delivery.day : input.dueDate,
         });
+        for (const [index, item] of input.items.entries()) {
+          await sellSerials(repos, { productId: item.productId, quantity: item.quantity, serials: item.serials, saleId: saleIds[index]!, documentId: invoice.id, customerId: customerId ?? null, soldAt: saleDate ?? new Date(), offline: Boolean(input.soldAt), timeZone: this.timeZone, actorId: soldBy });
+        }
         if (input.offerId !== undefined && !(await repos.salesDocs.decideOffer(input.offerId, 'sold', invoice.id))) {
           throw new ConflictError('That offer was sold or turned down already');
         }

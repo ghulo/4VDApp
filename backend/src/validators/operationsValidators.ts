@@ -40,6 +40,7 @@ export const recordSaleSchema = z.object({
   /** The registered customer it was for. Goes on their tab unless `paidNow`. */
   customerId: idSchema.optional(),
   paidNow: z.boolean().optional(),
+  serials: z.array(z.string().trim().min(1).max(80)).max(1000).optional(),
 });
 
 const time = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'must be a time like 14:30');
@@ -73,6 +74,8 @@ export const basketSchema = z
           offerPrice: z.number().min(0).max(10_000_000).multipleOf(0.01).optional(),
           /** A stickered unit from this short-dated batch. */
           shortDatedId: idSchema.optional(),
+          /** Serial numbers sold, one per unit, for a product that has them. */
+          serials: z.array(z.string().trim().min(1).max(80)).max(1000).optional(),
         }),
       )
       .min(1, 'add at least one product')

@@ -1,3 +1,4 @@
+import { resellSerials, returnSerials } from '../SerialService.js';
 import { NOTIFICATION_TYPES } from '../../constants/notifications.js';
 import { SYSTEM_STOCK_REASONS } from '../../constants/stock.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../../errors/httpErrors.js';
@@ -80,6 +81,11 @@ export class UndoService {
 
       const effect = plan.stock ? await moveStock(repos, plan, mode, actor.id) : null;
       for (const row of plan.rows) await repos.undo.mark(row, mode === 'undo' ? { by: actor.id, note } : null);
+      for (const row of plan.rows) {
+        if (row.table !== 'sales') continue;
+        if (mode === 'undo') await returnSerials(repos, row.id, null, new Date());
+        else await resellSerials(repos, row.id);
+      }
       if (plan.document) {
         const { undoIssues, ...lines } = plan.document;
         const kind = mode === 'undo' ? undoIssues : undoIssues === 'credit_note' ? 'invoice' : 'credit_note';

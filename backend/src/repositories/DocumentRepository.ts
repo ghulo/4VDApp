@@ -327,6 +327,17 @@ export class DocumentRepository {
     return this.baseQuery().where('d.id', '=', id).executeTakeFirst();
   }
 
+  /** The serial numbers sold on these sales, with their warranty end. */
+  serialsOf(saleIds: number[]): Promise<Array<{ sale_id: number | null; serial: string; warranty_ends: string | null }>> {
+    if (saleIds.length === 0) return Promise.resolve([]);
+    return this.db
+      .selectFrom('serials')
+      .select(['sale_id', 'serial', sql<string | null>`to_char(warranty_ends, 'YYYY-MM-DD')`.as('warranty_ends')])
+      .where('sale_id', 'in', saleIds)
+      .orderBy('id')
+      .execute();
+  }
+
   findLines(documentId: number): Promise<DocumentLineRecord[]> {
     return this.db
       .selectFrom('document_lines')

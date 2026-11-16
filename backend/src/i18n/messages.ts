@@ -293,6 +293,8 @@ export interface ServerMessages {
     creditedToAccount: string;
     dueDate: string;
     deliverTo: string;
+    serial: string;
+    warrantyUntil: string;
     stamp: string;
   };
 }
@@ -620,6 +622,8 @@ export const en: ServerMessages = {
     creditedToAccount: 'Credited to the account',
     dueDate: 'Due by',
     deliverTo: 'Deliver to',
+    serial: 'S/N',
+    warrantyUntil: 'warranty until',
     stamp: 'Stamp',
   },
 };
@@ -946,6 +950,8 @@ export const sq: ServerMessages = {
     creditedToAccount: 'Kreditohet në llogari',
     dueDate: 'Afati i pagesës',
     deliverTo: 'Dërgohet në',
+    serial: 'Nr. serik',
+    warrantyUntil: 'garanci deri më',
     stamp: 'V.V.',
   },
 };

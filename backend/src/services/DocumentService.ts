@@ -17,6 +17,8 @@ import { formatNumber, readRules } from './shopRules.js';
 
 export interface DocumentLineDto {
   saleId: number;
+  /** Serial numbers sold on this line, with the warranty end; on invoice lines only. */
+  serials?: Array<{ serial: string; warrantyEnds: string | null }>;
   returnId: number | null;
   productName: string;
   /** The product's barcode, else its SKU, as it was when issued. */
@@ -248,6 +250,13 @@ export class DocumentService {
   private async detail(record: DocumentRecord): Promise<DocumentDetailDto> {
     const id = record.id;
     const [lines, delivery] = await Promise.all([this.documentRepository.findLines(id).then((rows) => rows.map(toLineDto)), this.documentRepository.deliveryOf(id)]);
+    if (record.kind === 'invoice') {
+      const serials = await this.documentRepository.serialsOf(lines.filter((line) => line.returnId === null).map((line) => line.saleId));
+      for (const line of lines) {
+        const own = serials.filter((row) => row.sale_id === line.saleId && line.returnId === null);
+        if (own.length > 0) line.serials = own.map((row) => ({ serial: row.serial, warrantyEnds: row.warranty_ends }));
+      }
+    }
     return { ...toDto(record), lines, vatByRate: vatByRate(lines), deliverTo: delivery ?? null };
   }
 

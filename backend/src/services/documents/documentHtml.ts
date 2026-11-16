@@ -79,7 +79,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
     .map(
       (line, index) => `<tr>
         <td class="num muted">${index + 1}</td>
-        <td class="product">${escape(line.productName)}${line.productCode ? `<span class="code">${escape(line.productCode)}</span>` : ''}</td>
+        <td class="product">${escape(line.productName)}${line.productCode ? `<span class="code">${escape(line.productCode)}</span>` : ''}${(line.serials ?? []).map((item) => `<span class="code">${escape(t.serial)} ${escape(item.serial)}${item.warrantyEnds ? ` · ${escape(t.warrantyUntil)} ${dayFormat.format(new Date(`${item.warrantyEnds}T00:00:00Z`))}` : ''}</span>`).join('')}</td>
         <td class="num">${line.quantity}</td>
         <td class="num">${eur(line.priceBeforeDiscount ?? line.unitPrice)}</td>
         <td class="num">${line.discountPercent ? `${formatPercent(line.discountPercent, language)}` : ''}</td>

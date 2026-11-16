@@ -1,3 +1,4 @@
+import { returnSerials } from './SerialService.js';
 import type { ApprovalStatus, ReturnCondition } from '../constants/approvals.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
@@ -239,6 +240,7 @@ async function approveReturn(repos: TransactionalRepositories, id: number, decid
       });
     }
   }
+  await returnSerials(repos, item.sale_id, item.quantity, new Date());
   await documents.followUp(repos, 'credit_note', {
     saleId: item.sale_id,
     returnId: id,

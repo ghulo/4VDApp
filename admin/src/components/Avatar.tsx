@@ -1,8 +1,8 @@
 import { mediaSrc } from '../services/apiClient';
 
-// Warm ink, stone, ember, clay and two greens: from the palette's family, all
-// dark enough for white initials (5:1 or more). Keep both apps' lists the same.
-const COLOURS = ['#1f1b19', '#57534e', '#9a3412', '#7c5a3c', '#047857', '#3f6212'];
+// Six steps from 4VD's own palette (tokens --avatar-1…6: anthracite greys and
+// deep ambers, one green, one blue), all dark enough for white initials.
+const COLOURS = [1, 2, 3, 4, 5, 6].map((step) => `var(--avatar-${step})`);
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);

@@ -13,6 +13,10 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Backups and error tracking**
+- [ ] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy
+- [ ] Sentry: after the API DSN is on Render and the dashboard DSN is in admin/.env.production, the first real error shows in Sentry with a stack trace and no email, name or request body in it
+
 **Step 17: yearly declarations** (Books → Declaration, sign in as the owner or the accountant)
 - [ ] Settings → Business details: Legal form shows "Company (sh.p.k., sh.a.)"; switching it to "Individual business" turns the page into the PD with three bands, and Books → Year says "Personal income tax"; switch it back
 - [ ] Books → Declaration, last year: income, costs and book profit match Books → Statements for the year; an income or cost line with several accounts lists them, and each opens its card

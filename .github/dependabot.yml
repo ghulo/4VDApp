@@ -1,55 +1,67 @@
 # Dependabot opens pull requests when a package 4VD uses has a newer or safer
-# version. Once a week, grouped so each app gets one pull request for minor
-# and patch updates instead of one per package. Security fixes come at once,
-# whatever the schedule. Each pull request runs the full Checks workflow.
+# version. Once a month, one grouped pull request per app for minor and patch
+# updates. Major versions are left out on purpose: each needs real work and a
+# try by hand (Electron on the shop PC, React Router, the Anthropic SDK...), so
+# they are done as their own task, not merged because a check went green.
+# Security fixes still come at once, whatever the schedule.
+# The repo is private, so every pull request spends GitHub Actions minutes
+# (the free plan has 2,000 a month): keep the limits low.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /backend
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     groups:
       backend-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /admin
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
     groups:
       dashboard-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /desktop
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 3
+      interval: monthly
+    open-pull-requests-limit: 1
     groups:
       desktop-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /mail
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 3
+      interval: monthly
+    open-pull-requests-limit: 1
     groups:
       mail-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]
 
-  # The GitHub Actions the workflows use (checkout, setup-node, wrangler…).
+  # The GitHub Actions the workflows use (checkout, setup-node, wrangler...).
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
+    open-pull-requests-limit: 1
     groups:
       actions:
         patterns: ['*']

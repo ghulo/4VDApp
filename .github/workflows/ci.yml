@@ -1,10 +1,17 @@
-# Runs every check on every push and pull request, so a broken change shows
-# up on GitHub (red cross) before it reaches the live app. On main, once every
-# check is green, the last job puts the dashboard live at 4vd.app.
+# Runs the checks on pushes to main and on pull requests, so a broken change
+# shows up on GitHub (red cross) before it reaches the live app. On main, once
+# every check is green, the last job puts the dashboard live at 4vd.app.
+#
+# The repo is private and GitHub's free plan has 2,000 Actions minutes a month,
+# so each job only runs when its own folder (or this file) changed: a change to
+# progress.md or the docs runs nothing, a dashboard-only change skips the
+# 20-minute backend suite. Pushes to other branches run nothing until they are
+# opened as a pull request or merged into main.
 name: Checks
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 # A newer push to the same branch cancels the older, now pointless run
@@ -14,8 +21,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Which parts changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      admin: ${{ steps.filter.outputs.admin }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+      mail: ${{ steps.filter.outputs.mail }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ci: &ci
+              - '.github/workflows/ci.yml'
+            backend:
+              - *ci
+              - 'backend/**'
+            admin:
+              - *ci
+              - 'admin/**'
+            e2e:
+              - *ci
+              - 'backend/**'
+              - 'admin/**'
+              - 'e2e/**'
+            mobile:
+              - *ci
+              - 'mobile/**'
+            mail:
+              - *ci
+              - 'mail/**'
+            desktop:
+              - *ci
+              - 'desktop/**'
+
   backend:
     name: Backend (types and tests)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     # The full suite now runs past 15 minutes; a timeout shows as "cancelled"
     # and holds back both Render and the dashboard deploy.
@@ -58,6 +110,8 @@ jobs:
 
   backend-image:
     name: Backend Docker image
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -67,6 +121,8 @@ jobs:
 
   admin:
     name: Dashboard (build, lint and tests)
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -88,6 +144,8 @@ jobs:
 
   mobile:
     name: Mobile app (types)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -105,6 +163,8 @@ jobs:
 
   mail:
     name: Bills email worker (tests and audit)
+    needs: changes
+    if: needs.changes.outputs.mail == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -124,6 +184,8 @@ jobs:
 
   desktop-audit:
     name: Windows app (security audit, warning only)
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
     # A hole here needs an Electron upgrade tried on the shop PC first, so it
     # shows as a warning on the run instead of a red check (Render waits for
     # every check, so a red one would hold back the API).
@@ -141,6 +203,8 @@ jobs:
 
   e2e:
     name: Browser tests (money paths)
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
     # A real browser drives the dashboard against its own API and its own
     # database (never the shop's): a Counter sale, a supplier bill, a payroll
     # month and a return, each checked in the books and the VAT month to the cent.
@@ -195,8 +259,15 @@ jobs:
     # Only after every check above passes, and only for pushes to main. Render
     # waits for all checks too, this one included, so a failed upload here also
     # holds back the API: the two stay on the same version.
-    needs: [backend, backend-image, admin, mobile, mail, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # A job skipped because its folder didn't change counts as fine; a failed
+    # or cancelled one stops the deploy. Only runs when the dashboard changed.
+    needs: [changes, backend, backend-image, admin, mobile, mail, e2e]
+    if: >-
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.admin == 'true' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:

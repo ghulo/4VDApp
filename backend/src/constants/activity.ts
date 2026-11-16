@@ -77,6 +77,15 @@ export const ACTIVITY_ACTIONS = [
   'counter.pay_later_allowed',
   'offer.made',
   'offer.declined',
+  'portal.settings_changed',
+  'portal.invited',
+  'portal.person_removed',
+  'portal.signed_out_everywhere',
+  'portal.signed_in',
+  'portal.order_sent',
+  'portal.order_cancelled',
+  'portal.order_accepted',
+  'portal.order_declined',
   'delivery.taken',
   'delivery.delivered',
   'delivery.missed',
@@ -157,5 +166,5 @@ export const ACTIVITY_ACTIONS = [
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move', 'portal_order'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

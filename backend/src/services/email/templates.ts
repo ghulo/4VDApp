@@ -260,6 +260,37 @@ function plain(lines: Array<string | undefined>): string {
 }
 
 export const emailTemplates = {
+  portalInvite(input: { shopName: string; customerName: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.portalInviteSubject(input.shopName);
+    const body = (shop: string, customer: string) => t.email.portalInviteBody({ shop, customer });
+    return {
+      subject,
+      html: letter({
+        t,
+        subject,
+        paragraphs: [body(`<strong>${escapeHtml(input.shopName)}</strong>`, escapeHtml(input.customerName))],
+        button: { label: t.email.portalInviteButton, link: input.link },
+        note: escapeHtml(t.email.portalInviteNote),
+      }),
+      text: plain([body(input.shopName, input.customerName), `${t.email.portalInviteButton}: ${input.link}`, t.email.portalInviteNote]),
+    };
+  },
+
+  portalSignIn(input: { shopName: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.portalSignInSubject(input.shopName);
+    return {
+      subject,
+      html: letter({
+        t,
+        subject,
+        paragraphs: [escapeHtml(t.email.portalSignInBody(input.shopName))],
+        button: { label: t.email.portalSignInButton, link: input.link },
+        note: escapeHtml(t.email.portalSignInNote),
+      }),
+      text: plain([t.email.portalSignInBody(input.shopName), `${t.email.portalSignInButton}: ${input.link}`, t.email.portalSignInNote]),
+    };
+  },
+
   invite(input: { shopName: string; inviterName: string; role: string; link: string }, t: ServerMessages = en): EmailContent {
     const subject = t.email.inviteSubject({ inviter: input.inviterName, shop: input.shopName });
     const role = t.roleName[input.role] ?? input.role;

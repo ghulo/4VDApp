@@ -234,7 +234,19 @@ export class DocumentService {
   }
 
   async get(id: number, viewer: PublicUser): Promise<DocumentDetailDto> {
-    const record = await this.visible(id, viewer);
+    return this.detail(await this.visible(id, viewer));
+  }
+
+  /** The portal (step 15): a customer's own invoice or credit note as the A4 page; anyone else's is "not found". */
+  async htmlForCustomer(id: number, customerId: number, language: Language): Promise<string> {
+    const record = await this.documentRepository.findById(id);
+    if (!record || record.customer_id !== customerId) throw new NotFoundError(`Document ${id} does not exist`);
+    const [document, letterhead] = await Promise.all([this.detail(record), this.documentRepository.letterhead()]);
+    return renderDocumentHtml(document, letterhead, language, this.timeZone);
+  }
+
+  private async detail(record: DocumentRecord): Promise<DocumentDetailDto> {
+    const id = record.id;
     const [lines, delivery] = await Promise.all([this.documentRepository.findLines(id).then((rows) => rows.map(toLineDto)), this.documentRepository.deliveryOf(id)]);
     return { ...toDto(record), lines, vatByRate: vatByRate(lines), deliverTo: delivery ?? null };
   }

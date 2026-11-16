@@ -23,14 +23,18 @@ export function StockTag({ quantity, reorderLevel, size = 'regular' }: StockTagP
   const t = useT();
   const level = stockLevel(quantity, reorderLevel);
   const label = t.stockTag[level];
-  // Full at four times the reorder level, so the alert point sits a quarter of the way along.
-  const fullAt = Math.max(reorderLevel * 4, 1);
+  // Four bays, each one reorder level deep, so the first bay is the alert zone.
+  const bay = Math.max(reorderLevel, 1);
 
   return (
     <span className={`stock-tag stock-tag--${level} stock-tag--${size}`} title={t.stockTag.title(label, reorderLevel)}>
       <span className="stock-tag__count">{quantity}</span>
-      <span className="target-bar__track" aria-hidden="true">
-        <span className="target-bar__fill" style={{ inlineSize: `${Math.min(quantity / fullAt, 1) * 100}%` }} />
+      <span className="stock-tag__bays" aria-hidden="true">
+        {[0, 1, 2, 3].map((index) => (
+          <span key={index} className="stock-tag__bay">
+            <span className="stock-tag__fill" style={{ inlineSize: `${Math.min(Math.max(quantity / bay - index, 0), 1) * 100}%` }} />
+          </span>
+        ))}
       </span>
       <span className="visually-hidden">{label}</span>
     </span>

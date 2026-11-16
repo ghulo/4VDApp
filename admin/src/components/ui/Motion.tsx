@@ -1,7 +1,10 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
-/** How long a change shows before the piece settles back to plain text (just over --motion-quick). */
-const SETTLE_MS = 260;
+/** How long a change shows before the piece settles back to plain text: --motion-quick plus the longest digit ripple. */
+const SETTLE_MS = 320;
+/** Changed digits roll one after another from the right, this far apart, the ripple capped at four steps. */
+const RIPPLE_MS = 20;
+const RIPPLE_STEPS = 4;
 
 /*
  * Small moving pieces of the shared motion vocabulary (DESIGN.md 12). The
@@ -71,20 +74,26 @@ export function RollingNumber({ value, className }: { value: string; className?:
   }
   const dir = direction(before, now);
   // Digits line up from the right, so "9.99" → "10.00" rolls each place.
-  const cells = [...now].map((char, index) => {
-    const old = before[before.length - (now.length - index)];
-    if (old === char) return char;
-    return (
-      <span key={`${turn}-${index}`} className="num__cell">
+  // Each changed digit waits a little longer than the one to its right: an odometer ripple.
+  let changed = 0;
+  const cells = [...now]
+    .map((char, index) => ({ char, index, old: before[before.length - (now.length - index)] }))
+    .reverse()
+    .map(({ char, index, old }) => {
+      if (old === char) return char;
+      const delay = Math.min(changed++, RIPPLE_STEPS) * RIPPLE_MS;
+      return (
+        <span key={`${turn}-${index}`} className="num__cell" style={{ '--ripple': `${delay}ms` } as CSSProperties}>
         {old !== undefined && (
           <span className="num__out" aria-hidden="true">
             {old}
           </span>
         )}
         <span className="num__in">{char}</span>
-      </span>
-    );
-  });
+        </span>
+      );
+    })
+    .reverse();
   // The cents keep their smaller size while they roll, so nothing jumps.
   const majorLength = splitMinor(now)[0].length;
   return (
@@ -160,7 +169,7 @@ export function SuccessCheck({ size = 20, busy = false, className }: { size?: nu
       <circle className="success-check__arc" cx="12" cy="12" r="10" pathLength={100} />
       <g className="success-check__mark">
         <circle className="success-check__ring" cx="12" cy="12" r="11" />
-        <path className="success-check__tick" d="M7.2 12.4l3.2 3.2 6.4-6.6" />
+        <path className="success-check__tick" d="M7.2 12.4l3.2 3.2 6.4-6.6" pathLength={1} />
       </g>
     </svg>
   );

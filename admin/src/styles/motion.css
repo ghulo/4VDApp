@@ -294,6 +294,11 @@
 
 /* ---------- A figure changes: its changed digits roll in place ---------- */
 
+/* Every digit as wide as the next, so a rolling figure never wobbles sideways. */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
 .num__cell {
   position: relative;
   display: inline-block;
@@ -438,13 +443,15 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Each changed digit starts a beat after the one to its right (--ripple, set in Motion.tsx);
+     the old digit stays and the new one waits hidden until its turn. */
   .num__in {
     display: inline-block;
-    animation: num-in var(--motion-quick) var(--spring);
+    animation: num-in var(--motion-quick) var(--spring) var(--ripple, 0ms) backwards;
   }
 
   .num__out {
-    animation: num-out var(--motion-quick) var(--spring);
+    animation: num-out var(--motion-quick) var(--spring) var(--ripple, 0ms) both;
   }
 
   [data-dir='down'] > .num__cell > .num__in {
@@ -593,7 +600,8 @@
   }
 
   .success-check--done .success-check__tick {
-    animation: tick-in var(--motion-quick) var(--spring) 70ms backwards;
+    stroke-dasharray: 1;
+    animation: tick-in var(--motion-quick) var(--ease) 90ms backwards;
   }
 
   @keyframes check-spin {
@@ -610,10 +618,10 @@
     }
   }
 
+  /* The tick draws itself, short stroke then long, as a pen would. */
   @keyframes tick-in {
     from {
-      opacity: 0;
-      transform: rotate(-25deg) scale(0.4);
+      stroke-dashoffset: 1;
     }
   }
 

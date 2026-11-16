@@ -4,9 +4,11 @@ import { loadConfig } from './config/env.js';
 import { createContainer } from './container.js';
 import { ensureFirstAdmin } from './database/firstAdmin.js';
 import { createDatabase } from './database/connection.js';
+import { captureError, captureLoggedError, flushErrorTracking, initErrorTracking } from './utils/errorTracking.js';
 import { logger } from './utils/logger.js';
 
 const config = loadConfig();
+initErrorTracking(config.sentryDsn, config.nodeEnv);
 const db = createDatabase(config.databaseUrl);
 const container = createContainer(config, db);
 await ensureFirstAdmin(db, {
@@ -15,8 +17,11 @@ await ensureFirstAdmin(db, {
   name: process.env.SEED_ADMIN_NAME,
 });
 const app = createApp(config, db, { container });
-// Every error logged from here on reaches the developer by email (at most hourly).
-logger.onError((message, context) => container.errorAlertService.record(message, context));
+// Every error logged from here on reaches the developer by email (at most hourly), and Sentry when it is set up.
+logger.onError((message, context) => {
+  container.errorAlertService.record(message, context);
+  captureLoggedError(message, context);
+});
 
 /** How often new notifications are pushed to phones and browsers, and queued emails sent. */
 const PUSH_INTERVAL_MS = 5_000;
@@ -100,8 +105,8 @@ function crash(kind: string, error: unknown): void {
   if (crashing) return;
   crashing = true;
   logger.error(kind, { error: error instanceof Error ? (error.stack ?? error.message) : String(error) });
-  container.errorAlertService
-    .sendIfDue()
+  captureError(error, { kind });
+  Promise.all([flushErrorTracking(), container.errorAlertService.sendIfDue()])
     .then(() => container.emailService.sendPending())
     .catch(() => undefined)
     .finally(() => shutdown(kind, 1));

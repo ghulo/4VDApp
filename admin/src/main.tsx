@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { startSelectionPills } from './components/ui/selectionPills'
+import { startErrorTracking } from './errorTracking'
 
 startSelectionPills()
+startErrorTracking()
 
 // Pages load on demand. After a new release, a tab left open may ask for page files
 // that no longer exist, so reload once to pick up the new release instead of failing.

@@ -37,6 +37,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Optional: Sentry error tracking (project 4vd-api). Off when empty.
+      - key: SENTRY_DSN
+        sync: false
       # The dashboard (comma-separated if ever more than one).
       - key: CORS_ORIGINS
         value: https://4vd.app

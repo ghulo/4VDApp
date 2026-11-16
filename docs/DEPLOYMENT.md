@@ -215,6 +215,23 @@ anything after that together in the next hour's email (at most one an hour).
 It needs real emails (`RESEND_API_KEY`, `EMAIL_FROM`). Full details are in the
 Render logs for `4vd-api`.
 
+**Sentry (error tracking).** Errors also go to Sentry, with the stack trace and
+grouped into one issue per bug: crashed API requests, errors from background jobs,
+crashes of the whole API, and dashboard pages that crash or throw. It is off until
+a DSN is set: `SENTRY_DSN` on Render (`4vd-api` → **Environment**) for the API, and
+`VITE_SENTRY_DSN` in `admin/.env.production` for the dashboard (public, committed).
+Personal data stays out (`backend/src/utils/errorTracking.ts`, `admin/src/errorTracking.ts`):
+no request bodies, cookies, headers, query strings, users, IP addresses, console
+lines or typed text; keys such as password, token, email, name or phone are
+removed; email addresses in error texts become `[email]`. Errors only: no tracing,
+no session replay. Data is kept in Sentry's EU region.
+
+Setup: sentry.io → sign up → organization `4vd`, data storage **European Union**,
+plan **Developer (free)** → **Create Project** → platform **Express**, name `4vd-api`
+→ copy the DSN → again with platform **React**, name `4vd-dashboard` → copy that DSN.
+Then put each DSN where it goes (above) and, for the API, **Save, rebuild and deploy**
+on Render. Each project's page in Sentry waits for its first error.
+
 **Uptime check.** `.github/workflows/uptime.yml` asks `https://api.4vd.app/health`
 every 10 minutes, three tries each time. When the API doesn't answer, the run
 fails and GitHub emails the repository owner. GitHub pauses scheduled runs in a

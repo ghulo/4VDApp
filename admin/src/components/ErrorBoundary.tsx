@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportError } from '../errorTracking';
 import { useT } from '../i18n/useT';
 import { Button } from './ui';
 
@@ -25,6 +26,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(error, info.componentStack);
+    reportError(error);
   }
 
   render() {

@@ -119,8 +119,11 @@ jobs:
           cache: npm
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
-      # The public addresses (VITE_API_URL ...) come from admin/.env.production.
+      # The public addresses (VITE_API_URL, VITE_SENTRY_DSN ...) come from admin/.env.production.
       - run: npm run build
+        env:
+          # Tags Sentry reports with the commit, like Render does for the API.
+          VITE_RELEASE: ${{ github.sha }}
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

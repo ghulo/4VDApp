@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../errors/httpErrors.js';
 import { sendError } from '../utils/apiResponse.js';
+import { captureError, stripQuery } from '../utils/errorTracking.js';
 import { logger } from '../utils/logger.js';
 
 // Express only treats a middleware as an error handler when it declares all
@@ -28,6 +29,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     error: err instanceof Error ? err.message : String(err),
     stack: err instanceof Error ? err.stack : undefined,
   });
+  captureError(err, { method: req.method, path: stripQuery(req.originalUrl) });
   // Never leak internal details to the client.
   sendError(res, 500, 'INTERNAL_ERROR', 'Something went wrong on our side');
 }

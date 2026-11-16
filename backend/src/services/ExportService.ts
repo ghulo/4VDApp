@@ -1,3 +1,4 @@
+import type { ProjectProfitRow } from './ProjectService.js';
 import type { CarwashRepository } from '../repositories/CarwashRepository.js';
 import type { StockDocumentExportRow } from './StockDocumentService.js';
 import type { StockMoveExportRow } from './StockMoveService.js';
@@ -155,6 +156,17 @@ const STOCK_DOCUMENT_COLUMNS: ExportColumn<StockDocumentExportRow>[] = [
   { header: 'Voided', value: (row) => (row.voided ? 'yes' : 'no') },
 ];
 
+const PROJECT_COLUMNS: ExportColumn<ProjectProfitRow>[] = [
+  { header: 'Project', value: (row) => row.name },
+  { header: 'Closed', value: (row) => (row.closed ? 'yes' : 'no') },
+  { header: 'Income without VAT', kind: 'money', total: true, value: (row) => row.income },
+  { header: 'Goods sold, at cost', kind: 'money', total: true, value: (row) => row.goodsCost },
+  { header: 'Bills and expenses', kind: 'money', total: true, value: (row) => row.bills },
+  { header: 'Stock taken out', kind: 'money', total: true, value: (row) => row.stockOut },
+  { header: 'Written off', kind: 'money', total: true, value: (row) => row.writeOffs },
+  { header: 'Profit', kind: 'money', total: true, value: (row) => row.profit },
+];
+
 const STOCK_MOVE_COLUMNS: ExportColumn<StockMoveExportRow>[] = [
   { header: 'Date', kind: 'date', value: (row) => row.day },
   { header: 'Number', value: (row) => row.number },
@@ -200,7 +212,18 @@ export class ExportService {
     private readonly priceRows: () => Promise<PriceRow[]>,
     private readonly stockDocumentLines: (from: string, to: string) => Promise<StockDocumentExportRow[]>,
     private readonly stockMoveLines: (from: string, to: string) => Promise<StockMoveExportRow[]> = async () => [],
+    private readonly projectRows: (range: DateRange) => Promise<ProjectProfitRow[]> = async () => [],
   ) {}
+
+  /** Profit by project: each project's income and costs in the period, without VAT. */
+  async projects(range: DateRange, timeZone: string): Promise<ExportFile> {
+    const { from, to } = zonedDays(range, timeZone);
+    const rows = await this.projectRows(range);
+    return {
+      basename: `4vd-projects-${from}-to-${to}`,
+      sheet: { name: 'Profit by project', subtitle: readableRange(from, to), columns: PROJECT_COLUMNS, rows, totals: { inCsv: false } },
+    };
+  }
 
   /** Every product's prices, in the shape the Prices page reads back in (change the prices, upload the file). */
   async prices(timeZone: string): Promise<ExportFile> {

@@ -48,6 +48,8 @@ export interface StockDocumentDto {
   /** Where the stock came in or went out; null on documents from before locations. */
   locationId: number | null;
   locationName: string | null;
+  /** The project stock going out counts against; null when none. */
+  projectId: number | null;
   lines?: StockDocumentLineDto[];
 }
 
@@ -247,6 +249,7 @@ export class StockDocumentService {
       .select([
         'd.location_id',
         'loc.name as location_name',
+        'd.project_id',
         'd.id',
         'd.number',
         'd.direction',
@@ -291,5 +294,6 @@ function toDto(row: Row): StockDocumentDto {
     noCost: row.no_cost,
     locationId: row.location_id,
     locationName: row.location_name,
+    projectId: row.project_id,
   };
 }

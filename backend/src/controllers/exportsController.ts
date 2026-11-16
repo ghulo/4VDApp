@@ -40,6 +40,7 @@ export function createExportsController(exportService: ExportService) {
     expenses: (req: Request, tz: string) => exportService.expenses(range(req), tz),
     'stock-documents': (req: Request, tz: string) => exportService.stockDocuments(range(req), tz),
     'stock-moves': (req: Request, tz: string) => exportService.stockMoves(range(req), tz),
+    projects: (req: Request, tz: string) => exportService.projects(range(req), tz),
     team: (req: Request, tz: string) => exportService.team(range(req), tz),
     prices: (_req: Request, tz: string) => exportService.prices(tz),
     'price-list': (req: Request, tz: string) => exportService.priceList(parseInput(priceListSchema, req.query), tz),

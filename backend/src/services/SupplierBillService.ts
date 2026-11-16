@@ -76,6 +76,8 @@ export interface BillLineDto {
 
 export interface SupplierBillDto {
   id: number;
+  /** The project its costs count against; null when none. */
+  projectId: number | null;
   kind: BillKind;
   /** Null for an expense paid to nobody in particular. */
   supplier: { id: number; name: string } | null;
@@ -1110,9 +1112,11 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
   const history = bill.trefin_ref !== null;
   const left = voided || history ? 0 : roundMoney(Math.max(0, amount - paid));
   const status: BillStatus = voided ? 'void' : history ? 'history' : left === 0 ? 'paid' : paid > 0 ? 'partly_paid' : 'unpaid';
+  const projectId = bill.project_id;
   const daysLeft = !isCredit && left > 0 && bill.due_on ? daysBetween(today, bill.due_on) : null;
   const customsVat = bill.customs_vat === null ? 0 : Number(bill.customs_vat);
   return {
+    projectId,
     id: bill.id,
     kind: bill.kind,
     supplier: bill.supplier_id === null ? null : { id: bill.supplier_id, name: bill.supplier_name ?? '' },

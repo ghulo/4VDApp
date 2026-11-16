@@ -234,7 +234,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const projectService = new ProjectService(db, transactions, config.shopTimeZone);
   const makeService = new MakeService(db, transactions, config.shopTimeZone);
   const serialService = new SerialService(db, transactions, config.shopTimeZone);
-  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to), (from, to) => stockMoveService.linesBetween(from, to));
+  const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to), (from, to) => stockMoveService.linesBetween(from, to), (range) => projectService.profit(range));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
   const stockCountService = new StockCountService(stockCountRepository, transactions);

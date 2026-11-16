@@ -40,6 +40,8 @@ export interface DocumentLineDto {
 
 export interface DocumentDto {
   id: number;
+  /** The project it counts for (a credit note: its invoice's); null when none. */
+  projectId: number | null;
   kind: DocumentKind;
   number: string;
   issuedAt: string;
@@ -326,6 +328,7 @@ function vatByRate(lines: DocumentLineDto[]): DocumentDetailDto['vatByRate'] {
 function toDto(record: DocumentRecord): DocumentDto {
   return {
     id: record.id,
+    projectId: record.project_id,
     kind: record.kind,
     number: record.number,
     issuedAt: record.issued_at.toISOString(),

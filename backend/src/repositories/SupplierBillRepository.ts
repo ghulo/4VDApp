@@ -42,6 +42,7 @@ export interface BillRecord {
   place: ExpensePlace;
   carwash_id: number | null;
   location_id: number | null;
+  project_id: number | null;
   carwash_name: string | null;
   repeat_id: number | null;
   /** The VAT month it counts in when its own month was filed before it came; null: its own month. */
@@ -192,6 +193,7 @@ export class SupplierBillRepository {
         'b.place',
         'b.carwash_id',
         'b.location_id',
+        'b.project_id',
         'w.name as carwash_name',
         'b.repeat_id',
         'b.trefin_ref',

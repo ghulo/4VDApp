@@ -20,6 +20,7 @@ export interface WriteOffRecord {
   decision_note: string | null;
   location_id: number | null;
   location_name: string | null;
+  project_id: number | null;
 }
 
 export interface NewWriteOff {
@@ -68,6 +69,7 @@ export class WriteOffRepository {
         'w.decision_note',
         'w.location_id',
         'loc.name as location_name',
+        'w.project_id',
       ]);
   }
 

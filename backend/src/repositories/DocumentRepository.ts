@@ -27,6 +27,7 @@ export interface DocumentRecord {
   buyer: DocumentParty | null;
   corrects_id: number | null;
   corrects_number: string | null;
+  project_id: number | null;
   reason: string | null;
   net_total: string;
   vat_total: string;
@@ -283,6 +284,7 @@ export class DocumentRepository {
         'd.buyer',
         'd.corrects_id',
         'c.number as corrects_number',
+        sql<number | null>`coalesce(d.project_id, c.project_id)`.as('project_id'),
         'd.reason',
         'd.net_total',
         'd.vat_total',

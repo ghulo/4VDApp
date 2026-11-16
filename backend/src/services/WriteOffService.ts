@@ -38,6 +38,8 @@ export interface WriteOffDto {
   requestedAt: string;
   decidedBy: { id: number; name: string } | null;
   decidedAt: string | null;
+  /** The project the loss counts against; null when none. */
+  projectId: number | null;
   decisionNote: string | null;
 }
 
@@ -225,6 +227,7 @@ export function toWriteOffDto(row: WriteOffRecord): WriteOffDto {
     requestedAt: row.requested_at.toISOString(),
     decidedBy: row.decided_by === null ? null : { id: row.decided_by, name: row.decided_by_name ?? 'Unknown' },
     decidedAt: toIsoOrNull(row.decided_at),
+    projectId: row.project_id,
     decisionNote: row.decision_note,
   };
 }

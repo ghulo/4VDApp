@@ -193,9 +193,11 @@ kbd {
 }
 
 .toast {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
+  /* Icon, Undo and close line up with the title, so a second line hangs under the words. */
+  align-items: start;
   gap: var(--space-3);
   inline-size: min(380px, calc(100vw - var(--space-6)));
   padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
@@ -204,6 +206,26 @@ kbd {
   box-shadow: var(--shadow-float);
   color: var(--ink);
   pointer-events: auto;
+}
+
+/* The icon sits in the title's line box: optically centred on the first line. */
+.toast__icon {
+  margin-block-start: calc((var(--control-h-sm) - 20px) / 2);
+}
+
+.toast__words {
+  /* Centre a one-line title on the 28px buttons; longer words flow down. */
+  padding-block: calc((var(--control-h-sm) - 1.25rem) / 2);
+}
+
+.toast__title,
+.toast__detail {
+  line-height: 1.25rem;
+}
+
+/* Only a problem is tinted, like badges and notices: a faint red wash. */
+.toast--danger {
+  background: color-mix(in oklab, var(--danger-soft) 40%, var(--surface));
 }
 
 .toast--ok .toast__icon {
@@ -255,10 +277,37 @@ kbd {
   color: var(--ink-muted);
 }
 
-.toast__action:hover,
+.toast__action:hover {
+  background: var(--brand-soft);
+}
+
 .toast__close:hover {
   background: var(--surface-sunk);
   color: var(--ink);
+}
+
+/* Time left to press Undo: a hairline along the foot that drains, and stops while the stack is pointed at. */
+.toast__time {
+  position: absolute;
+  inset-inline: var(--space-4);
+  inset-block-end: 0;
+  block-size: 2px;
+  border-radius: 1px;
+  background: var(--brand);
+  opacity: 0.6;
+  transform-origin: left center;
+  animation: toast-time var(--stay, 9s) linear forwards;
+  pointer-events: none;
+}
+
+.toasts__list[data-paused] .toast__time {
+  animation-play-state: paused;
+}
+
+@keyframes toast-time {
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @media (max-width: 900px) {

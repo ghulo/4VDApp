@@ -22,7 +22,7 @@ interface ShownToast extends ToastInput {
   leaving?: boolean;
 }
 
-/** How long a message stays; one with a follow-up stays longer, and none goes while the pointer or focus is on it. */
+/** How long a message stays; one with a follow-up stays longer. While the pointer or focus is on the stack, every clock stops and later carries on from where it was. */
 const STAY_MS = 5000;
 const STAY_WITH_ACTION_MS = 9000;
 /** Older ones go when a fourth arrives. */
@@ -54,15 +54,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setToasts((list) => list.filter((toast) => toast.id !== id)), LEAVE_MS);
   }, []);
   const staying = toasts.filter((toast) => !toast.leaving);
+  // Pointing at the stack or tabbing into it stops every clock, not just the one under the pointer.
+  const [pointed, setPointed] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const paused = pointed || focused;
 
   return (
     <ToastContext.Provider value={show}>
       {children}
       <section className="toasts" aria-label={t.kit.notifications}>
-        <ol className="toasts__list" aria-live="polite">
+        <ol
+          className="toasts__list"
+          aria-live="polite"
+          data-paused={paused || undefined}
+          onPointerEnter={() => setPointed(true)}
+          onPointerLeave={() => setPointed(false)}
+          onFocus={() => setFocused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+          }}
+        >
           {toasts.map((toast) => (
             // Depth: how many newer toasts sit in front of this one (0 = the front one).
-            <ToastItem key={toast.id} toast={toast} depth={toast.leaving ? 0 : staying.length - 1 - staying.indexOf(toast)} onDismiss={dismiss} />
+            <ToastItem key={toast.id} toast={toast} depth={toast.leaving ? 0 : staying.length - 1 - staying.indexOf(toast)} paused={paused} onDismiss={dismiss} />
           ))}
         </ol>
       </section>
@@ -72,32 +86,34 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 const ICONS = { ok: CheckCircle, info: Info, danger: WarningCircle };
 
-const depthStyle = (depth: number) => ({ '--depth': depth }) as CSSProperties;
+const depthStyle = (depth: number, stay: number) => ({ '--depth': depth, '--stay': `${stay}ms` }) as CSSProperties;
 
-function ToastItem({ toast, depth, onDismiss: dismissById }: { toast: ShownToast; depth: number; onDismiss: (id: number) => void }) {
+function ToastItem({ toast, depth, paused, onDismiss: dismissById }: { toast: ShownToast; depth: number; paused: boolean; onDismiss: (id: number) => void }) {
   const t = useT();
   const tone = toast.tone ?? 'ok';
   const ToneIcon = ICONS[tone];
-  const [held, setHeld] = useState(false);
+  const stay = toast.action ? STAY_WITH_ACTION_MS : STAY_MS;
+  const left = useRef(stay);
   const onDismiss = useCallback(() => dismissById(toast.id), [dismissById, toast.id]);
 
+  // The clock runs only while the stack isn't paused, and keeps the time already used.
   useEffect(() => {
-    if (held) return;
-    const timer = window.setTimeout(onDismiss, toast.action ? STAY_WITH_ACTION_MS : STAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [held, onDismiss, toast.action]);
+    if (paused) return;
+    const started = Date.now();
+    const timer = window.setTimeout(onDismiss, left.current);
+    return () => {
+      window.clearTimeout(timer);
+      left.current = Math.max(0, left.current - (Date.now() - started));
+    };
+  }, [paused, onDismiss]);
 
   return (
     <li
       className={`toast toast--${tone}`}
-      style={depthStyle(depth)}
+      style={depthStyle(depth, stay)}
       data-behind={depth > 0 || undefined}
       data-leaving={toast.leaving || undefined}
       role={tone === 'danger' ? 'alert' : undefined}
-      onPointerEnter={() => setHeld(true)}
-      onPointerLeave={() => setHeld(false)}
-      onFocus={() => setHeld(true)}
-      onBlur={() => setHeld(false)}
     >
       {tone === 'ok' ? <SuccessCheck className="toast__icon" size={20} /> : <ToneIcon className="toast__icon" size={20} weight="fill" aria-hidden="true" />}
       <div className="toast__words">
@@ -121,6 +137,8 @@ function ToastItem({ toast, depth, onDismiss: dismissById }: { toast: ShownToast
           <X size={14} weight="bold" aria-hidden="true" />
         </button>
       </Tooltip>
+      {/* With an Undo, a hairline shows how long is left to press it. */}
+      {toast.action && <span className="toast__time" aria-hidden="true" />}
     </li>
   );
 }

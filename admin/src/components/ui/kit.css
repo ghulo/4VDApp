@@ -363,16 +363,18 @@ kbd {
   flex: none;
 }
 
+/* The line to the next step: a hairline that fills with ink from the left
+   once the step is behind you, and drains back if you go back to it. */
 .steps__step:not(:last-child)::after {
   flex: 1;
   min-inline-size: var(--space-4);
   block-size: 1px;
-  background: var(--line-strong);
+  background: linear-gradient(var(--ink), var(--ink)) no-repeat 0 0 / 0% 100% var(--line-strong);
   content: '';
 }
 
 .steps__step--done:not(:last-child)::after {
-  background: var(--ink);
+  background-size: 100% 100%;
 }
 
 .steps__mark {
@@ -386,6 +388,10 @@ kbd {
   box-shadow: var(--shadow-inset);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
+}
+
+.steps__mark > svg {
+  display: block;
 }
 
 .steps__name {
@@ -427,8 +433,40 @@ kbd {
   cursor: pointer;
 }
 
+/* A step you can go back to: its mark gets a ring and the name an underline in the line colour. */
+.steps__back:hover .steps__mark {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line-strong);
+}
+
 .steps__back:hover .steps__name {
   text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .steps__mark {
+    transition:
+      background-color var(--fast) var(--ease),
+      box-shadow var(--fast) var(--ease),
+      color var(--fast) var(--ease);
+  }
+
+  /* The line fills just after the step's mark turns to a tick. */
+  .steps__step:not(:last-child)::after {
+    transition: background-size var(--motion-quick) var(--ease);
+  }
+
+  .steps__step--done .steps__mark > svg {
+    animation: steps-tick var(--motion-quick) var(--spring);
+  }
+
+  @keyframes steps-tick {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+  }
 }
 
 @media (max-width: 599px) {

@@ -32,6 +32,7 @@ A short map of the code as it is. Product and design rules live in `DESIGN.md`; 
 
 - Migrations are numbered TypeScript files in `backend/src/database/migrations/` (`NNN_name.ts`, each with `up` and `down`). Add the next number; never edit one that has run. `npm run migrate` / `npm run migrate:down`.
 - Local Postgres runs in Docker (`four-vd-app-postgres`). App DB `four_vd_app`, test DB `four_vd_app_test`.
+- **Many businesses:** every table carries `business_id` (default `current_business_id()`, from the request's `app.business_id` setting), except the global ones listed in migration 078 (people, sign-in tokens, the business list). A new table must add `business_id INT NOT NULL DEFAULT current_business_id()`; `tests/businessColumns.test.ts` fails otherwise. People work for businesses through `memberships`; businesses belong to a `tenant` (who pays).
 - The database guards itself where it can: CHECK constraints against negative stock and prices, foreign keys, unique keys.
 
 ## Tests

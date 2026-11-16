@@ -62,11 +62,12 @@ export async function resetData(db: DatabaseClient): Promise<void> {
     sales, stock_adjustments, product_images, notifications, favorites, activity_log,
     settings, returns, write_offs, stock_counts, stock_count_lines, promotions, carwash_days, carwashes, cash_counts, cash_openings, pin_attempts, offline_shortfalls, rabat_approvals, bill_lines, bill_repeats, no_expense_days, tab_entries, customers, expiry_dates, supplier_payments, supplier_bills, report_subscriptions, purchase_order_lines, purchase_orders, suppliers, push_subscriptions,
     businesses, media, invites, account_tokens, user_identities, email_outbox, document_lines, documents, document_numbers, day_closings, ledger_queue, ledger_lines, ledger_entries, vat_months, document_notes, document_threads, counter_events, book_years, tax_instalments, tax_declarations, offer_lines, offers, customer_deliveries, partner_addresses, partner_offsets, bonus_payouts, attachments, depreciation_lines, depreciation_months, fixed_assets, bill_emails, bill_scans RESTART IDENTITY CASCADE`.execute(db);
+  // The business first: every other row takes its business_id from it.
+  await sql`INSERT INTO businesses (name) VALUES ('Test shop')`.execute(db);
   // Back to the one location every shop starts with.
   await sql`TRUNCATE stock_locations RESTART IDENTITY CASCADE`.execute(db);
   await sql`INSERT INTO stock_locations (name, sells_here, receives_here) VALUES ('Shop floor', true, true)`.execute(db);
   await sql`INSERT INTO settings (key, value) VALUES ('refund_approval_limit', '50'), ('return_window_days', '14')`.execute(db);
-  await sql`INSERT INTO businesses (name) VALUES ('Test shop')`.execute(db);
   await sql`INSERT INTO carwashes (name) VALUES ('Carwash')`.execute(db);
 }
 

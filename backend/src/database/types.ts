@@ -83,6 +83,7 @@ export interface RefreshTokensTable {
 }
 
 export interface OfflineShortfallsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   sale_id: number | null;
@@ -93,6 +94,7 @@ export interface OfflineShortfallsTable {
 }
 
 export interface PinAttemptsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   user_id: number | null;
   device_id: string;
@@ -102,6 +104,7 @@ export interface PinAttemptsTable {
 }
 
 export interface RabatApprovalsTable {
+  business_id: Generated<number>;
   id: string;
   approved_by: number;
   asked_by: number;
@@ -120,6 +123,7 @@ export type LegalForm = 'company' | 'individual';
 
 export interface BusinessesTable {
   id: Generated<number>;
+  tenant_id: number | null;
   name: string;
   address: string | null;
   phone: string | null;
@@ -139,10 +143,28 @@ export interface BusinessesTable {
   updated_at: UpdatedAt;
 }
 
+/** Who pays for 4VD; one tenant has one or more businesses. */
+export interface TenantsTable {
+  id: Generated<number>;
+  name: string;
+  created_at: CreatedAt;
+}
+
+/** Who works for which business, and as what. Until sign-in reads it, a trigger copies users.role here. */
+export interface MembershipsTable {
+  id: Generated<number>;
+  user_id: number;
+  business_id: number;
+  role: UserRole;
+  is_active: Generated<boolean>;
+  created_at: CreatedAt;
+}
+
 export type AttachmentEntity = 'bill' | 'expense' | 'document' | 'offer' | 'order' | 'customer' | 'supplier' | 'entry';
 
 /** A file (PDF or photo) kept on a record; removed ones wait in the recycle bin. */
 export interface AttachmentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   entity_type: AttachmentEntity;
   entity_id: number;
@@ -213,6 +235,7 @@ export interface EmailOutboxTable {
 }
 
 export interface CategoriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   description: string | null;
@@ -227,6 +250,7 @@ export interface CategoriesTable {
 export type ProductUnit = 'piece' | 'kg' | 'l' | 'm' | 'm2';
 
 export interface ProductsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   description: string | null;
@@ -264,6 +288,7 @@ export interface ProductsTable {
 }
 
 export interface InventoryTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   quantity_on_hand: Generated<number>;
@@ -273,6 +298,7 @@ export interface InventoryTable {
 }
 
 export interface BulkPricingTiersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   quantity_min: number;
@@ -281,6 +307,7 @@ export interface BulkPricingTiersTable {
 }
 
 export interface SalesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   quantity_sold: number;
@@ -316,6 +343,7 @@ export interface SalesTable {
 /** Two products that look like the same item, for someone to merge or keep apart. */
 /** A product's other barcodes; `products.barcode` is its main one. */
 export interface ProductBarcodesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   barcode: string;
@@ -330,6 +358,7 @@ export type StockDocumentReason = 'found' | 'received_free' | 'own_use' | 'given
 
 /** Where stock is kept: the shop floor, a storeroom. */
 export interface StockLocationsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   /** The till sells from here. Exactly one. */
@@ -342,6 +371,7 @@ export interface StockLocationsTable {
 
 /** How much of a product's total is in each location. */
 export interface LocationStockTable {
+  business_id: Generated<number>;
   location_id: number;
   product_id: number;
   quantity: Generated<number>;
@@ -352,6 +382,7 @@ export interface LocationStockTable {
 
 /** Stock moved from one location to another (LV-). Never in the books. */
 export interface StockMovesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   number: string;
   from_location_id: number;
@@ -366,6 +397,7 @@ export interface StockMovesTable {
 }
 
 export interface StockMoveLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   move_id: number;
   product_id: number;
@@ -373,6 +405,7 @@ export interface StockMoveLinesTable {
 }
 
 export interface StockDocumentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   number: string;
   direction: StockDocumentDirection;
@@ -391,6 +424,7 @@ export interface StockDocumentsTable {
 }
 
 export interface StockDocumentLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   document_id: number;
   product_id: number;
@@ -402,6 +436,7 @@ export type AssetCategory = 'furniture' | 'equipment' | 'vehicle' | 'building' |
 export type AssetDisposal = 'sold' | 'scrapped' | 'returned';
 
 export interface FixedAssetsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   code: string | null;
@@ -435,18 +470,21 @@ export interface FixedAssetsTable {
 }
 
 export interface DepreciationMonthsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   /** The month's first day, read through to_char. */
   month: string;
 }
 
 export interface DepreciationLinesTable {
+  business_id: Generated<number>;
   month_id: number;
   asset_id: number;
   amount: ColumnType<string, number, number>;
 }
 
 export interface ProductDuplicateFlagsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   other_product_id: number;
@@ -460,6 +498,7 @@ export interface ProductDuplicateFlagsTable {
 }
 
 export interface StockAdjustmentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   adjustment_quantity: number;
@@ -473,6 +512,7 @@ export interface StockAdjustmentsTable {
 }
 
 export interface ProductImagesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   image_url: string;
@@ -481,6 +521,7 @@ export interface ProductImagesTable {
 }
 
 export interface NotificationsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   user_id: number;
   title: string;
@@ -511,12 +552,14 @@ export interface PushSubscriptionsTable {
 }
 
 export interface FavoritesTable {
+  business_id: Generated<number>;
   user_id: number;
   product_id: number;
   created_at: CreatedAt;
 }
 
 export interface ActivityLogTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   user_id: number | null;
   action: string;
@@ -535,6 +578,7 @@ export interface ActivityLogTable {
 }
 
 export interface PromotionsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   percent_off: Decimal;
@@ -551,6 +595,7 @@ export interface PromotionsTable {
 
 /** A carwash the business runs. Archived ones keep their history but are no longer offered. */
 export interface CarwashesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   /** Change left in its drawer every night; the cash check takes it off the count. */
@@ -561,6 +606,7 @@ export interface CarwashesTable {
 
 /** One carwash's takings for one day. `day` is a calendar date in shop time. */
 export interface CarwashDaysTable {
+  business_id: Generated<number>;
   carwash_id: number;
   day: ColumnType<string, string, string>;
   carwash_amount: Decimal;
@@ -571,6 +617,7 @@ export interface CarwashDaysTable {
 
 /** One end-of-day count of a drawer. `day` is a calendar date in shop time. */
 export interface CashOpeningsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   place: 'shop' | 'carwash';
   /** Which carwash; null for the shop. */
@@ -582,6 +629,7 @@ export interface CashOpeningsTable {
 }
 
 export interface CashCountsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   place: 'shop' | 'carwash';
   /** Which carwash; null for the shop. */
@@ -598,6 +646,7 @@ export interface CashCountsTable {
 }
 
 export interface AssistantChatsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   user_id: number;
   title: string;
@@ -606,6 +655,7 @@ export interface AssistantChatsTable {
 }
 
 export interface AssistantMessagesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   chat_id: number;
   role: 'user' | 'assistant';
@@ -616,6 +666,7 @@ export interface AssistantMessagesTable {
 
 /** A bill made by itself every month (rent, internet, power), from the bill form's own input. */
 export interface BillRepeatsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   supplier_id: number | null;
   template: ColumnType<unknown, string, string>;
@@ -633,6 +684,7 @@ export interface BillRepeatsTable {
 
 /** One line of a supplier bill: a product into stock, a cost with a category, or equipment. */
 export interface BillLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   bill_id: number;
   position: number;
@@ -654,12 +706,14 @@ export interface BillLinesTable {
 
 /** A day a manager said had no expenses, so the end-of-day list can close. */
 export interface NoExpenseDaysTable {
+  business_id: Generated<number>;
   day: ColumnType<string, string, string>;
   marked_by: number | null;
   marked_at: CreatedAt;
 }
 
 export interface CustomersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   kind: Generated<'person' | 'business'>;
@@ -704,6 +758,7 @@ export type OfferStatus = 'open' | 'sold' | 'declined';
 
 /** A price quote made in 4VD; TREFIN's are in `trefin_offers`. */
 export interface OffersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   number: string;
   customer_id: number | null;
@@ -723,6 +778,7 @@ export interface OffersTable {
 }
 
 export interface OfferLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   offer_id: number;
   product_id: number;
@@ -738,6 +794,7 @@ export type DeliveryStatus = 'waiting' | 'on_the_way' | 'delivered';
 
 /** A sale taken to the customer's door. */
 export interface CustomerDeliveriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   document_id: number;
   customer_id: number | null;
@@ -767,6 +824,7 @@ export interface CustomerDeliveriesTable {
 }
 
 export interface TabEntriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number;
   kind: TabEntryKind;
@@ -787,6 +845,7 @@ export interface TabEntriesTable {
 }
 
 export interface SuppliersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   nui: string | null;
@@ -817,6 +876,7 @@ export interface SuppliersTable {
 }
 
 export interface PurchaseOrdersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   supplier_id: number;
   status: Generated<'open' | 'received' | 'cancelled'>;
@@ -828,6 +888,7 @@ export interface PurchaseOrdersTable {
 }
 
 export interface PurchaseOrderLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   order_id: number;
   product_id: number;
@@ -837,6 +898,7 @@ export interface PurchaseOrderLinesTable {
 }
 
 export interface ExpiryDatesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   quantity: number;
@@ -852,6 +914,7 @@ export interface ExpiryDatesTable {
 }
 
 export interface SettingsTable {
+  business_id: Generated<number>;
   key: string;
   value: ColumnType<unknown, string, string>;
   updated_by: number | null;
@@ -869,6 +932,7 @@ interface ApprovalColumns {
 }
 
 export interface ReturnsTable extends ApprovalColumns {
+  business_id: Generated<number>;
   id: Generated<number>;
   sale_id: number;
   quantity: number;
@@ -883,6 +947,7 @@ export interface ReturnsTable extends ApprovalColumns {
 }
 
 export interface WriteOffsTable extends ApprovalColumns {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   quantity: number;
@@ -901,6 +966,7 @@ export interface WriteOffsTable extends ApprovalColumns {
 }
 
 export interface StockCountsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   category_id: number | null;
   status: CountStatus;
@@ -914,6 +980,7 @@ export interface StockCountsTable {
 }
 
 export interface StockCountLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   count_id: number;
   product_id: number;
@@ -946,6 +1013,7 @@ export interface SalesLedgerView {
 }
 
 export interface SupplierBillsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   /** Null for an expense paid to nobody in particular. */
   supplier_id: number | null;
@@ -1001,6 +1069,7 @@ export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const
 export type BillScanStatus = (typeof BILL_SCAN_STATUSES)[number];
 
 export interface BillScansTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   status: ColumnType<BillScanStatus, BillScanStatus | undefined, BillScanStatus>;
   media_ids: string[];
@@ -1022,6 +1091,7 @@ export type BillEmailStatus = 'waiting' | 'read' | 'failed' | 'duplicate' | 'rem
 
 /** One file from an email to the shop's bill address. */
 export interface BillEmailsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   message_id: string;
   sender: string;
@@ -1042,11 +1112,13 @@ export type ProductRequestStatus = 'pending' | 'approved' | 'rejected';
 /** A product someone at the counter wants added; approving it creates the product. */
 /** One row per shop day whose closing alert went out. */
 export interface DayClosingsTable {
+  business_id: Generated<number>;
   day: string;
   announced_at: Generated<Date>;
 }
 
 export interface ProductRequestsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   status: ColumnType<ProductRequestStatus, ProductRequestStatus | undefined, ProductRequestStatus>;
   name: string;
@@ -1068,6 +1140,7 @@ export interface ProductRequestsTable {
 }
 
 export interface SupplierProductCodesTable {
+  business_id: Generated<number>;
   supplier_id: number;
   code: string;
   product_id: number;
@@ -1081,6 +1154,7 @@ export const SUPPLIER_PAYMENT_METHODS = ['drawer', 'cash', 'bank'] as const;
 export type SupplierPaymentMethod = (typeof SUPPLIER_PAYMENT_METHODS)[number] | 'credit' | 'offset';
 
 export interface SupplierPaymentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   bill_id: number;
   amount: Decimal;
@@ -1103,6 +1177,7 @@ export interface SupplierPaymentsTable {
 }
 
 export interface PartnerAddressesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number | null;
   supplier_id: number | null;
@@ -1114,6 +1189,7 @@ export interface PartnerAddressesTable {
 }
 
 export interface PartnerOffsetsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number;
   supplier_id: number;
@@ -1125,6 +1201,7 @@ export interface PartnerOffsetsTable {
 }
 
 export interface BonusPayoutsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number;
   year: number;
@@ -1137,6 +1214,7 @@ export interface BonusPayoutsTable {
 }
 
 export interface ReportSubscriptionsTable {
+  business_id: Generated<number>;
   user_id: number;
   daily_enabled: Generated<boolean>;
   daily_hour: Generated<number>;
@@ -1163,12 +1241,14 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
+  business_id: Generated<number>;
   kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make';
   year: number;
   last_number: number;
 }
 
 export interface DocumentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   kind: DocumentKind;
   number: string;
@@ -1199,6 +1279,7 @@ export interface DocumentsTable {
 }
 
 export interface DocumentLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   document_id: number;
   sale_id: number;
@@ -1220,6 +1301,7 @@ export interface DocumentLinesTable {
 
 /** One account in the chart (Plani kontabël). */
 export interface LedgerAccountsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   number: string;
   name: string;
@@ -1236,6 +1318,7 @@ export interface LedgerAccountsTable {
 
 /** Which account a kind of movement posts to (see DEFAULT_ACCOUNT_LINKS). */
 export interface LedgerLinksTable {
+  business_id: Generated<number>;
   key: string;
   account_id: number;
 }
@@ -1243,6 +1326,7 @@ export interface LedgerLinksTable {
 export type LedgerEntryKind = 'auto' | 'manual' | 'reversal';
 
 export interface LedgerEntriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   /** A calendar day. */
   entry_date: ColumnType<string, string, string>;
@@ -1258,6 +1342,7 @@ export interface LedgerEntriesTable {
 }
 
 export interface LedgerLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   entry_id: number;
   account_id: number;
@@ -1269,6 +1354,7 @@ export interface LedgerLinesTable {
 }
 
 export interface LedgerQueueTable {
+  business_id: Generated<number>;
   source_table: string;
   row_id: number;
   queued_at: CreatedAt;
@@ -1276,6 +1362,7 @@ export interface LedgerQueueTable {
 
 /** A VAT month someone has filed, asked a refund for, or typed the credit carried in for. */
 export interface VatMonthsTable {
+  business_id: Generated<number>;
   /** Its first day. */
   month: ColumnType<string, string, string>;
   filed_at: Date | null;
@@ -1294,6 +1381,7 @@ export type MoneyPlaceKind = 'till' | 'safe' | 'bank';
 
 /** A place money is kept: the shop's till, a carwash's till, a safe, a bank account. */
 export interface MoneyPlacesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   kind: MoneyPlaceKind;
   name: string | null;
@@ -1314,6 +1402,7 @@ export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_ope
 
 /** Something that happened at the counter other than a sale, by person (the counter report). */
 export interface CounterEventsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   kind: CounterEventKind;
   user_id: number | null;
@@ -1327,6 +1416,7 @@ export interface CounterEventsTable {
 
 /** Money taken from one place to another; one side empty when the owner put it in or took it out. */
 export interface MoneyMovesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   day: ColumnType<string, string, string>;
   amount: Decimal;
@@ -1340,6 +1430,7 @@ export interface MoneyMovesTable {
 }
 
 export interface PaymentGroupsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   supplier_id: number | null;
   place_id: number;
@@ -1351,6 +1442,7 @@ export interface PaymentGroupsTable {
 }
 
 export interface TabAllocationsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   payment_id: number;
   /** Null: the tab's charges that are on no invoice. */
@@ -1361,6 +1453,7 @@ export interface TabAllocationsTable {
 export type BankRuleAction = 'expense' | 'transfer' | 'owner';
 
 export interface BankRulesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   place_id: number | null;
   contains: string;
@@ -1374,6 +1467,7 @@ export interface BankRulesTable {
 }
 
 export interface BankStatementsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   place_id: number;
   file_name: string;
@@ -1392,6 +1486,7 @@ export type BankLineStatus = 'open' | 'done' | 'skipped';
 export type BankLineDoneKind = 'payment' | 'payment_group' | 'tab_payment' | 'move' | 'expense' | 'payroll';
 
 export interface BankLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   statement_id: number;
   place_id: number;
@@ -1412,6 +1507,7 @@ export interface BankLinesTable {
 
 /** Questions the accountant leaves on a document, answered there by the people who run the shop. */
 export interface DocumentThreadsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   subject: string;
   status: ColumnType<'open' | 'answered', 'open' | 'answered' | undefined, 'open' | 'answered'>;
@@ -1420,6 +1516,7 @@ export interface DocumentThreadsTable {
 }
 
 export interface DocumentNotesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   thread_id: number;
   author_id: number | null;
@@ -1431,6 +1528,7 @@ export type PortalOrderStatus = 'sent' | 'seen' | 'changed' | 'accepted' | 'decl
 
 /** Someone at a business customer who may sign in to the portal. Never a dashboard user. */
 export interface PortalUsersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number;
   name: string;
@@ -1444,6 +1542,7 @@ export interface PortalUsersTable {
 }
 
 export interface PortalLinksTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   portal_user_id: number;
   purpose: 'invite' | 'sign_in';
@@ -1454,6 +1553,7 @@ export interface PortalLinksTable {
 }
 
 export interface PortalSessionsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   portal_user_id: number;
   token_hash: string;
@@ -1464,6 +1564,7 @@ export interface PortalSessionsTable {
 }
 
 export interface PortalOrdersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   customer_id: number;
   portal_user_id: number | null;
@@ -1489,6 +1590,7 @@ export interface PortalOrdersTable {
 }
 
 export interface PortalOrderLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   order_id: number;
   product_id: number;
@@ -1502,6 +1604,7 @@ export interface PortalOrderLinesTable {
 }
 
 export interface ProjectsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   name: string;
   note: string | null;
@@ -1512,6 +1615,7 @@ export interface ProjectsTable {
 
 /** One part of a made product's recipe: how many go into one. */
 export interface RecipePartsTable {
+  business_id: Generated<number>;
   product_id: number;
   part_id: number;
   quantity: number;
@@ -1519,6 +1623,7 @@ export interface RecipePartsTable {
 }
 
 export interface MakesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   number: string;
   product_id: number;
@@ -1537,6 +1642,7 @@ export interface MakesTable {
 }
 
 export interface MakeLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   make_id: number;
   product_id: number;
@@ -1547,6 +1653,7 @@ export interface MakeLinesTable {
 export type SerialStatus = 'in_stock' | 'sold';
 
 export interface SerialsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   product_id: number;
   serial: string;
@@ -1590,6 +1697,8 @@ export interface Database {
   promotions: PromotionsTable;
   push_subscriptions: PushSubscriptionsTable;
   businesses: BusinessesTable;
+  tenants: TenantsTable;
+  memberships: MembershipsTable;
   media: MediaTable;
   attachments: AttachmentsTable;
   invites: InvitesTable;
@@ -1692,6 +1801,7 @@ export type OpeningSource = 'trefin' | 'counted' | 'statement' | 'stock' | 'type
 
 /** One line of what the shop has and owes when the books start (see migration 044). */
 export interface OpeningLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   kind: OpeningLineKind;
   account_id: number | null;
@@ -1718,6 +1828,7 @@ export type NotificationRow = Selectable<NotificationsTable>;
 
 /** A receipt someone deleted in TREFIN, kept to look at (see migration 047). */
 export interface TrefinDeletedReceiptsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   trefin_ref: string;
   number: string | null;
@@ -1732,6 +1843,7 @@ export interface TrefinDeletedReceiptsTable {
 
 /** TREFIN's starting stock, a correction or a count, kept to look at (see migration 048). */
 export interface TrefinStockDocumentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   trefin_ref: string;
   kind: 'opening' | 'correction' | 'count';
@@ -1741,6 +1853,7 @@ export interface TrefinStockDocumentsTable {
 }
 
 export interface TrefinStockLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   document_id: number;
   product_id: number | null;
@@ -1752,6 +1865,7 @@ export interface TrefinStockLinesTable {
 
 /** A payment from TREFIN's cash desk or bank, kept to look at (see migration 049). */
 export interface TrefinMoneyLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   trefin_ref: string;
   place: 'till' | 'bank';
@@ -1770,6 +1884,7 @@ export interface TrefinMoneyLinesTable {
 
 /** An entry of TREFIN's journal, kept to look at in Books (see migration 050). */
 export interface TrefinJournalEntriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   trefin_ref: string;
   dated: ColumnType<string, string, string>;
@@ -1780,6 +1895,7 @@ export interface TrefinJournalEntriesTable {
 
 /** One of TREFIN's offers (price quotes), on the Offers page (see migration 051). */
 export interface TrefinOffersTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   trefin_ref: string;
   number: string | null;
@@ -1791,6 +1907,7 @@ export interface TrefinOffersTable {
 }
 
 export interface TrefinOfferLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   offer_id: number;
   product_id: number | null;
@@ -1802,6 +1919,7 @@ export interface TrefinOfferLinesTable {
 
 /** A line of TREFIN's activity log, in Activity. */
 export interface TrefinActivityTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   done_at: Date;
   person: string | null;
@@ -1811,6 +1929,7 @@ export interface TrefinActivityTable {
 }
 
 export interface TrefinJournalLinesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   entry_id: number;
   dated: ColumnType<string, string, string>;
@@ -1828,6 +1947,7 @@ export interface TrefinReceiptLine {
 
 /** A VAT month's documents as TREFIN had them, to run 4VD next to TREFIN (see TrefinCompareService). */
 export interface TrefinMonthsTable {
+  business_id: Generated<number>;
   /** Its first day. */
   month: ColumnType<string, string, string>;
   items: unknown;
@@ -1840,6 +1960,7 @@ export interface TrefinMonthsTable {
 
 /** A closed year (see migration 052). */
 export interface BookYearsTable {
+  business_id: Generated<number>;
   year: number;
   profit: ColumnType<string, number, number>;
   tax: ColumnType<string, number, number>;
@@ -1851,6 +1972,7 @@ export interface BookYearsTable {
 
 /** A year's income declaration (CD or PD): typed inputs and, once filed, the figures as filed (migration 076). */
 export interface TaxDeclarationsTable {
+  business_id: Generated<number>;
   year: number;
   inputs: ColumnType<unknown, string | undefined, string>;
   filed_on: ColumnType<string | null, string | null | undefined, string | null>;
@@ -1863,6 +1985,7 @@ export interface TaxDeclarationsTable {
 
 /** A quarterly profit tax instalment (TM) paid (see migration 052); quarter 0 is the rest, paid with the declaration. */
 export interface TaxInstalmentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   year: number;
   quarter: number;
@@ -1882,6 +2005,7 @@ type NullableDay = ColumnType<string | null, string | null | undefined, string |
 
 /** A person on the payroll (see migration 068). */
 export interface EmployeesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   user_id: number | null;
   name: string;
@@ -1911,6 +2035,7 @@ export interface EmployeesTable {
 }
 
 export interface PayrollMonthsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   month: Day;
   confirmed_by: number | null;
@@ -1920,6 +2045,7 @@ export interface PayrollMonthsTable {
 }
 
 export interface PayrollLinesTable {
+  business_id: Generated<number>;
   month_id: number;
   employee_id: number;
   place: 'shop' | 'carwash';
@@ -1939,6 +2065,7 @@ export interface PayrollLinesTable {
 export type PayrollPaymentKind = 'wages' | 'tax' | 'pension';
 
 export interface PayrollPaymentsTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   month_id: number;
   kind: PayrollPaymentKind;
@@ -1954,12 +2081,14 @@ export interface PayrollPaymentsTable {
 }
 
 export interface PayrollPaymentLinesTable {
+  business_id: Generated<number>;
   payment_id: number;
   employee_id: number;
   amount: Decimal;
 }
 
 export interface LeaveEntriesTable {
+  business_id: Generated<number>;
   id: Generated<number>;
   employee_id: number;
   kind: 'taken' | 'adjust';

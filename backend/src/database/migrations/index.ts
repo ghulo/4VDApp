@@ -69,6 +69,7 @@ import * as shortDated from './067_short_dated.js';
 import * as payroll from './068_payroll.js';
 import * as stockLocations from './069_stock_locations.js';
 import * as portal from './070_portal.js';
+import * as portalOrderChanges from './071_portal_order_changes.js';
 import * as employeeDetails from './072_employee_details.js';
 
 /**
@@ -148,5 +149,6 @@ export const migrations: Record<string, Migration> = {
   '068_payroll': payroll,
   '069_stock_locations': stockLocations,
   '070_portal': portal,
+  '071_portal_order_changes': portalOrderChanges,
   '072_employee_details': employeeDetails,
 };

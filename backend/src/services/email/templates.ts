@@ -291,6 +291,22 @@ export const emailTemplates = {
     };
   },
 
+  portalOrderChanged(input: { shopName: string; orderId: number; reason: string; total: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.portalChangedSubject({ shop: input.shopName, id: input.orderId });
+    const lines = [t.email.portalChangedBody({ shop: input.shopName, id: input.orderId }), t.email.portalChangedReason(input.reason), t.email.portalChangedTotal(input.total)];
+    return {
+      subject,
+      html: letter({
+        t,
+        subject,
+        paragraphs: lines.map(escapeHtml),
+        button: { label: t.email.portalChangedButton, link: input.link },
+        note: escapeHtml(t.email.portalChangedNote),
+      }),
+      text: plain([...lines, `${t.email.portalChangedButton}: ${input.link}`, t.email.portalChangedNote]),
+    };
+  },
+
   invite(input: { shopName: string; inviterName: string; role: string; link: string }, t: ServerMessages = en): EmailContent {
     const subject = t.email.inviteSubject({ inviter: input.inviterName, shop: input.shopName });
     const role = t.roleName[input.role] ?? input.role;

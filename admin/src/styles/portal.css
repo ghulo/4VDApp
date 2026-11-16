@@ -552,3 +552,122 @@ a.portal-row:focus-visible {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+/* ---------- A change by the shop ---------- */
+
+/* The dot on Orders: something there waits for the customer. */
+.portal-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: var(--space-1);
+  border-radius: 50%;
+  background: var(--warn);
+  vertical-align: super;
+}
+
+.portal-changes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.portal-change--waiting {
+  box-shadow: var(--shadow-raise), inset 3px 0 0 var(--warn);
+}
+
+.portal-change__why {
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.portal-change__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.portal-basket__line--changed .portal-basket__total {
+  font-weight: 600;
+}
+
+.portal-basket__line--removed {
+  color: var(--ink-muted);
+}
+
+.portal-was {
+  color: var(--warn);
+}
+
+.portal-totals--compare {
+  margin: var(--space-2) 0;
+}
+
+/* The shop's change form: a line per product with its quantity and a remove key. */
+.portal-change-edit {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal-change-edit__line {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.portal-change-edit .portal-stepper__input {
+  width: 7ch;
+}
+
+/* ---------- On a computer ---------- */
+
+@media (min-width: 1024px) {
+  .portal-app .staff-app__main .main__frame {
+    max-width: 1200px;
+  }
+
+  /* Products on the left, the basket beside them, staying in view while scrolling. */
+  .portal-order {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    grid-template-areas: 'shop basket';
+    align-items: start;
+    gap: var(--space-5);
+  }
+
+  .portal-order__shop {
+    grid-area: shop;
+    min-width: 0;
+  }
+
+  .portal-order__basket {
+    grid-area: basket;
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--space-4));
+    max-height: calc(100vh - var(--topbar-h) - var(--space-6));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .portal-order__basket .portal-basket {
+    margin-bottom: 0;
+  }
+
+  .portal-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-5);
+  }
+}

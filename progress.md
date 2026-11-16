@@ -41,6 +41,10 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
 - [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it
 - [ ] On the shelf: the location filter, a shelf minimum on a product page, then Refill from storage and its Bring button opening Move stock filled in
+- [ ] Sales → Online orders → an order → Change order: change a quantity, take one out, add a product, write why, Send the change; the firm gets an email, and the WhatsApp button opens a message with the reason and the link
+- [ ] In the portal: Orders shows a dot and a notice; the order lists what changed (was 5, Added, Taken out, the old total) with the reason; Agree sends it back to the shop (alert + To do), Cancel the order tells the shop too; Accept stays blocked until they agree
+- [ ] Portal on a PC: the basket sits beside the products and stays in view while scrolling; Orders and Invoices are tables; on Account the balance and open items sit side by side
+- [ ] Offers → an offer → Print and Print as pro-forma show the offer sheet, not a blank page (also the customer statement and the LV note)
 - [ ] A bill and an order received land in Depo; a product's page shows how much each location holds
 - [ ] A sale bigger than the floor holds takes the rest from Depo and its stock history says "(from Depo)"
 - [ ] Count only Depo, and only the shop floor; the staff phone count always counts the shop floor

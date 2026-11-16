@@ -9,6 +9,7 @@ import type {
   PortalDocumentRecord,
   PortalOrderLineRecord,
   PortalOrderRecord,
+  PortalOrderSnapshot,
   PortalPrincipalRecord,
   PortalProductRecord,
   PortalRepository,
@@ -63,7 +64,7 @@ export interface PortalPrincipal {
 }
 
 /** What a customer sees of an order; the shop's own words stay out. */
-export type PortalOrderState = 'sent' | 'seen' | 'offered' | 'preparing' | 'on_the_way' | 'delivered' | 'done' | 'declined' | 'cancelled';
+export type PortalOrderState = 'sent' | 'seen' | 'changed' | 'offered' | 'preparing' | 'on_the_way' | 'delivered' | 'done' | 'declined' | 'cancelled';
 
 export interface PortalProductDto {
   id: number;
@@ -117,11 +118,14 @@ export interface PortalOrderDto {
   offer: { number: string; total: number } | null;
   invoice: { id: number; number: string } | null;
   deliverOn: string | null;
+  /** The shop's last change, with what the customer had agreed before it. */
+  change: { reason: string; at: string; seen: boolean; agreed: boolean; previous: PortalOrderSnapshot | null } | null;
 }
 
 export interface PortalOrderDetailDto extends PortalOrderDto {
   lines: Array<{ productId: number; name: string; unit: string; quantity: number; unitPrice: number; vatRate: number; total: number; inStock: boolean }>;
   canCancel: boolean;
+  canAgree: boolean;
 }
 
 export interface PortalDocumentDto {
@@ -207,7 +211,7 @@ const money = (value: string | number | null): number | null => (value === null 
 export function orderState(o: Pick<PortalOrderRecord, 'status' | 'offer_status' | 'sale_document_id' | 'delivery_status'>): PortalOrderState {
   if (o.status === 'cancelled') return 'cancelled';
   if (o.status === 'declined' || o.offer_status === 'declined') return 'declined';
-  if (o.status === 'sent' || o.status === 'seen') return o.status;
+  if (o.status === 'sent' || o.status === 'seen' || o.status === 'changed') return o.status;
   if (o.offer_status === 'sold' || o.sale_document_id !== null) {
     if (o.delivery_status === 'waiting') return 'preparing';
     if (o.delivery_status === 'on_the_way') return 'on_the_way';
@@ -232,6 +236,10 @@ function toOrderDto(o: PortalOrderRecord): PortalOrderDto {
     offer: o.offer_number ? { number: o.offer_number, total: Number(o.offer_total) } : null,
     invoice: o.sale_document_id && o.sale_number ? { id: o.sale_document_id, number: o.sale_number } : null,
     deliverOn: o.deliver_on,
+    change:
+      o.changed_at && o.change_reason
+        ? { reason: o.change_reason, at: o.changed_at.toISOString(), seen: o.change_seen_at !== null, agreed: o.change_agreed_at !== null, previous: o.previous }
+        : null,
   };
 }
 
@@ -341,8 +349,9 @@ export class PortalService {
   }
 
   async me(p: PortalPrincipal) {
-    const shop = await this.repository.shop();
+    const [shop, unseenChanges] = await Promise.all([this.repository.shop(), this.repository.unseenChanges(p.customerId)]);
     return {
+      unseenChanges,
       person: { name: p.name, email: p.email, language: p.language },
       customer: { name: p.customerName },
       canOrder: p.canOrder,
@@ -390,6 +399,11 @@ export class PortalService {
    * it is lower. Only product ids and quantities come from the phone.
    */
   async quote(p: PortalPrincipal, asked: Array<{ productId: number; quantity: number }>): Promise<PortalQuoteDto> {
+    return { ...(await this.price({ categories: p.categories, paysWholesale: p.paysWholesale }, asked)), minOrder: p.minOrder, canOrder: p.canOrder };
+  }
+
+  /** Prices lines at a customer's price level; `categories` null means any product (the shop's own changes). */
+  private async price(p: { categories: number[] | null; paysWholesale: boolean }, asked: Array<{ productId: number; quantity: number }>) {
     if (asked.length > MAX_LINES) throw new ValidationError(`At most ${MAX_LINES} products in one order`);
     const ids = [...new Set(asked.map((line) => line.productId))];
     const [products, tiers] = await Promise.all([this.repository.products({ categories: p.categories, ids }), this.pricingTiers.findByProductIds(ids)]);
@@ -427,7 +441,7 @@ export class PortalService {
     }
     const total = roundMoney(lines.reduce((sum, line) => sum + line.total, 0));
     const net = roundMoney(lines.reduce((sum, line) => sum + line.net, 0));
-    return { lines, net, vat: roundMoney(total - net), total, missing, minOrder: p.minOrder, canOrder: p.canOrder };
+    return { lines, net, vat: roundMoney(total - net), total, missing };
   }
 
   // ——— Orders, the customer's side ———
@@ -475,8 +489,33 @@ export class PortalService {
   async order(p: PortalPrincipal, id: number): Promise<PortalOrderDetailDto> {
     const order = await this.repository.findOrder(id, p.customerId);
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
+    if (order.status === 'changed' && order.change_seen_at === null) await this.repository.markChangeSeen(id, p.customerId, new Date());
     const lines = await this.repository.orderLines(id);
-    return { ...toOrderDto(order), lines: lines.map(toLineDto), canCancel: order.status === 'sent' };
+    return { ...toOrderDto(order), lines: lines.map(toLineDto), canCancel: order.status === 'sent' || order.status === 'changed', canAgree: order.status === 'changed' };
+  }
+
+  /** The customer agrees to the shop's change; the order goes back to the shop to accept. */
+  async agree(p: PortalPrincipal, id: number, now = new Date()): Promise<PortalOrderDetailDto> {
+    await this.transactions.run(async (repos) => {
+      const order = await repos.portal.findOrder(id, p.customerId, true);
+      if (!order) throw new NotFoundError(`Order ${id} does not exist`);
+      if (order.status !== 'changed') throw new ConflictError('There is no change waiting on this order');
+      await repos.portal.agreeChange(id, now);
+      await repos.activityLog.create({
+        userId: null,
+        action: 'portal.change_agreed',
+        entityType: 'portal_order',
+        entityId: id,
+        say: { key: 'portalChangeAgreed', params: { name: p.customerName, person: p.name, id } },
+        details: { customerId: p.customerId, portalUserId: p.personId },
+      });
+      await repos.notifications.createForRoles(rolesWith('oversee'), {
+        type: NOTIFICATION_TYPES.PORTAL_ORDER,
+        write: (w) => ({ title: w.portalChangeAgreedTitle, message: w.portalChangeAgreedMessage({ name: p.customerName, id }) }),
+        link: `/portal-orders?open=${id}`,
+      });
+    });
+    return this.order(p, id);
   }
 
   /** "Order again": the old order's products at today's prices, for the basket. */
@@ -491,8 +530,15 @@ export class PortalService {
     await this.transactions.run(async (repos) => {
       const order = await repos.portal.findOrder(id, p.customerId, true);
       if (!order) throw new NotFoundError(`Order ${id} does not exist`);
-      if (order.status !== 'sent') throw new ConflictError('The shop has already seen this order. Call them to change it.');
+      if (order.status !== 'sent' && order.status !== 'changed') throw new ConflictError('The shop has already seen this order. Call them to change it.');
       await repos.portal.decide(id, { status: 'cancelled', userId: null }, now);
+      if (order.status === 'changed') {
+        await repos.notifications.createForRoles(rolesWith('oversee'), {
+          type: NOTIFICATION_TYPES.PORTAL_ORDER,
+          write: (w) => ({ title: w.portalChangeCancelledTitle, message: w.portalChangeCancelledMessage({ name: p.customerName, id }) }),
+          link: `/portal-orders?open=${id}`,
+        });
+      }
       await repos.activityLog.create({
         userId: null,
         action: 'portal.order_cancelled',
@@ -751,6 +797,7 @@ export class PortalService {
     const order = await this.transactions.run(async (repos) => {
       const row = await repos.portal.findOrder(id, null, true);
       if (!row) throw new NotFoundError(`Order ${id} does not exist`);
+      if (row.status === 'changed') throw new ConflictError('The customer hasn’t agreed to your change yet');
       if (row.status !== 'sent' && row.status !== 'seen') throw new ConflictError('This order was already answered');
       await repos.portal.decide(id, { status: 'accepted', userId: actorId }, now);
       return row;
@@ -792,7 +839,7 @@ export class PortalService {
     await this.transactions.run(async (repos) => {
       const row = await repos.portal.findOrder(id, null, true);
       if (!row) throw new NotFoundError(`Order ${id} does not exist`);
-      if (row.status !== 'sent' && row.status !== 'seen') throw new ConflictError('This order was already answered');
+      if (row.status !== 'sent' && row.status !== 'seen' && row.status !== 'changed') throw new ConflictError('This order was already answered');
       await repos.portal.decide(id, { status: 'declined', userId: actorId, reason }, now);
       await repos.activityLog.create({
         userId: actorId,
@@ -803,6 +850,71 @@ export class PortalService {
         details: { customerId: row.customer_id, reason },
       });
     });
+    return this.shopOrder(id, actorId, now);
+  }
+
+  /**
+   * The shop changes an order before accepting it: other quantities, lines
+   * taken out or added, always at this customer's own prices. A reason is
+   * required; the order then waits for the customer to agree or cancel, and
+   * everyone at the firm with an email is told.
+   */
+  async change(id: number, input: { lines: Array<{ productId: number; quantity: number }>; reason: string }, actorId: number, now = new Date()) {
+    const reason = input.reason.trim();
+    if (!reason) throw new ValidationError('Say why the order changed');
+    if (input.lines.length === 0) throw new ValidationError('Keep at least one product, or decline the order');
+    const current = await this.repository.findOrder(id, null);
+    if (!current) throw new NotFoundError(`Order ${id} does not exist`);
+    const settings = await this.repository.findSettings(current.customer_id);
+    const priced = await this.price({ categories: null, paysWholesale: settings?.pays_wholesale ?? false }, input.lines);
+    if (priced.missing.length > 0) throw new ConflictError('Some products are no longer on sale');
+    const order = await this.transactions.run(async (repos) => {
+      const row = await repos.portal.findOrder(id, null, true);
+      if (!row) throw new NotFoundError(`Order ${id} does not exist`);
+      if (row.status !== 'sent' && row.status !== 'seen' && row.status !== 'changed') throw new ConflictError('This order was already answered');
+      // What the customer agreed to; kept as it was while an earlier change is still unanswered.
+      let previous: PortalOrderSnapshot | null = null;
+      if (row.status !== 'changed') {
+        const before = await repos.portal.orderLines(id);
+        previous = {
+          net: Number(row.net),
+          vat: Number(row.vat),
+          total: Number(row.total),
+          lines: before.map((line) => ({ productId: line.product_id, name: line.product_name, unit: line.unit, quantity: line.quantity, unitPrice: Number(line.unit_price), total: Number(line.total) })),
+        };
+      }
+      await repos.portal.replaceLines(
+        id,
+        {
+          net: priced.net,
+          vat: priced.vat,
+          total: priced.total,
+          lines: priced.lines.map((line) => ({ productId: line.productId, productName: line.name, unit: line.unit, quantity: line.quantity, unitPrice: line.unitPrice, vatRate: line.vatRate, total: line.total, inStock: line.inStock })),
+          reason,
+          userId: actorId,
+          previous,
+        },
+        now,
+      );
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'portal.order_changed',
+        entityType: 'portal_order',
+        entityId: id,
+        say: { key: 'portalOrderChanged', params: { name: row.customer_name, id, reason } },
+        details: { customerId: row.customer_id, reason, total: priced.total, lines: priced.lines.length },
+      });
+      return row;
+    });
+    const [people, shop] = await Promise.all([this.repository.listUsers(order.customer_id), this.repository.shop()]);
+    const link = `${this.dashboardUrl}/portal/orders/${id}`;
+    for (const person of people) {
+      if (!person.email) continue;
+      await this.emailService.queue(
+        person.email,
+        emailTemplates.portalOrderChanged({ shopName: shop.name, orderId: id, reason, total: formatMoney(priced.total, person.language), link }, messages[person.language]),
+      );
+    }
     return this.shopOrder(id, actorId, now);
   }
 }

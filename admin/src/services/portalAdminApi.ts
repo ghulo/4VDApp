@@ -23,7 +23,7 @@ export interface ShopPortal {
   allCategories: Array<{ id: number; name: string }>;
 }
 
-export type ShopPortalOrderStatus = 'sent' | 'seen' | 'accepted' | 'declined' | 'cancelled';
+export type ShopPortalOrderStatus = 'sent' | 'seen' | 'changed' | 'accepted' | 'declined' | 'cancelled';
 
 export interface ShopPortalOrder extends PortalOrder {
   status: ShopPortalOrderStatus;
@@ -52,5 +52,7 @@ export const portalAdminApi = {
   orders: async (customerId?: number) => (await apiRequest<ShopPortalOrder[]>('/portal-admin/orders', { query: { customerId } })).data,
   order: async (id: number) => (await apiRequest<ShopPortalOrderDetail>(`/portal-admin/orders/${id}`)).data,
   accept: async (id: number) => (await apiRequest<{ order: ShopPortalOrderDetail; offer: { id: number; number: string } }>(`/portal-admin/orders/${id}/accept`, { method: 'POST' })).data,
+  change: async (id: number, input: { lines: Array<{ productId: number; quantity: number }>; reason: string }) =>
+    (await apiRequest<ShopPortalOrderDetail>(`/portal-admin/orders/${id}`, { method: 'PUT', body: input })).data,
   decline: async (id: number, reason: string | null) => (await apiRequest<ShopPortalOrderDetail>(`/portal-admin/orders/${id}/decline`, { method: 'POST', body: { reason } })).data,
 };

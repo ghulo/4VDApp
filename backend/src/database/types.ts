@@ -1402,7 +1402,7 @@ export interface DocumentNotesTable {
   created_at: CreatedAt;
 }
 
-export type PortalOrderStatus = 'sent' | 'seen' | 'accepted' | 'declined' | 'cancelled';
+export type PortalOrderStatus = 'sent' | 'seen' | 'changed' | 'accepted' | 'declined' | 'cancelled';
 
 /** Someone at a business customer who may sign in to the portal. Never a dashboard user. */
 export interface PortalUsersTable {
@@ -1453,6 +1453,13 @@ export interface PortalOrdersTable {
   decided_by: number | null;
   decline_reason: string | null;
   offer_id: number | null;
+  change_reason: string | null;
+  changed_at: Date | null;
+  changed_by: number | null;
+  change_seen_at: Date | null;
+  change_agreed_at: Date | null;
+  /** The order as the customer last agreed it: { net, vat, total, lines }. */
+  previous: ColumnType<unknown, string | null, string | null>;
   created_at: CreatedAt;
 }
 

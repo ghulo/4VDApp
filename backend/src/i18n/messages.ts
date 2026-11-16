@@ -43,6 +43,10 @@ export interface ServerMessages {
   billEmailTitle: string;
   portalOrderTitle: string;
   portalOrderMessage: (p: { name: string; total: number; lines: number }) => string;
+  portalChangeAgreedTitle: string;
+  portalChangeAgreedMessage: (p: { name: string; id: number }) => string;
+  portalChangeCancelledTitle: string;
+  portalChangeCancelledMessage: (p: { name: string; id: number }) => string;
   billEmailDuplicate: (p: { sender: string; file: string | null; day: string }) => string;
   billEmailNoFile: (p: { sender: string; subject: string | null }) => string;
   productApproved: (product: string) => string;
@@ -166,6 +170,12 @@ export interface ServerMessages {
     portalSignInBody: (shop: string) => string;
     portalSignInButton: string;
     portalSignInNote: string;
+    portalChangedSubject: (p: { shop: string; id: number }) => string;
+    portalChangedBody: (p: { shop: string; id: number }) => string;
+    portalChangedReason: (reason: string) => string;
+    portalChangedTotal: (total: string) => string;
+    portalChangedButton: string;
+    portalChangedNote: string;
     verifySubject: string;
     verifyBody: string;
     verifyButton: string;
@@ -328,6 +338,10 @@ export const en: ServerMessages = {
   billEmailTitle: 'Bill by email',
   portalOrderTitle: 'Order from the portal',
   portalOrderMessage: (p) => `${p.name} sent an order of ${money(p.total, 'en')} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
+  portalChangeAgreedTitle: 'Change agreed',
+  portalChangeAgreedMessage: (p) => `${p.name} agreed to your change of order #${p.id}. You can accept it now.`,
+  portalChangeCancelledTitle: 'Changed order cancelled',
+  portalChangeCancelledMessage: (p) => `${p.name} cancelled order #${p.id} instead of agreeing to the change.`,
   billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'A bill'} from ${sender} was already received on ${day}, so it wasn't read again.`,
   billEmailNoFile: ({ sender, subject }) => `An email from ${sender}${subject ? ` (${subject})` : ''} had no PDF or bill photo, so nothing was added.`,
   billPending: ({ name, supplier, lines }) => `${name} scanned a bill${supplier ? ` from ${supplier}` : ''} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
@@ -472,6 +486,12 @@ export const en: ServerMessages = {
     portalSignInBody: (shop) => `Press the button to sign in to your account at ${shop}.`,
     portalSignInButton: 'Sign in',
     portalSignInNote: 'This link works once and expires in 15 minutes. If you didn’t ask for it, ignore this email.',
+    portalChangedSubject: (p) => `${p.shop} changed your order #${p.id}`,
+    portalChangedBody: (p) => `${p.shop} made a change to your order #${p.id}. Look at it and agree, or cancel the order.`,
+    portalChangedReason: (reason) => `Why: ${reason}`,
+    portalChangedTotal: (total) => `New total: ${total}`,
+    portalChangedButton: 'See the change',
+    portalChangedNote: 'Nothing is prepared until you agree.',
     verifySubject: 'Confirm your email for 4VD',
     verifyBody: 'Please confirm this is your email address.',
     verifyButton: 'Confirm my email',
@@ -644,6 +664,10 @@ export const sq: ServerMessages = {
   billEmailTitle: 'Faturë me email',
   portalOrderTitle: 'Porosi nga portali',
   portalOrderMessage: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
+  portalChangeAgreedTitle: 'Ndryshimi u pranua',
+  portalChangeAgreedMessage: (p) => `${p.name} pranoi ndryshimin tuaj të porosisë #${p.id}. Tani mund ta pranoni.`,
+  portalChangeCancelledTitle: 'Porosia e ndryshuar u anulua',
+  portalChangeCancelledMessage: (p) => `${p.name} anuloi porosinë #${p.id} në vend që të pranonte ndryshimin.`,
   billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'Një faturë'} nga ${sender} ishte marrë më ${day}, prandaj nuk u lexua sërish.`,
   billEmailNoFile: ({ sender, subject }) => `Një email nga ${sender}${subject ? ` (${subject})` : ''} nuk kishte PDF ose foto fature, prandaj nuk u shtua asgjë.`,
   billPending: ({ name, supplier, lines }) => `${name} skanoi një faturë${supplier ? ` nga ${supplier}` : ''} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
@@ -788,6 +812,12 @@ export const sq: ServerMessages = {
     portalSignInBody: (shop) => `Shtypni butonin për të hyrë në llogarinë tuaj te ${shop}.`,
     portalSignInButton: 'Hyr',
     portalSignInNote: 'Kjo lidhje punon vetëm një herë dhe skadon pas 15 minutash. Nëse nuk e kërkuat, injorojeni këtë email.',
+    portalChangedSubject: (p) => `${p.shop} ndryshoi porosinë tuaj #${p.id}`,
+    portalChangedBody: (p) => `${p.shop} bëri një ndryshim në porosinë tuaj #${p.id}. Shikojeni dhe pranojeni, ose anulojeni porosinë.`,
+    portalChangedReason: (reason) => `Pse: ${reason}`,
+    portalChangedTotal: (total) => `Totali i ri: ${total}`,
+    portalChangedButton: 'Shiko ndryshimin',
+    portalChangedNote: 'Asgjë nuk përgatitet derisa ta pranoni.',
     verifySubject: 'Konfirmo emailin për 4VD',
     verifyBody: 'Të lutem konfirmo që kjo është adresa jote e emailit.',
     verifyButton: 'Konfirmo emailin',

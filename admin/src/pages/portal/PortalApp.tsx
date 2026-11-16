@@ -1,4 +1,4 @@
-import { ArrowCounterClockwise, Basket as BasketIcon, DownloadSimple, FilePdf, Minus, Package, Plus, Printer, Receipt, SignOut, Storefront, Trash, Wallet } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Basket as BasketIcon, Check, DownloadSimple, FilePdf, Minus, Package, Plus, Printer, Receipt, SignOut, Storefront, Trash, Wallet } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, Suspense, useDeferredValue, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -9,13 +9,14 @@ import { LogoMark } from '../../components/LogoMark';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { SearchInput } from '../../components/SearchInput';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from '../../components/SkipLink';
-import { Badge, Button, ButtonLink, Card, EmptyState, Field, PageHeader, useToast } from '../../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, useToast } from '../../components/ui';
 import { useLanguage, useT } from '../../i18n/useT';
 import { ApiError } from '../../services/apiClient';
-import { type PortalProduct, portalApi } from '../../services/portalApi';
+import { type PortalDocument, type PortalOrder, type PortalProduct, portalApi } from '../../services/portalApi';
 import type { ProductUnit } from '../../services/types';
 import { ThemeSwitch } from '../../theme/ThemeSwitch';
-import { formatDate, formatMoney, formatQuantity } from '../../utils/format';
+import { formatDate, formatMoney } from '../../utils/format';
+import { OrderChangeList } from './OrderChange';
 import { BasketProvider, OrderStateBadge, PortalLanguagePick, PortalPrice, useBasket, usePortalMe, useQuote } from './PortalParts';
 
 const TABS = [
@@ -82,6 +83,11 @@ export function PortalLayout() {
             <span>
               {t.portal.nav[tab.key]}
               {tab.key === 'order' && count > 0 && <span className="portal-count"> {count}</span>}
+              {tab.key === 'orders' && me.data.unseenChanges > 0 && (
+                <span className="portal-dot">
+                  <span className="visually-hidden">{t.portal.orders.changesBadge(me.data.unseenChanges)}</span>
+                </span>
+              )}
             </span>
           </Link>
         );
@@ -109,6 +115,14 @@ export function PortalLayout() {
       </header>
       <main className="main staff-app__main" id={MAIN_ID} tabIndex={-1}>
         <div className="main__frame">
+          {me.data.unseenChanges > 0 && !location.pathname.startsWith('/portal/orders') && (
+            <p className="notice notice--warn portal-changes" role="status">
+              <span>{t.portal.orders.changesWaiting(me.data.unseenChanges)}</span>
+              <ButtonLink to="/portal/orders" size="sm" variant="secondary">
+                {t.portal.orders.seeChanged}
+              </ButtonLink>
+            </p>
+          )}
           <ErrorBoundary key={location.pathname}>
             <Suspense fallback={<Loading />}>
               <Outlet />
@@ -184,7 +198,11 @@ export function PortalOrderPage() {
   return (
     <>
       <PageHeader title={t.portal.order.title} description={me.data && !me.data.canOrder ? t.portal.order.orderingOff : undefined} />
-      <BasketCard />
+      <div className="portal-order">
+      <aside className="portal-order__basket">
+        <BasketCard />
+      </aside>
+      <div className="portal-order__shop">
       <div className="portal-filters">
         <SearchInput value={search} onChange={setSearch} label={t.portal.order.search} />
         {products.data && products.data.categories.length > 1 && (
@@ -228,6 +246,8 @@ export function PortalOrderPage() {
           })}
         </ul>
       )}
+      </div>
+      </div>
     </>
   );
 }
@@ -322,6 +342,7 @@ function BasketCard() {
 
 export function PortalOrdersPage() {
   const t = useT();
+  const navigate = useNavigate();
   const orders = useQuery({ queryKey: ['portal', 'orders'], queryFn: portalApi.orders });
   return (
     <>
@@ -337,24 +358,29 @@ export function PortalOrdersPage() {
           {t.portal.orders.emptyHint}
         </EmptyState>
       ) : (
-        <ul className="portal-list">
-          {orders.data.map((order) => (
-            <li key={order.id}>
-              <Link to={`/portal/orders/${order.id}`} className="portal-row">
-                <span className="portal-row__main">
-                  <span className="portal-row__title">{t.portal.orders.number(order.id)}</span>
-                  <span className="portal-row__meta">
-                    {formatDate(order.at)} · {t.portal.orders.lines(order.lineCount)}
-                  </span>
-                </span>
-                <span className="portal-row__end">
-                  <span className="portal-row__amount">{formatMoney(order.offer?.total ?? order.total)}</span>
-                  <OrderStateBadge state={order.state} />
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Card flush>
+          <DataTable<PortalOrder>
+            caption={t.portal.orders.caption}
+            rows={orders.data}
+            rowKey={(order) => order.id}
+            onRowClick={(order) => navigate(`/portal/orders/${order.id}`)}
+            columns={[
+              {
+                header: t.portal.columns.order,
+                title: true,
+                cell: (order) => (
+                  <Link to={`/portal/orders/${order.id}`} className="table__primary-link">
+                    {t.portal.orders.number(order.id)}
+                  </Link>
+                ),
+              },
+              { header: t.portal.columns.date, cell: (order) => formatDate(order.at) },
+              { header: t.portal.columns.products, align: 'end', cell: (order) => order.lineCount },
+              { header: t.portal.columns.state, cell: (order) => <OrderStateBadge state={order.state} /> },
+              { header: t.portal.columns.total, align: 'end', cell: (order) => formatMoney(order.offer?.total ?? order.total) },
+            ]}
+          />
+        </Card>
       )}
     </>
   );
@@ -377,14 +403,32 @@ export function PortalOrderDetailPage() {
       navigate('/portal/order');
     },
   });
+  const answered = (fresh: Awaited<ReturnType<typeof portalApi.order>>) => {
+    queryClient.setQueryData(['portal', 'orders', id], fresh);
+    queryClient.invalidateQueries({ queryKey: ['portal', 'orders'], exact: true });
+    queryClient.invalidateQueries({ queryKey: ['portal', 'me'] });
+  };
   const cancel = useMutation({
     mutationFn: () => portalApi.cancel(id),
     onSuccess: (fresh) => {
-      queryClient.setQueryData(['portal', 'orders', id], fresh);
-      queryClient.invalidateQueries({ queryKey: ['portal', 'orders'], exact: true });
+      answered(fresh);
       toast({ title: t.portal.orders.cancelled });
     },
   });
+  const agree = useMutation({
+    mutationFn: () => portalApi.agree(id),
+    onSuccess: (fresh) => {
+      answered(fresh);
+      toast({ title: t.portal.orders.agreedDone, tone: 'ok' });
+    },
+  });
+  const me = usePortalMe();
+  const unseen = me.data?.unseenChanges ?? 0;
+  const loaded = order.data?.id;
+  // Opening a changed order counts as seeing it: refresh the dot on Orders.
+  useEffect(() => {
+    if (loaded && unseen > 0) void queryClient.invalidateQueries({ queryKey: ['portal', 'me'] });
+  }, [loaded, unseen, queryClient]);
 
   if (order.isPending) return <Loading />;
   if (order.isError) {
@@ -421,21 +465,24 @@ export function PortalOrderDetailPage() {
           )}
         </div>
       </Card>
+      {data.change && (data.canAgree || data.change.agreed) && (
+        <Card title={t.portal.orders.changeTitle} className={data.canAgree ? 'portal-change portal-change--waiting' : 'portal-change'}>
+          <p className="portal-change__why">{t.portal.orders.changeWhy(data.change.reason)}</p>
+          <p className="portal-muted">{data.canAgree ? t.portal.orders.changeAsk : t.portal.orders.changeAgreed}</p>
+          {data.canAgree && (
+            <div className="portal-change__actions">
+              <Button variant="primary" icon={Check} onClick={() => agree.mutate()} loading={agree.isPending} disabled={cancel.isPending}>
+                {t.portal.orders.agree}
+              </Button>
+              <Button variant="danger-text" onClick={() => cancel.mutate()} loading={cancel.isPending} disabled={agree.isPending}>
+                {t.portal.orders.cancelInstead}
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
       <Card title={t.portal.order.basketCount(data.lines.length)} description={t.portal.orders.priceNote}>
-        <ul className="portal-basket__lines">
-          {data.lines.map((line) => (
-            <li key={line.productId} className="portal-basket__line">
-              <span className="portal-basket__name">
-                {line.name}
-                {!line.inStock && <Badge tone="warn">{t.portal.order.outOfStock}</Badge>}
-              </span>
-              <span className="portal-muted">
-                {formatQuantity(line.quantity, line.unit as ProductUnit)} × {formatMoney(line.unitPrice)}
-              </span>
-              <span className="portal-basket__total">{formatMoney(line.total)}</span>
-            </li>
-          ))}
-        </ul>
+        <OrderChangeList lines={data.lines} previous={data.canAgree ? (data.change?.previous ?? null) : null} />
         <dl className="portal-totals">
           <div>
             <dt>{t.portal.net}</dt>
@@ -452,14 +499,14 @@ export function PortalOrderDetailPage() {
         </dl>
         {data.note && <p className="portal-muted">{data.note}</p>}
       </Card>
-      {data.canCancel && (
+      {data.canCancel && !data.canAgree && (
         <Button variant="danger-text" onClick={() => cancel.mutate()} loading={cancel.isPending}>
           {t.portal.orders.cancel}
         </Button>
       )}
-      {(again.isError || cancel.isError) && (
+      {(again.isError || cancel.isError || agree.isError) && (
         <p className="notice notice--error" role="alert">
-          {portalError(again.error ?? cancel.error, t)}
+          {portalError(again.error ?? cancel.error ?? agree.error, t)}
         </p>
       )}
     </>
@@ -486,28 +533,42 @@ export function PortalInvoicesPage() {
           {t.portal.invoices.emptyHint}
         </EmptyState>
       ) : (
-        <ul className="portal-list">
-          {invoices.data.map((doc) => (
-            <li key={doc.id} className="portal-row">
-              <span className="portal-row__main">
-                <span className="portal-row__title">
-                  {doc.number} {doc.kind === 'credit_note' && <Badge tone="info">{t.portal.invoices.creditNote}</Badge>}
-                </span>
-                <span className="portal-row__meta">
-                  {[formatDate(doc.issuedAt), doc.corrects && t.portal.invoices.corrects(doc.corrects), doc.kind === 'invoice' && (doc.onAccount ? doc.dueDate && t.portal.invoices.due(day(doc.dueDate)) : t.portal.invoices.paidAtTill)]
+        <Card flush>
+          <DataTable<PortalDocument>
+            caption={t.portal.invoices.caption}
+            rows={invoices.data}
+            rowKey={(doc) => doc.id}
+            columns={[
+              {
+                header: t.portal.columns.number,
+                title: true,
+                cell: (doc) => (
+                  <span className="portal-row__title">
+                    {doc.number} {doc.kind === 'credit_note' && <Badge tone="info">{t.portal.invoices.creditNote}</Badge>}
+                  </span>
+                ),
+              },
+              { header: t.portal.columns.date, cell: (doc) => formatDate(doc.issuedAt) },
+              {
+                header: t.portal.columns.payment,
+                cell: (doc) =>
+                  [doc.corrects && t.portal.invoices.corrects(doc.corrects), doc.kind === 'invoice' && (doc.onAccount ? doc.dueDate && t.portal.invoices.due(day(doc.dueDate)) : t.portal.invoices.paidAtTill)]
                     .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </span>
-              <span className="portal-row__end">
-                <PortalPrice gross={doc.kind === 'credit_note' ? -doc.total : doc.total} net={doc.kind === 'credit_note' ? -doc.net : doc.net} />
-                <a className="button button--secondary button--sm" href={portalApi.invoiceUrl(doc.id, language)} target="_blank" rel="noreferrer" aria-label={t.portal.invoices.openLabel(doc.number)}>
-                  <FilePdf aria-hidden="true" /> {t.portal.invoices.open}
-                </a>
-              </span>
-            </li>
-          ))}
-        </ul>
+                    .join(' · ') || null,
+              },
+              { header: t.portal.columns.total, align: 'end', cell: (doc) => <PortalPrice gross={doc.kind === 'credit_note' ? -doc.total : doc.total} net={doc.kind === 'credit_note' ? -doc.net : doc.net} /> },
+              {
+                header: t.portal.columns.file,
+                align: 'end',
+                cell: (doc) => (
+                  <a className="button button--secondary button--sm" href={portalApi.invoiceUrl(doc.id, language)} target="_blank" rel="noreferrer" aria-label={t.portal.invoices.openLabel(doc.number)}>
+                    <FilePdf aria-hidden="true" /> {t.portal.invoices.open}
+                  </a>
+                ),
+              },
+            ]}
+          />
+        </Card>
       )}
     </>
   );
@@ -620,6 +681,7 @@ export function PortalAccountPage() {
   return (
     <>
       <PageHeader title={t.portal.account.title} />
+      <div className="portal-split">
       <Card>
         <div className="portal-balance">
           <span className="portal-balance__label">{t.portal.account.owe}</span>
@@ -657,6 +719,7 @@ export function PortalAccountPage() {
           </ul>
         )}
       </Card>
+      </div>
       <Card
         title={t.portal.account.statement}
         description={t.portal.account.statementHint}

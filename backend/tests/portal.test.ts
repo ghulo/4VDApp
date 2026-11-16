@@ -269,6 +269,65 @@ describe('ordering', () => {
     expect((await p.get(`/orders/${second.id}`)).body.data).toMatchObject({ state: 'declined', declineReason: 'Mbaroi' });
   });
 
+  it('lets the shop change an order with a reason; the customer is told, sees what changed, and must agree before it can be accepted', async () => {
+    const kafe = await createTestProduct(context, adminToken, { name: 'Kafe', price: 10, stock: 5 });
+    const caj = await createTestProduct(context, adminToken, { name: 'Çaj', price: 4, stock: 5 });
+    const arta = await customer('Kafe Arta');
+    await portalOn(arta);
+    const p = portal(await signIn(arta, { email: 'besa@arta.test' }));
+    const order = (await p.post('/orders', { lines: [{ productId: kafe, quantity: 5 }], note: null })).body.data;
+    const shop = (path: string) => `/api/portal-admin/orders/${order.id}${path}`;
+
+    // A reason is required.
+    expect((await api().put(shop('')).set(auth(adminToken)).send({ lines: [{ productId: kafe, quantity: 3 }], reason: ' ' })).status).toBe(400);
+    const changed = await api()
+      .put(shop(''))
+      .set(auth(adminToken))
+      .send({ lines: [{ productId: kafe, quantity: 3 }, { productId: caj, quantity: 2 }], reason: 'Only 3 left' });
+    expect(changed.status).toBe(200);
+    expect(changed.body.data).toMatchObject({ status: 'changed', total: 38, change: { reason: 'Only 3 left', previous: { total: 50 } } });
+
+    // The firm is emailed, the Orders tab shows a dot until the order is opened.
+    const outbox = await context.db.selectFrom('email_outbox').select(['to_address', 'subject']).execute();
+    expect(outbox.some((row) => row.to_address === 'besa@arta.test' && row.subject.includes(`#${order.id}`))).toBe(true);
+    expect((await p.get('/me')).body.data.unseenChanges).toBe(1);
+    const seen = (await p.get(`/orders/${order.id}`)).body.data;
+    expect(seen).toMatchObject({
+      state: 'changed',
+      canAgree: true,
+      canCancel: true,
+      total: 38,
+      lines: [{ productId: kafe, quantity: 3 }, { productId: caj, quantity: 2 }],
+      change: { reason: 'Only 3 left', previous: { lines: [{ productId: kafe, quantity: 5 }] } },
+    });
+    expect((await p.get('/me')).body.data.unseenChanges).toBe(0);
+
+    // Not accepted before the customer agrees; afterwards the offer has the new lines.
+    expect((await api().post(shop('/accept')).set(auth(adminToken))).status).toBe(409);
+    const agreed = await p.post(`/orders/${order.id}/agree`);
+    expect(agreed.body.data).toMatchObject({ state: 'seen', canAgree: false, change: { agreed: true } });
+    expect((await p.post(`/orders/${order.id}/agree`)).status).toBe(409);
+    const logged = await context.db.selectFrom('activity_log').select('action').where('entity_type', '=', 'portal_order').execute();
+    expect(logged.map((row) => row.action)).toEqual(expect.arrayContaining(['portal.order_changed', 'portal.change_agreed']));
+    const accepted = await api().post(shop('/accept')).set(auth(adminToken));
+    expect(accepted.status).toBe(200);
+    expect((await api().get(`/api/offers/${accepted.body.data.offer.id}`).set(auth(adminToken))).body.data.total).toBe(38);
+    expect((await api().put(shop('')).set(auth(adminToken)).send({ lines: [{ productId: kafe, quantity: 1 }], reason: 'x' })).status).toBe(409);
+  });
+
+  it('lets a customer cancel a changed order instead of agreeing, and the shop hears of it', async () => {
+    const kafe = await createTestProduct(context, adminToken, { name: 'Kafe', price: 10, stock: 5 });
+    const arta = await customer('Kafe Arta');
+    await portalOn(arta);
+    const p = portal(await signIn(arta));
+    const order = (await p.post('/orders', { lines: [{ productId: kafe, quantity: 5 }], note: null })).body.data;
+    await api().put(`/api/portal-admin/orders/${order.id}`).set(auth(adminToken)).send({ lines: [{ productId: kafe, quantity: 2 }], reason: 'Mbaroi' });
+    await context.db.deleteFrom('notifications').execute();
+    expect((await p.post(`/orders/${order.id}/cancel`)).body.data.state).toBe('cancelled');
+    const alerts = await context.db.selectFrom('notifications').select('type').where('type', '=', 'portal_order').execute();
+    expect(alerts.length).toBeGreaterThan(0);
+  });
+
   it('refuses orders when the shop switched ordering off', async () => {
     const product = await createTestProduct(context, adminToken, { name: 'Kafe', price: 10, stock: 5 });
     const arta = await customer('Kafe Arta');

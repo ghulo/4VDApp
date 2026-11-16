@@ -86,6 +86,8 @@ export const ACTIVITY_ACTIONS = [
   'portal.order_cancelled',
   'portal.order_accepted',
   'portal.order_declined',
+  'portal.order_changed',
+  'portal.change_agreed',
   'delivery.taken',
   'delivery.delivered',
   'delivery.missed',

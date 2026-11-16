@@ -45,6 +45,7 @@ export function PortalPrice({ gross, net, size = 'md' }: { gross: number; net: n
 const STATE_TONE: Record<PortalOrderState, Tone> = {
   sent: 'info',
   seen: 'info',
+  changed: 'warn',
   offered: 'ok',
   preparing: 'warn',
   on_the_way: 'warn',

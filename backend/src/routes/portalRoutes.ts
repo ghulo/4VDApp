@@ -184,6 +184,7 @@ export function createPortalRoutes({ portalService, config }: Container): Router
   });
   router.get('/orders/:id', async (req, res) => sendSuccess(res, await portalService.order(me(req), parseInput(idParamsSchema, req.params).id)));
   router.get('/orders/:id/again', async (req, res) => sendSuccess(res, await portalService.reorder(me(req), parseInput(idParamsSchema, req.params).id)));
+  router.post('/orders/:id/agree', async (req, res) => sendSuccess(res, await portalService.agree(me(req), parseInput(idParamsSchema, req.params).id)));
   router.post('/orders/:id/cancel', async (req, res) => sendSuccess(res, await portalService.cancel(me(req), parseInput(idParamsSchema, req.params).id)));
   router.get('/invoices', async (req, res) => sendSuccess(res, await portalService.documents(me(req))));
   router.get('/invoices/:id/print', async (req, res) => {
@@ -227,6 +228,7 @@ const inviteSchema = z
   .refine((input) => !input.sendEmail || input.email !== null, { path: ['email'], message: 'type an email to send the link to' });
 const reinviteSchema = z.object({ sendEmail: z.boolean().default(false) });
 const declineSchema = z.object({ reason: textOrNull(300) });
+const changeSchema = z.object({ lines: linesSchema.min(1, 'keep at least one product'), reason: z.string().trim().min(1, 'say why the order changed').max(300) });
 const personParamsSchema = z.object({ id: idSchema, personId: idSchema });
 const shopOrdersQuerySchema = z.object({ customerId: idSchema.optional() });
 
@@ -260,6 +262,10 @@ export function createShopPortalRoutes({ portalService, guards }: Container): Ro
   router.get('/orders', ...guards.oversee, async (req, res) => sendSuccess(res, await portalService.shopOrders(parseInput(shopOrdersQuerySchema, req.query))));
   router.get('/orders/:id', ...guards.oversee, async (req, res) => sendSuccess(res, await portalService.shopOrder(parseInput(idParamsSchema, req.params).id, req.user!.id)));
   router.post('/orders/:id/accept', ...guards.oversee, async (req, res) => sendSuccess(res, await portalService.accept(parseInput(idParamsSchema, req.params).id, req.user!.id)));
+  router.put('/orders/:id', ...guards.oversee, async (req, res) => {
+    const { id } = parseInput(idParamsSchema, req.params);
+    sendSuccess(res, await portalService.change(id, parseInput(changeSchema, req.body), req.user!.id));
+  });
   router.post('/orders/:id/decline', ...guards.oversee, async (req, res) => {
     const { id } = parseInput(idParamsSchema, req.params);
     sendSuccess(res, await portalService.decline(id, parseInput(declineSchema, req.body ?? {}).reason, req.user!.id));

@@ -40,6 +40,7 @@ export interface PortalSettingsRecord {
   portal_can_order: boolean;
   portal_min_order: string | null;
   portal_categories: number[] | null;
+  pays_wholesale: boolean;
 }
 
 export interface PortalProductRecord {
@@ -70,6 +71,11 @@ export interface PortalOrderRecord {
   decided_at: Date | null;
   decline_reason: string | null;
   offer_id: number | null;
+  change_reason: string | null;
+  changed_at: Date | null;
+  change_seen_at: Date | null;
+  change_agreed_at: Date | null;
+  previous: PortalOrderSnapshot | null;
   offer_number: string | null;
   offer_status: 'open' | 'sold' | 'declined' | null;
   offer_total: string | null;
@@ -92,6 +98,16 @@ export interface PortalOrderLineRecord {
   in_stock: boolean;
 }
 
+/** An order as the customer last agreed it, kept when the shop changes it. */
+export interface PortalOrderSnapshot {
+  net: number;
+  vat: number;
+  total: number;
+  lines: Array<{ productId: number; name: string; unit: string; quantity: number; unitPrice: number; total: number }>;
+}
+
+export type NewPortalOrderLine = { productId: number; productName: string; unit: string; quantity: number; unitPrice: number; vatRate: number; total: number; inStock: boolean };
+
 export interface PortalDocumentRecord {
   id: number;
   kind: DocumentKind;
@@ -112,7 +128,7 @@ export interface NewPortalOrder {
   net: number;
   vat: number;
   total: number;
-  lines: Array<{ productId: number; productName: string; unit: string; quantity: number; unitPrice: number; vatRate: number; total: number; inStock: boolean }>;
+  lines: NewPortalOrderLine[];
 }
 
 const USER_COLUMNS = ['u.id', 'u.customer_id', 'u.name', 'u.email', 'u.phone', 'u.language', 'u.created_at', 'u.last_seen_at'] as const;
@@ -284,7 +300,7 @@ export class PortalRepository {
   findSettings(customerId: number): Promise<PortalSettingsRecord | undefined> {
     return this.db
       .selectFrom('customers')
-      .select(['id', 'name', 'kind', 'archived_at', 'portal_enabled', 'portal_can_order', 'portal_min_order', 'portal_categories'])
+      .select(['id', 'name', 'kind', 'archived_at', 'portal_enabled', 'portal_can_order', 'portal_min_order', 'portal_categories', 'pays_wholesale'])
       .where('id', '=', customerId)
       .executeTakeFirst();
   }
@@ -356,11 +372,17 @@ export class PortalRepository {
       .values({ customer_id: order.customerId, portal_user_id: order.portalUserId, note: order.note, net: order.net, vat: order.vat, total: order.total })
       .returning('id')
       .executeTakeFirstOrThrow();
+    await this.insertLines(row.id, order.lines);
+    return row.id;
+  }
+
+  private async insertLines(orderId: number, lines: NewPortalOrderLine[]): Promise<void> {
+    if (lines.length === 0) return;
     await this.db
       .insertInto('portal_order_lines')
       .values(
-        order.lines.map((line) => ({
-          order_id: row.id,
+        lines.map((line) => ({
+          order_id: orderId,
           product_id: line.productId,
           product_name: line.productName,
           unit: line.unit,
@@ -372,13 +394,79 @@ export class PortalRepository {
         })),
       )
       .execute();
-    return row.id;
+  }
+
+  /**
+   * The shop's change: new lines and totals, and the order waits for the
+   * customer. `previous` is left as it is when the order already waits (a
+   * second change still compares with what the customer agreed).
+   */
+  async replaceLines(
+    id: number,
+    change: { net: number; vat: number; total: number; lines: NewPortalOrderLine[]; reason: string; userId: number; previous: PortalOrderSnapshot | null },
+    now: Date,
+  ): Promise<void> {
+    await this.db.deleteFrom('portal_order_lines').where('order_id', '=', id).execute();
+    await this.insertLines(id, change.lines);
+    await this.db
+      .updateTable('portal_orders')
+      .set({
+        status: 'changed',
+        net: change.net,
+        vat: change.vat,
+        total: change.total,
+        change_reason: change.reason,
+        changed_at: now,
+        changed_by: change.userId,
+        change_seen_at: null,
+        change_agreed_at: null,
+        seen_at: sql<Date>`coalesce(seen_at, ${now})`,
+        seen_by: sql<number>`coalesce(seen_by, ${change.userId})`,
+        ...(change.previous && { previous: JSON.stringify(change.previous) }),
+      })
+      .where('id', '=', id)
+      .execute();
+  }
+
+  /** The customer opened a changed order. */
+  async markChangeSeen(id: number, customerId: number, now: Date): Promise<void> {
+    await this.db
+      .updateTable('portal_orders')
+      .set({ change_seen_at: now })
+      .where('id', '=', id)
+      .where('customer_id', '=', customerId)
+      .where('status', '=', 'changed')
+      .where('change_seen_at', 'is', null)
+      .execute();
+  }
+
+  /** The customer agreed to the change: it goes back to the shop, seen. */
+  async agreeChange(id: number, now: Date): Promise<void> {
+    await this.db
+      .updateTable('portal_orders')
+      .set({ status: 'seen', change_agreed_at: now, change_seen_at: sql<Date>`coalesce(change_seen_at, ${now})` })
+      .where('id', '=', id)
+      .where('status', '=', 'changed')
+      .execute();
+  }
+
+  /** Changed orders this customer hasn't opened yet, for the dot on Orders. */
+  async unseenChanges(customerId: number): Promise<number> {
+    const row = await this.db
+      .selectFrom('portal_orders')
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .where('customer_id', '=', customerId)
+      .where('status', '=', 'changed')
+      .where('change_seen_at', 'is', null)
+      .executeTakeFirst();
+    return Number(row?.count ?? 0);
   }
 
   private orderSelect() {
     return sql`
       select o.id, o.customer_id, c.name as customer_name, o.portal_user_id, u.name as person_name, o.note, o.status,
         o.net, o.vat, o.total, o.seen_at, o.decided_at, o.decline_reason, o.offer_id,
+        o.change_reason, o.changed_at, o.change_seen_at, o.change_agreed_at, o.previous,
         f.number as offer_number, f.status as offer_status, f.total as offer_total,
         f.sale_document_id, d.number as sale_number, x.status as delivery_status, to_char(x.deliver_on, 'YYYY-MM-DD') as deliver_on,
         (select count(*)::int from portal_order_lines l where l.order_id = o.id) as line_count, o.created_at

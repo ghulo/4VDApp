@@ -8,9 +8,11 @@ import type { ProductUnit } from './types';
  */
 
 export type PortalLanguage = 'sq' | 'en';
-export type PortalOrderState = 'sent' | 'seen' | 'offered' | 'preparing' | 'on_the_way' | 'delivered' | 'done' | 'declined' | 'cancelled';
+export type PortalOrderState = 'sent' | 'seen' | 'changed' | 'offered' | 'preparing' | 'on_the_way' | 'delivered' | 'done' | 'declined' | 'cancelled';
 
 export interface PortalMe {
+  /** Orders the shop changed that nobody here has opened yet. */
+  unseenChanges: number;
   person: { name: string; email: string | null; language: PortalLanguage };
   customer: { name: string };
   canOrder: boolean;
@@ -67,6 +69,23 @@ export interface PortalOrder {
   offer: { number: string; total: number } | null;
   invoice: { id: number; number: string } | null;
   deliverOn: string | null;
+  change: PortalOrderChange | null;
+}
+
+/** An order as the customer last agreed it, before the shop's change. */
+export interface PortalOrderSnapshot {
+  net: number;
+  vat: number;
+  total: number;
+  lines: Array<{ productId: number; name: string; unit: string; quantity: number; unitPrice: number; total: number }>;
+}
+
+export interface PortalOrderChange {
+  reason: string;
+  at: string;
+  seen: boolean;
+  agreed: boolean;
+  previous: PortalOrderSnapshot | null;
 }
 
 export interface PortalOrderLine {
@@ -83,6 +102,7 @@ export interface PortalOrderLine {
 export interface PortalOrderDetail extends PortalOrder {
   lines: PortalOrderLine[];
   canCancel: boolean;
+  canAgree: boolean;
 }
 
 export interface PortalDocument {
@@ -154,6 +174,7 @@ export const portalApi = {
   order: (id: number) => portalRequest<PortalOrderDetail>(`/orders/${id}`),
   send: (input: { lines: Array<{ productId: number; quantity: number }>; note: string | null }) => portalRequest<PortalOrderDetail>('/orders', { method: 'POST', body: input }),
   again: (id: number) => portalRequest<PortalQuote>(`/orders/${id}/again`),
+  agree: (id: number) => portalRequest<PortalOrderDetail>(`/orders/${id}/agree`, { method: 'POST' }),
   cancel: (id: number) => portalRequest<PortalOrderDetail>(`/orders/${id}/cancel`, { method: 'POST' }),
   invoices: () => portalRequest<PortalDocument[]>('/invoices'),
   invoiceUrl: (id: number, language: PortalLanguage) => `${API_URL}/api/portal/invoices/${id}/print?language=${language}`,

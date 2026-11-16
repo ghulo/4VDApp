@@ -4,6 +4,7 @@ import { ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/htt
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { toPublicUser } from '../services/mappers.js';
 import { hasPower, type Power, rolesWith } from '../utils/roles.js';
+import { ACCESS_COOKIE, cookieMayAct, readCookie } from '../utils/sessionCookies.js';
 import { extractBearerToken, verifyAccessToken } from '../utils/tokens.js';
 
 /**
@@ -28,9 +29,13 @@ function viewedRole(req: Request, realRole: UserRole): UserRole | null {
  * use the result to tailor responses (admins see cost prices) and the rate
  * limiter uses it to give logged-in users a higher limit.
  */
-export function identifyRequester(jwtSecret: string): RequestHandler {
+export function identifyRequester(jwtSecret: string, allowedOrigins: ReadonlySet<string> = new Set()): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction) => {
-    const token = extractBearerToken(req.headers.authorization);
+    // A Bearer header (scripts, tests) or the dashboard's cookie, which only counts for
+    // a change when the request comes from one of our own pages (see cookieMayAct).
+    const cookie = readCookie(req, ACCESS_COOKIE);
+    const token =
+      extractBearerToken(req.headers.authorization) ?? (cookie && cookieMayAct(req, allowedOrigins) ? cookie : null);
     const identity = token ? verifyAccessToken(token, jwtSecret) : null;
     if (identity) {
       const viewed = viewedRole(req, identity.role);
@@ -79,6 +84,32 @@ export function requirePower(power: Power): RequestHandler {
     if (!req.user) throw new UnauthorizedError();
     if (!hasPower(req.user.role, power)) {
       throw new ForbiddenError(`This action requires the ${rolesWith(power).join(' or ')} role`);
+    }
+    next();
+  };
+}
+
+/**
+ * Changes may only come from our own pages: a browser request from any other
+ * site is refused, whatever it carries. Requests without an Origin (scripts,
+ * the mail Worker) pass; they can't use the cookie anyway.
+ */
+export function refuseForeignOrigins(allowedOrigins: ReadonlySet<string>): RequestHandler {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const origin = req.headers.origin;
+    if (!READS.has(req.method) && typeof origin === 'string' && !allowedOrigins.has(origin)) {
+      throw new ForbiddenError('This request must come from the 4VD dashboard');
+    }
+    next();
+  };
+}
+
+/** Must run after requireAuth. Lets in whoever holds at least one of the powers. */
+export function requireAnyPower(...powers: Power[]): RequestHandler {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) throw new UnauthorizedError();
+    if (!powers.some((power) => hasPower(req.user!.role, power))) {
+      throw new ForbiddenError('Your role cannot see this');
     }
     next();
   };

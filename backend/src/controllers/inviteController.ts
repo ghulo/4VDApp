@@ -1,11 +1,12 @@
 import type { Request, Response } from 'express';
 import type { InviteService } from '../services/InviteService.js';
+import { deliverSession } from '../utils/sessionCookies.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { acceptInviteSchema, inviteSchema, linkTokenParamsSchema } from '../validators/authValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { deviceOf } from './authController.js';
 
-export function createInviteController(inviteService: InviteService) {
+export function createInviteController(inviteService: InviteService, refreshTtlDays: number) {
   return {
     async list(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await inviteService.list(req.user!.id));
@@ -35,7 +36,7 @@ export function createInviteController(inviteService: InviteService) {
     async accept(req: Request, res: Response): Promise<void> {
       const { token } = parseInput(linkTokenParamsSchema, req.params);
       const input = parseInput(acceptInviteSchema, req.body);
-      sendSuccess(res, await inviteService.accept(token, input, deviceOf(req)), { statusCode: 201, message: 'Welcome to 4VD' });
+      sendSuccess(res, deliverSession(req, res, await inviteService.accept(token, input, deviceOf(req)), refreshTtlDays), { statusCode: 201, message: 'Welcome to 4VD' });
     },
   };
 }

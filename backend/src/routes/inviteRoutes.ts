@@ -3,8 +3,8 @@ import type { Container } from '../container.js';
 import { createInviteController } from '../controllers/inviteController.js';
 
 /** The owner's side: invite, list, resend, cancel. */
-export function createInviteRoutes({ inviteService, guards }: Container): Router {
-  const controller = createInviteController(inviteService);
+export function createInviteRoutes({ inviteService, guards, config }: Container): Router {
+  const controller = createInviteController(inviteService, config.refreshTokenTtlDays);
   const router = Router();
 
   router.use(...guards.manage);

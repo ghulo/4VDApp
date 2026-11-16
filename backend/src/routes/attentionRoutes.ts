@@ -7,7 +7,7 @@ export function createAttentionRoutes({ attentionService, guards }: Container): 
   const router = Router();
 
   // Everyone gets their own To do list; what is on it depends on their role.
-  router.get('/', guards.authenticated, controller.get);
+  router.get('/', ...guards.team, controller.get);
 
   return router;
 }

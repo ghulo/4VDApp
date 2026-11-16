@@ -13,11 +13,12 @@ export function createAuthRoutes({
   googleAuthService,
   signupService,
   guards,
+  config,
 }: Container): Router {
   const signup = createSignupController(signupService);
-  const google = createGoogleController(googleAuthService);
-  const controller = createAuthController(authService);
-  const invites = createInviteController(inviteService);
+  const google = createGoogleController(googleAuthService, config.refreshTokenTtlDays);
+  const controller = createAuthController(authService, config.refreshTokenTtlDays);
+  const invites = createInviteController(inviteService, config.refreshTokenTtlDays);
   const account = createAccountController(accountService);
   const router = Router();
   // Public links from emails share the failed-login limit, which slows guessing.

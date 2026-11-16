@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { AppConfig } from './config/env.js';
 import type { DatabaseClient } from './database/connection.js';
-import { requireAuth, requirePower, requireRole } from './middlewares/authenticate.js';
+import { requireAnyPower, requireAuth, requirePower, requireRole } from './middlewares/authenticate.js';
 import { ActivityLogRepository } from './repositories/ActivityLogRepository.js';
 import { CategoryRepository } from './repositories/CategoryRepository.js';
 import { ActivityLogService } from './services/ActivityLogService.js';
@@ -513,6 +513,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     oversee: [authenticated, requirePower('oversee')] as RequestHandler[],
     products: [authenticated, requirePower('products')] as RequestHandler[],
     staff: [authenticated, requirePower('sell')] as RequestHandler[],
+    /** The working team (the counter or the money side): stock moves, makes, to-dos; not family, who only browse. */
+    team: [authenticated, requireAnyPower('sell', 'books')] as RequestHandler[],
     /** The money side: the books, VAT, bills, invoices, expenses and reports; the accountant too. */
     books: [authenticated, requirePower('books')] as RequestHandler[],
     filing: [authenticated, requirePower('filing')] as RequestHandler[],

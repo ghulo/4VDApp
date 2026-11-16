@@ -24,27 +24,68 @@ export class ApiError extends Error {
 
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-// Tokens live in localStorage so a page refresh keeps you logged in. The
-// admin dashboard is only used by trusted staff on their own devices.
-const TOKEN_KEY = '4vd.accessToken';
-const REFRESH_KEY = '4vd.refreshToken';
+// The sign-in itself lives in httpOnly cookies the API sets: page scripts
+// can't read them, so a script slipped into a page can't steal the session.
+// The browser only keeps a note that someone is signed in, to skip asking
+// the server on a page nobody has signed in to.
+const SIGNED_IN_KEY = '4vd.signedIn';
+// Where sign-ins used to be kept, before the cookies (moved once, then deleted).
+const OLD_TOKEN_KEY = '4vd.accessToken';
+const OLD_REFRESH_KEY = '4vd.refreshToken';
 
-export const tokenStore = {
-  get access(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+function readStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export const sessionHint = {
+  get signedIn(): boolean {
+    return readStorage(SIGNED_IN_KEY) === 'yes' || readStorage(OLD_REFRESH_KEY) !== null;
   },
-  get refresh(): string | null {
-    return localStorage.getItem(REFRESH_KEY);
-  },
-  save(token: string, refreshToken: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(REFRESH_KEY, refreshToken);
+  set(): void {
+    try {
+      localStorage.setItem(SIGNED_IN_KEY, 'yes');
+    } catch {
+      // Private window: the cookie still works, the page just asks the server each time.
+    }
   },
   clear(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
+    try {
+      localStorage.removeItem(SIGNED_IN_KEY);
+      localStorage.removeItem(OLD_TOKEN_KEY);
+      localStorage.removeItem(OLD_REFRESH_KEY);
+    } catch {
+      // Nothing stored to clear.
+    }
   },
 };
+
+/**
+ * A browser signed in before the cookies keeps its old refresh token: swap it
+ * once for the cookies, so nobody is signed out by the change.
+ */
+export async function moveOldSignIn(): Promise<void> {
+  const refreshToken = readStorage(OLD_REFRESH_KEY);
+  if (!refreshToken) return;
+  const response = await fetch(`${API_URL}/api/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  }).catch(() => null);
+  // Unreachable: try again next time. Answered: the old token is spent either way.
+  if (!response) return;
+  try {
+    localStorage.removeItem(OLD_TOKEN_KEY);
+    localStorage.removeItem(OLD_REFRESH_KEY);
+  } catch {
+    // Nothing to remove.
+  }
+  if (response.ok) sessionHint.set();
+}
 
 /** Called when the session can't be refreshed, so the app can show the login page. */
 let onSessionExpired: () => void = () => {};
@@ -57,20 +98,14 @@ export function setSessionExpiredHandler(handler: () => void): void {
 let refreshInFlight: Promise<boolean> | null = null;
 
 async function refreshSession(): Promise<boolean> {
-  const refreshToken = tokenStore.refresh;
-  if (!refreshToken) return false;
-
+  // The refresh cookie goes along by itself; the answer sets new cookies.
   refreshInFlight ??= fetch(`${API_URL}/api/auth/refresh`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
+    body: '{}',
   })
-    .then(async (response) => {
-      if (!response.ok) return false;
-      const body = (await response.json()) as ApiResponse<{ token: string; refreshToken: string }>;
-      tokenStore.save(body.data.token, body.data.refreshToken);
-      return true;
-    })
+    .then((response) => response.ok)
     .catch(() => false)
     .finally(() => {
       refreshInFlight = null;
@@ -100,7 +135,6 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = {
     'Content-Type': options.file ? options.file.type || 'application/octet-stream' : 'application/json',
   };
-  if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
   const viewAs = options.asMyself ? null : readViewAs();
   if (viewAs) headers['X-View-As'] = viewAs;
   if (options.fileName) headers['X-File-Name'] = encodeURIComponent(options.fileName);
@@ -108,6 +142,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   try {
     return await fetch(url, {
       method: options.method ?? 'GET',
+      credentials: 'include',
       headers,
       body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
     });
@@ -119,11 +154,11 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
 /** Send a request, refreshing the session once if the access token expired. */
 async function sendWithRefresh(path: string, options: RequestOptions): Promise<Response> {
   let response = await send(path, options);
-  if (response.status === 401 && tokenStore.refresh && !path.startsWith('/auth/')) {
+  if (response.status === 401 && sessionHint.signedIn && !path.startsWith('/auth/')) {
     if (await refreshSession()) {
       response = await send(path, options);
     } else {
-      tokenStore.clear();
+      sessionHint.clear();
       onSessionExpired();
     }
   }

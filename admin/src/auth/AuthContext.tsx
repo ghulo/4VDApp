@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { authApi, meApi, permissionsApi } from '../services/api';
 import { DEFAULT_PERMISSIONS, setPermissions } from './permissions';
-import { setSessionExpiredHandler, tokenStore } from '../services/apiClient';
+import { moveOldSignIn, sessionHint, setSessionExpiredHandler } from '../services/apiClient';
 import { disablePush, reregisterPush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
@@ -18,7 +18,7 @@ async function loadPermissions(): Promise<void> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() =>
-    tokenStore.access ? { status: 'loading' } : { status: 'signedOut' },
+    sessionHint.signedIn ? { status: 'loading' } : { status: 'signedOut' },
   );
   // The language saved on the account follows the person, like the theme.
   const { setLanguage } = useLanguage();
@@ -26,17 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Restore the session on page load if we still have a token.
   useEffect(() => {
     setSessionExpiredHandler(() => setState({ status: 'signedOut' }));
-    if (!tokenStore.access) return;
+    if (!sessionHint.signedIn) return;
 
-    authApi
-      .me()
+    moveOldSignIn()
+      .then(() => authApi.me())
       .then(async (user) => {
         await loadPermissions();
         setLanguage(user.language);
         setState({ status: 'signedIn', user });
       })
       .catch(() => {
-        tokenStore.clear();
+        sessionHint.clear();
         setState({ status: 'signedOut' });
       });
   }, [setLanguage]);
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * tokens are dropped and the caller sends them to the team app instead.
    */
   const adoptSession = useCallback(async (result: LoginResult): Promise<'signedIn' | 'notAdmin'> => {
-    tokenStore.save(result.token, result.refreshToken);
+    sessionHint.set();
     await loadPermissions();
     if (!canUseDashboard(result.user.role)) {
       await authApi.logout().catch(() => undefined);

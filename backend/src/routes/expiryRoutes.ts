@@ -22,12 +22,12 @@ export function createExpiryRoutes({ expiryService, guards }: Container): Router
   const router = Router();
 
   // Staff note dates while stocking shelves; everyone who sees stock sees them.
-  router.get('/', guards.authenticated, async (req: Request, res: Response) => {
+  router.get('/', ...guards.team, async (req: Request, res: Response) => {
     const { productId, days } = parseInput(z.object({ productId: idSchema.optional(), days: z.coerce.number().int().min(1).max(90).optional() }), req.query);
     sendSuccess(res, productId ? await expiryService.forProduct(productId) : await expiryService.upcoming(days));
   });
   // Batches a stickered unit sells cheaper from today: the Counter and the Sell screen offer them.
-  router.get('/short-dated', guards.authenticated, async (_req: Request, res: Response) => {
+  router.get('/short-dated', ...guards.team, async (_req: Request, res: Response) => {
     sendSuccess(res, await expiryService.shortDated());
   });
   router.post('/', ...guards.staff, async (req: Request, res: Response) => {

@@ -7,9 +7,9 @@ export function createStockMoveRoutes({ stockMoveService, guards }: Container): 
   const controller = createStockMoveController(stockMoveService);
   const router = Router();
 
-  router.get('/', guards.authenticated, controller.list);
+  router.get('/', ...guards.team, controller.list);
   router.post('/', ...guards.oversee, controller.create);
-  router.get('/:id', guards.authenticated, controller.get);
+  router.get('/:id', ...guards.team, controller.get);
   router.post('/:id/void', ...guards.oversee, controller.void);
 
   return router;
@@ -20,11 +20,11 @@ export function createLocationRoutes({ locationService, guards }: Container): Ro
   const controller = createLocationController(locationService);
   const router = Router();
 
-  router.get('/', guards.authenticated, controller.list);
+  router.get('/', ...guards.team, controller.list);
   router.post('/', ...guards.oversee, controller.create);
   router.patch('/:id', ...guards.oversee, controller.update);
   router.delete('/:id', ...guards.oversee, controller.remove);
-  router.get('/products/:productId', guards.authenticated, controller.forProduct);
+  router.get('/products/:productId', ...guards.team, controller.forProduct);
   router.put('/products/:productId', ...guards.oversee, controller.setShelfMinimum);
 
   return router;

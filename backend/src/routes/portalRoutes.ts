@@ -9,6 +9,7 @@ import { ForbiddenError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { PortalPrincipal } from '../services/PortalService.js';
 import { PORTAL_SESSION_DAYS } from '../services/PortalService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
+import { readCookie } from '../utils/sessionCookies.js';
 import { hasPower } from '../utils/roles.js';
 import { calendarDaySchema, idParamsSchema, idSchema, parseInput, quantitySchema } from '../validators/validate.js';
 
@@ -29,20 +30,6 @@ declare module 'express-serve-static-core' {
 }
 
 const rateLimitedBody = (message: string) => ({ success: false, data: null, message, error: 'RATE_LIMITED' });
-
-function readCookie(req: Request, name: string): string | null {
-  const header = req.headers.cookie;
-  if (!header) return null;
-  for (const part of header.split(';')) {
-    const at = part.indexOf('=');
-    if (at < 0) continue;
-    if (part.slice(0, at).trim() === name) {
-      const value = part.slice(at + 1).trim();
-      return /^[A-Za-z0-9_-]{20,200}$/.test(value) ? value : null;
-    }
-  }
-  return null;
-}
 
 /**
  * Changes must come from the dashboard's own pages. SameSite=Lax already keeps

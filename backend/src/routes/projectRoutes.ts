@@ -7,7 +7,7 @@ export function createProjectRoutes({ projectService, guards }: Container): Rout
   const controller = createProjectController(projectService);
   const router = Router();
 
-  router.get('/', guards.authenticated, controller.list);
+  router.get('/', ...guards.team, controller.list);
   router.post('/', ...guards.oversee, controller.create);
   router.put('/tag', ...guards.oversee, controller.tag);
   router.get('/profit', ...guards.books, controller.profit);

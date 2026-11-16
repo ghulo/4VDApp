@@ -7,13 +7,13 @@ export function createMakeRoutes({ makeService, guards }: Container): Router {
   const controller = createMakeController(makeService);
   const router = Router();
 
-  router.get('/', guards.authenticated, controller.list);
-  router.get('/plan', guards.authenticated, controller.plan);
+  router.get('/', ...guards.team, controller.list);
+  router.get('/plan', ...guards.team, controller.plan);
   router.post('/', ...guards.oversee, controller.create);
-  router.get('/recipes', guards.authenticated, controller.madeProducts);
-  router.get('/recipes/:productId', guards.authenticated, controller.recipe);
+  router.get('/recipes', ...guards.team, controller.madeProducts);
+  router.get('/recipes/:productId', ...guards.team, controller.recipe);
   router.put('/recipes/:productId', ...guards.oversee, controller.setRecipe);
-  router.get('/:id', guards.authenticated, controller.get);
+  router.get('/:id', ...guards.team, controller.get);
   router.post('/:id/void', ...guards.oversee, controller.void);
 
   return router;

@@ -37,7 +37,11 @@ export const stockLevelSchema = (max: number) => z.number().min(0).max(max).mult
 export const calendarDaySchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'must be a day like 2026-10-04')
-  .refine((value) => new Date(`${value}T00:00:00Z`).toISOString().startsWith(value), 'must be a real day');
+  // Zod runs this even when the pattern failed, and month 13 is no date at all: check before toISOString throws.
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, 'must be a real day');
 
 export const idParamsSchema = z.object({ id: idSchema });
 export const productIdParamsSchema = z.object({ productId: idSchema });

@@ -1,4 +1,4 @@
-import { apiDownload, apiRequest, saveDownload, tokenStore } from './apiClient';
+import { apiDownload, apiRequest, saveDownload, sessionHint } from './apiClient';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
@@ -194,11 +194,11 @@ async function paginated<TItem>(path: string, query: Record<string, string | num
 
 export const authApi = {
   async login(email: string, password: string): Promise<User> {
-    const { data } = await apiRequest<{ token: string; refreshToken: string; user: User }>('/auth/login', {
+    const { data } = await apiRequest<{ user: User }>('/auth/login', {
       method: 'POST',
       body: { email, password },
     });
-    tokenStore.save(data.token, data.refreshToken);
+    sessionHint.set();
     return data.user;
   },
 
@@ -207,12 +207,12 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
-    const refreshToken = tokenStore.refresh ?? undefined;
     try {
-      await apiRequest('/auth/logout', { method: 'POST', body: { refreshToken }, asMyself: true });
+      // The server ends this device's session (from its cookie) and clears the cookies.
+      await apiRequest('/auth/logout', { method: 'POST', body: {}, asMyself: true });
     } finally {
       // Log out locally even if the server is unreachable.
-      tokenStore.clear();
+      sessionHint.clear();
     }
   },
 };

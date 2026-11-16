@@ -4,9 +4,9 @@ import { createCounterController } from '../controllers/counterController.js';
 import { createCounterPinController } from '../controllers/counterPinController.js';
 
 /** The counter: everyone who sells reads its settings and records what happened; the people who run the shop set it up and read the report. */
-export function createCounterRoutes({ counterService, counterPinService, productService, cashCountService, guards }: Container): Router {
+export function createCounterRoutes({ counterService, counterPinService, productService, cashCountService, guards, config }: Container): Router {
   const controller = createCounterController(counterService, productService, cashCountService);
-  const pins = createCounterPinController(counterPinService);
+  const pins = createCounterPinController(counterPinService, config.refreshTokenTtlDays);
   const router = Router();
 
   router.get('/settings', ...guards.staff, controller.settings);

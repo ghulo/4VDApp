@@ -16,9 +16,10 @@ export function createMeRoutes({
   googleAuthService,
   counterPinService,
   guards,
+  config,
 }: Container): Router {
-  const pins = createCounterPinController(counterPinService);
-  const google = createGoogleController(googleAuthService);
+  const pins = createCounterPinController(counterPinService, config.refreshTokenTtlDays);
+  const google = createGoogleController(googleAuthService, config.refreshTokenTtlDays);
   const sessions = createSessionController(sessionService);
   const account = createAccountController(accountService);
   const profile = createProfileController(profileService, businessService);

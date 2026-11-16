@@ -5,7 +5,8 @@ import helmet from 'helmet';
 import type { AppConfig } from './config/env.js';
 import { type Container, type ContainerOptions, createContainer } from './container.js';
 import type { DatabaseClient } from './database/connection.js';
-import { identifyRequester } from './middlewares/authenticate.js';
+import { identifyRequester, refuseForeignOrigins } from './middlewares/authenticate.js';
+import { allowedOriginsOf } from './utils/sessionCookies.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { createApiRateLimiter } from './middlewares/rateLimiter.js';
@@ -35,7 +36,7 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use(helmet());
   // Browsers hide Content-Disposition from cross-origin JS unless it is exposed,
   // and the admin dashboard needs it to name downloaded CSV files.
-  // credentials: the portal (step 15) signs in with a cookie; the dashboard keeps its Bearer token.
+  // credentials: the portal and the dashboard both sign in with httpOnly cookies.
   app.use(cors({ origin: config.corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition'] }));
   app.use(compression());
   // Scanned bills arrive as base64 photos or PDFs: several pages, a few MB each.
@@ -57,7 +58,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   };
   // The business customers' portal: its own cookie sign-in, limits and origin check; no dashboard middleware.
   app.use('/api/portal', createPortalRoutes(container));
-  app.use('/api', identifyRequester(config.jwtSecret), loadPermissions, createApiRateLimiter(), createApiRoutes(container));
+  const ownOrigins = allowedOriginsOf(config);
+  app.use('/api', refuseForeignOrigins(ownOrigins), identifyRequester(config.jwtSecret, ownOrigins), loadPermissions, createApiRateLimiter(), createApiRoutes(container));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

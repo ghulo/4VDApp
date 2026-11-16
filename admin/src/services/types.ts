@@ -1319,9 +1319,8 @@ export interface PriceSuggestion {
   provider: string;
 }
 
+/** A new session: the tokens arrive as httpOnly cookies, never in the page. */
 export interface LoginResult {
-  token: string;
-  refreshToken: string;
   user: User;
 }
 

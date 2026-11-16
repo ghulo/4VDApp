@@ -472,7 +472,9 @@ describe('newer kit pieces', () => {
     expect(steps).toContain('steps__step--done');
     expect(steps).toContain('aria-current="step"');
     expect(render(<Skeleton rows={2} />).match(/skeleton__bar/g)).toHaveLength(2);
-    expect(render(<Skeleton kind="table" rows={3} />).match(/skeleton__row/g)).toHaveLength(3);
+    const table = render(<Skeleton kind="table" rows={3} />);
+    expect(table.match(/skeleton__row"/g)).toHaveLength(3);
+    expect(table.match(/skeleton__row--head/g)).toHaveLength(1);
     const page = render(<Skeleton kind="page" rows={2} />);
     expect(page.match(/skeleton__tile"/g)).toHaveLength(4);
     expect(page).toContain('skeleton__bar--title');

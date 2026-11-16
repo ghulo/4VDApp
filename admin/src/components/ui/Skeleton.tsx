@@ -40,6 +40,16 @@ function Row({ index, figure = true }: { index: number; figure?: boolean }) {
   );
 }
 
+/** The table's column labels: short quiet bars in the same 36px band, so rows land where the real ones will. */
+function Head() {
+  return (
+    <span className="skeleton__row skeleton__row--head">
+      <span className="skeleton__bar skeleton__bar--meta" style={{ inlineSize: '18%' }} />
+      <span className="skeleton__bar skeleton__bar--meta skeleton__bar--figure" />
+    </span>
+  );
+}
+
 /**
  * The shape of what is loading, set into the page like an empty mould: lines
  * of text, the rows of a table, or a whole page (title, figures, table).
@@ -69,7 +79,14 @@ export function Skeleton({ rows, kind = 'auto', label }: { rows?: number; kind?:
       />
     ));
   } else if (shape === 'table') {
-    body = Array.from({ length: count }, (_, index) => <Row key={index} index={index} />);
+    body = (
+      <>
+        <Head />
+        {Array.from({ length: count }, (_, index) => (
+          <Row key={index} index={index} />
+        ))}
+      </>
+    );
   } else {
     body = (
       <>
@@ -86,6 +103,7 @@ export function Skeleton({ rows, kind = 'auto', label }: { rows?: number; kind?:
           ))}
         </span>
         <span className="skeleton__panel">
+          <Head />
           {Array.from({ length: count }, (_, index) => (
             <Row key={index} index={index + 3} />
           ))}

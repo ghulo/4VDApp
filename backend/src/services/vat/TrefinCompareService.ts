@@ -156,7 +156,7 @@ export class TrefinCompareService {
     await this.db
       .insertInto('trefin_months')
       .values({ month: firstDay(month), items: JSON.stringify(items), source, loaded_by: actorId })
-      .onConflict((oc) => oc.column('month').doUpdateSet({ items: JSON.stringify(items), source, loaded_by: actorId, loaded_at: new Date() }))
+      .onConflict((oc) => oc.columns(['business_id', 'month']).doUpdateSet({ items: JSON.stringify(items), source, loaded_by: actorId, loaded_at: new Date() }))
       .execute();
   }
 

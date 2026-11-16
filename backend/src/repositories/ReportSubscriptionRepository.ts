@@ -49,7 +49,7 @@ export class ReportSubscriptionRepository {
     await this.db
       .insertInto('report_subscriptions')
       .values({ user_id: userId, ...row })
-      .onConflict((oc) => oc.column('user_id').doUpdateSet(row))
+      .onConflict((oc) => oc.columns(['business_id', 'user_id']).doUpdateSet(row))
       .execute();
   }
 

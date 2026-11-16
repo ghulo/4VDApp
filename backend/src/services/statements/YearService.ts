@@ -248,7 +248,7 @@ export class YearService {
     await this.db
       .insertInto('settings')
       .values({ key: `${TAX_INPUTS_KEY}${year}`, value, updated_by: actor.id, updated_at: new Date() })
-      .onConflict((conflict) => conflict.column('key').doUpdateSet({ value, updated_by: actor.id, updated_at: new Date() }))
+      .onConflict((conflict) => conflict.columns(['business_id', 'key']).doUpdateSet({ value, updated_by: actor.id, updated_at: new Date() }))
       .execute();
     return this.year(year, actor.role, now);
   }

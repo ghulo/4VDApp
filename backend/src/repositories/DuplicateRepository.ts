@@ -169,7 +169,7 @@ export class DuplicateRepository {
     await sql`UPDATE product_barcodes b SET pack_size = NULL FROM products k WHERE k.id = ${keepId} AND b.product_id = k.id AND k.unit <> 'piece'`.execute(this.db);
     const added = moved.map((row) => row.barcode);
     if (dropBarcode && dropBarcode !== kept.rows[0]?.barcode) {
-      await this.db.insertInto('product_barcodes').values({ product_id: keepId, barcode: dropBarcode }).onConflict((oc) => oc.column('barcode').doNothing()).execute();
+      await this.db.insertInto('product_barcodes').values({ product_id: keepId, barcode: dropBarcode }).onConflict((oc) => oc.columns(['business_id', 'barcode']).doNothing()).execute();
       added.unshift(dropBarcode);
     }
     return added;

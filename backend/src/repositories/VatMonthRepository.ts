@@ -76,7 +76,7 @@ export class VatMonthRepository {
       .insertInto('vat_months')
       .values({ month, refund: values.refund ?? 0, carried_in: values.carriedIn ?? null, updated_by: by })
       .onConflict((conflict) =>
-        conflict.column('month').doUpdateSet({
+        conflict.columns(['business_id', 'month']).doUpdateSet({
           ...(values.refund !== undefined && { refund: values.refund }),
           ...(values.carriedIn !== undefined && { carried_in: values.carriedIn }),
           updated_by: by,
@@ -91,7 +91,7 @@ export class VatMonthRepository {
       .insertInto('vat_months')
       .values({ month, filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by })
       .onConflict((conflict) =>
-        conflict.column('month').doUpdateSet({ filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by, updated_at: new Date() }),
+        conflict.columns(['business_id', 'month']).doUpdateSet({ filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by, updated_at: new Date() }),
       )
       .execute();
   }

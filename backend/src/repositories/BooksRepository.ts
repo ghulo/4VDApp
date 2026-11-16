@@ -299,7 +299,7 @@ export class BooksRepository {
     await this.db
       .insertInto('ledger_links')
       .values({ key, account_id: accountId })
-      .onConflict((oc) => oc.column('key').doUpdateSet({ account_id: accountId }))
+      .onConflict((oc) => oc.columns(['business_id', 'key']).doUpdateSet({ account_id: accountId }))
       .execute();
   }
 

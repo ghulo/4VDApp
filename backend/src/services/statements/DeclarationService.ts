@@ -383,7 +383,7 @@ export class DeclarationService {
     await this.db
       .insertInto('tax_declarations')
       .values({ year, inputs: value, updated_by: actor.id, updated_at: new Date() })
-      .onConflict((conflict) => conflict.column('year').doUpdateSet({ inputs: value, updated_by: actor.id, updated_at: new Date() }))
+      .onConflict((conflict) => conflict.columns(['business_id', 'year']).doUpdateSet({ inputs: value, updated_by: actor.id, updated_at: new Date() }))
       .execute();
     return this.declaration(year, now);
   }
@@ -403,7 +403,7 @@ export class DeclarationService {
       await trx
         .insertInto('tax_declarations')
         .values({ year, filed_on: day, filed_by: actor.id, filed_at: new Date(), filed, updated_by: actor.id, updated_at: new Date() })
-        .onConflict((conflict) => conflict.column('year').doUpdateSet({ filed_on: day, filed_by: actor.id, filed_at: new Date(), filed, updated_by: actor.id, updated_at: new Date() }))
+        .onConflict((conflict) => conflict.columns(['business_id', 'year']).doUpdateSet({ filed_on: day, filed_by: actor.id, filed_at: new Date(), filed, updated_by: actor.id, updated_at: new Date() }))
         .execute();
       await new ActivityLogRepository(trx).create({
         userId: actor.id,

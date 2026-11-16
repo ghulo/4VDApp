@@ -122,7 +122,7 @@ export async function wipeShopData(db: DatabaseClient, options: { apply: boolean
       // Ticks off "test data wiped" on the launch checklist.
       await sql`
         INSERT INTO settings (key, value, updated_at) VALUES (${WIPED_AT_KEY}, to_jsonb(now()::text), now())
-        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+        ON CONFLICT (business_id, key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
       `.execute(trx);
       // The wipe empties the Activity page, so its own entry is the first thing on it afterwards.
       if (options.actorId !== undefined) {

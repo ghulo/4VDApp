@@ -110,7 +110,7 @@ export class ExpenseRepository {
     await this.db
       .insertInto('no_expense_days')
       .values({ day, marked_by: userId })
-      .onConflict((conflict) => conflict.column('day').doUpdateSet({ marked_by: userId }))
+      .onConflict((conflict) => conflict.columns(['business_id', 'day']).doUpdateSet({ marked_by: userId }))
       .execute();
   }
 

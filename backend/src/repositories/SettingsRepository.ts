@@ -20,7 +20,7 @@ export class SettingsRepository {
       .values({ key, value: json, updated_at: new Date() })
       .onConflict((oc) =>
         oc
-          .column('key')
+          .columns(['business_id', 'key'])
           .doUpdateSet({ value: json, updated_at: new Date() })
           .where('settings.value', 'is distinct from', sql<string>`${json}::jsonb`),
       )
@@ -34,7 +34,7 @@ export class SettingsRepository {
     await this.db
       .insertInto('settings')
       .values({ key, value: json, updated_by: updatedBy, updated_at: new Date() })
-      .onConflict((oc) => oc.column('key').doUpdateSet({ value: json, updated_by: updatedBy, updated_at: new Date() }))
+      .onConflict((oc) => oc.columns(['business_id', 'key']).doUpdateSet({ value: json, updated_by: updatedBy, updated_at: new Date() }))
       .execute();
   }
 }

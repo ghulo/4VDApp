@@ -130,7 +130,7 @@ describe('emails in each person’s language', () => {
     await context.db.updateTable('report_subscriptions').set({ email: true }).execute();
     await context.db.insertInto('report_subscriptions').values({ user_id: owner.id, email: true }).onConflict((oc) => oc.doNothing()).execute();
     const admin = await context.db.selectFrom('users').select('id').where('email', '=', 'admin@test.local').executeTakeFirstOrThrow();
-    await context.db.insertInto('report_subscriptions').values({ user_id: admin.id, email: true }).onConflict((oc) => oc.column('user_id').doUpdateSet({ email: true })).execute();
+    await context.db.insertInto('report_subscriptions').values({ user_id: admin.id, email: true }).onConflict((oc) => oc.columns(['business_id', 'user_id']).doUpdateSet({ email: true })).execute();
 
     await context.container.reportDeliveryService.sendDue(new Date('2026-10-05T20:00:00Z'));
     const toOwner = await newestEmailTo('owner@test.local');

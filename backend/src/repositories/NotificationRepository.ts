@@ -77,7 +77,7 @@ export class NotificationRepository {
     const claimed = await this.db
       .insertInto('day_closings')
       .values({ day })
-      .onConflict((oc) => oc.column('day').doNothing())
+      .onConflict((oc) => oc.columns(['business_id', 'day']).doNothing())
       .returning('day')
       .executeTakeFirst();
     return claimed !== undefined;

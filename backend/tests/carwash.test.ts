@@ -104,7 +104,7 @@ describe('carwash takings', () => {
     await save('2026-09-29', { carwash: 40, change: 10 });
     await save('2026-10-04', { carwash: 60, change: 0 });
 
-    await context.db.insertInto('report_subscriptions').values({ user_id: 1, email: true }).onConflict((oc) => oc.column('user_id').doUpdateSet({ email: true })).execute();
+    await context.db.insertInto('report_subscriptions').values({ user_id: 1, email: true }).onConflict((oc) => oc.columns(['business_id', 'user_id']).doUpdateSet({ email: true })).execute();
     // Monday 21:30 in Budapest: the weekly report covers Monday 28 Sept to Sunday 4 Oct.
     await context.container.reportDeliveryService.sendDue(new Date('2026-10-05T19:30:00Z'));
     const emails = await context.db.selectFrom('email_outbox').select(['subject', 'text']).execute();

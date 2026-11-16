@@ -46,7 +46,7 @@ export class BillEmailRepository {
         status: input.status,
         first_id: input.firstId ?? null,
       })
-      .onConflict((conflict) => conflict.columns(['message_id', 'file_hash']).doNothing())
+      .onConflict((conflict) => conflict.columns(['business_id', 'message_id', 'file_hash']).doNothing())
       .returning('id')
       .executeTakeFirst();
     return row?.id ?? null;

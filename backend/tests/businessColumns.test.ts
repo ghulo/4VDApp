@@ -45,3 +45,17 @@ describe('every row belongs to a business', () => {
     expect(rows).toEqual([{ role: 'admin', is_active: false, business_id: user.business_id }]);
   });
 });
+
+describe('what must be unique is unique within one business', () => {
+  it('lets two businesses use the same setting, category name and VAT month', async () => {
+    const other = await context.db.insertInto('businesses').values({ name: 'Other shop' }).returning('id').executeTakeFirstOrThrow();
+    await sql`INSERT INTO settings (key, value) VALUES ('shared_key', '1')`.execute(context.db);
+    await sql`INSERT INTO settings (business_id, key, value) VALUES (${other.id}, 'shared_key', '2')`.execute(context.db);
+    await sql`INSERT INTO categories (name) VALUES ('Snacks')`.execute(context.db);
+    await sql`INSERT INTO categories (business_id, name) VALUES (${other.id}, 'Snacks')`.execute(context.db);
+    await sql`INSERT INTO vat_months (month) VALUES ('2026-10-01')`.execute(context.db);
+    await sql`INSERT INTO vat_months (business_id, month) VALUES (${other.id}, '2026-10-01')`.execute(context.db);
+    // Within one business the old rule still holds.
+    await expect(sql`INSERT INTO categories (name) VALUES ('snacks')`.execute(context.db)).rejects.toThrow(/duplicate key/);
+  });
+});

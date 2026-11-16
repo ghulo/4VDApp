@@ -162,7 +162,7 @@ export class DocumentRepository {
     const row = await this.db
       .insertInto('document_numbers')
       .values({ kind, year, last_number: 1 })
-      .onConflict((oc) => oc.columns(['kind', 'year']).doUpdateSet({ last_number: sql`document_numbers.last_number + 1` }))
+      .onConflict((oc) => oc.columns(['business_id', 'kind', 'year']).doUpdateSet({ last_number: sql`document_numbers.last_number + 1` }))
       .returning('last_number')
       .executeTakeFirstOrThrow();
     return row.last_number;

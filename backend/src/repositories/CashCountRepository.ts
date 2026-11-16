@@ -90,7 +90,7 @@ export class CashCountRepository {
         counted_by: entry.countedBy,
       })
       .onConflict((conflict) =>
-        conflict.columns(['place', 'carwash_id', 'day']).doUpdateSet({
+        conflict.columns(['business_id', 'place', 'carwash_id', 'day']).doUpdateSet({
           float_amount: entry.float,
           counted_amount: entry.counted,
           note: entry.note,

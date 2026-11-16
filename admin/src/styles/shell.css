@@ -703,12 +703,14 @@
 }
 
 /* A filter dropdown beside the filters (supplier, category, sort, compare) is a
-   small raised key with its value in ink, the same height as the filter track. */
+   small raised key with its value in ink, the same height as the filter track.
+   The chevron keeps a clear --space-4 from the words even when the longest
+   choice fills the key ("4VD and TREFIN"), not only on keys with longer choices. */
 .toolbar select,
 .data-table__toolbar select {
   width: auto;
   height: var(--control-h);
-  padding: 0 calc(var(--space-3) + var(--space-2) + 10px) 0 var(--space-3);
+  padding: 0 calc(var(--space-3) + 10px + var(--space-4)) 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-small);
   background: var(--chevron), var(--light-raise), var(--surface);

@@ -13,7 +13,7 @@ import { inventoryApi } from '../services/api';
 import { type InventoryDetail, MANUAL_STOCK_REASONS, type RecordSource, type StockReason } from '../services/types';
 import { formatDate, formatDateTime, formatSignedQuantity } from '../utils/format';
 import { SourceFilter, TrefinTag } from '../components/TrefinParts';
-import { Button, Card } from '../components/ui';
+import { Badge, Button, Card } from '../components/ui';
 import { Minus, Plus } from '@phosphor-icons/react';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
@@ -41,9 +41,13 @@ export function ProductStockTab() {
             <StockTag quantity={item.quantity} reorderLevel={item.reorderLevel} size="large" />
             {/* Written here rather than taken from the server, so they follow the language. */}
             {item.quantity === 0 ? (
-              <p className="stock-hero__warning">{t.inventory.outWarning}</p>
+              <p className="stock-hero__warning">
+                <Badge tone="danger">{t.inventory.outWarning}</Badge>
+              </p>
             ) : item.quantity <= item.reorderLevel ? (
-              <p className="stock-hero__warning">{t.inventory.lowWarning(item.reorderLevel)}</p>
+              <p className="stock-hero__warning">
+                <Badge tone="warn">{t.inventory.lowWarning(item.reorderLevel)}</Badge>
+              </p>
             ) : (
               <p className="stock-hero__note">{t.inventory.alertAt(item.reorderLevel)}</p>
             )}

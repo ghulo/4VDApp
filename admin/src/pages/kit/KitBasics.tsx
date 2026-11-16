@@ -40,6 +40,8 @@ import type { PeriodKey } from '../../utils/periods';
 // tables, notices, panels and the smaller charts.
 
 const TONES: Tone[] = ['neutral', 'ok', 'warn', 'danger', 'info', 'brand'];
+// Real words for each tone, as pages use them.
+const TONE_WORDS: Record<Tone, string> = { neutral: 'Draft', ok: 'Paid', warn: 'Due Friday', danger: 'Overdue', info: 'Imported', brand: 'Owner' };
 
 interface Row {
   id: number;
@@ -137,7 +139,7 @@ export function KitBasics() {
           <div className="kit-row kit-row--gap">
             {TONES.map((tone) => (
               <Badge key={tone} tone={tone}>
-                {tone}
+                {TONE_WORDS[tone]}
               </Badge>
             ))}
           </div>
@@ -145,9 +147,24 @@ export function KitBasics() {
             <StockTag quantity={42} reorderLevel={10} />
             <StockTag quantity={3} reorderLevel={10} />
             <StockTag quantity={0} reorderLevel={10} />
-            <StockTag quantity={118} reorderLevel={10} size="large" />
+          </div>
+          <div className="kit-row kit-row--gap">
             <Avatar name="Arta Krasniqi" url={null} />
-            <Avatar name="Blerim Gashi" url={null} size={28} />
+            <Avatar name="Blerim Gashi" url={null} />
+            <Avatar name="Çlirim Berisha" url={null} />
+            <Avatar name="Dafina Hoxha" url={null} />
+            <Avatar name="Ëndrit Morina" url={null} size={28} />
+            <Avatar name="Teuta Krasniqi" url={null} size={28} />
+          </div>
+          <div className="stock-hero">
+            <StockTag quantity={118} reorderLevel={10} size="large" />
+            <p className="stock-hero__note">Alert when it drops to 10</p>
+          </div>
+          <div className="stock-hero">
+            <StockTag quantity={4} reorderLevel={10} size="large" />
+            <p className="stock-hero__warning">
+              <Badge tone="warn">Stock is at or below the reorder level (10)</Badge>
+            </p>
           </div>
         </Card>
       </Section>

@@ -1122,7 +1122,7 @@ export const makesApi = {
   create: async (input: { productId: number; quantity: number; day: string; locationId?: number | null; expiresOn?: string | null; note: string | null }) =>
     (await apiRequest<Make>('/makes', { method: 'POST', body: input })).data,
   void: async (id: number) => (await apiRequest<Make>(`/makes/${id}/void`, { method: 'POST' })).data,
-  madeProducts: async () => (await apiRequest<Array<{ productId: number; name: string; unit: ProductUnit; parts: number }>>('/makes/recipes')).data,
+  madeProducts: async () => (await apiRequest<Array<{ productId: number; name: string; unit: Product['unit']; parts: number }>>('/makes/recipes')).data,
   recipe: async (productId: number) => (await apiRequest<RecipePart[]>(`/makes/recipes/${productId}`)).data,
   setRecipe: async (productId: number, parts: Array<{ productId: number; quantity: number }>) =>
     (await apiRequest<RecipePart[]>(`/makes/recipes/${productId}`, { method: 'PUT', body: { parts } })).data,

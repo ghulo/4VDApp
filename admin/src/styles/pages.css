@@ -6173,6 +6173,64 @@ form.prices-form > .prices-form__actions {
   overflow-wrap: anywhere;
 }
 
+/* ---------- Serial numbers ---------- */
+
+/* A serial reads character by character, so it is set in monospace with even figures. */
+.serial-code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.serial-entry {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Each scanned serial pressed into the paper like a badge, with its own small x. */
+.serial-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.serial-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-h-xs);
+  padding-inline: var(--space-2) var(--space-1);
+  border-radius: var(--radius-segment);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-size: var(--text-sm);
+}
+
+.serial-chip__remove {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-segment);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.serial-chip__remove:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.serial-chip__remove:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
 /* ---------- Payroll ---------- */
 
 /* A line's warnings sit under the name, each its own small badge. */

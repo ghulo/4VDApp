@@ -23,7 +23,7 @@ import {
 import { hasPower, pageRoles, type Power } from '../auth/permissions';
 import { canManage, canOversee } from '../auth/roles';
 import type { Catalogue } from '../i18n/en';
-import type { UserRole } from '../services/types';
+import type { ShopFeatures, UserRole } from '../services/types';
 
 type NavKey = keyof Catalogue['nav']['items'];
 type TabKey = keyof Catalogue['nav']['tabs'];
@@ -42,6 +42,8 @@ export interface SectionTab {
   overseersOnly?: boolean;
   /** Only once the shop keeps stock in more than one location. */
   locations?: boolean;
+  /** Only once this feature is switched on (Settings → Features). */
+  feature?: keyof ShopFeatures;
   /** Only for roles with this power (Settings → Roles), like pay for the owner and the accountant. */
   power?: Power;
 }
@@ -79,6 +81,8 @@ export const SECTIONS = {
     { to: '/prices', key: 'prices', overseersOnly: true },
     { to: '/stock-documents', key: 'stockDocuments', overseersOnly: true, accountant: true },
     { to: '/stock-moves', key: 'stockMoves', overseersOnly: true, locations: true },
+    { to: '/makes', key: 'makes', overseersOnly: true, feature: 'recipes' },
+    { to: '/serials', key: 'serials', feature: 'serials' },
     { to: '/expiring', key: 'expiring' },
     { to: '/categories', key: 'categories' },
   ],
@@ -122,6 +126,7 @@ export const SECTIONS = {
     { to: '/reports/team', key: 'team', keepSearch: true },
     { to: '/reports/counter', key: 'counter', keepSearch: true },
     { to: '/reports/profit', key: 'profit', keepSearch: true, accountant: true },
+    { to: '/reports/projects', key: 'projects', keepSearch: true, accountant: true, feature: 'projects' },
     { to: '/reports/downloads', key: 'downloads', keepSearch: true, accountant: true, rare: true },
   ],
 } satisfies Record<string, SectionTab[]>;
@@ -148,7 +153,7 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
   {
     key: 'stock',
     items: [
-      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/stock-documents', '/stock-moves', '/expiring', '/categories', '/labels'] },
+      { to: '/inventory', key: 'stock', icon: Package, also: ['/products', '/prices', '/stock-documents', '/stock-moves', '/makes', '/serials', '/expiring', '/categories', '/labels'] },
       { to: '/counts', key: 'counts', icon: ClipboardText },
     ],
   },

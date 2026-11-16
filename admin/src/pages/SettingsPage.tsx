@@ -1,7 +1,8 @@
-import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
 import { BinPanel } from '../components/BinPanel';
 import { BillEmailPanel } from '../components/BillEmailParts';
 import { ShopRulesPanel } from '../components/ShopRulesPanel';
+import { FeaturesPanel } from '../components/FeaturesPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
@@ -93,6 +94,16 @@ export function SettingsPage() {
             content: (
               <ManagersOnly>
                 <BillEmailPanel />
+              </ManagersOnly>
+            ),
+          },
+          {
+            id: 'features',
+            label: t.features.title,
+            icon: PuzzlePiece,
+            content: (
+              <ManagersOnly can={canOversee}>
+                <FeaturesPanel />
               </ManagersOnly>
             ),
           },

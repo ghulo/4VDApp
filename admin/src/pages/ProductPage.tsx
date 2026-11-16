@@ -6,6 +6,7 @@ import { Badge, PageHeader } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { productsApi } from '../services/api';
 import { formatMoney, formatPromotionDay } from '../utils/format';
+import { useFeatures } from '../utils/useFeatures';
 
 /**
  * One page per product: the name and any promotion on top, then two tabs.
@@ -15,6 +16,7 @@ import { formatMoney, formatPromotionDay } from '../utils/format';
 export function ProductPage() {
   const t = useT();
   const productId = Number(useParams().id);
+  const features = useFeatures();
   // The same query as the Details form, so switching tabs costs nothing.
   const product = useQuery({
     queryKey: ['products', productId],
@@ -60,6 +62,16 @@ export function ProductPage() {
         <NavLink to={`/products/${productId}/details`} end className="section-tabs__tab">
           {t.productPage.details}
         </NavLink>
+        {features.recipes && (
+          <NavLink to={`/products/${productId}/made-from`} end className="section-tabs__tab">
+            {t.productPage.madeFrom}
+          </NavLink>
+        )}
+        {features.serials && (
+          <NavLink to={`/products/${productId}/serials`} end className="section-tabs__tab">
+            {t.productPage.serials}
+          </NavLink>
+        )}
       </nav>
       <Suspense fallback={<Loading />}>
         <Outlet />

@@ -57,6 +57,12 @@ const StockDocumentsPage = lazyPage(() => import('./pages/StockDocumentsPage'), 
 const StockDocumentPage = lazyPage(() => import('./pages/StockDocumentsPage'), 'StockDocumentPage');
 const StockMovesPage = lazyPage(() => import('./pages/StockMovesPage'), 'StockMovesPage');
 const StockMovePage = lazyPage(() => import('./pages/StockMovesPage'), 'StockMovePage');
+const MakesPage = lazyPage(() => import('./pages/MakesPage'), 'MakesPage');
+const MakePage = lazyPage(() => import('./pages/MakesPage'), 'MakePage');
+const SerialsPage = lazyPage(() => import('./pages/SerialsPage'), 'SerialsPage');
+const ProductRecipeTab = lazyPage(() => import('./pages/ProductRecipeTab'), 'ProductRecipeTab');
+const ProductSerialsTab = lazyPage(() => import('./pages/ProductSerialsTab'), 'ProductSerialsTab');
+const ProjectsReportPage = lazyPage(() => import('./pages/ProjectsReportPage'), 'ProjectsReportPage');
 const ReportsPage = lazyPage(() => import('./pages/ReportsPage'), 'ReportsPage');
 const SalesPage = lazyPage(() => import('./pages/SalesPage'), 'SalesPage');
 const ExpiringPage = lazyPage(() => import('./pages/ExpiringPage'), 'ExpiringPage');
@@ -240,6 +246,9 @@ function App() {
                         <Route path="stock-documents/:id" element={<StockDocumentPage />} />
                         <Route path="stock-moves" element={<StockMovesPage />} />
                         <Route path="stock-moves/:id" element={<StockMovePage />} />
+                        <Route path="makes" element={<MakesPage />} />
+                        <Route path="makes/:id" element={<MakePage />} />
+                        <Route path="serials" element={<SerialsPage />} />
                         <Route path="expiring" element={<ExpiringPage />} />
                         <Route path="categories" element={<CategoriesPage />} />
                       </Route>
@@ -249,6 +258,8 @@ function App() {
                       <Route path="products/:id" element={<ProductPage />}>
                         <Route index element={<ProductStockTab />} />
                         <Route path="details" element={<ProductFormPage />} />
+                        <Route path="made-from" element={<ProductRecipeTab />} />
+                        <Route path="serials" element={<ProductSerialsTab />} />
                       </Route>
                       <Route path="labels" element={<LabelsPage />} />
                       <Route element={<SectionTabs tabs={SECTIONS.sales} labelKey="sales" />}>
@@ -293,6 +304,7 @@ function App() {
                         <Route path="reports/team" element={<ReportsPage view="team" />} />
                         <Route path="reports/counter" element={<ReportsPage view="counter" />} />
                         <Route path="reports/profit" element={<ReportsPage view="profit" />} />
+                        <Route path="reports/projects" element={<ProjectsReportPage />} />
                         <Route path="reports/downloads" element={<ReportsPage view="downloads" />} />
                       </Route>
                       <Route path="customers" element={<CustomersPage />} />

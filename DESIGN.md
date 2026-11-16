@@ -724,7 +724,7 @@ hover (less jumpy in dense rows).
 | **Secondary** | Paper with a 1px Strong Hairline ring | 2px Strong Hairline | every other action, form Cancel |
 | **Ghost** | none until hover (Oat) | none | toolbars, icon buttons, menu rows |
 | **Danger** | Danger with Paper text | 2px darker danger | destroying something, inside a confirm |
-| **Danger text** | red words only | none | "Delete" beside other actions |
+| **Danger text** | red words only | none | every "Delete" / "Remove" that opens the question; the red key appears only once it is asked |
 
 - **Rest**: face + edge + a 1px light line inside the top + a soft drop (0 2px
   6px, 10% ink).

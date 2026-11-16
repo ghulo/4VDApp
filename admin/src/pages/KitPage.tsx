@@ -87,7 +87,7 @@ export function KitPage() {
         <Card>
           <div className="kit-row">
             <Button icon={PencilSimple} aria-label="Edit the product" />
-            <Button icon={Trash} variant="danger" aria-label="Remove the line" />
+            <Button icon={Trash} variant="danger-text" aria-label="Remove the line" />
             <Popover label="Filters" icon={Funnel} title="Show only">
               {(close) => (
                 <>

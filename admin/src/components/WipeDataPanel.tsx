@@ -45,7 +45,7 @@ export function WipeDataPanel() {
       )}
       {!open ? (
         <div className="form-actions">
-          <Button variant="danger" onClick={() => setOpen(true)}>
+          <Button variant="danger-text" onClick={() => setOpen(true)}>
             {t.wipe.open}
           </Button>
         </div>

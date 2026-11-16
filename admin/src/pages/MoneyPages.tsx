@@ -1335,7 +1335,7 @@ function RuleForm({ rule, places, onDone }: { rule: BankRule | null; places: Mon
               </Button>
             </span>
           ) : (
-            <Button variant="danger" className="money-actions__end" onClick={() => setRemoving(true)}>
+            <Button variant="danger-text" className="money-actions__end" onClick={() => setRemoving(true)}>
               {t.money.rules.remove}
             </Button>
           ))}

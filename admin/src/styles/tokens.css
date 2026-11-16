@@ -38,6 +38,8 @@
   --cta-top: var(--amber-350);
   --cta-low: var(--amber-450);
   --cta-ink: var(--neutral-975);
+  /* The light that falls on a key when the pointer is on it (fades in as its own layer). */
+  --key-light: linear-gradient(180deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0) 70%);
   /* Amber depth for "where you are" and selected things: a solid wash, a rim one shade
      deeper, a lit top lip, and a mark for edges and bars. Hover uses the quieter wash. */
   --tint: var(--amber-150);
@@ -126,6 +128,7 @@
   --cta-top: var(--amber-350);
   --cta-low: var(--amber-450);
   --cta-ink: var(--neutral-975);
+  --key-light: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 70%);
   /* Dark amber surfaces climb 975 (hover) → 925 (selected) with an 850 rim. */
   --tint: var(--amber-925);
   --amber-wash: var(--amber-975);

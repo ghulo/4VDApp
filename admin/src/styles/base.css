@@ -107,16 +107,26 @@ select,
 textarea {
   width: 100%;
   min-height: var(--control-h);
-  padding: 6px 10px;
+  padding: 0 var(--space-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-small);
-  background: var(--surface);
+  background-color: var(--surface);
   /* Fields sit into the page, the opposite of the raised buttons. */
   box-shadow: var(--shadow-inset);
   color: var(--ink);
   font: inherit;
   font-size: var(--text-field);
-  transition: border-color 0.1s, box-shadow 0.1s;
+  transition:
+    border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+/* Figures line up digit under digit while you type them. */
+input[inputmode='decimal'],
+input[inputmode='numeric'],
+input[type='number'] {
+  font-variant-numeric: tabular-nums;
 }
 
 input::placeholder,
@@ -124,9 +134,9 @@ textarea::placeholder {
   color: var(--ink-muted);
 }
 
-input:hover,
-select:hover,
-textarea:hover {
+input:hover:not(:disabled, :focus-visible),
+select:hover:not(:disabled, :focus-visible),
+textarea:hover:not(:disabled, :focus-visible) {
   border-color: color-mix(in srgb, var(--line-strong) 60%, var(--ink));
 }
 
@@ -138,16 +148,53 @@ textarea:focus-visible {
   box-shadow: var(--shadow-inset), 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent);
 }
 
+/* A field with a mistake keeps its red while you fix it, ring included. */
+:is(input, select, textarea)[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+:is(input, select, textarea)[aria-invalid='true']:focus-visible {
+  border-color: var(--danger);
+  box-shadow: var(--shadow-inset), 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
 input:disabled,
 select:disabled,
 textarea:disabled {
-  background: var(--surface-sunk);
+  background-color: var(--surface-sunk);
   color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+/* The browser's own yellow for saved logins would break the paper: keep it ours. */
+input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  box-shadow: var(--shadow-inset), inset 0 0 0 100vmax var(--brand-soft);
+  caret-color: var(--ink);
 }
 
 textarea {
   resize: vertical;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Our own small chevron instead of each system's arrow (Windows draws a
+   grey box in dark mode). Two half-squares of ink make the V. */
+:root {
+  --chevron:
+    linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%) calc(100% - var(--space-3) - 10px) 50% / 5px 5px no-repeat,
+    linear-gradient(135deg, var(--ink-muted) 50%, transparent 50%) calc(100% - var(--space-3) - 5px) 50% / 5px 5px no-repeat;
+}
+
+select:not([multiple], [size]) {
+  appearance: none;
+  padding-inline-end: calc(var(--space-3) * 2 + 10px);
+  background: var(--chevron);
+  background-color: var(--surface);
+}
+
+select:not([multiple], [size]):disabled {
+  background-color: var(--surface-sunk);
 }
 
 input[type='checkbox'],

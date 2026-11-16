@@ -708,10 +708,10 @@
 .data-table__toolbar select {
   width: auto;
   height: var(--control-h);
-  padding: 0 var(--space-2) 0 var(--space-3);
+  padding: 0 calc(var(--space-3) + var(--space-2) + 10px) 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-small);
-  background: var(--light-raise), var(--surface);
+  background: var(--chevron), var(--light-raise), var(--surface);
   font-size: var(--text-sm);
   font-weight: 400;
   box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);

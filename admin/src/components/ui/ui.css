@@ -1212,7 +1212,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   max-inline-size: var(--field-max);
   margin-bottom: var(--space-4);
 }
@@ -1298,10 +1298,6 @@
 /* Empty, it takes no room but stays in place to be read out when it fills. */
 .password-field__caps:empty {
   display: contents;
-}
-
-input[aria-invalid='true'] {
-  border-color: var(--danger);
 }
 
 .field--narrow {

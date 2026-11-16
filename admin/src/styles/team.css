@@ -440,9 +440,21 @@
 }
 
 /* The one place that can't be taken back reads as such. */
+/* Something that can't be undone: a hairline of red around the card and the
+   problem circle before its title, no stripe (a pale band read as a glitch). */
 .card--danger {
   border-color: color-mix(in srgb, var(--danger) 35%, transparent);
-  background: linear-gradient(var(--danger-soft), var(--danger-soft)) top / 100% 4px no-repeat, var(--surface);
+}
+
+.card--danger .card__title::before {
+  display: inline-block;
+  inline-size: 18px;
+  block-size: 18px;
+  margin-inline-end: var(--space-2);
+  vertical-align: -3px;
+  background: currentColor;
+  mask: var(--icon-error) center / contain no-repeat;
+  content: '';
 }
 
 .card--danger .card__title {
@@ -733,7 +745,7 @@
 }
 
 .card__empty {
-  margin: var(--space-4) var(--space-5);
+  margin: var(--space-4) var(--inset-panel);
   color: var(--ink-muted);
 }
 

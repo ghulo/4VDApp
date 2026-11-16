@@ -276,10 +276,10 @@ export function KitBasics() {
           footer={<span className="kit-note">Changed by Arta, yesterday</span>}
         >
           <SettingRow title="Print a receipt for every sale" description="Customers can still say no.">
-            <label className="toggle">
-              <input type="checkbox" defaultChecked />
-              On
-            </label>
+            <input type="checkbox" role="switch" className="switch" aria-label="Print a receipt for every sale" defaultChecked />
+          </SettingRow>
+          <SettingRow title="Ask for the customer at the till" description="Off: sales go to walk-in customers.">
+            <input type="checkbox" role="switch" className="switch" aria-label="Ask for the customer at the till" />
           </SettingRow>
           <SettingRow title="Language">
             <select defaultValue="sq" aria-label="Language">
@@ -287,6 +287,9 @@ export function KitBasics() {
               <option value="en">English</option>
             </select>
           </SettingRow>
+        </Card>
+        <Card className="card--danger" title="Wipe the shop's data" description="Sales, bills and stock go. Products and people stay. This can't be undone.">
+          <Button variant="danger-text">Wipe the data…</Button>
         </Card>
       </Section>
 

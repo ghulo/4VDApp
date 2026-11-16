@@ -155,6 +155,17 @@ describe('payroll in the app', () => {
     expect((await api().get('/api/payroll/employees').set(auth())).status).toBe(200);
   });
 
+  it('offers team accounts with their email and phone, and keeps a person’s contact details', async () => {
+    await loginAs(context, 'employee', { email: 'drita@test.local' });
+    const team = await api().get('/api/payroll/team').set(auth());
+    const drita = (team.body.data as Array<{ id: number; email: string; phone: string | null }>).find((one) => one.email === 'drita@test.local');
+    expect(drita).toBeDefined();
+    const id = await add({ userId: drita!.id, phone: '044 123 456', email: ' Drita@Test.local ', address: 'Rr. Agim Ramadani 12, Prishtinë', birthDate: '1995-04-02', bankName: 'ProCredit' });
+    const saved = (await api().get(`/api/payroll/employees/${id}`).set(auth())).body.data;
+    expect(saved).toMatchObject({ userId: drita!.id, phone: '044 123 456', email: 'drita@test.local', address: 'Rr. Agim Ramadani 12, Prishtinë', birthDate: '1995-04-02', bankName: 'ProCredit' });
+    expect((await api().post('/api/payroll/employees').set(auth()).send(person({ name: 'Bad Mail', email: 'not-an-email' }))).status).toBe(400);
+  });
+
   it('confirms a month into the books, keeps the carwash out of them, and pays wages and ATK', async () => {
     await add();
     await add({ name: 'Besnik Gashi', personalNumber: '1234567891', payBasis: 'net', payAmount: 456.5, place: 'carwash' });

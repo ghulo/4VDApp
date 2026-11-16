@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useT } from '../../i18n/useT';
 import { formatPercent } from '../../utils/format';
+
+const RingView = lazy(() => import('./charts/RechartsViews').then((module) => ({ default: module.RingView })));
 
 export interface DonutSlice {
   key: string | number;
@@ -23,11 +25,6 @@ export function donutSlices(slices: DonutSlice[], otherLabel: string, formatOthe
   return [...sorted.slice(0, MOST - 1), { key: 'other', label: otherLabel, value: rest, display: formatOther(rest) }];
 }
 
-const RADIUS = 40;
-const CIRCLE = 2 * Math.PI * RADIUS;
-/** Paper between slices, in the circle's units. */
-const GAP = 1.2;
-
 /**
  * Parts of one whole (sales by how paid, costs by kind) as a ring in steps
  * of the brand amber, the total in the middle and a legend that carries the figures. Five
@@ -39,32 +36,14 @@ export function DonutChart({ slices, label, total, formatOther }: { slices: Donu
   const [active, setActive] = useState<string | number | null>(null);
   const shown = donutSlices(slices, t.kit.other, formatOther);
   const sum = shown.reduce((acc, slice) => acc + slice.value, 0);
-  let start = 0;
   return (
     <figure className="donut" aria-label={label}>
       <div className="donut__ring">
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <circle className="donut__track" cx="50" cy="50" r={RADIUS} />
-          {sum > 0 &&
-            shown.map((slice, index) => {
-              const length = (slice.value / sum) * CIRCLE;
-              const dash = Math.max(0, length - (shown.length > 1 ? GAP : 0));
-              const arc = (
-                <circle
-                  key={slice.key}
-                  className={active === null || active === slice.key ? 'donut__slice' : 'donut__slice donut__slice--dim'}
-                  cx="50"
-                  cy="50"
-                  r={RADIUS}
-                  style={{ stroke: SHADES[index] }}
-                  strokeDasharray={`${dash} ${CIRCLE - dash}`}
-                  strokeDashoffset={-start}
-                />
-              );
-              start += length;
-              return arc;
-            })}
-        </svg>
+        <div className="donut__plot" aria-hidden="true">
+          <Suspense fallback={null}>
+            <RingView slices={sum > 0 ? shown : []} shades={SHADES} active={active} onActive={setActive} />
+          </Suspense>
+        </div>
         <p className="donut__total">
           <span className="donut__figure">{total}</span>
           <span className="donut__caption">{t.common.total}</span>

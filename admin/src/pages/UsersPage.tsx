@@ -1,4 +1,4 @@
-import { ClockCounterClockwise, Plus, UsersThree } from '@phosphor-icons/react';
+import { ClockCounterClockwise, Money, Plus, UsersThree } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -16,6 +16,8 @@ import { formatDate, formatHeadlineMoney, formatMoney, formatTime, localDay } fr
 import { resolvePeriod } from '../utils/periods';
 import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile } from '../components/ui';
 import { assignableRoles, canHandOut, canManage, canOversee } from '../auth/roles';
+import { hasPower } from '../auth/permissions';
+import { payrollApi } from '../services/payroll';
 import type { Language } from '../services/types';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -442,6 +444,8 @@ export function PersonPage() {
     enabled: oversee,
   });
   const sessions = useQuery({ queryKey: ['users', personId, 'sessions'], queryFn: () => usersApi.sessions(personId), enabled: oversee });
+  const payroll = hasPower(currentUser.role, 'payroll');
+  const employees = useQuery({ queryKey: ['payroll', 'employees'], queryFn: payrollApi.employees, enabled: payroll });
 
   if (!Number.isInteger(personId)) return <Navigate to="/people" replace />;
   if (users.isPending) return <Loading />;
@@ -463,6 +467,7 @@ export function PersonPage() {
   const counts = cash.data?.filter((count) => count.countedById === person.id) ?? [];
   const off = counts.filter((count) => count.difference !== null && Math.abs(count.difference) >= 0.5);
   const offTotal = off.reduce((sum, count) => sum + (count.difference ?? 0), 0);
+  const employee = employees.data?.find((one) => one.userId === person.id);
   const reported = writeOffs.data?.filter((item) => item.requestedBy?.id === person.id && item.requestedAt >= range.startDate) ?? [];
 
   return (
@@ -480,6 +485,19 @@ export function PersonPage() {
           </span>
         }
         meta={<Avatar name={person.name} url={person.avatarUrl} size={48} />}
+        actions={
+          payroll && employees.data && person.role !== 'developer' ? (
+            employee ? (
+              <ButtonLink to={`/payroll/people/${employee.id}`} variant="secondary" icon={Money}>
+                {t.people.onPayroll}
+              </ButtonLink>
+            ) : (
+              <ButtonLink to={`/payroll?new=1&user=${person.id}`} variant="secondary" icon={Plus}>
+                {t.people.putOnPayroll}
+              </ButtonLink>
+            )
+          ) : undefined
+        }
       />
 
       {oversee && sells && (

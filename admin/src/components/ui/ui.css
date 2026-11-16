@@ -2213,8 +2213,7 @@ input.switch:focus-visible {
 }
 
 /* Far past the rest: drawn to the end with a break near its tip (DESIGN.md 10.7). */
-.bar-list__bar--capped,
-.column-chart__bar--capped {
+.bar-list__bar--capped {
   position: relative;
 }
 
@@ -2227,114 +2226,16 @@ input.switch:focus-visible {
   content: '';
 }
 
-.column-chart__bar--capped::after {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-start: 8px;
-  block-size: 2px;
-  background: var(--surface);
-  content: '';
-}
-
 .bar-list__value {
   font-variant-numeric: tabular-nums;
   text-align: end;
   white-space: nowrap;
 }
 
-.column-chart {
-  display: grid;
-  align-items: end;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.column-chart__slot {
-  display: grid;
-  gap: var(--space-1);
-  min-inline-size: 0;
-}
-
-.column-chart__track {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  block-size: 140px;
-  border-bottom: 1px solid var(--line-strong);
-}
-
 /* A column is a block standing on the line with room on each side, never
    wider than a finger, so a week reads as seven pieces, not one wall. */
-.column-chart__bar {
-  display: block;
-  inline-size: min(100%, 2.5rem);
-  border-radius: var(--radius-stamp) var(--radius-stamp) 0 0;
-  background: var(--chart-series);
-  box-shadow: var(--bar-depth);
-  transition:
-    background var(--fast) var(--ease),
-    opacity var(--fast) var(--ease);
-}
-
 /* Pointing at one column lifts it and lets the rest step back. */
-.column-chart:has(.column-chart__slot:hover) .column-chart__slot:not(:hover) .column-chart__bar {
-  opacity: 0.45;
-}
-
-.column-chart__bar--top {
-  background: var(--chart-strong);
-}
-
-.column-chart__slot:hover .column-chart__bar {
-  background: var(--chart-strong);
-}
-
-.column-chart__tip {
-  position: absolute;
-  bottom: calc(100% + var(--space-1));
-  left: 50%;
-  z-index: 2;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-small);
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
-  color: var(--ink);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-  pointer-events: none;
-  transform: translateX(-50%);
-  /* Out of the layout until hovered, so it never widens the page. */
-  display: none;
-}
-
-.column-chart__slot:hover .column-chart__tip {
-  display: block;
-}
-
 /* Columns near the edges open their figure inwards. */
-.column-chart__slot:nth-child(-n + 2) .column-chart__tip {
-  left: 0;
-  transform: none;
-}
-
-.column-chart__slot:nth-last-child(-n + 2) .column-chart__tip {
-  right: 0;
-  left: auto;
-  transform: none;
-}
-
-.column-chart__label {
-  overflow: hidden;
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  white-space: nowrap;
-}
-
 @media (max-width: 599px) {
   /* Names are long on a phone: label and value share a line, the bar runs beneath. */
   .bar-list__row {
@@ -2358,9 +2259,6 @@ input.switch:focus-visible {
     block-size: 8px;
   }
 
-  .column-chart__track {
-    block-size: 110px;
-  }
 }
 
 /* ---------- Ledger rows ----------

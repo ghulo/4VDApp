@@ -29,6 +29,11 @@ export interface EmployeeInput {
   extraPensionEmployee: number;
   extraPensionEmployer: number;
   bankAccount: string | null;
+  bankName: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  birthDate: string | null;
   place: Place;
   leaveDays: number;
   note: string | null;
@@ -181,6 +186,11 @@ function employeeQuery(db: DatabaseClient) {
       'e.extra_pension_employee',
       'e.extra_pension_employer',
       'e.bank_account',
+      'e.bank_name',
+      'e.phone',
+      'e.email',
+      'e.address',
+      sql<string | null>`to_char(e.birth_date, 'YYYY-MM-DD')`.as('birth_date'),
       'e.place',
       'e.leave_days',
       'e.note',
@@ -292,9 +302,9 @@ export class PayrollService {
     };
   }
 
-  /** Team accounts that can be linked to someone on the payroll: name and role only. */
-  async team(): Promise<Array<{ id: number; name: string; role: string }>> {
-    return this.db.selectFrom('users').select(['id', 'name', 'role']).where('is_active', '=', true).where('role', '!=', 'developer').orderBy('name').execute();
+  /** Team accounts that can be linked to someone on the payroll, with the email and phone that fill in their details. */
+  async team(): Promise<Array<{ id: number; name: string; role: string; email: string; phone: string | null }>> {
+    return this.db.selectFrom('users').select(['id', 'name', 'role', 'email', 'phone']).where('is_active', '=', true).where('deleted_at', 'is', null).where('role', '!=', 'developer').orderBy('name').execute();
   }
 
   /** The employee record linked to a team account, if any. */
@@ -809,6 +819,11 @@ function toInput(row: EmployeeRow): EmployeeInput {
     extraPensionEmployee: Number(row.extra_pension_employee),
     extraPensionEmployer: Number(row.extra_pension_employer),
     bankAccount: row.bank_account,
+    bankName: row.bank_name,
+    phone: row.phone,
+    email: row.email,
+    address: row.address,
+    birthDate: row.birth_date,
     place: row.place,
     leaveDays: Number(row.leave_days),
     note: row.note,
@@ -832,6 +847,11 @@ function toRow(input: EmployeeInput) {
     extra_pension_employee: input.extraPensionEmployee,
     extra_pension_employer: input.extraPensionEmployer,
     bank_account: input.bankAccount,
+    bank_name: input.bankName,
+    phone: input.phone,
+    email: input.email,
+    address: input.address,
+    birth_date: input.birthDate,
     place: input.place,
     leave_days: input.leaveDays,
     note: input.note,

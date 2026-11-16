@@ -361,10 +361,14 @@ describe('BarList and ColumnChart', () => {
     expect(html).toContain('>100<');
   });
 
-  it('should cap one huge column the same way, and leave an even chart alone', () => {
-    expect(columns([5, 60, 4]).match(/column-chart__bar--capped/g)).toHaveLength(1);
-    expect(columns([5, 6, 4])).not.toContain('--capped');
+  it('should leave an even bar list alone', () => {
     expect(bars([5, 6, 4])).not.toContain('--capped');
+  });
+
+  it('should give screen readers every column as a line of text', () => {
+    const html = columns([5, 60, 4]);
+    expect(html).toContain('<li>5</li>');
+    expect(html).toContain('<li>60</li>');
   });
 });
 
@@ -414,17 +418,6 @@ describe('newer kit pieces', () => {
     expect(matchOptions(options, 'clirim').map((option) => option.value)).toEqual(['2', '1']);
     expect(matchOptions(options, '044').map((option) => option.value)).toEqual(['2']);
     expect(matchOptions(options, '  ')).toHaveLength(3);
-  });
-
-  it('should scale area points to the top value, with an outlier on the edge', async () => {
-    const { areaPoints } = await import('./AreaChart');
-    expect(areaPoints([0, 5, 10])).toEqual([
-      { x: 0, y: 1 },
-      { x: 0.5, y: 0.5 },
-      { x: 1, y: 0 },
-    ]);
-    expect(areaPoints([10, 12, 100])[2]!.y).toBe(0);
-    expect(areaPoints([])).toEqual([]);
   });
 
   it('should keep the four biggest donut slices and add up the rest as Other', async () => {

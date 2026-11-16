@@ -1784,6 +1784,11 @@ export interface EmployeesTable {
   extra_pension_employee: ColumnType<string, number | string | undefined, number | string>;
   extra_pension_employer: ColumnType<string, number | string | undefined, number | string>;
   bank_account: string | null;
+  bank_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  birth_date: NullableDay;
   place: Generated<'shop' | 'carwash'>;
   leave_days: ColumnType<string, number | string | undefined, number | string>;
   note: string | null;

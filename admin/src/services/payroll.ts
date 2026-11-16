@@ -22,9 +22,23 @@ export interface EmployeeInput {
   extraPensionEmployee: number;
   extraPensionEmployer: number;
   bankAccount: string | null;
+  bankName: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  birthDate: string | null;
   place: StaffPlace;
   leaveDays: number;
   note: string | null;
+}
+
+/** A team account that can be linked to someone on the payroll. */
+export interface PayrollTeamMember {
+  id: number;
+  name: string;
+  role: string;
+  email: string;
+  phone: string | null;
 }
 
 export interface LeaveBalance {
@@ -170,7 +184,7 @@ export const PAYROLL_KEY = ['payroll'];
 
 export const payrollApi = {
   employees: async () => (await apiRequest<Employee[]>('/payroll/employees')).data,
-  team: async () => (await apiRequest<Array<{ id: number; name: string; role: string }>>('/payroll/team')).data,
+  team: async () => (await apiRequest<PayrollTeamMember[]>('/payroll/team')).data,
   employee: async (id: number) => (await apiRequest<EmployeeDetail>(`/payroll/employees/${id}`)).data,
   create: async (input: EmployeeInput) => (await apiRequest<EmployeeDetail>('/payroll/employees', { method: 'POST', body: input })).data,
   update: async (id: number, input: EmployeeInput) => (await apiRequest<EmployeeDetail>(`/payroll/employees/${id}`, { method: 'PUT', body: input })).data,

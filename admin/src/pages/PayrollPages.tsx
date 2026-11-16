@@ -1,6 +1,6 @@
 import { DownloadSimple, PencilSimple, Plus, Printer } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { ChipChoice } from '../components/ChipChoice';
 import { ErrorNotice, Loading } from '../components/Feedback';
@@ -97,6 +97,14 @@ export function PayrollPeoplePage() {
   const filter: Filter = params.get('show') === 'left' || params.get('show') === 'all' ? (params.get('show') as Filter) : 'current';
   const employees = useQuery({ queryKey: [...PAYROLL_KEY, 'employees'], queryFn: payrollApi.employees });
   const [adding, setAdding] = useNewSheet();
+  const linkUserId = params.get('user') ?? undefined;
+  const closeAdding = () =>
+    setParams((current) => {
+      const updated = new URLSearchParams(current);
+      updated.delete('new');
+      updated.delete('user');
+      return updated;
+    });
 
   const all = employees.data ?? [];
   const working = all.filter((employee) => !employee.gone);
@@ -162,8 +170,8 @@ export function PayrollPeoplePage() {
           />
         </>
       )}
-      <Sheet open={adding} onClose={() => setAdding(false)} title={w.add}>
-        <EmployeeForm onSaved={() => setAdding(false)} />
+      <Sheet open={adding} onClose={closeAdding} title={w.add}>
+        <EmployeeForm linkUserId={linkUserId} onSaved={closeAdding} />
       </Sheet>
     </>
   );
@@ -203,13 +211,18 @@ interface FormState {
   extraEmployee: string;
   extraEmployer: string;
   bankAccount: string;
+  bankName: string;
+  phone: string;
+  email: string;
+  address: string;
+  birthDate: string;
   place: StaffPlace;
   leaveDays: string;
   note: string;
 }
 
 /** Adding someone to the payroll, or changing their contract. */
-function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSaved: () => void }) {
+function EmployeeForm({ employee, linkUserId, onSaved }: { employee?: EmployeeDetail; /** Opened from a team member's page: link that account. */ linkUserId?: string; onSaved: () => void }) {
   const t = useT();
   const w = t.payroll.form;
   const toast = useToast();
@@ -218,7 +231,7 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
   const team = useQuery({ queryKey: [...PAYROLL_KEY, 'team'], queryFn: payrollApi.team });
   const employees = useQuery({ queryKey: [...PAYROLL_KEY, 'employees'], queryFn: payrollApi.employees });
   const [form, setForm] = useState<FormState>(() => ({
-    userId: employee?.userId ? String(employee.userId) : '',
+    userId: employee?.userId ? String(employee.userId) : (linkUserId ?? ''),
     name: employee?.name ?? '',
     personalNumber: employee?.personalNumber ?? '',
     jobTitle: employee?.jobTitle ?? '',
@@ -233,6 +246,11 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
     extraEmployee: employee ? String(employee.extraPensionEmployee) : '0',
     extraEmployer: employee ? String(employee.extraPensionEmployer) : '0',
     bankAccount: employee?.bankAccount ?? '',
+    bankName: employee?.bankName ?? '',
+    phone: employee?.phone ?? '',
+    email: employee?.email ?? '',
+    address: employee?.address ?? '',
+    birthDate: employee?.birthDate ?? '',
     place: employee?.place ?? 'shop',
     leaveDays: employee ? String(employee.leaveDays) : '20',
     note: employee?.note ?? '',
@@ -244,6 +262,31 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
     setForm((now) => ({ ...now, ...patch }));
   };
 
+  // Picking their account fills in what it knows, without overwriting what is typed.
+  const fillFrom = (userId: string) => (now: FormState): FormState => {
+    const user = (team.data ?? []).find((one) => String(one.id) === userId);
+    if (!user) return { ...now, userId };
+    return {
+      ...now,
+      userId,
+      name: now.name.trim() === '' ? user.name : now.name,
+      phone: now.phone.trim() === '' ? (user.phone ?? '') : now.phone,
+      email: now.email.trim() === '' ? user.email : now.email,
+    };
+  };
+  const linkAccount = (userId: string) => {
+    setTouched(true);
+    setForm(fillFrom(userId));
+  };
+  // Opened from a team member's page: fill in from that account once the list is here.
+  const filled = useRef(false);
+  useEffect(() => {
+    if (filled.current || employee || !linkUserId || !team.data) return;
+    filled.current = true;
+    setForm(fillFrom(linkUserId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [team.data]);
+
   const amount = amountOf(form.payAmount);
   const extraEmployee = amountOf(form.extraEmployee || '0');
   const extraEmployer = amountOf(form.extraEmployer || '0');
@@ -252,6 +295,8 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
     name: form.name.trim() === '' ? w.nameError : null,
     personalNumber: form.personalNumber.trim() !== '' && !/^\d+$/.test(form.personalNumber.trim()) ? w.personalNumberError : null,
     payAmount: !(amount > 0) ? w.payAmountError : null,
+    email: form.email.trim() !== '' && !/^[^s@]+@[^s@]+.[^s@]+$/.test(form.email.trim()) ? w.emailError : null,
+    birthDate: form.birthDate !== '' && form.birthDate > today() ? w.birthDateError : null,
     extraEmployee: !(extraEmployee >= 0 && extraEmployee <= 10) ? w.extraError : null,
     extraEmployer: !(extraEmployer >= 0 && extraEmployer <= 10) ? w.extraError : null,
     contractEndsOn: form.contractEndsOn !== '' && form.contractEndsOn < form.startedOn ? w.datesError : null,
@@ -281,6 +326,11 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
         extraPensionEmployee: form.nonResident ? 0 : extraEmployee,
         extraPensionEmployer: form.nonResident ? 0 : extraEmployer,
         bankAccount: form.bankAccount.trim() || null,
+        bankName: form.bankName.trim() || null,
+        phone: form.phone.trim() || null,
+        email: form.email.trim() || null,
+        address: form.address.trim() || null,
+        birthDate: form.birthDate || null,
         place: form.place,
         leaveDays,
         note: form.note.trim() || null,
@@ -306,6 +356,18 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
   return (
     <form className="settings-form" onSubmit={handleSubmit} noValidate>
       <h3 className="subheading">{w.who}</h3>
+      <Field label={w.account} hint={w.accountHint}>
+        <select value={form.userId} onChange={(event) => linkAccount(event.target.value)}>
+          <option value="">{w.noAccount}</option>
+          {(team.data ?? [])
+            .filter((user) => !taken.has(user.id) || String(user.id) === form.userId)
+            .map((user) => (
+              <option key={user.id} value={user.id}>
+                {`${user.name} · ${t.common.roles[user.role as keyof typeof t.common.roles] ?? user.role}`}
+              </option>
+            ))}
+        </select>
+      </Field>
       <Field label={w.name} error={touched ? (problems.name ?? undefined) : undefined}>
         <input required autoComplete="off" maxLength={200} value={form.name} onChange={(event) => change({ name: event.target.value })} />
       </Field>
@@ -317,18 +379,22 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
           <input autoComplete="off" maxLength={100} value={form.jobTitle} onChange={(event) => change({ jobTitle: event.target.value })} />
         </Field>
       </div>
-      <Field label={w.account} hint={w.accountHint}>
-        <select value={form.userId} onChange={(event) => change({ userId: event.target.value })}>
-          <option value="">{w.noAccount}</option>
-          {(team.data ?? [])
-            .filter((user) => !taken.has(user.id) || String(user.id) === form.userId)
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {`${user.name} · ${t.common.roles[user.role as keyof typeof t.common.roles] ?? user.role}`}
-              </option>
-            ))}
-        </select>
-      </Field>
+      <div className="field-row">
+        <Field label={w.phone}>
+          <input type="tel" autoComplete="off" maxLength={40} value={form.phone} onChange={(event) => change({ phone: event.target.value })} />
+        </Field>
+        <Field label={w.email} error={touched ? (problems.email ?? undefined) : undefined}>
+          <input type="email" autoComplete="off" spellCheck={false} maxLength={200} value={form.email} onChange={(event) => change({ email: event.target.value })} />
+        </Field>
+      </div>
+      <div className="field-row">
+        <Field label={w.birthDate} error={problems.birthDate ?? undefined}>
+          <DateField max={today()} value={form.birthDate} onChange={(birthDate) => change({ birthDate })} />
+        </Field>
+        <Field label={w.address}>
+          <input autoComplete="off" maxLength={300} value={form.address} onChange={(event) => change({ address: event.target.value })} />
+        </Field>
+      </div>
       <div className="field">
         <span className="field__label" aria-hidden="true">{w.place}</span>
         <ChipChoice label={w.place} value={form.place} options={(['shop', 'carwash'] as const).map((value) => ({ value, label: w.places[value] }))} onChange={(place) => change({ place })} />
@@ -407,9 +473,14 @@ function EmployeeForm({ employee, onSaved }: { employee?: EmployeeDetail; onSave
           </Field>
         </div>
       )}
-      <Field label={w.bankAccount}>
-        <input autoComplete="off" spellCheck={false} maxLength={40} value={form.bankAccount} onChange={(event) => change({ bankAccount: event.target.value })} />
-      </Field>
+      <div className="field-row">
+        <Field label={w.bankAccount}>
+          <input autoComplete="off" spellCheck={false} maxLength={40} value={form.bankAccount} onChange={(event) => change({ bankAccount: event.target.value })} />
+        </Field>
+        <Field label={w.bankName}>
+          <input autoComplete="off" maxLength={80} value={form.bankName} onChange={(event) => change({ bankName: event.target.value })} />
+        </Field>
+      </div>
       <Field label={w.note}>
         <input autoComplete="off" maxLength={500} value={form.note} onChange={(event) => change({ note: event.target.value })} />
       </Field>
@@ -490,7 +561,11 @@ export function PayrollPersonPage() {
             <Fact label={w.form.extraEmployee}>{`${e.extraPensionEmployee}% · ${e.extraPensionEmployer}%`}</Fact>
           )}
           <Fact label={w.form.personalNumber}>{e.personalNumber ?? '–'}</Fact>
-          {e.bankAccount && <Fact label={w.form.bankAccount}>{e.bankAccount}</Fact>}
+          {e.birthDate && <Fact label={w.form.birthDate}>{formatDay(e.birthDate)}</Fact>}
+          {e.phone && <Fact label={w.form.phone}><a href={`tel:${e.phone}`}>{e.phone}</a></Fact>}
+          {e.email && <Fact label={w.form.email}><a href={`mailto:${e.email}`}>{e.email}</a></Fact>}
+          {e.address && <Fact label={w.form.address}>{e.address}</Fact>}
+          {(e.bankAccount || e.bankName) && <Fact label={w.form.bankAccount}>{[e.bankAccount, e.bankName].filter(Boolean).join(' · ')}</Fact>}
           {e.userName && <Fact label={w.form.account}>{e.userName}</Fact>}
           {e.note && <Fact label={w.form.note}>{e.note}</Fact>}
         </dl>

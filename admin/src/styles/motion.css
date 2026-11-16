@@ -169,8 +169,7 @@
     }
   }
 
-  .palette-backdrop,
-  .column-chart__slot:hover .column-chart__tip {
+  .palette-backdrop {
     animation: fade var(--fast) var(--ease);
   }
 
@@ -254,7 +253,6 @@
     animation: grow-x var(--spring-time) var(--spring);
   }
 
-  .column-chart__bar,
   .day-bars__bar {
     transform-origin: bottom;
     animation: grow-y var(--spring-time) var(--spring);

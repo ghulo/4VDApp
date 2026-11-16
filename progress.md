@@ -17,6 +17,16 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy
 - [ ] Sentry: after the API DSN is on Render and the dashboard DSN is in admin/.env.production, the first real error shows in Sentry with a stack trace and no email, name or request body in it
 
+**Security: cookie sign-in, two-step sign-in** (after the deploy, on 4vd.app and the shop PC)
+- [ ] A browser that was signed in before the deploy stays signed in after it (it moves to the new cookies by itself); the shop PC's Windows app too
+- [ ] Sign out, sign in again: works; closing and reopening the Windows app keeps you signed in
+- [ ] Profile → Sign-in and security → Two-step sign-in → Turn on: scan the QR with Google or Microsoft Authenticator, type its code; ten backup codes show; Copy codes works; "I saved them" says it is on
+- [ ] Sign out and in: after the password it asks for the code; a wrong code says so; the right one signs in; the same code a second time is refused
+- [ ] Sign in with a backup code instead: works once; Profile then says 9 left
+- [ ] Turn off asks for a code first; with it off, the password alone signs in again
+- [ ] As the developer: People → the owner → Two-step sign-in → Switch off; Activity shows who did it
+- [ ] Google sign-in with two-step on also asks for the code
+
 **Step 17: yearly declarations** (Books → Declaration, sign in as the owner or the accountant)
 - [ ] Settings → Business details: Legal form shows "Company (sh.p.k., sh.a.)"; switching it to "Individual business" turns the page into the PD with three bands, and Books → Year says "Personal income tax"; switch it back
 - [ ] Books → Declaration, last year: income, costs and book profit match Books → Statements for the year; an income or cost line with several accounts lists them, and each opens its card

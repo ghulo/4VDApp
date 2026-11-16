@@ -71,6 +71,9 @@ import * as stockLocations from './069_stock_locations.js';
 import * as portal from './070_portal.js';
 import * as portalOrderChanges from './071_portal_order_changes.js';
 import * as employeeDetails from './072_employee_details.js';
+import * as projects from './073_projects.js';
+import * as recipes from './074_recipes.js';
+import * as serials from './075_serials.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -151,4 +154,7 @@ export const migrations: Record<string, Migration> = {
   '070_portal': portal,
   '071_portal_order_changes': portalOrderChanges,
   '072_employee_details': employeeDetails,
+  '073_projects': projects,
+  '074_recipes': recipes,
+  '075_serials': serials,
 };

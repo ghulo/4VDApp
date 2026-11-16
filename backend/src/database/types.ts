@@ -244,6 +244,10 @@ export interface ProductsTable {
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;
+  /** Serial numbers are recorded and asked for at the sale. */
+  has_serials: Generated<boolean>;
+  /** Months of warranty the shop gives; null when none. */
+  warranty_months: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface InventoryTable {
@@ -369,6 +373,8 @@ export interface StockDocumentsTable {
   voided_by: ColumnType<number | null, number | null | undefined, number | null>;
   /** Where the stock moved (stock_locations); null before locations existed. */
   location_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Project tag (projects); null when none. */
+  project_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface StockDocumentLinesTable {
@@ -877,6 +883,8 @@ export interface WriteOffsTable extends ApprovalColumns {
   undo_note: string | null;
   /** Where the stock moved (stock_locations); null before locations existed. */
   location_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Project tag (projects); null when none. */
+  project_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface StockCountsTable {
@@ -972,6 +980,8 @@ export interface SupplierBillsTable {
   trefin_ref: Optional<string>;
   /** Where its products came in (stock_locations). */
   location_id: ColumnType<number | null, number | null | undefined, number | null>;
+  /** Project tag (projects); null when none. */
+  project_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export const BILL_SCAN_STATUSES = ['waiting', 'confirmed', 'discarded'] as const;
@@ -1171,6 +1181,8 @@ export interface DocumentsTable {
   client_key: ColumnType<string | null, string | null | undefined, never>;
   /** "<database>/<document id>" on an invoice TREFIN issued: history only, see migration 047. */
   trefin_ref: ColumnType<string | null, string | null | undefined, never>;
+  /** Project tag (projects); null when none. */
+  project_id: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface DocumentLinesTable {
@@ -1476,6 +1488,70 @@ export interface PortalOrderLinesTable {
   in_stock: boolean;
 }
 
+export interface ProjectsTable {
+  id: Generated<number>;
+  name: string;
+  note: string | null;
+  closed_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
+/** One part of a made product's recipe: how many go into one. */
+export interface RecipePartsTable {
+  product_id: number;
+  part_id: number;
+  quantity: number;
+  position: ColumnType<number, number | undefined, number>;
+}
+
+export interface MakesTable {
+  id: Generated<number>;
+  number: string;
+  product_id: number;
+  quantity: number;
+  unit_cost: ColumnType<string, number, number>;
+  cost_before: ColumnType<string | null, number | null, number | null>;
+  /** Read through to_char, so kept as text. */
+  day: string;
+  location_id: number | null;
+  expires_on: ColumnType<string | null, string | null, string | null>;
+  note: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  voided_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  voided_by: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
+export interface MakeLinesTable {
+  id: Generated<number>;
+  make_id: number;
+  product_id: number;
+  quantity: number;
+  unit_cost: ColumnType<string, number, number>;
+}
+
+export type SerialStatus = 'in_stock' | 'sold';
+
+export interface SerialsTable {
+  id: Generated<number>;
+  product_id: number;
+  serial: string;
+  status: ColumnType<SerialStatus, SerialStatus | undefined, SerialStatus>;
+  bill_id: ColumnType<number | null, number | null | undefined, number | null>;
+  stock_document_id: ColumnType<number | null, number | null | undefined, number | null>;
+  order_id: ColumnType<number | null, number | null | undefined, number | null>;
+  came_on: ColumnType<string | null, string | null | undefined, string | null>;
+  sale_id: ColumnType<number | null, number | null | undefined, number | null>;
+  document_id: ColumnType<number | null, number | null | undefined, number | null>;
+  customer_id: ColumnType<number | null, number | null | undefined, number | null>;
+  sold_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  warranty_ends: ColumnType<string | null, string | null | undefined, string | null>;
+  returned_at: ColumnType<Date | null, Date | null | undefined, Date | null>;
+  created_by: number | null;
+  created_at: CreatedAt;
+}
+
 export interface Database {
   portal_users: PortalUsersTable;
   portal_links: PortalLinksTable;
@@ -1552,6 +1628,11 @@ export interface Database {
   stock_moves: StockMovesTable;
   stock_move_lines: StockMoveLinesTable;
   stock_document_lines: StockDocumentLinesTable;
+  projects: ProjectsTable;
+  recipe_parts: RecipePartsTable;
+  makes: MakesTable;
+  make_lines: MakeLinesTable;
+  serials: SerialsTable;
   fixed_assets: FixedAssetsTable;
   depreciation_months: DepreciationMonthsTable;
   depreciation_lines: DepreciationLinesTable;

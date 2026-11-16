@@ -7,6 +7,7 @@ import { createCashCountRoutes } from './cashCountRoutes.js';
 import { createExpenseRoutes } from './expenseRoutes.js';
 import { createStockDocumentRoutes } from './stockDocumentRoutes.js';
 import { createLocationRoutes, createStockMoveRoutes } from './stockMoveRoutes.js';
+import { createProjectRoutes } from './projectRoutes.js';
 import { createAssetRoutes } from './assetRoutes.js';
 import { createPayrollRoutes } from './payrollRoutes.js';
 import { createCustomerRoutes } from './customerRoutes.js';
@@ -80,6 +81,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/stock-documents', createStockDocumentRoutes(container));
   router.use('/stock-moves', createStockMoveRoutes(container));
   router.use('/locations', createLocationRoutes(container));
+  router.use('/projects', createProjectRoutes(container));
   router.use('/assets', createAssetRoutes(container));
   router.use('/payroll', createPayrollRoutes(container));
   router.use('/day', createDayRoutes(container));

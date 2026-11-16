@@ -42,6 +42,8 @@ import { PortalRepository } from './PortalRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
+    /** The transaction itself, for the few services that query directly. */
+    db,
     products: new ProductRepository(db),
     portal: new PortalRepository(db),
     pricingTiers: new PricingTierRepository(db),

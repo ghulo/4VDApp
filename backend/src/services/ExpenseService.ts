@@ -54,6 +54,7 @@ export interface NewExpenseInput {
   supplierId?: number | null;
   note: string | null;
   repeatMonthly: boolean;
+  projectId?: number | null;
 }
 
 const toDto = (row: ExpenseRecord): ExpenseDto => ({
@@ -144,6 +145,7 @@ export class ExpenseService {
           place: input.place,
           carwashId,
           repeatMonthly: input.repeatMonthly,
+          projectId: input.projectId ?? null,
         },
         actorId,
         { today, quiet: true },

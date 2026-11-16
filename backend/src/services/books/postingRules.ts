@@ -82,7 +82,7 @@ export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
   's' || s.id
 )`;
 
-const zonedDaySql = (column: ReturnType<typeof sql.ref>, timeZone: string) => sql<string>`(${column} at time zone ${timeZone})::date::text`;
+export const zonedDaySql = (column: ReturnType<typeof sql.ref>, timeZone: string) => sql<string>`(${column} at time zone ${timeZone})::date::text`;
 
 const n = (value: string | number | null | undefined) => (value === null || value === undefined ? null : Number(value));
 

@@ -164,9 +164,18 @@ export const ACTIVITY_ACTIONS = [
   'payroll.payment_voided',
   'leave.recorded',
   'leave.removed',
+  'project.created',
+  'project.updated',
+  'project.removed',
+  'project.tagged',
+  'recipe.updated',
+  'make.created',
+  'make.voided',
+  'serial.added',
+  'serial.removed',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move', 'portal_order'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move', 'portal_order', 'project', 'make', 'serial'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

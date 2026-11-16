@@ -12,6 +12,7 @@ import { zonedDay } from '../utils/zonedDates.js';
 import { type BillFigures, billFigures, priceKeepingMargin } from './bills/billFigures.js';
 import { vatOf } from './books/entryBuilder.js';
 import { applyStockChange } from './InventoryService.js';
+import { checkProject } from './ProjectService.js';
 import { pickLocation } from './StockDocumentService.js';
 import { mediaUrl } from './mappers.js';
 import type { MediaService } from './MediaService.js';
@@ -192,6 +193,8 @@ export interface NewBillInput {
   updateCosts?: boolean;
   /** New shelf prices chosen from the price alerts. */
   prices?: Array<{ productId: number; price: number }>;
+  /** A project its costs count against (Settings → Features → Projects). */
+  projectId?: number | null;
 }
 
 export interface CreditInput {
@@ -765,6 +768,10 @@ export async function createBill(
     throw error;
   }
   await repos.bills.addLines(id, rows);
+  if (input.projectId) {
+    await checkProject(repos.db, input.projectId);
+    await repos.db.updateTable('supplier_bills').set({ project_id: input.projectId }).where('id', '=', id).execute();
+  }
   await addBillAssets(repos, id, actorId);
   await placeInVatMonth(repos, id, input.issuedOn);
 

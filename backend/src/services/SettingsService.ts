@@ -58,7 +58,7 @@ export class SettingsService {
 
   /** The number format applies from the next number; issued ones never change. */
   async updateRules(
-    input: { numbering?: Partial<ShopRules['numbering']>; noStockSales?: ShopRules['noStockSales']; shortDated?: Partial<ShopRules['shortDated']> },
+    input: { numbering?: Partial<ShopRules['numbering']>; noStockSales?: ShopRules['noStockSales']; shortDated?: Partial<ShopRules['shortDated']>; features?: Partial<ShopRules['features']> },
     userId: number,
   ): Promise<ShopRules> {
     const before = await this.rules();
@@ -66,6 +66,7 @@ export class SettingsService {
       numbering: input.numbering ? { ...before.numbering, ...input.numbering } : before.numbering,
       noStockSales: input.noStockSales ?? before.noStockSales,
       shortDated: input.shortDated ? { ...before.shortDated, ...input.shortDated } : before.shortDated,
+      features: input.features ? { ...before.features, ...input.features } : before.features,
     };
     after.shortDated = { ...after.shortDated, steps: checkSteps(after.shortDated.steps) };
     checkNumbering(after.numbering);
@@ -84,7 +85,7 @@ export class SettingsService {
           action: 'settings.updated',
           entityType: 'settings',
           entityId: null,
-          say: { key: 'rulesChanged', params: { numbering: changed.includes('numbering'), noStockSales: changed.includes('noStockSales') ? after.noStockSales : null, shortDated: changed.includes('shortDated') } },
+          say: { key: 'rulesChanged', params: { numbering: changed.includes('numbering'), noStockSales: changed.includes('noStockSales') ? after.noStockSales : null, shortDated: changed.includes('shortDated'), features: changed.includes('features') } },
           details: Object.fromEntries(changed.map((name) => [name, { from: before[name], to: after[name] }])),
         });
       });

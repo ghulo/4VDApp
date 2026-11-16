@@ -7,6 +7,7 @@ import type { PublicUser } from '../types/auth.js';
 import { roundMoney } from '../utils/money.js';
 import { assertPending, closePendingAlerts, notifyAdminsOfPending, notifyRequester } from './approvals/approvalHelpers.js';
 import { applyStockChange } from './InventoryService.js';
+import { checkProject } from './ProjectService.js';
 import { toIsoOrNull, toMoneyOrNull } from './mappers.js';
 import { canOversee } from '../utils/roles.js';
 
@@ -17,6 +18,8 @@ export interface WriteOffInput {
   notes: string | null;
   /** Where the units are taken from; null or left out is where the till sells from. */
   locationId?: number | null;
+  /** A project the loss counts against (Settings → Features → Projects). */
+  projectId?: number | null;
 }
 
 export interface WriteOffDto {
@@ -116,6 +119,10 @@ export class WriteOffService {
         throw new ValidationError(`Only ${inStock} in stock, so at most ${inStock} can be written off`);
       }
       const { id, productName } = await createWriteOffRecord(repos, { ...input, returnId: null, requestedBy: user.id });
+      if (input.projectId) {
+        await checkProject(repos.db, input.projectId);
+        await repos.db.updateTable('write_offs').set({ project_id: input.projectId }).where('id', '=', id).execute();
+      }
       const units = { quantity: input.quantity, product: productName, reason: input.reason };
       await repos.activityLog.create({
         userId: user.id,

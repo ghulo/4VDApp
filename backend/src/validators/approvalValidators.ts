@@ -13,6 +13,7 @@ export const writeOffSchema = z.object({
   quantity: quantitySchema(MAX_UNITS),
   reason: z.enum(WRITE_OFF_REASONS),
   notes: optionalText(1000),
+  projectId: idSchema.nullish(),
 });
 
 export const updateSettingsSchema = z
@@ -37,7 +38,7 @@ const numberFormatSchema = z.object({
 export const updateRulesSchema = z
   .object({
     numbering: z
-      .object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema, stock_in: numberFormatSchema, stock_out: numberFormatSchema, stock_move: numberFormatSchema })
+      .object({ invoice: numberFormatSchema, credit_note: numberFormatSchema, offer: numberFormatSchema, stock_in: numberFormatSchema, stock_out: numberFormatSchema, stock_move: numberFormatSchema, make: numberFormatSchema })
       .partial()
       .optional(),
     noStockSales: z.enum(['block', 'allow']).optional(),
@@ -49,9 +50,10 @@ export const updateRulesSchema = z
       })
       .partial()
       .optional(),
+    features: z.object({ projects: z.boolean(), recipes: z.boolean(), serials: z.boolean() }).partial().optional(),
   })
-  .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined || input.shortDated !== undefined, {
-    message: 'send numbering, noStockSales or shortDated',
+  .refine((input) => input.numbering !== undefined || input.noStockSales !== undefined || input.shortDated !== undefined || input.features !== undefined, {
+    message: 'send numbering, noStockSales, shortDated or features',
   });
 
 /** Wiping everything has to be typed out, so it can't happen by a stray click. */

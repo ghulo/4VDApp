@@ -2,8 +2,18 @@ import { ValidationError } from '../errors/httpErrors.js';
 import { DEFAULT_SHORT_DATED, type ShortDatedRules } from './pricing/shortDated.js';
 
 /** The documents 4VD numbers itself. */
-export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out' | 'stock_move';
-export const NUMBERED_KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer', 'stock_in', 'stock_out', 'stock_move'];
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make';
+export const NUMBERED_KINDS: NumberedKind[] = ['invoice', 'credit_note', 'offer', 'stock_in', 'stock_out', 'stock_move', 'make'];
+
+/** Parts most shops never need, each shown only once it is switched on in Settings. */
+export interface ShopFeatures {
+  /** Projects: a tag on bills, expenses, invoices, stock out and write-offs, with a profit report. */
+  projects: boolean;
+  /** Products made here from other products (gift baskets, packs), and the Make document. */
+  recipes: boolean;
+  /** Serial numbers and warranty on the products marked for them. */
+  serials: boolean;
+}
 
 /** How a number reads, like FSM-26-000001: prefix, the year in 2 or 4 digits, then the count. */
 export interface NumberFormat {
@@ -22,6 +32,7 @@ export interface ShopRules {
   noStockSales: 'block' | 'allow';
   /** When stock counts as short-dated and how much comes off it. */
   shortDated: ShortDatedRules;
+  features: ShopFeatures;
 }
 
 export const DEFAULT_RULES: ShopRules = {
@@ -34,14 +45,18 @@ export const DEFAULT_RULES: ShopRules = {
     stock_out: { prefix: 'DA', year: 'yyyy', digits: 6 },
     // Lëvizje (a move between locations).
     stock_move: { prefix: 'LV', year: 'yyyy', digits: 6 },
+    // Prodhim (made here).
+    make: { prefix: 'PR', year: 'yyyy', digits: 6 },
   },
   noStockSales: 'block',
   shortDated: DEFAULT_SHORT_DATED,
+  features: { projects: false, recipes: false, serials: false },
 };
 
 const NUMBERING_KEY = 'numbering';
 const NO_STOCK_KEY = 'no_stock_sales';
 const SHORT_DATED_KEY = 'short_dated';
+const FEATURES_KEY = 'features';
 
 /** Reads the rules from the settings store, filling in what was never set. */
 export async function readRules(settings: { all(): Promise<Map<string, unknown>> }): Promise<ShopRules> {
@@ -49,14 +64,16 @@ export async function readRules(settings: { all(): Promise<Map<string, unknown>>
   const numbering = (stored.get(NUMBERING_KEY) ?? {}) as Partial<Record<NumberedKind, Partial<NumberFormat>>>;
   const noStock = stored.get(NO_STOCK_KEY);
   const shortDated = (stored.get(SHORT_DATED_KEY) ?? {}) as Partial<ShortDatedRules>;
+  const features = (stored.get(FEATURES_KEY) ?? {}) as Partial<ShopFeatures>;
   return {
     numbering: Object.fromEntries(NUMBERED_KINDS.map((kind) => [kind, { ...DEFAULT_RULES.numbering[kind], ...numbering[kind] }])) as ShopRules['numbering'],
     noStockSales: noStock === 'allow' ? 'allow' : 'block',
     shortDated: { ...DEFAULT_SHORT_DATED, ...shortDated },
+    features: { projects: features.projects === true, recipes: features.recipes === true, serials: features.serials === true },
   };
 }
 
-export const RULE_KEYS = { numbering: NUMBERING_KEY, noStockSales: NO_STOCK_KEY, shortDated: SHORT_DATED_KEY } as const;
+export const RULE_KEYS = { numbering: NUMBERING_KEY, noStockSales: NO_STOCK_KEY, shortDated: SHORT_DATED_KEY, features: FEATURES_KEY } as const;
 
 /** "FSM-26-000001". The count grows past `digits` rather than wrap. */
 export function formatNumber(format: NumberFormat, year: number, count: number): string {

@@ -54,6 +54,7 @@ import { ExpenseService } from './services/ExpenseService.js';
 import { StockDocumentService } from './services/StockDocumentService.js';
 import { StockMoveService } from './services/StockMoveService.js';
 import { LocationService } from './services/LocationService.js';
+import { ProjectService } from './services/ProjectService.js';
 import { LocationRepository } from './repositories/LocationRepository.js';
 import { FixedAssetService } from './services/FixedAssetService.js';
 import { PayrollService } from './services/payroll/PayrollService.js';
@@ -228,6 +229,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const stockDocumentService = new StockDocumentService(db, transactions, config.shopTimeZone);
   const stockMoveService = new StockMoveService(db, transactions, config.shopTimeZone);
   const locationService = new LocationService(new LocationRepository(db), transactions);
+  const projectService = new ProjectService(db, transactions, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to), (from, to) => stockMoveService.linesBetween(from, to));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
   const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
@@ -566,6 +568,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     stockDocumentService,
     stockMoveService,
     locationService,
+    projectService,
     fixedAssetService,
     payrollService,
     tabService,

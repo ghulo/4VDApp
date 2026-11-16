@@ -3,6 +3,7 @@ import { calendarDaySchema, idSchema, quantitySchema } from './validate.js';
 
 export const newStockDocumentSchema = z.object({
   locationId: idSchema.nullish(),
+  projectId: idSchema.nullish(),
   direction: z.enum(['in', 'out']),
   reason: z.enum(['found', 'received_free', 'own_use', 'given_away', 'other']),
   day: calendarDaySchema,

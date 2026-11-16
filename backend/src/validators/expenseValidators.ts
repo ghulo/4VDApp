@@ -19,6 +19,7 @@ export const newExpenseSchema = z.object({
     .nullish()
     .transform((value) => value || null),
   repeatMonthly: z.boolean().default(false),
+  projectId: idSchema.nullish(),
 }).refine((input) => input.place === 'carwash' || input.carwashId === undefined, {
   message: 'only a carwash expense belongs to a carwash',
   path: ['carwashId'],

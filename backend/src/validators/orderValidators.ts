@@ -131,6 +131,7 @@ export const billFormSchema = z.object({
   locationId: idSchema.nullish(),
   repeatMonthly: z.boolean().default(false),
   updateCosts: z.boolean().default(true),
+  projectId: idSchema.nullish(),
   prices: z
     .array(z.object({ productId: idSchema, price: positiveMoney }))
     .max(300)

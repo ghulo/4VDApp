@@ -7,6 +7,7 @@ import type { TransactionalRepositories, TransactionManager } from '../repositor
 import { roundMoney } from '../utils/money.js';
 import { zonedDay, zonedDays } from '../utils/zonedDates.js';
 import { applyStockChange } from './InventoryService.js';
+import { checkProject } from './ProjectService.js';
 import type { DateRange } from './reports/calculations.js';
 import { formatNumber, readRules } from './shopRules.js';
 import { assertMonthsOpen } from './vat/periodLock.js';
@@ -71,6 +72,8 @@ export interface NewStockDocumentInput {
   note: string | null;
   /** Where; left out, stock in goes where goods are received and stock out leaves where the till sells. */
   locationId?: number | null;
+  /** A project for stock going out (Settings → Features → Projects). */
+  projectId?: number | null;
   /** expiresOn: a best-before date for the units coming in (stock in only). */
   lines: Array<{ productId: number; quantity: number; expiresOn?: string | null }>;
 }
@@ -167,6 +170,10 @@ export class StockDocumentService {
       const number = formatNumber((await readRules(repos.settings)).numbering[kind], year, await repos.documents.nextNumber(kind, year));
       const locationId = await pickLocation(repos, input.locationId, input.direction);
       const documentId = await repos.stockDocuments.create({ number, direction: input.direction, reason: input.reason, day: input.day, note: input.note, createdBy: actorId, locationId });
+      if (input.projectId && input.direction === 'out') {
+        await checkProject(repos.db, input.projectId);
+        await repos.db.updateTable('stock_documents').set({ project_id: input.projectId }).where('id', '=', documentId).execute();
+      }
       for (const line of input.lines) {
         const product = await repos.products.findById(line.productId, true);
         if (!product) throw new ValidationError(`lines: product ${line.productId} does not exist`);

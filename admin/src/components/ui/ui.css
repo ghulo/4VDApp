@@ -2194,14 +2194,14 @@ input.switch:focus-visible {
 .bar-list__track {
   display: block;
   block-size: 12px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-stamp) var(--radius-stamp) 0;
   background: var(--amber-track);
 }
 
 .bar-list__bar {
   display: block;
   block-size: 100%;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-stamp) var(--radius-stamp) 0;
   background: var(--chart-series);
   box-shadow: var(--bar-depth);
 }
@@ -2245,7 +2245,7 @@ input.switch:focus-visible {
 .column-chart {
   display: grid;
   align-items: end;
-  gap: 2px;
+  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2261,17 +2261,27 @@ input.switch:focus-visible {
   position: relative;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   block-size: 140px;
   border-bottom: 1px solid var(--line-strong);
 }
 
+/* A column is a block standing on the line with room on each side, never
+   wider than a finger, so a week reads as seven pieces, not one wall. */
 .column-chart__bar {
   display: block;
-  inline-size: 100%;
-  border-radius: 4px 4px 0 0;
+  inline-size: min(100%, 2.5rem);
+  border-radius: var(--radius-stamp) var(--radius-stamp) 0 0;
   background: var(--chart-series);
   box-shadow: var(--bar-depth);
-  transition: background var(--fast) var(--ease);
+  transition:
+    background var(--fast) var(--ease),
+    opacity var(--fast) var(--ease);
+}
+
+/* Pointing at one column lifts it and lets the rest step back. */
+.column-chart:has(.column-chart__slot:hover) .column-chart__slot:not(:hover) .column-chart__bar {
+  opacity: 0.45;
 }
 
 .column-chart__bar--top {

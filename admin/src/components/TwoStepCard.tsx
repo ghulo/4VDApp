@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'qrcode';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n/useT';
 import { twoStepApi } from '../services/api';
 import { errorMessage } from '../utils/errors';
@@ -21,6 +21,16 @@ export function TwoStepCard() {
   const [mode, setMode] = useState<Mode>({ kind: 'idle' });
   const [code, setCode] = useState('');
   const [done, setDone] = useState<string | null>(null);
+  // The keys that opened a step disappear with it: keep keyboard and screen-reader focus on the card.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const firstMode = useRef(true);
+  useEffect(() => {
+    if (firstMode.current) {
+      firstMode.current = false;
+      return;
+    }
+    if (mode.kind === 'idle' || mode.kind === 'codes') rootRef.current?.focus();
+  }, [mode.kind]);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['me', 'two-step'] });
@@ -64,10 +74,17 @@ export function TwoStepCard() {
   if (status.isPending) return <Loading />;
   if (status.isError) return <ErrorNotice error={status.error} onRetry={() => status.refetch()} />;
   const { on, backupCodesLeft } = status.data;
-  const failure = start.error ?? confirm.error ?? act.error;
+  // Code mistakes show under the field; anything else in the card's foot.
+  const codeError = confirm.error ?? act.error;
+  const failure = start.error;
+  const wrap = (content: ReactNode) => (
+    <div ref={rootRef} tabIndex={-1} className="two-step">
+      {content}
+    </div>
+  );
 
   const codeField = (id: string) => (
-    <Field label={t.auth.code} hint={t.profile.twoStepCodeToConfirm}>
+    <Field label={t.auth.code} hint={t.profile.twoStepCodeToConfirm} error={codeError ? errorMessage(codeError) : undefined}>
       <input
         id={id}
         className="code-input"
@@ -87,7 +104,7 @@ export function TwoStepCard() {
       event.preventDefault();
       confirm.mutate();
     };
-    return (
+    return wrap(
       <form onSubmit={submit}>
         <Card
           title={t.profile.twoStep}
@@ -105,26 +122,26 @@ export function TwoStepCard() {
               >
                 {t.profile.cancel}
               </Button>
-              <Button type="submit" variant="primary" loading={confirm.isPending} disabled={code.trim().length < 6}>
+              <Button type="submit" variant="primary" loading={confirm.isPending}>
                 {t.profile.twoStepConfirm}
               </Button>
             </>
           }
         >
           <div className="two-step__steps">
-            <QrCode url={mode.url} label={t.profile.twoStep} />
+            <QrCode url={mode.url} label={t.profile.twoStepQrAlt} />
             <p className="field-hint">
               {t.profile.twoStepKey} <span className="two-step__key">{mode.secret.replace(/(.{4})/g, '$1 ').trim()}</span>
             </p>
             {codeField('two-step-setup-code')}
           </div>
         </Card>
-      </form>
+      </form>,
     );
   }
 
   if (mode.kind === 'codes') {
-    return (
+    return wrap(
       <Card
         title={t.profile.twoStepCodesTitle}
         description={t.profile.twoStepCodesHint}
@@ -148,7 +165,7 @@ export function TwoStepCard() {
             <li key={backup}>{backup}</li>
           ))}
         </ul>
-      </Card>
+      </Card>,
     );
   }
 
@@ -157,7 +174,7 @@ export function TwoStepCard() {
       event.preventDefault();
       act.mutate(mode.action);
     };
-    return (
+    return wrap(
       <form onSubmit={submit}>
         <Card
           title={t.profile.twoStep}
@@ -175,7 +192,7 @@ export function TwoStepCard() {
               >
                 {t.profile.cancel}
               </Button>
-              <Button type="submit" variant={mode.action === 'off' ? 'danger' : 'primary'} loading={act.isPending} disabled={code.trim().length < 6}>
+              <Button type="submit" variant={mode.action === 'off' ? 'danger' : 'primary'} loading={act.isPending}>
                 {mode.action === 'off' ? t.profile.twoStepTurnOff : t.profile.twoStepNewCodes}
               </Button>
             </>
@@ -183,11 +200,11 @@ export function TwoStepCard() {
         >
           {codeField('two-step-confirm-code')}
         </Card>
-      </form>
+      </form>,
     );
   }
 
-  return (
+  return wrap(
     <Card
       title={t.profile.twoStep}
       description={on ? t.profile.twoStepOn(backupCodesLeft) : t.profile.twoStepOff}
@@ -208,7 +225,7 @@ export function TwoStepCard() {
           )}
         </>
       }
-    />
+    />,
   );
 }
 

@@ -260,7 +260,7 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
           }}
           readOnly={check.isPending}
           aria-invalid={missing || check.isError ? true : undefined}
-          aria-describedby="login-code-hint"
+          aria-describedby={check.isError ? 'login-code-hint login-code-error' : 'login-code-hint'}
           autoFocus
         />
         <span className="field-hint" id="login-code-hint">
@@ -268,7 +268,7 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
         </span>
       </label>
       {check.isError && (
-        <p className="form-error" role="alert">
+        <p className="form-error" role="alert" id="login-code-error">
           {signInMessage(check.error)}
         </p>
       )}

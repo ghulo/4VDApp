@@ -287,6 +287,7 @@ export const sq: Catalogue = {
     twoStepOn: (left) => `E ndezur. Të kanë mbetur ${left} kode rezervë.`,
     twoStepTurnOn: 'Ndize',
     twoStepScan: 'Skanoje me një aplikacion kodesh (Google Authenticator, Microsoft Authenticator, 1Password), pastaj shkruaj kodin që tregon.',
+    twoStepQrAlt: 'Kodi QR për aplikacionin e kodeve',
     twoStepKey: 'S’mund ta skanosh? Shkruaj këtë çelës në aplikacion:',
     twoStepConfirm: 'Ndiz hyrjen me dy hapa',
     twoStepCodesTitle: 'Kodet e tua rezervë',

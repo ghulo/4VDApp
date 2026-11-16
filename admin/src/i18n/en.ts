@@ -292,6 +292,7 @@ export const en = {
     twoStepOn: (left: number) => `On. You have ${left} backup code${left === 1 ? '' : 's'} left.`,
     twoStepTurnOn: 'Turn on',
     twoStepScan: 'Scan this with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password), then type the code it shows.',
+    twoStepQrAlt: 'QR code for your authenticator app',
     twoStepKey: 'Can’t scan? Type this key in the app:',
     twoStepConfirm: 'Turn on two-step sign-in',
     twoStepCodesTitle: 'Your backup codes',

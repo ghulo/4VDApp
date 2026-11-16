@@ -29,7 +29,7 @@
     "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.131.0",
+    "@anthropic-ai/sdk": "^1.8.0",
     "@sentry/node": "11.10.0",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.2",

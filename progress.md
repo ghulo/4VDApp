@@ -13,6 +13,17 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Step 16: Make, serial numbers, projects** (Settings → Features switches each on; all off until then)
+- [ ] Settings → Features: switch on Projects, Made products and Serial numbers; Stock gets Make and Serial numbers tabs, Reports gets Projects
+- [ ] Projects: add "Dasma Krasniqi" in Settings → Features; pick it on a new bill, an expense, a Stock out and a damage; change it on a bill, an invoice and a stock out afterwards; close it and it leaves the pickers
+- [ ] Reports → Projects: income, goods sold, bills, stock out, damage and profit per project with totals; a project opens its documents; Excel, CSV and Print come out right
+- [ ] A product → Made from: add rakia and honey with how many go into one; "One costs …" shows; Make some opens the Make form with it picked
+- [ ] Stock → Make: pick the basket, 10, the location: the sentence says what comes out and goes in at what cost; best-before is the parts' earliest; a part with no cost or too little stock stops it; after saving, stock and costs moved, nothing in Books; Void puts it all back
+- [ ] A product → Serial numbers: switch on, 24 months warranty; scan 3 serials (Enter after each) and Record; one already in stock is reported, not added twice
+- [ ] On a bill or a Stock in with that product, the serial box shows per line and records them against the bill
+- [ ] Counter: a basket with 2 of that product → Pay asks for 2 serials first (scan, Enter, scan, Enter → straight to Pay); Esc leaves it; a serial sold before and not returned is refused; the invoice and its print show "S/N … · warranty until …"
+- [ ] Stock → Serial numbers: type part of a serial: where it came from, the invoice, the customer and the warranty show; after a return it is back in stock
+
 **Smoothness** (on your own screen, after the next deploy)
 - [ ] The sign-in page's moving dots look the same as before but run smoothly (no longer 30 frames a second), and typing in the form stays quick
 - [ ] Scrolling a long dashboard page feels smooth under the glass top bar
@@ -190,5 +201,5 @@ Rules for every step: one screen with a "type" instead of a menu per case; works
 - [x] 13. Employees and payroll (2026-11-15): Team → Payroll. Each person with their contract (gross or net, second job, extra pension, shop or carwash); a month is worked out with Kosovo wage tax and Trust pension, confirmed into the books, then wages and ATK (tax and pension as two payments) are paid and matched on bank statements; payslips to print, the declaration file, annual leave, and staff see their own under Account. Defaults to confirm with the accountant (handoff.md)
 - [x] 14. Several stock locations and moves between them (2026-11-15): add a storeroom in Settings → Stock locations; each product keeps a total plus how much each location holds. Stock → Move stock moves goods in one step (LV-, printable note, Excel/PDF, void) and never touches the books; a sale short on the floor takes the rest from storage and says so; bills, orders, scans, in and out, write-offs and counts ask which location; On the shelf filters by location and offers Refill from storage below a shelf minimum. All of it stays hidden while the shop has one location
 - [x] 15. B2B portal for business customers (loyalty moved to step 22: loyalty by phone number replaces the cards). Done: 4vd.app/portal, firms invited by WhatsApp link see their own prices with and without VAT, order (Order again too), and read invoices, credit notes, balance and statement; orders land in To do and Sales → Online orders
-- [ ] 16. Production (recipes, semi-finished goods), serial numbers, projects
+- [x] 16. Production (recipes, semi-finished goods), serial numbers, projects. Done 2026-11-16: three switches in Settings → Features. Projects go on bills, expenses, invoices, stock out and damage, with a profit-by-project report (Excel, CSV, Print). Make turns parts into a product at their cost at one location (made ahead, no books entry, voidable). Serial numbers with a warranty: recorded at intake, asked for at the Counter, printed on the invoice, looked up on their own page, freed by a return
 - [ ] 17. Yearly declarations (CD / PD)

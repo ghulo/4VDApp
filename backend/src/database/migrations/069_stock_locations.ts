@@ -82,5 +82,6 @@ export async function down(db: Kysely<unknown>): Promise<void> {
     await sql`ALTER TABLE ${sql.table(table)} DROP COLUMN IF EXISTS location_id`.execute(db);
   }
   await sql`DROP TABLE IF EXISTS location_stock`.execute(db);
-  await sql`DROP TABLE IF EXISTS stock_locations`.execute(db);
+  // Later tables point here too (makes, 074): CASCADE drops only those links, not the tables.
+  await sql`DROP TABLE IF EXISTS stock_locations CASCADE`.execute(db);
 }

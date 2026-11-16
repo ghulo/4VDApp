@@ -25,7 +25,7 @@
 }
 
 .palette-backdrop {
-  background: rgb(20 20 19 / 0.3);
+  background: var(--scrim);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }

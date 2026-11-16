@@ -582,7 +582,7 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-menu);
-    background: rgb(20 20 19 / 0.3);
+    background: var(--scrim);
     backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
@@ -888,7 +888,7 @@
   justify-items: center;
   align-items: start;
   padding: 12vh 16px 16px;
-  background: rgb(20 20 19 / 0.3);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
 }
 

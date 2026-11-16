@@ -1970,7 +1970,7 @@ input.switch:focus-visible {
 }
 
 .sheet::backdrop {
-  background: rgb(20 20 19 / 0.3);
+  background: var(--scrim);
   backdrop-filter: blur(2px);
 }
 
@@ -2030,6 +2030,33 @@ input.switch:focus-visible {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--space-5);
+}
+
+/* In a side panel, Save and Cancel stay at the bottom while a long form
+   scrolls under them, on their own strip with a hairline above. */
+.sheet:not(.sheet--center) .sheet__body .form-actions:last-child {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  margin: var(--space-5) calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* On a computer the side panel floats a step in from the edges with rounded
+   corners, like a sheet of paper laid over the page, not a wall. */
+@media (min-width: 601px) {
+  .sheet:not(.sheet--center) {
+    inset: var(--space-2) var(--space-2) var(--space-2) auto;
+    height: calc(100dvh - 2 * var(--space-2));
+    max-height: calc(100dvh - 2 * var(--space-2));
+  }
+
+  .sheet:not(.sheet--center) .sheet__panel {
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+  }
 }
 
 @media (max-width: 600px) {

@@ -193,8 +193,9 @@
 
   /* ---------- The side sheet: in from the right, back out to the right ---------- */
 
+  /* Out past its own width plus the gap it floats in from the edge. */
   .sheet {
-    transform: translateX(100%);
+    transform: translateX(calc(100% + var(--space-2)));
     transition:
       display var(--spring-time) allow-discrete,
       overlay var(--spring-time) allow-discrete,
@@ -215,7 +216,7 @@
 
   @starting-style {
     .sheet[open] {
-      transform: translateX(100%);
+      transform: translateX(calc(100% + var(--space-2)));
     }
 
     .sheet[open]::backdrop {

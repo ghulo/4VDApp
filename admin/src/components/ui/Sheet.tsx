@@ -38,7 +38,7 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
     if (open) setOpening((count) => count + 1);
   }
   // On a touch screen the panel can be swiped back out to the right.
-  useSwipeToDismiss(ref, { side: 'right', closed: 'translateX(100%)', onDismiss: onClose, enabled: open && placement === 'side' });
+  useSwipeToDismiss(ref, { side: 'right', closed: 'translateX(calc(100% + var(--space-2)))', onDismiss: onClose, enabled: open && placement === 'side' });
 
   useEffect(() => {
     const dialog = ref.current;

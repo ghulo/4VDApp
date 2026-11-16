@@ -283,9 +283,11 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {direction === 'in' ? t.stockDocs.saveIn : t.stockDocs.saveOut}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {direction === 'in' ? t.stockDocs.saveIn : t.stockDocs.saveOut}
+        </Button>
+      </div>
     </form>
   );
 }

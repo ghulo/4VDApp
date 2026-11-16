@@ -438,9 +438,11 @@ export function BasketForm() {
           )}
         </div>
       )}
-      <Button type="submit" variant="primary" disabled={lines.length === 0 || tooMuchDiscount || record.isPending} loading={record.isPending}>
-        {t.basket.record(formatMoney(total))}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={lines.length === 0 || tooMuchDiscount || record.isPending} loading={record.isPending}>
+          {t.basket.record(formatMoney(total))}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -489,9 +489,11 @@ function EmployeeForm({ employee, linkUserId, onSaved }: { employee?: EmployeeDe
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={save.isPending} loading={save.isPending}>
-        {employee ? w.save : t.payroll.add}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={save.isPending} loading={save.isPending}>
+          {employee ? w.save : t.payroll.add}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -742,9 +744,11 @@ function LeaveForm({ employee, onSaved }: { employee: EmployeeDetail; onSaved: (
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {t.payroll.form.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {t.payroll.form.save}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -979,9 +983,11 @@ function ChangeGrossForm({ line, onSaved }: { line: PayLine; onSaved: (change: L
       <Field label={w.reason} error={tried && reason.trim() === '' ? w.reasonError : undefined}>
         <input required autoComplete="off" maxLength={200} placeholder={w.reasonPlaceholder} value={reason} onChange={(event) => setReason(event.target.value)} />
       </Field>
-      <Button type="submit" variant="primary">
-        {t.common.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary">
+          {t.common.save}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -1234,9 +1240,11 @@ function PayForm({ detail, kind, onSaved }: { detail: PayrollMonthDetail; kind: 
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {`${w.save} · ${w.total(formatMoney(Math.round(total * 100) / 100))}`}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {`${w.save} · ${w.total(formatMoney(Math.round(total * 100) / 100))}`}
+        </Button>
+      </div>
     </form>
   );
 }

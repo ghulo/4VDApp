@@ -266,9 +266,11 @@ function StockMoveForm({ prefill, onSaved }: { prefill: DraftLine | null; onSave
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {t.moves.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {t.moves.save}
+        </Button>
+      </div>
     </form>
   );
 }

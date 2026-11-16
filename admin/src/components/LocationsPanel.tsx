@@ -93,9 +93,11 @@ function AddLocation({ onDone }: { onDone: () => void }) {
           {errorMessage(add.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!name.trim() || add.isPending} loading={add.isPending}>
-        {t.locations.add}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!name.trim() || add.isPending} loading={add.isPending}>
+          {t.locations.add}
+        </Button>
+      </div>
     </form>
   );
 }

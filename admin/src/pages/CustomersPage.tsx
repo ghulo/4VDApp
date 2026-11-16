@@ -389,9 +389,11 @@ function CustomerForm({ customer, onSaved }: { customer?: Customer; onSaved?: ()
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
-        {customer ? t.tabs.saveDetails : t.customers.add}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
+          {customer ? t.tabs.saveDetails : t.customers.add}
+        </Button>
+      </div>
     </form>
   );
 }

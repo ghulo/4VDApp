@@ -207,12 +207,14 @@ function ExpenseForm() {
       {add.isSuccess && (
         <SavedToast message={t.expenses.saved} />
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
-        {t.expenses.save}
-      </Button>
       <p className="field-hint">
         {t.expenses.fullBill} <Link to="/bills/new?paid=now">{t.expenses.fullBillLink}</Link>
       </p>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!isValid || add.isPending} loading={add.isPending}>
+          {t.expenses.save}
+        </Button>
+      </div>
     </form>
   );
 }

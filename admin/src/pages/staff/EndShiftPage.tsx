@@ -120,9 +120,11 @@ function TakingsFields(props: { carwashId: number; name: string | null; day: str
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid} loading={save.isPending}>
-        {t.staff.carwash.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid} loading={save.isPending}>
+          {t.staff.carwash.save}
+        </Button>
+      </div>
     </form>
   );
 }

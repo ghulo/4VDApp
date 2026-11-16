@@ -462,9 +462,11 @@ function AssetForm({ asset, onSaved }: { asset?: FixedAssetDetail; onSaved: () =
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {editing ? t.common.save : w.add}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {editing ? t.common.save : w.add}
+        </Button>
+      </div>
     </form>
   );
 }
@@ -603,9 +605,11 @@ function DisposeForm({ asset, onSaved }: { asset: FixedAssetDetail; onSaved: () 
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
-        {kind === 'sold' ? w.saveSold : w.saveScrapped}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+          {kind === 'sold' ? w.saveSold : w.saveScrapped}
+        </Button>
+      </div>
     </form>
   );
 }

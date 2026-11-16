@@ -174,9 +174,11 @@ export function CountForm({ drawer: initialDrawer = 'shop' }: { drawer?: string 
           <DifferenceBadge difference={save.data.difference} />
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
-        {t.cash.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
+          {t.cash.save}
+        </Button>
+      </div>
     </form>
   );
 }

@@ -109,13 +109,15 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
           {errorMessage(mutation.error)}
         </p>
       )}
-      <Button type="submit"
-       
-        disabled={!isQuantityValid || !isRefundValid || mutation.isPending} variant="primary">
-        {mutation.isPending
-          ? t.returnForm.returning
-          : t.returnForm.returnAndRefund(isRefundValid && isQuantityValid ? formatMoney(refundAmount) : '')}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit"
+         
+          disabled={!isQuantityValid || !isRefundValid || mutation.isPending} variant="primary">
+          {mutation.isPending
+            ? t.returnForm.returning
+            : t.returnForm.returnAndRefund(isRefundValid && isQuantityValid ? formatMoney(refundAmount) : '')}
+        </Button>
+      </div>
     </form>
   );
 }

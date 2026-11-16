@@ -593,9 +593,11 @@ function ManualEntryForm({ startDay, onSaved }: { startDay: string | null; onSav
           {errorMessage(save.error)}
         </p>
       )}
-      <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
-        {f.save}
-      </Button>
+      <div className="form-actions">
+        <Button type="submit" variant="primary" disabled={!isValid || save.isPending} loading={save.isPending}>
+          {f.save}
+        </Button>
+      </div>
     </form>
   );
 }

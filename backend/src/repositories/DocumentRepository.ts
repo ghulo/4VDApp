@@ -139,23 +139,25 @@ export class DocumentRepository {
    * rolled-back one gives its number back (no gaps).
    */
 /** Which kinds have documents whose numbers start with these letters. */
-  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move'>> {
+  async kindsNumberedWith(prefix: string): Promise<Array<DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make'>> {
     const like = `${escapeLikePattern(prefix)}-%`;
-    const [documents, offer, stock, move] = await Promise.all([
+    const [documents, offer, stock, move, make] = await Promise.all([
       this.db.selectFrom('documents').select('kind').distinct().where('number', 'like', like).execute(),
       this.db.selectFrom('offers').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
       this.db.selectFrom('stock_documents').select('direction').distinct().where('number', 'like', like).execute(),
       this.db.selectFrom('stock_moves').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
+      this.db.selectFrom('makes').select('id').where('number', 'like', like).limit(1).executeTakeFirst(),
     ]);
     return [
       ...documents.map((row) => row.kind),
       ...(offer ? (['offer'] as const) : []),
       ...stock.map((row) => (row.direction === 'in' ? ('stock_in' as const) : ('stock_out' as const))),
       ...(move ? (['stock_move'] as const) : []),
+      ...(make ? (['make'] as const) : []),
     ];
   }
 
-  async nextNumber(kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move', year: number): Promise<number> {
+  async nextNumber(kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make', year: number): Promise<number> {
     const row = await this.db
       .insertInto('document_numbers')
       .values({ kind, year, last_number: 1 })

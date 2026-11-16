@@ -1150,7 +1150,7 @@ export interface DocumentParty {
 }
 
 export interface DocumentNumbersTable {
-  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move';
+  kind: DocumentKind | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make';
   year: number;
   last_number: number;
 }

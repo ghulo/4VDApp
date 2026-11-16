@@ -16,6 +16,7 @@ export const SYSTEM_STOCK_REASONS = {
   MERGE: 'Merged duplicate',
   STOCK_DOCUMENT: 'Stock document',
   MOVE: 'Moved',
+  MAKE: 'Made here',
 } as const;
 
 export const DEFAULT_REORDER_LEVEL = 10;

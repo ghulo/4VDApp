@@ -56,7 +56,7 @@ type ExpensePlace = { carwash: string } | { place: string };
 type WriteOffReason = 'damaged' | 'lost' | 'expired' | 'other' | string;
 
 /** Why a cost changed: a delivery, a scanned bill, or a scanned bill taken back. */
-export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string };
+export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string } | { made: string } | { unmade: string };
 
 /** A place money is kept; a null name is the usual name of its kind. */
 type Place = { kind: 'till' | 'safe' | 'bank'; name: string | null };
@@ -213,6 +213,11 @@ const en = {
   stockMoveVoided: (p: { number: string }) => `Voided ${p.number} and moved the stock back`,
   locationAdded: (p: { name: string }) => `Added the stock location ${p.name}`,
   projectAdded: (p: { name: string }) => `Added the project ${p.name}`,
+  recipeChanged: (p: { product: string; parts: number }) => (p.parts === 0 ? `Removed what ${p.product} is made from` : `Set what ${p.product} is made from (${p.parts === 1 ? '1 part' : `${p.parts} parts`})`),
+  madeSaved: (p: { number: string; quantity: number; product: string }) => `Made ${p.quantity} × ${p.product} with ${p.number}`,
+  makeVoided: (p: { number: string }) => `Voided ${p.number}: the parts went back into stock`,
+  serialsAdded: (p: { product: string; count: number }) => `Recorded ${p.count === 1 ? '1 serial number' : `${p.count} serial numbers`} for ${p.product}`,
+  serialRemoved: (p: { product: string; serial: string }) => `Removed the serial number ${p.serial} of ${p.product}`,
   projectChanged: (p: { name: string; closed: boolean | null }) => (p.closed === true ? `Closed the project ${p.name}` : p.closed === false ? `Opened the project ${p.name} again` : `Changed the project ${p.name}`),
   projectRemoved: (p: { name: string }) => `Removed the project ${p.name}`,
   projectTagged: (p: { kind: string; projectId: number | null }) => (p.projectId === null ? `Took a ${p.kind.replace("_", " ")} off its project` : `Put a ${p.kind.replace("_", " ")} on a project`),
@@ -264,7 +269,7 @@ const en = {
   orderCancelled: (p: { orderId: number; supplier: string }) => `Cancelled order #${p.orderId} from ${p.supplier}`,
   costChanged: (p: { product: string; from: number | null; to: number | null; because: CostReason }, w: Words) =>
     `Changed cost of ${p.product} from ${p.from === null ? 'none' : w.money(p.from)} to ${p.to === null ? 'none' : w.money(p.to)} (${
-      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'bill' in p.because ? `bill from ${p.because.bill}` : 'scanned bill reopened'
+      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'bill' in p.because ? `bill from ${p.because.bill}` : 'made' in p.because ? `made with ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} voided` : 'scanned bill reopened'
     })`,
   orderReceived: (p: { orderId: number; supplier: string; units: number }) =>
     `Received order #${p.orderId} from ${p.supplier}: ${p.units} ${p.units === 1 ? 'unit' : 'units'} into stock`,
@@ -745,6 +750,11 @@ const sq: Templates = {
   stockMoveVoided: (p) => `Anuloi ${p.number} dhe e ktheu stokun`,
   locationAdded: (p) => `Shtoi vendndodhjen e stokut ${p.name}`,
   projectAdded: (p) => `Shtoi projektin ${p.name}`,
+  recipeChanged: (p) => (p.parts === 0 ? `Hoqi nga se bëhet ${p.product}` : `Caktoi nga se bëhet ${p.product} (${p.parts === 1 ? '1 pjesë' : `${p.parts} pjesë`})`),
+  madeSaved: (p) => `Prodhoi ${p.quantity} × ${p.product} me ${p.number}`,
+  makeVoided: (p) => `Anuloi ${p.number}: pjesët u kthyen në stok`,
+  serialsAdded: (p) => `Regjistroi ${p.count === 1 ? '1 numër serik' : `${p.count} numra serikë`} për ${p.product}`,
+  serialRemoved: (p) => `Hoqi numrin serik ${p.serial} të ${p.product}`,
   projectChanged: (p) => (p.closed === true ? `Mbylli projektin ${p.name}` : p.closed === false ? `Hapi sërish projektin ${p.name}` : `Ndryshoi projektin ${p.name}`),
   projectRemoved: (p) => `Hoqi projektin ${p.name}`,
   projectTagged: (p) => (p.projectId === null ? "Hoqi një dokument nga projekti" : "Vendosi një dokument në një projekt"),
@@ -794,7 +804,7 @@ const sq: Templates = {
   orderCancelled: (p) => `Anuloi porosinë #${p.orderId} nga ${p.supplier}`,
   costChanged: (p, w) =>
     `Ndryshoi koston e ${p.product} nga ${p.from === null ? 'asnjë' : w.money(p.from)} në ${p.to === null ? 'asnjë' : w.money(p.to)} (${
-      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'bill' in p.because ? `fatura nga ${p.because.bill}` : 'fatura e skanuar u rihap'
+      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'bill' in p.because ? `fatura nga ${p.because.bill}` : 'made' in p.because ? `prodhuar me ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} u anulua` : 'fatura e skanuar u rihap'
     })`,
   orderReceived: (p) => `Mori porosinë #${p.orderId} nga ${p.supplier}: ${p.units} copë në stok`,
 

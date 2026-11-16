@@ -42,6 +42,17 @@ function direction(before: string, now: string): 'up' | 'down' {
 }
 
 /**
+ * An amount of money split into euros and the cents after them ("€1,482" +
+ * ".40", "1.482" + ",40 €"), so a big figure can set its cents smaller and
+ * quieter. Anything that isn't money with cents stays whole.
+ */
+export function splitMinor(text: string): [string, string] {
+  if (!text.includes('€')) return [text, ''];
+  const match = /[.,]\d{2}(?:\s?€)?$/.exec(text);
+  return match ? [text.slice(0, match.index), match[0]] : [text, ''];
+}
+
+/**
  * A figure whose changed digits roll in place: the old digit leaves, the new
  * one arrives from below (going up) or above (going down). At rest it is
  * plain text, so it reads and copies like any other number.
@@ -49,7 +60,15 @@ function direction(before: string, now: string): 'up' | 'down' {
 export function RollingNumber({ value, className }: { value: string; className?: string }) {
   const { now, before, turn } = useChange(value);
   const name = ['num', className].filter(Boolean).join(' ');
-  if (turn === 0 || now === before) return <span className={name}>{now}</span>;
+  if (turn === 0 || now === before) {
+    const [major, minor] = splitMinor(now);
+    return (
+      <span className={name}>
+        {major}
+        {minor && <span className="num__minor">{minor}</span>}
+      </span>
+    );
+  }
   const dir = direction(before, now);
   // Digits line up from the right, so "9.99" → "10.00" rolls each place.
   const cells = [...now].map((char, index) => {
@@ -66,9 +85,12 @@ export function RollingNumber({ value, className }: { value: string; className?:
       </span>
     );
   });
+  // The cents keep their smaller size while they roll, so nothing jumps.
+  const majorLength = splitMinor(now)[0].length;
   return (
     <span className={name} data-dir={dir}>
-      {cells}
+      {cells.slice(0, majorLength)}
+      {majorLength < cells.length && <span className="num__minor">{cells.slice(majorLength)}</span>}
     </span>
   );
 }

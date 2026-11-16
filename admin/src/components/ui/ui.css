@@ -964,7 +964,7 @@
   position: relative;
   display: grid;
   align-content: start;
-  gap: 2px;
+  gap: var(--space-1);
   min-width: 0;
   padding: var(--space-4) var(--inset-panel);
   color: var(--ink);
@@ -1007,8 +1007,9 @@
 .stat__label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   color: var(--ink-muted);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
@@ -1034,6 +1035,20 @@
 .stat__hint {
   color: var(--ink-muted);
   font-size: var(--text-sm);
+}
+
+/* The cents of a big amount: smaller and quieter, so the euros read first. */
+:is(.stat__value, .metric__value) .num__minor {
+  color: var(--ink-muted);
+  font-size: 0.6em;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* A coloured figure keeps its cents in the same colour, a shade softer. */
+:is(.stat--warn, .stat--danger) .stat__value .num__minor {
+  color: inherit;
+  opacity: 0.75;
 }
 
 .stat--warn .stat__value {
@@ -1557,7 +1572,8 @@ input.switch:focus-visible {
   grid-template-rows: auto auto 1fr;
   gap: var(--space-1);
   min-width: 0;
-  padding: var(--space-4);
+  /* The same inner rhythm as a strip of figures, so both read as one family. */
+  padding: var(--space-4) var(--inset-panel);
   /* Paper resting above the canvas, like the other cards. */
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
@@ -1589,9 +1605,9 @@ input.switch:focus-visible {
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  margin: -6px -6px -6px 0;
+  width: calc(var(--space-6) - var(--space-1));
+  height: calc(var(--space-6) - var(--space-1));
+  margin: calc(var(--space-1) * -1.5) calc(var(--space-1) * -1.5) calc(var(--space-1) * -1.5) 0;
   border-radius: var(--radius-small);
   color: var(--ink-muted);
   transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
@@ -1612,7 +1628,7 @@ input.switch:focus-visible {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
-  margin: 0;
+  margin: var(--space-1) 0 0;
 }
 
 .metric__value {
@@ -1639,7 +1655,7 @@ input.switch:focus-visible {
 .metric__change-shown {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: calc(var(--space-1) / 2);
 }
 
 .metric__change--up {

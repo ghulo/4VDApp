@@ -240,7 +240,9 @@ describe('Badge, StatTile and EmptyState', () => {
       </StatGrid>,
     );
 
-    expect(html).toContain('€120.00');
+    // The cents sit in their own span (smaller), but read as one figure.
+    expect(html.replace(/<[^>]+>/g, '')).toContain('€120.00');
+    expect(html).toContain('<span class="num__minor">.00</span>');
     expect(html).toContain('Sold today');
     expect(html).toMatch(/<a [^>]*href="\/sales"/);
   });

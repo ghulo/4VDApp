@@ -50,6 +50,8 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      # Stops on any known high or critical security hole in a package.
+      - run: npm audit --audit-level=high
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
@@ -78,6 +80,8 @@ jobs:
           cache: npm
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
+      # Stops on any known high or critical security hole in a package.
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm test
       - run: npm run build
@@ -99,12 +103,48 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
+  mail:
+    name: Bills email worker (tests and audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mail
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mail/package-lock.json
+      - run: npm ci
+      # Stops on any known high or critical security hole in a package.
+      - run: npm audit --audit-level=high
+      - run: npm test
+
+  desktop-audit:
+    name: Windows app (security audit, warning only)
+    # A hole here needs an Electron upgrade tried on the shop PC first, so it
+    # shows as a warning on the run instead of a red check (Render waits for
+    # every check, so a red one would hold back the API).
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm audit --audit-level=high || echo "::warning title=Windows app::npm audit found a high or critical security hole; see this step's log"
+
   deploy-dashboard:
     name: Put the dashboard live (4vd.app)
     # Only after every check above passes, and only for pushes to main. Render
     # waits for all checks too, this one included, so a failed upload here also
     # holds back the API: the two stay on the same version.
-    needs: [backend, backend-image, admin, mobile]
+    needs: [backend, backend-image, admin, mobile, mail]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10

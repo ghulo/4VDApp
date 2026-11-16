@@ -207,6 +207,22 @@ After this, pushes to `main` deploy by themselves: Render redeploys the API once
 
 ---
 
+## Two-step sign-in key
+
+Two-step sign-in (an authenticator app code after the password, optional per person)
+keeps each person's secret sealed with `TOTP_KEY`. Set it once, before anyone turns
+two-step on:
+
+1. Make a key of 48 random characters, e.g. in a terminal: `node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"`.
+2. Render → `4vd-api` → **Environment** → **Add Environment Variable**: Key `TOTP_KEY`,
+   Value = that key → **Save, rebuild and deploy**.
+3. Keep a copy in the password manager. Never change it afterwards: secrets sealed with
+   it could no longer be opened, and everyone with two-step on would need a reset
+   (People → the person → Two-step sign-in → Switch off). Without `TOTP_KEY` the API falls back to a
+   key derived from `JWT_SECRET`, and secrets sealed that way keep working after it is set.
+
+---
+
 ## Errors and Uptime
 
 **Error emails.** Every error the server logs is counted, and the developer

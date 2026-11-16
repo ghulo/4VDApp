@@ -1,5 +1,5 @@
 import { ArrowRight } from '@phosphor-icons/react';
-import { type DragEvent, type ReactNode, useState } from 'react';
+import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useT } from '../../i18n/useT';
 import { MenuButton } from './MenuButton';
 
@@ -38,10 +38,18 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
   const [over, setOver] = useState<string | null>(null);
   // The card that just moved settles into its new column; the rest show at once.
   const [arrived, setArrived] = useState<string | null>(null);
+  // A card moved from its Move key is rebuilt in the new column, so keyboard focus follows it there.
+  const refocus = useRef<string | null>(null);
   const move = (card: string, column: string) => {
     setArrived(card);
     onMove(card, column);
   };
+  useEffect(() => {
+    const key = refocus.current;
+    if (key === null) return;
+    refocus.current = null;
+    document.querySelector<HTMLButtonElement>(`[data-card="${CSS.escape(key)}"] .menu-button > button`)?.focus();
+  }, [cards]);
 
   const drop = (event: DragEvent, column: string) => {
     event.preventDefault();
@@ -83,6 +91,7 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
                 {inColumn.map((card) => (
                   <li
                     key={card.key}
+                    data-card={card.key}
                     className={['kanban__card', dragging === card.key && 'kanban__card--lifted', arrived === card.key && 'kanban__card--arrived'].filter(Boolean).join(' ')}
                     onAnimationEnd={(event) => {
                       if (event.target === event.currentTarget) setArrived((was) => (was === card.key ? null : was));
@@ -104,7 +113,13 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
                       icon={ArrowRight}
                       items={columns
                         .filter((other) => other.key !== column.key)
-                        .map((other) => ({ label: other.title, onSelect: () => move(card.key, other.key) }))}
+                        .map((other) => ({
+                          label: other.title,
+                          onSelect: () => {
+                            refocus.current = card.key;
+                            move(card.key, other.key);
+                          },
+                        }))}
                     />
                   </li>
                 ))}

@@ -1023,6 +1023,11 @@ kbd {
   cursor: grabbing;
 }
 
+/* Dragging a card never selects its words on the way. */
+.kanban__card[draggable] {
+  user-select: none;
+}
+
 /* While dragged, the card leaves a dashed hole where it was. */
 .kanban__card--lifted {
   background: none;

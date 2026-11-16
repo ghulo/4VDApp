@@ -115,7 +115,7 @@ export function KitPage() {
 
       <Section title="Pick from a long list">
         <Card>
-          <Combobox label="Customer" options={CUSTOMERS} value={customer} onChange={setCustomer} placeholder="Type a name or phone" hint="Try “cl” for Çlirim: accents don't matter." />
+          <Combobox label="Customer" options={CUSTOMERS} value={customer} onChange={setCustomer} placeholder="Type a name or phone…" hint="Try “cl” for Çlirim: accents don't matter." />
         </Card>
       </Section>
 

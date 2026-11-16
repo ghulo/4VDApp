@@ -36,12 +36,18 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
   const t = useT();
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  // The card that just moved settles into its new column; the rest show at once.
+  const [arrived, setArrived] = useState<string | null>(null);
+  const move = (card: string, column: string) => {
+    setArrived(card);
+    onMove(card, column);
+  };
 
   const drop = (event: DragEvent, column: string) => {
     event.preventDefault();
     const card = event.dataTransfer.getData('text/plain') || dragging;
     const current = cards.find((item) => item.key === card);
-    if (current && current.column !== column) onMove(current.key, column);
+    if (current && current.column !== column) move(current.key, column);
     setDragging(null);
     setOver(null);
   };
@@ -54,7 +60,7 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
         return (
           <section
             key={column.key}
-            className={over === column.key ? 'kanban__column kanban__column--over' : 'kanban__column'}
+            className={over === column.key && cards.find((card) => card.key === dragging)?.column !== column.key ? 'kanban__column kanban__column--over' : 'kanban__column'}
             aria-labelledby={headingId}
             onDragOver={(event) => {
               if (!dragging) return;
@@ -77,7 +83,10 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
                 {inColumn.map((card) => (
                   <li
                     key={card.key}
-                    className={dragging === card.key ? 'kanban__card kanban__card--lifted' : 'kanban__card'}
+                    className={['kanban__card', dragging === card.key && 'kanban__card--lifted', arrived === card.key && 'kanban__card--arrived'].filter(Boolean).join(' ')}
+                    onAnimationEnd={(event) => {
+                      if (event.target === event.currentTarget) setArrived((was) => (was === card.key ? null : was));
+                    }}
                     draggable
                     onDragStart={(event) => {
                       event.dataTransfer.setData('text/plain', card.key);
@@ -95,7 +104,7 @@ export function Board({ label, columns, cards, onMove, emptyText }: BoardProps) 
                       icon={ArrowRight}
                       items={columns
                         .filter((other) => other.key !== column.key)
-                        .map((other) => ({ label: other.title, onSelect: () => onMove(card.key, other.key) }))}
+                        .map((other) => ({ label: other.title, onSelect: () => move(card.key, other.key) }))}
                     />
                   </li>
                 ))}

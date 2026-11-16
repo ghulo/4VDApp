@@ -950,7 +950,7 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  min-block-size: 200px;
+  min-block-size: calc(var(--space-7) * 4);
   padding: var(--space-3);
   border-radius: var(--radius-panel);
   background: var(--surface-sunk);
@@ -960,6 +960,14 @@ kbd {
 
 .kanban__column--over {
   box-shadow: var(--shadow-inset), inset 0 0 0 2px var(--focus);
+}
+
+/* Where the card will land: a dashed slot at the foot of the column. */
+.kanban__column--over::after {
+  block-size: calc(var(--space-7) + var(--space-2));
+  border: 1px dashed var(--focus);
+  border-radius: var(--radius-small);
+  content: '';
 }
 
 .kanban__heading {
@@ -991,8 +999,11 @@ kbd {
   list-style: none;
 }
 
+/* The words on the left, the Move key beside them at the top, so a card is no taller than its words. */
 .kanban__card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: var(--space-2);
   padding: var(--space-3);
   border-radius: var(--radius-small);
@@ -1008,12 +1019,34 @@ kbd {
   box-shadow: var(--shadow-raise-hover);
 }
 
-.kanban__card--lifted {
-  opacity: 0.5;
+.kanban__card:active {
+  cursor: grabbing;
 }
 
-.kanban__card .menu-button {
-  justify-self: end;
+/* While dragged, the card leaves a dashed hole where it was. */
+.kanban__card--lifted {
+  background: none;
+  box-shadow: none;
+  outline: 1px dashed var(--line-strong);
+  outline-offset: -1px;
+}
+
+.kanban__card--lifted > * {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A moved card rises into its new place; everything else shows at once. */
+  .kanban__card--arrived {
+    animation: kanban-in var(--spring-time) var(--spring);
+  }
+
+  @keyframes kanban-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--space-2)) scale(0.98);
+    }
+  }
 }
 
 .kanban__empty {
@@ -1027,7 +1060,7 @@ kbd {
 @media (max-width: 900px) {
   /* A column at a time, side by side, snapping as you swipe. */
   .kanban {
-    grid-auto-columns: minmax(260px, 85%);
+    grid-auto-columns: minmax(calc(var(--space-7) * 5), 85%);
     padding-block-end: var(--space-2);
     overflow-x: auto;
     contain: inline-size;

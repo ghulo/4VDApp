@@ -3978,9 +3978,12 @@ fieldset.report-sections {
   border-bottom: 1px solid var(--line);
 }
 
-/* A statement of account: on screen inside a card, and alone on the paper when printed (see CustomerStatementPage). */
-.print-root {
-  display: none;
+/* A statement of account: on screen inside a card, and alone on the paper when printed (see CustomerStatementPage).
+   Hidden on screen only: a plain rule here would also beat the print rule above and print a blank page. */
+@media screen {
+  .print-root {
+    display: none;
+  }
 }
 
 .statement {

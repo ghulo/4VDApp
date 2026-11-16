@@ -102,7 +102,7 @@ export class ReportSubscriptionRepository {
     const column = kind === 'daily' ? 'last_daily' : 'last_weekly';
     const result = await sql<{ user_id: number }>`
       insert into report_subscriptions (user_id, ${sql.ref(column)}) values (${userId}, ${day}::date)
-      on conflict (user_id) do update set ${sql.ref(column)} = excluded.${sql.ref(column)}
+      on conflict (business_id, user_id) do update set ${sql.ref(column)} = excluded.${sql.ref(column)}
       where report_subscriptions.${sql.ref(column)} is distinct from excluded.${sql.ref(column)}
       returning user_id
     `.execute(this.db);

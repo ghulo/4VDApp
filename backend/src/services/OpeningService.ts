@@ -123,7 +123,7 @@ export class OpeningService {
   private async putSetting(db: DatabaseClient, key: string, value: unknown, actorId: number | null): Promise<void> {
     await sql`
       insert into settings (key, value, updated_by, updated_at) values (${key}, ${JSON.stringify(value)}, ${actorId}, now())
-      on conflict (key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+      on conflict (business_id, key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at
     `.execute(db);
   }
 

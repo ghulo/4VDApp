@@ -153,7 +153,7 @@ export async function fillDepreciation(db: DatabaseClient, startDay: string | nu
   const monthId = async (month: string) => {
     const known = monthIds.get(month);
     if (known !== undefined) return known;
-    await sql`insert into depreciation_months (month) values (${month}::date) on conflict (month) do nothing`.execute(db);
+    await sql`insert into depreciation_months (month) values (${month}::date) on conflict (business_id, month) do nothing`.execute(db);
     const row = await db.selectFrom('depreciation_months').select('id').where('month', '=', month).executeTakeFirstOrThrow();
     monthIds.set(month, row.id);
     return row.id;

@@ -671,7 +671,7 @@ export class BooksService {
       if (startChanged) {
         await sql`
           insert into settings (key, value, updated_by, updated_at) values (${BOOKS_START_KEY}, ${JSON.stringify(input.startDay)}, ${actorId}, now())
-          on conflict (key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at
+          on conflict (business_id, key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at
         `.execute(trx);
         await log.create({
           userId: actorId,

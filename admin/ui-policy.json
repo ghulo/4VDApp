@@ -247,6 +247,13 @@
         "content-clipping"
       ],
       "reason": "On a phone each planned thing in a calendar day is drawn as a 6px dot and its words are pushed out of sight on purpose; the day key still reads them out."
+    },
+    {
+      "selector": ".calendar__label",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On a phone each planned thing in the calendar is a dot; its words are hidden the visually-hidden way (1px, clip) so screen readers still read what is on the day."
     }
   ]
 }

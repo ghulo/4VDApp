@@ -45,7 +45,7 @@ export function AreaView({ points, height, formatValue }: { points: ChartColumn[
   const { top, outlier } = scaleTop(points.map((point) => point.value));
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <RAreaChart data={points} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+      <RAreaChart accessibilityLayer={false} data={points} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" style={{ stopColor: 'var(--data-line)', stopOpacity: 0.28 }} />
@@ -86,7 +86,7 @@ export function ColumnView({ columns, height }: { columns: ChartColumn[]; height
   const { top, outlier } = scaleTop(values);
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart
+      <BarChart accessibilityLayer={false}
         data={columns}
         margin={{ top: 8, right: 0, bottom: 0, left: 0 }}
         barCategoryGap="22%"
@@ -149,8 +149,9 @@ export interface RingSlice {
 export function RingView({ slices, shades, active, onActive }: { slices: RingSlice[]; shades: string[]; active: string | number | null; onActive: (key: string | number | null) => void }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
+      <PieChart accessibilityLayer={false}>
         <Pie
+          rootTabIndex={-1}
           data={slices.length ? slices : [{ key: 'none', label: '', value: 1, display: '' }]}
           dataKey="value"
           nameKey="label"

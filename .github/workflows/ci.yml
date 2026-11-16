@@ -17,7 +17,9 @@ jobs:
   backend:
     name: Backend (types and tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The full suite now runs past 15 minutes; a timeout shows as "cancelled"
+    # and holds back both Render and the dashboard deploy.
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17-alpine

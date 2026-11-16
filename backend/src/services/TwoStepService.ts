@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { enterBusiness } from '../database/businessContext.js';
 import jwt from 'jsonwebtoken';
 import type { DatabaseClient } from '../database/connection.js';
 import type { UserRow } from '../database/types.js';
@@ -148,6 +149,8 @@ export class TwoStepService {
     const count = (tries && tries.until > now ? 0 : (tries?.count ?? 0)) + 1;
     this.wrong.set(key, { count, until: count >= MAX_WRONG ? now + LOCK_MS : 0 });
     if (count >= MAX_WRONG) {
+      // Still before sign-in: the log entry goes to the person's business.
+      enterBusiness(user.business_id);
       await this.log(user.id, 'auth.two_step_locked', { key: 'twoStepLocked', params: { name: user.name } });
     }
     throw new AppError('That code is not right', 401, 'WRONG_CODE');

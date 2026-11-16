@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { GLOBAL_TABLES } from '../src/database/migrations/078_business_everywhere.js';
+import { GLOBAL_TABLES } from '../src/database/globalTables.js';
 import { createTestUser, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;

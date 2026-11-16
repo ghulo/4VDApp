@@ -41,6 +41,8 @@ export function createInternalRoutes({ config, launchService, billEmailService, 
   router.post('/backup-ok', async (req: Request, res: Response) => {
     const given = req.header('x-backup-token') ?? '';
     if (!config.backupPingToken || !sameSecret(given, config.backupPingToken)) throw new UnauthorizedError('Wrong or missing backup token');
+    // The backup covers the whole server; its launch step is kept with the shop.
+    enterBusiness(await defaultBusinessId(db));
     await launchService.recordBackup();
     sendSuccess(res, null, { message: 'Backup noted' });
   });

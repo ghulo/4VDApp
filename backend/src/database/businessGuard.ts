@@ -1,7 +1,7 @@
 import { CompiledQuery, type DatabaseConnection, type KyselyPlugin, type PluginTransformQueryArgs, type PluginTransformResultArgs, type QueryResult, type RootOperationNode, type UnknownRow } from 'kysely';
 import { logger } from '../utils/logger.js';
 import { currentContext } from './businessContext.js';
-import { GLOBAL_TABLES } from './migrations/078_business_everywhere.js';
+import { GLOBAL_TABLES } from './globalTables.js';
 
 /** What each open connection was last told. Kysely keeps one connection object per pooled client. */
 const told = new WeakMap<DatabaseConnection, string>();

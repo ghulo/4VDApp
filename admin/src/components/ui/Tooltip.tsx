@@ -3,6 +3,10 @@ import { type Side, setPopover, useFloating } from './floating';
 
 /** A pointer resting this long on a key shows its name; a key reached by Tab shows it at once. */
 const HOVER_DELAY = 400;
+/** Moving from one key to the next within this long shows the next name at once, like a menu bar. */
+const WARM_FOR = 500;
+/** When a tooltip last went away, shared by every tooltip on the page. */
+let lastHidden = 0;
 
 interface TooltipProps {
   /** The words shown: the same as the key's aria-label, so sighted and screen-reader users get one name. */
@@ -49,12 +53,14 @@ export function Tooltip({ label, shortcut, side = 'top', children }: TooltipProp
   };
   const hide = () => {
     window.clearTimeout(timer.current);
+    if (open) lastHidden = Date.now();
     setOpen(false);
   };
   const onPointerEnter = (event: PointerEvent) => {
     if (event.pointerType === 'touch') return;
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(show, HOVER_DELAY);
+    // Already reading names along a toolbar: no second wait.
+    timer.current = window.setTimeout(show, Date.now() - lastHidden < WARM_FOR ? 0 : HOVER_DELAY);
   };
   const onFocus = (event: FocusEvent) => {
     if ((event.target as HTMLElement).matches?.(':focus-visible')) show();

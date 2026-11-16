@@ -141,7 +141,7 @@
 kbd.kbd {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: calc(var(--space-1) / 2);
   padding: 0;
   border: 0;
   background: none;

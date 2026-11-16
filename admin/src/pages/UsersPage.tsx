@@ -8,7 +8,7 @@ import { Avatar } from '../components/Avatar';
 import { DeviceList } from '../components/DeviceList';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
-import { activityApi, cashApi, invitesApi, reportsApi, usersApi, writeOffsApi } from '../services/api';
+import { activityApi, cashApi, invitesApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -603,6 +603,14 @@ function ManagePanel({ person }: { person: TeamMember }) {
       setNewPassword('');
     },
   });
+  const resetTwoStep = useMutation({
+    mutationFn: () => twoStepApi.reset(person.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      setSaved(t.people.twoStepResetDone);
+    },
+  });
   const remove = useMutation({
     mutationFn: () => usersApi.remove(person.id),
     onSuccess: () => {
@@ -718,6 +726,13 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </SettingRow>
       )}
+      {!isSelf && person.twoStep && (
+        <SettingRow title={t.people.twoStep} description={t.people.twoStepOnHint(firstName)}>
+          <Button size="sm" disabled={resetTwoStep.isPending} onClick={() => resetTwoStep.mutate()}>
+            {t.people.twoStepReset}
+          </Button>
+        </SettingRow>
+      )}
       {!isSelf && (
         <SettingRow title={t.people.remove} description={t.people.removeHint}>
           {confirmingRemove ? (
@@ -736,9 +751,9 @@ function ManagePanel({ person }: { person: TeamMember }) {
           )}
         </SettingRow>
       )}
-      {(update.isError || remove.isError) && (
+      {(update.isError || remove.isError || resetTwoStep.isError) && (
         <p className="form-error" role="alert">
-          {errorMessage(update.error ?? remove.error)}
+          {errorMessage(update.error ?? remove.error ?? resetTwoStep.error)}
         </p>
       )}
       {saved && !update.isError && (

@@ -27,6 +27,7 @@ export function toPublicUser(user: UserRow): PublicUser {
     language: user.language,
     monthlyTarget: toMoneyOrNull(user.monthly_target),
     commissionPercent: user.commission_percent === null ? null : Number(user.commission_percent),
+    twoStep: user.totp_secret !== null,
     createdAt: user.created_at.toISOString(),
   };
 }

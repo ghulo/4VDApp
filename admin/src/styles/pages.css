@@ -936,6 +936,51 @@ form.product-form > .form-actions {
   width: min(380px, 100%);
 }
 
+/* The two-step code: wide, evenly spaced digits, easy to check against the phone. */
+.code-input {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3em;
+}
+
+/* Two-step setup in Profile: the QR code on a white tile (readable in dark mode), the key and the backup codes. */
+.two-step__qr {
+  display: block;
+  width: 176px;
+  height: 176px;
+  padding: var(--space-2);
+  /* QR codes need dark on light to scan, in either theme. */
+  background: #fff;
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow-raise);
+}
+
+.two-step__key,
+.two-step__codes {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.two-step__codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: var(--space-3);
+  list-style: none;
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.two-step__steps {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
 .login__title {
   font-family: var(--font-display);
   font-size: var(--text-headline);

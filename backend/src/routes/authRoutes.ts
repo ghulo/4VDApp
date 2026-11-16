@@ -8,6 +8,7 @@ import { createLoginRateLimiter } from '../middlewares/rateLimiter.js';
 
 export function createAuthRoutes({
   authService,
+  twoStepService,
   inviteService,
   accountService,
   googleAuthService,
@@ -17,7 +18,7 @@ export function createAuthRoutes({
 }: Container): Router {
   const signup = createSignupController(signupService);
   const google = createGoogleController(googleAuthService, config.refreshTokenTtlDays);
-  const controller = createAuthController(authService, config.refreshTokenTtlDays);
+  const controller = createAuthController(authService, twoStepService, config.refreshTokenTtlDays);
   const invites = createInviteController(inviteService, config.refreshTokenTtlDays);
   const account = createAccountController(accountService);
   const router = Router();
@@ -25,6 +26,8 @@ export function createAuthRoutes({
   const linkLimiter = createLoginRateLimiter();
 
   router.post('/login', createLoginRateLimiter(), controller.login);
+  // The code step after the password; shares the failed-login limit, which slows guessing.
+  router.post('/two-step', createLoginRateLimiter(), controller.twoStep);
   router.post('/refresh', controller.refresh);
   router.post('/logout', guards.authenticated, controller.logout);
   router.get('/me', guards.authenticated, controller.me);

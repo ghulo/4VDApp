@@ -65,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(async (email: string, password: string) => {
-    const user = await authApi.login(email, password);
+    const result = await authApi.login(email, password);
+    if ('challenge' in result) return result;
+    const user = result;
     await loadPermissions();
     if (!canUseDashboard(user.role)) {
       await authApi.logout();
@@ -73,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     applyTheme(user.theme);
     setState({ status: 'signedIn', user: settleLanguage(user) });
+    return null;
   }, [settleLanguage]);
 
   /**

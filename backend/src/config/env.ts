@@ -37,6 +37,11 @@ const envSchema = z.object({
     .string()
     .optional()
     .refine((value) => !value || value.length >= 20, 'must be at least 20 characters, or left empty'),
+  /** Key that encrypts two-step sign-in secrets (32+ random characters). Unset: derived from JWT_SECRET. */
+  TOTP_KEY: z
+    .string()
+    .optional()
+    .refine((value) => !value || value.length >= 32, 'must be at least 32 characters, or left empty'),
   /** The most emailed bills read by AI in one shop day; the rest wait until tomorrow or until someone reads them. */
   BILL_EMAIL_DAILY_READS: z.coerce.number().int().min(0).default(50),
   /** Public "create your shop" sign-up. Off while 4VD serves one shop. */
@@ -73,6 +78,8 @@ export interface AppConfig {
   backupPingToken?: string;
   /** Secret the mail Worker sends with emailed bills; unset switches bills by email off. */
   billEmailToken?: string;
+  /** Encrypts two-step sign-in secrets; falls back to one derived from jwtSecret. */
+  totpKey?: string;
   billEmailDailyReads: number;
   allowSignup: boolean;
   googleClientId?: string;
@@ -115,6 +122,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     email: { resendApiKey: env.RESEND_API_KEY || undefined, from: env.EMAIL_FROM },
     backupPingToken: env.BACKUP_PING_TOKEN || undefined,
     billEmailToken: env.BILL_EMAIL_TOKEN || undefined,
+    totpKey: env.TOTP_KEY || undefined,
     billEmailDailyReads: env.BILL_EMAIL_DAILY_READS,
     allowSignup: env.ALLOW_SIGNUP === 'true',
     googleClientId: env.GOOGLE_CLIENT_ID || undefined,

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import type { AppConfig } from '../config/env.js';
 import { AppError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
@@ -27,6 +28,16 @@ export interface LoginResult extends TokenPair {
 }
 
 /** Shown in the list of devices someone is logged in on. */
+/** The password (or Google) was right, and two-step sign-in is on: a code is still needed. */
+export interface TwoStepNeeded {
+  twoStep: true;
+  /** Good for one sign-in, a few minutes; not a session. */
+  challenge: string;
+}
+
+export const TWO_STEP_AUDIENCE = '4vd-two-step';
+const TWO_STEP_MINUTES = 5;
+
 export interface DeviceInfo {
   userAgent?: string | null;
   ip?: string | null;
@@ -42,7 +53,7 @@ export class AuthService {
     private readonly config: AuthConfig,
   ) {}
 
-  async login(email: string, password: string, device: DeviceInfo = {}): Promise<LoginResult> {
+  async login(email: string, password: string, device: DeviceInfo = {}): Promise<LoginResult | TwoStepNeeded> {
     const user = await this.userRepository.findByEmail(email);
     const isPasswordCorrect = await verifyPassword(password, user?.password_hash ?? DUMMY_PASSWORD_HASH);
 
@@ -54,7 +65,22 @@ export class AuthService {
       // Its own code, so the sign-in page can say it in the reader's language and offer the link again.
       throw new AppError('Confirm your email first: use the link we sent you', 401, 'EMAIL_NOT_CONFIRMED');
     }
-    return this.startSession(user, device);
+    return this.signIn(user, device, 'password');
+  }
+
+  /**
+   * Someone proved who they are with a password or Google: a session, or, with
+   * two-step sign-in on, a short challenge for the code step (TwoStepService.finish).
+   * A Counter PIN takeover or an invite starts the session straight away instead.
+   */
+  async signIn(user: UserRow, device: DeviceInfo, how: 'password' | 'google'): Promise<LoginResult | TwoStepNeeded> {
+    if (!user.totp_secret) return this.startSession(user, device, how);
+    const challenge = jwt.sign({ uid: user.id, how }, this.config.jwtSecret, {
+      audience: TWO_STEP_AUDIENCE,
+      expiresIn: `${TWO_STEP_MINUTES}m`,
+      algorithm: 'HS256',
+    });
+    return { twoStep: true, challenge };
   }
 
   /**

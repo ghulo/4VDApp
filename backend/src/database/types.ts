@@ -52,6 +52,15 @@ export interface UsersTable {
   pin_set_at: Generated<Date | null>;
   /** A password sign-in clears wrong-PIN attempts before this moment. */
   pin_cleared_at: Generated<Date | null>;
+  /** Two-step sign-in: the encrypted authenticator secret; null while it is off. */
+  totp_secret: Generated<string | null>;
+  /** A secret being set up, until the first code confirms it. */
+  totp_pending: Generated<string | null>;
+  totp_enabled_at: Generated<Date | null>;
+  /** The 30-second step of the last code used (a code works once). */
+  totp_last_step: ColumnType<string | null, string | number | null | undefined, string | number | null>;
+  /** SHA-256 hashes of the unused backup codes. */
+  totp_recovery: Generated<string[]>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;

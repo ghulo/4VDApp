@@ -104,6 +104,8 @@ import type {
   Invite,
   InvitePreview,
   LoginResult,
+  TwoStepChallenge,
+  TwoStepStatus,
   PinPerson,
   RabatApproval,
   Security,
@@ -193,14 +195,20 @@ async function paginated<TItem>(path: string, query: Record<string, string | num
 }
 
 export const authApi = {
-  async login(email: string, password: string): Promise<User> {
-    const { data } = await apiRequest<{ user: User }>('/auth/login', {
+  /** The person, or the code step when two-step sign-in is on. */
+  async login(email: string, password: string): Promise<User | TwoStepChallenge> {
+    const { data } = await apiRequest<LoginResult | TwoStepChallenge>('/auth/login', {
       method: 'POST',
       body: { email, password },
     });
+    if ('challenge' in data) return data;
     sessionHint.set();
     return data.user;
   },
+
+  /** The code (or a backup code) after the password. */
+  twoStep: async (challenge: string, code: string) =>
+    (await apiRequest<LoginResult>('/auth/two-step', { method: 'POST', body: { challenge, code } })).data,
 
   async me(): Promise<User> {
     return (await apiRequest<User>('/auth/me', { asMyself: true })).data;
@@ -266,7 +274,23 @@ export const accountApi = {
     await apiRequest<null>('/auth/confirm-email-change', { method: 'POST', body: { token } }),
   googleStatus: async () => (await apiRequest<{ enabled: boolean; clientId: string | null }>('/auth/google')).data,
   googleSignIn: async (credential: string) =>
-    (await apiRequest<LoginResult>('/auth/google', { method: 'POST', body: { credential } })).data,
+    (await apiRequest<LoginResult | TwoStepChallenge>('/auth/google', { method: 'POST', body: { credential } })).data,
+};
+
+/** Two-step sign-in on the signed-in person's own account. */
+export const twoStepApi = {
+  status: async () => (await apiRequest<TwoStepStatus>('/me/two-step')).data,
+  start: async () => (await apiRequest<{ secret: string; url: string }>('/me/two-step/start', { method: 'POST', body: {} })).data,
+  confirm: async (code: string) => (await apiRequest<{ backupCodes: string[] }>('/me/two-step/confirm', { method: 'POST', body: { code } })).data,
+  newBackupCodes: async (code: string) =>
+    (await apiRequest<{ backupCodes: string[] }>('/me/two-step/backup-codes', { method: 'POST', body: { code } })).data,
+  turnOff: async (code: string) => {
+    await apiRequest<null>('/me/two-step/off', { method: 'POST', body: { code } });
+  },
+  /** A manager switches it off for someone who lost their phone and backup codes. */
+  reset: async (userId: number) => {
+    await apiRequest<null>(`/users/${userId}/two-step/reset`, { method: 'POST', body: {} });
+  },
 };
 
 /** The signed-in person's own profile and security. */

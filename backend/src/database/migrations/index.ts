@@ -75,6 +75,7 @@ import * as projects from './073_projects.js';
 import * as recipes from './074_recipes.js';
 import * as serials from './075_serials.js';
 import * as declarations from './076_declarations.js';
+import * as twoStepSignIn from './077_two_step_sign_in.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -159,4 +160,5 @@ export const migrations: Record<string, Migration> = {
   '074_recipes': recipes,
   '075_serials': serials,
   '076_declarations': declarations,
+  '077_two_step_sign_in': twoStepSignIn,
 };

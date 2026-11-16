@@ -147,6 +147,8 @@ import { ProductService } from './services/ProductService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { ThreadService } from './services/ThreadService.js';
 import { VatService } from './services/vat/VatService.js';
+import { TwoStepService } from './services/TwoStepService.js';
+import { SecretBox } from './utils/totp.js';
 
 /**
  * The one place where repositories and services are created and wired
@@ -191,6 +193,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const promotionRepository = new PromotionRepository(db);
 
   const authService = new AuthService(userRepository, refreshTokenRepository, activityLogRepository, config);
+  const twoStepService = new TwoStepService(db, userRepository, authService, activityLogRepository, new SecretBox(config.jwtSecret, config.totpKey), config.jwtSecret);
   const categoryService = new CategoryService(categoryRepository, transactions);
   const duplicateService = new DuplicateService(new DuplicateRepository(db), transactions);
   const mediaService = new MediaService(new MediaRepository(db));
@@ -535,6 +538,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     db,
     userRepository,
     authService,
+    twoStepService,
     categoryService,
     duplicateService,
     productService,

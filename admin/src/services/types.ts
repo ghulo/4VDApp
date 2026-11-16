@@ -19,6 +19,8 @@ export interface User {
   /** Euros of sales (after refunds) hoped for each month; null when not set. */
   monthlyTarget: number | null;
   commissionPercent: number | null;
+  /** Signs in with a code from an authenticator app as well. */
+  twoStep?: boolean;
   createdAt: string;
 }
 
@@ -1322,6 +1324,17 @@ export interface PriceSuggestion {
 /** A new session: the tokens arrive as httpOnly cookies, never in the page. */
 export interface LoginResult {
   user: User;
+}
+
+/** The password (or Google) was right and two-step sign-in is on: the code comes next. */
+export interface TwoStepChallenge {
+  twoStep: true;
+  challenge: string;
+}
+
+export interface TwoStepStatus {
+  on: boolean;
+  backupCodesLeft: number;
 }
 
 export interface Invite {

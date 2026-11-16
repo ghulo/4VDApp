@@ -28,5 +28,7 @@ export interface PublicUser {
   monthlyTarget: number | null;
   /** Share of their sales (after refunds) they earn; null when not set. */
   commissionPercent: number | null;
+  /** Signs in with a code from an authenticator app as well. */
+  twoStep: boolean;
   createdAt: string;
 }

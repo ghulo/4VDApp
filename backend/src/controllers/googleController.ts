@@ -14,7 +14,9 @@ export function createGoogleController(googleAuthService: GoogleAuthService, ref
 
     async signIn(req: Request, res: Response): Promise<void> {
       const { credential } = parseInput(googleCredentialSchema, req.body);
-      sendSuccess(res, deliverSession(req, res, await googleAuthService.signIn(credential, deviceOf(req)), refreshTtlDays), { message: 'Logged in' });
+      const result = await googleAuthService.signIn(credential, deviceOf(req));
+      if ('twoStep' in result) sendSuccess(res, result, { message: 'Type the code from your authenticator app' });
+      else sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
     },
 
     async acceptInvite(req: Request, res: Response): Promise<void> {

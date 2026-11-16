@@ -1,3 +1,4 @@
+import { createAuthController } from '../controllers/authController.js';
 import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createReturnsController } from '../controllers/returnsController.js';
@@ -40,8 +41,9 @@ export function createAnalyticsRoutes({ analyticsService, guards }: Container): 
   return router;
 }
 
-export function createUserRoutes({ userService, sessionService, guards }: Container): Router {
+export function createUserRoutes({ userService, sessionService, authService, twoStepService, guards, config }: Container): Router {
   const controller = createUserController(userService);
+  const auth = createAuthController(authService, twoStepService, config.refreshTokenTtlDays);
   const sessions = createSessionController(sessionService);
   const router = Router();
 
@@ -51,6 +53,8 @@ export function createUserRoutes({ userService, sessionService, guards }: Contai
   router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);
   router.delete('/:id', ...guards.manage, controller.remove);
+  // Lost phone and backup codes: a manager switches two-step sign-in off for them.
+  router.post('/:id/two-step/reset', ...guards.manage, auth.twoStepReset);
 
   return router;
 }

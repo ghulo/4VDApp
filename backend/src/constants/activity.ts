@@ -1,5 +1,10 @@
 export const ACTIVITY_ACTIONS = [
   'auth.logged_in',
+  'auth.two_step_on',
+  'auth.two_step_off',
+  'auth.two_step_codes',
+  'auth.two_step_reset',
+  'auth.two_step_locked',
   'product.created',
   'product.updated',
   'product.deleted',

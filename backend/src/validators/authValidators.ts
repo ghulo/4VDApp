@@ -113,3 +113,8 @@ export const refreshTokenSchema = z.object({
 export const logoutSchema = z.object({
   refreshToken: z.string().min(1).max(500).optional(),
 });
+
+/** A six-digit app code or a backup code like k7m2-9qxp. */
+const twoStepCode = z.string().trim().min(6, 'type the 6-digit code').max(20);
+export const twoStepCodeSchema = z.object({ code: twoStepCode });
+export const twoStepSignInSchema = z.object({ challenge: z.string().min(20).max(1000), code: twoStepCode });

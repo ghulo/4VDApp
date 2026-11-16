@@ -15,7 +15,8 @@ import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
 import { DeviceList, type DeviceGroup } from '../components/DeviceList';
-import { canOversee } from '../auth/roles';
+import { canOversee, canReadBooks } from '../auth/roles';
+import { TwoStepCard } from '../components/TwoStepCard';
 import { MyPayPanel, useOnPayroll } from './PayrollPages';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -294,6 +295,9 @@ function SecurityPanel({ user }: { user: User }) {
       </form>
 
       <PinCard hasPassword={hasPassword} hasPin={security.data.hasPin} />
+
+      {/* Offered to those who handle the books or the whole business; kept visible once on. */}
+      {(canOversee(user.role) || canReadBooks(user.role) || user.twoStep) && <TwoStepCard />}
 
       <Card title="Google">
         <SettingRow

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { useT } from '../../i18n/useT';
 import { setPopover, useFloating } from './floating';
 
@@ -8,8 +8,14 @@ export function heatLevel(value: number, max: number): number {
   return Math.min(1, value / max);
 }
 
-/** A level's colour: an empty cell stays sunk paper, the busiest is full amber. */
-const heatColour = (level: number) => `color-mix(in oklab, var(--data-heat) ${level === 0 ? 0 : Math.round(12 + level * 88)}%, var(--surface-sunk))`;
+/**
+ * A level's colour, in the key's four steps of amber (an empty cell stays
+ * sunk paper), so every cell matches a swatch in the key exactly.
+ */
+const heatColour = (level: number) => {
+  const step = level === 0 ? 0 : Math.ceil(level * 4) / 4;
+  return `color-mix(in oklab, var(--data-heat) ${step === 0 ? 0 : Math.round(12 + step * 88)}%, var(--surface-sunk))`;
+};
 
 interface HeatmapProps {
   /** Read out by screen readers. */
@@ -49,7 +55,7 @@ export function Heatmap({ label, rows, columns, values, describe, labelEvery = 1
             <tr>
               <td />
               {columns.map((column, index) => (
-                <th key={column} scope="col" className="heatmap__column">
+                <th key={column} scope="col" className="heatmap__column" data-lit={hover?.column === index || undefined}>
                   <span className={index % labelEvery === 0 ? undefined : 'visually-hidden'}>{column}</span>
                 </th>
               ))}
@@ -58,7 +64,7 @@ export function Heatmap({ label, rows, columns, values, describe, labelEvery = 1
           <tbody>
             {rows.map((row, r) => (
               <tr key={row}>
-                <th scope="row" className="heatmap__row">
+                <th scope="row" className="heatmap__row" data-lit={hover?.row === r || undefined}>
                   {row}
                 </th>
                 {columns.map((column, c) => {
@@ -67,6 +73,7 @@ export function Heatmap({ label, rows, columns, values, describe, labelEvery = 1
                     <td
                       key={column}
                       className="heatmap__cell"
+                      style={{ '--c': c } as CSSProperties}
                       onPointerEnter={(event) => {
                         cellRef.current = event.currentTarget;
                         setHover({ row: r, column: c });

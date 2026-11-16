@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useT } from '../../i18n/useT';
 import { formatPercent } from '../../utils/format';
 
@@ -33,8 +34,10 @@ export function FunnelChart({ stages, label }: { stages: FunnelStage[]; label: s
     <ol className="funnel" aria-label={label}>
       {stages.map((stage, index) => {
         const { share, lost } = steps[index]!;
+        const width = (value: number, has: boolean) => `${Math.max(value * 100, has ? 1.5 : 0)}%`;
+        const before = index > 0 ? steps[index - 1]!.share : null;
         return (
-          <li key={stage.key} className="funnel__stage">
+          <li key={stage.key} className="funnel__stage" style={{ '--i': index } as CSSProperties}>
             {lost !== null && (
               <p className="funnel__lost">
                 <span>{t.kit.dropped(formatPercent(lost))}</span>
@@ -43,7 +46,9 @@ export function FunnelChart({ stages, label }: { stages: FunnelStage[]; label: s
             <div className="funnel__row">
               <span className="funnel__label">{stage.label}</span>
               <span className="funnel__track" aria-hidden="true">
-                <span className="funnel__bar" style={{ inlineSize: `${Math.max(share * 100, stage.value > 0 ? 1.5 : 0)}%` }} />
+                {/* A ghost of the step before, so what dropped off shows as the gap. */}
+                {before !== null && <span className="funnel__ghost" style={{ inlineSize: width(before, before > 0) }} />}
+                <span className="funnel__bar" style={{ inlineSize: width(share, stage.value > 0) }} />
               </span>
               <span className="funnel__value">{stage.display}</span>
             </div>

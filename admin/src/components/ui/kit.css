@@ -769,9 +769,9 @@ kbd {
 
 .heatmap__grid {
   inline-size: 100%;
-  min-inline-size: 560px;
+  min-inline-size: calc(var(--space-7) * 12);
   border-collapse: separate;
-  border-spacing: 3px;
+  border-spacing: var(--space-1);
   table-layout: fixed;
 }
 
@@ -780,10 +780,16 @@ kbd {
   color: var(--ink-muted);
   font-size: var(--text-xs);
   font-weight: 500;
+  transition: color var(--fast) var(--ease);
+}
+
+/* The day and hour of the cell under the pointer light up in ink, like a crosshair. */
+.heatmap__grid th[data-lit] {
+  color: var(--ink);
 }
 
 .heatmap__row {
-  inline-size: 48px;
+  inline-size: var(--space-7);
   padding-inline-end: var(--space-2);
   text-align: start;
   white-space: nowrap;
@@ -805,9 +811,9 @@ kbd {
   border-radius: var(--radius-stamp);
 }
 
+/* The cell under the pointer gets a fine ink ring; its labels light up too. */
 .heatmap__cell:hover .heatmap__fill {
-  outline: 2px solid var(--ink);
-  outline-offset: 1px;
+  box-shadow: 0 0 0 1px var(--surface), 0 0 0 2px var(--ink);
 }
 
 .heatmap__key {
@@ -839,7 +845,7 @@ kbd {
 .funnel__row,
 .funnel__lost {
   display: grid;
-  grid-template-columns: minmax(96px, 160px) minmax(0, 1fr) minmax(64px, auto);
+  grid-template-columns: minmax(calc(var(--space-7) * 2), calc(var(--space-7) * 3)) minmax(0, 1fr) minmax(calc(var(--space-7) + var(--space-4)), auto);
   align-items: center;
   gap: var(--space-3);
 }
@@ -864,6 +870,7 @@ kbd {
 }
 
 .funnel__track {
+  position: relative;
   block-size: var(--space-5);
   overflow: hidden;
   border-radius: var(--radius-stamp);
@@ -871,7 +878,17 @@ kbd {
   box-shadow: var(--shadow-inset);
 }
 
+/* The step before's width, faint: the gap between it and the bar is who dropped off. */
+.funnel__ghost {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  border-radius: var(--radius-stamp);
+  background: var(--tint);
+}
+
 .funnel__bar {
+  position: relative;
   display: block;
   block-size: 100%;
   border-radius: var(--radius-stamp);
@@ -903,6 +920,19 @@ kbd {
 
   .funnel__lost span {
     grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Funnel bars grow in one after another, each step a beat after the one above. */
+  .funnel__bar {
+    transform-origin: left;
+    animation: grow-x var(--spring-time) var(--spring) calc(var(--i, 0) * 60ms) backwards;
+  }
+
+  /* Heatmap cells fade in hour by hour, left to right. */
+  .heatmap__fill {
+    animation: fade var(--spring-time) var(--ease) calc(var(--c, 0) * 20ms) backwards;
   }
 }
 

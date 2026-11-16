@@ -1,5 +1,7 @@
 // Cloudflare Workers (static assets) config for the dashboard: 4vd.app.
-// Cloudflare builds with `npm ci && npm run build`, then `npx wrangler deploy` uploads dist/.
+// GitHub Actions (.github/workflows/ci.yml, job deploy-dashboard) builds it and runs
+// `wrangler deploy` once every check passes on main. Cloudflare's own build only uploads
+// versions (deploy command `npx wrangler versions upload`), never puts them live.
 {
   "name": "4vd-dashboard",
   "compatibility_date": "2026-10-01",

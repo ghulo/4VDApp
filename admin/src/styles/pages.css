@@ -6351,7 +6351,7 @@ fieldset.payroll-pick {
   border-radius: var(--radius-small);
   background: var(--surface);
   box-shadow: var(--shadow-raise);
-  color: var(--brand-ink);
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-figure);
   font-weight: 600;
@@ -6471,6 +6471,11 @@ fieldset.payroll-pick {
   justify-content: space-between;
   gap: var(--space-3);
   color: var(--ink-muted);
+}
+
+.declaration__accounts a {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .declaration__no {

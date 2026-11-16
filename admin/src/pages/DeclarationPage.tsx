@@ -118,7 +118,7 @@ function Summary({ data }: { data: Declaration }) {
   return (
     <section className="declaration__summary" aria-labelledby="declaration-form">
       <div className="declaration__form">
-        <p className="declaration__code" aria-hidden="true">
+        <p className="declaration__code" aria-hidden="true" translate="no">
           {data.form}
         </p>
         <div>
@@ -311,7 +311,7 @@ function Inputs({ data, canEdit }: { data: Declaration; canEdit: boolean }) {
             <p className="field__hint">{w.otherHint}</p>
             {other.map((line, index) => (
               <div key={index} className="declaration__pair">
-                <input aria-label={w.otherLabel} name={`other-label-${index}`} autoComplete="off" maxLength={120} placeholder={w.otherLabel} value={line.label} onChange={(event) => setOther(other.map((item, at) => (at === index ? { ...item, label: event.target.value } : item)))} />
+                <input aria-label={w.otherLabel} name={`other-label-${index}`} autoComplete="off" maxLength={120} placeholder={`${w.otherLabel}…`} value={line.label} onChange={(event) => setOther(other.map((item, at) => (at === index ? { ...item, label: event.target.value } : item)))} />
                 <input aria-label={w.otherAmount} name={`other-amount-${index}`} autoComplete="off" type="number" inputMode="decimal" step={0.01} className="declaration__money" value={line.amount} onChange={(event) => setOther(other.map((item, at) => (at === index ? { ...item, amount: event.target.value } : item)))} />
                 <Button size="sm" variant="ghost" icon={X} aria-label={w.remove(line.label || w.otherLabel)} onClick={() => setOther(other.filter((_, at) => at !== index))} />
               </div>

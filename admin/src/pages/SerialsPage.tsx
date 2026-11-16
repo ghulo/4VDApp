@@ -5,7 +5,10 @@ import { SearchInput } from '../components/SearchInput';
 import { DataTable, EmptyState, PageHeader, Section } from '../components/ui';
 import { useT } from '../i18n/useT';
 import { serialsApi } from '../services/api';
-import { SerialOrigin, SerialStatus, SerialWarranty, formatSerialDay } from './ProductSerialsTab';
+import { formatDateWith } from '../utils/format';
+import { SerialOrigin, SerialStatus, SerialWarranty } from './ProductSerialsTab';
+
+const formatSerialDay = (day: string) => formatDateWith(new Date(`${day.slice(0, 10)}T00:00:00Z`), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** Look up a serial: where it came from, who bought it, and until when its warranty runs. */
 export function SerialsPage() {

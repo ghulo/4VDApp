@@ -42,7 +42,8 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import { cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import { useFeatures } from '../utils/useFeatures';
 import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
@@ -52,7 +53,7 @@ import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
-import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
+import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, SerialSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
 import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
 import { InvoicesSheet } from './counter/InvoicesSheet';
 import { DeliverSheet } from './counter/DeliverSheet';
@@ -86,6 +87,7 @@ type Panel =
   | 'approve'
   | 'approvePayLater'
   | 'deliver'
+  | 'serial'
   | null;
 
 /** What the till shows after a sale: the invoice, how it was paid, the change, and the printer's receipt number once it prints. */
@@ -174,6 +176,10 @@ export function CounterPage() {
   const shortDatedBatches = useQuery({ queryKey: ['expiry', 'short-dated'], queryFn: expiryApi.shortDated, staleTime: 5 * 60_000 });
   const offers = useMemo(() => offersByProduct(shortDatedBatches.data), [shortDatedBatches.data]);
   const [panel, setPanel] = useState<Panel>(null);
+  // Products that have serial numbers (Settings → Features): the sale asks for one per unit.
+  const features = useFeatures();
+  const serialProducts = useQuery({ queryKey: ['serials', 'products'], queryFn: serialsApi.products, enabled: features.serials, staleTime: 60_000 });
+  const [serialFor, setSerialFor] = useState<number | null>(null);
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
   const { baskets, current, setLines, update: updateBasket, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
 
@@ -452,12 +458,16 @@ export function CounterPage() {
     // Stickered short-dated units go as their own line, with their batch.
     items: lines.flatMap((line): QueuedSale['body']['items'] => {
       const discount = roundMoney(line.percent);
-      if (line.offerPrice !== undefined) return [{ productId: line.productId, quantity: line.quantity, offerPrice: line.offerPrice }];
+      // Serials go with the units in order: the short-dated ones first, then the rest.
+      const serials = tracked.has(line.productId) ? (line.serials ?? []).slice(0, Math.ceil(line.quantity)) : [];
+      const take = (from: number, count: number) => (serials.length > 0 ? { serials: serials.slice(from, from + count) } : {});
+      if (line.offerPrice !== undefined) return [{ productId: line.productId, quantity: line.quantity, offerPrice: line.offerPrice, ...take(0, line.quantity) }];
       const rabat = discount > 0 ? { discountPercent: discount } : {};
       const rest = roundMoney(line.quantity - line.shortQuantity);
+      const shortCount = line.shortQuantity > 0 && line.shortDated ? line.shortQuantity : 0;
       return [
-        ...(line.shortQuantity > 0 && line.shortDated ? [{ productId: line.productId, quantity: line.shortQuantity, shortDatedId: line.shortDated.id, ...rabat }] : []),
-        ...(rest > 0 ? [{ productId: line.productId, quantity: rest, ...rabat }] : []),
+        ...(shortCount > 0 && line.shortDated ? [{ productId: line.productId, quantity: line.shortQuantity, shortDatedId: line.shortDated.id, ...rabat, ...take(0, shortCount) }] : []),
+        ...(rest > 0 ? [{ productId: line.productId, quantity: rest, ...rabat, ...take(shortCount, rest) }] : []),
       ];
     }),
     notes: null,
@@ -672,10 +682,20 @@ export function CounterPage() {
   const keysEnabled = panel === null;
   const hasLines = lines.length > 0;
   const canPrint = printer.reach === 'ready' || printer.reach === 'notRunning' || printer.reach === 'noFolder' || printer.reach === 'checking';
+  const tracked = new Set(features.serials ? (serialProducts.data ?? []).map((product) => product.productId) : []);
+  const serialLine = lines.find((line) => line.productId === serialFor) ?? null;
+  const missingSerial = () => lines.find((line) => tracked.has(line.productId) && (line.serials?.length ?? 0) < Math.ceil(line.quantity));
   const startPanel = (next: Panel) => {
     setAlarm(null);
     if (['quantity', 'price', 'discount', 'remove'].includes(next ?? '') && !selected) return complain(t.counter.pickLine);
     if ((next === 'pay' || next === 'cancel') && !hasLines) return complain(t.counter.addFirst);
+    // Online, each unit of a product with serial numbers needs its serial before paying; offline it can wait.
+    const missing = next === 'pay' && online ? missingSerial() : undefined;
+    if (missing) {
+      setSerialFor(missing.productId);
+      setPanel('serial');
+      return;
+    }
     if (next === 'pay') setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
     setPanel(next);
   };
@@ -1161,6 +1181,25 @@ export function CounterPage() {
       </main>
 
 
+      {serialLine && (
+        <SerialSheet
+          open={panel === 'serial'}
+          name={serialLine.product?.name ?? serialLine.name}
+          total={Math.ceil(serialLine.quantity)}
+          initial={serialLine.serials ?? []}
+          onClose={closePanel}
+          onSave={(serials) => {
+            const done = serials.length >= Math.ceil(serialLine.quantity);
+            setLines((now) => now.map((line) => (line.productId === serialLine.productId ? { ...line, serials } : line)));
+            if (!done) return closePanel();
+            // The next line that still needs serials, else on to paying.
+            const next = lines.find((line) => line.productId !== serialLine.productId && tracked.has(line.productId) && (line.serials?.length ?? 0) < Math.ceil(line.quantity));
+            if (next) return setSerialFor(next.productId);
+            setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
+            setPanel('pay');
+          }}
+        />
+      )}
       {selected && (
         <>
           <NumberSheet

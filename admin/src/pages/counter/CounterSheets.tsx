@@ -1,5 +1,5 @@
 import { shake } from '../../components/ui';
-import { ArrowLeft, LockKey, Printer, Truck } from '@phosphor-icons/react';
+import { ArrowLeft, LockKey, Printer, Truck, X } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
 import { Button, DateField, Field, Sheet } from '../../components/ui';
@@ -760,6 +760,97 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
       <div className="form-actions">
         <Button variant="primary" type="submit" loading={busy}>
           {submit}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+interface SerialProps {
+  /** The product's name, as the cashier sees it on the line. */
+  name: string;
+  /** How many units the line has: one serial each. */
+  total: number;
+  /** Serials already typed for this line. */
+  initial: string[];
+  onSave: (serials: string[]) => void;
+}
+
+/**
+ * The serials of one line, keyboard first: scan (the scanner sends Enter),
+ * the next, and once every unit has one it saves by itself. Esc leaves it
+ * for later; Pay asks again.
+ */
+export function SerialSheet({ open, onClose, ...form }: SerialProps & { open: boolean; onClose: () => void }) {
+  const t = useT();
+  return (
+    <Sheet open={open} onClose={onClose} title={t.serials.prompt(form.name, form.total)} placement="center">
+      <SerialForm key={`${form.name}-${form.total}`} {...form} onClose={onClose} />
+    </Sheet>
+  );
+}
+
+function SerialForm({ total, initial, onSave, onClose }: SerialProps & { onClose: () => void }) {
+  const t = useT();
+  const [list, setList] = useState<string[]>(() => initial.slice(0, total));
+  const [text, setText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const serial = text.trim();
+    if (!serial) {
+      if (list.length > 0) onSave(list);
+      return;
+    }
+    if (list.some((one) => one.toLowerCase() === serial.toLowerCase())) {
+      setError(t.serials.twice);
+      if (input.current) shake(input.current);
+      return;
+    }
+    const next = [...list, serial];
+    setText('');
+    setError(null);
+    if (next.length >= total) onSave(next);
+    else setList(next);
+  }
+
+  return (
+    <form className="counter-form" onSubmit={submit}>
+      <Field label={t.serials.entry} hint={error ? undefined : `${t.serials.progress(list.length, total)} · ${t.serials.promptHint}`} error={error ?? undefined}>
+        <input
+          ref={input}
+          className="counter-number"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={100}
+          aria-invalid={error ? true : undefined}
+          value={text}
+          onChange={(event) => {
+            setText(event.target.value);
+            setError(null);
+          }}
+        />
+      </Field>
+      {list.length > 0 && (
+        <ul className="serial-chips" aria-label={t.serials.entry}>
+          {list.map((serial) => (
+            <li key={serial} className="serial-chip">
+              <span className="serial-code">{serial}</span>
+              <button type="button" className="serial-chip__remove" aria-label={t.serials.remove(serial)} onClick={() => setList((now) => now.filter((one) => one !== serial))}>
+                <X size={12} weight="bold" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="form-actions">
+        <Button onClick={() => (list.length > 0 ? onSave(list) : onClose())}>
+          {t.serials.later}
+        </Button>
+        <Button variant="primary" type="submit">
+          {t.serials.done}
         </Button>
       </div>
     </form>

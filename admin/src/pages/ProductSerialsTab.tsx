@@ -13,7 +13,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateWith } from '../utils/format';
 
 /** "4 Oct 2026" for a "2026-10-04" day, without any time zone moving it. */
-export const formatSerialDay = (day: string) => formatDateWith(new Date(`${day.slice(0, 10)}T00:00:00Z`), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const formatSerialDay = (day: string) => formatDateWith(new Date(`${day.slice(0, 10)}T00:00:00Z`), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** Where a serial came from: its bill, its stock-in, or typed at the sale. */
 export function SerialOrigin({ serial }: { serial: Serial }) {

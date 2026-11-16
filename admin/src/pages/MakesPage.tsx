@@ -1,6 +1,6 @@
 import { Plus } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -130,8 +130,8 @@ function MakeForm({ initialProduct, onSaved }: { initialProduct: number | null; 
   const [quantity, setQuantity] = useState('1');
   const [locationId, setLocationId] = useState<number | null>(receiving?.id ?? null);
   const [day, setDay] = useState(today);
-  const [expiresOn, setExpiresOn] = useState('');
-  const [expiryTouched, setExpiryTouched] = useState(false);
+  // Left alone, the best-before follows the earliest of the parts; typing one replaces it.
+  const [typedExpiry, setTypedExpiry] = useState<string | null>(null);
   const [note, setNote] = useState('');
 
   const count = Number(quantity.replace(',', '.'));
@@ -144,11 +144,8 @@ function MakeForm({ initialProduct, onSaved }: { initialProduct: number | null; 
   });
   const ready = plan.data && plan.data.productId === productId ? plan.data : null;
 
-  // The best-before follows the earliest of the parts until it is typed over.
   const earliest = ready?.earliestExpiry ?? null;
-  useEffect(() => {
-    if (!expiryTouched) setExpiresOn(earliest ?? '');
-  }, [earliest, expiryTouched]);
+  const expiresOn = typedExpiry ?? earliest ?? '';
 
   const quantityError = quantity === '' ? undefined : !(count > 0) ? t.makes.quantityError : !Number.isInteger(count) ? t.makes.wholeError : undefined;
   const blocked = ready ? ready.noCost.length > 0 || ready.short.length > 0 : true;
@@ -199,10 +196,7 @@ function MakeForm({ initialProduct, onSaved }: { initialProduct: number | null; 
       <Field label={t.makes.expiresOn} hint={earliest && expiresOn === earliest ? t.makes.expiresHint : undefined}>
         <DateField
           value={expiresOn}
-          onChange={(next) => {
-            setExpiryTouched(true);
-            setExpiresOn(next);
-          }}
+          onChange={(next) => setTypedExpiry(next)}
         />
       </Field>
       <Field label={t.makes.note}>

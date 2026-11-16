@@ -17,6 +17,8 @@ export interface StoredLine {
   offerPrice?: number;
   /** Stickered short-dated units the cashier tapped: this many of the line sell at the batch's price. */
   shortDated?: ShortDatedPick;
+  /** Serial numbers typed for this line's units (products that have them), first ones first. */
+  serials?: string[];
 }
 
 export interface Basket {

@@ -96,14 +96,28 @@
   color: var(--signal-out);
 }
 
-.stock-tag .target-bar__fill {
-  border-radius: 0;
-  background: var(--tag-color);
+/* Each bay is its own little well, rounded on both ends; what's on the shelf
+   fills it as a raised block (lit top, shaded foot), like the chart bars. */
+.stock-tag__bays {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
 }
 
-.stock-tag .target-bar__track {
-  border-radius: var(--radius-stamp);
-  mask-image: repeating-linear-gradient(90deg, black 0 calc(25% - 2px), transparent calc(25% - 2px) 25%);
+.stock-tag__bay {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  box-shadow: var(--shadow-inset);
+}
+
+.stock-tag__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--tag-color);
+  box-shadow: var(--bar-depth);
 }
 
 .stock-tag--large {
@@ -117,9 +131,6 @@
   letter-spacing: -0.04em;
 }
 
-.stock-tag--large .target-bar__track {
-  block-size: 8px;
-}
 
 .stock-hero {
   display: flex;

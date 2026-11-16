@@ -35,7 +35,7 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Invoices: invoices and credit notes show; PDF opens the invoice with stamp and signature
 - [ ] Account: balance, due dates and late items match the customer page; the statement prints cleanly and the CSV opens in Excel
 - [ ] Switching the portal off, or removing a person, signs them out at once; the language switch (Shqip/English) sticks
-- [ ] Email sign-in: only after the Resend setup (handoff.md); asking for a link with an unknown email says the same as with a known one
+- [ ] Email sign-in: ask for a link on 4vd.app/portal with a portal person's email and it arrives; asking for a link with an unknown email says the same as with a known one
 
 **Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
 - [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location

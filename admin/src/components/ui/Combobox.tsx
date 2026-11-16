@@ -29,6 +29,31 @@ export function matchOptions(options: ComboOption[], query: string): ComboOption
   return [...hits.filter((option) => fold(option.label).startsWith(first)), ...hits.filter((option) => !fold(option.label).startsWith(first))];
 }
 
+/**
+ * The name with the typed words picked out, matched the same way as the
+ * search (no accents, any case): "çli" marks "Çli" in "Çlirim Berisha".
+ */
+export function markMatches(label: string, query: string): Array<{ text: string; hit: boolean }> {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  const chars = [...label];
+  // One folded letter per letter of the name, so a hit's place maps straight back.
+  const folded = chars.map((char) => fold(char).slice(0, 1) || char);
+  const flat = folded.join('');
+  const hit = chars.map(() => false);
+  for (const word of words) {
+    for (let at = flat.indexOf(word); at !== -1; at = flat.indexOf(word, at + word.length)) {
+      for (let index = at; index < at + word.length; index++) hit[index] = true;
+    }
+  }
+  const parts: Array<{ text: string; hit: boolean }> = [];
+  chars.forEach((char, index) => {
+    const last = parts.at(-1);
+    if (last && last.hit === hit[index]) last.text += char;
+    else parts.push({ text: char, hit: hit[index]! });
+  });
+  return parts;
+}
+
 interface ComboboxProps {
   /** The field's label, shown above it. */
   label: string;
@@ -107,7 +132,7 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
 
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
   return (
-    <div className="field combobox">
+    <div className={open ? 'field combobox combobox--open' : 'field combobox'}>
       <label className="field__label" htmlFor={id}>
         {label}
       </label>
@@ -164,7 +189,17 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
               onPointerMove={() => setActive(index)}
             >
               <span className="combobox__name">
-                {option.label}
+                <span>
+                  {markMatches(option.label, typed).map((part, partIndex) =>
+                    part.hit ? (
+                      <mark key={partIndex} className="combobox__match">
+                        {part.text}
+                      </mark>
+                    ) : (
+                      part.text
+                    ),
+                  )}
+                </span>
                 {option.hint && <span className="combobox__hint">{option.hint}</span>}
               </span>
               {option.value === value && <Check size={14} weight="bold" aria-hidden="true" />}

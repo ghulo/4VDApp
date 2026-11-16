@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { markMatches } from './Combobox';
 import { splitMinor } from './Motion';
+
+describe('markMatches', () => {
+  it('should mark the typed letters, ignoring accents and case', () => {
+    expect(markMatches('Çlirim Berisha', 'cli')).toEqual([
+      { text: 'Çli', hit: true },
+      { text: 'rim Berisha', hit: false },
+    ]);
+    expect(markMatches('Arta Krasniqi', 'kras arta').filter((part) => part.hit).map((part) => part.text)).toEqual(['Arta', 'Kras']);
+    expect(markMatches('Arta', '')).toEqual([{ text: 'Arta', hit: false }]);
+  });
+});
 
 describe('splitMinor', () => {
   it('should split the cents off an amount in either language', () => {

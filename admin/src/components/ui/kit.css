@@ -84,6 +84,20 @@
   color: var(--ink-muted);
   pointer-events: none;
   transform: translateY(-50%);
+  transition: transform var(--spring-time) var(--spring);
+}
+
+/* The arrow turns over while the list is open. */
+.combobox--open .combobox__caret {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* The letters you typed, picked out in each name: ink on a faint amber wash. */
+.combobox__match {
+  border-radius: 2px;
+  background: var(--tint);
+  color: inherit;
+  font-weight: 600;
 }
 
 .combobox__list {

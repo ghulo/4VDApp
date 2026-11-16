@@ -5823,5 +5823,6 @@ export const sq: Catalogue = {
     twice: 'Ky numër serik është tashmë në këtë rresht.',
     forLine: (name: string) => `Shto numrat serikë të ${name}`,
     onLine: (count: number, total: number) => `Nr. serik ${count}/${total}`,
+    serialLine: (serial: string, until: string | null) => (until ? `Nr. serik ${serial} · garanci deri më ${until}` : `Nr. serik ${serial}`),
   },
 };

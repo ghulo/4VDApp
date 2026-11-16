@@ -15,7 +15,8 @@ import { QuestionsCard } from '../components/QuestionsCard';
 import { useCurrentUser } from '../auth/useAuth';
 import { TrefinTag } from '../components/TrefinParts';
 import { FilesCard } from '../components/FilesCard';
-import { canReadBooks } from '../auth/roles';
+import { canOversee, canReadBooks } from '../auth/roles';
+import { ProjectTag } from '../components/ProjectSelect';
 
 /** One invoice or credit note: who, what, VAT, and the link to the fiscal receipt. */
 export function DocumentDetailPage() {
@@ -65,6 +66,8 @@ export function DocumentDetailPage() {
         </p>
       )}
 
+      {doc.kind === 'invoice' && !doc.fromTrefin && <ProjectTag kind="invoice" id={doc.id} projectId={doc.projectId} editable={canOversee(role)} invalidate={[['documents']]} />}
+
       <div className="document-parties">
         <Party title={t.documents.seller} party={doc.seller} />
         <Party title={t.documents.buyer} party={doc.buyer} customerId={doc.customerId} />
@@ -83,6 +86,11 @@ export function DocumentDetailPage() {
                 <span className="product-cell__text">
                   {line.productName}
                   {line.productCode && <span className="table__secondary">{line.productCode}</span>}
+                  {line.serials?.map((one) => (
+                    <span key={one.serial} className="table__secondary">
+                      {t.serials.serialLine(one.serial, one.warrantyEnds ? formatDate(`${one.warrantyEnds}T12:00:00`) : null)}
+                    </span>
+                  ))}
                 </span>
               ),
             },

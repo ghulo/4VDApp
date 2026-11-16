@@ -10,6 +10,7 @@ import { formatMoney, inGrams } from '../utils/format';
 import { Button } from './ui';
 import { useT } from '../i18n/useT';
 import { SavedToast } from './Feedback';
+import { ProjectSelect } from './ProjectSelect';
 
 /** Take damaged, lost or expired stock out as a recorded loss. */
 export function WriteOffForm({ productId, inStock, unit }: { productId: number; inStock: number; unit?: ProductUnit }) {
@@ -19,6 +20,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const [reason, setReason] = useState<WriteOffReason>('damaged');
   const [notes, setNotes] = useState('');
   const [locationId, setLocationId] = useState<number | null>(null);
+  const [projectId, setProjectId] = useState<number | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const byKg = allowsParts(unit) || !Number.isInteger(inStock);
@@ -26,7 +28,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
   const isValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= inStock;
 
   const mutation = useMutation({
-    mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null, locationId }),
+    mutationFn: () => writeOffsApi.request({ productId, quantity: units, reason, notes: notes.trim() || null, locationId, projectId }),
     onSuccess: (writeOff) => {
       for (const key of ['inventory', 'products', 'reports', 'activity']) queryClient.invalidateQueries({ queryKey: [key] });
       setQuantity('');
@@ -72,6 +74,7 @@ export function WriteOffForm({ productId, inStock, unit }: { productId: number; 
         </label>
       </div>
       <LocationSelect coming="out" value={locationId} onChange={setLocationId} />
+      <ProjectSelect value={projectId} onChange={setProjectId} />
       <label className="field">
         <span className="field__label">{t.writeOff.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />

@@ -15,6 +15,7 @@ import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/forma
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { Badge, Button, DataTable, DateField, EmptyState, Field, PageHeader, Section, Sheet, StatGrid, StatTile, useNewSheet } from '../components/ui';
+import { ProjectSelect } from '../components/ProjectSelect';
 
 /** Same cap as the server: every month has a 28th. */
 const LAST_REPEAT_DAY = 28;
@@ -109,11 +110,12 @@ function ExpenseForm() {
   const [note, setNote] = useState('');
   const [repeatMonthly, setRepeatMonthly] = useState(false);
   const [supplierId, setSupplierId] = useState('');
+  const [projectId, setProjectId] = useState<number | null>(null);
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
 
   const add = useMutation({
     mutationFn: () => {
-      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly, supplierId: supplierId ? Number(supplierId) : null };
+      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly, supplierId: supplierId ? Number(supplierId) : null, projectId };
       return place.startsWith('carwash:')
         ? expensesApi.add({ ...input, place: 'carwash', carwashId: Number(place.split(':')[1]) })
         : expensesApi.add({ ...input, place: place as ExpensePlace });
@@ -194,6 +196,7 @@ function ExpenseForm() {
       <Field label={t.expenses.note}>
         <input maxLength={500} placeholder={t.expenses.notePlaceholder} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
+      <ProjectSelect value={projectId} onChange={setProjectId} />
       <label className="toggle">
         <input type="checkbox" checked={repeatMonthly} onChange={(event) => setRepeatMonthly(event.target.checked)} />
         {t.expenses.repeat}

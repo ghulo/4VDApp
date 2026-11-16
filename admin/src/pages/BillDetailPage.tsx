@@ -20,6 +20,8 @@ import { QuestionsCard } from '../components/QuestionsCard';
 import { formatMonth } from '../utils/vat';
 import { useCurrentUser } from '../auth/useAuth';
 import { canOversee } from '../auth/roles';
+import { ProjectTag } from '../components/ProjectSelect';
+import { SerialIntakeCard } from '../components/SerialIntakeCard';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
 import { FilesCard } from '../components/FilesCard';
@@ -90,6 +92,7 @@ export function BillDetailPage() {
       />
       {b.voidNote && <p className="callout document-note">{t.bills.voided(b.voidNote)}</p>}
       {b.vatMonth && <p className="callout document-note">{t.bills.lateVat(formatMonth(b.vatMonth))}</p>}
+      {!b.fromTrefin && !b.voidNote && <ProjectTag kind="bill" id={b.id} projectId={b.projectId} editable={writes} invalidate={[['bills']]} />}
 
       {b.fromTrefin ? (
         <>
@@ -138,6 +141,9 @@ export function BillDetailPage() {
       <div className={canChange && owes(b) ? 'product-layout' : undefined}>
         <div className="product-layout__main">
           {b.lines.length > 0 && <LinesSection bill={b} />}
+          {!isCredit && !b.voidNote && writes && (
+            <SerialIntakeCard billId={b.id} lines={b.lines.filter((line) => line.kind === 'product').map((line) => ({ productId: line.productId, productName: line.productName, quantity: line.quantity ?? 0 }))} />
+          )}
           {b.credits.length > 0 && <CreditsSection bill={b} />}
           {!b.fromTrefin && <PaymentsCard bill={b} writes={canChange} />}
           {!b.fromTrefin && <PhotoCard bill={b} writes={canChange} />}

@@ -6231,6 +6231,24 @@ form.prices-form > .prices-form__actions {
   outline-offset: 1px;
 }
 
+/* One product's serials on a bill or stock-in: its name, then the scan box. */
+.serial-intake {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.serial-intake:last-child {
+  border-bottom: 0;
+}
+
+.serial-intake__name {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
 /* ---------- Payroll ---------- */
 
 /* A line's warnings sit under the name, each its own small badge. */

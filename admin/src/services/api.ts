@@ -728,6 +728,7 @@ export const expensesApi = {
     supplierId?: number | null;
     note: string | null;
     repeatMonthly: boolean;
+    projectId?: number | null;
   }) =>
     (await apiRequest<Expense>('/expenses', { method: 'POST', body: input })).data,
   remove: async (id: number) => {
@@ -931,7 +932,7 @@ export const productRequestsApi = {
 
 export const writeOffsApi = {
   list: async (status?: ApprovalStatus) => (await apiRequest<WriteOff[]>('/write-offs', { query: { status } })).data,
-  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null; locationId?: number | null }) =>
+  request: async (input: { productId: number; quantity: number; reason: WriteOffReason; notes: string | null; locationId?: number | null; projectId?: number | null }) =>
     (await apiRequest<WriteOff>('/write-offs', { method: 'POST', body: input })).data,
   approve: async (id: number) => (await apiRequest<WriteOff>(`/write-offs/${id}/approve`, { method: 'POST' })).data,
   reject: async (id: number, note: string) =>
@@ -1083,7 +1084,7 @@ export const threadsApi = {
 export const stockDocumentsApi = {
   list: async (range: ReportRange) => (await apiRequest<StockDocument[]>('/stock-documents', { query: { ...range } })).data,
   get: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}`)).data,
-  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; locationId?: number | null; lines: Array<{ productId: number; quantity: number; expiresOn?: string }> }) =>
+  create: async (input: { direction: StockDocumentDirection; reason: StockDocumentReason; day: string; note: string | null; locationId?: number | null; projectId?: number | null; lines: Array<{ productId: number; quantity: number; expiresOn?: string }> }) =>
     (await apiRequest<StockDocument>('/stock-documents', { method: 'POST', body: input })).data,
   void: async (id: number) => (await apiRequest<StockDocument>(`/stock-documents/${id}/void`, { method: 'POST' })).data,
 };

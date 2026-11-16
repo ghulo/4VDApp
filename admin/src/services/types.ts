@@ -746,6 +746,8 @@ export interface BillFormInput {
   repeatMonthly: boolean;
   /** New shelf prices chosen from the price alerts. */
   prices: Array<{ productId: number; price: number }>;
+  /** The project it counts for (Settings → Features → Projects). */
+  projectId?: number | null;
 }
 
 export interface CreditInput {

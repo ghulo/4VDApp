@@ -5851,6 +5851,7 @@ export const en = {
     twice: 'That serial is already on this line.',
     forLine: (name: string) => `Add serial numbers of ${name}`,
     onLine: (count: number, total: number) => `S/N ${count}/${total}`,
+    serialLine: (serial: string, until: string | null) => (until ? `S/N ${serial} · warranty until ${until}` : `S/N ${serial}`),
   },
 };
 

@@ -23,6 +23,7 @@ import { errorMessage } from '../utils/errors';
 import { formatMoney, formatPercent } from '../utils/format';
 import { carwashLabel, useCarwashes } from '../utils/useCarwashes';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
+import { ProjectSelect } from '../components/ProjectSelect';
 
 const PREVIEW_DEBOUNCE_MS = 300;
 /** Same cap as the server: every month has a 28th. */
@@ -85,6 +86,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const [place, setPlace] = useState('shop');
   const [locationId, setLocationId] = useState<number | null>(null);
   const [repeatMonthly, setRepeatMonthly] = useState(false);
+  const [projectId, setProjectId] = useState<number | null>(null);
   // Shelf prices chosen from the price alerts, by product.
   const [prices, setPrices] = useState<Record<number, { use: boolean; price: string }>>({});
 
@@ -146,7 +148,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
           : null;
 
   const create = useMutation({
-    mutationFn: () => billsApi.create(input),
+    mutationFn: () => billsApi.create({ ...input, projectId }),
     onSuccess: (bill) => {
       for (const key of ['bills', 'attention', 'expenses', 'inventory', 'products', 'activity', 'reports', 'books']) queryClient.invalidateQueries({ queryKey: [key] });
       navigate(`/bills/${bill.id}`);
@@ -317,6 +319,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
           <Field label={t.bills.note}>
             <input maxLength={500} autoComplete="off" value={note} onChange={(event) => setNote(event.target.value)} />
           </Field>
+          <ProjectSelect value={projectId} onChange={setProjectId} />
         </Card>
       </div>
 

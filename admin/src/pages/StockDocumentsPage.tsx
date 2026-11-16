@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Plus, X } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { canManage } from '../auth/roles';
+import { canManage, canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { EntriesPanel } from '../components/BooksParts';
 import { ExportMenu } from '../components/ExportMenu';
@@ -19,6 +19,8 @@ import { formatDateWith, formatHeadlineMoney, formatMoney, formatQuantity } from
 import { allowsParts } from '../utils/units';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
+import { ProjectSelect, ProjectTag } from '../components/ProjectSelect';
+import { SerialIntakeCard } from '../components/SerialIntakeCard';
 
 /** Why goods come in or go out; the same lists as the server's. Damage, loss and expiry are write-offs. */
 const REASONS: Record<StockDocumentDirection, StockDocumentReason[]> = {
@@ -130,6 +132,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
   const [day, setDay] = useState(today);
   const [note, setNote] = useState('');
   const [locationId, setLocationId] = useState<number | null>(null);
+  const [projectId, setProjectId] = useState<number | null>(null);
   const [lines, setLines] = useState<DraftLine[]>([]);
   const shelf = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const costs = useQuery({ queryKey: ['prices'], queryFn: pricesApi.list, staleTime: 60_000 });
@@ -169,6 +172,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
         day,
         note: note.trim() || null,
         locationId,
+        projectId: direction === 'out' ? projectId : null,
         lines: lines.map((line) => ({
           productId: line.productId,
           quantity: Number(line.quantity.replace(',', '.')),
@@ -271,6 +275,7 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
       <Field label={t.stockDocs.note}>
         <input maxLength={500} placeholder={t.stockDocs.notePlaceholder} value={note} onChange={(event) => setNote(event.target.value)} />
       </Field>
+      {direction === 'out' && <ProjectSelect value={projectId} onChange={setProjectId} />}
       {lines.length === 0 && <p className="field-hint">{t.stockDocs.needLine}</p>}
       {lines.length > 0 && (
         <p className="notice" aria-live="polite">
@@ -342,6 +347,9 @@ export function StockDocumentPage() {
           totals={[t.common.total, '', '', formatMoney(doc.value)]}
         />
         {doc.note && <p className="field-hint">{doc.note}</p>}
+        {doc.direction === 'out' && !doc.voidedAt && (
+          <ProjectTag kind="stock_document" id={doc.id} projectId={doc.projectId} editable={canOversee(role)} invalidate={[['stock-documents']]} />
+        )}
         <p className="field-hint">
           {t.stockDocs.madeBy(doc.createdBy ?? '–', formatDateWith(new Date(doc.createdAt), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}
           {doc.voidedAt && ` ${t.stockDocs.voidedBy(doc.voidedBy ?? '–', formatDateWith(new Date(doc.voidedAt), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}`}
@@ -371,6 +379,7 @@ export function StockDocumentPage() {
           </p>
         )}
       </Card>
+      {doc.direction === 'in' && !doc.voidedAt && canManage(role) && <SerialIntakeCard stockDocumentId={doc.id} lines={lines} />}
       <EntriesPanel source="stock_doc" id={doc.id} />
     </>
   );

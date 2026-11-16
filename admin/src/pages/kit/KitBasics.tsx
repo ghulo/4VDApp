@@ -72,7 +72,7 @@ export function KitBasics() {
 
   return (
     <>
-      <Section title="Buttons" description="Every look, both sizes, and the states: loading, disabled, icon only.">
+      <Section title="Buttons" description="Every look, both sizes, and the states: loading (with and without an icon), disabled, icon only, with a shortcut.">
         <Card>
           <div className="kit-row kit-row--gap">
             <Button variant="primary" icon={Plus}>
@@ -80,10 +80,10 @@ export function KitBasics() {
             </Button>
             <Button variant="secondary">Secondary</Button>
             <Button variant="ghost">Ghost</Button>
-            <Button variant="danger" icon={Trash}>
-              Danger
+            <Button variant="danger-text" icon={Trash}>
+              Remove
             </Button>
-            <Button variant="danger-text">Danger text</Button>
+            <Button variant="danger">Yes, remove (only in a confirm)</Button>
           </div>
           <div className="kit-row kit-row--gap">
             <Button size="sm" variant="primary">
@@ -93,6 +93,9 @@ export function KitBasics() {
             <Button variant="primary" loading>
               Saving
             </Button>
+            <Button variant="primary" icon={Plus} loading>
+              Adding
+            </Button>
             <Button disabled>Disabled</Button>
             <Button icon={PencilSimple} aria-label="Edit" />
             <ButtonLink to="/kit" icon={DownloadSimple} variant="secondary">
@@ -100,6 +103,10 @@ export function KitBasics() {
             </ButtonLink>
           </div>
           <div className="kit-row kit-row--gap">
+            <Button variant="primary" shortcut="F12">
+              Pay
+            </Button>
+            <Button shortcut="Ctrl S">Save</Button>
             <MenuButton
               label="Export"
               icon={DownloadSimple}

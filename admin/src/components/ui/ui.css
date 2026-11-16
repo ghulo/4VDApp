@@ -4,12 +4,17 @@
 /* ---------- Button ---------- */
 
 .button {
+  /* Side padding on the 4px grid; a leading icon sits one step closer to the
+     edge, because its own whitespace already reads as padding. */
+  --pad-x: var(--space-3);
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   height: var(--control-h);
-  padding: 0 12px;
+  padding: 0 var(--pad-x);
   border: 0;
   border-radius: var(--radius-small);
   font: inherit;
@@ -26,8 +31,62 @@
     transform var(--fast) var(--ease);
 }
 
+.button:has(> svg:first-child):not(.button--icon, .button--busy-label) {
+  padding-inline-start: calc(var(--pad-x) - var(--space-1));
+}
+
+/* Going down is instant, like a real key; coming back up rides the spring. */
 .button:not(:disabled):active {
   transform: translateY(1px);
+  transition-duration: var(--instant);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button {
+    transition:
+      background-color var(--fast) var(--ease),
+      box-shadow var(--fast) var(--ease),
+      color var(--fast) var(--ease),
+      transform var(--spring-time) var(--spring);
+  }
+}
+
+/* Hover lights the key from above. A gradient can't fade into another, so
+   the light is its own layer whose opacity fades in. */
+.button::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--key-light);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fast) var(--ease);
+  content: '';
+}
+
+.button--primary:not(:disabled):hover::before {
+  opacity: 1;
+}
+
+/* The shortcut that does the same, faint after the label. */
+.button__shortcut {
+  margin-inline-start: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+/* Busy with no icon: the label holds the width, the spinner sits in the middle. */
+.button--busy-label .button__label {
+  visibility: hidden;
+}
+
+.button--busy-label .button__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
 }
 
 /* Keys (DESIGN.md 10.1): raised buttons stand on a 2px edge (--edge), with a
@@ -38,7 +97,7 @@
 .button--quiet,
 .button--danger {
   --edge-h: 2px;
-  padding: 0 14px;
+  --pad-x: var(--space-4);
   box-shadow: var(--shine), 0 var(--edge-h) 0 var(--edge), var(--key-drop);
 }
 
@@ -86,9 +145,6 @@
   font-weight: 600;
 }
 
-.button--primary:not(:disabled):hover {
-  background: linear-gradient(180deg, var(--cta-hover), var(--cta-top) 20%, var(--cta) 70%, var(--cta-low));
-}
 
 /* Secondary: paper with a hairline ring on a hairline edge. "quiet" is the old name. */
 .button--secondary,
@@ -147,9 +203,14 @@
 }
 
 .button--sm {
+  --pad-x: var(--space-3);
+  gap: var(--space-1);
   height: var(--control-h-sm);
-  padding: 0 10px;
   font-size: var(--text-sm);
+}
+
+.button--sm:is(.button--ghost, .button--danger-text) {
+  --pad-x: var(--space-2);
 }
 
 .button--icon {

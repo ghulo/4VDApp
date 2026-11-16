@@ -104,6 +104,19 @@ export class MakeService {
     private readonly timeZone: string,
   ) {}
 
+  /** The products that have a recipe, for the Make form. */
+  async madeProducts(): Promise<Array<{ productId: number; name: string; unit: string; parts: number }>> {
+    const rows = await this.db
+      .selectFrom('recipe_parts as r')
+      .innerJoin('products as p', 'p.id', 'r.product_id')
+      .select(['p.id', 'p.name', 'p.unit', (eb) => eb.fn.countAll<string>().as('parts')])
+      .where('p.deleted_at', 'is', null)
+      .groupBy(['p.id', 'p.name', 'p.unit'])
+      .orderBy('p.name')
+      .execute();
+    return rows.map((row) => ({ productId: row.id, name: row.name, unit: row.unit, parts: Number(row.parts) }));
+  }
+
   async recipe(productId: number): Promise<RecipePartDto[]> {
     return recipeOf(this.db, productId);
   }

@@ -248,6 +248,8 @@ export interface DocumentParty {
 /** An invoice or credit note. Never changes once issued, except the fiscal receipt number. */
 export interface SalesDocument extends DocumentRef {
   kind: DocumentKind;
+  /** The project it counts for (a credit note: its invoice's). */
+  projectId?: number | null;
   issuedAt: string;
   issuedBy: string | null;
   seller: DocumentParty;
@@ -274,6 +276,8 @@ export interface SalesDocument extends DocumentRef {
 export interface SalesDocumentDetail extends SalesDocument {
   lines: Array<{
     saleId: number;
+    /** Serial numbers sold on the line, with the warranty end. */
+    serials?: Array<{ serial: string; warrantyEnds: string | null }>;
     returnId: number | null;
     productName: string;
     /** The product's barcode, else its SKU, as it was when issued. */
@@ -635,6 +639,7 @@ export interface BillLine {
 
 export interface SupplierBill {
   id: number;
+  projectId: number | null;
   /** A bill, or a return or credit against one. */
   kind: 'bill' | 'credit';
   /** Null for an expense paid to nobody in particular. */
@@ -1354,7 +1359,7 @@ export interface Business {
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
 
-export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out';
+export type NumberedKind = 'invoice' | 'credit_note' | 'offer' | 'stock_in' | 'stock_out' | 'stock_move' | 'make';
 export interface NumberFormat {
   prefix: string;
   year: 'yy' | 'yyyy';
@@ -1366,6 +1371,14 @@ export interface ShopRules {
   noStockSales: 'block' | 'allow';
   /** When stock counts as short-dated and how much comes off a stickered unit. */
   shortDated: ShortDatedRules;
+  /** Parts most shops never need, shown only once switched on. */
+  features: ShopFeatures;
+}
+
+export interface ShopFeatures {
+  projects: boolean;
+  recipes: boolean;
+  serials: boolean;
 }
 
 export interface ShortDatedRules {
@@ -1512,6 +1525,7 @@ export interface ProductRequest {
 
 export interface WriteOff {
   id: number;
+  projectId?: number | null;
   productId: number;
   productName: string;
   quantity: number;
@@ -2563,6 +2577,7 @@ export interface StockDocument {
   /** Where the stock came in or went out; null on documents from before locations. */
   locationId: number | null;
   locationName: string | null;
+  projectId?: number | null;
   lines?: Array<{ productId: number; productName: string; unit: string; quantity: number; unitCost: number | null; value: number | null }>;
 }
 
@@ -2711,4 +2726,105 @@ export interface AssetBooksCheckRow {
   booksDepreciated: number;
   costAccount: string;
   depreciationAccount: string | null;
+}
+
+/** A job, event or renovation whose income and costs are kept apart (Settings → Features → Projects). */
+export interface Project {
+  id: number;
+  name: string;
+  note: string | null;
+  closed: boolean;
+  documents: number;
+}
+
+export type ProjectTaggable = 'bill' | 'invoice' | 'stock_document' | 'write_off';
+
+export interface ProjectProfitRow {
+  projectId: number;
+  name: string;
+  closed: boolean;
+  income: number;
+  goodsCost: number;
+  bills: number;
+  stockOut: number;
+  writeOffs: number;
+  profit: number;
+}
+
+export interface ProjectDocumentRow {
+  kind: ProjectTaggable | 'credit_note';
+  id: number;
+  day: string;
+  number: string | null;
+  who: string | null;
+  amount: number;
+}
+
+/** One part of a made product: how many go into one. */
+export interface RecipePart {
+  productId: number;
+  name: string;
+  unit: ProductUnit;
+  quantity: number;
+  cost: number | null;
+}
+
+export interface MakePlan {
+  productId: number;
+  productName: string;
+  unit: ProductUnit;
+  quantity: number;
+  locationId: number;
+  locationName: string;
+  parts: Array<RecipePart & { needed: number; atLocation: number; inStock: number }>;
+  unitCost: number | null;
+  noCost: string[];
+  short: string[];
+  earliestExpiry: string | null;
+}
+
+export interface Make {
+  id: number;
+  number: string;
+  productId: number;
+  productName: string;
+  unit: ProductUnit;
+  quantity: number;
+  unitCost: number;
+  value: number;
+  day: string;
+  locationId: number | null;
+  locationName: string | null;
+  expiresOn: string | null;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  voidedAt: string | null;
+  voidedBy: string | null;
+  lines?: Array<{ productId: number; productName: string; unit: ProductUnit; quantity: number; unitCost: number }>;
+}
+
+export interface SerialProduct {
+  productId: number;
+  name: string;
+  warrantyMonths: number | null;
+}
+
+export interface Serial {
+  id: number;
+  serial: string;
+  productId: number;
+  productName: string;
+  status: 'in_stock' | 'sold';
+  cameOn: string | null;
+  bill: { id: number; number: string | null; supplier: string | null } | null;
+  stockDocument: { id: number; number: string } | null;
+  orderId: number | null;
+  saleId: number | null;
+  soldAt: string | null;
+  invoice: { id: number; number: string } | null;
+  customer: { id: number; name: string } | null;
+  warrantyEnds: string | null;
+  underWarranty: boolean;
+  returnedAt: string | null;
 }

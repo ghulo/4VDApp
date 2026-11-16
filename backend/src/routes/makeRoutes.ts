@@ -10,6 +10,7 @@ export function createMakeRoutes({ makeService, guards }: Container): Router {
   router.get('/', guards.authenticated, controller.list);
   router.get('/plan', guards.authenticated, controller.plan);
   router.post('/', ...guards.oversee, controller.create);
+  router.get('/recipes', guards.authenticated, controller.madeProducts);
   router.get('/recipes/:productId', guards.authenticated, controller.recipe);
   router.put('/recipes/:productId', ...guards.oversee, controller.setRecipe);
   router.get('/:id', guards.authenticated, controller.get);

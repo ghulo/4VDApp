@@ -28,6 +28,9 @@ export function createMakeController(service: MakeService) {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await service.void(id, req.user!.id), { message: 'Make voided' });
     },
+    async madeProducts(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await service.madeProducts());
+    },
     async recipe(req: Request, res: Response): Promise<void> {
       const { productId } = parseInput(productParamsSchema, req.params);
       sendSuccess(res, await service.recipe(productId));

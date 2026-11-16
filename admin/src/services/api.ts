@@ -176,6 +176,15 @@ import type {
   ProductLocation,
   StockDocumentDirection,
   StockDocumentReason,
+  Make,
+  MakePlan,
+  Project,
+  ProjectDocumentRow,
+  ProjectProfitRow,
+  ProjectTaggable,
+  RecipePart,
+  Serial,
+  SerialProduct,
 } from './types';
 
 async function paginated<TItem>(path: string, query: Record<string, string | number | boolean | undefined>) {
@@ -456,7 +465,7 @@ export const salesApi = {
     return { items: data.checkouts, totalRevenue: data.totalRevenue, days: data.days, meta: meta! };
   },
   recordBasket: async (input: {
-    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
+    items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number; serials?: string[] }>;
     notes: string | null;
     customerId?: number;
     /** Wholesale prices on or off for this sale; left out: what the customer pays. */
@@ -840,7 +849,7 @@ export const expiryApi = {
 export const exportsApi = {
   /** A formatted Excel workbook, or plain CSV for importing elsewhere. */
   async download(
-    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents' | 'stock-moves',
+    kind: 'sales' | 'stock' | 'team' | 'money' | 'expenses' | 'prices' | 'price-list' | 'stock-documents' | 'stock-moves' | 'projects',
     format: 'xlsx' | 'csv',
     range?: ReportRange,
     extra?: { level?: 'shelf' | 'wholesale'; categoryId?: number; lang?: 'en' | 'sq' },
@@ -872,7 +881,7 @@ export const settingsApi = {
   get: async () => (await apiRequest<AppSettings>('/settings')).data,
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
   rules: async () => (await apiRequest<ShopRules>('/settings/rules')).data,
-  updateRules: async (input: Partial<Omit<ShopRules, 'shortDated'>> & { shortDated?: Partial<ShopRules['shortDated']> }) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
+  updateRules: async (input: Partial<Omit<ShopRules, 'shortDated' | 'features'>> & { shortDated?: Partial<ShopRules['shortDated']>; features?: Partial<ShopRules['features']> }) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,
   /** Emails the signed-in developer; `sent` is false (with a `reason`) when real emails don't work yet. */
@@ -1089,6 +1098,47 @@ export const locationsApi = {
   forProduct: async (productId: number) => (await apiRequest<ProductLocation[]>(`/locations/products/${productId}`)).data,
   setShelfMinimum: async (productId: number, locationId: number, minimum: number | null) =>
     (await apiRequest<ProductLocation[]>(`/locations/products/${productId}`, { method: 'PUT', body: { locationId, minimum } })).data,
+};
+
+export const projectsApi = {
+  list: async () => (await apiRequest<Project[]>('/projects')).data,
+  create: async (input: { name: string; note: string | null }) => (await apiRequest<Project>('/projects', { method: 'POST', body: input })).data,
+  update: async (id: number, input: { name?: string; note?: string | null; closed?: boolean }) => (await apiRequest<Project>(`/projects/${id}`, { method: 'PATCH', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest<null>(`/projects/${id}`, { method: 'DELETE' });
+  },
+  tag: async (kind: ProjectTaggable, id: number, projectId: number | null) => {
+    await apiRequest<null>('/projects/tag', { method: 'PUT', body: { kind, id, projectId } });
+  },
+  profit: async (range: ReportRange) => (await apiRequest<ProjectProfitRow[]>('/projects/profit', { query: { ...range } })).data,
+  documents: async (id: number, range: ReportRange) => (await apiRequest<ProjectDocumentRow[]>(`/projects/${id}/documents`, { query: { ...range } })).data,
+};
+
+export const makesApi = {
+  list: async (range: ReportRange) => (await apiRequest<Make[]>('/makes', { query: { ...range } })).data,
+  get: async (id: number) => (await apiRequest<Make>(`/makes/${id}`)).data,
+  plan: async (input: { productId: number; quantity: number; locationId?: number | null }) =>
+    (await apiRequest<MakePlan>('/makes/plan', { query: { productId: String(input.productId), quantity: String(input.quantity), ...(input.locationId ? { locationId: String(input.locationId) } : {}) } })).data,
+  create: async (input: { productId: number; quantity: number; day: string; locationId?: number | null; expiresOn?: string | null; note: string | null }) =>
+    (await apiRequest<Make>('/makes', { method: 'POST', body: input })).data,
+  void: async (id: number) => (await apiRequest<Make>(`/makes/${id}/void`, { method: 'POST' })).data,
+  madeProducts: async () => (await apiRequest<Array<{ productId: number; name: string; unit: ProductUnit; parts: number }>>('/makes/recipes')).data,
+  recipe: async (productId: number) => (await apiRequest<RecipePart[]>(`/makes/recipes/${productId}`)).data,
+  setRecipe: async (productId: number, parts: Array<{ productId: number; quantity: number }>) =>
+    (await apiRequest<RecipePart[]>(`/makes/recipes/${productId}`, { method: 'PUT', body: { parts } })).data,
+};
+
+export const serialsApi = {
+  search: async (q: string) => (await apiRequest<Serial[]>('/serials', { query: { q } })).data,
+  add: async (input: { productId: number; serials: string[]; billId?: number | null; stockDocumentId?: number | null; orderId?: number | null }) =>
+    (await apiRequest<{ added: number; alreadyInStock: string[] }>('/serials', { method: 'POST', body: input })).data,
+  products: async () => (await apiRequest<SerialProduct[]>('/serials/products')).data,
+  forProduct: async (productId: number) => (await apiRequest<Serial[]>(`/serials/products/${productId}`)).data,
+  setProduct: async (productId: number, input: { hasSerials: boolean; warrantyMonths: number | null }) =>
+    (await apiRequest<SerialProduct | null>(`/serials/products/${productId}`, { method: 'PUT', body: input })).data,
+  remove: async (id: number) => {
+    await apiRequest<null>(`/serials/${id}`, { method: 'DELETE' });
+  },
 };
 
 export const stockMovesApi = {

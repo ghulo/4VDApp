@@ -38,10 +38,12 @@ import { AttachmentRepository } from './AttachmentRepository.js';
 import { BinRepository } from './BinRepository.js';
 import { StockDocumentRepository } from './StockDocumentRepository.js';
 import { AssetRepository } from './AssetRepository.js';
+import { PortalRepository } from './PortalRepository.js';
 
 function createTransactionalRepositories(db: DatabaseClient) {
   return {
     products: new ProductRepository(db),
+    portal: new PortalRepository(db),
     pricingTiers: new PricingTierRepository(db),
     inventory: new InventoryRepository(db),
     locations: new LocationRepository(db),

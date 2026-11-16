@@ -11,4 +11,9 @@ export const RATE_LIMITS = {
   FAILED_LOGINS: 10,
   // AI questions per person; each one uses the AI service's (free) quota.
   AI_QUESTIONS: 20,
+  // The business customers' portal: everything, per signed-in phone or IP.
+  PORTAL: 300,
+  // Sign-in links asked for or opened, per IP, and asked for per email address.
+  PORTAL_LINKS: 10,
+  PORTAL_LINKS_PER_EMAIL: 3,
 } as const;

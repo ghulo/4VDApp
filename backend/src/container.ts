@@ -90,6 +90,9 @@ import { StatementService } from './services/StatementService.js';
 import { BillScanRepository } from './repositories/BillScanRepository.js';
 import { BillScanService } from './services/BillScanService.js';
 import { BillEmailRepository } from './repositories/BillEmailRepository.js';
+import { PortalRepository } from './repositories/PortalRepository.js';
+import { PortalService } from './services/PortalService.js';
+import { PricingTierRepository as PortalPricingTiers } from './repositories/PricingTierRepository.js';
 import { BillEmailService } from './services/BillEmailService.js';
 import { ClaudeProvider } from './services/ai/claudeProvider.js';
 import { EmailOutboxRepository } from './repositories/EmailOutboxRepository.js';
@@ -342,6 +345,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     new BillEmailRepository(db),
     config.billEmailDailyReads,
     payrollService,
+    new PortalRepository(db),
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -476,6 +480,19 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.webPush?.publicKey ?? null,
   );
 
+  const portalService = new PortalService(
+    new PortalRepository(db),
+    tabRepository,
+    new PortalPricingTiers(db),
+    tabService,
+    salesDocumentService,
+    documentService,
+    emailService,
+    transactions,
+    config.dashboardUrl,
+    config.shopTimeZone,
+  );
+
   const permissionService = new PermissionService(settingsRepository, activityLogRepository, transactions);
   // app.ts reads the rules from Settings → Roles before any API request reaches these guards.
   const authenticated = requireAuth(userRepository);
@@ -503,6 +520,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
 
   return {
     config,
+    portalService,
     db,
     userRepository,
     authService,

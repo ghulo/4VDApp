@@ -88,7 +88,7 @@ type AlertFilter = 'all' | 'reports' | 'requests' | 'stock' | 'cash';
 const ALERT_FILTERS: Array<{ key: AlertFilter; types?: string; icon: Icon }> = [
   { key: 'all', icon: Bell },
   { key: 'reports', types: 'daily_report,weekly_report,daily_summary,day_closed', icon: ChartBar },
-  { key: 'requests', types: 'approval,approval_decision,bill_scan,bill_email', icon: Tray },
+  { key: 'requests', types: 'approval,approval_decision,bill_scan,bill_email,portal_order', icon: Tray },
   { key: 'stock', types: 'low_stock,out_of_stock,expiring', icon: Package },
   { key: 'cash', types: 'cash_difference', icon: Money },
 ];

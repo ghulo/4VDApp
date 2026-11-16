@@ -41,6 +41,8 @@ export interface ServerMessages {
   billPending: (p: { name: string; supplier: string | null; lines: number }) => string;
   billEmailedPending: (p: { sender: string; supplier: string | null; lines: number }) => string;
   billEmailTitle: string;
+  portalOrderTitle: string;
+  portalOrderMessage: (p: { name: string; total: number; lines: number }) => string;
   billEmailDuplicate: (p: { sender: string; file: string | null; day: string }) => string;
   billEmailNoFile: (p: { sender: string; subject: string | null }) => string;
   productApproved: (product: string) => string;
@@ -88,6 +90,8 @@ export interface ServerMessages {
     billScanTitle: (supplier: string | null) => string;
     billScanDetail: (input: { name: string | null; number: string | null; emailFrom?: string | null }) => string;
     billEmailWaitingTitle: (sender: string) => string;
+    portalOrderTitle: (p: { name: string; total: number }) => string;
+    portalOrderDetail: (p: { lines: number; day: string }) => string;
     billEmailWaitingDetail: (limit: number) => string;
     billEmailFailedTitle: (sender: string) => string;
     billEmailFailedDetail: string;
@@ -154,6 +158,14 @@ export interface ServerMessages {
     inviteButton: string;
     inviteNote: string;
     inviteNoteShort: string;
+    portalInviteSubject: (shop: string) => string;
+    portalInviteBody: (p: { shop: string; customer: string }) => string;
+    portalInviteButton: string;
+    portalInviteNote: string;
+    portalSignInSubject: (shop: string) => string;
+    portalSignInBody: (shop: string) => string;
+    portalSignInButton: string;
+    portalSignInNote: string;
     verifySubject: string;
     verifyBody: string;
     verifyButton: string;
@@ -314,6 +326,8 @@ export const en: ServerMessages = {
   productPending: ({ name, product, price }) => `${name} wants to add ${product} at ${price}.`,
   billEmailedPending: ({ sender, supplier, lines }) => `A bill${supplier ? ` from ${supplier}` : ''} came by email from ${sender} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
   billEmailTitle: 'Bill by email',
+  portalOrderTitle: 'Order from the portal',
+  portalOrderMessage: (p) => `${p.name} sent an order of ${money(p.total, 'en')} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
   billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'A bill'} from ${sender} was already received on ${day}, so it wasn't read again.`,
   billEmailNoFile: ({ sender, subject }) => `An email from ${sender}${subject ? ` (${subject})` : ''} had no PDF or bill photo, so nothing was added.`,
   billPending: ({ name, supplier, lines }) => `${name} scanned a bill${supplier ? ` from ${supplier}` : ''} (${lines} ${lines === 1 ? 'line' : 'lines'}).`,
@@ -373,6 +387,8 @@ export const en: ServerMessages = {
         ? `${number ? `Bill ${number}, came` : 'Came'} by email from ${emailFrom}. Confirm it to put the stock in.`
         : `${number ? `Bill ${number}, scanned` : 'Scanned'}${name ? ` by ${name}` : ''}. Confirm it to put the stock in.`,
     billEmailWaitingTitle: (sender) => `Read the emailed bill from ${sender}`,
+    portalOrderTitle: (p) => `${p.name} sent an order of ${money(p.total, 'en')}`,
+    portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'product' : 'products'}, sent ${p.day}. Accept it as an offer or decline it.`,
     billEmailWaitingDetail: (limit) => `Today's ${limit} bill reads by email are used up. Read it now, or it waits for tomorrow.`,
     billEmailFailedTitle: (sender) => `The emailed bill from ${sender} couldn't be read`,
     billEmailFailedDetail: 'Open the file and try again, or add the bill by hand.',
@@ -448,6 +464,14 @@ export const en: ServerMessages = {
     inviteButton: 'Accept the invite',
     inviteNote: 'This link works once and expires in 7 days. If you weren’t expecting it, you can ignore this email.',
     inviteNoteShort: 'This link works once and expires in 7 days.',
+    portalInviteSubject: (shop) => `${shop} invites you to order online`,
+    portalInviteBody: (p) => `${p.shop} opened an online account for ${p.customer}: your prices, orders, invoices and what is still to pay, on your phone.`,
+    portalInviteButton: 'Open my account',
+    portalInviteNote: 'This link works once and expires in 7 days. After that, sign in with this email address.',
+    portalSignInSubject: (shop) => `Sign in to ${shop}`,
+    portalSignInBody: (shop) => `Press the button to sign in to your account at ${shop}.`,
+    portalSignInButton: 'Sign in',
+    portalSignInNote: 'This link works once and expires in 15 minutes. If you didn’t ask for it, ignore this email.',
     verifySubject: 'Confirm your email for 4VD',
     verifyBody: 'Please confirm this is your email address.',
     verifyButton: 'Confirm my email',
@@ -618,6 +642,8 @@ export const sq: ServerMessages = {
   productPending: ({ name, product, price }) => `${name} do të shtojë ${product} me ${price}.`,
   billEmailedPending: ({ sender, supplier, lines }) => `Një faturë${supplier ? ` nga ${supplier}` : ''} erdhi me email nga ${sender} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
   billEmailTitle: 'Faturë me email',
+  portalOrderTitle: 'Porosi nga portali',
+  portalOrderMessage: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
   billEmailDuplicate: ({ sender, file, day }) => `${file ?? 'Një faturë'} nga ${sender} ishte marrë më ${day}, prandaj nuk u lexua sërish.`,
   billEmailNoFile: ({ sender, subject }) => `Një email nga ${sender}${subject ? ` (${subject})` : ''} nuk kishte PDF ose foto fature, prandaj nuk u shtua asgjë.`,
   billPending: ({ name, supplier, lines }) => `${name} skanoi një faturë${supplier ? ` nga ${supplier}` : ''} (${lines} ${lines === 1 ? 'rresht' : 'rreshta'}).`,
@@ -677,6 +703,8 @@ export const sq: ServerMessages = {
         ? `${number ? `Fatura ${number}, erdhi` : 'Erdhi'} me email nga ${emailFrom}. Konfirmoje që malli të hyjë në stok.`
         : `${number ? `Fatura ${number}, skanuar` : 'Skanuar'}${name ? ` nga ${name}` : ''}. Konfirmoje që malli të hyjë në stok.`,
     billEmailWaitingTitle: (sender) => `Lexo faturën me email nga ${sender}`,
+    portalOrderTitle: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')}`,
+    portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'produkt' : 'produkte'}, dërguar ${p.day}. Pranoje si ofertë ose refuzoje.`,
     billEmailWaitingDetail: (limit) => `Leximet e sotme me email (${limit}) u mbaruan. Lexoje tani, ose pret deri nesër.`,
     billEmailFailedTitle: (sender) => `Fatura me email nga ${sender} nuk u lexua`,
     billEmailFailedDetail: 'Hape skedarin dhe provo sërish, ose shtoje faturën me dorë.',
@@ -752,6 +780,14 @@ export const sq: ServerMessages = {
     inviteButton: 'Prano ftesën',
     inviteNote: 'Kjo lidhje punon vetëm një herë dhe skadon pas 7 ditësh. Nëse nuk e prisje, mund ta injorosh këtë email.',
     inviteNoteShort: 'Kjo lidhje punon vetëm një herë dhe skadon pas 7 ditësh.',
+    portalInviteSubject: (shop) => `${shop} ju fton të porositni online`,
+    portalInviteBody: (p) => `${p.shop} hapi një llogari online për ${p.customer}: çmimet tuaja, porositë, faturat dhe sa keni për të paguar, në telefon.`,
+    portalInviteButton: 'Hap llogarinë time',
+    portalInviteNote: 'Kjo lidhje punon vetëm një herë dhe skadon pas 7 ditësh. Më pas hyni me këtë adresë emaili.',
+    portalSignInSubject: (shop) => `Hyni te ${shop}`,
+    portalSignInBody: (shop) => `Shtypni butonin për të hyrë në llogarinë tuaj te ${shop}.`,
+    portalSignInButton: 'Hyr',
+    portalSignInNote: 'Kjo lidhje punon vetëm një herë dhe skadon pas 15 minutash. Nëse nuk e kërkuat, injorojeni këtë email.',
     verifySubject: 'Konfirmo emailin për 4VD',
     verifyBody: 'Të lutem konfirmo që kjo është adresa jote e emailit.',
     verifyButton: 'Konfirmo emailin',

@@ -3,6 +3,7 @@ import { en, type ServerMessages } from '../i18n/messages.js';
 import { canOversee, canReadBooks, canSell, hasPower } from '../utils/roles.js';
 import type { PayrollService } from './payroll/PayrollService.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
+import type { PortalRepository } from '../repositories/PortalRepository.js';
 import type { BillScanRepository } from '../repositories/BillScanRepository.js';
 import type { BillEmailRepository } from '../repositories/BillEmailRepository.js';
 import type { OfflineShortfallRepository } from '../repositories/OfflineShortfallRepository.js';
@@ -26,7 +27,7 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer' | 'runPayroll' | 'payAtk';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -109,6 +110,7 @@ export class AttentionService {
     private readonly billEmails: BillEmailRepository,
     private readonly billEmailDailyReads: number,
     private readonly payroll: PayrollService | null = null,
+    private readonly portalOrders: Pick<PortalRepository, 'openOrders'> | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -158,6 +160,18 @@ export class AttentionService {
         detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null, emailFrom: scan.email_from }),
         verb: 'checkBill',
         to: `/bills/scans/${scan.id}`,
+      });
+    }
+    // Orders business customers sent from the portal, until someone accepts or declines them.
+    for (const order of this.portalOrders ? await this.portalOrders.openOrders() : []) {
+      items.push({
+        key: `portal_order:${order.id}`,
+        kind: 'portal_order',
+        severity: 'check',
+        title: t.todo.portalOrderTitle({ name: order.customer_name, total: Number(order.total) }),
+        detail: t.todo.portalOrderDetail({ lines: order.line_count, day: zonedDay(order.created_at, this.timeZone) }),
+        verb: 'look',
+        to: `/portal-orders?open=${order.id}`,
       });
     }
     for (const mail of emailed) {

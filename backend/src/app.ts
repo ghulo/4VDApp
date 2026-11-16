@@ -11,6 +11,7 @@ import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { createApiRateLimiter } from './middlewares/rateLimiter.js';
 import { healthRoutes } from './routes/healthRoutes.js';
 import { createApiRoutes } from './routes/index.js';
+import { createPortalRoutes } from './routes/portalRoutes.js';
 import { billEmailTokenGuard } from './routes/internalRoutes.js';
 
 /**
@@ -34,7 +35,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use(helmet());
   // Browsers hide Content-Disposition from cross-origin JS unless it is exposed,
   // and the admin dashboard needs it to name downloaded CSV files.
-  app.use(cors({ origin: config.corsOrigins, exposedHeaders: ['Content-Disposition'] }));
+  // credentials: the portal (step 15) signs in with a cookie; the dashboard keeps its Bearer token.
+  app.use(cors({ origin: config.corsOrigins, credentials: true, exposedHeaders: ['Content-Disposition'] }));
   app.use(compression());
   // Scanned bills arrive as base64 photos or PDFs: several pages, a few MB each.
   app.use('/api/bill-scans', express.json({ limit: '40mb' }));
@@ -53,6 +55,8 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   const loadPermissions: express.RequestHandler = (_req, _res, next) => {
     container.permissionService.ensureLoaded().then(() => next(), next);
   };
+  // The business customers' portal: its own cookie sign-in, limits and origin check; no dashboard middleware.
+  app.use('/api/portal', createPortalRoutes(container));
   app.use('/api', identifyRequester(config.jwtSecret), loadPermissions, createApiRateLimiter(), createApiRoutes(container));
 
   app.use(notFoundHandler);

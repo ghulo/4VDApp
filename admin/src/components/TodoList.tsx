@@ -12,6 +12,7 @@ import {
   EnvelopeSimple,
   Scan,
   SignOut,
+  Storefront,
   Tray,
   TrendDown,
   WarningCircle,
@@ -41,6 +42,7 @@ const ICONS: Record<string, Icon> = {
   end_shift: SignOut,
   bill_scan: Scan,
   bill_email: EnvelopeSimple,
+  portal_order: Storefront,
   requests: Tray,
 };
 

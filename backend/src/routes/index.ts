@@ -48,6 +48,7 @@ import { createAttachmentRoutes, createBinRoutes } from './attachmentRoutes.js';
 import { createDeliveryRoutes } from './deliveryRoutes.js';
 import { createInternalRoutes } from './internalRoutes.js';
 import { createInviteRoutes } from './inviteRoutes.js';
+import { createShopPortalRoutes } from './portalRoutes.js';
 import { createMeRoutes } from './meRoutes.js';
 import { createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
@@ -111,6 +112,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/approvals', createApprovalRoutes(container));
   router.use('/assistant', createAssistantRoutes(container));
   router.use('/invites', createInviteRoutes(container));
+  router.use('/portal-admin', createShopPortalRoutes(container));
   router.use('/me', createMeRoutes(container));
   router.use('/business', createBusinessRoutes(container));
   router.use('/media', createMediaRoutes(container));

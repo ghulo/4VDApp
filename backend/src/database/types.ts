@@ -665,6 +665,11 @@ export interface CustomersTable {
   pay_later: Generated<boolean>;
   /** They pay the wholesale price instead of the shelf price (step 9). */
   pays_wholesale: Generated<boolean>;
+  /** Step 15: the portal is on for this customer, they may order there, the least an order may be, and the categories they see (null: all). */
+  portal_enabled: Generated<boolean>;
+  portal_can_order: Generated<boolean>;
+  portal_min_order: ColumnType<string | null, number | null | undefined, number | null>;
+  portal_categories: ColumnType<number[] | null, number[] | null | undefined, number[] | null>;
   /** The bonus they earn on a year's purchases, in percent; null: none. */
   bonus_percent: ColumnType<string | null, number | null | undefined, number | null>;
   archived_at: Date | null;
@@ -1397,7 +1402,79 @@ export interface DocumentNotesTable {
   created_at: CreatedAt;
 }
 
+export type PortalOrderStatus = 'sent' | 'seen' | 'accepted' | 'declined' | 'cancelled';
+
+/** Someone at a business customer who may sign in to the portal. Never a dashboard user. */
+export interface PortalUsersTable {
+  id: Generated<number>;
+  customer_id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  language: Generated<'sq' | 'en'>;
+  created_by: number | null;
+  created_at: CreatedAt;
+  last_seen_at: Date | null;
+  removed_at: Date | null;
+}
+
+export interface PortalLinksTable {
+  id: Generated<number>;
+  portal_user_id: number;
+  purpose: 'invite' | 'sign_in';
+  token_hash: string;
+  expires_at: Date;
+  used_at: Date | null;
+  created_at: CreatedAt;
+}
+
+export interface PortalSessionsTable {
+  id: Generated<number>;
+  portal_user_id: number;
+  token_hash: string;
+  expires_at: Date;
+  revoked_at: Date | null;
+  created_at: CreatedAt;
+  last_used_at: Generated<Date>;
+}
+
+export interface PortalOrdersTable {
+  id: Generated<number>;
+  customer_id: number;
+  portal_user_id: number | null;
+  note: string | null;
+  status: Generated<PortalOrderStatus>;
+  net: ColumnType<string, number, number>;
+  vat: ColumnType<string, number, number>;
+  total: ColumnType<string, number, number>;
+  seen_at: Date | null;
+  seen_by: number | null;
+  decided_at: Date | null;
+  decided_by: number | null;
+  decline_reason: string | null;
+  offer_id: number | null;
+  created_at: CreatedAt;
+}
+
+export interface PortalOrderLinesTable {
+  id: Generated<number>;
+  order_id: number;
+  product_id: number;
+  product_name: string;
+  unit: string;
+  quantity: number;
+  unit_price: ColumnType<string, number, number>;
+  vat_rate: ColumnType<string, number, number>;
+  total: ColumnType<string, number, number>;
+  in_stock: boolean;
+}
+
 export interface Database {
+  portal_users: PortalUsersTable;
+  portal_links: PortalLinksTable;
+  portal_sessions: PortalSessionsTable;
+  portal_orders: PortalOrdersTable;
+  portal_order_lines: PortalOrderLinesTable;
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
   pin_attempts: PinAttemptsTable;

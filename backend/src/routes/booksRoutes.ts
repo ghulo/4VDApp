@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createBooksController } from '../controllers/booksController.js';
+import { createDeclarationController } from '../controllers/declarationController.js';
 import { createOpeningController } from '../controllers/openingController.js';
 import { createStatementsController } from '../controllers/statementsController.js';
 
 /** The books: whoever oversees the business and the accountant read them; managers and the accountant write entries; managers change the chart. */
-export function createBooksRoutes({ booksService, openingService, statementsService, yearService, db, guards }: Container): Router {
+export function createBooksRoutes({ booksService, openingService, statementsService, yearService, declarationService, db, guards }: Container): Router {
   const controller = createBooksController(booksService);
   const opening = createOpeningController(openingService);
   const statements = createStatementsController(statementsService, yearService, db);
+  const declaration = createDeclarationController(declarationService, db);
   const router = Router();
 
   router.get('/accounts', ...guards.books, controller.accounts);
@@ -48,6 +50,13 @@ export function createBooksRoutes({ booksService, openingService, statementsServ
   router.post('/year/:year/instalments', ...guards.filing, statements.pay);
   router.put('/year/:year/inputs', ...guards.filing, statements.inputs);
   router.delete('/instalments/:id', ...guards.filing, statements.undo);
+  // The yearly declaration (CD or PD): read with the books, typed and filed by whoever files VAT.
+  router.get('/declaration/:year', ...guards.books, declaration.get);
+  router.get('/declaration/:year/download', ...guards.books, declaration.download);
+  router.put('/declaration/:year/inputs', ...guards.filing, declaration.inputs);
+  router.post('/declaration/:year/file', ...guards.filing, declaration.file);
+  router.post('/declaration/:year/reopen', ...guards.filing, declaration.reopen);
+  router.post('/declaration/:year/pay', ...guards.filing, declaration.pay);
 
   return router;
 }

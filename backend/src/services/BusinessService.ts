@@ -1,3 +1,4 @@
+import type { LegalForm } from '../database/types.js';
 import { NotFoundError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
@@ -20,6 +21,8 @@ export interface BusinessDto {
   bankName: string | null;
   iban: string | null;
   invoiceNote: string | null;
+  /** 'company' files the CD, 'individual' (B.I.) the PD. */
+  legalForm: LegalForm;
 }
 
 export interface BusinessChanges {
@@ -31,6 +34,7 @@ export interface BusinessChanges {
   bankName?: string | null;
   iban?: string | null;
   invoiceNote?: string | null;
+  legalForm?: LegalForm;
 }
 
 const toDto = (business: BusinessRow): BusinessDto => ({
@@ -47,6 +51,7 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   bankName: business.bank_name,
   iban: business.iban,
   invoiceNote: business.invoice_note,
+  legalForm: business.legal_form,
 });
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
@@ -76,6 +81,7 @@ export class BusinessService {
       ...(changes.bankName !== undefined && { bank_name: changes.bankName }),
       ...(changes.iban !== undefined && { iban: changes.iban }),
       ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
+      ...(changes.legalForm !== undefined && { legal_form: changes.legalForm }),
     });
     // Every field that really changed, before and after, for the shop's history.
     const before = toDto(business) as unknown as Record<string, unknown>;

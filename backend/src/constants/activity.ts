@@ -28,6 +28,8 @@ export const ACTIVITY_ACTIONS = [
   'books.entry_reversed',
   'books.year_closed',
   'books.year_reopened',
+  'books.declaration_filed',
+  'books.declaration_reopened',
   'books.tm_paid',
   'books.tm_undone',
   'books.links_changed',

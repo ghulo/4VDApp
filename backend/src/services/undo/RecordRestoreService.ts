@@ -16,7 +16,7 @@ const RESTORABLE = {
   user: ['name', 'role', 'isActive'],
   supplier: ['name', 'nui', 'phone', 'email', 'note'],
   customer: ['name', 'kind', 'nui', 'phone', 'note'],
-  business: ['name', 'address', 'phone', 'nui', 'timeZone', 'bankName', 'iban', 'invoiceNote'],
+  business: ['name', 'address', 'phone', 'nui', 'timeZone', 'bankName', 'iban', 'invoiceNote', 'legalForm'],
 } as const;
 
 type RestorableType = keyof typeof RESTORABLE;

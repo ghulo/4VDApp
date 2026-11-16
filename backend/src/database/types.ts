@@ -107,6 +107,8 @@ export interface RabatApprovalsTable {
   created_at: CreatedAt;
 }
 
+export type LegalForm = 'company' | 'individual';
+
 export interface BusinessesTable {
   id: Generated<number>;
   name: string;
@@ -122,6 +124,8 @@ export interface BusinessesTable {
   iban: string | null;
   /** Printed at the bottom of every invoice: thanks, return rules. */
   invoice_note: string | null;
+  /** 'company' files the CD (profit tax); 'individual' (B.I.) files the PD (personal income tax). */
+  legal_form: Generated<LegalForm>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -1656,6 +1660,7 @@ export interface Database {
   trefin_months: TrefinMonthsTable;
   book_years: BookYearsTable;
   tax_instalments: TaxInstalmentsTable;
+  tax_declarations: TaxDeclarationsTable;
   employees: EmployeesTable;
   payroll_months: PayrollMonthsTable;
   payroll_lines: PayrollLinesTable;
@@ -1835,7 +1840,19 @@ export interface BookYearsTable {
   closed_at: ColumnType<Date, Date | undefined, Date>;
 }
 
-/** A quarterly profit tax instalment (TM) paid (see migration 052). */
+/** A year's income declaration (CD or PD): typed inputs and, once filed, the figures as filed (migration 076). */
+export interface TaxDeclarationsTable {
+  year: number;
+  inputs: ColumnType<unknown, string | undefined, string>;
+  filed_on: ColumnType<string | null, string | null | undefined, string | null>;
+  filed_by: number | null;
+  filed_at: Date | null;
+  filed: ColumnType<unknown, string | null | undefined, string | null>;
+  updated_by: number | null;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+/** A quarterly profit tax instalment (TM) paid (see migration 052); quarter 0 is the rest, paid with the declaration. */
 export interface TaxInstalmentsTable {
   id: Generated<number>;
   year: number;

@@ -69,6 +69,7 @@ export const businessSchema = z
     bankName: optionalText(100),
     iban: ibanSchema.optional(),
     invoiceNote: optionalText(500),
+    legalForm: z.enum(['company', 'individual']).optional(),
   })
   .strict();
 

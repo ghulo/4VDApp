@@ -33,7 +33,7 @@ export type ProductField =
   | 'vatExempt'
   | 'originCountry'
   | 'bulkPricingTiers';
-export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote';
+export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote' | 'legalForm';
 type SettingName =
   | 'refundApprovalLimit'
   | 'returnWindowDays'
@@ -112,7 +112,7 @@ const en = {
     `Changed the barcode of ${p.product}${p.from ? ` from ${p.from}` : ''} to ${p.to}, as on ${p.supplier}'s bill`,
 
   shopChanged: (p: { fields: ShopField[] }, w: Words) =>
-    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note' })[field] ?? field))}`,
+    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note', legalForm: 'legal form' })[field] ?? field))}`,
 
   carwashAdded: (p: { name: string; float: number }, w: Words) => `Added the carwash ${p.name} (cash float ${w.money(p.float)})`,
   carwashArchived: (p: { name: string; stoppedExpenses: number }) =>
@@ -175,8 +175,13 @@ const en = {
     `Closed ${p.year} in the books: ${p.profit >= 0 ? 'profit' : 'loss'} of ${w.money(Math.abs(p.profit))} after ${w.money(p.tax)} profit tax moved into retained earnings`,
   yearReopened: (p: { year: number; reason: string }) => `Reopened ${p.year} in the books: ${p.reason}`,
   tmPaid: (p: { year: number; quarter: number; amount: number; day: string }, w: Words) =>
-    `Paid the profit tax instalment for Q${p.quarter} ${p.year}: ${w.money(p.amount)} on ${w.day(p.day)}`,
-  tmUndone: (p: { year: number; quarter: number; amount: number }, w: Words) => `Took back the ${w.money(p.amount)} profit tax instalment for Q${p.quarter} ${p.year}`,
+    p.quarter === 0
+      ? `Paid the rest of the ${p.year} income tax with the declaration: ${w.money(p.amount)} on ${w.day(p.day)}`
+      : `Paid the profit tax instalment for Q${p.quarter} ${p.year}: ${w.money(p.amount)} on ${w.day(p.day)}`,
+  tmUndone: (p: { year: number; quarter: number; amount: number }, w: Words) =>
+    p.quarter === 0 ? `Took back the ${w.money(p.amount)} paid with the ${p.year} declaration` : `Took back the ${w.money(p.amount)} profit tax instalment for Q${p.quarter} ${p.year}`,
+  declarationFiled: (p: { year: number; form: 'CD' | 'PD'; day: string }, w: Words) => `Marked the ${p.year} ${p.form} as filed with ATK on ${w.day(p.day)}`,
+  declarationReopened: (p: { year: number; form: 'CD' | 'PD'; reason: string }) => `Reopened the ${p.year} ${p.form}: “${p.reason}”`,
   questionAsked: (p: { on: QuestionOn; text: string }) => `Asked about ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   questionAnswered: (p: { on: QuestionOn; text: string }) => `Answered on ${EN_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p: { number: string; name: string }) => `Added account ${p.number} ${p.name} to the books`,
@@ -557,6 +562,7 @@ const SQ_SHOP_FIELD: Record<ShopField, string> = {
   bankName: 'bankën',
   iban: 'IBAN-in',
   invoiceNote: 'shënimin e faturës',
+  legalForm: 'formën ligjore',
 };
 const sqAlso = (also: ProductField[]) => (also.length > 0 ? ` (ndryshoi edhe ${also.map((field) => SQ_PRODUCT_FIELD[field]).join(', ')})` : '');
 /** A place in the case the sentence needs: "arka e dyqanit", "arkën e dyqanit", "arkës së dyqanit". */
@@ -716,8 +722,12 @@ const sq: Templates = {
   yearClosed: (p, w) =>
     `Mbylli vitin ${p.year} në libra: ${p.profit >= 0 ? 'fitimi' : 'humbja'} prej ${w.money(Math.abs(p.profit))} pas tatimit në fitim prej ${w.money(p.tax)} kaloi te fitimet e mbajtura`,
   yearReopened: (p) => `Rihapi vitin ${p.year} në libra: ${p.reason}`,
-  tmPaid: (p, w) => `Pagoi këstin e tatimit në fitim për TM${p.quarter} ${p.year}: ${w.money(p.amount)} më ${w.day(p.day)}`,
-  tmUndone: (p, w) => `Anuloi këstin e tatimit në fitim prej ${w.money(p.amount)} për TM${p.quarter} ${p.year}`,
+  tmPaid: (p, w) =>
+    p.quarter === 0 ? `Pagoi pjesën e mbetur të tatimit për ${p.year} me deklaratën: ${w.money(p.amount)} më ${w.day(p.day)}` : `Pagoi këstin e tatimit në fitim për TM${p.quarter} ${p.year}: ${w.money(p.amount)} më ${w.day(p.day)}`,
+  tmUndone: (p, w) =>
+    p.quarter === 0 ? `Anuloi pagesën prej ${w.money(p.amount)} me deklaratën e ${p.year}` : `Anuloi këstin e tatimit në fitim prej ${w.money(p.amount)} për TM${p.quarter} ${p.year}`,
+  declarationFiled: (p, w) => `Shënoi deklaratën ${p.form} të ${p.year} si të dorëzuar në ATK më ${w.day(p.day)}`,
+  declarationReopened: (p) => `Rihapi deklaratën ${p.form} të ${p.year}: “${p.reason}”`,
   questionAsked: (p) => `Pyeti për ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   questionAnswered: (p) => `U përgjigj te ${SQ_ON[p.on.kind]} ${p.on.label}: “${p.text}”`,
   bookAccountAdded: (p) => `Shtoi llogarinë ${p.number} ${p.name} në libra`,

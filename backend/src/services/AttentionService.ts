@@ -15,6 +15,7 @@ import type { Insight, InsightKind, InsightSeverity, InsightsService } from './I
 import type { ThreadService } from './ThreadService.js';
 import { DUE_DAY, addMonths, type VatService } from './vat/VatService.js';
 import type { YearService } from './statements/YearService.js';
+import type { DeclarationService } from './statements/DeclarationService.js';
 
 /** From this hour (shop time) an unfinished day or shift becomes something to do. */
 export const CLOSING_HOUR = 18;
@@ -26,8 +27,8 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 /** How long a just-emailed bill may take to read before it shows in To do. */
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
-export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'answer' | 'runPayroll' | 'payAtk';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order';
+export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'fileDeclaration' | 'answer' | 'runPayroll' | 'payAtk';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -111,6 +112,7 @@ export class AttentionService {
     private readonly billEmailDailyReads: number,
     private readonly payroll: PayrollService | null = null,
     private readonly portalOrders: Pick<PortalRepository, 'openOrders'> | null = null,
+    private readonly declarations: Pick<DeclarationService, 'due'> | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -262,7 +264,7 @@ export class AttentionService {
    */
   private async books(t: ServerMessages, now: Date): Promise<TodoItem[]> {
     const today = zonedDay(now, this.timeZone);
-    const [months, instalments] = await Promise.all([this.vat.unfiled(now), this.years.dueInstalments(now)]);
+    const [months, instalments, declaration] = await Promise.all([this.vat.unfiled(now), this.years.dueInstalments(now), this.declarations?.due(now) ?? null]);
     const tm = instalments.map(
       (item): TodoItem => ({
         key: `tm_due:${item.year}-${item.quarter}`,
@@ -287,7 +289,19 @@ export class AttentionService {
         to: `/books/vat?month=${month}`,
       };
     });
-    return [...vat, ...tm];
+    // Last year's CD or PD, from 1 January until it is marked as filed; urgent after 31 March.
+    const yearly: TodoItem[] = declaration
+      ? [{
+          key: `declaration_due:${declaration.year}`,
+          kind: 'declaration_due',
+          severity: declaration.late ? 'urgent' : 'check',
+          title: t.todo.declarationDueTitle(declaration),
+          detail: t.todo.declarationDueDetail(declaration),
+          verb: 'fileDeclaration',
+          to: `/books/declaration?year=${declaration.year}`,
+        }]
+      : [];
+    return [...vat, ...tm, ...yearly];
   }
 
   /**

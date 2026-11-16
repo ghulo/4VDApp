@@ -120,6 +120,9 @@ export interface ServerMessages {
     /** due "2026-10-15": the quarter's profit tax instalment. */
     tmDueTitle: (p: { quarter: number; year: number; due: string }) => string;
     tmDueDetail: (p: { amount: number; late: boolean }) => string;
+    /** Last year's yearly declaration (CD or PD), due 31 March. */
+    declarationDueTitle: (p: { year: number; form: 'CD' | 'PD'; due: string }) => string;
+    declarationDueDetail: (p: { late: boolean }) => string;
     questionTitle: (on: QuestionOn) => string;
     questionDetail: (p: { name: string | null; text: string }) => string;
   };
@@ -426,6 +429,9 @@ export const en: ServerMessages = {
     tmDueTitle: ({ quarter, year, due }) => `Profit tax for Q${quarter} ${year} is due by ${Number(due.slice(8, 10))} ${EN_MONTH[Number(due.slice(5, 7)) - 1]}`,
     tmDueDetail: ({ amount, late }) =>
       late ? `The day has passed. Pay about ${money(amount, 'en')} to ATK, then mark it as paid.` : `About ${money(amount, 'en')} on the profit so far. Pay it to ATK, then mark it as paid.`,
+    declarationDueTitle: ({ year, form, due }) => `File the ${year} ${form} by ${Number(due.slice(8, 10))} ${EN_MONTH[Number(due.slice(5, 7)) - 1]}`,
+    declarationDueDetail: ({ late }) =>
+      late ? 'The day has passed. Check the figures with the accountant, file it with ATK, then mark it as filed.' : 'The figures come from the books. Check them with the accountant, file with ATK, then mark it as filed.',
     questionTitle: (on) => `The accountant asks about ${EN_ON_TODO[on.kind]} ${on.label}`,
     questionDetail: ({ name, text }) => `${name ?? 'The accountant'}: “${text}”`,
   },
@@ -754,6 +760,9 @@ export const sq: ServerMessages = {
     tmDueTitle: ({ quarter, year, due }) => `Tatimi në fitim për TM${quarter} ${year} duhet paguar deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
     tmDueDetail: ({ amount, late }) =>
       late ? `Afati ka kaluar. Paguaj rreth ${money(amount, 'sq')} në ATK, pastaj shënoje si të paguar.` : `Rreth ${money(amount, 'sq')} mbi fitimin deri tani. Paguaje në ATK, pastaj shënoje si të paguar.`,
+    declarationDueTitle: ({ year, form, due }) => `Dorëzo ${form} për ${year} deri më ${Number(due.slice(8, 10))} ${SQ_MONTH_DAY[Number(due.slice(5, 7)) - 1]}`,
+    declarationDueDetail: ({ late }) =>
+      late ? 'Afati ka kaluar. Kontrollo shifrat me kontabilistin, dorëzoje në ATK, pastaj shënoje si të dorëzuar.' : 'Shifrat vijnë nga librat. Kontrolloji me kontabilistin, dorëzoje në ATK, pastaj shënoje si të dorëzuar.',
     questionTitle: (on) => `Kontabilisti pyet për ${SQ_ON_TODO[on.kind]} ${on.label}`,
     questionDetail: ({ name, text }) => `${name ?? 'Kontabilisti'}: “${text}”`,
   },

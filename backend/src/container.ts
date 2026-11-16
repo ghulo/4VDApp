@@ -36,6 +36,7 @@ import { SupplierBillService } from './services/SupplierBillService.js';
 import { BooksService } from './services/BooksService.js';
 import { StatementsService } from './services/statements/StatementsService.js';
 import { YearService } from './services/statements/YearService.js';
+import { DeclarationService } from './services/statements/DeclarationService.js';
 import { OpeningService } from './services/OpeningService.js';
 import { TrefinCompareService } from './services/vat/TrefinCompareService.js';
 import { SalesService } from './services/SalesService.js';
@@ -336,6 +337,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const threadService = new ThreadService(db);
   const statementsService = new StatementsService(db, booksService.poster);
   const yearService = new YearService(db, booksService.poster, statementsService, config.shopTimeZone);
+  const declarationService = new DeclarationService(db, booksService.poster, statementsService, yearService, config.shopTimeZone);
   const attentionService = new AttentionService(
     insightsService,
     approvalService,
@@ -352,6 +354,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     config.billEmailDailyReads,
     payrollService,
     new PortalRepository(db),
+    declarationService,
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -583,6 +586,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     booksService,
     statementsService,
     yearService,
+    declarationService,
     openingService,
     vatService,
     trefinCompareService,

@@ -11,6 +11,7 @@ import { zonedDay } from '../../utils/zonedDates.js';
 import { type BooksPoster, insertLines, POSTING_LOCK, reverseEntry } from '../books/BooksPoster.js';
 import { assertMonthsOpen } from '../vat/periodLock.js';
 import { CLOSING_PREFIX, type StatementsService } from './StatementsService.js';
+import { type DeclarationForm, formOf, incomeTax } from './taxRules.js';
 
 /**
  * 4VD SH.P.K. pays corporate income tax: 10% of the year's profit (Law
@@ -65,6 +66,8 @@ export interface QuarterDto {
 export interface YearDto {
   year: number;
   rate: number;
+  /** 'CD' for a company (10%), 'PD' for an individual business (the yearly personal bands). */
+  form: DeclarationForm;
   method: TmMethod;
   /** Last year's profit tax, from 4VD's closed year or typed from the annual return; null when not known. */
   previousTax: number | null;
@@ -101,7 +104,6 @@ export const quarterRange = (year: number, quarter: number) => ({
   to: `${year}-${pad(quarter * 3)}-${pad(lastDay(year, quarter * 3))}`,
 });
 export const quarterDue = (year: number, quarter: number) => (quarter < 4 ? `${year}-${pad(quarter * 3 + 1)}-${pad(TM_DUE_DAY)}` : `${year + 1}-01-${pad(TM_DUE_DAY)}`);
-const taxOn = (profit: number) => (profit > 0 ? roundMoney(profit * PROFIT_TAX_RATE) : 0);
 /**
  * A quarter's instalment: the tax on the profit so far, less what earlier
  * quarters paid or still owe (an unpaid quarter stays its own To do, so its
@@ -130,7 +132,13 @@ export class YearService {
     this.periods = new VatMonthRepository(db);
   }
 
-  private async instalments(year: number | null): Promise<Array<InstalmentDto & { year: number; quarter: number }>> {
+  /** CD or PD, from the business's legal form. */
+  async form(): Promise<DeclarationForm> {
+    const row = await this.db.selectFrom('businesses').select('legal_form').orderBy('id').executeTakeFirst();
+    return formOf(row?.legal_form ?? 'company');
+  }
+
+  async instalments(year: number | null): Promise<Array<InstalmentDto & { year: number; quarter: number }>> {
     let query = this.db
       .selectFrom('tax_instalments as t')
       .innerJoin('money_places as p', 'p.id', 't.place_id')
@@ -185,7 +193,8 @@ export class YearService {
   /** The year's four instalments and whether it can be closed. */
   async year(year: number, actorRole: UserRole, now = new Date()): Promise<YearDto> {
     const today = zonedDay(now, this.timeZone);
-    const [startDay, instalments, basis] = await Promise.all([this.poster.startDay(), this.instalments(year), this.basis(year)]);
+    const [startDay, instalments, basis, form] = await Promise.all([this.poster.startDay(), this.instalments(year), this.basis(year), this.form()]);
+    const taxOn = (profit: number) => incomeTax(form, profit, year);
     const quarters: QuarterDto[] = [];
     let paidBefore = 0;
     let taxBefore = 0;
@@ -220,6 +229,7 @@ export class YearService {
     return {
       year,
       rate: PROFIT_TAX_RATE,
+      form,
       ...basis,
       startsInYear: startDay && startDay > `${year}-01-01` && startDay <= `${year}-12-31` ? startDay : null,
       quarters,
@@ -285,7 +295,7 @@ export class YearService {
       unfiledMonths: record ? [] : unfiledMonths,
       profitBeforeTax,
       booksProfit,
-      suggestedTax: taxOn(profitBeforeTax),
+      suggestedTax: incomeTax(await this.form(), profitBeforeTax, year),
       finalDue: `${year + 1}-03-31`,
       canReopen: Boolean(record) && !later && canReopen(actorRole),
     };
@@ -413,6 +423,8 @@ export class YearService {
     const amount = roundMoney(input.amount);
     if (amount <= 0) throw new ValidationError('Type the amount paid.');
     if (input.day > zonedDay(now, this.timeZone)) throw new ValidationError("The day paid can't be in the future.");
+    // Quarter 0 is the rest of the year's tax, paid with the declaration once the year is over.
+    if (quarter === 0 && input.day <= `${year}-12-31`) throw new ValidationError(`The rest of the ${year} tax is paid with the declaration, from 1 January ${year + 1}.`);
     const start = await this.poster.startDay();
     if (start && input.day < start) throw new ValidationError(`The books start on ${start}; a payment from before that belongs in the opening balances.`);
     await assertMonthsOpen(this.periods, [input.day]);
@@ -422,7 +434,7 @@ export class YearService {
       if (!place || place.archived_at) throw new ValidationError('Pick the till, safe or bank account the money came from.');
       if (place.carwash_id !== null || place.account_id === null) throw new ValidationError("A carwash's till is outside the books; pay from the shop's till, the safe or a bank account.");
       if (await trx.selectFrom('tax_instalments').select('id').where('year', '=', year).where('quarter', '=', quarter).where('undone_at', 'is', null).executeTakeFirst()) {
-        throw new ConflictError(`Q${quarter} ${year} is already marked as paid. Take that payment back first to change it.`);
+        throw new ConflictError(quarter === 0 ? `The rest of the ${year} tax is already marked as paid. Take that payment back first to change it.` : `Q${quarter} ${year} is already marked as paid. Take that payment back first to change it.`);
       }
       const note = input.note?.trim() || null;
       const row = await trx
@@ -432,7 +444,7 @@ export class YearService {
         .executeTakeFirstOrThrow();
       const entryId = await this.manualEntry(
         trx,
-        { date: input.day, sourceKey: `${TM_KEY}${row.id}`, description: `Profit tax instalment (TM) for Q${quarter} ${year}`, by: actor.id },
+        { date: input.day, sourceKey: `${TM_KEY}${row.id}`, description: quarter === 0 ? `Income tax for ${year}, paid with the yearly declaration` : `Profit tax instalment (TM) for Q${quarter} ${year}`, by: actor.id },
         [
           { accountId: await this.linkOf(trx, 'profit_tax_payable'), debit: amount, credit: 0, supplierId: null, customerId: null },
           { accountId: place.account_id, debit: 0, credit: amount, supplierId: null, customerId: null },
@@ -482,6 +494,7 @@ export class YearService {
     const start = await this.poster.startDay();
     if (!start) return [];
     const thisYear = Number(today.slice(0, 4));
+    const form = await this.form();
     const out: Array<{ year: number; quarter: number; due: string; amount: number; late: boolean }> = [];
     // This year and last (Q4 is due in January); never before the books start.
     // Only quarters over and unpaid cost a look at the books, so the badge stays quick.
@@ -492,12 +505,13 @@ export class YearService {
     for (const year of [thisYear - 1, thisYear]) {
       if (`${year}-12-31` < start || closed.some((row) => row.year === year)) continue;
       const basis = await this.basis(year);
+      const taxOn = (profit: number) => incomeTax(form, profit, year);
       // Profit so far, with what TREFIN made before the books start.
       const profitTo = async (day: string) => (await this.statements.profitBeforeTax({ from: `${year}-01-01`, to: day })) + basis.profitBefore;
       for (const quarter of [1, 2, 3, 4]) {
         const { to } = quarterRange(year, quarter);
         if (to >= today || to < start || paid.some((row) => row.year === year && row.quarter === quarter)) continue;
-        const paidBefore = paid.filter((row) => row.year === year && row.quarter < quarter).reduce((sum, row) => sum + Number(row.amount), 0);
+        const paidBefore = paid.filter((row) => row.year === year && row.quarter >= 1 && row.quarter < quarter).reduce((sum, row) => sum + Number(row.amount), 0);
         const amount =
           basis.share ??
           instalmentFor(taxOn(await profitTo(to)), quarter === 1 ? 0 : taxOn(await profitTo(quarterRange(year, quarter - 1).to)), paidBefore);

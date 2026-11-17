@@ -18,6 +18,7 @@
 - `mail/`: the Cloudflare Email Worker for bills@4vd.app (own `wrangler.jsonc`, deployed by hand; `npm test`). Setup in `docs/DEPLOYMENT.md`.
 - `mobile/`: the old Expo team app, retired since 2026-10-20. Don't change it unless the user asks.
 - `progress.md`: the task list (tick items as they're done). `DESIGN.md`: the rulebook for logic, words and look. `PRODUCT.md`: who it's for.
+- Project skills: `step-workflow` (how a step session runs, start to merge: read it when starting a task) and `kosovo-tax` (every VAT, payroll, profit tax and books rule 4VD follows and where it lives; read it before touching money logic, add new rules to it).
 
 ## Commands
 - backend: `npm run typecheck`, `npx vitest run tests/<file>.test.ts` (one file), `npm test` (full suite, about 20–35 min), `npm run migrate`, `npm run seed:demo` (demo logins `demo-*@4vd.local`).
@@ -26,6 +27,7 @@
 - A check still failing after 3 rounds of fixes: stop and tell the user (or the orchestrator) what fails and what you tried; don't keep grinding.
 - A flaky test: never re-run it until it passes, add sleeps or raise timeouts. Find the cause; if you can't, delete the test and write down why in the commit.
 - Commits: `feat:` / `fix:` / `docs:` prefix, then plain English a non-developer understands. Work on main or a short branch in this checkout (no worktrees); merge, push and delete branches yourself.
+- The checkout is shared by several sessions, and an orchestrator session says who may use it. Without its go, don't switch branches, stash, run tests or migrate here; land files on main through a temporary index instead (`step-workflow` skill). Stage only your own files (`git diff --cached --name-only` before every commit). Number a new migration at merge time, against the newest main.
 
 ## Gotchas
 - Docker Desktop must be running, or migrations fail with a blank error.

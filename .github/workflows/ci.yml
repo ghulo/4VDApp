@@ -14,11 +14,12 @@ on:
     branches: [main]
   pull_request:
 
-# A newer push to the same branch cancels the older, now pointless run
-# (a dashboard upload cut short this way is fine: the newer run uploads again).
+# On a pull request a newer push cancels the older, now pointless run. On main
+# runs never cancel each other: they wait in line. A cancelled main run once let
+# a code commit go untested while the docs push after it looked green.
 concurrency:
   group: checks-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
@@ -28,6 +29,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       admin: ${{ steps.filter.outputs.admin }}
@@ -37,9 +39,23 @@ jobs:
       desktop: ${{ steps.filter.outputs.desktop }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # On main, compare with the last commit whose checks all passed, not just
+      # the previous push: a push that only touches docs then still tests code
+      # from an earlier push whose run failed or never finished.
+      - name: Last green commit on main
+        id: base
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1" -q '.workflow_runs[0].head_sha' || true)
+          echo "sha=${sha:-${{ github.event.before }}}" >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ steps.base.outputs.sha }}
           filters: |
             ci: &ci
               - '.github/workflows/ci.yml'

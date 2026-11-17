@@ -78,11 +78,11 @@ general enough for that, but the shop comes first whenever the two conflict.
 ## Brand Commitments
 
 - Name: **4VD**, "4 Vëllezërit Dacaj", the four Dacaj brothers, named by their
-  father. The mark is four equal pillars under one roof. The story is there for
+  father. The mark is a hand-drawn home with four equal doorways under one roof. The story is there for
   people who ask, not told in the interface.
 - Visual direction: calm and tactile, "modern frame, vintage finish" (clean
   paper on faintly cool greys, one amber, serif page titles, buttons that press
-  like keys, the shop at sunrise),
+  like keys, the family-home mark),
   learned from Cloudflare's structure, the SBB design system's rigour and
   anthropic.com's finish. All rules live in `DESIGN.md`, the single rulebook.
 - Voice: plain, friendly, short. Sentence case. Buttons say what they do.

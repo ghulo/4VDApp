@@ -39,7 +39,7 @@ A short map of the code as it is. Product and design rules live in `DESIGN.md`; 
 
 - Backend (`backend/tests/`, vitest + supertest): mostly integration tests against `TEST_DATABASE_URL`. `tests/helpers/testApp.ts` refuses a URL without "test" in it, builds a fresh schema per file, and files run one at a time because they share the DB.
 - Dashboard (`admin/`, vitest + Testing Library): components, formatting, contrast and token rules (`src/theme/*.test.ts`).
-- Dependencies: Dependabot (`.github/dependabot.yml`) opens weekly grouped updates; CI runs `npm audit --audit-level=high` for each app, so a known high-risk package stops the deploy.
+- Dependencies: Dependabot (`.github/dependabot.yml`) opens monthly grouped minor and patch updates (majors are done by hand); CI runs `npm audit --audit-level=high` for each app, so a known high-risk package stops the deploy.
 - `admin` `npm run lint:ui` (lintapple) checks a running dashboard against `admin/ui-policy.json`.
 
 ## Dashboard

@@ -1,39 +1,6 @@
 # Deployment Guide
 
-## Environments
-
-### Development
-- Local laptop/PC setup
-- See "Local Setup" in the root README.md
-
-### Staging
-- Optional testing environment before production
-
-### Production
-- Live environment for users
-
----
-
-## Backend Deployment
-
-### Prerequisites
-- Node.js v22 LTS+
-- PostgreSQL database set up
-- Environment variables configured
-- Git for version control
-
-### Hosting Options (Free Tier Start)
-- **Render** - Easy PostgreSQL + Node.js hosting (free tier available)
-- **Railway** - Modern alternative with free trial
-- **Heroku** - Classic option (free tier limited now)
-- **DigitalOcean** - $5/month VPS starting point
-- **Self-hosted** - Your own server
-
-### Database Hosting (Free Tier)
-- **Render PostgreSQL** - Free tier available
-- **Railway PostgreSQL** - Free tier with credits
-- **Neon** - Free tier with generous limits
-- **Supabase** - PostgreSQL with free tier
+Where 4VD runs: the API and its Postgres 18 database on Render (`render.yaml`), the dashboard on Cloudflare at 4vd.app, backups in Cloudflare R2, errors in Sentry. Local setup is in the root README.md.
 
 ### Deploy: Cloudflare (front ends) + Render (API and database)
 
@@ -135,78 +102,6 @@ After this, pushes to `main` deploy by themselves: Render redeploys the API once
 
 ---
 
-## Mobile Deployment
-
-### iOS
-
-1. **Build for App Store**
-   ```bash
-   cd mobile
-   npm run build:ios
-   # or with Expo:
-   eas build --platform ios
-   ```
-
-2. **App Store Connect Setup**
-   - Create Apple Developer account ($99/year)
-   - Create app in App Store Connect
-   - Configure provisioning profiles
-
-3. **TestFlight (Beta Testing)**
-   - Upload build to TestFlight
-   - Invite testers via email
-   - Gather feedback before release
-
-4. **Submit to App Store**
-   - Complete app information
-   - Screenshots, description, keywords
-   - Submit for review (1-3 days)
-
-### Android
-
-0. **Phone alerts need an Expo project ID.** Run `eas init` in `mobile` once (free Expo account). It adds `extra.eas.projectId` to `app.json`, which the app needs to get a push token. Until then the Account screen says phone alerts only work in the installed app. Expo Go can't receive them.
-
-1. **Build for Play Store**
-   ```bash
-   cd mobile
-   npm run build:android
-   # or with Expo:
-   eas build --platform android
-   ```
-
-2. **Google Play Console Setup**
-   - Create Google Play Developer account ($25 one-time)
-   - Create app in Play Console
-   - Configure signing certificate
-
-3. **Google Play Beta Testing**
-   - Upload to internal testing
-   - Invite testers via Play Store link
-   - Gather feedback
-
-4. **Submit to Play Store**
-   - Complete store listing
-   - Screenshots, description, category
-   - Submit for review (few hours to 1 day)
-
----
-
-## SSL/TLS
-
-**Method:** Let's Encrypt (Free)
-
-**On Render:**
-- Automatically provisions free SSL certificate
-- Auto-renews
-- HTTPS enabled by default
-
-**Custom Domain:**
-- Add domain in Render settings
-- Point DNS to Render
-- SSL auto-provisioned
-
----
-
 ## Two-step sign-in key
 
 Two-step sign-in (an authenticator app code after the password, optional per person)
@@ -297,7 +192,7 @@ pg_restore --no-owner --no-privileges --dbname "$EMPTY_DATABASE_URL" 4vd.dump
 `.github/workflows/restore-check.yml` proves the steps above work, on the 2nd of
 every month (or Actions > Backup restore check > Run workflow). It takes the newest
 copy from R2, unlocks it with `BACKUP_PASSPHRASE`, restores it into a throwaway
-Postgres 17 on the GitHub runner and checks that every table came back and that
+Postgres 18 on the GitHub runner and checks that every table came back and that
 `businesses`, `users`, `products`, `inventory`, `sales` and the migrations list
 have rows. The run summary shows the newest sale and last migration in the copy.
 It fails, and GitHub emails the repository owner, when:
@@ -312,11 +207,11 @@ To run the same check by hand on a downloaded, unlocked copy (`4vd.dump`), from 
 repository folder:
 
 ```bash
-docker run -d --rm --name restore-pg -e POSTGRES_PASSWORD=restore -e POSTGRES_DB=restore_check -p 5440:5432 postgres:17-alpine
+docker run -d --rm --name restore-pg -e POSTGRES_PASSWORD=restore -e POSTGRES_DB=restore_check -p 5440:5432 postgres:18-alpine
 ```
 
 ```bash
-docker run --rm --network host -v "$PWD:/w" -w /w postgres:17-alpine sh -c 'apk add --no-cache bash >/dev/null && bash .github/scripts/restore-check.sh 4vd.dump postgresql://postgres:restore@localhost:5440/restore_check'
+docker run --rm --network host -v "$PWD:/w" -w /w postgres:18-alpine sh -c 'apk add --no-cache bash >/dev/null && bash .github/scripts/restore-check.sh 4vd.dump postgresql://postgres:restore@localhost:5440/restore_check'
 ```
 
 ```bash
@@ -325,58 +220,6 @@ docker stop restore-pg
 
 (On Windows Docker Desktop, `--network host` may not reach the port; there, put both
 containers on one `docker network create` network and use the first one's name as the host.)
-
----
-
-## Rate Limiting
-
-**Enabled:** Yes (limits in backend/src/constants/rateLimits.ts)
-
-**Implementation:**
-```bash
-npm install express-rate-limit
-```
-
-```javascript
-const rateLimit = require('express-rate-limit');
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
-});
-
-app.use('/api/', limiter);
-```
-
----
-
-## DNS Setup
-
-**Domain:** Not decided yet
-
-**When you choose:**
-1. Update DNS records:
-   - CNAME to Render (or your host)
-   - Point to your production API
-
-2. Configure in app:
-   - Update `EXPO_PUBLIC_API_URL` (mobile) and `VITE_API_URL` (admin) to your domain
-   - Rebuild mobile apps
-
----
-
-## Costs (Free Tier for Now)
-
-| Service | Tier | Cost | Notes |
-|---------|------|------|-------|
-| Render Web Service | Free/Hobby | $0-7 | Auto-sleep on free, $7 for always-on |
-| Render PostgreSQL | Free | $0 | 256MB storage |
-| Sentry | Free | $0 | 5k events/month |
-| Domain | .com/.dev | ~$10-15/year | When ready |
-| SSL | Let's Encrypt | $0 | Free, auto-renewing |
-
-**Total: $0/month (free tier)**
 
 ---
 
@@ -392,7 +235,6 @@ app.use('/api/', limiter);
 - [ ] Actions > Backup restore check run once by hand and green
 - [ ] Admin user created
 - [ ] Initial products loaded
-- [ ] Mobile API URL points to production domain
 - [ ] Authentication working (JWT)
 - [ ] Load testing completed (optional)
 - [ ] Team access configured
@@ -401,17 +243,7 @@ app.use('/api/', limiter);
 
 ## Deployment Process
 
-**Automatic (Recommended):**
-```bash
-# Just push to main branch
-git add .
-git commit -m "Deploy: feature xyz"
-git push origin main
-# Render auto-deploys in 2-5 minutes
-```
-
-**Manual:**
-- Render Dashboard → Web Service → Manual Deploy
+Push to `main`. GitHub's "Checks" workflow runs the tests for the parts that changed; only when every check passes does it put the dashboard live, and Render deploys the API (`autoDeployTrigger: checksPass`). Runs on main wait in line and never cancel each other. The API container applies new migrations each time it starts (`backend/Dockerfile`). By hand: Render → `4vd-api` → **Manual Deploy**.
 
 ---
 
@@ -426,60 +258,3 @@ If deployment fails:
 5. **Re-deploy** → Push to main again
 
 ---
-
-## Support & Contact
-
-**Issues?** Contact: labidaqaj@gmail.com
-
-**Render Support:** https://render.com/docs
-**Sentry Support:** https://sentry.io/support
-
----
-
-## Scaling (Future)
-
-When you outgrow free tier:
-
-1. **Render Paid Tiers**
-   - Standard tier: ~$7-50/month
-   - Includes 0.5 CPU, 512MB RAM
-
-2. **Database Scaling**
-   - Upgrade PostgreSQL tier
-   - Add read replicas for analytics
-
-3. **Caching**
-   - Add Redis for hot data (products, pricing)
-   - Cache frequently accessed data
-
-4. **CDN**
-   - Cloudflare free tier for image delivery
-   - Faster product images globally
-
-5. **Load Balancing**
-   - Multiple Node.js instances
-   - Render handles automatically on paid tiers
-
----
-
-## Continuous Deployment (CI/CD)
-
-**Current:** Manual git push → Auto-deploys
-
-**Future Enhancements:**
-- GitHub Actions for testing before deploy
-- Automated database migrations
-- Deployment notifications
-- Staged rollouts
-
----
-
-## Key Commands
-
-| Action | Command |
-|--------|---------|
-| Deploy | `git push origin main` |
-| View logs | Render dashboard |
-| Check health | `curl https://your-api.render.com/health` |
-| Backup DB | `pg_dump $DATABASE_URL > backup.sql` |
-| View errors | Sentry dashboard |

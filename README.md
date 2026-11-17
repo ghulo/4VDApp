@@ -54,12 +54,12 @@ Log in with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` from `backend/.env`.
 
 ## Checks
 
-These are what CI runs on every push:
+GitHub runs these on every push to main, for the parts the push changed (`.github/workflows/ci.yml`):
 ```bash
 cd backend && npm run typecheck && npm test && npm run build
 cd admin && npm run lint && npm test && npm run build
 ```
-The backend tests need the Docker database running and take about 10 minutes. With the dashboard running, `npm run lint:ui` in `admin/` checks it against `admin/ui-policy.json`.
+The backend tests need the Docker database running and take about 20–35 minutes; while working, run only the files that cover your change. With the dashboard running, `npm run lint:ui` in `admin/` checks it against `admin/ui-policy.json`.
 
 ## Environment variables
 Every app has a `.env.example` listing what it needs. Copy it to `.env` and fill it in. Never commit `.env` files.

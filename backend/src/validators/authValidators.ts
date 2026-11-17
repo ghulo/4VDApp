@@ -110,6 +110,11 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1).max(500),
 });
 
+/** The business picker: which business the session carries on in. */
+export const switchBusinessSchema = z.object({
+  businessId: z.number().int().positive(),
+});
+
 export const logoutSchema = z.object({
   refreshToken: z.string().min(1).max(500).optional(),
 });

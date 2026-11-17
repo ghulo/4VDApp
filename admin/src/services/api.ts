@@ -218,6 +218,11 @@ export const authApi = {
     return (await apiRequest<User>('/auth/me', { asMyself: true })).data;
   },
 
+  /** The business picker: this session carries on in another business (new cookies). */
+  async switchBusiness(businessId: number): Promise<void> {
+    await apiRequest('/auth/switch', { method: 'POST', body: { businessId }, asMyself: true });
+  },
+
   async logout(): Promise<void> {
     try {
       // The server ends this device's session (from its cookie) and clears the cookies.

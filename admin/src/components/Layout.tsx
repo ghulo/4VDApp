@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
+import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
 import { businessApi } from '../services/api';
@@ -67,6 +68,7 @@ function FullLayout() {
   useFocusOnRouteChange();
   const navigate = useNavigate();
   const t = useT();
+  const businesses = useBusinessPicker();
 
   const [collapsed, setCollapsed] = useState(() => readYes(COLLAPSED_KEY));
   const [moreOpen, setMoreOpen] = useState(() => readYes(MORE_KEY) || underMore(user.role, location.pathname));
@@ -217,7 +219,8 @@ function FullLayout() {
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             heading={user.platformDeveloper ? <DeveloperMark /> : undefined}
             items={[
-              { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },
+              ...businesses,
+              { label: t.nav.items.profile, icon: UserCircle, divider: businesses.length > 0, onSelect: () => navigate('/profile') },
               { label: t.nav.logOut, icon: SignOut, onSelect: logout },
             ]}
           />

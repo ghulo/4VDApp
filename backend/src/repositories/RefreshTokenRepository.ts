@@ -9,7 +9,7 @@ export class RefreshTokenRepository {
     userId: number,
     tokenHash: string,
     expiresAt: Date,
-    session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null } = {},
+    session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null; businessId?: number | null } = {},
   ): Promise<void> {
     await this.db
       .insertInto('refresh_tokens')
@@ -21,6 +21,7 @@ export class RefreshTokenRepository {
         device_id: session.deviceId ?? null,
         user_agent: session.userAgent?.slice(0, 500) ?? null,
         ip: session.ip ?? null,
+        business_id: session.businessId ?? null,
         last_used_at: new Date(),
       })
       .execute();
@@ -33,16 +34,16 @@ export class RefreshTokenRepository {
    */
   async consumeValid(
     tokenHash: string,
-  ): Promise<{ userId: number; sessionId: string; deviceId: string | null; userAgent: string | null } | undefined> {
+  ): Promise<{ userId: number; sessionId: string; deviceId: string | null; userAgent: string | null; businessId: number | null } | undefined> {
     const row = await this.db
       .updateTable('refresh_tokens')
       .set({ revoked_at: new Date() })
       .where('token_hash', '=', tokenHash)
       .where('revoked_at', 'is', null)
       .where('expires_at', '>', new Date())
-      .returning(['user_id', 'session_id', 'device_id', 'user_agent'])
+      .returning(['user_id', 'session_id', 'device_id', 'user_agent', 'business_id'])
       .executeTakeFirst();
-    return row ? { userId: row.user_id, sessionId: row.session_id, deviceId: row.device_id, userAgent: row.user_agent } : undefined;
+    return row ? { userId: row.user_id, sessionId: row.session_id, deviceId: row.device_id, userAgent: row.user_agent, businessId: row.business_id } : undefined;
   }
 
 /** The PC a session runs on; the session id itself for sessions from before PCs were recorded. */

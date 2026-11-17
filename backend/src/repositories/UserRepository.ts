@@ -101,6 +101,26 @@ export class UserRepository {
     return row.id;
   }
 
+  /**
+   * Every business the person may open, with their role there: their active
+   * memberships, or for 4VD's developer every business (as 'developer').
+   */
+  async businessesOf(user: { id: number; is_platform_developer: boolean }): Promise<{ id: number; name: string; role: UserRole }[]> {
+    if (user.is_platform_developer) {
+      const all = await this.db.selectFrom('businesses').select(['id', 'name']).orderBy('name').orderBy('id').execute();
+      return all.map((business) => ({ ...business, role: 'developer' as const }));
+    }
+    return this.db
+      .selectFrom('memberships as m')
+      .innerJoin('businesses as b', 'b.id', 'm.business_id')
+      .select(['b.id', 'b.name', 'm.role'])
+      .where('m.user_id', '=', user.id)
+      .where('m.is_active', '=', true)
+      .orderBy('b.name')
+      .orderBy('b.id')
+      .execute();
+  }
+
   async businessName(businessId: number): Promise<string | undefined> {
     const row = await this.db.selectFrom('businesses').select('name').where('id', '=', businessId).executeTakeFirst();
     return row?.name;

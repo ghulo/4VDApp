@@ -54,13 +54,18 @@ function read(key: string): { baskets: Basket[]; current: string } | null {
   }
 }
 
+const keyOf = (userId: number) => `4vd.counter.baskets.${userId}`;
+
+/** A basket on this PC with something in it, for this person. */
+export const basketsWaiting = (userId: number): boolean => read(keyOf(userId))?.baskets.some((basket) => basket.lines.length > 0) ?? false;
+
 /**
  * The baskets open at the Counter, one per waiting customer, up to five. They
  * live in this browser, per person, so a reload or a closed window loses
  * nothing; a basket is gone once it is paid or cancelled.
  */
 export function useBaskets(userId: number) {
-  const key = `4vd.counter.baskets.${userId}`;
+  const key = keyOf(userId);
   const [state, setState] = useState(() => {
     const saved = read(key);
     if (saved) return saved;

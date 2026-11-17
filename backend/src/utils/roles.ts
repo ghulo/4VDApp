@@ -1,12 +1,14 @@
+import { currentBusinessId, currentContext } from '../database/businessContext.js';
 import type { StoredRole, UserRole } from '../database/types.js';
 
 /**
  * Who may do what, in one place.
  *
  * Each power below is held by a list of roles. The lists start as the shop's
- * usual rules (DEFAULT_GRANTS) and the developer can change them in
- * Settings → Roles; PermissionService loads the saved lists into this module,
- * so every check here and every route guard follows them at once.
+ * usual rules (DEFAULT_GRANTS) and each business's main admin can change them
+ * for that business in Settings → Roles; PermissionService loads the saved
+ * lists into this module, so every check here and every route guard follows
+ * the current business's lists at once.
  *
  * - developer: 4VD's own staff (users.is_platform_developer), in any business:
  *   everything, always. Never stored as a role inside a business.
@@ -59,13 +61,19 @@ export const DEFAULT_GRANTS: Grants = {
   payroll: ['developer', 'main_admin', 'owner', 'accountant'],
 };
 
-let grants: Grants = { ...DEFAULT_GRANTS };
+/**
+ * Each business's grid, as saved in its own settings (missing = the usual
+ * rules). PermissionService fills this in for every business before the first
+ * check, and replaces one business's entry when its main admin saves.
+ */
+const grids = new Map<number, Grants>();
 
 /**
- * Put the saved changes on top of the defaults. Only editable roles move;
- * the developer keeps everything and locked powers keep their default.
+ * The grid for the saved changes: the defaults with the changes on top. Only
+ * editable roles move; the developer and main admin keep everything and locked
+ * powers keep their default.
  */
-export function applyGrants(changes: Partial<Grants>): Grants {
+export function gridFrom(changes: Partial<Grants>): Grants {
   const next = { ...DEFAULT_GRANTS };
   for (const power of POWERS) {
     const chosen = changes[power];
@@ -73,15 +81,34 @@ export function applyGrants(changes: Partial<Grants>): Grants {
     const kept = DEFAULT_GRANTS[power].filter((role) => !EDITABLE_ROLES.includes(role));
     next[power] = [...kept, ...EDITABLE_ROLES.filter((role) => chosen.includes(role))];
   }
-  grants = next;
   return next;
 }
 
-export const currentGrants = (): Grants => grants;
+/** Use `changes` as `businessId`'s grid from the next check on. */
+export function setGrants(businessId: number, changes: Partial<Grants>): Grants {
+  const grid = gridFrom(changes);
+  grids.set(businessId, grid);
+  return grid;
+}
 
-/** Everyone who holds `power` right now. */
-export const rolesWith = (power: Power): UserRole[] => grants[power];
-export const hasPower = (role: UserRole | undefined, power: Power): boolean => role !== undefined && grants[power].includes(role);
+/** Drop every business's grid (tests reset the data underneath). */
+export function forgetGrants(): void {
+  grids.clear();
+}
+
+/**
+ * The grid of the business the current work is for: the one requireAuth
+ * entered, or for a public page the one the visitor's token names. With no
+ * business at all (signing in), the usual rules.
+ */
+export function currentGrants(): Grants {
+  const businessId = currentBusinessId() ?? currentContext()?.powersOf ?? null;
+  return (businessId !== null && grids.get(businessId)) || DEFAULT_GRANTS;
+}
+
+/** Everyone who holds `power` right now, in the current business. */
+export const rolesWith = (power: Power): UserRole[] => currentGrants()[power];
+export const hasPower = (role: UserRole | undefined, power: Power): boolean => role !== undefined && currentGrants()[power].includes(role);
 
 /** Roles only a main admin (or the 4VD developer) may give, change or take away. The accountant sees every figure, so it is one. */
 export const TOP_ROLES: UserRole[] = ['main_admin', 'admin', 'owner', 'accountant'];

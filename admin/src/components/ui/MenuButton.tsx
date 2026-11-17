@@ -1,5 +1,5 @@
-import { CaretDown, type Icon } from '@phosphor-icons/react';
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { CaretDown, Check, type Icon } from '@phosphor-icons/react';
+import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Button } from './Button';
 import type { ButtonVariant } from './buttonClass';
 import { Tooltip } from './Tooltip';
@@ -9,6 +9,10 @@ export interface MenuItem {
   icon?: Icon;
   /** The key that does the same, shown at the end of the line. */
   shortcut?: string;
+  /** One choice among several (e.g. which business is open): a tick when on, read out as checked. */
+  checked?: boolean;
+  /** A line above this item, where a new group starts. */
+  divider?: boolean;
   onSelect: () => void;
 }
 
@@ -119,13 +123,16 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
         {items.map((item, index) => {
           const ItemIcon = item.icon;
           return (
-            <li key={item.label} role="none">
+            <Fragment key={item.label}>
+            {item.divider && <li role="separator" className="menu__divider" />}
+            <li role="none">
               <button
                 ref={(element) => {
                   itemRefs.current[index] = element;
                 }}
                 type="button"
-                role="menuitem"
+                role={item.checked === undefined ? 'menuitem' : 'menuitemradio'}
+                aria-checked={item.checked}
                 aria-keyshortcuts={item.shortcut}
                 tabIndex={-1}
                 className="menu__item"
@@ -135,14 +142,16 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
                 }}
               >
                 {ItemIcon && <ItemIcon size={16} aria-hidden="true" />}
-                {item.label}
+                <span className="menu__label">{item.label}</span>
                 {item.shortcut && (
                   <kbd className="menu__shortcut" aria-hidden="true">
                     {item.shortcut}
                   </kbd>
                 )}
+                {item.checked && <Check className="menu__check" size={16} weight="bold" aria-hidden="true" />}
               </button>
             </li>
+            </Fragment>
           );
         })}
       </ul>

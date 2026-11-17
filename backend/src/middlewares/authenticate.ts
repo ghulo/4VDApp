@@ -103,9 +103,10 @@ async function platformPlace(
  */
 async function keepSupportVisit(support: SupportRepository, req: Request, res: Response, developer: { id: number; name: string }, businessId: number): Promise<void> {
   const visitId = await support.visit(developer, req.identity?.sessionId ?? 'no-session');
-  if (READS.has(req.method)) return;
-  // Kept before the change runs, so it is there even if the change fails; the answer's status follows.
   const path = `${req.baseUrl}${req.path}`;
+  // Reading, or his own session (switching to another business, signing out): nothing changed here.
+  if (READS.has(req.method) || path.startsWith('/api/auth/')) return;
+  // Kept before the change runs, so it is there even if the change fails; the answer's status follows.
   const parts = path.replace(/^\/api\//, '').split('/');
   const actionId = await support.action(visitId, { method: req.method, path, entity: parts[0] || null, entityId: parts.find((part) => /^\d+$/.test(part)) ?? null });
   res.on('finish', () => {

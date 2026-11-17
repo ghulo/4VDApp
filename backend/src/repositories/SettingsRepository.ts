@@ -4,6 +4,15 @@ import type { DatabaseClient } from '../database/connection.js';
 export class SettingsRepository {
   constructor(private readonly db: DatabaseClient) {}
 
+  /**
+   * One setting as each business saved it. Only before any business is known
+   * (runAsSystem), where the database lets settings be read for every business.
+   */
+  async everyBusiness(key: string): Promise<Map<number, unknown>> {
+    const rows = await this.db.selectFrom('settings').select(['business_id', 'value']).where('key', '=', key).execute();
+    return new Map(rows.map((row) => [row.business_id, row.value]));
+  }
+
   async all(): Promise<Map<string, unknown>> {
     const rows = await this.db.selectFrom('settings').select(['key', 'value']).execute();
     return new Map(rows.map((row) => [row.key, row.value]));

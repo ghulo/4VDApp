@@ -4,7 +4,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { AppConfig } from './config/env.js';
 import { type Container, type ContainerOptions, createContainer } from './container.js';
-import { requestContext, runAsSystem } from './database/businessContext.js';
+import { requestContext, usePowersOf } from './database/businessContext.js';
 import type { DatabaseClient } from './database/connection.js';
 import { identifyRequester, refuseForeignOrigins } from './middlewares/authenticate.js';
 import { allowedOriginsOf } from './utils/sessionCookies.js';
@@ -55,13 +55,17 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.
   app.use('/health', healthRoutes);
-  // Public pages also hide costs by role, so the rules from Settings → Roles are read before any API request.
-  const loadPermissions: express.RequestHandler = (_req, _res, next) => {
-    // Read once for the whole server (one grid for now; per business in phase 5), before anyone is known.
-    runAsSystem(() => container.permissionService.ensureLoaded()).then(() => next(), next);
+  // Public pages also hide costs by role, so every business's rules from Settings → Roles are read before
+  // any API request; a signed-in visitor's role is then read in the grid of the business their token names.
+  const loadPermissions: express.RequestHandler = (req, _res, next) => {
+    container.permissionService.ensureLoaded().then(() => {
+      if (req.identity?.businessId !== undefined) usePowersOf(req.identity.businessId);
+      next();
+    }, next);
   };
   // The business customers' portal: its own cookie sign-in, limits and origin check; no dashboard middleware.
-  app.use('/api/portal', createPortalRoutes(container));
+  // Its alerts go to whoever oversees the business, so it reads the roles grids too.
+  app.use('/api/portal', loadPermissions, createPortalRoutes(container));
   const ownOrigins = allowedOriginsOf(config);
   app.use('/api', refuseForeignOrigins(ownOrigins), identifyRequester(config.jwtSecret, ownOrigins), loadPermissions, createApiRateLimiter(), createApiRoutes(container));
 

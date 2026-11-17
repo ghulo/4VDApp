@@ -9,6 +9,8 @@ import { logger } from './utils/logger.js';
  * row security shows work outside one no rows and refuses its writes.
  */
 export async function minuteJobs(db: DatabaseClient, container: Container): Promise<void> {
+  // Alerts go to whoever holds a power in each business's own roles grid.
+  await container.permissionService.ensureLoaded().catch((error) => logger.error('Reading the roles grids failed', { error: String(error) }));
   // The error alert goes to 4VD's own developers, and remembers its last hour in the 4VD shop's settings.
   const alert = defaultBusinessId(db)
     .then((shop) => runAsBusiness(shop, () => container.errorAlertService.sendIfDue()))
@@ -39,6 +41,7 @@ export async function minuteJobs(db: DatabaseClient, container: Container): Prom
 
 /** What the server runs every few seconds: push alerts per business, then the shared email outbox (it belongs to no business). */
 export async function pushJobs(db: DatabaseClient, container: Container): Promise<void> {
+  await container.permissionService.ensureLoaded().catch((error) => logger.error('Reading the roles grids failed', { error: String(error) }));
   await Promise.all([
     forEachBusiness(db, () => container.pushService.sendPending()).catch((error) => logger.error('Sending push alerts failed', { error: String(error) })),
     container.emailService.sendPending().catch((error) => logger.error('Sending emails failed', { error: String(error) })),

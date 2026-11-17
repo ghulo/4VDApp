@@ -8,6 +8,7 @@ import { applyTheme } from '../theme/theme';
 import { activeCatalogue, useLanguage } from '../i18n/useT';
 import { AuthContext, type AuthState } from './useAuth';
 import { canUseDashboard } from './roles';
+import { followSwitches } from './businessSwitch';
 import { forgetViewAs, readViewAs } from './viewAs';
 import { languageAfterSignIn, takeSignInPick } from '../i18n/signInLanguage';
 
@@ -41,7 +42,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, [setLanguage]);
 
+  /**
+   * A profile save answers with the person only: keep the business this session
+   * is in and the businesses for the picker, which only auth/me knows.
+   */
+  const keepPlace = useCallback((user: User) => {
+    setState((before) =>
+      before.status === 'signedIn' && before.user.id === user.id
+        ? { status: 'signedIn', user: { ...user, businessId: before.user.businessId, businesses: before.user.businesses } }
+        : { status: 'signedIn', user },
+    );
+  }, []);
+
+  /** Just signed in: the sign-in answer doesn't name the businesses, so ask once for the picker. */
+  const loadPlace = useCallback(() => {
+    authApi
+      .me()
+      .then((me) =>
+        setState((before) =>
+          before.status === 'signedIn' && before.user.id === me.id
+            ? { status: 'signedIn', user: { ...before.user, businessId: me.businessId, businesses: me.businesses } }
+            : before,
+        ),
+      )
+      .catch(() => undefined);
+  }, []);
+
   const signedInId = state.status === 'signedIn' ? state.user.id : null;
+  // Another tab picked another business: this one must not keep working in the old one.
+  useEffect(() => (signedInId === null ? undefined : followSwitches()), [signedInId]);
   useEffect(() => {
     if (signedInId !== null) reregisterPush().catch(() => undefined);
   }, [signedInId]);
@@ -57,11 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!saveToAccount) return user;
       meApi
         .updateProfile({ language })
-        .then((saved) => setState({ status: 'signedIn', user: saved }))
+        .then(keepPlace)
         .catch(() => undefined);
       return { ...user, language };
     },
-    [setLanguage],
+    [setLanguage, keepPlace],
   );
 
   const login = useCallback(async (email: string, password: string) => {
@@ -75,8 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     applyTheme(user.theme);
     setState({ status: 'signedIn', user: settleLanguage(user) });
+    loadPlace();
     return null;
-  }, [settleLanguage]);
+  }, [settleLanguage, loadPlace]);
 
   /**
    * Keep a session started elsewhere (invite accepted, Google sign-in). Only
@@ -92,8 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     applyTheme(result.user.theme);
     setState({ status: 'signedIn', user: settleLanguage(result.user) });
+    loadPlace();
     return 'signedIn';
-  }, [settleLanguage]);
+  }, [settleLanguage, loadPlace]);
 
   const logout = useCallback(async () => {
     // The next person to use this browser shouldn't get the owner's alerts.
@@ -103,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'signedOut' });
   }, []);
 
-  const updateUser = useCallback((user: User) => setState({ status: 'signedIn', user }), []);
+  const updateUser = keepPlace;
 
   const value = useMemo(() => {
     // The developer previewing another role: every screen draws as that role (the API answers as it too).

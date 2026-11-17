@@ -12,7 +12,7 @@ import {
   passkeyTwoStepSchema,
 } from '../validators/authValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
-import { deviceOf } from './authController.js';
+import { deviceOf, isPending, pendingMessage } from './authController.js';
 
 export function createPasskeyController(passkeyService: PasskeyService, refreshTtlDays: number) {
   return {
@@ -23,7 +23,8 @@ export function createPasskeyController(passkeyService: PasskeyService, refreshT
     async signIn(req: Request, res: Response): Promise<void> {
       const { response } = parseInput(passkeySignInSchema, req.body);
       const result = await passkeyService.signIn(response as AuthenticationResponseJSON, deviceOf(req));
-      sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
+      if (isPending(result)) sendSuccess(res, result, { message: pendingMessage(result) });
+      else sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
     },
 
     async twoStepOptions(req: Request, res: Response): Promise<void> {

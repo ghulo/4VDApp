@@ -1,6 +1,6 @@
 import { ClockCounterClockwise, Money, Plus, UsersThree } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { ActivityFeed } from '../components/activity/ActivityFeed';
@@ -600,6 +600,8 @@ function ManagePanel({ person }: { person: TeamMember }) {
   const [commission, setCommission] = useState(person.commissionPercent === null ? '' : String(person.commissionPercent));
   const [newPassword, setNewPassword] = useState('');
   const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [confirmingAgain, setConfirmingAgain] = useState(false);
+  const againRef = useRef<HTMLButtonElement>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
   const update = useMutation({
@@ -612,11 +614,12 @@ function ManagePanel({ person }: { person: TeamMember }) {
     },
   });
   const resetTwoStep = useMutation({
-    mutationFn: () => twoStepApi.reset(person.id),
-    onSuccess: () => {
+    mutationFn: (how: 'off' | 'again' | 'cancel') => twoStepApi.reset(person.id, how === 'again'),
+    onSuccess: (_data, how) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['activity'] });
-      setSaved(t.people.twoStepResetDone);
+      setConfirmingAgain(false);
+      setSaved(how === 'again' ? t.people.twoStepAgainDone : how === 'cancel' ? t.people.twoStepAgainCancelled : t.people.twoStepResetDone);
     },
   });
   const resetPasskeys = useMutation({
@@ -742,12 +745,59 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </SettingRow>
       )}
-      {!isSelf && person.twoStep && (
-        <SettingRow title={t.people.twoStep} description={t.people.twoStepOnHint(firstName)}>
-          <Button size="sm" disabled={resetTwoStep.isPending} onClick={() => resetTwoStep.mutate()}>
-            {t.people.twoStepReset}
-          </Button>
+      {!isSelf && (
+        <SettingRow
+          title={t.people.twoStep}
+          description={
+            person.twoStepRequired
+              ? t.people.twoStepRequiredHint(firstName)
+              : person.twoStep
+                ? t.people.twoStepOnHint(firstName)
+                : t.people.twoStepOffHint(firstName)
+          }
+        >
+          {person.twoStepRequired ? (
+            <Button size="sm" loading={resetTwoStep.isPending} onClick={() => resetTwoStep.mutate('cancel')}>
+              {t.people.twoStepAgainCancel}
+            </Button>
+          ) : (
+            <>
+              {person.twoStep && (
+                <Button
+                  size="sm"
+                  loading={resetTwoStep.isPending && resetTwoStep.variables === 'off'}
+                  disabled={resetTwoStep.isPending}
+                  onClick={() => resetTwoStep.mutate('off')}
+                >
+                  {t.people.twoStepReset}
+                </Button>
+              )}
+              <Button
+                ref={againRef}
+                size="sm"
+                aria-expanded={confirmingAgain}
+                aria-controls={confirmingAgain ? `two-step-again-${person.id}` : undefined}
+                disabled={resetTwoStep.isPending}
+                onClick={() => setConfirmingAgain(true)}
+              >
+                {t.people.twoStepAgain(Boolean(person.twoStep))}
+              </Button>
+            </>
+          )}
         </SettingRow>
+      )}
+      {!isSelf && confirmingAgain && !person.twoStepRequired && (
+        <TwoStepAgainConfirm
+          id={`two-step-again-${person.id}`}
+          name={firstName}
+          on={Boolean(person.twoStep)}
+          pending={resetTwoStep.isPending}
+          onConfirm={() => resetTwoStep.mutate('again')}
+          onCancel={() => {
+            setConfirmingAgain(false);
+            againRef.current?.focus();
+          }}
+        />
       )}
       {!isSelf && person.passkeys && (
         <SettingRow title={t.people.passkeys} description={t.people.passkeysHint(firstName)}>
@@ -783,5 +833,50 @@ function ManagePanel({ person }: { person: TeamMember }) {
         <SavedToast message={saved} />
       )}
     </Card>
+  );
+}
+
+/**
+ * Says what "Make them set it up again" does before it happens: two-step off,
+ * signed out everywhere, a new setup at the next sign-in whose codes only they see.
+ */
+function TwoStepAgainConfirm({ id, name, on, pending, onConfirm, onCancel }: { id: string; name: string; on: boolean; pending: boolean; onConfirm: () => void; onCancel: () => void }) {
+  const t = useT();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const headingId = useId();
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+  return (
+    <div
+      id={id}
+      role="group"
+      className="undo-confirm two-step-again"
+      aria-labelledby={headingId}
+      aria-busy={pending || undefined}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !pending) {
+          event.stopPropagation();
+          onCancel();
+        }
+      }}
+    >
+      <h3 id={headingId} ref={headingRef} tabIndex={-1} className="undo-confirm__title">
+        {t.people.twoStepAgainTitle(name, on)}
+      </h3>
+      <ul className="undo-confirm__effects">
+        {t.people.twoStepAgainEffects(name, on).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      <div className="undo-confirm__buttons">
+        <Button size="sm" variant="primary" loading={pending} onClick={onConfirm}>
+          {t.people.twoStepAgain(on)}
+        </Button>
+        <Button size="sm" disabled={pending} onClick={onCancel}>
+          {t.common.cancel}
+        </Button>
+      </div>
+    </div>
   );
 }

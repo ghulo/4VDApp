@@ -4,7 +4,7 @@ import { deliverSession } from '../utils/sessionCookies.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { googleCredentialSchema, googleInviteSchema, linkTokenParamsSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
-import { deviceOf } from './authController.js';
+import { deviceOf, isPending, pendingMessage } from './authController.js';
 
 export function createGoogleController(googleAuthService: GoogleAuthService, refreshTtlDays: number) {
   return {
@@ -15,7 +15,7 @@ export function createGoogleController(googleAuthService: GoogleAuthService, ref
     async signIn(req: Request, res: Response): Promise<void> {
       const { credential } = parseInput(googleCredentialSchema, req.body);
       const result = await googleAuthService.signIn(credential, deviceOf(req));
-      if ('twoStep' in result) sendSuccess(res, result, { message: 'Type the code from your authenticator app' });
+      if (isPending(result)) sendSuccess(res, result, { message: pendingMessage(result) });
       else sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
     },
 

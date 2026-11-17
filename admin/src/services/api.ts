@@ -105,7 +105,8 @@ import type {
   Invite,
   InvitePreview,
   LoginResult,
-  TwoStepChallenge,
+  TwoStepSetup,
+  SignInStep,
   TwoStepStatus,
   Passkey,
   PasskeyList,
@@ -199,12 +200,12 @@ async function paginated<TItem>(path: string, query: Record<string, string | num
 
 export const authApi = {
   /** The person, or the code step when two-step sign-in is on. */
-  async login(email: string, password: string): Promise<User | TwoStepChallenge> {
-    const { data } = await apiRequest<LoginResult | TwoStepChallenge>('/auth/login', {
+  async login(email: string, password: string): Promise<User | SignInStep> {
+    const { data } = await apiRequest<LoginResult | SignInStep>('/auth/login', {
       method: 'POST',
       body: { email, password },
     });
-    if ('challenge' in data) return data;
+    if ('challenge' in data || 'setupChallenge' in data) return data;
     sessionHint.set();
     return data.user;
   },
@@ -273,17 +274,24 @@ export const accountApi = {
   verifyEmail: async (token: string) => await apiRequest<null>('/auth/verify-email', { method: 'POST', body: { token } }),
   resendVerification: async (email: string) =>
     await apiRequest<null>('/auth/resend-verification', { method: 'POST', body: { email } }),
+  /** Setting two-step sign-in up again before the session (a manager asked): the QR. */
+  setupStart: async (setupChallenge: string) =>
+    (await apiRequest<{ secret: string; url: string }>('/auth/two-step/setup/start', { method: 'POST', body: { setupChallenge } })).data,
+  /** The first code turns it on and starts the session; the backup codes are shown once. */
+  setupConfirm: async (setupChallenge: string, code: string) =>
+    (await apiRequest<LoginResult & { backupCodes: string[] }>('/auth/two-step/setup/confirm', { method: 'POST', body: { setupChallenge, code } })).data,
+
   confirmEmailChange: async (token: string) =>
     await apiRequest<null>('/auth/confirm-email-change', { method: 'POST', body: { token } }),
   googleStatus: async () => (await apiRequest<{ enabled: boolean; clientId: string | null }>('/auth/google')).data,
   googleSignIn: async (credential: string) =>
-    (await apiRequest<LoginResult | TwoStepChallenge>('/auth/google', { method: 'POST', body: { credential } })).data,
+    (await apiRequest<LoginResult | SignInStep>('/auth/google', { method: 'POST', body: { credential } })).data,
 };
 
 /** Passkeys: sign-in with the device's fingerprint, face or PIN. */
 export const passkeyApi = {
   signInOptions: async () => (await apiRequest<PublicKeyCredentialRequestOptionsJSON>('/auth/passkey/options', { method: 'POST', body: {} })).data,
-  signIn: async (response: AuthenticationResponseJSON) => (await apiRequest<LoginResult>('/auth/passkey', { method: 'POST', body: { response } })).data,
+  signIn: async (response: AuthenticationResponseJSON) => (await apiRequest<LoginResult | TwoStepSetup>('/auth/passkey', { method: 'POST', body: { response } })).data,
   /** After the password: the prompt for a passkey instead of the code, or null when the person has none. */
   twoStepOptions: async (challenge: string) =>
     (await apiRequest<PublicKeyCredentialRequestOptionsJSON | null>('/auth/two-step/passkey/options', { method: 'POST', body: { challenge } })).data,
@@ -312,9 +320,9 @@ export const twoStepApi = {
   turnOff: async (code: string) => {
     await apiRequest<null>('/me/two-step/off', { method: 'POST', body: { code } });
   },
-  /** A manager switches it off for someone who lost their phone and backup codes. */
-  reset: async (userId: number) => {
-    await apiRequest<null>(`/users/${userId}/two-step/reset`, { method: 'POST', body: {} });
+  /** A manager switches it off for someone who lost their phone and backup codes; with `again`, they must set it up afresh at their next sign-in. */
+  reset: async (userId: number, again = false) => {
+    await apiRequest<null>(`/users/${userId}/two-step/reset`, { method: 'POST', body: again ? { again: true } : {} });
   },
 };
 

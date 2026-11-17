@@ -238,7 +238,7 @@ function Failure({ error }: { error: unknown }) {
 }
 
 /** The otpauth link as a QR code, black on white so phone cameras read it in dark mode too. */
-function QrCode({ url, label }: { url: string; label: string }) {
+export function QrCode({ url, label }: { url: string; label: string }) {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let current = true;
@@ -252,7 +252,7 @@ function QrCode({ url, label }: { url: string; label: string }) {
   return src ? <img className="two-step__qr" src={src} width={176} height={176} alt={label} /> : <div className="two-step__qr" aria-hidden="true" />;
 }
 
-function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text }: { text: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
   return (

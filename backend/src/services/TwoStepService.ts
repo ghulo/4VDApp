@@ -10,7 +10,7 @@ import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashRecoveryCode, matchCode, newRecoveryCodes, newTotpSecret, otpauthUrl, type SecretBox } from '../utils/totp.js';
 import type { ActivityAction } from '../constants/activity.js';
 import type { Say } from '../i18n/activityText.js';
-import { type AuthService, type DeviceInfo, type LoginResult, TWO_STEP_AUDIENCE } from './AuthService.js';
+import { type AuthService, type DeviceInfo, type LoginResult, TWO_STEP_AUDIENCE, TWO_STEP_SETUP_AUDIENCE } from './AuthService.js';
 
 /** Wrong codes in a row before the person waits. */
 const MAX_WRONG = 5;
@@ -60,6 +60,43 @@ export class TwoStepService {
     return { user, how: claims.how === 'google' ? 'google' : 'password' };
   }
 
+  /**
+   * Who a setup challenge (from signIn, when a manager asked them to set it up
+   * again) is for. Only while that is still owed, so a challenge works for one setup.
+   */
+  private async readSetupChallenge(setupChallenge: string): Promise<{ user: UserRow; how: 'password' | 'google' | 'passkey' }> {
+    let claims: { uid?: unknown; how?: unknown };
+    try {
+      claims = jwt.verify(setupChallenge, this.jwtSecret, { audience: TWO_STEP_SETUP_AUDIENCE, algorithms: ['HS256'] }) as typeof claims;
+    } catch {
+      throw new AppError('This sign-in took too long. Start again with your password.', 401, 'TWO_STEP_EXPIRED');
+    }
+    const user = typeof claims.uid === 'number' ? await this.users.findById(claims.uid) : undefined;
+    if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
+    if (!user.two_step_required) throw new AppError('This sign-in took too long. Start again with your password.', 401, 'TWO_STEP_EXPIRED');
+    // Still before sign-in: what follows (the log, the session) goes to the person's business.
+    enterBusiness(user.business_id);
+    const how = claims.how === 'google' || claims.how === 'passkey' ? claims.how : 'password';
+    return { user, how };
+  }
+
+  /** Setting it up again at sign-in, step one: a new secret for their app. */
+  async setupStart(setupChallenge: string): Promise<{ secret: string; url: string }> {
+    const { user } = await this.readSetupChallenge(setupChallenge);
+    const secret = newTotpSecret();
+    await this.users.update(user.id, { totp_pending: this.box.seal(secret) });
+    return { secret, url: otpauthUrl(secret, user.email) };
+  }
+
+  /** Step two: the first code turns it on, and only then does the session start. The backup codes go to this person alone. */
+  async setupConfirm(setupChallenge: string, code: string, device: DeviceInfo): Promise<LoginResult & { backupCodes: string[] }> {
+    const { user, how } = await this.readSetupChallenge(setupChallenge);
+    const backupCodes = await this.enable(user, code);
+    const fresh = await this.users.findById(user.id);
+    if (!fresh) throw new NotFoundError('User');
+    return { ...(await this.authService.startSession(fresh, device, how)), backupCodes };
+  }
+
   /** Re-confirming a change to how someone signs in (adding a passkey): their code, when two-step sign-in is on. */
   async confirmCode(user: UserRow, code: string): Promise<void> {
     await this.checkCode(user, code);
@@ -85,6 +122,12 @@ export class TwoStepService {
   async confirm(userId: number, code: string): Promise<{ backupCodes: string[] }> {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError('User');
+    return { backupCodes: await this.enable(user, code) };
+  }
+
+  /** The first code proves the app has the pending secret: turn it on, clear any "set it up again", make the backup codes. */
+  private async enable(user: UserRow, code: string): Promise<string[]> {
+    const userId = user.id;
     if (user.totp_secret) throw new AppError('Two-step sign-in is already on', 409, 'TWO_STEP_ON');
     if (!user.totp_pending) throw new AppError('Start again: scan the new QR code first', 409, 'TWO_STEP_NOT_STARTED');
     const step = matchCode(this.box.open(user.totp_pending), code.trim(), null);
@@ -96,9 +139,10 @@ export class TwoStepService {
       totp_enabled_at: new Date(),
       totp_last_step: step,
       totp_recovery: backupCodes.map(hashRecoveryCode),
+      two_step_required: false,
     });
     await this.log(userId, 'auth.two_step_on', { key: 'twoStepOn' });
-    return { backupCodes };
+    return backupCodes;
   }
 
   async turnOff(userId: number, code: string): Promise<void> {
@@ -117,19 +161,25 @@ export class TwoStepService {
     return { backupCodes };
   }
 
-  /** A manager switches it off for someone who lost their phone and their backup codes. */
-  async reset(actorId: number, userId: number): Promise<void> {
+  /**
+   * A manager switches it off for someone who lost their phone and their backup codes.
+   * With `again`, the person must also set it up afresh: they are signed out
+   * everywhere and get no session until they have (their codes are shown only to them).
+   */
+  async reset(actorId: number, userId: number, again = false): Promise<void> {
     const [actor, user] = await Promise.all([this.users.findById(actorId), this.users.findById(userId)]);
     if (!actor || !user) throw new NotFoundError('User');
     // Same rule as changing someone: a top role only by a main admin; 4VD's developer only by himself.
     if (!mayChangePerson(actor, user)) throw new ForbiddenError('Only a main admin can reset this for a main admin, owner, admin or accountant');
     await this.clear(userId);
+    await this.users.update(userId, { two_step_required: again });
+    if (again) await this.authService.logout(userId);
     await this.activity.create({
       userId: actorId,
-      action: 'auth.two_step_reset',
+      action: again ? 'auth.two_step_again' : 'auth.two_step_reset',
       entityType: 'user',
       entityId: userId,
-      say: { key: 'twoStepReset', params: { name: user.name } },
+      say: { key: again ? 'twoStepAgain' : 'twoStepReset', params: { name: user.name } },
     });
   }
 

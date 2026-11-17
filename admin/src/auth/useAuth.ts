@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { LoginResult, TwoStepChallenge, User, UserRole } from '../services/types';
+import type { LoginResult, SignInStep, User, UserRole } from '../services/types';
 
 export type AuthState =
   | { status: 'loading' }
@@ -10,8 +10,8 @@ export interface AuthContextValue {
   state: AuthState;
   /** The role the developer is previewing (Settings → Roles → View as); state.user already has it. */
   viewingAs: UserRole | null;
-  /** Signs in, or hands back the code step when two-step sign-in is on. */
-  login: (email: string, password: string) => Promise<TwoStepChallenge | null>;
+  /** Signs in, or hands back the code step (or the two-step setup a manager asked for). */
+  login: (email: string, password: string) => Promise<SignInStep | null>;
   logout: () => Promise<void>;
   /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */
   adoptSession: (result: LoginResult) => Promise<'signedIn' | 'notAdmin'>;

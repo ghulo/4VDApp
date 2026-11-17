@@ -37,6 +37,28 @@ export interface TwoStepNeeded {
 }
 
 export const TWO_STEP_AUDIENCE = '4vd-two-step';
+
+/**
+ * The first step was right, but a manager asked this person to set two-step
+ * sign-in up again: no session until they have (TwoStepService.setupConfirm).
+ * Its own keys, so nothing mistakes it for a session or for the code step.
+ */
+export interface TwoStepSetupNeeded {
+  twoStepSetup: true;
+  /** Good for one setup, a few minutes; not a session. */
+  setupChallenge: string;
+}
+
+export const TWO_STEP_SETUP_AUDIENCE = '4vd-two-step-setup';
+const SETUP_MINUTES = 15;
+
+/** What a first step (password, Google, passkey) leads to. */
+export type SignInResult = LoginResult | TwoStepNeeded | TwoStepSetupNeeded;
+
+/** Refused session: the person must set two-step sign-in up again first. */
+export function setupNeededError(): AppError {
+  return new AppError('Set up two-step sign-in again first: sign in with your password', 403, 'TWO_STEP_SETUP_NEEDED');
+}
 const TWO_STEP_MINUTES = 5;
 
 export interface DeviceInfo {
@@ -54,7 +76,7 @@ export class AuthService {
     private readonly config: AuthConfig,
   ) {}
 
-  async login(email: string, password: string, device: DeviceInfo = {}): Promise<LoginResult | TwoStepNeeded> {
+  async login(email: string, password: string, device: DeviceInfo = {}): Promise<SignInResult> {
     const user = await this.userRepository.findByEmail(email);
     const isPasswordCorrect = await verifyPassword(password, user?.password_hash ?? DUMMY_PASSWORD_HASH);
 
@@ -73,9 +95,18 @@ export class AuthService {
    * Someone proved who they are with a password or Google: a session, or, with
    * two-step sign-in on, a short challenge for the code step (TwoStepService.finish).
    * A Counter PIN takeover or an invite starts the session straight away instead.
+   * Someone a manager asked to set two-step up again gets the setup instead.
    */
-  async signIn(user: UserRow, device: DeviceInfo, how: 'password' | 'google'): Promise<LoginResult | TwoStepNeeded> {
-    if (!user.totp_secret) return this.startSession(user, device, how);
+  async signIn(user: UserRow, device: DeviceInfo, how: 'password' | 'google' | 'passkey'): Promise<SignInResult> {
+    if (user.two_step_required) {
+      const setupChallenge = jwt.sign({ uid: user.id, how }, this.config.jwtSecret, {
+        audience: TWO_STEP_SETUP_AUDIENCE,
+        expiresIn: `${SETUP_MINUTES}m`,
+        algorithm: 'HS256',
+      });
+      return { twoStepSetup: true, setupChallenge };
+    }
+    if (!user.totp_secret || how === 'passkey') return this.startSession(user, device, how);
     const challenge = jwt.sign({ uid: user.id, how }, this.config.jwtSecret, {
       audience: TWO_STEP_AUDIENCE,
       expiresIn: `${TWO_STEP_MINUTES}m`,
@@ -95,6 +126,8 @@ async startSession(
     /** The PC, when someone takes it over with a PIN; any other sign-in starts a new one. */
     deviceId: string = randomUUID(),
   ): Promise<LoginResult> {
+    // Every way in ends here: no session while the setup is owed (an old code-step challenge, a PIN, a passkey).
+    if (user.two_step_required) throw setupNeededError();
     const publicUser = toPublicUser(user);
     const tokens = await this.issueTokens(publicUser, user.business_id, { userAgent: device.userAgent, ip: device.ip, deviceId });
     // Signing in for real clears any wrong-PIN lock on the person.
@@ -117,6 +150,7 @@ async startSession(
 
     const user = await this.userRepository.findById(consumed.userId);
     if (!user || !user.is_active) throw new UnauthorizedError('Session expired, please log in again');
+    if (user.two_step_required) throw new AppError('Set up two-step sign-in again: sign in with your password', 401, 'TWO_STEP_SETUP_NEEDED');
 
     // Same device, same session: keep its id so it stays one row in the devices list.
     return this.issueTokens(toPublicUser(user), user.business_id, {

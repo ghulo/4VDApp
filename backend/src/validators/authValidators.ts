@@ -118,6 +118,8 @@ export const logoutSchema = z.object({
 const twoStepCode = z.string().trim().min(6, 'type the 6-digit code').max(20);
 export const twoStepCodeSchema = z.object({ code: twoStepCode });
 export const twoStepSignInSchema = z.object({ challenge: z.string().min(20).max(1000), code: twoStepCode });
+export const twoStepSetupStartSchema = z.object({ setupChallenge: z.string().min(20).max(1000) });
+export const twoStepSetupConfirmSchema = z.object({ setupChallenge: z.string().min(20).max(1000), code: twoStepCode });
 
 /**
  * A passkey answer from the browser. Its parts are checked by the WebAuthn

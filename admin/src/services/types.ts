@@ -23,6 +23,8 @@ export interface User {
   commissionPercent: number | null;
   /** Signs in with a code from an authenticator app as well. */
   twoStep?: boolean;
+  /** A manager asked them to set two-step sign-in up again at their next sign-in. */
+  twoStepRequired?: boolean;
   /** Has at least one passkey (in the People list). */
   passkeys?: boolean;
   createdAt: string;
@@ -1351,6 +1353,15 @@ export interface TwoStepChallenge {
   twoStep: true;
   challenge: string;
 }
+
+/** A manager asked this person to set two-step sign-in up again: the setup comes before the session. */
+export interface TwoStepSetup {
+  twoStepSetup: true;
+  setupChallenge: string;
+}
+
+/** The first step was right, but no session yet: the code, or setting two-step sign-in up again. */
+export type SignInStep = TwoStepChallenge | TwoStepSetup;
 
 export interface TwoStepStatus {
   on: boolean;

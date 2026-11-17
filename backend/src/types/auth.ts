@@ -34,5 +34,7 @@ export interface PublicUser {
   commissionPercent: number | null;
   /** Signs in with a code from an authenticator app as well. */
   twoStep: boolean;
+  /** Must set two-step sign-in up at the next sign-in. */
+  twoStepRequired: boolean;
   createdAt: string;
 }

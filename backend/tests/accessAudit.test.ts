@@ -64,6 +64,8 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/auth/passkey',
     'POST /api/auth/two-step/passkey/options',
     'POST /api/auth/two-step/passkey',
+    'POST /api/auth/two-step/setup/start',
+    'POST /api/auth/two-step/setup/confirm',
     'GET /health/',
     'POST /api/auth/login',
     'POST /api/auth/refresh',

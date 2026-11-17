@@ -1,14 +1,25 @@
 import type { Request, Response } from 'express';
-import type { AuthService, DeviceInfo } from '../services/AuthService.js';
+import type { AuthService, DeviceInfo, SignInResult, TwoStepNeeded, TwoStepSetupNeeded } from '../services/AuthService.js';
 import type { TwoStepService } from '../services/TwoStepService.js';
 import { clearSessionCookies, deliverSession, readCookie, REFRESH_COOKIE } from '../utils/sessionCookies.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { loginSchema, logoutSchema, refreshTokenSchema, twoStepCodeSchema, twoStepSignInSchema } from '../validators/authValidators.js';
+import { loginSchema, logoutSchema, refreshTokenSchema, twoStepCodeSchema, twoStepSetupConfirmSchema, twoStepSetupStartSchema, twoStepSignInSchema } from '../validators/authValidators.js';
+import { z } from 'zod';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 /** What the devices list shows for this browser or phone. */
 export function deviceOf(req: Request): DeviceInfo {
   return { userAgent: req.get('user-agent') ?? null, ip: req.ip ?? null };
+}
+
+/** No session yet: the code step, or setting two-step sign-in up again. */
+export function isPending(result: SignInResult): result is TwoStepNeeded | TwoStepSetupNeeded {
+  return 'twoStep' in result || 'twoStepSetup' in result;
+}
+
+/** What the page says when the first step was right but no session starts yet. */
+export function pendingMessage(result: TwoStepNeeded | TwoStepSetupNeeded): string {
+  return 'twoStepSetup' in result ? 'Set up two-step sign-in again' : 'Type the code from your authenticator app';
 }
 
 export function createAuthController(authService: AuthService, twoStepService: TwoStepService, refreshTtlDays: number) {
@@ -17,7 +28,7 @@ export function createAuthController(authService: AuthService, twoStepService: T
       const { email, password } = parseInput(loginSchema, req.body);
       const result = await authService.login(email, password, deviceOf(req));
       // With two-step sign-in on, no session yet: the page asks for the code.
-      if ('twoStep' in result) sendSuccess(res, result, { message: 'Type the code from your authenticator app' });
+      if (isPending(result)) sendSuccess(res, result, { message: pendingMessage(result) });
       else sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
     },
 
@@ -25,6 +36,18 @@ export function createAuthController(authService: AuthService, twoStepService: T
       const { challenge, code } = parseInput(twoStepSignInSchema, req.body);
       const result = await twoStepService.finish(challenge, code, deviceOf(req));
       sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Logged in' });
+    },
+
+    /** Setting two-step sign-in up again at sign-in (a manager asked): the QR, then the first code starts the session. */
+    async twoStepSetupStart(req: Request, res: Response): Promise<void> {
+      const { setupChallenge } = parseInput(twoStepSetupStartSchema, req.body);
+      sendSuccess(res, await twoStepService.setupStart(setupChallenge));
+    },
+
+    async twoStepSetupConfirm(req: Request, res: Response): Promise<void> {
+      const { setupChallenge, code } = parseInput(twoStepSetupConfirmSchema, req.body);
+      const { backupCodes, ...session } = await twoStepService.setupConfirm(setupChallenge, code, deviceOf(req));
+      sendSuccess(res, { ...deliverSession(req, res, session, refreshTtlDays), backupCodes }, { message: 'Two-step sign-in is on' });
     },
 
     async twoStepStatus(req: Request, res: Response): Promise<void> {
@@ -53,7 +76,8 @@ export function createAuthController(authService: AuthService, twoStepService: T
 
     async twoStepReset(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      await twoStepService.reset(req.user!.id, id);
+      const { again } = parseInput(z.object({ again: z.boolean().optional() }), req.body ?? {});
+      await twoStepService.reset(req.user!.id, id, again ?? false);
       sendSuccess(res, null, { message: 'Two-step sign-in reset' });
     },
 

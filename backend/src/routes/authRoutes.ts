@@ -40,6 +40,9 @@ export function createAuthRoutes({
   router.post('/passkey', createLoginRateLimiter(), passkeys.signIn);
   router.post('/two-step/passkey/options', passkeys.twoStepOptions);
   router.post('/two-step/passkey', createLoginRateLimiter(), passkeys.twoStep);
+  // A manager asked them to set two-step sign-in up again: the setup comes before any session.
+  router.post('/two-step/setup/start', createLoginRateLimiter(), controller.twoStepSetupStart);
+  router.post('/two-step/setup/confirm', createLoginRateLimiter(), controller.twoStepSetupConfirm);
   router.post('/refresh', controller.refresh);
   router.post('/logout', guards.authenticated, controller.logout);
   router.get('/me', guards.authenticated, controller.me);

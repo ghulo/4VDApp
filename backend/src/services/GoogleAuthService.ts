@@ -1,7 +1,7 @@
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { UserIdentityRepository } from '../repositories/UserIdentityRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
-import type { AuthService, DeviceInfo, LoginResult, TwoStepNeeded } from './AuthService.js';
+import type { AuthService, DeviceInfo, LoginResult, SignInResult } from './AuthService.js';
 import type { GoogleVerifier } from './google/googleVerifier.js';
 import type { InviteService } from './InviteService.js';
 import type { Language } from '../i18n/language.js';
@@ -35,7 +35,7 @@ export class GoogleAuthService {
     return { enabled: this.verifier !== null, clientId: this.verifier ? this.clientId : null };
   }
 
-  async signIn(credential: string, device: DeviceInfo): Promise<LoginResult | TwoStepNeeded> {
+  async signIn(credential: string, device: DeviceInfo): Promise<SignInResult> {
     const profile = await this.verify(credential);
     const linkedUserId = await this.identities.findUserId('google', profile.subject);
     let user = linkedUserId ? await this.userRepository.findById(linkedUserId) : undefined;

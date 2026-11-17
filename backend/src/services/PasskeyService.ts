@@ -17,7 +17,7 @@ import type { ActivityLogRepository } from '../repositories/ActivityLogRepositor
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { verifyPassword } from '../utils/password.js';
 import { mayChangePerson } from '../utils/roles.js';
-import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
+import type { AuthService, DeviceInfo, LoginResult, SignInResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates } from './email/templates.js';
 import type { TwoStepService } from './TwoStepService.js';
@@ -129,12 +129,13 @@ export class PasskeyService {
     return options;
   }
 
-  async signIn(response: AuthenticationResponseJSON, device: DeviceInfo): Promise<LoginResult> {
+  async signIn(response: AuthenticationResponseJSON, device: DeviceInfo): Promise<SignInResult> {
     const { user, passkey } = await this.check(response, 'signIn', null);
     // The person is known: from here on this request works in their business.
     enterBusiness(user.business_id);
     await this.markUsed(passkey);
-    return this.authService.startSession(user, device, 'passkey');
+    // A passkey skips the code step, but not "set two-step sign-in up again".
+    return this.authService.signIn(user, device, 'passkey');
   }
 
   /** After the password: the prompt for one of this person's passkeys instead of the code, or null when they have none. */

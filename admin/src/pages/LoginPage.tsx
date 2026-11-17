@@ -8,7 +8,8 @@ import { AuthShell } from '../components/AuthShell';
 import { GoogleButton } from '../components/GoogleButton';
 import { accountApi, authApi, passkeyApi } from '../services/api';
 import { passkeyCancelled, passkeyMessage, usePasskeysHere } from '../auth/passkeys';
-import type { LoginResult, TwoStepChallenge } from '../services/types';
+import type { LoginResult, SignInStep, TwoStepSetup } from '../services/types';
+import { CopyButton, QrCode } from '../components/TwoStepCard';
 import { ApiError } from '../services/apiClient';
 import { errorMessage } from '../utils/errors';
 import { useFinishSignIn } from '../auth/finishSignIn';
@@ -45,6 +46,7 @@ function signInMessage(error: unknown): string {
     if (error.code === 'WRONG_CODE') return t.wrongCode;
     if (error.code === 'TOO_MANY_CODES' || error.status === 429) return t.tooManyCodes;
     if (error.code === 'TWO_STEP_EXPIRED') return t.codeExpired;
+    if (error.code === 'TWO_STEP_SETUP_NEEDED') return t.setupNeeded;
     if (error.code?.startsWith('PASSKEY_')) return passkeyMessage(error);
     if (error.status === 401) return t.wrongLogin;
   }
@@ -71,7 +73,11 @@ export function LoginPage() {
 
   // Two-step sign-in: after the password (or Google), the code from the app.
   const [challenge, setChallenge] = useState<string | null>(null);
-  const afterGoogle = (result: LoginResult | TwoStepChallenge) => ('challenge' in result ? setChallenge(result.challenge) : finish(result));
+  // A manager asked them to set two-step sign-in up again: that comes before the session.
+  const [setupChallenge, setSetupChallenge] = useState<string | null>(null);
+  /** No session yet: show the code step or the setup. */
+  const nextStep = (step: SignInStep) => ('setupChallenge' in step ? setSetupChallenge(step.setupChallenge) : setChallenge(step.challenge));
+  const afterGoogle = (result: LoginResult | SignInStep) => ('user' in result ? finish(result) : nextStep(result));
   const google = useMutation({ mutationFn: accountApi.googleSignIn, onSuccess: afterGoogle });
   const resend = useMutation({ mutationFn: () => accountApi.resendVerification(email.trim()) });
   // Passkeys: offered in the email field's autofill where the browser can, and always as a key.
@@ -80,15 +86,21 @@ export function LoginPage() {
   useEffect(() => {
     finishRef.current = finish;
   });
+  /** A passkey skips the code step, but not the setup a manager asked for. */
+  const afterPasskey = (result: LoginResult | TwoStepSetup) => ('user' in result ? finishRef.current(result) : setSetupChallenge(result.setupChallenge));
+  const afterPasskeyRef = useRef(afterPasskey);
+  useEffect(() => {
+    afterPasskeyRef.current = afterPasskey;
+  });
   const [autofillRound, setAutofillRound] = useState(0);
   const passkey = useMutation({
     mutationFn: async () => passkeyApi.signIn(await startAuthentication({ optionsJSON: await passkeyApi.signInOptions() })),
-    onSuccess: (result) => finishRef.current(result),
+    onSuccess: (result) => afterPasskeyRef.current(result),
     // Listen in the email field again (the key's prompt replaced that one).
     onSettled: () => setAutofillRound((round) => round + 1),
   });
   useEffect(() => {
-    if (!passkeysHere || challenge) return;
+    if (!passkeysHere || challenge || setupChallenge) return;
     let live = true;
     void (async () => {
       try {
@@ -96,7 +108,7 @@ export function LoginPage() {
         const optionsJSON = await passkeyApi.signInOptions();
         if (!live) return;
         const result = await passkeyApi.signIn(await startAuthentication({ optionsJSON, useBrowserAutofill: true }));
-        if (live) await finishRef.current(result);
+        if (live) await afterPasskeyRef.current(result);
       } catch (autofillError) {
         if (live && !passkeyCancelled(autofillError)) setError(autofillError);
       }
@@ -105,7 +117,7 @@ export function LoginPage() {
       live = false;
       WebAuthnAbortService.cancelCeremony();
     };
-  }, [passkeysHere, challenge, autofillRound]);
+  }, [passkeysHere, challenge, setupChallenge, autofillRound]);
   const busy = isSubmitting || google.isPending || passkey.isPending;
   const notConfirmed = error instanceof ApiError && error.code === 'EMAIL_NOT_CONFIRMED';
 
@@ -131,7 +143,7 @@ export function LoginPage() {
       rememberEmail(trimmed);
       if (needsCode) {
         setPassword('');
-        setChallenge(needsCode.challenge);
+        nextStep(needsCode);
         return;
       }
       navigate(redirectTo, { replace: true });
@@ -152,6 +164,19 @@ export function LoginPage() {
       <AuthShell title={t.auth.signedIn}>
         <OpenTheApp />
       </AuthShell>
+    );
+  }
+
+  if (setupChallenge) {
+    return (
+      <SetupStep
+        setupChallenge={setupChallenge}
+        onDone={finish}
+        onBack={() => {
+          setSetupChallenge(null);
+          setError(null);
+        }}
+      />
     );
   }
 
@@ -359,5 +384,140 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
         </button>
       </p>
     </form>
+  );
+}
+
+/**
+ * A manager asked them to set two-step sign-in up again (lost phone and codes):
+ * a new QR code, the first code, then the new backup codes, shown here once
+ * and only to them. The session starts with the first code, but the page moves
+ * on only once they say the codes are saved.
+ */
+function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string; onDone: (result: LoginResult) => Promise<void>; onBack: () => void }) {
+  const t = useT();
+  const [code, setCode] = useState('');
+  const [missing, setMissing] = useState(false);
+  const [session, setSession] = useState<(LoginResult & { backupCodes: string[] }) | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const codesRef = useRef<HTMLUListElement>(null);
+  const qr = useQuery({
+    queryKey: ['auth', 'two-step-setup', setupChallenge],
+    queryFn: () => accountApi.setupStart(setupChallenge),
+    staleTime: Infinity,
+    gcTime: 0,
+    retry: false,
+  });
+  const confirm = useMutation({
+    mutationFn: () => accountApi.setupConfirm(setupChallenge, code.trim()),
+    onSuccess: (result) => {
+      setCode('');
+      setSession(result);
+    },
+    onError: () => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    },
+  });
+  const leaving = useMutation({ mutationFn: (result: LoginResult) => onDone(result) });
+  useEffect(() => {
+    if (session) codesRef.current?.focus();
+  }, [session]);
+  const expired = confirm.error instanceof ApiError && confirm.error.code === 'TWO_STEP_EXPIRED';
+
+  if (session) {
+    const { backupCodes, ...result } = session;
+    return (
+      <AuthShell title={t.profile.twoStepCodesTitle} subtitle={t.auth.setupCodesSubtitle}>
+        <div className="two-step two-step-setup">
+          <ul ref={codesRef} tabIndex={-1} className="two-step__codes" aria-label={t.profile.twoStepCodesTitle}>
+            {backupCodes.map((backup) => (
+              <li key={backup}>{backup}</li>
+            ))}
+          </ul>
+          <div className="two-step-setup__buttons">
+            <CopyButton text={backupCodes.join('\n')} />
+            <Button variant="primary" loading={leaving.isPending} onClick={() => leaving.mutate(result)}>
+              {t.auth.setupContinue}
+            </Button>
+          </div>
+          {leaving.isError && (
+            <p className="form-error" role="alert">
+              {signInMessage(leaving.error)}
+            </p>
+          )}
+        </div>
+      </AuthShell>
+    );
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (code.trim().length < 6) {
+      setMissing(true);
+      inputRef.current?.focus();
+      return;
+    }
+    confirm.mutate();
+  }
+
+  return (
+    <AuthShell title={t.auth.setupTitle} subtitle={t.auth.setupSubtitle}>
+      <form onSubmit={submit} noValidate aria-busy={confirm.isPending || qr.isPending || undefined} className="two-step two-step-setup">
+        {qr.isPending ? (
+          <p className="field-hint" role="status">
+            {t.auth.setupLoading}
+          </p>
+        ) : qr.isError ? (
+          <p className="form-error" role="alert">
+            {signInMessage(qr.error)}
+          </p>
+        ) : (
+          <div className="two-step__steps">
+            <p className="field-hint">{t.profile.twoStepScan}</p>
+            <QrCode url={qr.data.url} label={t.profile.twoStepQrAlt} />
+            <p className="field-hint">
+              {t.profile.twoStepKey} <span className="two-step__key">{qr.data.secret.replace(/(.{4})/g, '$1 ').trim()}</span>
+            </p>
+            <label className="field">
+              <span className="field__label">{t.auth.code}</span>
+              <input
+                ref={inputRef}
+                className="code-input"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoCapitalize="off"
+                spellCheck={false}
+                maxLength={20}
+                value={code}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setMissing(false);
+                }}
+                readOnly={confirm.isPending}
+                aria-invalid={missing || confirm.isError ? true : undefined}
+                aria-describedby={confirm.isError ? 'setup-code-hint setup-code-error' : 'setup-code-hint'}
+                autoFocus
+              />
+              <span className="field-hint" id="setup-code-hint">
+                {missing ? t.auth.enterCode : t.auth.setupCodeHint}
+              </span>
+            </label>
+            {confirm.isError && (
+              <p className="form-error" role="alert" id="setup-code-error">
+                {signInMessage(confirm.error)}
+              </p>
+            )}
+          </div>
+        )}
+        <Button type="submit" loading={confirm.isPending} variant="primary" wide disabled={!qr.isSuccess || expired}>
+          {confirm.isPending ? t.auth.checkingCode : t.auth.setupConfirm}
+        </Button>
+        <p className="field-hint">
+          <button type="button" className="text-button" onClick={onBack}>
+            {t.auth.useOtherAccount}
+          </button>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

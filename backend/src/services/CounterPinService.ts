@@ -8,7 +8,7 @@ import type { RefreshTokenRepository } from '../repositories/RefreshTokenReposit
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { canOversee, canSell } from '../utils/roles.js';
-import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
+import { type AuthService, type DeviceInfo, type LoginResult, setupNeededError } from './AuthService.js';
 import type { GoogleAuthService, SecurityDto } from './GoogleAuthService.js';
 
 /** Wrong PINs for one person before they are locked, and for how long. */
@@ -108,6 +108,8 @@ export class CounterPinService {
     const deviceId = await this.refreshTokens.deviceOf(actor.sessionId);
     const person = await this.check(deviceId, input, 'switch', (row) => canSell(row.role), now);
     const user = (await this.users.findById(person.id))!;
+    // Checked before the PC changes hands, so a refused takeover leaves the one asking signed in.
+    if (user.two_step_required) throw setupNeededError();
     await this.refreshTokens.revokeSession(actor.id, actor.sessionId);
     const result = await this.auth.startSession(user, device, 'pin', deviceId);
     await this.counter.create([{ kind: 'person_switched', userId: person.id, productId: null, quantity: null, amount: null, reason: actor.name, documentId: null }]);

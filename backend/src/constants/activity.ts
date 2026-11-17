@@ -4,6 +4,7 @@ export const ACTIVITY_ACTIONS = [
   'auth.two_step_off',
   'auth.two_step_codes',
   'auth.two_step_reset',
+  'auth.two_step_again',
   'auth.two_step_locked',
   'auth.passkey_added',
   'auth.passkey_removed',

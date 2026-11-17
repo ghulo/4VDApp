@@ -67,6 +67,8 @@ export interface UsersTable {
   totp_last_step: ColumnType<string | null, string | number | null | undefined, string | number | null>;
   /** SHA-256 hashes of the unused backup codes. */
   totp_recovery: Generated<string[]>;
+  /** A manager asked them to set two-step sign-in up again: no session until they do. */
+  two_step_required: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;

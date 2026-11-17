@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await authApi.login(email, password);
-    if ('challenge' in result) return result;
+    if ('challenge' in result || 'setupChallenge' in result) return result;
     const user = result;
     await loadPermissions();
     if (!canUseDashboard(user.role)) {

@@ -981,6 +981,41 @@ form.product-form > .form-actions {
   justify-items: start;
 }
 
+/* Setting two-step up again at sign-in (a manager asked): the same parts on the sign-in card. */
+.two-step-setup {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.two-step-setup .two-step__steps > .field {
+  justify-self: stretch;
+}
+
+/* "Back to the password" is a link-like key: still big enough to hit. */
+.two-step-setup .text-button {
+  min-height: var(--space-6);
+}
+
+.two-step-setup .two-step__codes:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.two-step-setup__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* People: the confirm for "Make them set it up again" sits under its row. */
+.two-step-again {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
 .login__title {
   font-family: var(--font-display);
   font-size: var(--text-headline);

@@ -2,12 +2,13 @@ import 'dotenv/config';
 import { createApp } from './app.js';
 import { loadConfig } from './config/env.js';
 import { createContainer } from './container.js';
-import { defaultBusinessId, forEachBusiness } from './database/business.js';
+import { defaultBusinessId } from './database/business.js';
 import { runAsBusiness } from './database/businessContext.js';
 import { ensureFirstAdmin } from './database/firstAdmin.js';
 import { createDatabase } from './database/connection.js';
 import { databaseRole, refuseRole } from './database/roleCheck.js';
 import { captureError, captureLoggedError, flushErrorTracking, initErrorTracking } from './utils/errorTracking.js';
+import { minuteJobs, pushJobs } from './timers.js';
 import { logger } from './utils/logger.js';
 
 const config = loadConfig();
@@ -48,31 +49,7 @@ const summaryTimer = setInterval(() => {
   // Skip a beat rather than overlap if a run is slow, so nothing is sent twice.
   if (isChecking) return;
   isChecking = true;
-  const alert = container.errorAlertService
-    .sendIfDue()
-    // Logged as a warning on purpose: as an error it would be counted again and retried forever.
-    .catch((error) => logger.warn('Sending the error alert failed', { error: String(error) }));
-  // Everything else runs once per business, inside that business.
-  const perBusiness = forEachBusiness(db, async () => {
-    const report = container.reportDeliveryService
-      .sendDue()
-      .catch((error) => logger.error('Sending the reports failed', { error: String(error) }));
-    const expenses = container.expenseService
-      .fillDue()
-      .catch((error) => logger.error('Adding the monthly expenses failed', { error: String(error) }));
-    const dayClosed = container.dayClosedAlert
-      .sendIfClosed()
-      .catch((error) => logger.error('Sending the day closed alert failed', { error: String(error) }));
-    // The books post on every read too; this keeps them current when nobody is looking.
-    const books = container.booksService.poster
-      .sync()
-      .catch((error) => logger.error('Posting to the books failed', { error: String(error) }));
-    // Emailed bills left waiting (the day's reads used up, or a restart) are read when there's room.
-    container.billEmailService.kick();
-    const bin = container.attachmentService.purge().catch((error) => logger.error('Emptying the recycle bin failed', { error: String(error) }));
-    await Promise.all([report, expenses, dayClosed, books, bin]);
-  }).catch((error) => logger.error('Running the business timers failed', { error: String(error) }));
-  Promise.all([alert, perBusiness]).finally(() => {
+  minuteJobs(db, container).finally(() => {
     isChecking = false;
   });
 }, SUMMARY_CHECK_MS);
@@ -81,12 +58,7 @@ const pushTimer = setInterval(() => {
   // Skip a beat rather than overlap if sending is slow.
   if (isPushing) return;
   isPushing = true;
-  Promise.all([
-    forEachBusiness(db, () => container.pushService.sendPending()).catch((error) => logger.error('Sending push alerts failed', { error: String(error) })),
-    container.emailService
-      .sendPending()
-      .catch((error) => logger.error('Sending emails failed', { error: String(error) })),
-  ])
+  pushJobs(db, container)
     .finally(() => {
       isPushing = false;
     });

@@ -33,7 +33,8 @@ export function businessSetter(outsideContextBusiness?: number) {
 }
 
 const GLOBAL = new Set(GLOBAL_TABLES);
-const RAW_TABLE = /\b(?:from|join|into|update)\s+"?([a-z_]+)"?/gi;
+// `for update skip locked`, `for update of p` and `do update set` name no table.
+const RAW_TABLE = /\b(?:from|join|into|(?<!\bfor\s+|\bdo\s+)update)\s+"?(?!set\b|skip\b|nowait\b|of\b)([a-z_]+)"?/gi;
 
 function tablesIn(node: unknown, found: Set<string>): void {
   if (!node || typeof node !== 'object') return;

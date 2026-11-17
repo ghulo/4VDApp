@@ -37,7 +37,7 @@ A short map of the code as it is. Product and design rules live in `DESIGN.md`; 
 
 ## Tests
 
-- Backend (`backend/tests/`, vitest + supertest): mostly integration tests against `TEST_DATABASE_URL`. `tests/helpers/testApp.ts` refuses a URL without "test" in it, builds a fresh schema per file, and files run one at a time because they share the DB.
+- Backend (`backend/tests/`, vitest + supertest): mostly integration tests against `TEST_DATABASE_URL`. Files run in parallel, one database per vitest worker (`tests/helpers/testDatabases.ts`): a global setup migrates `<name>_tpl` once per run, and `setupTestApp` gives each file a fresh copy of it as `<name>_w<worker>` (a database copy is quick; dropping and re-migrating a schema in four workers at once ran Postgres out of locks). A URL without "test" in its name is refused, and only `_tpl`/`_w<n>` databases are ever dropped. Tests run as the non-superuser `four_vd_app_tester`, so row security applies.
 - Dashboard (`admin/`, vitest + Testing Library): components, formatting, contrast and token rules (`src/theme/*.test.ts`).
 - Dependencies: Dependabot (`.github/dependabot.yml`) opens monthly grouped minor and patch updates (majors are done by hand); CI runs `npm audit --audit-level=high` for each app, so a known high-risk package stops the deploy.
 - `admin` `npm run lint:ui` (lintapple) checks a running dashboard against `admin/ui-policy.json`.

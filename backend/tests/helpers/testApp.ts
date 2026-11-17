@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import type { Express } from 'express';
-import { type Kysely, sql } from 'kysely';
+import { sql } from 'kysely';
 import request from 'supertest';
 import { createApp } from '../../src/app.js';
 import { type AppConfig, loadConfig } from '../../src/config/env.js';
@@ -8,9 +8,9 @@ import { type Container, type ContainerOptions, createContainer } from '../../sr
 import { createDatabase, type DatabaseClient } from '../../src/database/connection.js';
 import { defaultBusinessId } from '../../src/database/business.js';
 import { runAsBusiness } from '../../src/database/businessContext.js';
-import { runMigrations } from '../../src/database/migrator.js';
 import type { UserRole } from '../../src/database/types.js';
 import { hashPassword } from '../../src/utils/password.js';
+import { freshWorkerDatabase, TEST_ROLE, workerUrl } from './testDatabases.js';
 
 export const TEST_PASSWORD = 'correct-horse-battery';
 
@@ -21,53 +21,25 @@ export interface TestContext {
   container: Container;
 }
 
-function testDatabaseUrl(): string {
-  const url = process.env.TEST_DATABASE_URL;
-  if (!url) {
-    throw new Error('Set TEST_DATABASE_URL in backend/.env to run integration tests (see .env.example)');
-  }
-  // Guard against wiping real data by accident.
-  if (!/test/i.test(url)) {
-    throw new Error('TEST_DATABASE_URL must point at a database with "test" in its name');
-  }
-  return url;
-}
-
-/** Fresh schema for each test file. */
 const NO_PUSH = { send: async () => ({ deadTokens: [] }) };
 const NO_EMAIL = { send: async () => undefined };
 
 /** Push senders default to ones that send nothing. */
 /** `env` overrides settings, e.g. { ALLOW_SIGNUP: 'true' }. */
 export async function setupTestApp(options: ContainerOptions = {}, env: Record<string, string> = {}): Promise<TestContext> {
-  const databaseUrl = testDatabaseUrl();
+  // Each call starts from an empty, migrated database: a fresh copy of the template (testDatabases.ts).
+  const databaseUrl = await freshWorkerDatabase();
   const config = loadConfig({
     NODE_ENV: 'test',
     DATABASE_URL: databaseUrl,
     JWT_SECRET: 'integration-test-secret-long-enough',
     ...env,
   });
-  // Superusers skip row security, so everything runs as an ordinary role that owns the schema, like the app's user on Render.
-  const admin = createDatabase(databaseUrl);
-  await sql`
-    DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${sql.lit(TEST_ROLE)}) THEN
-        CREATE ROLE ${sql.raw(TEST_ROLE)} NOLOGIN NOSUPERUSER NOBYPASSRLS;
-      END IF;
-    -- Roles are shared by every database on the server: another session's test DB may create it at the same moment.
-    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
-    END $$
-  `.execute(admin);
-  await sql`DROP SCHEMA public CASCADE`.execute(admin);
-  await sql`CREATE SCHEMA public AUTHORIZATION ${sql.raw(TEST_ROLE)}`.execute(admin);
-  await admin.destroy();
-
   // Test setup writes outside any request: it works in the test shop (business 1).
-  const db = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1 });
-  await runMigrations(db as Kysely<unknown>);
+  const db = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1, poolSize: TEST_POOL });
   // The app's handle: a request that loses its business fails here as it would live. Services a test calls
   // directly, outside any request or timer, work in the test shop.
-  const appDb = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1 });
+  const appDb = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1, poolSize: TEST_POOL });
   const destroySetup = db.destroy.bind(db);
   db.destroy = async () => {
     await appDb.destroy();
@@ -78,8 +50,8 @@ export async function setupTestApp(options: ContainerOptions = {}, env: Record<s
   return { app: createApp(config, appDb, { container }), db, config, container };
 }
 
-/** The ordinary database role tests run as. */
-const TEST_ROLE = 'four_vd_app_tester';
+/** Connections per handle: four workers with a few handles each must stay well under Postgres's 100. */
+const TEST_POOL = 6;
 
 /** Run work as the test shop, the way a timer runs it for each business. */
 export function asShop<T>(work: () => Promise<T>): Promise<T> {
@@ -179,5 +151,5 @@ export async function stockOf(context: TestContext, productId: number): Promise<
  * testing code that runs outside requests (the server's timers).
  */
 export function createLiveLikeDatabase(): DatabaseClient {
-  return createDatabase(testDatabaseUrl(), { role: TEST_ROLE });
+  return createDatabase(workerUrl(), { role: TEST_ROLE, poolSize: TEST_POOL });
 }

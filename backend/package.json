@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:related": "vitest related --run",
     "migrate": "tsx src/scripts/migrate.ts",
     "migrate:down": "tsx src/scripts/migrate.ts --down",
     "seed": "tsx src/scripts/seed.ts",

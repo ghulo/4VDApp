@@ -1,4 +1,4 @@
-import type { UserRole } from '../database/types.js';
+import type { StoredRole, UserRole } from '../database/types.js';
 
 /**
  * Who may do what, in one place.
@@ -8,7 +8,9 @@ import type { UserRole } from '../database/types.js';
  * Settings → Roles; PermissionService loads the saved lists into this module,
  * so every check here and every route guard follows them at once.
  *
- * - developer: everything, always; the only one who hands out the top roles.
+ * - developer: 4VD's own staff (users.is_platform_developer), in any business:
+ *   everything, always. Never stored as a role inside a business.
+ * - main_admin: the top role inside one business: everything, hands out the top roles.
  * - admin: runs the shop day to day (products, stock, people below them, settings).
  * - owner: sees the whole business, decides requests, and adds and edits products.
  * - employee: sells and sends requests from the counter.
@@ -21,7 +23,7 @@ export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing
 export type Power = (typeof POWERS)[number];
 export type Grants = Record<Power, UserRole[]>;
 
-/** The roles the developer can give or take powers from (the developer always has them all). */
+/** The roles a main admin can give or take powers from (developer and main admin always have them all). */
 export const EDITABLE_ROLES: UserRole[] = ['admin', 'owner', 'employee', 'accountant', 'family'];
 
 /**
@@ -30,7 +32,7 @@ export const EDITABLE_ROLES: UserRole[] = ['admin', 'owner', 'employee', 'accoun
  */
 export const LOCKED_POWERS: Power[] = ['manage'];
 
-const OVERSEERS: UserRole[] = ['developer', 'admin', 'owner'];
+const OVERSEERS: UserRole[] = ['developer', 'main_admin', 'admin', 'owner'];
 const SELLERS: UserRole[] = [...OVERSEERS, 'employee'];
 
 export const DEFAULT_GRANTS: Grants = {
@@ -41,20 +43,20 @@ export const DEFAULT_GRANTS: Grants = {
   /** Add products and change their details, price, barcode and photo (deleting stays with managers). */
   products: OVERSEERS,
   /** Change products, stock, people and settings. */
-  manage: ['developer', 'admin'],
+  manage: ['developer', 'main_admin', 'admin'],
   /** Read the books, VAT, bills, invoices, expenses, reports and the customer and supplier lists. */
   books: [...OVERSEERS, 'accountant'],
   /** Mark a VAT month as filed. */
   filing: [...OVERSEERS, 'accountant'],
   /** Reopen a filed VAT month. */
-  reopen: ['developer', 'owner', 'accountant'],
+  reopen: ['developer', 'main_admin', 'owner', 'accountant'],
   /** Write and reverse hand-written entries in the books. */
-  entries: ['developer', 'admin', 'accountant'],
+  entries: ['developer', 'main_admin', 'admin', 'accountant'],
   /** Read the customer list and a customer's page: the counter (for tabs) and the accountant. */
   customers: [...SELLERS, 'accountant'],
   /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
   documents: [...SELLERS, 'accountant'],
-  payroll: ['developer', 'owner', 'accountant'],
+  payroll: ['developer', 'main_admin', 'owner', 'accountant'],
 };
 
 let grants: Grants = { ...DEFAULT_GRANTS };
@@ -81,8 +83,14 @@ export const currentGrants = (): Grants => grants;
 export const rolesWith = (power: Power): UserRole[] => grants[power];
 export const hasPower = (role: UserRole | undefined, power: Power): boolean => role !== undefined && grants[power].includes(role);
 
-/** Roles only a developer may give, change or take away. The accountant sees every figure, so it is one. */
-export const TOP_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'accountant'];
+/** Roles only a main admin (or the 4VD developer) may give, change or take away. The accountant sees every figure, so it is one. */
+export const TOP_ROLES: UserRole[] = ['main_admin', 'admin', 'owner', 'accountant'];
+
+/** The roles that hold every power in a business and may change its powers grid. */
+export const isTopRole = (role: UserRole | undefined): boolean => role === 'developer' || role === 'main_admin';
+
+/** The roles that can be stored on a person (users.role): developer is a flag, not a role. */
+export const storedOnly = (roles: readonly UserRole[]): StoredRole[] => roles.filter((role): role is StoredRole => role !== 'developer');
 
 export const canManage = (role: UserRole | undefined): boolean => hasPower(role, 'manage');
 export const canOversee = (role: UserRole | undefined): boolean => hasPower(role, 'oversee');
@@ -91,7 +99,21 @@ export const canReadBooks = (role: UserRole | undefined): boolean => hasPower(ro
 export const canReopen = (role: UserRole | undefined): boolean => hasPower(role, 'reopen');
 export const canEditProducts = (role: UserRole | undefined): boolean => hasPower(role, 'products');
 
+/** A person as stored, for the checks below. */
+type Person = { id: number; role: UserRole; is_platform_developer: boolean };
+
+/**
+ * May `actor` change `target` (details, password, block, delete, reset their
+ * sign-in)? 4VD's developer only changes himself: no business can take over
+ * the account that opens every business.
+ */
+export function mayChangePerson(actor: Person, target: Person): boolean {
+  if (target.is_platform_developer) return actor.id === target.id;
+  return canHandOut(actor.is_platform_developer ? 'developer' : actor.role, target.role);
+}
+
 /** May someone with `actorRole` give a person `targetRole`, or change a person who has it? */
 export function canHandOut(actorRole: UserRole, targetRole: UserRole): boolean {
-  return actorRole === 'developer' || !TOP_ROLES.includes(targetRole);
+  if (targetRole === 'developer') return false; // 4VD staff only, set by hand on the database
+  return isTopRole(actorRole) || !TOP_ROLES.includes(targetRole);
 }

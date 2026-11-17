@@ -13,6 +13,7 @@ import {
   DataTable,
   DateField,
   DayBars,
+  DeveloperMark,
   EmptyState,
   Field,
   ShopSunrise,
@@ -478,5 +479,19 @@ describe('newer kit pieces', () => {
     const page = render(<Skeleton kind="page" rows={2} />);
     expect(page.match(/skeleton__tile"/g)).toHaveLength(4);
     expect(page).toContain('skeleton__bar--title');
+  });
+});
+
+describe('DeveloperMark', () => {
+  it('says who it marks in words, or names the hammer when it stands alone', () => {
+    const full = renderToStaticMarkup(<DeveloperMark />);
+    const compact = renderToStaticMarkup(<DeveloperMark size="compact" />);
+    const glyph = renderToStaticMarkup(<DeveloperMark size="glyph" />);
+
+    expect(full).toContain('4VD developer');
+    expect(compact).toContain('>4VD<');
+    expect(glyph).toContain('role="img"');
+    expect(glyph).toContain('aria-label="4VD developer"');
+    expect(glyph).not.toContain('devmark__label');
   });
 });

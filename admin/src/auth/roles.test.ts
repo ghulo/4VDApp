@@ -17,8 +17,10 @@ describe('roles', () => {
     expect(canUseDashboard('family')).toBe(false);
   });
 
-  it('should leave the top roles to the developer', () => {
-    expect(assignableRoles('developer')).toEqual(['developer', 'admin', 'owner', 'accountant', 'employee', 'family']);
+  it('should leave the top roles to the main admin, and never hand out developer', () => {
+    expect(assignableRoles('main_admin')).toEqual(['main_admin', 'admin', 'owner', 'accountant', 'employee', 'family']);
+    expect(assignableRoles('developer')).toEqual(['main_admin', 'admin', 'owner', 'accountant', 'employee', 'family']);
+    expect(canHandOut('main_admin', 'developer')).toBe(false);
     expect(assignableRoles('admin')).toEqual(['employee', 'family']);
     expect(assignableRoles('owner')).toEqual([]);
     expect(canHandOut('admin', 'owner')).toBe(false);

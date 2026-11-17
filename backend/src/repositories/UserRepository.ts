@@ -1,3 +1,5 @@
+import { sql } from 'kysely';
+import { storedOnly } from '../utils/roles.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { Language } from '../i18n/language.js';
 import type { NewUserRow, UserRole, UserRow, UserUpdate } from '../database/types.js';
@@ -53,8 +55,13 @@ export class UserRepository {
   }
 
   async findAll(filters: UserListFilters): Promise<{ users: UserRow[]; total: number }> {
-    let query = this.db.selectFrom('users').where('deleted_at', 'is', null);
-    if (filters.role) query = query.where('role', '=', filters.role);
+    // 4VD's developer is visible everywhere (row security) but listed only in his own business.
+    let query = this.db
+      .selectFrom('users')
+      .where('deleted_at', 'is', null)
+      .where((eb) => eb.or([eb('is_platform_developer', '=', false), eb('business_id', '=', sql<number>`current_business_id()`)]));
+    if (filters.role === 'developer') query = query.where('is_platform_developer', '=', true);
+    else if (filters.role) query = query.where('role', '=', filters.role);
 
     const [users, count] = await Promise.all([
       query.selectAll().orderBy('name').limit(filters.limit).offset(filters.offset).execute(),
@@ -78,12 +85,12 @@ export class UserRepository {
   }
 
   /** Active people who oversee the shop and want the Monday report email. */
-  /** Active developers, who hear when the server runs into errors. */
+  /** Active 4VD developers, who hear when the server runs into errors. */
   developers(): Promise<Array<{ email: string; name: string; language: Language }>> {
     return this.db
       .selectFrom('users')
       .select(['email', 'name', 'language'])
-      .where('role', '=', 'developer')
+      .where('is_platform_developer', '=', true)
       .where('is_active', '=', true)
       .where('deleted_at', 'is', null)
       .execute();
@@ -99,12 +106,15 @@ export class UserRepository {
     return row?.name;
   }
 
-  /** Active people with one of the roles (e.g. to keep at least one developer). */
+  /** Active people of the business's own with one of the roles (to keep at least one main admin); 4VD's developer doesn't count. */
   async countActive(roles: UserRole[]): Promise<number> {
+    const stored = storedOnly(roles);
+    if (stored.length === 0) return 0;
     const row = await this.db
       .selectFrom('users')
       .select((eb) => eb.fn.countAll<string>().as('total'))
-      .where('role', 'in', roles)
+      .where('role', 'in', stored)
+      .where('is_platform_developer', '=', false)
       .where('is_active', '=', true)
       .where('deleted_at', 'is', null)
       .executeTakeFirstOrThrow();

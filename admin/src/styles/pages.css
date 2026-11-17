@@ -6643,3 +6643,9 @@ fieldset.payroll-pick {
 .passkeys__synced-hint {
   display: block;
 }
+
+/* Settings → Support visits: each change under its visit. */
+.support-actions {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+}

@@ -28,7 +28,7 @@ describe('roles and what they may do', () => {
     const response = await request(context.app).get('/api/permissions').set(auth(employeeToken));
 
     expect(response.status).toBe(200);
-    expect(response.body.data.powers.oversee).toEqual(['developer', 'admin', 'owner']);
+    expect(response.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'admin', 'owner']);
     expect(response.body.data.powers).toEqual(response.body.data.defaults);
   });
 
@@ -39,7 +39,7 @@ describe('roles and what they may do', () => {
     const saved = await save({ powers: { oversee: ['admin', 'owner', 'employee'] }, pages: {} });
 
     expect(saved.status).toBe(200);
-    expect(saved.body.data.powers.oversee).toEqual(['developer', 'admin', 'owner', 'employee']);
+    expect(saved.body.data.powers.oversee).toEqual(['developer', 'main_admin', 'admin', 'owner', 'employee']);
     expect((await request(context.app).get('/api/activity').set(auth(employeeToken))).status).toBe(200);
   });
 
@@ -58,7 +58,7 @@ describe('roles and what they may do', () => {
 
     const saved = await save({ powers: { manage: ['owner'] }, pages: {} });
 
-    expect(saved.body.data.powers.manage).toEqual(['developer', 'admin']);
+    expect(saved.body.data.powers.manage).toEqual(['developer', 'main_admin', 'admin']);
     expect((await request(context.app).put('/api/settings').set(auth(ownerToken)).send({ returnWindowDays: 3 })).status).toBe(403);
   });
 
@@ -87,7 +87,7 @@ describe('roles and what they may do', () => {
     const restored = await request(context.app).post(`/api/permissions/history/${history.body.data[0].id}/restore`).set(auth(developerToken));
 
     expect(restored.status).toBe(200);
-    expect(restored.body.data.powers.filing).toEqual(['developer', 'admin', 'owner', 'accountant']);
+    expect(restored.body.data.powers.filing).toEqual(['developer', 'main_admin', 'admin', 'owner', 'accountant']);
   });
 
   it('should read the saved rules again after a restart', async () => {
@@ -96,7 +96,7 @@ describe('roles and what they may do', () => {
 
     const response = await request(context.app).get('/api/permissions').set(auth(developerToken));
 
-    expect(response.body.data.powers.reopen).toEqual(['developer', 'accountant']);
+    expect(response.body.data.powers.reopen).toEqual(['developer', 'main_admin', 'accountant']);
   });
 });
 

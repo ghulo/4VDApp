@@ -12,7 +12,7 @@ import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
 import { LogoMark } from './LogoMark';
-import { Button, Kbd, MenuButton, Tooltip } from './ui';
+import { Button, DeveloperMark, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
 import { isCurrent, mainItemsFor, NAV_GROUPS, type NavItem, phoneTabsFor, shownTo } from '../navigation/sections';
@@ -208,12 +208,14 @@ function FullLayout() {
           </button>
         </Tooltip>
         <div className="topbar__end">
+          {user.platformDeveloper && <DeveloperMark />}
           <ThemeSwitch persist compact />
           {/* Log out sits behind the avatar: a key of its own beside it was one stray click from signing out. */}
           <MenuButton
             label={t.nav.yourProfile(user.name)}
             face={<Avatar name={user.name} url={user.avatarUrl} size={30} />}
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
+            heading={user.platformDeveloper ? <DeveloperMark /> : undefined}
             items={[
               { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },
               { label: t.nav.logOut, icon: SignOut, onSelect: logout },

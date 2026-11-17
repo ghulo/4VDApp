@@ -14,14 +14,14 @@ import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney, formatTime, localDay } from '../utils/format';
 import { resolvePeriod } from '../utils/periods';
-import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DeveloperMark, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile } from '../components/ui';
 import { assignableRoles, canHandOut, canManage, canOversee } from '../auth/roles';
 import { hasPower } from '../auth/permissions';
 import { payrollApi } from '../services/payroll';
 import type { Language } from '../services/types';
 
 const MIN_PASSWORD_LENGTH = 8;
-const RUNS_THE_SHOP: UserRole[] = ['developer', 'admin', 'owner'];
+const RUNS_THE_SHOP: UserRole[] = ['developer', 'main_admin', 'admin', 'owner'];
 
 const FILTERS = ['all', 'running', 'accountant', 'employee', 'family', 'blocked'] as const;
 type Filter = (typeof FILTERS)[number];
@@ -203,7 +203,11 @@ export function UsersPage() {
               header: t.people.role,
               cell: (person) => (
                 <span className="person-role">
-                  <Badge tone={RUNS_THE_SHOP.includes(person.role) ? 'brand' : 'neutral'}>{t.common.roles[person.role]}</Badge>
+                  {person.role === 'developer' ? (
+                    <DeveloperMark size="compact" />
+                  ) : (
+                    <Badge tone={RUNS_THE_SHOP.includes(person.role) ? 'brand' : 'neutral'}>{t.common.roles[person.role]}</Badge>
+                  )}
                   {!person.isActive && <Badge tone="danger">{t.people.blockedBadge}</Badge>}
                 </span>
               ),
@@ -477,7 +481,11 @@ export function PersonPage() {
         crumbs={[{ label: t.people.title, to: '/people' }]}
         description={
           <span className="person-head">
-            <Badge tone={RUNS_THE_SHOP.includes(person.role) ? 'brand' : 'neutral'}>{t.common.roles[person.role]}</Badge>
+            {person.role === 'developer' ? (
+              <DeveloperMark />
+            ) : (
+              <Badge tone={RUNS_THE_SHOP.includes(person.role) ? 'brand' : 'neutral'}>{t.common.roles[person.role]}</Badge>
+            )}
             {!person.isActive && <Badge tone="danger">{t.people.blockedBadge}</Badge>}
             <span>{person.email}</span>
             {person.phone && <span>{person.phone}</span>}

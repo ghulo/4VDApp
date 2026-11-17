@@ -135,6 +135,7 @@ import { ReportsService } from './services/ReportsService.js';
 import { ExportService } from './services/ExportService.js';
 import { StockAdjustmentRepository } from './repositories/StockAdjustmentRepository.js';
 import { TransactionManager } from './repositories/TransactionManager.js';
+import { SupportRepository } from './repositories/SupportRepository.js';
 import { UserRepository } from './repositories/UserRepository.js';
 import { AuthService } from './services/AuthService.js';
 import { CategoryService } from './services/CategoryService.js';
@@ -514,7 +515,8 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
 
   const permissionService = new PermissionService(settingsRepository, activityLogRepository, transactions);
   // app.ts reads the rules from Settings → Roles before any API request reaches these guards.
-  const authenticated = requireAuth(userRepository);
+  const supportRepository = new SupportRepository(db);
+  const authenticated = requireAuth(userRepository, supportRepository);
   const guards = {
     authenticated,
     // Arrays so routes can spread them: router.post('/', ...guards.manage, handler).
@@ -536,7 +538,12 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     customers: [authenticated, requirePower('customers')] as RequestHandler[],
     /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
     documents: [authenticated, requirePower('documents')] as RequestHandler[],
+    /** 4VD's own staff only (users.is_platform_developer): whole-server tools. */
     developer: [authenticated, requireRole('developer')] as RequestHandler[],
+    /** The top of one business: its powers grid. The 4VD developer too. */
+    mainAdmin: [authenticated, requireRole('developer', 'main_admin')] as RequestHandler[],
+    /** The business's own leaders: see who from 4VD opened it (support visits). */
+    leaders: [authenticated, requireRole('developer', 'main_admin', 'admin')] as RequestHandler[],
   };
 
   return {
@@ -544,6 +551,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     portalService,
     db,
     userRepository,
+    supportRepository,
     authService,
     twoStepService,
     passkeyService,

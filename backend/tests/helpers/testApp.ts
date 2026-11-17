@@ -90,12 +90,14 @@ export async function createTestUser(
   overrides: { email?: string; isActive?: boolean } = {},
 ) {
   cachedPasswordHash ??= hashPassword(TEST_PASSWORD);
+  // 'developer' is 4VD's own staff: a flag on a main admin (tests run as the schema owner, which may set it).
   return db
     .insertInto('users')
     .values({
       email: overrides.email ?? `${role}@test.local`,
       name: `Test ${role}`,
-      role,
+      role: role === 'developer' ? 'main_admin' : role,
+      is_platform_developer: role === 'developer',
       is_active: overrides.isActive ?? true,
       password_hash: await cachedPasswordHash,
       business_id: await defaultBusinessId(db),

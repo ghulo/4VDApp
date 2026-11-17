@@ -80,7 +80,9 @@ describe('who may hand out roles', () => {
 
     expect((await make('employee')).status).toBe(201);
     expect((await make('family')).status).toBe(201);
-    for (const role of ['owner', 'admin', 'developer']) expect((await make(role)).status, role).toBe(403);
+    for (const role of ['owner', 'admin']) expect((await make(role)).status, role).toBe(403);
+    // developer is no role at all inside a business: refused as bad input.
+    expect((await make('developer')).status).toBe(400);
   });
 
   it('should not let an admin promote someone or change the owner', async () => {
@@ -117,15 +119,16 @@ describe('who may hand out roles', () => {
     expect(invite.status).toBe(201);
   });
 
-  it('should keep at least one developer', async () => {
-    const developer = await context.db.selectFrom('users').select('id').where('role', '=', 'developer').executeTakeFirstOrThrow();
+  it('should keep at least one main admin of the business itself', async () => {
+    const mainAdminToken = await loginAs(context, 'main_admin');
+    const mainAdmin = await context.db.selectFrom('users').select('id').where('email', '=', 'main_admin@test.local').executeTakeFirstOrThrow();
 
     const response = await request(context.app)
-      .put(`/api/users/${developer.id}`)
-      .set(auth(developerToken))
+      .put(`/api/users/${mainAdmin.id}`)
+      .set(auth(mainAdminToken))
       .send({ role: 'admin' });
 
     expect(response.status).toBe(409);
-    expect(response.body.message).toMatch(/only developer/);
+    expect(response.body.message).toMatch(/only main admin/);
   });
 });

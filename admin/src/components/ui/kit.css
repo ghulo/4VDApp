@@ -1344,3 +1344,9 @@ kbd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* DeveloperMark: the 4VD developer's hammer (Phosphor Hammer, bold) in amber; words or an aria-label carry the meaning. */
+.devmark { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; line-height: 1; color: var(--dev-mark); }
+.devmark__hammer { width: 15px; height: 15px; flex: none; }
+.devmark--glyph .devmark__hammer { width: 14px; height: 14px; }
+.devmark__label { font-weight: 700; font-variant-caps: all-small-caps; font-size: var(--text-sm); letter-spacing: 0.08em; color: var(--dev-mark-text); white-space: nowrap; }

@@ -17,7 +17,7 @@ beforeEach(async () => {
   for (const role of ['developer', 'admin'] as const) {
     const token = await loginAs(context, role);
     if (role === 'admin') adminToken = token;
-    const row = await context.db.selectFrom('users').selectAll().where('role', '=', role as UserRole).executeTakeFirstOrThrow();
+    const row = await context.db.selectFrom('users').selectAll().where('email', '=', `${role}@test.local`).executeTakeFirstOrThrow();
     people[role] = toPublicUser(row);
   }
 });

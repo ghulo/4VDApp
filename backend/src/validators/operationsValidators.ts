@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PUSH_TOPICS, type PushTopic } from '../constants/notifications.js';
-import { USER_ROLES } from '../database/types.js';
+import { STORED_ROLES, USER_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { addDays, startOfDay } from '../utils/zonedDates.js';
 import { booleanQuerySchema, calendarDaySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
@@ -153,14 +153,14 @@ const password = z
 export const createUserSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   name: trimmedString(255),
-  role: z.enum(USER_ROLES),
+  role: z.enum(STORED_ROLES),
   password,
 });
 
 export const updateUserSchema = z
   .object({
     name: trimmedString(255).optional(),
-    role: z.enum(USER_ROLES).optional(),
+    role: z.enum(STORED_ROLES).optional(),
     isActive: z.boolean().optional(),
     password: password.optional(),
     monthlyTarget: z.number().min(0).max(100_000_000).nullable().optional(),

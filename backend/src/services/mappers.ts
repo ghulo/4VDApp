@@ -19,7 +19,9 @@ export function toPublicUser(user: UserRow): PublicUser {
     id: user.id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    // 4VD's own developer shows as that everywhere; his stored role (main admin of his shop) stays underneath.
+    role: user.is_platform_developer ? 'developer' : user.role,
+    platformDeveloper: user.is_platform_developer,
     isActive: user.is_active,
     phone: user.phone,
     avatarUrl: mediaUrl(user.avatar_media_id),

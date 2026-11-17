@@ -25,13 +25,15 @@ interface MenuButtonProps {
   faceClassName?: string;
   /** A face that already shows its words needs no tooltip repeating them. */
   tooltip?: boolean;
+  /** Shown above the items, not chosen (e.g. who you are). */
+  heading?: ReactNode;
 }
 
 /**
  * A key that opens a short list of related actions, like the downloads of a
  * page. Arrow keys move through the list, Esc closes it and returns to the key.
  */
-export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName, tooltip = true }: MenuButtonProps) {
+export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName, tooltip = true, heading }: MenuButtonProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -108,6 +110,11 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
       )}
       {/* Kept in the page while shut, so it can close the way it opened. */}
       <ul id={menuId} hidden={!open} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
+        {heading && (
+          <li role="none" className="menu__heading">
+            {heading}
+          </li>
+        )}
         {items.map((item, index) => {
           const ItemIcon = item.icon;
           return (

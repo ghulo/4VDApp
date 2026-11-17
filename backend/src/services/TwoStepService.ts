@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import type { DatabaseClient } from '../database/connection.js';
 import type { UserRow } from '../database/types.js';
 import { AppError, ForbiddenError, NotFoundError, UnauthorizedError } from '../errors/httpErrors.js';
-import { canHandOut } from '../utils/roles.js';
+import { mayChangePerson } from '../utils/roles.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashRecoveryCode, matchCode, newRecoveryCodes, newTotpSecret, otpauthUrl, type SecretBox } from '../utils/totp.js';
@@ -121,8 +121,8 @@ export class TwoStepService {
   async reset(actorId: number, userId: number): Promise<void> {
     const [actor, user] = await Promise.all([this.users.findById(actorId), this.users.findById(userId)]);
     if (!actor || !user) throw new NotFoundError('User');
-    // Same rule as changing someone: an owner, admin or developer only by the developer.
-    if (!canHandOut(actor.role, user.role)) throw new ForbiddenError('Only the developer can reset this for an owner, admin or developer');
+    // Same rule as changing someone: a top role only by a main admin; 4VD's developer only by himself.
+    if (!mayChangePerson(actor, user)) throw new ForbiddenError('Only a main admin can reset this for a main admin, owner, admin or accountant');
     await this.clear(userId);
     await this.activity.create({
       userId: actorId,

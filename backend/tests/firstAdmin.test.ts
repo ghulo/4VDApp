@@ -11,7 +11,7 @@ beforeEach(() => resetData(context.db));
 afterAll(() => context.db.destroy());
 
 const owner = { email: 'Owner@Shop.com ', password: 'a-long-enough-password', name: 'Owner' };
-const admins = () => context.db.selectFrom('users').select(['email', 'role']).where('role', 'in', ['developer', 'admin']).execute();
+const admins = () => context.db.selectFrom('users').select(['email', 'role']).where('role', 'in', ['main_admin', 'admin']).execute();
 
 describe('ensureFirstAdmin', () => {
   it('should create the owner on an empty server, once', async () => {
@@ -19,8 +19,8 @@ describe('ensureFirstAdmin', () => {
     const second = await ensureFirstAdmin(context.db, owner);
 
     expect([first, second]).toEqual(['created', 'skipped']);
-    // Whoever sets up the server runs it: they become the developer.
-    expect(await admins()).toEqual([{ email: 'owner@shop.com', role: 'developer' }]);
+    // Whoever sets up the server runs it: they become its main admin (4VD's developer flag is set by hand).
+    expect(await admins()).toEqual([{ email: 'owner@shop.com', role: 'main_admin' }]);
   });
 
   it('should do nothing when an admin already exists, even with a different email', async () => {

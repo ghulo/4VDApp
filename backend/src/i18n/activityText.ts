@@ -15,7 +15,7 @@ interface Words {
   list: (items: string[]) => string;
 }
 
-type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
+type Role = 'developer' | 'main_admin' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents' | 'payroll';
 type RoleChange = { role: Role; power: RolePower; on: boolean };
 type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' | 'passkey';
@@ -388,7 +388,7 @@ const EN_ON: Record<QuestionOn['kind'], string> = { bill: 'the bill', document: 
 const SQ_MONTHS = ['janar', 'shkurt', 'mars', 'prill', 'maj', 'qershor', 'korrik', 'gusht', 'shtator', 'tetor', 'nëntor', 'dhjetor'];
 const SQ_ON: Record<QuestionOn['kind'], string> = { bill: 'faturën', document: 'faturën e shitjes', entry: 'regjistrimin' };
 
-const EN_ROLE: Record<Role, string> = { developer: 'developer', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family', accountant: 'accountant' };
+const EN_ROLE: Record<Role, string> = { developer: '4VD developer', main_admin: 'main admin', admin: 'admin', owner: 'owner', employee: 'employee', family: 'family', accountant: 'accountant' };
 const EN_POWER: Record<RolePower, string> = {
   sell: 'sell',
   oversee: 'see costs, reports and activity and decide requests',
@@ -499,7 +499,7 @@ export type Say = { [K in Key]: Parameters<Templates[K]>[0] extends undefined ? 
 /** A stored Say, or an old entry's English sentence when it has none. */
 export type Said = Say | { text: string };
 
-const SQ_ROLE: Record<Role, string> = { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' };
+const SQ_ROLE: Record<Role, string> = { developer: 'zhvillues i 4VD', main_admin: 'administrator kryesor', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' };
 const SQ_POWER: Record<RolePower, string> = {
   sell: 'shesë',
   oversee: 'shohë kostot, raportet dhe aktivitetin dhe vendosë për kërkesat',

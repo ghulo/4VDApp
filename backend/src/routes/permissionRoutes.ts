@@ -15,21 +15,21 @@ const permissionsSchema = z.object({
 });
 const entrySchema = z.object({ id: idSchema });
 
-/** What each role may do (Settings → Roles). Everyone reads it, so their screens match; only the developer changes it. */
+/** What each role may do (Settings → Roles). Everyone reads it, so their screens match; only a main admin (or the 4VD developer) changes it. */
 export function createPermissionRoutes({ permissionService, guards }: Container): Router {
   const router = Router();
 
   router.get('/', guards.authenticated, async (_req: Request, res: Response) => {
     sendSuccess(res, await permissionService.get());
   });
-  router.put('/', ...guards.developer, async (req: Request, res: Response) => {
+  router.put('/', ...guards.mainAdmin, async (req: Request, res: Response) => {
     const input = parseInput(permissionsSchema, req.body);
     sendSuccess(res, await permissionService.update(input, req.user!), { message: 'Roles saved' });
   });
-  router.get('/history', ...guards.developer, async (_req: Request, res: Response) => {
+  router.get('/history', ...guards.mainAdmin, async (_req: Request, res: Response) => {
     sendSuccess(res, await permissionService.history());
   });
-  router.post('/history/:id/restore', ...guards.developer, async (req: Request, res: Response) => {
+  router.post('/history/:id/restore', ...guards.mainAdmin, async (req: Request, res: Response) => {
     const { id } = parseInput(entrySchema, { id: Number(req.params.id) });
     const restored = await permissionService.restore(id, req.user!);
     if (!restored) throw new NotFoundError('That change is no longer in the activity log');

@@ -24,7 +24,11 @@ type UpdatedAt = ColumnType<Date, Date | undefined, Date>;
 /** A nullable column that inserts may leave out. */
 type Optional<T> = ColumnType<T | null, T | null | undefined, T | null>;
 
-export const USER_ROLES = ['developer', 'admin', 'owner', 'employee', 'family', 'accountant'] as const;
+/** Roles a person holds inside a business (users, memberships, invites). main_admin is the top one. */
+export const STORED_ROLES = ['main_admin', 'admin', 'owner', 'employee', 'family', 'accountant'] as const;
+export type StoredRole = (typeof STORED_ROLES)[number];
+/** Roles a request can act as: the stored ones, plus developer for 4VD's own staff (users.is_platform_developer). */
+export const USER_ROLES = ['developer', ...STORED_ROLES] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export interface UsersTable {
@@ -33,9 +37,11 @@ export interface UsersTable {
   /** Null for people who only sign in with Google. */
   password_hash: string | null;
   name: string;
-  role: UserRole;
+  role: StoredRole;
   is_active: Generated<boolean>;
   business_id: number;
+  /** 4VD's own staff: opens every business. Set by hand on the database only (a trigger refuses the app). */
+  is_platform_developer: Generated<boolean>;
   email_verified_at: Date | null;
   phone: string | null;
   avatar_media_id: string | null;
@@ -155,7 +161,7 @@ export interface MembershipsTable {
   id: Generated<number>;
   user_id: number;
   business_id: number;
-  role: UserRole;
+  role: StoredRole;
   is_active: Generated<boolean>;
   created_at: CreatedAt;
 }
@@ -190,7 +196,7 @@ export interface InvitesTable {
   id: Generated<number>;
   business_id: number;
   email: string;
-  role: UserRole;
+  role: StoredRole;
   token_hash: string;
   invited_by: number | null;
   language: Generated<Language>;
@@ -1686,7 +1692,36 @@ export interface SerialsTable {
   created_at: CreatedAt;
 }
 
+/** The 4VD developer opening a business he isn't a member of: one row per sign-in session, shown to that business. */
+export interface SupportVisitsTable {
+  id: Generated<number>;
+  business_id: Generated<number>;
+  developer_id: number;
+  developer_name: string;
+  session_id: string;
+  started_at: Generated<Date>;
+  last_seen_at: Generated<Date>;
+  reason: string | null;
+}
+
+/** A change the 4VD developer made during a support visit. before/after are kept for a later undo. */
+export interface SupportActionsTable {
+  id: Generated<number>;
+  business_id: Generated<number>;
+  visit_id: number;
+  at: Generated<Date>;
+  method: string;
+  path: string;
+  entity: string | null;
+  entity_id: string | null;
+  status: number | null;
+  before: unknown | null;
+  after: unknown | null;
+}
+
 export interface Database {
+  support_visits: SupportVisitsTable;
+  support_actions: SupportActionsTable;
   portal_users: PortalUsersTable;
   portal_links: PortalLinksTable;
   portal_sessions: PortalSessionsTable;

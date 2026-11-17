@@ -20,9 +20,9 @@
 - `progress.md`: the task list (tick items as they're done). `DESIGN.md`: the rulebook for logic, words and look. `PRODUCT.md`: who it's for.
 
 ## Commands
-- backend: `npm run typecheck`, `npx vitest run tests/<file>.test.ts` (one file), `npm test` (full suite, about 10 min), `npm run migrate`, `npm run seed:demo` (demo logins `demo-*@4vd.local`).
+- backend: `npm run typecheck`, `npx vitest run tests/<file>.test.ts` (one file), `npm test` (full suite, about 20–35 min), `npm run migrate`, `npm run seed:demo` (demo logins `demo-*@4vd.local`).
 - admin: `npm run lint` (oxlint), `npm test`, `npm run build` (`tsc -b`, stricter than plain `tsc`).
-- While working, run only the tests that cover the change. Before pushing logic changes, run what CI runs: backend typecheck, full suite and build; admin lint, test and build. CSS-only changes need lint:ui, not the suite.
+- While working, run only the tests that cover the change. Before merging logic changes, run the tests for every file you touched plus backend typecheck and build, admin lint, test and build. GitHub runs the full suite on main, and nothing goes live (Render or 4vd.app) until it passes, so it is the real gate: watch that run and fix main at once if it goes red. Run the full suite locally first only for migrations, money logic (posting, VAT, payroll, stock cost), sign-in, or tenancy. CSS-only changes need lint:ui, not the suite.
 - A check still failing after 3 rounds of fixes: stop and tell the user (or the orchestrator) what fails and what you tried; don't keep grinding.
 - A flaky test: never re-run it until it passes, add sleeps or raise timeouts. Find the cause; if you can't, delete the test and write down why in the commit.
 - Commits: `feat:` / `fix:` / `docs:` prefix, then plain English a non-developer understands. Work on main or a short branch in this checkout (no worktrees); merge, push and delete branches yourself.
@@ -30,13 +30,14 @@
 ## Gotchas
 - Docker Desktop must be running, or migrations fail with a blank error.
 - `python` isn't installed: use `node`. Run `tsx -e` with `< /dev/null` or it hangs.
-- Backend test files share one test DB and wipe it, so two suites at once (another session) fail each other.
+- Backend tests wipe their test DB, so each session uses its own: `docker exec four-vd-app-postgres createdb -U postgres four_vd_app_test_<session-name>` once, then run tests with `TEST_DATABASE_URL` pointing at it (same URL as in `backend/.env`, other database name; the name must contain "test"). Never run tests against another session's test DB. Drop yours when your work is merged.
 - `gh` lives at `C:/Program Files/GitHub CLI`; in bash add it to PATH.
-- Pressing keys on the real dashboard records real sales in `four_vd_app`. Don't try a checkout there to test it.
+- Pressing keys on the real dashboard records real sales in `four_vd_app`. Don't try a checkout there to test it: use the demo database (Local servers).
 
 ## Local servers
 - One local app only: API on http://localhost:3000, dashboard on http://localhost:5173, database `four_vd_app`. Start them with `preview_start` (`api`, `dashboard` in `.claude/launch.json`); if they already run, reuse them.
-- Never start a second API or dashboard on other ports (3001, 5174, 5175…) or point one at a scratch database. If a test needs other data, ask the user first.
+- To click through flows that create data (checkouts, bills, payroll), point the API at the demo database `four_vd_app_demo` (migrated, filled by `npm run seed:demo`), never at `four_vd_app`. Switch back to `four_vd_app` when done, and say so in handoff.md while it's switched. The browser tests (`e2e/`) may run their own API and dashboard on 3100/5180 with `four_vd_app_e2e`.
+- Otherwise never start a second API or dashboard on other ports or point one at a scratch database. If a test needs other data, ask the user first.
 
 ## UI/UX rules
 - Design direction: follow frontend-design. Never use generic defaults (Inter + purple gradients).

@@ -18,12 +18,13 @@
 - `mail/`: the Cloudflare Email Worker for bills@4vd.app (own `wrangler.jsonc`, deployed by hand; `npm test`). Setup in `docs/DEPLOYMENT.md`.
 - `mobile/`: the old Expo team app, retired since 2026-10-20. Don't change it unless the user asks.
 - `progress.md`: the task list (tick items as they're done). `DESIGN.md`: the rulebook for logic, words and look. `PRODUCT.md`: who it's for.
-- Project skills: `step-workflow` (how a step session runs, start to merge: read it when starting a task) and `kosovo-tax` (every VAT, payroll, profit tax and books rule 4VD follows and where it lives; read it before touching money logic, add new rules to it).
+- Project skills: `verify` (run the app and prove a change before committing), `step-workflow` (how a step session runs, start to merge: read it when starting a task) and `kosovo-tax` (every VAT, payroll, profit tax and books rule 4VD follows and where it lives; read it before touching money logic, add new rules to it).
 
 ## Commands
 - backend: `npm run typecheck`, `npx vitest run tests/<file>.test.ts` (one file), `npm test` (full suite, about 20–35 min), `npm run migrate`, `npm run seed:demo` (demo logins `demo-*@4vd.local`).
 - admin: `npm run lint` (oxlint), `npm test`, `npm run build` (`tsc -b`, stricter than plain `tsc`).
 - While working, run only the tests that cover the change. Before merging logic changes, run the tests for every file you touched plus backend typecheck and build, admin lint, test and build. GitHub runs the full suite on main, and nothing goes live (Render or 4vd.app) until it passes, so it is the real gate: watch that run and fix main at once if it goes red. Run the full suite locally first only for migrations, money logic (posting, VAT, payroll, stock cost), sign-in, or tenancy. CSS-only changes need lint:ui, not the suite.
+- Before committing a change to `admin/` or `backend/src`: run the `verify` skill (loads the touched screens signed in as demo logins, text evidence; data-creating flows on the demo database), then check the `REVIEW.md` items your diff triggers, read from main (`git show origin/main:REVIEW.md`). End the commit message with a `Verified:` line saying what was checked, or `Verified: none (why)`.
 - A check still failing after 3 rounds of fixes: stop and tell the user (or the orchestrator) what fails and what you tried; don't keep grinding.
 - A flaky test: never re-run it until it passes, add sleeps or raise timeouts. Find the cause; if you can't, delete the test and write down why in the commit.
 - Commits: `feat:` / `fix:` / `docs:` prefix, then plain English a non-developer understands. Work on main or a short branch in this checkout (no worktrees); merge, push and delete branches yourself.

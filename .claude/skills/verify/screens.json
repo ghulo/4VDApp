@@ -1,0 +1,26 @@
+{
+  "_about": "Feature map: a changed file (regex over its repo path, case-insensitive) -> dashboard screens to load. 'role' = which demo login opens those paths (default admin; payroll needs accountant or owner). Add a line when a screen has no match. 'always' screens load on every run.",
+  "always": [
+    "/"
+  ],
+  "map": [
+    { "match": "pages/(Inventory|Products|ProductForm|Product|Prices|Categories|Duplicates|Labels|Serials|Expiring)|services/(product|inventory|stock|price|categor)", "paths": [ "/inventory", "/products", "/prices", "/categories" ] },
+    { "match": "pages/(StockDocuments|DocumentDetail|StockMoves|Makes|StockCount)|services/(stockDocument|stockMove|make|count)", "paths": [ "/stock-documents", "/stock-moves", "/makes", "/counts" ] },
+    { "match": "pages/(Sales|Documents|Offers|ToDeliver|PortalOrders)|services/(sale|document|offer|return|deliver)", "paths": [ "/sales", "/documents", "/offers", "/to-deliver" ] },
+    { "match": "pages/(Day|Cash|Carwash|Money)|services/(cash|carwash|money|place|till|shift)", "paths": [ "/day", "/cash", "/carwash", "/money" ] },
+    { "match": "pages/(Books|Opening|Vat|Statements|Assets|Declaration|TrefinCompare)|services/(books|ledger|posting|vat|statement|asset|declaration|year)", "paths": [ "/books", "/books/journal", "/books/vat", "/books/sales-book", "/books/purchase-book", "/books/statements", "/books/assets", "/books/declaration" ] },
+    { "match": "pages/(Bills|BillDetail|NewBill|Suppliers|SupplierDetail|Orders|OrderDetail|NewOrder)|services/(bill|supplier|order|purchase)|mail/", "paths": [ "/bills", "/suppliers", "/orders" ] },
+    { "match": "pages/(Customers)|services/(customer|tab|portal)|pages/portal", "paths": [ "/customers", "/tabs" ] },
+    { "match": "pages/(Payroll)|services/(payroll|employee|leave)", "paths": [ "/payroll", "/payroll/months" ], "role": "accountant" },
+    { "match": "pages/(Users)|services/(user|invite)", "paths": [ "/people" ] },
+    { "match": "pages/(Reports?|ProjectsReport|Activity)|services/(report|summary|activity|profit)", "paths": [ "/reports", "/report", "/reports/profit", "/reports/team", "/activity" ] },
+    { "match": "pages/(Expenses)|services/expense", "paths": [ "/expenses" ] },
+    { "match": "pages/(Promotions)|services/promotion", "paths": [ "/promotions" ] },
+    { "match": "pages/(Inbox)|services/(notification|approval|alert)", "paths": [ "/inbox", "/inbox/updates" ] },
+    { "match": "pages/(Settings|Profile)|services/(setting|profile|passkey|totp|auth)|utils/session|middlewares/auth", "paths": [ "/settings", "/profile" ] },
+    { "match": "pages/(Overview|Ask)|services/(overview|dashboard|ask)", "paths": [ "/", "/ask" ] },
+    { "match": "pages/Counter|pages/counter/|services/(counter|fiscal)", "paths": [ "/counter" ] },
+    { "match": "pages/staff/", "paths": [ "/my-sales", "/catalog", "/deliveries" ], "role": "employee" },
+    { "match": "admin/src/(components|styles|App\\.tsx|services/apiClient)|tokens\\.css", "paths": [ "/", "/inventory", "/sales", "/books", "/settings" ] }
+  ]
+}

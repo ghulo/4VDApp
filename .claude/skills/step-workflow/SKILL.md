@@ -38,7 +38,7 @@ The user isn't a developer. Write to them in plain English, short.
 
 ## 4. Before merging
 
-Run what CLAUDE.md "Commands" lists: tests for every touched file, backend typecheck and build, admin lint, test and build (`tsc -b`). Run the full backend suite locally only for migrations, money logic, sign-in or tenancy. Before every commit in the shared checkout: `git diff --cached --name-only`, and stage only your own files.
+Run the `verify` skill and check the REVIEW.md items your diff triggers (read from main). Run what CLAUDE.md "Commands" lists: tests for every touched file, backend typecheck and build, admin lint, test and build (`tsc -b`). Run the full backend suite locally only for migrations, money logic, sign-in or tenancy. Before every commit in the shared checkout: `git diff --cached --name-only`, and stage only your own files.
 
 ## 5. Commit, merge, push
 

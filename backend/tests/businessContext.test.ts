@@ -102,6 +102,10 @@ describe('each piece of work sees only its own business', () => {
     await expect(
       inRequest(() => sql`update email_outbox set attempts = attempts where id in (select id from email_outbox for update skip locked)`.execute(small)),
     ).resolves.toBeDefined();
+    // A name given with `with … as (` is not a table either (Kysely's migration lock uses `set_timeout`).
+    await expect(
+      inRequest(() => sql`with set_timeout as (select 1 as one) select one from set_timeout`.execute(small)),
+    ).resolves.toBeDefined();
     await expect(
       inRequest(async () => {
         enterBusiness(shopId);

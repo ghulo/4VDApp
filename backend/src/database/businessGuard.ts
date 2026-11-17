@@ -35,6 +35,7 @@ export function businessSetter(outsideContextBusiness?: number) {
 const GLOBAL = new Set(GLOBAL_TABLES);
 // `for update skip locked`, `for update of p` and `do update set` name no table.
 const RAW_TABLE = /\b(?:from|join|into|(?<!\bfor\s+|\bdo\s+)update)\s+"?(?!set\b|skip\b|nowait\b|of\b)([a-z_]+)"?/gi;
+const WITH_NAME = /\b(?:with(?:\s+recursive)?|,)\s+"?([a-z_]+)"?\s+as\s+(?:not\s+)?(?:materialized\s+)?\(/gi;
 
 function tablesIn(node: unknown, found: Set<string>): void {
   if (!node || typeof node !== 'object') return;
@@ -49,7 +50,13 @@ function tablesIn(node: unknown, found: Set<string>): void {
     const name = (record.table as { identifier?: { name?: string } } | undefined)?.identifier?.name;
     if (name) found.add(name);
   } else if (record.kind === 'RawNode') {
-    for (const match of (record.sqlFragments as string[]).join(' ').matchAll(RAW_TABLE)) found.add(match[1]!.toLowerCase());
+    const text = (record.sqlFragments as string[]).join(' ');
+    // `with set_timeout as (…) … from set_timeout` (Kysely's migration lock) names a query, not a table.
+    const named = new Set([...text.matchAll(WITH_NAME)].map((match) => match[1]!.toLowerCase()));
+    for (const match of text.matchAll(RAW_TABLE)) {
+      const table = match[1]!.toLowerCase();
+      if (!named.has(table)) found.add(table);
+    }
   }
   for (const value of Object.values(record)) if (value && typeof value === 'object') tablesIn(value, found);
 }

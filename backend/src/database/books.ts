@@ -17,6 +17,14 @@ export async function seedBooks(db: Kysely<unknown>): Promise<void> {
   if (places.rows[0]?.exists) await sql`UPDATE money_places SET account_id = NULL`.execute(db);
   await sql`DELETE FROM ledger_accounts`.execute(db);
   await sql`ALTER SEQUENCE ledger_accounts_id_seq RESTART`.execute(db);
+  await insertChart(db);
+}
+
+/**
+ * Put the chart of accounts and the default links into the current business.
+ * Adds only: a new business gets these from seedBusiness (newBusiness.ts).
+ */
+export async function insertChart(db: Kysely<unknown>): Promise<void> {
   for (const account of TREFIN_ACCOUNTS) {
     await sql`
       INSERT INTO ledger_accounts (number, name, class, type_name, group_name, cash_flow)

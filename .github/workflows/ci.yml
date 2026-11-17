@@ -120,8 +120,11 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # Stops on any known high or critical security hole in a package.
-      - run: npm audit --audit-level=high
+      # Stops on a high or critical security hole in a package that ships to
+      # users. Holes only in dev tools (vite, vitest…) warn instead: an advisory
+      # with no fixed version once blocked every deploy.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high || echo "::warning title=Dev tools::npm audit found a high or critical hole in a dev tool; see this step's log"
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
@@ -154,8 +157,11 @@ jobs:
           cache: npm
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
-      # Stops on any known high or critical security hole in a package.
-      - run: npm audit --audit-level=high
+      # Stops on a high or critical security hole in a package that ships to
+      # users. Holes only in dev tools (vite, vitest…) warn instead: an advisory
+      # with no fixed version once blocked every deploy.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high || echo "::warning title=Dev tools::npm audit found a high or critical hole in a dev tool; see this step's log"
       - run: npm run lint
       - run: npm test
       - run: npm run build
@@ -196,8 +202,11 @@ jobs:
           cache: npm
           cache-dependency-path: mail/package-lock.json
       - run: npm ci
-      # Stops on any known high or critical security hole in a package.
-      - run: npm audit --audit-level=high
+      # Stops on a high or critical security hole in a package that ships to
+      # users. Holes only in dev tools (vite, vitest…) warn instead: an advisory
+      # with no fixed version once blocked every deploy.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high || echo "::warning title=Dev tools::npm audit found a high or critical hole in a dev tool; see this step's log"
       - run: npm test
 
   desktop-audit:

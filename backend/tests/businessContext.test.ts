@@ -23,7 +23,7 @@ beforeAll(async () => {
   await resetData(context.db);
   shopId = (await context.db.selectFrom('businesses').select('id').executeTakeFirstOrThrow()).id;
   otherId = (await context.db.insertInto('businesses').values({ name: 'Other shop' }).returning('id').executeTakeFirstOrThrow()).id;
-  small = createDatabase(process.env.TEST_DATABASE_URL!, 2);
+  small = createDatabase(process.env.TEST_DATABASE_URL!, { poolSize: 2 });
 });
 afterAll(async () => {
   await small.destroy();
@@ -61,6 +61,26 @@ describe('each piece of work sees only its own business', () => {
     const [shop, other] = await Promise.all([run(shopId, 'Tea'), run(otherId, 'Tea')]);
     expect(shop).toEqual({ before: String(shopId), after: String(shopId), stored: shopId });
     expect(other).toEqual({ before: String(otherId), after: String(otherId), stored: otherId });
+  });
+
+  it('keeps the remembered business true after a transaction rolls back', async () => {
+    // One connection only: the setting is skipped when the connection already holds it, so a
+    // rollback must never have undone it (it is set before BEGIN, outside the transaction).
+    const one = createDatabase(process.env.TEST_DATABASE_URL!, { poolSize: 1 });
+    try {
+      const failed = runAsBusiness(shopId, () =>
+        one.transaction().execute(async (trx) => {
+          await trx.insertInto('categories').values({ name: 'Rolled back' }).execute();
+          throw new Error('undo');
+        }),
+      );
+      await expect(failed).rejects.toThrow('undo');
+      expect(await runAsBusiness(shopId, () => seen(one))).toBe(String(shopId));
+      expect(await runAsBusiness(otherId, () => seen(one))).toBe(String(otherId));
+      expect(await runAsBusiness(shopId, () => seen(one))).toBe(String(shopId));
+    } finally {
+      await one.destroy();
+    }
   });
 
   it('clears the business on a connection that is reused without one', async () => {

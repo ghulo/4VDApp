@@ -45,10 +45,11 @@ jobs:
 
       - name: Dump the database
         # The same major version as the server (18; a newer pg_dump also reads an older server), so the dump always works.
+        # Row security: app.maintenance lets the owner see every business's rows, and --enable-row-security lets pg_dump run with it on.
         run: |
           FILE="4vd-$(date -u +%Y-%m-%d).dump"
           echo "FILE=$FILE" >> "$GITHUB_ENV"
-          docker run --rm postgres:18-alpine pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" > "$FILE"
+          docker run --rm -e PGOPTIONS="-c app.maintenance=on" postgres:18-alpine pg_dump --enable-row-security --format=custom --no-owner --no-privileges "$DATABASE_URL" > "$FILE"
 
       - name: Make sure the dump can be read back
         run: |

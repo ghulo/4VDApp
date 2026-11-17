@@ -6,12 +6,21 @@ import { defaultBusinessId, forEachBusiness } from './database/business.js';
 import { runAsBusiness } from './database/businessContext.js';
 import { ensureFirstAdmin } from './database/firstAdmin.js';
 import { createDatabase } from './database/connection.js';
+import { databaseRole, refuseRole } from './database/roleCheck.js';
 import { captureError, captureLoggedError, flushErrorTracking, initErrorTracking } from './utils/errorTracking.js';
 import { logger } from './utils/logger.js';
 
 const config = loadConfig();
 initErrorTracking(config.sentryDsn, config.nodeEnv);
 const db = createDatabase(config.databaseUrl);
+const role = await databaseRole(db);
+const refused = refuseRole(role, config.nodeEnv);
+if (refused) {
+  logger.error(`Refusing to start: ${refused}. Point DATABASE_URL at the app's own role (docs/DEPLOYMENT.md).`);
+  await flushErrorTracking();
+  process.exit(1);
+}
+logger.info('Connected to the database', { role: role.name });
 const container = createContainer(config, db);
 await runAsBusiness(await defaultBusinessId(db), () =>
   ensureFirstAdmin(db, {

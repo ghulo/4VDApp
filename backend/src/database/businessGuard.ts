@@ -14,13 +14,22 @@ const told = new WeakMap<DatabaseConnection, string>();
  * already holds this exact value the round trip is skipped (it doubled the
  * time of a simple query).
  */
-export async function setConnectionBusiness(connection: DatabaseConnection): Promise<void> {
-  const businessId = currentContext()?.businessId;
-  const value = businessId == null ? '' : String(businessId);
-  if (told.get(connection) === value) return;
-  told.delete(connection);
-  await connection.executeQuery(CompiledQuery.raw(`select set_config('app.business_id', $1, false)`, [value]));
-  told.set(connection, value);
+export function businessSetter(outsideContextBusiness?: number) {
+  return async (connection: DatabaseConnection): Promise<void> => {
+    const context = currentContext();
+    // Work outside any context (only test setup gets a default) has no business.
+    const businessId = context ? context.businessId : (outsideContextBusiness ?? null);
+    const value = businessId == null ? '' : String(businessId);
+    // Before the business is known (signing in), the database lets business rows be read, never written.
+    const system = context?.system && businessId == null ? 'on' : '';
+    const key = `${value}|${system}`;
+    if (told.get(connection) === key) return;
+    told.delete(connection);
+    await connection.executeQuery(
+      CompiledQuery.raw(`select set_config('app.business_id', $1, false), set_config('app.system', $2, false)`, [value, system]),
+    );
+    told.set(connection, key);
+  };
 }
 
 const GLOBAL = new Set(GLOBAL_TABLES);
@@ -57,7 +66,9 @@ const warned = new Set<string>();
 /**
  * Catch work that touches a business's tables without saying which business.
  * Inside a request that is a bug: tests fail on it, production logs it. Outside
- * a request (tests setting up data, one-off tools) it is only logged.
+ * a request (tests setting up data, one-off tools) it is only logged. Live it is
+ * logged as an error (alert email, Sentry): under row security such a query
+ * sees no rows and its writes fail.
  */
 export const businessGuard: KyselyPlugin = {
   transformQuery(args: PluginTransformQueryArgs): RootOperationNode {
@@ -67,13 +78,14 @@ export const businessGuard: KyselyPlugin = {
     if (context?.system && !writes(args.node)) return args.node;
     const tables = new Set<string>();
     tablesIn(args.node, tables);
-    const scoped = [...tables].filter((table) => !GLOBAL.has(table));
+    // Postgres's own catalog (pg_roles, pg_class…) belongs to no business.
+    const scoped = [...tables].filter((table) => !GLOBAL.has(table) && !table.startsWith('pg_') && table !== 'information_schema');
     if (scoped.length === 0) return args.node;
     const message = `A query on ${scoped.join(', ')} ran without a business`;
     if (context?.inRequest && process.env.NODE_ENV === 'test') throw new Error(message);
     if (process.env.NODE_ENV !== 'test' && !warned.has(message)) {
       warned.add(message);
-      logger.warn(message, { inRequest: Boolean(context?.inRequest), stack: new Error().stack?.split('\n').slice(2, 8).join(' | ') });
+      logger.error(message, { inRequest: Boolean(context?.inRequest), stack: new Error().stack?.split('\n').slice(2, 8).join(' | ') });
     }
     return args.node;
   },

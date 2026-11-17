@@ -17,10 +17,14 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:
+      # Set by hand (docs/DEPLOYMENT.md, "The app's own database role"): the API connects as fourvd_app,
+      # which row security always applies to; migrations connect as the owner. Not fromDatabase:
+      # Render would keep putting back the owner with its stored password.
       - key: DATABASE_URL
-        fromDatabase:
-          name: 4vd-db
-          property: connectionString
+        sync: false
+      # The owner's connection string, used only to run migrations at start. Empty: DATABASE_URL.
+      - key: MIGRATION_DATABASE_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: SHOP_TIME_ZONE

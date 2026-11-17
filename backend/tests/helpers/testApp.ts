@@ -7,6 +7,7 @@ import { type AppConfig, loadConfig } from '../../src/config/env.js';
 import { type Container, type ContainerOptions, createContainer } from '../../src/container.js';
 import { createDatabase, type DatabaseClient } from '../../src/database/connection.js';
 import { defaultBusinessId } from '../../src/database/business.js';
+import { runAsBusiness } from '../../src/database/businessContext.js';
 import { runMigrations } from '../../src/database/migrator.js';
 import type { UserRole } from '../../src/database/types.js';
 import { hashPassword } from '../../src/utils/password.js';
@@ -46,14 +47,43 @@ export async function setupTestApp(options: ContainerOptions = {}, env: Record<s
     JWT_SECRET: 'integration-test-secret-long-enough',
     ...env,
   });
-  const db = createDatabase(databaseUrl);
+  // Superusers skip row security, so everything runs as an ordinary role that owns the schema, like the app's user on Render.
+  const admin = createDatabase(databaseUrl);
+  await sql`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${sql.lit(TEST_ROLE)}) THEN
+        CREATE ROLE ${sql.raw(TEST_ROLE)} NOLOGIN NOSUPERUSER NOBYPASSRLS;
+      END IF;
+    -- Roles are shared by every database on the server: another session's test DB may create it at the same moment.
+    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+    END $$
+  `.execute(admin);
+  await sql`DROP SCHEMA public CASCADE`.execute(admin);
+  await sql`CREATE SCHEMA public AUTHORIZATION ${sql.raw(TEST_ROLE)}`.execute(admin);
+  await admin.destroy();
 
-  await sql`DROP SCHEMA public CASCADE`.execute(db);
-  await sql`CREATE SCHEMA public`.execute(db);
+  // Test setup writes outside any request: it works in the test shop (business 1).
+  const db = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1 });
   await runMigrations(db as Kysely<unknown>);
+  // The app's handle: a request that loses its business fails here as it would live. Services a test calls
+  // directly, outside any request or timer, work in the test shop.
+  const appDb = createDatabase(databaseUrl, { role: TEST_ROLE, outsideContextBusiness: 1 });
+  const destroySetup = db.destroy.bind(db);
+  db.destroy = async () => {
+    await appDb.destroy();
+    await destroySetup();
+  };
 
-  const container = createContainer(config, db, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, aiProvider: null, emailSender: NO_EMAIL, ...options });
-  return { app: createApp(config, db, { container }), db, config, container };
+  const container = createContainer(config, appDb, { pushSenders: { expo: NO_PUSH, web: NO_PUSH }, aiProvider: null, emailSender: NO_EMAIL, ...options });
+  return { app: createApp(config, appDb, { container }), db, config, container };
+}
+
+/** The ordinary database role tests run as. */
+const TEST_ROLE = 'four_vd_app_tester';
+
+/** Run work as the test shop, the way a timer runs it for each business. */
+export function asShop<T>(work: () => Promise<T>): Promise<T> {
+  return runAsBusiness(1, work);
 }
 
 /** Empty every table between tests but keep the schema. */

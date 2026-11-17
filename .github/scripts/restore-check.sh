@@ -16,7 +16,7 @@ fail() { echo "::error::$1"; exit 1; }
 echo "Restoring $(du -h "$DUMP" | cut -f1) into the empty database..."
 # Without --exit-on-error so every problem is listed, then any error fails the run.
 set +e
-pg_restore --no-owner --no-privileges --dbname "$DB" "$DUMP" 2> restore-errors.txt
+PGOPTIONS="-c app.maintenance=on" pg_restore --no-owner --no-privileges --dbname "$DB" "$DUMP" 2> restore-errors.txt
 code=$?
 set -e
 if [ "$code" -ne 0 ] || grep -q "error:" restore-errors.txt; then

@@ -23,6 +23,8 @@
 - backend: `npm run typecheck`, `npx vitest run tests/<file>.test.ts` (one file), `npm test` (full suite, about 10 min), `npm run migrate`, `npm run seed:demo` (demo logins `demo-*@4vd.local`).
 - admin: `npm run lint` (oxlint), `npm test`, `npm run build` (`tsc -b`, stricter than plain `tsc`).
 - While working, run only the tests that cover the change. Before pushing logic changes, run what CI runs: backend typecheck, full suite and build; admin lint, test and build. CSS-only changes need lint:ui, not the suite.
+- A check still failing after 3 rounds of fixes: stop and tell the user (or the orchestrator) what fails and what you tried; don't keep grinding.
+- A flaky test: never re-run it until it passes, add sleeps or raise timeouts. Find the cause; if you can't, delete the test and write down why in the commit.
 - Commits: `feat:` / `fix:` / `docs:` prefix, then plain English a non-developer understands. Work on main or a short branch in this checkout (no worktrees); merge, push and delete branches yourself.
 
 ## Gotchas

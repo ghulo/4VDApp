@@ -45,6 +45,13 @@ export class UserRepository {
       .executeTakeFirst();
   }
 
+  /** Who has at least one passkey (People shows the reset only for them). */
+  async withPasskeys(userIds: number[]): Promise<Set<number>> {
+    if (userIds.length === 0) return new Set();
+    const rows = await this.db.selectFrom('passkeys').select('user_id').distinct().where('user_id', 'in', userIds).execute();
+    return new Set(rows.map((row) => row.user_id));
+  }
+
   async findAll(filters: UserListFilters): Promise<{ users: UserRow[]; total: number }> {
     let query = this.db.selectFrom('users').where('deleted_at', 'is', null);
     if (filters.role) query = query.where('role', '=', filters.role);

@@ -8,7 +8,7 @@ import { Avatar } from '../components/Avatar';
 import { DeviceList } from '../components/DeviceList';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
-import { activityApi, cashApi, invitesApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
+import { activityApi, cashApi, invitesApi, passkeyApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -611,6 +611,14 @@ function ManagePanel({ person }: { person: TeamMember }) {
       setSaved(t.people.twoStepResetDone);
     },
   });
+  const resetPasskeys = useMutation({
+    mutationFn: () => passkeyApi.reset(person.id),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      setSaved(t.people.passkeysResetDone(result.removed));
+    },
+  });
   const remove = useMutation({
     mutationFn: () => usersApi.remove(person.id),
     onSuccess: () => {
@@ -733,6 +741,13 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </SettingRow>
       )}
+      {!isSelf && person.passkeys && (
+        <SettingRow title={t.people.passkeys} description={t.people.passkeysHint(firstName)}>
+          <Button size="sm" loading={resetPasskeys.isPending} onClick={() => resetPasskeys.mutate()}>
+            {t.people.passkeysReset}
+          </Button>
+        </SettingRow>
+      )}
       {!isSelf && (
         <SettingRow title={t.people.remove} description={t.people.removeHint}>
           {confirmingRemove ? (
@@ -751,9 +766,9 @@ function ManagePanel({ person }: { person: TeamMember }) {
           )}
         </SettingRow>
       )}
-      {(update.isError || remove.isError || resetTwoStep.isError) && (
+      {(update.isError || remove.isError || resetTwoStep.isError || resetPasskeys.isError) && (
         <p className="form-error" role="alert">
-          {errorMessage(update.error ?? remove.error ?? resetTwoStep.error)}
+          {errorMessage(update.error ?? remove.error ?? resetTwoStep.error ?? resetPasskeys.error)}
         </p>
       )}
       {saved && !update.isError && (

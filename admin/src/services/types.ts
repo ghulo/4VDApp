@@ -21,6 +21,8 @@ export interface User {
   commissionPercent: number | null;
   /** Signs in with a code from an authenticator app as well. */
   twoStep?: boolean;
+  /** Has at least one passkey (in the People list). */
+  passkeys?: boolean;
   createdAt: string;
 }
 
@@ -1327,6 +1329,21 @@ export interface LoginResult {
 }
 
 /** The password (or Google) was right and two-step sign-in is on: the code comes next. */
+export interface Passkey {
+  id: number;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** Synced to the person's other devices (iCloud Keychain, Google Password Manager…). */
+  synced: boolean;
+}
+
+export interface PasskeyList {
+  passkeys: Passkey[];
+  /** What adding one asks for first. */
+  confirmWith: 'code' | 'password' | null;
+}
+
 export interface TwoStepChallenge {
   twoStep: true;
   challenge: string;

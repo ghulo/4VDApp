@@ -58,6 +58,10 @@ const WHO = {
 const ACCESS: Record<keyof typeof WHO, string[]> = {
   anyone: [
     'POST /api/auth/two-step',
+    'POST /api/auth/passkey/options',
+    'POST /api/auth/passkey',
+    'POST /api/auth/two-step/passkey/options',
+    'POST /api/auth/two-step/passkey',
     'GET /health/',
     'POST /api/auth/login',
     'POST /api/auth/refresh',
@@ -106,6 +110,11 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/me/two-step/confirm',
     'POST /api/me/two-step/backup-codes',
     'POST /api/me/two-step/off',
+    'GET /api/me/passkeys',
+    'POST /api/me/passkeys/options',
+    'POST /api/me/passkeys',
+    'PATCH /api/me/passkeys/:id',
+    'DELETE /api/me/passkeys/:id',
     'POST /api/auth/logout',
     'GET /api/auth/me',
     'GET /api/categories/',
@@ -469,6 +478,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
   ],
   managers: [
     'POST /api/users/:id/two-step/reset',
+    'POST /api/users/:id/passkeys/reset',
     'POST /api/categories/',
     'PUT /api/categories/:id',
     'DELETE /api/categories/:id',

@@ -118,3 +118,42 @@ export const logoutSchema = z.object({
 const twoStepCode = z.string().trim().min(6, 'type the 6-digit code').max(20);
 export const twoStepCodeSchema = z.object({ code: twoStepCode });
 export const twoStepSignInSchema = z.object({ challenge: z.string().min(20).max(1000), code: twoStepCode });
+
+/**
+ * A passkey answer from the browser. Its parts are checked by the WebAuthn
+ * library (signature, challenge, site); here only the shape and size.
+ */
+const base64url = z.string().regex(/^[A-Za-z0-9_-]*={0,2}$/).max(20_000);
+const passkeyAnswer = z.object({
+  id: base64url.min(1).max(1500),
+  rawId: base64url,
+  type: z.literal('public-key'),
+  clientExtensionResults: z.record(z.string(), z.unknown()).default({}),
+  authenticatorAttachment: z.enum(['platform', 'cross-platform']).optional(),
+});
+export const passkeySignInSchema = z.object({
+  response: passkeyAnswer.extend({
+    response: z.object({
+      clientDataJSON: base64url,
+      authenticatorData: base64url,
+      signature: base64url,
+      userHandle: base64url.optional(),
+    }),
+  }),
+});
+export const passkeyTwoStepSchema = passkeySignInSchema.extend({ challenge: z.string().min(20).max(1000) });
+export const passkeyTwoStepOptionsSchema = z.object({ challenge: z.string().min(20).max(1000) });
+export const passkeyAddOptionsSchema = z.object({ code: z.string().trim().max(20).optional(), password: z.string().max(200).optional() });
+export const passkeyAddSchema = z.object({
+  response: passkeyAnswer.extend({
+    response: z.object({
+      clientDataJSON: base64url,
+      attestationObject: base64url,
+      transports: z.array(z.string().max(30)).max(10).optional(),
+      authenticatorData: base64url.optional(),
+      publicKey: base64url.optional(),
+      publicKeyAlgorithm: z.number().int().optional(),
+    }),
+  }),
+});
+export const passkeyRenameSchema = z.object({ name: z.string().trim().min(1, 'type a name').max(60) });

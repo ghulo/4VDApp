@@ -37,13 +37,18 @@ export class UserService {
   ) {}
 
   /** Everyone, each with when they last used 4VD on any device (null if never). */
-  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser & { lastActiveAt: string | null }>> {
+  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser & { lastActiveAt: string | null; passkeys: boolean }>> {
     const [{ users, total }, lastUsed] = await Promise.all([
       this.userRepository.findAll({ role: query.role, limit: query.limit, offset: toOffset(query) }),
       this.refreshTokenRepository.lastUsedByUser(),
     ]);
+    const withPasskeys = await this.userRepository.withPasskeys(users.map((user) => user.id));
     return {
-      items: users.map((user) => ({ ...toPublicUser(user), lastActiveAt: lastUsed.get(user.id)?.toISOString() ?? null })),
+      items: users.map((user) => ({
+        ...toPublicUser(user),
+        lastActiveAt: lastUsed.get(user.id)?.toISOString() ?? null,
+        passkeys: withPasskeys.has(user.id),
+      })),
       meta: toPaginationMeta(query, total),
     };
   }

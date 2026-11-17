@@ -41,6 +41,14 @@ export class TwoStepService {
 
   /** Second step: the code (or a backup code) for a challenge from signIn. */
   async finish(challenge: string, code: string, device: DeviceInfo): Promise<LoginResult> {
+    const { user, how } = await this.readChallenge(challenge);
+    if (!user.totp_secret) return this.authService.startSession(user, device, how);
+    await this.checkCode(user, code);
+    return this.authService.startSession(user, device, how);
+  }
+
+  /** Who a challenge from signIn is for, and how they proved the first step. Throws when expired or the person is gone. */
+  async readChallenge(challenge: string): Promise<{ user: UserRow; how: 'password' | 'google' }> {
     let claims: { uid?: unknown; how?: unknown };
     try {
       claims = jwt.verify(challenge, this.jwtSecret, { audience: TWO_STEP_AUDIENCE, algorithms: ['HS256'] }) as typeof claims;
@@ -49,9 +57,12 @@ export class TwoStepService {
     }
     const user = typeof claims.uid === 'number' ? await this.users.findById(claims.uid) : undefined;
     if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
-    if (!user.totp_secret) return this.authService.startSession(user, device, claims.how === 'google' ? 'google' : 'password');
+    return { user, how: claims.how === 'google' ? 'google' : 'password' };
+  }
+
+  /** Re-confirming a change to how someone signs in (adding a passkey): their code, when two-step sign-in is on. */
+  async confirmCode(user: UserRow, code: string): Promise<void> {
     await this.checkCode(user, code);
-    return this.authService.startSession(user, device, claims.how === 'google' ? 'google' : 'password');
   }
 
   async status(userId: number): Promise<TwoStepStatus> {

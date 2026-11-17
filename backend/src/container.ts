@@ -147,8 +147,10 @@ import { ProductService } from './services/ProductService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { ThreadService } from './services/ThreadService.js';
 import { VatService } from './services/vat/VatService.js';
+import { PasskeyService } from './services/PasskeyService.js';
 import { TwoStepService } from './services/TwoStepService.js';
 import { SecretBox } from './utils/totp.js';
+import { allowedOriginsOf } from './utils/sessionCookies.js';
 
 /**
  * The one place where repositories and services are created and wired
@@ -414,6 +416,11 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     transactions,
     config.dashboardUrl,
   );
+  const passkeyService = new PasskeyService(db, userRepository, authService, twoStepService, activityLogRepository, emailService, {
+    rpId: new URL(config.dashboardUrl).hostname,
+    origins: [...allowedOriginsOf(config)],
+    dashboardUrl: config.dashboardUrl,
+  });
   const accountService = new AccountService(
     userRepository,
     new AccountTokenRepository(db),
@@ -539,6 +546,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     userRepository,
     authService,
     twoStepService,
+    passkeyService,
     categoryService,
     duplicateService,
     productService,

@@ -18,7 +18,7 @@ interface Words {
 type Role = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents' | 'payroll';
 type RoleChange = { role: Role; power: RolePower; on: boolean };
-type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin';
+type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' | 'passkey';
 export type ProductField =
   | 'name'
   | 'description'
@@ -68,7 +68,7 @@ type Units = { quantity: number; product: string };
 
 const en = {
   loggedIn: (p: { name: string; how: LoginHow }) =>
-    `${p.name} ${{ password: 'logged in', google: 'logged in with Google', googleFirst: 'logged in with Google for the first time', invite: 'logged in for the first time', pin: 'took over the Counter with their PIN' }[p.how]}`,
+    `${p.name} ${{ password: 'logged in', google: 'logged in with Google', googleFirst: 'logged in with Google for the first time', invite: 'logged in for the first time', pin: 'took over the Counter with their PIN', passkey: 'logged in with a passkey' }[p.how]}`,
   pinSet: () => 'Set a Counter PIN',
   pinRemoved: () => 'Removed their Counter PIN',
   pinLocked: (p: { name: string }) => `Too many wrong PINs for ${p.name}: locked for 15 minutes`,
@@ -77,6 +77,10 @@ const en = {
   twoStepCodes: () => 'Made new backup codes for two-step sign-in',
   twoStepReset: (p: { name: string }) => `Reset two-step sign-in for ${p.name}`,
   twoStepLocked: (p: { name: string }) => `Too many wrong sign-in codes for ${p.name}: locked for 15 minutes`,
+  passkeyAdded: (p: { device: string }) => `Added a passkey (${p.device})`,
+  passkeyRemoved: (p: { device: string }) => `Removed a passkey (${p.device})`,
+  passkeysReset: (p: { name: string; count: number }) => `Removed ${p.name}’s passkeys (${p.count})`,
+  passkeyRefused: (p: { name: string; device: string }) => `Refused a sign-in with ${p.name}’s passkey (${p.device}): it looks copied`,
   rabatAllowed: (p: { percent: number; seller: string }) => `Allowed ${p.percent}% rabat for ${p.seller} at the Counter`,
   payLaterAllowed: (p: { name: string; amount: number; seller: string }, w: Words) =>
     `Let ${p.name} pay ${w.money(p.amount)} later (${p.seller} at the Counter)`,
@@ -636,7 +640,7 @@ const SQ_BIN_KIND = { product: 'produktin', supplier: 'furnitorin', customer: 'k
 
 const sq: Templates = {
   loggedIn: (p) =>
-    `${p.name} ${{ password: 'hyri', google: 'hyri me Google', googleFirst: 'hyri me Google për herë të parë', invite: 'hyri për herë të parë', pin: 'mori arkën me PIN-in e vet' }[p.how]}`,
+    `${p.name} ${{ password: 'hyri', google: 'hyri me Google', googleFirst: 'hyri me Google për herë të parë', invite: 'hyri për herë të parë', pin: 'mori arkën me PIN-in e vet', passkey: 'hyri me çelës kalimi' }[p.how]}`,
   pinSet: () => 'Vendosi një PIN arke',
   pinRemoved: () => 'Hoqi PIN-in e arkës',
   pinLocked: (p) => `Shumë PIN të gabuar për ${p.name}: bllokuar për 15 minuta`,
@@ -645,6 +649,10 @@ const sq: Templates = {
   twoStepCodes: () => 'Bëri kode rezervë të reja për hyrjen me dy hapa',
   twoStepReset: (p) => `Rivendosi hyrjen me dy hapa për ${p.name}`,
   twoStepLocked: (p) => `Shumë kode hyrjeje të gabuara për ${p.name}: bllokuar për 15 minuta`,
+  passkeyAdded: (p) => `Shtoi një çelës kalimi (${p.device})`,
+  passkeyRemoved: (p) => `Hoqi një çelës kalimi (${p.device})`,
+  passkeysReset: (p) => `Hoqi çelësat e kalimit të ${p.name} (${p.count})`,
+  passkeyRefused: (p) => `Refuzoi një hyrje me çelësin e kalimit të ${p.name} (${p.device}): duket i kopjuar`,
   rabatAllowed: (p) => `Lejoi ${p.percent}% rabat për ${p.seller} te Arka`,
   payLaterAllowed: (p, w) => `Lejoi ${p.name} të paguajë ${w.money(p.amount)} më vonë (${p.seller} te Arka)`,
   offerMade: (p, w) => `Bëri ofertën ${p.number} për ${p.name}, ${w.money(p.total)}`,

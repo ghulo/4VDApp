@@ -1,4 +1,5 @@
 import { apiDownload, apiRequest, saveDownload, sessionHint } from './apiClient';
+import type { AuthenticationResponseJSON, PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON, RegistrationResponseJSON } from '@simplewebauthn/browser';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
 import type {
@@ -106,6 +107,8 @@ import type {
   LoginResult,
   TwoStepChallenge,
   TwoStepStatus,
+  Passkey,
+  PasskeyList,
   PinPerson,
   RabatApproval,
   Security,
@@ -275,6 +278,28 @@ export const accountApi = {
   googleStatus: async () => (await apiRequest<{ enabled: boolean; clientId: string | null }>('/auth/google')).data,
   googleSignIn: async (credential: string) =>
     (await apiRequest<LoginResult | TwoStepChallenge>('/auth/google', { method: 'POST', body: { credential } })).data,
+};
+
+/** Passkeys: sign-in with the device's fingerprint, face or PIN. */
+export const passkeyApi = {
+  signInOptions: async () => (await apiRequest<PublicKeyCredentialRequestOptionsJSON>('/auth/passkey/options', { method: 'POST', body: {} })).data,
+  signIn: async (response: AuthenticationResponseJSON) => (await apiRequest<LoginResult>('/auth/passkey', { method: 'POST', body: { response } })).data,
+  /** After the password: the prompt for a passkey instead of the code, or null when the person has none. */
+  twoStepOptions: async (challenge: string) =>
+    (await apiRequest<PublicKeyCredentialRequestOptionsJSON | null>('/auth/two-step/passkey/options', { method: 'POST', body: { challenge } })).data,
+  twoStep: async (challenge: string, response: AuthenticationResponseJSON) =>
+    (await apiRequest<LoginResult>('/auth/two-step/passkey', { method: 'POST', body: { challenge, response } })).data,
+  list: async () => (await apiRequest<PasskeyList>('/me/passkeys')).data,
+  /** Re-confirm (the two-step code or the password), then the device prompt. */
+  addOptions: async (proof: { code?: string; password?: string }) =>
+    (await apiRequest<PublicKeyCredentialCreationOptionsJSON>('/me/passkeys/options', { method: 'POST', body: proof })).data,
+  add: async (response: RegistrationResponseJSON) => (await apiRequest<Passkey>('/me/passkeys', { method: 'POST', body: { response } })).data,
+  rename: async (id: number, name: string) => (await apiRequest<Passkey>(`/me/passkeys/${id}`, { method: 'PATCH', body: { name } })).data,
+  remove: async (id: number) => {
+    await apiRequest<null>(`/me/passkeys/${id}`, { method: 'DELETE' });
+  },
+  /** A manager removes someone's passkeys (a lost or shared device). */
+  reset: async (userId: number) => (await apiRequest<{ removed: number }>(`/users/${userId}/passkeys/reset`, { method: 'POST', body: {} })).data,
 };
 
 /** Two-step sign-in on the signed-in person's own account. */

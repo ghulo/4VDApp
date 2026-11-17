@@ -349,6 +349,21 @@ export const emailTemplates = {
     };
   },
 
+  passkeyAdded(input: { name: string; device: string; link: string }, t: ServerMessages = en): EmailContent {
+    const subject = t.email.passkeySubject;
+    return {
+      subject,
+      html: letter({
+        t,
+        subject,
+        paragraphs: [escapeHtml(t.email.greeting(input.name)), escapeHtml(t.email.passkeyBody(input.device))],
+        button: { label: t.email.passkeyButton, link: input.link },
+        note: escapeHtml(t.email.passkeyNote),
+      }),
+      text: plain([t.email.greeting(input.name), t.email.passkeyBody(input.device), `${t.email.passkeyButton}: ${input.link}`, t.email.passkeyNote]),
+    };
+  },
+
   resetPassword(input: { name: string; link: string }, t: ServerMessages = en): EmailContent {
     const subject = t.email.resetSubject;
     return {

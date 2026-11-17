@@ -3,6 +3,7 @@ import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createReturnsController } from '../controllers/returnsController.js';
 import { createSessionController } from '../controllers/sessionController.js';
+import { createPasskeyController } from '../controllers/passkeyController.js';
 import {
   createAnalyticsController,
   createFavoriteController,
@@ -41,7 +42,7 @@ export function createAnalyticsRoutes({ analyticsService, guards }: Container): 
   return router;
 }
 
-export function createUserRoutes({ userService, sessionService, authService, twoStepService, guards, config }: Container): Router {
+export function createUserRoutes({ userService, sessionService, authService, twoStepService, passkeyService, guards, config }: Container): Router {
   const controller = createUserController(userService);
   const auth = createAuthController(authService, twoStepService, config.refreshTokenTtlDays);
   const sessions = createSessionController(sessionService);
@@ -55,6 +56,8 @@ export function createUserRoutes({ userService, sessionService, authService, two
   router.delete('/:id', ...guards.manage, controller.remove);
   // Lost phone and backup codes: a manager switches two-step sign-in off for them.
   router.post('/:id/two-step/reset', ...guards.manage, auth.twoStepReset);
+  // A lost or shared device: a manager removes someone's passkeys.
+  router.post('/:id/passkeys/reset', ...guards.manage, createPasskeyController(passkeyService, config.refreshTokenTtlDays).reset);
 
   return router;
 }

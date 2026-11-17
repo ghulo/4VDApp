@@ -27,6 +27,18 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] As the developer: People → the owner → Two-step sign-in → Switch off; Activity shows who did it
 - [ ] Google sign-in with two-step on also asks for the code
 
+**Passkeys: fingerprint, face or device PIN** (after the deploy, on 4vd.app, a phone and the Windows app)
+- [ ] Profile → Sign-in and security → Passkeys → Add a passkey: it asks for your password (or your two-step code when that is on), then Windows Hello / Touch ID / Face ID / the Android fingerprint; the passkey shows with its device name, and an email says a passkey was added
+- [ ] Sign out: the email field offers the passkey (Chrome, Edge, Safari); picking it signs you in with no password and no two-step code
+- [ ] "Sign in with a passkey" under the form does the same; closing the device prompt shows no error
+- [ ] On a computer without a fingerprint reader: "Sign in with a passkey" → "use a phone" shows a QR; scan it with the phone that has the passkey
+- [ ] With two-step on: password → the code screen offers "Use a passkey instead", which signs in
+- [ ] Rename and Remove a passkey; a removed one no longer signs in
+- [ ] As an admin: People → an employee who has a passkey → Remove passkeys; Activity shows who did it
+- [ ] Windows app (office PC): Windows Hello works for adding and signing in
+- [ ] Counter PC (Windows app set up as the Counter) and /counter: no passkey key anywhere, the login page included
+- [ ] Albanian: the Profile card, login key and errors read naturally ("çelës kalimi")
+
 **Step 17: yearly declarations** (Books → Declaration, sign in as the owner or the accountant)
 - [ ] Settings → Business details: Legal form shows "Company (sh.p.k., sh.a.)"; switching it to "Individual business" turns the page into the PD with three bands, and Books → Year says "Personal income tax"; switch it back
 - [ ] Books → Declaration, last year: income, costs and book profit match Books → Statements for the year; an income or cost line with several accounts lists them, and each opens its card

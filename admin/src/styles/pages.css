@@ -6571,3 +6571,75 @@ fieldset.payroll-pick {
 .declaration__file > .button {
   justify-self: start;
 }
+
+/* Passkeys in Profile: one row per device, the fingerprint mark before its name. */
+.passkeys:focus {
+  outline: none;
+}
+
+.passkeys__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.passkeys__list > li + li .setting-row,
+.passkeys__list > li + li .passkeys__rename {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.passkeys__list > li:not(:last-child) .setting-row,
+.passkeys__list > li:not(:last-child) .passkeys__rename {
+  padding-bottom: var(--space-4);
+}
+
+.passkeys__list .setting-row {
+  border-top: 0;
+}
+
+.passkeys__name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.passkeys__icon {
+  width: 1.25em;
+  height: 1.25em;
+  color: var(--ink-muted);
+}
+
+.passkeys__rename {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.passkeys__rename-keys {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* The login page's passkey key: under the form after the same "or" rule as Google, which then shows no second rule. */
+.passkey-sign-in {
+  margin-top: var(--space-5);
+}
+
+.passkey-sign-in + .google-sign-in {
+  margin-top: var(--space-3);
+}
+
+.passkey-sign-in + .google-sign-in .google-sign-in__divider {
+  display: none;
+}
+
+/* After the password: the passkey instead of the code, a secondary key under the form. */
+.code-step__passkey {
+  margin-top: var(--space-3);
+}
+
+.passkeys__synced-hint {
+  display: block;
+}

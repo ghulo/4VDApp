@@ -1,10 +1,13 @@
-import { useMutation } from '@tanstack/react-query';
-import { type FormEvent, useRef, useState } from 'react';
+import { Fingerprint } from '@phosphor-icons/react';
+import { browserSupportsWebAuthnAutofill, startAuthentication, WebAuthnAbortService } from '@simplewebauthn/browser';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/useAuth';
 import { AuthShell } from '../components/AuthShell';
 import { GoogleButton } from '../components/GoogleButton';
-import { accountApi, authApi } from '../services/api';
+import { accountApi, authApi, passkeyApi } from '../services/api';
+import { passkeyCancelled, passkeyMessage, usePasskeysHere } from '../auth/passkeys';
 import type { LoginResult, TwoStepChallenge } from '../services/types';
 import { ApiError } from '../services/apiClient';
 import { errorMessage } from '../utils/errors';
@@ -42,6 +45,7 @@ function signInMessage(error: unknown): string {
     if (error.code === 'WRONG_CODE') return t.wrongCode;
     if (error.code === 'TOO_MANY_CODES' || error.status === 429) return t.tooManyCodes;
     if (error.code === 'TWO_STEP_EXPIRED') return t.codeExpired;
+    if (error.code?.startsWith('PASSKEY_')) return passkeyMessage(error);
     if (error.status === 401) return t.wrongLogin;
   }
   return errorMessage(error);
@@ -70,7 +74,39 @@ export function LoginPage() {
   const afterGoogle = (result: LoginResult | TwoStepChallenge) => ('challenge' in result ? setChallenge(result.challenge) : finish(result));
   const google = useMutation({ mutationFn: accountApi.googleSignIn, onSuccess: afterGoogle });
   const resend = useMutation({ mutationFn: () => accountApi.resendVerification(email.trim()) });
-  const busy = isSubmitting || google.isPending;
+  // Passkeys: offered in the email field's autofill where the browser can, and always as a key.
+  const passkeysHere = usePasskeysHere();
+  const finishRef = useRef(finish);
+  useEffect(() => {
+    finishRef.current = finish;
+  });
+  const [autofillRound, setAutofillRound] = useState(0);
+  const passkey = useMutation({
+    mutationFn: async () => passkeyApi.signIn(await startAuthentication({ optionsJSON: await passkeyApi.signInOptions() })),
+    onSuccess: (result) => finishRef.current(result),
+    // Listen in the email field again (the key's prompt replaced that one).
+    onSettled: () => setAutofillRound((round) => round + 1),
+  });
+  useEffect(() => {
+    if (!passkeysHere || challenge) return;
+    let live = true;
+    void (async () => {
+      try {
+        if (!(await browserSupportsWebAuthnAutofill())) return;
+        const optionsJSON = await passkeyApi.signInOptions();
+        if (!live) return;
+        const result = await passkeyApi.signIn(await startAuthentication({ optionsJSON, useBrowserAutofill: true }));
+        if (live) await finishRef.current(result);
+      } catch (autofillError) {
+        if (live && !passkeyCancelled(autofillError)) setError(autofillError);
+      }
+    })();
+    return () => {
+      live = false;
+      WebAuthnAbortService.cancelCeremony();
+    };
+  }, [passkeysHere, challenge, autofillRound]);
+  const busy = isSubmitting || google.isPending || passkey.isPending;
   const notConfirmed = error instanceof ApiError && error.code === 'EMAIL_NOT_CONFIRMED';
 
   if (state.status === 'signedIn') return <Navigate to={redirectTo} replace />;
@@ -143,7 +179,7 @@ export function LoginPage() {
             ref={emailRef}
             type="email"
             inputMode="email"
-            autoComplete="username"
+            autoComplete="username webauthn"
             autoCapitalize="off"
             spellCheck={false}
             value={email}
@@ -210,6 +246,19 @@ export function LoginPage() {
           {busy ? t.auth.loggingIn : t.auth.logIn}
         </Button>
       </form>
+      {passkeysHere && (
+        <div className="passkey-sign-in">
+          <p className="google-sign-in__divider">{t.common.or}</p>
+          <Button variant="secondary" wide icon={Fingerprint} loading={passkey.isPending} disabled={busy && !passkey.isPending} onClick={() => passkey.mutate()}>
+            {t.passkeys.signIn}
+          </Button>
+          {passkey.isError && !passkeyCancelled(passkey.error) && (
+            <p className="form-error" role="alert">
+              {passkeyMessage(passkey.error)}
+            </p>
+          )}
+        </div>
+      )}
       <GoogleButton label="signin_with" onCredential={(credential) => google.mutate(credential)} />
     </AuthShell>
   );
@@ -230,6 +279,23 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
     },
   });
   const expired = check.error instanceof ApiError && check.error.code === 'TWO_STEP_EXPIRED';
+  // Someone with a passkey can use it instead of the code (not on the Counter).
+  const passkeysHere = usePasskeysHere();
+  const offer = useQuery({
+    queryKey: ['auth', 'two-step-passkey', challenge],
+    queryFn: async () => (await passkeyApi.twoStepOptions(challenge)) !== null,
+    enabled: passkeysHere,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const passkeyStep = useMutation({
+    mutationFn: async () => {
+      const optionsJSON = await passkeyApi.twoStepOptions(challenge);
+      if (!optionsJSON) throw new ApiError('No passkey', 401, 'PASSKEY_UNKNOWN');
+      return passkeyApi.twoStep(challenge, await startAuthentication({ optionsJSON }));
+    },
+    onSuccess: onDone,
+  });
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -272,9 +338,21 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
           {signInMessage(check.error)}
         </p>
       )}
-      <Button type="submit" loading={check.isPending} variant="primary" wide disabled={expired}>
+      <Button type="submit" loading={check.isPending} variant="primary" wide disabled={expired || passkeyStep.isPending}>
         {check.isPending ? t.auth.checkingCode : t.auth.checkCode}
       </Button>
+      {offer.data && (
+        <div className="code-step__passkey">
+          <Button variant="secondary" wide icon={Fingerprint} loading={passkeyStep.isPending} disabled={expired || check.isPending} onClick={() => passkeyStep.mutate()}>
+            {t.passkeys.instead}
+          </Button>
+          {passkeyStep.isError && !passkeyCancelled(passkeyStep.error) && (
+            <p className="form-error" role="alert">
+              {passkeyMessage(passkeyStep.error)}
+            </p>
+          )}
+        </div>
+      )}
       <p className="field-hint">
         <button type="button" className="text-button" onClick={onBack}>
           {t.auth.useOtherAccount}

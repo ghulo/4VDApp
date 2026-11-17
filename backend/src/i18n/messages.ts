@@ -183,6 +183,10 @@ export interface ServerMessages {
     verifyBody: string;
     verifyButton: string;
     expires24h: string;
+    passkeySubject: string;
+    passkeyBody: (device: string) => string;
+    passkeyButton: string;
+    passkeyNote: string;
     resetSubject: string;
     resetBody: string;
     resetButton: string;
@@ -504,6 +508,10 @@ export const en: ServerMessages = {
     verifyBody: 'Please confirm this is your email address.',
     verifyButton: 'Confirm my email',
     expires24h: 'This link expires in 24 hours.',
+    passkeySubject: 'A passkey was added to your 4VD account',
+    passkeyBody: (device) => `A new passkey (${device}) can now sign in to your 4VD account with the device’s fingerprint, face or PIN.`,
+    passkeyButton: 'See my passkeys',
+    passkeyNote: 'If you didn’t add it, remove it on your profile and change your password.',
     resetSubject: 'Reset your 4VD password',
     resetBody: 'Someone asked to reset the password for your 4VD account. If it was you, choose a new one here.',
     resetButton: 'Choose a new password',
@@ -835,6 +843,10 @@ export const sq: ServerMessages = {
     verifyBody: 'Të lutem konfirmo që kjo është adresa jote e emailit.',
     verifyButton: 'Konfirmo emailin',
     expires24h: 'Kjo lidhje skadon pas 24 orësh.',
+    passkeySubject: 'U shtua një çelës kalimi në llogarinë tënde 4VD',
+    passkeyBody: (device) => `Një çelës i ri kalimi (${device}) tani mund të hyjë në llogarinë tënde 4VD me gjurmën e gishtit, fytyrën ose PIN-in e pajisjes.`,
+    passkeyButton: 'Shiko çelësat e mi',
+    passkeyNote: 'Nëse nuk e shtove ti, hiqe te profili yt dhe ndrysho fjalëkalimin.',
     resetSubject: 'Ndrysho fjalëkalimin e 4VD',
     resetBody: 'Dikush kërkoi të ndryshojë fjalëkalimin e llogarisë tënde në 4VD. Nëse ishe ti, zgjidh një të ri këtu.',
     resetButton: 'Zgjidh një fjalëkalim të ri',

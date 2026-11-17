@@ -17,6 +17,8 @@ import { formatDate } from '../utils/format';
 import { DeviceList, type DeviceGroup } from '../components/DeviceList';
 import { canOversee, canReadBooks } from '../auth/roles';
 import { TwoStepCard } from '../components/TwoStepCard';
+import { PasskeyCard } from '../components/PasskeyCard';
+import { usePasskeysHere } from '../auth/passkeys';
 import { MyPayPanel, useOnPayroll } from './PayrollPages';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -178,6 +180,7 @@ function SecurityPanel({ user }: { user: User }) {
   const t = useT();
   const queryClient = useQueryClient();
   const security = useQuery({ queryKey: ['me', 'security'], queryFn: meApi.security });
+  const passkeysHere = usePasskeysHere();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -298,6 +301,9 @@ function SecurityPanel({ user }: { user: User }) {
 
       {/* Offered to those who handle the books or the whole business; kept visible once on. */}
       {(canOversee(user.role) || canReadBooks(user.role) || user.twoStep) && <TwoStepCard />}
+
+      {/* Everyone's own account, but never on the Counter PC. */}
+      {passkeysHere && <PasskeyCard />}
 
       <Card title="Google">
         <SettingRow

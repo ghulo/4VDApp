@@ -14,6 +14,7 @@ export const GLOBAL_TABLES: readonly string[] = [
   'refresh_tokens',
   'account_tokens',
   'user_identities',
+  'passkeys', // a person's own devices, used before their business is known
   'push_subscriptions',
   'email_outbox', // sent by the server for everyone
   'media', // nullable business_id: people's photos have none

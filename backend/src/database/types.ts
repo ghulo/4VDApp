@@ -222,6 +222,20 @@ export interface UserIdentitiesTable {
   created_at: CreatedAt;
 }
 
+export interface PasskeysTable {
+  id: Generated<number>;
+  user_id: number;
+  credential_id: string;
+  public_key: Uint8Array;
+  counter: ColumnType<string, string | number | undefined, string | number>;
+  transports: ColumnType<string[], string[] | undefined, string[]>;
+  backed_up: ColumnType<boolean, boolean | undefined, boolean>;
+  aaguid: string | null;
+  name: string;
+  created_at: CreatedAt;
+  last_used_at: Date | null;
+}
+
 export interface EmailOutboxTable {
   id: Generated<number>;
   to_address: string;
@@ -1704,6 +1718,7 @@ export interface Database {
   invites: InvitesTable;
   account_tokens: AccountTokensTable;
   user_identities: UserIdentitiesTable;
+  passkeys: PasskeysTable;
   email_outbox: EmailOutboxTable;
   returns: ReturnsTable;
   write_offs: WriteOffsTable;
@@ -1821,6 +1836,7 @@ export interface OpeningLinesTable {
 }
 
 export type UserRow = Selectable<UsersTable>;
+export type PasskeyRow = Selectable<PasskeysTable>;
 export type NewUserRow = Insertable<UsersTable>;
 export type UserUpdate = Updateable<UsersTable>;
 export type CategoryRow = Selectable<CategoriesTable>;

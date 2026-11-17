@@ -91,7 +91,7 @@ export class AuthService {
 async startSession(
     user: UserRow,
     device: DeviceInfo = {},
-    how: 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' = 'password',
+    how: 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' | 'passkey' = 'password',
     /** The PC, when someone takes it over with a PIN; any other sign-in starts a new one. */
     deviceId: string = randomUUID(),
   ): Promise<LoginResult> {

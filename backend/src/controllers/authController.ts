@@ -3,7 +3,7 @@ import type { AuthService, DeviceInfo, SignInResult, TwoStepNeeded, TwoStepSetup
 import type { TwoStepService } from '../services/TwoStepService.js';
 import { clearSessionCookies, deliverSession, readCookie, REFRESH_COOKIE } from '../utils/sessionCookies.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { loginSchema, logoutSchema, refreshTokenSchema, twoStepCodeSchema, twoStepSetupConfirmSchema, twoStepSetupStartSchema, twoStepSignInSchema } from '../validators/authValidators.js';
+import { loginSchema, logoutSchema, refreshTokenSchema, switchBusinessSchema, twoStepCodeSchema, twoStepSetupConfirmSchema, twoStepSetupStartSchema, twoStepSignInSchema } from '../validators/authValidators.js';
 import { z } from 'zod';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
@@ -99,8 +99,17 @@ export function createAuthController(authService: AuthService, twoStepService: T
       sendSuccess(res, null, { message: 'Logged out' });
     },
 
-    me(req: Request, res: Response): void {
-      sendSuccess(res, req.user);
+    /** The person, the business this session works in, and every business they may switch to. */
+    async me(req: Request, res: Response): Promise<void> {
+      const businesses = await authService.businessesOf(req.user!);
+      sendSuccess(res, { ...req.user, businessId: req.identity!.businessId, businesses });
+    },
+
+    /** The business picker: same session, another business; new cookies, so the dashboard reloads into it. */
+    async switchBusiness(req: Request, res: Response): Promise<void> {
+      const { businessId } = parseInput(switchBusinessSchema, req.body);
+      const result = await authService.switchBusiness(req.user!.id, req.identity!.sessionId, businessId, deviceOf(req));
+      sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Switched business' });
     },
   };
 }

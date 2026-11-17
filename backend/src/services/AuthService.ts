@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { enterBusiness } from '../database/businessContext.js';
 import jwt from 'jsonwebtoken';
 import type { AppConfig } from '../config/env.js';
-import { AppError, UnauthorizedError } from '../errors/httpErrors.js';
+import { AppError, ForbiddenError, UnauthorizedError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
-import type { UserRow } from '../database/types.js';
+import type { UserRole, UserRow } from '../database/types.js';
 import type { PublicUser } from '../types/auth.js';
 import { verifyPassword } from '../utils/password.js';
 import { generateRefreshToken, hashRefreshToken, signAccessToken } from '../utils/tokens.js';
@@ -34,6 +34,12 @@ export interface TwoStepNeeded {
   twoStep: true;
   /** Good for one sign-in, a few minutes; not a session. */
   challenge: string;
+}
+
+/** Where a session works: a business and the person's role in it. */
+interface Place {
+  businessId: number;
+  role: UserRole;
 }
 
 export const TWO_STEP_AUDIENCE = '4vd-two-step';
@@ -128,8 +134,9 @@ async startSession(
   ): Promise<LoginResult> {
     // Every way in ends here: no session while the setup is owed (an old code-step challenge, a PIN, a passkey).
     if (user.two_step_required) throw setupNeededError();
-    const publicUser = toPublicUser(user);
-    const tokens = await this.issueTokens(publicUser, user.business_id, { userAgent: device.userAgent, ip: device.ip, deviceId });
+    const place = await this.placeOf(user);
+    const publicUser = { ...toPublicUser(user), role: place.role };
+    const tokens = await this.issueTokens(publicUser, place, { userAgent: device.userAgent, ip: device.ip, deviceId });
     // Signing in for real clears any wrong-PIN lock on the person.
     await this.userRepository.update(user.id, { last_login_at: new Date(), ...(how !== 'pin' && { pin_cleared_at: new Date() }) });
     // Logged once the session exists, so the log never shows a login that failed.
@@ -152,13 +159,50 @@ async startSession(
     if (!user || !user.is_active) throw new UnauthorizedError('Session expired, please log in again');
     if (user.two_step_required) throw new AppError('Set up two-step sign-in again: sign in with your password', 401, 'TWO_STEP_SETUP_NEEDED');
 
+    // Same business as before, while the person may still open it; else back home.
+    const place = await this.placeOf(user, consumed.businessId ?? undefined);
     // Same device, same session: keep its id so it stays one row in the devices list.
-    return this.issueTokens(toPublicUser(user), user.business_id, {
+    return this.issueTokens({ ...toPublicUser(user), role: place.role }, place, {
       sessionId: consumed.sessionId,
       deviceId: consumed.deviceId ?? undefined,
       userAgent: device.userAgent ?? consumed.userAgent,
       ip: device.ip,
     });
+  }
+
+  /**
+   * The business picker: the same session (same device row) carries on in
+   * `businessId`. Only a business the person belongs to, or any business for
+   * 4VD's developer. The session's old tokens stop working.
+   */
+  async switchBusiness(userId: number, sessionId: string | undefined, businessId: number, device: DeviceInfo = {}): Promise<LoginResult> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
+    const place = await this.placeOf(user, businessId);
+    if (place.businessId !== businessId) throw new ForbiddenError('You are not part of that business');
+    const deviceId = sessionId ? await this.refreshTokenRepository.deviceOf(sessionId) : undefined;
+    if (sessionId) await this.refreshTokenRepository.revokeSession(user.id, sessionId);
+    const publicUser = { ...toPublicUser(user), role: place.role };
+    const tokens = await this.issueTokens(publicUser, place, { sessionId, deviceId, userAgent: device.userAgent, ip: device.ip });
+    return { ...tokens, user: publicUser };
+  }
+
+  /** The businesses the person may switch to, for the picker. */
+  businessesOf(user: { id: number; platformDeveloper: boolean }) {
+    return this.userRepository.businessesOf({ id: user.id, is_platform_developer: user.platformDeveloper });
+  }
+
+  /**
+   * Where a session works: `wanted` when the person still belongs to it (4VD's
+   * developer: any business that exists), else their home business.
+   */
+  private async placeOf(user: UserRow, wanted?: number): Promise<Place> {
+    if (user.is_platform_developer) {
+      const exists = wanted !== undefined && (await this.userRepository.businessName(wanted)) !== undefined;
+      return { businessId: exists ? wanted : user.business_id, role: 'developer' };
+    }
+    const membership = await this.userRepository.membership(user.id, user.business_id, wanted);
+    return membership ?? { businessId: user.business_id, role: user.role };
   }
 
   /**
@@ -175,20 +219,22 @@ async startSession(
 
   private async issueTokens(
     user: PublicUser,
-    businessId: number,
+    place: Place,
     session: { sessionId?: string; deviceId?: string; userAgent?: string | null; ip?: string | null } = {},
   ): Promise<TokenPair> {
-    // From here on this request works in the person's business (the sign-in log entry, the session).
+    const { businessId } = place;
+    // From here on this request works in the session's business (the sign-in log entry, the session).
     enterBusiness(businessId);
     const sessionId = session.sessionId ?? randomUUID();
+    // The role in the token is the one in this business (public pages trust it to hide costs).
     const token = signAccessToken(
-      { userId: user.id, email: user.email, role: user.role, sessionId, businessId },
+      { userId: user.id, email: user.email, role: place.role, sessionId, businessId },
       this.config.jwtSecret,
       this.config.jwtExpiresIn,
     );
     const refreshToken = generateRefreshToken();
     const expiresAt = new Date(Date.now() + this.config.refreshTokenTtlDays * MS_PER_DAY);
-    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt, { ...session, sessionId });
+    await this.refreshTokenRepository.create(user.id, hashRefreshToken(refreshToken), expiresAt, { ...session, sessionId, businessId });
     return { token, refreshToken };
   }
 }

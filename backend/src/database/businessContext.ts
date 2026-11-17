@@ -18,6 +18,11 @@ interface BusinessContext {
   inRequest: boolean;
   /** Work before the business is known, on purpose. */
   system: boolean;
+  /**
+   * Public pages (no sign-in required) still tailor answers to a signed-in
+   * visitor's role: whose powers grid that role is read in. Reads no rows.
+   */
+  powersOf?: number;
 }
 
 const storage = new AsyncLocalStorage<BusinessContext>();
@@ -53,6 +58,12 @@ export function enterBusiness(businessId: number): void {
   if (!context) throw new Error('enterBusiness called outside a request or runAsBusiness');
   context.businessId = businessId;
   context.system = false;
+}
+
+/** Read role checks in this business's powers grid until a business is entered (public pages). */
+export function usePowersOf(businessId: number): void {
+  const context = storage.getStore();
+  if (context) context.powersOf = businessId;
 }
 
 /** Mark the rest of this request as work before the business is known (sign-in, emailed links). */

@@ -46,6 +46,7 @@ export function createAuthRoutes({
   router.post('/refresh', controller.refresh);
   router.post('/logout', guards.authenticated, controller.logout);
   router.get('/me', guards.authenticated, controller.me);
+  router.post('/switch', guards.authenticated, controller.switchBusiness);
   router.get('/invites/:token', linkLimiter, invites.preview);
   router.post('/invites/:token/accept', linkLimiter, invites.accept);
   router.get('/google', google.status);

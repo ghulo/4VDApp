@@ -1,9 +1,10 @@
+import { currentBusinessId, runAsSystem } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { PublicUser } from '../types/auth.js';
-import { applyGrants, currentGrants, DEFAULT_GRANTS, EDITABLE_ROLES, type Grants, LOCKED_POWERS, POWERS, type Power } from '../utils/roles.js';
+import { currentGrants, DEFAULT_GRANTS, EDITABLE_ROLES, type Grants, LOCKED_POWERS, POWERS, type Power, forgetGrants, setGrants } from '../utils/roles.js';
 
 const KEY = 'role_permissions';
 
@@ -29,13 +30,17 @@ export interface RoleChange {
 }
 
 /**
- * What each role may do, as the developer set it in Settings → Roles. Loaded
- * once into utils/roles.ts (where every check reads it) and swapped in place on
- * each change, so a change applies to the very next request.
+ * What each role may do in each business, as its main admin set it in
+ * Settings → Roles. Every business's saved rules are read once (before the
+ * first check anywhere) into utils/roles.ts, where every check reads the
+ * current business's grid; a save replaces only that business's entry, so it
+ * applies to the very next request. A business that never saved uses the
+ * usual rules.
  */
 export class PermissionService {
   private loading: Promise<void> | null = null;
-  private pages: Record<string, UserRole[]> = {};
+  /** Menu pages each business changed from the usual. */
+  private pages = new Map<number, Record<string, UserRole[]>>();
 
   constructor(
     private readonly settingsRepository: SettingsRepository,
@@ -43,9 +48,9 @@ export class PermissionService {
     private readonly transactions: TransactionManager,
   ) {}
 
-  /** Read the saved rules the first time anyone asks; later calls cost nothing. */
+  /** Read every business's saved rules the first time anyone asks; later calls cost nothing. */
   ensureLoaded(): Promise<void> {
-    this.loading ??= this.load().catch((error: unknown) => {
+    this.loading ??= runAsSystem(() => this.load()).catch((error: unknown) => {
       this.loading = null;
       throw error;
     });
@@ -55,11 +60,13 @@ export class PermissionService {
   /** Forget what was read, so the next request reads the database again (tests reset the data underneath). */
   forget(): void {
     this.loading = null;
+    this.pages.clear();
+    forgetGrants();
   }
 
   async get(): Promise<RolePermissions> {
     await this.ensureLoaded();
-    return { powers: currentGrants(), pages: this.pages, defaults: DEFAULT_GRANTS, editableRoles: EDITABLE_ROLES, lockedPowers: LOCKED_POWERS };
+    return { powers: currentGrants(), pages: this.pages.get(this.business()) ?? {}, defaults: DEFAULT_GRANTS, editableRoles: EDITABLE_ROLES, lockedPowers: LOCKED_POWERS };
   }
 
   async update(input: StoredPermissions, actor: PublicUser, restoredFrom?: number): Promise<RolePermissions> {
@@ -80,7 +87,7 @@ export class PermissionService {
           details: { before, after, ...(restoredFrom !== undefined && { restoredFrom }) },
         });
       });
-      this.use(after);
+      this.use(this.business(), after);
     }
     return this.get();
   }
@@ -107,20 +114,32 @@ export class PermissionService {
   }
 
   private async load(): Promise<void> {
-    const saved = (await this.settingsRepository.all()).get(KEY) as Partial<StoredPermissions> | undefined;
-    this.use(tidy({ powers: saved?.powers ?? {}, pages: saved?.pages ?? {} }));
+    const saved = await this.settingsRepository.everyBusiness(KEY);
+    forgetGrants();
+    this.pages.clear();
+    for (const [businessId, value] of saved) {
+      const rules = value as Partial<StoredPermissions> | undefined;
+      this.use(businessId, tidy({ powers: rules?.powers ?? {}, pages: rules?.pages ?? {} }));
+    }
   }
 
-  private use(stored: StoredPermissions): void {
-    applyGrants(stored.powers);
-    this.pages = stored.pages;
+  private use(businessId: number, stored: StoredPermissions): void {
+    setGrants(businessId, stored.powers);
+    this.pages.set(businessId, stored.pages);
+  }
+
+  /** The business whose rules are read or changed: the one the request entered. */
+  private business(): number {
+    const businessId = currentBusinessId();
+    if (businessId === null) throw new Error('The roles grid is read or changed inside a business only');
+    return businessId;
   }
 
   /** The rules in force, as they would be saved. */
   private stored(): StoredPermissions {
     const grants = currentGrants();
     const powers = Object.fromEntries(POWERS.map((power) => [power, grants[power].filter((role) => EDITABLE_ROLES.includes(role))]));
-    return { powers, pages: this.pages };
+    return { powers, pages: this.pages.get(this.business()) ?? {} };
   }
 }
 

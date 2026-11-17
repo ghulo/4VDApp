@@ -11,6 +11,10 @@ export interface User {
   role: UserRole;
   /** 4VD's own staff: opens every business (role 'developer'). */
   platformDeveloper?: boolean;
+  /** Signed in only (auth/me): the business this session works in. */
+  businessId?: number;
+  /** Signed in only (auth/me): every business this person may switch to, with their role there. */
+  businesses?: BusinessChoice[];
   isActive: boolean;
   phone: string | null;
   /** Path to the photo (use mediaSrc); null shows initials. */
@@ -28,6 +32,13 @@ export interface User {
   /** Has at least one passkey (in the People list). */
   passkeys?: boolean;
   createdAt: string;
+}
+
+/** A business someone may open, for the picker in the account menu. */
+export interface BusinessChoice {
+  id: number;
+  name: string;
+  role: UserRole;
 }
 
 /** Someone on the People page: their account and when they last used 4VD. */

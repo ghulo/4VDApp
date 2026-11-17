@@ -87,6 +87,8 @@ export interface RefreshTokensTable {
   last_used_at: Date | null;
   /** One PC: new at a password sign-in, kept when someone takes over with a PIN. */
   device_id: Generated<string | null>;
+  /** The business this session works in (the business picker); null = the person's home business. */
+  business_id: number | null;
   created_at: CreatedAt;
 }
 

@@ -29,6 +29,9 @@ function readUnprinted(): Unprinted[] {
   }
 }
 
+/** Receipts on this PC still waiting to be printed. */
+export const unprintedWaiting = (): boolean => readUnprinted().length > 0;
+
 /** F-Link's messages, in words the person at the counter can act on. */
 export function plainReason(message: string | null, t: Catalogue['counter']): string {
   if (!message) return t.printer.unknown;

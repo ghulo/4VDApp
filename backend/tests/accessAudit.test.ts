@@ -121,6 +121,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'DELETE /api/me/passkeys/:id',
     'POST /api/auth/logout',
     'GET /api/auth/me',
+    'POST /api/auth/switch',
     'GET /api/categories/',
     'GET /api/products/',
     'GET /api/products/barcode/:barcode',

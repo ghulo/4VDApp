@@ -2582,6 +2582,8 @@ input.switch:focus-visible {
   right: 0;
   z-index: var(--z-menu);
   min-width: 240px;
+  /* Never wider than a phone's screen; a longer label ends in "…" there. */
+  max-width: calc(100vw - 2 * var(--space-4));
   margin: 0;
   padding: var(--space-1);
   list-style: none;
@@ -2633,6 +2635,29 @@ input.switch:focus-visible {
   .menu__shortcut {
     display: none;
   }
+}
+
+/* Long names (a business) end in an ellipsis instead of widening the menu past the screen. */
+.menu__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The open choice in a pick-one group (the business picker). */
+.menu__check {
+  flex: none;
+  margin-left: auto;
+}
+
+.menu__item .menu__check {
+  color: var(--brand);
+}
+
+.menu__divider {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--line);
 }
 
 .menu__item:hover,

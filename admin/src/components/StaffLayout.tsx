@@ -2,6 +2,7 @@ import { SignOut, UserCircle } from '@phosphor-icons/react';
 import { Suspense } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
+import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { useT } from '../i18n/useT';
 import { STAFF_TABS, staffTabFor } from '../navigation/staff';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
@@ -24,6 +25,7 @@ export function StaffLayout() {
   const navigate = useNavigate();
   useFocusOnRouteChange();
   const t = useT();
+  const businesses = useBusinessPicker();
   const current = staffTabFor(location.pathname);
 
   const tabs = (
@@ -57,7 +59,8 @@ export function StaffLayout() {
             face={<Avatar name={user.name} url={user.avatarUrl} size={28} />}
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             items={[
-              { label: t.nav.items.profile, icon: UserCircle, onSelect: () => navigate('/profile') },
+              ...businesses,
+              { label: t.nav.items.profile, icon: UserCircle, divider: businesses.length > 0, onSelect: () => navigate('/profile') },
               { label: t.nav.logOut, icon: SignOut, onSelect: logout },
             ]}
           />

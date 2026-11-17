@@ -35,7 +35,7 @@ export class SignupService {
         email: input.email,
         name: input.name,
         // The founder runs the business; developer is 4VD's own staff, above every business, and never handed out here.
-        role: 'admin',
+        role: 'main_admin',
         password_hash: passwordHash,
         business_id: businessId,
         email_verified_at: null,

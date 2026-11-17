@@ -1,5 +1,7 @@
-import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, Hammer, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
 import { BinPanel } from '../components/BinPanel';
+import { SupportVisitsPanel } from '../components/SupportVisitsPanel';
+import { isTopRole } from '../auth/roles';
 import { BillEmailPanel } from '../components/BillEmailParts';
 import { ShopRulesPanel } from '../components/ShopRulesPanel';
 import { FeaturesPanel } from '../components/FeaturesPanel';
@@ -29,6 +31,7 @@ export function SettingsPage() {
   const t = useT();
   const { role } = useCurrentUser();
   const isDeveloper = role === 'developer';
+  const leads = isDeveloper || role === 'main_admin' || role === 'admin';
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
@@ -151,10 +154,13 @@ export function SettingsPage() {
           ...(desktopBridge()
             ? [{ id: 'this-computer', label: t.desktop.thisComputer.title, icon: Desktop, content: <ThisComputerPanel /> }]
             : []),
-          // The developer's own tools come last: the shop's settings are what the owner opens this page for.
+          // Who from 4VD opened this business, for the people who run it.
+          ...(leads ? [{ id: 'support', label: t.support.title, icon: Hammer, content: <SupportVisitsPanel /> }] : []),
+          // The powers grid: the main admin's (and 4VD's developer's).
+          ...(isTopRole(role) ? [{ id: 'roles', label: t.permissions.title, icon: ShieldCheck, content: <RolesPanel /> }] : []),
+          // 4VD's own tools come last: the shop's settings are what the owner opens this page for.
           ...(isDeveloper
             ? [
-                { id: 'roles', label: t.permissions.title, icon: ShieldCheck, content: <RolesPanel /> },
                 {
                   id: 'launch',
                   label: t.launch.title,

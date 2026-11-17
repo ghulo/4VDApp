@@ -18,6 +18,8 @@ export interface PublicUser {
   email: string;
   name: string;
   role: UserRole;
+  /** 4VD's own staff: opens every business (set by hand on the database). */
+  platformDeveloper: boolean;
   isActive: boolean;
   phone: string | null;
   /** Path to the photo, e.g. /api/media/<id>; null shows initials. */

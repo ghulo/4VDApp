@@ -1,7 +1,7 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { Language } from '../i18n/language.js';
-import { rolesWith } from '../utils/roles.js';
+import { rolesWith, storedOnly } from '../utils/roles.js';
 
 export interface SubscriptionRow {
   daily_enabled: boolean;
@@ -73,7 +73,8 @@ export class ReportSubscriptionRepository {
         sql<string | null>`to_char(r.last_daily, 'YYYY-MM-DD')`.as('last_daily'),
         sql<string | null>`to_char(r.last_weekly, 'YYYY-MM-DD')`.as('last_weekly'),
       ])
-      .where('u.role', 'in', rolesWith('oversee'))
+      .where('u.role', 'in', storedOnly(rolesWith('oversee')))
+      .where((w) => w.or([w('u.is_platform_developer', '=', false), w('u.business_id', '=', sql<number>`current_business_id()`)]))
       .where('u.is_active', '=', true)
       .where('u.deleted_at', 'is', null)
       .execute();

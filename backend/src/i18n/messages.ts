@@ -324,7 +324,7 @@ const enUndoneKind: Record<UndoneKind, string> = {
 
 export const en: ServerMessages = {
   language: 'en',
-  roleName: { developer: 'the developer', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member', accountant: 'the accountant' },
+  roleName: { developer: 'the 4VD developer', main_admin: 'the main admin', admin: 'an admin', owner: 'the owner', employee: 'an employee', family: 'a family member', accountant: 'the accountant' },
   writeOffReason: { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' },
   myRequest: {
     return: ({ what, refund }) => `Return of ${what}, refund ${money(refund, 'en')}`,
@@ -654,7 +654,7 @@ const sqUndoneKind: Record<UndoneKind, string> = {
 
 export const sq: ServerMessages = {
   language: 'sq',
-  roleName: { developer: 'zhvillues', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' },
+  roleName: { developer: 'zhvillues i 4VD', main_admin: 'administrator kryesor', admin: 'administrator', owner: 'pronar', employee: 'punonjës', family: 'anëtar i familjes', accountant: 'kontabilist' },
   writeOffReason: { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' },
   myRequest: {
     return: ({ what, refund }) => `Kthim i ${what}, rimbursim ${money(refund, 'sq')}`,

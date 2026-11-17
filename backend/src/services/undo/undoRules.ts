@@ -1,4 +1,5 @@
 import type { UserRole } from '../../database/types.js';
+import { isTopRole } from '../../utils/roles.js';
 
 /** What an undoable activity entry changed. */
 export type UndoKind =
@@ -24,7 +25,7 @@ interface Person {
  * person whose action it was (null when they've been removed: developer only).
  */
 export function canUndo(actor: Person, owner: Person | null): boolean {
-  if (actor.role === 'developer') return true;
+  if (isTopRole(actor.role)) return true;
   if (actor.role !== 'admin' && actor.role !== 'owner') return false;
   if (owner === null) return false;
   return owner.id === actor.id || owner.role === 'employee';

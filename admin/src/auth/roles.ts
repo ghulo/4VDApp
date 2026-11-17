@@ -1,7 +1,7 @@
 import { USER_ROLES, type UserRole } from '../services/types';
 import { hasPower } from './permissions';
 
-// The same rules as the API (backend/src/utils/roles.ts), as the developer set
+// The same rules as the API (backend/src/utils/roles.ts), as a main admin set
 // them in Settings → Roles; the API enforces them, these only decide what to show.
 
 /** Change products, stock, people and settings. */
@@ -20,17 +20,20 @@ export const staffLayout = counterOnly;
 export const canSell = (role: UserRole): boolean => hasPower(role, 'sell');
 /** Use the dashboard at all: whoever oversees the business, the accountant, and employees for the Counter. */
 export const canUseDashboard = (role: UserRole): boolean => canOversee(role) || canReadBooks(role) || counterOnly(role);
-/** Reopen a filed VAT month: the accountant, the owner and the developer. */
+/** Reopen a filed VAT month: the accountant, the owner and the main admin. */
 export const canReopen = (role: UserRole): boolean => hasPower(role, 'reopen');
 /** Write hand-written entries in the books: managers and the accountant. */
 export const canWriteEntries = (role: UserRole): boolean => hasPower(role, 'entries');
 
-const TOP_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'accountant'];
+const TOP_ROLES: UserRole[] = ['main_admin', 'admin', 'owner', 'accountant'];
 
-/** May `actor` give someone `role`, or change someone who has it? */
+/** Every power in the business, and changes its powers grid: the main admin, and 4VD's developer. */
+export const isTopRole = (role: UserRole): boolean => role === 'developer' || role === 'main_admin';
+
+/** May `actor` give someone `role`, or change someone who has it? developer is never handed out. */
 export function canHandOut(actor: UserRole, role: UserRole): boolean {
-  if (!canManage(actor)) return false;
-  return actor === 'developer' || !TOP_ROLES.includes(role);
+  if (!canManage(actor) || role === 'developer') return false;
+  return isTopRole(actor) || !TOP_ROLES.includes(role);
 }
 
 /** The roles `actor` may choose from when adding or changing someone. */

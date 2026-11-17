@@ -207,7 +207,7 @@ export function phoneTabsFor(role: UserRole): NavItem[] {
 
 /** Whether this person sees the menu item or tab: as chosen in Settings → Roles, else the accountant sees only the money side. */
 export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean; power?: Power }): boolean {
-  return role === 'developer' || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
+  return role === 'developer' || role === 'main_admin' || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
 }
 
 /** The usual rule, before any change in Settings → Roles. */

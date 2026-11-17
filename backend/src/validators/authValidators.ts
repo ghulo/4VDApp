@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { USER_ROLES } from '../database/types.js';
+import { STORED_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { LANGUAGES } from '../i18n/language.js';
 import { ibanSchema, nuiSchema } from './validate.js';
@@ -89,7 +89,7 @@ export const signupSchema = z.object({
 
 export const inviteSchema = z.object({
   email: emailSchema,
-  role: z.enum(USER_ROLES),
+  role: z.enum(STORED_ROLES),
   /** The invite email and the new account's language; the inviter's own when left out. */
   language: z.enum(LANGUAGES).optional(),
 });

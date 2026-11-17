@@ -106,6 +106,9 @@ describe('each piece of work sees only its own business', () => {
     await expect(
       inRequest(() => sql`with set_timeout as (select 1 as one) select one from set_timeout`.execute(small)),
     ).resolves.toBeDefined();
+    // A schema change (a migration's policy or view) reads no rows, whatever tables its text names.
+    await expect(inRequest(() => sql`create view guard_probe as select id from products`.execute(small))).resolves.toBeDefined();
+    await sql`drop view guard_probe`.execute(small);
     await expect(
       inRequest(async () => {
         enterBusiness(shopId);

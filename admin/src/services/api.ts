@@ -950,9 +950,32 @@ export interface RoleHistoryEntry {
   pages: number;
 }
 
+export interface SupportAction {
+  at: string;
+  method: string;
+  path: string;
+  entity: string | null;
+  entityId: string | null;
+  status: number | null;
+}
+
+export interface SupportVisit {
+  id: number;
+  developerName: string;
+  startedAt: string;
+  lastSeenAt: string;
+  reason: string | null;
+  actions: SupportAction[];
+}
+
+/** Settings → Support visits: when someone from 4VD opened this business. Main admin and admins. */
+export const supportApi = {
+  visits: async () => (await apiRequest<SupportVisit[]>('/support-visits')).data,
+};
+
 export const permissionsApi = {
   get: async () => (await apiRequest<Permissions>('/permissions')).data,
-  /** Developer only. */
+  /** Main admin (and 4VD's developer) only. */
   save: async (input: { powers: Partial<Grants>; pages: Permissions['pages'] }) =>
     (await apiRequest<Permissions>('/permissions', { method: 'PUT', body: input })).data,
   history: async () => (await apiRequest<RoleHistoryEntry[]>('/permissions/history')).data,

@@ -16,7 +16,7 @@ import { messages } from '../i18n/messages.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { verifyPassword } from '../utils/password.js';
-import { canHandOut } from '../utils/roles.js';
+import { mayChangePerson } from '../utils/roles.js';
 import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates } from './email/templates.js';
@@ -259,7 +259,7 @@ export class PasskeyService {
   async reset(actorId: number, userId: number): Promise<{ removed: number }> {
     const [actor, user] = await Promise.all([this.users.findById(actorId), this.users.findById(userId)]);
     if (!actor || !user) throw new NotFoundError('User');
-    if (!canHandOut(actor.role, user.role)) throw new ForbiddenError('Only the developer can reset this for an owner, admin or developer');
+    if (!mayChangePerson(actor, user)) throw new ForbiddenError('Only a main admin can reset this for a main admin, owner, admin or accountant');
     const result = await this.db.deleteFrom('passkeys').where('user_id', '=', userId).executeTakeFirst();
     const removed = Number(result.numDeletedRows);
     await this.activity.create({

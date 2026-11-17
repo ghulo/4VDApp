@@ -1,4 +1,4 @@
-import type { UserRole } from '../database/types.js';
+import type { StoredRole } from '../database/types.js';
 import { enterBusiness } from '../database/businessContext.js';
 import { ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
 import type { InviteRecord, InviteRepository } from '../repositories/InviteRepository.js';
@@ -20,7 +20,7 @@ const LINK_GONE = 'This invite link no longer works. Ask the shop owner to send 
 export interface InviteDto {
   id: number;
   email: string;
-  role: UserRole;
+  role: StoredRole;
   invitedBy: string | null;
   expiresAt: string;
   createdAt: string;
@@ -28,7 +28,7 @@ export interface InviteDto {
 
 export interface InvitePreviewDto {
   email: string;
-  role: UserRole;
+  role: StoredRole;
   shopName: string;
   invitedBy: string | null;
   /** The language the invite was sent in; the invite page opens in it. */
@@ -65,10 +65,10 @@ export class InviteService {
   }
 
   /** A new invite replaces any open one to the same email. */
-  async invite(actorId: number, email: string, role: UserRole, language?: Language): Promise<InviteDto> {
+  async invite(actorId: number, email: string, role: StoredRole, language?: Language): Promise<InviteDto> {
     const actor = await this.actor(actorId);
     const inviteLanguage = language ?? actor.language;
-    if (!canHandOut(actor.role, role)) throw new ForbiddenError('Only the developer can invite an owner, admin or developer');
+    if (!canHandOut(actor.is_platform_developer ? 'developer' : actor.role, role)) throw new ForbiddenError('Only a main admin can invite a main admin, owner, admin or accountant');
     if (await this.userRepository.findByEmail(email)) {
       throw new ConflictError(`${email} already has an account`);
     }

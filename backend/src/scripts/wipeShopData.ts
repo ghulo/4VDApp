@@ -87,7 +87,7 @@ export interface WipeReport {
  */
 export async function wipeShopData(db: DatabaseClient, options: { apply: boolean; actorId?: number }): Promise<WipeReport> {
   return db.transaction().execute(async (trx) => {
-    const developers = await trx.selectFrom('users').select(['id', 'email']).where('role', '=', 'developer').execute();
+    const developers = await trx.selectFrom('users').select(['id', 'email']).where('is_platform_developer', '=', true).execute();
     if (developers.length === 0) {
       throw new Error('There is no developer account to keep, so nothing was deleted (you would be locked out).');
     }

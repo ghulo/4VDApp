@@ -16,7 +16,7 @@ beforeEach(async () => {
   await resetData(context.db);
   for (const role of ['developer', 'admin', 'owner', 'employee'] as const) {
     tokens[role] = await loginAs(context, role);
-    const row = await context.db.selectFrom('users').selectAll().where('role', '=', role as UserRole).executeTakeFirstOrThrow();
+    const row = await context.db.selectFrom('users').selectAll().where('email', '=', `${role}@test.local`).executeTakeFirstOrThrow();
     people[role] = toPublicUser(row);
   }
 });

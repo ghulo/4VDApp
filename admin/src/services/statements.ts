@@ -168,9 +168,9 @@ export const statementsApi = {
 };
 
 /** Who closes and reopens a year: the same people who reopen a VAT month. */
-export const canCloseYear = (role: UserRole) => role === 'developer' || role === 'owner' || role === 'accountant';
+export const canCloseYear = (role: UserRole) => role === 'developer' || role === 'main_admin' || role === 'owner' || role === 'accountant';
 /** Who records a profit tax instalment as paid: whoever files VAT. */
-export const canPayTax = (role: UserRole) => role === 'developer' || role === 'admin' || role === 'owner' || role === 'accountant';
+export const canPayTax = (role: UserRole) => role === 'developer' || role === 'main_admin' || role === 'admin' || role === 'owner' || role === 'accountant';
 
 /** The yearly income declaration (backend services/statements/DeclarationService). */
 export type DeclarationForm = 'CD' | 'PD';

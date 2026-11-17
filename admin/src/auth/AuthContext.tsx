@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => {
     // The developer previewing another role: every screen draws as that role (the API answers as it too).
-    const viewingAs = state.status === 'signedIn' && state.user.role === 'developer' ? readViewAs() : null;
+    const viewingAs = state.status === 'signedIn' && (state.user.role === 'developer' || state.user.role === 'main_admin') ? readViewAs() : null;
     const shown: AuthState = viewingAs && state.status === 'signedIn' ? { status: 'signedIn', user: { ...state.user, role: viewingAs } } : state;
     return { state: shown, viewingAs, login, logout, adoptSession, updateUser };
   }, [state, login, logout, adoptSession, updateUser]);

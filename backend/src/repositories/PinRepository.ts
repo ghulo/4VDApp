@@ -25,6 +25,7 @@ export class PinRepository {
               coalesce((select max(b.at) from pin_attempts b where b.user_id = u.id and b.ok), '-infinity'))) as recent_failures
       from users u
       where u.is_active and u.deleted_at is null and u.pin_hash is not null
+        and (not u.is_platform_developer or u.business_id = current_business_id())
       order by u.name
     `.execute(this.db);
     return rows;

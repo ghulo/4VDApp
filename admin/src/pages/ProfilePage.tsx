@@ -6,7 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { PushSettingsPanel } from '../components/PushSettingsPanel';
 import { ReportSettingsPanel } from '../components/ReportSettingsPanel';
-import { Badge, Button, Card, Field, PageHeader, RemoveButton, SettingRow, SettingsLayout } from '../components/ui';
+import { Badge, Button, Card, DeveloperMark, Field, PageHeader, RemoveButton, SettingRow, SettingsLayout } from '../components/ui';
 import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { User } from '../services/types';
@@ -51,7 +51,7 @@ export function ProfilePage() {
         <div className="profile-hero__text">
           <p className="profile-hero__name">{user.name}</p>
           <p className="profile-hero__meta">
-            <Badge tone="brand">{t.common.roles[user.role]}</Badge>
+            {user.role === 'developer' ? <DeveloperMark /> : <Badge tone="brand">{t.common.roles[user.role]}</Badge>}
             <span>{user.email}</span>
             <span aria-hidden="true">·</span>
             <span>{t.profile.memberSince(formatDate(user.createdAt))}</span>

@@ -1230,3 +1230,15 @@
     animation-timeline: scroll(self inline);
   }
 }
+
+/* Phones: the hammer alone in the top bar (the account menu still says "4VD developer"). */
+@media (max-width: 599px) {
+  .topbar__end > .devmark .devmark__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

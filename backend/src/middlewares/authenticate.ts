@@ -1,10 +1,12 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { enterBusiness, enterSystem } from '../database/businessContext.js';
+import { enterBusiness, enterSystem, runAsBusiness } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
 import { ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
+import type { SupportRepository } from '../repositories/SupportRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
+import { logger } from '../utils/logger.js';
 import { toPublicUser } from '../services/mappers.js';
-import { hasPower, type Power, rolesWith } from '../utils/roles.js';
+import { hasPower, isTopRole, type Power, rolesWith } from '../utils/roles.js';
 import { ACCESS_COOKIE, cookieMayAct, readCookie } from '../utils/sessionCookies.js';
 import { extractBearerToken, verifyAccessToken } from '../utils/tokens.js';
 
@@ -20,7 +22,7 @@ export const VIEWABLE_ROLES: UserRole[] = ['admin', 'owner', 'accountant', 'empl
 const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 function viewedRole(req: Request, realRole: UserRole): UserRole | null {
-  if (realRole !== 'developer') return null;
+  if (!isTopRole(realRole)) return null;
   const asked = req.headers[VIEW_AS_HEADER];
   return typeof asked === 'string' && VIEWABLE_ROLES.includes(asked as UserRole) ? (asked as UserRole) : null;
 }
@@ -51,8 +53,8 @@ export function identifyRequester(jwtSecret: string, allowedOrigins: ReadonlySet
  * every request means deactivating someone or changing their role takes
  * effect immediately instead of when their 7-day token expires.
  */
-export function requireAuth(userRepository: UserRepository): RequestHandler {
-  return async (req: Request, _res: Response, next: NextFunction) => {
+export function requireAuth(userRepository: UserRepository, supportRepository?: SupportRepository): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.identity) throw new UnauthorizedError();
 
     // The person is read before their business is named.
@@ -63,15 +65,52 @@ export function requireAuth(userRepository: UserRepository): RequestHandler {
     // The business this session works in, and the person's role there. Trust the
     // database over the token, in case the role or the membership changed since login.
     const membership = await userRepository.membership(user.id, user.business_id, req.identity.businessId);
-    if (!membership) throw new UnauthorizedError('Your account is no longer active');
-    enterBusiness(membership.businessId);
-    const viewed = viewedRole(req, membership.role);
+    // 4VD's own developer (a database flag, never the token) may open any business, with every power.
+    const place = user.is_platform_developer ? await platformPlace(userRepository, user.business_id, req.identity.businessId, membership) : membership;
+    if (!place) throw new UnauthorizedError('Your account is no longer active');
+    enterBusiness(place.businessId);
+    const viewed = viewedRole(req, place.role);
     if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);
-    const role = viewed ?? membership.role;
+    const role = viewed ?? place.role;
     req.user = { ...toPublicUser(user), role };
-    req.identity = { userId: user.id, email: user.email, role, sessionId: req.identity.sessionId, businessId: membership.businessId };
+    req.identity = { userId: user.id, email: user.email, role, sessionId: req.identity.sessionId, businessId: place.businessId };
+    if (user.is_platform_developer && supportRepository && membership?.businessId !== place.businessId) {
+      await keepSupportVisit(supportRepository, req, res, { id: user.id, name: user.name }, place.businessId);
+    }
     next();
   };
+}
+
+/**
+ * Where the 4VD developer works: the business his token names (any that
+ * exists), else his own. Inside it he acts as 'developer'.
+ */
+async function platformPlace(
+  userRepository: UserRepository,
+  homeBusinessId: number,
+  asked: number | undefined,
+  membership: { businessId: number; role: UserRole } | undefined,
+): Promise<{ businessId: number; role: UserRole } | undefined> {
+  const businessId = asked !== undefined && (await userRepository.businessName(asked)) !== undefined ? asked : (membership?.businessId ?? homeBusinessId);
+  return { businessId, role: 'developer' };
+}
+
+/**
+ * The 4VD developer is in a business he isn't a member of: note the visit for
+ * that business to see, and each change he makes there once it is answered.
+ */
+async function keepSupportVisit(support: SupportRepository, req: Request, res: Response, developer: { id: number; name: string }, businessId: number): Promise<void> {
+  const visitId = await support.visit(developer, req.identity?.sessionId ?? 'no-session');
+  if (READS.has(req.method)) return;
+  // Kept before the change runs, so it is there even if the change fails; the answer's status follows.
+  const path = `${req.baseUrl}${req.path}`;
+  const parts = path.replace(/^\/api\//, '').split('/');
+  const actionId = await support.action(visitId, { method: req.method, path, entity: parts[0] || null, entityId: parts.find((part) => /^\d+$/.test(part)) ?? null });
+  res.on('finish', () => {
+    runAsBusiness(businessId, () => support.answered(actionId, res.statusCode)).catch((error: unknown) =>
+      logger.error('Could not record a support action', { error: error instanceof Error ? error.message : String(error) }),
+    );
+  });
 }
 
 /** Must run after requireAuth. */

@@ -2,13 +2,15 @@
 
 export type Language = 'en' | 'sq';
 
-export type UserRole = 'developer' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
+export type UserRole = 'developer' | 'main_admin' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
 
 export interface User {
   id: number;
   email: string;
   name: string;
   role: UserRole;
+  /** 4VD's own staff: opens every business (role 'developer'). */
+  platformDeveloper?: boolean;
   isActive: boolean;
   phone: string | null;
   /** Path to the photo (use mediaSrc); null shows initials. */
@@ -341,7 +343,8 @@ export interface AppNotification {
   createdAt: string;
 }
 
-export const USER_ROLES: UserRole[] = ['developer', 'admin', 'owner', 'accountant', 'employee', 'family'];
+/** Roles a person can hold in a business. developer is 4VD's own staff, set on the database, never handed out. */
+export const USER_ROLES: UserRole[] = ['main_admin', 'admin', 'owner', 'accountant', 'employee', 'family'];
 
 export interface PeriodTotals {
   /** After refunds. */

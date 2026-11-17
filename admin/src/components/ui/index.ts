@@ -8,6 +8,7 @@ export { ColumnChart, type ChartColumn } from './ColumnChart';
 export { DataTable, type Column } from './DataTable';
 export { DateField } from './DateField';
 export { DayBars } from './DayBars';
+export { DeveloperMark } from './DeveloperMark';
 export { EmptyState } from './EmptyState';
 export { Inspector, InspectorLayout, useDocked } from './Inspector';
 export { MenuButton, type MenuItem } from './MenuButton';

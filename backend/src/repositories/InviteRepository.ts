@@ -1,5 +1,5 @@
 import type { DatabaseClient } from '../database/connection.js';
-import type { UserRole } from '../database/types.js';
+import type { StoredRole } from '../database/types.js';
 import type { Language } from '../i18n/language.js';
 
 export interface InviteRecord {
@@ -7,7 +7,7 @@ export interface InviteRecord {
   business_id: number;
   business_name: string;
   email: string;
-  role: UserRole;
+  role: StoredRole;
   language: Language;
   invited_by_name: string | null;
   expires_at: Date;
@@ -42,7 +42,7 @@ export class InviteRepository {
   async create(invite: {
     businessId: number;
     email: string;
-    role: UserRole;
+    role: StoredRole;
     language: Language;
     tokenHash: string;
     invitedBy: number;

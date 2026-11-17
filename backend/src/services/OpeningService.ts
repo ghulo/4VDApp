@@ -142,6 +142,8 @@ export class OpeningService {
       select 'place', p.id, p.account_id, 0, 'typed' from money_places p
       where p.archived_at is null and p.account_id is not null and p.carwash_id is null
         and not exists (select 1 from opening_lines o where o.place_id = p.id)
+      -- In chart order: lines are shown in the order they were made.
+      order by (select a.number from ledger_accounts a where a.id = p.account_id)
     `.execute(db);
     const links = await this.links(db);
     await sql`

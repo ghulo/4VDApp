@@ -51,6 +51,8 @@ const WHO = {
   payroll: ['accountant', 'owner', 'developer'],
   /** Hand-written book entries, the opening balance, fixed assets. */
   entries: ['accountant', 'admin', 'developer'],
+  /** Who from 4VD opened the business: the people who run it (main admin, admins). */
+  leaders: ['admin', 'developer'],
   /** Roles, wiping data, restore points. */
   developer: ['developer'],
 } satisfies Record<string, readonly Caller[]>;
@@ -564,6 +566,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/books/opening/post',
     'POST /api/books/opening/take-back',
   ],
+  leaders: ['GET /api/support-visits/'],
   developer: [
     'GET /api/activity/:id/restore-point',
     'POST /api/activity/:id/restore-point',

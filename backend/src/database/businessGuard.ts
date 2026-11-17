@@ -35,6 +35,8 @@ export function businessSetter(outsideContextBusiness?: number) {
 const GLOBAL = new Set(GLOBAL_TABLES);
 // `for update skip locked`, `for update of p` and `do update set` name no table.
 const RAW_TABLE = /\b(?:from|join|into|(?<!\bfor\s+|\bdo\s+)update)\s+"?(?!set\b|skip\b|nowait\b|of\b)([a-z_]+)"?/gi;
+// Schema changes (migrations) name tables in their text but read no business rows.
+const DDL = /^\s*(?:create|alter|drop|comment|grant|revoke)\b/i;
 const WITH_NAME = /\b(?:with(?:\s+recursive)?|,)\s+"?([a-z_]+)"?\s+as\s+(?:not\s+)?(?:materialized\s+)?\(/gi;
 
 function tablesIn(node: unknown, found: Set<string>): void {
@@ -51,6 +53,7 @@ function tablesIn(node: unknown, found: Set<string>): void {
     if (name) found.add(name);
   } else if (record.kind === 'RawNode') {
     const text = (record.sqlFragments as string[]).join(' ');
+    if (DDL.test(text)) return;
     // `with set_timeout as (…) … from set_timeout` (Kysely's migration lock) names a query, not a table.
     const named = new Set([...text.matchAll(WITH_NAME)].map((match) => match[1]!.toLowerCase()));
     for (const match of text.matchAll(RAW_TABLE)) {

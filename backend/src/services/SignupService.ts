@@ -30,17 +30,17 @@ export class SignupService {
       throw new ConflictError(`${input.email} already has an account. Log in instead.`);
     }
     const passwordHash = await hashPassword(input.password);
-    const owner = await this.transactions.run(async (repos) => {
-      const businessId = await repos.users.createBusiness(input.shopName);
-      return repos.users.create({
+    const owner = await this.transactions.inNewBusiness(input.shopName, (repos, businessId) =>
+      repos.users.create({
         email: input.email,
         name: input.name,
-        role: 'developer',
+        // The founder runs the business; developer is 4VD's own staff, above every business, and never handed out here.
+        role: 'admin',
         password_hash: passwordHash,
         business_id: businessId,
         email_verified_at: null,
-      });
-    });
+      }),
+    );
     await this.accountService.sendVerification(owner.id);
   }
 }

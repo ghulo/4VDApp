@@ -91,7 +91,7 @@ async function makePlaces(db: Kysely<unknown>): Promise<void> {
   await sql`
     insert into money_places (kind, is_default, name, bank_name, iban)
     select 'bank', true, b.bank_name, b.bank_name, b.iban from (select 1) one
-    left join lateral (select bank_name, iban from businesses order by id limit 1) b on true
+    left join lateral (select bank_name, iban from businesses where id = nullif(current_setting('app.business_id', true), '')::int) b on true
     where not exists (select 1 from money_places where kind = 'bank' and is_default)
   `.execute(db);
   await sql`

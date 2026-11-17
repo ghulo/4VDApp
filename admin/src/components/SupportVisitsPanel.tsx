@@ -35,7 +35,8 @@ export function SupportVisitsPanel() {
         <ul className="bin-list">
           {visits.data.map((visit) => (
             <li key={visit.id} className="bin-list__row">
-              <span className="bin-list__icon">
+              {/* The row text already says who opened it; the hammer is only a cue. */}
+              <span className="bin-list__icon" aria-hidden="true">
                 <DeveloperMark size="glyph" />
               </span>
               <span className="bin-list__text">

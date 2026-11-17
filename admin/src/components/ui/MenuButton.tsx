@@ -111,7 +111,8 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
       {/* Kept in the page while shut, so it can close the way it opened. */}
       <ul id={menuId} hidden={!open} role="menu" aria-label={label} className="menu" onKeyDown={onMenuKey}>
         {heading && (
-          <li role="none" className="menu__heading">
+          // A menu may only hold menu items, so the heading is a sighted cue only (callers repeat it elsewhere).
+          <li role="none" aria-hidden="true" className="menu__heading">
             {heading}
           </li>
         )}

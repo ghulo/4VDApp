@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { runAsBusiness } from '../src/database/businessContext.js';
 import { GLOBAL_TABLES } from '../src/database/globalTables.js';
 import { createTestUser, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
@@ -22,15 +23,27 @@ describe('every row belongs to a business', () => {
       ORDER BY c.relname
     `.execute(context.db);
     // A new table needs a business_id (add it in its migration with
-    // `business_id INT NOT NULL DEFAULT current_business_id()`), or a reason to be global here and in GLOBAL_TABLES.
+    // `business_id INT NOT NULL DEFAULT current_business_id()`), or a reason to be global in GLOBAL_TABLES.
     const missing = rows
-      .filter((row) => !GLOBAL_TABLES.includes(row.table) && row.table !== 'memberships')
+      .filter((row) => !GLOBAL_TABLES.includes(row.table))
       .filter((row) => row.nullable !== 'NO' || row.fills !== 'current_business_id()')
       .map((row) => row.table);
     expect(missing).toEqual([]);
   });
 
-  it('fills business_id with the shop until a request names its business', async () => {
+  it('keeps every business table behind forced row security with its policy', async () => {
+    const { rows } = await sql<{ table: string; on: boolean; forced: boolean; policy: boolean }>`
+      SELECT c.relname AS table, c.relrowsecurity AS on, c.relforcerowsecurity AS forced,
+        EXISTS (SELECT 1 FROM pg_policies p WHERE p.tablename = c.relname AND p.policyname = 'business_rows') AS policy
+      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r'
+    `.execute(context.db);
+    // A new business table calls `select protect_business_table('its_name')` in its migration.
+    const open = rows.filter((row) => !GLOBAL_TABLES.includes(row.table) && !(row.on && row.forced && row.policy)).map((row) => row.table);
+    expect(open).toEqual([]);
+  });
+
+  it('fills business_id with the business the work is for', async () => {
     const shop = await context.db.selectFrom('businesses').select('id').executeTakeFirstOrThrow();
     const { rows } = await sql<{ business_id: number }>`INSERT INTO categories (name) VALUES ('Drinks') RETURNING business_id`.execute(context.db);
     expect(rows[0]?.business_id).toBe(shop.id);
@@ -47,15 +60,21 @@ describe('every row belongs to a business', () => {
 });
 
 describe('what must be unique is unique within one business', () => {
-  it('lets two businesses use the same setting, category name and VAT month', async () => {
+  it('lets two businesses use the same setting, category name and VAT month, and neither write into the other', async () => {
     const other = await context.db.insertInto('businesses').values({ name: 'Other shop' }).returning('id').executeTakeFirstOrThrow();
-    await sql`INSERT INTO settings (key, value) VALUES ('shared_key', '1')`.execute(context.db);
-    await sql`INSERT INTO settings (business_id, key, value) VALUES (${other.id}, 'shared_key', '2')`.execute(context.db);
-    await sql`INSERT INTO categories (name) VALUES ('Snacks')`.execute(context.db);
-    await sql`INSERT INTO categories (business_id, name) VALUES (${other.id}, 'Snacks')`.execute(context.db);
-    await sql`INSERT INTO vat_months (month) VALUES ('2026-10-01')`.execute(context.db);
-    await sql`INSERT INTO vat_months (business_id, month) VALUES (${other.id}, '2026-10-01')`.execute(context.db);
+    const both = async () => {
+      await sql`INSERT INTO settings (key, value) VALUES ('shared_key', '1')`.execute(context.db);
+      await sql`INSERT INTO categories (name) VALUES ('Snacks')`.execute(context.db);
+      await sql`INSERT INTO vat_months (month) VALUES ('2026-10-01')`.execute(context.db);
+    };
+    await both();
+    await runAsBusiness(other.id, both);
     // Within one business the old rule still holds.
     await expect(sql`INSERT INTO categories (name) VALUES ('snacks')`.execute(context.db)).rejects.toThrow(/duplicate key/);
+    await expect(sql`INSERT INTO categories (business_id, name) VALUES (${other.id}, 'Sneaky')`.execute(context.db)).rejects.toThrow(/row-level security/);
+    // Each sees only its own.
+    const names = async () => (await context.db.selectFrom('categories').select('business_id').where('name', '=', 'Snacks').execute()).map((row) => row.business_id);
+    expect(await names()).toEqual([1]);
+    expect(await runAsBusiness(other.id, names)).toEqual([other.id]);
   });
 });

@@ -15,7 +15,7 @@ Before committing, check the items whose **trigger** matches your diff (usually 
   - The books still balance (debits = credits) and the VAT return's boxes match the month's sales and bills.
   - Run the property tests (`backend/tests/properties/`) and the e2e money paths (`e2e/`: bill, return, counter, payroll).
   - A rule that changes goes into `.claude/skills/kosovo-tax/reference.md`.
-- **Incident:** bfc7ba2 added the property tests after books and VAT drifted by cents. TREFIN's trial balance is €976.78 off, which is what 4VD must never be.
+- **Incident:** bfc7ba2 added the property tests so the books balance to the cent and the VAT return matches the books. TREFIN's trial balance is €976.78 off (handoff.md, Accountant), which is what 4VD must never be.
 
 ### 2. Dates and day boundaries
 - **Trigger:** new date maths in services or reports (`new Date(`, `toISOString().slice(0, 10)`, `between`, `endOf`, `< '…-01'`).
@@ -68,7 +68,7 @@ Before committing, check the items whose **trigger** matches your diff (usually 
   - Every sign-in still works: the dashboard (password, passkey, two-step), the Counter PIN on the shop PC, and the Windows app (its origin is allowed, and its cookies survive a restart).
   - Run verify on `/login` → `/` and `/counter` (`screens.mjs --db real --paths /,/counter`).
   - Name what can only be tried on the shop PC in progress.md "To test by hand".
-- **Incident:** the security merge's cookie and CSRF change (notes `security-sign-in-for-e2e.md`). The shop PC Counter has to keep working on launch day.
+- **Why:** the security merge moved sign-in to cookies with an origin check (`security-sign-in-for-e2e.md` in the session notes), and the e2e sign-in had to change with it. The Counter on the shop PC and the Windows app sign in the same way and are only tried by hand, so a break there shows up at the till.
 
 ## CI and deploys
 

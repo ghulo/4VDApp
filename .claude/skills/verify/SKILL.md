@@ -17,8 +17,10 @@ Scripts live in `.claude/skills/verify/scripts/` and run with plain `node`. They
    - **Screens:** it picks them from the diff (`main...HEAD`, uncommitted and untracked files) through `screens.json`. Add `--paths /a,/b` or `--role accountant|employee|family` to choose them yourself, or `--base <ref>` for another base.
    - **Database:** `--db real` is checked against what port 3000 really serves. On a mismatch it stops before loading anything.
    - **What it does:** signs in through the real login form as `demo-admin` (or the role the map names), loads each screen, and prints `ok` / `WARN` / `FAIL` per screen and one summary line.
-   - **Write block:** on four_vd_app every API call that isn't a GET or a sign-in is answered "blocked" inside the browser. Each run proves the block first with a test POST, and stops if the POST gets through. `WARN` = a screen tried to write on load (blocked, but worth a look).
+   - **Write block:** on four_vd_app every API call that isn't a GET or a sign-in is answered "blocked" inside the browser (service workers are off, so none can slip past). Each run proves the block first with a test POST, and stops if the POST gets through. `WARN` = a screen tried to write on load (blocked, but worth a look).
+   - **Not strictly read-only:** each run signs a demo login in and out on four_vd_app, which the API records (a session row, and the sign-in in the activity log). No shop data is written.
 3. Call `preview_logs` for the `api` server with `level: "error"`. Any error logged during the run is a finding.
+   - Known baseline (2026-11-17, not from your change): two lines at startup, `A query on skip ran without a business` (EmailOutboxRepository.claim) and `A query on settings ran without a business` (SettingsRepository.claim). They come from timers outside a business; reported to the tenancy work.
 4. If a screen has no line in `screens.json`, add one in the same commit.
 
 A run takes about 6 s to sign in, then about 2 s per screen. 4 screens take about 13 s, all 44 mapped screens about 90 s.
@@ -61,7 +63,8 @@ Never on four_vd_app (CLAUDE.md). Switch port 3000 to the demo database, and alw
 - `screens: ok 8/8 screens, roles admin, four_vd_app (writes blocked), 0 blocked writes, 112 API calls, 21.0s` is a pass.
 - Each `FAIL` line lists what was seen: `console:` (browser console error), `crash:` (uncaught exception), `HTTP 4xx/5xx METHOD /api/...`, `failed:` (network), `error notice:` (the page's red notice), `sent back to sign-in`, `no page heading (h1) rendered`.
 - A 403 means that role may not open the screen. Set the right `role` in `screens.json` (payroll needs accountant or owner); it isn't a bug.
-- `probe` and `screens` say `unknown (API rate limit hit…)` after about 1000 API calls by one login in 15 minutes, which is about 18 runs of 4 screens or one full run plus a few.
+- After about 1000 API calls by one login in 15 minutes, the screens fail with `HTTP 429` and the summary says the rate limit was hit (`probe` says `unknown (API rate limit hit…)`). A 4-screen run makes about 56 calls and the full 44-screen run about 430, so that's about 18 small runs, or one full run plus 10.
+  - Every session on port 3000 shares demo-admin's budget, so check only the screens your diff needs.
   - The probe signs in as demo-family, so it never uses up the quota of the logins the screens sign in as.
   - On the demo API, restarting it resets the counter. On the real API, wait.
   - Never loop verify to make a flaky result pass (CLAUDE.md flaky-test rule).
@@ -83,7 +86,7 @@ Put one line in the commit message body, for example:
 
 ## Stress test (2026-11-17)
 
-- **Timing:** 10 runs in a row on demo and 6 on real, at 11–18 s each for 4 screens. Two runs of all 44 mapped screens (demo, then real) gave 0 false failures once payroll used the accountant login.
+- **Timing:** 30 runs of 4 screens (10 on demo, 20 on real), at 11–18 s each. Three runs of all 44 mapped screens gave 0 false failures once payroll used the accountant login. Every failure in the loops (5 on demo, 7 on real) was the rate limit (HTTP 429), reproduced on purpose: one full run plus about 10 small ones. No other flake.
 - **Failure cases:** each one ended with one line and the right exit code, with nothing hanging:
   - API down;
   - dashboard down;

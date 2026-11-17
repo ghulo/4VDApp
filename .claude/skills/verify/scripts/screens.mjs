@@ -90,7 +90,8 @@ let limited = false;
 
 for (const [role, pathSet] of groups) {
   const user = DEMO_USERS[role];
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  // Service workers off: a request a worker handles could slip past context.route and the write block.
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, serviceWorkers: 'block' });
   const blockedUrls = new Set();
   if (db === 'real') {
     await context.route('**/api/**', (route) => {
@@ -153,7 +154,8 @@ for (const [role, pathSet] of groups) {
       lines.push('ok    write block proven (a test POST from the page came back blocked)');
     }
   } catch (error) {
-    failures++;
+    // Every screen this role would have opened counts as failed.
+    failures += pathSet.size;
     screens += pathSet.size;
     lines.push(`FAIL  sign-in as ${user.email}: ${String(error.message).split('\n')[0]}${events.length ? `  ${events.join('; ')}` : ''}`);
     lines.push(`      skipped as ${role}: ${[...pathSet].join(', ')}`);

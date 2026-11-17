@@ -254,6 +254,13 @@
         "content-clipping"
       ],
       "reason": "On a phone each planned thing in the calendar is a dot; its words are hidden the visually-hidden way (1px, clip) so screen readers still read what is on the day."
+    },
+    {
+      "selector": ".topbar__end .devmark__label",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "On a phone the top bar shows the developer hammer alone; the words \"4VD developer\" are hidden the visually-hidden way (1px, clip) so screen readers still read them."
     }
   ]
 }

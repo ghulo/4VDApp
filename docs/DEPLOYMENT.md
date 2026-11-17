@@ -223,6 +223,16 @@ two-step on:
 
 ---
 
+## The app's own database role
+
+Every business table has row-level security (migration 081): a row is only seen and written by its own business. Live, the API connects as `fourvd_app` (not the owner, no BYPASSRLS), so it also can't alter tables or turn row security off. Migrations run as the owner `db_4vd_db_user` through `MIGRATION_DATABASE_URL`; the backup (`BACKUP_DATABASE_URL`) uses the owner too, with `app.maintenance=on` so it sees every business.
+
+- Both URLs are set by hand on 4vd-api (`sync: false` in render.yaml); Render's Info page shows only the owner, and its stored password goes stale after a password change.
+- The API refuses to start in production as a superuser or a BYPASSRLS role (logs "Refusing to start").
+- Creating the role: `CREATE ROLE fourvd_app LOGIN PASSWORD '…' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;` then, as the owner, grant CONNECT on the database, USAGE on schema public, SELECT/INSERT/UPDATE/DELETE on all tables, USAGE/SELECT on all sequences, EXECUTE on all functions, and the same as ALTER DEFAULT PRIVILEGES so new tables are covered.
+- A data fix by hand as the owner: `SET app.maintenance = 'on'` first, or row security hides every row.
+- Undo: set `DATABASE_URL` to the owner's URL and redeploy (row security still applies to the owner, FORCE is on).
+
 ## Errors and Uptime
 
 **Error emails.** Every error the server logs is counted, and the developer
@@ -287,7 +297,8 @@ Two layers:
 # 2. Unlock it with the passphrase:
 gpg --decrypt 4vd-2026-10-11.dump.gpg > 4vd.dump
 # 3. Restore into an EMPTY database first and check it (never straight over live data):
-pg_restore --no-owner --no-privileges --dbname "$EMPTY_DATABASE_URL" 4vd.dump
+#    app.maintenance lets rows of every business in past row security (not needed as a superuser).
+PGOPTIONS="-c app.maintenance=on" pg_restore --no-owner --no-privileges --dbname "$EMPTY_DATABASE_URL" 4vd.dump
 # 4. When it looks right, point DATABASE_URL on Render at it, or restore into
 #    the live database after taking a fresh copy of what's there now.
 ```

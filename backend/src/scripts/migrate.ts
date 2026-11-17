@@ -13,7 +13,8 @@ import { logger } from '../utils/logger.js';
 async function main(): Promise<void> {
   const direction: MigrationDirection = process.argv.includes('--down') ? 'down' : 'latest';
   const config = loadConfig();
-  const db = createDatabase(config.databaseUrl);
+  // Live, the app's own role can't change tables: migrations connect as the owner.
+  const db = createDatabase(process.env.MIGRATION_DATABASE_URL || config.databaseUrl);
 
   try {
     const { results } = await runMigrations(db as Kysely<unknown>, direction);

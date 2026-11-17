@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { enterBusiness } from '../database/businessContext.js';
+import { enterBusiness, enterSystem } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
 import { ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -55,6 +55,8 @@ export function requireAuth(userRepository: UserRepository): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
     if (!req.identity) throw new UnauthorizedError();
 
+    // The person is read before their business is named.
+    enterSystem();
     const user = await userRepository.findById(req.identity.userId);
     if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
 

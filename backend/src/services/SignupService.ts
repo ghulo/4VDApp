@@ -34,7 +34,8 @@ export class SignupService {
       repos.users.create({
         email: input.email,
         name: input.name,
-        role: 'developer',
+        // The founder runs the business; developer is 4VD's own staff, above every business, and never handed out here.
+        role: 'admin',
         password_hash: passwordHash,
         business_id: businessId,
         email_verified_at: null,

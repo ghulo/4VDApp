@@ -79,6 +79,7 @@ import * as twoStepSignIn from './077_two_step_sign_in.js';
 import * as businessEverywhere from './078_business_everywhere.js';
 import * as uniquePerBusiness from './079_unique_per_business.js';
 import * as passkeys from './080_passkeys.js';
+import * as rowSecurity from './081_row_security.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -167,4 +168,5 @@ export const migrations: Record<string, Migration> = {
   '078_business_everywhere': businessEverywhere,
   '079_unique_per_business': uniquePerBusiness,
   '080_passkeys': passkeys,
+  '081_row_security': rowSecurity,
 };

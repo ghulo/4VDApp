@@ -172,3 +172,12 @@ export async function stockOf(context: TestContext, productId: number): Promise<
     .executeTakeFirstOrThrow();
   return row.quantity_on_hand;
 }
+
+/**
+ * A database handle with no default business, as the live server has: work
+ * outside a request, timer business or script sees no business rows. For
+ * testing code that runs outside requests (the server's timers).
+ */
+export function createLiveLikeDatabase(): DatabaseClient {
+  return createDatabase(testDatabaseUrl(), { role: TEST_ROLE });
+}

@@ -85,13 +85,13 @@ await withClient(demoUrl, async (client) => {
 // every run, since a migration may have added tables.
 await withClient(demoUrl, async (client) => {
   await client.query(`
-    DO $ BEGIN
+    DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${DEMO_APP_ROLE}') THEN
         CREATE ROLE ${DEMO_APP_ROLE} NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
       END IF;
     -- Roles are shared by every database on the server: another run may create it at the same moment.
     EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
-    END $`);
+    END $$`);
   await client.query(`GRANT CONNECT ON DATABASE ${DEMO_DB} TO ${DEMO_APP_ROLE}`);
   await client.query(`GRANT USAGE ON SCHEMA public TO ${DEMO_APP_ROLE}`);
   await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${DEMO_APP_ROLE}`);

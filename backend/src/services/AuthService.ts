@@ -42,6 +42,9 @@ interface Place {
   role: UserRole;
 }
 
+/** The session's business no longer has this person (blocked or taken off it). */
+export const BUSINESS_GONE = 'You no longer have access to that business. Log in again.';
+
 export const TWO_STEP_AUDIENCE = '4vd-two-step';
 
 /**
@@ -131,10 +134,13 @@ async startSession(
     how: 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' | 'passkey' = 'password',
     /** The PC, when someone takes it over with a PIN; any other sign-in starts a new one. */
     deviceId: string = randomUUID(),
+    /** The business to open (a PIN takeover: the Counter's business); else their home business. */
+    businessId?: number,
   ): Promise<LoginResult> {
     // Every way in ends here: no session while the setup is owed (an old code-step challenge, a PIN, a passkey).
     if (user.two_step_required) throw setupNeededError();
-    const place = await this.placeOf(user);
+    const place = await this.placeOf(user, businessId);
+    if (businessId !== undefined && place.businessId !== businessId) throw new ForbiddenError('You are not part of this business');
     const publicUser = { ...toPublicUser(user), role: place.role };
     const tokens = await this.issueTokens(publicUser, place, { userAgent: device.userAgent, ip: device.ip, deviceId });
     // Signing in for real clears any wrong-PIN lock on the person.
@@ -159,8 +165,10 @@ async startSession(
     if (!user || !user.is_active) throw new UnauthorizedError('Session expired, please log in again');
     if (user.two_step_required) throw new AppError('Set up two-step sign-in again: sign in with your password', 401, 'TWO_STEP_SETUP_NEEDED');
 
-    // Same business as before, while the person may still open it; else back home.
+    // Same business as before, while the person may still open it. Blocked in or taken off it:
+    // signed out, so nothing carries on in another business by itself (they sign in again).
     const place = await this.placeOf(user, consumed.businessId ?? undefined);
+    if (consumed.businessId !== null && place.businessId !== consumed.businessId) throw new AppError(BUSINESS_GONE, 401, 'BUSINESS_GONE');
     // Same device, same session: keep its id so it stays one row in the devices list.
     return this.issueTokens({ ...toPublicUser(user), role: place.role }, place, {
       sessionId: consumed.sessionId,

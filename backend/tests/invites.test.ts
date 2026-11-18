@@ -78,7 +78,7 @@ describe('invites', () => {
     expect((await accept('not-a-real-token-at-all-0000000000000000000')).status).toBe(410);
   });
 
-  it('should not invite someone who already has an account', async () => {
+  it('should not invite someone who already works here', async () => {
     await createTestUser(context.db, 'employee', { email: 'ana@example.com' });
 
     const response = await invite({ email: 'ana@example.com', role: 'employee' });

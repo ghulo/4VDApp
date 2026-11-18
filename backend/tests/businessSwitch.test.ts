@@ -124,17 +124,20 @@ describe('switching business', () => {
     expect(businessOf(refreshed.body.data.token)).toBe(otherId);
   });
 
-  it('should go back home when the person no longer belongs to the switched business', async () => {
+  it('should sign the session out, not carry on at home, when the person no longer belongs to the switched business', async () => {
     const session = await signIn(both.email);
     const switched = await request(context.app).post('/api/auth/switch').set(auth(session.token)).send({ businessId: otherId });
     await context.db.updateTable('memberships').set({ is_active: false }).where('user_id', '=', both.id).where('business_id', '=', otherId).execute();
 
     try {
-      const refreshed = await request(context.app).post('/api/auth/refresh').send({ refreshToken: switched.body.data.refreshToken });
-      expect(businessOf(refreshed.body.data.token)).toBe(shopId);
-      // The token still naming the other business no longer opens it either.
+      // The token still naming the other business opens nothing: a save from that tab must not land at home.
       const me = await request(context.app).get('/api/auth/me').set(auth(switched.body.data.token));
-      expect(me.body.data.businessId).toBe(shopId);
+      expect(me.status).toBe(401);
+      expect(me.body.error).toBe('BUSINESS_GONE');
+      const refreshed = await request(context.app).post('/api/auth/refresh').send({ refreshToken: switched.body.data.refreshToken });
+      expect(refreshed.status).toBe(401);
+      // Signing in again opens the home business.
+      expect(businessOf((await signIn(both.email)).token)).toBe(shopId);
     } finally {
       await context.db.updateTable('memberships').set({ is_active: true }).where('user_id', '=', both.id).where('business_id', '=', otherId).execute();
     }

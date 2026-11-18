@@ -45,6 +45,8 @@ export interface BusinessChoice {
 export interface TeamMember extends User {
   /** Their newest login or refresh on any device; null if never. */
   lastActiveAt: string | null;
+  /** Their account belongs to this business; false: only their role, access and place here change. */
+  homeHere?: boolean;
 }
 
 export interface PaginationMeta {
@@ -1395,6 +1397,8 @@ export interface InvitePreview {
   invitedBy: string | null;
   /** The invite page opens in this language. */
   language: Language;
+  /** The email already has a 4VD account: log in and join with it. */
+  hasAccount: boolean;
 }
 
 export interface Business {

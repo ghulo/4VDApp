@@ -270,6 +270,8 @@ export const accountApi = {
   invitePreview: async (token: string) => (await apiRequest<InvitePreview>(`/auth/invites/${token}`)).data,
   acceptInvite: async (token: string, input: { name: string; password: string; language?: User['language'] }) =>
     (await apiRequest<LoginResult>(`/auth/invites/${token}/accept`, { method: 'POST', body: input })).data,
+  joinInvite: async (token: string) =>
+    (await apiRequest<LoginResult>(`/auth/invites/${token}/join`, { method: 'POST' })).data,
   acceptInviteWithGoogle: async (token: string, credential: string, language?: User['language']) =>
     (await apiRequest<LoginResult>(`/auth/invites/${token}/google`, { method: 'POST', body: { credential, language } })).data,
   forgotPassword: async (email: string) =>

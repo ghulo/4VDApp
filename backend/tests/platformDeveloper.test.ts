@@ -152,7 +152,8 @@ describe('opening another business', () => {
     const employee = await createTestUser(context.db, 'admin', { email: 'nosy@test.local' });
     const token = signAccessToken({ userId: employee.id, email: employee.email, role: 'admin', businessId: otherId }, context.config.jwtSecret, context.config.jwtExpiresIn);
     const made = await request(context.app).post('/api/categories').set(auth(token)).send({ name: 'Stolen' });
-    expect(made.status).toBe(201);
+    // Refused outright: never carried on in another business either.
+    expect(made.status).toBe(401);
     const inOther = await runAsBusiness(otherId, () => context.db.selectFrom('categories').select('name').where('name', '=', 'Stolen').execute());
     expect(inOther).toEqual([]);
   });

@@ -56,7 +56,8 @@ export class ThreadService {
     const notes = await this.db
       .selectFrom('document_notes as n')
       .leftJoin('users as u', 'u.id', 'n.author_id')
-      .select(['n.id', 'n.body', 'n.created_at', 'u.name', 'u.role'])
+      .leftJoin('people as p', 'p.id', 'n.author_id')
+      .select(['n.id', 'n.body', 'n.created_at', 'u.name', 'p.role'])
       .where('n.thread_id', '=', thread.id)
       .orderBy('n.id')
       .execute();
@@ -108,7 +109,7 @@ export class ThreadService {
       if (!asking) {
         const askers = await trx
           .selectFrom('document_notes as n')
-          .innerJoin('users as u', 'u.id', 'n.author_id')
+          .innerJoin('people as u', 'u.id', 'n.author_id')
           .select('u.id')
           .distinct()
           .where('n.thread_id', '=', threadId)

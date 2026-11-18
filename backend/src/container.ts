@@ -442,7 +442,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     tabService,
     businessService,
   );
-  const sessionService = new SessionService(refreshTokenRepository);
+  const sessionService = new SessionService(refreshTokenRepository, userRepository);
   const googleAuthService = new GoogleAuthService(
     options.google?.verifier ?? (config.googleClientId ? new GoogleIdTokenVerifier(config.googleClientId) : null),
     options.google?.clientId ?? config.googleClientId ?? null,

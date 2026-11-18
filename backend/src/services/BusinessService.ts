@@ -1,5 +1,6 @@
 import type { LegalForm } from '../database/types.js';
 import { NotFoundError } from '../errors/httpErrors.js';
+import { currentBusinessId } from '../database/businessContext.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -139,9 +140,10 @@ export class BusinessService {
     });
   }
 
-  private async businessOf(userId: number): Promise<BusinessRow> {
-    const user = await this.userRepository.findById(userId);
-    const business = user ? await this.businessRepository.findById(user.business_id) : undefined;
+  /** The business open in this request (not the person's home business). */
+  private async businessOf(_userId: number): Promise<BusinessRow> {
+    const businessId = currentBusinessId();
+    const business = businessId === null ? undefined : await this.businessRepository.findById(businessId);
     if (!business) throw new NotFoundError('No business found for this account');
     return business;
   }

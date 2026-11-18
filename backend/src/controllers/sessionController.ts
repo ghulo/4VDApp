@@ -15,7 +15,7 @@ export function createSessionController(sessionService: SessionService) {
     /** Someone else's devices, for the person page (overseers only). */
     async ofUser(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
-      sendSuccess(res, await sessionService.list(id, undefined));
+      sendSuccess(res, await sessionService.ofPerson(id));
     },
 
     async end(req: Request, res: Response): Promise<void> {

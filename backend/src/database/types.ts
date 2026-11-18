@@ -167,6 +167,8 @@ export interface MembershipsTable {
   business_id: number;
   role: StoredRole;
   is_active: Generated<boolean>;
+  /** Taken off a business that is not their home (the row stays for their name on past work). */
+  removed_at: Generated<Date | null>;
   created_at: CreatedAt;
 }
 
@@ -1024,6 +1026,12 @@ export interface StockCountLinesTable {
 }
 
 /** Read-only view: sales, plus approved returns as negative rows. */
+/**
+ * Everyone who works for the current business (view, migration 085): a users
+ * row with role and is_active from their membership in this business.
+ */
+export type PeopleView = UsersTable;
+
 export interface SalesLedgerView {
   sale_id: number;
   return_id: number | null;
@@ -1785,6 +1793,7 @@ export interface Database {
   purchase_order_lines: PurchaseOrderLinesTable;
   expiry_dates: ExpiryDatesTable;
   sales_ledger: SalesLedgerView;
+  people: PeopleView;
   document_numbers: DocumentNumbersTable;
   documents: DocumentsTable;
   document_lines: DocumentLinesTable;

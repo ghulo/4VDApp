@@ -182,8 +182,8 @@ export class ReportsRepository {
       select
         u.id as user_id,
         u.name,
-        u.role,
-        (not u.is_active or u.deleted_at is not null) as has_left,
+        coalesce(m.role, u.role) as role,
+        (m.user_id is null or not m.is_active or m.removed_at is not null or u.deleted_at is not null) as has_left,
         u.monthly_target,
         u.commission_percent,
         count(l.sale_id) filter (where l.return_id is null) as sales_count,
@@ -192,12 +192,12 @@ export class ReportsRepository {
         coalesce(-sum(l.revenue) filter (where l.return_id is not null), 0) as refunds,
         coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit
       from users u
+      left join memberships m on m.user_id = u.id and m.business_id = current_business_id()
       left join sales_ledger l
         on l.sold_by = u.id and l.occurred_at >= ${range.startDate} and l.occurred_at < ${range.endDate}
-      where (u.role in ('main_admin', 'admin', 'owner', 'employee') and u.is_active and u.deleted_at is null
-          and (not u.is_platform_developer or u.business_id = current_business_id()))
+      where (m.role in ('main_admin', 'admin', 'owner', 'employee') and m.is_active and m.removed_at is null and u.deleted_at is null)
         or l.sale_id is not null
-      group by u.id
+      group by u.id, m.user_id, m.role, m.is_active, m.removed_at
       order by revenue desc, u.name
     `.execute(this.db);
     return result.rows;

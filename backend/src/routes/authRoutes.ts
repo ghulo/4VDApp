@@ -49,6 +49,8 @@ export function createAuthRoutes({
   router.post('/switch', guards.authenticated, controller.switchBusiness);
   router.get('/invites/:token', linkLimiter, invites.preview);
   router.post('/invites/:token/accept', linkLimiter, invites.accept);
+  // Someone who already has an account, signed in as the invited email, joins with it.
+  router.post('/invites/:token/join', linkLimiter, guards.authenticated, invites.join);
   router.get('/google', google.status);
   router.post('/google', linkLimiter, google.signIn);
   router.post('/invites/:token/google', linkLimiter, google.acceptInvite);

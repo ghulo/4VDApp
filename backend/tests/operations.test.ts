@@ -189,29 +189,6 @@ describe('analytics', () => {
 });
 
 describe('users', () => {
-  it('should create an account that can log in', async () => {
-    const created = await request(context.app)
-      .post('/api/users')
-      .set(auth(adminToken))
-      .send({ email: 'Cousin@Family.com', name: 'Cousin', role: 'family', password: 'family-password' });
-    const login = await request(context.app)
-      .post('/api/auth/login')
-      .send({ email: 'cousin@family.com', password: 'family-password' });
-
-    expect(created.status).toBe(201);
-    expect(created.body.data.email).toBe('cousin@family.com');
-    expect(login.status).toBe(200);
-  });
-
-  it('should reject a duplicate email', async () => {
-    const response = await request(context.app)
-      .post('/api/users')
-      .set(auth(adminToken))
-      .send({ email: 'admin@test.local', name: 'Copy', role: 'family', password: 'some-password' });
-
-    expect(response.status).toBe(409);
-  });
-
   it('should not let the only admin demote themselves', async () => {
     const admin = await context.db.selectFrom('users').select('id').where('role', '=', 'admin').executeTakeFirstOrThrow();
 

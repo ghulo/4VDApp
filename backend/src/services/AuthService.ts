@@ -210,7 +210,9 @@ async startSession(
       return { businessId: exists ? wanted : user.business_id, role: 'developer' };
     }
     const membership = await this.userRepository.membership(user.id, user.business_id, wanted);
-    return membership ?? { businessId: user.business_id, role: user.role };
+    // Blocked in every business they belong to: no session anywhere.
+    if (!membership) throw new UnauthorizedError('Your account is no longer active');
+    return membership;
   }
 
   /**

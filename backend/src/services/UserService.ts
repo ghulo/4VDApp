@@ -5,7 +5,6 @@ import type { RefreshTokenRepository } from '../repositories/RefreshTokenReposit
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import type { PublicUser } from '../types/auth.js';
-import { isUniqueViolation } from '../utils/databaseErrors.js';
 import { type Paginated, type PageRequest, toOffset, toPaginationMeta } from '../utils/pagination.js';
 import { hashPassword } from '../utils/password.js';
 import { canHandOut, canManage, mayChangePerson, rolesWith } from '../utils/roles.js';
@@ -14,13 +13,6 @@ import type { Say, UserChange } from '../i18n/activityText.js';
 
 const TOP_ROLE_MESSAGE = 'Only a main admin can add or change a main admin, owner, admin or accountant';
 export const NOT_HOME_MESSAGE = "This person's account belongs to another business. Here you can change only their role, block them or take them off this business.";
-
-export interface CreateUserInput {
-  email: string;
-  name: string;
-  role: StoredRole;
-  password: string;
-}
 
 export interface UpdateUserInput {
   name?: string;
@@ -57,43 +49,6 @@ export class UserService {
     };
   }
 
-  async create(input: CreateUserInput, actorId: number): Promise<PublicUser> {
-    const existing = await this.userRepository.findByEmail(input.email);
-    if (existing) throw new ConflictError(`An account for ${input.email} already exists`);
-    const passwordHash = await hashPassword(input.password);
-    const { actor } = await this.userRepository.inThisBusiness(actorId, actorId);
-    if (!actor) throw new NotFoundError(`User ${actorId} does not exist`);
-    if (!canHandOut(actor.is_platform_developer ? 'developer' : actor.role, input.role)) throw new ForbiddenError(TOP_ROLE_MESSAGE);
-    const businessId = currentBusinessId();
-    if (businessId === null) throw new Error('Adding someone needs a business');
-
-    try {
-      return await this.transactions.run(async (repos) => {
-        // Made by the owner, who vouches for the address, so it counts as verified.
-        const user = await repos.users.create({
-          email: input.email,
-          name: input.name,
-          role: input.role,
-          password_hash: passwordHash,
-          business_id: businessId,
-          email_verified_at: new Date(),
-        });
-        await repos.activityLog.create({
-          userId: actorId,
-          action: 'user.created',
-          entityType: 'user',
-          entityId: user.id,
-          say: { key: 'userAdded', params: { name: user.name, role: user.role } },
-          details: { email: user.email, role: user.role },
-        });
-        return toPublicUser(user);
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictError(`An account for ${input.email} already exists`);
-      throw error;
-    }
-  }
-
   /** `logExtra` is added to the logged details (a restore marks its own change with it). */
   async update(id: number, input: UpdateUserInput, actingUserId: number, logExtra?: Record<string, unknown>): Promise<PublicUser> {
     const { actor, target: user, home } = await this.userRepository.inThisBusiness(actingUserId, id);
@@ -113,23 +68,26 @@ export class UserService {
     const passwordHash = input.password === undefined ? undefined : await hashPassword(input.password);
 
     const updated = await this.transactions.run(async (repos) => {
-      if (!home && (input.role !== undefined || input.isActive !== undefined)) {
-        const changed = await repos.users.updateMembership(id, {
+      // Access is per business: blocking someone, even at home, blocks only their place in this business.
+      // Their role at home lives on users too (the trigger copies it to the home membership).
+      const membershipChange = {
+        ...(!home && input.role !== undefined && { role: input.role }),
+        ...(input.isActive !== undefined && { is_active: input.isActive }),
+      };
+      if (Object.keys(membershipChange).length > 0 && !(await repos.users.updateMembership(id, membershipChange))) {
+        throw new NotFoundError(`User ${id} does not exist`);
+      }
+      if (home) {
+        const changed = await repos.users.update(id, {
+          ...(input.name !== undefined && { name: input.name }),
           ...(input.role !== undefined && { role: input.role }),
-          ...(input.isActive !== undefined && { is_active: input.isActive }),
+        ...(passwordHash !== undefined && { password_hash: passwordHash }),
+        ...(input.monthlyTarget !== undefined && { monthly_target: input.monthlyTarget }),
+          ...(input.commissionPercent !== undefined && { commission_percent: input.commissionPercent }),
         });
         if (!changed) throw new NotFoundError(`User ${id} does not exist`);
       }
-      const result = !home
-        ? await repos.users.person(id)
-        : await repos.users.update(id, {
-        ...(input.name !== undefined && { name: input.name }),
-        ...(input.role !== undefined && { role: input.role }),
-        ...(input.isActive !== undefined && { is_active: input.isActive }),
-        ...(passwordHash !== undefined && { password_hash: passwordHash }),
-        ...(input.monthlyTarget !== undefined && { monthly_target: input.monthlyTarget }),
-        ...(input.commissionPercent !== undefined && { commission_percent: input.commissionPercent }),
-      });
+      const result = await repos.users.person(id);
       if (!result) throw new NotFoundError(`User ${id} does not exist`);
       await repos.activityLog.create({
         userId: actingUserId,
@@ -153,10 +111,9 @@ export class UserService {
       return result;
     });
 
-    // A new password or lost access should end their other sessions straight away.
-    if (input.password !== undefined || input.isActive === false || (input.role && input.role !== user.role)) {
-      await this.endSessions(id, home);
-    }
+    // A new password ends every session; lost access or a new role ends their sessions in this business.
+    if (input.password !== undefined) await this.endSessions(id, true);
+    else if (input.isActive === false || (input.role && input.role !== user.role)) await this.endSessions(id, false);
     return toPublicUser(updated);
   }
 
@@ -168,6 +125,12 @@ export class UserService {
     if (!actor) throw new NotFoundError(`User ${actingUserId} does not exist`);
     if (!mayChangePerson(actor, user)) throw new ForbiddenError(TOP_ROLE_MESSAGE);
     await this.keepSomeoneInCharge(user, { isActive: false }, false);
+    if (home) {
+      const left = await this.userRepository.lastMainAdminElsewhere(id, user.business_id);
+      if (left.length > 0) {
+        throw new ConflictError(`${user.name} is the only main admin of ${left.join(', ')}. Make someone else a main admin there first, or block them here instead.`);
+      }
+    }
 
     await this.transactions.run(async (repos) => {
       // Their home business deletes the account; any other business only takes them off its own list.
@@ -181,13 +144,14 @@ export class UserService {
         say: { key: 'userRemoved', params: { name: user.name } },
       });
     });
+    // Deleting the account (home) signs them out everywhere; taking them off another business only there.
     await this.endSessions(id, home);
   }
 
-  /** Signed out everywhere when it is their home business, else only from their sessions in this business. */
-  private async endSessions(userId: number, home: boolean): Promise<void> {
+  /** Signed out everywhere, or only from their sessions in the business open now. */
+  private async endSessions(userId: number, everywhere: boolean): Promise<void> {
     const businessId = currentBusinessId();
-    if (home || businessId === null) await this.refreshTokenRepository.revokeAllForUser(userId);
+    if (everywhere || businessId === null) await this.refreshTokenRepository.revokeAllForUser(userId);
     else await this.refreshTokenRepository.revokeForUserIn(userId, businessId);
   }
 

@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import { storedOnly } from '../utils/roles.js';
-import { currentBusinessId } from '../database/businessContext.js';
+import { currentBusinessId, runAsSystem } from '../database/businessContext.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { Language } from '../i18n/language.js';
 import type { NewUserRow, StoredRole, UserRole, UserRow, UserUpdate } from '../database/types.js';
@@ -16,7 +16,8 @@ export class UserRepository {
 
   /**
    * The person's active membership: in `businessId` when given and still theirs,
-   * otherwise in their home business (users.business_id).
+   * otherwise in their home business (users.business_id), otherwise (blocked
+   * at home) the first other business they are active in.
    */
   async membership(userId: number, homeBusinessId: number, businessId?: number): Promise<{ businessId: number; role: UserRole } | undefined> {
     const rows = await this.db
@@ -24,9 +25,10 @@ export class UserRepository {
       .select(['business_id', 'role'])
       .where('user_id', '=', userId)
       .where('is_active', '=', true)
-      .where('business_id', 'in', [businessId ?? homeBusinessId, homeBusinessId])
+      .where('removed_at', 'is', null)
+      .orderBy('business_id')
       .execute();
-    const row = rows.find((r) => r.business_id === businessId) ?? rows.find((r) => r.business_id === homeBusinessId);
+    const row = rows.find((r) => r.business_id === businessId) ?? rows.find((r) => r.business_id === homeBusinessId) ?? rows[0];
     return row && { businessId: row.business_id, role: row.role };
   }
 
@@ -191,6 +193,27 @@ export class UserRepository {
       .where('deleted_at', 'is', null)
       .executeTakeFirstOrThrow();
     return Number(row.total);
+  }
+
+  /**
+   * The other businesses where this person is the only active main admin
+   * (deleting their account would leave them with none). Read before any
+   * business applies, since people of other businesses are hidden otherwise.
+   */
+  lastMainAdminElsewhere(userId: number, businessId: number): Promise<string[]> {
+    return runAsSystem(async () => {
+      const { rows } = await sql<{ name: string }>`
+        select b.name from memberships m join businesses b on b.id = m.business_id
+        where m.user_id = ${userId} and m.business_id <> ${businessId}
+          and m.role = 'main_admin' and m.is_active and m.removed_at is null
+          and not exists (
+            select 1 from memberships o join users u on u.id = o.user_id
+            where o.business_id = m.business_id and o.user_id <> ${userId}
+              and o.role = 'main_admin' and o.is_active and o.removed_at is null
+              and u.deleted_at is null and u.is_active and not u.is_platform_developer)
+        order by b.name`.execute(this.db);
+      return rows.map((row) => row.name);
+    });
   }
 
   async softDelete(id: number): Promise<boolean> {

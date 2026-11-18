@@ -7,7 +7,6 @@ import type { SalesService } from '../services/SalesService.js';
 import type { UserService } from '../services/UserService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import {
-  createUserSchema,
   dashboardQuerySchema,
   notificationQuerySchema,
   pushDeviceSchema,
@@ -81,11 +80,6 @@ export function createUserController(userService: UserService) {
       const query = parseInput(userQuerySchema, req.query);
       const { items, meta } = await userService.list(query);
       sendSuccess(res, items, { meta });
-    },
-
-    async create(req: Request, res: Response): Promise<void> {
-      const input = parseInput(createUserSchema, req.body);
-      sendSuccess(res, await userService.create(input, req.user!.id), { statusCode: 201, message: 'Account created' });
     },
 
     async update(req: Request, res: Response): Promise<void> {

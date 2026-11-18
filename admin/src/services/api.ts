@@ -386,8 +386,8 @@ export const binApi = {
 export const invitesApi = {
   list: async () => (await apiRequest<Invite[]>('/invites')).data,
   create: async (input: { email: string; role: UserRole; language?: User['language'] }) =>
-    (await apiRequest<Invite>('/invites', { method: 'POST', body: input })),
-  resend: async (id: number) => await apiRequest<Invite>(`/invites/${id}/resend`, { method: 'POST' }),
+    (await apiRequest<Invite & { link: string }>('/invites', { method: 'POST', body: input })),
+  resend: async (id: number) => await apiRequest<Invite & { link: string }>(`/invites/${id}/resend`, { method: 'POST' }),
   cancel: async (id: number) => await apiRequest<null>(`/invites/${id}`, { method: 'DELETE' }),
 };
 
@@ -593,8 +593,6 @@ export const usersApi = {
   list: (page: number) => paginated<TeamMember>('/users', { page, limit: 50 }),
   /** Someone's devices, for their page. */
   sessions: async (id: number) => (await apiRequest<Session[]>(`/users/${id}/sessions`)).data,
-  create: async (input: { email: string; name: string; role: UserRole; password: string }) =>
-    (await apiRequest<User>('/users', { method: 'POST', body: input })).data,
   update: async (
     id: number,
     input: {

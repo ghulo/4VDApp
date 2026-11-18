@@ -42,6 +42,8 @@ describe('invites', () => {
 
     expect(created.status).toBe(201);
     expect(link).toMatch(/^http:\/\/localhost:5173\/invite\/[A-Za-z0-9_-]{40,}$/);
+    // The inviter gets the same link back, to send on WhatsApp or copy.
+    expect(created.body.data.link).toBe(link);
     expect(preview.body.data).toMatchObject({ email: 'ana@example.com', role: 'employee', shopName: 'Test shop', invitedBy: 'Test admin' });
   });
 

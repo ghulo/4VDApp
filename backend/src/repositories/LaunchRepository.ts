@@ -35,9 +35,9 @@ export class LaunchRepository {
         exists (select 1 from settings where key = ${OPENING_POSTED_KEY}) as opening_posted,
         (select count(*) from products) as products,
         (select count(*) from sales) as sales,
-        coalesce((select address is not null and address <> '' from businesses order by id limit 1), false) as has_address,
-        coalesce((select nui is not null from businesses order by id limit 1), false) as has_nui,
-        coalesce((select phone is not null and phone <> '' from businesses order by id limit 1), false) as has_phone,
+        coalesce((select address is not null and address <> '' from businesses where id = current_business_id()), false) as has_address,
+        coalesce((select nui is not null from businesses where id = current_business_id()), false) as has_nui,
+        coalesce((select phone is not null and phone <> '' from businesses where id = current_business_id()), false) as has_phone,
         (select count(*) from people where role = 'owner' and is_active and deleted_at is null) as owners,
         (select count(*) from people u left join report_subscriptions r on r.user_id = u.id
           where u.role = 'owner' and u.is_active and u.deleted_at is null and coalesce(r.daily_enabled or r.weekly_enabled, true)) as owners_with_reports,

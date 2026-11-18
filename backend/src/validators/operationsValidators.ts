@@ -150,13 +150,6 @@ const password = z
   .min(MIN_PASSWORD_LENGTH, `password must be at least ${MIN_PASSWORD_LENGTH} characters`)
   .max(200);
 
-export const createUserSchema = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email()),
-  name: trimmedString(255),
-  role: z.enum(STORED_ROLES),
-  password,
-});
-
 export const updateUserSchema = z
   .object({
     name: trimmedString(255).optional(),

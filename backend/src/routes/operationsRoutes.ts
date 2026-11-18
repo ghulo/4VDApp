@@ -49,9 +49,9 @@ export function createUserRoutes({ userService, sessionService, authService, two
   const router = Router();
 
   // The owner may see who works here; only managers change it (UserService checks who may touch whom).
+  // People join only by invite (email or a shared link), never with a password someone else typed.
   router.get('/', ...guards.oversee, controller.list);
   router.get('/:id/sessions', ...guards.oversee, sessions.ofUser);
-  router.post('/', ...guards.manage, controller.create);
   router.put('/:id', ...guards.manage, controller.update);
   router.delete('/:id', ...guards.manage, controller.remove);
   // Lost phone and backup codes: a manager switches two-step sign-in off for them.

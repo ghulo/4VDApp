@@ -26,6 +26,11 @@ export interface InviteDto {
   createdAt: string;
 }
 
+/** Right after sending: the link itself, so the inviter can also send it on WhatsApp or copy it. */
+export interface SentInviteDto extends InviteDto {
+  link: string;
+}
+
 export interface InvitePreviewDto {
   email: string;
   role: StoredRole;
@@ -67,7 +72,7 @@ export class InviteService {
   }
 
   /** A new invite replaces any open one to the same email. */
-  async invite(actorId: number, email: string, role: StoredRole, language?: Language): Promise<InviteDto> {
+  async invite(actorId: number, email: string, role: StoredRole, language?: Language): Promise<SentInviteDto> {
     const { actor, businessId } = await this.actor(actorId);
     const inviteLanguage = language ?? actor.language;
     if (!canHandOut(actor.is_platform_developer ? 'developer' : actor.role, role)) throw new ForbiddenError('Only a main admin can invite a main admin, owner, admin or accountant');
@@ -103,11 +108,11 @@ export class InviteService {
       email,
       emailTemplates.invite({ shopName: business, inviterName: actor.name, role, link: this.link(token) }, messages[inviteLanguage]),
     );
-    return toDto((await this.inviteRepository.findById(id, businessId))!);
+    return { ...toDto((await this.inviteRepository.findById(id, businessId))!), link: this.link(token) };
   }
 
   /** Sends a fresh link; the old one stops working. */
-  async resend(actorId: number, inviteId: number): Promise<InviteDto> {
+  async resend(actorId: number, inviteId: number): Promise<SentInviteDto> {
     const { actor, businessId } = await this.actor(actorId);
     const invite = await this.inviteRepository.findById(inviteId, businessId);
     if (!invite || invite.accepted_at || invite.revoked_at) throw new NotFoundError('That invite is no longer open');
@@ -120,7 +125,7 @@ export class InviteService {
         messages[invite.language],
       ),
     );
-    return toDto((await this.inviteRepository.findById(invite.id, businessId))!);
+    return { ...toDto((await this.inviteRepository.findById(invite.id, businessId))!), link: this.link(token) };
   }
 
   async cancel(actorId: number, inviteId: number): Promise<void> {

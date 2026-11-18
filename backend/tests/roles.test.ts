@@ -71,12 +71,8 @@ describe('the owner', () => {
 });
 
 describe('who may hand out roles', () => {
-  it('should let an admin add employees and family, but not owners, admins or developers', async () => {
-    const make = (role: string) =>
-      request(context.app)
-        .post('/api/users')
-        .set(auth(adminToken))
-        .send({ email: `${role}-new@example.com`, name: 'New person', password: 'a-long-password', role });
+  it('should let an admin invite employees and family, but not owners, admins or developers', async () => {
+    const make = (role: string) => request(context.app).post('/api/invites').set(auth(adminToken)).send({ email: `${role}-new@example.com`, role });
 
     expect((await make('employee')).status).toBe(201);
     expect((await make('family')).status).toBe(201);

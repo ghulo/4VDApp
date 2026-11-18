@@ -553,6 +553,20 @@ show depth in its own colour instead of one flat yellow. Never a coloured glow o
 Where you are = tint + lip + rim + raise; a selected row = tint, a two-shade edge
 mark (400 over 450) and a rim under it; progress = an amber key in an amber well.
 
+### A business's own colour (branding)
+
+4VD's own business keeps amber exactly. Every other business picks one colour
+(Settings → Business look); `admin/src/theme/brandTheme.ts` builds the whole
+amber scale from it on 4VD's lightness ladder, for light and dark, and the
+backend twin `backend/src/utils/brandColours.ts` gives the same answer for
+emails and invoices. Keys keep the exact colour with white or near-black ink
+(at least 4.5:1, guaranteed); words, links and outlines take the first shade that
+reads 4.5:1 on every paper, and the card tells the owner when that happens.
+Greys stay plain or lean slightly toward the colour. Layout, keys, depth and
+fonts never change. Without a logo the mark is the business's initials on a key
+in its colour, never the 4VD house. "Runs on 4VD" stays in small print only;
+the developer mark and All logs stay amber.
+
 ### Status (quiet)
 Each has a strong colour for text and outlines, and a soft tint for washes.
 

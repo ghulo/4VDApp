@@ -9,6 +9,8 @@ import { type Kysely, sql } from 'kysely';
  * all of it and keeps 4VD's look.
  */
 export async function up(db: Kysely<unknown>): Promise<void> {
+  // businesses is tiny, but every request reads it: give up rather than queue behind a long transaction.
+  await sql`SET LOCAL lock_timeout = '10s'`.execute(db);
   await sql`
     ALTER TABLE businesses
       ADD COLUMN brand_colour text,

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { businessApi } from '../services/api';
 import type { Business, BrandGreys } from '../services/types';
 import { applyBrand, previewBrand } from '../theme/applyBrand';
@@ -7,9 +7,10 @@ import { BRAND_PRESETS, brandInitials, brandTheme, isBrandHex } from '../theme/b
 import { errorMessage } from '../utils/errors';
 import { useT } from '../i18n/useT';
 import { BrandMark } from './BrandMark';
+import { Segmented } from './BillLines';
 import { CopyButton } from './TwoStepCard';
 import { SavedToast } from './Feedback';
-import { Button, Card, Field } from './ui';
+import { Button, Card, Field, Tooltip } from './ui';
 
 /**
  * Settings → Business look: the name, colour and greys this business shows
@@ -82,6 +83,17 @@ export function BrandCard({ business }: { business: Business }) {
     if (hasChanges) save.mutate();
   }
 
+  // One tab stop for the presets, like radio buttons: the arrow keys move the choice.
+  function swatchKey(event: KeyboardEvent<HTMLDivElement>) {
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (step === 0 || !(event.target instanceof HTMLButtonElement)) return;
+    event.preventDefault();
+    const at = BRAND_PRESETS.findIndex((preset) => preset.hex === colour);
+    const next = (Math.max(at, step > 0 ? -1 : 0) + step + BRAND_PRESETS.length) % BRAND_PRESETS.length;
+    pick(BRAND_PRESETS[next]!.hex);
+    event.currentTarget.querySelectorAll<HTMLButtonElement>('[role=radio]')[next]?.focus();
+  }
+
   const typedOk = isBrandHex(typed.trim().startsWith('#') ? typed.trim() : `#${typed.trim()}`);
   const custom = !BRAND_PRESETS.some((preset) => preset.hex === colour);
 
@@ -118,18 +130,20 @@ export function BrandCard({ business }: { business: Business }) {
 
             <fieldset className="brand-card__colour">
               <legend className="field__label">{words.colour}</legend>
-              <div className="brand-swatches" role="radiogroup" aria-label={words.colour}>
-                {BRAND_PRESETS.map((preset) => (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={colour === preset.hex}
-                    aria-label={words.presets[preset.key]}
-                    className="brand-swatch"
-                    style={{ background: preset.hex }}
-                    onClick={() => pick(preset.hex)}
-                  />
+              <div className="brand-swatches" role="radiogroup" aria-label={words.colour} onKeyDown={swatchKey}>
+                {BRAND_PRESETS.map((preset, index) => (
+                  <Tooltip key={preset.key} label={words.presets[preset.key]}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={colour === preset.hex}
+                      tabIndex={colour === preset.hex || (custom && index === 0) ? 0 : -1}
+                      aria-label={words.presets[preset.key]}
+                      className="brand-swatch"
+                      style={{ background: preset.hex }}
+                      onClick={() => pick(preset.hex)}
+                    />
+                  </Tooltip>
                 ))}
                 <label className={custom ? 'brand-swatch brand-swatch--any brand-swatch--chosen' : 'brand-swatch brand-swatch--any'} style={custom ? { background: colour } : undefined}>
                   <span className="visually-hidden">{words.any}</span>
@@ -151,16 +165,15 @@ export function BrandCard({ business }: { business: Business }) {
             </fieldset>
 
             <div className="field">
-              <span className="field__label" id="brand-greys">
+              <span className="field__label" aria-hidden="true">
                 {words.greys}
               </span>
-              <div className="segmented" role="radiogroup" aria-labelledby="brand-greys">
-                {(['plain', 'tinted'] as const).map((option) => (
-                  <button key={option} type="button" role="radio" aria-checked={greys === option} className="segmented__option" onClick={() => setGreys(option)}>
-                    {words.greysOptions[option]}
-                  </button>
-                ))}
-              </div>
+              <Segmented
+                label={words.greys}
+                value={greys}
+                options={(['plain', 'tinted'] as const).map((option) => ({ value: option, label: words.greysOptions[option] }))}
+                onChange={setGreys}
+              />
             </div>
 
             <p className="brand-card__guard" role="status">

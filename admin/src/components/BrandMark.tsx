@@ -20,8 +20,7 @@ export function BrandMark({ brand, size = 36 }: { brand: MarkBrand | null | unde
     return <img className="brand-mark brand-mark--logo" src={src} alt="" width={size} height={size} style={sized} onError={() => setBroken(src)} />;
   }
   return (
-    <span className="brand-mark brand-mark--initials" style={sized} aria-hidden="true">
-      {brand.initials}
-    </span>
+    // The letters are drawn by CSS (::after), so a link around the mark is named by its label alone.
+    <span className="brand-mark brand-mark--initials" style={sized} data-initials={brand.initials} aria-hidden="true" />
   );
 }

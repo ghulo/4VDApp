@@ -80,10 +80,8 @@
   user-select: none;
 }
 
-.topbar__slash {
-  color: var(--line-strong);
-  font-size: var(--text-lg);
-  font-weight: 300;
+.brand-mark--initials::after {
+  content: attr(data-initials);
 }
 
 .topbar__shop {
@@ -523,7 +521,6 @@
     padding: 0 var(--space-2);
   }
 
-  .topbar__slash,
   .topbar__shop,
   .topbar__search kbd,
   .topbar .segmented {

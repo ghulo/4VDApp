@@ -261,6 +261,14 @@
         "content-clipping"
       ],
       "reason": "On a phone the top bar shows the developer hammer alone; the words \"4VD developer\" are hidden the visually-hidden way (1px, clip) so screen readers still read them."
+    },
+    {
+      "selector": ".brand-mark--initials",
+      "rules": [
+        "font-size",
+        "text-contrast"
+      ],
+      "reason": "A business's placeholder logo: its initials on a key in its colour. The letters scale with the mark (0.42 of its size), like a logo, not a text role. The key is a light gradient the tool cannot read; src/theme/brandTheme.test.ts proves the ink passes 4.5:1 on every key colour (grid of 2,016 colours)."
     }
   ]
 }

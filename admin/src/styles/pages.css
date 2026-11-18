@@ -2490,6 +2490,8 @@ form.product-form > .form-actions {
 
 .brand-card__colour {
   display: grid;
+  /* A plain auto track would size to the swatches' widest row and push past a phone screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -2503,6 +2505,11 @@ form.product-form > .form-actions {
   grid-template-columns: repeat(auto-fill, minmax(var(--control-h), 1fr));
   gap: var(--space-2);
   max-width: 420px;
+}
+
+/* Each preset sits in its tooltip anchor; the anchor passes the cell's width on to the key. */
+.brand-swatches > .tooltip-anchor {
+  display: grid;
 }
 
 .brand-swatch {

@@ -19,12 +19,26 @@ import { forgetViewAs } from './viewAs';
  */
 export function useBusinessPicker(): MenuItem[] {
   const user = useCurrentUser();
-  const t = useT();
-  const toast = useToast();
+  const switchTo = useSwitchBusiness();
   const businesses = user.businesses ?? [];
   if (businesses.length < 2) return [];
 
-  const switchTo = async (businessId: number) => {
+  return businesses.map((business) => ({
+    label: business.name,
+    icon: Storefront,
+    checked: business.id === user.businessId,
+    onSelect: () => {
+      if (business.id !== user.businessId) void switchTo(business.id);
+    },
+  }));
+}
+
+/** Opens the app again from Home in another business (the picker, and Add business's "Open it now"). */
+export function useSwitchBusiness(): (businessId: number) => Promise<void> {
+  const user = useCurrentUser();
+  const t = useT();
+  const toast = useToast();
+  return async (businessId: number) => {
     // The Counter's waiting work belongs to the business it was rung up in.
     if (localStore.read().length > 0 || unprintedWaiting() || basketsWaiting(user.id)) {
       toast({ title: t.nav.switchBlocked, detail: t.nav.switchBlockedDetail, tone: 'danger' });
@@ -39,13 +53,4 @@ export function useBusinessPicker(): MenuItem[] {
       toast({ title: t.nav.switchFailed, detail: errorMessage(error), tone: 'danger' });
     }
   };
-
-  return businesses.map((business) => ({
-    label: business.name,
-    icon: Storefront,
-    checked: business.id === user.businessId,
-    onSelect: () => {
-      if (business.id !== user.businessId) void switchTo(business.id);
-    },
-  }));
 }

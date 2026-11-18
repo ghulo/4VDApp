@@ -1,11 +1,13 @@
 import PostalMime from 'postal-mime';
 import { checkSender } from './auth.js';
 import { billFiles } from './files.js';
+import { rejectReason } from './reply.js';
 
 /**
- * bills@4vd.app: a supplier bill forwarded here is passed to the 4VD API, which
- * checks the sender is on the team or on the list in Settings and reads it into
- * a bill scan that waits in To do. Mail that fails SPF and DKIM for its From
+ * bills@4vd.app (and bills+<short>@4vd.app, one per business): a supplier bill
+ * forwarded here is passed to the 4VD API, which picks the business from the
+ * address, checks the sender works there or is on its list in Settings, and
+ * reads it into a bill scan that waits in To do. Mail that fails SPF and DKIM for its From
  * domain is dropped here without a word, so nobody can pose as a team member.
  */
 export default {
@@ -30,12 +32,14 @@ export default {
       body: JSON.stringify({
         messageId: parsed.messageId ?? header('message-id') ?? `${from}:${parsed.date ?? Date.now()}`,
         from,
+        // The address it came to: the part after the + names the business.
+        to: message.to,
         subject: parsed.subject?.slice(0, 500) ?? null,
         files,
       }),
     });
-    console.log('passed on', { from, via: sender.why, files: files.length, status: response.status, auth });
-    // The sender hears back only when 4VD couldn't take it, so they know to send it again.
-    if (!response.ok) message.setReject('4VD could not take this bill just now. Please send it again in a few minutes.');
+    console.log('passed on', { from, to: message.to, via: sender.why, files: files.length, status: response.status, auth });
+    // The sender hears back only when 4VD couldn't take it, so they know to send it again (or fix the address).
+    if (!response.ok) message.setReject(await rejectReason(response));
   },
 };

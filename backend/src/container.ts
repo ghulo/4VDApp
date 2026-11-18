@@ -109,6 +109,7 @@ import { MediaService } from './services/MediaService.js';
 import { ProfileService } from './services/ProfileService.js';
 import { BusinessRepository } from './repositories/BusinessRepository.js';
 import { BusinessService } from './services/BusinessService.js';
+import { AddBusinessService } from './services/AddBusinessService.js';
 import { SessionService } from './services/SessionService.js';
 import { GoogleAuthService } from './services/GoogleAuthService.js';
 import { SignupService } from './services/SignupService.js';
@@ -442,6 +443,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     tabService,
     businessService,
   );
+  const addBusinessService = new AddBusinessService(transactions, inviteService);
   const sessionService = new SessionService(refreshTokenRepository, userRepository);
   const googleAuthService = new GoogleAuthService(
     options.google?.verifier ?? (config.googleClientId ? new GoogleIdTokenVerifier(config.googleClientId) : null),
@@ -628,6 +630,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     mediaService,
     profileService,
     businessService,
+    addBusinessService,
     sessionService,
     googleAuthService,
     signupService,

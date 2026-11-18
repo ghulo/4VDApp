@@ -1,5 +1,5 @@
 import type { DatabaseClient } from '../database/connection.js';
-import { createBusiness } from '../database/newBusiness.js';
+import { createBusiness, type NewBusinessDetails } from '../database/newBusiness.js';
 import { ActivityLogRepository } from './ActivityLogRepository.js';
 import { CarwashRepository } from './CarwashRepository.js';
 import { CashCountRepository } from './CashCountRepository.js';
@@ -103,7 +103,11 @@ export class TransactionManager {
   }
 
   /** Make a new business with everything it needs, then run `work` inside it, as one all-or-nothing unit. */
-  inNewBusiness<TResult>(name: string, work: (repositories: TransactionalRepositories, businessId: number) => Promise<TResult>): Promise<TResult> {
-    return createBusiness(this.db, name, (trx, businessId) => work(createTransactionalRepositories(trx), businessId));
+  inNewBusiness<TResult>(
+    name: string,
+    work: (repositories: TransactionalRepositories, businessId: number) => Promise<TResult>,
+    details?: NewBusinessDetails,
+  ): Promise<TResult> {
+    return createBusiness(this.db, name, (trx, businessId) => work(createTransactionalRepositories(trx), businessId), details);
   }
 }

@@ -1,11 +1,13 @@
 import { timingSafeEqual } from 'node:crypto';
 import { enterBusiness } from '../database/businessContext.js';
-import { defaultBusinessId } from '../database/business.js';
+import { defaultBusinessId, forEachBusiness } from '../database/business.js';
 import { type Request, type RequestHandler, type Response, Router } from 'express';
 import type { AppConfig } from '../config/env.js';
 import type { Container } from '../container.js';
 import { z } from 'zod';
-import { UnauthorizedError } from '../errors/httpErrors.js';
+import { AppError, UnauthorizedError } from '../errors/httpErrors.js';
+import { runAsSystem } from '../database/businessContext.js';
+import type { DatabaseClient } from '../database/connection.js';
 import { parseInput } from '../validators/validate.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 
@@ -28,11 +30,25 @@ export function billEmailTokenGuard(config: AppConfig): RequestHandler {
 const billEmailSchema = z.object({
   messageId: z.string().trim().min(1).max(500),
   from: z.string().trim().min(3).max(254),
+  /** The address it was sent to: bills+<short>@4vd.app picks the business; plain bills@ (or none, from an older worker) is the first one. */
+  to: z.string().trim().max(254).optional(),
   subject: z.string().max(500).nullable().default(null),
   files: z
     .array(z.object({ name: z.string().max(500).nullable().default(null), mime: z.string().max(100), data: z.string() }))
     .max(20),
 });
+
+/** Unknown short name: the worker tells the sender no business uses the address. */
+export const UNKNOWN_BILL_ADDRESS = 'UNKNOWN_BILL_ADDRESS';
+
+/** bills+<short>@… → that business; bills@… or no address → the first business. */
+export async function businessForBillAddress(db: DatabaseClient, to: string | undefined): Promise<number> {
+  const tag = /^[^+@]+\+([^@]+)@/.exec(to?.toLowerCase() ?? '')?.[1];
+  if (!tag) return defaultBusinessId(db);
+  const row = await runAsSystem(() => db.selectFrom('businesses').select('id').where('short_name', '=', tag).executeTakeFirst());
+  if (!row) throw new AppError(`No business uses the bill address ${to}`, 404, UNKNOWN_BILL_ADDRESS);
+  return row.id;
+}
 
 export function createInternalRoutes({ config, launchService, billEmailService, db }: Container): Router {
   const router = Router();
@@ -41,17 +57,15 @@ export function createInternalRoutes({ config, launchService, billEmailService, 
   router.post('/backup-ok', async (req: Request, res: Response) => {
     const given = req.header('x-backup-token') ?? '';
     if (!config.backupPingToken || !sameSecret(given, config.backupPingToken)) throw new UnauthorizedError('Wrong or missing backup token');
-    // The backup covers the whole server; its launch step is kept with the shop.
-    enterBusiness(await defaultBusinessId(db));
-    await launchService.recordBackup();
+    // The backup covers the whole server: every business's launch step sees it.
+    await forEachBusiness(db, () => launchService.recordBackup());
     sendSuccess(res, null, { message: 'Backup noted' });
   });
 
   // The mail Worker passes on emails to the bill address that passed SPF or DKIM for their sender.
   router.post('/bill-email', billEmailTokenGuard(config), async (req: Request, res: Response) => {
     const mail = parseInput(billEmailSchema, req.body);
-    // One bill address for now; phase 5 gives each business its own and picks it from the address.
-    enterBusiness(await defaultBusinessId(db));
+    enterBusiness(await businessForBillAddress(db, mail.to));
     sendSuccess(res, await billEmailService.receive(mail), { statusCode: 202, message: 'Email taken' });
   });
 

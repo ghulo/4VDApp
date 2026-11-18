@@ -13,7 +13,7 @@ export async function defaultBusinessId(db: DatabaseClient): Promise<number> {
   if (existing) return existing.id;
   const created = await db
     .insertInto('businesses')
-    .values({ name: DEFAULT_BUSINESS_NAME })
+    .values({ name: DEFAULT_BUSINESS_NAME, short_name: '4vd' })
     .returning('id')
     .executeTakeFirstOrThrow();
   return created.id;

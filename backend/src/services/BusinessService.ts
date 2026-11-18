@@ -1,5 +1,7 @@
 import type { LegalForm } from '../database/types.js';
-import { NotFoundError } from '../errors/httpErrors.js';
+import { ConflictError, ForbiddenError, NotFoundError } from '../errors/httpErrors.js';
+import { isUniqueViolation } from '../utils/databaseErrors.js';
+import { billAddressOf } from './BillEmailService.js';
 import { currentBusinessId } from '../database/businessContext.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
@@ -24,6 +26,9 @@ export interface BusinessDto {
   invoiceNote: string | null;
   /** 'company' files the CD, 'individual' (B.I.) the PD. */
   legalForm: LegalForm;
+  shortName: string | null;
+  /** Where suppliers email this business's bills. */
+  billAddress: string;
 }
 
 export interface BusinessChanges {
@@ -36,6 +41,7 @@ export interface BusinessChanges {
   iban?: string | null;
   invoiceNote?: string | null;
   legalForm?: LegalForm;
+  shortName?: string;
 }
 
 const toDto = (business: BusinessRow): BusinessDto => ({
@@ -53,6 +59,8 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   iban: business.iban,
   invoiceNote: business.invoice_note,
   legalForm: business.legal_form,
+  shortName: business.short_name,
+  billAddress: billAddressOf(business.short_name),
 });
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
@@ -73,7 +81,11 @@ export class BusinessService {
 
   async update(userId: number, changes: BusinessChanges, logExtra?: Record<string, unknown>): Promise<BusinessDto> {
     const business = await this.businessOf(userId);
+    if (changes.shortName !== undefined && changes.shortName !== business.short_name) {
+      if (!(await this.userRepository.findById(userId))?.is_platform_developer) throw new ForbiddenError("Only 4VD's developer can change the bill address");
+    }
     const updated = await this.businessRepository.update(business.id, {
+      ...(changes.shortName !== undefined && { short_name: changes.shortName }),
       ...(changes.name !== undefined && { name: changes.name }),
       ...(changes.address !== undefined && { address: changes.address }),
       ...(changes.phone !== undefined && { phone: changes.phone }),
@@ -83,6 +95,9 @@ export class BusinessService {
       ...(changes.iban !== undefined && { iban: changes.iban }),
       ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
       ...(changes.legalForm !== undefined && { legal_form: changes.legalForm }),
+    }).catch((error: unknown) => {
+      if (isUniqueViolation(error, 'businesses_short_name_key')) throw new ConflictError(`${billAddressOf(changes.shortName ?? null)} is already used by another business`);
+      throw error;
     });
     // Every field that really changed, before and after, for the shop's history.
     const before = toDto(business) as unknown as Record<string, unknown>;

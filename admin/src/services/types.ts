@@ -1417,6 +1417,19 @@ export interface Business {
   invoiceNote: string | null;
   /** 'company' (sh.p.k., sh.a.) files the CD; 'individual' (B.I.) files the PD. */
   legalForm: 'company' | 'individual';
+  /** The part after the + in its bill address. */
+  shortName: string | null;
+  /** Where suppliers email its bills. */
+  billAddress: string;
+}
+
+export interface AddedBusiness {
+  id: number;
+  name: string;
+  shortName: string;
+  billAddress: string;
+  /** Who got the main admin invite, if anyone. */
+  invited: string | null;
 }
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';

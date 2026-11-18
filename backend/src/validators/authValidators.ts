@@ -3,6 +3,13 @@ import { STORED_ROLES } from '../database/types.js';
 import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { LANGUAGES } from '../i18n/language.js';
 import { ibanSchema, nuiSchema } from './validate.js';
+import { SHORT_NAME_PATTERN } from '../utils/shortName.js';
+
+const shortNameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(SHORT_NAME_PATTERN, 'use 3 to 30 lowercase letters, digits or dashes, starting and ending with a letter or digit');
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email());
 
@@ -70,6 +77,20 @@ export const businessSchema = z
     iban: ibanSchema.optional(),
     invoiceNote: optionalText(500),
     legalForm: z.enum(['company', 'individual']).optional(),
+    /** 4VD's developer only: suppliers may have saved the old bill address. */
+    shortName: shortNameSchema.optional(),
+  })
+  .strict();
+
+/** 4VD's developer adds a business for a customer. */
+export const addBusinessSchema = z
+  .object({
+    name: z.string().trim().min(1).max(255),
+    shortName: shortNameSchema,
+    nui: z.union([z.literal('').transform(() => null), nuiSchema, z.null()]).optional(),
+    legalForm: z.enum(['company', 'individual']),
+    mainAdminEmail: z.union([z.literal('').transform(() => null), emailSchema, z.null()]).optional(),
+    language: z.enum(LANGUAGES).optional(),
   })
   .strict();
 

@@ -149,6 +149,8 @@ export interface BusinessesTable {
   invoice_note: string | null;
   /** 'company' files the CD (profit tax); 'individual' (B.I.) files the PD (personal income tax). */
   legal_form: Generated<LegalForm>;
+  /** The part after the + in its bill address, bills+<short>@4vd.app (utils/shortName.ts). */
+  short_name: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

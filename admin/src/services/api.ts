@@ -102,6 +102,7 @@ import type {
   PurchaseOrder,
   ExpiryDate,
   AddedBusiness,
+  Brand,
   Business,
   Invite,
   InvitePreview,
@@ -363,6 +364,11 @@ export const meApi = {
 export const businessesApi = {
   add: async (input: { name: string; shortName: string; nui: string | null; legalForm: 'company' | 'individual'; mainAdminEmail: string | null }) =>
     (await apiRequest<AddedBusiness>('/businesses', { method: 'POST', body: input })).data,
+};
+
+/** A business's look by the short name in its own links (no sign-in needed). */
+export const brandApi = {
+  get: async (shortName: string) => (await apiRequest<Brand>(`/brand/${encodeURIComponent(shortName)}`)).data,
 };
 
 export const businessApi = {

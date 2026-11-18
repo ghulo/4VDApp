@@ -1393,6 +1393,8 @@ export interface Invite {
 }
 
 export interface InvitePreview {
+  /** The inviting business's look: its name, mark and colours on the invite page. */
+  brand: Brand;
   email: string;
   role: UserRole;
   shopName: string;
@@ -1423,6 +1425,26 @@ export interface Business {
   shortName: string | null;
   /** Where suppliers email its bills. */
   billAddress: string;
+  /** The name shown instead of the legal one (null = the legal name). */
+  displayName: string | null;
+  /** The colour the owner picked (null = not picked yet; brand.colour holds its default). */
+  brandColour: string | null;
+  brandGreys: BrandGreys;
+  /** Lines printed under the name on documents. */
+  receiptHeader: string | null;
+  brand: Brand;
+}
+
+export type BrandGreys = 'plain' | 'tinted';
+
+/** How a business shows itself: 4VD's own look (house), or its own name, logo and colours. */
+export interface Brand {
+  house: boolean;
+  name: string;
+  colour: string;
+  greys: BrandGreys;
+  logoUrl: string | null;
+  initials: string;
 }
 
 export interface AddedBusiness {

@@ -29,6 +29,7 @@ import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import { levelPrice } from './pricing/salePrice.js';
 import type { SalesDocumentService } from './SalesDocumentService.js';
 import type { TabService } from './TabService.js';
+import { brandOf, type BrandDto } from './brand.js';
 
 /**
  * Step 15, the portal for business customers (4vd.app/portal).
@@ -311,11 +312,12 @@ export class PortalService {
   }
 
   /** The page before the button: is the link still good, and whose is it. Spends nothing. */
-  async peek(token: string, now = new Date()): Promise<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string }> {
+  async peek(token: string, now = new Date()): Promise<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string; brand: BrandDto }> {
     const link = await this.repository.peekLink(hashRefreshToken(token), now);
     if (!link) throw new NotFoundError('This link no longer works. Ask the shop for a new one, or sign in with your email.');
     const shop = await this.repository.shop();
-    return { purpose: link.purpose, customer: link.customer_name, name: link.person_name, shop: shop.name };
+    const brand = brandOf(shop);
+    return { purpose: link.purpose, customer: link.customer_name, name: link.person_name, shop: brand.name, brand };
   }
 
   /** Spends the link and opens a session; returns the cookie's token. */
@@ -370,6 +372,7 @@ export class PortalService {
       canOrder: p.canOrder,
       minOrder: p.minOrder,
       shop: { name: shop.name, phone: shop.phone, address: shop.address },
+      brand: brandOf(shop),
     };
   }
 

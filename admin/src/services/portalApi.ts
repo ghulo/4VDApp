@@ -1,5 +1,6 @@
 import { API_URL, ApiError } from './apiClient';
 import type { ProductUnit } from './types';
+import type { Brand } from './types';
 
 /**
  * The business customers' portal (step 15). It signs in with an httpOnly
@@ -18,6 +19,8 @@ export interface PortalMe {
   canOrder: boolean;
   minOrder: number | null;
   shop: { name: string; phone: string | null; address: string | null };
+  /** The shop's look: its name, mark and colours across the portal. */
+  brand: Brand;
 }
 
 export interface PortalProduct {
@@ -162,7 +165,7 @@ async function portalRequest<T>(path: string, options: { method?: 'GET' | 'POST'
 
 export const portalApi = {
   requestLink: (email: string) => portalRequest<{ sent: true }>('/links', { method: 'POST', body: { email } }),
-  peek: (token: string) => portalRequest<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string }>('/links/peek', { method: 'POST', body: { token } }),
+  peek: (token: string) => portalRequest<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string; brand: Brand }>('/links/peek', { method: 'POST', body: { token } }),
   useLink: (token: string) => portalRequest<{ signedIn: true }>('/links/use', { method: 'POST', body: { token } }),
   signOut: () => portalRequest<{ signedOut: true }>('/sign-out', { method: 'POST' }),
   me: () => portalRequest<PortalMe>('/me'),

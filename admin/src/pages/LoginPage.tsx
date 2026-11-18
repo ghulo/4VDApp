@@ -16,6 +16,7 @@ import { useFinishSignIn } from '../auth/finishSignIn';
 import { OpenTheApp } from '../components/OpenTheApp';
 import { Button, PasswordField } from '../components/ui';
 import { activeCatalogue, useT } from '../i18n/useT';
+import { useLinkBrand } from '../theme/useLinkBrand';
 
 /** The last email that signed in on this device, so the shop PC only asks for the password. */
 const LAST_EMAIL_KEY = '4vd.lastEmail';
@@ -62,6 +63,7 @@ export function LoginPage() {
   const redirectTo = (location.state as { from?: string } | null)?.from ?? '/';
   const { finish, sentToApp } = useFinishSignIn(redirectTo);
   const t = useT();
+  const linkBrand = useLinkBrand();
 
   const [email, setEmail] = useState(savedEmail);
   const [password, setPassword] = useState('');
@@ -161,7 +163,7 @@ export function LoginPage() {
 
   if (sentToApp) {
     return (
-      <AuthShell title={t.auth.signedIn}>
+      <AuthShell brand={linkBrand} title={t.auth.signedIn}>
         <OpenTheApp />
       </AuthShell>
     );
@@ -182,7 +184,7 @@ export function LoginPage() {
 
   if (challenge) {
     return (
-      <AuthShell title={t.auth.codeTitle} subtitle={t.auth.codeSubtitle}>
+      <AuthShell brand={linkBrand} title={t.auth.codeTitle} subtitle={t.auth.codeSubtitle}>
         <CodeStep
           challenge={challenge}
           onDone={finish}
@@ -196,7 +198,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthShell title={t.auth.logIn} subtitle={t.auth.loginSubtitle}>
+    <AuthShell brand={linkBrand} title={t.auth.logIn} subtitle={t.auth.loginSubtitle}>
       <form onSubmit={handleSubmit} noValidate aria-busy={busy || undefined}>
         <label className="field">
           <span className="field__label">{t.auth.email}</span>
@@ -395,6 +397,7 @@ function CodeStep({ challenge, onDone, onBack }: { challenge: string; onDone: (r
  */
 function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string; onDone: (result: LoginResult) => Promise<void>; onBack: () => void }) {
   const t = useT();
+  const linkBrand = useLinkBrand();
   const [code, setCode] = useState('');
   const [missing, setMissing] = useState(false);
   const [session, setSession] = useState<(LoginResult & { backupCodes: string[] }) | null>(null);
@@ -427,7 +430,7 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
   if (session) {
     const { backupCodes, ...result } = session;
     return (
-      <AuthShell title={t.profile.twoStepCodesTitle} subtitle={t.auth.setupCodesSubtitle}>
+      <AuthShell brand={linkBrand} title={t.profile.twoStepCodesTitle} subtitle={t.auth.setupCodesSubtitle}>
         <div className="two-step two-step-setup">
           <ul ref={codesRef} tabIndex={-1} className="two-step__codes" aria-label={t.profile.twoStepCodesTitle}>
             {backupCodes.map((backup) => (
@@ -461,7 +464,7 @@ function SetupStep({ setupChallenge, onDone, onBack }: { setupChallenge: string;
   }
 
   return (
-    <AuthShell title={t.auth.setupTitle} subtitle={t.auth.setupSubtitle}>
+    <AuthShell brand={linkBrand} title={t.auth.setupTitle} subtitle={t.auth.setupSubtitle}>
       <form onSubmit={submit} noValidate aria-busy={confirm.isPending || qr.isPending || undefined} className="two-step two-step-setup">
         {qr.isPending ? (
           <p className="field-hint" role="status">

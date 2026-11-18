@@ -10,6 +10,7 @@ import { AuthContext, type AuthState } from './useAuth';
 import { canUseDashboard } from './roles';
 import { followSwitches } from './businessSwitch';
 import { forgetViewAs, readViewAs } from './viewAs';
+import { clearBrand } from '../theme/applyBrand';
 import { languageAfterSignIn, takeSignInPick } from '../i18n/signInLanguage';
 
 /** What each role may do, read before the screens draw; the usual rules if it can't be read. */
@@ -130,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The next person to use this browser shouldn't get the owner's alerts.
     await disablePush().catch(() => undefined);
     forgetViewAs();
+    // The next person signs in to their own business: back to 4VD's look until then.
+    clearBrand();
     await authApi.logout().catch(() => undefined);
     setState({ status: 'signedOut' });
   }, []);

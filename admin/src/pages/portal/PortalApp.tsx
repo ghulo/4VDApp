@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { Loading } from '../../components/Feedback';
-import { LogoMark } from '../../components/LogoMark';
+import { BrandMark } from '../../components/BrandMark';
+import { showBrand } from '../../theme/applyBrand';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { SearchInput } from '../../components/SearchInput';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from '../../components/SkipLink';
@@ -44,6 +45,9 @@ export function PortalLayout() {
   const { setLanguage, language } = useLanguage();
   useFocusOnRouteChange();
   const { count } = useBasket();
+  // The whole portal in the shop's own colours.
+  const portalBrand = me.data?.brand;
+  useEffect(() => showBrand(portalBrand), [portalBrand]);
 
   // Their saved language wins the first time this phone opens the portal.
   const saved = me.data?.person.language;
@@ -99,11 +103,11 @@ export function PortalLayout() {
     <div className="staff-app portal-app">
       <SkipLink />
       <header className="topbar staff-app__top">
-        <Link to="/portal/order" className="topbar__brand portal-app__brand" aria-label={me.data.shop.name}>
-          <LogoMark size={32} />
+        <Link to="/portal/order" className="topbar__brand portal-app__brand" aria-label={me.data.brand.name}>
+          <BrandMark brand={me.data.brand} size={32} />
           <span className="portal-app__who">
             <span className="portal-app__firm">{me.data.customer.name}</span>
-            <span className="portal-app__shop">{me.data.shop.name}</span>
+            <span className="portal-app__shop">{me.data.brand.name}</span>
           </span>
         </Link>
         <div className="staff-app__wide-tabs">{tabs}</div>

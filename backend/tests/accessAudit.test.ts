@@ -81,6 +81,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/auth/verify-email',
     'POST /api/auth/confirm-email-change',
     'GET /api/media/:id',
+    'GET /api/brand/:shortName',
   ],
   portalOpen: [
     'POST /api/portal/links',

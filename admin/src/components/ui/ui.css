@@ -2592,6 +2592,15 @@ input.switch:focus-visible {
   box-shadow: var(--shadow-float);
 }
 
+/* Not an item: small print under the choices ("Runs on 4VD"). */
+.menu__footnote {
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
 /* Not an item: who you are, above the choices. */
 .menu__heading {
   display: flex;

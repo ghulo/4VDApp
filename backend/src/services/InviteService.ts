@@ -12,6 +12,7 @@ import { emailTemplates } from './email/templates.js';
 import { canHandOut } from '../utils/roles.js';
 import type { Language } from '../i18n/language.js';
 import { messages } from '../i18n/messages.js';
+import { brandOf, type BrandDto } from './brand.js';
 
 const INVITE_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -37,6 +38,8 @@ export interface InvitePreviewDto {
   email: string;
   role: StoredRole;
   shopName: string;
+  /** The business's look: the invite page shows its name, logo and colours. */
+  brand: BrandDto;
   invitedBy: string | null;
   /** The language the invite was sent in; the invite page opens in it. */
   language: Language;
@@ -144,7 +147,8 @@ export class InviteService {
     return {
       email: invite.email,
       role: invite.role,
-      shopName: invite.business_name,
+      shopName: inviteBrand(invite).name,
+      brand: inviteBrand(invite),
       invitedBy: invite.invited_by_name,
       language: invite.language,
       // Read before sign-in (system mode), so accounts of every business count.
@@ -300,3 +304,6 @@ export class InviteService {
 function hasAccount(email: string): AppError {
   return new AppError(`${email} already has a 4VD account. Log in with it, then open this link again to join.`, 409, 'INVITE_HAS_ACCOUNT');
 }
+
+/** The look of the business an invite is for. */
+const inviteBrand = (invite: InviteRecord): BrandDto => brandOf({ ...invite, name: invite.business_name });

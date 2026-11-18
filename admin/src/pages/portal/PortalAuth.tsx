@@ -1,7 +1,10 @@
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogoMark } from '../../components/LogoMark';
+import { BrandMark } from '../../components/BrandMark';
+import type { Brand } from '../../services/types';
+import { showBrand } from '../../theme/applyBrand';
+import { useLinkBrand } from '../../theme/useLinkBrand';
 import { Button, ButtonLink, Field } from '../../components/ui';
 import { useLanguage, useT } from '../../i18n/useT';
 import { ApiError } from '../../services/apiClient';
@@ -10,14 +13,16 @@ import { ThemeSwitch } from '../../theme/ThemeSwitch';
 import { PortalLanguagePick } from './PortalParts';
 
 /** The calm frame around signing in: the mark, one card, language and theme. */
-export function PortalAuthShell({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
+export function PortalAuthShell({ title, subtitle, children, brand }: { title: string; subtitle?: ReactNode; children: ReactNode; brand?: Brand | null }) {
+  const t = useT();
   return (
     <main className="portal-auth">
       <div className="portal-auth__card">
-        <LogoMark size={56} />
+        <BrandMark brand={brand} size={56} />
         <h1 className="portal-auth__title">{title}</h1>
         {subtitle && <p className="portal-auth__subtitle">{subtitle}</p>}
         {children}
+        {brand && !brand.house && <small className="portal-auth__runs">{t.nav.runsOn}</small>}
         <div className="portal-auth__prefs">
           <ThemeSwitch />
           <PortalLanguagePick />
@@ -30,6 +35,7 @@ export function PortalAuthShell({ title, subtitle, children }: { title: string; 
 /** "Send me a link": the same answer whether or not the address is known. */
 export function PortalSignInPage() {
   const t = useT();
+  const linkBrand = useLinkBrand();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +54,7 @@ export function PortalSignInPage() {
   }
 
   return (
-    <PortalAuthShell title={t.portal.signIn.title} subtitle={t.portal.signIn.lead}>
+    <PortalAuthShell brand={linkBrand} title={t.portal.signIn.title} subtitle={t.portal.signIn.lead}>
       {state === 'sent' ? (
         <p className="notice notice--ok" role="status">
           {t.portal.signIn.sent}
@@ -80,6 +86,8 @@ export function PortalLinkPage() {
   const { setLanguage } = useLanguage();
   const token = useRef(window.location.hash.replace(/^#/, ''));
   const [info, setInfo] = useState<Awaited<ReturnType<typeof portalApi.peek>> | null>(null);
+  const infoBrand = info?.brand;
+  useEffect(() => showBrand(infoBrand), [infoBrand]);
   const [dead, setDead] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +140,7 @@ export function PortalLinkPage() {
     );
   }
   return (
-    <PortalAuthShell title={info.purpose === 'invite' ? t.portal.link.inviteTitle(info.shop) : t.portal.link.signInTitle(info.shop)} subtitle={t.portal.link.forWhom(info.name, info.customer)}>
+    <PortalAuthShell brand={info.brand} title={info.purpose === 'invite' ? t.portal.link.inviteTitle(info.shop) : t.portal.link.signInTitle(info.shop)} subtitle={t.portal.link.forWhom(info.name, info.customer)}>
       {error && (
         <p className="notice notice--error" role="alert">
           {error}

@@ -79,6 +79,11 @@ export const businessSchema = z
     legalForm: z.enum(['company', 'individual']).optional(),
     /** 4VD's developer only: suppliers may have saved the old bill address. */
     shortName: shortNameSchema.optional(),
+    /** How the business shows itself (Settings → Business look). */
+    displayName: optionalText(40),
+    brandColour: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'a colour code like #0f766e').nullable().optional(),
+    brandGreys: z.enum(['plain', 'tinted']).optional(),
+    receiptHeader: optionalText(200),
   })
   .strict();
 

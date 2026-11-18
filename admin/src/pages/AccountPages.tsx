@@ -14,6 +14,7 @@ import { useLanguage, useT } from '../i18n/useT';
 import { hasSavedLanguage } from '../i18n/language';
 import { errorMessage } from '../utils/errors';
 import { Button, PasswordField } from '../components/ui';
+import { showBrand } from '../theme/applyBrand';
 
 const MIN_PASSWORD_LENGTH = 8;
 function BackToLogin() {
@@ -173,6 +174,9 @@ export function AcceptInvitePage() {
   const t = useT();
   const { token = '' } = useParams();
   const invite = useQuery({ queryKey: ['invite', token], queryFn: () => accountApi.invitePreview(token), retry: false });
+  // The invite page wears the inviting business's colours (shown, not remembered).
+  const inviteBrand = invite.data?.brand;
+  useEffect(() => showBrand(inviteBrand), [inviteBrand]);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const { finish, sentToApp } = useFinishSignIn();
@@ -225,11 +229,11 @@ export function AcceptInvitePage() {
     );
   }
 
-  const { shopName, invitedBy, role, email, hasAccount } = invite.data;
+  const { shopName, invitedBy, role, email, hasAccount, brand } = invite.data;
   if (hasAccount) {
     const signedInAs = auth.status === 'signedIn' ? auth.user.email.toLowerCase() : null;
     return (
-      <AuthShell title={t.auth.join(shopName)} subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}>
+      <AuthShell brand={brand} title={t.auth.join(shopName)} subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}>
         {signedInAs === email.toLowerCase() ? (
           <>
             <p className="field-hint">{t.auth.hasAccount(email)}</p>
@@ -258,6 +262,7 @@ export function AcceptInvitePage() {
   }
   return (
     <AuthShell
+      brand={brand}
       title={t.auth.join(shopName)}
       subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}
     >

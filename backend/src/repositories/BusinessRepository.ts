@@ -11,6 +11,11 @@ export class BusinessRepository {
     return this.db.selectFrom('businesses').selectAll().where('id', '=', id).executeTakeFirst();
   }
 
+  /** A business by the short name in its links (bills+<short>@, ?b=<short>). */
+  findByShortName(shortName: string): Promise<BusinessRow | undefined> {
+    return this.db.selectFrom('businesses').selectAll().where('short_name', '=', shortName).executeTakeFirst();
+  }
+
   async update(id: number, changes: Updateable<BusinessesTable>): Promise<BusinessRow> {
     return this.db
       .updateTable('businesses')

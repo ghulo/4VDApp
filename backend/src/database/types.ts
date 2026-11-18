@@ -153,6 +153,14 @@ export interface BusinessesTable {
   legal_form: Generated<LegalForm>;
   /** The part after the + in its bill address, bills+<short>@4vd.app (utils/shortName.ts). */
   short_name: string | null;
+  /** The owner's colour, #rrggbb; null = a preset picked from short_name (utils/brandColours.ts). 4VD's own ignores it. */
+  brand_colour: string | null;
+  /** Whether the greys lean towards brand_colour. */
+  brand_greys: Generated<'plain' | 'tinted'>;
+  /** The name on the dashboard, sign-in, portal and emails; null = name. Invoices keep the legal name. */
+  display_name: string | null;
+  /** Lines under the name on what 4VD prints (documents), at most 200 characters. */
+  receipt_header: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }

@@ -49,6 +49,37 @@
   flex: none;
 }
 
+/* A business's own mark (BrandMark.tsx): its uploaded logo on a small paper
+   tile, or its initials on a key in its colour, lit top and deeper foot like
+   the main button, so a business without a logo still has a crafted one. */
+.brand-mark {
+  display: block;
+  flex: none;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  border-radius: 28%;
+}
+
+.brand-mark--logo {
+  object-fit: contain;
+  background: var(--surface);
+  box-shadow: var(--shadow-inset);
+}
+
+.brand-mark--initials {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  font-size: calc(var(--mark-size) * 0.42);
+  letter-spacing: -0.02em;
+  color: var(--cta-ink);
+  background: var(--amber-face);
+  box-shadow: var(--key-shine), inset 0 -2px 0 var(--cta-edge), var(--key-drop);
+  user-select: none;
+}
+
 .topbar__slash {
   color: var(--line-strong);
   font-size: var(--text-lg);

@@ -7,6 +7,7 @@ import type { ActivityLogRepository } from '../repositories/ActivityLogRepositor
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { mediaUrl } from './mappers.js';
+import { brandOf, type BrandDto } from './brand.js';
 import type { MediaService } from './MediaService.js';
 import type { ShopField } from '../i18n/activityText.js';
 
@@ -29,6 +30,15 @@ export interface BusinessDto {
   shortName: string | null;
   /** Where suppliers email this business's bills. */
   billAddress: string;
+  /** The name shown instead of the legal name (null = the legal name). */
+  displayName: string | null;
+  /** The colour the owner picked (null = not picked: brand.colour holds the default). */
+  brandColour: string | null;
+  brandGreys: 'plain' | 'tinted';
+  /** Lines printed under the name on documents. */
+  receiptHeader: string | null;
+  /** How it shows itself: 4VD's own look, or its own name, logo and colours. */
+  brand: BrandDto;
 }
 
 export interface BusinessChanges {
@@ -42,6 +52,10 @@ export interface BusinessChanges {
   invoiceNote?: string | null;
   legalForm?: LegalForm;
   shortName?: string;
+  displayName?: string | null;
+  brandColour?: string | null;
+  brandGreys?: 'plain' | 'tinted';
+  receiptHeader?: string | null;
 }
 
 const toDto = (business: BusinessRow): BusinessDto => ({
@@ -61,6 +75,11 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   legalForm: business.legal_form,
   shortName: business.short_name,
   billAddress: billAddressOf(business.short_name),
+  displayName: business.display_name,
+  brandColour: business.brand_colour,
+  brandGreys: business.brand_greys,
+  receiptHeader: business.receipt_header,
+  brand: brandOf(business),
 });
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
@@ -74,6 +93,16 @@ export class BusinessService {
     private readonly mediaService: MediaService,
     private readonly activityLog: ActivityLogRepository,
   ) {}
+
+  /**
+   * What a stranger on a business's own sign-in link sees: its name, logo and
+   * colours, nothing else. Runs under the system context (the route sets it).
+   */
+  async publicBrand(shortName: string): Promise<BrandDto> {
+    const business = await this.businessRepository.findByShortName(shortName);
+    if (!business) throw new NotFoundError('No business uses this link');
+    return brandOf(business);
+  }
 
   async get(userId: number): Promise<BusinessDto> {
     return toDto(await this.businessOf(userId));
@@ -95,6 +124,10 @@ export class BusinessService {
       ...(changes.iban !== undefined && { iban: changes.iban }),
       ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
       ...(changes.legalForm !== undefined && { legal_form: changes.legalForm }),
+      ...(changes.displayName !== undefined && { display_name: changes.displayName }),
+      ...(changes.brandColour !== undefined && { brand_colour: changes.brandColour?.toLowerCase() ?? null }),
+      ...(changes.brandGreys !== undefined && { brand_greys: changes.brandGreys }),
+      ...(changes.receiptHeader !== undefined && { receipt_header: changes.receiptHeader }),
     }).catch((error: unknown) => {
       if (isUniqueViolation(error, 'businesses_short_name_key')) throw new ConflictError(`${billAddressOf(changes.shortName ?? null)} is already used by another business`);
       throw error;

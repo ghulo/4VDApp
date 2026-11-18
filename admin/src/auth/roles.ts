@@ -14,12 +14,14 @@ export const canEditProducts = (role: UserRole): boolean => hasPower(role, 'prod
 export const canReadBooks = (role: UserRole): boolean => hasPower(role, 'books');
 /** The people who sell but don't run the shop: they get the simple staff 4VD (Home, Products, Sell, Account). */
 export const counterOnly = (role: UserRole): boolean => role === 'employee';
-/** Uses the staff layout: bottom tabs and only the counter's own pages. */
-export const staffLayout = counterOnly;
+/** Family: browse the products and keep favourites, nothing else (the old team app's family view). */
+export const browseOnly = (role: UserRole): boolean => role === 'family';
+/** Uses the staff layout: bottom tabs and only the counter's own pages (family: only Products and Account). */
+export const staffLayout = (role: UserRole): boolean => counterOnly(role) || browseOnly(role);
 /** Sell at the Counter: everyone who sells in the team app too. */
 export const canSell = (role: UserRole): boolean => hasPower(role, 'sell');
-/** Use the dashboard at all: whoever oversees the business, the accountant, and employees for the Counter. */
-export const canUseDashboard = (role: UserRole): boolean => canOversee(role) || canReadBooks(role) || counterOnly(role);
+/** Use the dashboard at all: whoever oversees the business, the accountant, employees for the Counter and family to browse. */
+export const canUseDashboard = (role: UserRole): boolean => canOversee(role) || canReadBooks(role) || staffLayout(role);
 /** Reopen a filed VAT month: the accountant, the owner and the main admin. */
 export const canReopen = (role: UserRole): boolean => hasPower(role, 'reopen');
 /** Write hand-written entries in the books: managers and the accountant. */

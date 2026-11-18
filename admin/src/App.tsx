@@ -22,7 +22,7 @@ import { OverviewPage } from './pages/OverviewPage';
 import { ButtonLink, ToastProvider } from './components/ui';
 import { useT } from './i18n/useT';
 import { useCurrentUser } from './auth/useAuth';
-import { staffLayout } from './auth/roles';
+import { browseOnly, staffLayout } from './auth/roles';
 import { ViewAsBar } from './components/ViewAsBar';
 
 /** Loads a page's code only when someone first opens it, so the first visit stays light. */
@@ -162,9 +162,10 @@ function NotFoundPage() {
   );
 }
 
-/** The Overview; the staff's own Home; or for the accountant (who sees only the money side) the VAT page. */
+/** The Overview; the staff's own Home; for family the Products; or for the accountant (who sees only the money side) the VAT page. */
 function HomePage() {
   const { role } = useCurrentUser();
+  if (browseOnly(role)) return <Navigate to="/catalog" replace />;
   if (staffLayout(role)) return <StaffHomePage />;
   return role === 'accountant' ? <Navigate to="/books/vat" replace /> : <OverviewPage />;
 }

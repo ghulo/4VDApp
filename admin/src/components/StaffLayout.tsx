@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { useT } from '../i18n/useT';
-import { STAFF_TABS, staffTabFor } from '../navigation/staff';
+import { staffTabFor, staffTabs } from '../navigation/staff';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -26,11 +26,12 @@ export function StaffLayout() {
   useFocusOnRouteChange();
   const t = useT();
   const businesses = useBusinessPicker();
-  const current = staffTabFor(location.pathname);
+  const shown = staffTabs(user.role);
+  const current = staffTabFor(location.pathname, shown);
 
   const tabs = (
     <nav className="staff-tabs" aria-label={t.staff.tabBar}>
-      {STAFF_TABS.map((tab) => {
+      {shown.map((tab) => {
         const TabIcon = tab.icon;
         const active = current === tab.to;
         return (
@@ -47,7 +48,7 @@ export function StaffLayout() {
     <div className="staff-app">
       <SkipLink />
       <header className="topbar staff-app__top">
-        <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
+        <Link to={shown[0].to} className="topbar__brand" aria-label={t.nav.home}>
           <LogoMark size={36} />
         </Link>
         <div className="staff-app__wide-tabs">{tabs}</div>

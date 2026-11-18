@@ -2,7 +2,7 @@ import { CaretRight, Package, Star } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
-import { staffLayout } from '../../auth/roles';
+import { canSell, staffLayout } from '../../auth/roles';
 import { useCurrentUser } from '../../auth/useAuth';
 import { CameraScanButton } from '../../components/CameraScanner';
 import { ExpiryCard } from '../../components/ExpiryCard';
@@ -165,6 +165,8 @@ export function StaffProductPage() {
   const productId = Number(id);
   const opened = params.get('open');
   const queryClient = useQueryClient();
+  // Family only browses: no Sell key, expiry dates or write-offs (the server refuses those too).
+  const sells = canSell(useCurrentUser().role);
   const product = useQuery({ queryKey: ['products', productId], queryFn: () => productsApi.get(productId), enabled: Number.isInteger(productId) });
   const favoriteIds = useFavoriteIds();
   const isFavorite = favoriteIds.data?.includes(productId) ?? false;
@@ -218,18 +220,24 @@ export function StaffProductPage() {
               <p className="staff-muted">{[item.category.name, item.barcode].filter(Boolean).join(' · ')}</p>
             </div>
           </div>
-          <ButtonLink to={`/counter?add=${item.id}`} variant="primary">
-            {t.staff.products.sell}
-          </ButtonLink>
+          {sells && (
+            <ButtonLink to={`/counter?add=${item.id}`} variant="primary">
+              {t.staff.products.sell}
+            </ButtonLink>
+          )}
         </Card>
 
-        <div id="expiry" className={opened === 'expiry' ? 'staff-focus' : undefined}>
-          <ExpiryCard productId={item.id} />
-        </div>
+        {sells && (
+          <>
+            <div id="expiry" className={opened === 'expiry' ? 'staff-focus' : undefined}>
+              <ExpiryCard productId={item.id} />
+            </div>
 
-        <Card title={t.staff.products.writeOffTitle} id="write-off" className={opened === 'writeOff' ? 'staff-focus' : undefined}>
-          <WriteOffForm productId={item.id} inStock={item.stock.quantity} unit={item.unit} />
-        </Card>
+            <Card title={t.staff.products.writeOffTitle} id="write-off" className={opened === 'writeOff' ? 'staff-focus' : undefined}>
+              <WriteOffForm productId={item.id} inStock={item.stock.quantity} unit={item.unit} />
+            </Card>
+          </>
+        )}
       </div>
     </>
   );

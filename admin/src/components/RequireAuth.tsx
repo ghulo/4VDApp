@@ -24,7 +24,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
   // The staff layout opens only the counter's own pages.
-  if (staffLayout(state.user.role) && !staffMayOpen(location.pathname)) {
+  if (staffLayout(state.user.role) && !staffMayOpen(location.pathname, state.user.role)) {
     return <Navigate to="/" replace />;
   }
   return children;

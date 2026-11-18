@@ -56,6 +56,7 @@ Never on four_vd_app (CLAUDE.md). Switch port 3000 to the demo database, and alw
 **What api-demo changes:**
 - **Outside world:** email (Resend), push, AI, Sentry and the bill-mail token are blank, so demo sales never email or alert anyone.
 - **Sign-in secret:** its sign-in secret is its own, so a session signed in on demo is worthless against the real database after the switch back. The built-in browser shows the sign-in page again; two 401s in the console right after a switch are expected.
+- **Database role:** it acts as `four_vd_app_demo_app` (made and granted by `demo-db.mjs`): not a superuser, not the owner, no BYPASSRLS, like `fourvd_app` live. So row security applies, and adding a business, the support visit log and keeping one business's rows from another can be checked on demo. The real `api` (four_vd_app) still connects as the postgres superuser, which skips row security: don't read business isolation off it. The API log's `Connected to the database` line names the role.
 - **Process:** it runs `tsx` without watch: one process, so `preview_stop` leaves nothing on the port.
 
 ## 3. Reading the results

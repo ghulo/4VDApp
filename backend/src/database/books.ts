@@ -23,15 +23,35 @@ export async function seedBooks(db: Kysely<unknown>): Promise<void> {
 /**
  * Put the chart of accounts and the default links into the current business.
  * Adds only: a new business gets these from seedBusiness (newBusiness.ts).
+ *
+ * With `businessId` (a new business) every row is written and read for that
+ * business by name, not left to row security, so a script or an owner
+ * connection (which row security doesn't limit) can't link another business's
+ * accounts. Without it (the early migrations, before businesses existed) the
+ * statements name no business.
  */
-export async function insertChart(db: Kysely<unknown>): Promise<void> {
+export async function insertChart(db: Kysely<unknown>, businessId?: number): Promise<void> {
   for (const account of TREFIN_ACCOUNTS) {
-    await sql`
-      INSERT INTO ledger_accounts (number, name, class, type_name, group_name, cash_flow)
-      VALUES (${account.number}, ${account.name}, ${account.accountClass}, ${account.type}, ${account.group}, ${account.cashFlow})
-    `.execute(db);
+    if (businessId === undefined) {
+      await sql`
+        INSERT INTO ledger_accounts (number, name, class, type_name, group_name, cash_flow)
+        VALUES (${account.number}, ${account.name}, ${account.accountClass}, ${account.type}, ${account.group}, ${account.cashFlow})
+      `.execute(db);
+    } else {
+      await sql`
+        INSERT INTO ledger_accounts (business_id, number, name, class, type_name, group_name, cash_flow)
+        VALUES (${businessId}, ${account.number}, ${account.name}, ${account.accountClass}, ${account.type}, ${account.group}, ${account.cashFlow})
+      `.execute(db);
+    }
   }
   for (const [key, number] of Object.entries(DEFAULT_ACCOUNT_LINKS)) {
-    await sql`INSERT INTO ledger_links (key, account_id) SELECT ${key}, id FROM ledger_accounts WHERE number = ${number}`.execute(db);
+    if (businessId === undefined) {
+      await sql`INSERT INTO ledger_links (key, account_id) SELECT ${key}, id FROM ledger_accounts WHERE number = ${number}`.execute(db);
+    } else {
+      await sql`
+        INSERT INTO ledger_links (business_id, key, account_id)
+        SELECT ${businessId}, ${key}, id FROM ledger_accounts WHERE number = ${number} AND business_id = ${businessId}
+      `.execute(db);
+    }
   }
 }

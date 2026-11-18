@@ -4,7 +4,9 @@ import { DEFAULT_ACCOUNT_LINKS, TREFIN_ACCOUNTS } from '../src/constants/chartOf
 import { runAsBusiness } from '../src/database/businessContext.js';
 import type { DatabaseClient } from '../src/database/connection.js';
 import { createBusiness } from '../src/database/newBusiness.js';
+import { createDatabase } from '../src/database/connection.js';
 import { createLiveLikeDatabase, setupTestApp, type TestContext } from './helpers/testApp.js';
+import { workerUrl } from './helpers/testDatabases.js';
 
 /** Tables the first business has rows in on purpose, which a new one starts without. */
 const NOT_FOR_NEW_BUSINESSES: Record<string, string> = {
@@ -75,6 +77,31 @@ describe('a new business', () => {
     expect(business.tenant_id).not.toBeNull();
     expect(tenants.length).toBe(2);
     expect(await filledTables(context.db)).toEqual(firstBusiness);
+  });
+
+  it('names its own business in every seed query, so an owner connection (no row security) copies nothing from another', async () => {
+    // No role: the superuser, whom row security doesn't limit (like an owner connection in a script).
+    const owner = createDatabase(workerUrl(), { poolSize: 1 });
+    try {
+      const firstLinks = await context.db.selectFrom('ledger_links').select('key').execute();
+      const id = await createBusiness(owner, 'Owner Seeded', async (_trx, businessId) => businessId);
+
+      const rows = (table: string) => sql<{ n: number }>`select count(*)::int as n from ${sql.table(table)} where business_id = ${id}`.execute(owner);
+      const crossed = await sql<{ n: number }>`
+        select (select count(*) from ledger_links l join ledger_accounts a on a.id = l.account_id where l.business_id = ${id} and a.business_id <> ${id})
+             + (select count(*) from money_places p join ledger_accounts a on a.id = p.account_id where p.business_id = ${id} and a.business_id <> ${id}) as n
+      `.execute(owner);
+      expect(Number(crossed.rows[0]!.n)).toBe(0);
+      expect((await rows('ledger_links')).rows[0]!.n).toBe(Object.keys(DEFAULT_ACCOUNT_LINKS).length);
+      // The chart plus the safe's own account, as for a business seeded under row security.
+      const seededUnderRowSecurity = await runAsBusiness(newId, () => live.selectFrom('ledger_accounts').select('id').execute());
+      expect((await rows('ledger_accounts')).rows[0]!.n).toBe(seededUnderRowSecurity.length);
+      expect((await rows('money_places')).rows[0]!.n).toBe(3);
+      expect((await rows('stock_locations')).rows[0]!.n).toBe(1);
+      expect(await context.db.selectFrom('ledger_links').select('key').execute()).toEqual(firstLinks);
+    } finally {
+      await owner.destroy();
+    }
   });
 
   it('leaves nothing behind when the work inside it fails', async () => {

@@ -10,6 +10,11 @@ export const API = 'http://localhost:3000';
 export const WEB = 'http://localhost:5173';
 export const DEMO_DB = 'four_vd_app_demo';
 export const REAL_DB = 'four_vd_app';
+/**
+ * The role api-demo acts as: not a superuser, no BYPASSRLS, not the tables' owner,
+ * so row security keeps businesses apart on demo as it does live (fourvd_app).
+ */
+export const DEMO_APP_ROLE = 'four_vd_app_demo_app';
 /** A category that exists only in the demo database: how port 3000 proves which database it serves. */
 export const MARKER = 'VERIFY demo database';
 

@@ -15,18 +15,22 @@ import type { Database, LegalForm } from './types.js';
  *
  * The migrations gave the first business the same things; newBusiness.test.ts
  * fails when a migration seeds something new for it that this doesn't.
+ *
+ * Every row names `businessId` and every read filters by it, on top of row
+ * security: a script or an owner connection (which row security doesn't
+ * limit) must never copy or link another business's rows.
  */
-export async function seedBusiness(db: Kysely<unknown>): Promise<void> {
-  await insertChart(db);
+export async function seedBusiness(db: Kysely<unknown>, businessId: number): Promise<void> {
+  await insertChart(db, businessId);
   await sql`
-    INSERT INTO settings (key, value) VALUES
-      ('refund_approval_limit', '50'),
-      ('return_window_days', '14'),
-      ('minimum_margin_percent', '0'),
-      ('books_start', to_jsonb(current_date::text))
+    INSERT INTO settings (business_id, key, value) VALUES
+      (${businessId}, 'refund_approval_limit', '50'),
+      (${businessId}, 'return_window_days', '14'),
+      (${businessId}, 'minimum_margin_percent', '0'),
+      (${businessId}, 'books_start', to_jsonb(current_date::text))
   `.execute(db);
-  await sql`INSERT INTO stock_locations (name, sells_here, receives_here) VALUES ('Shop floor', true, true)`.execute(db);
-  await ensurePlaces(db);
+  await sql`INSERT INTO stock_locations (business_id, name, sells_here, receives_here) VALUES (${businessId}, 'Shop floor', true, true)`.execute(db);
+  await ensurePlaces(db, businessId);
 }
 
 /**
@@ -75,7 +79,7 @@ export async function createBusiness<T>(
           ...(details.legalForm && { legal_form: details.legalForm }),
         })
         .execute();
-      await seedBusiness(trx as unknown as Kysely<unknown>);
+      await seedBusiness(trx as unknown as Kysely<unknown>, businessId);
       return work(trx, businessId);
     }),
   );

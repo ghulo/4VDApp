@@ -12,6 +12,43 @@
 
 import { en, type ServerMessages } from '../../i18n/messages.js';
 import { blocksText, type ReportBlock, type ReportRow, type Tone } from '../reports/reportText.js';
+import type { BrandDto } from '../brand.js';
+import { brandColours } from '../../utils/brandColours.js';
+
+/**
+ * A customer's business in its own emails (team invites, portal): its logo or
+ * initials key at the top, its colour on the key and links, its name in the
+ * small print with 4VD after it. Account and security emails stay 4VD's.
+ */
+export interface EmailBrand {
+  name: string;
+  initials: string;
+  /** An absolute PNG address (mail apps can't show WebP or relative links), or null for the initials key. */
+  logoSrc: string | null;
+  key: { face: string; top: string; edge: string; ink: string };
+  link: string;
+  linkDark: string;
+}
+
+/** Where /api/media pictures are served from, for logos in emails (set once at start-up). */
+let mediaBase: string | null = null;
+export function setEmailMediaBase(base: string | undefined): void {
+  mediaBase = base ? base.replace(/\/$/, '') : null;
+}
+
+/** 4VD's own business: undefined (the house look). Others: their look, ready for an email. */
+export function emailBrandOf(brand: BrandDto): EmailBrand | undefined {
+  if (brand.house) return undefined;
+  const colours = brandColours(brand.colour, brand.greys);
+  return {
+    name: brand.name,
+    initials: brand.initials,
+    logoSrc: brand.logoUrl && mediaBase ? `${mediaBase}${brand.logoUrl}?format=png` : null,
+    key: { face: colours.key.face, top: colours.key.top, edge: colours.key.edge, ink: colours.key.ink },
+    link: colours.words.light,
+    linkDark: colours.words.dark,
+  };
+}
 
 export interface EmailContent {
   subject: string;
@@ -120,14 +157,16 @@ const specLabel = (text: string, margin = '0') =>
 const stamp = (text: string, tone: Tone) =>
   `<span class="s-${tone}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-family:${SANS};font-size:12px;line-height:16px;font-weight:600;white-space:nowrap;vertical-align:1px;color:${toneColor(tone)};background:${tone === 'neutral' ? C.sunk : C[`${tone}Soft`]}">${escapeHtml(text)}</span>`;
 
-/** The amber key standing on its edge, like the dashboard's main button. Outlook gets the flat amber face. */
-function renderButton(t: ServerMessages, button: { label: string; link: string }): string {
+/** The amber key standing on its edge, like the dashboard's main button. Outlook gets the flat amber face. A business's own email: its colour. */
+function renderButton(t: ServerMessages, button: { label: string; link: string }, brand?: EmailBrand): string {
   const link = escapeHtml(button.link);
+  const key = brand ? brand.key : { face: AMBER, top: AMBER_TOP, edge: AMBER_EDGE, ink: AMBER_INK };
+  const linkColour = brand ? brand.link : C.accent;
   return `<table ${TABLE} style="margin:4px 0 16px"><tr>
-<td style="border-radius:10px;background-color:${AMBER};background-image:linear-gradient(${AMBER_TOP},${AMBER} 60%);border-bottom:2px solid ${AMBER_EDGE};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(22,25,27,0.1)">
-<a href="${link}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:15px;line-height:20px;font-weight:600;color:${AMBER_INK};text-decoration:none;border-radius:10px">${escapeHtml(button.label)}</a>
+<td style="border-radius:10px;background-color:${key.face};background-image:linear-gradient(${key.top},${key.face} 60%);border-bottom:2px solid ${key.edge};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(22,25,27,0.1)">
+<a href="${link}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:15px;line-height:20px;font-weight:600;color:${key.ink};text-decoration:none;border-radius:10px">${escapeHtml(button.label)}</a>
 </td></tr></table>
-<p class="muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted}">${escapeHtml(t.email.pasteLink)}<br><a class="link" href="${link}" style="color:${C.accent};word-break:break-all">${link}</a></p>`;
+<p class="muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted}">${escapeHtml(t.email.pasteLink)}<br><a class="link" href="${link}" style="color:${linkColour};word-break:break-all">${link}</a></p>`;
 }
 
 /** The serif page title over a hairline, with an optional spec-label kicker above it. */
@@ -145,20 +184,29 @@ const card = (inner: string, strip?: string) =>
   }
 </table>`;
 
+/** A business's own mark and name on the canvas: its logo, or its initials on a key in its colour (a cell, not an image). */
+function brandHeader(brand: EmailBrand): string {
+  const mark = brand.logoSrc
+    ? `<img src="${escapeHtml(brand.logoSrc)}" width="56" height="56" alt="${escapeHtml(brand.name)}" style="display:block;border:0;width:56px;height:56px;border-radius:14px">`
+    : `<table ${TABLE}><tr><td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;border-radius:15px;background-color:${brand.key.face};background-image:linear-gradient(${brand.key.top},${brand.key.face} 55%);border-bottom:2px solid ${brand.key.edge};font-family:${SERIF};font-size:23px;line-height:56px;font-weight:600;color:${brand.key.ink};text-align:center">${escapeHtml(brand.initials)}</td></tr></table>`;
+  return `<td style="vertical-align:middle">${mark}</td><td class="ink" style="vertical-align:middle;padding-left:14px;font-family:${SERIF};font-size:20px;line-height:26px;font-weight:600;color:${C.ink}">${escapeHtml(brand.name)}</td>`;
+}
+
 /** The page every email shares: the logo on the canvas, the content, the small print. */
-function shell({ t, subject, preview, content }: { t: ServerMessages; subject: string; preview: string; content: string }): string {
+function shell({ t, subject, preview, content, brand }: { t: ServerMessages; subject: string; preview: string; content: string; brand?: EmailBrand }): string {
+  const brandDark = brand ? `@media (prefers-color-scheme:dark){.link{color:${brand.linkDark}!important}}[data-ogsc] .link{color:${brand.linkDark}!important}` : '';
   return `<!doctype html><html lang="${t.language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escapeHtml(subject)}</title>
 <link href="${FONTS_URL}" rel="stylesheet">
-<style>:root{color-scheme:light dark}${NARROW}${DARK}</style></head>
+<style>:root{color-scheme:light dark}${NARROW}${DARK}${brandDark}</style></head>
 <body class="bg-canvas" style="margin:0;padding:0;background:${C.canvas};-webkit-text-size-adjust:100%">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escapeHtml(preview)}</div>
 <table ${TABLE} width="100%" class="bg-canvas" style="background:${C.canvas}"><tr><td align="center" style="padding:32px 12px 40px">
 <table ${TABLE} width="100%" style="max-width:600px">
 <tr><td style="padding:0 4px 24px"><table ${TABLE}><tr>
-<td style="vertical-align:middle"><img src="${LOGO_URL}" width="64" height="64" alt="4VD" style="display:block;border:0;width:64px;height:64px"></td>
+${brand ? brandHeader(brand) : `<td style="vertical-align:middle"><img src="${LOGO_URL}" width="64" height="64" alt="4VD" style="display:block;border:0;width:64px;height:64px"></td>`}
 </tr></table></td></tr>
 <tr><td>${content}</td></tr>
-<tr><td class="muted" style="padding:24px 8px 0;font-family:${SANS};font-size:12px;line-height:18px;color:${C.muted}">${escapeHtml(t.email.footer)}<br><a class="muted" href="https://4vd.app" style="color:${C.muted}">4vd.app</a></td></tr>
+<tr><td class="muted" style="padding:24px 8px 0;font-family:${SANS};font-size:12px;line-height:18px;color:${C.muted}">${brand ? `${escapeHtml(brand.name)}<br>${escapeHtml(t.email.runsOn)} · ` : `${escapeHtml(t.email.footer)}<br>`}<a class="muted" href="https://4vd.app" style="color:${C.muted}">4vd.app</a></td></tr>
 </table></td></tr></table></body></html>`;
 }
 
@@ -171,6 +219,8 @@ interface Letter {
   button?: { label: string; link: string };
   /** Small print in the card's footer strip, already escaped. */
   note?: string;
+  /** A customer business's own email: its look instead of 4VD's. */
+  brand?: EmailBrand;
 }
 
 const unescape = (html: string) =>
@@ -183,12 +233,13 @@ const unescape = (html: string) =>
     .replace(/&amp;/g, '&');
 
 /** An account email: one raised card with the headline, a few lines, the amber key and the small print. */
-function letter({ t, subject, paragraphs, button, note }: Letter): string {
+function letter({ t, subject, paragraphs, button, note, brand }: Letter): string {
   return shell({
     t,
     subject,
     preview: unescape(paragraphs[0] ?? ''),
-    content: card(`${headline(subject)}${paragraphs.map(paragraph).join('')}${button ? renderButton(t, button) : ''}`, note),
+    content: card(`${headline(subject)}${paragraphs.map(paragraph).join('')}${button ? renderButton(t, button, brand) : ''}`, note),
+    brand,
   });
 }
 
@@ -255,12 +306,12 @@ ${[block.figures ? renderFigures(block.figures) : '', block.bars ? renderBars(bl
   .join(GAP(12))}
 </td></tr>`;
 
-function plain(lines: Array<string | undefined>): string {
-  return `${lines.filter((line) => line !== undefined).join('\n\n')}\n\n-- \n4VD`;
+function plain(lines: Array<string | undefined>, brand?: EmailBrand): string {
+  return `${lines.filter((line) => line !== undefined).join('\n\n')}\n\n-- \n${brand ? `${brand.name} (4VD)` : '4VD'}`;
 }
 
 export const emailTemplates = {
-  portalInvite(input: { shopName: string; customerName: string; link: string }, t: ServerMessages = en): EmailContent {
+  portalInvite(input: { shopName: string; customerName: string; link: string; brand?: EmailBrand }, t: ServerMessages = en): EmailContent {
     const subject = t.email.portalInviteSubject(input.shopName);
     const body = (shop: string, customer: string) => t.email.portalInviteBody({ shop, customer });
     return {
@@ -271,12 +322,13 @@ export const emailTemplates = {
         paragraphs: [body(`<strong>${escapeHtml(input.shopName)}</strong>`, escapeHtml(input.customerName))],
         button: { label: t.email.portalInviteButton, link: input.link },
         note: escapeHtml(t.email.portalInviteNote),
+        brand: input.brand,
       }),
-      text: plain([body(input.shopName, input.customerName), `${t.email.portalInviteButton}: ${input.link}`, t.email.portalInviteNote]),
+      text: plain([body(input.shopName, input.customerName), `${t.email.portalInviteButton}: ${input.link}`, t.email.portalInviteNote], input.brand),
     };
   },
 
-  portalSignIn(input: { shopName: string; link: string }, t: ServerMessages = en): EmailContent {
+  portalSignIn(input: { shopName: string; link: string; brand?: EmailBrand }, t: ServerMessages = en): EmailContent {
     const subject = t.email.portalSignInSubject(input.shopName);
     return {
       subject,
@@ -286,12 +338,13 @@ export const emailTemplates = {
         paragraphs: [escapeHtml(t.email.portalSignInBody(input.shopName))],
         button: { label: t.email.portalSignInButton, link: input.link },
         note: escapeHtml(t.email.portalSignInNote),
+        brand: input.brand,
       }),
-      text: plain([t.email.portalSignInBody(input.shopName), `${t.email.portalSignInButton}: ${input.link}`, t.email.portalSignInNote]),
+      text: plain([t.email.portalSignInBody(input.shopName), `${t.email.portalSignInButton}: ${input.link}`, t.email.portalSignInNote], input.brand),
     };
   },
 
-  portalOrderChanged(input: { shopName: string; orderId: number; reason: string; total: string; link: string }, t: ServerMessages = en): EmailContent {
+  portalOrderChanged(input: { shopName: string; orderId: number; reason: string; total: string; link: string; brand?: EmailBrand }, t: ServerMessages = en): EmailContent {
     const subject = t.email.portalChangedSubject({ shop: input.shopName, id: input.orderId });
     const lines = [t.email.portalChangedBody({ shop: input.shopName, id: input.orderId }), t.email.portalChangedReason(input.reason), t.email.portalChangedTotal(input.total)];
     return {
@@ -302,12 +355,13 @@ export const emailTemplates = {
         paragraphs: lines.map(escapeHtml),
         button: { label: t.email.portalChangedButton, link: input.link },
         note: escapeHtml(t.email.portalChangedNote),
+        brand: input.brand,
       }),
-      text: plain([...lines, `${t.email.portalChangedButton}: ${input.link}`, t.email.portalChangedNote]),
+      text: plain([...lines, `${t.email.portalChangedButton}: ${input.link}`, t.email.portalChangedNote], input.brand),
     };
   },
 
-  invite(input: { shopName: string; inviterName: string; role: string; link: string }, t: ServerMessages = en): EmailContent {
+  invite(input: { shopName: string; inviterName: string; role: string; link: string; brand?: EmailBrand }, t: ServerMessages = en): EmailContent {
     const subject = t.email.inviteSubject({ inviter: input.inviterName, shop: input.shopName });
     const role = t.roleName[input.role] ?? input.role;
     return {
@@ -325,12 +379,12 @@ export const emailTemplates = {
         ],
         button: { label: t.email.inviteButton, link: input.link },
         note: escapeHtml(t.email.inviteNote),
+        brand: input.brand,
       }),
-      text: plain([
-        t.email.inviteBody({ inviter: input.inviterName, shop: input.shopName, role }),
-        `${t.email.inviteButton}: ${input.link}`,
-        t.email.inviteNoteShort,
-      ]),
+      text: plain(
+        [t.email.inviteBody({ inviter: input.inviterName, shop: input.shopName, role }), `${t.email.inviteButton}: ${input.link}`, t.email.inviteNoteShort],
+        input.brand,
+      ),
     };
   },
 

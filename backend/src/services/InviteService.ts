@@ -8,7 +8,7 @@ import { hashAccountToken, newAccountToken } from '../utils/accountTokens.js';
 import { hashPassword } from '../utils/password.js';
 import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
-import { emailTemplates } from './email/templates.js';
+import { emailBrandOf, emailTemplates } from './email/templates.js';
 import { canHandOut } from '../utils/roles.js';
 import type { Language } from '../i18n/language.js';
 import { messages } from '../i18n/messages.js';
@@ -110,11 +110,16 @@ export class InviteService {
       });
       return inviteId;
     });
+    const sent = (await this.inviteRepository.findById(id, businessId))!;
+    const brand = inviteBrand(sent);
     await this.emailService.queue(
       email,
-      emailTemplates.invite({ shopName: business, inviterName: actor.name, role, link: this.link(token) }, messages[inviteLanguage]),
+      emailTemplates.invite(
+        { shopName: brand.house ? business : brand.name, inviterName: actor.name, role, link: this.link(token), brand: emailBrandOf(brand) },
+        messages[inviteLanguage],
+      ),
     );
-    return { ...toDto((await this.inviteRepository.findById(id, businessId))!), link: this.link(token) };
+    return { ...toDto(sent), link: this.link(token) };
   }
 
   /** Sends a fresh link; the old one stops working. */
@@ -127,7 +132,7 @@ export class InviteService {
     await this.emailService.queue(
       invite.email,
       emailTemplates.invite(
-        { shopName: invite.business_name, inviterName: actor.name, role: invite.role, link: this.link(token) },
+        { shopName: inviteBrand(invite).name, inviterName: actor.name, role: invite.role, link: this.link(token), brand: emailBrandOf(inviteBrand(invite)) },
         messages[invite.language],
       ),
     );

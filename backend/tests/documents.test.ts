@@ -198,6 +198,20 @@ describe('access, printing and the fiscal receipt', () => {
     expect(page.text).not.toContain('IBAN');
   });
 
+  it("should print a customer business's initials key and its lines under the name, never 4VD's house", async () => {
+    await context.db
+      .updateTable('businesses')
+      .set({ name: 'Kafe Dardania', short_name: 'kafe-dardania', brand_colour: '#7c3a8f', receipt_header: 'Rr. Nëna Terezë 14\n<b>Tel</b> 044 123 456' })
+      .execute();
+    const { invoice } = await checkout(adminToken, [{ productId: chair, quantity: 1 }]);
+
+    const page = (await api().get(`/api/documents/${invoice.id}/print?language=sq`).set(auth(adminToken))).text;
+    expect(page).toContain('>KD</text>');
+    expect(page).toContain('stop-color="#7c3a8f"');
+    expect(page).toContain('<p>Rr. Nëna Terezë 14</p>');
+    expect(page).toContain('&lt;b&gt;Tel&lt;/b&gt; 044 123 456');
+  });
+
   it('should print the bank account on invoices left on account, but not on paid ones or credit notes', async () => {
     const saved = await api().put('/api/business').set(auth(adminToken)).send({ bankName: 'ProCredit Bank', iban: 'xk05 1212 0123 4567 8906' });
     expect(saved.body.data).toMatchObject({ bankName: 'ProCredit Bank', iban: 'XK051212012345678906' });

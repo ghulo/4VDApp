@@ -24,6 +24,9 @@ const envSchema = z.object({
   /** Where the dashboard and the employee app live; links in emails point here. */
   DASHBOARD_URL: z.url().default('http://localhost:5173'),
   TEAM_APP_URL: z.url().default('http://localhost:8081'),
+  /** Where this API is reached from outside, for pictures in emails (a business's logo). Render sets RENDER_EXTERNAL_URL by itself. */
+  API_PUBLIC_URL: z.url().optional(),
+  RENDER_EXTERNAL_URL: z.url().optional(),
   /** Emails are printed to the log until this is set. */
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('4VD <onboarding@resend.dev>'),
@@ -72,6 +75,8 @@ export interface AppConfig {
   sentryDsn?: string;
   shopTimeZone: string;
   dashboardUrl: string;
+  /** The API's own address from outside, or undefined (emails then show a business's initials instead of its logo). */
+  apiPublicUrl?: string;
   teamAppUrl: string;
   email: { resendApiKey?: string; from: string };
   /** Secret the weekly backup job sends to say it finished; unset means the app can't tell. */
@@ -118,6 +123,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     sentryDsn: env.SENTRY_DSN || undefined,
     shopTimeZone: env.SHOP_TIME_ZONE,
     dashboardUrl: env.DASHBOARD_URL.replace(/\/$/, ''),
+    apiPublicUrl: (env.API_PUBLIC_URL || env.RENDER_EXTERNAL_URL)?.replace(/\/$/, ''),
     teamAppUrl: env.TEAM_APP_URL.replace(/\/$/, ''),
     email: { resendApiKey: env.RESEND_API_KEY || undefined, from: env.EMAIL_FROM },
     backupPingToken: env.BACKUP_PING_TOKEN || undefined,

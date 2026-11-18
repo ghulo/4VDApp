@@ -24,7 +24,7 @@ import { zonedDay } from '../utils/zonedDates.js';
 import { splitVat } from './documents/vat.js';
 import type { DocumentService } from './DocumentService.js';
 import type { EmailService } from './email/EmailService.js';
-import { emailTemplates } from './email/templates.js';
+import { emailBrandOf, emailTemplates } from './email/templates.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import { levelPrice } from './pricing/salePrice.js';
 import type { SalesDocumentService } from './SalesDocumentService.js';
@@ -306,7 +306,7 @@ export class PortalService {
         const token = generateRefreshToken();
         await this.repository.createLink(person.id, 'sign_in', hashRefreshToken(token), new Date(now.getTime() + PORTAL_SIGN_IN_MINUTES * 60 * 1000));
         const shop = await this.repository.shop();
-        await this.emailService.queue(address, emailTemplates.portalSignIn({ shopName: shop.name, link: this.link(token, 'sign_in') }, messages[person.language]));
+        await this.emailService.queue(address, emailTemplates.portalSignIn({ ...shopForEmail(shop), link: this.link(token, 'sign_in') }, messages[person.language]));
       });
     }
   }
@@ -747,7 +747,7 @@ export class PortalService {
   private async sendInvite(email: string | null, send: boolean, language: PortalLanguage, customerName: string, token: string): Promise<boolean> {
     if (!email || !send) return false;
     const shop = await this.repository.shop();
-    await this.emailService.queue(email, emailTemplates.portalInvite({ shopName: shop.name, customerName, link: this.link(token, 'invite') }, messages[language]));
+    await this.emailService.queue(email, emailTemplates.portalInvite({ ...shopForEmail(shop), customerName, link: this.link(token, 'invite') }, messages[language]));
     return true;
   }
 
@@ -928,9 +928,15 @@ export class PortalService {
       if (!person.email) continue;
       await this.emailService.queue(
         person.email,
-        emailTemplates.portalOrderChanged({ shopName: shop.name, orderId: id, reason, total: formatMoney(priced.total, person.language), link }, messages[person.language]),
+        emailTemplates.portalOrderChanged({ ...shopForEmail(shop), orderId: id, reason, total: formatMoney(priced.total, person.language), link }, messages[person.language]),
       );
     }
     return this.shopOrder(id, actorId, now);
   }
+}
+
+/** The business's name and look in a portal email: its display name and colours, or 4VD's own for 4VD. */
+function shopForEmail(shop: Parameters<typeof brandOf>[0]) {
+  const brand = brandOf(shop);
+  return { shopName: brand.name, brand: emailBrandOf(brand) };
 }

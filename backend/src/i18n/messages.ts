@@ -157,6 +157,8 @@ export interface ServerMessages {
 
   email: {
     footer: string;
+    /** Small print under a customer business's own emails. */
+    runsOn: string;
     pasteLink: string;
     greeting: (name: string) => string;
     inviteSubject: (p: { inviter: string; shop: string }) => string;
@@ -482,6 +484,7 @@ export const en: ServerMessages = {
 
   email: {
     footer: 'You’re getting this because of your 4VD account.',
+    runsOn: 'Runs on 4VD',
     pasteLink: 'Or paste this link into your browser:',
     greeting: (name) => `Hi ${name},`,
     inviteSubject: ({ inviter, shop }) => `${inviter} invited you to ${shop} on 4VD`,
@@ -817,6 +820,7 @@ export const sq: ServerMessages = {
 
   email: {
     footer: 'Po e merr këtë sepse ke një llogari në 4VD.',
+    runsOn: 'Punon me 4VD',
     pasteLink: 'Ose ngjite këtë lidhje në shfletues:',
     greeting: (name) => `Përshëndetje ${name},`,
     inviteSubject: ({ inviter, shop }) => `${inviter} të ftoi në ${shop} te 4VD`,

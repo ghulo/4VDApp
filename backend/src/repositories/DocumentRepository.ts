@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../database/types.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
+import { brandOf, type BrandDto } from '../services/brand.js';
 
 /** Printed around a document from the shop's current settings; the document itself never changes. */
 export interface Letterhead {
@@ -13,6 +14,10 @@ export interface Letterhead {
   iban: string | null;
   /** The shop's own words at the bottom of every invoice. */
   note: string | null;
+  /** Lines printed under the shop's name (Settings → Business look). */
+  headerLines: string[];
+  /** The shop's look: without a logo, a customer's business prints its initials key, 4VD its house. */
+  brand: BrandDto;
 }
 
 export interface DocumentRecord {
@@ -194,6 +199,7 @@ export class DocumentRepository {
       .leftJoin('media as st', 'st.id', 'b.stamp_media_id')
       .leftJoin('media as sg', 'sg.id', 'b.signature_media_id')
       .select(['b.bank_name', 'b.iban', 'b.invoice_note', 'm.mime', 'm.bytes'])
+      .select(['b.name', 'b.display_name', 'b.short_name', 'b.brand_colour', 'b.brand_greys', 'b.logo_media_id', 'b.receipt_header'])
       .select(['st.mime as stamp_mime', 'st.bytes as stamp_bytes', 'sg.mime as signature_mime', 'sg.bytes as signature_bytes'])
       .orderBy('b.id')
       .executeTakeFirstOrThrow();
@@ -204,6 +210,8 @@ export class DocumentRepository {
       bankName: row.bank_name,
       iban: row.iban,
       note: row.invoice_note,
+      headerLines: (row.receipt_header ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 4),
+      brand: brandOf(row),
     };
   }
 

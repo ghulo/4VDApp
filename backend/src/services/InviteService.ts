@@ -3,7 +3,7 @@ import { currentBusinessId, enterBusiness, runAsBusiness } from '../database/bus
 import { AppError, ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
 import type { InviteRecord, InviteRepository } from '../repositories/InviteRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
-import type { UserRepository } from '../repositories/UserRepository.js';
+import { EMAIL_TAKEN, type UserRepository } from '../repositories/UserRepository.js';
 import { hashAccountToken, newAccountToken } from '../utils/accountTokens.js';
 import { hashPassword } from '../utils/password.js';
 import type { AuthService, DeviceInfo, LoginResult } from './AuthService.js';
@@ -178,9 +178,9 @@ export class InviteService {
    */
   async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
     // Checked before entering the business: there, accounts of other businesses are hidden.
-    if (await this.userRepository.findByEmail(invite.email)) {
-      throw new AppError(`${invite.email} already has a 4VD account. Log in with it, then open this link again to join.`, 409, 'INVITE_HAS_ACCOUNT');
-    }
+    const existing = await this.userRepository.findAnyByEmail(invite.email);
+    if (existing && (existing.deleted_at === null || existing.is_platform_developer)) throw hasAccount(invite.email);
+    if (existing) return this.revive(existing.id, invite, details);
     enterBusiness(invite.business_id);
     return this.transactions.run(async (repos) => {
       if (!(await repos.invites.markAccepted(invite.id))) throw new GoneError(LINK_GONE);
@@ -192,16 +192,54 @@ export class InviteService {
         password_hash: details.passwordHash,
         business_id: invite.business_id,
         email_verified_at: new Date(),
+      }).catch((error: unknown) => {
+        // Someone took the email between the check and now: never a 500.
+        if (error instanceof AppError && error.code === EMAIL_TAKEN) throw hasAccount(invite.email);
+        throw error;
       });
-      await repos.activityLog.create({
-        userId: user.id,
-        action: 'user.created',
-        entityType: 'user',
-        entityId: user.id,
-        say: { key: 'joined', params: { name: user.name, role: user.role } },
-        details: { email: user.email, role: user.role, invitedBy: invite.invited_by_name },
-      });
+      await this.logJoined(repos, user, invite);
       return user;
+    });
+  }
+
+  /**
+   * The invited email belonged to an account that was deleted: it comes back as
+   * a fresh start in the invite's business only (see UserRepository.revive).
+   * The business's history says they joined, like anyone new.
+   */
+  private async revive(userId: number, invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
+    const everywhere = new Set([...(await this.userRepository.everyBusinessOf(userId)), invite.business_id]);
+    // Before entering the business: the deleted account's row belongs to its old one.
+    const user = await this.transactions.run(async (repos) => {
+      if (!(await repos.invites.markAccepted(invite.id))) throw new GoneError(LINK_GONE);
+      const revived = await repos.users.revive(userId, {
+        name: details.name,
+        passwordHash: details.passwordHash,
+        role: invite.role,
+        language: details.language ?? invite.language,
+        businessId: invite.business_id,
+      });
+      if (!revived) throw hasAccount(invite.email);
+      return revived;
+    });
+    // Its own leftovers (favourites, notifications, report emails, assistant chats) go in every business it was in,
+    // so joining an old business again later never brings them back.
+    for (const businessId of everywhere) {
+      await runAsBusiness(businessId, () => this.transactions.run((repos) => repos.users.forgetPersonalHere(user.id)));
+    }
+    enterBusiness(invite.business_id);
+    await this.transactions.run((repos) => this.logJoined(repos, user, invite));
+    return user;
+  }
+
+  private logJoined(repos: Parameters<Parameters<TransactionManager['run']>[0]>[0], user: { id: number; name: string; email: string; role: StoredRole }, invite: InviteRecord) {
+    return repos.activityLog.create({
+      userId: user.id,
+      action: 'user.created',
+      entityType: 'user',
+      entityId: user.id,
+      say: { key: 'joined', params: { name: user.name, role: user.role } },
+      details: { email: user.email, role: user.role, invitedBy: invite.invited_by_name },
     });
   }
 
@@ -254,4 +292,8 @@ export class InviteService {
   private link(token: string): string {
     return `${this.dashboardUrl}/invite/${token}`;
   }
+}
+
+function hasAccount(email: string): AppError {
+  return new AppError(`${email} already has a 4VD account. Log in with it, then open this link again to join.`, 409, 'INVITE_HAS_ACCOUNT');
 }

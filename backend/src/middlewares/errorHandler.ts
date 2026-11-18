@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../errors/httpErrors.js';
+import { isEmailTaken } from '../repositories/UserRepository.js';
 import { sendError } from '../utils/apiResponse.js';
 import { captureError, stripQuery } from '../utils/errorTracking.js';
 import { logger } from '../utils/logger.js';
@@ -9,6 +10,12 @@ import { logger } from '../utils/logger.js';
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof AppError) {
     sendError(res, err.statusCode, err.code, err.message);
+    return;
+  }
+
+  // Two accounts never share an email; whatever path tried, it is a clear 409, not a 500.
+  if (isEmailTaken(err)) {
+    sendError(res, 409, 'EMAIL_TAKEN', 'That email already has a 4VD account. Log in with it instead.');
     return;
   }
 

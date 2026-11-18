@@ -87,6 +87,7 @@ import * as people from './085_people.js';
 import * as blockPerBusiness from './086_block_per_business.js';
 import * as businessShortName from './087_business_short_name.js';
 import * as allLogs from './088_all_logs.js';
+import * as sessionsFrom from './089_sessions_from.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -183,4 +184,5 @@ export const migrations: Record<string, Migration> = {
   '086_block_per_business': blockPerBusiness,
   '087_business_short_name': businessShortName,
   '088_all_logs': allLogs,
+  '089_sessions_from': sessionsFrom,
 };

@@ -69,6 +69,8 @@ export interface UsersTable {
   totp_recovery: Generated<string[]>;
   /** A manager asked them to set two-step sign-in up again: no session until they do. */
   two_step_required: Generated<boolean>;
+  /** Set when a deleted account came back: sign-in tokens signed before it no longer count. */
+  sessions_from: Generated<Date | null>;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
   deleted_at: Date | null;

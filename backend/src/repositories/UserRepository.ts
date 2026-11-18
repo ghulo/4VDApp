@@ -1,4 +1,5 @@
 import { sql } from 'kysely';
+import { AppError } from '../errors/httpErrors.js';
 import { storedOnly } from '../utils/roles.js';
 import { currentBusinessId, runAsSystem } from '../database/businessContext.js';
 import type { DatabaseClient } from '../database/connection.js';
@@ -124,8 +125,98 @@ export class UserRepository {
       .execute();
   }
 
-  create(user: NewUserRow): Promise<UserRow> {
-    return this.db.insertInto('users').values(user).returningAll().executeTakeFirstOrThrow();
+  /** Every account with this email, deleted ones included (an email belongs to one account, ever). */
+  findAnyByEmail(email: string): Promise<UserRow | undefined> {
+    return this.db.selectFrom('users').selectAll().where('email', '=', email.toLowerCase()).executeTakeFirst();
+  }
+
+  async create(user: NewUserRow): Promise<UserRow> {
+    try {
+      return await this.db.insertInto('users').values(user).returningAll().executeTakeFirstOrThrow();
+    } catch (error) {
+      if (isEmailTaken(error)) throw new AppError(`${user.email} already has a 4VD account.`, 409, EMAIL_TAKEN);
+      throw error;
+    }
+  }
+
+  /**
+   * A deleted account comes back for a new invite: a fresh start with the new
+   * name and password in the invite's business only. Everything personal from
+   * before goes (phone, photo, settings, PIN, two-step, passkeys, Google link,
+   * sessions, open links, push devices), and every old membership stays removed.
+   * Undefined when the account is not deleted (any more).
+   */
+  async revive(
+    id: number,
+    fresh: { name: string; passwordHash: string | null; role: StoredRole; language: Language; businessId: number },
+  ): Promise<UserRow | undefined> {
+    const now = new Date();
+    const user = await this.db
+      .updateTable('users')
+      .set({
+        name: fresh.name,
+        password_hash: fresh.passwordHash,
+        role: fresh.role,
+        language: fresh.language,
+        business_id: fresh.businessId,
+        is_active: true,
+        deleted_at: null,
+        email_verified_at: now,
+        phone: null,
+        avatar_media_id: null,
+        theme: 'system',
+        email_weekly_report: true,
+        push_preferences: {},
+        last_login_at: null,
+        monthly_target: null,
+        commission_percent: null,
+        pin_hash: null,
+        pin_set_at: null,
+        pin_cleared_at: null,
+        totp_secret: null,
+        totp_pending: null,
+        totp_enabled_at: null,
+        totp_last_step: null,
+        totp_recovery: sql<string[]>`'{}'::text[]`,
+        two_step_required: false,
+        // A fresh start: tokens signed before now no longer count (requireAuth).
+        sessions_from: now,
+        updated_at: now,
+      })
+      .where('id', '=', id)
+      .where('deleted_at', 'is not', null)
+      .where('is_platform_developer', '=', false)
+      .returningAll()
+      .executeTakeFirst();
+    if (!user) return undefined;
+    for (const table of ['refresh_tokens', 'account_tokens', 'user_identities', 'passkeys', 'push_subscriptions'] as const) {
+      await this.db.deleteFrom(table).where('user_id', '=', id).execute();
+    }
+    await this.db
+      .updateTable('memberships')
+      .set({ is_active: false, removed_at: now })
+      .where('user_id', '=', id)
+      .where('business_id', '<>', fresh.businessId)
+      .execute();
+    await this.db
+      .insertInto('memberships')
+      .values({ user_id: id, business_id: fresh.businessId, role: fresh.role, is_active: true })
+      .onConflict((oc) => oc.columns(['user_id', 'business_id']).doUpdateSet({ role: fresh.role, is_active: true, removed_at: null }))
+      .execute();
+    return user;
+  }
+
+  /** Every business the person ever had a membership in, removed ones included. */
+  async everyBusinessOf(userId: number): Promise<number[]> {
+    const rows = await this.db.selectFrom('memberships').select('business_id').where('user_id', '=', userId).execute();
+    return rows.map((row) => row.business_id);
+  }
+
+  /** A revived account's own leftovers in the business open now (favourites, notifications, report emails, assistant chats). */
+  async forgetPersonalHere(userId: number): Promise<void> {
+    for (const table of ['favorites', 'notifications', 'report_subscriptions', 'assistant_chats'] as const) {
+      await this.db.deleteFrom(table).where('user_id', '=', userId).execute();
+    }
   }
 
   update(id: number, changes: UserUpdate): Promise<UserRow | undefined> {
@@ -231,4 +322,13 @@ export class UserRepository {
       .executeTakeFirst();
     return result.numUpdatedRows > 0n;
   }
+}
+
+/** The code a taken email answers with; callers turn it into their own clear 409. */
+export const EMAIL_TAKEN = 'EMAIL_TAKEN';
+
+/** Postgres's unique-violation on the users email: two accounts never share one. */
+export function isEmailTaken(error: unknown): boolean {
+  const pg = error as { code?: string; constraint?: string };
+  return pg?.code === '23505' && pg.constraint === 'users_email_key';
 }

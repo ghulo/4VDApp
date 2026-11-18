@@ -33,11 +33,11 @@ export function verifyAccessToken(token: string, secret: string): RequestIdentit
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
     if (typeof decoded !== 'object' || decoded === null) return null;
 
-    const { userId, email, role, sid, bid } = decoded as Partial<AccessTokenClaims>;
+    const { userId, email, role, sid, bid, iat } = decoded as Partial<AccessTokenClaims> & { iat?: number };
     const isValidRole = typeof role === 'string' && (USER_ROLES as readonly string[]).includes(role);
     if (typeof userId !== 'number' || typeof email !== 'string' || !isValidRole) return null;
 
-    return { userId, email, role: role as UserRole, ...(typeof sid === 'string' && { sessionId: sid }), ...(typeof bid === 'number' && { businessId: bid }) };
+    return { userId, email, role: role as UserRole, ...(typeof sid === 'string' && { sessionId: sid }), ...(typeof bid === 'number' && { businessId: bid }), ...(typeof iat === 'number' && { issuedAt: iat }) };
   } catch {
     return null;
   }

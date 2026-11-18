@@ -62,6 +62,8 @@ export function requireAuth(userRepository: UserRepository, supportRepository?: 
     enterSystem();
     const user = await userRepository.findById(req.identity.userId);
     if (!user || !user.is_active) throw new UnauthorizedError('Your account is no longer active');
+    // A deleted account that came back for a new invite starts clean: its tokens from before no longer count.
+    if (user.sessions_from && (req.identity.issuedAt ?? 0) < Math.floor(user.sessions_from.getTime() / 1000)) throw new UnauthorizedError();
     // A manager asked them to set two-step sign-in up again: an older session (tokens last days) stops here.
     if (user.two_step_required) throw new AppError('Set up two-step sign-in again: sign in with your password', 401, 'TWO_STEP_SETUP_NEEDED');
 

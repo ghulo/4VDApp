@@ -10,6 +10,8 @@ export interface RequestIdentity {
   sessionId?: string;
   /** The business this session works in (a person may work for several). */
   businessId?: number;
+  /** When the token was signed (seconds, the JWT iat). */
+  issuedAt?: number;
 }
 
 /** The user as the API exposes it. Never includes the password hash. */

@@ -74,6 +74,24 @@ describe('Google sign-in', () => {
     expect((await google('ana')).status).toBe(200);
   });
 
+  it('should bring a deleted account back when its email accepts a new invite with Google', async () => {
+    const adminToken = await loginAs(context, 'admin');
+    const old = await createTestUser(context.db, 'employee', { email: 'ana@example.com' });
+    await context.db.insertInto('user_identities').values({ user_id: old.id, provider: 'google', subject: 'google-someone-else', email: 'ana@example.com' }).execute();
+    expect((await request(context.app).delete(`/api/users/${old.id}`).set({ Authorization: `Bearer ${adminToken}` })).status).toBeLessThan(300);
+    await request(context.app).post('/api/invites').set({ Authorization: `Bearer ${adminToken}` }).send({ email: 'ana@example.com', role: 'employee' });
+    const email = await context.db.selectFrom('email_outbox').select('text').where('to_address', '=', 'ana@example.com').orderBy('id', 'desc').executeTakeFirstOrThrow();
+
+    const accepted = await request(context.app).post(`/api/auth/invites/${/invite\/(\S+)/.exec(email.text)![1]}/google`).send({ credential: 'ana' });
+
+    expect(accepted.status, JSON.stringify(accepted.body)).toBe(201);
+    expect(accepted.body.data.user).toMatchObject({ id: old.id, name: 'Ana Kovač' });
+    const links = await context.db.selectFrom('user_identities').select('subject').where('user_id', '=', old.id).execute();
+    expect(links.map((l) => l.subject)).toEqual(['google-ana']);
+    const user = await context.db.selectFrom('users').selectAll().where('id', '=', old.id).executeTakeFirstOrThrow();
+    expect(user).toMatchObject({ deleted_at: null, password_hash: null });
+  });
+
   it('should show and remove the link from the security settings', async () => {
     await createTestUser(context.db, 'employee', { email: 'ana@example.com' });
     const session = await google('ana');

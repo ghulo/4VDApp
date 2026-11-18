@@ -5,7 +5,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { DEMO_DB, MARKER, ROOT, databaseUrl, requireBackend } from './lib.mjs';
+import { DEMO_APP_ROLE, DEMO_DB, MARKER, ROOT, databaseUrl, requireBackend } from './lib.mjs';
 
 const pg = requireBackend('pg');
 const demoUrl = databaseUrl(DEMO_DB);
@@ -79,6 +79,26 @@ await withClient(demoUrl, async (client) => {
     [MARKER],
   );
 });
+
+// 4b. The role api-demo acts as (like fourvd_app live): it may read and write every table, but row security
+// applies to it, so creating a business and keeping businesses apart can be checked locally. Granted again on
+// every run, since a migration may have added tables.
+await withClient(demoUrl, async (client) => {
+  await client.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${DEMO_APP_ROLE}') THEN
+        CREATE ROLE ${DEMO_APP_ROLE} NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+      END IF;
+    -- Roles are shared by every database on the server: another run may create it at the same moment.
+    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+    END $$`);
+  await client.query(`GRANT CONNECT ON DATABASE ${DEMO_DB} TO ${DEMO_APP_ROLE}`);
+  await client.query(`GRANT USAGE ON SCHEMA public TO ${DEMO_APP_ROLE}`);
+  await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${DEMO_APP_ROLE}`);
+  await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${DEMO_APP_ROLE}`);
+  await client.query(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO ${DEMO_APP_ROLE}`);
+});
+say(`role ${DEMO_APP_ROLE} granted (row security applies to it)`);
 
 // 5. The api-demo entry in .claude/launch.json (that file is local, not in git).
 const launchPath = path.join(ROOT, '.claude', 'launch.json');

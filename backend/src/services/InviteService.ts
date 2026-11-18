@@ -1,6 +1,6 @@
 import type { StoredRole } from '../database/types.js';
-import { enterBusiness } from '../database/businessContext.js';
-import { ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
+import { currentBusinessId, enterBusiness, runAsBusiness } from '../database/businessContext.js';
+import { AppError, ConflictError, ForbiddenError, GoneError, NotFoundError } from '../errors/httpErrors.js';
 import type { InviteRecord, InviteRepository } from '../repositories/InviteRepository.js';
 import type { TransactionManager } from '../repositories/TransactionManager.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -33,6 +33,8 @@ export interface InvitePreviewDto {
   invitedBy: string | null;
   /** The language the invite was sent in; the invite page opens in it. */
   language: Language;
+  /** The email already has a 4VD account: they sign in and join instead of choosing a password. */
+  hasAccount: boolean;
 }
 
 const toDto = (invite: InviteRecord): InviteDto => ({
@@ -60,25 +62,27 @@ export class InviteService {
   ) {}
 
   async list(actorId: number): Promise<InviteDto[]> {
-    const actor = await this.actor(actorId);
-    return (await this.inviteRepository.findPending(actor.business_id, new Date())).map(toDto);
+    const { businessId } = await this.actor(actorId);
+    return (await this.inviteRepository.findPending(businessId, new Date())).map(toDto);
   }
 
   /** A new invite replaces any open one to the same email. */
   async invite(actorId: number, email: string, role: StoredRole, language?: Language): Promise<InviteDto> {
-    const actor = await this.actor(actorId);
+    const { actor, businessId } = await this.actor(actorId);
     const inviteLanguage = language ?? actor.language;
     if (!canHandOut(actor.is_platform_developer ? 'developer' : actor.role, role)) throw new ForbiddenError('Only a main admin can invite a main admin, owner, admin or accountant');
-    if (await this.userRepository.findByEmail(email)) {
-      throw new ConflictError(`${email} already has an account`);
+    // Someone with an account in another business may be invited too (they join with it);
+    // whether they have one isn't said here, only to the person holding the link.
+    if (await this.userRepository.personByEmail(email)) {
+      throw new ConflictError(`${email} already works here`);
     }
     const { token, hash } = newAccountToken();
-    const business = await this.businessName(actor.business_id);
+    const business = await this.businessName(businessId);
 
     const id = await this.transactions.run(async (repos) => {
-      await repos.invites.revokeOpenFor(actor.business_id, email);
+      await repos.invites.revokeOpenFor(businessId, email);
       const inviteId = await repos.invites.create({
-        businessId: actor.business_id,
+        businessId,
         email,
         role,
         language: inviteLanguage,
@@ -99,13 +103,13 @@ export class InviteService {
       email,
       emailTemplates.invite({ shopName: business, inviterName: actor.name, role, link: this.link(token) }, messages[inviteLanguage]),
     );
-    return toDto((await this.inviteRepository.findById(id, actor.business_id))!);
+    return toDto((await this.inviteRepository.findById(id, businessId))!);
   }
 
   /** Sends a fresh link; the old one stops working. */
   async resend(actorId: number, inviteId: number): Promise<InviteDto> {
-    const actor = await this.actor(actorId);
-    const invite = await this.inviteRepository.findById(inviteId, actor.business_id);
+    const { actor, businessId } = await this.actor(actorId);
+    const invite = await this.inviteRepository.findById(inviteId, businessId);
     if (!invite || invite.accepted_at || invite.revoked_at) throw new NotFoundError('That invite is no longer open');
     const { token, hash } = newAccountToken();
     await this.inviteRepository.replaceToken(invite.id, hash, this.expiry());
@@ -116,12 +120,12 @@ export class InviteService {
         messages[invite.language],
       ),
     );
-    return toDto((await this.inviteRepository.findById(invite.id, actor.business_id))!);
+    return toDto((await this.inviteRepository.findById(invite.id, businessId))!);
   }
 
   async cancel(actorId: number, inviteId: number): Promise<void> {
-    const actor = await this.actor(actorId);
-    const invite = await this.inviteRepository.findById(inviteId, actor.business_id);
+    const { businessId } = await this.actor(actorId);
+    const invite = await this.inviteRepository.findById(inviteId, businessId);
     if (!invite) throw new NotFoundError('That invite does not exist');
     await this.inviteRepository.revoke(invite.id);
   }
@@ -135,6 +139,8 @@ export class InviteService {
       shopName: invite.business_name,
       invitedBy: invite.invited_by_name,
       language: invite.language,
+      // Read before sign-in (system mode), so accounts of every business count.
+      hasAccount: (await this.userRepository.findByEmail(invite.email)) !== undefined,
     };
   }
 
@@ -166,10 +172,11 @@ export class InviteService {
    * The language the invite page was shown in wins over the invite's own.
    */
   async createMember(invite: InviteRecord, details: { name: string; passwordHash: string | null; language?: Language }) {
-    enterBusiness(invite.business_id);
+    // Checked before entering the business: there, accounts of other businesses are hidden.
     if (await this.userRepository.findByEmail(invite.email)) {
-      throw new ConflictError(`${invite.email} already has an account. Log in instead.`);
+      throw new AppError(`${invite.email} already has a 4VD account. Log in with it, then open this link again to join.`, 409, 'INVITE_HAS_ACCOUNT');
     }
+    enterBusiness(invite.business_id);
     return this.transactions.run(async (repos) => {
       if (!(await repos.invites.markAccepted(invite.id))) throw new GoneError(LINK_GONE);
       const user = await repos.users.create({
@@ -193,10 +200,42 @@ export class InviteService {
     });
   }
 
+  /**
+   * Someone who already has an account (in another business) accepts: signed in
+   * as the invited email, they join with their account as it is (no new
+   * password or name), and the session moves into the business they joined.
+   */
+  async join(userId: number, token: string, sessionId: string | undefined, device: DeviceInfo): Promise<LoginResult> {
+    const invite = await this.openInvite(token);
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.email !== invite.email.toLowerCase()) {
+      throw new ForbiddenError(`This invite is for ${invite.email}. Log in with that account to join.`);
+    }
+    // 4VD's developer opens every business already; a membership would hide his visits from the customer.
+    if (user.is_platform_developer) throw new ForbiddenError("4VD's developer doesn't join businesses");
+    await runAsBusiness(invite.business_id, () =>
+      this.transactions.run(async (repos) => {
+        if (!(await repos.invites.markAccepted(invite.id))) throw new GoneError(LINK_GONE);
+        await repos.users.join(user.id, invite.business_id, invite.role);
+        await repos.activityLog.create({
+          userId: user.id,
+          action: 'user.joined',
+          entityType: 'user',
+          entityId: user.id,
+          say: { key: 'joined', params: { name: user.name, role: invite.role } },
+          details: { email: user.email, role: invite.role, invitedBy: invite.invited_by_name },
+        });
+      }),
+    );
+    return this.authService.switchBusiness(user.id, sessionId, invite.business_id, device);
+  }
+
+  /** The person acting, with their role in the business open now. */
   private async actor(actorId: number) {
-    const actor = await this.userRepository.findById(actorId);
-    if (!actor) throw new NotFoundError(`User ${actorId} does not exist`);
-    return actor;
+    const { actor } = await this.userRepository.inThisBusiness(actorId, actorId);
+    const businessId = currentBusinessId();
+    if (!actor || businessId === null) throw new NotFoundError(`User ${actorId} does not exist`);
+    return { actor, businessId };
   }
 
   private async businessName(businessId: number): Promise<string> {

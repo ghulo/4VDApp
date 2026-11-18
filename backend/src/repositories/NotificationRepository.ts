@@ -1,4 +1,3 @@
-import { sql } from 'kysely';
 import { storedOnly } from '../utils/roles.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { NotificationRow, UserRole } from '../database/types.js';
@@ -53,7 +52,8 @@ export class NotificationRepository {
         .columns(['user_id', 'title', 'message', 'type', 'subject_type', 'subject_id', 'link'])
         .expression((eb) =>
           eb
-            .selectFrom('users')
+            // People of this business, with their role here.
+            .selectFrom('people')
             .select([
               'id',
               eb.val(text.title).as('title'),
@@ -64,8 +64,6 @@ export class NotificationRepository {
               eb.val(notification.link ?? null).as('link'),
             ])
             .where('role', 'in', storedOnly(roles))
-            // 4VD's developer hears only from his own business.
-            .where((w) => w.or([w('is_platform_developer', '=', false), w('business_id', '=', sql<number>`current_business_id()`)]))
             .where('language', '=', language)
             .where('is_active', '=', true)
             .where('deleted_at', 'is', null),

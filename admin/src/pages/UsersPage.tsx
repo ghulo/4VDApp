@@ -593,7 +593,9 @@ function ManagePanel({ person }: { person: TeamMember }) {
   const isSelf = person.id === currentUser.id;
   // Others with a top role are the developer's to change; your own role is changed by someone else.
   const canEdit = isSelf ? canManage(currentUser.role) : canHandOut(currentUser.role, person.role);
-  const sells = person.role !== 'family';
+  // Someone whose account belongs to another business: only their role, access and place here.
+  const accountHere = person.homeHere !== false;
+  const sells = person.role !== 'family' && accountHere;
   const firstName = person.name.split(' ')[0] ?? person.name;
 
   const [target, setTarget] = useState(person.monthlyTarget === null ? '' : String(person.monthlyTarget));
@@ -650,6 +652,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
 
   return (
     <Card title={t.people.manage} description={t.people.manageHint(firstName)}>
+      {!accountHere && <p className="field-hint">{t.people.otherHome(firstName)}</p>}
       {!isSelf && (
         <SettingRow title={t.people.role} description={t.people.roleHints[person.role]}>
           <select
@@ -713,7 +716,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </form>
       )}
-      <form
+      {accountHere && <form
         className="setting-row setting-row--fields"
         onSubmit={(event: FormEvent) => {
           event.preventDefault();
@@ -733,7 +736,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
         <Button type="submit" size="sm" disabled={newPassword.length < MIN_PASSWORD_LENGTH || update.isPending}>
           {t.people.setPassword}
         </Button>
-      </form>
+      </form>}
       {!isSelf && (
         <SettingRow title={t.people.access} description={person.isActive ? t.people.accessOn : t.people.accessOff}>
           <Button
@@ -745,7 +748,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </SettingRow>
       )}
-      {!isSelf && (
+      {!isSelf && accountHere && (
         <SettingRow
           title={t.people.twoStep}
           description={
@@ -786,7 +789,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
           )}
         </SettingRow>
       )}
-      {!isSelf && confirmingAgain && !person.twoStepRequired && (
+      {!isSelf && accountHere && confirmingAgain && !person.twoStepRequired && (
         <TwoStepAgainConfirm
           id={`two-step-again-${person.id}`}
           name={firstName}
@@ -799,7 +802,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
           }}
         />
       )}
-      {!isSelf && person.passkeys && (
+      {!isSelf && accountHere && person.passkeys && (
         <SettingRow title={t.people.passkeys} description={t.people.passkeysHint(firstName)}>
           <Button size="sm" loading={resetPasskeys.isPending} onClick={() => resetPasskeys.mutate()}>
             {t.people.passkeysReset}
@@ -807,7 +810,7 @@ function ManagePanel({ person }: { person: TeamMember }) {
         </SettingRow>
       )}
       {!isSelf && (
-        <SettingRow title={t.people.remove} description={t.people.removeHint}>
+        <SettingRow title={t.people.remove} description={accountHere ? t.people.removeHint : t.people.removeHereHint}>
           {confirmingRemove ? (
             <>
               <Button size="sm" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate()}>

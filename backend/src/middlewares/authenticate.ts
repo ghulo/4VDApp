@@ -6,6 +6,7 @@ import type { SupportRepository } from '../repositories/SupportRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { logger } from '../utils/logger.js';
 import { toPublicUser } from '../services/mappers.js';
+import { BUSINESS_GONE } from '../services/AuthService.js';
 import { hasPower, isTopRole, type Power, rolesWith } from '../utils/roles.js';
 import { ACCESS_COOKIE, cookieMayAct, readCookie } from '../utils/sessionCookies.js';
 import { extractBearerToken, verifyAccessToken } from '../utils/tokens.js';
@@ -70,6 +71,9 @@ export function requireAuth(userRepository: UserRepository, supportRepository?: 
     // 4VD's own developer (a database flag, never the token) may open any business, with every power.
     const place = user.is_platform_developer ? await platformPlace(userRepository, user.business_id, req.identity.businessId, membership) : membership;
     if (!place) throw new UnauthorizedError('Your account is no longer active');
+    // Blocked in or taken off the business this session works in: never carry on in another one
+    // (a save from a tab still showing that business would land in the wrong books).
+    if (req.identity.businessId !== undefined && place.businessId !== req.identity.businessId) throw new AppError(BUSINESS_GONE, 401, 'BUSINESS_GONE');
     enterBusiness(place.businessId);
     const viewed = viewedRole(req, place.role);
     if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);

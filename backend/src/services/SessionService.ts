@@ -1,5 +1,7 @@
 import { NotFoundError } from '../errors/httpErrors.js';
+import { currentBusinessId } from '../database/businessContext.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
+import type { UserRepository } from '../repositories/UserRepository.js';
 
 export interface SessionDto {
   id: string;
@@ -41,10 +43,24 @@ export function describeDevice(userAgent: string | null): string {
 
 /** The devices someone is logged in on, and logging them out. */
 export class SessionService {
-  constructor(private readonly refreshTokenRepository: RefreshTokenRepository) {}
+  constructor(
+    private readonly refreshTokenRepository: RefreshTokenRepository,
+    private readonly userRepository: UserRepository,
+  ) {}
 
-  async list(userId: number, currentSessionId: string | undefined): Promise<SessionDto[]> {
-    const sessions = await this.refreshTokenRepository.activeSessions(userId);
+  /**
+   * Someone else's devices, only for a person of the current business: all of
+   * them in their home business, else only their sessions open in this one.
+   */
+  async ofPerson(userId: number): Promise<SessionDto[]> {
+    const person = await this.userRepository.person(userId);
+    if (!person) throw new NotFoundError(`User ${userId} does not exist`);
+    const here = currentBusinessId();
+    return this.list(userId, undefined, person.business_id === here ? undefined : (here ?? undefined));
+  }
+
+  async list(userId: number, currentSessionId: string | undefined, businessId?: number): Promise<SessionDto[]> {
+    const sessions = await this.refreshTokenRepository.activeSessions(userId, businessId);
     return sessions
       .map((session) => ({
         id: session.session_id,

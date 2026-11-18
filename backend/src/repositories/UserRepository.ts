@@ -1,8 +1,9 @@
 import { sql } from 'kysely';
 import { storedOnly } from '../utils/roles.js';
+import { currentBusinessId } from '../database/businessContext.js';
 import type { DatabaseClient } from '../database/connection.js';
 import type { Language } from '../i18n/language.js';
-import type { NewUserRow, UserRole, UserRow, UserUpdate } from '../database/types.js';
+import type { NewUserRow, StoredRole, UserRole, UserRow, UserUpdate } from '../database/types.js';
 
 export interface UserListFilters {
   role?: UserRole;
@@ -54,12 +55,30 @@ export class UserRepository {
     return new Set(rows.map((row) => row.user_id));
   }
 
+  /** Someone who works for the current business, with their role and active state here (people view). */
+  person(id: number): Promise<UserRow | undefined> {
+    return this.db.selectFrom('people').selectAll().where('id', '=', id).where('deleted_at', 'is', null).executeTakeFirst();
+  }
+
+  /** Someone of the current business by email (an invite to them would be pointless). */
+  personByEmail(email: string): Promise<UserRow | undefined> {
+    return this.db.selectFrom('people').selectAll().where('email', '=', email.toLowerCase()).where('deleted_at', 'is', null).executeTakeFirst();
+  }
+
+  /**
+   * A manager acting on someone in the current business: both with their role
+   * here (4VD's developer keeps his own row), and whether this business is the
+   * person's home (only the home business changes their account itself).
+   */
+  async inThisBusiness(actorId: number, targetId: number): Promise<{ actor?: UserRow; target?: UserRow; home: boolean }> {
+    const [account, here, target] = await Promise.all([this.findById(actorId), this.person(actorId), this.person(targetId)]);
+    const actor = account?.is_platform_developer ? account : here;
+    return { actor, target, home: target !== undefined && target.business_id === currentBusinessId() };
+  }
+
   async findAll(filters: UserListFilters): Promise<{ users: UserRow[]; total: number }> {
-    // 4VD's developer is visible everywhere (row security) but listed only in his own business.
-    let query = this.db
-      .selectFrom('users')
-      .where('deleted_at', 'is', null)
-      .where((eb) => eb.or([eb('is_platform_developer', '=', false), eb('business_id', '=', sql<number>`current_business_id()`)]));
+    // Everyone with a membership here; 4VD's developer only where he is a member himself.
+    let query = this.db.selectFrom('people').where('deleted_at', 'is', null);
     if (filters.role === 'developer') query = query.where('is_platform_developer', '=', true);
     else if (filters.role) query = query.where('role', '=', filters.role);
 
@@ -68,6 +87,39 @@ export class UserRepository {
       query.select((eb) => eb.fn.countAll<string>().as('total')).executeTakeFirstOrThrow(),
     ]);
     return { users, total: Number(count.total) };
+  }
+
+  /** Role or active state in the current business only (someone whose home is another business). */
+  async updateMembership(userId: number, changes: { role?: StoredRole; is_active?: boolean }): Promise<boolean> {
+    const result = await this.db
+      .updateTable('memberships')
+      .set(changes)
+      .where('user_id', '=', userId)
+      .where('business_id', '=', sql<number>`current_business_id()`)
+      .where('removed_at', 'is', null)
+      .executeTakeFirst();
+    return result.numUpdatedRows > 0n;
+  }
+
+  /** Takes someone off the current business; the row stays so their name still shows on past work. */
+  async removeMembership(userId: number): Promise<boolean> {
+    const result = await this.db
+      .updateTable('memberships')
+      .set({ is_active: false, removed_at: new Date() })
+      .where('user_id', '=', userId)
+      .where('business_id', '=', sql<number>`current_business_id()`)
+      .where('removed_at', 'is', null)
+      .executeTakeFirst();
+    return result.numUpdatedRows > 0n;
+  }
+
+  /** Someone who already has an account joins another business (an accepted invite). */
+  async join(userId: number, businessId: number, role: StoredRole): Promise<void> {
+    await this.db
+      .insertInto('memberships')
+      .values({ user_id: userId, business_id: businessId, role })
+      .onConflict((oc) => oc.columns(['user_id', 'business_id']).doUpdateSet({ role, is_active: true, removed_at: null }))
+      .execute();
   }
 
   create(user: NewUserRow): Promise<UserRow> {
@@ -126,12 +178,12 @@ export class UserRepository {
     return row?.name;
   }
 
-  /** Active people of the business's own with one of the roles (to keep at least one main admin); 4VD's developer doesn't count. */
+  /** Active people of the current business with one of the roles (to keep at least one main admin); 4VD's developer doesn't count. */
   async countActive(roles: UserRole[]): Promise<number> {
     const stored = storedOnly(roles);
     if (stored.length === 0) return 0;
     const row = await this.db
-      .selectFrom('users')
+      .selectFrom('people')
       .select((eb) => eb.fn.countAll<string>().as('total'))
       .where('role', 'in', stored)
       .where('is_platform_developer', '=', false)

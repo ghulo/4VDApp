@@ -79,7 +79,8 @@ export class RefreshTokenRepository {
   }
 
   /** Devices still logged in: one row per session, from its newest token. */
-  async activeSessions(userId: number): Promise<
+  /** `businessId`: only the sessions open in that business. */
+  async activeSessions(userId: number, businessId?: number): Promise<
     Array<{ session_id: string; user_agent: string | null; ip: string | null; last_used_at: Date | null; started_at: Date }>
   > {
     const result = await sql<{
@@ -97,6 +98,7 @@ export class RefreshTokenRepository {
         and session_id in (
           select session_id from refresh_tokens
           where user_id = ${userId} and revoked_at is null and expires_at > now()
+            and (${businessId ?? null}::int is null or business_id = ${businessId ?? null}::int)
         )
       order by session_id, created_at desc
     `.execute(this.db);
@@ -131,6 +133,17 @@ export class RefreshTokenRepository {
       .updateTable('refresh_tokens')
       .set({ revoked_at: new Date() })
       .where('user_id', '=', userId)
+      .where('revoked_at', 'is', null)
+      .execute();
+  }
+
+  /** Their sessions open in one business that is not their home (refresh_tokens.business_id). */
+  async revokeForUserIn(userId: number, businessId: number): Promise<void> {
+    await this.db
+      .updateTable('refresh_tokens')
+      .set({ revoked_at: new Date() })
+      .where('user_id', '=', userId)
+      .where('business_id', '=', businessId)
       .where('revoked_at', 'is', null)
       .execute();
   }

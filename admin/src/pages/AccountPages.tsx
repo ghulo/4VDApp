@@ -3,6 +3,9 @@ import { TEAM_APP_URL, useFinishSignIn } from '../auth/finishSignIn';
 import { OpenTheApp } from '../components/OpenTheApp';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { useAuth } from '../auth/useAuth';
+import { announceSwitch } from '../auth/businessSwitch';
+import { forgetViewAs } from '../auth/viewAs';
 import { AuthShell } from '../components/AuthShell';
 import { Loading } from '../components/Feedback';
 import { GoogleButton } from '../components/GoogleButton';
@@ -174,7 +177,17 @@ export function AcceptInvitePage() {
   const [password, setPassword] = useState('');
   const { finish, sentToApp } = useFinishSignIn();
   const { language, setLanguage } = useLanguage();
+  const { state: auth, logout } = useAuth();
 
+  // An account that already exists joins as it is; the app opens again in the business joined.
+  const join = useMutation({
+    mutationFn: () => accountApi.joinInvite(token),
+    onSuccess: () => {
+      forgetViewAs();
+      announceSwitch(0);
+      window.location.assign('/');
+    },
+  });
   const accept = useMutation({
     // The account starts in the language this page is shown in.
     mutationFn: () => accountApi.acceptInvite(token, { name: name.trim(), password, language }),
@@ -212,7 +225,37 @@ export function AcceptInvitePage() {
     );
   }
 
-  const { shopName, invitedBy, role, email } = invite.data;
+  const { shopName, invitedBy, role, email, hasAccount } = invite.data;
+  if (hasAccount) {
+    const signedInAs = auth.status === 'signedIn' ? auth.user.email.toLowerCase() : null;
+    return (
+      <AuthShell title={t.auth.join(shopName)} subtitle={t.auth.invitedAs({ by: invitedBy, email, role: t.common.roles[role] })}>
+        {signedInAs === email.toLowerCase() ? (
+          <>
+            <p className="field-hint">{t.auth.hasAccount(email)}</p>
+            <FormError error={join.error} />
+            <Button variant="primary" wide loading={join.isPending} disabled={join.isPending} onClick={() => join.mutate()}>
+              {t.auth.joinWithAccount(shopName)}
+            </Button>
+          </>
+        ) : signedInAs ? (
+          <>
+            <p className="field-hint">{t.auth.signedInAsOther({ email, other: signedInAs })}</p>
+            <Button variant="primary" wide onClick={() => void logout()}>
+              {t.auth.logOutToJoin(email)}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="field-hint">{t.auth.hasAccount(email)}</p>
+            <Link to="/login" state={{ from: `/invite/${token}` }} className="button button--primary button--wide">
+              {t.auth.logInToJoin}
+            </Link>
+          </>
+        )}
+      </AuthShell>
+    );
+  }
   return (
     <AuthShell
       title={t.auth.join(shopName)}

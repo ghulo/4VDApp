@@ -56,7 +56,7 @@ export class ReportSubscriptionRepository {
   /** Every active owner, admin and developer with their choices (the defaults when they never changed them). */
   async recipients(): Promise<Recipient[]> {
     const rows = await this.db
-      .selectFrom('users as u')
+      .selectFrom('people as u')
       .leftJoin('report_subscriptions as r', 'r.user_id', 'u.id')
       .select([
         'u.id as user_id',
@@ -74,7 +74,6 @@ export class ReportSubscriptionRepository {
         sql<string | null>`to_char(r.last_weekly, 'YYYY-MM-DD')`.as('last_weekly'),
       ])
       .where('u.role', 'in', storedOnly(rolesWith('oversee')))
-      .where((w) => w.or([w('u.is_platform_developer', '=', false), w('u.business_id', '=', sql<number>`current_business_id()`)]))
       .where('u.is_active', '=', true)
       .where('u.deleted_at', 'is', null)
       .execute();

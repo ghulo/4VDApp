@@ -1,3 +1,4 @@
+import { currentBusinessId } from '../database/businessContext.js';
 import { randomUUID } from 'node:crypto';
 import type { UserRole } from '../database/types.js';
 import { AppError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
@@ -111,7 +112,8 @@ export class CounterPinService {
     // Checked before the PC changes hands, so a refused takeover leaves the one asking signed in.
     if (user.two_step_required) throw setupNeededError();
     await this.refreshTokens.revokeSession(actor.id, actor.sessionId);
-    const result = await this.auth.startSession(user, device, 'pin', deviceId);
+    // The Counter stays in its business: someone whose home is another business sells here, not there.
+    const result = await this.auth.startSession(user, device, 'pin', deviceId, currentBusinessId() ?? undefined);
     await this.counter.create([{ kind: 'person_switched', userId: person.id, productId: null, quantity: null, amount: null, reason: actor.name, documentId: null }]);
     return result;
   }

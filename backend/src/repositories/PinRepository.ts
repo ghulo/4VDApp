@@ -23,9 +23,8 @@ export class PinRepository {
           where a.user_id = u.id and not a.ok
             and a.at > greatest(${windowStart}::timestamptz, coalesce(u.pin_cleared_at, '-infinity'),
               coalesce((select max(b.at) from pin_attempts b where b.user_id = u.id and b.ok), '-infinity'))) as recent_failures
-      from users u
+      from people u
       where u.is_active and u.deleted_at is null and u.pin_hash is not null
-        and (not u.is_platform_developer or u.business_id = current_business_id())
       order by u.name
     `.execute(this.db);
     return rows;

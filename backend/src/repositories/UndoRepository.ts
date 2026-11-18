@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
+import type { StoredRole } from '../database/types.js';
 
 /** Who undid a row, and when; null when it stands. */
 export interface UndoState {
@@ -224,7 +225,13 @@ export class UndoRepository {
 
   usersByIds(ids: number[]) {
     if (ids.length === 0) return Promise.resolve([]);
-    return this.db.selectFrom('users').select(['id', 'name', 'role']).where('id', 'in', ids).execute();
+    // Role in this business; someone taken off it keeps their name with their home role.
+    return this.db
+      .selectFrom('users as u')
+      .leftJoin('people as p', 'p.id', 'u.id')
+      .select(['u.id', 'u.name', sql<StoredRole>`coalesce(p.role, u.role)`.as('role')])
+      .where('u.id', 'in', ids)
+      .execute();
   }
 
   productNames(ids: number[]) {

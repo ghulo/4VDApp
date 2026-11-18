@@ -38,5 +38,11 @@ export function createInviteController(inviteService: InviteService, refreshTtlD
       const input = parseInput(acceptInviteSchema, req.body);
       sendSuccess(res, deliverSession(req, res, await inviteService.accept(token, input, deviceOf(req)), refreshTtlDays), { statusCode: 201, message: 'Welcome to 4VD' });
     },
+
+    async join(req: Request, res: Response): Promise<void> {
+      const { token } = parseInput(linkTokenParamsSchema, req.params);
+      const result = await inviteService.join(req.user!.id, token, req.identity?.sessionId, deviceOf(req));
+      sendSuccess(res, deliverSession(req, res, result, refreshTtlDays), { message: 'Joined' });
+    },
   };
 }

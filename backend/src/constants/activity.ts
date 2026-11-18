@@ -56,6 +56,7 @@ export const ACTIVITY_ACTIONS = [
   'category.deleted',
   'user.created',
   'user.invited',
+  'user.joined',
   'user.updated',
   'user.deleted',
   'return.requested',

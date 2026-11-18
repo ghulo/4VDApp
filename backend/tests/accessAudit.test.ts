@@ -122,6 +122,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/auth/logout',
     'GET /api/auth/me',
     'POST /api/auth/switch',
+    'POST /api/auth/invites/:token/join',
     'GET /api/categories/',
     'GET /api/products/',
     'GET /api/products/barcode/:barcode',

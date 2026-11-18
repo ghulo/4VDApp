@@ -17,6 +17,7 @@ import type { ActivityLogRepository } from '../repositories/ActivityLogRepositor
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { verifyPassword } from '../utils/password.js';
 import { mayChangePerson } from '../utils/roles.js';
+import { NOT_HOME_MESSAGE } from './UserService.js';
 import type { AuthService, DeviceInfo, LoginResult, SignInResult } from './AuthService.js';
 import type { EmailService } from './email/EmailService.js';
 import { emailTemplates } from './email/templates.js';
@@ -258,8 +259,9 @@ export class PasskeyService {
 
   /** A manager removes someone's passkeys (a lost or shared device). Same rule as the two-step reset. */
   async reset(actorId: number, userId: number): Promise<{ removed: number }> {
-    const [actor, user] = await Promise.all([this.users.findById(actorId), this.users.findById(userId)]);
+    const { actor, target: user, home } = await this.users.inThisBusiness(actorId, userId);
     if (!actor || !user) throw new NotFoundError('User');
+    if (!home) throw new ForbiddenError(NOT_HOME_MESSAGE);
     if (!mayChangePerson(actor, user)) throw new ForbiddenError('Only a main admin can reset this for a main admin, owner, admin or accountant');
     const result = await this.db.deleteFrom('passkeys').where('user_id', '=', userId).executeTakeFirst();
     const removed = Number(result.numDeletedRows);

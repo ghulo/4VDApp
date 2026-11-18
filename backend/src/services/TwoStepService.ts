@@ -5,6 +5,7 @@ import type { DatabaseClient } from '../database/connection.js';
 import type { UserRow } from '../database/types.js';
 import { AppError, ForbiddenError, NotFoundError, UnauthorizedError } from '../errors/httpErrors.js';
 import { mayChangePerson } from '../utils/roles.js';
+import { NOT_HOME_MESSAGE } from './UserService.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashRecoveryCode, matchCode, newRecoveryCodes, newTotpSecret, otpauthUrl, type SecretBox } from '../utils/totp.js';
@@ -167,8 +168,9 @@ export class TwoStepService {
    * everywhere and get no session until they have (their codes are shown only to them).
    */
   async reset(actorId: number, userId: number, again = false): Promise<void> {
-    const [actor, user] = await Promise.all([this.users.findById(actorId), this.users.findById(userId)]);
+    const { actor, target: user, home } = await this.users.inThisBusiness(actorId, userId);
     if (!actor || !user) throw new NotFoundError('User');
+    if (!home) throw new ForbiddenError(NOT_HOME_MESSAGE);
     // Same rule as changing someone: a top role only by a main admin; 4VD's developer only by himself.
     if (!mayChangePerson(actor, user)) throw new ForbiddenError('Only a main admin can reset this for a main admin, owner, admin or accountant');
     await this.clear(userId);

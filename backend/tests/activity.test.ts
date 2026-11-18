@@ -227,11 +227,12 @@ describe('stock, sales, people and login activity', () => {
   });
 
   it('should log people changes without ever storing a password', async () => {
-    const created = await request(context.app)
-      .post('/api/users')
-      .set(auth(adminToken))
-      .send({ email: 'sam@test.local', name: 'Sam', role: 'employee', password: 'first-secret-pw' });
-    const samId = created.body.data.id;
+    const sam = await context.db
+      .insertInto('users')
+      .values({ email: 'sam@test.local', name: 'Sam', role: 'employee', password_hash: 'x', business_id: 1 })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const samId = sam.id;
     await request(context.app)
       .put(`/api/users/${samId}`)
       .set(auth(adminToken))
@@ -243,7 +244,6 @@ describe('stock, sales, people and login activity', () => {
     expect(response.body.data.map((entry: { summary: string }) => entry.summary)).toEqual([
       'Removed Sam',
       "Changed Sam's role from employee to family; set a new password for Sam",
-      'Added Sam as employee',
     ]);
     expect(JSON.stringify(response.body)).not.toMatch(/secret-pw/);
   });

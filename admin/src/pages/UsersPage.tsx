@@ -1,4 +1,4 @@
-import { ClockCounterClockwise, Money, Plus, UsersThree } from '@phosphor-icons/react';
+import { ClockCounterClockwise, Copy, Money, Plus, UsersThree, WhatsappLogo } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -8,13 +8,14 @@ import { Avatar } from '../components/Avatar';
 import { DeviceList } from '../components/DeviceList';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
-import { activityApi, cashApi, invitesApi, passkeyApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
+import { activityApi, businessApi, cashApi, invitesApi, passkeyApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney, formatTime, localDay } from '../utils/format';
 import { resolvePeriod } from '../utils/periods';
-import { Badge, Button, ButtonLink, Card, DataTable, DeveloperMark, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile } from '../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, DeveloperMark, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile, useToast } from '../components/ui';
+import { buttonClass } from '../components/ui/buttonClass';
 import { assignableRoles, canHandOut, canManage, canOversee } from '../auth/roles';
 import { hasPower } from '../auth/permissions';
 import { payrollApi } from '../services/payroll';
@@ -126,10 +127,6 @@ export function UsersPage() {
 
       <Sheet open={inviting} onClose={() => setInviting(false)} title={t.people.invite} description={t.people.inviteHint}>
         <InviteForm />
-        <details className="fallback">
-          <summary>{t.people.setUpYourself}</summary>
-          <AddUserForm />
-        </details>
       </Sheet>
 
       {all.length > 0 && (
@@ -295,13 +292,44 @@ function InviteForm() {
           {errorMessage(invite.error)}
         </p>
       )}
-      {invite.isSuccess && (
-        <SavedToast message={t.people.inviteSent(invite.data.data.email)} />
-      )}
+      {invite.isSuccess && <InviteShare email={invite.data.data.email} link={invite.data.data.link} />}
       <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary" loading={invite.isPending}>
         {t.people.sendInvite}
       </Button>
     </form>
+  );
+}
+
+/** After an invite goes out: the same link to send on WhatsApp or copy, for people who don't read email. */
+function InviteShare({ email, link }: { email: string; link: string }) {
+  const t = useT();
+  const toast = useToast();
+  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
+  const chat = `https://wa.me/?text=${encodeURIComponent(t.people.whatsappText(business.data?.name ?? '4VD', link))}`;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({ title: t.people.linkCopied });
+    } catch {
+      // No clipboard (an old browser): the link is selectable below.
+    }
+  }
+  return (
+    <div className="invite-share" role="status">
+      <p className="invite-share__sent">{t.people.inviteSent(email)}</p>
+      <p className="invite-share__link" translate="no">
+        {link}
+      </p>
+      <div className="invite-share__actions">
+        <a href={chat} target="_blank" rel="noreferrer" className={buttonClass({})}>
+          <WhatsappLogo aria-hidden="true" />
+          {t.people.sendOnWhatsapp}
+        </a>
+        <Button type="button" icon={Copy} onClick={copy}>
+          {t.people.copyLink}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -342,6 +370,7 @@ function PendingInvites() {
           </li>
         ))}
       </ul>
+      {resend.isSuccess && <InviteShare email={resend.data.data.email} link={resend.data.data.link} />}
       {(resend.isError || cancel.isError) && (
         <p className="form-error" role="alert">
           {errorMessage(resend.error ?? cancel.error)}
@@ -350,85 +379,6 @@ function PendingInvites() {
     </Card>
   );
 }
-
-function AddUserForm() {
-  const t = useT();
-  const currentUser = useCurrentUser();
-  const queryClient = useQueryClient();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('family');
-  const [password, setPassword] = useState('');
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
-
-  const create = useMutation({
-    mutationFn: usersApi.create,
-    onSuccess: (user) => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      setSavedMessage(t.people.canLogIn(user.name, user.email));
-      setName('');
-      setEmail('');
-      setPassword('');
-    },
-  });
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setSavedMessage(null);
-    create.mutate({ name: name.trim(), email: email.trim(), role, password });
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="field-row">
-        <label className="field">
-          <span className="field__label">{t.people.name}</span>
-          <input required maxLength={255} value={name} onChange={(event) => setName(event.target.value)} />
-        </label>
-        <label className="field">
-          <span className="field__label">{t.people.email}</span>
-          <input type="email" autoComplete="off" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
-      </div>
-      <div className="field-row">
-        <label className="field">
-          <span className="field__label">{t.people.role}</span>
-          <select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            {assignableRoles(currentUser.role).map((option) => (
-              <option key={option} value={option}>
-                {t.common.roles[option]}: {t.people.roleHints[option]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field__label">{t.people.firstPassword}</span>
-          <input
-            type="text"
-            autoComplete="off"
-            minLength={MIN_PASSWORD_LENGTH}
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-      </div>
-      <p className="field-hint">{t.people.passwordHint(MIN_PASSWORD_LENGTH)}</p>
-      {create.isError && (
-        <p className="form-error" role="alert">
-          {errorMessage(create.error)}
-        </p>
-      )}
-      {savedMessage && (
-        <SavedToast message={savedMessage} />
-      )}
-      <Button type="submit" disabled={create.isPending} variant="primary">
-        {t.people.add}
-      </Button>
-    </form>
-  );
-}
-
 
 /** One person: how their month is going, what they did lately, where they're logged in, and managing them. */
 export function PersonPage() {

@@ -493,7 +493,6 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/promotions/preview',
     'POST /api/promotions/',
     'POST /api/promotions/:id/end',
-    'POST /api/users/',
     'PUT /api/users/:id',
     'DELETE /api/users/:id',
     'POST /api/carwash/places',

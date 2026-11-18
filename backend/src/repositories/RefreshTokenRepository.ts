@@ -137,13 +137,18 @@ export class RefreshTokenRepository {
       .execute();
   }
 
-  /** Their sessions open in one business that is not their home (refresh_tokens.business_id). */
+  /** Their sessions open in one business (refresh_tokens.business_id; older sessions without one are home sessions). */
   async revokeForUserIn(userId: number, businessId: number): Promise<void> {
     await this.db
       .updateTable('refresh_tokens')
       .set({ revoked_at: new Date() })
       .where('user_id', '=', userId)
-      .where('business_id', '=', businessId)
+      .where((eb) =>
+        eb.or([
+          eb('business_id', '=', businessId),
+          eb.and([eb('business_id', 'is', null), eb.exists(eb.selectFrom('users').select('id').where('users.id', '=', userId).where('users.business_id', '=', businessId))]),
+        ]),
+      )
       .where('revoked_at', 'is', null)
       .execute();
   }

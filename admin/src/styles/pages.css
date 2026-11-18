@@ -6684,3 +6684,32 @@ fieldset.payroll-pick {
   margin: var(--space-1) 0 0;
   padding-left: var(--space-4);
 }
+
+/* People → invite sent: the link again, to send on WhatsApp or copy. */
+.invite-share {
+  display: grid;
+  gap: var(--space-3);
+  margin-block: var(--space-4);
+}
+
+.invite-share__sent {
+  margin: 0;
+}
+
+.invite-share__link {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.invite-share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

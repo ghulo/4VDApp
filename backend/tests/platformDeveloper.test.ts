@@ -93,8 +93,6 @@ describe('the 4VD developer flag', () => {
 
   it('is never a role a business can store or hand out', async () => {
     const token = await loginAs(context, 'main_admin', { email: 'boss@test.local' });
-    const created = await request(context.app).post('/api/users').set(auth(token)).send({ email: 'dev2@test.local', name: 'Dev', role: 'developer', password: 'long-enough-password' });
-    expect(created.status).toBe(400);
     const invited = await request(context.app).post('/api/invites').set(auth(token)).send({ email: 'dev3@test.local', role: 'developer' });
     expect(invited.status).toBe(400);
     await expect(context.db.updateTable('memberships').set({ role: 'developer' as never }).where('business_id', '=', 1).execute()).rejects.toThrow(/memberships_role_check/);

@@ -1,4 +1,4 @@
-import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, ListMagnifyingGlass, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -73,7 +73,11 @@ function FullLayout() {
   const [addingBusiness, setAddingBusiness] = useState(false);
   // 4VD's developer adds businesses for customers, under the picker.
   const businessItems = user.platformDeveloper
-    ? [...businesses, { label: t.nav.addBusiness, icon: Plus, divider: businesses.length > 0, onSelect: () => setAddingBusiness(true) }]
+    ? [
+        ...businesses,
+        { label: t.nav.addBusiness, icon: Plus, divider: businesses.length > 0, onSelect: () => setAddingBusiness(true) },
+        { label: t.nav.allLogs, icon: ListMagnifyingGlass, onSelect: () => navigate('/all-logs') },
+      ]
     : businesses;
 
   const [collapsed, setCollapsed] = useState(() => readYes(COLLAPSED_KEY));

@@ -6739,3 +6739,23 @@ fieldset.payroll-pick {
   overflow-wrap: anywhere;
   user-select: all;
 }
+
+/* All logs (4VD's developer): a support visit's Show changes and Open keys, side by side at the row's end. */
+.all-logs__visit-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+.all-logs__visit-actions svg {
+  transition: transform var(--fast) var(--ease);
+}
+.all-logs__caret--open {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .all-logs__visit-actions svg {
+    transition: none;
+  }
+}

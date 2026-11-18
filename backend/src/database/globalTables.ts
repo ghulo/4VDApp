@@ -19,4 +19,5 @@ export const GLOBAL_TABLES: readonly string[] = [
   'email_outbox', // sent by the server for everyone
   'media', // nullable business_id: people's photos have none
   'invites', // has business_id, but is opened by link before sign-in
+  'all_logs_reads', // the 4VD developer reading All logs, across businesses
 ];

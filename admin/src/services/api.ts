@@ -971,6 +971,8 @@ export interface RoleHistoryEntry {
 }
 
 export interface SupportAction {
+  /** Set on All logs rows. */
+  id?: number;
   at: string;
   method: string;
   path: string;
@@ -987,6 +989,38 @@ export interface SupportVisit {
   reason: string | null;
   actions: SupportAction[];
 }
+
+/** One line of a business's history on All logs. */
+export interface AllLogsEntry {
+  id: number;
+  business: { id: number; name: string };
+  action: string;
+  entityType: string | null;
+  entityId: number | null;
+  summary: string;
+  createdAt: string;
+  user: { id: number; name: string; isDeveloper: boolean } | null;
+  undoneAt: string | null;
+}
+
+/** A support visit on All logs. */
+export interface AllLogsVisit {
+  id: number;
+  business: { id: number; name: string };
+  developer: { id: number; name: string };
+  reason: string | null;
+  startedAt: string;
+  lastSeenAt: string;
+  actions: SupportAction[];
+}
+
+/** All logs: 4VD's developer only. Every read is logged on the server. */
+export const allLogsApi = {
+  activity: (query: { page: number; businessId?: number; action?: string; exclude?: string; search?: string }) =>
+    paginated<AllLogsEntry>('/all-logs/activity', { limit: 30, ...query }),
+  support: (query: { page: number; businessId?: number }) => paginated<AllLogsVisit>('/all-logs/support', { limit: 30, ...query }),
+  businesses: async () => (await apiRequest<{ id: number; name: string; shortName: string | null }[]>('/all-logs/businesses')).data,
+};
 
 /** Settings → Support visits: when someone from 4VD opened this business. Main admin and admins. */
 export const supportApi = {

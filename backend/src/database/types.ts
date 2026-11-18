@@ -1733,9 +1733,19 @@ export interface SupportActionsTable {
   after: unknown | null;
 }
 
+/** Each time the 4VD developer reads All logs (who, which list, which filters). Global: spans businesses. */
+export interface AllLogsReadsTable {
+  id: Generated<number>;
+  developer_id: number;
+  kind: 'activity' | 'support';
+  filters: ColumnType<Record<string, unknown>, Record<string, unknown>, never>;
+  at: Generated<Date>;
+}
+
 export interface Database {
   support_visits: SupportVisitsTable;
   support_actions: SupportActionsTable;
+  all_logs_reads: AllLogsReadsTable;
   portal_users: PortalUsersTable;
   portal_links: PortalLinksTable;
   portal_sessions: PortalSessionsTable;

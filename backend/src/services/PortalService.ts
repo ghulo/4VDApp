@@ -1,5 +1,5 @@
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
-import { enterBusiness } from '../database/businessContext.js';
+import { enterBusiness, runAsBusiness } from '../database/businessContext.js';
 import { allowsParts } from '../constants/units.js';
 import type { ProductUnit } from '../database/types.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
@@ -297,13 +297,17 @@ export class PortalService {
    * known, so nobody can find out which firms use the portal.
    */
   async requestLink(email: string, now = new Date()): Promise<void> {
-    const person = await this.repository.findUserByEmail(email.trim());
-    if (!person?.email) return;
-    enterBusiness(person.business_id);
-    const token = generateRefreshToken();
-    await this.repository.createLink(person.id, 'sign_in', hashRefreshToken(token), new Date(now.getTime() + PORTAL_SIGN_IN_MINUTES * 60 * 1000));
-    const shop = await this.repository.shop();
-    await this.emailService.queue(person.email, emailTemplates.portalSignIn({ shopName: shop.name, link: this.link(token, 'sign_in') }, messages[person.language]));
+    // One link per shop they buy from, each email naming its shop; the answer is the same either way.
+    for (const person of await this.repository.findUsersByEmail(email.trim())) {
+      const address = person.email;
+      if (!address) continue;
+      await runAsBusiness(person.business_id, async () => {
+        const token = generateRefreshToken();
+        await this.repository.createLink(person.id, 'sign_in', hashRefreshToken(token), new Date(now.getTime() + PORTAL_SIGN_IN_MINUTES * 60 * 1000));
+        const shop = await this.repository.shop();
+        await this.emailService.queue(address, emailTemplates.portalSignIn({ shopName: shop.name, link: this.link(token, 'sign_in') }, messages[person.language]));
+      });
+    }
   }
 
   /** The page before the button: is the link still good, and whose is it. Spends nothing. */

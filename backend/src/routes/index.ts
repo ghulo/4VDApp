@@ -54,7 +54,7 @@ import { createInternalRoutes } from './internalRoutes.js';
 import { createInviteRoutes } from './inviteRoutes.js';
 import { createShopPortalRoutes } from './portalRoutes.js';
 import { createMeRoutes } from './meRoutes.js';
-import { createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
+import { createBusinessesRoutes, createBusinessRoutes, createMediaRoutes } from './profileRoutes.js';
 import { createExportsRoutes } from './exportsRoutes.js';
 import { createReportsRoutes } from './reportsRoutes.js';
 import { createThreadRoutes, createVatRoutes } from './vatRoutes.js';
@@ -123,6 +123,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/portal-admin', createShopPortalRoutes(container));
   router.use('/me', createMeRoutes(container));
   router.use('/business', createBusinessRoutes(container));
+  router.use('/businesses', createBusinessesRoutes(container));
   router.use('/media', createMediaRoutes(container));
 
   return router;

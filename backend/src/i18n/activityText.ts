@@ -33,7 +33,7 @@ export type ProductField =
   | 'vatExempt'
   | 'originCountry'
   | 'bulkPricingTiers';
-export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote' | 'legalForm';
+export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote' | 'legalForm' | 'shortName';
 type SettingName =
   | 'refundApprovalLimit'
   | 'returnWindowDays'
@@ -122,7 +122,7 @@ const en = {
     `Changed the barcode of ${p.product}${p.from ? ` from ${p.from}` : ''} to ${p.to}, as on ${p.supplier}'s bill`,
 
   shopChanged: (p: { fields: ShopField[] }, w: Words) =>
-    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note', legalForm: 'legal form' })[field] ?? field))}`,
+    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note', legalForm: 'legal form', shortName: 'bill address' })[field] ?? field))}`,
 
   carwashAdded: (p: { name: string; float: number }, w: Words) => `Added the carwash ${p.name} (cash float ${w.money(p.float)})`,
   carwashArchived: (p: { name: string; stoppedExpenses: number }) =>
@@ -308,6 +308,7 @@ const en = {
   rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null; shortDated?: boolean; features?: boolean }) =>
     `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.shortDated ? ['the short-dated discounts'] : []), ...(p.features ? ['which features are on'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
   shopPictureSet: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Added the shop's ${p.which} for invoices`,
+  businessCreated: (p: { name: string }) => `Created the business ${p.name} for 4VD`,
   shopPictureRemoved: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Removed the shop's ${p.which} from invoices`,
   fileAdded: (p: { name: string }) => `Added the file ${p.name}`,
   fileRemoved: (p: { name: string }) => `Moved the file ${p.name} to the recycle bin`,
@@ -573,6 +574,7 @@ const SQ_SHOP_FIELD: Record<ShopField, string> = {
   iban: 'IBAN-in',
   invoiceNote: 'shënimin e faturës',
   legalForm: 'formën ligjore',
+  shortName: 'adresën e faturave',
 };
 const sqAlso = (also: ProductField[]) => (also.length > 0 ? ` (ndryshoi edhe ${also.map((field) => SQ_PRODUCT_FIELD[field]).join(', ')})` : '');
 /** A place in the case the sentence needs: "arka e dyqanit", "arkën e dyqanit", "arkës së dyqanit". */
@@ -857,6 +859,7 @@ const sq: Templates = {
   rulesChanged: (p) =>
     `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.shortDated ? ['zbritjet për mallin që i afrohet afatit'] : []), ...(p.features ? ['cilat veçori janë të ndezura'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
   shopPictureSet: (p) => `Shtoi ${SQ_PICTURE[p.which]} e dyqanit për faturat`,
+  businessCreated: (p) => `Krijoi biznesin ${p.name} në 4VD`,
   shopPictureRemoved: (p) => `Hoqi ${SQ_PICTURE[p.which]} e dyqanit nga faturat`,
   fileAdded: (p) => `Shtoi skedarin ${p.name}`,
   fileRemoved: (p) => `Çoi skedarin ${p.name} te koshi`,

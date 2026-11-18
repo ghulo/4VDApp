@@ -101,6 +101,7 @@ import type {
   Supplier,
   PurchaseOrder,
   ExpiryDate,
+  AddedBusiness,
   Business,
   Invite,
   InvitePreview,
@@ -356,6 +357,12 @@ export const meApi = {
   sessions: async () => (await apiRequest<Session[]>('/me/sessions')).data,
   endSession: async (id: string) => await apiRequest<null>(`/me/sessions/${id}`, { method: 'DELETE' }),
   endOtherSessions: async () => await apiRequest<null>('/me/sessions/log-out-others', { method: 'POST' }),
+};
+
+/** 4VD's developer adds a business for a customer. */
+export const businessesApi = {
+  add: async (input: { name: string; shortName: string; nui: string | null; legalForm: 'company' | 'individual'; mainAdminEmail: string | null }) =>
+    (await apiRequest<AddedBusiness>('/businesses', { method: 'POST', body: input })).data,
 };
 
 export const businessApi = {

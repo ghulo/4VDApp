@@ -5,7 +5,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
 import { createApiRoutes } from '../src/routes/index.js';
 import { createPortalRoutes } from '../src/routes/portalRoutes.js';
-import { createTestCategory, createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
+import { runAsBusiness } from '../src/database/businessContext.js';
+import { createBusiness } from '../src/database/newBusiness.js';
+import { createLiveLikeDatabase, createTestCategory, createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
 let adminToken: string;
@@ -394,6 +396,30 @@ describe('signing in', () => {
     const outbox = await context.db.selectFrom('email_outbox').select(['to_address']).execute();
     for (const row of outbox) sent.push(row.to_address);
     expect(sent).toEqual(['besa@arta.test']);
+  });
+
+  it('emails a customer of two shops one sign-in link from each, naming the shop', async () => {
+    const arta = await customer('Kafe Arta');
+    await portalOn(arta);
+    await invite(arta, { email: 'besa@arta.test' });
+    const live = createLiveLikeDatabase();
+    try {
+      const other = await createBusiness(live, 'Bakery Dacaj', async (_trx, id) => id);
+      await runAsBusiness(other, async () => {
+        const row = await live.insertInto('customers').values({ name: 'Kafe Arta', kind: 'business', portal_enabled: true }).returning('id').executeTakeFirstOrThrow();
+        await live.insertInto('portal_users').values({ customer_id: row.id, name: 'Besa', email: 'besa@arta.test' }).execute();
+      });
+      await context.db.deleteFrom('email_outbox').execute();
+
+      const asked = await api().post('/api/portal/links').set('Origin', ORIGIN).send({ email: 'besa@arta.test' });
+
+      expect(asked.status).toBe(200);
+      const outbox = await context.db.selectFrom('email_outbox').select(['to_address', 'text']).orderBy('id').execute();
+      expect(outbox.map((row) => row.to_address)).toEqual(['besa@arta.test', 'besa@arta.test']);
+      expect(outbox.some((row) => row.text.includes('Bakery Dacaj'))).toBe(true);
+    } finally {
+      await live.destroy();
+    }
   });
 
   it('lets only the owner or a manager invite people or switch the portal on', async () => {

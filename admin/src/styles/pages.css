@@ -6713,3 +6713,29 @@ fieldset.payroll-pick {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* Add business → done: the new business's bill address, then open it or not. */
+.added-business {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.added-business p {
+  margin: 0;
+}
+
+.added-business__title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.added-business__address {
+  padding: var(--space-3);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}

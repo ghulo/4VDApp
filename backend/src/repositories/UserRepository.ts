@@ -175,6 +175,12 @@ export class UserRepository {
       .execute();
   }
 
+  /** The part after the + in the business's bill address. */
+  async shortName(businessId: number): Promise<string | null> {
+    const row = await this.db.selectFrom('businesses').select('short_name').where('id', '=', businessId).executeTakeFirst();
+    return row?.short_name ?? null;
+  }
+
   async businessName(businessId: number): Promise<string | undefined> {
     const row = await this.db.selectFrom('businesses').select('name').where('id', '=', businessId).executeTakeFirst();
     return row?.name;

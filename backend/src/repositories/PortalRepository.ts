@@ -154,7 +154,8 @@ export class PortalRepository {
   }
 
   /** Someone who may be sent a sign-in link: not removed, and their customer has the portal on. */
-  findUserByEmail(email: string): Promise<PortalUserRecord | undefined> {
+  /** Every business's portal person with this email (a customer of two shops has one in each). */
+  findUsersByEmail(email: string): Promise<PortalUserRecord[]> {
     return this.db
       .selectFrom('portal_users as u')
       .innerJoin('customers as c', 'c.id', 'u.customer_id')
@@ -163,7 +164,8 @@ export class PortalRepository {
       .where('u.removed_at', 'is', null)
       .where('c.portal_enabled', '=', true)
       .where('c.archived_at', 'is', null)
-      .executeTakeFirst();
+      .orderBy('u.business_id')
+      .execute();
   }
 
   async emailTaken(email: string): Promise<boolean> {

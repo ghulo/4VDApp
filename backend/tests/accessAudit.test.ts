@@ -575,6 +575,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/activity/:id/restore-point',
     'POST /api/bill-scans/:id/reopen',
     'GET /api/settings/launch-checklist',
+    'POST /api/businesses/',
     'POST /api/settings/test-email',
     'GET /api/settings/wipe-preview',
     'POST /api/settings/wipe',

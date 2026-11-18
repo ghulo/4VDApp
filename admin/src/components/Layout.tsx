@@ -1,4 +1,4 @@
-import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, MagnifyingGlass, SignOut, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
@@ -20,6 +20,7 @@ import { isCurrent, mainItemsFor, NAV_GROUPS, type NavItem, phoneTabsFor, shownT
 import { staffLayout } from '../auth/roles';
 import type { UserRole } from '../services/types';
 import { StaffLayout } from './StaffLayout';
+import { AddBusinessSheet } from './AddBusinessSheet';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
 /** Shortcut hints show ⌘ on a Mac and Ctrl elsewhere. */
@@ -69,6 +70,11 @@ function FullLayout() {
   const navigate = useNavigate();
   const t = useT();
   const businesses = useBusinessPicker();
+  const [addingBusiness, setAddingBusiness] = useState(false);
+  // 4VD's developer adds businesses for customers, under the picker.
+  const businessItems = user.platformDeveloper
+    ? [...businesses, { label: t.nav.addBusiness, icon: Plus, divider: businesses.length > 0, onSelect: () => setAddingBusiness(true) }]
+    : businesses;
 
   const [collapsed, setCollapsed] = useState(() => readYes(COLLAPSED_KEY));
   const [moreOpen, setMoreOpen] = useState(() => readYes(MORE_KEY) || underMore(user.role, location.pathname));
@@ -219,8 +225,8 @@ function FullLayout() {
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             heading={user.platformDeveloper ? <DeveloperMark /> : undefined}
             items={[
-              ...businesses,
-              { label: t.nav.items.profile, icon: UserCircle, divider: businesses.length > 0, onSelect: () => navigate('/profile') },
+              ...businessItems,
+              { label: t.nav.items.profile, icon: UserCircle, divider: businessItems.length > 0, onSelect: () => navigate('/profile') },
               { label: t.nav.logOut, icon: SignOut, onSelect: logout },
             ]}
           />
@@ -329,6 +335,7 @@ function FullLayout() {
         </button>
       </nav>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {user.platformDeveloper && <AddBusinessSheet open={addingBusiness} onClose={() => setAddingBusiness(false)} />}
     </div>
   );
 }

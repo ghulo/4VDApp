@@ -27,6 +27,7 @@
     "categorise:trefin": "tsx src/scripts/categoriseTrefin.ts",
     "opening:trefin": "tsx src/scripts/openingTrefin.ts",
     "compare:trefin": "tsx src/scripts/compareTrefin.ts",
+    "export:business": "tsx src/scripts/exportBusiness.ts",
     "vapid": "tsx src/scripts/vapid.ts"
   },
   "dependencies": {

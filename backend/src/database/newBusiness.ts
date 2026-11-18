@@ -3,7 +3,8 @@ import { insertChart } from './books.js';
 import { runAsBusiness } from './businessContext.js';
 import type { DatabaseClient } from './connection.js';
 import { ensurePlaces } from './places.js';
-import type { Database } from './types.js';
+import { toShortName } from '../utils/shortName.js';
+import type { Database, LegalForm } from './types.js';
 
 /**
  * Everything a business needs before its first screen works, put into the
@@ -34,13 +35,46 @@ export async function seedBusiness(db: Kysely<unknown>): Promise<void> {
  * nothing behind. The id is taken first so the whole transaction can run
  * inside the new business, which row security needs for every insert.
  */
-export async function createBusiness<T>(db: DatabaseClient, name: string, work: (trx: Kysely<Database>, businessId: number) => Promise<T>): Promise<T> {
+export interface NewBusinessDetails {
+  /** Taken as given (a clash fails on the unique key); made from the name, free, when left out. */
+  shortName?: string;
+  nui?: string | null;
+  legalForm?: LegalForm;
+}
+
+/** A short name made from the business name that no business uses yet: market, market-2, … */
+export async function freeShortName(db: Kysely<Database>, name: string): Promise<string> {
+  const base = toShortName(name);
+  const taken = new Set(
+    (await db.selectFrom('businesses').select('short_name').where('short_name', 'like', `${base.slice(0, 27)}%`).execute()).map((row) => row.short_name),
+  );
+  let candidate = base;
+  for (let n = 2; taken.has(candidate); n += 1) candidate = `${base.slice(0, 27)}-${n}`;
+  return candidate;
+}
+
+export async function createBusiness<T>(
+  db: DatabaseClient,
+  name: string,
+  work: (trx: Kysely<Database>, businessId: number) => Promise<T>,
+  details: NewBusinessDetails = {},
+): Promise<T> {
   const { rows } = await sql<{ id: number }>`select nextval(pg_get_serial_sequence('businesses', 'id'))::int as id`.execute(db);
   const businessId = rows[0]!.id;
   return runAsBusiness(businessId, () =>
     db.transaction().execute(async (trx) => {
       const tenant = await trx.insertInto('tenants').values({ name }).returning('id').executeTakeFirstOrThrow();
-      await trx.insertInto('businesses').values({ id: businessId, name, tenant_id: tenant.id }).execute();
+      await trx
+        .insertInto('businesses')
+        .values({
+          id: businessId,
+          name,
+          tenant_id: tenant.id,
+          short_name: details.shortName ?? (await freeShortName(trx, name)),
+          nui: details.nui ?? null,
+          ...(details.legalForm && { legal_form: details.legalForm }),
+        })
+        .execute();
       await seedBusiness(trx as unknown as Kysely<unknown>);
       return work(trx, businessId);
     }),

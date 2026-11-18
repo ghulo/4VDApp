@@ -129,6 +129,7 @@ export const ACTIVITY_ACTIONS = [
   'bill.scan_reopened',
   'document.issued',
   'business.updated',
+  'business.created',
   'expiry.added',
   'expiry.cleared',
   'undo.applied',

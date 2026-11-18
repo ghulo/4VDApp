@@ -59,6 +59,17 @@ describe('blocking at home', () => {
     expect(businessOf(signedIn.body.data.token)).toBe(otherId);
   });
 
+  it('should sign out a session already open in the home business', async () => {
+    await change({ isActive: true });
+    const open = (await login(sam.email)).body.data.token as string;
+    expect(businessOf(open)).toBe(shopId);
+
+    await change({ isActive: false });
+    const after = await request(context.app).get('/api/auth/me').set(auth(open));
+
+    expect(after.status).toBe(401);
+  });
+
   it('should keep the block when their role at home changes', async () => {
     expect((await change({ role: 'owner' })).status).toBe(200);
 

@@ -47,3 +47,11 @@ test('PDFs win over photos; small images are ignored; at most five', () => {
   assert.deepEqual(billFiles([file('logo.png', 'image/png', 5000), file('IMG.jpg', 'image/jpeg', 200 * 1024)]).map((f) => f.name), ['IMG.jpg']);
   assert.equal(billFiles(Array.from({ length: 7 }, (_, i) => file(`${i}.pdf`, 'application/pdf', 10))).length, 5);
 });
+
+test('an unknown bill address says so; anything else asks to send again', async () => {
+  const { rejectReason } = await import('./reply.js');
+  const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  assert.match(await rejectReason(json(404, { error: 'UNKNOWN_BILL_ADDRESS' })), /No 4VD business uses this address/);
+  assert.match(await rejectReason(json(500, { error: 'INTERNAL' })), /send it again/);
+  assert.match(await rejectReason(new Response('bad gateway', { status: 502 })), /send it again/);
+});

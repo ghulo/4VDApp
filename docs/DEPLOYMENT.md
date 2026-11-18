@@ -94,6 +94,14 @@ Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Envir
    The tail prints the auth headers top first. Go on only if Cloudflare's own header sits above the made-up one. If it doesn't, stop: the Worker must check DKIM itself first.
 6. Render → `4vd-api` → **Environment** → **Add Environment Variable**: Key `BILL_EMAIL_TOKEN`, Value = the same secret → **Save, rebuild and deploy**. (Optional: `BILL_EMAIL_DAILY_READS`, default 50.) Forward the PDF again: `passed on … status 202`, and the scan appears under Bills.
 
+*One bill address per business (phase 5d-2b).* Each business has a short name (Settings → Bills by email; only 4VD's developer can change it). Its suppliers send to `bills+<short>@4vd.app`; plain `bills@4vd.app` stays the first business. The Worker passes the address it came to (`message.to`, which keeps the `+<short>`), and the API picks the business from it; an unknown short name is rejected with "No 4VD business uses this address". Set up once, after the API with this change is live:
+
+1. Cloudflare dashboard → **Compute** → **Email Service** → **Email Routing** → **Settings** → turn **Subaddressing** on. The `bills` rule then also catches `bills+anything@4vd.app` (Cloudflare docs: "Email routing rules and addresses", Subaddressing).
+2. In `mail/`: `npx wrangler deploy`.
+3. Check with `npx wrangler tail`: a mail to `bills+<short>@4vd.app` from someone in that business prints `passed on … to: 'bills+<short>@4vd.app' … status 202`.
+
+Making a business's data into files for its owner: `npm run export:business -- <business id> [--out <folder>]` in `backend/` with the live `DATABASE_URL`. One JSON file per table; passwords, PINs, two-step secrets, passkeys and sign-in tokens are left out, and photos/PDFs are listed (media.json), not copied.
+
 After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`), and the last check, `deploy-dashboard`, puts the dashboard live at 4vd.app. Cloudflare only builds preview versions.
 
 **Free plan caveats** (check current pricing): a free Render web service sleeps when idle, and while asleep push alerts and the daily summary don't go out; a free Render database has limited storage and may expire.

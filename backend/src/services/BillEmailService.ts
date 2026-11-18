@@ -1,3 +1,4 @@
+import { currentBusinessId, runAsBusiness } from '../database/businessContext.js';
 import { createHash } from 'node:crypto';
 import { NOTIFICATION_TYPES } from '../constants/notifications.js';
 import type { ServerMessages } from '../i18n/messages.js';
@@ -16,6 +17,12 @@ import type { MediaService } from './MediaService.js';
 
 /** The shop's bill address. One shop for now, so one address. */
 export const BILL_EMAIL_ADDRESS = 'bills@4vd.app';
+/** The first business keeps the plain address; every other one is bills+<short>@4vd.app. */
+export const FIRST_SHORT_NAME = '4vd';
+
+export function billAddressOf(shortName: string | null): string {
+  return shortName && shortName !== FIRST_SHORT_NAME ? BILL_EMAIL_ADDRESS.replace('@', `+${shortName}@`) : BILL_EMAIL_ADDRESS;
+}
 export const MAX_EMAIL_FILES = 5;
 export const MAX_EMAIL_FILE_BYTES = 10 * 1024 * 1024;
 /** Photos smaller than this are logos and signatures, not a bill. */
@@ -128,9 +135,11 @@ export class BillEmailService {
   }
 
   /** Read what is waiting, up to the day's cap, one at a time and after the reply has gone. */
-  kick(): void {
+  kick(businessId: number | null = currentBusinessId()): void {
+    if (businessId === null) return;
+    // Named, not left to ride the promise chain: the queue is shared by every business.
     this.running = this.running
-      .then(() => this.readWaiting())
+      .then(() => runAsBusiness(businessId, () => this.readWaiting()))
       .catch((error) => logger.error('Reading emailed bills failed', { error: String(error) }));
   }
 
@@ -182,7 +191,9 @@ export class BillEmailService {
 
   /** The bill address, the day's cap and the extra senders, for Settings. */
   async settings(): Promise<{ address: string; dailyReads: number; senders: string[] }> {
-    return { address: BILL_EMAIL_ADDRESS, dailyReads: this.dailyReads, senders: await this.senders() };
+    const businessId = currentBusinessId();
+    const shortName = businessId === null ? null : await this.userRepository.shortName(businessId);
+    return { address: billAddressOf(shortName), dailyReads: this.dailyReads, senders: await this.senders() };
   }
 
   async setSenders(input: string[], userId: number): Promise<string[]> {
@@ -213,8 +224,9 @@ export class BillEmailService {
   /** Team members who still have an account, and the senders listed in Settings (an address, or a whole @domain). */
   private async allowed(sender: string): Promise<boolean> {
     if (!EMAIL.test(sender)) return false;
-    const user = await this.userRepository.findByEmail(sender);
-    if (user?.is_active) return true;
+    // Someone who works for this business and isn't blocked here; a member of another business is not enough.
+    const person = await this.userRepository.personByEmail(sender);
+    if (person?.is_active) return true;
     const domain = `@${sender.split('@').pop()}`;
     return (await this.senders()).some((entry) => entry === sender || entry === domain);
   }

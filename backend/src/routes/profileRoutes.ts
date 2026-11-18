@@ -1,9 +1,22 @@
-import express, { Router } from 'express';
+import express, { type Request, type Response, Router } from 'express';
+import { sendSuccess } from '../utils/apiResponse.js';
+import { addBusinessSchema } from '../validators/authValidators.js';
+import { parseInput } from '../validators/validate.js';
 import type { Container } from '../container.js';
 import { createMediaController, createProfileController } from '../controllers/profileController.js';
 
 /** Pictures arrive as the raw request body; anything over 5 MB is refused with 413. */
 const readImage = express.raw({ type: 'image/*', limit: '5mb' });
+
+/** 4VD's developer adds a business for a customer (Add business in the account menu). */
+export function createBusinessesRoutes({ addBusinessService, guards }: Container): Router {
+  const router = Router();
+  router.post('/', ...guards.developer, async (req: Request, res: Response) => {
+    const input = parseInput(addBusinessSchema, req.body);
+    sendSuccess(res, await addBusinessService.add({ id: req.user!.id, name: req.user!.name, sessionId: req.identity?.sessionId ?? 'no-session' }, input), { statusCode: 201, message: 'Business added' });
+  });
+  return router;
+}
 
 export function createBusinessRoutes({ profileService, businessService, guards }: Container): Router {
   const controller = createProfileController(profileService, businessService);

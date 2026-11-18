@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useT } from '../i18n/useT';
-import { billEmailsApi } from '../services/api';
+import { useCurrentUser } from '../auth/useAuth';
+import { billEmailsApi, businessApi } from '../services/api';
+import { billAddressFor, SHORT_NAME_PATTERN } from '../utils/shortName';
 import { mediaSrc } from '../services/apiClient';
 import type { BillEmailSettings, OpenBillEmail } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateTime } from '../utils/format';
 import { ErrorNotice, Loading, SavedToast } from './Feedback';
-import { Button, buttonClass, Card, SettingRow, ShimmerText } from './ui';
+import { Button, buttonClass, Card, Field, SettingRow, ShimmerText } from './ui';
 
 /** Emailed files with no scan yet: over the day's reads, or not readable. Shown above the bills; hidden when there are none. */
 export function EmailedBills() {
@@ -88,7 +90,74 @@ export function BillEmailPanel() {
   const settings = useQuery({ queryKey: ['bill-emails', 'settings'], queryFn: billEmailsApi.settings });
   if (settings.isPending) return <Loading />;
   if (settings.isError) return <ErrorNotice error={settings.error} onRetry={() => settings.refetch()} />;
-  return <BillEmailForm initial={settings.data} />;
+  return (
+    <>
+      <BillEmailForm initial={settings.data} />
+      <ShortNameCard />
+    </>
+  );
+}
+
+/** 4VD's developer only: the part after the + in this business's bill address. */
+function ShortNameCard() {
+  const user = useCurrentUser();
+  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get, enabled: Boolean(user.platformDeveloper) });
+  if (!user.platformDeveloper || !business.data) return null;
+  return <ShortNameForm key={business.data.shortName ?? ''} current={business.data.shortName ?? ''} />;
+}
+
+function ShortNameForm({ current }: { current: string }) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState(current);
+  const ok = SHORT_NAME_PATTERN.test(value);
+  const save = useMutation({
+    mutationFn: () => businessApi.update({ shortName: value }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['business'], updated);
+      void queryClient.invalidateQueries({ queryKey: ['bill-emails', 'settings'] });
+    },
+  });
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    save.mutate();
+  }
+  return (
+    <form onSubmit={submit}>
+      <Card
+        title={t.billEmail.shortName}
+        description={t.billEmail.shortNameWarning}
+        footer={
+          <>
+            {save.isError && (
+              <span className="form-error" role="alert">
+                {errorMessage(save.error)}
+              </span>
+            )}
+            {save.isSuccess && <SavedToast message={t.billEmail.shortNameSaved} />}
+            <Button type="submit" variant={value !== current ? 'primary' : 'secondary'} disabled={value === current || !ok || save.isPending} loading={save.isPending}>
+              {t.settings.saveChanges}
+            </Button>
+          </>
+        }
+      >
+        <div className="setting-row setting-row--fields">
+          <Field label={t.billEmail.shortName} hint={billAddressFor(value)} error={value && !ok ? t.addBusiness.shortNameBad : undefined}>
+            <input
+              required
+              maxLength={30}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              value={value}
+              aria-invalid={value !== '' && !ok}
+              onChange={(event) => setValue(event.target.value.toLowerCase())}
+            />
+          </Field>
+        </div>
+      </Card>
+    </form>
+  );
 }
 
 function BillEmailForm({ initial }: { initial: BillEmailSettings }) {

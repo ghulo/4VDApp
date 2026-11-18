@@ -5,6 +5,33 @@ import type { TodoVerb } from '../services/types';
  * against this, so a text missing there is a compile error. Texts with
  * numbers or names are functions.
  */
+/** The part of the dashboard a support visit touched (the address's first part): [one new, that one, all of them]. */
+const SUPPORT_NOUNS: Record<string, [string, string, string]> = {
+  users: ['a person','person','people'],
+  invites: ['an invite','invite','invites'],
+  products: ['a product','product','products'],
+  categories: ['a category','category','categories'],
+  suppliers: ['a supplier','supplier','suppliers'],
+  customers: ['a customer','customer','customers'],
+  sales: ['a sale','sale','sales'],
+  expenses: ['an expense','expense','expenses'],
+  settings: ['a setting','setting','settings'],
+  bills: ['a bill','bill','bills'],
+  offers: ['an offer','offer','offers'],
+  orders: ['an order','order','orders'],
+  promotions: ['a promotion','promotion','promotions'],
+  locations: ['a location','location','locations'],
+  payroll: ['a payroll entry','payroll entry','payroll'],
+  business: ['a business detail','business detail','business details'],
+  books: ['a books entry','books entry','books'],
+  'stock-documents': ['a stock document','stock document','stock documents'],
+  returns: ['a return','return','returns'],
+  'write-offs': ['a write-off','write-off','write-offs'],
+  carwash: ['a carwash entry','carwash entry','carwash entries'],
+  projects: ['a project','project','projects'],
+  makes: ['a make','make','makes'],
+};
+
 export const en = {
   language: {
     label: 'Language',
@@ -2493,7 +2520,14 @@ export const en = {
     from: (when: string) => `from ${when}`,
     lastSeen: (when: string) => `last seen ${when}`,
     changes: (count: number) => (count === 0 ? 'looked only, changed nothing' : `${count} change${count === 1 ? '' : 's'}`),
-    verbs: { POST: 'Added', PUT: 'Changed', PATCH: 'Changed', DELETE: 'Removed' },
+    /** One change made in a support visit, as a sentence: "Added an invite", "Changed invite no. 3". */
+    action: (method: string, entity: string | null, id: string | null): string => {
+      const [a, one, many] = (entity && SUPPORT_NOUNS[entity]) ?? [`something in ${entity ?? 'the business'}`, `${entity ?? 'item'}`, `${entity ?? 'the business'}`];
+      const no = id ? ` no. ${id}` : '';
+      if (method === 'DELETE') return id ? `Removed ${one}${no}` : `Removed ${many}`;
+      if (method === 'POST' && !id) return `Added ${a}`;
+      return id ? `Changed ${one}${no}` : `Changed ${many}`;
+    },
     failed: 'refused',
   },
   bin: {

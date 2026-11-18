@@ -215,10 +215,8 @@ function VisitList({ visits }: { visits: AllLogsVisit[] }) {
   const t = useT();
   const [open, setOpen] = useState<number | null>(null);
   const describe = (action: SupportAction) => {
-    const what = [action.entity, action.entityId].filter(Boolean).join(' ');
-    const verb = t.support.verbs[action.method as keyof typeof t.support.verbs] ?? action.method;
     const failed = action.status !== null && action.status >= 400;
-    return `${verb} ${what} · ${formatDateTime(action.at)}${failed ? ` · ${t.support.failed}` : ''}`;
+    return `${t.support.action(action.method, action.entity, action.entityId)} · ${formatDateTime(action.at)}${failed ? ` · ${t.support.failed}` : ''}`;
   };
 
   return (

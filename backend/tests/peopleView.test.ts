@@ -192,6 +192,21 @@ describe('someone in two businesses', () => {
   });
 });
 
+describe('deleting an account at home', () => {
+  it('should take it off every business it belonged to', async () => {
+    const sam = await createTestUser(context.db, 'employee', { email: 'sam@test.local' });
+    await context.db.insertInto('memberships').values({ user_id: sam.id, business_id: otherId, role: 'main_admin' }).execute();
+
+    const deleted = await request(context.app).delete(`/api/users/${sam.id}`).set(auth(shopMainAdmin));
+
+    expect(deleted.status).toBe(200);
+    const left = await context.db.selectFrom('memberships').select(['business_id', 'is_active', 'removed_at']).where('user_id', '=', sam.id).execute();
+    expect(left.length).toBeGreaterThan(0);
+    expect(left.every((row) => !row.is_active && row.removed_at !== null)).toBe(true);
+    expect((await listIn(otherMainAdmin)).some((person) => person.id === sam.id)).toBe(false);
+  });
+});
+
 describe('inviting someone who already has an account', () => {
   it('should not say at invite time that the email has an account', async () => {
     const invited = await request(context.app).post('/api/invites').set(auth(otherMainAdmin)).send({ email: pat.email, role: 'accountant' });

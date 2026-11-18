@@ -308,7 +308,7 @@ const en = {
   rulesChanged: (p: { numbering: boolean; noStockSales: 'block' | 'allow' | null; shortDated?: boolean; features?: boolean }) =>
     `Changed ${[...(p.numbering ? ['how documents are numbered'] : []), ...(p.shortDated ? ['the short-dated discounts'] : []), ...(p.features ? ['which features are on'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'selling with no stock to allowed' : 'selling with no stock to refused'] : [])].join(' and ')}`,
   shopPictureSet: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Added the shop's ${p.which} for invoices`,
-  businessCreated: (p: { name: string }) => `Created the business ${p.name} for 4VD`,
+  businessCreated: (p: { name: string }) => `Created the business ${p.name}`,
   shopPictureRemoved: (p: { which: 'logo' | 'stamp' | 'signature' }) => `Removed the shop's ${p.which} from invoices`,
   fileAdded: (p: { name: string }) => `Added the file ${p.name}`,
   fileRemoved: (p: { name: string }) => `Moved the file ${p.name} to the recycle bin`,
@@ -859,7 +859,7 @@ const sq: Templates = {
   rulesChanged: (p) =>
     `Ndryshoi ${[...(p.numbering ? ['numërimin e dokumenteve'] : []), ...(p.shortDated ? ['zbritjet për mallin që i afrohet afatit'] : []), ...(p.features ? ['cilat veçori janë të ndezura'] : []), ...(p.noStockSales ? [p.noStockSales === 'allow' ? 'shitjen pa stok në të lejuar' : 'shitjen pa stok në të ndaluar'] : [])].join(' dhe ')}`,
   shopPictureSet: (p) => `Shtoi ${SQ_PICTURE[p.which]} e dyqanit për faturat`,
-  businessCreated: (p) => `Krijoi biznesin ${p.name} në 4VD`,
+  businessCreated: (p) => `Krijoi biznesin ${p.name}`,
   shopPictureRemoved: (p) => `Hoqi ${SQ_PICTURE[p.which]} e dyqanit nga faturat`,
   fileAdded: (p) => `Shtoi skedarin ${p.name}`,
   fileRemoved: (p) => `Çoi skedarin ${p.name} te koshi`,

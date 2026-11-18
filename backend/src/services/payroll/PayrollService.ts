@@ -304,7 +304,8 @@ export class PayrollService {
 
   /** Team accounts that can be linked to someone on the payroll, with the email and phone that fill in their details. */
   async team(): Promise<Array<{ id: number; name: string; role: string; email: string; phone: string | null }>> {
-    return this.db.selectFrom('users').select(['id', 'name', 'role', 'email', 'phone']).where('is_active', '=', true).where('deleted_at', 'is', null).where('is_platform_developer', '=', false).orderBy('name').execute();
+    // The people of the business open now with access here: someone blocked or taken off it isn't offered.
+    return this.db.selectFrom('people').select(['id', 'name', 'role', 'email', 'phone']).where('is_active', '=', true).where('deleted_at', 'is', null).where('is_platform_developer', '=', false).orderBy('name').execute();
   }
 
   /** The employee record linked to a team account, if any. */

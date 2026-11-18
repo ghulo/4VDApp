@@ -134,8 +134,11 @@ export class UserService {
 
     await this.transactions.run(async (repos) => {
       // Their home business deletes the account; any other business only takes them off its own list.
-      if (home) await repos.users.softDelete(id);
-      else await repos.users.removeMembership(id);
+      // Deleting the account takes it off every business too, in the same transaction.
+      if (home) {
+        await repos.users.softDelete(id);
+        await repos.users.closeEveryMembership(id);
+      } else await repos.users.removeMembership(id);
       await repos.activityLog.create({
         userId: actingUserId,
         action: 'user.deleted',

@@ -24,6 +24,8 @@ export interface InviteDto {
   invitedBy: string | null;
   expiresAt: string;
   createdAt: string;
+  /** The language the invite was sent in: the WhatsApp text goes out in it too. */
+  language: Language;
 }
 
 /** Right after sending: the link itself, so the inviter can also send it on WhatsApp or copy it. */
@@ -49,6 +51,7 @@ const toDto = (invite: InviteRecord): InviteDto => ({
   invitedBy: invite.invited_by_name,
   expiresAt: invite.expires_at.toISOString(),
   createdAt: invite.created_at.toISOString(),
+  language: invite.language,
 });
 
 /**

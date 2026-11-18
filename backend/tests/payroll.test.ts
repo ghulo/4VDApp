@@ -166,6 +166,23 @@ describe('payroll in the app', () => {
     expect((await api().post('/api/payroll/employees').set(auth()).send(person({ name: 'Bad Mail', email: 'not-an-email' }))).status).toBe(400);
   });
 
+  it('leaves people blocked in or taken off this business out of the team accounts', async () => {
+    const ids: Record<string, number> = {};
+    for (const email of ['kept@test.local', 'blocked@test.local', 'gone@test.local']) {
+      await loginAs(context, 'employee', { email });
+      ids[email] = (await context.db.selectFrom('users').select('id').where('email', '=', email).executeTakeFirstOrThrow()).id;
+    }
+    // Blocked here (the membership's is_active), and taken off (removed_at): how People leaves them.
+    await context.db.updateTable('memberships').set({ is_active: false }).where('user_id', '=', ids['blocked@test.local']!).execute();
+    await context.db.updateTable('memberships').set({ is_active: false, removed_at: new Date() }).where('user_id', '=', ids['gone@test.local']!).execute();
+
+    const emails = ((await api().get('/api/payroll/team').set(auth())).body.data as Array<{ email: string }>).map((one) => one.email);
+
+    expect(emails).toContain('kept@test.local');
+    expect(emails).not.toContain('blocked@test.local');
+    expect(emails).not.toContain('gone@test.local');
+  });
+
   it('confirms a month into the books, keeps the carwash out of them, and pays wages and ATK', async () => {
     await add();
     await add({ name: 'Besnik Gashi', personalNumber: '1234567891', payBasis: 'net', payAmount: 456.5, place: 'carwash' });

@@ -116,6 +116,11 @@ export class UserRepository {
     return result.numUpdatedRows > 0n;
   }
 
+  /** A deleted account leaves every business it belonged to (memberships hold no business rows, so this reaches all of them). */
+  async closeEveryMembership(userId: number, now = new Date()): Promise<void> {
+    await this.db.updateTable('memberships').set({ is_active: false, removed_at: now }).where('user_id', '=', userId).where('removed_at', 'is', null).execute();
+  }
+
   /** Someone who already has an account joins another business (an accepted invite). */
   async join(userId: number, businessId: number, role: StoredRole): Promise<void> {
     await this.db

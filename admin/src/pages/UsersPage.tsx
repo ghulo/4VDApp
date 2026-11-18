@@ -9,7 +9,7 @@ import { DeviceList } from '../components/DeviceList';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
 import { HistoryCard } from '../components/HistoryCard';
 import { activityApi, businessApi, cashApi, invitesApi, passkeyApi, reportsApi, twoStepApi, usersApi, writeOffsApi } from '../services/api';
-import { useT } from '../i18n/useT';
+import { CATALOGUES, useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatHeadlineMoney, formatMoney, formatTime, localDay } from '../utils/format';
@@ -292,7 +292,7 @@ function InviteForm() {
           {errorMessage(invite.error)}
         </p>
       )}
-      {invite.isSuccess && <InviteShare email={invite.data.data.email} link={invite.data.data.link} />}
+      {invite.isSuccess && <InviteShare email={invite.data.data.email} link={invite.data.data.link} language={invite.data.data.language} />}
       <Button type="submit" disabled={!email.trim() || invite.isPending} variant="primary" loading={invite.isPending}>
         {t.people.sendInvite}
       </Button>
@@ -300,12 +300,12 @@ function InviteForm() {
   );
 }
 
-/** After an invite goes out: the same link to send on WhatsApp or copy, for people who don't read email. */
-function InviteShare({ email, link }: { email: string; link: string }) {
+/** After an invite goes out: the same link to send on WhatsApp or copy, for people who don't read email. The message is in the invite's language, not the sender's. */
+function InviteShare({ email, link, language }: { email: string; link: string; language: Language }) {
   const t = useT();
   const toast = useToast();
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
-  const chat = `https://wa.me/?text=${encodeURIComponent(t.people.whatsappText(business.data?.name ?? '4VD', link))}`;
+  const chat = `https://wa.me/?text=${encodeURIComponent(CATALOGUES[language].people.whatsappText(business.data?.name ?? '4VD', link))}`;
   async function copy() {
     try {
       await navigator.clipboard.writeText(link);
@@ -370,7 +370,7 @@ function PendingInvites() {
           </li>
         ))}
       </ul>
-      {resend.isSuccess && <InviteShare email={resend.data.data.email} link={resend.data.data.link} />}
+      {resend.isSuccess && <InviteShare email={resend.data.data.email} link={resend.data.data.link} language={resend.data.data.language} />}
       {(resend.isError || cancel.isError) && (
         <p className="form-error" role="alert">
           {errorMessage(resend.error ?? cancel.error)}

@@ -1388,6 +1388,8 @@ export interface Invite {
   invitedBy: string | null;
   expiresAt: string;
   createdAt: string;
+  /** The language the invite was sent in. */
+  language: User['language'];
 }
 
 export interface InvitePreview {

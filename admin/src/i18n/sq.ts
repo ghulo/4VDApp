@@ -1,6 +1,33 @@
 import type { Catalogue } from './en';
 
 /** Every word the dashboard shows, in Albanian. Terms follow the glossary in the Albanian plan. */
+/** The part of the dashboard a support visit touched (the address's first part): [one new, that one, all of them]. */
+const SUPPORT_NOUNS: Record<string, [string, string, string]> = {
+  users: ['një person','personin','personat'],
+  invites: ['një ftesë','ftesën','ftesat'],
+  products: ['një produkt','produktin','produktet'],
+  categories: ['një kategori','kategorinë','kategoritë'],
+  suppliers: ['një furnitor','furnitorin','furnitorët'],
+  customers: ['një klient','klientin','klientët'],
+  sales: ['një shitje','shitjen','shitjet'],
+  expenses: ['një shpenzim','shpenzimin','shpenzimet'],
+  settings: ['një cilësim','cilësimin','cilësimet'],
+  bills: ['një faturë','faturën','faturat'],
+  offers: ['një ofertë','ofertën','ofertat'],
+  orders: ['një porosi','porosinë','porositë'],
+  promotions: ['një promocion','promocionin','promocionet'],
+  locations: ['një vend','vendin','vendet'],
+  payroll: ['një pagë','pagën','pagat'],
+  business: ['një të dhënë biznesi','të dhënën e biznesit','të dhënat e biznesit'],
+  books: ['një regjistrim në libra','regjistrimin në libra','librat'],
+  'stock-documents': ['një dokument stoku','dokumentin e stokut','dokumentet e stokut'],
+  returns: ['një kthim','kthimin','kthimet'],
+  'write-offs': ['një shlyerje','shlyerjen','shlyerjet'],
+  carwash: ['një regjistrim larjeje','regjistrimin e larjes','regjistrimet e larjes'],
+  projects: ['një projekt','projektin','projektet'],
+  makes: ['një prodhim','prodhimin','prodhimet'],
+};
+
 export const sq: Catalogue = {
   language: {
     label: 'Gjuha',
@@ -2473,7 +2500,13 @@ export const sq: Catalogue = {
     from: (when: string) => `nga ${when}`,
     lastSeen: (when: string) => `parë së fundi ${when}`,
     changes: (count: number) => (count === 0 ? 'vetëm shikoi, nuk ndryshoi asgjë' : `${count} ndryshim${count === 1 ? '' : 'e'}`),
-    verbs: { POST: 'Shtoi', PUT: 'Ndryshoi', PATCH: 'Ndryshoi', DELETE: 'Hoqi' },
+    action: (method, entity, id) => {
+      const [a, one, many] = (entity && SUPPORT_NOUNS[entity]) ?? [`diçka te ${entity ?? 'biznesi'}`, `${entity ?? 'elementin'}`, `${entity ?? 'biznesin'}`];
+      const no = id ? ` nr. ${id}` : '';
+      if (method === 'DELETE') return id ? `Hoqi ${one}${no}` : `Hoqi ${many}`;
+      if (method === 'POST' && !id) return `Shtoi ${a}`;
+      return id ? `Ndryshoi ${one}${no}` : `Ndryshoi ${many}`;
+    },
     failed: 'u refuzua',
   },
   bin: {

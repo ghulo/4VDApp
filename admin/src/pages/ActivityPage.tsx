@@ -3,29 +3,16 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 import { ActivityFeed } from '../components/activity/ActivityFeed';
+import { ACTIVITY_KINDS } from '../components/activity/activityKinds';
 import { Avatar } from '../components/Avatar';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Pagination } from '../components/Pagination';
 import { SearchInput } from '../components/SearchInput';
 import { SourceFilter, sourceFrom } from '../components/TrefinParts';
 import { EmptyState, PageHeader } from '../components/ui';
-import type { Catalogue } from '../i18n/en';
 import { useT } from '../i18n/useT';
 import { activityApi, usersApi } from '../services/api';
 
-/**
- * Kinds of change a person would filter by, mapped to action prefixes. The
- * default leaves logins out: they outnumber real changes and bury what can be undone.
- */
-const KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }> = [
-  { value: '', key: 'all' },
-  { value: 'sale,return,promotion,document', key: 'sales' },
-  { value: 'product,pricing,category,stock,count,expiry,write_off', key: 'stock' },
-  { value: 'order,bill,supplier', key: 'buying' },
-  { value: 'cash,expense,carwash,customer,tab', key: 'money' },
-  { value: 'user,settings,business', key: 'people' },
-  { value: 'auth', key: 'logins' },
-];
 
 export function ActivityPage() {
   const t = useT();
@@ -100,7 +87,7 @@ export function ActivityPage() {
           ))}
         </div>
         <div className="segmented segmented--small segmented--chips activity-filters__kinds" role="radiogroup" aria-label={t.activity.kind}>
-          {KINDS.map((kind) => (
+          {ACTIVITY_KINDS.map((kind) => (
             <button
               key={kind.key}
               type="button"

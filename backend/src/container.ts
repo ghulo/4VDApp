@@ -137,6 +137,8 @@ import { ExportService } from './services/ExportService.js';
 import { StockAdjustmentRepository } from './repositories/StockAdjustmentRepository.js';
 import { TransactionManager } from './repositories/TransactionManager.js';
 import { SupportRepository } from './repositories/SupportRepository.js';
+import { AllLogsRepository } from './repositories/AllLogsRepository.js';
+import { AllLogsService } from './services/AllLogsService.js';
 import { UserRepository } from './repositories/UserRepository.js';
 import { AuthService } from './services/AuthService.js';
 import { CategoryService } from './services/CategoryService.js';
@@ -518,6 +520,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const permissionService = new PermissionService(settingsRepository, activityLogRepository, transactions);
   // app.ts reads the rules from Settings → Roles before any API request reaches these guards.
   const supportRepository = new SupportRepository(db);
+  const allLogsService = new AllLogsService(new AllLogsRepository(db));
   const authenticated = requireAuth(userRepository, supportRepository);
   const guards = {
     authenticated,
@@ -554,6 +557,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     db,
     userRepository,
     supportRepository,
+    allLogsService,
     authService,
     twoStepService,
     passkeyService,

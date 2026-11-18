@@ -43,6 +43,7 @@ const PortalInvoicesPage = lazyPage(() => import('./pages/portal/PortalApp'), 'P
 const PortalAccountPage = lazyPage(() => import('./pages/portal/PortalApp'), 'PortalAccountPage');
 const ShopPortalOrdersPage = lazyPage(() => import('./pages/PortalOrdersPage'), 'PortalOrdersPage');
 const ActivityPage = lazyPage(() => import('./pages/ActivityPage'), 'ActivityPage');
+const AllLogsPage = lazyPage(() => import('./pages/AllLogsPage'), 'AllLogsPage');
 const InboxPage = lazyPage(() => import('./pages/InboxPage'), 'InboxPage');
 const UpdatesPage = lazyPage(() => import('./pages/InboxPage'), 'UpdatesPage');
 const CategoriesPage = lazyPage(() => import('./pages/CategoriesPage'), 'CategoriesPage');
@@ -340,6 +341,7 @@ function App() {
                       <Route path="settings/:section?" element={<SettingsPage />} />
                       <Route path="profile/:section?" element={<ProfilePage />} />
                       <Route path="activity" element={<ActivityPage />} />
+                      <Route path="all-logs" element={<AllLogsPage />} />
                       <Route path="*" element={<NotFoundPage />} />
                     </Route>
                   </Routes>

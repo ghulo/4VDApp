@@ -6,7 +6,7 @@ export const undoBodySchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 
-const actionList = z
+export const actionList = z
   .string()
   .regex(/^[a-z_]+(\.[a-z_]+)?(,[a-z_]+(\.[a-z_]+)?)*$/, 'use action names like stock or stock.adjusted, separated by commas')
   .max(200)
@@ -34,3 +34,18 @@ export const historyQuerySchema = z.object({
   entityType: z.enum(ACTIVITY_ENTITY_TYPES),
   entityId: idSchema,
 });
+
+/**
+ * All logs (developer only). Strict: nothing else is read from the request, above all no user id; whose
+ * read it is comes only from the signed-in user.
+ */
+export const allActivityQuerySchema = paginationSchema
+  .extend({
+    businessId: idSchema.optional(),
+    action: actionList.optional(),
+    exclude: actionList.optional(),
+    search: z.string().trim().max(100).optional(),
+  })
+  .strict();
+
+export const allSupportQuerySchema = paginationSchema.extend({ businessId: idSchema.optional() }).strict();

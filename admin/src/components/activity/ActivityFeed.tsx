@@ -1,22 +1,4 @@
-import {
-  AddressBook,
-  ArrowCounterClockwise,
-  ArrowUUpLeft,
-  CaretRight,
-  Drop,
-  FileText,
-  Gear,
-  type Icon,
-  Money,
-  Package,
-  Percent,
-  Receipt,
-  SignIn,
-  Tag,
-  Truck,
-  User,
-  Wallet,
-} from '@phosphor-icons/react';
+import { CaretRight, Gear } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useT } from '../../i18n/useT';
@@ -25,35 +7,9 @@ import { dayHeading, formatDateTime, formatTime, groupByDay } from '../../utils/
 import { Avatar } from '../Avatar';
 import { TrefinTag } from '../TrefinParts';
 import { Button } from '../ui';
+import { ACTIVITY_ICONS } from './activityKinds';
 import { UndoConfirm } from './UndoConfirm';
 
-/** What a change was about, by the first word of its action ("sale.recorded" → sale). */
-const ICONS: Record<string, Icon> = {
-  sale: Receipt,
-  return: ArrowUUpLeft,
-  promotion: Percent,
-  document: FileText,
-  product: Tag,
-  pricing: Tag,
-  category: Tag,
-  stock: Package,
-  count: Package,
-  expiry: Package,
-  write_off: Package,
-  order: Truck,
-  bill: Truck,
-  supplier: Truck,
-  cash: Money,
-  expense: Wallet,
-  carwash: Drop,
-  customer: AddressBook,
-  tab: AddressBook,
-  user: User,
-  auth: SignIn,
-  settings: Gear,
-  business: Gear,
-  undo: ArrowCounterClockwise,
-};
 
 /** The page about the record a change touched, when it has one. */
 function linkFor(entry: ActivityEntry): string | null {
@@ -161,7 +117,7 @@ export function ActivityFeed({ entries, people, hidePerson, headingLevel: Headin
           </Heading>
           <ul className="activity-feed">
             {group.rows.map((entry) => {
-              const KindIcon = ICONS[entry.action.split('.')[0] ?? ''] ?? Gear;
+              const KindIcon = ACTIVITY_ICONS[entry.action.split('.')[0] ?? ''] ?? Gear;
               const link = linkFor(entry);
               const undone = entry.undo?.state === 'undone';
               const text = entry.trefin ? t.fromTrefin.activity(entry.trefin.verb, entry.trefin.what, entry.trefin.subject) : entry.summary;

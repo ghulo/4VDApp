@@ -2582,7 +2582,7 @@ export const sq: Catalogue = {
       accentPresets: { saffron: 'Shafran', coral: 'Koral', mint: 'Mente', lilac: 'Jargavan', sand: 'Rërë', teal: 'Gurkali', navy: 'Blu e errët', rose: 'Rozë' },
       accentAny: 'Çfarëdo theksi',
       accentCode: 'Kodi i theksit',
-      gradient: 'Gradient',
+      gradient: 'Kalim ngjyrash',
       gradientOptions: { off: 'Fikur', on: 'Ngjyra → theksi' },
       gradientHint: 'Vetëm te butoni kryesor, logoja dhe shenja. Kurrë në faqe ose karta.',
       gradientNeedsAccent: 'Zgjidh fillimisht një theks: gradienti shkon nga ngjyra jote te ai.',

@@ -5,6 +5,7 @@ import type { Brand, Business, BrandGreys } from '../services/types';
 import { applyBrand, previewBrand, themeOf } from '../theme/applyBrand';
 import { ACCENT_PRESETS, BRAND_PRESETS, HOUSE_COLOUR, brandInitials, isBrandHex, type BrandPreview } from '../theme/brandTheme';
 import { errorMessage } from '../utils/errors';
+import { formatMoney } from '../utils/format';
 import { useT } from '../i18n/useT';
 import { BrandMark } from './BrandMark';
 import { Segmented } from './BillLines';
@@ -52,6 +53,12 @@ export function BrandCard({ business }: { business: Business }) {
   const [notice, setNotice] = useState<string | null>(null);
   const savedBrand = useRef(business.brand);
   const resetPanel = useRef<HTMLDivElement>(null);
+  const resetKey = useRef<HTMLButtonElement>(null);
+  /** Close the reset question and give focus back to the key that opened it. */
+  const keepMine = () => {
+    setConfirmReset(false);
+    requestAnimationFrame(() => resetKey.current?.focus());
+  };
   useEffect(() => {
     savedBrand.current = business.brand;
   }, [business.brand]);
@@ -138,7 +145,7 @@ export function BrandCard({ business }: { business: Business }) {
               </Button>
             )}
             {!hasChanges && !atDefault && (
-              <Button type="button" variant="ghost" disabled={save.isPending} aria-expanded={confirmReset} aria-controls="brand-reset" onClick={() => setConfirmReset(true)}>
+              <Button ref={resetKey} type="button" variant="ghost" disabled={save.isPending} aria-expanded={confirmReset} aria-controls="brand-reset" onClick={() => setConfirmReset(true)}>
                 {words.reset}
               </Button>
             )}
@@ -155,7 +162,7 @@ export function BrandCard({ business }: { business: Business }) {
       >
         <div className="brand-card">
           {confirmReset && (
-            <div className="brand-card__reset" id="brand-reset" role="group" aria-labelledby="brand-reset-title" ref={resetPanel}>
+            <div className="brand-card__reset" id="brand-reset" role="group" aria-labelledby="brand-reset-title" ref={resetPanel} onKeyDown={(event) => event.key === 'Escape' && keepMine()}>
               <span className="brand-card__reset-swatch" aria-hidden="true" style={{ background: business.brandDefault.colour }} />
               <div className="brand-card__reset-text">
                 <strong id="brand-reset-title">{words.resetTitle}</strong>
@@ -170,7 +177,7 @@ export function BrandCard({ business }: { business: Business }) {
                 >
                   {words.resetConfirm}
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => setConfirmReset(false)}>
+                <Button type="button" variant="ghost" onClick={keepMine}>
                   {words.resetKeep}
                 </Button>
               </div>
@@ -448,7 +455,7 @@ function MiniDashboard({ caption, tones, name, house, initials, logoUrl }: { cap
           </span>
           <span className="brand-mini__tile">
             <span className="brand-mini__label">{words.previewSales}</span>
-            <strong>€1,284</strong>
+            <strong>{formatMoney(1284)}</strong>
           </span>
           <span className="brand-mini__bars">
             {[42, 58, 35, 70, 64, 88, 51].map((height, index) => (

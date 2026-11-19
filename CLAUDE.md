@@ -16,7 +16,7 @@
 - `admin/`: the dashboard (React + Vite, plain CSS on tokens). It is the only app in use: owners get the full dashboard, employees a phone-style layout (`StaffLayout`), the Counter is `/counter`.
 - `desktop/`: the Electron Windows app (fiscal printer through F-Link, updates from GitHub Releases). The dashboard lives at 4vd.app (`admin/wrangler.jsonc`); app.4vd.app (old QR labels) redirects there by a Cloudflare rule.
 - `mail/`: the Cloudflare Email Worker for bills@4vd.app (own `wrangler.jsonc`, deployed by hand; `npm test`). Setup in `docs/DEPLOYMENT.md`.
-- `mobile/`: the old Expo team app, retired since 2026-10-20. Don't change it unless the user asks.
+- The old Expo team app (`mobile/`) was retired on 2026-10-20 and removed on 2026-11-19; it is only in git history (last in commit 3cbaf85b).
 - `progress.md`: the task list (tick items as they're done). `DESIGN.md`: the rulebook for logic, words and look. `PRODUCT.md`: who it's for.
 - Project skills: `verify` (run the app and prove a change before committing), `step-workflow` (how a step session runs, start to merge: read it when starting a task) and `kosovo-tax` (every VAT, payroll, profit tax and books rule 4VD follows and where it lives; read it before touching money logic, add new rules to it).
 

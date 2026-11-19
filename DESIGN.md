@@ -170,8 +170,8 @@ that fits their job:
 | Job | run the shop: stock, buying, money, books, people, decisions, reports | sell, look up, report what happened, close the shift | sell fast with a scanner and print the fiscal receipt |
 | Scene | shop computer in the morning, phone when away | phone in one hand, a customer waiting | the shop PC, in the Windows app (`desktop/`) |
 
-Tech: React + Vite with plain CSS on tokens. The old Expo team app (`mobile/`,
-`app.4vd.app`) was retired on 2026-10-20; its features live in the staff layout.
+Tech: React + Vite with plain CSS on tokens. The old Expo team app (`app.4vd.app`) was
+retired on 2026-10-20 and removed from the repo; its features live in the staff layout.
 
 ## 2. Principles
 

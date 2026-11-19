@@ -26,7 +26,6 @@ Chosen 2026-11-11 (replaced the tick, which read as "done" and said nothing abou
   Then bump `?v=` on the icon links in `admin/index.html` and
   `admin/public/manifest.json` (and `?v=` on `LOGO_URL` in
   `backend/src/services/email/templates.ts`), or browsers keep showing the old icon.
-  The script also redraws the retired team app's icons; leave those out of commits.
 - `ShopSunrise` draws the mark large (sign-in, empty pages).
 
 ## Look, colours and type

@@ -34,7 +34,6 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       admin: ${{ steps.filter.outputs.admin }}
       e2e: ${{ steps.filter.outputs.e2e }}
-      mobile: ${{ steps.filter.outputs.mobile }}
       mail: ${{ steps.filter.outputs.mail }}
       desktop: ${{ steps.filter.outputs.desktop }}
     steps:
@@ -70,9 +69,6 @@ jobs:
               - 'backend/**'
               - 'admin/**'
               - 'e2e/**'
-            mobile:
-              - *ci
-              - 'mobile/**'
             mail:
               - *ci
               - 'mail/**'
@@ -165,25 +161,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-
-  mobile:
-    name: Mobile app (types)
-    needs: changes
-    if: needs.changes.outputs.mobile == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: mobile
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
-      - run: npm ci
-      - run: npm run typecheck
 
   mail:
     name: Bills email worker (tests and audit)
@@ -288,7 +265,7 @@ jobs:
     # holds back the API: the two stay on the same version.
     # A job skipped because its folder didn't change counts as fine; a failed
     # or cancelled one stops the deploy. Only runs when the dashboard changed.
-    needs: [changes, backend, backend-image, admin, mobile, mail, e2e]
+    needs: [changes, backend, backend-image, admin, mail, e2e]
     if: >-
       always() &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&

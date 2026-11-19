@@ -12,18 +12,12 @@ coverage/
 !.env.example
 # Public production addresses for the front ends (no secrets)
 !admin/.env.production
-!mobile/.env.production
 
-# Expo / React Native
-.expo/
-web-build/
-ios/
-android/
+# Signing keys (never committed)
 *.jks
 *.p8
 *.p12
 *.key
-*.mobileprovision
 
 # Logs
 *.log
@@ -40,10 +34,8 @@ Thumbs.db
 .superpowers/
 
 # Local links the skills installer makes to .agents/skills (absolute paths)
-.claude/skills/design-md
 .claude/skills/web-design-guidelines
 .claude/skills/vercel-react-best-practices
-.claude/skills/vercel-react-native-skills
 .claude/skills/migration
 
 # Wrangler (Cloudflare) local state

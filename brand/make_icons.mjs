@@ -22,7 +22,6 @@ const inkOnly = bare;
 if (inkOnly.includes('#F5B71A')) throw new Error('logo-mark.svg has amber outside its tile; update make_icons.mjs');
 
 const fileIn = (app, path) => new URL(`../${app}/${path}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const out = (path) => fileIn('mobile', path);
 
 /** Renders `svg` at `size` px; `padding` is the share of each side left empty (maskable icons get cropped). */
 async function render(svg, size, padding = 0) {
@@ -33,8 +32,8 @@ async function render(svg, size, padding = 0) {
     .composite([{ input: art, gravity: 'centre' }]);
 }
 
-// Home-screen icons for the dashboard (and the retired team app, kept in step).
-for (const app of ['mobile', 'admin']) {
+// Home-screen icons for the dashboard.
+for (const app of ['admin']) {
   await (await render(square, 180)).png().toFile(fileIn(app, 'public/apple-touch-icon.png'));
   await (await render(square, 192)).png().toFile(fileIn(app, 'public/icon-192.png'));
   await (await render(square, 512)).png().toFile(fileIn(app, 'public/icon-512.png'));
@@ -45,21 +44,4 @@ writeFileSync(fileIn('admin', 'public/favicon.svg'), mark);
 await (await render(mark, 192)).png().toFile(fileIn('admin', 'public/email-logo.png'));
 // The Windows app's icon: taskbar, Start menu, installer.
 await (await render(mark, 512)).png().toFile(fileIn('desktop', 'src/icon.png'));
-await (await render(mark, 48)).png().toFile(out('assets/favicon.png'));
-await (await render(square, 1024)).png().toFile(out('assets/icon.png'));
-await (await render(bare, 1024, 0.1)).png().toFile(out('assets/android-icon-foreground.png'));
-await sharp({ create: { width: 1024, height: 1024, channels: 3, background: AMBER } }).png().toFile(out('assets/android-icon-background.png'));
-// Every drawn pixel in white; Android tints it to the phone's theme.
-await (await render(inkOnly, 1024, 0.1))
-  .ensureAlpha()
-  .extractChannel('alpha')
-  .raw()
-  .toBuffer()
-  .then((alpha) =>
-    sharp({ create: { width: 1024, height: 1024, channels: 3, background: '#ffffff' } })
-      .joinChannel(alpha, { raw: { width: 1024, height: 1024, channels: 1 } })
-      .png()
-      .toFile(out('assets/android-icon-monochrome.png')),
-  );
-await (await render(bare, 1024, 0.1)).png().toFile(out('assets/splash-icon.png'));
 console.log('Icons drawn from brand/logo-mark.svg');

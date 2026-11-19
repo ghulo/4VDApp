@@ -22,7 +22,8 @@ A map of the code as it is: each claim names the file or symbol to read next. Wh
 | `desktop/` | Electron shell for the shop PC: loads 4vd.app, prints fiscal receipts on the Datecs printer through Enternet's F-Link (`src/fiscal.js`), shows its own page when offline, updates itself from GitHub Releases |
 | `mail/` | Cloudflare Email Worker for bills@4vd.app: checks SPF/DKIM/DMARC, passes supplier bills to `POST /api/internal/bill-email` (deployed by hand with wrangler) |
 | `e2e/` | Playwright tests of the money paths against their own API and dashboard (ports 3100/5180, database `four_vd_app_e2e`) |
-| `mobile/` | Retired Expo team app, kept for reference only |
+
+The old Expo team app (`mobile/`) was retired on 2026-10-20 and removed on 2026-11-19 (last in commit 3cbaf85b; see git history).
 
 ## Many businesses (tenancy)
 

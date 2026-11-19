@@ -1,3 +1,0 @@
-# Cloudflare Pages headers. The alerts service worker must never be served stale.
-/sw.js
-  Cache-Control: no-cache

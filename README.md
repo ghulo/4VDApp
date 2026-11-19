@@ -36,7 +36,8 @@ The roadmap, and what still needs trying by hand: [progress.md](progress.md).
 | `brand/` | Logo source files and the icon and palette scripts |
 | `docs/` | Architecture, deployment, and an archive of finished work |
 | `.claude/skills/` | Instructions for AI coding sessions (`kosovo-tax`, `step-workflow`, `verify`, and design helpers) |
-| `mobile/` | The old Expo team app, retired on 2026-10-20 (its features live in the dashboard) |
+
+The old Expo team app (`mobile/`, retired 2026-10-20) was removed on 2026-11-19 (last in commit 3cbaf85b; see git history).
 
 ## Quick start
 

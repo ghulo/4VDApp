@@ -28,6 +28,7 @@
 - A check still failing after 3 rounds of fixes: stop and tell the user (or the orchestrator) what fails and what you tried; don't keep grinding.
 - A flaky test: never re-run it until it passes, add sleeps or raise timeouts. Find the cause; if you can't, delete the test and write down why in the commit.
 - Commits: `feat:` / `fix:` / `docs:` prefix, then plain English a non-developer understands. Work on main or a short branch in this checkout (no worktrees); merge, push and delete branches yourself.
+- Speed of going live: a push that touches only `admin/` (or docs) is live on 4vd.app in about 3 min; any `backend/` change runs the full backend suite (~16 min) plus Render's deploy. So when a change has a screen part that works on its own, push it as its own commit first, then the backend part.
 - The checkout is shared by several sessions, and an orchestrator session says who may use it. Without its go, don't switch branches, stash, run tests or migrate here; land files on main through a temporary index instead (`step-workflow` skill). Stage only your own files (`git diff --cached --name-only` before every commit). Number a new migration at merge time, against the newest main.
 
 ## Gotchas

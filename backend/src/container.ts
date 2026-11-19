@@ -39,6 +39,7 @@ import { StatementsService } from './services/statements/StatementsService.js';
 import { YearService } from './services/statements/YearService.js';
 import { DeclarationService } from './services/statements/DeclarationService.js';
 import { OpeningService } from './services/OpeningService.js';
+import { ImportService, importsToCheck } from './services/import/ImportService.js';
 import { TrefinCompareService } from './services/vat/TrefinCompareService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
@@ -367,6 +368,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     payrollService,
     new PortalRepository(db),
     declarationService,
+    { toCheck: () => importsToCheck(db) },
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -384,6 +386,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
         : config.ai?.provider === 'gemini'
           ? new GeminiProvider(config.ai.apiKey, config.ai.model)
           : null;
+  const importService = new ImportService(db, openingService, aiProvider);
   const assistantService = new AssistantService(
     aiProvider,
     new AssistantChatRepository(db),
@@ -542,6 +545,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     entries: [authenticated, requirePower('entries')] as RequestHandler[],
     /** Employees, pay and leave: the owner and the accountant. */
     payroll: [authenticated, requirePower('payroll')] as RequestHandler[],
+    import: [authenticated, requirePower('import')] as RequestHandler[],
     /** The customer list: the counter (for tabs) and the accountant. */
     customers: [authenticated, requirePower('customers')] as RequestHandler[],
     /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
@@ -619,6 +623,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     yearService,
     declarationService,
     openingService,
+    importService,
     vatService,
     trefinCompareService,
     threadService,

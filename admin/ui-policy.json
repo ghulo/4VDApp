@@ -269,6 +269,13 @@
         "text-contrast"
       ],
       "reason": "A business's placeholder logo: its initials on a key in its colour. The letters scale with the mark (0.42 of its size), like a logo, not a text role. The key is a light gradient the tool cannot read; src/theme/brandTheme.test.ts proves the ink passes 4.5:1 on every key colour (grid of 2,016 colours)."
+    },
+    {
+      "selector": ".import-problem:not([open]) .import-problem__body, .import-problem:not([open]) .import-problem__body *",
+      "rules": [
+        "content-clipping"
+      ],
+      "reason": "A closed fold on Settings → Import: the browser hides its rows until it is opened, so they read as clipped."
     }
   ]
 }

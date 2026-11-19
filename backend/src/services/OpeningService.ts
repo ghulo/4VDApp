@@ -160,6 +160,62 @@ export class OpeningService {
     if (await this.posted(db)) throw new ConflictError('The opening balances are posted. Take them back first to change a line.');
   }
 
+  /**
+   * Whether a partner's balance from another program can come in as an opening
+   * line now: the books need a start day and the opening must not be posted.
+   * Otherwise the import keeps the figure in the partner's note instead.
+   */
+  async bookState(db: DatabaseClient = this.db): Promise<{ startDay: string | null; openingPosted: boolean }> {
+    const [startDay, posted] = await Promise.all([this.setting<string>(BOOKS_START_KEY, db), this.posted(db)]);
+    return { startDay: startDay ?? null, openingPosted: posted !== null };
+  }
+
+  /**
+   * One partner's balance brought over from another program (Settings → Import),
+   * the way TREFIN's balances come in: what we owe a supplier becomes one
+   * brought-over bill, what a customer owes one charge on their tab, each with
+   * its opening line; a balance paid ahead becomes a typed opening line.
+   * `owed` is positive when we owe the supplier / the customer owes us.
+   * Returns the rows it wrote, so the import can take them back.
+   */
+  async bringOverPartner(
+    trx: DatabaseClient,
+    input: { kind: 'supplier' | 'customer'; partnerId: number; owed: number; startDay: string; from: string; actorId: number | null },
+  ): Promise<Array<{ table: 'supplier_bills' | 'tab_entries' | 'opening_lines'; id: number }>> {
+    const owed = roundMoney(input.owed);
+    if (owed === 0) return [];
+    const written: Array<{ table: 'supplier_bills' | 'tab_entries' | 'opening_lines'; id: number }> = [];
+    const lastEvening = new Date(startOfDay(input.startDay, this.timeZone).getTime() - 60_000);
+    const dayBefore = new Date(Date.parse(`${input.startDay}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+    const partner = input.kind === 'supplier' ? { supplier_id: input.partnerId } : { customer_id: input.partnerId };
+    if (owed > 0) {
+      if (input.kind === 'supplier') {
+        const bill = await trx
+          .insertInto('supplier_bills')
+          .values({ supplier_id: input.partnerId, number: null, issued_on: dayBefore, amount: owed, note: `Brought over from ${input.from}: owed on the day 4VD took over.`, brought_over: true, created_by: input.actorId })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        written.push({ table: 'supplier_bills', id: bill.id });
+      } else {
+        const charge = await trx
+          .insertInto('tab_entries')
+          .values({ customer_id: input.partnerId, kind: 'charge', amount: owed, note: `Brought over from ${input.from}: owed on the day 4VD took over.`, occurred_at: lastEvening, created_by: input.actorId, brought_over: true })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        written.push({ table: 'tab_entries', id: charge.id });
+      }
+      const line = await trx.insertInto('opening_lines').values({ kind: input.kind, ...partner, updated_by: input.actorId }).returning('id').executeTakeFirstOrThrow();
+      written.push({ table: 'opening_lines', id: line.id });
+    } else {
+      // Debits minus credits: a supplier paid ahead is a debit, a customer who paid ahead a credit.
+      const amount = input.kind === 'supplier' ? -owed : owed;
+      const note = input.kind === 'supplier' ? `${input.from} shows you paid them more than their bills.` : `${input.from} shows they paid more than they owed.`;
+      const line = await trx.insertInto('opening_lines').values({ kind: input.kind, ...partner, amount, note, updated_by: input.actorId }).returning('id').executeTakeFirstOrThrow();
+      written.push({ table: 'opening_lines', id: line.id });
+    }
+    return written;
+  }
+
   /** The figures worked out from the rest of 4VD: stock at cost (without VAT), and each partner's brought-over bills and charges. */
   private async workedOut(db: DatabaseClient) {
     const stock = await sql<{ value: string; products: string; no_cost: string }>`

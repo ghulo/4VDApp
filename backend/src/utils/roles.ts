@@ -21,7 +21,7 @@ import type { StoredRole, UserRole } from '../database/types.js';
  *   reports, customers and suppliers), files and reopens VAT months and asks
  *   questions on documents; never sells or changes stock, prices or people.
  */
-export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing', 'reopen', 'entries', 'customers', 'documents', 'payroll'] as const;
+export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing', 'reopen', 'entries', 'customers', 'documents', 'payroll', 'import'] as const;
 export type Power = (typeof POWERS)[number];
 export type Grants = Record<Power, UserRole[]>;
 
@@ -59,6 +59,8 @@ export const DEFAULT_GRANTS: Grants = {
   /** Open and print an invoice: the counter (its own, checked in the service) and the accountant. */
   documents: [...SELLERS, 'accountant'],
   payroll: ['developer', 'main_admin', 'owner', 'accountant'],
+  /** Bring products, suppliers and customers in from another program, and undo an import (Settings → Import). */
+  import: ['developer', 'main_admin'],
 };
 
 /**

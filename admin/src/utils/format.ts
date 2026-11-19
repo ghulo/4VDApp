@@ -149,6 +149,10 @@ export function formatQuantity(quantity: number, unit: ProductUnit = 'piece'): s
   return `${kilos}${String.fromCharCode(160)}${unitSymbol(unit)}`;
 }
 
+/** A whole count with thousands marks: "2,272" in English, "2 272" in Albanian (from five digits). */
+export const formatCount = (count: number) =>
+  current === 'sq' ? albanianNumber(Math.round(count), 0) : cached('count', () => new Intl.NumberFormat('en-IE', { maximumFractionDigits: 0 })).format(count);
+
 /** True when a quantity is kept to the gram (at most 3 decimals), as kilo products are. */
 export function inGrams(quantity: number): boolean {
   return Number.isFinite(quantity) && Math.abs(quantity * 1000 - Math.round(quantity * 1000)) < 1e-6;

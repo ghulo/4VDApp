@@ -925,6 +925,10 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   - Selection glides: the chosen segment of every segmented track and the
     current sidebar item (with its orange tick) are one highlight that slides
     to the next choice (`selectionPills.ts`, no per-screen code).
+  - A flow of steps on one card (Settings → Import: drop, found, check,
+    bring in) slides the next step in from the right on the spring, and Back
+    brings the earlier one in from the left; it answers a key press, so it is
+    not a page entrance.
   - Panels leave the way they came: the form card grows out of the key that
     opened it (from the middle when opened by a link) and folds back into it,
     its words a beat behind the paper, form still on it; on a phone it rises

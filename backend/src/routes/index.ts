@@ -12,6 +12,7 @@ import { createLocationRoutes, createStockMoveRoutes } from './stockMoveRoutes.j
 import { createProjectRoutes } from './projectRoutes.js';
 import { createMakeRoutes } from './makeRoutes.js';
 import { createSerialRoutes } from './serialRoutes.js';
+import { createImportRoutes } from './importRoutes.js';
 import { createAssetRoutes } from './assetRoutes.js';
 import { createPayrollRoutes } from './payrollRoutes.js';
 import { createCustomerRoutes } from './customerRoutes.js';
@@ -90,6 +91,7 @@ export function createApiRoutes(container: Container): Router {
   router.use('/projects', createProjectRoutes(container));
   router.use('/makes', createMakeRoutes(container));
   router.use('/serials', createSerialRoutes(container));
+  router.use('/imports', createImportRoutes(container));
   router.use('/assets', createAssetRoutes(container));
   router.use('/payroll', createPayrollRoutes(container));
   router.use('/day', createDayRoutes(container));

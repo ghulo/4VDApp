@@ -1866,6 +1866,9 @@ export interface Database {
   bank_statements: BankStatementsTable;
   bank_lines: BankLinesTable;
   opening_lines: OpeningLinesTable;
+  import_batches: ImportBatchesTable;
+  import_batch_rows: ImportBatchRowsTable;
+  import_layouts: ImportLayoutsTable;
   trefin_months: TrefinMonthsTable;
   book_years: BookYearsTable;
   tax_instalments: TaxInstalmentsTable;
@@ -2198,4 +2201,53 @@ export interface StoredBrandTheme {
   accent: string | null;
   gradient: boolean;
   greys: 'plain' | 'tinted' | null;
+}
+
+export type ImportStatus = 'reading' | 'ready' | 'running' | 'done' | 'failed' | 'undone' | 'partly_undone' | 'discarded';
+
+/** One import from Settings → Import (migration 091). */
+export interface ImportBatchesTable {
+  business_id: Generated<number>;
+  id: Generated<number>;
+  status: Generated<ImportStatus>;
+  /** The profile that read the files ('trefin'), or 'sheet' for any Excel or CSV. */
+  source: Generated<string>;
+  file_names: Generated<string[]>;
+  /** What was read from the files; kept until it is undone or discarded. */
+  draft: ColumnType<unknown | null, string | null | undefined, string | null>;
+  choices: ColumnType<Record<string, unknown>, string | undefined, string>;
+  summary: ColumnType<unknown | null, string | null | undefined, string | null>;
+  error: string | null;
+  created_by: number | null;
+  created_at: CreatedAt;
+  started_at: Date | null;
+  finished_at: Date | null;
+  undone_at: Date | null;
+  undone_by: number | null;
+}
+
+/** A row an import created or changed, for undo. */
+export interface ImportBatchRowsTable {
+  business_id: Generated<number>;
+  id: Generated<string>;
+  batch_id: number;
+  kind: string;
+  table_name: string;
+  row_id: number;
+  action: 'created' | 'updated';
+  before: ColumnType<Record<string, unknown> | null, string | null | undefined, string | null>;
+  after: ColumnType<Record<string, unknown> | null, string | null | undefined, string | null>;
+  undone_at: Date | null;
+}
+
+/** Which column holds what in a file 4VD didn't know, by the file's headings. */
+export interface ImportLayoutsTable {
+  business_id: Generated<number>;
+  id: Generated<number>;
+  signature: string;
+  kind: string;
+  header_row: number;
+  mapping: ColumnType<Record<string, number>, string, string>;
+  updated_by: number | null;
+  updated_at: Generated<Date>;
 }

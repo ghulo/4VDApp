@@ -1,5 +1,7 @@
-import { Books, CashRegister, EnvelopeSimple, Desktop, Drop, Hammer, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
+import { Books, CashRegister, DownloadSimple, EnvelopeSimple, Desktop, Drop, Hammer, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
 import { BinPanel } from '../components/BinPanel';
+import { ImportPanel } from '../components/ImportPanel';
+import { hasPower } from '../auth/permissions';
 import { SupportVisitsPanel } from '../components/SupportVisitsPanel';
 import { isTopRole } from '../auth/roles';
 import { BillEmailPanel } from '../components/BillEmailParts';
@@ -150,6 +152,8 @@ export function SettingsPage() {
               </ManagersOnly>
             ),
           },
+          // Bringing data in from another program: for whoever holds the import power.
+          ...(hasPower(role, 'import') ? [{ id: 'import', label: t.imports.title, icon: DownloadSimple, content: <ImportPanel /> }] : []),
           // Only inside the Windows app: what this computer opens, and starting with Windows.
           ...(desktopBridge()
             ? [{ id: 'this-computer', label: t.desktop.thisComputer.title, icon: Desktop, content: <ThisComputerPanel /> }]

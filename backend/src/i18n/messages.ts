@@ -43,6 +43,8 @@ export interface ServerMessages {
   billEmailTitle: string;
   portalOrderTitle: string;
   portalOrderMessage: (p: { name: string; total: number; lines: number }) => string;
+  importDoneTitle: string;
+  importDoneMessage: (p: { products: number; changed: number; suppliers: number; customers: number }) => string;
   portalChangeAgreedTitle: string;
   portalChangeAgreedMessage: (p: { name: string; id: number }) => string;
   portalChangeCancelledTitle: string;
@@ -96,6 +98,8 @@ export interface ServerMessages {
     billEmailWaitingTitle: (sender: string) => string;
     portalOrderTitle: (p: { name: string; total: number }) => string;
     portalOrderDetail: (p: { lines: number; day: string }) => string;
+    importCheckTitle: (products: number) => string;
+    importCheckDetail: string;
     billEmailWaitingDetail: (limit: number) => string;
     billEmailFailedTitle: (sender: string) => string;
     billEmailFailedDetail: string;
@@ -349,6 +353,8 @@ export const en: ServerMessages = {
   billEmailTitle: 'Bill by email',
   portalOrderTitle: 'Order from the portal',
   portalOrderMessage: (p) => `${p.name} sent an order of ${money(p.total, 'en')} (${p.lines} ${p.lines === 1 ? 'line' : 'lines'})`,
+  importDoneTitle: 'Your import is done',
+  importDoneMessage: (p) => `${p.products} new products, ${p.changed} changed, ${p.suppliers} suppliers, ${p.customers} customers. Check a few of them by eye.`,
   portalChangeAgreedTitle: 'Change agreed',
   portalChangeAgreedMessage: (p) => `${p.name} agreed to your change of order #${p.id}. You can accept it now.`,
   portalChangeCancelledTitle: 'Changed order cancelled',
@@ -414,6 +420,8 @@ export const en: ServerMessages = {
     billEmailWaitingTitle: (sender) => `Read the emailed bill from ${sender}`,
     portalOrderTitle: (p) => `${p.name} sent an order of ${money(p.total, 'en')}`,
     portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'product' : 'products'}, sent ${p.day}. Accept it as an offer or decline it.`,
+    importCheckTitle: (products) => `Check the ${products} imported products`,
+    importCheckDetail: 'Look at a few side by side with your file, then mark the import checked.',
     billEmailWaitingDetail: (limit) => `Today's ${limit} bill reads by email are used up. Read it now, or it waits for tomorrow.`,
     billEmailFailedTitle: (sender) => `The emailed bill from ${sender} couldn't be read`,
     billEmailFailedDetail: 'Open the file and try again, or add the bill by hand.',
@@ -685,6 +693,8 @@ export const sq: ServerMessages = {
   billEmailTitle: 'Faturë me email',
   portalOrderTitle: 'Porosi nga portali',
   portalOrderMessage: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')} (${p.lines} ${p.lines === 1 ? 'rresht' : 'rreshta'})`,
+  importDoneTitle: 'Importi përfundoi',
+  importDoneMessage: (p) => `${p.products} produkte të reja, ${p.changed} të ndryshuara, ${p.suppliers} furnitorë, ${p.customers} klientë. Kontrollo disa me sy.`,
   portalChangeAgreedTitle: 'Ndryshimi u pranua',
   portalChangeAgreedMessage: (p) => `${p.name} pranoi ndryshimin tuaj të porosisë #${p.id}. Tani mund ta pranoni.`,
   portalChangeCancelledTitle: 'Porosia e ndryshuar u anulua',
@@ -750,6 +760,8 @@ export const sq: ServerMessages = {
     billEmailWaitingTitle: (sender) => `Lexo faturën me email nga ${sender}`,
     portalOrderTitle: (p) => `${p.name} dërgoi një porosi prej ${money(p.total, 'sq')}`,
     portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'produkt' : 'produkte'}, dërguar ${p.day}. Pranoje si ofertë ose refuzoje.`,
+    importCheckTitle: (products) => `Kontrollo ${products} produktet e importuara`,
+    importCheckDetail: 'Shiko disa krahas skedarit tënd, pastaj shëno importin si të kontrolluar.',
     billEmailWaitingDetail: (limit) => `Leximet e sotme me email (${limit}) u mbaruan. Lexoje tani, ose pret deri nesër.`,
     billEmailFailedTitle: (sender) => `Fatura me email nga ${sender} nuk u lexua`,
     billEmailFailedDetail: 'Hape skedarin dhe provo sërish, ose shtoje faturën me dorë.',

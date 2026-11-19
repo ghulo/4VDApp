@@ -48,6 +48,7 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
   app.use('/api/money/places', express.json({ limit: '15mb' }));
   app.use('/api/products/prices', express.json({ limit: '15mb' }));
   app.use('/api/partners/read', express.json({ limit: '25mb' }));
+  app.use('/api/imports', express.json({ limit: '42mb' }));
   app.use(express.json({ limit: '1mb' }));
   // Each request gets its own business context, after the body is read (stream callbacks would lose it).
   app.use(requestContext);

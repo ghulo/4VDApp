@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '../components/ui';
 import { setupSteps } from './steps';
 import { useCurrentUser } from '../auth/useAuth';
 import { canManage } from '../auth/roles';
+import { hasPower } from '../auth/permissions';
 import { useT } from '../i18n/useT';
 
 const HIDDEN_KEY = '4vd.setupGuide.hidden';
@@ -47,6 +48,7 @@ export function SetupGuide() {
     peopleCount: people.data.meta.total,
     openInvites: invites.data.length,
     alertDevices: alerts.data.deviceCount,
+    canImport: hasPower(role, 'import'),
   }, t);
   const done = steps.filter((step) => step.done).length;
   if (done === steps.length) return null;

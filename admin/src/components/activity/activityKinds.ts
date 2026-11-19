@@ -1,4 +1,4 @@
-import { AddressBook, ArrowCounterClockwise, ArrowUUpLeft, Drop, FileText, Gear, type Icon, Money, Package, Percent, Receipt, SignIn, Tag, Truck, User, Wallet } from '@phosphor-icons/react';
+import { AddressBook, ArrowCounterClockwise, ArrowUUpLeft, DownloadSimple, Drop, FileText, Gear, type Icon, Money, Package, Percent, Receipt, SignIn, Tag, Truck, User, Wallet } from '@phosphor-icons/react';
 import type { Catalogue } from '../../i18n/en';
 
 /** What a change was about, by the first word of its action ("sale.recorded" → sale). */
@@ -27,6 +27,7 @@ export const ACTIVITY_ICONS: Record<string, Icon> = {
   settings: Gear,
   business: Gear,
   undo: ArrowCounterClockwise,
+  import: DownloadSimple,
 };
 
 /**
@@ -36,7 +37,7 @@ export const ACTIVITY_ICONS: Record<string, Icon> = {
 export const ACTIVITY_KINDS: Array<{ value: string; key: keyof Catalogue['activity']['kinds'] }> = [
   { value: '', key: 'all' },
   { value: 'sale,return,promotion,document', key: 'sales' },
-  { value: 'product,pricing,category,stock,count,expiry,write_off', key: 'stock' },
+  { value: 'product,pricing,category,stock,count,expiry,write_off,import', key: 'stock' },
   { value: 'order,bill,supplier', key: 'buying' },
   { value: 'cash,expense,carwash,customer,tab', key: 'money' },
   { value: 'user,settings,business', key: 'people' },

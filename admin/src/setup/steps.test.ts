@@ -34,4 +34,12 @@ describe('setupSteps', () => {
 
     expect(invite?.done).toBe(true);
   });
+
+  it('should send people who may import to Settings → Import, and others to a new product', () => {
+    const importer = setupSteps({ ...empty, canImport: true }).find((step) => step.id === 'product');
+    const other = setupSteps(empty).find((step) => step.id === 'product');
+
+    expect(importer?.to).toBe('/settings/import');
+    expect(other?.to).toBe('/products/new');
+  });
 });

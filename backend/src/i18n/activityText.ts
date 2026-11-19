@@ -16,7 +16,7 @@ interface Words {
 }
 
 type Role = 'developer' | 'main_admin' | 'admin' | 'owner' | 'employee' | 'family' | 'accountant';
-type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents' | 'payroll';
+type RolePower = 'sell' | 'oversee' | 'products' | 'manage' | 'books' | 'filing' | 'reopen' | 'entries' | 'customers' | 'documents' | 'payroll' | 'import';
 type RoleChange = { role: Role; power: RolePower; on: boolean };
 type LoginHow = 'password' | 'google' | 'googleFirst' | 'invite' | 'pin' | 'passkey';
 export type ProductField =
@@ -174,6 +174,10 @@ const en = {
   openingTakenBack: (p: { id: number; reason: string }) => `Took back the opening balances (entry #${p.id}): ${p.reason}`,
   openingTrefinLoaded: (p: { bills: number; charges: number; lines: number }) =>
     `Brought the opening balances over from TREFIN: ${p.lines} lines, ${p.bills} open supplier bills, ${p.charges} customer balances`,
+  importDone: (p: { from: string | null; products: number; changed: number; suppliers: number; customers: number }) =>
+    `Imported ${p.from ? `from ${p.from}` : 'a file'}: ${p.products} new products, ${p.changed} changed, ${p.suppliers} suppliers, ${p.customers} customers`,
+  importUndone: (p: { from: string | null; removed: number; restored: number; kept: number }) =>
+    `Undid the import ${p.from ? `from ${p.from}` : 'of a file'}: ${p.removed} removed, ${p.restored} put back as they were${p.kept ? `, ${p.kept} kept (used or changed since)` : ''}`,
 
   vatFiled: (p: { month: string; outcome: 'pay' | 'carry' | 'nothing'; amount: number }, w: Words) =>
     `Filed the VAT return for ${EN_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${
@@ -403,6 +407,7 @@ const EN_POWER: Record<RolePower, string> = {
   entries: 'write entries in the books',
   customers: 'see customers',
   documents: 'open invoices',
+  import: 'import data from another program',
 };
 const EN_REASON: Record<string, string> = { damaged: 'damaged', lost: 'lost', expired: 'expired', theft: 'stolen', other: 'other' };
 const EN_EXPENSE: Record<string, string> = {
@@ -514,6 +519,7 @@ const SQ_POWER: Record<RolePower, string> = {
   entries: 'shkruajë regjistrime në libra',
   customers: 'shohë klientët',
   documents: 'hapë faturat',
+  import: 'importojë të dhëna nga një program tjetër',
 };
 const SQ_REASON: Record<string, string> = { damaged: 'i dëmtuar', lost: 'i humbur', expired: 'i skaduar', theft: 'i vjedhur', other: 'tjetër' };
 const SQ_EXPENSE: Record<string, string> = {
@@ -738,6 +744,10 @@ const sq: Templates = {
   openingPosted: (p, w) => `Regjistroi gjendjet fillestare më ${w.day(p.day)} (regjistrimi #${p.id}, ${w.money(p.amount)})`,
   openingTakenBack: (p) => `Anuloi gjendjet fillestare (regjistrimi #${p.id}): ${p.reason}`,
   openingTrefinLoaded: (p) => `Solli gjendjet fillestare nga TREFIN: ${p.lines} rreshta, ${p.bills} fatura të hapura të furnitorëve, ${p.charges} borxhe të klientëve`,
+  importDone: (p) =>
+    `Importoi ${p.from ? `nga ${p.from}` : 'një skedar'}: ${p.products} produkte të reja, ${p.changed} të ndryshuara, ${p.suppliers} furnitorë, ${p.customers} klientë`,
+  importUndone: (p) =>
+    `Zhbëri importin ${p.from ? `nga ${p.from}` : 'e një skedari'}: ${p.removed} të hequra, ${p.restored} të kthyera si ishin${p.kept ? `, ${p.kept} të mbajtura (të përdorura ose të ndryshuara që atëherë)` : ''}`,
 
   vatFiled: (p, w) =>
     `Dorëzoi deklaratën e TVSH-së për ${SQ_MONTHS[Number(p.month.slice(5, 7)) - 1]} ${p.month.slice(0, 4)}: ${

@@ -47,6 +47,8 @@ export const ACTIVITY_ACTIONS = [
   'books.opening_posted',
   'books.opening_taken_back',
   'books.opening_trefin_loaded',
+  'import.done',
+  'import.undone',
   'vat.filed',
   'vat.reopened',
   'question.asked',
@@ -191,5 +193,5 @@ export const ACTIVITY_ACTIONS = [
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move', 'portal_order', 'project', 'make', 'serial'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['product', 'category', 'user', 'sale', 'return', 'write_off', 'stock_count', 'settings', 'promotion', 'carwash', 'cash_count', 'expense', 'customer', 'supplier', 'order', 'document', 'bill', 'bill_scan', 'business', 'product_request', 'activity', 'ledger_account', 'ledger_entry', 'vat_month', 'money_place', 'money_move', 'bank_statement', 'bank_rule', 'counter', 'offer', 'stock_document', 'asset', 'employee', 'payroll_month', 'stock_location', 'stock_move', 'portal_order', 'project', 'make', 'serial', 'import'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];

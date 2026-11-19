@@ -28,7 +28,7 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'fileDeclaration' | 'answer' | 'runPayroll' | 'payAtk';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order' | 'import_done';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -113,6 +113,7 @@ export class AttentionService {
     private readonly payroll: PayrollService | null = null,
     private readonly portalOrders: Pick<PortalRepository, 'openOrders'> | null = null,
     private readonly declarations: Pick<DeclarationService, 'due'> | null = null,
+    private readonly imports: { toCheck(): Promise<Array<{ id: number; products: number; day: Date }>> } | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -162,6 +163,18 @@ export class AttentionService {
         detail: t.todo.billScanDetail({ name: scan.scanned_by_name, number: reading.number ?? null, emailFrom: scan.email_from }),
         verb: 'checkBill',
         to: `/bills/scans/${scan.id}`,
+      });
+    }
+    // A finished import, until someone has looked at a few of its products (Settings → Import).
+    for (const done of hasPower(role, 'import') && this.imports ? await this.imports.toCheck() : []) {
+      items.push({
+        key: `import_done:${done.id}`,
+        kind: 'import_done',
+        severity: 'check',
+        title: t.todo.importCheckTitle(done.products),
+        detail: t.todo.importCheckDetail,
+        verb: 'look',
+        to: `/settings/import?batch=${done.id}`,
       });
     }
     // Orders business customers sent from the portal, until someone accepts or declines them.

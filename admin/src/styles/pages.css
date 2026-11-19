@@ -7199,3 +7199,642 @@ fieldset.payroll-pick {
     transition: none;
   }
 }
+
+/* ───────────── Settings → Import ─────────────
+   One card per step: what 4VD found in serif, the figures, then the few
+   choices. The drop zone is a sunk tray you drop paper into; the progress
+   meter an inset groove that fills with an amber key. */
+.import {
+  display: grid;
+  gap: var(--gap-block);
+}
+
+.import .steps {
+  margin-bottom: var(--space-5);
+}
+
+.import__intro {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 62ch;
+  margin-bottom: var(--space-5);
+}
+
+.import__title {
+  font-family: var(--font-display);
+  font-size: var(--text-figure);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.import__lead {
+  color: var(--ink-muted);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.import__subtitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.import__quiet {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.import__figure {
+  font-variant-numeric: tabular-nums;
+}
+
+.import__was {
+  color: var(--ink-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+}
+
+.import__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.import__foot .text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.import__keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* The way on: back on the left, what it costs in the middle, the main key on the right. */
+.import__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.import__actions .import__quiet {
+  flex: 1;
+  text-align: center;
+}
+
+.import__actions > :last-child {
+  margin-inline-start: auto;
+}
+
+/* The drop tray */
+.import-drop {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-5);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+  text-align: center;
+  transition:
+    border-color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.import-drop--over {
+  border-color: var(--amber-rim);
+  background: var(--amber-wash);
+}
+
+.import-drop--busy {
+  border-style: solid;
+}
+
+.import-drop__mark,
+.import-locked__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 56px;
+  block-size: 56px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+  color: var(--ink);
+  transition: transform var(--spring-time) var(--spring);
+}
+
+.import-drop--over .import-drop__mark {
+  transform: translateY(-4px) scale(1.06);
+}
+
+.import-drop__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.import-drop__kinds {
+  max-width: 46ch;
+  color: var(--ink-muted);
+}
+
+.import-drop__keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* Waiting: reading, then bringing in */
+.import-wait,
+.import-locked,
+.import-done {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 60ch;
+  margin-inline: auto;
+  padding-block: var(--space-5);
+  text-align: center;
+}
+
+.import-meter {
+  inline-size: 100%;
+  block-size: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunk);
+  box-shadow: var(--shadow-inset);
+}
+
+.import-meter__fill {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--amber-key);
+  box-shadow: var(--bar-depth);
+  transform-origin: left center;
+  transition: transform var(--spring-time) var(--spring);
+}
+
+.import-run__figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: 100%;
+}
+
+.import-locked__steps {
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-5);
+  text-align: start;
+}
+
+/* What 4VD noticed about each file */
+.import-health {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+  text-align: start;
+  list-style: none;
+}
+
+.import-health__row {
+  --tone: var(--ok);
+  --tone-soft: var(--ok-soft);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 16rem);
+  align-items: start;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+}
+
+.import-health__row + .import-health__row {
+  border-top: 1px solid var(--line);
+}
+
+.import-health__row--info {
+  --tone: var(--info);
+  --tone-soft: var(--info-soft);
+}
+
+.import-health__row--warn {
+  --tone: var(--warn);
+  --tone-soft: var(--warn-soft);
+}
+
+.import-health__row--danger {
+  --tone: var(--danger);
+  --tone-soft: var(--danger-soft);
+}
+
+/* A small round mark in the tone, like the badges' marks. */
+.import-health__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 20px;
+  block-size: 20px;
+  margin-top: 1px;
+  border-radius: var(--radius-pill);
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.import-health__what {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.import-health__hint {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.import-health__file {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  text-align: end;
+}
+
+.import-nothing {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.import-say {
+  max-width: 62ch;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+.import-warning {
+  justify-content: flex-start;
+}
+
+.import-warning p {
+  margin-top: var(--space-1);
+}
+
+.import-warning__body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.import-warning__top summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.import-warning__top ul {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  list-style: none;
+}
+
+.import-warning__top li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.import-part {
+  display: grid;
+  gap: var(--space-3);
+  margin-block: var(--space-5);
+}
+
+/* A sheet to confirm, and its columns */
+.import-sheet {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.import-sheet__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.import-sheet__name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.import-sheet__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+}
+
+.import-columns {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.import-columns__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 16rem);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+}
+
+.import-columns__row--unsure {
+  background: var(--warn-soft);
+}
+
+.import-columns__header {
+  display: grid;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.import-columns__example {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Things to look at: one fold each */
+.import-problems {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.import-problem + .import-problem {
+  border-top: 1px solid var(--line);
+}
+
+.import-problem__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-h);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  list-style: none;
+  transition: background-color var(--fast) var(--ease);
+}
+
+.import-problem__head::-webkit-details-marker {
+  display: none;
+}
+
+.import-problem__head:hover {
+  background: var(--tint);
+}
+
+.import-problem__head:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.import-problem__title {
+  flex: 1;
+  min-width: 12rem;
+  font-weight: 500;
+}
+
+.import-problem__chosen {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.import-problem__caret {
+  color: var(--ink-muted);
+  transition: transform var(--spring-time) var(--spring);
+}
+
+.import-problem[open] .import-problem__caret {
+  transform: rotate(90deg);
+}
+
+.import-problem__frame {
+  overflow-x: auto;
+}
+
+.import-fix {
+  inline-size: 7rem;
+  min-height: var(--control-h-sm);
+  text-align: end;
+}
+
+.import-problem__body {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.import-problem__rows {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.import-problem__rows th,
+.import-problem__rows td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.import-problem__rows th {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.import-problem__rows .import-problem__num {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.import-excel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-small);
+  background: var(--surface-sunk);
+}
+
+.import-excel p {
+  max-width: 56ch;
+  color: var(--ink-muted);
+}
+
+.import-spot--differs {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.import-done {
+  margin-bottom: var(--space-4);
+}
+
+.import-done__check {
+  margin-bottom: var(--space-2);
+}
+
+/* Undo: one line per kind, then what stays */
+.import-undo {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+  padding: 0;
+  border: 0;
+}
+
+.import-undo__kind {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  cursor: pointer;
+}
+
+.import-undo__kind input {
+  margin-top: var(--space-1);
+}
+
+.import-undo__words {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.import-used {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.import-used ul {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.import-used li {
+  display: grid;
+}
+
+.import-past__keys {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* A new step slides in from the side the flow is going; Back comes from the left. */
+@media (prefers-reduced-motion: no-preference) {
+  .import-step {
+    animation: import-step-in var(--spring-time) var(--spring) both;
+  }
+
+  .import-step--back {
+    animation-name: import-step-back;
+  }
+}
+
+@keyframes import-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes import-step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@media (max-width: 640px) {
+  .import-health__row {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+
+  .import-health__file {
+    grid-column: 2;
+    text-align: start;
+  }
+
+  .import-columns__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .import-drop {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .import__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .import__actions > :last-child {
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .import-drop__mark,
+  .import-problem__caret,
+  .import-meter__fill {
+    transition: none;
+  }
+
+  .import-drop--over .import-drop__mark {
+    transform: none;
+  }
+}

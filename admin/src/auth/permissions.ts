@@ -1,7 +1,7 @@
 import type { UserRole } from '../services/types';
 
 /** What each role may do; the API's list (backend/src/utils/roles.ts), changed by a main admin in Settings → Roles. */
-export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing', 'reopen', 'entries', 'customers', 'documents', 'payroll'] as const;
+export const POWERS = ['sell', 'oversee', 'products', 'manage', 'books', 'filing', 'reopen', 'entries', 'customers', 'documents', 'payroll', 'import'] as const;
 export type Power = (typeof POWERS)[number];
 export type Grants = Record<Power, UserRole[]>;
 
@@ -29,6 +29,7 @@ const DEFAULT_GRANTS: Grants = {
   customers: [...SELLERS, 'accountant'],
   documents: [...SELLERS, 'accountant'],
   payroll: ['developer', 'main_admin', 'owner', 'accountant'],
+  import: ['developer', 'main_admin'],
 };
 
 export const DEFAULT_PERMISSIONS: Permissions = {
@@ -46,7 +47,8 @@ export function setPermissions(permissions: Permissions): void {
   current = permissions;
 }
 
-export const hasPower = (role: UserRole, power: Power): boolean => current.powers[power].includes(role);
+/** A power the server doesn't list yet (an older API during a deploy) follows its default. */
+export const hasPower = (role: UserRole, power: Power): boolean => (current.powers[power] ?? DEFAULT_GRANTS[power]).includes(role);
 
 /** The roles chosen for a menu page, or undefined when it follows the usual rules. */
 export const pageRoles = (path: string): UserRole[] | undefined => current.pages[path];

@@ -13,6 +13,15 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Settings → Import** (on 4vd.app, after the deploy; a main admin or the developer)
+- [ ] The look by eye: drop tray, Found, Check, the bar while it brings things in, Done; light and dark, phone and PC; Albanian reads naturally
+- [ ] Drag a real Excel from another program (not TREFIN) onto the tray: it guesses what each column is; pointing a column at something else changes the counts
+- [ ] Drop the whole TREFIN export folder before launch day on a test business: it sends only products, suppliers and customers, says what it left out, and the totals match TREFIN (local test on the demo database: 4,248 products, 121 suppliers, 13 customers, then Undo took all of it back)
+- [ ] Change a few prices in Excel and drop it again: only those prices change (update by barcode); Undo puts the old prices back (local test: worked on demo)
+- [ ] "Download problem rows": fix them in Excel and drop the file back in
+- [ ] The To do notice when an import finishes, and the import line in History and All logs
+- [ ] A file with a password: it says so plainly
+
 **Each business in its own look** (on 4vd.app, after the deploy; 4VD's own business must look exactly as before)
 - [ ] A customer business (not 4VD): Settings → Business → "How your business looks": pick a preset and type any colour code; only your own screen turns that colour as you pick; Cancel puts it back; "Save for everyone" keeps it after a reload and on another device
 - [ ] A very dark and a very pale colour: the card says words and outlines use a readable shade; the main key keeps the exact colour and its text stays readable, light and dark

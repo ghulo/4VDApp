@@ -8,6 +8,8 @@ export interface SetupData {
   openInvites: number;
   /** Phones and computers getting this person's alerts. */
   alertDevices: number;
+  /** May bring data in from another program (the import power): the product step then opens Settings → Import. */
+  canImport?: boolean;
 }
 
 export interface SetupStep {
@@ -36,8 +38,8 @@ export function setupSteps(data: SetupData, t: Catalogue = en): SetupStep[] {
     },
     {
       id: 'product',
-      ...t.setup.steps.product,
-      to: '/products/new',
+      ...(data.canImport ? { title: t.imports.bringYourData, why: t.imports.bringYourDataHint, action: t.imports.title } : t.setup.steps.product),
+      to: data.canImport ? '/settings/import' : '/products/new',
       done: data.productCount > 0,
     },
     {

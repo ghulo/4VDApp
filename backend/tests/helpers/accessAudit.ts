@@ -58,6 +58,8 @@ const WHO = {
   leaders: ['admin', 'developer'],
   /** Roles, wiping data, restore points. */
   developer: ['developer'],
+  /** Settings → Import: the main admin (not a caller here) and the developer. */
+  importers: ['developer'],
 } satisfies Record<string, readonly Caller[]>;
 
 const ACCESS: Record<keyof typeof WHO, string[]> = {
@@ -574,6 +576,21 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'POST /api/books/opening/take-back',
   ],
   leaders: ['GET /api/support-visits/'],
+  importers: [
+    'GET /api/imports/template',
+    'POST /api/imports/wanted',
+    'GET /api/imports/',
+    'POST /api/imports/',
+    'GET /api/imports/:id',
+    'PUT /api/imports/:id/choices',
+    'POST /api/imports/:id/run',
+    'DELETE /api/imports/:id',
+    'GET /api/imports/:id/undo',
+    'POST /api/imports/:id/undo',
+    'GET /api/imports/:id/spot-check',
+    'POST /api/imports/:id/checked',
+    'GET /api/imports/:id/problems.xlsx',
+  ],
   developer: [
     'GET /api/activity/:id/restore-point',
     'POST /api/activity/:id/restore-point',

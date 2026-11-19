@@ -17,6 +17,9 @@ recordMountPaths();
 const { createTestUser, loginAs, resetData, setupTestApp } = await import('./helpers/testApp.js');
 const { createApp } = await import('../src/app.js');
 const { signAccessToken } = await import('../src/utils/tokens.js');
+const { RATE_LIMITS } = await import('../src/constants/rateLimits.js');
+/** Calls one app may take before a new one: below every rate limit, so a limit can never decide the answer. */
+const CALLS_PER_APP = Math.min(...Object.values(RATE_LIMITS));
 type TestContext = Awaited<ReturnType<typeof setupTestApp>>;
 
 const CALLERS = ['signedOut', 'portalCustomer', 'family', 'employee', 'accountant', 'owner', 'admin', 'developer'] as const;
@@ -646,12 +649,19 @@ describe('access audit: every route × every caller', () => {
     const routes = listRoutes(context.app).sort((a, b) => Number(SIGNS_OUT.test(a.path)) - Number(SIGNS_OUT.test(b.path)));
     const headers = await headersFor(caller);
     const wrong: string[] = [];
+    let app = createApp(context.config, context.db, { container: context.container });
+    let calls = 0;
     for (const route of routes) {
       const key = `${route.method} ${route.path}`;
       const tier = tierOf.get(key);
       if (!tier) continue;
-      // A fresh app each time, so the rate limits (kept per app) never decide the answer.
-      const app = createApp(context.config, context.db, { container: context.container });
+      // Rate limits are counted per app: a fresh one before any limit could be reached, so they never decide the answer.
+      // (Building one takes about 18ms; one per call was half this file's time.)
+      if (calls === CALLS_PER_APP) {
+        app = createApp(context.config, context.db, { container: context.container });
+        calls = 0;
+      }
+      calls += 1;
       const call = request(app)[route.method.toLowerCase() as 'get'](fillPath(route.path)).set(headers);
       if (route.method !== 'GET') call.set('Origin', ORIGIN);
       const response = route.method === 'GET' ? await call : await call.send({});

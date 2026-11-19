@@ -1,8 +1,10 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedBooks } from '../src/database/books.js';
+import { BooksPoster } from '../src/services/books/BooksPoster.js';
 import type { PartnerReader, PartnerReading, PartnerSource } from '../src/services/ai/partnerReader.js';
 import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
+import { shopTimeZone } from '../src/validators/operationsValidators.js';
 
 let context: TestContext;
 let adminToken: string;
@@ -150,6 +152,9 @@ describe('a firm on both lists', () => {
     const entries = (await api().get(`/api/books/entries?source=offset&id=${done.body.data.offsets[0].id}`).set(auth())).body.data;
     const lines = entries[0].lines.map((line: { accountNumber: string; debit: number; credit: number }) => `${line.accountNumber} ${line.debit || -line.credit}`).sort();
     expect(lines).toEqual(['1230 -150', '2000 150']);
+    // A rebuild of the books posts it again.
+    await new BooksPoster(context.db, shopTimeZone()).rebuild();
+    expect((await api().get(`/api/books/entries?source=offset&id=${done.body.data.offsets[0].id}`).set(auth())).body.data).toHaveLength(1);
     // The bill payments the offset made post nothing of their own.
     const payment = await context.db.selectFrom('supplier_payments').select('id').where('bill_id', '=', first).executeTakeFirstOrThrow();
     expect((await api().get(`/api/books/entries?source=payment&id=${payment.id}`).set(auth())).body.data).toEqual([]);
@@ -186,6 +191,9 @@ describe('customer bonus', () => {
     const entries = (await api().get(`/api/books/entries?source=bonus&id=${payout.id}`).set(auth())).body.data;
     const lines = entries[0].lines.map((line: { accountNumber: string; debit: number; credit: number }) => `${line.accountNumber} ${line.debit || -line.credit}`).sort();
     expect(lines).toEqual(['1230 -10', '4200 10']);
+    // A rebuild of the books posts it again.
+    await new BooksPoster(context.db, shopTimeZone()).rebuild();
+    expect((await api().get(`/api/books/entries?source=bonus&id=${payout.id}`).set(auth())).body.data).toHaveLength(1);
   });
 
   it('lets only the owner’s side set the bonus', async () => {

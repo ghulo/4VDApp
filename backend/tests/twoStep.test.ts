@@ -125,6 +125,24 @@ describe('two-step sign-in', () => {
     expect(locked.status).toBe(429);
   });
 
+  it('starts the count again once the lock has run out', async () => {
+    const { secret } = await ownerWithTwoStep();
+    const { body } = await passwordStep();
+    for (let i = 0; i < 5; i++) await api().post('/api/auth/two-step').send({ challenge: body.data.challenge, code: '000000' });
+    // The 15 minutes pass.
+    const realNow = Date.now;
+    Date.now = () => realNow() + 16 * 60_000;
+    try {
+      const again = await passwordStep();
+      // One wrong code after the lock is just one wrong code, not a new lock.
+      expect((await api().post('/api/auth/two-step').send({ challenge: again.body.data.challenge, code: '000000' })).status).toBe(401);
+      const right = await api().post('/api/auth/two-step').send({ challenge: again.body.data.challenge, code: codeAt(secret, currentStep()) });
+      expect(right.status).toBe(200);
+    } finally {
+      Date.now = realNow;
+    }
+  });
+
   it('refuses a made-up or old challenge', async () => {
     await ownerWithTwoStep();
     const response = await api().post('/api/auth/two-step').send({ challenge: 'x'.repeat(40), code: '123456' });

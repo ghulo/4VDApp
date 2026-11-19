@@ -109,6 +109,8 @@ export class BooksPoster {
         union all select 'supplier_payments', id from supplier_payments where paid_on >= ${start}::date
         union all select 'tab_entries', id from tab_entries where kind = 'payment'
         union all select 'money_moves', id from money_moves where day >= ${start}::date
+        union all select 'partner_offsets', id from partner_offsets where day >= ${start}::date
+        union all select 'bonus_payouts', id from bonus_payouts where day >= ${start}::date
         union all select 'payroll_months', id from payroll_months where voided_at is null
         union all select 'payroll_payments', id from payroll_payments where voided_at is null
         on conflict do nothing

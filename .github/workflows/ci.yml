@@ -187,7 +187,7 @@ jobs:
       - run: npm test
 
   desktop-audit:
-    name: Windows app (security audit, warning only)
+    name: Windows app (tests; security audit warning only)
     needs: changes
     if: needs.changes.outputs.desktop == 'true'
     # A hole here needs an Electron upgrade tried on the shop PC first, so it
@@ -203,6 +203,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # The fiscal printer and setup tests need no installed packages.
+      - run: npm test
       - run: npm audit --audit-level=high || echo "::warning title=Windows app::npm audit found a high or critical security hole; see this step's log"
 
   e2e:

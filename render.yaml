@@ -41,6 +41,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Seals two-step sign-in secrets (docs/DEPLOYMENT.md).
+      - key: TOTP_KEY
+        sync: false
       # Optional: Sentry error tracking (project 4vd-api). Off when empty.
       - key: SENTRY_DSN
         sync: false
@@ -67,4 +70,4 @@ databases:
     # Basic-256mb: kept for good, with point-in-time restore (3 days on the Hobby workspace).
     plan: basic-256mb
     region: frankfurt
-    postgresMajorVersion: "17"
+    postgresMajorVersion: "18"

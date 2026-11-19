@@ -209,7 +209,8 @@ export class TwoStepService {
       this.wrong.delete(key);
       return;
     }
-    const count = (tries && tries.until > now ? 0 : (tries?.count ?? 0)) + 1;
+    // A lock that has run out starts the count again (a live one threw above).
+    const count = (tries && tries.until > 0 ? 0 : (tries?.count ?? 0)) + 1;
     this.wrong.set(key, { count, until: count >= MAX_WRONG ? now + LOCK_MS : 0 });
     if (count >= MAX_WRONG) {
       // Still before sign-in: the log entry goes to the person's business.

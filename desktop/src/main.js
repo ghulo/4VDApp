@@ -3,6 +3,7 @@
 const { app, BrowserWindow, Menu, ipcMain, nativeTheme, screen, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 const fiscal = require('./fiscal.js');
 const setupStore = require('./setup.js');
@@ -10,11 +11,8 @@ const setupStore = require('./setup.js');
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://4vd.app/';
 const DASHBOARD_ORIGIN = new URL(DASHBOARD_URL).origin;
-// The dashboard moved from dashboard.4vd.app to 4vd.app on 2026-10-20. The old
-// name still counts as the dashboard until it is gone: pages, links and printing.
-const DASHBOARD_ORIGINS = app.isPackaged
-  ? ['https://4vd.app', 'https://dashboard.4vd.app']
-  : [DASHBOARD_ORIGIN];
+// Only the dashboard may open pages, links and printing (dashboard.4vd.app is gone).
+const DASHBOARD_ORIGINS = app.isPackaged ? ['https://4vd.app'] : [DASHBOARD_ORIGIN];
 // Google's sign-in opens its own small window; everything else leaves for the browser.
 const GOOGLE_SIGN_IN = 'https://accounts.google.com';
 
@@ -127,6 +125,19 @@ function handleKeys(event, input) {
   event.preventDefault();
 }
 
+/** Google's sign-in window: its exact address, not one that only starts the same (accounts.google.com.evil.example). */
+function isGoogleSignIn(url) {
+  try {
+    return new URL(url).origin === GOOGLE_SIGN_IN;
+  } catch {
+    return false;
+  }
+}
+
+/** The app's own loading and offline pages, not any file on the PC. */
+const OWN_FILES = pathToFileURL(__dirname + path.sep).href;
+const isOwnFile = (url) => url.startsWith(OWN_FILES);
+
 function isDashboard(url) {
   return DASHBOARD_ORIGINS.some((origin) => url.startsWith(origin + '/') || url === origin);
 }
@@ -160,7 +171,7 @@ function createWindow() {
   win.webContents.on('context-menu', (_event, params) => showEditMenu(params));
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith(GOOGLE_SIGN_IN)) return { action: 'allow' };
+    if (isGoogleSignIn(url)) return { action: 'allow' };
     if (isDashboard(url)) {
       win.loadURL(url);
     } else if (/^https?:|^mailto:|^tel:/.test(url)) {
@@ -169,7 +180,7 @@ function createWindow() {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => {
-    if (isDashboard(url) || url.startsWith(GOOGLE_SIGN_IN) || url.startsWith('file:')) return;
+    if (isDashboard(url) || isGoogleSignIn(url) || isOwnFile(url)) return;
     event.preventDefault();
     if (/^https?:/.test(url)) shell.openExternal(url);
   });

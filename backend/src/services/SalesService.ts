@@ -431,7 +431,8 @@ export class SalesService {
    */
   private async sellsPastStock(repos: TransactionalRepositories, soldBy: number): Promise<boolean> {
     if ((await readRules(repos.settings)).noStockSales === 'allow') return true;
-    const seller = await repos.users.findById(soldBy);
+    // Their role in this business, not in the business their account belongs to.
+    const seller = await repos.users.person(soldBy);
     return canOversee(seller?.role);
   }
 

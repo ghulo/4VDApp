@@ -27,6 +27,18 @@ describe('GET /health', () => {
   });
 });
 
+describe('big uploads', () => {
+  // Never reaches the database: a stranger is turned away before the body is read.
+  it('turns away a big body from someone not signed in, before reading it', async () => {
+    const big = JSON.stringify({ file: 'x'.repeat(5 * 1024 * 1024) });
+    for (const path of ['/api/imports', '/api/bill-scans', '/api/partners/read', '/api/money/places/1/statement', '/api/products/prices/file']) {
+      const response = await request(app).post(path).set('Content-Type', 'application/json').send(big);
+      expect(response.status, path).toBe(401);
+      expect(response.body.success).toBe(false);
+    }
+  });
+});
+
 describe('unknown routes', () => {
   // Every /api request reads the Settings → Roles rules first, so this one needs the test database.
   it('should return 404 in the standard error format', async () => {

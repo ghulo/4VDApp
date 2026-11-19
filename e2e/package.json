@@ -1,6 +1,7 @@
 {
   "name": "four-vd-e2e",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "test": "playwright test",

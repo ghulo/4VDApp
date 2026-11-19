@@ -2,6 +2,7 @@
   "name": "4vd-app-backend",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "REST API for 4VD App",
   "type": "module",
   "main": "dist/server.js",

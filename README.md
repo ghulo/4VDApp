@@ -86,4 +86,4 @@ Every app has a `.env.example`; copy it to `.env`. Never commit `.env` files.
 
 ## License
 
-[MIT](LICENSE)
+Proprietary: copyright (c) 2026 the Dacaj family (4VD), all rights reserved. No use, copying or distribution without written permission ([LICENSE](LICENSE)).

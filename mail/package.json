@@ -1,6 +1,7 @@
 {
   "name": "4vd-mail",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "description": "Cloudflare Email Worker for bills@4vd.app: passes supplier bills to the 4VD API.",
   "scripts": {

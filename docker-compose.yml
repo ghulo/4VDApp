@@ -1,6 +1,7 @@
 # Local development database. Start with: docker compose up -d
 services:
   postgres:
+    # Live (Render) and CI run Postgres 18; moving this local volume to 18 needs a dump and restore first.
     image: postgres:17-alpine
     container_name: four-vd-app-postgres
     restart: unless-stopped

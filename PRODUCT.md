@@ -78,7 +78,7 @@ the shop still comes first whenever it and the product conflict.
 - Runs on Render (API, database) and Cloudflare (the dashboard at 4vd.app);
   details in `docs/DEPLOYMENT.md`.
 - The shop is VAT-registered. The Counter prints legal receipts on the shop's
-  Datecs FP-700+ fiscal printer (through F-Link); 4VD also prints A4 invoices
+  Datecs FP-550 fiscal printer (through F-Link); 4VD also prints A4 invoices
   and labels.
 - Currently holds test data only; at launch it is wiped and TREFIN's history is
   imported (`npm run import:trefin`).

@@ -131,6 +131,16 @@ describe('files and the recycle bin', () => {
     expect(await context.db.selectFrom('media').select('id').where('id', '=', added.url.split('/').pop()).executeTakeFirst()).toBeUndefined();
   });
 
+  it('should show an attached file only to someone signed in to the business, and let nobody keep a copy', async () => {
+    const supplier = (await api().post('/api/suppliers').set(auth()).send({ name: 'Private Ltd', nui: '811234563' })).body.data.id;
+    const added = (await api().post(`/api/files/supplier/${supplier}`).set(auth()).set('Content-Type', 'application/pdf').send(pdf)).body.data;
+
+    expect((await api().get(added.url)).status).toBe(401);
+    const shown = await api().get(added.url).set(auth());
+    expect(shown.status).toBe(200);
+    expect(shown.headers['cache-control']).toBe('private, no-store');
+  });
+
   it('should list removed products, suppliers, customers and expenses and put each back', async () => {
     const supplier = (await api().post('/api/suppliers').set(auth()).send({ name: 'Gone Ltd', nui: '811234562' })).body.data.id;
     const customer = (await api().post('/api/customers').set(auth()).send({ name: 'Arben' })).body.data.id;

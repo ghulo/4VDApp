@@ -1,3 +1,4 @@
+import { currentBusinessId } from '../database/businessContext.js';
 import type { AttachmentEntity } from '../database/types.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { AttachmentRecord, AttachmentRepository } from '../repositories/AttachmentRepository.js';
@@ -56,7 +57,7 @@ export class AttachmentService {
     if (file.bytes.length === 0) throw new ValidationError('That file is empty');
     const isPdf = file.mime === 'application/pdf';
     if (!isPdf && !file.mime.startsWith('image/')) throw new ValidationError('Add a PDF or a photo (JPG, PNG or WebP).');
-    const mediaId = isPdf ? await this.mediaService.storePdf(null, file.bytes) : await this.mediaService.store(null, file.bytes, 'bill');
+    const mediaId = isPdf ? await this.mediaService.storePdf(currentBusinessId(), file.bytes) : await this.mediaService.store(currentBusinessId(), file.bytes, 'bill');
     const mime = isPdf ? 'application/pdf' : 'image/webp';
     // A photo becomes WebP; its name says so, so a download opens.
     const name = (isPdf ? file.name : file.name.replace(/\.[a-z0-9]{2,5}$/i, '') + '.webp').slice(0, 200) || (isPdf ? 'file.pdf' : 'photo.webp');

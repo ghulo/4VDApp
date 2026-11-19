@@ -1,3 +1,4 @@
+import { currentBusinessId } from '../database/businessContext.js';
 import { DEFAULT_REORDER_LEVEL, SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { AiUnavailableError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { BillScanRecord, BillScanRepository } from '../repositories/BillScanRepository.js';
@@ -170,7 +171,7 @@ export class BillScanService {
         const bytes = Buffer.from(page.data, 'base64');
         if (bytes.length === 0 || bytes.length > MAX_PAGE_BYTES) throw new ValidationError('Each page must be under 10 MB');
         // Photos are shrunk like any bill photo (still sharp enough for small print); PDFs are kept whole.
-        const id = page.mime === 'application/pdf' ? await this.mediaService.storePdf(null, bytes) : await this.mediaService.store(null, bytes, 'bill');
+        const id = page.mime === 'application/pdf' ? await this.mediaService.storePdf(currentBusinessId(), bytes) : await this.mediaService.store(currentBusinessId(), bytes, 'bill');
         mediaIds.push(id);
         const stored = await this.mediaService.read(id);
         read.push({ mime: stored.mime, bytes: stored.bytes });

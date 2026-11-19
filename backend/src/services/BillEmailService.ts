@@ -125,7 +125,7 @@ export class BillEmailService {
       }
 
       // Photos are shrunk like any bill photo; PDFs are kept whole.
-      const mediaId = file.pdf ? await this.mediaService.storePdf(null, bytes) : await this.mediaService.store(null, bytes, 'bill');
+      const mediaId = file.pdf ? await this.mediaService.storePdf(currentBusinessId(), bytes) : await this.mediaService.store(currentBusinessId(), bytes, 'bill');
       const id = await this.repository.create({ ...base, mediaId, status: 'waiting' });
       if (id === null) await this.mediaService.remove(mediaId);
       else waiting += 1;

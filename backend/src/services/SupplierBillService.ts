@@ -1,3 +1,4 @@
+import { currentBusinessId } from '../database/businessContext.js';
 import { type BillKind, type BillLineKind, type CustomsPaidMethod, EQUIPMENT_CATEGORIES, WITHHOLDING_RATES, type WithholdingType } from '../constants/bills.js';
 import { addBillAssets, returnBillAssets, voidBillAssets } from './assets/billAssets.js';
 import { EXPENSE_CATEGORIES, type ExpensePlace } from '../constants/expenses.js';
@@ -420,7 +421,7 @@ export class SupplierBillService {
   async setPhoto(id: number, upload: Buffer | null, actorId: number): Promise<SupplierBillDto> {
     const bill = await this.billRepository.findById(id);
     if (!bill) throw new NotFoundError(`Bill ${id} does not exist`);
-    const mediaId = upload ? await this.mediaService.store(null, upload, 'bill') : null;
+    const mediaId = upload ? await this.mediaService.store(currentBusinessId(), upload, 'bill') : null;
     await this.transactions.run(async (repos) => {
       await repos.bills.setPhoto(id, mediaId);
       await repos.activityLog.create({

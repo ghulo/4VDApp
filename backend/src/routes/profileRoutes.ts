@@ -1,11 +1,12 @@
 import express, { type Request, type Response, Router } from 'express';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { addBusinessSchema } from '../validators/authValidators.js';
+import { addBusinessSchema, mediaParamsSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMITS } from '../constants/rateLimits.js';
-import { systemRoute } from '../database/businessContext.js';
+import { currentBusinessId, systemRoute } from '../database/businessContext.js';
+import { NotFoundError } from '../errors/httpErrors.js';
 import type { Container } from '../container.js';
 import { createMediaController, createProfileController } from '../controllers/profileController.js';
 
@@ -53,11 +54,26 @@ export function createBrandRoutes({ businessService }: Container): Router {
 
 const brandParamsSchema = z.object({ shortName: z.string().regex(/^[a-z0-9-]{3,30}$/) });
 
-/** Photos and logos, public by their unguessable id so <img> tags can show them. */
-export function createMediaRoutes({ mediaService }: Container): Router {
+/**
+ * Logos, profile and product photos: public by their unguessable id, so <img> tags, emails and the
+ * portal can show them. Bills, attachments, the stamp and the signature: only for someone signed in
+ * to the business they belong to (an id leaks through history, logs and screenshots).
+ */
+export function createMediaRoutes({ mediaService, guards }: Container): Router {
   const controller = createMediaController(mediaService);
   const router = Router();
-  router.get('/:id', controller.show);
+  const signedInToOwner = async (req: Request, res: Response, next: express.NextFunction): Promise<void> => {
+    const { id } = parseInput(mediaParamsSchema, req.params);
+    const privacy = await mediaService.privacyOf(id);
+    if (!privacy?.private) return next();
+    // The usual sign-in check (account active, session open, business still theirs); it throws when not.
+    await guards.authenticated(req, res, () => undefined);
+    // Another business's file is as good as not there.
+    if (privacy.businessId !== null && privacy.businessId !== currentBusinessId()) throw new NotFoundError('That picture does not exist');
+    res.locals.privateMedia = true;
+    next();
+  };
+  router.get('/:id', signedInToOwner, controller.show);
   return router;
 }
 

@@ -71,8 +71,8 @@ export function createMediaController(mediaService: MediaService) {
       const { id } = parseInput(mediaParamsSchema, req.params);
       // Emails ask for ?format=png: Outlook and older mail apps can't show WebP.
       const media = req.query.format === 'png' ? await mediaService.readPng(id) : await mediaService.read(id);
-      // A new picture always gets a new id, so the old one can be cached forever.
-      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      // A new picture always gets a new id, so the old one can be cached forever; a private file is kept by nobody (shop PCs are shared).
+      res.set('Cache-Control', res.locals.privateMedia ? 'private, no-store' : 'public, max-age=31536000, immutable');
       // The dashboard and the app are on other addresses; let their <img> tags load it.
       res.set('Cross-Origin-Resource-Policy', 'cross-origin');
       res.type(media.mime).send(media.bytes);

@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { runAsBusiness, runAsSystem } from '../database/businessContext.js';
 import { NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { MediaRepository } from '../repositories/MediaRepository.js';
 
@@ -33,6 +34,16 @@ export class MediaService {
   async storePdf(businessId: number | null, upload: Buffer): Promise<string> {
     if (upload.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError("That file isn't a PDF we can read.");
     return this.mediaRepository.create({ businessId, mime: 'application/pdf', bytes: upload });
+  }
+
+  /** Whether a file needs a sign-in in its business (see MediaRepository.privacyOf). */
+  async privacyOf(id: string): Promise<{ private: boolean; businessId: number | null } | undefined> {
+    const owner = await runAsSystem(() => this.mediaRepository.ownerOf(id));
+    if (!owner) return undefined;
+    // A file of no business (a profile photo) is never private.
+    if (owner.businessId === null) return { private: false, businessId: null };
+    const businessId = owner.businessId;
+    return { private: await runAsBusiness(businessId, () => this.mediaRepository.isPrivate(id)), businessId };
   }
 
   async read(id: string): Promise<{ mime: string; bytes: Buffer }> {

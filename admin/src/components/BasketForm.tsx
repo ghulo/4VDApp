@@ -34,7 +34,8 @@ export function unitPriceFor(product: Product, quantity: number, wholesale = fal
   return product.promotion && product.promotion.price < tier ? product.promotion.price : tier;
 }
 
-export const roundMoney = (amount: number) => Math.round(amount * 100) / 100;
+/** To whole cents, halves away from zero: the same rule as the API (backend/src/utils/money.ts). */
+export const roundMoney = (amount: number) => (Math.sign(amount) * Math.round(Number((Math.abs(amount) * 100).toPrecision(12)))) / 100 || 0;
 
 /** The unit price after a rabat, rounded like the server rounds it. */
 export const afterDiscount = (price: number, percent: number) => (percent > 0 ? roundMoney(price * (1 - percent / 100)) : price);

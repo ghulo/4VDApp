@@ -39,6 +39,26 @@ describe('roundMoney', () => {
     );
   });
 
+  it('rounds a half cent away from zero, despite float noise', () => {
+    expect(roundMoney(1.005)).toBe(1.01);
+    expect(roundMoney(-1.005)).toBe(-1.01);
+    expect(roundMoney(1.115)).toBe(1.12);
+    expect(roundMoney(10.235)).toBe(10.24);
+    expect(roundMoney(0.285)).toBe(0.29);
+    expect(roundMoney(1.0049)).toBe(1);
+    expect(roundMoney(0.1 + 0.2)).toBe(0.3);
+    expect(Object.is(roundMoney(-0.001), 0)).toBe(true);
+  });
+
+  it('rounds a refund exactly like the sale it mirrors', () => {
+    fc.assert(
+      fc.property(fc.double({ min: 0, max: 1e7, noNaN: true }), (amount) => {
+        expect(roundMoney(-amount)).toBe(-roundMoney(amount) || 0);
+      }),
+      RUNS,
+    );
+  });
+
   it('leaves an amount already in cents unchanged', () => {
     fc.assert(
       fc.property(fc.integer({ min: -1e9, max: 1e9 }), (c) => {

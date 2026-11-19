@@ -1,6 +1,6 @@
 import type { UserRole } from '../database/types.js';
 import { en, type ServerMessages } from '../i18n/messages.js';
-import { canOversee, canReadBooks, canSell, hasPower } from '../utils/roles.js';
+import { canManage, canOversee, canReadBooks, canSell, hasPower } from '../utils/roles.js';
 import type { PayrollService } from './payroll/PayrollService.js';
 import { zonedDay, zonedHour } from '../utils/zonedDates.js';
 import type { PortalRepository } from '../repositories/PortalRepository.js';
@@ -28,7 +28,7 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'fileDeclaration' | 'answer' | 'runPayroll' | 'payAtk';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order' | 'import_done';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order' | 'import_done' | 'pin_locked';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -114,6 +114,7 @@ export class AttentionService {
     private readonly portalOrders: Pick<PortalRepository, 'openOrders'> | null = null,
     private readonly declarations: Pick<DeclarationService, 'due'> | null = null,
     private readonly imports: { toCheck(): Promise<Array<{ id: number; products: number; day: Date }>> } | null = null,
+    private readonly pinLocks: { lockedToday(): Promise<Array<{ id: number; name: string }>> } | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -125,6 +126,7 @@ export class AttentionService {
           ? await this.counter(role, t, now)
           : [];
     if (hasPower(role, 'payroll')) todo.push(...(await this.payrollItems(t, now)));
+    if (canManage(role)) todo.push(...(await this.lockedPins(t)));
     todo.sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
     return { todo, count: todo.filter((item) => item.severity !== 'idea').length };
   }
@@ -351,6 +353,19 @@ export class AttentionService {
   }
 
   /** Questions the accountant left on documents, until someone answers. */
+  /** Counter PINs the daily cap locked: until a manager unlocks them on People, or the wrong tries are a day old. */
+  private async lockedPins(t: ServerMessages): Promise<TodoItem[]> {
+    return (this.pinLocks ? await this.pinLocks.lockedToday() : []).map((person) => ({
+      key: `pin_locked:${person.id}`,
+      kind: 'pin_locked',
+      severity: 'urgent',
+      title: t.todo.pinLockedTitle(person.name),
+      detail: t.todo.pinLockedDetail,
+      verb: 'look',
+      to: `/people/${person.id}`,
+    }));
+  }
+
   private async questions(t: ServerMessages): Promise<TodoItem[]> {
     const open = await this.threads.open();
     return open.map((question) => ({

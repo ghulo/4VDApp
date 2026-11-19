@@ -10,6 +10,7 @@ import {
   Package,
   Receipt,
   EnvelopeSimple,
+  LockKey,
   Scan,
   SignOut,
   Storefront,
@@ -43,6 +44,7 @@ const ICONS: Record<string, Icon> = {
   bill_scan: Scan,
   bill_email: EnvelopeSimple,
   portal_order: Storefront,
+  pin_locked: LockKey,
   requests: Tray,
 };
 

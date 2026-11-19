@@ -28,20 +28,27 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly transactions: TransactionManager,
+    /** People here whose Counter PIN the daily cap has locked. */
+    private readonly pinLocks: { lockedToday(): Promise<Array<{ id: number }>> } | null = null,
   ) {}
 
   /** Everyone, each with when they last used 4VD on any device (null if never). */
-  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser & { lastActiveAt: string | null; passkeys: boolean; homeHere: boolean }>> {
+  async list(query: PageRequest & { role?: UserRole }): Promise<Paginated<PublicUser & { lastActiveAt: string | null; passkeys: boolean; homeHere: boolean; pinLocked: boolean }>> {
     const [{ users, total }, lastUsed] = await Promise.all([
       this.userRepository.findAll({ role: query.role, limit: query.limit, offset: toOffset(query) }),
       this.refreshTokenRepository.lastUsedByUser(),
     ]);
-    const withPasskeys = await this.userRepository.withPasskeys(users.map((user) => user.id));
+    const [withPasskeys, pinLocked] = await Promise.all([
+      this.userRepository.withPasskeys(users.map((user) => user.id)),
+      this.pinLocks ? this.pinLocks.lockedToday().then((rows) => new Set(rows.map((row) => row.id))) : new Set<number>(),
+    ]);
     return {
       items: users.map((user) => ({
         ...toPublicUser(user),
         lastActiveAt: lastUsed.get(user.id)?.toISOString() ?? null,
         passkeys: withPasskeys.has(user.id),
+        // Too many wrong Counter PINs today: a manager unlocks it on their page.
+        pinLocked: pinLocked.has(user.id),
         // Their account belongs to this business (else only their role and access here change).
         homeHere: user.business_id === currentBusinessId(),
       })),

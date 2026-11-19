@@ -12,6 +12,7 @@ import { activityApi, businessApi, cashApi, invitesApi, passkeyApi, reportsApi, 
 import { CATALOGUES, useT } from '../i18n/useT';
 import type { TeamMember, UserRole } from '../services/types';
 import { errorMessage } from '../utils/errors';
+import { ATTENTION_KEY } from '../utils/useAttention';
 import { formatDate, formatHeadlineMoney, formatMoney, formatTime, localDay } from '../utils/format';
 import { resolvePeriod } from '../utils/periods';
 import { Badge, Button, ButtonLink, Card, DataTable, DeveloperMark, EmptyState, Field, PageHeader, SettingRow, Sheet, StatGrid, StatTile, useToast } from '../components/ui';
@@ -582,6 +583,15 @@ function ManagePanel({ person }: { person: TeamMember }) {
       setSaved(t.people.passkeysResetDone(result.removed));
     },
   });
+  const unlockPin = useMutation({
+    mutationFn: () => usersApi.unlockPin(person.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['activity'] });
+      queryClient.invalidateQueries({ queryKey: ATTENTION_KEY });
+      setSaved(t.people.pinUnlocked);
+    },
+  });
   const remove = useMutation({
     mutationFn: () => usersApi.remove(person.id),
     onSuccess: () => {
@@ -759,6 +769,14 @@ function ManagePanel({ person }: { person: TeamMember }) {
           </Button>
         </SettingRow>
       )}
+      {/* Locked by the daily cap on wrong Counter PINs; one's own too, since anyone at the Counter can lock it. */}
+      {person.pinLocked && (
+        <SettingRow title={t.people.pinLocked} description={t.people.pinLockedHint(firstName)}>
+          <Button size="sm" loading={unlockPin.isPending} onClick={() => unlockPin.mutate()}>
+            {t.people.pinUnlock}
+          </Button>
+        </SettingRow>
+      )}
       {!isSelf && (
         <SettingRow title={t.people.remove} description={accountHere ? t.people.removeHint : t.people.removeHereHint}>
           {confirmingRemove ? (
@@ -777,9 +795,9 @@ function ManagePanel({ person }: { person: TeamMember }) {
           )}
         </SettingRow>
       )}
-      {(update.isError || remove.isError || resetTwoStep.isError || resetPasskeys.isError) && (
+      {(update.isError || remove.isError || resetTwoStep.isError || resetPasskeys.isError || unlockPin.isError) && (
         <p className="form-error" role="alert">
-          {errorMessage(update.error ?? remove.error ?? resetTwoStep.error ?? resetPasskeys.error)}
+          {errorMessage(update.error ?? remove.error ?? resetTwoStep.error ?? resetPasskeys.error ?? unlockPin.error)}
         </p>
       )}
       {saved && !update.isError && (

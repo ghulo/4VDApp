@@ -492,6 +492,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
   managers: [
     'POST /api/users/:id/two-step/reset',
     'POST /api/users/:id/passkeys/reset',
+    'POST /api/users/:id/pin/unlock',
     'POST /api/categories/',
     'PUT /api/categories/:id',
     'DELETE /api/categories/:id',

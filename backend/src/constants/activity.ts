@@ -88,6 +88,8 @@ export const ACTIVITY_ACTIONS = [
   'pin.set',
   'pin.removed',
   'pin.locked',
+  'pin.day_locked',
+  'pin.unlocked',
   'counter.rabat_allowed',
   'counter.pay_later_allowed',
   'offer.made',

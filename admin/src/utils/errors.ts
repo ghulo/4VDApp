@@ -8,5 +8,7 @@ export function errorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === 'VIEWING_AS') return activeCatalogue().viewAs.nothingSaved;
   // A Counter takeover by someone a manager asked to set two-step sign-in up again.
   if (error instanceof ApiError && error.code === 'TWO_STEP_SETUP_NEEDED') return activeCatalogue().common.twoStepSetupNeeded;
+  // The daily cap on wrong Counter PINs.
+  if (error instanceof ApiError && error.code === 'PIN_LOCKED_DAY') return activeCatalogue().counter.pinLockedDayError;
   return error instanceof Error ? error.message : activeCatalogue().common.somethingWrong;
 }

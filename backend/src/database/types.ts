@@ -187,6 +187,8 @@ export interface MembershipsTable {
   is_active: Generated<boolean>;
   /** Taken off a business that is not their home (the row stays for their name on past work). */
   removed_at: Generated<Date | null>;
+  /** When a manager last unlocked this person's Counter PIN here: wrong PINs before it don't count toward the daily cap. */
+  pin_unlocked_at: Generated<Date | null>;
   created_at: CreatedAt;
 }
 

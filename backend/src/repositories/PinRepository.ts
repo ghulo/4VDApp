@@ -7,27 +7,52 @@ export interface PinPersonRow {
   name: string;
   role: UserRole;
   pin_hash: string;
-  /** Wrong PINs since the last right one, the last password sign-in, or 15 minutes ago. */
+  /** Wrong PINs since the last right one, the last password sign-in, a manager's unlock, or 15 minutes ago. */
   recent_failures: number;
+  /** Wrong PINs in this business in the last 24 hours, since a manager last unlocked it here. A right PIN or a sign-in doesn't reset these. */
+  day_failures: number;
 }
+
+/** Wrong PINs here since a manager's unlock, within the day window, per person. */
+const dayFailures = (dayStart: Date) => sql<number>`(select count(*)::int from pin_attempts a
+  where a.user_id = u.id and not a.ok and a.business_id = (select current_business_id())
+    and a.at > greatest(${dayStart}::timestamptz, coalesce(m.pin_unlocked_at, '-infinity')))`;
 
 /** Counter PINs: who has one, every PIN typed (for the locks), and owners' one-time rabat approvals. */
 export class PinRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  /** Active people with a PIN, each with their recent wrong PINs. */
-  async people(windowStart: Date): Promise<PinPersonRow[]> {
+  /** Active people with a PIN, each with their recent wrong PINs and today's. */
+  async people(windowStart: Date, dayStart: Date): Promise<PinPersonRow[]> {
     const { rows } = await sql<PinPersonRow>`
       select u.id, u.name, u.role, u.pin_hash,
         (select count(*)::int from pin_attempts a
           where a.user_id = u.id and not a.ok
-            and a.at > greatest(${windowStart}::timestamptz, coalesce(u.pin_cleared_at, '-infinity'),
-              coalesce((select max(b.at) from pin_attempts b where b.user_id = u.id and b.ok), '-infinity'))) as recent_failures
+            and a.at > greatest(${windowStart}::timestamptz, coalesce(u.pin_cleared_at, '-infinity'), coalesce(m.pin_unlocked_at, '-infinity'),
+              coalesce((select max(b.at) from pin_attempts b where b.user_id = u.id and b.ok), '-infinity'))) as recent_failures,
+        ${dayFailures(dayStart)} as day_failures
       from people u
+      join memberships m on m.user_id = u.id and m.business_id = (select current_business_id())
       where u.is_active and u.deleted_at is null and u.pin_hash is not null
       order by u.name
     `.execute(this.db);
     return rows;
+  }
+
+  /** People here whose PIN has hit the daily cap (whatever their role or access), for To do and People. */
+  async dayLocked(dayStart: Date, cap: number): Promise<Array<{ id: number; name: string }>> {
+    const { rows } = await sql<{ id: number; name: string }>`
+      select u.id, u.name from people u
+      join memberships m on m.user_id = u.id and m.business_id = (select current_business_id())
+      where u.deleted_at is null and u.pin_hash is not null and ${dayFailures(dayStart)} >= ${cap}
+      order by u.name
+    `.execute(this.db);
+    return rows;
+  }
+
+  /** A manager unlocks someone's PIN in this business: wrong PINs before now stop counting (both locks). */
+  async unlock(userId: number): Promise<void> {
+    await sql`update memberships set pin_unlocked_at = now() where user_id = ${userId} and business_id = (select current_business_id())`.execute(this.db);
   }
 
   /** Wrong PINs typed on one PC since `since`. */

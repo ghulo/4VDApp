@@ -4,6 +4,7 @@ import type { Container } from '../container.js';
 import { createReturnsController } from '../controllers/returnsController.js';
 import { createSessionController } from '../controllers/sessionController.js';
 import { createPasskeyController } from '../controllers/passkeyController.js';
+import { createCounterPinController } from '../controllers/counterPinController.js';
 import {
   createAnalyticsController,
   createFavoriteController,
@@ -42,7 +43,7 @@ export function createAnalyticsRoutes({ analyticsService, guards }: Container): 
   return router;
 }
 
-export function createUserRoutes({ userService, sessionService, authService, twoStepService, passkeyService, guards, config }: Container): Router {
+export function createUserRoutes({ userService, sessionService, authService, twoStepService, passkeyService, counterPinService, guards, config }: Container): Router {
   const controller = createUserController(userService);
   const auth = createAuthController(authService, twoStepService, config.refreshTokenTtlDays);
   const sessions = createSessionController(sessionService);
@@ -58,6 +59,8 @@ export function createUserRoutes({ userService, sessionService, authService, two
   router.post('/:id/two-step/reset', ...guards.manage, auth.twoStepReset);
   // A lost or shared device: a manager removes someone's passkeys.
   router.post('/:id/passkeys/reset', ...guards.manage, createPasskeyController(passkeyService, config.refreshTokenTtlDays).reset);
+  // Too many wrong Counter PINs today: a manager unlocks that person's PIN here.
+  router.post('/:id/pin/unlock', ...guards.manage, createCounterPinController(counterPinService, config.refreshTokenTtlDays).unlock);
 
   return router;
 }

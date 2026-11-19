@@ -47,6 +47,8 @@ export interface TeamMember extends User {
   lastActiveAt: string | null;
   /** Their account belongs to this business; false: only their role, access and place here change. */
   homeHere?: boolean;
+  /** Too many wrong Counter PINs today: their PIN doesn't work here until a manager unlocks it. */
+  pinLocked?: boolean;
 }
 
 export interface PaginationMeta {
@@ -2525,6 +2527,8 @@ export interface PinPerson {
   role: UserRole;
   /** Too many wrong PINs: try again later, or sign in with the password. */
   locked: boolean;
+  /** Locked by the daily cap: until a manager unlocks it on People. */
+  lockedToday?: boolean;
 }
 
 /** An owner's one-time yes to a rabat over the limit, for one basket and 5 minutes. */

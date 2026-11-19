@@ -1,31 +1,46 @@
 import { currentBusinessId } from '../database/businessContext.js';
 import { randomUUID } from 'node:crypto';
 import type { UserRole } from '../database/types.js';
-import { AppError, ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
 import type { ActivityLogRepository } from '../repositories/ActivityLogRepository.js';
 import type { CounterRepository } from '../repositories/CounterRepository.js';
 import type { PinPersonRow, PinRepository } from '../repositories/PinRepository.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
-import { canOversee, canSell } from '../utils/roles.js';
+import { canOversee, canSell, mayChangePerson } from '../utils/roles.js';
 import { type AuthService, type DeviceInfo, type LoginResult, setupNeededError } from './AuthService.js';
 import type { GoogleAuthService, SecurityDto } from './GoogleAuthService.js';
 
 /** Wrong PINs for one person before they are locked, and for how long. */
 export const PERSON_LOCK = { failures: 5, minutes: 15 };
+/**
+ * The daily cap: wrong PINs for one person in one business within a rolling
+ * 24 hours before their PIN stops working there until a manager unlocks it on
+ * People (or the tries age out). A right PIN or a password sign-in doesn't
+ * reset it, so a guesser can't wait for the real person to use the till.
+ * Password, Google and passkey sign-in keep working, and nobody is signed out.
+ */
+export const DAY_LOCK = { failures: 10, hours: 24 };
 /** Wrong PINs on one PC within an hour before PIN switching stops there. */
 export const DEVICE_LOCK = { failures: 20, minutes: 60 };
 /** How long an owner's yes to a rabat lasts. */
 export const APPROVAL_MINUTES = 5;
 
 const minutesAgo = (minutes: number, now: Date) => new Date(now.getTime() - minutes * 60_000);
+const dayStart = (now: Date) => minutesAgo(DAY_LOCK.hours * 60, now);
+
+/** People here whose PIN the daily cap has locked (for To do and People). */
+export const pinsLockedToday = (pins: PinRepository, now = new Date()) => pins.dayLocked(dayStart(now), DAY_LOCK.failures);
 
 export interface PinPersonDto {
   id: number;
   name: string;
   role: UserRole;
+  /** Their PIN doesn't work now (either lock). */
   locked: boolean;
+  /** Locked by the daily cap: until a manager unlocks it, not just for a few minutes. */
+  lockedToday: boolean;
 }
 
 export interface PayLaterApprovalDto {
@@ -62,6 +77,13 @@ class PinLockedError extends AppError {
   }
 }
 
+/** The daily cap: the dashboard words it in the reader's language (admin utils/errors.ts). */
+class PinDayLockedError extends AppError {
+  constructor(name: string) {
+    super(`Too many wrong PINs today for ${name}. The PIN is locked: ask the owner to unlock it on People, or sign in with the password.`, 429, 'PIN_LOCKED_DAY');
+  }
+}
+
 /**
  * Counter PINs. A PIN never signs anyone in on its own: it only works on a PC
  * where someone is already signed in at the Counter, to hand the till to
@@ -77,6 +99,9 @@ export class CounterPinService {
     private readonly auth: AuthService,
     private readonly google: GoogleAuthService,
   ) {}
+
+  /** PIN checks for one person in one business, one at a time, so parallel guesses can't all slip under the caps. */
+  private readonly checking = new Map<string, Promise<unknown>>();
 
   /** Set (or with null, remove) one's own PIN, after typing the account password. */
   async setPin(userId: number, input: { password: string; pin: string | null }): Promise<SecurityDto> {
@@ -97,10 +122,29 @@ export class CounterPinService {
 
   /** Who may take over the Counter here (or, with `approvers`, allow a rabat), never the person asking. */
   async people(actorId: number, approvers: boolean, now = new Date()): Promise<PinPersonDto[]> {
-    const rows = await this.pins.people(minutesAgo(PERSON_LOCK.minutes, now));
+    const rows = await this.pins.people(minutesAgo(PERSON_LOCK.minutes, now), dayStart(now));
     return rows
       .filter((row) => row.id !== actorId && (approvers ? canOversee(row.role) : canSell(row.role)))
-      .map((row) => ({ id: row.id, name: row.name, role: row.role, locked: row.recent_failures >= PERSON_LOCK.failures }));
+      .map((row) => {
+        const lockedToday = row.day_failures >= DAY_LOCK.failures;
+        return { id: row.id, name: row.name, role: row.role, locked: lockedToday || row.recent_failures >= PERSON_LOCK.failures, lockedToday };
+      });
+  }
+
+  /** A manager (or the person themselves, signed in) unlocks a PIN in this business: both locks end at once. */
+  async unlock(actorId: number, userId: number): Promise<void> {
+    const { actor, target } = await this.users.inThisBusiness(actorId, userId);
+    if (!actor || !target) throw new NotFoundError('User');
+    // Same rule as the other keys on someone's page; one's own PIN is always one's own to unlock.
+    if (userId !== actorId && !mayChangePerson(actor, target)) throw new ForbiddenError('Only a main admin can unlock this for a main admin, owner, admin or accountant');
+    await this.pins.unlock(userId);
+    await this.activity.create({
+      userId: actorId,
+      action: 'pin.unlocked',
+      entityType: 'user',
+      entityId: userId,
+      say: { key: 'pinUnlocked', params: { name: target.name } },
+    });
   }
 
   /** Hand the Counter to someone else: their PIN starts their session on this PC and ends the one asking. */
@@ -181,17 +225,50 @@ export class CounterPinService {
     allowed: (row: PinPersonRow) => boolean,
     now: Date,
   ): Promise<PinPersonRow> {
+    // One process serves the API, so an in-memory queue is enough to make "count, check, record" one step.
+    const key = `${currentBusinessId()}:${input.userId}`;
+    const before = this.checking.get(key) ?? Promise.resolve();
+    const run = before.then(() => this.checkNow(deviceId, input, purpose, allowed, now));
+    const settled = run.catch(() => undefined);
+    this.checking.set(key, settled);
+    try {
+      return await run;
+    } finally {
+      if (this.checking.get(key) === settled) this.checking.delete(key);
+    }
+  }
+
+  private async checkNow(
+    deviceId: string,
+    input: { userId: number; pin: string },
+    purpose: 'switch' | 'rabat' | 'pay_later',
+    allowed: (row: PinPersonRow) => boolean,
+    now: Date,
+  ): Promise<PinPersonRow> {
     if ((await this.pins.deviceFailures(deviceId, minutesAgo(DEVICE_LOCK.minutes, now))) >= DEVICE_LOCK.failures) {
       throw new PinLockedError('Too many wrong PINs on this PC. Sign in with a password to use PINs here again.');
     }
-    const person = (await this.pins.people(minutesAgo(PERSON_LOCK.minutes, now))).find((row) => row.id === input.userId);
+    const person = (await this.pins.people(minutesAgo(PERSON_LOCK.minutes, now), dayStart(now))).find((row) => row.id === input.userId);
     if (!person || !allowed(person)) throw new NotFoundError('That person has no Counter PIN here');
+    // The daily cap first: even the right PIN is refused until a manager unlocks it.
+    if (person.day_failures >= DAY_LOCK.failures) throw new PinDayLockedError(person.name);
     if (person.recent_failures >= PERSON_LOCK.failures) {
       throw new PinLockedError(`Too many wrong PINs for ${person.name}. Try again in ${PERSON_LOCK.minutes} minutes, or sign in with the password.`);
     }
     const ok = await verifyPassword(input.pin, person.pin_hash);
     await this.pins.recordAttempt({ userId: person.id, deviceId, purpose, ok });
     if (ok) return person;
+    const leftToday = DAY_LOCK.failures - person.day_failures - 1;
+    if (leftToday === 0) {
+      await this.activity.create({
+        userId: person.id,
+        action: 'pin.day_locked',
+        entityType: 'user',
+        entityId: person.id,
+        say: { key: 'pinDayLocked', params: { name: person.name } },
+      });
+      throw new PinDayLockedError(person.name);
+    }
     const left = PERSON_LOCK.failures - person.recent_failures - 1;
     if (left === 0) {
       await this.activity.create({
@@ -202,6 +279,9 @@ export class CounterPinService {
         say: { key: 'pinLocked', params: { name: person.name } },
       });
       throw new PinLockedError(`Too many wrong PINs for ${person.name}. Try again in ${PERSON_LOCK.minutes} minutes, or sign in with the password.`);
+    }
+    if (leftToday < left) {
+      throw new WrongPinError(`That PIN is wrong. ${leftToday} ${leftToday === 1 ? 'try' : 'tries'} left today before the PIN of ${person.name} is locked until the owner unlocks it.`);
     }
     throw new WrongPinError(`That PIN is wrong. ${left} ${left === 1 ? 'try' : 'tries'} left before ${person.name} is locked for ${PERSON_LOCK.minutes} minutes.`);
   }

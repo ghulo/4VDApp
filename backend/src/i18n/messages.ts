@@ -100,6 +100,8 @@ export interface ServerMessages {
     portalOrderDetail: (p: { lines: number; day: string }) => string;
     importCheckTitle: (products: number) => string;
     importCheckDetail: string;
+    pinLockedTitle: (name: string) => string;
+    pinLockedDetail: string;
     billEmailWaitingDetail: (limit: number) => string;
     billEmailFailedTitle: (sender: string) => string;
     billEmailFailedDetail: string;
@@ -422,6 +424,8 @@ export const en: ServerMessages = {
     portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'product' : 'products'}, sent ${p.day}. Accept it as an offer or decline it.`,
     importCheckTitle: (products) => `Check the ${products} imported products`,
     importCheckDetail: 'Look at a few side by side with your file, then mark the import checked.',
+    pinLockedTitle: (name) => `The Counter PIN of ${name} is locked`,
+    pinLockedDetail: '10 wrong PINs in a day: someone may be guessing it. Ask them, then unlock it on their page. If nobody unlocks it, it opens once the wrong tries are a day old.',
     billEmailWaitingDetail: (limit) => `Today's ${limit} bill reads by email are used up. Read it now, or it waits for tomorrow.`,
     billEmailFailedTitle: (sender) => `The emailed bill from ${sender} couldn't be read`,
     billEmailFailedDetail: 'Open the file and try again, or add the bill by hand.',
@@ -762,6 +766,8 @@ export const sq: ServerMessages = {
     portalOrderDetail: (p) => `${p.lines} ${p.lines === 1 ? 'produkt' : 'produkte'}, dërguar ${p.day}. Pranoje si ofertë ose refuzoje.`,
     importCheckTitle: (products) => `Kontrollo ${products} produktet e importuara`,
     importCheckDetail: 'Shiko disa krahas skedarit tënd, pastaj shëno importin si të kontrolluar.',
+    pinLockedTitle: (name) => `PIN-i i arkës për ${name} është i bllokuar`,
+    pinLockedDetail: '10 PIN të gabuar brenda një dite: dikush mund të jetë duke e provuar. Pyete, pastaj zhbllokoje te faqja e tij. Nëse askush nuk e zhbllokon, hapet kur provat e gabuara bëhen një ditë të vjetra.',
     billEmailWaitingDetail: (limit) => `Leximet e sotme me email (${limit}) u mbaruan. Lexoje tani, ose pret deri nesër.`,
     billEmailFailedTitle: (sender) => `Fatura me email nga ${sender} nuk u lexua`,
     billEmailFailedDetail: 'Hape skedarin dhe provo sërish, ose shtoje faturën me dorë.',

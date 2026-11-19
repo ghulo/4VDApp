@@ -4,7 +4,7 @@ import type { CounterPinService } from '../services/CounterPinService.js';
 import { deliverSession } from '../utils/sessionCookies.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { payLaterApprovalSchema, pinPeopleQuerySchema, rabatApprovalSchema, setPinSchema, switchSchema } from '../validators/pinValidators.js';
-import { parseInput } from '../validators/validate.js';
+import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { deviceOf } from './authController.js';
 
 export function createCounterPinController(pins: CounterPinService, refreshTtlDays: number) {
@@ -35,6 +35,13 @@ export function createCounterPinController(pins: CounterPinService, refreshTtlDa
 
     async allowPayLater(req: Request, res: Response): Promise<void> {
       sendSuccess(res, await pins.allowPayLater(actor(req), parseInput(payLaterApprovalSchema, req.body)), { statusCode: 201, message: 'Pay later allowed' });
+    },
+
+    /** A manager unlocks someone's PIN in this business (People → their page). */
+    async unlock(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await pins.unlock(req.user!.id, id);
+      sendSuccess(res, null, { message: 'PIN unlocked' });
     },
   };
 }

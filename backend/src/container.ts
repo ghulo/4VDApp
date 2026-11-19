@@ -14,7 +14,7 @@ import { SalesRepository } from './repositories/SalesRepository.js';
 import { SettingsRepository } from './repositories/SettingsRepository.js';
 import { SettingsService } from './services/SettingsService.js';
 import { CounterService } from './services/CounterService.js';
-import { CounterPinService } from './services/CounterPinService.js';
+import { CounterPinService, pinsLockedToday } from './services/CounterPinService.js';
 import { PinRepository } from './repositories/PinRepository.js';
 import { OfflineShortfallRepository } from './repositories/OfflineShortfallRepository.js';
 import { CounterRepository } from './repositories/CounterRepository.js';
@@ -230,7 +230,10 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     stockAdjustmentRepository,
     config.shopTimeZone,
   );
-  const userService = new UserService(userRepository, refreshTokenRepository, transactions);
+  // Counter PINs locked by the daily cap: People shows it, managers get a To do.
+  const pinRepository = new PinRepository(db);
+  const pinLocks = { lockedToday: () => pinsLockedToday(pinRepository) };
+  const userService = new UserService(userRepository, refreshTokenRepository, transactions, pinLocks);
   const notificationService = new NotificationService(notificationRepository);
   const favoriteService = new FavoriteService(favoriteRepository, productRepository, productService);
   const undoRepository = new UndoRepository(db);
@@ -369,6 +372,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     new PortalRepository(db),
     declarationService,
     { toCheck: () => importsToCheck(db) },
+    pinLocks,
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,
@@ -462,7 +466,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     inviteService,
   );
   const counterPinService = new CounterPinService(
-    new PinRepository(db),
+    pinRepository,
     userRepository,
     refreshTokenRepository,
     activityLogRepository,

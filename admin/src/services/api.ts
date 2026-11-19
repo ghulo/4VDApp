@@ -621,6 +621,10 @@ export const usersApi = {
   remove: async (id: number) => {
     await apiRequest(`/users/${id}`, { method: 'DELETE' });
   },
+  /** Too many wrong Counter PINs today: a manager unlocks that person's PIN here. */
+  unlockPin: async (id: number) => {
+    await apiRequest<null>(`/users/${id}/pin/unlock`, { method: 'POST', body: {} });
+  },
 };
 
 export const attentionApi = {

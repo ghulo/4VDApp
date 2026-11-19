@@ -736,7 +736,7 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
             }}
           >
             <span>{person.name}</span>
-            <span className="counter-person__role">{person.locked ? t.counter.pinLocked : t.common.roles[person.role]}</span>
+            <span className="counter-person__role">{person.lockedToday ? t.counter.pinLockedToday : person.locked ? t.counter.pinLocked : t.common.roles[person.role]}</span>
           </button>
         ))}
       </fieldset>

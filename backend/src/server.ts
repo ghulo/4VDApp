@@ -93,7 +93,9 @@ function crash(kind: string, error: unknown): void {
   crashing = true;
   logger.error(kind, { error: error instanceof Error ? (error.stack ?? error.message) : String(error) });
   captureError(error, { kind });
-  Promise.all([flushErrorTracking(), container.errorAlertService.sendIfDue()])
+  // Like the minute timer: the alert remembers its hour in the 4VD shop's settings, so it runs inside that business.
+  const alert = defaultBusinessId(db).then((shop) => runAsBusiness(shop, () => container.errorAlertService.sendIfDue()));
+  Promise.all([flushErrorTracking(), alert])
     .then(() => container.emailService.sendPending())
     .catch(() => undefined)
     .finally(() => shutdown(kind, 1));

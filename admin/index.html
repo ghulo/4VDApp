@@ -29,6 +29,16 @@
           choice = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         document.documentElement.dataset.theme = choice;
+        // A business in its own colours: put them back before the first paint (src/theme/applyBrand.ts keeps them).
+        try {
+          var brand = localStorage.getItem('4vd.brand');
+          if (brand && /^[\w\s:;#\-[\]'=(),.{}]+$/.test(brand)) {
+            var style = document.createElement('style');
+            style.id = 'brand-theme';
+            style.textContent = brand;
+            document.head.appendChild(style);
+          }
+        } catch (e) {}
       })();
     </script>
   </head>

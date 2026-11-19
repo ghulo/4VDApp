@@ -2,6 +2,10 @@ import express, { type Request, type Response, Router } from 'express';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { addBusinessSchema } from '../validators/authValidators.js';
 import { parseInput } from '../validators/validate.js';
+import { rateLimit } from 'express-rate-limit';
+import { z } from 'zod';
+import { RATE_LIMIT_WINDOW_MS, RATE_LIMITS } from '../constants/rateLimits.js';
+import { systemRoute } from '../database/businessContext.js';
 import type { Container } from '../container.js';
 import { createMediaController, createProfileController } from '../controllers/profileController.js';
 
@@ -31,6 +35,23 @@ export function createBusinessRoutes({ profileService, businessService, guards }
 
   return router;
 }
+
+/**
+ * A business's look by its short name, for its own sign-in and portal links
+ * (4vd.app/login?b=<short>): name, logo and colours only. Public, so it is
+ * rate-limited and runs as the system (no business is signed in yet).
+ */
+export function createBrandRoutes({ businessService }: Container): Router {
+  const router = Router();
+  const limit = rateLimit({ windowMs: RATE_LIMIT_WINDOW_MS, limit: RATE_LIMITS.PUBLIC, standardHeaders: 'draft-8', legacyHeaders: false });
+  router.get('/:shortName', limit, systemRoute, async (req, res) => {
+    const { shortName } = parseInput(brandParamsSchema, req.params);
+    sendSuccess(res, await businessService.publicBrand(shortName));
+  });
+  return router;
+}
+
+const brandParamsSchema = z.object({ shortName: z.string().regex(/^[a-z0-9-]{3,30}$/) });
 
 /** Photos and logos, public by their unguessable id so <img> tags can show them. */
 export function createMediaRoutes({ mediaService }: Container): Router {

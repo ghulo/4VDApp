@@ -153,6 +153,20 @@ export interface BusinessesTable {
   legal_form: Generated<LegalForm>;
   /** The part after the + in its bill address, bills+<short>@4vd.app (utils/shortName.ts). */
   short_name: string | null;
+  /** The owner's main colour, #rrggbb; null = the default (4VD's amber for 4VD, else a preset picked from short_name). */
+  brand_colour: string | null;
+  /** A second colour for charts and the marker; null = the main one. */
+  brand_accent: string | null;
+  /** Main → accent on the main key, the logo key and the marker. */
+  brand_gradient: Generated<boolean>;
+  /** Whether the greys lean towards the colour; null = the default (plain for 4VD, tinted for others). */
+  brand_greys: 'plain' | 'tinted' | null;
+  /** The theme before the last colour change, for "Back to previous". */
+  brand_previous: StoredBrandTheme | null;
+  /** The name on the dashboard, sign-in, portal and emails; null = name. Invoices keep the legal name. */
+  display_name: string | null;
+  /** Lines under the name on what 4VD prints (documents), at most 200 characters. */
+  receipt_header: string | null;
   created_at: CreatedAt;
   updated_at: UpdatedAt;
 }
@@ -2176,4 +2190,12 @@ export interface LeaveEntriesTable {
   note: string | null;
   created_by: number | null;
   created_at: CreatedAt;
+}
+
+/** A business's colour settings as stored (businesses.brand_previous keeps the one before the last change). */
+export interface StoredBrandTheme {
+  colour: string | null;
+  accent: string | null;
+  gradient: boolean;
+  greys: 'plain' | 'tinted' | null;
 }

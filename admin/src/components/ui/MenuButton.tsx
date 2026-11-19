@@ -31,13 +31,15 @@ interface MenuButtonProps {
   tooltip?: boolean;
   /** Shown above the items, not chosen (e.g. who you are). */
   heading?: ReactNode;
+  /** Small print under the items, not chosen (e.g. "Runs on 4VD"). */
+  footnote?: ReactNode;
 }
 
 /**
  * A key that opens a short list of related actions, like the downloads of a
  * page. Arrow keys move through the list, Esc closes it and returns to the key.
  */
-export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName, tooltip = true, heading }: MenuButtonProps) {
+export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm', loading, face, faceClassName, tooltip = true, heading, footnote }: MenuButtonProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -154,6 +156,12 @@ export function MenuButton({ label, icon, items, variant = 'ghost', size = 'sm',
             </Fragment>
           );
         })}
+        {footnote && (
+          // Like the heading: a sighted cue only, said again where it matters (the sign-in page).
+          <li role="none" aria-hidden="true" className="menu__footnote">
+            {footnote}
+          </li>
+        )}
       </ul>
     </div>
   );

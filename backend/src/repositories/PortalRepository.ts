@@ -536,9 +536,13 @@ export class PortalRepository {
   }
 
   /** The shop's own details, shown to customers (where to pay, whom to call). */
-  async shop(): Promise<{ name: string; phone: string | null; address: string | null; bank_name: string | null; iban: string | null }> {
-    const row = await this.db.selectFrom('businesses').select(['name', 'phone', 'address', 'bank_name', 'iban']).where('id', '=', sql<number>`current_business_id()`).executeTakeFirst();
-    return row ?? { name: '4VD', phone: null, address: null, bank_name: null, iban: null };
+  async shop() {
+    const row = await this.db
+      .selectFrom('businesses')
+      .select(['name', 'phone', 'address', 'bank_name', 'iban', 'display_name', 'short_name', 'brand_colour', 'brand_accent', 'brand_gradient', 'brand_greys', 'logo_media_id'])
+      .where('id', '=', sql<number>`current_business_id()`)
+      .executeTakeFirst();
+    return row ?? { name: '4VD', phone: null, address: null, bank_name: null, iban: null, display_name: null, short_name: '4vd', brand_colour: null, brand_accent: null, brand_gradient: false, brand_greys: null, logo_media_id: null };
   }
 
   async reopen(id: number, status: 'sent' | 'seen'): Promise<void> {

@@ -49,10 +49,39 @@
   flex: none;
 }
 
-.topbar__slash {
-  color: var(--line-strong);
-  font-size: var(--text-lg);
-  font-weight: 300;
+/* A business's own mark (BrandMark.tsx): its uploaded logo on a small paper
+   tile, or its initials on a key in its colour, lit top and deeper foot like
+   the main button, so a business without a logo still has a crafted one. */
+.brand-mark {
+  display: block;
+  flex: none;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  border-radius: 28%;
+}
+
+.brand-mark--logo {
+  object-fit: contain;
+  background: var(--surface);
+  box-shadow: var(--shadow-inset);
+}
+
+.brand-mark--initials {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1;
+  font-size: calc(var(--mark-size) * 0.42);
+  letter-spacing: -0.02em;
+  color: var(--cta-ink);
+  background: var(--mark-face, var(--amber-face));
+  box-shadow: var(--key-shine), inset 0 -2px 0 var(--cta-edge), var(--key-drop);
+  user-select: none;
+}
+
+.brand-mark--initials::after {
+  content: attr(data-initials);
 }
 
 .topbar__shop {
@@ -211,7 +240,8 @@
   bottom: 8px;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: var(--cta);
+  /* --nav-tick: a business's accent, or its main → accent gradient (theme/brandTheme.ts). */
+  background: var(--nav-tick, var(--cta));
   box-shadow: inset -1px 0 0 var(--amber-mark);
 }
 
@@ -492,7 +522,6 @@
     padding: 0 var(--space-2);
   }
 
-  .topbar__slash,
   .topbar__shop,
   .topbar__search kbd,
   .topbar .segmented {

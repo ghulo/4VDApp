@@ -1,18 +1,17 @@
 import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, ListMagnifyingGlass, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
-import { useQuery } from '@tanstack/react-query';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useBusinessPicker } from '../auth/useBusinessPicker';
 import { CommandPalette } from '../command/CommandPalette';
 import { useShortcuts } from '../command/useShortcuts';
-import { businessApi } from '../services/api';
 import { useAttention } from '../utils/useAttention';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
-import { LogoMark } from './LogoMark';
+import { BrandMark } from './BrandMark';
+import { useBrand } from '../theme/useBrand';
 import { Button, DeveloperMark, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
@@ -147,7 +146,7 @@ function FullLayout() {
 
   // The badge counts To do items only (DESIGN.md 3.3); Updates never add to it.
   const inboxCount = useAttention().data?.count ?? 0;
-  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
+  const brand = useBrand();
 
   // The top bar is plain canvas at the top of the page and turns to glass once
   // there is something underneath it to see through.
@@ -197,18 +196,13 @@ function FullLayout() {
     <div className={collapsed ? 'app app--collapsed' : 'app'}>
       <SkipLink />
       <header className={scrolled ? 'topbar topbar--glass' : 'topbar'}>
-        <Link to="/" className="topbar__brand" aria-label={t.nav.home}>
-          <LogoMark size={36} />
+        <Link to="/" className="topbar__brand" aria-label={brand && !brand.house ? t.nav.homeOf(brand.name) : t.nav.home}>
+          <BrandMark brand={brand} size={36} />
         </Link>
-        {business.data && business.data.name.trim().toUpperCase() !== '4VD' && (
-          <>
-            <span className="topbar__slash" aria-hidden="true">
-              /
-            </span>
-            <Link to="/settings" className="topbar__shop">
-              {business.data.name}
-            </Link>
-          </>
+        {brand && !brand.house && (
+          <Link to="/settings" className="topbar__shop">
+            {brand.name}
+          </Link>
         )}
         <Tooltip label={t.nav.search} shortcut={isMac ? '⌘ K' : 'Ctrl K'} side="bottom">
           <button type="button" className="topbar__search" aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'} onClick={() => setPaletteOpen(true)}>
@@ -228,6 +222,7 @@ function FullLayout() {
             face={<Avatar name={user.name} url={user.avatarUrl} size={30} />}
             faceClassName={location.pathname.startsWith('/profile') ? 'topbar__user active' : 'topbar__user'}
             heading={user.platformDeveloper ? <DeveloperMark /> : undefined}
+            footnote={brand && !brand.house ? t.nav.runsOn : undefined}
             items={[
               ...businessItems,
               { label: t.nav.items.profile, icon: UserCircle, divider: businessItems.length > 0, onSelect: () => navigate('/profile') },
@@ -247,7 +242,7 @@ function FullLayout() {
       <aside ref={sidebar} id="sidebar" className={drawerOpen ? 'sidebar sidebar--open' : 'sidebar'} aria-label={t.nav.mainMenu}>
         <div className="sidebar__drawer-head">
           <span className="topbar__brand">
-            <LogoMark size={36} />
+            <BrandMark brand={brand} size={36} />
           </span>
           <Button variant="ghost" icon={X} aria-label={t.nav.closeMenu} onClick={closeDrawer} />
         </div>

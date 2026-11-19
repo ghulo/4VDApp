@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { EmailService } from '../src/services/email/EmailService.js';
 import type { EmailSender, OutgoingEmail } from '../src/services/email/senders.js';
-import { emailTemplates } from '../src/services/email/templates.js';
+import { emailBrandOf, emailTemplates, setEmailMediaBase } from '../src/services/email/templates.js';
 import { EmailOutboxRepository } from '../src/repositories/EmailOutboxRepository.js';
 import { resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
@@ -63,6 +63,30 @@ describe('email outbox', () => {
 });
 
 describe('email templates', () => {
+  it("should show a customer business's own name, initials key and colour, with 4VD only in the small print", () => {
+    const brand = emailBrandOf({ house: false, name: 'Kafe <D>', colour: '#0f766e', greys: 'tinted', logoUrl: null, initials: 'KD', accent: null, gradient: false });
+    const email = emailTemplates.invite({ shopName: 'Kafe <D>', inviterName: 'Arta', role: 'employee', link: 'https://app.test/invite/abc', brand });
+
+    expect(email.html).toContain('Kafe &lt;D&gt;');
+    expect(email.html).toContain('>KD</td>');
+    expect(email.html).toContain('background-color:#0f766e');
+    expect(email.html).toContain('Runs on 4VD');
+    expect(email.html).not.toContain('email-logo.png');
+    expect(email.text).toContain('Kafe <D> (4VD)');
+  });
+
+  it('should ask for a PNG logo by its full address, and keep the initials when the API has no outside address', () => {
+    const look = { house: false, name: 'Kafe D', colour: '#0f766e', greys: 'plain', logoUrl: '/api/media/abc', initials: 'KD', accent: null, gradient: false } as const;
+    setEmailMediaBase('https://api.test/');
+    expect(emailBrandOf(look)?.logoSrc).toBe('https://api.test/api/media/abc?format=png');
+    setEmailMediaBase(undefined);
+    expect(emailBrandOf(look)?.logoSrc).toBeNull();
+  });
+
+  it("should keep 4VD's own look for 4VD's own business", () => {
+    expect(emailBrandOf({ house: true, name: '4VD', colour: '#f5b71a', greys: 'plain', logoUrl: null, initials: '4V', accent: null, gradient: false })).toBeUndefined();
+  });
+
   it('should carry the link in both the HTML and the plain text', () => {
     const email = invite();
 

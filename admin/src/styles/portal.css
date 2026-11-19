@@ -48,6 +48,13 @@
   gap: var(--space-4);
 }
 
+/* 4VD in small print under a shop's own sign-in. */
+.portal-auth__runs {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
 .portal-auth__prefs {
   display: flex;
   flex-wrap: wrap;

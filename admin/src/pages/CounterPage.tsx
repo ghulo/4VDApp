@@ -42,7 +42,7 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import { businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
 import { useFeatures } from '../utils/useFeatures';
 import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -166,6 +166,8 @@ export function CounterPage() {
   const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  // The Z report's header shows the business's own name (4VD's own business: 4VD).
+  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   // The shop drawer today: its opening cash and whether it was counted (never what 4VD expects).
@@ -664,7 +666,7 @@ export function CounterPage() {
   }
 
   async function runReport(kind: 'x' | 'z') {
-    const printed = await printer.send(kind === 'x' ? '4VD-X' : '4VD-Z', kind === 'x' ? xReportJob() : zReportJob('4VD'));
+    const printed = await printer.send(kind === 'x' ? '4VD-X' : '4VD-Z', kind === 'x' ? xReportJob() : zReportJob(business.data?.brand.name ?? '4VD'));
     if (!printed.ok) {
       setPrintNote({ ok: false, text: printed.message });
       return;

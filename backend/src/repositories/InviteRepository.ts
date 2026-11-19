@@ -6,6 +6,14 @@ export interface InviteRecord {
   id: number;
   business_id: number;
   business_name: string;
+  /** The business's look (services/brand.ts), for the invite page and email. */
+  display_name: string | null;
+  short_name: string | null;
+  brand_colour: string | null;
+  brand_accent: string | null;
+  brand_gradient: boolean;
+  brand_greys: 'plain' | 'tinted' | null;
+  logo_media_id: string | null;
   email: string;
   role: StoredRole;
   language: Language;
@@ -28,6 +36,13 @@ export class InviteRepository {
         'i.id',
         'i.business_id',
         'b.name as business_name',
+        'b.display_name',
+        'b.short_name',
+        'b.brand_colour',
+        'b.brand_accent',
+        'b.brand_gradient',
+        'b.brand_greys',
+        'b.logo_media_id',
         'i.email',
         'i.role',
         'i.language',

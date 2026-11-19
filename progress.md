@@ -13,6 +13,21 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
+**Each business in its own look** (on 4vd.app, after the deploy; 4VD's own business must look exactly as before)
+- [ ] A customer business (not 4VD): Settings → Business → "How your business looks": pick a preset and type any colour code; only your own screen turns that colour as you pick; Cancel puts it back; "Save for everyone" keeps it after a reload and on another device
+- [ ] A very dark and a very pale colour: the card says words and outlines use a readable shade; the main key keeps the exact colour and its text stays readable, light and dark
+- [ ] Name shown and receipt lines: the top bar, account menu ("Runs on 4VD" small print) and the preview show the new name; invoices keep the legal name, with the receipt lines under it
+- [ ] Without a logo: its initials on a key in its colour (top bar, sign-in link, portal, invoice); with a logo: the logo everywhere instead
+- [ ] Its own sign-in link (copy from the card) opens a sign-in page in its colour and name; plain 4vd.app/login stays 4VD's
+- [ ] Its portal link and the portal after signing in: its name, mark and colour, "Runs on 4VD" under the sign-in
+- [ ] An invite and a portal invite/sign-in email from that business, in Gmail and in Outlook (phone and PC): its logo or initials key at the top, the key in its colour, its name in the small print; Outlook shows the logo (it gets a PNG)
+- [ ] Shop PC: the Z report header says the business's name; the fiscal slip header itself can't be set from 4VD (no F-Link command known), so it stays whatever the printer has
+- [ ] An accent (e.g. Navy) on a customer business: the charts and the marker beside the page you're on take it; the rest of the dashboard keeps the main colour
+- [ ] Gradient "Colour → accent": the main keys, the logo key and the marker run from one to the other; a pair too far apart (e.g. Cobalt + Coral) keeps the main key flat and the card says why; the logo key and marker still run
+- [ ] 4VD's own business: the same card without name or receipt lines; it starts on today's amber; an accent changes only the charts and the marker; the 4VD logo stays
+- [ ] "Back to previous" after a save puts the colours from before it back; "Reset to default" asks first, says what it goes back to, and Esc or "Keep mine" closes it
+- [ ] The two small previews (light and dark) and the receipt match what the dashboard shows after saving; History shows one "colours" entry per save
+
 **Backups and error tracking**
 - [ ] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy
 - [ ] Sentry: after the API DSN is on Render and the dashboard DSN is in admin/.env.production, the first real error shows in Sentry with a stack trace and no email, name or request body in it

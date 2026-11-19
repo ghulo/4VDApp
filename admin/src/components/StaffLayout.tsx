@@ -9,7 +9,8 @@ import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loading } from './Feedback';
-import { LogoMark } from './LogoMark';
+import { BrandMark } from './BrandMark';
+import { useBrand } from '../theme/useBrand';
 import { MenuButton } from './ui';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 
@@ -21,6 +22,7 @@ import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 export function StaffLayout() {
   const user = useCurrentUser();
   const { logout } = useAuth();
+  const brand = useBrand();
   const location = useLocation();
   const navigate = useNavigate();
   useFocusOnRouteChange();
@@ -48,8 +50,8 @@ export function StaffLayout() {
     <div className="staff-app">
       <SkipLink />
       <header className="topbar staff-app__top">
-        <Link to={shown[0].to} className="topbar__brand" aria-label={t.nav.home}>
-          <LogoMark size={36} />
+        <Link to={shown[0].to} className="topbar__brand" aria-label={brand && !brand.house ? t.nav.homeOf(brand.name) : t.nav.home}>
+          <BrandMark brand={brand} size={36} />
         </Link>
         <div className="staff-app__wide-tabs">{tabs}</div>
         <div className="topbar__end">
@@ -64,6 +66,7 @@ export function StaffLayout() {
               { label: t.nav.items.profile, icon: UserCircle, divider: businesses.length > 0, onSelect: () => navigate('/profile') },
               { label: t.nav.logOut, icon: SignOut, onSelect: logout },
             ]}
+            footnote={brand && !brand.house ? t.nav.runsOn : undefined}
           />
         </div>
       </header>

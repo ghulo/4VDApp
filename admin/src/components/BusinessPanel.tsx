@@ -10,6 +10,8 @@ import { Button, Card, Field, RemoveButton, SettingRow } from './ui';
 import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 import { HistoryCard } from './HistoryCard';
+import { BrandCard } from './BrandCard';
+import { BrandMark } from './BrandMark';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
@@ -43,6 +45,7 @@ export function BusinessPanel() {
   return (
     <>
       <BusinessForm initial={business.data} />
+      <BrandCard business={business.data} />
       <InvoicePicturesCard business={business.data} />
       <HistoryCard entityType="business" entityId={business.data.id} />
     </>
@@ -220,6 +223,9 @@ function BusinessForm({ initial }: { initial: Business }) {
           {/* No logo yet: an empty frame, not 4VD's own mark, which looked like a logo was already set. */}
           {logo ? (
             <img className="business-logo" src={mediaSrc(logo)!} alt="" width={72} height={72} />
+          ) : !initial.brand.house ? (
+            // Until a logo comes: the initials key it shows everywhere.
+            <BrandMark brand={{ house: false, logoUrl: null, initials: initial.brand.initials }} size={48} />
           ) : (
             <span className="business-logo business-logo--empty" aria-hidden="true">
               <ImageSquare size={22} />

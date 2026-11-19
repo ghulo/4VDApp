@@ -69,7 +69,8 @@ export function createMediaController(mediaService: MediaService) {
   return {
     async show(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(mediaParamsSchema, req.params);
-      const media = await mediaService.read(id);
+      // Emails ask for ?format=png: Outlook and older mail apps can't show WebP.
+      const media = req.query.format === 'png' ? await mediaService.readPng(id) : await mediaService.read(id);
       // A new picture always gets a new id, so the old one can be cached forever.
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
       // The dashboard and the app are on other addresses; let their <img> tags load it.

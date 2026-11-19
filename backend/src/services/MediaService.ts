@@ -41,6 +41,13 @@ export class MediaService {
     return media;
   }
 
+  /** A picture as PNG, for mail apps that can't show WebP (Outlook). PDFs and other files stay as they are. */
+  async readPng(id: string): Promise<{ mime: string; bytes: Buffer }> {
+    const media = await this.read(id);
+    if (!media.mime.startsWith('image/') || media.mime === 'image/png') return media;
+    return { mime: 'image/png', bytes: await sharp(media.bytes).png().toBuffer() };
+  }
+
   async mimes(ids: string[]): Promise<Map<string, string>> {
     return this.mediaRepository.findMimes(ids);
   }

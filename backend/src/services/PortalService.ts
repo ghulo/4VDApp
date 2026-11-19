@@ -24,11 +24,12 @@ import { zonedDay } from '../utils/zonedDates.js';
 import { splitVat } from './documents/vat.js';
 import type { DocumentService } from './DocumentService.js';
 import type { EmailService } from './email/EmailService.js';
-import { emailTemplates } from './email/templates.js';
+import { emailBrandOf, emailTemplates } from './email/templates.js';
 import { calculateUnitPrice } from './pricing/bulkPricing.js';
 import { levelPrice } from './pricing/salePrice.js';
 import type { SalesDocumentService } from './SalesDocumentService.js';
 import type { TabService } from './TabService.js';
+import { brandOf, type BrandDto } from './brand.js';
 
 /**
  * Step 15, the portal for business customers (4vd.app/portal).
@@ -305,17 +306,18 @@ export class PortalService {
         const token = generateRefreshToken();
         await this.repository.createLink(person.id, 'sign_in', hashRefreshToken(token), new Date(now.getTime() + PORTAL_SIGN_IN_MINUTES * 60 * 1000));
         const shop = await this.repository.shop();
-        await this.emailService.queue(address, emailTemplates.portalSignIn({ shopName: shop.name, link: this.link(token, 'sign_in') }, messages[person.language]));
+        await this.emailService.queue(address, emailTemplates.portalSignIn({ ...shopForEmail(shop), link: this.link(token, 'sign_in') }, messages[person.language]));
       });
     }
   }
 
   /** The page before the button: is the link still good, and whose is it. Spends nothing. */
-  async peek(token: string, now = new Date()): Promise<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string }> {
+  async peek(token: string, now = new Date()): Promise<{ purpose: 'invite' | 'sign_in'; customer: string; name: string; shop: string; brand: BrandDto }> {
     const link = await this.repository.peekLink(hashRefreshToken(token), now);
     if (!link) throw new NotFoundError('This link no longer works. Ask the shop for a new one, or sign in with your email.');
     const shop = await this.repository.shop();
-    return { purpose: link.purpose, customer: link.customer_name, name: link.person_name, shop: shop.name };
+    const brand = brandOf(shop);
+    return { purpose: link.purpose, customer: link.customer_name, name: link.person_name, shop: brand.name, brand };
   }
 
   /** Spends the link and opens a session; returns the cookie's token. */
@@ -370,6 +372,7 @@ export class PortalService {
       canOrder: p.canOrder,
       minOrder: p.minOrder,
       shop: { name: shop.name, phone: shop.phone, address: shop.address },
+      brand: brandOf(shop),
     };
   }
 
@@ -744,7 +747,7 @@ export class PortalService {
   private async sendInvite(email: string | null, send: boolean, language: PortalLanguage, customerName: string, token: string): Promise<boolean> {
     if (!email || !send) return false;
     const shop = await this.repository.shop();
-    await this.emailService.queue(email, emailTemplates.portalInvite({ shopName: shop.name, customerName, link: this.link(token, 'invite') }, messages[language]));
+    await this.emailService.queue(email, emailTemplates.portalInvite({ ...shopForEmail(shop), customerName, link: this.link(token, 'invite') }, messages[language]));
     return true;
   }
 
@@ -925,9 +928,15 @@ export class PortalService {
       if (!person.email) continue;
       await this.emailService.queue(
         person.email,
-        emailTemplates.portalOrderChanged({ shopName: shop.name, orderId: id, reason, total: formatMoney(priced.total, person.language), link }, messages[person.language]),
+        emailTemplates.portalOrderChanged({ ...shopForEmail(shop), orderId: id, reason, total: formatMoney(priced.total, person.language), link }, messages[person.language]),
       );
     }
     return this.shopOrder(id, actorId, now);
   }
+}
+
+/** The business's name and look in a portal email: its display name and colours, or 4VD's own for 4VD. */
+function shopForEmail(shop: Parameters<typeof brandOf>[0]) {
+  const brand = brandOf(shop);
+  return { shopName: brand.name, brand: emailBrandOf(brand) };
 }

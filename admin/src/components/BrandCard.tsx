@@ -75,6 +75,10 @@ export function BrandCard({ business }: { business: Business }) {
   const lookChanged = !sameLook(look, saved);
   const hasChanges = lookChanged || (!house && ((displayName.trim() || null) !== business.displayName || (receiptHeader.trim() || null) !== business.receiptHeader));
   const atDefault = business.brandColour === null && business.brandAccent === null && !business.brandGradient && business.brandGreys === null;
+  const defaultLook: Look = { colour: business.brandDefault.colour, accent: null, gradient: false, greys: business.brandDefault.greys };
+  /** Saved colours go back after a question; colours only tried go back at once (nothing to save). */
+  const resetNothing = atDefault && sameLook(look, defaultLook);
+  const onReset = () => (atDefault ? setLook(defaultLook) : setConfirmReset(true));
   const previous = business.brandPrevious;
   const previousLook: Look | null = previous
     ? {
@@ -145,11 +149,18 @@ export function BrandCard({ business }: { business: Business }) {
                 {words.previous}
               </Button>
             )}
-            {!hasChanges && !atDefault && (
-              <Button ref={resetKey} type="button" variant="ghost" disabled={save.isPending} aria-expanded={confirmReset} aria-controls="brand-reset" onClick={() => setConfirmReset(true)}>
-                {words.reset}
-              </Button>
-            )}
+            {/* Always here, so it is never missing when someone looks for it; greyed out once everything is the default. */}
+            <Button
+              ref={resetKey}
+              type="button"
+              variant="ghost"
+              disabled={save.isPending || resetNothing}
+              aria-expanded={atDefault ? undefined : confirmReset}
+              aria-controls={atDefault ? undefined : 'brand-reset'}
+              onClick={onReset}
+            >
+              {words.reset}
+            </Button>
             {hasChanges && (
               <Button type="button" variant="ghost" onClick={cancel} disabled={save.isPending}>
                 {words.undo}

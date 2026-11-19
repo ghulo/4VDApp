@@ -9,6 +9,7 @@ import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { CountryFlag, useCountries } from './CountryFlag';
 import { ErrorNotice, Loading } from './Feedback';
+import { ColourChange } from './ColourChange';
 import { Badge, Button, Card } from './ui';
 
 /** Newest few first; the rest behind "Show all", so a long-lived product doesn't push the page down. */
@@ -16,6 +17,9 @@ const SHOWN = 8;
 
 /** Records the developer can put back to an earlier point (the API checks the same). */
 const RESTORABLE: HistoryEntity[] = ['product', 'user', 'supplier', 'customer', 'business'];
+
+/** Colour saves go back through Settings (Back to previous, Reset), not Restore. */
+const onlyColours = (entry: ActivityEntry) => (entry.changes ?? []).length > 0 && (entry.changes ?? []).every((change) => change.field === 'colours');
 
 const MONEY_FIELDS = new Set(['price', 'costPrice', 'monthlyTarget']);
 
@@ -40,6 +44,7 @@ function useValueText() {
 function ChangeLine({ change }: { change: FieldChange }) {
   const t = useT();
   const text = useValueText();
+  if (change.field === 'colours') return <ColourChange from={change.from} to={change.to} />;
   return (
     <span className="record-history__change">
       {change.field === 'originCountry' && typeof change.to === 'string' && <CountryFlag code={change.to} decorative />}
@@ -73,7 +78,7 @@ export function HistoryCard({ entityType, entityId }: { entityType: HistoryEntit
   const own = (entry: ActivityEntry) => entry.entityType === entityType && entry.entityId === entityId;
   // Restoring to the newest change would change nothing, so it gets no button.
   const newestOwn = entries.find(own)?.id;
-  const canRestore = (entry: ActivityEntry) => role === 'developer' && RESTORABLE.includes(entityType) && own(entry) && entry.id !== newestOwn;
+  const canRestore = (entry: ActivityEntry) => role === 'developer' && RESTORABLE.includes(entityType) && own(entry) && entry.id !== newestOwn && !onlyColours(entry);
   // Focus goes back to the entry's button once its panel closes.
   function closeRestore(id: number) {
     setRestoring(null);

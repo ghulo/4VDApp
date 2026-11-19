@@ -674,7 +674,7 @@ export class PayrollService {
       (left) => left.amount,
     );
     const amount = sumOf(chosen, (left) => left.amount);
-    await this.addPayments(monthId, detail.month, input, [{ kind: 'wages', amount, carwash, people: chosen }], actorId);
+    await this.addPayments(monthId, detail, input, [{ kind: 'wages', amount, carwash, people: chosen }], actorId);
     return this.month(monthId, now);
   }
 
@@ -693,22 +693,33 @@ export class PayrollService {
     if (detail.taxLeft > 0) parts.push({ kind: 'tax', amount: detail.taxLeft, carwash: Math.min(detail.taxLeft, roundMoney(carwashTax - paidCarwash('tax'))), people: [] });
     if (detail.pensionLeft > 0) parts.push({ kind: 'pension', amount: detail.pensionLeft, carwash: Math.min(detail.pensionLeft, roundMoney(carwashPension - paidCarwash('pension'))), people: [] });
     if (parts.length === 0) throw new ValidationError('Nothing is owed to ATK for this month');
-    await this.addPayments(monthId, detail.month, input, parts, actorId);
+    await this.addPayments(monthId, detail, input, parts, actorId);
     return this.month(monthId, now);
   }
 
+  /**
+   * What is owed was worked out from `seen` before this runs. Two people pressing
+   * Pay at once: the month row is locked, and if the payments changed since
+   * `seen` (the other one got there first) nothing is paid twice.
+   */
   private async addPayments(
     monthId: number,
-    month: string,
+    seen: { month: string; payments: Array<{ id: number }> },
     input: { placeId: number; paidOn: string; note: string | null },
     parts: Array<{ kind: 'wages' | 'tax' | 'pension'; amount: number; carwash: number; people: Array<{ employeeId: number; amount: number }> }>,
     actorId: number,
   ): Promise<void> {
+    const month = seen.month;
     if (input.paidOn < month) throw new ValidationError('paidOn: pay is paid after the month starts');
     await this.db.transaction().execute(async (trx) => {
       await this.checkPlace(trx, input.placeId);
       await assertMonthsOpen(new VatMonthRepository(trx), [input.paidOn]);
       await trx.selectFrom('payroll_months').select('id').where('id', '=', monthId).forUpdate().execute();
+      const current = await trx.selectFrom('payroll_payments').select('id').where('month_id', '=', monthId).where('voided_at', 'is', null).orderBy('id').execute();
+      const before = seen.payments.map((payment) => payment.id).sort((a, b) => a - b);
+      if (current.length !== before.length || current.some((row, i) => row.id !== before[i])) {
+        throw new ConflictError('Someone else paid or undid a payment for this month just now. Look again before paying.');
+      }
       for (const part of parts) {
         const row = await trx
           .insertInto('payroll_payments')
@@ -739,6 +750,8 @@ export class PayrollService {
         .forUpdate()
         .executeTakeFirst();
       if (!row || row.voided_at) throw new NotFoundError(`Payment ${paymentId} does not exist`);
+      // The same lock as paying, so a payment and an undo can't cross.
+      await trx.selectFrom('payroll_months').select('id').where('id', '=', row.month_id).forUpdate().execute();
       const line = await trx.selectFrom('bank_lines').select('id').where('done_kind', '=', 'payroll').where('done_ref', '=', paymentId).where('status', '=', 'done').executeTakeFirst();
       if (line) throw new ConflictError('A bank statement line is matched to this payment: undo the match first');
       await assertMonthsOpen(new VatMonthRepository(trx), [row.paid_on]);

@@ -619,7 +619,7 @@ export class VatService {
     if (!current.canFile) throw new ConflictError('A month can be filed once it is over');
     const figures: FiledFigures = { boxes: current.boxes, outcome: current.outcome, carriedFrom: current.carriedFrom };
     await this.db.transaction().execute(async (trx) => {
-      await new VatMonthRepository(trx).file(month, figures, actorId);
+      if (!(await new VatMonthRepository(trx).file(month, figures, actorId))) throw new ConflictError('This month is already filed');
       await new ActivityLogRepository(trx).create({
         userId: actorId,
         action: 'vat.filed',

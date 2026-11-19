@@ -176,7 +176,9 @@ describe('filing a month', () => {
 
   it('keeps what was filed, and refuses filing a month that is not over or already filed', async () => {
     expect((await api().post(`/api/vat/${THIS}/file`).set(auth(accountantToken))).status).toBe(409);
-    expect((await api().post(`/api/vat/${LAST}/file`).set(auth(accountantToken))).status).toBe(200);
+    // Two presses at once: only one files.
+    const presses = await Promise.all([1, 2, 3].map(() => api().post(`/api/vat/${LAST}/file`).set(auth(accountantToken))));
+    expect(presses.map((press) => press.status).sort()).toEqual([200, 409, 409]);
     expect((await api().post(`/api/vat/${LAST}/file`).set(auth(accountantToken))).status).toBe(409);
     expect((await api().put(`/api/vat/${LAST}`).set(auth(accountantToken)).send({ refund: 0 })).status).toBe(409);
   });

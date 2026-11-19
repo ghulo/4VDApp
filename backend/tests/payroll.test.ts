@@ -243,6 +243,20 @@ describe('payroll in the app', () => {
     expect(book.body.data.lines.some((line: { kind: string; amount: number }) => line.kind === 'payroll' && line.amount === -456.5)).toBe(true);
   });
 
+  it('pays wages once when two people press Pay at the same moment', async () => {
+    await add();
+    const id = (await api().post(`/api/payroll/run/${lastMonth()}`).set(auth()).send({})).body.data.id;
+    const { till } = await places();
+    const press = () => api().post(`/api/payroll/months/${id}/pay-wages`).set(auth()).send({ placeId: till.id, paidOn: today() });
+    const results = await Promise.all([press(), press(), press()]);
+    const statuses = results.map((result) => result.status).sort();
+    // One pays; the others either see nothing left (400) or that someone else just paid (409).
+    expect(statuses.filter((status) => status === 201)).toHaveLength(1);
+    expect(statuses.every((status) => [201, 400, 409].includes(status))).toBe(true);
+    const month = await api().get(`/api/payroll/months/${id}`).set(auth());
+    expect(month.body.data.payments.filter((payment: { kind: string }) => payment.kind === 'wages')).toHaveLength(1);
+  });
+
   it('lets a changed gross through with a reason, and warns about the minimum wage and leave still owed', async () => {
     const low = await add({ payAmount: 300 });
     await add({ name: 'Leaving', personalNumber: null, startedOn: '2025-01-01', leftOn: `${lastMonth()}-20` });

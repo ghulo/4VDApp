@@ -86,14 +86,20 @@ export class VatMonthRepository {
       .execute();
   }
 
-  async file(month: string, figures: unknown, by: number): Promise<void> {
-    await this.db
+  /** Files the month; false when it was already filed (two people pressing File at once: only one files). */
+  async file(month: string, figures: unknown, by: number): Promise<boolean> {
+    const row = await this.db
       .insertInto('vat_months')
       .values({ month, filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by })
       .onConflict((conflict) =>
-        conflict.columns(['business_id', 'month']).doUpdateSet({ filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by, updated_at: new Date() }),
+        conflict
+          .columns(['business_id', 'month'])
+          .doUpdateSet({ filed_at: new Date(), filed_by: by, figures: JSON.stringify(figures), updated_by: by, updated_at: new Date() })
+          .where('vat_months.filed_at', 'is', null),
       )
-      .execute();
+      .returning('month')
+      .executeTakeFirst();
+    return row !== undefined;
   }
 
   async reopen(month: string, by: number): Promise<void> {

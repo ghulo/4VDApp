@@ -2594,6 +2594,7 @@ export const sq: Catalogue = {
         darkWords: 'Ngjyra jote është shumë e errët, ndaj në pamjen e errët fjalët dhe vijat marrin një nuancë më të çelët të saj. Butonat dhe logoja mbajnë ngjyrën tënde të saktë.',
         paleWords: 'Ngjyra jote është shumë e çelët, ndaj në pamjen e çelët fjalët dhe vijat marrin një nuancë më të thellë të saj. Butonat dhe logoja mbajnë ngjyrën tënde të saktë.',
         flatKey: 'Dy ngjyrat e tua janë shumë larg në ndriçim që një ngjyrë fjalësh të lexohet përgjatë tyre, ndaj butoni kryesor mbetet me një ngjyrë. Logoja dhe shenja e mbajnë gradientin.',
+        flatMark: 'Dy ngjyrat e tua janë shumë larg në ndriçim që fjalët ose logoja të lexohen mbi një kalim mes tyre, ndaj butonat dhe logoja mbeten me një ngjyrë. Vetëm shenja pranë faqes ku je kalon nga njëra te tjetra.',
       },
       receiptHeader: 'Rreshtat nën emër (opsional)',
       receiptHeaderHint: 'Shtypen nën emrin tënd në fatura dhe oferta, p.sh. adresa dhe telefoni. Deri në 200 shkronja.',

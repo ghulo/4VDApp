@@ -29,6 +29,8 @@ export interface EmailBrand {
   key: { face: string; top: string; edge: string; ink: string; to: string | null };
   /** The accent the logo key runs to, when the gradient is on. */
   markTo: string | null;
+  /** The ink on the initials key (reads along its gradient). */
+  markInk: string;
   link: string;
   linkDark: string;
 }
@@ -49,6 +51,7 @@ export function emailBrandOf(brand: BrandDto): EmailBrand | undefined {
     logoSrc: brand.logoUrl && mediaBase ? `${mediaBase}${brand.logoUrl}?format=png` : null,
     key: { face: colours.key.face, top: colours.key.top, edge: colours.key.edge, ink: colours.key.ink, to: colours.gradient.key ? brand.accent : null },
     markTo: colours.gradient.mark ? brand.accent : null,
+    markInk: colours.key.markInk,
     link: colours.words.light,
     linkDark: colours.words.dark,
   };
@@ -193,7 +196,7 @@ const card = (inner: string, strip?: string) =>
 function brandHeader(brand: EmailBrand): string {
   const mark = brand.logoSrc
     ? `<img src="${escapeHtml(brand.logoSrc)}" width="56" height="56" alt="${escapeHtml(brand.name)}" style="display:block;border:0;width:56px;height:56px;border-radius:14px">`
-    : `<table ${TABLE}><tr><td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;border-radius:15px;background-color:${brand.key.face};background-image:${brand.markTo ? `linear-gradient(100deg,${brand.key.face},${brand.markTo})` : `linear-gradient(${brand.key.top},${brand.key.face} 55%)`};border-bottom:2px solid ${brand.key.edge};font-family:${SERIF};font-size:23px;line-height:56px;font-weight:600;color:${brand.key.ink};text-align:center">${escapeHtml(brand.initials)}</td></tr></table>`;
+    : `<table ${TABLE}><tr><td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;border-radius:15px;background-color:${brand.key.face};background-image:${brand.markTo ? `linear-gradient(100deg,${brand.key.face},${brand.markTo})` : `linear-gradient(${brand.key.top},${brand.key.face} 55%)`};border-bottom:2px solid ${brand.key.edge};font-family:${SERIF};font-size:23px;line-height:56px;font-weight:600;color:${brand.markInk};text-align:center">${escapeHtml(brand.initials)}</td></tr></table>`;
   return `<td style="vertical-align:middle">${mark}</td><td class="ink" style="vertical-align:middle;padding-left:14px;font-family:${SERIF};font-size:20px;line-height:26px;font-weight:600;color:${C.ink}">${escapeHtml(brand.name)}</td>`;
 }
 

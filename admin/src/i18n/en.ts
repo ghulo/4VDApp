@@ -2616,6 +2616,7 @@ export const en = {
         darkWords: 'Your colour is very dark, so on the dark look words and outlines use a lighter shade of it. Keys and your logo keep your exact colour.',
         paleWords: 'Your colour is very pale, so on the light look words and outlines use a deeper shade of it. Keys and your logo keep your exact colour.',
         flatKey: 'Your two colours are too far apart in lightness for one word colour to read all along them, so the main key stays one colour. The logo key and the marker still use the gradient.',
+        flatMark: 'Your two colours are too far apart in lightness for words or the logo to read on a gradient between them, so the keys and the logo stay one colour. Only the marker beside the page you’re on runs from one to the other.',
       },
       receiptHeader: 'Lines under your name (optional)',
       receiptHeaderHint: 'Printed under your name on invoices and offers, e.g. address and phone. Up to 200 characters.',

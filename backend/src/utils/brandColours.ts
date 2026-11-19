@@ -16,8 +16,11 @@ function contrastRatio(hexA: string, hexB: string): number {
 }
 
 export type BrandGreys = 'plain' | 'tinted';
-/** darkWords/paleWords: words take a readable shade; flatKey: no word colour reads all along the gradient, so the main key stays one colour. */
-export type BrandNote = 'darkWords' | 'paleWords' | 'flatKey';
+/**
+ * darkWords/paleWords: words take a readable shade; flatKey: no word colour reads all along the gradient, so the main key stays one colour;
+ * flatMark: not even the logo's ink reads along it (3:1, as for graphics), so the logo and initials key stay one colour too and only the marker runs.
+ */
+export type BrandNote = 'darkWords' | 'paleWords' | 'flatKey' | 'flatMark';
 
 export interface BrandExtras {
   /** A second colour for charts and the "where you are" marker; null = the main one. */
@@ -41,6 +44,10 @@ export interface BrandPreview {
   keyInk: string;
   keyEdge: string;
   markFace: string;
+  /** The logo tile's two ends (the same colour when there is no gradient). */
+  markFrom: string;
+  markTo: string;
+  markInk: string;
   tick: string;
   data1: string;
   data3: string;
@@ -52,7 +59,8 @@ export interface BrandTheme {
   /** What the guard changed, for the owner. */
   notes: BrandNote[];
   /** The key's colours, for previews and the placeholder logo. */
-  key: { face: string; top: string; low: string; edge: string; ink: string };
+  /** markInk: the ink on the logo tile and initials key (reads along the gradient when they run). */
+  key: { face: string; top: string; low: string; edge: string; ink: string; markInk: string };
   /** Brand words and outlines on paper, light and dark. */
   words: { light: string; dark: string };
   /** The ramp itself, 50 → 990, for the little strip under the picker. */
@@ -187,25 +195,31 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
   // The gradient runs main → accent. Its words must read all along it (luminance
   // can dip between two hues), and where the key's foot darkens it; the light
   // along the top fades out above the words. If no ink reads, the main key stays
-  // one colour and only the logo key and marker shade.
+  // one colour. The logo and initials key are graphics, so their ink needs 3:1
+  // along it; below that they stay one colour too and only the marker runs.
   let keyGradient: string | null = null;
   let markGradient: string | null = null;
+  let markInk = ink;
   if (extras.gradient && accentHex) {
-    markGradient = `${KEY_SHADE}, linear-gradient(100deg, ${hex}, ${accentHex})`;
+    const shaded = `${KEY_SHADE}, linear-gradient(100deg, ${hex}, ${accentHex})`;
     const along = Array.from({ length: 11 }, (_, i) => mix(hex, accentHex, i / 10)).flatMap((colour) => [colour, mix(colour, BLACK, 0.1)]);
     const worst = (candidate: string) => Math.min(...along.map((colour) => contrastRatio(colour, candidate)));
     const best = [darkInk, WHITE, BLACK].sort((a, b) => worst(b) - worst(a))[0]!;
     if (worst(best) >= 4.5) {
-      keyGradient = markGradient;
+      keyGradient = shaded;
       ink = best;
     } else notes.push('flatKey');
+    if (worst(best) >= 3) {
+      markGradient = shaded;
+      markInk = best;
+    } else notes.push('flatMark');
   }
 
   // The accent draws the charts and the marker; without one, the main colour does (tokens.css's own mapping).
   const accentRamp = accentHex ? rampOf(accentHex) : null;
   const ticks = {
-    light: markGradient ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [500, 600, 700], [light.surface], accentRamp[700]!, 3) : null,
-    dark: markGradient ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [400, 300, 200], [dark.surface], accentRamp[200]!, 3) : null,
+    light: extras.gradient && accentHex ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [500, 600, 700], [light.surface], accentRamp[700]!, 3) : null,
+    dark: extras.gradient && accentHex ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [400, 300, 200], [dark.surface], accentRamp[200]!, 3) : null,
   };
   const chartTokens = (map: [number, number, number, number, number, number, number]) =>
     accentRamp
@@ -213,7 +227,7 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
       : {};
   const lightCharts = chartTokens([700, 500, 400, 300, 200, 500, 600]);
   const darkCharts = chartTokens([300, 400, 500, 700, 800, 400, 400]);
-  const shaded = { ...(keyGradient && { 'key-face': keyGradient }), ...(markGradient && { 'mark-face': markGradient }) };
+  const shaded = { ...(keyGradient && { 'key-face': keyGradient }), ...(markGradient && { 'mark-face': markGradient }), ...(markGradient && accentHex && { 'mark-to': accentHex, 'mark-ink': markInk }) };
 
   const vars = (entries: Record<string, string | undefined>) =>
     Object.entries(entries)
@@ -231,8 +245,9 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
     ...shaded,
     ...(ticks.light && { 'nav-tick': ticks.light }),
     ...lightCharts,
-    'dev-mark': DEV_MARK.light.mark,
-    'dev-mark-text': DEV_MARK.light.text,
+    // The developer badge keeps 4VD amber on 4VD's own colour, else takes the business's word shade (reads at 4.5:1).
+    'dev-mark': keepMain ? DEV_MARK.light.mark : lightWord,
+    'dev-mark-text': keepMain ? DEV_MARK.light.text : lightWord,
   });
   const darkTokens = vars({
     ...keyTokens,
@@ -240,8 +255,8 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
     ...shaded,
     ...(ticks.dark && { 'nav-tick': ticks.dark }),
     ...darkCharts,
-    'dev-mark': DEV_MARK.dark.mark,
-    'dev-mark-text': DEV_MARK.dark.text,
+    'dev-mark': keepMain ? DEV_MARK.dark.mark : darkWord,
+    'dev-mark-text': keepMain ? DEV_MARK.dark.text : darkWord,
   });
   // 4VD's own look with nothing changed: no sheet at all, tokens.css shows as it always has.
   const nothing = keepMain && greys === 'plain' && !accentHex;
@@ -264,6 +279,9 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
       keyInk: ink,
       keyEdge: edge,
       markFace: markGradient ?? flatFace,
+      markFrom: hex,
+      markTo: markGradient && accentHex ? accentHex : hex,
+      markInk,
       tick: ticks[mode] ?? hex,
       data1: data[isLight ? 700 : 300]!,
       data3: data[isLight ? 400 : 500]!,
@@ -272,7 +290,7 @@ export function brandColours(input: string, greys: BrandGreys, extras: BrandExtr
   return {
     css,
     notes,
-    key: { face: hex, top, low, edge, ink },
+    key: { face: hex, top, low, edge, ink, markInk },
     words: { light: lightWord, dark: darkWord },
     ramp,
     gradient: { key: keyGradient, mark: markGradient },

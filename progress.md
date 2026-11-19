@@ -27,6 +27,7 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] 4VD's own business: the same card without name or receipt lines; it starts on today's amber; an accent changes only the charts and the marker; the 4VD logo stays
 - [ ] "Back to previous" after a save puts the colours from before it back; "Reset to default" asks first, says what it goes back to, and Esc or "Keep mine" closes it
 - [ ] The two small previews (light and dark) and the receipt match what the dashboard shows after saving; History shows one "colours" entry per save
+- [ ] 4VD's own business on another main colour: the house logo (top left, Overview, sign-in after a reload) and the "4VD developer" badge take that colour, light and dark; back on default they are amber again; with the gradient on, the logo runs to the accent unless the card says the colours are too far apart
 
 **Backups and error tracking**
 - [ ] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy

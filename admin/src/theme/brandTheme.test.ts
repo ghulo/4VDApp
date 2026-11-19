@@ -4,10 +4,10 @@ import { contrastRatio } from './contrast';
 
 // The server's twin (backend/src/utils/brandColours.ts) checks the same colours, so emails match the dashboard.
 const FIXTURES = [
-  { hex: '#0f766e', key: { face: '#0f766e', top: '#2f8179', low: '#026a62', edge: '#004b45', ink: '#ffffff' }, words: { light: '#146a63', dark: '#7ecbc2' }, notes: [] },
-  { hex: '#14284b', key: { face: '#14284b', top: '#203354', low: '#0b1e40', edge: '#000623', ink: '#ffffff' }, words: { light: '#485d80', dark: '#a4bce4' }, notes: ['darkWords'] },
-  { hex: '#7cc4f0', key: { face: '#7cc4f0', top: '#8fd0f9', low: '#6fb7e3', edge: '#5098c2', ink: '#0f1010' }, words: { light: '#226386', dark: '#84c3eb' }, notes: [] },
-  { hex: '#ffee00', key: { face: '#ffee00', top: '#fffab6', low: '#f1e105', edge: '#cdc003', ink: '#0f1010' }, words: { light: '#665e00', dark: '#ccbf03' }, notes: ['paleWords'] },
+  { hex: '#0f766e', key: { face: '#0f766e', top: '#2f8179', low: '#026a62', edge: '#004b45', ink: '#ffffff', markInk: '#ffffff' }, words: { light: '#146a63', dark: '#7ecbc2' }, notes: [] },
+  { hex: '#14284b', key: { face: '#14284b', top: '#203354', low: '#0b1e40', edge: '#000623', ink: '#ffffff', markInk: '#ffffff' }, words: { light: '#485d80', dark: '#a4bce4' }, notes: ['darkWords'] },
+  { hex: '#7cc4f0', key: { face: '#7cc4f0', top: '#8fd0f9', low: '#6fb7e3', edge: '#5098c2', ink: '#0f1010', markInk: '#0f1010' }, words: { light: '#226386', dark: '#84c3eb' }, notes: [] },
+  { hex: '#ffee00', key: { face: '#ffee00', top: '#fffab6', low: '#f1e105', edge: '#cdc003', ink: '#0f1010', markInk: '#0f1010' }, words: { light: '#665e00', dark: '#ccbf03' }, notes: ['paleWords'] },
 ];
 
 const token = (block: string, name: string) => block.match(new RegExp(`--${name}: (#[0-9a-f]{6})`))?.[1] ?? '';
@@ -43,8 +43,20 @@ describe('brandTheme', () => {
           }
   });
 
-  it('keeps the developer mark in 4VD amber', () => {
-    expect(brandTheme('#0f766e', 'plain').css).toContain('--dev-mark: #f5b71a');
+  it("draws the developer mark in the business's word shade, and 4VD amber on 4VD's own colour", () => {
+    const teal = brandTheme('#0f766e', 'plain');
+    expect(teal.css).toContain(`--dev-mark: ${teal.words.light};`);
+    expect(teal.css).toContain(`--dev-mark: ${teal.words.dark};`);
+    expect(brandTheme('#f5b71a', 'plain', { keepMain: true, accent: '#3fbf8f' }).css).toContain('--dev-mark: #f5b71a');
+  });
+
+  it('runs the logo tile to the accent only when the gradient is on', () => {
+    const flat = brandTheme('#1d5fd1', 'plain', { accent: '#14284b' });
+    const shaded = brandTheme('#1d5fd1', 'plain', { accent: '#14284b', gradient: true });
+    expect(flat.css).not.toContain('--mark-to');
+    expect(flat.preview.light).toMatchObject({ markFrom: '#1d5fd1', markTo: '#1d5fd1' });
+    expect(shaded.css).toContain('--mark-to: #14284b;');
+    expect(shaded.preview.dark).toMatchObject({ markFrom: '#1d5fd1', markTo: '#14284b' });
   });
 
   it('writes nothing but colours into the stylesheet', () => {
@@ -93,7 +105,9 @@ describe('accent and gradient', () => {
         for (const accent of ['#e0a33a', '#14284b', '#3fbf8f', '#ffee00', '#e8664a']) {
           if (accent === main) continue;
           const theme = brandTheme(main, 'plain', { accent, gradient: true });
-          expect(theme.gradient.mark, `logo key for ${main} → ${accent}`).not.toBeNull();
+          if (theme.gradient.mark) {
+            for (const colour of alongKey(main, accent)) expect(contrastRatio(theme.key.markInk, colour), `logo ${main} → ${accent} at ${colour}`).toBeGreaterThanOrEqual(3);
+          } else expect(theme.notes).toContain('flatMark');
           if (theme.gradient.key) {
             for (const colour of alongKey(main, accent)) expect(contrastRatio(theme.key.ink, colour), `${main} → ${accent} at ${colour}`).toBeGreaterThanOrEqual(4.5);
           } else expect(theme.notes).toContain('flatKey');
@@ -101,12 +115,16 @@ describe('accent and gradient', () => {
       }
   });
 
-  it('keeps a far-apart pair one colour on the main key', () => {
-    const theme = brandTheme('#ffee00', 'plain', { accent: '#14284b', gradient: true });
-    expect(theme.gradient.key).toBeNull();
-    expect(theme.notes).toContain('flatKey');
-    expect(theme.css).not.toContain('--key-face');
-    expect(theme.css).toContain('--mark-face');
+  it('keeps a far-apart pair one colour on the main key, and on the logo when even its ink cannot read', () => {
+    const apart = brandTheme('#0f766e', 'plain', { accent: '#e0a33a', gradient: true });
+    expect(apart.notes).toEqual(['flatKey']);
+    expect(apart.css).not.toContain('--key-face');
+    expect(apart.css).toContain('--mark-face');
+    expect(apart.css).toContain('--mark-ink: #000000;');
+    const far = brandTheme('#ffee00', 'plain', { accent: '#14284b', gradient: true });
+    expect(far.notes).toContain('flatMark');
+    expect(far.css).not.toContain('--mark-face');
+    expect(far.css).toContain('--nav-tick: linear-gradient');
   });
 
   it('has no gradient without an accent, or with the accent the same as the main colour', () => {
@@ -124,7 +142,7 @@ describe('accent and gradient', () => {
 const GRADIENTS = [
   { main: '#1d5fd1', accent: '#14284b', ink: '#ffffff', key: true, notes: [] },
   { main: '#0f766e', accent: '#e0a33a', ink: '#ffffff', key: false, notes: ['flatKey'] },
-  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey'] },
+  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey', 'flatMark'] },
 ];
 
 describe('gradient twins', () => {

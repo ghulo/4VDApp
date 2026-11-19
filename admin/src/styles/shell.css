@@ -74,7 +74,7 @@
   line-height: 1;
   font-size: calc(var(--mark-size) * 0.42);
   letter-spacing: -0.02em;
-  color: var(--cta-ink);
+  color: var(--mark-ink, var(--cta-ink));
   background: var(--mark-face, var(--amber-face));
   box-shadow: var(--key-shine), inset 0 -2px 0 var(--cta-edge), var(--key-drop);
   user-select: none;

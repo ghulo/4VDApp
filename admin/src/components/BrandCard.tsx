@@ -123,7 +123,8 @@ export function BrandCard({ business }: { business: Business }) {
   }
 
   const resetWhat = house ? words.resetHouse : words.resetOther(words.greysWord[business.brandDefault.greys]);
-  const notes = theme.notes.filter((note) => note !== 'flatKey' || look.gradient);
+  // flatMark says all flatKey does and more, so only one of them shows.
+  const notes = theme.notes.filter((note) => (note !== 'flatKey' && note !== 'flatMark') || (look.gradient && !(note === 'flatKey' && theme.notes.includes('flatMark'))));
 
   return (
     <form onSubmit={submit}>
@@ -435,6 +436,7 @@ function MiniDashboard({ caption, tones, name, house, initials, logoUrl }: { cap
     '--p-key': tones.keyFace,
     '--p-key-ink': tones.keyInk,
     '--p-key-edge': tones.keyEdge,
+    '--p-mark-ink': tones.markInk,
     '--p-mark': tones.markFace,
     '--p-tick': tones.tick,
     '--p-data1': tones.data1,
@@ -445,7 +447,11 @@ function MiniDashboard({ caption, tones, name, house, initials, logoUrl }: { cap
       <figcaption className="brand-mini__caption">{caption}</figcaption>
       <div className="brand-mini__screen" aria-hidden="true">
         <div className="brand-mini__top">
-          {house ? <LogoMark size={22} /> : logoUrl ? <BrandMark brand={{ house: false, logoUrl, initials }} size={22} /> : <span className="brand-mini__mark" data-initials={initials} />}
+          {house ? (
+            <span className="brand-mini__logo" style={{ '--logo-from': tones.markFrom, '--logo-to': tones.markTo, '--logo-ink': tones.markInk } as CSSProperties}>
+              <LogoMark size={22} />
+            </span>
+          ) : logoUrl ? <BrandMark brand={{ house: false, logoUrl, initials }} size={22} /> : <span className="brand-mini__mark" data-initials={initials} />}
           <span className="brand-mini__name">{name}</span>
         </div>
         <div className="brand-mini__body">

@@ -2539,6 +2539,11 @@ form.product-form > .form-actions {
   border-bottom: 1px solid var(--p-line);
 }
 
+/* 4VD's logo in the preview: only passes the tried colours down to it. */
+.brand-mini__logo {
+  display: contents;
+}
+
 .brand-mini__mark {
   display: grid;
   flex: none;
@@ -2547,7 +2552,7 @@ form.product-form > .form-actions {
   height: 22px;
   border-radius: 7px;
   background: var(--p-mark);
-  color: var(--p-key-ink);
+  color: var(--p-mark-ink);
   font-family: var(--font-display);
   font-weight: 700;
   box-shadow: var(--key-shine), inset 0 -1px 0 var(--p-key-edge);

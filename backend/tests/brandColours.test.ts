@@ -3,10 +3,10 @@ import { BRAND_PRESETS, brandColours, defaultBrandColour } from '../src/utils/br
 
 // admin/src/theme/brandTheme.test.ts checks the same colours, so emails match the dashboard.
 const FIXTURES = [
-  { hex: '#0f766e', key: { face: '#0f766e', top: '#2f8179', low: '#026a62', edge: '#004b45', ink: '#ffffff' }, words: { light: '#146a63', dark: '#7ecbc2' }, notes: [] },
-  { hex: '#14284b', key: { face: '#14284b', top: '#203354', low: '#0b1e40', edge: '#000623', ink: '#ffffff' }, words: { light: '#485d80', dark: '#a4bce4' }, notes: ['darkWords'] },
-  { hex: '#7cc4f0', key: { face: '#7cc4f0', top: '#8fd0f9', low: '#6fb7e3', edge: '#5098c2', ink: '#0f1010' }, words: { light: '#226386', dark: '#84c3eb' }, notes: [] },
-  { hex: '#ffee00', key: { face: '#ffee00', top: '#fffab6', low: '#f1e105', edge: '#cdc003', ink: '#0f1010' }, words: { light: '#665e00', dark: '#ccbf03' }, notes: ['paleWords'] },
+  { hex: '#0f766e', key: { face: '#0f766e', top: '#2f8179', low: '#026a62', edge: '#004b45', ink: '#ffffff', markInk: '#ffffff' }, words: { light: '#146a63', dark: '#7ecbc2' }, notes: [] },
+  { hex: '#14284b', key: { face: '#14284b', top: '#203354', low: '#0b1e40', edge: '#000623', ink: '#ffffff', markInk: '#ffffff' }, words: { light: '#485d80', dark: '#a4bce4' }, notes: ['darkWords'] },
+  { hex: '#7cc4f0', key: { face: '#7cc4f0', top: '#8fd0f9', low: '#6fb7e3', edge: '#5098c2', ink: '#0f1010', markInk: '#0f1010' }, words: { light: '#226386', dark: '#84c3eb' }, notes: [] },
+  { hex: '#ffee00', key: { face: '#ffee00', top: '#fffab6', low: '#f1e105', edge: '#cdc003', ink: '#0f1010', markInk: '#0f1010' }, words: { light: '#665e00', dark: '#ccbf03' }, notes: ['paleWords'] },
 ];
 
 describe('brandColours', () => {
@@ -29,7 +29,7 @@ describe('brandColours', () => {
 const GRADIENTS = [
   { main: '#1d5fd1', accent: '#14284b', ink: '#ffffff', key: true, notes: [] },
   { main: '#0f766e', accent: '#e0a33a', ink: '#ffffff', key: false, notes: ['flatKey'] },
-  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey'] },
+  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey', 'flatMark'] },
 ];
 
 describe('gradient twins', () => {

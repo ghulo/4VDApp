@@ -2420,7 +2420,7 @@ export const sq: Catalogue = {
       notSpreadsheet: ['Nuk është tabelë', 'Lihet jashtë. 4VD lexon skedarë Excel, CSV dhe .zip.'],
       emptySheet: ['Bosh', 'S’ka asgjë brenda, ndaj lihet jashtë.'],
       oldLetters: ['Shkronjat e vjetra të Windows u rregulluan', 'Ishte ruajtur në format të vjetër; shkronjat si ë dhe ç tani lexohen mirë.'],
-      zipTooBig: ['Shumë i madh për t’u hapur', 'Mbi 80 MB brenda. Dërgo vetëm produktet, furnitorët dhe klientët.'],
+      zipTooBig: ['Shumë i madh për t’u hapur', 'Brenda ka shumë të dhëna. Dërgo vetëm produktet, furnitorët dhe klientët.'],
       skippedInZip: ['U la jashtë nga .zip', 'Nuk është tabelë.'],
       history: ['Lënë mënjanë: historiku', 'Shitjet dhe blerjet ende nuk sillen; më vonë mund të vijnë si historik për t’i parë.'],
       notNeeded: ['Nuk nevojitet', '4VD e llogarit vetë.'],

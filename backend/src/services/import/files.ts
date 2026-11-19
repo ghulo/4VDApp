@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
+import { TooBigToUnpackError, UnpackBudget, rethrowIfTooBig } from '../../utils/unpackLimits.js';
 import { PROFILES, baseName } from './fields.js';
 
 /**
@@ -41,8 +42,6 @@ export interface ReadFiles {
   leftOut: string[];
 }
 
-/** Unzipped, at most this much is read: a bigger archive is a backup, not an export. */
-const MAX_UNZIPPED = 80 * 1024 * 1024;
 const OLE = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
 const ZIP = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 /** "EncryptedPackage" in UTF-16: the stream a password-protected .xlsx keeps its real content in. */
@@ -50,13 +49,32 @@ const ENCRYPTED = Buffer.from('EncryptedPackage', 'utf16le');
 
 const startsWith = (bytes: Buffer, magic: Buffer) => bytes.length >= magic.length && bytes.subarray(0, magic.length).equals(magic);
 
-export async function readFiles(files: Array<{ name: string; bytes: Buffer }>): Promise<ReadFiles> {
+/**
+ * One budget covers the whole drop (utils/unpackLimits.ts). A file (or a file
+ * inside a zip) that would unpack past it is left out with the note
+ * "zipTooBig": what it read is dropped and its rows given back, so the files
+ * after it still fit; the unpacked bytes stay spent.
+ */
+export async function readFiles(files: Array<{ name: string; bytes: Buffer }>, budget = new UnpackBudget()): Promise<ReadFiles> {
   const out: ReadFiles = { sheets: [], notes: [], leftOut: [] };
-  for (const file of files) await readOne(file.name, file.bytes, out, 0);
+  for (const file of files) await guarded(file.name, out, budget, () => readOne(file.name, file.bytes, out, 0, budget));
   return out;
 }
 
-async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: number): Promise<void> {
+async function guarded(name: string, out: ReadFiles, budget: UnpackBudget, read: () => Promise<void>): Promise<void> {
+  const mark = budget.mark();
+  const sheets = out.sheets.length;
+  try {
+    await read();
+  } catch (error) {
+    if (!(error instanceof TooBigToUnpackError)) throw error;
+    out.sheets.length = sheets;
+    budget.restore(mark);
+    out.notes.push({ file: name, key: 'zipTooBig' });
+  }
+}
+
+async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: number, budget: UnpackBudget): Promise<void> {
   const lower = name.toLowerCase();
   if (bytes.length === 0) {
     out.notes.push({ file: name, key: 'emptySheet', sheet: null });
@@ -70,13 +88,14 @@ async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: numbe
   if (startsWith(bytes, ZIP)) {
     let zip: JSZip;
     try {
-      zip = await JSZip.loadAsync(bytes);
-    } catch {
+      zip = await budget.openZip(bytes);
+    } catch (error) {
+      rethrowIfTooBig(error);
       out.notes.push({ file: name, key: 'notReadable' });
       return;
     }
     if (zip.file('[Content_Types].xml') && zip.folder('xl')) {
-      await readWorkbook(name, bytes, out);
+      await readWorkbook(name, bytes, out, budget);
       return;
     }
     if (lower.endsWith('.ods') || zip.file('mimetype')) {
@@ -84,7 +103,6 @@ async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: numbe
       return;
     }
     if (depth > 0) return;
-    let total = 0;
     for (const entry of Object.values(zip.files)) {
       if (entry.dir || entry.name.startsWith('__MACOSX/') || /(^|\/)\./.test(entry.name)) continue;
       if (!/\.(csv|txt|xlsx|xls)$/i.test(entry.name)) {
@@ -97,26 +115,25 @@ async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: numbe
         out.leftOut.push(entry.name);
         continue;
       }
-      // The size the zip says it holds, checked before unpacking (a tiny zip can unpack to gigabytes).
-      const declared = (entry as unknown as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize ?? 0;
-      if (total + declared > MAX_UNZIPPED) {
-        out.notes.push({ file: name, key: 'zipTooBig' });
-        return;
-      }
-      const inner = await entry.async('nodebuffer');
-      total += inner.length;
-      if (total > MAX_UNZIPPED) {
-        out.notes.push({ file: name, key: 'zipTooBig' });
-        return;
-      }
-      await readOne(entry.name, inner, out, depth + 1);
+      // Unpacked chunk by chunk and counted as it comes: a tiny zip can unpack to gigabytes, and its headers can lie.
+      await guarded(`${name}/${entry.name}`, out, budget, async () => {
+        let inner: Buffer;
+        try {
+          inner = await budget.read(entry, true);
+        } catch (error) {
+          rethrowIfTooBig(error);
+          out.notes.push({ file: `${name}/${entry.name}`, key: 'notReadable' });
+          return;
+        }
+        await readOne(entry.name, inner, out, depth + 1, budget);
+      });
     }
     return;
   }
   if (/\.(csv|txt|tsv)$/.test(lower) || looksLikeText(bytes)) {
     const { text, oldLetters } = decodeText(bytes);
     if (oldLetters) out.notes.push({ file: name, key: 'oldLetters' });
-    const rows = parseDelimited(text);
+    const rows = parseDelimited(text, budget);
     if (rows.length === 0) out.notes.push({ file: name, key: 'emptySheet', sheet: null });
     else out.sheets.push({ file: name, sheet: null, rows });
     return;
@@ -124,11 +141,14 @@ async function readOne(name: string, bytes: Buffer, out: ReadFiles, depth: numbe
   out.notes.push({ file: name, key: 'notSpreadsheet' });
 }
 
-async function readWorkbook(name: string, bytes: Buffer, out: ReadFiles): Promise<void> {
+async function readWorkbook(name: string, bytes: Buffer, out: ReadFiles, budget: UnpackBudget): Promise<void> {
   const workbook = new ExcelJS.Workbook();
   try {
+    // ExcelJS unpacks every part at once: walk and count them first.
+    await budget.checkWorkbook(bytes);
     await workbook.xlsx.load(bytes as unknown as ArrayBuffer);
-  } catch {
+  } catch (error) {
+    rethrowIfTooBig(error);
     out.notes.push({ file: name, key: 'notReadable' });
     return;
   }
@@ -136,6 +156,8 @@ async function readWorkbook(name: string, bytes: Buffer, out: ReadFiles): Promis
     if (sheet.state && sheet.state !== 'visible') continue;
     const rows: Cell[][] = [];
     sheet.eachRow({ includeEmpty: false }, (row) => {
+      budget.addRows(1);
+      budget.addCells(row.cellCount);
       const cells: Cell[] = [];
       for (let column = 1; column <= row.cellCount; column += 1) cells.push(cellValue(row.getCell(column).value));
       if (cells.some((cell) => cell !== null && cell !== '')) rows.push(cells);
@@ -187,7 +209,7 @@ export function decodeText(bytes: Buffer): { text: string; oldLetters: boolean }
  * inside quotes included. The separator is the one that splits the first line
  * into the most columns.
  */
-export function parseDelimited(text: string): Cell[][] {
+export function parseDelimited(text: string, budget?: UnpackBudget): Cell[][] {
   const firstLine = text.slice(0, text.search(/\r?\n|$/));
   const separator = [';', ',', '\t', '|'].map((sep) => ({ sep, n: splitCount(firstLine, sep) })).sort((a, b) => b.n - a.n)[0]!.sep;
   const rows: Cell[][] = [];
@@ -195,13 +217,17 @@ export function parseDelimited(text: string): Cell[][] {
   let field = '';
   let quoted = false;
   const endField = () => {
+    budget?.addCells(1);
     const value = field.trim();
     row.push(value === '' ? null : value);
     field = '';
   };
   const endRow = () => {
     endField();
-    if (row.some((cell) => cell !== null)) rows.push(row);
+    if (row.some((cell) => cell !== null)) {
+      budget?.addRows(1);
+      rows.push(row);
+    }
     row = [];
   };
   for (let i = 0; i < text.length; i++) {

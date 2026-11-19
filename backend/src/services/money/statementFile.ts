@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { roundMoney } from '../../utils/money.js';
+import { UnpackBudget, rethrowIfTooBig } from '../../utils/unpackLimits.js';
 
 /**
  * Reading a bank's statement export (Excel or CSV). Kosovo banks write dates
@@ -188,11 +189,12 @@ function splitCsvLine(line: string, separator: string): string[] {
 }
 
 /** A CSV file as rows of cells: UTF-8 (or Windows-1250 when it isn't), separated by ; , or tab, whichever splits the lines most evenly. */
-export function readCsv(bytes: Buffer): Cell[][] {
+export function readCsv(bytes: Buffer, budget = new UnpackBudget()): Cell[][] {
   let text = bytes.toString('utf8');
   if (text.includes('�')) text = new TextDecoder('windows-1250').decode(bytes);
   text = text.replace(/^﻿/, '');
   const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+  budget.addRows(lines.length);
   const separators = [';', ',', '\t', '|'];
   const best = separators
     .map((separator) => {
@@ -201,21 +203,30 @@ export function readCsv(bytes: Buffer): Cell[][] {
       return { separator, common };
     })
     .sort((a, b) => b.common - a.common)[0]!;
-  return lines.map((line) => splitCsvLine(line, best.separator).map((cell) => (cell === '' ? null : cell)));
+  return lines.map((line) => {
+    const cells = splitCsvLine(line, best.separator);
+    budget.addCells(cells.length);
+    return cells.map((cell) => (cell === '' ? null : cell));
+  });
 }
 
-/** The first sheet of an Excel file as rows of cells. */
-export async function readXlsx(bytes: Buffer): Promise<Cell[][]> {
+/** The first sheet of an Excel file as rows of cells; one that would unpack past the limits throws TooBigToUnpackError. */
+export async function readXlsx(bytes: Buffer, budget = new UnpackBudget()): Promise<Cell[][]> {
   const workbook = new ExcelJS.Workbook();
   try {
+    // ExcelJS unpacks every part at once: walk and count them first (utils/unpackLimits.ts).
+    await budget.checkWorkbook(bytes);
     await workbook.xlsx.load(bytes as unknown as ArrayBuffer);
-  } catch {
+  } catch (error) {
+    rethrowIfTooBig(error);
     throw new Error('not-xlsx');
   }
   const sheet = workbook.worksheets.find((candidate) => candidate.actualRowCount > 0);
   if (!sheet) return [];
   const rows: Cell[][] = [];
   sheet.eachRow({ includeEmpty: false }, (row) => {
+    budget.addRows(1);
+    budget.addCells(row.cellCount);
     const cells: Cell[] = [];
     for (let column = 1; column <= row.cellCount; column += 1) {
       const value = row.getCell(column).value;

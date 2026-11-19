@@ -2441,7 +2441,7 @@ export const en = {
       notSpreadsheet: ['Not a spreadsheet', 'Left out. 4VD reads Excel, CSV and .zip files.'],
       emptySheet: ['Empty', 'Nothing in it, so it is left out.'],
       oldLetters: ['Old Windows letters fixed', 'Saved in an old format; letters like ë and ç now read correctly.'],
-      zipTooBig: ['Too big to unpack', 'Over 80 MB inside. Send only products, suppliers and customers.'],
+      zipTooBig: ['Too big to unpack', 'It unpacks into too much data. Send only products, suppliers and customers.'],
       skippedInZip: ['Left out of the .zip', 'Not a spreadsheet.'],
       history: ['Kept aside: history', 'Sales and purchases are not brought in yet; later they can come in as a history to look back on.'],
       notNeeded: ['Not needed', '4VD works this out by itself.'],

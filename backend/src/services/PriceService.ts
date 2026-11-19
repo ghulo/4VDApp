@@ -2,6 +2,7 @@ import { ValidationError } from '../errors/httpErrors.js';
 import type { PriceRow } from '../repositories/ProductRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
+import { rethrowIfTooBig } from '../utils/unpackLimits.js';
 import { describeProductChanges, type ProductSnapshot } from './activity/describeProductChanges.js';
 import { type Cell, normalise, parseMoney, readCsv, readXlsx } from './money/statementFile.js';
 import { markupOf, priceFromCost } from './pricing/priceRules.js';
@@ -144,7 +145,8 @@ export class PriceService {
     let cells: Cell[][];
     try {
       cells = /\.csv$/i.test(fileName) ? readCsv(bytes) : await readXlsx(bytes);
-    } catch {
+    } catch (error) {
+      rethrowIfTooBig(error);
       throw new ValidationError('The file couldn’t be opened. Is it really an Excel or CSV file?');
     }
     const rows = await this.rows();

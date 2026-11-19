@@ -7,6 +7,7 @@ import { type BankLineRecord, type MoneyRepository, type PlaceRecord, placeWords
 import type { SupplierBillRepository } from '../repositories/SupplierBillRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { roundMoney } from '../utils/money.js';
+import { rethrowIfTooBig } from '../utils/unpackLimits.js';
 import { zonedDay } from '../utils/zonedDates.js';
 import type { StatementReader } from './ai/statementReader.js';
 import { addMove, type MoneyService, payBillsTogether } from './MoneyService.js';
@@ -139,7 +140,8 @@ export class StatementService {
       let rows;
       try {
         rows = format === 'csv' ? readCsv(bytes) : await readXlsx(bytes);
-      } catch {
+      } catch (error) {
+        rethrowIfTooBig(error);
         throw new ValidationError('The file couldn’t be opened. Is it really an Excel or CSV file?');
       }
       let layout: StatementLayout | null = null;

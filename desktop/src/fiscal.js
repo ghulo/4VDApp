@@ -126,6 +126,17 @@ async function status() {
 }
 
 /**
+ * Only the commands 4VD sends (admin/src/utils/fiscalReceipt.ts): sale lines, the footer and total,
+ * X and Z reports, the customer display and clearing articles. Anything else (a cancel, a cash out,
+ * a setting) is refused, so a bad script on the page can't make the printer do it.
+ */
+const ALLOWED_LINE = /^[SQTXZEO],1,______,_,__;/;
+function isAllowedJob(text) {
+  const lines = String(text).split(/\r?\n/).filter((line) => line.length > 0);
+  return lines.length > 0 && lines.every((line) => ALLOWED_LINE.test(line));
+}
+
+/**
  * Hand one job to F-Link and wait for its answer:
  *   { status: 'printed', receiptNo }
  *   { status: 'failed', message }      F-Link refused it (out of paper, …)
@@ -183,4 +194,4 @@ function safeRead(file) {
   }
 }
 
-module.exports = { send, status, parseAnswer, readFromZip, encode, safeName, FOLDER };
+module.exports = { send, status, parseAnswer, readFromZip, encode, safeName, isAllowedJob, FOLDER };

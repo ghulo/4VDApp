@@ -211,7 +211,7 @@ ipcMain.on('theme', (_event, preference) => {
 const fromDashboard = (event) => isDashboard(event.senderFrame?.url ?? '');
 ipcMain.handle('fiscal:status', (event) => (fromDashboard(event) ? fiscal.status() : null));
 ipcMain.handle('fiscal:send', (event, job) => {
-  if (!fromDashboard(event) || typeof job?.name !== 'string' || typeof job?.text !== 'string' || job.text.length > 20_000) {
+  if (!fromDashboard(event) || typeof job?.name !== 'string' || typeof job?.text !== 'string' || job.text.length > 20_000 || !fiscal.isAllowedJob(job.text)) {
     return { status: 'failed', message: null };
   }
   return fiscal.send(job);

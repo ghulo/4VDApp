@@ -85,3 +85,13 @@ test('keeps names safe and Albanian letters readable for F-Link', () => {
   assert.equal(fiscal.encode('Çaj me limon ë €\n').toString('latin1'), 'Çaj me limon ë ?\r\n');
   assert.deepEqual(fiscal.parseAnswer('S,1,001756,1,Ok;A;1;1\r\nT,1,001756,2,Error 13;0;5\r\n'), { ok: false, receiptNo: null, message: 'Error 13' });
 });
+
+test("lets only 4VD's own printer commands through", () => {
+  assert.equal(fiscal.isAllowedJob('S,1,______,_,__;Kafe;1.30;2;1;1;5;0;1764;0.00\r\nQ,1,______,_,__;1;\r\nT,1,______,_,__;0;5\r\n'), true);
+  assert.equal(fiscal.isAllowedJob('X,1,______,_,__;\n'), true);
+  assert.equal(fiscal.isAllowedJob('E,1,______,_,__;Printo Z raportin;Shop\nZ,1,______,_,__;\n'), true);
+  // A cancel or anything else the dashboard never sends.
+  assert.equal(fiscal.isAllowedJob('S,1,______,_,__;Kafe;1;1;1;1;5;0;1;0.00\nV,1,______,_,__;\n'), false);
+  assert.equal(fiscal.isAllowedJob('S;Kafe\n'), false);
+  assert.equal(fiscal.isAllowedJob(''), false);
+});

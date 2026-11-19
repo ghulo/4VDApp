@@ -8,7 +8,7 @@ import { VatMonthRepository } from '../../repositories/VatMonthRepository.js';
 import { formatEuro, roundMoney } from '../../utils/money.js';
 import { canReopen } from '../../utils/roles.js';
 import { zonedDay } from '../../utils/zonedDates.js';
-import { type BooksPoster, insertLines, POSTING_LOCK, reverseEntry } from '../books/BooksPoster.js';
+import { type BooksPoster, insertLines, lockPosting, reverseEntry } from '../books/BooksPoster.js';
 import { assertMonthsOpen } from '../vat/periodLock.js';
 import { CLOSING_PREFIX, type StatementsService } from './StatementsService.js';
 import { type DeclarationForm, formOf, incomeTax } from './taxRules.js';
@@ -344,7 +344,7 @@ export class YearService {
     const day = `${year}-12-31`;
 
     await this.db.transaction().execute(async (trx) => {
-      await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+      await lockPosting(trx);
       if (await trx.selectFrom('book_years').select('year').where('year', '=', year).executeTakeFirst()) throw new ConflictError(`${year} is already closed.`);
       let taxEntryId: number | null = null;
       if (tax > 0) {
@@ -393,7 +393,7 @@ export class YearService {
     const why = reason.trim();
     if (why.length < 3) throw new ValidationError('Say why the year is being reopened, so the books keep the reason.');
     await this.db.transaction().execute(async (trx) => {
-      await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+      await lockPosting(trx);
       const record = await trx.selectFrom('book_years').selectAll().where('year', '=', year).executeTakeFirst();
       if (!record) throw new NotFoundError(`${year} isn't closed.`);
       const later = await trx.selectFrom('book_years').select('year').where('year', '>', year).orderBy('year').executeTakeFirst();

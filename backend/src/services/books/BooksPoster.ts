@@ -6,8 +6,17 @@ import { ensurePlaces } from '../../database/places.js';
 import { checkoutKeySql, loadPlaceAccounts, PostingRules } from './postingRules.js';
 import { depreciationDue, fillDepreciation } from '../assets/depreciation.js';
 
-/** Any number, shared by every server: only one of them posts at a time. */
+/** Any number, shared by every server: only one of them posts to a business at a time. */
 export const POSTING_LOCK = 40_839;
+
+/**
+ * Posting to one business's books, one at a time; other businesses post at
+ * the same moment (the lock is keyed by business). Outside a business the key
+ * is 0, never null: a null key would skip the lock altogether.
+ */
+export async function lockPosting(trx: DatabaseClient): Promise<void> {
+  await sql`select pg_advisory_xact_lock(${POSTING_LOCK}, coalesce(current_business_id(), 0))`.execute(trx);
+}
 /** Queue rows taken per round. */
 const BATCH = 5_000;
 
@@ -61,14 +70,14 @@ export class BooksPoster {
     // A month that just ended has depreciation to work out; it is stored, then posts with the rest below.
     if (await depreciationDue(this.db, this.timeZone, now)) {
       await this.db.transaction().execute(async (trx) => {
-        await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+        await lockPosting(trx);
         await fillDepreciation(trx, await this.startDay(trx), this.timeZone, now);
       });
     }
     const waiting = await this.db.selectFrom('ledger_queue').select('row_id').limit(1).executeTakeFirst();
     if (!waiting) return;
     await this.db.transaction().execute(async (trx) => {
-      await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+      await lockPosting(trx);
       await ensurePlaces(trx as never);
       const rules = new PostingRules(trx, await this.links(trx), await loadPlaceAccounts(trx), this.timeZone, await this.startDay(trx));
       for (;;) {
@@ -90,7 +99,7 @@ export class BooksPoster {
    */
   async rebuild(): Promise<void> {
     await this.db.transaction().execute(async (trx) => {
-      await sql`select pg_advisory_xact_lock(${POSTING_LOCK})`.execute(trx);
+      await lockPosting(trx);
       await sql`delete from ledger_entries where kind = 'reversal' and source_key is not null`.execute(trx);
       await sql`delete from ledger_entries where kind = 'auto'`.execute(trx);
       const start = (await this.startDay(trx)) ?? '0001-01-01';

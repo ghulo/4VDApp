@@ -25,6 +25,12 @@ the same app. The old Expo team app was retired on 2026-10-20.
   prices and stock, report returns, damage and counts for approval, end the shift.
 - **The accountant.** Files the VAT returns and keeps the books. Sees only the
   money side (VAT, sales and purchase books, books, statements).
+- **Other businesses.** The other 4VD family businesses and, later, paying
+  customers each get their own business in the same installation, with their
+  own people, data, colours and logo. The main operator, as 4VD's developer,
+  sets them up and can open one for support (each visit is shown to it).
+- **Business customers.** Order and read their invoices and balance in the
+  portal (`/portal`).
 
 ## Product Purpose
 
@@ -32,8 +38,9 @@ the same app. The old Expo team app was retired on 2026-10-20.
 stock, counts and expiry dates, sales, returns and numbered invoices (with VAT),
 customer tabs, suppliers with orders and bills, the till (Counter) with fiscal
 receipts, the daily cash check, carwash takings and expenses, money places and
-bank statements, the books and VAT returns, a close-the-day checklist, approvals,
-promotions, people, and reports, with alerts, daily and weekly emails so nothing slips. Success is the family spending less
+bank statements, the books and VAT returns, payroll, fixed assets, the yearly
+profit-tax declaration, a close-the-day checklist, approvals, promotions, people,
+a portal for business customers, imports from other programs, and reports, with alerts, daily and weekly emails so nothing slips. Success is the family spending less
 time on paperwork and never being surprised by empty shelves or missing stock.
 It replaces TREFIN, the till and accounting program the shop used before.
 
@@ -41,8 +48,11 @@ It replaces TREFIN, the till and accounting program the shop used before.
 
 Built for one real family shop by the family itself, around how they actually
 work (approvals from the owner, a scanner-first till, the counter as the main scene).
-It may later be offered to other small shops as a product, so features are kept
-general enough for that, but the shop comes first whenever the two conflict.
+The goal: replace TREFIN for every 4VD business, accounting included, then sell
+4VD to other businesses in Kosovo. TREFIN is the checklist of what must exist, not
+the design: every feature should be easier than TREFIN's and need no training.
+Many businesses already run side by side in one installation, each kept apart;
+the shop still comes first whenever it and the product conflict.
 
 ## Operating Context
 
@@ -57,18 +67,16 @@ general enough for that, but the shop comes first whenever the two conflict.
 
 ## Capabilities and Constraints
 
-- Roles: **developer** (the operator: everything, and the only one who hands
-  out the top roles), **owner** (sees everything and decides requests, changes
-  nothing else), **admin** (runs the shop), **employee**, **family**,
-  **accountant** (money side only). The developer can change what each role may
-  do in Settings → Roles.
+- Roles in each business: **main admin** (the top role there), **owner** (sees
+  everything and decides requests, changes nothing else), **admin** (runs the shop), **employee**, **family**,
+  **accountant** (money side only). What each role may do is set per business
+  in Settings → Roles. **developer** is 4VD's own staff across all businesses.
 - Languages: **English and Albanian**, in the app, on invoices and in the emails. Each
   person's choice is saved on their account.
 - Money in euros; shop time zone is configurable (Europe/Budapest by default).
 - AI helpers (Ask, price suggestions) use Claude; staff names are masked first.
-- Deployed on Render (API at api.4vd.app, with weekly backups to Cloudflare R2)
-  and Cloudflare (the dashboard at 4vd.app). The old team app address
-  app.4vd.app (on printed QR labels) redirects there.
+- Runs on Render (API, database) and Cloudflare (the dashboard at 4vd.app);
+  details in `docs/DEPLOYMENT.md`.
 - The shop is VAT-registered. The Counter prints legal receipts on the shop's
   Datecs FP-700+ fiscal printer (through F-Link); 4VD also prints A4 invoices
   and labels.

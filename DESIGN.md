@@ -1,6 +1,6 @@
 ---
 name: 4VD
-description: The Dacaj family shop's stock, sales, money and team in two calm, precise apps; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the hand-drawn family home.
+description: The Dacaj family shop's stock, sales, money, books and team in one calm, precise app; ink on clean paper, one amber brand colour on matched colour scales, tactile keys and the hand-drawn family home.
 colors:
   amber: "#f5b71a"
   amber-hover: "#ffd073"
@@ -159,9 +159,10 @@ files. Where anything else disagrees with this file, this file wins.
 
 ## 1. What 4VD is
 
-One app, the **dashboard** (`4vd.app`), for one family shop and its
-carwashes (4VD = "4 Vëllezërit Dacaj", the four Dacaj brothers). It shows each
-person the layout that fits their job:
+One app, the **dashboard** (`4vd.app`), built for one family shop and its
+carwashes (4VD = "4 Vëllezërit Dacaj", the four Dacaj brothers) and now serving
+several businesses, each in its own colours. It shows each person the layout
+that fits their job:
 
 | | **Full dashboard** | **Staff layout** (phone-style) | **Counter** (`/counter`) |
 |---|---|---|---|

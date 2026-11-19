@@ -1,8 +1,8 @@
-# Deployment Guide
+# Deployment
 
-Where 4VD runs: the API and its Postgres 18 database on Render (`render.yaml`), the dashboard on Cloudflare at 4vd.app, backups in Cloudflare R2, errors in Sentry. Local setup is in the root README.md.
+Where 4VD runs: the API and its Postgres 18 database on Render (`render.yaml`), the dashboard on Cloudflare at 4vd.app, backups in Cloudflare R2, errors in Sentry. Local setup is in the root README.md; how a push goes live is in docs/ARCHITECTURE.md ("From a push to live"). Most of this page is one-time setup, already done for the live site, kept so it can be redone.
 
-### Deploy: Cloudflare (front ends) + Render (API and database)
+## Hosting: Cloudflare (dashboard) + Render (API and database)
 
 | Address | What | Where |
 |---|---|---|
@@ -34,27 +34,26 @@ The domain `4vd.app` is registered with Cloudflare, so its DNS lives there. The 
 If the job fails with an authentication error (code 10000), the token is wrong or misses the `4vd.app` zone: make a new one and replace the secret, then **Actions → the failed run → Re-run failed jobs**.
 
 **3. Old addresses** (the team app `app.4vd.app` was retired on 2026-10-20; printed QR labels still point at `app.4vd.app/scan/...`)
-Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *equals* `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. The name needs a proxied (orange) DNS record: it has one from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied). The old dashboard name `dashboard.4vd.app` was removed completely on 2026-10-20, so links to it no longer work.
+Cloudflare → `4vd.app` → **Rules → Redirect Rules → Create rule**: name `Old addresses to 4vd.app`; **Custom filter expression**, *Hostname* *equals* `app.4vd.app`; then **Dynamic**, expression `concat("https://4vd.app", http.request.uri.path)`, status `301`, **Preserve query string** on. The name needs a proxied (orange) DNS record: it has one from the old `4vd-app` Worker (keep that Worker, or replace it with an `A` record `app` → `192.0.2.1`, proxied).
 
 **4. Check everything**
 Open `https://4vd.app`, log in, switch a page or two. `https://app.4vd.app/scan/123` must land on the same paths at `4vd.app`.
 
-**6. Real emails (Resend)**
+**5. Real emails (Resend)**
 1. resend.com → **Domains → Add Domain** → `4vd.app`, region EU. Use its **Auto configure with Cloudflare** button (or copy its records into Cloudflare DNS, all DNS only).
 2. When verified: **API Keys → Create** (sending access).
 3. Render → `4vd-api` → **Environment**: `RESEND_API_KEY` = the key, `EMAIL_FROM` = `4VD <hello@4vd.app>`. Save (it redeploys).
 
-**7. Google sign-in (optional)**
+**6. Google sign-in (optional)**
 Google Cloud Console → **APIs & Services → Credentials → Create credentials → OAuth client ID** → Web application. Authorised JavaScript origins: `https://4vd.app`. Copy the client ID into `GOOGLE_CLIENT_ID` on `4vd-api`.
 
-**8. Before real use**
-- Render → `4vd-api` → **Upgrade** to Starter (always on, so alerts and the daily summary go out), and upgrade `4vd-db` to a paid plan. Then change `plan:` in `render.yaml` to match (ask Claude), or the Blueprint may put them back.
+**7. Before real use** (`4vd-api` is on Starter and `4vd-db` on a paid plan; `plan:` in `render.yaml` must match what Render shows, or the Blueprint may change them back)
 - Wipe the test data: dashboard → **Settings → Wipe all data** (developer only; you type `wipe 4vd.app` to confirm; it can't be undone).
 - First admin on a fresh database: in `4vd-api` → **Environment**, add `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (12+ characters) and `SEED_ADMIN_NAME`; it is created on start-up. Log in, then delete those three settings. Demo data and demo logins are refused in production.
 
-**9. Launch setup, step by step** (the things only you can do; Settings → Before launch ticks each one off)
+**8. Launch setup, step by step** (the things only you can do; Settings → Before launch ticks each one off)
 
-*Real emails.* Do step 6 above, then in the dashboard press **Send me a test email** on the "Send real emails" step. If Resend refuses, its message shows right there (usually the `4vd.app` domain is not verified yet).
+*Real emails.* Do step 5 above, then in the dashboard press **Send me a test email** on the "Send real emails" step. If Resend refuses, its message shows right there (usually the `4vd.app` domain is not verified yet).
 
 *Browser and phone alerts.* On your computer, in `backend/`, run `npm run vapid -- you@example.com` (use your own email). It prints three lines. In Render:
 
@@ -102,9 +101,7 @@ Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Envir
 
 Making a business's data into files for its owner: `npm run export:business -- <business id> [--out <folder>]` in `backend/` with the live `DATABASE_URL`. One JSON file per table; passwords, PINs, two-step secrets, passkeys and sign-in tokens are left out, and photos/PDFs are listed (media.json), not copied.
 
-After this, pushes to `main` deploy by themselves: Render redeploys the API once the GitHub checks pass (`autoDeployTrigger: checksPass`), and the last check, `deploy-dashboard`, puts the dashboard live at 4vd.app. Cloudflare only builds preview versions.
-
-**Free plan caveats** (check current pricing): a free Render web service sleeps when idle, and while asleep push alerts and the daily summary don't go out; a free Render database has limited storage and may expire.
+After this, pushes to `main` deploy by themselves ("Going live and rolling back" below).
 
 **Running the same image elsewhere:** `docker build -t 4vd-backend backend` then `docker run --env-file backend/.env -p 3000:3000 4vd-backend` works on any Docker host (a VPS, Fly.io, Railway).
 
@@ -181,17 +178,9 @@ Two layers:
 
 ### One-time setup
 
-1. Cloudflare dashboard > R2 > Create bucket `4vd-backups` (location: EU).
-2. R2 > Manage API tokens > Create token with **Object Read & Write** on that
-   bucket only. Note the Access Key ID, Secret Access Key and your Account ID.
-3. Render dashboard > `4vd-db` > Connect > copy the **External** connection string.
-4. Make a long random passphrase (e.g. a password manager's 6-word phrase) and
-   keep it somewhere safe outside GitHub. **Without it no backup can be opened.**
-5. GitHub > the repository > Settings > Secrets and variables > Actions > New
-   repository secret, one each: `BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`,
-   `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`.
-6. Actions > Database backup > Run workflow. It should go green and a file
-   `database/4vd-YYYY-MM-DD.dump.gpg` should appear in the bucket.
+Cloudflare dashboard > R2 > Create bucket `4vd-backups` (location: EU), then set the
+secrets as in "Weekly backup" under step 8 above. A green run leaves
+`database/4vd-YYYY-MM-DD.dump.gpg` in the bucket.
 
 ### Restore
 
@@ -242,38 +231,11 @@ containers on one `docker network create` network and use the first one's name a
 
 ---
 
-## Production Checklist
+## Going live and rolling back
 
-- [ ] Environment variables configured correctly
-- [ ] Database migrations run successfully
-- [ ] SSL certificate installed (auto with Render)
-- [ ] API health check endpoint working
-- [ ] Error emails reach the developer (real emails on)
-- [ ] Rate limiting enabled
-- [ ] Weekly R2 backup secrets set and one run green (see Database Backups)
-- [ ] Actions > Backup restore check run once by hand and green
-- [ ] Admin user created
-- [ ] Initial products loaded
-- [ ] Authentication working (JWT)
-- [ ] Load testing completed (optional)
-- [ ] Team access configured
+Push to `main`; when every GitHub check passes, the dashboard goes live and Render deploys the API (the full path is in docs/ARCHITECTURE.md, "From a push to live"). The API container applies new migrations each time it starts (`backend/Dockerfile`). Two things to watch:
 
----
+- Render deploys only pushes that change `backend/` (its root directory). A red backend push later fixed by a commit outside `backend/` is never deployed, and once (2026-11-18) a green backend push got no deploy at all. After every backend merge, check Render → `4vd-api` → **Events** shows a deploy for the commit; if not, **Manual Deploy → Deploy latest commit**.
+- The mail worker (`mail/`, `npx wrangler deploy`) and the Windows app (`desktop/README.md`) are released by hand.
 
-## Deployment Process
-
-Push to `main`. GitHub's "Checks" workflow runs the tests for the parts that changed; only when every check passes does it put the dashboard live, and Render deploys the API (`autoDeployTrigger: checksPass`). Runs on main wait in line and never cancel each other. The API container applies new migrations each time it starts (`backend/Dockerfile`). By hand: Render → `4vd-api` → **Manual Deploy**.
-
----
-
-## Rollback Plan
-
-If deployment fails:
-
-1. **Render Dashboard** → View logs
-2. **Identify issue** → Check error message
-3. **Rollback** → Select previous successful deploy
-4. **Fix** → Push corrected code
-5. **Re-deploy** → Push to main again
-
----
+**Rolling back** (labels from memory; the screens may word them slightly differently). The API: Render → `4vd-api` → **Events** → a previous good deploy → **Rollback**; Render may turn auto-deploy off after a rollback, so check **Settings → Auto-Deploy** before fixing forward. The dashboard: Cloudflare → **Workers & Pages** → `4vd-dashboard` → **Deployments** → an earlier version → **Rollback**. Then fix forward with a new push (`git revert` the bad commit). A rollback doesn't undo a migration that has already run, so the older code must still work with the newer tables.

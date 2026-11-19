@@ -33,8 +33,8 @@ Chosen 2026-11-11 (replaced the tick, which read as "done" and said nothing abou
 
 Everything about how 4VD looks, reads and works (colours, type, buttons, glass,
 the printed finish, wording) lives in one rulebook: [`DESIGN.md`](../DESIGN.md)
-in the project root. The values are in `admin/src/styles/tokens.css` and
-`mobile/src/theme.ts`. This file only covers the logo and icon files.
+in the project root. The values are in `admin/src/styles/tokens.css` (made by
+`brand/make_palette.mjs`). This file only covers the logo and icon files.
 
 ## Icons
 

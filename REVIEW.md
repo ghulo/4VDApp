@@ -75,7 +75,7 @@ Before committing, check the items whose **trigger** matches your diff (usually 
 ### 8. CI time and gating
 - **Trigger:** `.github/workflows/`, a new slow test file, or a test that starts a server or a browser.
 - **Check:**
-  - The backend job stays well under its 30-minute limit (about 24 minutes in Nov 2026). Split it into shards rather than raising the limit.
+  - The backend job stays well under its 30-minute limit (about 8 minutes after the Nov 2026 speed-ups). Split it into shards rather than raising the limit.
   - The dashboard deploy still `needs` the checks.
 - **Incident:** b8e1aff, where the suite outgrew 15 minutes and every run on main was stopped. dd30e4c made the deploy wait for the checks.
 

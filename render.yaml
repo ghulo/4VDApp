@@ -1,7 +1,8 @@
 # Render Blueprint: the API and its database (see docs/DEPLOYMENT.md).
 # The dashboard is hosted on Cloudflare Workers instead
 # (the dashboard at 4vd.app); the API is api.4vd.app.
-# The API redeploys by itself when backend/ changes on main, once the GitHub checks pass.
+# The API deploys when backend/ changes on main: GitHub's Checks run calls the deploy hook once
+# our own checks pass (job deploy-api). Render's own auto-deploy is off.
 
 services:
   # The API, from backend/Dockerfile. Applies database migrations on every start.
@@ -15,7 +16,7 @@ services:
     plan: starter
     region: frankfurt
     healthCheckPath: /health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: "off"
     envVars:
       # Set by hand (docs/DEPLOYMENT.md, "The app's own database role"): the API connects as fourvd_app,
       # which row security always applies to; migrations connect as the owner. Not fromDatabase:

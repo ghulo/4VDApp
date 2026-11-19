@@ -299,3 +299,28 @@ jobs:
           workingDirectory: admin
           wranglerVersion: '4.156.0'
           command: deploy
+
+  deploy-api:
+    name: Put the API live (api.4vd.app)
+    # GitHub tells Render to deploy this exact commit once our own checks pass.
+    # Render's auto-deploy is off: it used to wait for every check on the commit,
+    # other apps' too, and a red Cloudflare build of the retired team app held
+    # every API deploy back without a word (2026-11-18 and 19). Same rule as the
+    # dashboard: a job skipped because its folder didn't change counts as fine.
+    needs: [changes, backend, backend-image, admin, mail, e2e]
+    if: >-
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.backend == 'true' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask Render to deploy this commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "::error::The secret RENDER_DEPLOY_HOOK_URL is missing (docs/DEPLOYMENT.md)"; exit 1; fi
+          # A 404 means Render doesn't know the commit; curl -f turns it into a red step.
+          curl -fsS -X POST "${HOOK}&ref=${GITHUB_SHA}" -o /dev/null -w "Render answered %{http_code}\n"

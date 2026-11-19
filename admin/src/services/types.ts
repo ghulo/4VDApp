@@ -1427,9 +1427,15 @@ export interface Business {
   billAddress: string;
   /** The name shown instead of the legal one (null = the legal name). */
   displayName: string | null;
-  /** The colour the owner picked (null = not picked yet; brand.colour holds its default). */
+  /** The colours the owner picked (null = not picked yet; brand holds the default). */
   brandColour: string | null;
-  brandGreys: BrandGreys;
+  brandAccent: string | null;
+  brandGradient: boolean;
+  brandGreys: BrandGreys | null;
+  /** The colours before the last change, for "Back to previous" (null = none yet). */
+  brandPrevious: StoredBrandTheme | null;
+  /** What "Reset to default" goes back to. */
+  brandDefault: { colour: string; greys: BrandGreys };
   /** Lines printed under the name on documents. */
   receiptHeader: string | null;
   brand: Brand;
@@ -1437,11 +1443,23 @@ export interface Business {
 
 export type BrandGreys = 'plain' | 'tinted';
 
+/** A business's colour settings as saved (null = the default). */
+export interface StoredBrandTheme {
+  colour: string | null;
+  accent: string | null;
+  gradient: boolean;
+  greys: BrandGreys | null;
+}
+
 /** How a business shows itself: 4VD's own look (house), or its own name, logo and colours. */
 export interface Brand {
   house: boolean;
   name: string;
   colour: string;
+  /** A second colour for charts and the marker, or null for the main one. */
+  accent: string | null;
+  /** Main → accent on the main key, the logo key and the marker. */
+  gradient: boolean;
   greys: BrandGreys;
   logoUrl: string | null;
   initials: string;

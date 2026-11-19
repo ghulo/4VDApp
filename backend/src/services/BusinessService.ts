@@ -7,7 +7,8 @@ import type { ActivityLogRepository } from '../repositories/ActivityLogRepositor
 import type { BusinessRepository, BusinessRow } from '../repositories/BusinessRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { mediaUrl } from './mappers.js';
-import { brandOf, type BrandDto } from './brand.js';
+import { brandOf, defaultTheme, type BrandDto } from './brand.js';
+import type { StoredBrandTheme } from '../database/types.js';
 import type { MediaService } from './MediaService.js';
 import type { ShopField } from '../i18n/activityText.js';
 
@@ -32,9 +33,15 @@ export interface BusinessDto {
   billAddress: string;
   /** The name shown instead of the legal name (null = the legal name). */
   displayName: string | null;
-  /** The colour the owner picked (null = not picked: brand.colour holds the default). */
+  /** The colours the owner picked (null = not picked: brand holds the default). */
   brandColour: string | null;
-  brandGreys: 'plain' | 'tinted';
+  brandAccent: string | null;
+  brandGradient: boolean;
+  brandGreys: 'plain' | 'tinted' | null;
+  /** The colours before the last change, for "Back to previous" (null = none yet). */
+  brandPrevious: StoredBrandTheme | null;
+  /** What "Reset to default" goes back to. */
+  brandDefault: { colour: string; greys: 'plain' | 'tinted' };
   /** Lines printed under the name on documents. */
   receiptHeader: string | null;
   /** How it shows itself: 4VD's own look, or its own name, logo and colours. */
@@ -54,7 +61,9 @@ export interface BusinessChanges {
   shortName?: string;
   displayName?: string | null;
   brandColour?: string | null;
-  brandGreys?: 'plain' | 'tinted';
+  brandAccent?: string | null;
+  brandGradient?: boolean;
+  brandGreys?: 'plain' | 'tinted' | null;
   receiptHeader?: string | null;
 }
 
@@ -77,10 +86,17 @@ const toDto = (business: BusinessRow): BusinessDto => ({
   billAddress: billAddressOf(business.short_name),
   displayName: business.display_name,
   brandColour: business.brand_colour,
+  brandAccent: business.brand_accent,
+  brandGradient: business.brand_gradient,
   brandGreys: business.brand_greys,
+  brandPrevious: business.brand_previous,
+  brandDefault: defaultTheme(business),
   receiptHeader: business.receipt_header,
   brand: brandOf(business),
 });
+
+const THEME_FIELDS: string[] = ['brandColour', 'brandAccent', 'brandGradient', 'brandGreys'];
+const themeOf = (business: BusinessRow): StoredBrandTheme => ({ colour: business.brand_colour, accent: business.brand_accent, gradient: business.brand_gradient, greys: business.brand_greys });
 
 export type ShopPicture = 'logo' | 'stamp' | 'signature';
 const PICTURE_COLUMN = { logo: 'logo_media_id', stamp: 'stamp_media_id', signature: 'signature_media_id' } as const;
@@ -113,6 +129,15 @@ export class BusinessService {
     if (changes.shortName !== undefined && changes.shortName !== business.short_name) {
       if (!(await this.userRepository.findById(userId))?.is_platform_developer) throw new ForbiddenError("Only 4VD's developer can change the bill address");
     }
+    // A colour change keeps the colours it replaces, so one click can go back to them.
+    const themeBefore = themeOf(business);
+    const themeAfter: StoredBrandTheme = {
+      colour: changes.brandColour !== undefined ? (changes.brandColour?.toLowerCase() ?? null) : themeBefore.colour,
+      accent: changes.brandAccent !== undefined ? (changes.brandAccent?.toLowerCase() ?? null) : themeBefore.accent,
+      gradient: changes.brandGradient ?? themeBefore.gradient,
+      greys: changes.brandGreys !== undefined ? changes.brandGreys : themeBefore.greys,
+    };
+    const themeChanged = JSON.stringify(themeAfter) !== JSON.stringify(themeBefore);
     const updated = await this.businessRepository.update(business.id, {
       ...(changes.shortName !== undefined && { short_name: changes.shortName }),
       ...(changes.name !== undefined && { name: changes.name }),
@@ -125,8 +150,13 @@ export class BusinessService {
       ...(changes.invoiceNote !== undefined && { invoice_note: changes.invoiceNote }),
       ...(changes.legalForm !== undefined && { legal_form: changes.legalForm }),
       ...(changes.displayName !== undefined && { display_name: changes.displayName }),
-      ...(changes.brandColour !== undefined && { brand_colour: changes.brandColour?.toLowerCase() ?? null }),
-      ...(changes.brandGreys !== undefined && { brand_greys: changes.brandGreys }),
+      ...(themeChanged && {
+        brand_colour: themeAfter.colour,
+        brand_accent: themeAfter.accent,
+        brand_gradient: themeAfter.gradient,
+        brand_greys: themeAfter.greys,
+        brand_previous: themeBefore,
+      }),
       ...(changes.receiptHeader !== undefined && { receipt_header: changes.receiptHeader }),
     }).catch((error: unknown) => {
       if (isUniqueViolation(error, 'businesses_short_name_key')) throw new ConflictError(`${billAddressOf(changes.shortName ?? null)} is already used by another business`);
@@ -135,7 +165,10 @@ export class BusinessService {
     // Every field that really changed, before and after, for the shop's history.
     const before = toDto(business) as unknown as Record<string, unknown>;
     const after = toDto(updated) as unknown as Record<string, unknown>;
-    const fields = Object.keys(changes).filter((field) => (before[field] ?? null) !== (after[field] ?? null));
+    const fields = [
+      ...Object.keys(changes).filter((field) => !THEME_FIELDS.includes(field) && (before[field] ?? null) !== (after[field] ?? null)),
+      ...(themeChanged ? ['colours'] : []),
+    ];
     if (fields.length > 0) {
       await this.activityLog.create({
         userId,
@@ -143,7 +176,10 @@ export class BusinessService {
         entityType: 'business',
         entityId: business.id,
         say: { key: 'shopChanged', params: { fields: fields as ShopField[] } },
-        details: { fields: fields.map((field) => ({ field, from: before[field] ?? null, to: after[field] ?? null })), ...logExtra },
+        details: {
+          fields: fields.map((field) => (field === 'colours' ? { field, from: themeBefore, to: themeAfter } : { field, from: before[field] ?? null, to: after[field] ?? null })),
+          ...logExtra,
+        },
       });
     }
     return toDto(updated);

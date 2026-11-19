@@ -23,3 +23,18 @@ describe('brandColours', () => {
     expect(BRAND_PRESETS).not.toContain('#f5b71a');
   });
 });
+
+
+// The same main → accent pairs on both sides: whether the main key can carry the gradient, and its word colour.
+const GRADIENTS = [
+  { main: '#1d5fd1', accent: '#14284b', ink: '#ffffff', key: true, notes: [] },
+  { main: '#0f766e', accent: '#e0a33a', ink: '#ffffff', key: false, notes: ['flatKey'] },
+  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey'] },
+];
+
+describe('gradient twins', () => {
+  it.each(GRADIENTS)('decides $main → $accent the same on both sides', ({ main, accent, ink, key, notes }) => {
+    const theme = brandColours(main, 'plain', { accent, gradient: true });
+    expect({ ink: theme.key.ink, key: theme.gradient.key !== null, notes: theme.notes }).toEqual({ ink, key, notes });
+  });
+});

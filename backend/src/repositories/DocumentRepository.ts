@@ -199,7 +199,7 @@ export class DocumentRepository {
       .leftJoin('media as st', 'st.id', 'b.stamp_media_id')
       .leftJoin('media as sg', 'sg.id', 'b.signature_media_id')
       .select(['b.bank_name', 'b.iban', 'b.invoice_note', 'm.mime', 'm.bytes'])
-      .select(['b.name', 'b.display_name', 'b.short_name', 'b.brand_colour', 'b.brand_greys', 'b.logo_media_id', 'b.receipt_header'])
+      .select(['b.name', 'b.display_name', 'b.short_name', 'b.brand_colour', 'b.brand_accent', 'b.brand_gradient', 'b.brand_greys', 'b.logo_media_id', 'b.receipt_header'])
       .select(['st.mime as stamp_mime', 'st.bytes as stamp_bytes', 'sg.mime as signature_mime', 'sg.bytes as signature_bytes'])
       .orderBy('b.id')
       .executeTakeFirstOrThrow();

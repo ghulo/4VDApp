@@ -33,7 +33,7 @@ export type ProductField =
   | 'vatExempt'
   | 'originCountry'
   | 'bulkPricingTiers';
-export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote' | 'legalForm' | 'shortName' | 'displayName' | 'brandColour' | 'brandGreys' | 'receiptHeader';
+export type ShopField = 'name' | 'address' | 'phone' | 'nui' | 'timeZone' | 'bankName' | 'iban' | 'invoiceNote' | 'legalForm' | 'shortName' | 'displayName' | 'colours' | 'receiptHeader';
 type SettingName =
   | 'refundApprovalLimit'
   | 'returnWindowDays'
@@ -122,7 +122,7 @@ const en = {
     `Changed the barcode of ${p.product}${p.from ? ` from ${p.from}` : ''} to ${p.to}, as on ${p.supplier}'s bill`,
 
   shopChanged: (p: { fields: ShopField[] }, w: Words) =>
-    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note', legalForm: 'legal form', shortName: 'bill address', displayName: 'name shown', brandColour: 'colour', brandGreys: 'greys', receiptHeader: 'receipt header' })[field] ?? field))}`,
+    `Changed the shop's ${w.list(p.fields.map((field) => ({ name: 'name', address: 'address', phone: 'phone', nui: 'NUI', timeZone: 'time zone', bankName: 'bank', iban: 'IBAN', invoiceNote: 'invoice note', legalForm: 'legal form', shortName: 'bill address', displayName: 'name shown', colours: 'colours', receiptHeader: 'receipt header' })[field] ?? field))}`,
 
   carwashAdded: (p: { name: string; float: number }, w: Words) => `Added the carwash ${p.name} (cash float ${w.money(p.float)})`,
   carwashArchived: (p: { name: string; stoppedExpenses: number }) =>
@@ -576,8 +576,7 @@ const SQ_SHOP_FIELD: Record<ShopField, string> = {
   legalForm: 'formën ligjore',
   shortName: 'adresën e faturave',
   displayName: 'emrin që shfaqet',
-  brandColour: 'ngjyrën',
-  brandGreys: 'ngjyrat gri',
+  colours: 'ngjyrat',
   receiptHeader: 'kokën e kuponit',
 };
 const sqAlso = (also: ProductField[]) => (also.length > 0 ? ` (ndryshoi edhe ${also.map((field) => SQ_PRODUCT_FIELD[field]).join(', ')})` : '');

@@ -25,7 +25,10 @@ export interface EmailBrand {
   initials: string;
   /** An absolute PNG address (mail apps can't show WebP or relative links), or null for the initials key. */
   logoSrc: string | null;
-  key: { face: string; top: string; edge: string; ink: string };
+  /** to: the accent the key runs to when the gradient is on and its words read along it. */
+  key: { face: string; top: string; edge: string; ink: string; to: string | null };
+  /** The accent the logo key runs to, when the gradient is on. */
+  markTo: string | null;
   link: string;
   linkDark: string;
 }
@@ -39,12 +42,13 @@ export function setEmailMediaBase(base: string | undefined): void {
 /** 4VD's own business: undefined (the house look). Others: their look, ready for an email. */
 export function emailBrandOf(brand: BrandDto): EmailBrand | undefined {
   if (brand.house) return undefined;
-  const colours = brandColours(brand.colour, brand.greys);
+  const colours = brandColours(brand.colour, brand.greys, { accent: brand.accent, gradient: brand.gradient });
   return {
     name: brand.name,
     initials: brand.initials,
     logoSrc: brand.logoUrl && mediaBase ? `${mediaBase}${brand.logoUrl}?format=png` : null,
-    key: { face: colours.key.face, top: colours.key.top, edge: colours.key.edge, ink: colours.key.ink },
+    key: { face: colours.key.face, top: colours.key.top, edge: colours.key.edge, ink: colours.key.ink, to: colours.gradient.key ? brand.accent : null },
+    markTo: colours.gradient.mark ? brand.accent : null,
     link: colours.words.light,
     linkDark: colours.words.dark,
   };
@@ -160,10 +164,11 @@ const stamp = (text: string, tone: Tone) =>
 /** The amber key standing on its edge, like the dashboard's main button. Outlook gets the flat amber face. A business's own email: its colour. */
 function renderButton(t: ServerMessages, button: { label: string; link: string }, brand?: EmailBrand): string {
   const link = escapeHtml(button.link);
-  const key = brand ? brand.key : { face: AMBER, top: AMBER_TOP, edge: AMBER_EDGE, ink: AMBER_INK };
+  const key = brand ? brand.key : { face: AMBER, top: AMBER_TOP, edge: AMBER_EDGE, ink: AMBER_INK, to: null };
+  const face = key.to ? `linear-gradient(100deg,${key.face},${key.to})` : `linear-gradient(${key.top},${key.face} 60%)`;
   const linkColour = brand ? brand.link : C.accent;
   return `<table ${TABLE} style="margin:4px 0 16px"><tr>
-<td style="border-radius:10px;background-color:${key.face};background-image:linear-gradient(${key.top},${key.face} 60%);border-bottom:2px solid ${key.edge};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(22,25,27,0.1)">
+<td style="border-radius:10px;background-color:${key.face};background-image:${face};border-bottom:2px solid ${key.edge};box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 2px 6px rgba(22,25,27,0.1)">
 <a href="${link}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:15px;line-height:20px;font-weight:600;color:${key.ink};text-decoration:none;border-radius:10px">${escapeHtml(button.label)}</a>
 </td></tr></table>
 <p class="muted" style="margin:0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted}">${escapeHtml(t.email.pasteLink)}<br><a class="link" href="${link}" style="color:${linkColour};word-break:break-all">${link}</a></p>`;
@@ -188,7 +193,7 @@ const card = (inner: string, strip?: string) =>
 function brandHeader(brand: EmailBrand): string {
   const mark = brand.logoSrc
     ? `<img src="${escapeHtml(brand.logoSrc)}" width="56" height="56" alt="${escapeHtml(brand.name)}" style="display:block;border:0;width:56px;height:56px;border-radius:14px">`
-    : `<table ${TABLE}><tr><td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;border-radius:15px;background-color:${brand.key.face};background-image:linear-gradient(${brand.key.top},${brand.key.face} 55%);border-bottom:2px solid ${brand.key.edge};font-family:${SERIF};font-size:23px;line-height:56px;font-weight:600;color:${brand.key.ink};text-align:center">${escapeHtml(brand.initials)}</td></tr></table>`;
+    : `<table ${TABLE}><tr><td width="56" height="56" align="center" valign="middle" style="width:56px;height:56px;border-radius:15px;background-color:${brand.key.face};background-image:${brand.markTo ? `linear-gradient(100deg,${brand.key.face},${brand.markTo})` : `linear-gradient(${brand.key.top},${brand.key.face} 55%)`};border-bottom:2px solid ${brand.key.edge};font-family:${SERIF};font-size:23px;line-height:56px;font-weight:600;color:${brand.key.ink};text-align:center">${escapeHtml(brand.initials)}</td></tr></table>`;
   return `<td style="vertical-align:middle">${mark}</td><td class="ink" style="vertical-align:middle;padding-left:14px;font-family:${SERIF};font-size:20px;line-height:26px;font-weight:600;color:${C.ink}">${escapeHtml(brand.name)}</td>`;
 }
 

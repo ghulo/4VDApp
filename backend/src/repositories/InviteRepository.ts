@@ -10,7 +10,9 @@ export interface InviteRecord {
   display_name: string | null;
   short_name: string | null;
   brand_colour: string | null;
-  brand_greys: 'plain' | 'tinted';
+  brand_accent: string | null;
+  brand_gradient: boolean;
+  brand_greys: 'plain' | 'tinted' | null;
   logo_media_id: string | null;
   email: string;
   role: StoredRole;
@@ -37,6 +39,8 @@ export class InviteRepository {
         'b.display_name',
         'b.short_name',
         'b.brand_colour',
+        'b.brand_accent',
+        'b.brand_gradient',
         'b.brand_greys',
         'b.logo_media_id',
         'i.email',

@@ -7,6 +7,7 @@ import type { DocumentDetailDto } from '../DocumentService.js';
 import { code128Svg } from './code128.js';
 import { SHOP_MARK_SVG } from './shopMark.js';
 import { brandColours } from '../../utils/brandColours.js';
+import type { BrandDto } from '../brand.js';
 
 const escape = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
@@ -48,7 +49,7 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
 
   const logo = letterhead.logo
     ? `<img class="logo" src="data:${escape(letterhead.logo.mime)};base64,${letterhead.logo.bytes.toString('base64')}" alt="">`
-    : `<span class="logo" aria-hidden="true">${letterhead.brand.house ? SHOP_MARK_SVG : initialsKeySvg(letterhead.brand.initials, letterhead.brand.colour, letterhead.brand.greys)}</span>`;
+    : `<span class="logo" aria-hidden="true">${letterhead.brand.house ? SHOP_MARK_SVG : initialsKeySvg(letterhead.brand)}</span>`;
 
   const contact = (p: DocumentParty) =>
     [p.nui ? `${escape(t.nui)} ${escape(p.nui)}` : '', p.address ? escape(p.address) : '', p.phone ? `${escape(t.phone)} ${escape(p.phone)}` : '']
@@ -292,7 +293,13 @@ export function renderDocumentHtml(document: DocumentDetailDto, letterhead: Lett
 }
 
 /** A customer's business without a logo: its initials on a key in its colour, as on its dashboard. */
-function initialsKeySvg(initials: string, colour: string, greys: 'plain' | 'tinted'): string {
-  const key = brandColours(colour, greys).key;
-  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="brand-key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${key.top}"/><stop offset=".48" stop-color="${key.face}"/><stop offset="1" stop-color="${key.low}"/></linearGradient></defs><rect x="1" y="1" width="62" height="62" rx="17" fill="url(#brand-key)"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-family="'Source Serif 4',Georgia,serif" font-weight="600" font-size="27" fill="${key.ink}">${escape(initials)}</text></svg>`;
+function initialsKeySvg(brand: BrandDto): string {
+  const colours = brandColours(brand.colour, brand.greys, { accent: brand.accent, gradient: brand.gradient });
+  const key = colours.key;
+  const initials = brand.initials;
+  // With the gradient on, the key runs from the main colour to the accent, as on the dashboard.
+  const stops = colours.gradient.mark && brand.accent
+    ? `<linearGradient id="brand-key" x1="0" y1="0" x2="1" y2=".2"><stop offset="0" stop-color="${key.face}"/><stop offset="1" stop-color="${brand.accent}"/></linearGradient>`
+    : `<linearGradient id="brand-key" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${key.top}"/><stop offset=".48" stop-color="${key.face}"/><stop offset="1" stop-color="${key.low}"/></linearGradient>`;
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs>${stops}</defs><rect x="1" y="1" width="62" height="62" rx="17" fill="url(#brand-key)"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-family="'Source Serif 4',Georgia,serif" font-weight="600" font-size="27" fill="${key.ink}">${escape(initials)}</text></svg>`;
 }

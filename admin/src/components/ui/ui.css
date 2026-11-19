@@ -141,7 +141,8 @@
 .button--primary {
   --edge: var(--cta-edge);
   --shine: var(--key-shine);
-  background: linear-gradient(180deg, var(--cta-top), var(--cta) 45%, var(--cta-low));
+  /* --key-face: a business's main → accent gradient (theme/brandTheme.ts), only when its words read all along it. */
+  background: var(--key-face, linear-gradient(180deg, var(--cta-top), var(--cta) 45%, var(--cta-low)));
   color: var(--cta-ink);
   font-weight: 600;
 }

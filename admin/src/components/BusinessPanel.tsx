@@ -45,7 +45,7 @@ export function BusinessPanel() {
   return (
     <>
       <BusinessForm initial={business.data} />
-      {!business.data.brand.house && <BrandCard business={business.data} />}
+      <BrandCard business={business.data} />
       <InvoicePicturesCard business={business.data} />
       <HistoryCard entityType="business" entityId={business.data.id} />
     </>

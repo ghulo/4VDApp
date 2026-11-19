@@ -11,10 +11,38 @@
 import { contrastRatio } from './contrast';
 
 export type BrandGreys = 'plain' | 'tinted';
-export type BrandNote = 'darkWords' | 'paleWords';
+/** darkWords/paleWords: words take a readable shade; flatKey: no word colour reads all along the gradient, so the main key stays one colour. */
+export type BrandNote = 'darkWords' | 'paleWords' | 'flatKey';
+
+export interface BrandExtras {
+  /** A second colour for charts and the "where you are" marker; null = the main one. */
+  accent?: string | null;
+  /** Main → accent on the main key, the logo key and the marker. */
+  gradient?: boolean;
+  /** 4VD's own amber with its own scale (tokens.css): emit only the greys, accent and gradient, never a worked-out amber. */
+  keepMain?: boolean;
+}
+
+/** What one theme (light or dark) looks like, as plain colours, for Settings' side-by-side previews. */
+export interface BrandPreview {
+  bg: string;
+  surface: string;
+  sunk: string;
+  ink: string;
+  muted: string;
+  line: string;
+  word: string;
+  keyFace: string;
+  keyInk: string;
+  keyEdge: string;
+  markFace: string;
+  tick: string;
+  data1: string;
+  data3: string;
+}
 
 export interface BrandTheme {
-  /** A stylesheet for <style id="brand-theme">: the scales plus the light and dark tokens that point at them. */
+  /** A stylesheet for <style id="brand-theme">: the scales plus the light and dark tokens that point at them. Empty when nothing differs from 4VD's own look. */
   css: string;
   /** What the guard changed, for the owner. */
   notes: BrandNote[];
@@ -24,6 +52,10 @@ export interface BrandTheme {
   words: { light: string; dark: string };
   /** The ramp itself, 50 → 990, for the little strip under the picker. */
   ramp: Record<number, string>;
+  /** The gradient faces (CSS backgrounds), or null where it is off: the main key (null too when its words wouldn't read) and the logo key. */
+  gradient: { key: string | null; mark: string | null };
+  /** Light and dark, as colours, for previews. */
+  preview: { light: BrandPreview; dark: BrandPreview };
 }
 
 const hexToRgb = (hex: string) => [1, 3, 5].map((start) => parseInt(hex.slice(start, start + 2), 16) / 255) as [number, number, number];
@@ -62,6 +94,12 @@ export function fromOklch(L: number, C: number, H: number): string {
   return `#${grey}${grey}${grey}`;
 }
 
+/** a → b at t (0…1), mixed the way a browser draws a gradient (sRGB). */
+function mix(a: string, b: string, t: number): string {
+  const [x, y] = [hexToRgb(a), hexToRgb(b)];
+  return `#${x.map((v, i) => Math.round((v + (y[i]! - v) * t) * 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 975, 990] as const;
 const HALF = [150, 250, 350, 450, 550, 650, 850, 925] as const;
 const LADDER: Record<number, number> = { 50: 0.98, 100: 0.96, 200: 0.925, 300: 0.885, 400: 0.79, 500: 0.69, 600: 0.585, 700: 0.475, 800: 0.4, 900: 0.3, 950: 0.215, 975: 0.17, 990: 0.125 };
@@ -75,15 +113,17 @@ const DEV_MARK = { light: { mark: '#a66f02', text: '#7f5101' }, dark: { mark: '#
 
 const WHITE = '#ffffff';
 const BLACK = '#000000';
+/** The light along the top of a key and the shadow at its foot, drawn over a gradient key (8-digit hex: no "/" in a stored sheet). */
+const KEY_SHADE = 'linear-gradient(180deg, #ffffff33, #ffffff00, #0000001a)';
 
 /** The paler-or-darker ink that reads best on a colour; at least 4.58:1 on any colour. */
 const inkOn = (face: string, darkInk: string) => (contrastRatio(face, darkInk) >= contrastRatio(face, WHITE) ? darkInk : WHITE);
 
 export const isBrandHex = (value: string) => /^#[0-9a-f]{6}$/i.test(value);
 
-export function brandTheme(input: string, greys: BrandGreys): BrandTheme {
-  const hex = input.toLowerCase();
-  const [l0, c0, h] = toOklch(hex);
+/** An OKLCH ramp on 4VD's lightness ladder, with the half steps between. */
+function rampOf(hex: string): Record<number, string> {
+  const [, c0, h] = toOklch(hex);
   // A grey pick still gets a faint ramp; a neon one is held to amber's strength.
   const peak = Math.min(0.2, Math.max(0.02, c0));
   const ramp: Record<number, string> = {};
@@ -95,6 +135,15 @@ export function brandTheme(input: string, greys: BrandGreys): BrandTheme {
     const [lb, cb] = toOklch(ramp[hi]!);
     ramp[half] = fromOklch((la + lb) / 2, (ca + cb) / 2, h);
   }
+  return ramp;
+}
+
+export function brandTheme(input: string, greys: BrandGreys, extras: BrandExtras = {}): BrandTheme {
+  const hex = input.toLowerCase();
+  const accentHex = extras.accent && isBrandHex(extras.accent) && extras.accent.toLowerCase() !== hex ? extras.accent.toLowerCase() : null;
+  const keepMain = extras.keepMain === true;
+  const [l0, c0, h] = toOklch(hex);
+  const ramp = rampOf(hex);
   const neutral: Record<number, string> = {};
   if (greys === 'tinted') for (const step of STEPS) neutral[step] = fromOklch(LADDER[step]!, NEUTRAL_C[step]! * TINT, h);
   const grey = (step: number) => neutral[step] ?? NEUTRAL_HEX[step]!;
@@ -103,7 +152,7 @@ export function brandTheme(input: string, greys: BrandGreys): BrandTheme {
   // The ink is white or near-black, whichever reads; if the lit top or foot
   // would let it down, they step back towards the face until it reads.
   const darkInk = contrastRatio(hex, grey(975)) >= 4.5 || contrastRatio(hex, WHITE) >= 4.5 ? grey(975) : BLACK;
-  const ink = inkOn(hex, darkInk);
+  let ink = inkOn(hex, darkInk);
   let lift = 0.04;
   let top = fromOklch(l0 + lift, c0 * 0.92, h);
   let low = fromOklch(l0 - lift, c0, h);
@@ -119,49 +168,111 @@ export function brandTheme(input: string, greys: BrandGreys): BrandTheme {
   // on the canvas and on every brand wash the words sit on.
   const light = { surface: grey(50), bg: grey(100), soft: ramp[100]!, tint: ramp[150]!, wash: ramp[50]! };
   const dark = { surface: grey(950), bg: grey(975), soft: ramp[900]!, tint: ramp[925]!, wash: ramp[975]! };
-  const reads = (colour: string, on: string[]) => on.every((bg) => contrastRatio(colour, bg) >= 4.5);
-  const firstThatReads = (order: number[], on: string[], fallback: string) => order.map((s) => ramp[s]!).find((c) => reads(c, on)) ?? fallback;
+  const reads = (colour: string, on: string[], ratio = 4.5) => on.every((bg) => contrastRatio(colour, bg) >= ratio);
+  const firstThatReads = (from: Record<number, string>, order: number[], on: string[], fallback: string, ratio = 4.5) => order.map((s) => from[s]!).find((c) => reads(c, on, ratio)) ?? fallback;
   const lightOn = [light.surface, light.bg, light.soft, light.tint, light.wash];
   const darkOn = [dark.surface, dark.bg, dark.soft, dark.tint, dark.wash];
-  const lightWord = firstThatReads([700, 800, 900, 950], lightOn, grey(950));
-  const darkWord = firstThatReads([400, 300, 200, 100], darkOn, grey(50));
+  const lightWord = firstThatReads(ramp, [700, 800, 900, 950], lightOn, grey(950));
+  const darkWord = firstThatReads(ramp, [400, 300, 200, 100], darkOn, grey(50));
 
   const notes: BrandNote[] = [];
-  if (contrastRatio(hex, dark.bg) < 1.6) notes.push('darkWords');
-  if (contrastRatio(hex, light.bg) < 1.25) notes.push('paleWords');
+  if (!keepMain && contrastRatio(hex, dark.bg) < 1.6) notes.push('darkWords');
+  if (!keepMain && contrastRatio(hex, light.bg) < 1.25) notes.push('paleWords');
 
-  const vars = (entries: Record<string, string>) =>
+  // The gradient runs main → accent. Its words must read all along it (luminance
+  // can dip between two hues), and where the key's foot darkens it; the light
+  // along the top fades out above the words. If no ink reads, the main key stays
+  // one colour and only the logo key and marker shade.
+  let keyGradient: string | null = null;
+  let markGradient: string | null = null;
+  if (extras.gradient && accentHex) {
+    markGradient = `${KEY_SHADE}, linear-gradient(100deg, ${hex}, ${accentHex})`;
+    const along = Array.from({ length: 11 }, (_, i) => mix(hex, accentHex, i / 10)).flatMap((colour) => [colour, mix(colour, BLACK, 0.1)]);
+    const worst = (candidate: string) => Math.min(...along.map((colour) => contrastRatio(colour, candidate)));
+    const best = [darkInk, WHITE, BLACK].sort((a, b) => worst(b) - worst(a))[0]!;
+    if (worst(best) >= 4.5) {
+      keyGradient = markGradient;
+      ink = best;
+    } else notes.push('flatKey');
+  }
+
+  // The accent draws the charts and the marker; without one, the main colour does (tokens.css's own mapping).
+  const accentRamp = accentHex ? rampOf(accentHex) : null;
+  const ticks = {
+    light: markGradient ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [500, 600, 700], [light.surface], accentRamp[700]!, 3) : null,
+    dark: markGradient ? `linear-gradient(180deg, ${hex}, ${accentHex})` : accentRamp ? firstThatReads(accentRamp, [400, 300, 200], [dark.surface], accentRamp[200]!, 3) : null,
+  };
+  const chartTokens = (map: [number, number, number, number, number, number, number]) =>
+    accentRamp
+      ? { 'data-1': accentRamp[map[0]]!, 'data-2': accentRamp[map[1]]!, 'data-3': accentRamp[map[2]]!, 'data-4': accentRamp[map[3]]!, 'data-5': accentRamp[map[4]]!, 'data-heat': accentRamp[map[5]]!, 'data-line': accentRamp[map[6]]! }
+      : {};
+  const lightCharts = chartTokens([700, 500, 400, 300, 200, 500, 600]);
+  const darkCharts = chartTokens([300, 400, 500, 700, 800, 400, 400]);
+  const shaded = { ...(keyGradient && { 'key-face': keyGradient }), ...(markGradient && { 'mark-face': markGradient }) };
+
+  const vars = (entries: Record<string, string | undefined>) =>
     Object.entries(entries)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
       .map(([name, value]) => `--${name}: ${value};`)
       .join(' ');
   const scale = vars({
-    ...Object.fromEntries(Object.entries(ramp).map(([step, colour]) => [`amber-${step}`, colour])),
+    ...(!keepMain && Object.fromEntries(Object.entries(ramp).map(([step, colour]) => [`amber-${step}`, colour]))),
     ...Object.fromEntries(Object.entries(neutral).map(([step, colour]) => [`neutral-${step}`, colour])),
   });
-  const keyTokens = { cta: hex, 'cta-top': top, 'cta-low': low, 'cta-hover': hover, 'cta-edge': edge, 'cta-ink': ink };
+  const keyTokens = keepMain ? (keyGradient ? { 'cta-ink': ink } : {}) : { cta: hex, 'cta-top': top, 'cta-low': low, 'cta-hover': hover, 'cta-edge': edge, 'cta-ink': ink };
   const lightTokens = vars({
     ...keyTokens,
-    brand: lightWord,
-    'brand-ink': inkOn(lightWord, BLACK),
-    accent: lightWord,
-    focus: lightWord,
-    'glass-deep': lightWord,
+    ...(!keepMain && { brand: lightWord, 'brand-ink': inkOn(lightWord, BLACK), accent: lightWord, focus: lightWord, 'glass-deep': lightWord }),
+    ...shaded,
+    ...(ticks.light && { 'nav-tick': ticks.light }),
+    ...lightCharts,
     'dev-mark': DEV_MARK.light.mark,
     'dev-mark-text': DEV_MARK.light.text,
   });
   const darkTokens = vars({
     ...keyTokens,
-    brand: darkWord,
-    'brand-ink': inkOn(darkWord, grey(975)),
-    accent: darkWord,
-    focus: darkWord,
-    'amber-mark': darkWord,
+    ...(!keepMain && { brand: darkWord, 'brand-ink': inkOn(darkWord, grey(975)), accent: darkWord, focus: darkWord, 'amber-mark': darkWord }),
+    ...shaded,
+    ...(ticks.dark && { 'nav-tick': ticks.dark }),
+    ...darkCharts,
     'dev-mark': DEV_MARK.dark.mark,
     'dev-mark-text': DEV_MARK.dark.text,
   });
+  // 4VD's own look with nothing changed: no sheet at all, tokens.css shows as it always has.
+  const nothing = keepMain && greys === 'plain' && !accentHex;
   // html[...] outranks tokens.css's [data-theme] blocks, so these win without !important.
-  const css = `html:root { ${scale} }\nhtml:root, html[data-theme='light'] { ${lightTokens} }\nhtml[data-theme='dark'] { ${darkTokens} }`;
-  return { css, notes, key: { face: hex, top, low, edge, ink }, words: { light: lightWord, dark: darkWord }, ramp };
+  const css = nothing ? '' : `html:root { ${scale} }\nhtml:root, html[data-theme='light'] { ${lightTokens} }\nhtml[data-theme='dark'] { ${darkTokens} }`;
+
+  const flatFace = `linear-gradient(180deg, ${top}, ${hex}, ${low})`;
+  const previewOf = (mode: 'light' | 'dark'): BrandPreview => {
+    const isLight = mode === 'light';
+    const data = accentRamp ?? ramp;
+    return {
+      bg: grey(isLight ? 100 : 975),
+      surface: grey(isLight ? 50 : 950),
+      sunk: grey(isLight ? 200 : 990),
+      ink: grey(isLight ? 950 : 50),
+      muted: grey(isLight ? 700 : 400),
+      line: grey(isLight ? 200 : 900),
+      word: isLight ? lightWord : darkWord,
+      keyFace: keyGradient ?? flatFace,
+      keyInk: ink,
+      keyEdge: edge,
+      markFace: markGradient ?? flatFace,
+      tick: ticks[mode] ?? hex,
+      data1: data[isLight ? 700 : 300]!,
+      data3: data[isLight ? 400 : 500]!,
+    };
+  };
+  return {
+    css,
+    notes,
+    key: { face: hex, top, low, edge, ink },
+    words: { light: lightWord, dark: darkWord },
+    ramp,
+    gradient: { key: keyGradient, mark: markGradient },
+    preview: { light: previewOf('light'), dark: previewOf('dark') },
+  };
 }
 
 /** 4VD's own greys (tokens.css), used when a business keeps them plain. */
@@ -188,4 +299,19 @@ export const BRAND_PRESETS = [
   { key: 'olive', hex: '#76801f' },
   { key: 'rose', hex: '#d4537e' },
   { key: 'sky', hex: '#7cc4f0' },
+] as const;
+
+/** 4VD's own amber: 4VD's business starts on it, and can pick it back. */
+export const HOUSE_COLOUR = '#f5b71a';
+
+/** Ready-made accents for charts and the marker: warm and cool picks that sit beside most main colours. */
+export const ACCENT_PRESETS = [
+  { key: 'saffron', hex: '#e0a33a' },
+  { key: 'coral', hex: '#e8664a' },
+  { key: 'mint', hex: '#3fbf8f' },
+  { key: 'lilac', hex: '#9a7ee0' },
+  { key: 'sand', hex: '#c9a77c' },
+  { key: 'teal', hex: '#0f766e' },
+  { key: 'navy', hex: '#14284b' },
+  { key: 'rose', hex: '#d4537e' },
 ] as const;

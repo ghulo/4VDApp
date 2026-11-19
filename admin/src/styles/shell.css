@@ -75,7 +75,7 @@
   font-size: calc(var(--mark-size) * 0.42);
   letter-spacing: -0.02em;
   color: var(--cta-ink);
-  background: var(--amber-face);
+  background: var(--mark-face, var(--amber-face));
   box-shadow: var(--key-shine), inset 0 -2px 0 var(--cta-edge), var(--key-drop);
   user-select: none;
 }
@@ -240,7 +240,8 @@
   bottom: 8px;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: var(--cta);
+  /* --nav-tick: a business's accent, or its main → accent gradient (theme/brandTheme.ts). */
+  background: var(--nav-tick, var(--cta));
   box-shadow: inset -1px 0 0 var(--amber-mark);
 }
 

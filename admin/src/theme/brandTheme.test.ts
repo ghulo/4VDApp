@@ -60,3 +60,76 @@ describe('brandInitials', () => {
     ['', '?'],
   ])('%s → %s', (name, initials) => expect(brandInitials(name)).toBe(initials));
 });
+
+describe('accent and gradient', () => {
+  /** Every colour the gradient key's words sit on: main → accent, under the key's light and its shadow. */
+  const alongKey = (from: string, to: string) => {
+    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const mix = (a: string, b: string, t: number) => `#${rgb(a).map((v, i) => Math.round(v + (rgb(b)[i]! - v) * t).toString(16).padStart(2, '0')).join('')}`;
+    return Array.from({ length: 21 }, (_, i) => mix(from, to, i / 20)).flatMap((c) => [c, mix(c, '#000000', 0.1)]);
+  };
+
+  it("leaves 4VD's own look untouched until its owner changes something", () => {
+    expect(brandTheme('#f5b71a', 'plain', { keepMain: true }).css).toBe('');
+  });
+
+  it("changes only the charts and the marker when 4VD picks an accent", () => {
+    const css = brandTheme('#f5b71a', 'plain', { keepMain: true, accent: '#3fbf8f' }).css;
+    expect(css).toContain('--data-1:');
+    expect(css).toContain('--nav-tick:');
+    expect(css).not.toMatch(/--amber-\d|--cta:|--brand:|--accent:/);
+  });
+
+  it('draws the charts from the accent, never the brand words', () => {
+    const theme = brandTheme('#0f766e', 'plain', { accent: '#e0a33a' });
+    expect(token(theme.css.split('\n')[1]!, 'accent')).toBe(theme.words.light);
+    expect(theme.css).toContain('--data-1:');
+  });
+
+  it('keeps the gradient key readable all along it, or keeps the key one colour and says so', () => {
+    for (let L = 0.1; L <= 1; L += 0.15)
+      for (let H = 0; H < 360; H += 45) {
+        const main = fromOklch(L, 0.15, H);
+        for (const accent of ['#e0a33a', '#14284b', '#3fbf8f', '#ffee00', '#e8664a']) {
+          if (accent === main) continue;
+          const theme = brandTheme(main, 'plain', { accent, gradient: true });
+          expect(theme.gradient.mark, `logo key for ${main} → ${accent}`).not.toBeNull();
+          if (theme.gradient.key) {
+            for (const colour of alongKey(main, accent)) expect(contrastRatio(theme.key.ink, colour), `${main} → ${accent} at ${colour}`).toBeGreaterThanOrEqual(4.5);
+          } else expect(theme.notes).toContain('flatKey');
+        }
+      }
+  });
+
+  it('keeps a far-apart pair one colour on the main key', () => {
+    const theme = brandTheme('#ffee00', 'plain', { accent: '#14284b', gradient: true });
+    expect(theme.gradient.key).toBeNull();
+    expect(theme.notes).toContain('flatKey');
+    expect(theme.css).not.toContain('--key-face');
+    expect(theme.css).toContain('--mark-face');
+  });
+
+  it('has no gradient without an accent, or with the accent the same as the main colour', () => {
+    expect(brandTheme('#0f766e', 'plain', { gradient: true }).gradient).toEqual({ key: null, mark: null });
+    expect(brandTheme('#0f766e', 'plain', { accent: '#0F766E', gradient: true }).gradient).toEqual({ key: null, mark: null });
+  });
+
+  it('writes nothing but colours into the stylesheet, gradients included', () => {
+    expect(brandTheme('#1d5fd1', 'tinted', { accent: '#e0a33a', gradient: true }).css).toMatch(/^[\w\s:;#\-[\]'=(),.{}]+$/);
+  });
+});
+
+
+// The same main → accent pairs on both sides: whether the main key can carry the gradient, and its word colour.
+const GRADIENTS = [
+  { main: '#1d5fd1', accent: '#14284b', ink: '#ffffff', key: true, notes: [] },
+  { main: '#0f766e', accent: '#e0a33a', ink: '#ffffff', key: false, notes: ['flatKey'] },
+  { main: '#ffee00', accent: '#14284b', ink: '#0f1010', key: false, notes: ['paleWords', 'flatKey'] },
+];
+
+describe('gradient twins', () => {
+  it.each(GRADIENTS)('decides $main → $accent the same on both sides', ({ main, accent, ink, key, notes }) => {
+    const theme = brandTheme(main, 'plain', { accent, gradient: true });
+    expect({ ink: theme.key.ink, key: theme.gradient.key !== null, notes: theme.notes }).toEqual({ ink, key, notes });
+  });
+});

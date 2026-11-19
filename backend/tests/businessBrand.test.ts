@@ -54,7 +54,7 @@ describe('business look', () => {
     expect(response.status).toBe(200);
     expect(response.body.data).toMatchObject({ displayName: 'Kafe D', brandColour: '#1d5fd1', brandGreys: 'plain', receiptHeader: 'Rr. Nëna Terezë 14' });
     expect(response.body.data.brand).toMatchObject({ name: 'Kafe D', colour: '#1d5fd1', greys: 'plain', initials: 'KD' });
-    expect(JSON.stringify(log.details)).toContain('brandColour');
+    expect(log.details).toMatchObject({ fields: expect.arrayContaining([expect.objectContaining({ field: 'colours' })]) });
   });
 
   it('refuses a colour that is not a colour code, and staff without the manage power', async () => {
@@ -76,6 +76,49 @@ describe('business look', () => {
   });
 });
 
+describe('accent, gradient, back to previous and reset', () => {
+  it('saves an accent and the gradient, and keeps the colours they replace', async () => {
+    await becomeCustomer();
+    await api().put('/api/business').set(auth(adminToken)).send({ brandColour: '#1d5fd1' });
+    const response = await api().put('/api/business').set(auth(adminToken)).send({ brandAccent: '#14284B', brandGradient: true });
+
+    expect(response.body.data.brand).toMatchObject({ colour: '#1d5fd1', accent: '#14284b', gradient: true });
+    expect(response.body.data.brandPrevious).toEqual({ colour: '#1d5fd1', accent: null, gradient: false, greys: null });
+  });
+
+  it('keeps the previous colours when only the name changes', async () => {
+    await becomeCustomer();
+    await api().put('/api/business').set(auth(adminToken)).send({ brandColour: '#1d5fd1' });
+    const response = await api().put('/api/business').set(auth(adminToken)).send({ displayName: 'Kafe D' });
+
+    expect(response.body.data.brandPrevious).toEqual({ colour: null, accent: null, gradient: false, greys: null });
+  });
+
+  it('goes back to the starting colours on reset, and logs one colours change per save', async () => {
+    await becomeCustomer();
+    await api().put('/api/business').set(auth(adminToken)).send({ brandColour: '#1d5fd1', brandAccent: '#e0a33a', brandGradient: true, brandGreys: 'plain' });
+    const response = await api().put('/api/business').set(auth(adminToken)).send({ brandColour: null, brandAccent: null, brandGradient: false, brandGreys: null });
+    const logs = await context.db.selectFrom('activity_log').select('details').where('action', '=', 'business.updated').execute();
+
+    expect(response.body.data).toMatchObject({ brandColour: null, brandAccent: null, brandGradient: false, brandGreys: null });
+    expect(response.body.data.brand).toMatchObject({ colour: response.body.data.brandDefault.colour, greys: 'tinted', accent: null, gradient: false });
+    expect(logs).toHaveLength(2);
+  });
+
+  it("lets 4VD's own business change its colours, starting from amber", async () => {
+    await sql`UPDATE businesses SET short_name = '4vd'`.execute(context.db);
+    const before = await api().get('/api/business').set(auth(adminToken));
+    const response = await api().put('/api/business').set(auth(adminToken)).send({ brandAccent: '#3fbf8f' });
+
+    expect(before.body.data.brandDefault).toEqual({ colour: '#f5b71a', greys: 'plain' });
+    expect(response.body.data.brand).toMatchObject({ house: true, colour: '#f5b71a', accent: '#3fbf8f', logoUrl: null });
+  });
+
+  it('refuses an accent that is not a colour code', async () => {
+    expect((await api().put('/api/business').set(auth(adminToken)).send({ brandAccent: 'url(x)' })).status).toBe(400);
+  });
+});
+
 describe('a business look by its link', () => {
   it('shows only the name, logo and colours to anyone, without signing in', async () => {
     await becomeCustomer();
@@ -83,7 +126,7 @@ describe('a business look by its link', () => {
     const response = await api().get('/api/brand/kafe-dardania');
 
     expect(response.status).toBe(200);
-    expect(Object.keys(response.body.data).sort()).toEqual(['colour', 'greys', 'house', 'initials', 'logoUrl', 'name']);
+    expect(Object.keys(response.body.data).sort()).toEqual(['accent', 'colour', 'gradient', 'greys', 'house', 'initials', 'logoUrl', 'name']);
     expect(response.body.data).toMatchObject({ name: 'Kafe D', colour: '#7c3a8f', house: false });
   });
 

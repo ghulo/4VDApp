@@ -17,6 +17,7 @@ recordMountPaths();
 const { createTestUser, loginAs, resetData, setupTestApp } = await import('./testApp.js');
 const { createApp } = await import('../../src/app.js');
 const { signAccessToken } = await import('../../src/utils/tokens.js');
+const { RefreshTokenRepository } = await import('../../src/repositories/RefreshTokenRepository.js');
 const { RATE_LIMITS } = await import('../../src/constants/rateLimits.js');
 /** Calls one app may take before a new one: below every rate limit, so a limit can never decide the answer. */
 const CALLS_PER_APP = Math.min(...Object.values(RATE_LIMITS));
@@ -612,6 +613,8 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
 const ORIGIN = 'http://localhost:5173';
 /** Signing out goes last, so it can't end a session the other calls still use. */
 const SIGNS_OUT = /sign-out|logout|log-out-others|sessions\/:sessionId/;
+/** The session behind a signed-in caller's token. */
+const AUDIT_SESSION = '00000000-0000-4000-8000-000000000001';
 
 /** An id that doesn't exist, or a token-like string for anything else. */
 function fillPath(path: string): string {
@@ -640,8 +643,11 @@ async function headersFor(caller: Caller): Promise<Record<string, string>> {
     return { Cookie: cookie.split(';')[0]! };
   }
   const user = await createTestUser(context.db, caller);
+  const sessionId = AUDIT_SESSION;
+  // A live session behind the token, as a real sign-in leaves.
+  await new RefreshTokenRepository(context.db).create(user.id, `audit-${user.id}`, new Date(Date.now() + 3_600_000), { sessionId });
   const token = signAccessToken(
-    { userId: user.id, email: user.email, role: caller, sessionId: '00000000-0000-4000-8000-000000000001' },
+    { userId: user.id, email: user.email, role: caller, sessionId },
     context.config.jwtSecret,
     '1h',
   );
@@ -702,6 +708,8 @@ export function auditAccess(group: number): void {
         const response = route.method === 'GET' ? await call : await call.send({});
         const refused = response.status === 401 || response.status === 403;
         const shouldGetIn = (WHO[tier] as readonly Caller[]).includes(caller);
+        // A sign-out ended the caller's session: bring it back for the next sign-out route.
+        if (SIGNS_OUT.test(route.path)) await context.db.updateTable('refresh_tokens').set({ revoked_at: null }).where('session_id', '=', AUDIT_SESSION).execute();
         if (shouldGetIn === refused) wrong.push(`${key}: ${response.status}, expected ${shouldGetIn ? 'to get in' : 'refused'} (${tier})`);
         else if (response.status >= 500 && response.body?.error !== 'AI_UNAVAILABLE') wrong.push(`${key}: crashed with ${response.status}`);
       }

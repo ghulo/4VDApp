@@ -310,6 +310,8 @@ describe('sorting products with no category', () => {
   afterAll(() => sorted.db.destroy());
 
   it('asks the AI while reading, then brings them into the categories it picked', async () => {
+    // The file's beforeEach empties the sessions too: sign in again after it (it made main_admin already).
+    sortedToken = await loginAs(sorted, 'main_admin', { email: 'sorter@test.local' });
     const response = await request(sorted.app)
       .post('/api/imports')
       .set(auth(sortedToken))

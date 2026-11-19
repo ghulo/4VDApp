@@ -527,7 +527,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   // app.ts reads the rules from Settings → Roles before any API request reaches these guards.
   const supportRepository = new SupportRepository(db);
   const allLogsService = new AllLogsService(new AllLogsRepository(db));
-  const authenticated = requireAuth(userRepository, supportRepository);
+  const authenticated = requireAuth(userRepository, supportRepository, refreshTokenRepository);
   const guards = {
     authenticated,
     // Arrays so routes can spread them: router.post('/', ...guards.manage, handler).

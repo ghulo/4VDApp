@@ -128,3 +128,39 @@ describe('POST /api/auth/logout', () => {
     expect(refreshAfterLogout.status).toBe(401);
   });
 });
+
+describe('an ended session', () => {
+  const me = (token: string) => request(context.app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+
+  it('stops its access token at once after logging out', async () => {
+    await createTestUser(context.db, 'admin');
+    const { body } = await login('admin@test.local', TEST_PASSWORD);
+    expect((await me(body.data.token)).status).toBe(200);
+
+    await request(context.app).post('/api/auth/logout').set('Authorization', `Bearer ${body.data.token}`).send({ refreshToken: body.data.refreshToken });
+
+    expect((await me(body.data.token)).status).toBe(401);
+  });
+
+  it('stops another device when it is logged out from the devices list, and keeps this one', async () => {
+    await createTestUser(context.db, 'admin');
+    const here = (await login('admin@test.local', TEST_PASSWORD)).body.data;
+    const other = (await login('admin@test.local', TEST_PASSWORD)).body.data;
+
+    const ended = await request(context.app).post('/api/me/sessions/log-out-others').set('Authorization', `Bearer ${here.token}`).send({});
+    expect(ended.status).toBe(200);
+
+    expect((await me(other.token)).status).toBe(401);
+    expect((await me(here.token)).status).toBe(200);
+  });
+
+  it('keeps working while a refresh swaps the tokens', async () => {
+    await createTestUser(context.db, 'admin');
+    const { body } = await login('admin@test.local', TEST_PASSWORD);
+    const swapped = await request(context.app).post('/api/auth/refresh').send({ refreshToken: body.data.refreshToken });
+    expect(swapped.status).toBe(200);
+    // The old access token belongs to the same session, which goes on.
+    expect((await me(body.data.token)).status).toBe(200);
+    expect((await me(swapped.body.data.token)).status).toBe(200);
+  });
+});

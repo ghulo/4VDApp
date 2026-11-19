@@ -1,6 +1,11 @@
 import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 
+/** How long a refresh token just swapped for a new one still keeps its session alive. */
+const SWAP_GRACE_MS = 10_000;
+/** Sign-out, an ended device, a password reset: dated just before the swap grace, so the session's access tokens stop at once. */
+const endedOnPurpose = () => new Date(Date.now() - SWAP_GRACE_MS - 1_000);
+
 export class RefreshTokenRepository {
   constructor(private readonly db: DatabaseClient) {}
 
@@ -61,7 +66,7 @@ export class RefreshTokenRepository {
   async revoke(tokenHash: string, userId: number): Promise<void> {
     await this.db
       .updateTable('refresh_tokens')
-      .set({ revoked_at: new Date() })
+      .set({ revoked_at: endedOnPurpose() })
       .where('token_hash', '=', tokenHash)
       .where('user_id', '=', userId)
       .where('revoked_at', 'is', null)
@@ -105,11 +110,36 @@ export class RefreshTokenRepository {
     return result.rows;
   }
 
+  /**
+   * Whether a session still counts: it has a live refresh token. A token swapped for a new one in
+   * the last few seconds also counts, because a refresh revokes the old one just before it saves
+   * the new one, and a request in between must not sign the person out.
+   */
+  async sessionLive(userId: number, sessionId: string): Promise<boolean> {
+    // Sessions are UUIDs; anything else (a made-up token) is no session at all.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) return false;
+    const now = new Date();
+    const row = await this.db
+      .selectFrom('refresh_tokens')
+      .select('session_id')
+      .where('user_id', '=', userId)
+      .where('session_id', '=', sessionId)
+      .where((eb) =>
+        eb.or([
+          eb.and([eb('revoked_at', 'is', null), eb('expires_at', '>', now)]),
+          eb('revoked_at', '>', new Date(now.getTime() - SWAP_GRACE_MS)),
+        ]),
+      )
+      .limit(1)
+      .executeTakeFirst();
+    return row !== undefined;
+  }
+
   /** End one device's session. False when it isn't this person's. */
   async revokeSession(userId: number, sessionId: string): Promise<boolean> {
     const result = await this.db
       .updateTable('refresh_tokens')
-      .set({ revoked_at: new Date() })
+      .set({ revoked_at: endedOnPurpose() })
       .where('user_id', '=', userId)
       .where('session_id', '=', sessionId)
       .where('revoked_at', 'is', null)
@@ -121,7 +151,7 @@ export class RefreshTokenRepository {
   async revokeAllForUserExcept(userId: number, keepSessionId: string | undefined): Promise<void> {
     let query = this.db
       .updateTable('refresh_tokens')
-      .set({ revoked_at: new Date() })
+      .set({ revoked_at: endedOnPurpose() })
       .where('user_id', '=', userId)
       .where('revoked_at', 'is', null);
     if (keepSessionId) query = query.where('session_id', '!=', keepSessionId);
@@ -131,7 +161,7 @@ export class RefreshTokenRepository {
   async revokeAllForUser(userId: number): Promise<void> {
     await this.db
       .updateTable('refresh_tokens')
-      .set({ revoked_at: new Date() })
+      .set({ revoked_at: endedOnPurpose() })
       .where('user_id', '=', userId)
       .where('revoked_at', 'is', null)
       .execute();
@@ -141,7 +171,7 @@ export class RefreshTokenRepository {
   async revokeForUserIn(userId: number, businessId: number): Promise<void> {
     await this.db
       .updateTable('refresh_tokens')
-      .set({ revoked_at: new Date() })
+      .set({ revoked_at: endedOnPurpose() })
       .where('user_id', '=', userId)
       .where((eb) =>
         eb.or([

@@ -2,6 +2,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { enterBusiness, enterSystem, runAsBusiness } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
 import { AppError, ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
+import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { SupportRepository } from '../repositories/SupportRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
 import { logger } from '../utils/logger.js';
@@ -54,7 +55,7 @@ export function identifyRequester(jwtSecret: string, allowedOrigins: ReadonlySet
  * every request means deactivating someone or changing their role takes
  * effect immediately instead of when their 7-day token expires.
  */
-export function requireAuth(userRepository: UserRepository, supportRepository?: SupportRepository): RequestHandler {
+export function requireAuth(userRepository: UserRepository, supportRepository?: SupportRepository, refreshTokens?: RefreshTokenRepository): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.identity) throw new UnauthorizedError();
 
@@ -76,6 +77,8 @@ export function requireAuth(userRepository: UserRepository, supportRepository?: 
     // Blocked in or taken off the business this session works in: never carry on in another one
     // (a save from a tab still showing that business would land in the wrong books).
     if (req.identity.businessId !== undefined && place.businessId !== req.identity.businessId) throw new AppError(BUSINESS_GONE, 401, 'BUSINESS_GONE');
+    // Signed out, that device ended, or the password reset: the session's access token (it lasts days) stops here too.
+    if (refreshTokens && req.identity.sessionId && !(await refreshTokens.sessionLive(user.id, req.identity.sessionId))) throw new UnauthorizedError();
     enterBusiness(place.businessId);
     const viewed = viewedRole(req, place.role);
     if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);

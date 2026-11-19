@@ -5,6 +5,7 @@ import { runAsBusiness } from '../src/database/businessContext.js';
 import { createDatabase, type DatabaseClient } from '../src/database/connection.js';
 import { createBusiness } from '../src/database/newBusiness.js';
 import { hashPassword } from '../src/utils/password.js';
+import { RefreshTokenRepository } from '../src/repositories/RefreshTokenRepository.js';
 import { signAccessToken } from '../src/utils/tokens.js';
 import { createLiveLikeDatabase, createTestUser, loginAs, setupTestApp, TEST_PASSWORD, type TestContext } from './helpers/testApp.js';
 
@@ -66,8 +67,13 @@ afterAll(async () => {
 /** A developer's access token for `businessId`, as the business picker will issue it (phase 5c). */
 async function developerIn(businessId: number | undefined): Promise<{ token: string; id: number }> {
   const developer = (await context.db.selectFrom('users').select(['id', 'email']).where('email', '=', 'developer@test.local').executeTakeFirst()) ?? (await createTestUser(context.db, 'developer'));
+  // A live session behind the token, as a real sign-in leaves.
+  // One session per business, the same one each time (his support visits are kept per session).
+  const sessionId = `00000000-0000-4000-8000-${String(businessId ?? 0).padStart(12, '0')}`;
+  const live = await context.db.selectFrom('refresh_tokens').select('session_id').where('session_id', '=', sessionId).where('user_id', '=', developer.id).executeTakeFirst();
+  if (!live) await new RefreshTokenRepository(context.db).create(developer.id, `dev-${developer.id}-${sessionId}`, new Date(Date.now() + 3_600_000), { sessionId });
   const token = signAccessToken(
-    { userId: developer.id, email: developer.email, role: 'developer', sessionId: `s-${businessId ?? 'home'}`, businessId },
+    { userId: developer.id, email: developer.email, role: 'developer', sessionId, businessId },
     context.config.jwtSecret,
     context.config.jwtExpiresIn,
   );

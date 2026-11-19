@@ -32,6 +32,19 @@ if (!app.requestSingleInstanceLock()) app.quit();
 let win = null;
 let setup = null;
 
+// Update trouble goes to update.log next to setup.json (the last ~200 lines),
+// so a shop PC that stops updating can tell us why.
+function logUpdate(message) {
+  try {
+    const file = path.join(app.getPath('userData'), 'update.log');
+    const line = `${new Date().toISOString()} ${message}\n`;
+    let old = '';
+    try { old = fs.readFileSync(file, 'utf8'); } catch { /* first line */ }
+    const kept = (old + line).split('\n').slice(-201).join('\n');
+    fs.writeFileSync(file, kept);
+  } catch { /* never let logging break the app */ }
+}
+
 function setupFile() {
   return path.join(app.getPath('userData'), 'setup.json');
 }
@@ -248,7 +261,13 @@ app.whenReady().then(() => {
   setup = setupStore.read(setupFile());
   createWindow();
   // Only an installed copy can update itself; `npm start` skips this.
-  if (app.isPackaged) autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  if (app.isPackaged) {
+    autoUpdater.on('error', (err) => logUpdate(`error: ${err?.message ?? err}`));
+    autoUpdater.on('update-available', (info) => logUpdate(`found ${info?.version}`));
+    autoUpdater.on('update-downloaded', (info) => logUpdate(`downloaded ${info?.version}`));
+    logUpdate(`checking (running ${app.getVersion()})`);
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => logUpdate(`check failed: ${err?.message ?? err}`));
+  }
 });
 
 app.on('window-all-closed', () => app.quit());

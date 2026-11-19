@@ -1009,7 +1009,7 @@ export const en = {
     no: 'no',
     aPhoto: 'a photo',
     restoredTo: (when: string) => `Restored to ${when}`,
-    colours: { title: 'Colours', main: 'main colour', accent: 'accent', gradient: 'gradient', greys: 'greys', byDefault: (what: string) => `${what} (default)`, same: 'same as main', on: 'on', off: 'off', becomes: 'became' },
+    colours: { title: 'Colours', main: 'main colour', accent: 'accent', gradient: 'gradient', greys: 'greys', byDefault: (what: string) => `${what} (default)`, same: 'same as main', on: 'on', off: 'off', becomes: 'became', saves: (n: number) => `${n} saves in a row`, backAgain: 'changed, then back to how they were' },
     fields: {
       name: 'Name',
       description: 'Description',

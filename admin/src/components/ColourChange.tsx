@@ -53,6 +53,13 @@ export function ColourChange({ from, to }: { from: unknown; to: unknown }) {
   if (before.gradient !== after.gradient) parts.push({ key: 'gradient', name: words.gradient, from: <span>{before.gradient ? words.on : words.off}</span>, to: <span>{after.gradient ? words.on : words.off}</span> });
   if (before.greys !== after.greys) parts.push({ key: 'greys', name: words.greys, from: greys(before.greys), to: greys(after.greys) });
 
+  if (parts.length === 0) {
+    return (
+      <span className="record-history__change record-history__change--colours">
+        {words.title}: {words.backAgain}
+      </span>
+    );
+  }
   return (
     <span className="record-history__change record-history__change--colours">
       <span>{words.title}:</span>

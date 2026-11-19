@@ -21,6 +21,30 @@ const RESTORABLE: HistoryEntity[] = ['product', 'user', 'supplier', 'customer', 
 /** Colour saves go back through Settings (Back to previous, Reset), not Restore. */
 const onlyColours = (entry: ActivityEntry) => (entry.changes ?? []).length > 0 && (entry.changes ?? []).every((change) => change.field === 'colours');
 
+/** Saves of the colours by one person this close together read as one change (trying colours out). */
+const SAVE_RUN_MS = 2 * 60 * 1000;
+
+type ShownEntry = ActivityEntry & { saves?: number };
+
+/**
+ * Folds back-to-back colour saves by the same person, each within two minutes of
+ * the next, into one line: the colours before the first save → after the last.
+ * Only how History shows them; the log keeps every save.
+ */
+function foldColourSaves(entries: ActivityEntry[]): ShownEntry[] {
+  const folded: ShownEntry[] = [];
+  for (const entry of entries) {
+    const newer = folded.at(-1);
+    const close = newer && Date.parse(newer.createdAt) - Date.parse(entry.createdAt) <= SAVE_RUN_MS;
+    const plain = (one: ActivityEntry) => onlyColours(one) && one.undo?.state !== 'undone' && one.details?.restoredTo === undefined;
+    if (newer && close && plain(newer) && plain(entry) && newer.user?.id === entry.user?.id) {
+      // Newest first: this older save gives the run its starting colours, and its time.
+      folded[folded.length - 1] = { ...newer, createdAt: entry.createdAt, changes: [{ ...newer.changes[0]!, from: entry.changes[0]!.from }], saves: (newer.saves ?? 1) + 1 };
+    } else folded.push(entry);
+  }
+  return folded;
+}
+
 const MONEY_FIELDS = new Set(['price', 'costPrice', 'monthlyTarget']);
 
 /** One changed value as people read it: money as money, a country by name, a role by its title. */
@@ -74,7 +98,8 @@ export function HistoryCard({ entityType, entityId }: { entityType: HistoryEntit
 
   // Logins are about using an account, not changes to it; Activity keeps them.
   const entries = [...(history.data ?? [])].filter((entry) => !entry.action.startsWith('auth.')).reverse();
-  const shown = all ? entries : entries.slice(0, SHOWN);
+  const folded = foldColourSaves(entries);
+  const shown = all ? folded : folded.slice(0, SHOWN);
   const own = (entry: ActivityEntry) => entry.entityType === entityType && entry.entityId === entityId;
   // Restoring to the newest change would change nothing, so it gets no button.
   const newestOwn = entries.find(own)?.id;
@@ -107,6 +132,7 @@ export function HistoryCard({ entityType, entityId }: { entityType: HistoryEntit
                   <span className="record-history__when">
                     <time dateTime={entry.createdAt}>{formatDateTime(entry.createdAt)}</time>
                     {entry.user && <span> · {t.history.by(entry.user.name)}</span>}
+                    {entry.saves !== undefined && <span> · {t.history.colours.saves(entry.saves)}</span>}
                   </span>
                   <span className="record-history__what">
                     <span className="record-history__text">{entry.summary}</span>
@@ -131,9 +157,9 @@ export function HistoryCard({ entityType, entityId }: { entityType: HistoryEntit
               );
             })}
           </ol>
-          {entries.length > SHOWN && (
+          {folded.length > SHOWN && (
             <Button size="sm" variant="ghost" onClick={() => setAll((current) => !current)}>
-              {all ? t.history.showFewer : t.history.showAll(entries.length)}
+              {all ? t.history.showFewer : t.history.showAll(folded.length)}
             </Button>
           )}
         </>

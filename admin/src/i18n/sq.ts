@@ -1001,7 +1001,7 @@ export const sq: Catalogue = {
     no: 'jo',
     aPhoto: 'një foto',
     restoredTo: (when) => `Rikthyer si më ${when}`,
-    colours: { title: 'Ngjyrat', main: 'ngjyra kryesore', accent: 'theksi', gradient: 'kalimi i ngjyrave', greys: 'grit', byDefault: (what) => `${what} (parazgjedhje)`, same: 'e njëjta si kryesorja', on: 'ndezur', off: 'fikur', becomes: 'u bë' },
+    colours: { title: 'Ngjyrat', main: 'ngjyra kryesore', accent: 'theksi', gradient: 'kalimi i ngjyrave', greys: 'grit', byDefault: (what) => `${what} (parazgjedhje)`, same: 'e njëjta si kryesorja', on: 'ndezur', off: 'fikur', becomes: 'u bë', saves: (n) => `${n} ruajtje radhazi`, backAgain: 'u ndryshuan, pastaj u kthyen si ishin' },
     fields: {
       name: 'Emri',
       description: 'Përshkrimi',

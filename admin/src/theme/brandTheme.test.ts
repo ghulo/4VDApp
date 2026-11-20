@@ -20,27 +20,33 @@ describe('brandTheme', () => {
     expect(theme.notes).toEqual(notes);
   });
 
-  it('keeps every word readable on any colour an owner can pick', () => {
+  // About 2,000 colours per grey style: pure CPU, so failures are collected and checked once
+  // (65,000 separate expects made it slow enough to time out when the PC was busy).
+  it.each(['plain', 'tinted'] as const)('keeps every word readable on any colour an owner can pick (%s greys)', (greys) => {
+    const failed: string[] = [];
+    const check = (ratio: number, what: string) => {
+      if (!(ratio >= 4.5)) failed.push(`${what}: ${ratio.toFixed(2)}`);
+    };
     for (let L = 0.05; L <= 1; L += 0.06)
       for (let C = 0; C <= 0.32; C += 0.04)
-        for (let H = 0; H < 360; H += 24)
-          for (const greys of ['plain', 'tinted'] as const) {
-            const hex = fromOklch(L, C, H);
-            const theme = brandTheme(hex, greys);
-            const [scale, light, dark] = theme.css.split('\n') as [string, string, string];
-            const key = theme.key;
-            for (const face of [key.face, key.top, key.low]) expect(contrastRatio(key.ink, face), `key ink on ${face} for ${hex}`).toBeGreaterThanOrEqual(4.5);
-            const grey = (step: number, fallback: string) => token(scale, `neutral-${step}`) || fallback;
-            const amber = (step: number) => token(scale, `amber-${step}`);
-            for (const [block, paper] of [
-              [light, [grey(50, '#f5f9fc'), grey(100, '#eef2f5'), amber(100), amber(150), amber(50)]],
-              [dark, [grey(950, '#191a1a'), grey(975, '#0f1010'), amber(900), amber(925), amber(975)]],
-            ] as const) {
-              const brand = token(block, 'brand');
-              for (const bg of paper) expect(contrastRatio(brand, bg), `brand words for ${hex}`).toBeGreaterThanOrEqual(4.5);
-              expect(contrastRatio(token(block, 'brand-ink'), brand)).toBeGreaterThanOrEqual(4.5);
-            }
+        for (let H = 0; H < 360; H += 24) {
+          const hex = fromOklch(L, C, H);
+          const theme = brandTheme(hex, greys);
+          const [scale, light, dark] = theme.css.split('\n') as [string, string, string];
+          const key = theme.key;
+          for (const face of [key.face, key.top, key.low]) check(contrastRatio(key.ink, face), `key ink on ${face} for ${hex}`);
+          const grey = (step: number, fallback: string) => token(scale, `neutral-${step}`) || fallback;
+          const amber = (step: number) => token(scale, `amber-${step}`);
+          for (const [block, paper] of [
+            [light, [grey(50, '#f5f9fc'), grey(100, '#eef2f5'), amber(100), amber(150), amber(50)]],
+            [dark, [grey(950, '#191a1a'), grey(975, '#0f1010'), amber(900), amber(925), amber(975)]],
+          ] as const) {
+            const brand = token(block, 'brand');
+            for (const bg of paper) check(contrastRatio(brand, bg), `brand words on ${bg} for ${hex}`);
+            check(contrastRatio(token(block, 'brand-ink'), brand), `brand ink for ${hex}`);
           }
+        }
+    expect(failed).toEqual([]);
   });
 
   it("draws the developer mark in the business's word shade, and 4VD amber on 4VD's own colour", () => {

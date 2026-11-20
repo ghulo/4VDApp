@@ -7,7 +7,7 @@ description: How a 4VD roadmap step session (or any session building a feature i
 
 Many sessions share **one checkout** (`C:\Users\labid\Desktop\4VDApp`) and one Postgres container. An orchestrator session decides who may use the checkout. CLAUDE.md is the rulebook; this skill puts its rules in order. Where a number or command is in CLAUDE.md, it's not repeated here: read the named section.
 
-The user isn't a developer. Write to them in plain English, short.
+The user studied computer science but runs the shop: write to them short and clear (technical terms are fine); commit messages stay plain English.
 
 ## 1. Read first
 
@@ -38,7 +38,9 @@ The user isn't a developer. Write to them in plain English, short.
 
 ## 4. Before merging
 
-Run the `verify` skill and check the REVIEW.md items your diff triggers (read from main). Run what CLAUDE.md "Commands" lists: tests for every touched file, backend typecheck and build, admin lint, test and build (`tsc -b`). Run the full backend suite locally only for migrations, money logic, sign-in or tenancy. Before every commit in the shared checkout: `git diff --cached --name-only`, and stage only your own files.
+Run the `verify` skill and check the REVIEW.md items your diff triggers (read from main). Run what CLAUDE.md "Commands" lists: tests for every touched file, backend typecheck and build, admin lint, test and build (`tsc -b`). Migrations, money logic, sign-in or tenancy need the full suite green before main: a pull request from a short branch (GitHub runs it in about 2–3 min), or `npm test` locally.
+
+Outside review: one pass, only for money, the till, sign-in, tenancy and migrations; none for screens, copy or CSS. Fix its blockers once, turn the rest into follow-ups, re-check only those blockers (CLAUDE.md "Commands"). Keep one concern per commit. Before every commit in the shared checkout: `git diff --cached --name-only`, and stage only your own files.
 
 ## 5. Commit, merge, push
 

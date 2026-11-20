@@ -208,7 +208,6 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
 
   const [startDraft] = useState(draft);
   const changed = photo !== null || JSON.stringify(draft) !== JSON.stringify(startDraft);
-  useWarnBeforeLeaving(changed && !save.isPending && !save.isSuccess);
 
   const remove = useMutation({
     mutationFn: () => productsApi.remove(product!.id),
@@ -219,6 +218,8 @@ function ProductForm({ product, categories }: { product?: Product; categories: C
       navigate('/products', { replace: true });
     },
   });
+  // Removing the product isn't leaving typed work behind either.
+  useWarnBeforeLeaving(changed && !save.isPending && !save.isSuccess && !remove.isPending && !remove.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

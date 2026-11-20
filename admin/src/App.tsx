@@ -8,6 +8,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { I18nProvider } from './i18n/I18nProvider';
 import { EmptyState, Loading } from './components/Feedback';
 import { Layout } from './components/Layout';
+import { LeaveGuardHost } from './components/LeaveGuard';
 import { RequireAuth } from './components/RequireAuth';
 import { ApiError } from './services/apiClient';
 import { SectionTabs } from './components/SectionTabs';
@@ -184,12 +185,12 @@ function ByLayout({ staff, full }: { staff: ReactNode; full: ReactNode }) {
  */
 function Root() {
   return (
-    <>
+    <LeaveGuardHost>
       <ViewAsBar />
       <Suspense fallback={<Loading />}>
         <Outlet />
       </Suspense>
-    </>
+    </LeaveGuardHost>
   );
 }
 

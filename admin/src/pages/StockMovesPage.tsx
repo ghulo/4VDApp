@@ -140,7 +140,6 @@ function StockMoveForm({ prefill, onSaved }: { prefill: DraftLine | null; onSave
   const [lines, setLines] = useState<DraftLine[]>(prefill ? [prefill] : []);
   const shelf = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const stock = useQuery({ queryKey: ['reports', 'reorder'], queryFn: reportsApi.reorderSuggestions });
-  useWarnBeforeLeaving(lines.length > 0);
 
   const from = fromId ?? firstStore?.id ?? null;
   const to = toId ?? selling?.id ?? null;
@@ -181,6 +180,8 @@ function StockMoveForm({ prefill, onSaved }: { prefill: DraftLine | null; onSave
       navigate(`/stock-moves/${move.id}`);
     },
   });
+  // Not while saving or once saved: moving on to the saved paper isn't leaving work behind.
+  useWarnBeforeLeaving(lines.length > 0 && !save.isPending && !save.isSuccess);
 
   /** A pick (or a scan) adds the product, or one more of it when it's already on. */
   function add(picked: string | null) {

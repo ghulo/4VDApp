@@ -136,7 +136,6 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
   const [lines, setLines] = useState<DraftLine[]>([]);
   const shelf = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const costs = useQuery({ queryKey: ['prices'], queryFn: pricesApi.list, staleTime: 60_000 });
-  useWarnBeforeLeaving(lines.length > 0);
 
   const byId = useMemo(() => new Map((shelf.data ?? []).map((product) => [product.id, product])), [shelf.data]);
   const costOf = useMemo(() => new Map((costs.data ?? []).map((row) => [row.id, row.cost])), [costs.data]);
@@ -190,6 +189,8 @@ function StockDocumentForm({ onSaved }: { onSaved: () => void }) {
       navigate(`/stock-documents/${document.id}`);
     },
   });
+  // Not while saving or once saved: moving on to the saved paper isn't leaving work behind.
+  useWarnBeforeLeaving(lines.length > 0 && !save.isPending && !save.isSuccess);
 
   function choose(next: StockDocumentDirection) {
     setDirection(next);

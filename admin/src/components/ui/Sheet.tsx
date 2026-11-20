@@ -1,7 +1,8 @@
 import { X } from '@phosphor-icons/react';
-import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { Fragment, type KeyboardEvent, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { LeaveGuardContext, SheetWorkContext } from './leaveGuardContext';
 import { Tooltip } from './Tooltip';
 import { useSwipeToDismiss } from './useSwipeToDismiss';
 
@@ -15,6 +16,9 @@ interface SheetProps {
   placement?: 'side' | 'center';
   /** Centred, for a list to search or pick from: wider, and one steady height while the list changes. */
   wide?: boolean;
+  /** Ask "Leave without saving?" before typed work is closed away (Esc, a tap outside, the close key,
+   *  pulling it down, Back). On by default for a form card; off for centred questions and pickers. */
+  guard?: boolean;
   children: ReactNode;
 }
 
@@ -25,9 +29,40 @@ interface SheetProps {
  * the bottom and can be pulled back down by its handle. Ctrl Enter saves.
  * The browser's own modal dialog keeps focus inside, closes on Esc and returns
  * focus afterwards. The form inside starts fresh each time it opens.
+ * Once something is typed into it, closing it any way but its own Save asks first.
  */
-export function Sheet({ open, onClose, title, description, placement = 'side', wide = false, children }: SheetProps) {
+export function Sheet({ open, onClose, title, description, placement = 'side', wide = false, guard, children }: SheetProps) {
   const t = useT();
+  const guarded = guard ?? placement === 'side';
+  const leaveGuard = useContext(LeaveGuardContext);
+  // Typed into since it opened: read when closing, so no re-render per key.
+  const typed = useRef(false);
+  const markTyped = useCallback(() => {
+    typed.current = true;
+  }, []);
+  const holdsWork = () => guarded && typed.current;
+  // Back with typed work asks too (the router holds the move; see LeaveGuardHost).
+  const live = useRef({ open, guarded });
+  useEffect(() => {
+    live.current = { open, guarded };
+  });
+  const { register } = leaveGuard;
+  useEffect(() => register({ kind: 'sheet', active: () => live.current.open && live.current.guarded && typed.current }), [register]);
+  const latestClose = useRef(onClose);
+  useEffect(() => {
+    latestClose.current = onClose;
+  });
+  const asking = useRef(false);
+  /** Closing by hand: straight away when nothing was typed, else only once "Leave" is the answer. */
+  const requestClose = () => {
+    if (!holdsWork()) return onClose();
+    if (asking.current) return;
+    asking.current = true;
+    void leaveGuard.ask().then((leave) => {
+      asking.current = false;
+      if (leave) latestClose.current();
+    });
+  };
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   // The form stays on the panel while it slides out, then goes, so the next
@@ -43,12 +78,23 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
   // The key that opened the card, so it can grow out of it and fold back in.
   const trigger = useRef<HTMLElement | null>(null);
   // On a touch screen the card can be pulled back down by its head.
-  useSwipeToDismiss(ref, { side: 'bottom', handle: '.sheet__head', closed: 'translateY(100%)', onDismiss: onClose, enabled: open && placement === 'side' });
+  useSwipeToDismiss(ref, {
+    side: 'bottom',
+    handle: '.sheet__head',
+    closed: 'translateY(100%)',
+    onDismiss: () => {
+      // With typed work the card springs back up while the question is asked.
+      if (holdsWork()) ref.current?.style.removeProperty('transform');
+      requestClose();
+    },
+    enabled: open && placement === 'side',
+  });
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
+      typed.current = false;
       const active = document.activeElement;
       trigger.current = active instanceof HTMLElement && active !== document.body ? active : null;
       growFrom(dialog, trigger.current);
@@ -78,9 +124,15 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
       className={placement === 'center' ? (wide ? 'sheet sheet--center sheet--wide' : 'sheet sheet--center') : 'sheet sheet--card'}
       aria-labelledby={headingId}
       onClose={onClose}
+      // Esc (and a phone's Back on a modal): with typed work, ask instead of closing.
+      onCancel={(event) => {
+        if (!holdsWork()) return;
+        event.preventDefault();
+        requestClose();
+      }}
       onKeyDown={saveOnCtrlEnter}
       // The dialog itself is only hit outside the panel: on the dimmed backdrop.
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && requestClose()}
     >
       <div className="sheet__panel">
         <div className="sheet__head">
@@ -92,12 +144,14 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
             {description && <p className="sheet__description">{description}</p>}
           </div>
           <Tooltip label={t.common.close} side="bottom">
-            <button type="button" className="sheet__close" aria-label={t.common.close} onClick={onClose}>
+            <button type="button" className="sheet__close" aria-label={t.common.close} onClick={requestClose}>
               <X size={20} aria-hidden="true" />
             </button>
           </Tooltip>
         </div>
-        <div className="sheet__body">{shown && <Fragment key={opening}>{children}</Fragment>}</div>
+        <div className="sheet__body" onInput={markTyped} onChange={markTyped}>
+          <SheetWorkContext.Provider value={markTyped}>{shown && <Fragment key={opening}>{children}</Fragment>}</SheetWorkContext.Provider>
+        </div>
       </div>
     </dialog>
   );

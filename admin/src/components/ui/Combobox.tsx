@@ -2,6 +2,7 @@ import { CaretDown, Check } from '@phosphor-icons/react';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useT } from '../../i18n/useT';
 import { setPopover, useFloating } from './floating';
+import { useMarkTyped } from './leaveGuardContext';
 
 export interface ComboOption {
   value: string;
@@ -107,7 +108,9 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
     listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [active]);
 
+  const markTyped = useMarkTyped();
   const pick = (option: ComboOption) => {
+    markTyped();
     onChange(option.value);
     setQuery(resetAfterPick ? '' : option.label);
     setOpen(false);

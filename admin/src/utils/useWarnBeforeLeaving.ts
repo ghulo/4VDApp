@@ -1,11 +1,2 @@
-import { useEffect } from 'react';
-
-/** While `active`, reloading or closing the tab asks first, so typed work isn't lost. */
-export function useWarnBeforeLeaving(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [active]);
-}
+/** While `active`, leaving the page (another page, closing or reloading the tab) asks first, so typed work isn't lost. */
+export { useWarnBeforeLeaving } from '../components/ui/leaveGuardContext';

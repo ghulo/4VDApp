@@ -2961,6 +2961,13 @@ export const sq: Catalogue = {
     differencesCount: (n) => `${n} ${n === 1 ? 'produkt ndryshonte' : 'produkte ndryshonin'}`,
   },
   approvals: {
+    returnApproved: (what) => `Kthimi i ${what} u miratua`,
+    writeOffApproved: (what) => `Shlyerja e ${what} u miratua`,
+    undoApproval: 'Zhbëje',
+    undoneReturn: 'Kthimi u zhbë: stoku dhe rimbursimi u kthyen mbrapsht.',
+    undoneWriteOff: 'Shlyerja u zhbë: stoku u kthye.',
+    undoFailed: 'Nuk u zhbë dot',
+    undoGone: 'Ky miratim s’është ende në regjistrin e aktivitetit. Zhbëje te Aktiviteti.',
     title: 'Miratime',
     description: 'Çfarë kërkuan punonjësit dhe kërkon vendimin tënd. Asgjë këtu nuk prek stokun apo paratë derisa ta miratosh.',
     returns: 'Kthime',

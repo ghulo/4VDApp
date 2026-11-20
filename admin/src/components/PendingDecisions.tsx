@@ -6,10 +6,11 @@ import { ProductPhoto } from './ProductPhoto';
 import { DecisionControls } from './Decision';
 import { SealCheck } from '@phosphor-icons/react';
 import { ErrorNotice, Loading } from './Feedback';
-import { categoriesApi, productRequestsApi, returnsApi, stockCountsApi, writeOffsApi } from '../services/api';
+import { activityApi, categoriesApi, productRequestsApi, returnsApi, stockCountsApi, writeOffsApi } from '../services/api';
 import type { ProductRequest, ReturnItem, WriteOff } from '../services/types';
 import { formatDateTime, formatMoney } from '../utils/format';
-import { ButtonLink, Card, EmptyState } from './ui';
+import { ButtonLink, Card, EmptyState, useToast } from './ui';
+import { errorMessage } from '../utils/errors';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 import { describeReason } from '../utils/approvalReasons';
@@ -21,6 +22,37 @@ function useInvalidateAll() {
   const queryClient = useQueryClient();
   return () => {
     for (const key of AFFECTED_QUERIES) queryClient.invalidateQueries({ queryKey: [key] });
+  };
+}
+
+/**
+ * After an approval, a toast with Undo: it undoes the approval the way
+ * Activity does (stock back, a refund charged again), found by its log entry.
+ * A refused undo (a filed VAT month, a refund already sent) says why.
+ */
+function useApprovalUndo(kind: 'return' | 'write_off') {
+  const t = useT();
+  const toast = useToast();
+  const invalidate = useInvalidateAll();
+  return (id: number, what: string) => {
+    const undo = async () => {
+      try {
+        const page = await activityApi.list({ page: 1, limit: 1, action: `${kind}.approved`, entityType: kind, entityId: id });
+        const entry = page.items[0];
+        if (!entry) throw new Error(t.approvals.undoGone);
+        await activityApi.undo(entry.id, '');
+        toast({ title: kind === 'return' ? t.approvals.undoneReturn : t.approvals.undoneWriteOff });
+      } catch (error) {
+        toast({ title: t.approvals.undoFailed, detail: errorMessage(error), tone: 'danger' });
+      } finally {
+        invalidate();
+      }
+    };
+    toast({
+      title: kind === 'return' ? t.approvals.returnApproved(what) : t.approvals.writeOffApproved(what),
+      tone: 'ok',
+      action: { label: t.approvals.undoApproval, onClick: () => void undo() },
+    });
   };
 }
 
@@ -99,10 +131,14 @@ export function PendingDecisions() {
 function ReturnRow({ item }: { item: ReturnItem }) {
   const t = useT();
   const invalidate = useInvalidateAll();
+  const offerUndo = useApprovalUndo('return');
   const decide = useMutation({
     mutationFn: (decision: { approve: true } | { approve: false; note: string }) =>
       decision.approve ? returnsApi.approve(item.id) : returnsApi.reject(item.id, decision.note),
-    onSuccess: invalidate,
+    onSuccess: (_, decision) => {
+      invalidate();
+      if (decision.approve) offerUndo(item.id, `${item.quantity} × ${item.productName}`);
+    },
   });
   const subject = t.approvals.returnSubject(`${item.quantity} × ${item.productName}`);
 
@@ -208,10 +244,14 @@ function ProductRequestRow({ item }: { item: ProductRequest }) {
 function WriteOffRow({ item }: { item: WriteOff }) {
   const t = useT();
   const invalidate = useInvalidateAll();
+  const offerUndo = useApprovalUndo('write_off');
   const decide = useMutation({
     mutationFn: (decision: { approve: true } | { approve: false; note: string }) =>
       decision.approve ? writeOffsApi.approve(item.id) : writeOffsApi.reject(item.id, decision.note),
-    onSuccess: invalidate,
+    onSuccess: (_, decision) => {
+      invalidate();
+      if (decision.approve) offerUndo(item.id, `${item.quantity} × ${item.productName}`);
+    },
   });
 
   return (

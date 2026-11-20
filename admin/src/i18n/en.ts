@@ -2984,6 +2984,13 @@ export const en = {
     differencesCount: (n: number) => `${n} ${n === 1 ? 'product differed' : 'products differed'}`,
   },
   approvals: {
+    returnApproved: (what: string) => `Return of ${what} approved`,
+    writeOffApproved: (what: string) => `Write-off of ${what} approved`,
+    undoApproval: 'Undo',
+    undoneReturn: 'Return undone: the stock and the refund are taken back.',
+    undoneWriteOff: 'Write-off undone: the stock is back.',
+    undoFailed: 'Couldn’t undo it',
+    undoGone: 'This approval isn’t in the activity log yet. Undo it from Activity.',
     title: 'Approvals',
     description: 'What employees asked for that needs your decision. Nothing here touches stock or money until you approve it.',
     returns: 'Returns',

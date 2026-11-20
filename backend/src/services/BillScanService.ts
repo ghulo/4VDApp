@@ -19,6 +19,7 @@ import type { MediaService } from './MediaService.js';
 import { addProductBarcode, setProductBarcode } from './ProductService.js';
 import { changeCost, type OrderDto, type PurchaseOrderService, receiveOrder } from './PurchaseOrderService.js';
 import { type BillInput, createBill, type SupplierBillService } from './SupplierBillService.js';
+import { addWaitingPaper, type CustomsCandidate, type CustomsInput, customsCandidates, setCustoms } from './bills/customsPapers.js';
 
 /** Enough for a long bill; more pages is usually the wrong file. */
 export const MAX_SCAN_PAGES = 6;
@@ -67,10 +68,17 @@ export interface BillScanDto {
   orderId: number | null;
   /** The choices from the last confirm, when the scan was reopened: the check page starts from them. */
   previous: ConfirmScanInput | null;
+  /** A customs declaration rather than a bill: the import bills it may go on, best first, and the one it clearly belongs to. */
+  customs: { bills: CustomsCandidate[]; matchId: number | null } | null;
+}
+
+/** What confirming a scanned customs paper sends: its figures as checked, and its bill (null: it waits for it). */
+export interface ConfirmCustomsInput extends CustomsInput {
+  billId: number | null;
 }
 
 /** Why a bill can't be confirmed on the phone. */
-export type QuickBlocker = 'decided' | 'supplier' | 'duplicate' | 'totals' | 'no_lines' | 'new_product' | 'unsure' | 'amount';
+export type QuickBlocker = 'customs' | 'decided' | 'supplier' | 'duplicate' | 'totals' | 'no_lines' | 'new_product' | 'unsure' | 'amount';
 
 /** A scanned bill as the phone shows it, with the confirm it would send when nothing blocks it. */
 export interface QuickCheckDto {
@@ -95,6 +103,8 @@ export interface WaitingScanDto {
   scannedBy: string | null;
   emailFrom: string | null;
   scannedAt: string;
+  /** A customs declaration, not a bill. */
+  isCustoms: boolean;
 }
 
 export interface ConfirmScanInput {
@@ -233,6 +243,7 @@ export class BillScanService {
         scannedBy: scan.scanned_by_name,
         emailFrom: scan.email_from,
         scannedAt: scan.scanned_at.toISOString(),
+        isCustoms: reading.kind === 'customs',
       };
     });
   }
@@ -264,6 +275,16 @@ export class BillScanService {
       vatRate: row.vat_rate,
       hasBestBefore: row.has_best_before,
     }));
+    const isCustoms = reading.kind === 'customs';
+    const customs = isCustoms
+      ? await this.transactions.run((repos) =>
+          customsCandidates(
+            repos.db,
+            { supplierName: reading.supplier.name, invoiceNumbers: reading.customs?.invoiceNumbers ?? [], declaredValue: reading.customs?.declaredValue ?? null, issuedOn: reading.issuedOn ?? zonedDay(new Date(), this.timeZone) },
+            nameSimilarity,
+          ),
+        )
+      : null;
     const number = reading.number?.trim().toLowerCase();
     const duplicate = bills.find((bill) => bill.status !== 'void' && bill.number?.trim().toLowerCase() === number && bill.id !== scan.bill_id);
 
@@ -286,6 +307,7 @@ export class BillScanService {
       billId: scan.bill_id,
       orderId: scan.order_id,
       previous: scan.status === 'waiting' ? ((scan.confirmation as ScanConfirmation | null)?.input ?? null) : null,
+      customs: customs && { bills: customs.bills, matchId: customs.match?.id ?? null },
     };
   }
 
@@ -300,6 +322,8 @@ export class BillScanService {
     const scan = await this.get(id);
     const { reading } = scan;
     const blockers: QuickBlocker[] = [];
+    // A customs paper is checked on the dashboard, where its bill is picked.
+    if (reading.kind === 'customs') blockers.push('customs');
     if (scan.status !== 'waiting') blockers.push('decided');
     if (!scan.supplier) blockers.push('supplier');
     if (scan.duplicateBillId !== null) blockers.push('duplicate');
@@ -399,6 +423,7 @@ export class BillScanService {
       const scan = await repos.billScans.findById(id);
       if (!scan) throw new NotFoundError(`Scan ${id} does not exist`);
       if (scan.status !== 'waiting') throw new ConflictError('This scan was already dealt with');
+      if (parseReading(scan).kind === 'customs') throw new ConflictError('This is a customs paper, not a bill: put it on its import bill instead');
       await closePendingAlerts(repos, { type: 'bill_scan', id });
       const supplier = await repos.orders.findSupplier(input.supplierId);
       if (!supplier) throw new NotFoundError(`Supplier ${input.supplierId} does not exist`);
@@ -483,6 +508,38 @@ export class BillScanService {
     return result;
   }
 
+  /**
+   * A scanned customs paper checked: it goes on the import bill picked (posted
+   * like customs typed on the bill), or waits for its bill when that isn't in
+   * 4VD yet; it then goes on by itself when a bill with an invoice number it
+   * names is entered, or from its To do item.
+   */
+  async confirmCustoms(id: number, input: ConfirmCustomsInput, actorId: number, now = new Date()): Promise<{ billId: number | null; paperId: number }> {
+    return this.transactions.run(async (repos) => {
+      await repos.billScans.lock(id);
+      const scan = await repos.billScans.findById(id);
+      if (!scan) throw new NotFoundError(`Scan ${id} does not exist`);
+      if (scan.status !== 'waiting') throw new ConflictError('This scan was already dealt with');
+      const reading = parseReading(scan);
+      if (reading.kind !== 'customs') throw new ConflictError('This scan is a bill, not a customs paper');
+      await closePendingAlerts(repos, { type: 'bill_scan', id });
+      const today = zonedDay(now, this.timeZone);
+      const read = { supplierName: reading.supplier.name, invoiceNumbers: reading.customs?.invoiceNumbers ?? [], declaredValue: reading.customs?.declaredValue ?? null, scanId: id };
+      const { billId, ...paper } = input;
+      const paperId = billId !== null ? (await setCustoms(repos, billId, paper, actorId, { today, reading: read }))! : await addWaitingPaper(repos, paper, read, actorId, today);
+      await repos.billScans.decide(id, { status: 'confirmed', by: actorId, at: now, ...(billId !== null && { billId }) });
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'bill.scan_confirmed',
+        entityType: 'bill_scan',
+        entityId: id,
+        say: { key: 'customsScanConfirmed', params: { supplier: reading.supplier.name, number: input.number, waiting: billId === null } },
+        details: { billId, paperId },
+      });
+      return { billId, paperId };
+    });
+  }
+
   async discard(id: number, actorId: number, now = new Date()): Promise<void> {
     await this.transactions.run(async (repos) => {
       await repos.billScans.lock(id);
@@ -549,6 +606,7 @@ export class BillScanService {
       if (!scan) throw new NotFoundError(`Scan ${id} does not exist`);
       if (scan.status === 'waiting') throw new ConflictError('This scan is still waiting to be checked');
       const reading = parseReading(scan);
+      if (reading.kind === 'customs' && scan.status === 'confirmed') throw new ConflictError('A customs paper is changed or taken off on its bill, not by reopening the scan');
       const done = scan.status === 'confirmed' ? (scan.confirmation as ScanConfirmation | null) : null;
       if (scan.status === 'confirmed' && !done) throw new ConflictError('This scan was confirmed before reopening existed; fix its bill and stock by hand');
 

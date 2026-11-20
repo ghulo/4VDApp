@@ -17,6 +17,8 @@ describe('bill reader schema', () => {
 
   it('should turn blanks back into missing values', () => {
     const reading = toReading({
+      kind: 'bill',
+      customs: { vat: 0, duty: 0, excise: 0, totalPaid: 0, declaredValue: 0, invoiceNumbers: [] },
       supplier: { name: ' ', nui: '811234567' },
       number: '',
       issuedOn: '2026-10-11',
@@ -28,5 +30,23 @@ describe('bill reader schema', () => {
     });
     expect(reading).toMatchObject({ supplier: { name: null, nui: '811234567' }, number: null, dueOn: null, remarks: null });
     expect(reading.lines[0]).toMatchObject({ code: null, barcode: null, unit: 'pako', unitsPerPack: null, discountPercent: null, vatRate: null });
+    expect(reading).toMatchObject({ kind: 'bill', customs: null });
+  });
+
+  it('should read a customs declaration with the invoices it covers', () => {
+    const reading = toReading({
+      kind: 'customs',
+      customs: { vat: 25.2, duty: 20, excise: 0, totalPaid: 45.2, declaredValue: 0, invoiceNumbers: [' INV-77 ', ''] },
+      supplier: { name: 'Istanbul Toys', nui: '' },
+      number: 'C 4521',
+      issuedOn: '2026-11-02',
+      dueOn: '',
+      pricesIncludeVat: false,
+      lines: [],
+      totals: { net: null, vat: 25.2, gross: 45.2 },
+      remarks: '',
+    });
+    expect(reading.kind).toBe('customs');
+    expect(reading.customs).toEqual({ vat: 25.2, duty: 20, excise: 0, totalPaid: 45.2, declaredValue: null, invoiceNumbers: ['INV-77'] });
   });
 });

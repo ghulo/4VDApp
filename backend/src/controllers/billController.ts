@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { SupplierBillService } from '../services/SupplierBillService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { anyNewBillSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, customsSchema, noCustomsSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
+import { anyNewBillSchema, attachCustomsSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, customsSchema, noCustomsSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { uploadedImage } from './profileController.js';
 
@@ -72,6 +72,22 @@ export function createBillController(billService: SupplierBillService) {
     async removeCustoms(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await billService.setCustoms(id, null, req.user!.id), { message: 'Customs removed' });
+    },
+
+    async customsPaper(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.customsPaper(id));
+    },
+
+    async attachCustomsPaper(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.attachCustomsPaper(id, parseInput(attachCustomsSchema, req.body).billId, req.user!.id), { message: 'Customs saved' });
+    },
+
+    async discardCustomsPaper(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      await billService.discardCustomsPaper(id, req.user!.id);
+      sendSuccess(res, null, { message: 'Customs paper thrown away' });
     },
 
     async setNoCustoms(req: Request, res: Response): Promise<void> {

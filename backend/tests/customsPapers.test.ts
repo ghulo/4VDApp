@@ -1,14 +1,24 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedBooks } from '../src/database/books.js';
+import type { BillPage, BillReader, BillReading } from '../src/services/ai/billReader.js';
 import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
+
+/** Hands back the reading the test sets. */
+class FakeReader implements BillReader {
+  reading!: BillReading;
+  async read(_pages: BillPage[]): Promise<BillReading> {
+    return this.reading;
+  }
+}
+const reader = new FakeReader();
 
 let context: TestContext;
 let adminToken: string;
 let productId: number;
 
 beforeAll(async () => {
-  context = await setupTestApp();
+  context = await setupTestApp({ billReader: reader });
 });
 beforeEach(async () => {
   await resetData(context.db);
@@ -213,5 +223,135 @@ describe('the customs reminder', () => {
     expect(await kinds()).toHaveLength(1);
     expect((await putCustoms(fresh, { issuedOn: day(-8) })).status).toBe(200);
     expect(await kinds()).toEqual([]);
+  });
+});
+
+// A 1x1 PNG is enough; the fake reader never looks at it.
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+/** Scan a customs declaration from Dogana e Kosovës as the reader would read it. */
+async function scanPaper(customs: Partial<NonNullable<BillReading['customs']>> = {}, supplier = 'Istanbul Toys'): Promise<number> {
+  reader.reading = {
+    kind: 'customs',
+    customs: { vat: 23.04, duty: 10, excise: 0, totalPaid: 33.04, declaredValue: 118, invoiceNumbers: ['IT-1'], ...customs },
+    supplier: { name: supplier, nui: null },
+    number: 'C 4521',
+    issuedOn: today(),
+    dueOn: null,
+    pricesIncludeVat: false,
+    lines: [],
+    totals: { net: null, vat: 23.04, gross: 33.04 },
+    remarks: null,
+  };
+  const response = await api().post('/api/bill-scans').set(auth()).send({ pages: [{ mime: 'image/png', data: PNG }] });
+  expect(response.status, JSON.stringify(response.body)).toBe(201);
+  return response.body.data.id;
+}
+const checkPaper = (scanId: number, body: Record<string, unknown>) =>
+  api().post(`/api/bill-scans/${scanId}/customs`).set(auth()).send({ number: 'C 4521', issuedOn: today(), vat: 23.04, duty: 10, excise: 0, method: 'bank', ...body });
+const todoKinds = async () => ((await api().get('/api/attention').set(auth())).body.data.todo as Array<{ kind: string }>).map((item) => item.kind);
+
+describe('scanned customs papers', () => {
+  it('finds the bill by the invoice number the paper names, and puts the customs on it', async () => {
+    const billId = await importByOrder();
+    const scanId = await scanPaper();
+    const scan = (await api().get(`/api/bill-scans/${scanId}`).set(auth())).body.data;
+    expect(scan.reading.kind).toBe('customs');
+    expect(scan.customs.matchId).toBe(billId);
+    expect(scan.customs.bills[0]).toMatchObject({ id: billId, by: 'number' });
+    // Not a bill: it can't be confirmed as one, on the phone or the dashboard.
+    expect((await api().get(`/api/bill-scans/${scanId}/quick`).set(auth())).body.data.blockers).toContain('customs');
+    const asBill = await api()
+      .post(`/api/bill-scans/${scanId}/confirm`)
+      .set(auth())
+      .send({ supplierId: 1, orderId: null, categoryId: null, bill: { number: 'x', issuedOn: today(), dueOn: null, amount: 1, note: null }, lines: [{ productId, newProduct: null, code: null, pieces: 1, unitsPerPack: 1, unitCost: 1, updateCost: false, barcode: null, updateBarcode: false }] });
+    expect(asBill.status, JSON.stringify(asBill.body)).toBe(409);
+
+    const done = await checkPaper(scanId, { billId });
+    expect(done.status, JSON.stringify(done.body)).toBe(200);
+    const bill = (await api().get(`/api/bills/${billId}`).set(auth())).body.data;
+    expect(bill.customs).toMatchObject({ vat: 23.04, duty: 10, number: 'C 4521' });
+    const paper = await context.db.selectFrom('customs_papers').select(['scan_id', 'invoice_numbers', 'supplier_name']).where('voided_at', 'is', null).executeTakeFirstOrThrow();
+    expect(paper).toEqual({ scan_id: scanId, invoice_numbers: ['IT-1'], supplier_name: 'Istanbul Toys' });
+    expect((await api().get(`/api/bill-scans/${scanId}`).set(auth())).body.data.status).toBe('confirmed');
+  });
+
+  it('suggests the bill from the same supplier at about the declared value when no number matches', async () => {
+    const billId = await importByOrder();
+    const scanId = await scanPaper({ invoiceNumbers: ['PROFORMA 9'], declaredValue: 120 }, 'Istanbul Toys Ltd');
+    const scan = (await api().get(`/api/bill-scans/${scanId}`).set(auth())).body.data;
+    expect(scan.customs.bills[0]).toMatchObject({ id: billId, by: 'amount' });
+    expect(scan.customs.matchId).toBe(billId);
+  });
+
+  it('keeps a paper whose bill is not in yet waiting, and puts it on that bill by itself when the bill comes in', async () => {
+    const scanId = await scanPaper();
+    expect((await api().get(`/api/bill-scans/${scanId}`).set(auth())).body.data.customs.matchId).toBe(null);
+    const waited = await checkPaper(scanId, { billId: null });
+    expect(waited.status, JSON.stringify(waited.body)).toBe(200);
+    expect(waited.body.data.billId).toBe(null);
+    expect(await todoKinds()).toContain('customs_waiting');
+
+    const billId = await importByOrder();
+    const bill = (await api().get(`/api/bills/${billId}`).set(auth())).body.data;
+    expect(bill.customs).toMatchObject({ vat: 23.04, duty: 10, number: 'C 4521' });
+    expect(await todoKinds()).not.toContain('customs_waiting');
+    const [, customs] = standing(await entriesFor(billId));
+    expect(readLines(customs!)).toEqual(['1120 Cr 33.04', '1260 Dr 23.04', '1340 Dr 10']);
+  });
+
+  it('lets the owner put a waiting paper on the bill they pick, or throw it away', async () => {
+    const first = await scanPaper({ invoiceNumbers: [] });
+    expect((await checkPaper(first, { billId: null })).status).toBe(200);
+    const second = await scanPaper({ invoiceNumbers: [] });
+    expect((await checkPaper(second, { billId: null, number: 'C 9999' })).status).toBe(200);
+    const billId = await importByOrder();
+    const [paperA, paperB] = await context.db.selectFrom('customs_papers').select('id').where('bill_id', 'is', null).orderBy('id').execute();
+
+    const page = await api().get(`/api/bills/customs/${paperA!.id}`).set(auth());
+    expect(page.status).toBe(200);
+    expect(page.body.data).toMatchObject({ status: 'waiting', number: 'C 4521', vat: 23.04 });
+    expect(page.body.data.bills.map((bill: { id: number }) => bill.id)).toContain(billId);
+
+    const attached = await api().post(`/api/bills/customs/${paperA!.id}/attach`).set(auth()).send({ billId });
+    expect(attached.status, JSON.stringify(attached.body)).toBe(200);
+    expect(attached.body.data.customs).toMatchObject({ number: 'C 4521' });
+    // A bill takes one paper.
+    expect((await api().post(`/api/bills/customs/${paperB!.id}/attach`).set(auth()).send({ billId })).status).toBe(409);
+
+    expect((await api().delete(`/api/bills/customs/${paperB!.id}`).set(auth())).status).toBe(200);
+    expect((await api().get(`/api/bills/customs/${paperB!.id}`).set(auth())).body.data.status).toBe('closed');
+    expect(await todoKinds()).not.toContain('customs_waiting');
+  });
+
+  it('puts a waiting paper on a bill typed by hand, with the duty on top of the cost the bill sets', async () => {
+    await checkPaper(await scanPaper(), { billId: null });
+    const supplier = await api().post('/api/suppliers').set(auth()).send({ name: 'Istanbul Toys', nui: '', abroad: true });
+    const saved = await api()
+      .post('/api/bills')
+      .set(auth())
+      .send({ supplierId: supplier.body.data.id, issuedOn: today(), dueOn: null, number: 'it 1', lines: [{ kind: 'product', productId, quantity: 10, unitPrice: 10 }] });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(201);
+    expect(saved.body.data.customs).toMatchObject({ vat: 23.04, duty: 10 });
+    // The bill sets the cost at €11.80 (€10 + 18%); the €10 duty over its 10 units adds €1.18.
+    expect(await costOf()).toBe(12.98);
+    const scan = await context.db.selectFrom('bill_scans').select('bill_id').executeTakeFirstOrThrow();
+    expect(scan.bill_id).toBe(saved.body.data.id);
+  });
+
+  it('leaves two waiting papers naming the same invoice for the owner to sort out', async () => {
+    await checkPaper(await scanPaper(), { billId: null });
+    await checkPaper(await scanPaper(), { billId: null, number: 'C 4522' });
+    const billId = await importByOrder();
+    expect((await api().get(`/api/bills/${billId}`).set(auth())).body.data.customs).toBe(null);
+    expect((await todoKinds()).filter((kind) => kind === 'customs_waiting')).toHaveLength(2);
+  });
+
+  it('leads from a paper put on its bill to that bill', async () => {
+    await checkPaper(await scanPaper(), { billId: null });
+    const [waiting] = await context.db.selectFrom('customs_papers').select('id').execute();
+    const billId = await importByOrder();
+    const page = (await api().get(`/api/bills/customs/${waiting!.id}`).set(auth())).body.data;
+    expect(page).toMatchObject({ status: 'attached', billId });
   });
 });

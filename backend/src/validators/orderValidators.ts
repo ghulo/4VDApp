@@ -118,6 +118,12 @@ export const customsSchema = z.object({
   method: z.enum(CUSTOMS_PAID_METHODS).default('bank'),
 });
 
+/** A scanned customs paper checked: its figures and its bill (null: it waits for the bill). */
+export const confirmCustomsSchema = customsSchema.extend({ billId: z.number().int().positive().nullable() });
+
+/** A waiting customs paper put on the bill picked. */
+export const attachCustomsSchema = z.object({ billId: z.number().int().positive() });
+
 /** An import marked as having no customs paper, or taken back. */
 export const noCustomsSchema = z.object({ value: z.boolean() });
 

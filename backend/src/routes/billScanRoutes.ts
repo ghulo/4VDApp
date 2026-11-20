@@ -17,6 +17,7 @@ export function createBillScanRoutes({ billScanService, guards }: Container): Ro
   router.get('/:id/quick', controller.quickCheck);
   router.post('/:id/quick-confirm', controller.quickConfirm);
   router.post('/:id/confirm', controller.confirm);
+  router.post('/:id/customs', controller.confirmCustoms);
   router.post('/:id/discard', controller.discard);
 
   return router;

@@ -5,8 +5,27 @@ import { AiUnavailableError } from '../../errors/httpErrors.js';
 import { logger } from '../../utils/logger.js';
 import { toUnavailable } from './claudeProvider.js';
 
+/**
+ * What a customs declaration (Dogana e Kosovës, DUD/SAD) says besides its
+ * number and date: what was paid at the border, and the supplier invoices it
+ * covers (to find the import bill it belongs to).
+ */
+export const customsReadingSchema = z.object({
+  vat: z.number(),
+  duty: z.number(),
+  excise: z.number(),
+  totalPaid: z.number().nullable(),
+  /** The goods' value on the declaration (the invoice value), in euro. */
+  declaredValue: z.number().nullable(),
+  invoiceNumbers: z.array(z.string()),
+});
+export type CustomsPaperReading = z.infer<typeof customsReadingSchema>;
+
 /** What the AI reads off a supplier's bill. Anything it can't read is null, never guessed. */
 export const billReadingSchema = z.object({
+  /** A supplier's invoice, or a customs declaration (then supplier is the foreign seller, number and issuedOn the declaration's). Older readings have no kind: bills. */
+  kind: z.enum(['bill', 'customs']).default('bill'),
+  customs: customsReadingSchema.nullable().default(null),
   supplier: z.object({
     name: z.string().nullable(),
     /** The supplier's NUI (Kosovo business number), digits only. */
@@ -40,7 +59,8 @@ export const billReadingSchema = z.object({
   /** Anything the reader was unsure of, in a sentence. */
   remarks: z.string().nullable(),
 });
-export type BillReading = z.infer<typeof billReadingSchema>;
+/** Kind and customs are left out on older readings and in tests: read them as `kind ?? 'bill'`. */
+export type BillReading = z.input<typeof billReadingSchema>;
 
 /**
  * What Claude actually fills in. Structured outputs allow only a few nullable
@@ -49,6 +69,9 @@ export type BillReading = z.infer<typeof billReadingSchema>;
  * real value stay nullable. toReading turns the blanks back into nulls.
  */
 export const wireSchema = z.object({
+  kind: z.enum(['bill', 'customs']),
+  /** All 0 / empty on a supplier's invoice. */
+  customs: z.object({ vat: z.number(), duty: z.number(), excise: z.number(), totalPaid: z.number(), declaredValue: z.number(), invoiceNumbers: z.array(z.string()) }),
   supplier: z.object({ name: z.string(), nui: z.string() }),
   number: z.string(),
   issuedOn: z.string(),
@@ -77,7 +100,20 @@ const text = (value: string) => value.trim() || null;
 
 /** The reply with blanks turned back into nulls: the shape the rest of 4VD works with. */
 export function toReading(wire: WireReading): BillReading {
+  const c = wire.customs;
   return {
+    kind: wire.kind,
+    customs:
+      wire.kind === 'customs'
+        ? {
+            vat: Math.max(c.vat, 0),
+            duty: Math.max(c.duty, 0),
+            excise: Math.max(c.excise, 0),
+            totalPaid: c.totalPaid > 0 ? c.totalPaid : null,
+            declaredValue: c.declaredValue > 0 ? c.declaredValue : null,
+            invoiceNumbers: c.invoiceNumbers.map((number) => number.trim()).filter(Boolean),
+          }
+        : null,
     supplier: { name: text(wire.supplier.name), nui: text(wire.supplier.nui) },
     number: text(wire.number),
     issuedOn: text(wire.issuedOn),
@@ -127,7 +163,16 @@ Copy what is printed; never invent or correct values. For anything missing or un
 - discountPercent is the line's rabat, 0 if none. vatRate is the line's TVSH percent (18, 8 or 0).
 - pricesIncludeVat: true only if the unit prices already include TVSH.
 - totals: net (pa TVSH), vat (TVSH) and gross (gjithsej për pagesë) as printed.
-- remarks: one short sentence on anything unclear (a smudged line, a handwritten change), else "".`;
+- remarks: one short sentence on anything unclear (a smudged line, a handwritten change), else "".
+- kind: "bill" for a supplier's invoice. On an invoice, customs is all 0 with no invoiceNumbers.
+
+Customs declarations (Dogana e Kosovës / Republika e Kosovës, "Deklarata doganore", DUD/SAD, single administrative document) are not invoices: set kind "customs".
+- supplier: the foreign seller/consignor (dërguesi, box 2), not the Kosovo importer. NUI "".
+- number: the declaration's registration number (e.g. "C 12345" or MRN). issuedOn: the date it was registered or accepted.
+- customs.vat: TVSH (VAT) charged, tax type B00 or "TVSH". customs.duty: doganë (customs duty, A00). customs.excise: akcizë, 0 if none.
+- customs.totalPaid: the total taxes paid; customs.declaredValue: the invoice value of the goods in euro (box 22/42), 0 if unclear.
+- customs.invoiceNumbers: every supplier invoice number it lists (box 44, "Fatura", N380 / N935), as printed.
+- lines: the goods items (box 31) with quantity, no prices needed (unitPrice null). totals.gross = customs.totalPaid, totals.vat = customs.vat, totals.net null. pricesIncludeVat false.`;
 
 export class ClaudeBillReader implements BillReader {
   private readonly client: Anthropic;
@@ -148,7 +193,7 @@ export class ClaudeBillReader implements BillReader {
         ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: page.bytes.toString('base64') } }
         : { type: 'image', source: { type: 'base64', media_type: page.mime as 'image/webp', data: page.bytes.toString('base64') } },
     );
-    content.push({ type: 'text', text: pages.length > 1 ? `Read this ${pages.length}-page invoice.` : 'Read this invoice.' });
+    content.push({ type: 'text', text: pages.length > 1 ? `Read this ${pages.length}-page document.` : 'Read this document.' });
 
     let response;
     try {

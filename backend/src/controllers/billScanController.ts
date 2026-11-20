@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { BillScanService } from '../services/BillScanService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { confirmScanSchema, scanQuerySchema, scanUploadSchema } from '../validators/orderValidators.js';
+import { confirmCustomsSchema, confirmScanSchema, scanQuerySchema, scanUploadSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createBillScanController(scanService: BillScanService) {
@@ -24,6 +24,11 @@ export function createBillScanController(scanService: BillScanService) {
     async confirm(req: Request, res: Response): Promise<void> {
       const { id } = parseInput(idParamsSchema, req.params);
       sendSuccess(res, await scanService.confirm(id, parseInput(confirmScanSchema, req.body), req.user!.id), { message: 'Bill confirmed' });
+    },
+
+    async confirmCustoms(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await scanService.confirmCustoms(id, parseInput(confirmCustomsSchema, req.body), req.user!.id), { message: 'Customs paper saved' });
     },
 
     async quickCheck(req: Request, res: Response): Promise<void> {

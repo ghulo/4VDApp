@@ -264,3 +264,186 @@ export async function waitingPapers(db: DatabaseClient): Promise<Array<{ id: num
     .execute();
   return rows.map((row) => ({ id: row.id, number: row.number, supplier: row.supplier_name, issuedOn: row.issued_on }));
 }
+
+/** An invoice number as written on a customs paper and as typed on a bill compare equal: case, spaces and dashes don't count. */
+export const sameNumber = (value: string | null | undefined) => (value ?? '').toLowerCase().replace(/[^0-9a-z]/g, '');
+
+/** How far a paper's declared value may be from its bill's amount and still count as a match. */
+const VALUE_TOLERANCE = 0.1;
+
+/** An import bill a customs paper may belong to, and why it was put forward. */
+export interface CustomsCandidate {
+  id: number;
+  supplier: string | null;
+  number: string | null;
+  issuedOn: string;
+  amount: number;
+  /** `number`: the paper lists this bill's invoice number; `amount`: same supplier and about the same value; null: only an open import bill. */
+  by: 'number' | 'amount' | null;
+}
+
+interface PaperFacts {
+  supplierName: string | null;
+  invoiceNumbers: string[];
+  declaredValue: number | null;
+  issuedOn: string;
+}
+
+/**
+ * The import bills a customs paper may go on: open bills from a supplier
+ * abroad with goods and no paper yet, dated half a year before to two months
+ * after the paper. The ones it names by invoice number come first, then the
+ * same supplier at about the declared value. `match` is the bill to put it on
+ * without asking: the one named by number, else the only one at that value.
+ */
+export async function customsCandidates(
+  db: DatabaseClient,
+  paper: PaperFacts,
+  similarity: (a: string, b: string) => number,
+): Promise<{ bills: CustomsCandidate[]; match: CustomsCandidate | null }> {
+  const rows = await db
+    .selectFrom('supplier_bills as b')
+    .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
+    .select(['b.id', 's.name as supplier', 'b.number', 'b.amount', sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on')])
+    .where('b.kind', '=', 'bill')
+    .where('b.abroad', '=', true)
+    .where('b.voided_at', 'is', null)
+    .where('b.trefin_ref', 'is', null)
+    .where('b.brought_over', '=', false)
+    .where(sql<boolean>`b.issued_on between ${paper.issuedOn}::date - 183 and ${paper.issuedOn}::date + 61`)
+    .where((eb) => eb.exists(eb.selectFrom('bill_lines as l').select('l.id').whereRef('l.bill_id', '=', 'b.id').where('l.kind', 'in', ['product', 'equipment'])))
+    .where((eb) => eb.not(eb.exists(eb.selectFrom('customs_papers as p').select('p.id').whereRef('p.bill_id', '=', 'b.id').where('p.voided_at', 'is', null))))
+    .orderBy('b.issued_on', 'desc')
+    .limit(200)
+    .execute();
+  const numbers = new Set(paper.invoiceNumbers.map(sameNumber).filter(Boolean));
+  const bills = rows.map((row): CustomsCandidate => {
+    const amount = Number(row.amount);
+    const named = row.number !== null && numbers.has(sameNumber(row.number));
+    const sameSupplier = Boolean(paper.supplierName && row.supplier && similarity(paper.supplierName, row.supplier) >= 0.5);
+    const near = paper.declaredValue !== null && paper.declaredValue > 0 && Math.abs(amount - paper.declaredValue) <= paper.declaredValue * VALUE_TOLERANCE;
+    return { id: row.id, supplier: row.supplier, number: row.number, issuedOn: row.issued_on, amount, by: named ? 'number' : sameSupplier && near ? 'amount' : null };
+  });
+  const rank = (bill: CustomsCandidate) => (bill.by === 'number' ? 0 : bill.by === 'amount' ? 1 : 2);
+  bills.sort((a, b) => rank(a) - rank(b));
+  const byNumber = bills.filter((bill) => bill.by === 'number');
+  const byAmount = bills.filter((bill) => bill.by === 'amount');
+  const match = byNumber.length === 1 ? byNumber[0]! : byNumber.length === 0 && byAmount.length === 1 ? byAmount[0]! : null;
+  return { bills: bills.slice(0, 50), match };
+}
+
+/** A scanned paper whose bill isn't in 4VD yet: it waits (bill_id null) and posts nothing until it is put on one. */
+export async function addWaitingPaper(repos: TransactionalRepositories, input: CustomsInput, reading: CustomsReading, actorId: number, today: string): Promise<number> {
+  if (input.issuedOn > today) throw new ValidationError("The customs paper can't be dated after today");
+  if (input.vat + input.duty + (input.excise ?? 0) <= 0) throw new ValidationError('Type the customs VAT or the duty');
+  const row = await repos.db
+    .insertInto('customs_papers')
+    .values({
+      bill_id: null,
+      number: input.number?.trim() || null,
+      issued_on: input.issuedOn,
+      vat: input.vat,
+      duty: input.duty,
+      excise: input.excise ?? 0,
+      paid_method: input.method,
+      scan_id: reading.scanId,
+      supplier_name: reading.supplierName,
+      invoice_numbers: reading.invoiceNumbers,
+      declared_value: reading.declaredValue,
+      created_by: actorId,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+/** One customs paper with what the scanner read, for its page. */
+export async function findPaper(db: DatabaseClient, paperId: number) {
+  const paper = await db
+    .selectFrom('customs_papers')
+    .select([
+      'id',
+      'bill_id',
+      'voided_at',
+      'number',
+      'vat',
+      'duty',
+      'excise',
+      'paid_method',
+      'scan_id',
+      'supplier_name',
+      'invoice_numbers',
+      'declared_value',
+      sql<string>`to_char(issued_on, 'YYYY-MM-DD')`.as('issued_on'),
+    ])
+    .where('id', '=', paperId)
+    .executeTakeFirst();
+  if (!paper) throw new NotFoundError(`Customs paper ${paperId} does not exist`);
+  return paper;
+}
+
+/**
+ * Put a waiting paper on its bill: the bill gets the paper's figures (posted,
+ * VAT month, duty onto the goods, as if typed by hand) and the waiting one is
+ * closed. Refused when the bill already has a paper.
+ */
+export async function attachPaper(repos: TransactionalRepositories, paperId: number, billId: number, actorId: number | null, today: string): Promise<number> {
+  await repos.db.selectFrom('customs_papers').select('id').where('id', '=', paperId).forUpdate().execute();
+  const paper = await findPaper(repos.db, paperId);
+  if (paper.voided_at || paper.bill_id !== null) throw new ConflictError('This customs paper is already on a bill');
+  if (await currentPaper(repos, billId)) throw new ConflictError('That bill already has its customs paper. Remove it there first.');
+  const newId = await setCustoms(
+    repos,
+    billId,
+    { number: paper.number, issuedOn: paper.issued_on, vat: Number(paper.vat), duty: Number(paper.duty), excise: Number(paper.excise), method: paper.paid_method },
+    actorId,
+    {
+      today,
+      reading: {
+        supplierName: paper.supplier_name,
+        invoiceNumbers: paper.invoice_numbers,
+        declaredValue: paper.declared_value === null ? null : Number(paper.declared_value),
+        scanId: paper.scan_id,
+      },
+    },
+  );
+  await repos.db.updateTable('customs_papers').set({ voided_at: new Date() }).where('id', '=', paperId).execute();
+  // The scan now leads to the bill it went on.
+  if (paper.scan_id !== null) await repos.db.updateTable('bill_scans').set({ bill_id: billId }).where('id', '=', paper.scan_id).execute();
+  return newId!;
+}
+
+/** A waiting paper thrown away (scanned twice, or not ours). */
+export async function discardPaper(repos: TransactionalRepositories, paperId: number): Promise<void> {
+  await repos.db.selectFrom('customs_papers').select('id').where('id', '=', paperId).forUpdate().execute();
+  const paper = await findPaper(repos.db, paperId);
+  if (paper.voided_at || paper.bill_id !== null) throw new ConflictError('Only a paper still waiting for its bill can be thrown away; take it off its bill instead');
+  await repos.db.updateTable('customs_papers').set({ voided_at: new Date() }).where('id', '=', paperId).execute();
+}
+
+/**
+ * A bill just entered from a supplier abroad: a waiting paper that names its
+ * invoice number goes on it by itself. Only a clear match (one paper, by
+ * number), and only when it can go on without a question (no duty on
+ * equipment, dated within a year of the bill).
+ */
+export async function attachWaitingPaper(repos: TransactionalRepositories, billId: number, actorId: number | null, today: string): Promise<number | null> {
+  const bill = await repos.bills.findById(billId);
+  if (!bill || bill.customs_id !== null) return null;
+  const number = sameNumber(bill.number);
+  if (!number) return null;
+  const lines = await repos.bills.findLines([billId]);
+  if (customsBlocker(bill, lines)) return null;
+  const papers = await repos.db
+    .selectFrom('customs_papers')
+    .select(['id', 'invoice_numbers', 'duty', 'excise', sql<string>`to_char(issued_on, 'YYYY-MM-DD')`.as('issued_on')])
+    .where('bill_id', 'is', null)
+    .where('voided_at', 'is', null)
+    .execute();
+  const named = papers.filter((paper) => paper.invoice_numbers.some((value) => sameNumber(value) === number));
+  if (named.length !== 1) return null;
+  const paper = named[0]!;
+  if (Number(paper.duty) + Number(paper.excise) > 0 && lines.some((line) => line.kind === 'equipment')) return null;
+  if (Math.abs(Date.parse(paper.issued_on) - Date.parse(bill.issued_on)) / 86_400_000 > 366 || paper.issued_on > today) return null;
+  return attachPaper(repos, paper.id, billId, actorId, today);
+}

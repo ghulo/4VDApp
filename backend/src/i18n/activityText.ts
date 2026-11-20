@@ -114,6 +114,9 @@ const en = {
   billScanConfirmed: (p: { supplier: string; pieces: number; orderId: number; newProducts: number }) =>
     `Confirmed the scanned bill from ${p.supplier}: ${p.pieces} pieces into stock with order #${p.orderId}${p.newProducts > 0 ? `, ${p.newProducts} new products` : ''}`,
   billScanDiscarded: (p: { supplier: string | null }) => `Discarded a scanned bill${p.supplier ? ` from ${p.supplier}` : ''}`,
+  customsScanConfirmed: (p: { supplier: string | null; number: string | null; waiting: boolean }) =>
+    `Checked a scanned customs paper${p.number ? ` no. ${p.number}` : ''}${p.supplier ? ` for goods from ${p.supplier}` : ''}${p.waiting ? '; it waits for its bill' : ''}`,
+  customsPaperDiscarded: (p: { number: string | null; supplier: string | null }) => `Threw away a customs paper${p.number ? ` no. ${p.number}` : ''}${p.supplier ? ` for goods from ${p.supplier}` : ''} that was waiting for its bill`,
   orderFromScan: (p: { orderId: number }) => `Made order #${p.orderId} from a scanned bill`,
   barcodePutBack: (p: { product: string; to: string | null }) =>
     `Put the barcode of ${p.product} back${p.to ? ` to ${p.to}` : ''} (scanned bill reopened)`,
@@ -702,6 +705,9 @@ const sq: Templates = {
   billScanConfirmed: (p) =>
     `Konfirmoi faturën e skanuar nga ${p.supplier}: ${p.pieces} copë në stok me porosinë #${p.orderId}${p.newProducts > 0 ? `, ${p.newProducts} produkte të reja` : ''}`,
   billScanDiscarded: (p) => `Hodhi poshtë një faturë të skanuar${p.supplier ? ` nga ${p.supplier}` : ''}`,
+  customsScanConfirmed: (p) =>
+    `Kontrolloi një deklaratë doganore të skanuar${p.number ? ` nr. ${p.number}` : ''}${p.supplier ? ` për mallin nga ${p.supplier}` : ''}${p.waiting ? '; pret faturën e saj' : ''}`,
+  customsPaperDiscarded: (p) => `Hodhi poshtë një deklaratë doganore${p.number ? ` nr. ${p.number}` : ''}${p.supplier ? ` për mallin nga ${p.supplier}` : ''} që priste faturën e saj`,
   orderFromScan: (p) => `Krijoi porosinë #${p.orderId} nga një faturë e skanuar`,
   barcodePutBack: (p) => `Ktheu barkodin e ${p.product}${p.to ? ` në ${p.to}` : ''} (fatura e skanuar u rihap)`,
   billScanReopened: (p) =>

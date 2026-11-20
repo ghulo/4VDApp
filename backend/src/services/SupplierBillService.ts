@@ -21,7 +21,21 @@ import { validatePricingTiers } from './pricing/bulkPricing.js';
 import { changeCost } from './PurchaseOrderService.js';
 import { assertMonthsOpen, monthOf, vatMonthForBill } from './vat/periodLock.js';
 import { placeWords } from '../repositories/MoneyRepository.js';
-import { type CustomsInput, currentPaper, paperMonth, releasePaper, setCustoms, setNoCustoms } from './bills/customsPapers.js';
+import {
+  attachPaper,
+  attachWaitingPaper,
+  type CustomsCandidate,
+  type CustomsInput,
+  customsCandidates,
+  currentPaper,
+  discardPaper,
+  findPaper,
+  paperMonth,
+  releasePaper,
+  setCustoms,
+  setNoCustoms,
+} from './bills/customsPapers.js';
+import { nameSimilarity } from '../utils/billMatching.js';
 
 /** A bill due within this many days counts as "due soon". */
 export const BILL_DUE_SOON_DAYS = 7;
@@ -74,6 +88,27 @@ export interface BillLineDto {
   selfVat: number;
   /** The stock came in with a delivery (an order), not with the bill. */
   fromDelivery: boolean;
+}
+
+/** A customs paper on its own page: waiting for its bill, on one, or closed (thrown away or replaced). */
+export interface CustomsPaperDto {
+  id: number;
+  billId: number | null;
+  status: 'waiting' | 'attached' | 'closed';
+  number: string | null;
+  issuedOn: string;
+  vat: number;
+  duty: number;
+  excise: number;
+  method: CustomsPaidMethod;
+  supplierName: string | null;
+  invoiceNumbers: string[];
+  declaredValue: number | null;
+  scanId: number | null;
+  /** While waiting: the import bills it may go on, best first. */
+  bills: CustomsCandidate[];
+  /** The bill it clearly belongs to, picked already. */
+  matchId: number | null;
 }
 
 export interface SupplierBillDto {
@@ -444,6 +479,64 @@ export class SupplierBillService {
   async setNoCustoms(id: number, value: boolean, actorId: number): Promise<SupplierBillDto> {
     await this.transactions.run((repos) => setNoCustoms(repos, id, value, actorId));
     return this.get(id);
+  }
+
+  /** A customs paper (usually one waiting for its bill) with the bills it may go on. */
+  async customsPaper(paperId: number): Promise<CustomsPaperDto> {
+    return this.transactions.run(async (repos) => {
+      const paper = await findPaper(repos.db, paperId);
+      const facts = {
+        supplierName: paper.supplier_name,
+        invoiceNumbers: paper.invoice_numbers,
+        declaredValue: paper.declared_value === null ? null : Number(paper.declared_value),
+        issuedOn: paper.issued_on,
+      };
+      const waiting = paper.bill_id === null && paper.voided_at === null;
+      const { bills, match } = waiting ? await customsCandidates(repos.db, facts, nameSimilarity) : { bills: [], match: null };
+      // A waiting paper put on its bill lives on as that bill's paper (same scan): its old page leads there.
+      const onBill =
+        paper.voided_at && paper.scan_id !== null
+          ? await repos.db.selectFrom('customs_papers').select('bill_id').where('scan_id', '=', paper.scan_id).where('voided_at', 'is', null).where('bill_id', 'is not', null).executeTakeFirst()
+          : undefined;
+      return {
+        id: paper.id,
+        billId: onBill?.bill_id ?? paper.bill_id,
+        status: onBill ? 'attached' : paper.voided_at ? 'closed' : waiting ? 'waiting' : 'attached',
+        number: paper.number,
+        issuedOn: paper.issued_on,
+        vat: Number(paper.vat),
+        duty: Number(paper.duty),
+        excise: Number(paper.excise),
+        method: paper.paid_method,
+        supplierName: paper.supplier_name,
+        invoiceNumbers: paper.invoice_numbers,
+        declaredValue: facts.declaredValue,
+        scanId: paper.scan_id,
+        bills,
+        matchId: match?.id ?? null,
+      };
+    });
+  }
+
+  /** Put a waiting customs paper on the bill the owner picked. */
+  async attachCustomsPaper(paperId: number, billId: number, actorId: number, now = new Date()): Promise<SupplierBillDto> {
+    await this.transactions.run((repos) => attachPaper(repos, paperId, billId, actorId, this.today(now)));
+    return this.get(billId);
+  }
+
+  /** Throw away a customs paper still waiting for its bill. */
+  async discardCustomsPaper(paperId: number, actorId: number): Promise<void> {
+    await this.transactions.run(async (repos) => {
+      const paper = await findPaper(repos.db, paperId);
+      await discardPaper(repos, paperId);
+      await repos.activityLog.create({
+        userId: actorId,
+        action: 'bill.scan_discarded',
+        entityType: 'bill_scan',
+        entityId: paper.scan_id,
+        say: { key: 'customsPaperDiscarded', params: { number: paper.number, supplier: paper.supplier_name } },
+      });
+    });
   }
 
   async setPhoto(id: number, upload: Buffer | null, actorId: number): Promise<SupplierBillDto> {
@@ -868,6 +961,8 @@ export async function createBill(
       withholdingType: withholding,
     });
   }
+  // A customs paper scanned before this bill was entered, naming its invoice number, goes on it now.
+  if (plan.abroad) await attachWaitingPaper(repos, id, actorId, today);
   if (!options.quiet) {
     await repos.activityLog.create({
       userId: actorId,

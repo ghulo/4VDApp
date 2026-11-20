@@ -13,6 +13,10 @@ export function createBillRoutes({ supplierBillService, guards }: Container): Ro
   router.get('/repeats', ...guards.books, controller.repeats);
   router.post('/repeats/:id/stop', ...guards.oversee, controller.stopRepeat);
   router.post('/preview', ...guards.oversee, controller.preview);
+  // A customs paper waiting for its bill: look, put it on one, or throw it away.
+  router.get('/customs/:id', ...guards.oversee, controller.customsPaper);
+  router.post('/customs/:id/attach', ...guards.oversee, controller.attachCustomsPaper);
+  router.delete('/customs/:id', ...guards.oversee, controller.discardCustomsPaper);
   router.get('/:id', ...guards.books, controller.get);
   router.post('/', ...guards.oversee, controller.create);
   router.put('/:id', ...guards.oversee, controller.update);

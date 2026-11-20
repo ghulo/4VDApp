@@ -5,7 +5,7 @@ import { loadConfig } from '../src/config/env.js';
 import { createDatabase } from '../src/database/connection.js';
 import { setupTestApp } from './helpers/testApp.js';
 
-// The health check never reaches the database; the client only connects on first query.
+// The health check never reaches the database (the client only connects on first query); /health/db finds it missing.
 const testConfig = loadConfig({
   NODE_ENV: 'test',
   DATABASE_URL: 'postgresql://test:test@localhost:5432/unused_test',
@@ -24,6 +24,23 @@ describe('GET /health', () => {
     expect(response.body.success).toBe(true);
     expect(response.body.data.status).toBe('ok');
     expect(response.body.error).toBeNull();
+  });
+});
+
+describe('GET /health/db', () => {
+  it('says the database answers', async () => {
+    const context = await setupTestApp();
+    const response = await request(context.app).get('/health/db');
+    await context.db.destroy();
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({ status: 'ok', database: 'ok' });
+  });
+
+  it('answers 503 when the database is unreachable, while /health still says ok', async () => {
+    const response = await request(app).get('/health/db');
+    expect(response.status).toBe(503);
+    expect(response.body.error).toBe('DATABASE_DOWN');
+    expect((await request(app).get('/health')).status).toBe(200);
   });
 });
 

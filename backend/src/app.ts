@@ -12,7 +12,7 @@ import { allowedOriginsOf } from './utils/sessionCookies.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { createApiRateLimiter } from './middlewares/rateLimiter.js';
-import { healthRoutes } from './routes/healthRoutes.js';
+import { createHealthRoutes } from './routes/healthRoutes.js';
 import { createApiRoutes } from './routes/index.js';
 import { createPortalRoutes } from './routes/portalRoutes.js';
 import { billEmailTokenGuard } from './routes/internalRoutes.js';
@@ -70,7 +70,7 @@ export function createApp(config: AppConfig, db: DatabaseClient, options: AppOpt
 
   // Health check stays outside /api and the rate limiter so uptime monitors
   // never get throttled.
-  app.use('/health', healthRoutes);
+  app.use('/health', createHealthRoutes(db));
   // Public pages also hide costs by role, so every business's rules from Settings → Roles are read before
   // any API request; a signed-in visitor's role is then read in the grid of the business their token names.
   const loadPermissions: express.RequestHandler = (req, _res, next) => {

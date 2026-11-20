@@ -1,6 +1,10 @@
 import { Router } from 'express';
-import { getHealth } from '../controllers/healthController.js';
+import { getDatabaseHealth, getHealth } from '../controllers/healthController.js';
+import type { DatabaseClient } from '../database/connection.js';
 
-export const healthRoutes = Router();
-
-healthRoutes.get('/', getHealth);
+export function createHealthRoutes(db: DatabaseClient): Router {
+  const routes = Router();
+  routes.get('/', getHealth);
+  routes.get('/db', getDatabaseHealth(db));
+  return routes;
+}

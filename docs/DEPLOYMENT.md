@@ -158,11 +158,16 @@ plan **Developer (free)** → **Create Project** → platform **Express**, name 
 Then put each DSN where it goes (above) and, for the API, **Save, rebuild and deploy**
 on Render. Each project's page in Sentry waits for its first error.
 
-**Uptime check.** `.github/workflows/uptime.yml` asks `https://api.4vd.app/health`
-every 10 minutes, three tries each time. When the API doesn't answer, the run
-fails and GitHub emails the repository owner. GitHub pauses scheduled runs in a
-repository with no pushes for 60 days; push something or re-enable it under
-Actions if that happens.
+**Uptime check.** `https://api.4vd.app/health/db` answers 200 only when the API
+and its database both answer (`select 1`, 5 s limit; 503 otherwise). Render's own
+health check stays on `/health`, which skips the database, so a database blip
+doesn't restart the API. Two monitors ask `/health/db`:
+- **Sentry uptime monitor** "api.4vd.app database" (every 5 minutes, from several
+  regions; emails on failure). This is the reliable one.
+- `.github/workflows/uptime.yml` every 10 minutes, three tries each time; the run
+  fails and GitHub emails the repository owner. GitHub's schedule is best effort
+  (runs can come hours apart) and pauses in a repository with no pushes for 60
+  days; push something or re-enable it under Actions if that happens.
 
 ---
 

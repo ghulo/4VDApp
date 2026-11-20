@@ -1,5 +1,5 @@
 import { apiRequest } from './apiClient';
-import type { Checkout, Product, ProductRequest, StockCount } from './types';
+import type { Checkout, Product, ProductRequest, ProductUnit, StockCount } from './types';
 
 // What the counter staff do from a phone: the calls the team app made, now in
 // the dashboard. The server decides what each role may see (no costs for the
@@ -36,7 +36,8 @@ export interface Delivery {
   supplierName: string;
   note: string | null;
   createdAt: string;
-  lines: Array<{ id: number; productId: number; productName: string; sku: string | null; quantity: number }>;
+  /** unit: kg/l/m/m² take parts (2.5 kg); left out by an older server, it counts as a piece. */
+  lines: Array<{ id: number; productId: number; productName: string; sku: string | null; unit?: ProductUnit; quantity: number }>;
 }
 
 /** An open carwash and what was entered for it today (null when nothing yet). */

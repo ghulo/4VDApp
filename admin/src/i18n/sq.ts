@@ -5874,9 +5874,12 @@ export const sq: Catalogue = {
       intro: 'Krahaso çfarë erdhi me porosinë. Ndrysho numrin kur erdhi më pak dhe shto datën e skadimit për ato që prishen.',
       ordered: (n) => `Porositur ${n}`,
       came: 'Sa erdhën',
+      typeCame: 'Shkruaj sa erdhën, ose 0 nëse s’erdhi asnjë.',
+      wholeOnly: 'Vetëm copë të plota, si 12.',
+      notAmount: 'Një numër, si 2,5.',
       expiresOn: 'Skadon më (opsionale)',
       save: 'Fute në stok',
-      done: (units, supplier) => `${units} copë nga ${supplier} tani janë në stok.`,
+      done: (products, supplier) => `${products} ${products === 1 ? 'produkt' : 'produkte'} nga ${supplier} tani ${products === 1 ? 'është' : 'janë'} në stok.`,
     },
     tabs: {
       title: 'Borxhet',

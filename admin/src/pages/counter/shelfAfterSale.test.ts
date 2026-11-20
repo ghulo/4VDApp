@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Product } from '../../services/types';
-import { afterSaleRefresh, shelfAfterSale } from './shelfAfterSale';
+import { QueryClient } from '@tanstack/react-query';
+import { afterSaleRefresh, patchShelf, SHELF_KEY, shelfAfterSale } from './shelfAfterSale';
 
 const product = (id: number, quantity: number, reorderLevel = 2): Product =>
   ({ id, name: `P${id}`, stock: { quantity, reorderLevel, isInStock: quantity > 0, isLowStock: quantity <= reorderLevel } }) as Product;
@@ -47,5 +48,19 @@ describe('afterSaleRefresh', () => {
     const plan = afterSaleRefresh({ tab: true, customer: true, shortDated: true, delivery: true, offer: true });
     expect(plan.refetch).toEqual(expect.arrayContaining([['customers'], ['expiry'], ['deliveries', 'out'], ['offers']]));
     expect(plan.stale).not.toContainEqual(['customers']);
+  });
+});
+
+describe('patchShelf', () => {
+  it('keeps the patch when a shelf fetch was on its way (the cancelled fetch does not put the old shelf back)', async () => {
+    const client = new QueryClient();
+    client.setQueryData(SHELF_KEY, [product(1, 10)]);
+    let answer!: (shelf: Product[]) => void;
+    const fetching = client.fetchQuery({ queryKey: SHELF_KEY, queryFn: () => new Promise<Product[]>((resolve) => (answer = resolve)), staleTime: 0 }).catch(() => undefined);
+    await patchShelf(client, [{ productId: 1, quantity: 4 }]);
+    await fetching;
+    answer([product(1, 10)]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(client.getQueryData<Product[]>(SHELF_KEY)![0]!.stock.quantity).toBe(6);
   });
 });

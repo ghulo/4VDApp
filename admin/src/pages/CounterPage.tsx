@@ -53,7 +53,7 @@ import { drain, keep, localEventStore, type Owner, refusedEntries, unrefuse } fr
 import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
-import { afterSaleRefresh, shelfAfterSale } from './counter/shelfAfterSale';
+import { afterSaleRefresh, patchShelf, SHELF_KEY } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -149,8 +149,6 @@ const toGram = (amount: number) => Math.round(amount * 1000) / 1000;
 
 /** How long Pay waits for the server before the sale waits on the PC instead. */
 const PAY_TIMEOUT_MS = 12_000;
-/** The till's copy of the shelf. */
-const SHELF_KEY = ['products', 'counter-shelf'] as const;
 /** How often the till fetches its shelf again for stock that changed elsewhere (a sale here patches it at once). */
 const SHELF_REFRESH_MS = 3 * 60_000;
 
@@ -711,8 +709,7 @@ export function CounterPage() {
       return;
     }
     // A shelf fetch already on its way may not count this sale: it is dropped, and the copy here loses what was sold.
-    void queryClient.cancelQueries({ queryKey: SHELF_KEY });
-    queryClient.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, sale.sales.map((line) => ({ productId: line.productId, quantity: line.quantity }))));
+    void patchShelf(queryClient, sale.sales);
   };
 
   const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);
@@ -1068,8 +1065,7 @@ export function CounterPage() {
     if (result) refreshAfterSale({ sale: result, basket, payment });
     else {
       // This PC's shelf loses what was sold, so the next basket can't sell it again.
-      void queryClient.cancelQueries({ queryKey: SHELF_KEY });
-      queryClient.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, lines));
+      void patchShelf(queryClient, lines);
     }
     const receiptLines = result
       ? result.sales.map((sale) => {

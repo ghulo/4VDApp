@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { TO_DELIVER_KEY } from '../../services/api';
 import type { Product } from '../../services/types';
 
@@ -37,4 +38,18 @@ export function afterSaleRefresh(sale: { tab: boolean; customer: boolean; shortD
   if (sale.delivery) refetch.push(TO_DELIVER_KEY);
   if (sale.offer) refetch.push(['offers']);
   return { refetch, stale };
+}
+
+/** The till's copy of the shelf. */
+export const SHELF_KEY = ['products', 'counter-shelf'] as const;
+
+/**
+ * Takes a sale off the till's shelf. A shelf fetch already on its way may not
+ * count the sale: it is cancelled first, and the patch goes on only once the
+ * cancel has settled (a cancelled fetch puts back the shelf it started from,
+ * which would otherwise undo the patch a moment later).
+ */
+export async function patchShelf(client: QueryClient, sold: ReadonlyArray<{ productId: number; quantity: number }>): Promise<void> {
+  await client.cancelQueries({ queryKey: SHELF_KEY });
+  client.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, sold));
 }

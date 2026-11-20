@@ -845,7 +845,14 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pinRef = useRef<HTMLInputElement>(null);
-  const chosen = people?.find((person) => person.id === userId) ?? null;
+  // Only one person can be picked: they are, and the PIN box is ready for their PIN.
+  const open = people?.filter((person) => !person.locked);
+  const sole = open?.length === 1 ? open[0]!.id : null;
+  const chosenId = userId ?? sole;
+  const chosen = people?.find((person) => person.id === chosenId) ?? null;
+  useEffect(() => {
+    if (sole !== null) pinRef.current?.focus();
+  }, [sole]);
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -879,11 +886,13 @@ function PinForm({ people, nobody, submit, onSubmit }: PinProps) {
             key={person.id}
             type="button"
             className="counter-person"
-            aria-pressed={person.id === userId}
+            aria-pressed={person.id === chosenId}
             disabled={person.locked}
             onClick={() => {
               setUserId(person.id);
               setError(null);
+              // Next comes their PIN.
+              pinRef.current?.focus();
             }}
           >
             <span>{person.name}</span>

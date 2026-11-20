@@ -4728,6 +4728,7 @@ export const sq: Catalogue = {
     pendingSale: (total: string) => `Kjo shitje (${total}) u dërgua, por s’erdhi përgjigje. Ruhet ashtu siç ishte: dërgoje prapë para çdo gjëje tjetër.`,
     sendAgain: 'Dërgoje prapë',
     pendingLocked: 'Shitja e kësaj shporte është në rrugë, ndaj s’mund të ndryshojë. Dërgoje prapë më parë.',
+    basketChangedInPay: 'Shporta ndryshoi ndërsa pagesa ishte e hapur. Kontrolloje, pastaj shtyp Paguaj përsëri.',
     unclearPay: 'S’erdhi përgjigje nga 4VD, ndaj s’dihet a u regjistrua shitja. Shtyp Dërgoje prapë (kur të kthehet interneti): regjistrohet vetëm një herë.',
     noReceiptKept: 'Rreshtat e këtij kuponi nuk u ruajtën (4VD i vjetër), ndaj s’mund të printohet përsëri. Shitja është regjistruar: thuaji pronarit, kuponi fiskal duhet bërë me dorë në printer.',
     dismissConfirm: 'Po, lëre',

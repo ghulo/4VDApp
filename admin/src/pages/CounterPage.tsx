@@ -273,9 +273,23 @@ export function CounterPage() {
   const [flash, setFlash] = useState<{ id: number; key: number } | null>(null);
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
   const [payDraft, setPayDraft] = useState<PayDraft>(EMPTY_PAY);
-  // A payment half taken when Pay was left (Back, Esc): it comes back for the same basket while nothing in it changes.
-  const keptPay = useRef<KeptPay | null>(null);
-  const payToOpen = () => draftToOpen(keptPay.current, current.id, basketSignature(current, total), { ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
+  // Payments half taken when Pay was left (Back, Esc), per basket: one comes back for its basket while nothing in it changes.
+  const keptPays = useRef(new Map<string, KeptPay>());
+  const signatureNow = basketSignature(current, total);
+  // The basket Pay was opened for, as it was then: Pay takes the money for that basket only.
+  const [payFor, setPayFor] = useState<{ basketId: string; signature: string } | null>(null);
+  const openPay = () => {
+    setPayFor({ basketId: current.id, signature: signatureNow });
+    setPayDraft(draftToOpen(keptPays.current.get(current.id) ?? null, current.id, signatureNow, { ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' }));
+  };
+  // Pay shows only for the basket it was opened for.
+  const payOpen = panel === 'pay' && payFor?.basketId === current.id;
+  // A kept payment goes once its basket changes or closes: changing the basket back never brings an old payment back.
+  useEffect(() => {
+    for (const [id, kept] of keptPays.current) {
+      if (!baskets.some((basket) => basket.id === id) || (id === current.id && kept.basket !== signatureNow)) keptPays.current.delete(id);
+    }
+  }, [baskets, current.id, signatureNow]);
   const [printNote, setPrintNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [refundNumber, setRefundNumber] = useState<string | null>(null);
   const [finderQuery, setFinderQuery] = useState('');
@@ -508,6 +522,8 @@ export function CounterPage() {
       (offer) => {
         if (offer.status !== 'open') return complain(t.counter.offerGone(offer.number));
         if (current.lines.length > 0 && !openBasket()) return complain(t.counter.fullBaskets);
+        // An offer in a basket of its own: Pay, if open, was for the basket before.
+        if (!payingRef.current) setPanelState((now) => (now === 'pay' ? null : now));
         setLines(() => offer.lines.map((line) => ({ productId: line.productId, name: line.productName, quantity: line.quantity, discount: '', offerPrice: line.unitPrice })));
         updateBasket({ customerId: offer.customer?.id ?? null, offerId: offer.id, offerNumber: offer.number, discount: '' });
         setLastSale(null);
@@ -820,6 +836,17 @@ export function CounterPage() {
     void followUp();
   }, [followUp, ownerKey, connected]);
 
+  /** Pay's Record sale: only for the basket Pay opened with, unchanged; otherwise Pay closes and the money is taken again. */
+  async function payOpened(payment: Payment) {
+    if (!payFor || payFor.basketId !== current.id || payFor.signature !== signatureNow) {
+      keptPays.current.delete(current.id);
+      setPanel(null);
+      complain(t.counter.basketChangedInPay);
+      return;
+    }
+    return pay(payment);
+  }
+
   // One sale at a time: Back, Esc, Not printed, the basket tabs and Switch person wait until the server answered or the sale is kept on this PC.
   async function pay(payment: Payment) {
     if (payingRef.current) return;
@@ -1103,7 +1130,7 @@ export function CounterPage() {
       return;
     }
     const closed = closeBasket(basketId);
-    if (keptPay.current?.basketId === basketId) keptPay.current = null;
+    keptPays.current.delete(basketId);
     setPanelState(null);
     // Recorded (or waiting on this PC): the till is free again while the receipt prints.
     setPayingNow(false);
@@ -1364,11 +1391,12 @@ export function CounterPage() {
       setPanel('serial');
       return;
     }
-    if (next === 'pay') setPayDraft(payToOpen());
+    if (next === 'pay') openPay();
     setPanel(next);
   };
   function newBasket() {
     if (!openBasket()) return complain(t.counter.fullBaskets);
+    if (panel === 'pay') setPanel(null);
     setSelectedId(null);
     setLastSale(null);
     focusScan();
@@ -1393,7 +1421,7 @@ export function CounterPage() {
   keyHandler.current = (event: KeyboardEvent) => {
     if (document.querySelector('dialog[open]')) return;
     // Taking the money: the pay keys have the keyboard; Esc goes back to the basket.
-    if (panel === 'pay') {
+    if (payOpen) {
       if (event.key === 'Escape') {
         event.preventDefault();
         // While the sale is on its way, going back could let it be paid twice.
@@ -1539,6 +1567,8 @@ export function CounterPage() {
                 aria-pressed={basket.id === current.id}
                 disabled={paying}
                 onClick={() => {
+                  // Another basket: Pay (open for this one) closes, its payment kept for this basket.
+                  if (basket.id !== current.id && panel === 'pay') setPanel(null);
                   selectBasket(basket.id);
                   setSelectedId(null);
                   focusScan();
@@ -1730,22 +1760,24 @@ export function CounterPage() {
                 </span>
               </p>
             )}
-            {panel === 'pay' && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((one) => String(one.id) === payDraft.customerId)?.name ?? null} />}
+            {payOpen && <PaidRows draft={payDraft} total={total} customerName={customers.data?.find((one) => String(one.id) === payDraft.customerId)?.name ?? null} />}
           </div>
         </section>
 
         <aside className="counter-side" aria-label={t.counter.keys}>
-          {panel === 'pay' ? (
+          {payOpen ? (
             <PayPanel
               total={total}
               customers={customers.data}
               draft={payDraft}
               offline={!online}
               onChange={(draft) => {
+                // Only ever the payment of the basket Pay was opened for.
+                if (payFor?.basketId !== current.id) return;
                 setPayDraft(draft);
-                keptPay.current = { basketId: current.id, basket: basketSignature(current, total), draft };
+                keptPays.current.set(payFor.basketId, { basketId: payFor.basketId, basket: payFor.signature, draft });
               }}
-              onPay={pay}
+              onPay={payOpened}
               onBack={closePanel}
               canDecide={canOversee(user.role)}
               payLater={current.payLater}
@@ -1948,7 +1980,7 @@ export function CounterPage() {
             // The next line that still needs serials, else on to paying.
             const next = lines.find((line) => line.productId !== serialLine.productId && tracked.has(line.productId) && (line.serials?.length ?? 0) < Math.ceil(line.quantity));
             if (next) return setSerialFor(next.productId);
-            setPayDraft(payToOpen());
+            openPay();
             setPanel('pay');
           }}
         />

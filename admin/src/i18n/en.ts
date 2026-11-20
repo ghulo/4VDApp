@@ -4754,6 +4754,7 @@ export const en = {
     pendingSale: (total: string) => `This sale (${total}) was sent, but no answer came. It is kept just as it was: send it again before anything else.`,
     sendAgain: 'Send it again',
     pendingLocked: 'This basket’s sale is on its way, so it can’t change. Send it again first.',
+    basketChangedInPay: 'The basket changed while Pay was open. Check it, then press Pay again.',
     unclearPay: 'No answer from 4VD, so it isn’t clear the sale was recorded. Press Send it again (once the internet is back): it is recorded only once.',
     noReceiptKept: 'This receipt’s lines weren’t kept (an older 4VD), so it can’t be printed again. The sale is recorded: tell the owner, the fiscal receipt has to be made on the printer by hand.',
     dismissConfirm: 'Yes, leave it',

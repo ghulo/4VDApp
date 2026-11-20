@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ storageState: '.auth/admin.json' });
 
-test('the till: no shelf reload after a sale, Pay from the keyboard, a payment kept on Back, a reason picked then confirmed', async ({ page }) => {
+test('the till: no shelf reload after a sale, Pay from the keyboard, a payment kept on Back, a reason picked then confirmed, Pay closed by another basket', async ({ page }) => {
   await page.goto('/counter');
   const scan = page.getByRole('textbox', { name: 'Scan or type a product' });
   const table = page.getByRole('table', { name: 'Lines in this basket' });
@@ -54,4 +54,18 @@ test('the till: no shelf reload after a sale, Pay from the keyboard, a payment k
   await page.keyboard.press('Enter');
   await expect(reasons).toHaveCount(0);
   await expect(table.getByRole('cell', { name: '€11.80' })).toHaveCount(0);
+
+  // Another basket while Pay is open: Pay closes (it never takes that basket's money); back on the first, its payment is still there.
+  await scan.fill('E2E-KAFE');
+  await scan.press('Enter');
+  await expect(table.getByRole('cell', { name: '€11.80' }).first()).toBeVisible();
+  await page.keyboard.press('F9');
+  await page.keyboard.press('F3');
+  await pay.getByRole('textbox', { name: /On the card/ }).fill('4');
+  await page.getByRole('button', { name: 'New basket' }).click();
+  await expect(pay).toBeHidden();
+  await expect(page.getByRole('form', { name: /^Pay/ })).toHaveCount(0);
+  await page.getByRole('button', { name: /^Basket 1/ }).click();
+  await page.keyboard.press('F9');
+  await expect(pay.getByRole('textbox', { name: /On the card/ })).toHaveValue('4');
 });

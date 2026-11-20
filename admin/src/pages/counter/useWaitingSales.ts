@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type BasketSale, salesApi } from '../../services/api';
 import { ApiError } from '../../services/apiClient';
 import { localStore, newSaleKey, type QueuedSale, sendWaiting, settleInterrupted, withTimeout } from './offlineQueue';
 import { localSettledStore, noteSettled, type SettledStore } from './settledSales';
+import { heldBy, shelfGate } from './shelfAfterSale';
 import type { PrintOutcome } from './useFiscalPrinter';
 
 type Sent = BasketSale;
@@ -66,6 +68,8 @@ export function useWaitingSales(
   lookupPrint?: (key: string) => Promise<PrintOutcome | null>,
 ) {
   const [sales, setSales] = useState<QueuedSale[]>(() => localStore.read());
+  // Sent sales change 4VD's stock: no shelf fetch overlapping them is trusted (shelfAfterSale ShelfGate).
+  const gate = shelfGate(useQueryClient());
   // The round in progress: a second call (Switch person) waits for it instead of returning at once.
   const running = useRef<Promise<void> | null>(null);
   // Receipts still printing: their sale waits until the printer has answered.
@@ -94,16 +98,18 @@ export function useWaitingSales(
         // Still printing there, or its outcome couldn't be noted here: the sale waits, so nothing is released on a guess.
         const { holding, notNoted } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key));
         if (notNoted) unsavedRef.current();
-        const { sent, stoppedByNetwork, unsaved } = await sendWaiting(
-          localStore,
-          (sale) =>
-            withTimeout(
-              (signal) => salesApi.recordBasket({ ...sale.body, clientKey: sale.key, soldAt: sale.at }, { expectOwner: { businessId: sale.businessId, userId: sale.userId }, signal }),
-              SEND_TIMEOUT_MS,
-            ),
-          // Only whoever is at the till now, in the business they are in; the others wait for them.
-          (sale) => sale.userId !== ownerRef.current.userId || sale.businessId !== ownerRef.current.businessId || printing.current.has(sale.key) || holding.has(sale.key),
-          (sale, result) => noteSent({ ...sale, businessId: sale.businessId! }, result),
+        const { sent, stoppedByNetwork, unsaved } = await gate.sending(() =>
+          sendWaiting(
+            localStore,
+            (sale) =>
+              withTimeout(
+                (signal) => salesApi.recordBasket({ ...sale.body, clientKey: sale.key, soldAt: sale.at }, { expectOwner: { businessId: sale.businessId, userId: sale.userId }, signal }),
+                SEND_TIMEOUT_MS,
+              ),
+            // Only whoever is at the till now, in the business they are in; the others wait for them.
+            (sale) => sale.userId !== ownerRef.current.userId || sale.businessId !== ownerRef.current.businessId || printing.current.has(sale.key) || holding.has(sale.key),
+            (sale, result) => noteSent({ ...sale, businessId: sale.businessId! }, result),
+          ),
         );
         if (sent.length > 0 || stoppedByNetwork) reachRef.current(!stoppedByNetwork);
         if (sent.length > 0) sentRef.current(sent);
@@ -115,7 +121,7 @@ export function useWaitingSales(
     })();
     running.current = round;
     return round;
-  }, []);
+  }, [gate]);
 
   // Refused sales the person at the till may look at: their own here, or (an owner) anyone's here.
   const mine = (sale: QueuedSale) => sale.businessId === businessId && (oversees || sale.userId === userId);
@@ -130,7 +136,12 @@ export function useWaitingSales(
     return () => window.clearInterval(timer);
   }, [connected, pending, flush]);
 
+  // What the sales kept on this PC for the business the till is in took off the shelf (refused ones too: the goods left),
+  // whoever sold them: 4VD's stock doesn't count them until they are sent, so the till keeps them off every shelf it fetches.
+  const held = useMemo(() => heldBy(sales.filter((sale) => sale.businessId === businessId)), [sales, businessId]);
+
   return {
+    held,
     waiting: sales.filter((sale) => !sale.refused && !unplaced(sale)),
     /** Refused by the server, in the business the till is in: the signed-in person's own (an owner: everyone's), to look at. */
     refused: sales.filter((sale) => mine(sale) && sale.refused !== undefined),
@@ -183,7 +194,7 @@ export function useWaitingSales(
         if (holding.has(sale.key)) continue;
         let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
         try {
-          answer = await withTimeout((signal) => salesApi.stopBasket(sale.key, { expectOwner: owner, signal }), SEND_TIMEOUT_MS);
+          answer = await gate.sending(() => withTimeout((signal) => salesApi.stopBasket(sale.key, { expectOwner: owner, signal }), SEND_TIMEOUT_MS));
         } catch (error) {
           if (error instanceof ApiError && error.status === 403) {
             needsOwner = true;

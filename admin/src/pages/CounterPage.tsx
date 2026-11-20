@@ -53,7 +53,7 @@ import { drain, keep, localEventStore, type Owner, refusedEntries, unrefuse } fr
 import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
-import { afterSaleRefresh, patchShelf, SHELF_KEY } from './counter/shelfAfterSale';
+import { afterSaleRefresh, patchShelf, SHELF_KEY, shelfAfterSale, shelfGate } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -192,12 +192,18 @@ export function CounterPage() {
   const { logout, adoptSession } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
   const connected = useOnline();
+  // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
+  const lastBusiness = useRef(user.businessId);
+  if (user.businessId !== undefined) lastBusiness.current = user.businessId;
+  const businessId = user.businessId ?? lastBusiness.current ?? 0;
   // Connected but the server didn't answer (Wi-Fi up, internet down): the Counter works as offline until it answers again.
   const [unreachable, setUnreachable] = useState(false);
   const online = connected && !unreachable;
 
   // Patched after each sale here (shelfAfterSale), and fetched again every few minutes for what changed elsewhere (deliveries, other tills).
-  const products = useQuery({ queryKey: SHELF_KEY, queryFn: counterApi.products, staleTime: 60_000, refetchInterval: SHELF_REFRESH_MS });
+  // A fetch that a sale on its way may or may not count is not trusted (ShelfGate): each sale comes off it exactly once.
+  const gate = shelfGate(queryClient);
+  const products = useQuery({ queryKey: SHELF_KEY, queryFn: () => gate.load(counterApi.products), staleTime: 60_000, refetchInterval: SHELF_REFRESH_MS });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
@@ -232,8 +238,31 @@ export function CounterPage() {
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
   const { baskets, current, setLines, update: updateBasket, setPending, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
 
+  // Sales made without internet: sent once it is back, each keeping the receipt that printed for it.
+  // Each one's settled note (written before it left the queue) carries what is still to do for its receipt.
+  const waiting = useWaitingSales(
+    connected,
+    user.id,
+    businessId,
+    (ok) => setReached(ok),
+    (sent) => {
+      for (const { sale, result } of sent) {
+        setLastSale((last) => (last?.key === sale.key ? { ...last, documentId: result.invoice.id, number: result.invoice.number } : last));
+      }
+      // In 4VD now, so no longer held on this PC: off the shelf here once (one an earlier copy put in already: the shelf is fetched).
+      for (const { result } of sent) if (!result.again) patchShelf(queryClient, result.sales);
+      refreshAfterSale();
+      void followUp();
+    },
+    () => complain(t.counter.queueNotSaved),
+    canOversee(user.role),
+    printer.lookup,
+  );
+  // The shelf as this till sees it: 4VD's, less what sales waiting on this PC took (they aren't in 4VD's stock yet).
+  const shelf = useMemo(() => shelfAfterSale(products.data, waiting.held), [products.data, waiting.held]);
+
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
-  const byId = useMemo(() => new Map((products.data ?? []).map((product) => [product.id, product])), [products.data]);
+  const byId = useMemo(() => new Map((shelf ?? []).map((product) => [product.id, product])), [shelf]);
   // Days to the soonest date still on the shelf, per product.
   const expiry = useMemo(() => {
     const soonest = new Map<number, number>();
@@ -336,10 +365,6 @@ export function CounterPage() {
   const focusScan = useCallback(() => scanRef.current?.focus({ preventScroll: true }), []);
 
   // Never in the way of the sale: each event is written to this PC first, then sent in order; without internet it waits.
-  // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
-  const lastBusiness = useRef(user.businessId);
-  if (user.businessId !== undefined) lastBusiness.current = user.businessId;
-  const businessId = user.businessId ?? lastBusiness.current ?? 0;
   const owner = useMemo<Owner>(() => ({ businessId, userId: user.id }), [businessId, user.id]);
   // Who is at the till right now: a send that started for someone else stops before its next request.
   const ownerNow = useRef(owner);
@@ -539,10 +564,10 @@ export function CounterPage() {
   function isShelfCode(raw: string): boolean {
     const code = codeFromScan(raw);
     if (!code) return false;
-    const shelf = products.data ?? [];
-    if (exactMatch(code, shelf)) return true;
+    const onShelf = shelf ?? [];
+    if (exactMatch(code, onShelf)) return true;
     const label = readScaleLabel(code);
-    return Boolean(label) && shelf.some((product) => product.unit === 'kg' && (product.scalePlu === label!.plu || (product.scalePlu === null && product.sku === String(label!.plu))));
+    return Boolean(label) && onShelf.some((product) => product.unit === 'kg' && (product.scalePlu === label!.plu || (product.scalePlu === null && product.sku === String(label!.plu))));
   }
 
   // The till as it is now, for a scan whose answer comes from the server a moment later.
@@ -564,8 +589,8 @@ export function CounterPage() {
       }
       sound(add(product, quantity * piecesFor(product, code)) ? 'ok' : 'fail');
     };
-    const shelf = products.data ?? [];
-    const exact = exactMatch(code, shelf);
+    const onShelf = shelf ?? [];
+    const exact = exactMatch(code, onShelf);
     // A product comes first: the shop's own number format could look like a product code.
     if (exact) return take(exact);
     const documentNumber = documentNumberFromScan(code);
@@ -578,8 +603,8 @@ export function CounterPage() {
     const label = readScaleLabel(code);
     if (label) {
       const weighed =
-        shelf.find((product) => product.unit === 'kg' && product.scalePlu === label.plu) ??
-        shelf.find((product) => product.unit === 'kg' && product.scalePlu === null && product.sku === String(label.plu));
+        onShelf.find((product) => product.unit === 'kg' && product.scalePlu === label.plu) ??
+        onShelf.find((product) => product.unit === 'kg' && product.scalePlu === null && product.sku === String(label.plu));
       if (weighed) {
         if (priceCheck) return take(weighed);
         return sound(add(weighed, label.kg) ? 'ok' : 'fail');
@@ -610,7 +635,7 @@ export function CounterPage() {
     }
     const now = live.current;
     // Typed words: one product by a real name goes in; digits or a couple of letters only open the finder.
-    const named = nameMatches(code, shelf);
+    const named = nameMatches(code, onShelf);
     if (named.addAtOnce) {
       if (now.priceCheck) {
         now.showCheck(named.products[0]!);
@@ -713,7 +738,7 @@ export function CounterPage() {
     const plan = afterSaleRefresh({
       tab: payment.paidBy === 'tab',
       customer: Boolean(basket.customerId),
-      shortDated: basket.lines.some((line) => Boolean(line.shortDated)),
+      datedBatches: basket.lines.some((line) => Boolean(line.shortDated) || expiry.has(line.productId) || offers.has(line.productId)),
       delivery: Boolean(basket.delivery),
       offer: Boolean(basket.offerId),
     });
@@ -724,8 +749,8 @@ export function CounterPage() {
       void queryClient.invalidateQueries({ queryKey: SHELF_KEY });
       return;
     }
-    // A shelf fetch already on its way may not count this sale: it is dropped, and the copy here loses what was sold.
-    void patchShelf(queryClient, sale.sales);
+    // The shelf here was fetched before the sale went (ShelfGate threw away any fetch that may count it): it loses what was sold.
+    patchShelf(queryClient, sale.sales);
   };
 
   const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);
@@ -741,24 +766,6 @@ export function CounterPage() {
     return () => window.clearInterval(timer);
   }, [unreachable, connected]);
 
-  // Sales made without internet: sent once it is back, each keeping the receipt that printed for it.
-  // Each one's settled note (written before it left the queue) carries what is still to do for its receipt.
-  const waiting = useWaitingSales(
-    connected,
-    user.id,
-    businessId,
-    setReached,
-    (sent) => {
-      for (const { sale, result } of sent) {
-        setLastSale((last) => (last?.key === sale.key ? { ...last, documentId: result.invoice.id, number: result.invoice.number } : last));
-      }
-      refreshAfterSale();
-      void followUp();
-    },
-    () => complain(t.counter.queueNotSaved),
-    canOversee(user.role),
-    printer.lookup,
-  );
 
   /*
    * What is still to do for settled sales (in their notes on this PC, so a
@@ -959,7 +966,7 @@ export function CounterPage() {
     setPayingNow(true);
     let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
     try {
-      answer = await withTimeout((signal) => salesApi.stopBasket(pending.key, { expectOwner: owner, signal }), PAY_TIMEOUT_MS);
+      answer = await gate.sending(() => withTimeout((signal) => salesApi.stopBasket(pending.key, { expectOwner: owner, signal }), PAY_TIMEOUT_MS));
     } catch (error) {
       setPayingNow(false);
       return complain(payFailure(error) === 'offline' ? t.counter.stopNeedsAnswer : errorMessage(error));
@@ -1040,9 +1047,11 @@ export function CounterPage() {
       try {
         // Straight to the server: a query-library mutation would pause, not fail, when the browser says offline.
         // Sent for whoever made it: the server refuses it once someone else is signed in. A timeout stops the request.
-        result = await withTimeout(
-          (signal) => salesApi.recordBasket({ ...body, clientKey: key }, { expectOwner: { businessId: attempt.businessId, userId: attempt.userId }, signal }),
-          PAY_TIMEOUT_MS,
+        result = await gate.sending(() =>
+          withTimeout(
+            (signal) => salesApi.recordBasket({ ...body, clientKey: key }, { expectOwner: { businessId: attempt.businessId, userId: attempt.userId }, signal }),
+            PAY_TIMEOUT_MS,
+          ),
         );
         setUnreachable(false);
       } catch (error) {
@@ -1089,11 +1098,8 @@ export function CounterPage() {
     const sold = result
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
       : { total: attempt.total, documentId: 0, number: t.counter.waitingToSend };
+    // Kept on this PC instead, the sale stays off the shelf here while it waits (waiting.held), so the next basket can't sell it again.
     if (result) refreshAfterSale({ sale: result, basket, payment });
-    else {
-      // This PC's shelf loses what was sold, so the next basket can't sell it again.
-      void patchShelf(queryClient, lines);
-    }
     const receiptLines = result
       ? result.sales.map((sale) => {
           const product = byId.get(sale.productId);
@@ -2196,7 +2202,7 @@ export function CounterPage() {
       />
       <ProductFinder
         open={panel === 'find'}
-        products={products.data}
+        products={shelf}
         error={products.error}
         onRetry={() => products.refetch()}
         initialQuery={finderQuery}

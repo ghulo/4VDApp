@@ -6,6 +6,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 const fiscal = require('./fiscal.js');
+const journal = require('./journal.js');
 const setupStore = require('./setup.js');
 const { keyAction, pathOf } = require('./keys.js');
 
@@ -44,6 +45,11 @@ function logUpdate(message) {
     const kept = (old + line).split('\n').slice(-201).join('\n');
     fs.writeFileSync(file, kept);
   } catch { /* never let logging break the app */ }
+}
+
+/** The fiscal printer's job journal (journal.js): each receipt's fate by its sale's key, outside the page's storage. */
+function journalFile() {
+  return path.join(app.getPath('userData'), 'fiscal-journal.json');
 }
 
 function setupFile() {
@@ -224,12 +230,19 @@ ipcMain.on('theme', (_event, preference) => {
 // The counter's fiscal printer: only the dashboard itself may print.
 const fromDashboard = (event) => isDashboard(event.senderFrame?.url ?? '');
 ipcMain.handle('fiscal:status', (event) => (fromDashboard(event) ? fiscal.status() : null));
-ipcMain.handle('fiscal:send', (event, job) => {
+ipcMain.handle('fiscal:send', async (event, job) => {
   if (!fromDashboard(event) || typeof job?.name !== 'string' || typeof job?.text !== 'string' || job.text.length > 20_000 || !fiscal.isAllowedJob(job.text)) {
     return { status: 'failed', message: null };
   }
-  return fiscal.send(job);
+  // A sale's receipt is noted here before it goes and again with F-Link's answer, even if the page that asked is gone by then.
+  const key = journal.validKey(job.key) ? job.key : null;
+  if (key) journal.start(journalFile(), key, job.name);
+  const answer = await fiscal.send({ name: job.name, text: job.text });
+  if (key) journal.finish(journalFile(), key, answer);
+  return answer;
 });
+// What happened to a sale's last receipt (journal.js), or null.
+ipcMain.handle('fiscal:lookup', (event, key) => (fromDashboard(event) ? journal.lookup(journalFile(), key) : null));
 // The welcome screen and Settings → This computer.
 ipcMain.handle('setup:get', (event) =>
   fromDashboard(event) ? { ...setup, openAtLogin: openAtLogin(), canOpenAtLogin: app.isPackaged, version: app.getVersion() } : null);
@@ -260,6 +273,8 @@ app.on('second-instance', () => {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   setup = setupStore.read(setupFile());
+  // A receipt still printing when the app last closed: whether it came out is unknown.
+  journal.settleStale(journalFile());
   createWindow();
   // Only an installed copy can update itself; `npm start` skips this.
   if (app.isPackaged) {

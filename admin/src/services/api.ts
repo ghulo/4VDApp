@@ -53,6 +53,7 @@ import type {
   ReportKind,
   ReportSettings,
   SupplierBill,
+  CustomsInput,
   SupplierPaymentMethod,
   DocumentKind,
   DocumentRef,
@@ -703,6 +704,11 @@ export const billsApi = {
   void: async (id: number, note: string) => (await apiRequest<SupplierBill>(`/bills/${id}/void`, { method: 'POST', body: { note } })).data,
   setPhoto: async (id: number, photo: Blob) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'PUT', file: photo })).data,
   removePhoto: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}/photo`, { method: 'DELETE' })).data,
+  /** Put a customs paper on an import bill, or change it. */
+  setCustoms: async (id: number, input: CustomsInput) => (await apiRequest<SupplierBill>(`/bills/${id}/customs`, { method: 'PUT', body: input })).data,
+  removeCustoms: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}/customs`, { method: 'DELETE' })).data,
+  /** "No customs on this one" (under the limit), or taken back. */
+  setNoCustoms: async (id: number, value: boolean) => (await apiRequest<SupplierBill>(`/bills/${id}/no-customs`, { method: 'PUT', body: { value } })).data,
 };
 
 export const billScansApi = {

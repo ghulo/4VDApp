@@ -661,6 +661,29 @@ export interface BillLine {
   fromDelivery: boolean;
 }
 
+/** A customs paper (Dogana e Kosovës' declaration) on an import bill. */
+export interface BillCustoms {
+  id: number;
+  vat: number;
+  duty: number;
+  excise: number;
+  method: CustomsPaidMethod;
+  number: string | null;
+  issuedOn: string;
+  /** "2026-10" when it counts in a later month than its own (its month was filed). */
+  vatMonth: string | null;
+}
+
+/** What the Customs card saves. */
+export interface CustomsInput {
+  number: string | null;
+  issuedOn: string;
+  vat: number;
+  duty: number;
+  excise: number;
+  method: CustomsPaidMethod;
+}
+
 export interface SupplierBill {
   id: number;
   projectId: number | null;
@@ -700,7 +723,12 @@ export interface SupplierBill {
   pricesIncludeVat: boolean;
   /** From a supplier abroad: an import. */
   abroad: boolean;
-  customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
+  /** Its customs paper: duty and excise land on the goods' cost; the VAT counts in the paper's month. */
+  customs: BillCustoms | null;
+  /** An import with goods: it can take a customs paper. */
+  customsAllowed: boolean;
+  /** The owner said this import had no customs paper. */
+  noCustoms: boolean;
   withholding: { type: WithholdingType; rate: number; amount: number } | null;
   place: ExpensePlace;
   carwash: { id: number; name: string } | null;

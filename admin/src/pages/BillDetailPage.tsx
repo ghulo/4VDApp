@@ -25,6 +25,7 @@ import { SerialIntakeCard } from '../components/SerialIntakeCard';
 import { CreditForm } from '../components/CreditForm';
 import type { Catalogue } from '../i18n/en';
 import { FilesCard } from '../components/FilesCard';
+import { CustomsCard } from '../components/CustomsCard';
 
 
 /** What a cost or equipment line is, in words. */
@@ -141,6 +142,7 @@ export function BillDetailPage() {
       <div className={canChange && owes(b) ? 'product-layout' : undefined}>
         <div className="product-layout__main">
           {b.lines.length > 0 && <LinesSection bill={b} />}
+          {(b.customsAllowed || b.customs) && <CustomsCard key={`${b.customs?.id ?? 0}-${b.noCustoms}`} bill={b} writes={canChange && open} />}
           {!isCredit && !b.voidNote && writes && (
             <SerialIntakeCard billId={b.id} lines={b.lines.filter((line) => line.kind === 'product').map((line) => ({ productId: line.productId, productName: line.productName, quantity: line.quantity ?? 0 }))} />
           )}
@@ -213,11 +215,6 @@ function LinesSection({ bill }: { bill: SupplierBill }) {
       />
       {(bill.customs || bill.withholding || selfVat > 0) && (
         <div className="bill-extras">
-          {bill.customs && (
-            <p className="field-hint">
-              {t.bills.customsLine(formatMoney(bill.customs.vat), formatMoney(bill.customs.duty), t.billForm.customsMethods[bill.customs.method].toLowerCase())}
-            </p>
-          )}
           {bill.withholding && (
             <p className="field-hint">{t.bills.withheldLine(t.bills.withholdingTypes[bill.withholding.type], bill.withholding.rate, formatMoney(bill.withholding.amount))}</p>
           )}

@@ -4,6 +4,9 @@ import type { DocumentKind, DocumentParty, DocumentPaymentMethod } from '../data
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 import { brandOf, type BrandDto } from '../services/brand.js';
 
+/** The advisory-lock class for till sale keys (a number no other lock uses). */
+export const SALE_KEY_LOCK = 40_851;
+
 /** Printed around a document from the shop's current settings; the document itself never changes. */
 export interface Letterhead {
   logo: { mime: string; bytes: Buffer } | null;
@@ -215,10 +218,34 @@ export class DocumentRepository {
     };
   }
 
+  /**
+   * Hold a till sale's key until this transaction ends: a second request with
+   * the same key (an answer lost, a resend, an owner's Stop) waits here, then
+   * sees what the first one did.
+   */
+  async lockClientKey(key: string): Promise<void> {
+    await sql`select pg_advisory_xact_lock(${SALE_KEY_LOCK}, hashtext(coalesce(current_business_id(), 0)::text || ':' || ${key}))`.execute(this.db);
+  }
+
+  /** Why a till sale's key will never be recorded (refused or stopped), if it won't. */
+  async keyClosure(key: string): Promise<{ reason: 'refused' | 'stopped'; message: string | null } | undefined> {
+    return this.db.selectFrom('sale_key_closures').select(['reason', 'message']).where('client_key', '=', key).executeTakeFirst();
+  }
+
+  /** The key will never be recorded. Call it holding the key's lock, once no sale has it. */
+  async closeKey(key: string, reason: 'refused' | 'stopped', message: string | null, closedBy: number): Promise<void> {
+    await this.db
+      .insertInto('sale_key_closures')
+      .values({ client_key: key, reason, message: message?.slice(0, 500) ?? null, closed_by: closedBy })
+      .onConflict((conflict) => conflict.columns(['business_id', 'client_key']).doNothing())
+      .execute();
+  }
+
   /** The invoice the Counter already sent with this key, and the sales on it. */
-  async findByClientKey(key: string): Promise<{ id: number; number: string; saleIds: number[] } | undefined> {
-    const document = await this.db.selectFrom('documents').select(['id', 'number']).where('client_key', '=', key).executeTakeFirst();
-    if (!document) return undefined;
+  async findByClientKey(key: string): Promise<{ id: number; number: string; saleIds: number[]; fiscalNo: string | null } | undefined> {
+    const row = await this.db.selectFrom('documents').select(['id', 'number', 'fiscal_receipt_no']).where('client_key', '=', key).executeTakeFirst();
+    if (!row) return undefined;
+    const document = { id: row.id, number: row.number, fiscalNo: row.fiscal_receipt_no };
     const lines = await this.db
       .selectFrom('document_lines')
       .select('sale_id')

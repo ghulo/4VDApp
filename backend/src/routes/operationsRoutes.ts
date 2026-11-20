@@ -25,6 +25,8 @@ export function createSalesRoutes({ salesService, returnService, guards }: Conta
   // Employees record sales too; only the people who run the shop see the full history.
   router.post('/', ...guards.staff, controller.record);
   router.post('/basket', ...guards.staff, controller.recordBasket);
+  // A till sale whose answer never came: its sale if it was recorded, else it never will be (the till may sell the basket again).
+  router.post('/basket/:key/stop', ...guards.staff, controller.stopBasket);
   // Employees may return only their own sales; the service checks that.
   router.post('/:saleId/returns', ...guards.staff, returns.request);
 

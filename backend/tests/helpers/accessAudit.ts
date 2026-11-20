@@ -187,6 +187,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/sales/checkouts/mine',
     'POST /api/sales/',
     'POST /api/sales/basket',
+    'POST /api/sales/basket/:key/stop',
     'POST /api/sales/:saleId/returns',
     'GET /api/returns/refund-info',
     'PUT /api/documents/:id/fiscal-receipt',

@@ -1,7 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { enterBusiness, enterSystem, runAsBusiness } from '../database/businessContext.js';
 import type { UserRole } from '../database/types.js';
-import { AppError, ForbiddenError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
+import { AppError, ForbiddenError, OwnerChangedError, UnauthorizedError, ViewingAsError } from '../errors/httpErrors.js';
 import type { RefreshTokenRepository } from '../repositories/RefreshTokenRepository.js';
 import type { SupportRepository } from '../repositories/SupportRepository.js';
 import type { UserRepository } from '../repositories/UserRepository.js';
@@ -22,6 +22,21 @@ export const VIEW_AS_HEADER = 'x-view-as';
 /** The roles that have a dashboard to look at; family has none. */
 export const VIEWABLE_ROLES: UserRole[] = ['admin', 'owner', 'accountant', 'employee'];
 const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * The Counter names whose write this is ("<business id>:<user id>"): a sale
+ * kept on the PC, a till event, a resend after the sign-in was refreshed. When
+ * someone else is signed in by then (Switch person, another tab), the server
+ * refuses it, so it is never recorded as theirs or in their business.
+ * Optional: requests without it (older tills, other screens) carry on.
+ */
+export const EXPECT_OWNER_HEADER = 'x-expect-owner';
+
+function expectedOwnerMismatch(req: Request, businessId: number, userId: number): boolean {
+  const expected = req.headers[EXPECT_OWNER_HEADER];
+  if (typeof expected !== 'string' || expected === '') return false;
+  return expected !== `${businessId}:${userId}`;
+}
 
 function viewedRole(req: Request, realRole: UserRole): UserRole | null {
   if (!isTopRole(realRole)) return null;
@@ -79,6 +94,7 @@ export function requireAuth(userRepository: UserRepository, supportRepository?: 
     if (req.identity.businessId !== undefined && place.businessId !== req.identity.businessId) throw new AppError(BUSINESS_GONE, 401, 'BUSINESS_GONE');
     // Signed out, that device ended, or the password reset: the session's access token (it lasts days) stops here too.
     if (refreshTokens && req.identity.sessionId && !(await refreshTokens.sessionLive(user.id, req.identity.sessionId))) throw new UnauthorizedError();
+    if (expectedOwnerMismatch(req, place.businessId, user.id)) throw new OwnerChangedError();
     enterBusiness(place.businessId);
     const viewed = viewedRole(req, place.role);
     if (viewed && !READS.has(req.method)) throw new ViewingAsError(viewed);

@@ -1,6 +1,6 @@
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { allowsParts } from '../constants/units.js';
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
+import { AppError, ConflictError, ForbiddenError, NotFoundError, SaleClosedError, ValidationError } from '../errors/httpErrors.js';
 import { receivePayment } from './TabService.js';
 import type { CheckoutDayTotal, SaleRecord, SalesRepository } from '../repositories/SalesRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
@@ -132,6 +132,17 @@ export interface BasketInput {
   delivery?: DeliveryInput;
 }
 
+/** A till sale as recorded: its lines, its total and invoice. */
+export interface BasketResult {
+  sales: SaleDto[];
+  total: number;
+  invoice: DocumentRef;
+  /** Recorded before, by an earlier copy of this sale (an answer lost on the way): the till must not settle it twice. */
+  again: boolean;
+  /** The fiscal receipt number kept on its invoice, once one printed. */
+  fiscalNo: string | null;
+}
+
 export interface SaleQuery extends PageRequest {
   startDate?: Date;
   endDate?: Date;
@@ -235,7 +246,51 @@ export class SalesService {
    * (so returns, undo and reports work per product), all on one invoice, all
    * saved or none.
    */
-  async recordBasket(input: BasketInput, seller: { id: number; role: UserRole }): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
+  async recordBasket(input: BasketInput, seller: { id: number; role: UserRole }): Promise<BasketResult> {
+    const key = input.clientKey;
+    if (!key) return this.recordBasketOnce(input, seller);
+    try {
+      return await this.recordBasketOnce(input, seller);
+    } catch (error) {
+      // No clear answer (a fault on our side): the key stays open, and the till keeps the sale to send again.
+      if (!(error instanceof AppError) || error.statusCode >= 500 || error instanceof SaleClosedError) throw error;
+      // A clear no. A copy still on its way must not go in after the till frees the basket, so the key is
+      // closed first, unless a copy got in meanwhile: then that sale is the answer.
+      let recorded: BasketResult | undefined;
+      try {
+        recorded = await this.closeKey(key, 'refused', error.message, seller.id);
+      } catch (closing) {
+        // Not closed: the till must not free the basket, so this is no clear answer.
+        throw new Error(`The sale was refused but its key could not be closed: ${closing instanceof Error ? closing.message : String(closing)}`);
+      }
+      if (recorded) return recorded;
+      throw new SaleClosedError(error.message, error.statusCode);
+    }
+  }
+
+  /**
+   * An owner stops a till sale whose answer never came: recorded already, that
+   * sale comes back (the till settles it as usual); otherwise its key is closed,
+   * so no copy of it still on its way can go in, and the basket can be sold again.
+   */
+  async stopBasket(key: string, seller: { id: number }): Promise<{ state: 'recorded'; sale: BasketResult } | { state: 'stopped' }> {
+    const recorded = await this.closeKey(key, 'stopped', null, seller.id);
+    return recorded ? { state: 'recorded', sale: recorded } : { state: 'stopped' };
+  }
+
+  /** Under the key's lock: the sale it recorded, or (none) the key closed for good. */
+  private async closeKey(key: string, reason: 'refused' | 'stopped', message: string | null, closedBy: number): Promise<BasketResult | undefined> {
+    const sent = await this.transactions.run(async (repos) => {
+      await repos.documents.lockClientKey(key);
+      const document = await repos.documents.findByClientKey(key);
+      if (document) return document;
+      await repos.documents.closeKey(key, reason, message, closedBy);
+      return undefined;
+    });
+    return sent && this.basketResult(sent.saleIds, { id: sent.id, number: sent.number }, { again: true, fiscalNo: sent.fiscalNo });
+  }
+
+  private async recordBasketOnce(input: BasketInput, seller: { id: number; role: UserRole }): Promise<BasketResult> {
     const soldBy = seller.id;
     if (input.soldAt && input.soldAt.getTime() > Date.now() + CLOCK_SLACK_MS) throw new ValidationError('soldAt cannot be in the future');
     // Sent before: the answer was lost on the way, so give the same one again.
@@ -259,9 +314,24 @@ export class SalesService {
       if (needsApproval && !input.rabatApproval) throw new ForbiddenError(`You can give at most ${limit}% rabat. Ask the owner or an admin for more.`);
     }
     const saleDate = input.soldAt && new Date(Math.min(input.soldAt.getTime(), Date.now()));
-    let recorded: { saleIds: number[]; invoice: DocumentRef };
+    let recorded: { saleIds: number[]; invoice: DocumentRef; fiscalNo?: string | null; again?: boolean };
     try {
       recorded = await this.transactions.run(async (repos) => {
+        if (input.clientKey) {
+          // One request per key at a time: a copy that arrives meanwhile waits here, then finds this sale (or its refusal).
+          await repos.documents.lockClientKey(input.clientKey);
+          const closed = await repos.documents.keyClosure(input.clientKey);
+          if (closed) {
+            throw new SaleClosedError(
+              closed.reason === 'stopped'
+                ? 'This sale was stopped at the till and never recorded. Ring it up again.'
+                : `This sale was refused and never recorded${closed.message ? `: ${closed.message}` : ''}`,
+              410,
+            );
+          }
+          const sent = await repos.documents.findByClientKey(input.clientKey);
+          if (sent) return { saleIds: sent.saleIds, invoice: { id: sent.id, number: sent.number }, fiscalNo: sent.fiscalNo, again: true };
+        }
         // Used up only when the sale goes through.
         if (needsApproval && !(await repos.pins.consumeApproval(input.rabatApproval!, seller.id, largest))) {
           throw new ForbiddenError('The owner’s yes to this rabat has run out or was used already. Ask again.');
@@ -330,7 +400,7 @@ export class SalesService {
       if (sent) return sent;
       throw error;
     }
-    return this.basketResult(recorded.saleIds, recorded.invoice);
+    return this.basketResult(recorded.saleIds, recorded.invoice, { again: recorded.again ?? false, fiscalNo: recorded.fiscalNo ?? null });
   }
 
   /** The offered price of each product the basket sells from the offer; the offer must still be open and offer it at that price. */
@@ -415,14 +485,14 @@ export class SalesService {
     });
   }
 
-  private async alreadySent(clientKey: string): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef } | undefined> {
+  private async alreadySent(clientKey: string): Promise<BasketResult | undefined> {
     const document = await this.transactions.run((repos) => repos.documents.findByClientKey(clientKey));
-    return document && this.basketResult(document.saleIds, { id: document.id, number: document.number });
+    return document && this.basketResult(document.saleIds, { id: document.id, number: document.number }, { again: true, fiscalNo: document.fiscalNo });
   }
 
-  private async basketResult(saleIds: number[], invoice: DocumentRef): Promise<{ sales: SaleDto[]; total: number; invoice: DocumentRef }> {
+  private async basketResult(saleIds: number[], invoice: DocumentRef, from: { again: boolean; fiscalNo: string | null }): Promise<BasketResult> {
     const sales = (await Promise.all(saleIds.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));
-    return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice };
+    return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice, ...from };
   }
 
   /**

@@ -201,3 +201,6 @@ export const pushDeviceSchema = z.discriminatedUnion('kind', [
 ]);
 
 export const removePushDeviceSchema = z.object({ token: z.string().min(1).max(2000) });
+
+/** A till sale's key, as the Counter gave it at Pay. */
+export const saleKeyParamsSchema = z.object({ key: z.string().uuid() });

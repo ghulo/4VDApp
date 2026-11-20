@@ -1494,6 +1494,16 @@ export interface MoneyPlacesTable {
 export type CounterEventKind = 'line_removed' | 'basket_cancelled' | 'drawer_opened' | 'print_failed' | 'reprinted' | 'x_report' | 'z_report' | 'rabat_allowed' | 'person_switched' | 'pay_later_allowed';
 
 /** Something that happened at the counter other than a sale, by person (the counter report). */
+/** A till sale's key that will never be recorded (refused, or stopped by an owner). */
+export interface SaleKeyClosuresTable {
+  business_id: Generated<number>;
+  client_key: string;
+  reason: 'refused' | 'stopped';
+  message: string | null;
+  closed_by: number | null;
+  closed_at: CreatedAt;
+}
+
 export interface CounterEventsTable {
   business_id: Generated<number>;
   id: Generated<number>;
@@ -1905,6 +1915,7 @@ export interface Database {
   document_notes: DocumentNotesTable;
   money_places: MoneyPlacesTable;
   counter_events: CounterEventsTable;
+  sale_key_closures: SaleKeyClosuresTable;
   money_moves: MoneyMovesTable;
   payment_groups: PaymentGroupsTable;
   tab_allocations: TabAllocationsTable;

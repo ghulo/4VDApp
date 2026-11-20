@@ -64,3 +64,21 @@ export class ConflictError extends AppError {
     super(message, 409, 'CONFLICT');
   }
 }
+
+/**
+ * A till sale refused for good: its key is closed, so no copy of it (one
+ * still on its way included) will ever be recorded. Keeps the reason's own
+ * status and words; the Counter frees the basket only on this code.
+ */
+export class SaleClosedError extends AppError {
+  constructor(message: string, statusCode: number) {
+    super(message, statusCode, 'SALE_CLOSED');
+  }
+}
+
+/** A till write meant for another person or business than the one signed in now (the till changed hands meanwhile). */
+export class OwnerChangedError extends AppError {
+  constructor() {
+    super('Sent for another person or business than the one signed in now: it waits for them', 409, 'OWNER_CHANGED');
+  }
+}

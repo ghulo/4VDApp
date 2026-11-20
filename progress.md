@@ -9,7 +9,85 @@ Finished sections are kept in `docs/archive/progress-done.md`.
 - [ ] Link from a product to the supplier you usually buy it from (optional)
 - [ ] Run the TREFIN import for real at launch (`npm run import:trefin`)
 
+## Code review fixes (three-model review, 2026-11-19)
+
+Done:
+- [x] Rebuilding the books keeps set-offs (kompensim) and customer bonuses (4ecf8f50)
+- [x] Two-step: the first wrong code after a 15-minute lock no longer locks again (4ecf8f50)
+- [x] "Sell past stock" goes by the role in this business (4ecf8f50)
+- [x] Windows app tests run on GitHub; Windows app link checks tightened; render.yaml on Postgres 18 (4ecf8f50)
+- [x] Retired mobile job out of GitHub's checks (already done in d566e263)
+
+Security:
+- [x] Large uploads (15–42 MB) are read only for someone signed in (46f6374c)
+- [x] A sign-in ends at once after logging out, an ended device or a password reset (98e47b08)
+- [x] Bill files, scans, stamps and signatures need sign-in and belong to the business (2f7d6782, migration 092)
+- [x] Import zip/Excel files can't unpack into something huge (cd216b68)
+- [x] The Windows app accepts only known printer commands (b658ba02)
+- [x] Browser protection rules on 4vd.app: HSTS, no framing, nosniff, camera only for 4VD (1fc868c3)
+- [ ] Switch the CSP from report-only to enforced once Sentry shows no reports from real use
+- [x] Counter PIN: a daily cap on wrong tries and a note to the owner (a01e0645, migration 093)
+- [x] Windows app: log update errors (d20dffd5)
+- [x] Windows app: auto-update reaches the releases (repo made public 2026-11-19; history checked: no secrets, no shop data)
+- [ ] Windows app: sign the installer (needs a code-signing certificate)
+
+Books and money:
+- [ ] Stock cost: in at net, out VAT-inclusive (ask the accountant which basis; then make both sides the same)
+- [x] Refunds can go back by card or bank, not always cash from the till (card on the terminal, bank transfer to pay back in Money)
+- [x] Half-cent rounding (1.005 → 1.01) (264bbf77)
+- [x] Payroll payment and VAT filing safe when two people act at once (a01dd2e1)
+- [x] Order-linked import bill: checked. It balanced, but a delivery from abroad received with its bill took Kosovo VAT out of the goods; fixed (1b8dc349)
+- [x] Customs duty and VAT for an import that came through an order: a Customs card on every saved import bill (customs papers; scanner reading still to come)
+- [x] Books posting lock per business, not one for all (e9301739)
+- [x] Crash alert email runs inside a business (be60d895)
+
+Counter:
+- [ ] Offline sales keep their business, keep the printed prices, and never get lost when the browser can't save
+- [ ] "Did it print?" state when the printer's answer is unclear
+- [ ] Weighed items: receipt and sale use the same 3-decimal quantity
+
+Setup:
+- [x] Outside uptime monitor on /health/db (1daa2262): Sentry uptime monitor every 5 min + the GitHub job
+- [x] Daily database backup instead of weekly: nightly, 35 days + Sundays 90 days (cd9d95da); the backup had been failing since migration 082, fixed in 364fe45a (094)
+- [ ] Local Postgres to 18 (needs a dump and restore of the local data)
+
+UI and features (ask first):
+- [ ] Split the 1,834-line Counter page; the untranslated confirm box in Roles; heatmap figures by keyboard and touch
+- [ ] For selling: subscriptions, self sign-up, data export per business, terms and privacy, status page
+- [ ] Till: loyalty, gift cards, shifts per cashier, cash drawer, customer discount applied
+- [ ] Books: FIFO or average cost, foreign-currency bills, editable chart of accounts, bank matching
+
 ## To test by hand
+
+**Customs papers** (on 4vd.app after the deploy)
+- [ ] Receive an order from a supplier abroad with its bill; on the bill page the Customs card asks for the paper; add VAT and duty: the bill's "In the books" shows a Customs paper entry (1260, 1340, bank or till) and the product's cost goes up
+- [ ] Change and remove the paper; the entry is reversed and rewritten; the VAT return for the paper's month shows the customs VAT in boxes 35/36
+- [ ] An import bill older than 7 days with no paper shows "Customs missing" in To do; "No customs on this one" makes it go away, and Undo brings the form back
+- [ ] Albanian wording of the Customs card and its To do items reads naturally
+- [ ] Scan a real customs declaration (DUD) from Dogana e Kosovës: it is recognised as a customs paper, VAT/duty/excise and the invoice numbers are read right (the reader was only told the usual boxes, never tried on a real one), and it finds its import bill
+- [ ] A customs paper scanned before its bill: "Keep it waiting"; To do shows it; entering the bill with the invoice number it names puts it on by itself; or put it on from its page, or throw it away
+
+**Card and bank refunds** (on 4vd.app after the deploy, and the Counter on the shop PC)
+- [ ] A refund on a card sale: the screen says "Refund €X on the card terminal"; do it on the real Raiffeisen terminal, tick "Done on the terminal", type the slip's code; the drawer's expected cash at the count doesn't drop, and the bank book in Money shows the card money less the refund that day
+- [ ] A refund by bank transfer (name, IBAN): it shows in Money → "To pay back"; send it from the bank, press "Mark sent" with the day: it leaves the list and the bank's balance drops; Undo on that return is refused after
+- [ ] Counter: refund two lines of a card sale at once; "To pay back" or the bank shows one refund, not two
+- [ ] An employee asks for a card refund over their limit: it waits for the owner, the owner sees "On the card terminal €X" on the decision, approves, then the refund is done on the terminal
+- [ ] A split sale (part card, part cash): the refund starts split the same way and can be changed; the parts must add up
+- [ ] Albanian wording of the refund step and "Për t’u kthyer" reads naturally; phone layout of the refund step
+- [ ] When a sent bank refund shows on the bank statement, it isn't counted twice (statement matching for refunds isn't built yet: match it by hand or tell Claude)
+
+**Code review fixes** (on 4vd.app after the deploy, and on the shop PC after the next Windows app release)
+- [ ] Counter: type a wrong PIN for someone 10 times in a day (right ones in between don't help): it says their PIN is locked and they show as "PIN locked: ask the owner"; the person already at the Counter stays signed in
+- [ ] As main admin: Inbox has an urgent "Counter PIN … is locked" To do; their page in People has Unlock PIN; after pressing it the PIN works again at once
+- [ ] While locked, that person still signs in with password, Google or passkey; the same on the shop PC
+- [ ] Albanian wording of the PIN lock messages reads naturally
+- [ ] 4vd.app after the deploy: Google sign-in, camera scanner, product photos, push alerts and the Download page still work; Sentry shows any "CSP" reports (send them to Claude before the rule is switched on)
+- [ ] Settings → Import with a normal Excel and a normal zip still reads them
+- [ ] Open a bill scan, a mailed bill, an attached file and the stamp in Settings: they show while signed in; the same link in a private window says sign in
+- [ ] Logos in emails and product photos in the customer portal still show
+- [ ] Log out on one device (or Profile → log out other devices): the other device goes to the sign-in page at its next click
+- [ ] The Counter left open overnight on the shop PC is still signed in next morning
+- [ ] Shop PC, new Windows app: a sale, an X report, a Z report and the customer display still print; Google sign-in still opens
 
 The user tests these later, by eye or on the shop PC. Every finished step adds what nobody tried by hand. Tick an item once it's checked.
 
@@ -38,18 +116,71 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] The two small previews (light and dark) and the receipt match what the dashboard shows after saving; History shows one "colours" entry per save
 - [ ] 4VD's own business on another main colour: the house logo (top left, Overview, sign-in after a reload) and the "4VD developer" badge take that colour, light and dark; back on default they are amber again; with the gradient on, the logo runs to the accent unless the card says the colours are too far apart
 
+**Family can sign in** (on 4vd.app, after the deploy)
+- [x] A family login signs in and lands on Products (phone layout, tabs Products and Account); a star keeps a favourite; the product page shows no Sell key, expiry or write-off
+
+**Two-step sign-in: "Make them set it up again"** (on 4vd.app, after the deploy)
+- [x] People → a person → Two-step sign-in: "Switch off" and "Make them set it up again" both show; the second opens a card that says what happens; Cancel closes it
+- [ ] After "Make them set it up again", that person's open dashboard sends them to the sign-in page; after the password they see a QR code, scan it with a real phone app, type the code, see 10 backup codes, then "I saved them, continue" lands in 4VD (local test: computed code instead of a phone app: QR screen, 10 codes and continue into 4VD all worked; left for you: a real phone app)
+- [ ] The same with a passkey sign-in: after the fingerprint/face it shows the QR setup instead of opening 4VD
+- [ ] On the shop PC: a person who must set it up again can't take over the Counter with their PIN (a short message), and the one at the Counter stays signed in
+- [x] "Don't ask any more" (while they still have to set it up) lets them sign in with the password alone again
+- [ ] The look of the setup card and the backup codes, light and dark, phone and PC
+
+**Invite for a deleted person's email** (on 4vd.app, after the deploy)
+- [ ] The invite that gave "something on our side isn't working" earlier: open the same link again (it works for 7 days) and type a name and password; you're signed in
+- [x] People → delete someone → invite the same email again → they accept: they start fresh (new name and password, no old phone, photo, PIN or two-step), and see only the business that invited them
+- [x] An email that already has a 4VD account in another business: accepting the invite with a password says to log in first (no error page)
+
+**Many businesses, phase 5e: All logs** (on 4vd.app, signed in as yourself)
+- [x] Account menu → "All logs": the history of every business in one list, newest first, each line naming its business; your own lines carry the hammer
+- [x] The business chips, the kinds (Sales, Products and stock, …) and the search narrow the list; "Support visits" lists when you opened which business, and "Show changes" opens what you changed there
+- [x] "Open" on a line switches you into that business
+- [x] Signed in as anyone else (e.g. a main admin of a shop): "All logs" isn't in the menu, and 4vd.app/all-logs shows no data
+
+**Many businesses, phase 5d-2b: Add business, a bill address per business** (on 4vd.app, after the deploy; the bill address needs the Cloudflare steps first)
+- [x] Signed in as yourself: account menu → "Add business…" → name, short name (the bill address shows as you type), NUI (optional), legal form, first main admin's email → "Add business": it says the business is ready, shows its bill address, and "Open it now" opens it with an empty catalogue, its own till, safe and bank
+- [ ] The person invited gets the email, joins as main admin, and sees only that business (local test: joining as main admin and seeing only that business worked; the email itself not tried)
+- [x] In the new business, Settings → Support visits shows your visit ("Created the business") and History shows it was created
+- [x] Settings → Bills by email shows bills+<short name>@4vd.app; the short name card (with its warning) shows only for you
+- [ ] After the Cloudflare steps: a bill PDF sent from a team member's email to bills+<short name>@4vd.app waits under Bills in that business only; bills@4vd.app still goes to 4VD; a made-up bills+nobody@4vd.app gets a reply that no business uses it
+
+**Many businesses, phase 5d-2a: blocking per business, invite only** (on 4vd.app, after the deploy)
+- [x] People → Invite someone: there's no "set them up yourself with a password" any more; after "Send invite" the link shows with "Send on WhatsApp" (opens WhatsApp with the message ready, you pick the person) and "Copy link"; "Send again" on a waiting invite shows them too
+- [ ] The WhatsApp message reads well in English and Albanian (local test: English reads fine; fails: an invite set to Shqip still gets the English WhatsApp text (it follows the sender's dashboard language))
+- [x] Block someone who also works in a second business (needs one): they can still log in, and the app opens the other business; blocked in both, the login says the account is no longer active
+- [x] Try to delete someone who is the only main admin of another business: it refuses and names that business
+
+**Many businesses, phase 5d-1: one person in two businesses** (on 4vd.app, after the deploy; needs a second business, e.g. after 5d-2's "Add business")
+- [ ] Invite someone who already has a 4VD account: the email arrives; the link says they already have an account and shows "Log in to join"; after logging in, "Join …" opens the app in the new business with both businesses in the account menu (local test: API: link says hasAccount, join adds the business to the menu; the email and the Log in to join page not tried)
+- [x] In the business that isn't their home, People shows them with the role they have there and a note that their account belongs to another business: no name, password, two-step or passkey settings, only role, access and "Remove" (which takes them off that business only)
+- [ ] Block them in that business while they have it open in another tab: the tab goes to the sign-in page instead of carrying on; signing in again opens their home business (local test: API only: once blocked, both the token and the refresh are refused (401) and signing in again opens the home business; a tab moving to the sign-in page not watched)
+- [ ] On the shop PC: someone from another business who works here too takes over the Counter with their PIN, and the sale lands in this business
+
+**Many businesses, phase 5c: business picker and roles per business** (on 4vd.app, after the deploy)
+- [x] Your account menu (top right) lists 4VD and every other business with the open one ticked; someone in only one business sees no list
+- [ ] Pick another business: the app opens again from Home in it, and stays there after a reload and the next day; another open tab follows by itself (local test: opens from Home, stays after a reload, a second tab follows; the next day not tried)
+- [ ] Pick a business while the Counter on that PC has a basket with products: it says to finish at the Counter first and stays put (local test: not tried: needs a Counter basket in the browser and two businesses on one login)
+- [x] Settings → Roles: a change in one business doesn't change who may do what in another
+
+**Many businesses, phase 5b: the 4VD developer** (on 4vd.app, after the deploy)
+- [x] Signed in as yourself: an amber hammer with "4VD developer" shows in the top bar (on a phone the hammer alone), at the top of the account menu, on your profile, and beside your name in People
+- [x] Your brothers keep the role they had (none shows "developer" or the hammer) and can still do everything they could before
+- [x] Settings → Support visits opens for you and the admins and says nobody from 4VD has opened the business yet; an employee doesn't see it
+- [x] Nobody else can change your account (name, role, sign-in), and "developer" isn't offered when inviting someone
+
 **Backups and error tracking**
-- [ ] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy
-- [ ] Sentry: after the API DSN is on Render and the dashboard DSN is in admin/.env.production, the first real error shows in Sentry with a stack trace and no email, name or request body in it
+- [x] GitHub → Actions → Backup restore check → Run workflow: it goes green and its summary shows the newest sale and last migration in the copy
+- [x] Sentry: after the API DSN is on Render and the dashboard DSN is in admin/.env.production, the first real error shows in Sentry with a stack trace and no email, name or request body in it
 
 **Security: cookie sign-in, two-step sign-in** (after the deploy, on 4vd.app and the shop PC)
-- [ ] A browser that was signed in before the deploy stays signed in after it (it moves to the new cookies by itself); the shop PC's Windows app too
-- [ ] Sign out, sign in again: works; closing and reopening the Windows app keeps you signed in
-- [ ] Profile → Sign-in and security → Two-step sign-in → Turn on: scan the QR with Google or Microsoft Authenticator, type its code; ten backup codes show; Copy codes works; "I saved them" says it is on
-- [ ] Sign out and in: after the password it asks for the code; a wrong code says so; the right one signs in; the same code a second time is refused
-- [ ] Sign in with a backup code instead: works once; Profile then says 9 left
-- [ ] Turn off asks for a code first; with it off, the password alone signs in again
-- [ ] As the developer: People → the owner → Two-step sign-in → Switch off; Activity shows who did it
+- [x] A browser that was signed in before the deploy stays signed in after it (it moves to the new cookies by itself); the shop PC's Windows app too
+- [ ] Sign out, sign in again: works; closing and reopening the Windows app keeps you signed in (local test: sign out and in works in the browser; the Windows app not tried)
+- [ ] Profile → Sign-in and security → Two-step sign-in → Turn on: scan the QR with Google or Microsoft Authenticator, type its code; ten backup codes show; Copy codes works; "I saved them" says it is on (local test: by API with a computed code: 10 backup codes and it is on; the Profile screen, Copy codes and a real authenticator app not tried)
+- [x] Sign out and in: after the password it asks for the code; a wrong code says so; the right one signs in; the same code a second time is refused
+- [x] Sign in with a backup code instead: works once; Profile then says 9 left
+- [x] Turn off asks for a code first; with it off, the password alone signs in again
+- [ ] As the developer: People → the owner → Two-step sign-in → Switch off; Activity shows who did it (local test: done on another person, not the owner: Switch off works and Activity says who; no confirm card shows before it switches off)
 - [ ] Google sign-in with two-step on also asks for the code
 
 **Passkeys: fingerprint, face or device PIN** (after the deploy, on 4vd.app, a phone and the Windows app)
@@ -65,24 +196,42 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Albanian: the Profile card, login key and errors read naturally ("çelës kalimi")
 
 **Step 17: yearly declarations** (Books → Declaration, sign in as the owner or the accountant)
-- [ ] Settings → Business details: Legal form shows "Company (sh.p.k., sh.a.)"; switching it to "Individual business" turns the page into the PD with three bands, and Books → Year says "Personal income tax"; switch it back
-- [ ] Books → Declaration, last year: income, costs and book profit match Books → Statements for the year; an income or cost line with several accounts lists them, and each opens its card
-- [ ] The carwash takings and wages and bills show as two lines marked "outside the books"; unticking "Count the carwash" and Save takes them out and the tax drops
-- [ ] Type a representation figure, a fine, an "Other" line with a minus, and a TREFIN loss: Save, and the figures, taxable profit and tax follow; emptying representation goes back to 4VD's figure
-- [ ] The quarterly instalments paid for the year are taken off (Q4 paid in January counts for last year); Pay the rest records it with an entry against 2350 and Take back removes it
-- [ ] Mark as filed with a day in this year: the typed fields lock, the To do "File the CD by 31 March" goes; Reopen asks why and unlocks them
-- [ ] Download → Excel opens; Download → Print shows the CD with the shop's name, NUI and signature lines
+- [x] Settings → Business details: Legal form shows "Company (sh.p.k., sh.a.)"; switching it to "Individual business" turns the page into the PD with three bands, and Books → Year says "Personal income tax"; switch it back
+- [ ] Books → Declaration, last year: income, costs and book profit match Books → Statements for the year; an income or cost line with several accounts lists them, and each opens its card (local test: checked on 2026 (the demo has no 2025 books): income and costs match Statements, wages lists 6500 and 6520; opening each card not tried)
+- [x] The carwash takings and wages and bills show as two lines marked "outside the books"; unticking "Count the carwash" and Save takes them out and the tax drops
+- [x] Type a representation figure, a fine, an "Other" line with a minus, and a TREFIN loss: Save, and the figures, taxable profit and tax follow; emptying representation goes back to 4VD's figure
+- [ ] The quarterly instalments paid for the year are taken off (Q4 paid in January counts for last year); Pay the rest records it with an entry against 2350 and Take back removes it (local test: not tried: needs a finished year with tax in the demo)
+- [ ] Mark as filed with a day in this year: the typed fields lock, the To do "File the CD by 31 March" goes; Reopen asks why and unlocks them (local test: not tried: needs a finished year in the demo)
+- [x] Download → Excel opens; Download → Print shows the CD with the shop's name, NUI and signature lines
 
 **Step 16: Make, serial numbers, projects** (Settings → Features switches each on; all off until then)
-- [ ] Settings → Features: switch on Projects, Made products and Serial numbers; Stock gets Make and Serial numbers tabs, Reports gets Projects
-- [ ] Projects: add "Dasma Krasniqi" in Settings → Features; pick it on a new bill, an expense, a Stock out and a damage; change it on a bill, an invoice and a stock out afterwards; close it and it leaves the pickers
-- [ ] Reports → Projects: income, goods sold, bills, stock out, damage and profit per project with totals; a project opens its documents; Excel, CSV and Print come out right
-- [ ] A product → Made from: add rakia and honey with how many go into one; "One costs …" shows; Make some opens the Make form with it picked
-- [ ] Stock → Make: pick the basket, 10, the location: the sentence says what comes out and goes in at what cost; best-before is the parts' earliest; a part with no cost or too little stock stops it; after saving, stock and costs moved, nothing in Books; Void puts it all back
-- [ ] A product → Serial numbers: switch on, 24 months warranty; scan 3 serials (Enter after each) and Record; one already in stock is reported, not added twice
-- [ ] On a bill or a Stock in with that product, the serial box shows per line and records them against the bill
-- [ ] Counter: a basket with 2 of that product → Pay asks for 2 serials first (scan, Enter, scan, Enter → straight to Pay); Esc leaves it; a serial sold before and not returned is refused; the invoice and its print show "S/N … · warranty until …"
-- [ ] Stock → Serial numbers: type part of a serial: where it came from, the invoice, the customer and the warranty show; after a return it is back in stock
+- [x] Settings → Features: switch on Projects, Made products and Serial numbers; Stock gets Make and Serial numbers tabs, Reports gets Projects
+- [ ] Projects: add "Dasma Krasniqi" in Settings → Features; pick it on a new bill, an expense, a Stock out and a damage; change it on a bill, an invoice and a stock out afterwards; close it and it leaves the pickers (local test: adding, putting a bill and an invoice on it and closing work by API; the pickers on each form, an expense, a stock out and a damage not tried)
+- [ ] Reports → Projects: income, goods sold, bills, stock out, damage and profit per project with totals; a project opens its documents; Excel, CSV and Print come out right (local test: income 71.19, goods 30, profit 41.19 and the project's documents are right; Excel, CSV and Print not tried)
+- [ ] A product → Made from: add rakia and honey with how many go into one; "One costs …" shows; Make some opens the Make form with it picked (local test: a recipe of 2 parts gives "one costs €70"; the Make some key not tried)
+- [ ] Stock → Make: pick the basket, 10, the location: the sentence says what comes out and goes in at what cost; best-before is the parts' earliest; a part with no cost or too little stock stops it; after saving, stock and costs moved, nothing in Books; Void puts it all back (local test: making 3 moved stock at €70 each, too much stock was refused, nothing in Books, Void put it back; the plan gives the parts' earliest best-before and the Make screen fills it in and sends it; the test make went straight to the API without a date, so it saved none (not a bug))
+- [x] A product → Serial numbers: switch on, 24 months warranty; scan 3 serials (Enter after each) and Record; one already in stock is reported, not added twice
+- [ ] On a bill or a Stock in with that product, the serial box shows per line and records them against the bill (local test: serials recorded against a bill show that bill in the serial search; the serial box on the bill and Stock in screens not looked at)
+- [ ] Counter: a basket with 2 of that product → Pay asks for 2 serials first (scan, Enter, scan, Enter → straight to Pay); Esc leaves it; a serial sold before and not returned is refused; the invoice and its print show "S/N … · warranty until …" (local test: the sale refuses without 2 serials, refuses a serial already sold, warranty until 2028-11-18 recorded; the Counter's scan box and the printed S/N line not tried)
+- [x] Stock → Serial numbers: type part of a serial: where it came from, the invoice, the customer and the warranty show; after a return it is back in stock
+
+**Form card** (any "Add …" key, 2c48232)
+- [ ] The card grows out of the key you pressed and folds back into it on close, smoothly (no stutter)
+- [ ] Opened from a link (Overview, Ctrl K: ?new=1) it grows from the middle
+- [x] Ctrl Enter saves; the faint "Ctrl ↵" cap shows on Save only once Save is allowed
+- [ ] Long forms: numbered steps beside the fields, the one you are in amber (local test: numbered steps are there on the payroll form (13 steps); the amber one you're in is for your eye)
+- [ ] Phone: the card rises from the bottom, pulling its head down closes it, the body still scrolls
+
+**Payroll people** (on the dashboard)
+- [x] Payroll → Add a person: pick an account first; name, phone and email fill in; typed values aren't overwritten.
+- [x] People → a team member → "Put on payroll" opens the form already linked; once saved the button reads "Payroll record".
+- [x] A person's page shows birthday, phone, email, address and "account · bank".
+
+**Kit polish, last groups** (on /kit)
+- [ ] Messages: "With Undo" shows a thin amber line draining at the bottom; pointing at the stack stops it (and every message's clock) and it carries on when you move away; "Problem" has a faint red wash
+- [ ] Board: drag a card: a dashed hole stays where it was and the column under it shows a dashed slot; the card rises into its new column. With the keyboard, "Move to" → another column keeps focus on that card's Move key
+- [ ] Calendar: the arrows slide the new month in from that side; planned things show a dot before their words, the late one a red square on red
+- [ ] Steps: Next fills the line to the next step from the left, Back drains it; Loading: the table placeholder starts with a thin label band
 
 **Smoothness** (on your own screen, after the next deploy)
 - [ ] The sign-in page's moving dots look the same as before but run smoothly (no longer 30 frames a second), and typing in the form stays quick
@@ -98,44 +247,44 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] On a wide screen: charts side by side fill their cards with no empty band, four charts sit two by two, and form fields stop at a comfortable width (check a few real forms too: product, bill, settings); checkboxes are amber when ticked
 
 **Step 15: portal for business customers** (sign in as the owner; use a test firm, never a real customer)
-- [ ] A business customer's page → Online portal: switch it on, set a smallest order and only some categories, Save; Invite someone with a mobile → Send by WhatsApp opens a chat with the link
-- [ ] Open the link on a phone: WhatsApp's preview doesn't use it up; "Open my account" signs in; opening the same link again says it no longer works
-- [ ] Order tab: prices show with and without VAT (wholesale for a wholesale customer), out-of-stock products can still be added, the basket splits without VAT / VAT / total, below the smallest order Send stays off
-- [ ] Send an order: it appears in To do and as an alert; Sales → Online orders opens it (the customer now sees "Seen by the shop"); Accept makes an offer at the order's prices; sell it at the Counter with Deliver it on the demo shop only, and the customer follows Being prepared → On the way → Delivered
-- [ ] Orders → an old order → Order again fills the basket at today's prices; Cancel works only while it says Sent
-- [ ] Invoices: invoices and credit notes show; PDF opens the invoice with stamp and signature
-- [ ] Account: balance, due dates and late items match the customer page; the statement prints cleanly and the CSV opens in Excel
-- [ ] Switching the portal off, or removing a person, signs them out at once; the language switch (Shqip/English) sticks
-- [ ] Email sign-in: ask for a link on 4vd.app/portal with a portal person's email and it arrives; asking for a link with an unknown email says the same as with a known one
-
-**Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
-- [ ] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
-- [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it
-- [ ] On the shelf: the location filter, a shelf minimum on a product page, then Refill from storage and its Bring button opening Move stock filled in
-- [ ] Sales → Online orders → an order → Change order: change a quantity, take one out, add a product, write why, Send the change; the firm gets an email, and the WhatsApp button opens a message with the reason and the link
-- [ ] In the portal: Orders shows a dot and a notice; the order lists what changed (was 5, Added, Taken out, the old total) with the reason; Agree sends it back to the shop (alert + To do), Cancel the order tells the shop too; Accept stays blocked until they agree
+- [ ] A business customer's page → Online portal: switch it on, set a smallest order and only some categories, Save; Invite someone with a mobile → Send by WhatsApp opens a chat with the link (local test: switching on, smallest order, only some categories and inviting by mobile work; the WhatsApp chat itself not opened)
+- [ ] Open the link on a phone: WhatsApp's preview doesn't use it up; "Open my account" signs in; opening the same link again says it no longer works (local test: the link signs in once and says it no longer works the second time; the WhatsApp preview not tried)
+- [ ] Order tab: prices show with and without VAT (wholesale for a wholesale customer), out-of-stock products can still be added, the basket splits without VAT / VAT / total, below the smallest order Send stays off (local test: with/without VAT split and the smallest order block work; wholesale prices and out-of-stock not tried)
+- [ ] Send an order: it appears in To do and as an alert; Sales → Online orders opens it (the customer now sees "Seen by the shop"); Accept makes an offer at the order's prices; sell it at the Counter with Deliver it on the demo shop only, and the customer follows Being prepared → On the way → Delivered (local test: alert, Seen by the shop and Accept → offer OF-2026-000001 at the order prices work; selling it at the Counter with delivery not tried)
+- [x] Orders → an old order → Order again fills the basket at today's prices; Cancel works only while it says Sent
+- [ ] Invoices: invoices and credit notes show; PDF opens the invoice with stamp and signature (local test: the firm's 3 invoices show and the PDF has the stamp and signature; no credit note for that firm, so not seen)
+- [ ] Account: balance, due dates and late items match the customer page; the statement prints cleanly and the CSV opens in Excel (local test: balance €120.54 and the open item match the customer page; the statement figures are right; its print and CSV (made in the browser) not tried)
+- [ ] Switching the portal off, or removing a person, signs them out at once; the language switch (Shqip/English) sticks (local test: switching the portal off signs them out at once; removing a person and the language switch not tried)
+- [ ] Email sign-in: ask for a link on 4vd.app/portal with a portal person's email and it arrives; asking for a link with an unknown email says the same as with a known one (local test: unknown and known email get the same answer; the email arriving not tried)
+- [ ] Sales → Online orders → an order → Change order: change a quantity, take one out, add a product, write why, Send the change; the firm gets an email, and the WhatsApp button opens a message with the reason and the link (local test: the change with a reason works; the email and WhatsApp not tried)
+- [ ] In the portal: Orders shows a dot and a notice; the order lists what changed (was 5, Added, Taken out, the old total) with the reason; Agree sends it back to the shop (alert + To do), Cancel the order tells the shop too; Accept stays blocked until they agree (local test: change details and old total come through, Agree sends an alert and unblocks Accept; Cancel the order after a change not tried)
 - [ ] Portal on a PC: the basket sits beside the products and stays in view while scrolling; Orders and Invoices are tables; on Account the balance and open items sit side by side
 - [ ] Offers → an offer → Print and Print as pro-forma show the offer sheet, not a blank page (also the customer statement and the LV note)
-- [ ] A bill and an order received land in Depo; a product's page shows how much each location holds
-- [ ] A sale bigger than the floor holds takes the rest from Depo and its stock history says "(from Depo)"
-- [ ] Count only Depo, and only the shop floor; the staff phone count always counts the shop floor
-- [ ] Removing Depo is refused while it holds stock or is where goods come in, and the last location can never go
+
+**Step 14: stock locations** (sign in as the owner; nothing shows until a second location exists)
+- [x] Settings → Stock locations: add "Depo", rename it, make it "Goods come in here"; Stock now has a Move stock tab and stock screens ask which location
+- [ ] Move stock: move a few products from Shop floor to Depo by scanning, print the LV note (two signature lines), find it in the list with the period, Excel and PDF, then void it (local test: move, the list and Void (and its refusal when the stock has gone) work; the printed LV note, Excel and PDF not tried)
+- [x] On the shelf: the location filter, a shelf minimum on a product page, then Refill from storage and its Bring button opening Move stock filled in
+- [x] A bill and an order received land in Depo; a product's page shows how much each location holds (local test: a bill lands in Depo and the product page shows each location; an order received not tried; an order received with no location named lands in the "goods come in here" location)
+- [x] A sale bigger than the floor holds takes the rest from Depo and its stock history says "(from Depo)"
+- [x] Count only Depo, and only the shop floor; the staff phone count always counts the shop floor (local test: a Depo-only count changed only Depo (4 → 3, the floor kept 7); a shop-floor count and a count with no location are the same count (the second is refused while the first is open))
+- [x] Removing Depo is refused while it holds stock or is where goods come in, and the last location can never go
 
 **Step 13: payroll** (sign in as the owner or the accountant)
-- [ ] Team → Payroll: add a person with a gross pay, one with a net pay, one second job and one at the carwash; check each line of a month on the Months tab against the tax bands (0% to €250, 8% to €450, 10% above) and 5% + 5% pension
-- [ ] A gross under €350 for a full-time main job warns, and a person who left with leave not taken warns "add them to the last pay"
-- [ ] Change one person's gross for a month with a reason, confirm the month, then check Books: wages 6500, employer pension 6520, owed 2100/2200/2210/2310 (carwash staff left out)
-- [ ] Pay wages from the bank, then Pay ATK: two payments (tax and pension); on a bank statement each matches its own line
-- [ ] Download the declaration (Excel and CSV) and print a payslip; take a payment back, then take the month back
-- [ ] Record leave taken and a correction; the balance changes; link a person to their 4VD account and, signed in as them, see Account → Pay and leave with only their own payslips
+- [x] Team → Payroll: add a person with a gross pay, one with a net pay, one second job and one at the carwash; check each line of a month on the Months tab against the tax bands (0% to €250, 8% to €450, 10% above) and 5% + 5% pension
+- [x] A gross under €350 for a full-time main job warns, and a person who left with leave not taken warns "add them to the last pay"
+- [x] Change one person's gross for a month with a reason, confirm the month, then check Books: wages 6500, employer pension 6520, owed 2100/2200/2210/2310 (carwash staff left out)
+- [ ] Pay wages from the bank, then Pay ATK: two payments (tax and pension); on a bank statement each matches its own line (local test: two ATK payments (tax 115.38, pension 240.08) and their entries are right; the bank-statement matching not tried)
+- [x] Download the declaration (Excel and CSV) and print a payslip; take a payment back, then take the month back
+- [x] Record leave taken and a correction; the balance changes; link a person to their 4VD account and, signed in as them, see Account → Pay and leave with only their own payslips
 
 **Step 19: short-dated stock**
-- [ ] Mark a food product "Has a best-before date"; a bill line, a bill scan line and a stock-in for it show a Best before field, and the date appears under Stock → Expiring
-- [ ] Two days before the date: at the Counter the line shows "Short-dated −30%"; tap it once per stickered unit (tapping past the last undoes it); the receipt and the sale charge the lower price for those units only
+- [ ] Mark a food product "Has a best-before date"; a bill line, a bill scan line and a stock-in for it show a Best before field, and the date appears under Stock → Expiring (local test: a bill line with a best-before shows under Stock → Expiring; the Best before fields on the bill, scan and stock-in screens not looked at)
+- [ ] Two days before the date: at the Counter the line shows "Short-dated −30%"; tap it once per stickered unit (tapping past the last undoes it); the receipt and the sale charge the lower price for those units only (local test: two days before: −30% offered, a sale of 2 stickered + 1 normal charged 2 × €24.50 and 1 × €35; the Counter tapping not tried)
 - [ ] Same on the employee Sell screen
-- [ ] Settings → Shop rules: change the days and the discount steps; a category or product with its own days
-- [ ] The day after the date: To do opens Stock → Expiring; "Remove as expired" takes it off the shelf (an employee's waits for the owner) and it shows in the books as a write-off
-- [ ] A count: the Soonest best before field replaces the old dates
+- [ ] Settings → Shop rules: change the days and the discount steps; a category or product with its own days (local test: changing the days and steps changes the offered discount (30% → 50%); a category or product with its own days not tried) (local test: a product with its own 40 days is offered at 20% 32 days before its date; a category with its own days not tried)
+- [x] The day after the date: To do opens Stock → Expiring; "Remove as expired" takes it off the shelf (an employee's waits for the owner) and it shows in the books as a write-off
+- [x] A count: the Soonest best before field replaces the old dates (local test: counting with a soonest date replaces the two old dates with the one typed)
 - [ ] On the shop PC: what the fiscal receipt prints for a short-dated unit (same article, lower price; no separate discount line)
 
 **Step 18: bills by email** (after the setup in docs/DEPLOYMENT.md)
@@ -147,31 +296,31 @@ The user tests these later, by eye or on the shop PC. Every finished step adds w
 - [ ] Under Bills, "Emailed, not read yet": Read now opens the scan; Remove clears it from To do
 
 **Step 12: fixed assets**
-- [ ] Books → Fixed assets: add something owned before 4VD, with its wear before the books
-- [ ] A supplier bill with an equipment line: the asset appears, and its first month posts after the month ends
-- [ ] Sell one (paid into the till and on a customer's tab), throw one away, then Undo
-- [ ] Split a bill line of several pieces; a credit that gives one back
-- [ ] The year's depreciation and the register in Excel; Next to the books
+- [x] Books → Fixed assets: add something owned before 4VD, with its wear before the books
+- [ ] A supplier bill with an equipment line: the asset appears, and its first month posts after the month ends (local test: the asset appears from the bill; its first month posting after the month ends not seen yet (November))
+- [ ] Sell one (paid into the till and on a customer's tab), throw one away, then Undo (local test: sold into the till (cash, VAT, loss to 8200 right), scrapped and Undo work; selling on a customer's tab not tried)
+- [ ] Split a bill line of several pieces; a credit that gives one back (local test: splitting 3 shelves into 3 × €400 works; a credit that gives one back not tried)
+- [x] The year's depreciation and the register in Excel; Next to the books
 - [ ] An asset sale on the VAT return and the sales book
 
 **Step 9: products and prices**
-- [ ] Prices page: wholesale prices, mark-up, Excel download and upload
-- [ ] Pack barcodes and the new units on a product
-- [ ] Stock → In and out: a stock-in and a stock-out document, then Void
+- [ ] Prices page: wholesale prices, mark-up, Excel download and upload (local test: wholesale prices from cost at a mark-up, a CSV upload (an unknown product reported, not saved) and saving work; the Excel download and an .xlsx upload not tried)
+- [x] Pack barcodes and the new units on a product (local test: a 6-pack barcode at €1,350 scans to the product and adds a 6+ price of €225; a pack price that would beat the 5+ price is refused; the unit changes and saves; the screen itself not looked at)
+- [x] Stock → In and out: a stock-in and a stock-out document, then Void
 
 **Step 10: partners**
 - [ ] Reading a partner from a photo or pasted text (needs a working ANTHROPIC_API_KEY)
-- [ ] Paying out a customer bonus
-- [ ] Deliver it: the address chips
-- [ ] The delivery line on an invoice
+- [x] Paying out a customer bonus (local test: 2% of €123 = €2.46 paid as a credit on the tab, the year then shows paid)
+- [ ] Deliver it: the address chips (local test: a saved address and the delivery work; the chips on the Counter not looked at)
+- [x] The delivery line on an invoice (local test: "Deliver to <address> · 19 November 2026" prints on the invoice)
 
 **Step 11: settings and safety**
-- [ ] Print an invoice with the stamp and signature
-- [ ] Ring up a Counter sale after changing the number format
-- [ ] Settings → Recycle bin: bring back a product, supplier, customer, expense and file
+- [x] Print an invoice with the stamp and signature (local test: with a test stamp and signature uploaded, both print on the invoice and the portal PDF)
+- [x] Ring up a Counter sale after changing the number format (local test: after VF / yy / 4 digits the next invoices were VF-26-0029, 0030, 0031)
+- [ ] Settings → Recycle bin: bring back a product, supplier, customer, expense and file (local test: product, supplier, customer and expense go to the bin and come back; a file not tried)
 
 **Step 8: sales documents**
-- [ ] Offers, deliveries and pay-later as a whole
+- [x] Offers, deliveries and pay-later as a whole (local test: an offer sold on the tab with a delivery: the offer says sold, the delivery goes On the way then Delivered, the tab is paid against that invoice; question: with "pay at the door" the invoice is due on the delivery day, not the due date typed)
 
 **Counter (shop PC, real printer)**
 - [ ] A sale, X report and Z report on the Datecs printer

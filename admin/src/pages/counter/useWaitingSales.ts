@@ -59,6 +59,8 @@ export function useWaitingSales(
   onSent: (sent: Array<{ sale: QueuedSale; result: Sent }>) => void,
   /** A sale went in but this PC couldn't note it, so it stays in the queue. */
   onUnsaved: () => void,
+  /** An owner: sees and settles everyone's refused sales in this business, not only their own. */
+  oversees = false,
 ) {
   const [sales, setSales] = useState<QueuedSale[]>(() => localStore.read());
   // The round in progress: a second call (Switch person) waits for it instead of returning at once.
@@ -66,6 +68,7 @@ export function useWaitingSales(
   // Receipts still printing: their sale waits until the printer has answered.
   const printing = useRef(new Set<string>());
   const ownerRef = useRef({ userId, businessId });
+  const overseesRef = useRef(oversees);
   const sentRef = useRef(onSent);
   const reachRef = useRef(onReach);
   const unsavedRef = useRef(onUnsaved);
@@ -74,6 +77,7 @@ export function useWaitingSales(
     reachRef.current = onReach;
     unsavedRef.current = onUnsaved;
     ownerRef.current = { userId, businessId };
+    overseesRef.current = oversees;
   });
   const refresh = () => setSales(localStore.read());
 
@@ -104,7 +108,8 @@ export function useWaitingSales(
     return round;
   }, []);
 
-  const mine = (sale: QueuedSale) => sale.userId === userId && sale.businessId === businessId;
+  // Refused sales the person at the till may look at: their own here, or (an owner) anyone's here.
+  const mine = (sale: QueuedSale) => sale.businessId === businessId && (oversees || sale.userId === userId);
   // Kept by an older 4VD without its business: never sent (it might belong to another business), only shown to an owner.
   const unplaced = (sale: QueuedSale) => sale.businessId === undefined;
   const pending = sales.filter((sale) => !sale.refused && !unplaced(sale)).length;
@@ -118,7 +123,7 @@ export function useWaitingSales(
 
   return {
     waiting: sales.filter((sale) => !sale.refused && !unplaced(sale)),
-    /** Refused by the server: the signed-in person's own, in the business they are in, for them to look at. */
+    /** Refused by the server, in the business the till is in: the signed-in person's own (an owner: everyone's), to look at. */
     refused: sales.filter((sale) => mine(sale) && sale.refused !== undefined),
     /** Kept by an older 4VD without its business: whoever made them, for an owner to check against Sales. */
     unplaced: sales.filter(unplaced),
@@ -147,18 +152,20 @@ export function useWaitingSales(
     },
     /**
      * Send the refused ones again (after the cause was fixed, like a month
-     * reopened), the signed-in person's own in the business they are in. Each
-     * is first settled under its key on the server: recorded after all, it
-     * counts as sent; otherwise its key is closed for good, and it goes again
-     * under a new one. 'needsOwner' when 4VD lets only an owner settle one
-     * (its key was never closed, and someone else's sale could have it).
+     * reopened), in the business the till is in: the signed-in person's own,
+     * or (an owner) anyone's. Each is first settled under its key on the
+     * server: recorded after all, it counts as sent; otherwise its key is
+     * closed for good, and it waits again under a new one, still the sale of
+     * whoever made it (it goes when they are at the till). 'needsOwner' when
+     * 4VD lets only an owner settle one (its key was never closed, and
+     * someone else's sale could have it).
      */
     async retry(): Promise<'needsOwner' | undefined> {
       const owner = { ...ownerRef.current };
       const settled: Array<{ sale: QueuedSale; result: Sent }> = [];
       let needsOwner = false;
       for (const sale of localStore.read()) {
-        if (sale.refused === undefined || sale.businessId === undefined || sale.userId !== owner.userId || sale.businessId !== owner.businessId) continue;
+        if (sale.refused === undefined || sale.businessId !== owner.businessId || (sale.userId !== owner.userId && !overseesRef.current)) continue;
         let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
         try {
           answer = await withTimeout((signal) => salesApi.stopBasket(sale.key, { expectOwner: owner, signal }), SEND_TIMEOUT_MS);
@@ -172,7 +179,7 @@ export function useWaitingSales(
         }
         if (answer.state === 'recorded') {
           // Its note first: if it can't be written, the sale stays as it is (a later try finds the same sale).
-          if (!noteSent({ ...sale, businessId: sale.businessId }, answer.sale)) break;
+          if (!noteSent({ ...sale, businessId: owner.businessId }, answer.sale)) break;
           settled.push({ sale, result: answer.sale });
           localStore.write(localStore.read().filter((one) => one.key !== sale.key));
           continue;

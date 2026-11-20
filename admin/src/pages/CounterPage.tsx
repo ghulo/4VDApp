@@ -694,6 +694,7 @@ export function CounterPage() {
       void followUp();
     },
     () => complain(t.counter.queueNotSaved),
+    canOversee(user.role),
   );
 
   /*
@@ -705,48 +706,57 @@ export function CounterPage() {
   const followingUp = useRef<Promise<void> | null>(null);
   const followAgain = useRef(false);
   const keepUnprintedNow = printer.keepUnprinted;
+  // The newest round maker (for the person at the till now): a round asked for while another runs starts once that one ends.
+  const latestFollowUp = useRef<() => Promise<void>>(() => Promise.resolve());
   const followUp = useCallback((): Promise<void> => {
     if (followingUp.current) {
       followAgain.current = true;
       return followingUp.current;
     }
+    // Bound to whoever this render is for: its notes, its till notes (record) and its requests are theirs only.
+    const who = owner;
     const round = (async () => {
       // Yield first: a round with nothing to wait on would otherwise end before it is marked as running, and stay marked.
       await null;
+      followAgain.current = false;
       try {
-        do {
-          followAgain.current = false;
-          const who = ownerNow.current;
-          if (who.businessId === 0) return;
-          for (const sale of followUpsFor(localSettledStore, who)) {
-            if (ownerNow.current !== who) return;
-            const reason = sale.followUp?.unprinted;
-            if (reason !== undefined) {
-              const kept = keepUnprintedNow({ documentId: sale.documentId, number: sale.number, total: sale.total, at: sale.at, text: sale.text ?? '', reason, job: sale.job, businessId: sale.businessId });
-              void record([{ kind: 'print_failed', documentId: sale.documentId, reason: reason.slice(0, 200) }]);
-              // Only once Not printed is on this PC's disk does the note let go of the receipt.
-              if (kept) followUpDone(localSettledStore, sale.key, 'unprinted');
-            }
-            const fiscalNo = sale.followUp?.fiscalNo;
-            if (fiscalNo !== undefined) {
-              try {
-                await withTimeout((signal) => documentsApi.setFiscalReceipt(sale.documentId, fiscalNo, { expectOwner: who, signal }), EVENTS_TIMEOUT_MS);
-                followUpDone(localSettledStore, sale.key, 'fiscalNo');
-              } catch (error) {
-                // A clear no from 4VD (the invoice is gone, the number is wrong): nothing more to do. Anything else: later.
-                if (queueFailure(error) !== 'refused') return;
-                followUpDone(localSettledStore, sale.key, 'fiscalNo');
-              }
-            }
+        if (who.businessId === 0 || ownerNow.current !== who) return;
+        // Not printed first, without waiting on the internet.
+        for (const sale of followUpsFor(localSettledStore, who)) {
+          const reason = sale.followUp?.unprinted;
+          if (reason === undefined) continue;
+          const kept = keepUnprintedNow({ documentId: sale.documentId, number: sale.number, total: sale.total, at: sale.at, text: sale.text ?? '', reason, job: sale.job, businessId: sale.businessId });
+          // Only once Not printed is on this PC's disk does the note let go of the receipt (and the till note go, once).
+          if (!kept) continue;
+          void record([{ kind: 'print_failed', documentId: sale.documentId, reason: reason.slice(0, 200) }]);
+          followUpDone(localSettledStore, sale.key, 'unprinted');
+        }
+        for (const sale of followUpsFor(localSettledStore, who)) {
+          const fiscalNo = sale.followUp?.fiscalNo;
+          if (fiscalNo === undefined) continue;
+          if (ownerNow.current !== who) return;
+          try {
+            await withTimeout((signal) => documentsApi.setFiscalReceipt(sale.documentId, fiscalNo, { expectOwner: who, signal }), EVENTS_TIMEOUT_MS);
+          } catch (error) {
+            // A clear no from 4VD (the invoice is gone, the number is wrong): nothing more to do. Anything else: it waits.
+            if (queueFailure(error) !== 'refused') return;
           }
-        } while (followAgain.current);
+          followUpDone(localSettledStore, sale.key, 'fiscalNo');
+        }
       } finally {
         followingUp.current = null;
+        if (followAgain.current) {
+          followAgain.current = false;
+          void latestFollowUp.current();
+        }
       }
     })();
     followingUp.current = round;
     return round;
-  }, [keepUnprintedNow, record]);
+  }, [owner, keepUnprintedNow, record]);
+  useEffect(() => {
+    latestFollowUp.current = followUp;
+  }, [followUp]);
   // At the start, after a switch and when the internet is back: what an earlier session (or person) left to do.
   useEffect(() => {
     void followUp();
@@ -1125,11 +1135,23 @@ export function CounterPage() {
 
   async function afterPrint(item: Unprinted, printed: PrintResult, again: boolean) {
     if (!printed.ok) return printFailed({ ...item, reason: printed.message });
+    // Its number is still to go on the invoice: noted first (for whoever printed it), so neither a lost answer nor a restart drops it.
+    const noted = printed.receiptNo ? noteReprinted(item, printed.receiptNo) : true;
     printer.forget(item.documentId);
     setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo: printed.receiptNo } : sale));
     setPrintNote({ ok: true, text: printed.receiptNo ? t.counter.printer.printed(printed.receiptNo) : t.counter.printer.printedNoNumber });
-    if (printed.receiptNo) await documentsApi.setFiscalReceipt(item.documentId, printed.receiptNo, { expectOwner: owner }).catch(() => undefined);
+    if (printed.receiptNo && !noted) await documentsApi.setFiscalReceipt(item.documentId, printed.receiptNo, { expectOwner: owner }).catch(() => undefined);
+    if (noted) void followUp();
     if (again) void record([{ kind: 'reprinted', documentId: item.documentId }]);
+  }
+
+  /** A reprinted receipt's number, in the sale's note (or a new one), for the person at the till in this business. False when it couldn't be written. */
+  function noteReprinted(item: Unprinted, fiscalNo: string): boolean {
+    const noted = localSettledStore.read().find((sale) => sale.documentId === item.documentId);
+    const base = noted
+      ? { key: noted.key, documentId: noted.documentId, number: noted.number, total: noted.total, at: noted.at, settledAt: noted.settledAt }
+      : { key: `reprint:${item.documentId}`, documentId: item.documentId, number: item.number, total: item.total, at: item.at, settledAt: Date.now() };
+    return noteSettled(localSettledStore, { ...base, businessId: owner.businessId, userId: owner.userId, print: 'printed', followUp: { fiscalNo } });
   }
 
   /** The printer's job for a receipt, with today's footer and tax groups. Throws when a VAT rate has no tax group. */
@@ -1171,6 +1193,8 @@ export function CounterPage() {
         return cantPrint(item, receiptProblem(error));
       }
     }
+    // Until the printer answers, Not printed says to check the printer: a reload mid-print leaves that, not the old reason.
+    printer.keepUnprinted({ ...item, text, reason: t.counter.printInterrupted });
     const printed = await printer.send(`4VD-${item.number}`, text);
     await afterPrint({ ...item, text }, printed, true);
   }

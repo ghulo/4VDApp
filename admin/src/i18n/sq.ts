@@ -4705,7 +4705,7 @@ export const sq: Catalogue = {
     printInterrupted: 'Shiko printerin: arka u mbyll (ose e humbi gjurmën) ndërsa ky kupon po shtypej. Shtype prapë vetëm nëse s’doli asnjë kupon.',
     notSavedNoPrint: 'Shitja u regjistrua, por ky kompjuter s’e ruajti dot, prandaj kuponi s’u shtyp (një ndërprerje mund ta shtypte dy herë). Liro pak hapësirë në kompjuter, pastaj shtype nga lista «pa u printuar».',
     queueNotSaved: 'Një shitje në pritje hyri në 4VD, por ky kompjuter s’e shënoi dot (hapësira është plot ose e bllokuar). Mbetet në pritje dhe dërgohet prapë pa rrezik: liro pak hapësirë në kompjuter.',
-    retryNeedsOwner: 'Një nga këto shitje duhet ta dërgojë prapë pronari: 4VD s’e di ende nëse hyri.',
+    retryNeedsOwner: 'Një nga këto shitje duhet ta dërgojë prapë pronari (e sheh në këtë arkë): 4VD s’e di ende nëse hyri.',
     notSavedHere: 'Shitja u regjistrua, por ky kompjuter s’e ruajti dot këtë (hapësira është plot ose e bllokuar). Mos e rifresko faqen derisa të kalojë shitja e radhës.',
     maybeScanInPay: (code: string) => `“${code}” është edhe kod produkti, ndaj s’u regjistrua ende asgjë. E skanove? Fute në shportë. E shkrove si para? Vazhdo.`,
     maybeToBasket: 'Fute në shportë',

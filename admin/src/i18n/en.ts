@@ -4731,7 +4731,7 @@ export const en = {
     printInterrupted: 'Check the printer: the till closed (or lost track) while this receipt was printing. Print it again only if no receipt came out.',
     notSavedNoPrint: 'The sale is recorded, but this PC couldn’t save it, so the receipt wasn’t printed (a crash could have printed it twice). Free some space on the PC, then print it from Not printed.',
     queueNotSaved: 'A waiting sale went into 4VD, but this PC couldn’t note it (its storage is full or blocked). It stays waiting and goes again safely: free some space on the PC.',
-    retryNeedsOwner: 'An owner has to send one of these sales again: 4VD can’t tell yet whether it went in.',
+    retryNeedsOwner: 'An owner has to send one of these sales again (they see it at this till): 4VD can’t tell yet whether it went in.',
     notSavedHere: 'The sale is recorded, but this PC couldn’t save that it is (its storage is full or blocked). Don’t reload until the next sale goes through.',
     maybeScanInPay: (code: string) => `“${code}” is also a product’s code, so nothing was recorded yet. Scanned it? Put it in the basket. Typed it as cash? Go on.`,
     maybeToBasket: 'Put it in the basket',

@@ -43,8 +43,8 @@ jobs:
       AWS_DEFAULT_REGION: auto
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      # A weekly backup should never be older than this; older means backup.yml stopped.
-      MAX_AGE_DAYS: 8
+      # The daily backup should never be older than this; older means backup.yml stopped.
+      MAX_AGE_DAYS: 2
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +64,7 @@ jobs:
           echo "Newest backup: $NAME ($AGE days old)"
           echo "NAME=$NAME" >> "$GITHUB_ENV"
           if [ "$AGE" -gt "$MAX_AGE_DAYS" ]; then
-            echo "::error::The newest backup is $AGE days old; the weekly backup has stopped working (check Actions > Database backup)"
+            echo "::error::The newest backup is $AGE days old; the daily backup has stopped working (check Actions > Database backup)"
             exit 1
           fi
 

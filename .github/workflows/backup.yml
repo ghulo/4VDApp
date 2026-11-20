@@ -1,4 +1,4 @@
-# Weekly copy of the live database, kept in Cloudflare R2 for 90 days.
+# Daily copy of the live database in Cloudflare R2: each day's kept 35 days, Sundays' 90 days.
 # Render's own point-in-time restore only reaches back 3 days; this covers
 # a mistake noticed weeks later. The file is encrypted before it leaves the
 # runner, so R2 only ever holds a locked copy. How to restore: docs/DEPLOYMENT.md.
@@ -13,8 +13,8 @@ name: Database backup
 
 on:
   schedule:
-    # Sundays 02:30 UTC, when the shop is closed.
-    - cron: '30 2 * * 0'
+    # Every night at 02:30 UTC, when the shop is closed.
+    - cron: '30 2 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -34,7 +34,8 @@ jobs:
       AWS_DEFAULT_REGION: auto
       R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      KEEP_DAYS: 90
+      KEEP_DAYS: 35
+      KEEP_SUNDAY_DAYS: 90
       BACKUP_PING_TOKEN: ${{ secrets.BACKUP_PING_TOKEN }}
     steps:
       - name: Check the secrets are set
@@ -66,12 +67,16 @@ jobs:
       - name: Upload to R2
         run: aws s3 cp "$FILE.gpg" "s3://$R2_BUCKET/database/$FILE.gpg" --endpoint-url "$R2_ENDPOINT"
 
-      - name: Remove copies older than ${{ env.KEEP_DAYS }} days
+      - name: Remove daily copies older than ${{ env.KEEP_DAYS }} days, Sunday copies older than ${{ env.KEEP_SUNDAY_DAYS }}
         run: |
           CUTOFF=$(date -u -d "-$KEEP_DAYS days" +%Y-%m-%d)
+          SUNDAY_CUTOFF=$(date -u -d "-$KEEP_SUNDAY_DAYS days" +%Y-%m-%d)
           aws s3 ls "s3://$R2_BUCKET/database/" --endpoint-url "$R2_ENDPOINT" | awk '{print $4}' | while read -r name; do
             day=$(echo "$name" | sed -n 's/^4vd-\([0-9-]*\)\.dump\.gpg$/\1/p')
-            if [ -n "$day" ] && [[ "$day" < "$CUTOFF" ]]; then
+            [ -n "$day" ] || continue
+            # A Sunday copy stays longer, for a mistake noticed weeks later.
+            if [ "$(date -u -d "$day" +%u)" = 7 ]; then limit="$SUNDAY_CUTOFF"; else limit="$CUTOFF"; fi
+            if [[ "$day" < "$limit" ]]; then
               aws s3 rm "s3://$R2_BUCKET/database/$name" --endpoint-url "$R2_ENDPOINT"
             fi
           done

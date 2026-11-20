@@ -5,8 +5,8 @@ import type { LaunchRepository } from '../repositories/LaunchRepository.js';
 import { type WipeReport, wipeShopData } from '../scripts/wipeShopData.js';
 import { LAST_BACKUP_KEY } from '../repositories/LaunchRepository.js';
 
-/** The weekly backup runs on Sundays; this much slack covers a late or retried run. */
-const BACKUP_FRESH_DAYS = 9;
+/** The backup runs every night; this much slack covers a late or retried run. */
+const BACKUP_FRESH_DAYS = 2;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type LaunchStepKey = 'wiped' | 'trefin' | 'opening' | 'shopDetails' | 'owner' | 'team' | 'reports' | 'emails' | 'phoneAlerts' | 'backups';

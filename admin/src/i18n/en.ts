@@ -2339,7 +2339,7 @@ export const en = {
       reports: 'The owner gets the daily and weekly reports',
       emails: 'Send real emails',
       phoneAlerts: 'Turn on browser alerts',
-      backups: 'Check the weekly backup',
+      backups: 'Check the daily backup',
     },
     wipedAt: (when: string) => `Wiped on ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
@@ -2360,7 +2360,7 @@ export const en = {
       'On your computer, in the backend folder, run: npm run vapid -- your@email. Paste the three lines it prints into 4vd-api on Render (Environment). Then turn alerts on under your Profile. Details in docs/DEPLOYMENT.md.',
     backupsHow:
       'Add the R2 and backup secrets on GitHub, run “Database backup” once from the Actions tab, and add BACKUP_PING_TOKEN on both GitHub and Render so this ticks by itself. Exact fields in docs/DEPLOYMENT.md, “Launch setup”.',
-    backupLast: (when: string) => `The last backup finished on ${when}. It ticks off again each week the backup runs.`,
+    backupLast: (when: string) => `The last backup finished on ${when}. It stays ticked while the backup runs every night.`,
     actions: {
       wipe: 'Go to Wipe all data',
       shop: 'Fill in my shop',

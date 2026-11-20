@@ -65,7 +65,7 @@ Google Cloud Console → **APIs & Services → Credentials → Create credential
 
 Click **Save, rebuild and deploy**. Never run `npm run vapid` again afterwards: new keys would make everyone turn alerts on again. Then in the dashboard open your **Profile** and switch alerts on for this browser.
 
-*Weekly backup.* In GitHub → the 4VD repo → **Settings → Secrets and variables → Actions → New repository secret**, add each of these (Name, then Secret):
+*Daily backup.* In GitHub → the 4VD repo → **Settings → Secrets and variables → Actions → New repository secret**, add each of these (Name, then Secret):
 
 | Name | Secret |
 |---|---|
@@ -77,7 +77,7 @@ Click **Save, rebuild and deploy**. Never run `npm run vapid` again afterwards: 
 | `R2_BUCKET` | the bucket's name |
 | `BACKUP_PING_TOKEN` | any random 20+ character string (e.g. run `openssl rand -hex 24`) |
 
-Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Environment** → Key `BACKUP_PING_TOKEN`, Value = that string → **Save, rebuild and deploy**. Finally GitHub → **Actions → Database backup → Run workflow**. When it goes green, the "Check the weekly backup" step in the dashboard ticks by itself and stays ticked while a backup finishes every week.
+Then add the **same** `BACKUP_PING_TOKEN` value on Render: `4vd-api` → **Environment** → Key `BACKUP_PING_TOKEN`, Value = that string → **Save, rebuild and deploy**. Finally GitHub → **Actions → Database backup → Run workflow**. When it goes green, the "Check the daily backup" step in the dashboard ticks by itself and stays ticked while a backup finishes every night.
 
 *Bills by email (bills@4vd.app).* A supplier bill forwarded to bills@4vd.app is read into a waiting bill scan. Mail goes Cloudflare Email Routing → the Email Worker in `mail/` (`4vd-mail`) → `POST /api/internal/bill-email`. The Worker trusts only the topmost Authentication-Results header that names Cloudflare, and drops mail whose From domain doesn't pass DMARC, DKIM or SPF there. The API takes only team members' sign-in emails and the senders in Settings → Bills by email.
 
@@ -177,14 +177,14 @@ Two layers:
 
 1. **Render point-in-time restore** (3 days on the current plan): for "undo the
    last few hours". Render dashboard > `4vd-db` > Recovery.
-2. **Weekly encrypted copy in Cloudflare R2**, kept 90 days:
-   `.github/workflows/backup.yml`, Sundays 02:30 UTC. Each copy is checked to be
+2. **Nightly encrypted copy in Cloudflare R2**: each night's kept 35 days, Sundays' 90 days:
+   `.github/workflows/backup.yml`, every night 02:30 UTC. Each copy is checked to be
    readable before it is encrypted and uploaded.
 
 ### One-time setup
 
 Cloudflare dashboard > R2 > Create bucket `4vd-backups` (location: EU), then set the
-secrets as in "Weekly backup" under step 8 above. A green run leaves
+secrets as in "Daily backup" under step 8 above. A green run leaves
 `database/4vd-YYYY-MM-DD.dump.gpg` in the bucket.
 
 ### Restore
@@ -210,7 +210,7 @@ Postgres 18 on the GitHub runner and checks that every table came back and that
 have rows. The run summary shows the newest sale and last migration in the copy.
 It fails, and GitHub emails the repository owner, when:
 
-- there is no backup, or the newest is more than 8 days old (the weekly backup stopped);
+- there is no backup, or the newest is more than 2 days old (the daily backup stopped);
 - the passphrase no longer opens it;
 - `pg_restore` reports any error, or a key table is missing or empty.
 

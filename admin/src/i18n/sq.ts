@@ -2318,7 +2318,7 @@ export const sq: Catalogue = {
       reports: 'Pronari merr raportet ditore dhe javore',
       emails: 'Dërgo emaile të vërteta',
       phoneAlerts: 'Aktivizo njoftimet në shfletues',
-      backups: 'Kontrollo kopjen rezervë javore',
+      backups: 'Kontrollo kopjen rezervë ditore',
     },
     wipedAt: (when: string) => `U fshinë më ${when}.`,
     wipeHow: (p: { products: number; sales: number }) =>
@@ -2339,7 +2339,7 @@ export const sq: Catalogue = {
       'Në kompjuterin tënd, te dosja backend, ekzekuto: npm run vapid -- email@tendin. Ngjit tri rreshtat që shfaq te 4vd-api në Render (Environment). Pastaj aktivizo njoftimet te Profili yt. Detaje te docs/DEPLOYMENT.md.',
     backupsHow:
       'Shto sekretet e R2 dhe të kopjes rezervë te GitHub, ekzekuto një herë “Database backup” nga skeda Actions, dhe shto BACKUP_PING_TOKEN si te GitHub ashtu edhe te Render që ky hap të shënohet vetë. Fushat e sakta janë te docs/DEPLOYMENT.md, “Launch setup”.',
-    backupLast: (when: string) => `Kopja e fundit përfundoi më ${when}. Shënohet përsëri çdo javë që kopja ekzekutohet.`,
+    backupLast: (when: string) => `Kopja e fundit përfundoi më ${when}. Mbetet e shënuar sa kohë kopja bëhet çdo natë.`,
     actions: {
       wipe: 'Shko te Fshi të gjitha të dhënat',
       shop: 'Plotëso dyqanin tim',

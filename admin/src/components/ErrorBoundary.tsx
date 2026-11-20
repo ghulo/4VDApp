@@ -4,7 +4,7 @@ import { useT } from '../i18n/useT';
 import { Button } from './ui';
 
 /** Shown instead of a page that crashed while drawing, so the rest of the app keeps working. */
-function CrashNotice() {
+export function CrashNotice() {
   const t = useT();
   return (
     <div className="notice notice--error" role="alert">

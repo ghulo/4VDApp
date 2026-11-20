@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState } from 'react';
+import { Suspense, useState } from 'react';
+import { lazyNamed } from '../../utils/lazyNamed';
 import { useT } from '../../i18n/useT';
 import { formatPercent } from '../../utils/format';
 
-const RingView = lazy(() => import('./charts/RechartsViews').then((module) => ({ default: module.RingView })));
+const RingView = lazyNamed(() => import('./charts/RechartsViews'), 'RingView');
 
 export interface DonutSlice {
   key: string | number;

@@ -1,4 +1,5 @@
-import { lazy, type ReactNode, Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
+import { lazyNamed } from '../utils/lazyNamed';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { LogoMark } from './LogoMark';
@@ -8,7 +9,7 @@ import { LoginReceipt } from './LoginReceipt';
 import { useT } from '../i18n/useT';
 
 /** The moving shop loads after the form, so the form is there at once. */
-const ShopDrift = lazy(async () => ({ default: (await import('./ShopDrift')).ShopDrift }));
+const ShopDrift = lazyNamed(() => import('./ShopDrift'), 'ShopDrift');
 
 /**
  * The split screen used by login and every page reached from an email link.

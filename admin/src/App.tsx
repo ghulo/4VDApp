@@ -1,4 +1,5 @@
-import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
+import { lazyNamed } from './utils/lazyNamed';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
@@ -25,10 +26,8 @@ import { useCurrentUser } from './auth/useAuth';
 import { browseOnly, staffLayout } from './auth/roles';
 import { ViewAsBar } from './components/ViewAsBar';
 
-/** Loads a page's code only when someone first opens it, so the first visit stays light. */
-function lazyPage<M extends Record<K, ComponentType<any>>, K extends keyof M>(load: () => Promise<M>, name: K) {
-  return lazy(async () => ({ default: (await load())[name] }));
-}
+/** Pages load their code only when someone first opens them, so the first visit stays light. */
+const lazyPage = lazyNamed;
 
 const PayrollPeoplePage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollPeoplePage');
 const PayrollMonthsPage = lazyPage(() => import('./pages/PayrollPages'), 'PayrollMonthsPage');

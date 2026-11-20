@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+import { lazyNamed } from '../../utils/lazyNamed';
 import type { ChartColumn } from './ColumnChart';
 
-const AreaView = lazy(() => import('./charts/RechartsViews').then((module) => ({ default: module.AreaView })));
+const AreaView = lazyNamed(() => import('./charts/RechartsViews'), 'AreaView');
 
 /**
  * One series over time as a smooth line over a faint amber fill: a month of

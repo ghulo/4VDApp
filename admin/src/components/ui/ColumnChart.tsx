@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+import { lazyNamed } from '../../utils/lazyNamed';
 
-const ColumnView = lazy(() => import('./charts/RechartsViews').then((module) => ({ default: module.ColumnView })));
+const ColumnView = lazyNamed(() => import('./charts/RechartsViews'), 'ColumnView');
 
 export interface ChartColumn {
   key: string | number;

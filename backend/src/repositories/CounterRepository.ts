@@ -50,8 +50,12 @@ export interface CounterEventRow {
   created_at: Date;
 }
 
+/**
+ * The shop days `from`..`to` (in `timeZone`) as a range on the raw time, from the first day's midnight to the midnight
+ * after the last, so the column's index can be used (a date worked out per row means reading every row ever kept).
+ */
 const inDays = (column: ReturnType<typeof sql.ref>, from: string, to: string, timeZone: string) =>
-  sql<boolean>`(${column} at time zone ${timeZone})::date between ${from}::date and ${to}::date`;
+  sql<boolean>`(${column} >= (${from}::date)::timestamp at time zone ${timeZone} and ${column} < (${to}::date + 1)::timestamp at time zone ${timeZone})`;
 
 export class CounterRepository {
   constructor(private readonly db: DatabaseClient) {}

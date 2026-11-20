@@ -141,7 +141,7 @@ export class SalesRepository {
     const pattern = filters.search ? `%${escapeLikePattern(filters.search)}%` : null;
     const conditions = [
       pattern
-        ? sql`(exists (select 1 from products p where p.id = s.product_id and p.name ilike ${pattern}) or (${lastInvoice} ->> 'number') ilike ${pattern} or s.receipt_no ilike ${pattern})`
+        ? sql`(exists (select 1 from products p where p.id = s.product_id and p.name ilike ${pattern}) or exists (select 1 from documents d where d.id = inv.id and d.number ilike ${pattern}) or s.receipt_no ilike ${pattern})`
         : sql`true`,
       filters.startDate ? sql`s.sale_date >= ${filters.startDate}` : sql`true`,
       filters.endDate ? sql`s.sale_date < ${filters.endDate}` : sql`true`,
@@ -150,38 +150,47 @@ export class SalesRepository {
       filters.source ? (filters.source === 'trefin' ? sql`s.receipt_no is not null` : sql`s.receipt_no is null`) : sql`true`,
       sql`s.undone_at is null`,
     ];
-    const keyed = sql`
-      select s.id, s.sale_date, s.total_amount, coalesce('i' || (${lastInvoice} ->> 'id'), 'r' || s.receipt_no || '@' || (s.sale_date at time zone ${timeZone})::date::text, 's' || s.id) as key,
-        (s.sale_date at time zone ${timeZone})::date::text as day
-      from sales s where ${sql.join(conditions, sql` and `)}
-    `;
-    const [page, summary] = await Promise.all([
-      sql<{ key: string }>`
-        with k as (${keyed})
-        select key from k group by key order by max(sale_date) desc, max(id) desc
+    // The newest invoice of each sale. Over a date range: through its index, one sale at a time. Over the whole history:
+    // all invoice lines grouped once, which is cheaper than looking up 100k+ sales one by one.
+    const newestInvoice = filters.startDate
+      ? sql`left join lateral (
+          select max(dl.document_id) as id from document_lines dl join documents d on d.id = dl.document_id
+          where dl.sale_id = s.id and d.kind = 'invoice'
+        ) inv on true`
+      : sql`left join (
+          select dl.sale_id, max(dl.document_id) as id from document_lines dl join documents d on d.id = dl.document_id
+          where d.kind = 'invoice' and dl.sale_id is not null
+          group by dl.sale_id
+        ) inv on inv.sale_id = s.id`;
+    // Each sale with its checkout's key, worked out once for the page, the totals, the day totals and the page's sales.
+    const { rows } = await sql<{ keys: string[]; total: string; revenue: string; days: Array<{ day: string; checkouts: number; revenue: string | number }>; ids: number[] }>`
+      with k as materialized (
+        select s.id, s.sale_date, s.total_amount, coalesce('i' || inv.id, 'r' || s.receipt_no || '@' || (s.sale_date at time zone ${timeZone})::date::text, 's' || s.id) as key,
+          (s.sale_date at time zone ${timeZone})::date::text as day
+        from sales s
+        ${newestInvoice}
+        where ${sql.join(conditions, sql` and `)}
+      ),
+      page as (
+        select key, row_number() over (order by max(sale_date) desc, max(id) desc) as n from k
+        group by key order by max(sale_date) desc, max(id) desc
         limit ${filters.limit} offset ${filters.offset}
-      `.execute(this.db),
-      sql<{ total: string; revenue: string }>`
-        with k as (${keyed})
-        select count(distinct key) as total, coalesce(sum(total_amount), 0) as revenue from k
-      `.execute(this.db),
-    ]);
-    const keys = page.rows.map((row) => row.key);
-    const days =
-      keys.length === 0
-        ? []
-        : (
-            await sql<{ day: string; checkouts: string; revenue: string }>`
-              with k as (${keyed})
-              select day, count(distinct key) as checkouts, sum(total_amount) as revenue from k
-              where day in (select day from k where key in (${sql.join(keys)}))
-              group by day
-            `.execute(this.db)
-          ).rows.map((row) => ({ day: row.day, checkouts: Number(row.checkouts), revenue: Number(row.revenue) }));
-    const ids =
-      keys.length === 0
-        ? []
-        : (await sql<{ id: number }>`with k as (${keyed}) select id from k where key in (${sql.join(keys)})`.execute(this.db)).rows.map((row) => row.id);
+      )
+      select
+        (select coalesce(json_agg(key order by n), '[]') from page) as keys,
+        (select count(distinct key) from k) as total,
+        (select coalesce(sum(total_amount), 0) from k) as revenue,
+        (select coalesce(json_agg(json_build_object('day', day, 'checkouts', checkouts, 'revenue', revenue)), '[]') from (
+          select day, count(distinct key) as checkouts, sum(total_amount) as revenue from k
+          where day in (select k.day from k join page on page.key = k.key)
+          group by day
+        ) d) as days,
+        (select coalesce(json_agg(k.id), '[]') from k join page on page.key = k.key) as ids
+    `.execute(this.db);
+    const found = rows[0]!;
+    const keys = found.keys;
+    const days = found.days.map((row) => ({ day: row.day, checkouts: Number(row.checkouts), revenue: Number(row.revenue) }));
+    const ids = found.ids;
     const sales =
       ids.length === 0
         ? []
@@ -207,7 +216,7 @@ export class SalesRepository {
             .where('s.id', 'in', ids)
             .orderBy('s.id')
             .execute();
-    return { sales, keys, total: Number(summary.rows[0]!.total), revenue: Number(summary.rows[0]!.revenue), days };
+    return { sales, keys, total: Number(found.total), revenue: Number(found.revenue), days };
   }
 
   async create(sale: {

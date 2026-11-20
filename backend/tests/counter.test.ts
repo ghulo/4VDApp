@@ -1,3 +1,4 @@
+import { sql } from 'kysely';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { gtinCheckDigit, hasValidCheckDigit, inStoreBarcode } from '../src/utils/barcodes.js';
@@ -209,5 +210,38 @@ describe('sales history by checkout', () => {
     const byInvoice = (await checkouts(invoice)).body.data;
     expect(byInvoice.checkouts.map((row: { key: string }) => row.key)).toEqual([all.checkouts[1].key]);
     expect((await checkouts('100%_')).body.data.checkouts).toEqual([]);
+
+    // Over a date range the invoices are found another way than over the whole history: same answer.
+    const ranged = (search?: string) =>
+      request(context.app)
+        .get('/api/sales/checkouts')
+        .query({ startDate: '2000-01-01', endDate: '2100-01-01', ...(search ? { search } : {}) })
+        .set(auth());
+    const allRanged = (await ranged()).body;
+    expect(allRanged.data).toEqual(all);
+    expect(allRanged.meta.total).toBe(2);
+    expect((await ranged(invoice)).body.data.checkouts.map((row: { key: string }) => row.key)).toEqual([all.checkouts[1].key]);
+  });
+
+  it('should page checkouts newest first with the totals of the whole range', async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 1, stock: 20 });
+    for (let i = 0; i < 3; i++) await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: milk, quantity: i + 1 }] });
+    const page = (await request(context.app).get('/api/sales/checkouts').query({ limit: 2, page: 2 }).set(auth())).body;
+    expect(page.data.checkouts).toHaveLength(1);
+    expect(page.data.checkouts[0].total).toBe(1);
+    expect(page.data.totalRevenue).toBe(6);
+    expect(page.meta.total).toBe(3);
+  });
+});
+
+describe("the Counter's day figures", () => {
+  it("should count a sale in its own shop day only, which starts at the shop's midnight", async () => {
+    const milk = await createTestProduct(context, adminToken, { name: 'Milk', price: 2, stock: 10 });
+    await request(context.app).post('/api/sales/basket').set(auth()).send({ items: [{ productId: milk, quantity: 1 }] });
+    const before = (await request(context.app).get('/api/counter/today').set(auth())).body.data.mine;
+    expect(before).toMatchObject({ receipts: 1, total: 2 });
+    // Moved to one second before today's midnight in the shop's time zone: no longer today.
+    await sql`update documents set issued_at = (${today()}::date::timestamp at time zone ${context.config.shopTimeZone}) - interval '1 second'`.execute(context.db);
+    expect((await request(context.app).get('/api/counter/today').set(auth())).body.data.mine).toMatchObject({ receipts: 0, total: 0 });
   });
 });

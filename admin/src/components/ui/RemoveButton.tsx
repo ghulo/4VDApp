@@ -18,14 +18,15 @@ interface Props {
   'aria-label'?: string;
 }
 
-/** A remove that asks once: the first press shows "Yes, remove" and Cancel in its place. */
+/** A remove that asks once: the first press shows "Yes, remove" and Cancel in its place, with the focus on Cancel. */
 export function RemoveButton({ children, confirm, onConfirm, pending, disabled, size = 'sm', variant = 'danger-text', icon, 'aria-label': ariaLabel }: Props) {
   const t = useT();
   const [asking, setAsking] = useState(false);
-  const yes = useRef<HTMLButtonElement>(null);
+  // The focus goes to the safe choice, so a second press of the same key never removes.
+  const cancel = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (asking) yes.current?.focus();
+    if (asking) cancel.current?.focus();
   }, [asking]);
 
   if (!asking) {
@@ -38,7 +39,6 @@ export function RemoveButton({ children, confirm, onConfirm, pending, disabled, 
   return (
     <span className="inline-confirm" onKeyDown={(event) => event.key === 'Escape' && setAsking(false)}>
       <Button
-        ref={yes}
         size={size}
         variant="danger"
         loading={pending}
@@ -49,7 +49,7 @@ export function RemoveButton({ children, confirm, onConfirm, pending, disabled, 
       >
         {confirm}
       </Button>
-      <Button size={size} variant="ghost" onClick={() => setAsking(false)}>
+      <Button ref={cancel} size={size} variant="ghost" onClick={() => setAsking(false)}>
         {t.common.cancel}
       </Button>
     </span>

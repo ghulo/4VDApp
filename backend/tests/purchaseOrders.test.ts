@@ -91,7 +91,7 @@ describe('supplier orders', () => {
         supplierName: 'Fresh Foods',
         note: null,
         createdAt: order.createdAt,
-        lines: [{ id: order.lines[0].id, productId: milk, productName: 'Milk', sku: order.lines[0].sku, quantity: 12 }],
+        lines: [{ id: order.lines[0].id, productId: milk, productName: 'Milk', sku: order.lines[0].sku, unit: 'piece', quantity: 12 }],
       },
     ]);
 
@@ -108,6 +108,24 @@ describe('supplier orders', () => {
     const dates = (await request(context.app).get('/api/expiry').set(auth(employeeToken)).query({ productId: milk })).body.data;
     expect(dates).toMatchObject([{ expiresOn: '2027-01-15', quantity: 10 }]);
     expect((await request(context.app).get('/api/orders/deliveries').set(auth(employeeToken))).body.data).toEqual([]);
+  });
+
+  it('should tell the counter which goods come by weight, and take a delivery of 2.5 kg', async () => {
+    const freshFoods = await supplier();
+    const cheese = await createTestProduct(context, adminToken, { name: 'Djathë', price: 8, costPrice: 5, stock: 1, unit: 'kg' });
+    const order = (await request(context.app).post('/api/orders').set(auth()).send({ supplierId: freshFoods, lines: [{ productId: cheese, quantity: 3 }] })).body.data;
+    const employeeToken = await loginAs(context, 'employee');
+
+    const deliveries = (await request(context.app).get('/api/orders/deliveries').set(auth(employeeToken))).body.data;
+    expect(deliveries[0].lines[0]).toMatchObject({ productId: cheese, unit: 'kg', quantity: 3 });
+
+    const received = await request(context.app)
+      .post(`/api/orders/${order.id}/receive`)
+      .set(auth(employeeToken))
+      .send({ lines: [{ lineId: order.lines[0].id, receivedQuantity: 2.5, expiresOn: null }] });
+
+    expect(received.status).toBe(200);
+    expect(await stockOf(cheese)).toBe(3.5);
   });
 
   it('should let the owner look but only managers order', async () => {

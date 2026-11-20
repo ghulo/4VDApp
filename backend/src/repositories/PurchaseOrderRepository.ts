@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import type { BillLineKind, WithholdingType } from '../constants/bills.js';
 import type { DatabaseClient } from '../database/connection.js';
+import type { ProductUnit } from '../database/types.js';
 import { PARTNER_DETAIL_COLUMNS, partnerDetailRow, type PartnerDetails } from '../validators/partnerDetails.js';
 
 export type OrderStatus = 'open' | 'received' | 'cancelled';
@@ -99,6 +100,8 @@ export interface OrderLineRecord {
   product_id: number;
   product_name: string;
   sku: string | null;
+  /** How the product is counted: piece, or kg/l/m/m² (received in fractions). */
+  unit: ProductUnit;
   quantity: number;
   unit_cost: string | null;
   received_quantity: number | null;
@@ -195,7 +198,7 @@ export class PurchaseOrderRepository {
     return this.db
       .selectFrom('purchase_order_lines as l')
       .innerJoin('products as p', 'p.id', 'l.product_id')
-      .select(['l.id', 'l.order_id', 'l.product_id', 'p.name as product_name', 'p.sku', 'l.quantity', 'l.unit_cost', 'l.received_quantity'])
+      .select(['l.id', 'l.order_id', 'l.product_id', 'p.name as product_name', 'p.sku', 'p.unit', 'l.quantity', 'l.unit_cost', 'l.received_quantity'])
       .where('l.order_id', 'in', orderIds)
       .orderBy('p.name')
       .execute();

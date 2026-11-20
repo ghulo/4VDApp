@@ -1,3 +1,4 @@
+import type { ProductUnit } from '../database/types.js';
 import type { CostReason } from '../i18n/activityText.js';
 import { SYSTEM_STOCK_REASONS } from '../constants/stock.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
@@ -18,6 +19,8 @@ export interface OrderLineDto {
   productId: number;
   productName: string;
   sku: string | null;
+  /** How the product is counted: piece, or kg/l/m/m² (received in fractions). */
+  unit: ProductUnit;
   quantity: number;
   /** What one unit costs from this supplier, when known. */
   unitCost: number | null;
@@ -65,7 +68,7 @@ export interface DeliveryDto {
   supplierName: string;
   note: string | null;
   createdAt: string;
-  lines: Array<Pick<OrderLineDto, 'id' | 'productId' | 'productName' | 'sku' | 'quantity'>>;
+  lines: Array<Pick<OrderLineDto, 'id' | 'productId' | 'productName' | 'sku' | 'unit' | 'quantity'>>;
 }
 
 const toLineDto = (line: OrderLineRecord): OrderLineDto => ({
@@ -73,6 +76,7 @@ const toLineDto = (line: OrderLineRecord): OrderLineDto => ({
   productId: line.product_id,
   productName: line.product_name,
   sku: line.sku,
+  unit: line.unit,
   quantity: line.quantity,
   unitCost: line.unit_cost === null ? null : Number(line.unit_cost),
   receivedQuantity: line.received_quantity,
@@ -192,7 +196,7 @@ export class PurchaseOrderService {
         supplierName: order.supplier.name,
         note: order.note,
         createdAt: order.createdAt,
-        lines: order.lines.map(({ id, productId, productName, sku, quantity }) => ({ id, productId, productName, sku, quantity })),
+        lines: order.lines.map(({ id, productId, productName, sku, quantity, unit }) => ({ id, productId, productName, sku, quantity, unit })),
       }));
   }
 

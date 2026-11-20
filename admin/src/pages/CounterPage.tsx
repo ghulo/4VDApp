@@ -49,8 +49,8 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
 import { offersByProduct, tapShortDated as nextShortDated } from '../utils/shortDated';
 import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
-import { flushEvents, localEventStore, sendEvents } from './counter/eventOutbox';
-import { DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, stockDecision } from './counter/tillRules';
+import { drain, keep, localEventStore, type Owner } from './counter/eventOutbox';
+import { DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -63,9 +63,9 @@ import { ProductFinder } from './counter/ProductFinder';
 import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
-import { type Basket, useBaskets } from './counter/useBaskets';
+import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
-import { isNetworkFailure, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
+import { newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import { useWaitingSales } from './counter/useWaitingSales';
 
 type Panel =
@@ -135,6 +135,8 @@ const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now 
 const PAY_TIMEOUT_MS = 12_000;
 /** How long a scan waits for the server to look up a code this PC's shelf doesn't know. */
 const LOOKUP_TIMEOUT_MS = 5_000;
+/** The keys that change what a basket sells, closed while its sale waits for an answer. */
+const CHANGES_BASKET = new Set<Panel>(['quantity', 'price', 'discount', 'basketRabat', 'customer', 'remove', 'cancel', 'deliver', 'serial', 'find']);
 
 /** Whether the browser says it is connected, kept up to date. */
 function useOnline(): boolean {
@@ -186,13 +188,23 @@ export function CounterPage() {
   const expiries = useQuery({ queryKey: ['expiry', 'upcoming'], queryFn: () => expiryApi.upcoming(), staleTime: 5 * 60_000 });
   const shortDatedBatches = useQuery({ queryKey: ['expiry', 'short-dated'], queryFn: expiryApi.shortDated, staleTime: 5 * 60_000 });
   const offers = useMemo(() => offersByProduct(shortDatedBatches.data), [shortDatedBatches.data]);
-  const [panel, setPanel] = useState<Panel>(null);
+  const [panel, setPanelState] = useState<Panel>(null);
+  // A sale on its way to the server: nothing opens over Pay or takes its place (Back, Esc, Not printed, a scan) until it is settled.
+  const payingRef = useRef(false);
+  const [paying, setPaying] = useState(false);
+  const setPayingNow = (on: boolean) => {
+    payingRef.current = on;
+    setPaying(on);
+  };
+  const setPanel = useCallback((next: Panel) => {
+    if (!payingRef.current) setPanelState(next);
+  }, []);
   // Products that have serial numbers (Settings → Features): the sale asks for one per unit.
   const features = useFeatures();
   const serialProducts = useQuery({ queryKey: ['serials', 'products'], queryFn: serialsApi.products, enabled: features.serials, staleTime: 60_000 });
   const [serialFor, setSerialFor] = useState<number | null>(null);
   const printer = useFiscalPrinter(settings.data?.printer.enabled ?? false, t.counter);
-  const { baskets, current, setLines, update: updateBasket, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
+  const { baskets, current, setLines, update: updateBasket, setPending, open: openBasket, select: selectBasket, close: closeBasket } = useBaskets(user.id);
 
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
   const byId = useMemo(() => new Map((products.data ?? []).map((product) => [product.id, product])), [products.data]);
@@ -280,11 +292,27 @@ export function CounterPage() {
 
   const focusScan = useCallback(() => scanRef.current?.focus({ preventScroll: true }), []);
 
-  // Never in the way of the sale: without internet the events wait on this PC and go once it is back.
-  const record = useCallback((events: CounterEventInput[]) => sendEvents(localEventStore, user.id, events, counterApi.record), [user.id]);
+  // Never in the way of the sale: each event is written to this PC first, then sent in order; without internet it waits.
+  // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
+  const lastBusiness = useRef(user.businessId);
+  if (user.businessId !== undefined) lastBusiness.current = user.businessId;
+  const businessId = user.businessId ?? lastBusiness.current ?? 0;
+  const owner = useMemo<Owner>(() => ({ businessId, userId: user.id }), [businessId, user.id]);
+  const sendEvents = useCallback(() => drain(localEventStore, owner, counterApi.record).catch(() => undefined), [owner]);
+  const record = useCallback(
+    (events: CounterEventInput[]) => {
+      keep(localEventStore, owner, events);
+      return sendEvents();
+    },
+    [owner, sendEvents],
+  );
+  // What waits goes as soon as the internet is there, and again every half minute while it is.
   useEffect(() => {
-    if (online) void flushEvents(localEventStore, user.id, counterApi.record);
-  }, [online, user.id]);
+    if (!connected) return;
+    void sendEvents();
+    const timer = window.setInterval(() => void sendEvents(), 30_000);
+    return () => window.clearInterval(timer);
+  }, [connected, sendEvents]);
 
   /** The beep or the buzz after a scan, unless Settings → Counter turned them off. */
   const sound = (kind: 'ok' | 'fail') => {
@@ -293,12 +321,20 @@ export function CounterPage() {
 
   // A product refused past stock, put in once an owner or admin takes over the till.
   // Only for a couple of minutes: a switch much later, for something else, adds nothing.
-  const [afterSwitch, setAfterSwitch] = useState<{ product: Product; quantity: number; until: number } | null>(null);
+  // Bound to the basket and the line as they were refused: anything changed in between, and nothing goes in.
+  const [afterSwitch, setAfterSwitch] = useState<{ basketId: string; productId: number; from: number; to: number; until: number } | null>(null);
+  // Set once the owner's PIN went through, so closing the PIN sheet afterwards keeps what waits for them.
+  const switchDone = useRef(false);
 
-  /** Past stock with the shop's rule against it: the big alarm, with the owner's way through when they can take over. */
+  /**
+   * Past stock with the shop's rule against it: the big alarm, with the
+   * owner's way through when they can take over. `wanted` is what the line
+   * should hold, `inBasket` what it holds now.
+   */
   function refuseStock(product: Product, wanted: number, inBasket: number) {
     const stock = product.stock.quantity;
     const text = stock <= 0 ? t.counter.outOfStock(product.name) : t.counter.noMore(product.name, stock);
+    const basketId = current.id;
     alarmFor(text, {
       title: stock <= 0 ? t.counter.alarm.outOfStock : t.counter.alarm.noMore,
       detail: text,
@@ -307,7 +343,8 @@ export function CounterPage() {
         ? {
             label: t.counter.alarm.switchToOwner,
             run: () => {
-              setAfterSwitch({ product, quantity: toGram(wanted - inBasket), until: Date.now() + 2 * 60_000 });
+              switchDone.current = false;
+              setAfterSwitch(wanted > inBasket ? { basketId, productId: product.id, from: inBasket, to: toGram(wanted), until: Date.now() + 2 * 60_000 } : null);
               startPanel('switch');
             },
           }
@@ -321,6 +358,10 @@ export function CounterPage() {
    * an employee is selling. False when not all of them went in.
    */
   function add(product: Product, quantity = 1): boolean {
+    if (current.pending) {
+      complain(t.counter.pendingLocked);
+      return false;
+    }
     const already = current.lines.find((line) => line.productId === product.id)?.quantity ?? 0;
     const stock = product.stock.quantity;
     const decision = stockDecision({ stock, already, wanted: already + quantity, rule: noStockRule, oversees: canOversee(user.role) });
@@ -349,13 +390,16 @@ export function CounterPage() {
     return true;
   }
 
-  // The owner took over after a refusal: what was refused goes in now.
+  // The owner took over after a refusal: what was refused goes in now, if the basket and its line are still as they were.
   useEffect(() => {
     if (!afterSwitch) return;
     setAfterSwitch(null);
-    const product = byId.get(afterSwitch.product.id);
-    if (canOversee(user.role) && product && Date.now() < afterSwitch.until) add(product, afterSwitch.quantity);
-    // Runs once per person at the till; add() reads the latest basket itself.
+    const product = byId.get(afterSwitch.productId);
+    const line = current.lines.find((one) => one.productId === afterSwitch.productId)?.quantity ?? 0;
+    if (!canOversee(user.role) || !product || Date.now() >= afterSwitch.until || current.id !== afterSwitch.basketId || line !== afterSwitch.from) return;
+    if (line === 0) add(product, afterSwitch.to);
+    else setQuantity(product.id, afterSwitch.to);
+    // Runs once per person at the till; add() and setQuantity() read the latest basket themselves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id]);
 
@@ -417,6 +461,20 @@ export function CounterPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerId, products.data]);
 
+  /** Whether a scan names a product on this PC's shelf, read the way the scan box reads it (links, scale labels). */
+  function isShelfCode(raw: string): boolean {
+    const code = codeFromScan(raw);
+    if (!code) return false;
+    const shelf = products.data ?? [];
+    if (exactMatch(code, shelf)) return true;
+    const label = readScaleLabel(code);
+    return Boolean(label) && shelf.some((product) => product.unit === 'kg' && (product.scalePlu === label!.plu || (product.scalePlu === null && product.sku === String(label!.plu))));
+  }
+
+  // The till as it is now, for a scan whose answer comes from the server a moment later.
+  const live = useRef({ basketId: current.id, panel, add, showCheck, priceCheck, complain, alarmFor, sound });
+  live.current = { basketId: current.id, panel, add, showCheck, priceCheck, complain, alarmFor, sound };
+
   /** Enter in the scan box: a scanner always sends it after the code. "6*" first sells six. */
   async function handleScan(raw: string) {
     const multiplied = /^(\d{1,4})\s*[*xX]\s*(.+)$/.exec(raw.trim());
@@ -456,34 +514,55 @@ export function CounterPage() {
       alarmFor(t.counter.alarm.noScalePlu(label.plu), { title: t.counter.alarm.noScalePlu(label.plu), detail: code, todo: t.counter.alarm.noScalePluTodo });
       return sound('fail');
     }
-    // A barcode this PC's shelf doesn't know yet (a product added since): the server's answer comes before any name.
+    // A code this PC's shelf doesn't know yet (a product added since): the server's exact barcode or number comes before any name.
     let failure: ReturnType<typeof lookupFailure> = online ? 'notFound' : 'offline';
+    let found: Product | null = null;
     if (online) {
+      const startedIn = current.id;
       try {
-        return take(await withTimeout(productsApi.byBarcode(code), LOOKUP_TIMEOUT_MS));
+        found = await withTimeout(productsApi.byCode(code), LOOKUP_TIMEOUT_MS);
       } catch (error) {
         failure = lookupFailure(error);
       }
+      // The answer came late: the basket it was meant for was left, or paying started, so it goes nowhere.
+      const now = live.current;
+      if (now.basketId !== startedIn || now.panel === 'pay' || payingRef.current) return;
+      if (found) {
+        if (now.priceCheck) {
+          now.showCheck(found);
+          return now.sound('ok');
+        }
+        return now.sound(now.add(found, quantity * piecesFor(found, code)) ? 'ok' : 'fail');
+      }
     }
+    const now = live.current;
     // Typed words: one product by a real name goes in; digits or a couple of letters only open the finder.
     const named = nameMatches(code, shelf);
-    if (named.addAtOnce) return take(named.products[0]!);
+    if (named.addAtOnce) {
+      if (now.priceCheck) {
+        now.showCheck(named.products[0]!);
+        return now.sound('ok');
+      }
+      return now.sound(now.add(named.products[0]!, quantity * piecesFor(named.products[0]!, code)) ? 'ok' : 'fail');
+    }
     if (named.products.length > 0) {
       setFinderQuery(code);
       return setPanel('find');
     }
-    if (failure === 'notFound') alarmFor(t.counter.notFound(code), { title: t.counter.alarm.notFound, detail: code, todo: t.counter.alarm.notFoundTodo });
-    else alarmFor(t.counter.cantCheck(code), { title: t.counter.alarm.cantCheck, detail: code, todo: t.counter.alarm.cantCheckTodo });
-    sound('fail');
+    if (failure === 'notFound') now.alarmFor(t.counter.notFound(code), { title: t.counter.alarm.notFound, detail: code, todo: t.counter.alarm.notFoundTodo });
+    else now.alarmFor(t.counter.cantCheck(code), { title: t.counter.alarm.cantCheck, detail: code, todo: t.counter.alarm.cantCheckTodo });
+    now.sound('fail');
   }
 
   function setQuantity(productId: number, quantity: number) {
+    if (current.pending) return complain(t.counter.pendingLocked);
     const product = byId.get(productId);
     const already = current.lines.find((line) => line.productId === productId)?.quantity ?? 0;
     // Fewer is always fine, even on a line already past stock.
     const decision = product && quantity > already ? stockDecision({ stock: product.stock.quantity, already, wanted: quantity, rule: noStockRule, oversees: canOversee(user.role) }) : null;
     const capped = decision ? decision.quantity : quantity;
-    if (product && decision?.kind === 'refused') complain(t.counter.noMore(product.name, product.stock.quantity));
+    // Refused: the line takes what the shelf holds, and the owner can take over for the rest.
+    if (product && decision?.kind === 'refused') refuseStock(product, quantity, Math.max(already, toGram(capped)));
     if (product && decision?.kind === 'past') say(t.counter.pastStock(product.name, product.stock.quantity));
     const least = allowsParts(product?.unit) ? 0.001 : 1;
     setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(least, toGram(capped)) } : line)));
@@ -491,6 +570,7 @@ export function CounterPage() {
 
   function nudge(step: 1 | -1) {
     if (!selected) return;
+    if (current.pending) return complain(t.counter.pendingLocked);
     if (step === -1 && selected.quantity - 1 < (allowsParts(selected.product?.unit) ? 0.001 : 1)) return setPanel('remove');
     setQuantity(selected.productId, selected.quantity + step);
   }
@@ -576,15 +656,9 @@ export function CounterPage() {
     refreshAfterSale();
   });
 
-  // A sale on its way to the server: Back, Esc, the basket tabs and Switch person wait for it.
-  const [paying, setPaying] = useState(false);
-  const payingRef = useRef(false);
-  const setPayingNow = (on: boolean) => {
-    payingRef.current = on;
-    setPaying(on);
-  };
-
+  // One sale at a time: Back, Esc, Not printed, the basket tabs and Switch person wait until the server answered or the sale is kept on this PC.
   async function pay(payment: Payment) {
+    if (payingRef.current) return;
     setPayingNow(true);
     try {
       await recordSale(payment);
@@ -595,14 +669,22 @@ export function CounterPage() {
     }
   }
 
-  async function recordSale(payment: Payment) {
+  /** A sale sent before without an answer: exactly that sale again. */
+  function sendAgain() {
+    const pending = current.pending;
+    if (!pending || payingRef.current) return;
+    void pay(pending.payment).catch((error: unknown) => complain(errorMessage(error)));
+  }
+
+  async function recordSale(chosen: Payment) {
     const basketId = current.id;
+    // Sent before without an answer: the same sale, key and payment again, whatever the screen says now.
+    const attempt: PendingSale = current.pending ?? { key: newSaleKey(), payment: chosen, body: basketBody(chosen), total, at: new Date().toISOString() };
+    const { key, body, payment, at } = attempt;
     if (payment.paidBy === 'tab' && !online) throw new Error(t.counter.offlineNoTab);
     if (current.delivery && !online) throw new Error(t.counter.offlineNoDelivery);
-    // One key per basket until it is paid or changes, so Pay pressed again (the answer got lost) records the sale once.
-    const key = current.saleKey ?? newSaleKey();
-    if (!current.saleKey) updateBasket({ saleKey: key });
-    const body = basketBody(payment);
+    // Written to this PC before it goes, so a lost answer or a reload sends this very sale again, recorded once.
+    if (!current.pending) setPending(basketId, attempt);
     const delivered = current.delivery ?? null;
     let result: Awaited<ReturnType<typeof salesApi.recordBasket>> | null = null;
     if (online) {
@@ -610,21 +692,34 @@ export function CounterPage() {
         // Straight to the server: a query-library mutation would pause, not fail, when the browser says offline.
         result = await withTimeout(salesApi.recordBasket({ ...body, clientKey: key }), PAY_TIMEOUT_MS);
       } catch (error) {
-        // The internet went just now: the sale waits like any other made offline.
-        if (payment.paidBy === 'tab' || delivered || !isNetworkFailure(error)) throw error;
-        setUnreachable(true);
+        const failure = payFailure(error);
+        // The server said no: nothing was recorded (a key it knows gets its first answer back), so the basket is free again.
+        if (failure === 'refused') {
+          setPending(basketId, null);
+          throw error;
+        }
+        if (failure === 'offline') setUnreachable(true);
+        // It may have gone in, and a tab, a delivery or a server that broke mid-way can't wait on this PC:
+        // the basket stays as sent until Send it again gets an answer.
+        if (failure === 'unclear' || payment.paidBy === 'tab' || delivered) {
+          setPayingNow(false);
+          setPanelState(null);
+          complain(t.counter.unclearPay);
+          focusScan();
+          return;
+        }
+        // The internet went just now: the sale waits like any other made offline, with the same key.
       }
     }
-    const at = new Date().toISOString();
     const sold = result
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
-      : { total, documentId: 0, number: t.counter.waitingToSend };
+      : { total: attempt.total, documentId: 0, number: t.counter.waitingToSend };
     if (result) {
       refreshAfterSale();
       if (delivered) void queryClient.invalidateQueries({ queryKey: TO_DELIVER_KEY });
       if (current.offerId) void queryClient.invalidateQueries({ queryKey: ['offers'] });
     } else {
-      waiting.add({ key, at, userId: user.id, body, total, receipt: null });
+      waiting.add({ key, at, userId: user.id, body, total: attempt.total, receipt: null });
       // This PC's shelf loses what was sold, so the next basket can't sell it again.
       const soldNow = new Map(lines.map((line) => [line.productId, line.quantity]));
       queryClient.setQueryData<Product[]>(['products', 'counter-shelf'], (shelf) =>
@@ -648,7 +743,7 @@ export function CounterPage() {
           ];
         });
     closeBasket(basketId);
-    setPanel(null);
+    setPanelState(null);
     // Recorded (or waiting on this PC): the till is free again while the receipt prints.
     setPayingNow(false);
     setSelectedId(null);
@@ -748,7 +843,19 @@ export function CounterPage() {
     setPrintNote({ ok: false, text: reason });
   }
 
+  // One print per receipt at a time: Print again on the Paid screen and in Not printed can't both send it.
+  const printing = useRef(new Set<number>());
   async function printAgain(item: Unprinted) {
+    if (printing.current.has(item.documentId)) return;
+    printing.current.add(item.documentId);
+    try {
+      await printOnce(item);
+    } finally {
+      printing.current.delete(item.documentId);
+    }
+  }
+
+  async function printOnce(item: Unprinted) {
     let text = item.text;
     // Built again when it couldn't be the first time (a tax group set since, or an older 4VD kept no text).
     if (!text) {
@@ -786,9 +893,21 @@ export function CounterPage() {
   const serialLine = lines.find((line) => line.productId === serialFor) ?? null;
   const missingSerial = () => lines.find((line) => tracked.has(line.productId) && (line.serials?.length ?? 0) < Math.ceil(line.quantity));
   const startPanel = (next: Panel) => {
+    if (payingRef.current) return;
     setAlarm(null);
+    // A sale sent without an answer: Pay sends that same sale again; nothing else may change the basket first.
+    if (current.pending) {
+      if (next === 'pay') return sendAgain();
+      if (CHANGES_BASKET.has(next)) return complain(t.counter.pendingLocked);
+    }
     if (['quantity', 'price', 'discount', 'remove'].includes(next ?? '') && !selected) return complain(t.counter.pickLine);
     if ((next === 'pay' || next === 'cancel') && !hasLines) return complain(t.counter.addFirst);
+    // The shop's rule looks at the whole basket before the money is taken, online or not: lines put in by someone
+    // else (an owner before a switch) or a shelf that changed since can't be sold past stock by an employee.
+    if (next === 'pay' && noStockRule === 'block' && !canOversee(user.role)) {
+      const over = lines.find((line) => line.product && line.quantity > line.product.stock.quantity);
+      if (over?.product) return refuseStock(over.product, over.quantity, over.quantity);
+    }
     // Online, each unit of a product with serial numbers needs its serial before paying; offline it can wait.
     const missing = next === 'pay' && online ? missingSerial() : undefined;
     if (missing) {
@@ -1028,7 +1147,7 @@ export function CounterPage() {
             <span>{printer.busy ? t.counter.printer.printing : reachText[printer.reach]}</span>
           </p>
           {printer.unprinted.length > 0 && (
-            <Button size="sm" variant="danger" icon={WarningCircle} onClick={() => setPanel('unprinted')}>
+            <Button size="sm" variant="danger" icon={WarningCircle} disabled={paying} onClick={() => setPanel('unprinted')}>
               {t.counter.notPrinted(printer.unprinted.length)}
             </Button>
           )}
@@ -1226,6 +1345,7 @@ export function CounterPage() {
               }}
               door={current.delivery?.payment === 'door' ? current.delivery : null}
               // A barcode scanned while paying: back to the basket, and the product goes in.
+              isProductCode={isShelfCode}
               onScan={(code) => {
                 if (payingRef.current) return;
                 // A scanner that sends a second Enter must not open Pay again from the empty scan box.
@@ -1236,6 +1356,17 @@ export function CounterPage() {
             />
           ) : (
             <>
+              {current.pending && (
+                <div className="counter-opening counter-refused" role="alert">
+                  <WarningCircle size={20} weight="bold" aria-hidden="true" />
+                  <div className="counter-opening__text">
+                    <p className="counter-opening__title">{t.counter.pendingSale(formatMoney(current.pending.total))}</p>
+                  </div>
+                  <Button size="sm" variant="primary" icon={ArrowClockwise} loading={paying} disabled={paying} onClick={sendAgain}>
+                    {t.counter.sendAgain}
+                  </Button>
+                </div>
+              )}
               {waiting.refused.length > 0 && (
                 <div className="counter-opening counter-refused" role="alert">
                   <WarningCircle size={20} weight="bold" aria-hidden="true" />
@@ -1468,11 +1599,18 @@ export function CounterPage() {
         people={switchPeople.data}
         nobody={t.counter.switchNobody}
         submit={t.counter.takeOver}
-        onClose={closePanel}
+        onClose={() => {
+          // Closed without taking over: what waited for the owner is dropped.
+          if (!switchDone.current) setAfterSwitch(null);
+          switchDone.current = false;
+          closePanel();
+        }}
         onSubmit={async (userId, pin) => {
-          // Sales made offline go first, so each is recorded as the person who made it.
+          // Sales made offline and the till's events go first, so each is recorded as the person who made it.
           await waiting.flush();
+          await sendEvents();
           const result = await counterApi.switchTo({ userId, pin });
+          switchDone.current = true;
           closePanel();
           await adoptSession(result);
           // Everything on screen was the last person's: My day, permissions, the lists.

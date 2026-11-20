@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../../services/apiClient';
 import type { Product } from '../../services/types';
-import { BurstWatcher, exactMatch, lookupFailure, nameMatches, stockDecision, tenderedLooksWrong } from './tillRules';
+import { BurstWatcher, exactMatch, lookupFailure, nameMatches, payEnter, payFailure, stockDecision, tenderedLooksWrong } from './tillRules';
 
 const shelf = [
   { id: 1, name: 'Coca-Cola 500 ml', barcode: '5449000000996', otherBarcodes: ['5449000000002'], sku: 'CC500' },
@@ -33,37 +33,78 @@ describe('selling past what 4VD thinks is on the shelf', () => {
 });
 
 describe('telling the barcode scanner from a hand', () => {
-  const type = (watcher: BurstWatcher, keys: string, start: number, gap: number) => {
+  const type = (watcher: BurstWatcher, keys: string, start: number, gap: number, enterAfter = gap) => {
     let time = start;
     for (const key of keys) {
       watcher.key(key, time);
       time += gap;
     }
-    return watcher.key('Enter', time);
+    return watcher.key('Enter', time - gap + enterAfter);
   };
 
-  it('gives the code when a burst of keys ends in a quick Enter', () => {
-    expect(type(new BurstWatcher(), '5449000000996', 1000, 8)).toBe('5449000000996');
+  it('sees a burst of keys ending in a quick Enter, short codes too', () => {
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8)).toEqual({ code: '5449000000996', burst: true });
+    expect(type(new BurstWatcher(), '77', 1000, 8)).toEqual({ code: '77', burst: true });
   });
 
-  it('gives nothing for a hand typing an amount and pressing Enter', () => {
-    expect(type(new BurstWatcher(), '20', 1000, 180)).toBeNull();
-    expect(type(new BurstWatcher(), '2000', 1000, 120)).toBeNull();
+  it('still sees the scan when the scanner waits a little before its Enter', () => {
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 200)).toEqual({ code: '5449000000996', burst: true });
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 400)).toEqual({ code: '5449000000996', burst: false });
   });
 
-  it('gives nothing when the Enter comes slowly after the keys', () => {
+  it('sees a hand typing an amount', () => {
+    expect(type(new BurstWatcher(), '20', 1000, 180)).toEqual({ code: '0', burst: false });
+    expect(type(new BurstWatcher(), '2000', 1000, 120)?.burst).toBe(false);
+  });
+
+  it('keeps capitals typed with Shift in the code', () => {
     const watcher = new BurstWatcher();
-    for (const [index, key] of [...'54490000'].entries()) watcher.key(key, 1000 + index * 5);
-    expect(watcher.key('Enter', 2000)).toBeNull();
+    let time = 0;
+    for (const key of ['Shift', 'C', 'Shift', 'C', '5', '0', '0']) watcher.key(key, (time += 5));
+    expect(watcher.key('Enter', time + 5)).toEqual({ code: 'CC500', burst: true });
   });
 
-  it('starts again after a hand-typed key', () => {
+  it('gives nothing for an Enter with nothing typed (a second Enter)', () => {
     const watcher = new BurstWatcher();
-    watcher.key('1', 0);
-    watcher.key('2', 500);
-    expect(watcher.length).toBe(1);
-    for (const [index, key] of [...'5449000'].entries()) watcher.key(key, 510 + index * 5);
-    expect(watcher.key('Enter', 560)).toBe('25449000');
+    type(watcher, '5449000', 0, 5);
+    expect(watcher.key('Enter', 60)).toBeNull();
+  });
+});
+
+describe('an Enter in Pay', () => {
+  const known = (code: string) => exactMatch(code, shelf) !== undefined;
+  const enter = (keys: string, gap: number, enterAfter = gap) => {
+    const watcher = new BurstWatcher();
+    let time = 1000;
+    for (const key of keys) {
+      watcher.key(key, time);
+      time += gap;
+    }
+    return payEnter(watcher.key('Enter', time - gap + enterAfter), known);
+  };
+
+  it('sends a scanned product back to the basket, short codes too, and never takes it as cash', () => {
+    expect(enter('5449000000996', 8)).toEqual({ kind: 'product', code: '5449000000996' });
+    expect(enter('77', 8)).toEqual({ kind: 'product', code: '77' });
+    // The scanner waits a little before its Enter (a suffix delay): still the product.
+    expect(enter('77', 8, 250)).toEqual({ kind: 'product', code: '77' });
+  });
+
+  it('records nothing for a scanned code that is no product', () => {
+    expect(enter('4006381333931', 8)).toEqual({ kind: 'unknown', code: '4006381333931' });
+  });
+
+  it('pays for cash typed by hand, and for a quick short amount', () => {
+    expect(enter('20', 180)).toEqual({ kind: 'pay' });
+    expect(enter('2000', 120)).toEqual({ kind: 'pay' });
+    // A fast hand: "50" with the keys close together, not a product: still the cash.
+    expect(enter('50', 30)).toEqual({ kind: 'pay' });
+    // Typed, then a pause, then Enter.
+    expect(enter('5449000000996', 8, 900)).toEqual({ kind: 'pay' });
+  });
+
+  it('pays on a plain Enter with nothing typed just before', () => {
+    expect(payEnter(null, known)).toEqual({ kind: 'pay' });
   });
 });
 
@@ -109,5 +150,21 @@ describe('finding what was scanned or typed', () => {
     expect(lookupFailure(new ApiError('The server did not answer in time', 0, 'NETWORK'))).toBe('offline');
     expect(lookupFailure(new TypeError('Failed to fetch'))).toBe('offline');
     expect(lookupFailure(new ApiError('Server error', 500, null))).toBe('error');
+  });
+});
+
+describe('a Record sale that failed', () => {
+  it('frees the basket only when the server said no', () => {
+    expect(payFailure(new ApiError('Not enough stock', 400, null))).toBe('refused');
+    expect(payFailure(new ApiError('Signed out', 401, null))).toBe('refused');
+    expect(payFailure(new ApiError('Month closed', 409, null))).toBe('refused');
+  });
+
+  it('keeps the same sale when it may have gone in', () => {
+    expect(payFailure(new ApiError('The server did not answer in time', 0, 'NETWORK'))).toBe('offline');
+    expect(payFailure(new TypeError('Failed to fetch'))).toBe('offline');
+    expect(payFailure(new ApiError('Bad gateway', 502, null))).toBe('offline');
+    expect(payFailure(new ApiError('Server error', 500, null))).toBe('unclear');
+    expect(payFailure(new Error('something else'))).toBe('unclear');
   });
 });

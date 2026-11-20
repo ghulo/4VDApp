@@ -34,32 +34,39 @@ export function stockDecision(p: { stock: number; already: number; wanted: numbe
 
 /** Keys closer together than this come from the barcode scanner, not a hand. */
 export const SCANNER_GAP_MS = 60;
-/** A scanner sends at least this many characters before its Enter; a hand can't type them this fast. */
-const SCANNER_MIN_CHARS = 4;
+/** Some scanners wait a little before their Enter (a "suffix delay"): still the scan, up to this long. */
+export const SCAN_SUFFIX_MS = 300;
+/** Keys the scanner presses along the way (capitals) that are not part of the code. */
+const PASS_THROUGH = new Set(['Shift', 'CapsLock']);
 
 /**
  * Watches the keys typed in a form and tells a barcode scanner's burst (a
  * code typed in a few milliseconds, then Enter) from a hand. Feed it every
- * keydown; on Enter it gives the code the scanner sent, or null for a hand.
+ * keydown; on Enter it says what was typed just before and whether it came
+ * as a burst: at least two characters, each within 60 ms of the last, and
+ * the Enter within 300 ms. Whether a burst is a product is for the caller to
+ * check (a fast hand can type a burst too).
  */
 export class BurstWatcher {
   private chars: string[] = [];
   private last = Number.NEGATIVE_INFINITY;
 
-  /** A key went down at `time` (the event's timeStamp). Returns the scanned code when this is the scanner's Enter. */
-  key(key: string, time: number): string | null {
-    const quick = time - this.last < SCANNER_GAP_MS;
+  /** A key went down at `time` (the event's timeStamp). On Enter: what came before it, and whether it was a burst. */
+  key(key: string, time: number): { code: string; burst: boolean } | null {
+    if (PASS_THROUGH.has(key)) return null;
+    const gap = time - this.last;
     this.last = time;
     if (key === 'Enter') {
-      const code = quick && this.chars.length >= SCANNER_MIN_CHARS ? this.chars.join('') : null;
+      const typed = this.chars;
       this.chars = [];
-      return code;
+      if (typed.length === 0) return null;
+      return { code: typed.join(''), burst: typed.length >= 2 && gap < SCAN_SUFFIX_MS };
     }
     if (key.length !== 1) {
       this.chars = [];
       return null;
     }
-    this.chars = quick ? [...this.chars, key] : [key];
+    this.chars = gap < SCANNER_GAP_MS ? [...this.chars, key] : [key];
     return null;
   }
 
@@ -71,6 +78,23 @@ export class BurstWatcher {
 
 /** An Enter this soon after a scan's own Enter is the scanner's second one (CR+LF, or a double Enter), not a hand asking to pay. */
 export const DOUBLE_ENTER_MS = 150;
+
+/** A scanner's burst this long that names no product is a code 4VD doesn't know, never cash. */
+export const UNKNOWN_SCAN_LENGTH = 4;
+
+/**
+ * What an Enter in Pay means, from what came just before it:
+ * - product: the scanner read a product on this shelf; it goes back to the basket and the cash stays as it was;
+ * - unknown: the scanner read a code that is no product; nothing is recorded until the cashier looks;
+ * - pay: a hand typed the cash (or a short quick "20"): Record sale.
+ */
+export function payEnter(typed: { code: string; burst: boolean } | null, isProductCode: (code: string) => boolean): { kind: 'product' | 'unknown'; code: string } | { kind: 'pay' } {
+  if (!typed?.burst) return { kind: 'pay' };
+  const code = typed.code.trim();
+  if (isProductCode(code)) return { kind: 'product', code };
+  if (code.length >= UNKNOWN_SCAN_LENGTH) return { kind: 'unknown', code };
+  return { kind: 'pay' };
+}
 
 /**
  * Cash typed in Pay that is almost surely a mistake (a barcode scanned into
@@ -112,4 +136,17 @@ export function lookupFailure(error: unknown): 'notFound' | 'offline' | 'error' 
   if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return 'notFound';
   if (isNetworkFailure(error)) return 'offline';
   return 'error';
+}
+
+/**
+ * What a failed Record sale means for the sale on its way:
+ * - refused: the server read it and said no (4xx), so nothing was recorded (a key it knows gets its first answer back instead);
+ * - offline: it never got there, or no answer came in time: it may or may not be in;
+ * - unclear: the server broke while working on it (5xx): it may or may not be in.
+ * Only a refusal frees the basket; the others keep the same sale and key for Send it again.
+ */
+export function payFailure(error: unknown): 'refused' | 'offline' | 'unclear' {
+  if (isNetworkFailure(error)) return 'offline';
+  if (error instanceof ApiError && error.status >= 400 && error.status < 500) return 'refused';
+  return 'unclear';
 }

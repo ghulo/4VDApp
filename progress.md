@@ -63,8 +63,10 @@ UI and features (ask first):
 - [ ] Windows app: F5 on the Counter opens Customer and doesn't reload; F5 elsewhere still reloads; Ctrl+R reloads everywhere; F10 toggles Price check (Windows doesn't open a menu); F11 is still full screen
 - [ ] "Sell past stock" off: an employee scanning one more than the shelf holds sees "Switch to the owner"; the owner types their PIN and the product goes in under the owner's name. On: anyone sells it with "ask for a count" under the scan box
 - [ ] Price check (F10) and F3 find a product with 0 stock
-- [ ] With Pay open, scan a barcode into Tendered: back to the basket with the product added, no sale recorded
-- [ ] Type 5000 as cash on a small sale: it asks first; Record sale again records it. Pressing Record sale twice fast records one sale; Back to basket and Esc wait while it is sending
+- [ ] With Pay open, scan a product into Tendered: back to the basket with the product added, the cash as it was, no sale recorded. Scan a code that is no product: a note, nothing recorded. Typing cash quickly by hand still records
+- [ ] Type 5000 as cash on a small sale: Record sale is off and Enter does nothing until "Yes, €5,000.00 is right" is pressed. Pressing Record sale twice fast records one sale; Back to basket, Esc and Not printed wait while it is sending
+- [ ] A tab sale when the internet drops mid-way: "This sale was sent, but no answer came" with Send it again; the basket can't change; once back online Send it again records it once (check the customer's tab), also after reloading the page
+- [ ] Change a line's quantity (F2) past the shelf as an employee with "Sell past stock" off: "Switch to the owner"; the owner's PIN sets the quantity
 - [ ] Pull the network cable: remove a line and cancel a basket (both work); plug it back: the Counter report shows them
 - [ ] The real scanner (if it sends Enter twice) doesn't open Pay after a scan; a hand's Enter on the empty box still does
 - [ ] A receipt that didn't print because a VAT rate had no printer tax group: set the tax group in Settings → Counter, then Print again prints it; "Leave it" asks first

@@ -10,7 +10,7 @@ import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
 import { cashDue, changeFor, type PayDraft, splitFor } from './payDraft';
-import { BurstWatcher, DOUBLE_ENTER_MS, SCANNER_GAP_MS, tenderedLooksWrong } from './tillRules';
+import { BurstWatcher, DOUBLE_ENTER_MS, payEnter, SCANNER_GAP_MS, tenderedLooksWrong } from './tillRules';
 import type { Unprinted } from './useFiscalPrinter';
 
 /** "7,5" or "7.5" as a number; NaN when it isn't one. */
@@ -234,6 +234,8 @@ interface PayProps {
   door?: DeliveryInput | null;
   /** The barcode scanner fired while paying: the code it sent (the cash typed before it is kept). */
   onScan?: (code: string) => void;
+  /** Whether a code names a product on this PC's shelf: only those go back to the basket. */
+  isProductCode?: (code: string) => boolean;
 }
 
 /** Whether this customer may put `total` on their tab without asking the owner. */
@@ -247,14 +249,16 @@ export function mayPayLater(customer: Customer, total: number, approval: PayLate
  * give it), card on the bank's terminal, part of each, or on a customer's tab. The receipt
  * beside it shows what was paid and the change as it is typed.
  */
-export function PayPanel({ total: saleTotal, customers, draft: given, offline = false, onChange, onPay, onBack, canDecide = false, payLater, onAskOwner, door = null, onScan }: PayProps) {
+export function PayPanel({ total: saleTotal, customers, draft: given, offline = false, onChange, onPay, onBack, canDecide = false, payLater, onAskOwner, door = null, onScan, isProductCode = () => false }: PayProps) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   // Set at once, so a second Enter before the screen shows "busy" doesn't record the sale twice.
   const sending = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  // Cash far over the total (a barcode scanned into the box?) records only on a second press with the same amount.
-  const [checking, setChecking] = useState<string | null>(null);
+  // Cash far over the total (a barcode scanned into the box?) records only once its own key says the amount is right; Enter never does.
+  const [confirmed, setConfirmed] = useState<string | null>(null);
+  // A scanner's code that names no product came in: nothing is recorded until the cashier looks.
+  const [unknownScan, setUnknownScan] = useState<string | null>(null);
   const burst = useRef(new BurstWatcher());
   const beforeBurst = useRef<PayDraft>(given);
   const burstEnded = useRef(Number.NEGATIVE_INFINITY);
@@ -267,18 +271,21 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const short = cash !== null && cash.change < 0;
   const onTab = draft.paidBy === 'tab' ? (customers?.find((one) => String(one.id) === draft.customerId) ?? null) : null;
   const needsOwner = onTab !== null && !canDecide && !mayPayLater(onTab, saleTotal, payLater);
-  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid);
   const takesCash = (draft.paidBy === 'cash' && total > 0) || (draft.paidBy === 'split' && split?.valid === true);
-  const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
+  const looksWrong = takesCash && cash !== null && tenderedLooksWrong(cash.given, due);
+  const unchecked = looksWrong && confirmed !== draft.tendered;
+  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid) || unchecked;
+  const set = (patch: Partial<PayDraft>) => {
+    setUnknownScan(null);
+    onChange({ ...draft, ...patch });
+  };
   const back = () => {
     if (!sending.current) onBack();
   };
-  const looksWrong = cash !== null && tenderedLooksWrong(cash.given, due);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (blocked || sending.current) return;
-    if (looksWrong && checking !== draft.tendered) return setChecking(draft.tendered);
     sending.current = true;
     setBusy(true);
     setError(null);
@@ -303,7 +310,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
       className="counter-form counter-pay-panel"
       onSubmit={submit}
       aria-label={t.counter.payTitle(formatMoney(saleTotal))}
-      // The barcode scanner types a code and Enter in a burst: wherever the focus is, that is a product, never cash or a press of Record sale.
+      // The barcode scanner types a code and Enter in a burst: wherever the focus is, a product's code goes back to the basket, never into the cash or a press of Record sale.
       onKeyDownCapture={(event) => {
         if (event.ctrlKey || event.altKey || event.metaKey) return;
         // A scanner's second Enter (CR+LF) right after its code is part of the scan, never Record sale.
@@ -312,15 +319,20 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
           event.stopPropagation();
           return;
         }
-        const code = burst.current.key(event.key, event.timeStamp);
+        const typed = burst.current.key(event.key, event.timeStamp);
         if (event.key.length === 1 && burst.current.length === 1) beforeBurst.current = given;
-        if (!code) return;
+        const meant = payEnter(typed, isProductCode);
+        // Typed by hand: Record sale, as the form says.
+        if (meant.kind === 'pay') return;
         burstEnded.current = event.timeStamp;
         event.preventDefault();
         event.stopPropagation();
+        if (meant.kind === 'unknown') return setUnknownScan(meant.code);
         if (sending.current) return;
+        // A product: the cash goes back to what it was, and the product to the basket.
         onChange(beforeBurst.current);
-        onScan?.(code);
+        setUnknownScan(null);
+        onScan?.(meant.code);
       }}
     >
       {door ? (
@@ -383,10 +395,14 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
               }}
             />
           </Field>
-          {looksWrong && checking === draft.tendered && cash && (
-            <p className="counter-warning" role="alert">
-              {t.counter.tenderedCheck(formatMoney(cash.given), formatMoney(due))}
-            </p>
+          {unchecked && cash && (
+            <div className="counter-warning counter-warning--act" role="alert">
+              <p>{t.counter.tenderedCheck(formatMoney(cash.given), formatMoney(due))}</p>
+              {/* Its own key: a second Enter (or a scanner's) never says yes to this. */}
+              <Button size="sm" variant="secondary" onClick={() => setConfirmed(draft.tendered)}>
+                {t.counter.tenderedRight(formatMoney(cash.given))}
+              </Button>
+            </div>
           )}
           <div className="counter-notes" role="group" aria-label={t.counter.tendered}>
             <Button size="sm" onClick={() => set({ tendered: due.toFixed(2) })}>
@@ -410,6 +426,11 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
         </>
       )}
       {draft.paidBy === 'card' && <p className="counter-hint">{t.counter.cardHint}</p>}
+      {unknownScan !== null && (
+        <p className="counter-warning" role="alert">
+          {t.counter.unknownScanInPay(unknownScan)}
+        </p>
+      )}
       {draft.paidBy === 'tab' &&
         (customers && customers.length === 0 ? (
           <p className="counter-hint">{t.counter.noCustomers}</p>

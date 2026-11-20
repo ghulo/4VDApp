@@ -261,6 +261,8 @@ export const productsApi = {
     await apiRequest(`/products/${id}`, { method: 'DELETE' });
   },
   byBarcode: async (barcode: string) => (await apiRequest<Product>(`/products/barcode/${encodeURIComponent(barcode)}`)).data,
+  /** The product a code names exactly: a barcode first, then its own number (SKU). */
+  byCode: async (code: string) => (await apiRequest<Product>(`/products/code/${encodeURIComponent(code)}`)).data,
   setBarcode: async (id: number, barcode: string | null) =>
     (await apiRequest<Product>(`/products/${id}/barcode`, { method: 'PUT', body: { barcode } })).data,
   addBarcode: async (id: number, barcode: string, pack?: { packSize: number; packPrice?: number }) =>
@@ -579,7 +581,8 @@ export const salesApi = {
 export const counterApi = {
   settings: async () => (await apiRequest<CounterSettings>('/counter/settings')).data,
   updateSettings: async (input: CounterSettings) => (await apiRequest<CounterSettings>('/counter/settings', { method: 'PUT', body: input })).data,
-  record: async (events: CounterEventInput[]) => {
+  /** Each may carry the shop PC's id for it (sent twice, kept once) and when it happened. */
+  record: async (events: Array<CounterEventInput & { clientId?: string; at?: string }>) => {
     await apiRequest('/counter/events', { method: 'POST', body: { events } });
   },
   today: async () => (await apiRequest<CounterToday>('/counter/today')).data,

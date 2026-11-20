@@ -92,6 +92,7 @@ import * as businessBrand from './090_business_brand.js';
 import * as imports from './091_imports.js';
 import * as privateFiles from './092_private_files.js';
 import * as pinDayLock from './093_pin_day_lock.js';
+import * as backupSearchPath from './094_backup_search_path.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -193,4 +194,5 @@ export const migrations: Record<string, Migration> = {
   '091_imports': imports,
   '092_private_files': privateFiles,
   '093_pin_day_lock': pinDayLock,
+  '094_backup_search_path': backupSearchPath,
 };

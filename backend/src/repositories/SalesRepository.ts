@@ -150,9 +150,10 @@ export class SalesRepository {
       filters.source ? (filters.source === 'trefin' ? sql`s.receipt_no is not null` : sql`s.receipt_no is null`) : sql`true`,
       sql`s.undone_at is null`,
     ];
-    // The newest invoice of each sale. Over a date range: through its index, one sale at a time. Over the whole history:
-    // all invoice lines grouped once, which is cheaper than looking up 100k+ sales one by one.
-    const newestInvoice = filters.startDate
+    // The newest invoice of each sale. When the sales are narrowed (a date range, one product): through its index,
+    // one sale at a time. Over the whole history: all invoice lines grouped once, cheaper than looking up 100k+ sales one by one.
+    const narrowed = Boolean(filters.startDate || filters.productId);
+    const newestInvoice = narrowed
       ? sql`left join lateral (
           select max(dl.document_id) as id from document_lines dl join documents d on d.id = dl.document_id
           where dl.sale_id = s.id and d.kind = 'invoice'

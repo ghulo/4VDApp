@@ -6,7 +6,7 @@
  */
 
 import { ApiError } from '../../services/apiClient';
-import type { ReceiptInput } from './useFiscalPrinter';
+import type { PrintOutcome, ReceiptInput } from './useFiscalPrinter';
 
 const STORAGE_KEY = '4vd.counter.offline';
 
@@ -154,4 +154,38 @@ export async function sendWaiting<T>(
     }
   }
   return { sent, stoppedByNetwork: false };
+}
+
+/**
+ * Before waiting sales go: a receipt still marked as printing (the page closed
+ * or reloaded mid-print) is settled from the Windows app's journal (`lookup`,
+ * missing where the screen can't ask). Printed or failed: noted on the sale.
+ * Still printing there, or its outcome couldn't be noted here: `holding` (it
+ * waits this round, nothing is released on a guess). Unknown or never noted:
+ * left as printing (the sale goes, its receipt is marked "check the printer").
+ */
+export async function settleInterrupted(
+  store: QueueStore,
+  lookup: ((key: string) => Promise<PrintOutcome | null>) | undefined,
+  busy: (key: string) => boolean,
+): Promise<{ holding: Set<string>; notNoted: boolean }> {
+  const holding = new Set<string>();
+  let notNoted = false;
+  if (!lookup) return { holding, notNoted };
+  for (const sale of store.read()) {
+    if (!sale.receipt?.interrupted || busy(sale.key)) continue;
+    const outcome = await lookup(sale.key);
+    if (!outcome || outcome.kind === 'unknown' || outcome.kind === 'none') continue;
+    if (outcome.kind === 'printing') {
+      holding.add(sale.key);
+      continue;
+    }
+    const { result } = outcome;
+    const receipt = { ...sale.receipt, printed: result.ok, fiscalNo: result.ok ? result.receiptNo : null, reason: result.ok ? '' : result.message, interrupted: undefined };
+    if (store.write(store.read().map((one) => (one.key === sale.key ? { ...one, receipt } : one))) === false) {
+      holding.add(sale.key);
+      notNoted = true;
+    }
+  }
+  return { holding, notNoted };
 }

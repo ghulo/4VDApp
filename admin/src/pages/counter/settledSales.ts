@@ -42,8 +42,12 @@ export interface SettledSale {
   /** The receipt, kept while it prints or waits for Not printed. */
   text?: string;
   job?: ReceiptInput;
-  /** Still to do: this fiscal receipt number goes on the invoice; this reason puts the receipt in Not printed. */
-  followUp?: { fiscalNo?: string; unprinted?: string };
+  /**
+   * Still to do: this fiscal receipt number goes on the invoice; this reason
+   * puts the receipt in Not printed. blocked: why 4VD said not yet (a filed
+   * month, a closed year): the number stays and is tried again.
+   */
+  followUp?: { fiscalNo?: string; unprinted?: string; blocked?: string };
 }
 
 export interface SettledStore {
@@ -125,7 +129,10 @@ export const followUpsFor = (store: SettledStore, owner: { businessId: number; u
 export function followUpDone(store: SettledStore, key: string, done: 'fiscalNo' | 'unprinted'): boolean {
   const sale = settledSale(store, key);
   if (!sale?.followUp) return true;
-  const { [done]: _gone, ...left } = sale.followUp;
+  const { [done]: _gone, ...remaining } = sale.followUp;
+  // A number that went on (or was let go) takes its 'not yet' with it.
+  const { blocked: _blocked, ...unblocked } = remaining;
+  const left = done === 'fiscalNo' ? unblocked : remaining;
   const { followUp: _old, ...rest } = sale;
   const next: SettledSale = { ...rest, ...(Object.keys(left).length > 0 && { followUp: left }) };
   if (done === 'unprinted') {
@@ -133,4 +140,25 @@ export function followUpDone(store: SettledStore, key: string, done: 'fiscalNo' 
     delete next.job;
   }
   return noteSettled(store, next);
+}
+
+/** 4VD said not yet to this number (a filed month, a closed year): it stays, with why. False when it couldn't be written. */
+export function noteBlocked(store: SettledStore, key: string, why: string): boolean {
+  const sale = settledSale(store, key);
+  if (!sale?.followUp?.fiscalNo) return true;
+  return noteSettled(store, { ...sale, followUp: { ...sale.followUp, blocked: why } });
+}
+
+/** Fiscal numbers 4VD said not yet to, in this business (whoever sold them). */
+export const blockedIn = (store: SettledStore, businessId: number): SettledSale[] =>
+  store.read().filter((sale) => sale.businessId === businessId && sale.followUp?.fiscalNo !== undefined && sale.followUp.blocked !== undefined);
+
+/** Receipts still marked as printing, for the till to ask the Windows app about. */
+export const stillPrinting = (store: SettledStore): SettledSale[] => store.read().filter((sale) => sale.print === 'printing');
+
+/** The Windows app says whether it came out is unknown (it closed mid-print): check the printer. */
+export function markCheck(store: SettledStore, key: string, reason: string): boolean {
+  const sale = settledSale(store, key);
+  if (!sale || sale.print !== 'printing') return true;
+  return noteSettled(store, { ...sale, print: 'check', followUp: { ...sale.followUp, unprinted: reason } });
 }

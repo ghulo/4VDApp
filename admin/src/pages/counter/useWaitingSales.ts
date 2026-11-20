@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type BasketSale, salesApi } from '../../services/api';
 import { ApiError } from '../../services/apiClient';
-import { localStore, newSaleKey, type QueuedSale, sendWaiting, withTimeout } from './offlineQueue';
+import { localStore, newSaleKey, type QueuedSale, sendWaiting, settleInterrupted, withTimeout } from './offlineQueue';
 import { localSettledStore, noteSettled, type SettledStore } from './settledSales';
+import type { PrintOutcome } from './useFiscalPrinter';
 
 type Sent = BasketSale;
 
@@ -61,6 +62,8 @@ export function useWaitingSales(
   onUnsaved: () => void,
   /** An owner: sees and settles everyone's refused sales in this business, not only their own. */
   oversees = false,
+  /** How a sale's receipt came out, by the Windows app's journal (null: this screen can't ask). */
+  lookupPrint?: (key: string) => Promise<PrintOutcome | null>,
 ) {
   const [sales, setSales] = useState<QueuedSale[]>(() => localStore.read());
   // The round in progress: a second call (Switch person) waits for it instead of returning at once.
@@ -69,6 +72,7 @@ export function useWaitingSales(
   const printing = useRef(new Set<string>());
   const ownerRef = useRef({ userId, businessId });
   const overseesRef = useRef(oversees);
+  const lookupRef = useRef(lookupPrint);
   const sentRef = useRef(onSent);
   const reachRef = useRef(onReach);
   const unsavedRef = useRef(onUnsaved);
@@ -78,6 +82,7 @@ export function useWaitingSales(
     unsavedRef.current = onUnsaved;
     ownerRef.current = { userId, businessId };
     overseesRef.current = oversees;
+    lookupRef.current = lookupPrint;
   });
   const refresh = () => setSales(localStore.read());
 
@@ -85,6 +90,10 @@ export function useWaitingSales(
     if (running.current) return running.current;
     const round = (async () => {
       try {
+        // A receipt still marked as printing (the page closed or reloaded mid-print): the Windows app's journal says how it came out.
+        // Still printing there, or its outcome couldn't be noted here: the sale waits, so nothing is released on a guess.
+        const { holding, notNoted } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key));
+        if (notNoted) unsavedRef.current();
         const { sent, stoppedByNetwork, unsaved } = await sendWaiting(
           localStore,
           (sale) =>
@@ -93,7 +102,7 @@ export function useWaitingSales(
               SEND_TIMEOUT_MS,
             ),
           // Only whoever is at the till now, in the business they are in; the others wait for them.
-          (sale) => sale.userId !== ownerRef.current.userId || sale.businessId !== ownerRef.current.businessId || printing.current.has(sale.key),
+          (sale) => sale.userId !== ownerRef.current.userId || sale.businessId !== ownerRef.current.businessId || printing.current.has(sale.key) || holding.has(sale.key),
           (sale, result) => noteSent({ ...sale, businessId: sale.businessId! }, result),
         );
         if (sent.length > 0 || stoppedByNetwork) reachRef.current(!stoppedByNetwork);
@@ -143,9 +152,12 @@ export function useWaitingSales(
     has: (key: string) => localStore.read().some((sale) => sale.key === key),
     /** Whether this till is printing that sale's receipt right now. */
     isPrinting: (key: string) => printing.current.has(key),
-    /** The printer answered (or never got it): note how it went, and the sale may go. */
+    /**
+     * The printer answered (or never got it): note how it went, and the sale may go.
+     * If that can't be noted, the sale stays marked as printing, and the Windows app's journal settles it before it goes.
+     */
     printed(key: string, receipt: QueuedSale['receipt']) {
-      localStore.write(localStore.read().map((sale) => (sale.key === key ? { ...sale, receipt } : sale)));
+      if (localStore.write(localStore.read().map((sale) => (sale.key === key ? { ...sale, receipt } : sale))) === false) unsavedRef.current();
       printing.current.delete(key);
       refresh();
       if (navigator.onLine) void flush();

@@ -66,7 +66,21 @@ import { playScanSound } from './counter/scanSound';
 import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 import { localStore, newSaleKey, queueFailure, type QueuedSale, withTimeout } from './counter/offlineQueue';
-import { followUpDone, followUpsFor, localSettledStore, markInterrupted, notePrinted, noteSettled, settledSale } from './counter/settledSales';
+import { ApiError } from '../services/apiClient';
+import {
+  blockedIn,
+  followUpDone,
+  followUpsFor,
+  localSettledStore,
+  markCheck,
+  markInterrupted,
+  noteBlocked,
+  notePrinted,
+  noteSettled,
+  type SettledSale,
+  settledSale,
+  stillPrinting,
+} from './counter/settledSales';
 import { useWaitingSales } from './counter/useWaitingSales';
 
 type Panel =
@@ -695,6 +709,7 @@ export function CounterPage() {
     },
     () => complain(t.counter.queueNotSaved),
     canOversee(user.role),
+    printer.lookup,
   );
 
   /*
@@ -706,6 +721,9 @@ export function CounterPage() {
   const followingUp = useRef<Promise<void> | null>(null);
   const followAgain = useRef(false);
   const keepUnprintedNow = printer.keepUnprinted;
+  // Fiscal numbers 4VD said not yet to (a filed month, a closed year), in this business: shown until they go on or an owner lets them go.
+  const [blocked, setBlocked] = useState<SettledSale[]>(() => blockedIn(localSettledStore, businessId));
+  const [forgetBlocked, setForgetBlocked] = useState(false);
   // The newest round maker (for the person at the till now): a round asked for while another runs starts once that one ends.
   const latestFollowUp = useRef<() => Promise<void>>(() => Promise.resolve());
   const followUp = useCallback((): Promise<void> => {
@@ -738,12 +756,18 @@ export function CounterPage() {
           try {
             await withTimeout((signal) => documentsApi.setFiscalReceipt(sale.documentId, fiscalNo, { expectOwner: who, signal }), EVENTS_TIMEOUT_MS);
           } catch (error) {
+            // A filed month or a closed year: the number stays on this PC, with why, and is tried again (after the accountant reopens it).
+            if (error instanceof ApiError && error.status === 409) {
+              noteBlocked(localSettledStore, sale.key, error.message);
+              continue;
+            }
             // A clear no from 4VD (the invoice is gone, the number is wrong): nothing more to do. Anything else: it waits.
             if (queueFailure(error) !== 'refused') return;
           }
           followUpDone(localSettledStore, sale.key, 'fiscalNo');
         }
       } finally {
+        setBlocked(blockedIn(localSettledStore, who.businessId));
         followingUp.current = null;
         if (followAgain.current) {
           followAgain.current = false;
@@ -810,21 +834,43 @@ export function CounterPage() {
   // Receipts that were printing when the till closed: whether they came out is unknown, so they go to Not printed marked
   // "check the printer". Never one this till is printing now; after a reload, not before the Windows app is surely done with its last job.
   const printingKeys = useRef(new Set<string>());
+  const loadedAt = useRef(Date.now());
+  const lookupPrint = printer.lookup;
+  const unprintedNow = useRef(printer.unprinted);
+  unprintedNow.current = printer.unprinted;
+  const checkPrints = useCallback(async () => {
+    // The Windows app's journal says how each receipt still marked as printing came out (it keeps it on its disk).
+    const appHas = new Set<string>();
+    for (const sale of stillPrinting(localSettledStore)) {
+      if (printingKeys.current.has(sale.key)) continue;
+      const outcome = await lookupPrint(sale.key);
+      if (outcome === null || outcome.kind === 'none') continue;
+      if (outcome.kind === 'printing') appHas.add(sale.key);
+      else if (outcome.kind === 'unknown') markCheck(localSettledStore, sale.key, t.counter.printInterrupted);
+      else notePrinted(localSettledStore, sale.key, outcome.result.ok ? { ok: true, fiscalNo: outcome.result.receiptNo } : { ok: false, reason: outcome.result.message });
+    }
+    // A reprint whose answer the page never got: printed after all, its number is kept and it leaves Not printed.
+    for (const item of unprintedNow.current) {
+      if (!item.printKey || printing.current.has(item.documentId)) continue;
+      const outcome = await lookupPrint(item.printKey);
+      if (outcome?.kind === 'done' && outcome.result.ok) settleReprint(item, outcome.result.receiptNo);
+    }
+    // Where the app can't say (a browser, an older app, never noted): "check the printer" once it is surely done with its last job.
+    if (Date.now() - loadedAt.current >= DESKTOP_JOB_MS) {
+      markInterrupted(localSettledStore, Date.now() - INTERRUPTED_AFTER_MS, t.counter.printInterrupted, (key) => printingKeys.current.has(key) || appHas.has(key));
+    }
+    void followUp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- settleReprint is a plain function of this render
+  }, [followUp, lookupPrint, t]);
   useEffect(() => {
-    const check = () => {
-      markInterrupted(localSettledStore, Date.now() - INTERRUPTED_AFTER_MS, t.counter.printInterrupted, (key) => printingKeys.current.has(key));
-      void followUp();
-    };
-    let timer: number | undefined;
-    const first = window.setTimeout(() => {
-      check();
-      timer = window.setInterval(check, 60_000);
-    }, DESKTOP_JOB_MS);
+    void checkPrints();
+    const later = window.setTimeout(() => void checkPrints(), DESKTOP_JOB_MS);
+    const timer = window.setInterval(() => void checkPrints(), 60_000);
     return () => {
-      window.clearTimeout(first);
+      window.clearTimeout(later);
       window.clearInterval(timer);
     };
-  }, [followUp, t]);
+  }, [checkPrints]);
 
   /** A sale sent before without an answer: exactly that sale again, only by who made it, where they made it. */
   function sendAgain() {
@@ -1022,6 +1068,15 @@ export function CounterPage() {
           ...(willPrint && { job }),
         })
       : true;
+    // Recorded, but this PC can't note that its receipt is printing: nothing prints, and the basket stays as sent (on this PC's disk),
+    // so once there is room Pay finishes it: 4VD gives the same sale back, and it prints then. Never printed with nothing saying so.
+    if (result && willPrint && !noted) {
+      setPanelState(null);
+      setPayingNow(false);
+      complain(t.counter.notSavedKeepBasket);
+      focusScan();
+      return;
+    }
     const closed = closeBasket(basketId);
     setPanelState(null);
     // Recorded (or waiting on this PC): the till is free again while the receipt prints.
@@ -1056,14 +1111,6 @@ export function CounterPage() {
       if (!result) waiting.printed(key, null);
       return;
     }
-    // No print without the till's note that it is printing: a crash mid-print would leave nothing saying a receipt may have come out.
-    if (result && !noted) {
-      const reason = t.counter.notSavedNoPrint;
-      printer.keepUnprinted({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason, job, businessId: attempt.businessId });
-      setLastSale((sale) => (sale?.key === key ? { ...sale, print: 'failed' } : sale));
-      setPrintNote({ ok: false, text: reason });
-      return;
-    }
 
     let text: string;
     try {
@@ -1076,7 +1123,7 @@ export function CounterPage() {
     }
     if (!result) {
       // Offline the fiscal receipt still prints at once; 4VD's invoice number comes when the sale is sent.
-      const printed = await printer.send(`4VD-OFF-${key.slice(0, 8)}`, text);
+      const printed = await printer.send(`4VD-OFF-${key.slice(0, 8)}`, text, key);
       waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message, job });
       return offlinePrinted(key, printed);
     }
@@ -1086,7 +1133,7 @@ export function CounterPage() {
     printingKeys.current.add(key);
     let printed: PrintResult;
     try {
-      printed = await printer.send(`4VD-${result.invoice.number}`, text);
+      printed = await printer.send(`4VD-${result.invoice.number}`, text, key);
     } finally {
       printing.current.delete(item.documentId);
       printingKeys.current.delete(key);
@@ -1106,7 +1153,11 @@ export function CounterPage() {
       setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo: printed.receiptNo } : sale));
       setPrintNote({ ok: true, text: printed.receiptNo ? t.counter.printer.printed(printed.receiptNo) : t.counter.printer.printedNoNumber });
       if (!noted && printed.receiptNo) {
-        void documentsApi.setFiscalReceipt(item.documentId, printed.receiptNo, { expectOwner: { businessId: attempt.businessId, userId: attempt.userId } }).catch(() => undefined);
+        const fiscalNo = printed.receiptNo;
+        // The note stays as printing, so the app's journal hands this number over again later; meanwhile it is said on screen.
+        void documentsApi
+          .setFiscalReceipt(item.documentId, fiscalNo, { expectOwner: { businessId: attempt.businessId, userId: attempt.userId } })
+          .catch(() => setPrintNote({ ok: false, text: t.counter.fiscalNotSaved(fiscalNo) }));
       }
     } else {
       setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'failed' } : sale));
@@ -1135,14 +1186,32 @@ export function CounterPage() {
 
   async function afterPrint(item: Unprinted, printed: PrintResult, again: boolean) {
     if (!printed.ok) return printFailed({ ...item, reason: printed.message });
-    // Its number is still to go on the invoice: noted first (for whoever printed it), so neither a lost answer nor a restart drops it.
-    const noted = printed.receiptNo ? noteReprinted(item, printed.receiptNo) : true;
-    printer.forget(item.documentId);
-    setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo: printed.receiptNo } : sale));
-    setPrintNote({ ok: true, text: printed.receiptNo ? t.counter.printer.printed(printed.receiptNo) : t.counter.printer.printedNoNumber });
-    if (printed.receiptNo && !noted) await documentsApi.setFiscalReceipt(item.documentId, printed.receiptNo, { expectOwner: owner }).catch(() => undefined);
-    if (noted) void followUp();
+    await settleReprint(item, printed.receiptNo);
     if (again) void record([{ kind: 'reprinted', documentId: item.documentId }]);
+  }
+
+  /**
+   * A receipt from Not printed came out. Its number is noted first (for whoever
+   * printed it), so neither a lost answer nor a restart drops it. If it can't
+   * be noted and 4VD can't take it either, it stays in Not printed saying so:
+   * Print again then asks the Windows app's journal and keeps the number without printing.
+   */
+  async function settleReprint(item: Unprinted, fiscalNo: string | null) {
+    const noted = fiscalNo ? noteReprinted(item, fiscalNo) : true;
+    setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo } : sale));
+    setPrintNote({ ok: true, text: fiscalNo ? t.counter.printer.printed(fiscalNo) : t.counter.printer.printedNoNumber });
+    if (noted) {
+      printer.forget(item.documentId);
+      void followUp();
+      return;
+    }
+    try {
+      await withTimeout((signal) => documentsApi.setFiscalReceipt(item.documentId, fiscalNo, { expectOwner: owner, signal }), EVENTS_TIMEOUT_MS);
+      printer.forget(item.documentId);
+    } catch {
+      printer.keepUnprinted({ ...item, reason: t.counter.fiscalNotSaved(fiscalNo ?? '') });
+      setPrintNote({ ok: false, text: t.counter.fiscalNotSaved(fiscalNo ?? '') });
+    }
   }
 
   /** A reprinted receipt's number, in the sale's note (or a new one), for the person at the till in this business. False when it couldn't be written. */
@@ -1176,6 +1245,21 @@ export function CounterPage() {
     if (item.businessId !== undefined && item.businessId !== businessId) return complain(t.counter.pendingOther);
     printing.current.add(item.documentId);
     try {
+      // Kept by an older 4VD without its business: printed only once 4VD says the invoice is this business's.
+      if (item.businessId === undefined) {
+        try {
+          await documentsApi.get(item.documentId);
+        } catch {
+          return complain(t.counter.pendingOther);
+        }
+        item = { ...item, businessId };
+      }
+      // Its last print: the Windows app still has it (wait), or it came out after all (its number is kept, nothing prints again).
+      if (item.printKey) {
+        const outcome = await printer.lookup(item.printKey);
+        if (outcome?.kind === 'printing') return complain(t.counter.printerHasIt);
+        if (outcome?.kind === 'done' && outcome.result.ok) return void (await settleReprint(item, outcome.result.receiptNo));
+      }
       await printOnce(item);
     } finally {
       printing.current.delete(item.documentId);
@@ -1194,9 +1278,11 @@ export function CounterPage() {
       }
     }
     // Until the printer answers, Not printed says to check the printer: a reload mid-print leaves that, not the old reason.
-    printer.keepUnprinted({ ...item, text, reason: t.counter.printInterrupted });
-    const printed = await printer.send(`4VD-${item.number}`, text);
-    await afterPrint({ ...item, text }, printed, true);
+    // The print goes with a key, so the Windows app's journal can say later how it came out.
+    const printKey = localSettledStore.read().find((sale) => sale.documentId === item.documentId)?.key ?? `reprint:${item.documentId}`;
+    printer.keepUnprinted({ ...item, text, reason: t.counter.printInterrupted, printKey });
+    const printed = await printer.send(`4VD-${item.number}`, text, printKey);
+    await afterPrint({ ...item, text, printKey }, printed, true);
   }
 
   async function runReport(kind: 'x' | 'z') {
@@ -1214,8 +1300,11 @@ export function CounterPage() {
     setPrintNote({ ok: true, text: kind === 'x' ? t.counter.xDone : t.counter.zDone });
   }
 
-  // Receipts sold in the business the till is in (an older 4VD's, without a business, show everywhere).
-  const unprintedHere = printer.unprinted.filter((item) => item.businessId === undefined || item.businessId === businessId);
+  // Kept by an older 4VD without their business: shown only to an account with one business, where they can only be its own.
+  const oneBusiness = (user.businesses?.length ?? 0) === 1;
+  const unplacedMine = oneBusiness ? waiting.unplaced.filter((sale) => sale.userId === user.id) : [];
+  // Receipts sold in the business the till is in.
+  const unprintedHere = printer.unprinted.filter((item) => item.businessId === businessId || (item.businessId === undefined && oneBusiness));
 
   // ---- Keys ----
   const keysEnabled = panel === null;
@@ -1758,31 +1847,55 @@ export function CounterPage() {
                   </Button>
                 </div>
               )}
-              {canOversee(user.role) && waiting.unplaced.length > 0 && (
+              {blocked.length > 0 && (canOversee(user.role) || blocked.some((sale) => sale.userId === user.id)) && (
                 <div className="counter-opening counter-refused" role="alert">
                   <WarningCircle size={20} weight="bold" aria-hidden="true" />
                   <div className="counter-opening__text">
-                    <p className="counter-opening__title">{t.counter.unplacedTitle(waiting.unplaced.length)}</p>
+                    <p className="counter-opening__title">{t.counter.fiscalBlockedTitle(blocked.length)}</p>
+                    <p>{blocked[0]!.followUp?.blocked}</p>
+                    <p>{t.counter.fiscalBlockedHint}</p>
+                  </div>
+                  {canOversee(user.role) && (
+                    <Button
+                      size="sm"
+                      variant={forgetBlocked ? 'danger' : 'secondary'}
+                      onClick={() => {
+                        if (!forgetBlocked) return setForgetBlocked(true);
+                        setForgetBlocked(false);
+                        for (const sale of blocked) followUpDone(localSettledStore, sale.key, 'fiscalNo');
+                        setBlocked(blockedIn(localSettledStore, businessId));
+                      }}
+                    >
+                      {forgetBlocked ? t.counter.fiscalBlockedForgetYes : t.counter.fiscalBlockedForget}
+                    </Button>
+                  )}
+                </div>
+              )}
+              {unplacedMine.length > 0 && (
+                <div className="counter-opening counter-refused" role="alert">
+                  <WarningCircle size={20} weight="bold" aria-hidden="true" />
+                  <div className="counter-opening__text">
+                    <p className="counter-opening__title">{t.counter.unplacedTitle(unplacedMine.length)}</p>
                     <p>
                       {t.counter.unplacedLine(
-                        `${formatDate(waiting.unplaced[0]!.at)} ${formatTime(waiting.unplaced[0]!.at)}`,
-                        formatMoney(waiting.unplaced[0]!.total),
-                        waiting.unplaced[0]!.body.items.length,
+                        `${formatDate(unplacedMine[0]!.at)} ${formatTime(unplacedMine[0]!.at)}`,
+                        formatMoney(unplacedMine[0]!.total),
+                        unplacedMine[0]!.body.items.length,
                       )}
                     </p>
                     <p>{t.counter.unplacedHint}</p>
                   </div>
                   <Button
                     size="sm"
-                    variant={removeUnplaced === waiting.unplaced[0]!.key ? 'danger' : 'secondary'}
+                    variant={removeUnplaced === unplacedMine[0]!.key ? 'danger' : 'secondary'}
                     onClick={() => {
-                      const key = waiting.unplaced[0]!.key;
+                      const key = unplacedMine[0]!.key;
                       if (removeUnplaced !== key) return setRemoveUnplaced(key);
                       setRemoveUnplaced(null);
                       waiting.discard(key);
                     }}
                   >
-                    {removeUnplaced === waiting.unplaced[0]!.key ? t.counter.unplacedRemoveYes : t.counter.unplacedRemove}
+                    {removeUnplaced === unplacedMine[0]!.key ? t.counter.unplacedRemoveYes : t.counter.unplacedRemove}
                   </Button>
                 </div>
               )}

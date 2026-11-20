@@ -80,6 +80,9 @@ UI and features (ask first):
 - [ ] On the shop PC with the printer, offline: sell, then close the Windows app before the next sale; open it again with internet: the sale is in Sales once, and its fiscal receipt number shows on the invoice
 - [ ] An employee presses Send again on a refused offline sale that 4VD can't settle yet: it says an owner has to send it; the owner then can
 - [ ] Not printed in a second business shows only that business's receipts
+- [ ] On the shop PC with the new Windows app (journal): close the app (or reload) while a receipt prints; open it again: the receipt's fiscal number lands on its invoice by itself, nothing prints twice
+- [ ] A sale whose fiscal number arrives after its month was filed: the Counter shows "A fiscal receipt number waits…" with the reason; after the accountant reopens the month it goes on by itself; an owner can let it go
+- [ ] On a PC used for two businesses: Not printed and the old-4VD sales banner never show the other business's items
 - [ ] An employee with "Sell past stock" off while the product list hasn't loaded (slow internet at opening): Pay says 4VD can't see how many are left
 
 **Customs papers** (on 4vd.app after the deploy)

@@ -102,6 +102,10 @@ export interface ServerMessages {
     importCheckDetail: string;
     pinLockedTitle: (name: string) => string;
     pinLockedDetail: string;
+    customsMissingTitle: (p: { supplier: string | null; number: string | null }) => string;
+    customsMissingDetail: string;
+    customsWaitingTitle: (p: { number: string | null; supplier: string | null }) => string;
+    customsWaitingDetail: string;
     billEmailWaitingDetail: (limit: number) => string;
     billEmailFailedTitle: (sender: string) => string;
     billEmailFailedDetail: string;
@@ -425,6 +429,10 @@ export const en: ServerMessages = {
     importCheckTitle: (products) => `Check the ${products} imported products`,
     importCheckDetail: 'Look at a few side by side with your file, then mark the import checked.',
     pinLockedTitle: (name) => `The Counter PIN of ${name} is locked`,
+    customsMissingTitle: ({ supplier, number }) => `Customs missing for ${[supplier ?? 'a supplier abroad', number].filter(Boolean).join(' ')}`,
+    customsMissingDetail: 'Add its customs paper, so the customs VAT is claimed and the duty goes onto the goods. If it had none (under the limit), say so on the bill.',
+    customsWaitingTitle: ({ number, supplier }) => `Customs paper with no bill: match it${number ? ` (no. ${number})` : ''}${supplier ? `, ${supplier}` : ''}`,
+    customsWaitingDetail: 'Pick the import bill it covers. If the bill is not entered yet, it attaches by itself once it is.',
     pinLockedDetail: '10 wrong PINs in a day: someone may be guessing it. Ask them, then unlock it on their page. If nobody unlocks it, it opens once the wrong tries are a day old.',
     billEmailWaitingDetail: (limit) => `Today's ${limit} bill reads by email are used up. Read it now, or it waits for tomorrow.`,
     billEmailFailedTitle: (sender) => `The emailed bill from ${sender} couldn't be read`,
@@ -767,6 +775,10 @@ export const sq: ServerMessages = {
     importCheckTitle: (products) => `Kontrollo ${products} produktet e importuara`,
     importCheckDetail: 'Shiko disa krahas skedarit tënd, pastaj shëno importin si të kontrolluar.',
     pinLockedTitle: (name) => `PIN-i i arkës për ${name} është i bllokuar`,
+    customsMissingTitle: ({ supplier, number }) => `Mungon dogana për ${[supplier ?? 'një furnitor jashtë vendit', number].filter(Boolean).join(' ')}`,
+    customsMissingDetail: 'Shto deklaratën doganore, që TVSH-ja e doganës të zbritet dhe dogana të shkojë te kostoja e mallit. Nëse s’kishte (nën kufi), shëno këtë te fatura.',
+    customsWaitingTitle: ({ number, supplier }) => `Deklaratë doganore pa faturë: lidhe${number ? ` (nr. ${number})` : ''}${supplier ? `, ${supplier}` : ''}`,
+    customsWaitingDetail: 'Zgjidh faturën e importit që mbulon. Nëse fatura s’është futur ende, lidhet vetë kur të futet.',
     pinLockedDetail: '10 PIN të gabuar brenda një dite: dikush mund të jetë duke e provuar. Pyete, pastaj zhbllokoje te faqja e tij. Nëse askush nuk e zhbllokon, hapet kur provat e gabuara bëhen një ditë të vjetra.',
     billEmailWaitingDetail: (limit) => `Leximet e sotme me email (${limit}) u mbaruan. Lexoje tani, ose pret deri nesër.`,
     billEmailFailedTitle: (sender) => `Fatura me email nga ${sender} nuk u lexua`,

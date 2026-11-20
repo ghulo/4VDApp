@@ -40,6 +40,7 @@ import { YearService } from './services/statements/YearService.js';
 import { DeclarationService } from './services/statements/DeclarationService.js';
 import { OpeningService } from './services/OpeningService.js';
 import { ImportService, importsToCheck } from './services/import/ImportService.js';
+import { customsMissing, waitingPapers } from './services/bills/customsPapers.js';
 import { TrefinCompareService } from './services/vat/TrefinCompareService.js';
 import { SalesService } from './services/SalesService.js';
 import { UserService } from './services/UserService.js';
@@ -373,6 +374,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
     declarationService,
     { toCheck: () => importsToCheck(db) },
     pinLocks,
+    { missing: (today) => customsMissing(db, today), waiting: () => waitingPapers(db) },
   );
   const dailySummaryService = new DailySummaryService(
     reportsRepository,

@@ -265,11 +265,19 @@ export class VatService {
     });
   }
 
-  /** Supplier bills, returns and credits counted in the month (a late bill counts in the next open month). Carwash bills stay out, as in the books. */
+  /**
+   * Supplier bills, returns and credits counted in the month (a late bill counts
+   * in the next open month). Carwash bills stay out, as in the books. An
+   * import's goods count with their customs paper, in the paper's month; the
+   * rest of the bill (services from abroad) in the bill's.
+   */
   private async billItems(month: string): Promise<VatItem[]> {
+    const billMonth = sql<string>`coalesce(b.vat_month, date_trunc('month', b.issued_on)::date)`;
+    const paperMonth = sql<string>`coalesce(cp.vat_month, date_trunc('month', cp.issued_on)::date)`;
     const bills = await this.db
       .selectFrom('supplier_bills as b')
       .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
+      .leftJoin('customs_papers as cp', (join) => join.onRef('cp.bill_id', '=', 'b.id').on('cp.voided_at', 'is', null))
       .select([
         'b.id',
         'b.kind',
@@ -278,14 +286,19 @@ export class VatService {
         'b.vat_amount',
         'b.withheld',
         'b.abroad',
-        'b.customs_vat',
+        'cp.id as customs_id',
+        'cp.vat as customs_vat',
+        'cp.number as customs_number',
+        sql<string | null>`to_char(cp.issued_on, 'YYYY-MM-DD')`.as('customs_issued_on'),
+        sql<boolean>`${billMonth} = ${month}::date`.as('bill_here'),
+        sql<boolean>`cp.id is not null and ${paperMonth} = ${month}::date`.as('paper_here'),
         'b.note',
         's.name',
         's.nui',
         sql<string>`to_char(b.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
         sql<string | null>`to_char(b.vat_month, 'YYYY-MM-DD')`.as('vat_month'),
       ])
-      .where(sql<boolean>`coalesce(b.vat_month, date_trunc('month', b.issued_on)::date) = ${month}::date`)
+      .where((eb) => eb.or([eb(billMonth, '=', sql<string>`${month}::date`), eb.and([eb('cp.id', 'is not', null), eb(paperMonth, '=', sql<string>`${month}::date`)])]))
       .where('b.voided_at', 'is', null)
       .where('b.place', '<>', 'carwash')
       // Open bills from TREFIN, and TREFIN's history, were in TREFIN's returns already.
@@ -304,18 +317,26 @@ export class VatService {
     const linesOf = new Map<number, typeof lines>();
     for (const line of lines) linesOf.set(line.bill_id, [...(linesOf.get(line.bill_id) ?? []), line]);
 
-    return bills.map((bill) => {
-      const purchase = billBoxes(bill, linesOf.get(bill.id) ?? []);
-      return {
-        kind: bill.kind === 'credit' ? 'credit' : 'bill',
-        ref: String(bill.id),
-        date: bill.issued_on,
-        number: bill.number,
-        party: bill.name ?? bill.note,
-        nui: bill.nui,
-        boxes: bill.kind === 'credit' ? asSupplierCredit(purchase) : purchase,
-        ...(bill.vat_month !== null && bill.vat_month !== monthOf(bill.issued_on) && { lateFrom: short(monthOf(bill.issued_on)) }),
-      } satisfies VatItem;
+    return bills.flatMap((bill) => {
+      // With a customs paper, the import's goods count in the paper's month and the rest in the bill's.
+      const hasPaper = bill.customs_id !== null;
+      const goodsHere = hasPaper ? bill.paper_here : bill.bill_here;
+      const part: BillPart = bill.bill_here && goodsHere ? 'all' : bill.bill_here ? 'rest' : 'goods';
+      const purchase = billBoxes(bill, linesOf.get(bill.id) ?? [], part);
+      if (part !== 'all' && Object.values(purchase).every((value) => value === 0)) return [];
+      const goodsOnly = part === 'goods';
+      return [
+        {
+          kind: bill.kind === 'credit' ? 'credit' : 'bill',
+          ref: String(bill.id),
+          date: goodsOnly ? bill.customs_issued_on! : bill.issued_on,
+          number: goodsOnly ? (bill.customs_number ?? bill.number) : bill.number,
+          party: bill.name ?? bill.note,
+          nui: bill.nui,
+          boxes: bill.kind === 'credit' ? asSupplierCredit(purchase) : purchase,
+          ...(!goodsOnly && bill.vat_month !== null && bill.vat_month !== monthOf(bill.issued_on) && { lateFrom: short(monthOf(bill.issued_on)) }),
+        } satisfies VatItem,
+      ];
     });
   }
 
@@ -700,12 +721,17 @@ type LineRow = {
   product_rate: number | null;
 };
 
+/** Which part of a bill counts: all of it, an import's goods with their customs (in the paper's month), or the rest. */
+export type BillPart = 'all' | 'goods' | 'rest';
+
 /** A bill's boxes as a purchase (a return or credit is turned round by `asSupplierCredit`). */
-export function billBoxes(bill: BillRow, lines: LineRow[]): Boxes {
+export function billBoxes(bill: BillRow, lines: LineRow[], part: BillPart = 'all'): Boxes {
   const boxes: Boxes = {};
   const counted = lines.filter((line) => !(line.kind === 'cost' && line.category !== null && NOT_PURCHASES.has(line.category)));
 
+  if (part === 'goods' && !bill.abroad) return boxes;
   if (lines.length === 0) {
+    if (part === 'goods') return boxes;
     // Typed as a total, before bills had lines: all of it is goods, at the rate its VAT suggests.
     const vat = n(bill.vat_amount);
     const net = roundMoney(n(bill.amount) + n(bill.withheld) - vat);
@@ -722,11 +748,14 @@ export function billBoxes(bill: BillRow, lines: LineRow[]): Boxes {
     const weights = goods.map((line) => n(line.landed) * rateOf(line));
     const weight = weights.reduce((sum, value) => sum + value, 0);
     let left = customsVat;
-    goods.forEach((line, index) => {
-      const share = index === goods.length - 1 ? roundMoney(left) : weight > 0 ? roundMoney((customsVat * weights[index]!) / weight) : 0;
-      left = roundMoney(left - share);
-      importBoxes(boxes, n(line.landed), share, rateOf(line), line.kind === 'equipment');
-    });
+    if (part !== 'rest') {
+      goods.forEach((line, index) => {
+        const share = index === goods.length - 1 ? roundMoney(left) : weight > 0 ? roundMoney((customsVat * weights[index]!) / weight) : 0;
+        left = roundMoney(left - share);
+        importBoxes(boxes, n(line.landed), share, rateOf(line), line.kind === 'equipment');
+      });
+    }
+    if (part === 'goods') return boxes;
     for (const line of counted.filter((candidate) => candidate.kind === 'cost' && !candidate.spread)) {
       const selfVat = n(line.self_vat);
       if (selfVat > 0) {

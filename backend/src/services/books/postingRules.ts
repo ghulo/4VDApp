@@ -46,10 +46,13 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * - Supplier bill, by its lines: products to stock 1340, costs to their
  *   category's expense account (6xxx), equipment to its fixed-asset account
  *   (16xx-19xx) and the VAT to claim back to 1260, against what's owed to the
- *   supplier 2000 and any tax held back for ATK 2370. An import adds the customs
- *   VAT (1260) and the duty (onto the goods, with the transport), paid at the
- *   border from bank 1120 or cash 1110, and VAT charged to yourself on services
- *   from abroad both ways (1260 against 2340). A return or credit posts its
+ *   supplier 2000 and any tax held back for ATK 2370. Transport on an import
+ *   goes onto the goods; VAT charged to yourself on services from abroad posts
+ *   both ways (1260 against 2340).
+ * - Customs paper (its own entry, on its own date): the customs VAT to 1260 and
+ *   the duty and excise onto the goods (stock 1340, or the equipment's asset
+ *   account; cost of sales 5000 for a share whose units were all sold when it
+ *   came), paid at the border from bank 1120 or cash 1110. A return or credit posts its
  *   lines the other way round. Paying a bill: 2000 against cash 1110 or bank
  *   1120; a credit applied to it posts nothing more. An expense is a bill paid
  *   on the spot. Carwash-only bills are left out until the accountant says how
@@ -72,7 +75,7 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus' | 'payroll' | 'payroll_pay';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus' | 'payroll' | 'payroll_pay' | 'customs';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -147,6 +150,8 @@ export class PostingRules {
         return this.bill(Number(ref));
       case 'payment':
         return this.payment(Number(ref));
+      case 'customs':
+        return this.customs(Number(ref));
       case 'expense':
         return this.expense(Number(ref));
       case 'tab_payment':
@@ -431,9 +436,6 @@ export class PostingRules {
         'b.vat_amount',
         'b.kind',
         'b.withheld',
-        'b.customs_vat',
-        'b.customs_duty',
-        'b.customs_paid_method',
         'b.place',
         'b.brought_over',
         'b.trefin_ref',
@@ -450,7 +452,7 @@ export class PostingRules {
     const day = bill.vat_month !== null && bill.vat_month > bill.issued_on ? bill.vat_month : bill.issued_on;
     const lines = await this.db
       .selectFrom('bill_lines')
-      .select(['kind', 'category', 'net', 'vat', 'landed', 'self_vat', 'spread', 'order_line_id'])
+      .select(['kind', 'category', 'net', 'vat', 'landed', 'self_vat', 'spread', 'order_line_id', 'duty'])
       .where('bill_id', '=', id)
       .orderBy('position')
       .execute();
@@ -479,7 +481,8 @@ export class PostingRules {
     const products = lines.filter((line) => line.kind === 'product');
     let vatIn = others.reduce((sum, line) => sum + Number(line.vat), 0);
     for (const line of others) {
-      if (line.kind === 'equipment') debit(`asset:${line.category}` as AccountLinkKey, Number(line.landed));
+      // The duty in an equipment's landed cost posts with its customs paper.
+      if (line.kind === 'equipment') debit(`asset:${line.category}` as AccountLinkKey, Number(line.landed) - Number(line.duty));
       else if (!line.spread) debit(`expense:${line.category}` as AccountLinkKey, Number(line.net));
       // VAT on a service from abroad, charged to yourself: owed and claimed back at once.
       const selfVat = Number(line.self_vat);
@@ -490,7 +493,7 @@ export class PostingRules {
     }
     if (products.length > 0) {
       if (products.every((line) => line.order_line_id === null)) {
-        debit('stock', products.reduce((sum, line) => sum + Number(line.landed), 0));
+        debit('stock', products.reduce((sum, line) => sum + Number(line.landed) - Number(line.duty), 0));
         vatIn += products.reduce((sum, line) => sum + Number(line.vat), 0);
       } else {
         // A delivery's lines say what share of the paper's total is VAT; the paper's total wins.
@@ -509,14 +512,68 @@ export class PostingRules {
         vatIn += productsVat;
       }
     }
-    const customsVat = n(bill.customs_vat) ?? 0;
-    const duty = n(bill.customs_duty) ?? 0;
-    debit('vat_in', vatIn + customsVat);
-    // Customs VAT and duty are paid at the border.
-    if (customsVat + duty > 0) debit(bill.customs_paid_method === 'cash' ? this.till : { accountId: this.places.defaultBank }, -(customsVat + duty));
+    debit('vat_in', vatIn);
     debit('payables', -amount, party);
     debit('withholding', -withheld);
     return entry.build(day, description, warning);
+  }
+
+  /**
+   * A customs paper on an import bill, on the paper's date (the first day of
+   * the month it counts in, when it came after its own month was filed): the
+   * VAT to claim, the duty and excise onto the goods, paid at the border. A
+   * paper waiting for its bill posts nothing yet.
+   */
+  private async customs(id: number): Promise<DraftEntry | null> {
+    const paper = await this.db
+      .selectFrom('customs_papers as p')
+      .innerJoin('supplier_bills as b', 'b.id', 'p.bill_id')
+      .leftJoin('suppliers as s', 's.id', 'b.supplier_id')
+      .select([
+        'p.bill_id',
+        'p.number',
+        'p.vat',
+        'p.duty',
+        'p.excise',
+        'p.paid_method',
+        'b.number as bill_number',
+        'b.supplier_id',
+        'b.place',
+        'b.brought_over',
+        'b.trefin_ref',
+        'b.voided_at as bill_voided_at',
+        's.name',
+        sql<string>`to_char(p.issued_on, 'YYYY-MM-DD')`.as('issued_on'),
+        sql<string | null>`to_char(p.vat_month, 'YYYY-MM-DD')`.as('vat_month'),
+      ])
+      .where('p.id', '=', id)
+      .where('p.voided_at', 'is', null)
+      .executeTakeFirst();
+    if (!paper || paper.bill_voided_at !== null || paper.brought_over || paper.trefin_ref !== null || paper.place === 'carwash') return null;
+    const day = paper.vat_month !== null && paper.vat_month > paper.issued_on ? paper.vat_month : paper.issued_on;
+    if (this.tooEarly(day)) return null;
+    const lines = await this.db
+      .selectFrom('bill_lines')
+      .select(['kind', 'category', 'duty', 'duty_expensed'])
+      .where('bill_id', '=', paper.bill_id!)
+      .where('kind', 'in', ['product', 'equipment'])
+      .execute();
+    const vat = Number(paper.vat);
+    const duty = roundMoney(Number(paper.duty) + Number(paper.excise));
+    const entry = this.builder().debit('vat_in', vat);
+    let spread = 0;
+    for (const line of lines) {
+      const share = Number(line.duty);
+      const expensed = Number(line.duty_expensed);
+      if (line.kind === 'equipment') entry.debit(`asset:${line.category}` as AccountLinkKey, share);
+      else entry.debit('stock', share - expensed).debit('cost_of_sales', expensed);
+      spread += share;
+    }
+    // Whatever the lines don't carry (none to spread over) still is stock.
+    entry.debit('stock', roundMoney(duty - spread));
+    if (vat + duty > 0) entry.credit(paper.paid_method === 'cash' ? this.till : { accountId: this.places.defaultBank }, vat + duty);
+    const billName = paper.name ? (paper.bill_number ? `${paper.name} ${paper.bill_number}` : paper.name) : (paper.bill_number ?? '');
+    return entry.build(day, paper.number ? `Customs ${paper.number} · ${billName}` : `Customs · ${billName}`);
   }
 
   /** The VAT in a bill that came from an order, by the rates of the products on it; null when the order has no costs. */

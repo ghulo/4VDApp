@@ -56,7 +56,7 @@ type ExpensePlace = { carwash: string } | { place: string };
 type WriteOffReason = 'damaged' | 'lost' | 'expired' | 'other' | string;
 
 /** Why a cost changed: a delivery, a scanned bill, or a scanned bill taken back. */
-export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string } | { made: string } | { unmade: string };
+export type CostReason = { order: number; supplier: string } | { scan: string } | { reopened: true } | { bill: string } | { made: string } | { unmade: string } | { customs: string };
 
 /** A place money is kept; a null name is the usual name of its kind. */
 type Place = { kind: 'till' | 'safe' | 'bank'; name: string | null };
@@ -291,7 +291,7 @@ const en = {
   orderCancelled: (p: { orderId: number; supplier: string }) => `Cancelled order #${p.orderId} from ${p.supplier}`,
   costChanged: (p: { product: string; from: number | null; to: number | null; because: CostReason }, w: Words) =>
     `Changed cost of ${p.product} from ${p.from === null ? 'none' : w.money(p.from)} to ${p.to === null ? 'none' : w.money(p.to)} (${
-      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'bill' in p.because ? `bill from ${p.because.bill}` : 'made' in p.because ? `made with ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} voided` : 'scanned bill reopened'
+      'order' in p.because ? `order #${p.because.order} from ${p.because.supplier}` : 'scan' in p.because ? `scanned bill from ${p.because.scan}` : 'bill' in p.because ? `bill from ${p.because.bill}` : 'made' in p.because ? `made with ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} voided` : 'customs' in p.because ? `customs on the bill from ${p.because.customs}` : 'scanned bill reopened'
     })`,
   orderReceived: (p: { orderId: number; supplier: string; units: number }) =>
     `Received order #${p.orderId} from ${p.supplier}: ${p.units} ${p.units === 1 ? 'unit' : 'units'} into stock`,
@@ -337,6 +337,11 @@ const en = {
   billVoided: (p: Bill & { note: string }, w: Words) => `Voided ${enBill(p, w)}: ${p.note}`,
   billPhotoAdded: (p: Bill, w: Words) => `Added a photo to ${enBill(p, w)}`,
   billPhotoRemoved: (p: Bill, w: Words) => `Removed the photo from ${enBill(p, w)}`,
+  customsAdded: (p: Bill & { vat: number; duty: number }, w: Words) => `Added the customs paper to ${enBill(p, w)}: VAT ${w.money(p.vat)}, duty ${w.money(p.duty)}`,
+  customsChanged: (p: Bill & { vat: number; duty: number }, w: Words) => `Changed the customs on ${enBill(p, w)}: VAT ${w.money(p.vat)}, duty ${w.money(p.duty)}`,
+  customsRemoved: (p: Bill, w: Words) => `Removed the customs paper from ${enBill(p, w)}`,
+  customsNone: (p: Bill, w: Words) => `Marked ${enBill(p, w)} as having no customs paper`,
+  customsNoneUndone: (p: Bill, w: Words) => `Said ${enBill(p, w)} needs its customs paper after all`,
   billAdded: (p: Bill & { dueOn: string | null; paidNow?: boolean }, w: Words) =>
     p.supplier === null
       ? `Added a ${w.money(p.amount)} expense, paid on the spot`
@@ -855,7 +860,7 @@ const sq: Templates = {
   orderCancelled: (p) => `Anuloi porosinë #${p.orderId} nga ${p.supplier}`,
   costChanged: (p, w) =>
     `Ndryshoi koston e ${p.product} nga ${p.from === null ? 'asnjë' : w.money(p.from)} në ${p.to === null ? 'asnjë' : w.money(p.to)} (${
-      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'bill' in p.because ? `fatura nga ${p.because.bill}` : 'made' in p.because ? `prodhuar me ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} u anulua` : 'fatura e skanuar u rihap'
+      'order' in p.because ? `porosia #${p.because.order} nga ${p.because.supplier}` : 'scan' in p.because ? `fatura e skanuar nga ${p.because.scan}` : 'bill' in p.because ? `fatura nga ${p.because.bill}` : 'made' in p.because ? `prodhuar me ${p.because.made}` : 'unmade' in p.because ? `${p.because.unmade} u anulua` : 'customs' in p.because ? `dogana e faturës nga ${p.because.customs}` : 'fatura e skanuar u rihap'
     })`,
   orderReceived: (p) => `Mori porosinë #${p.orderId} nga ${p.supplier}: ${p.units} copë në stok`,
 
@@ -895,6 +900,11 @@ const sq: Templates = {
   billVoided: (p, w) => `Anuloi ${sqBill(p, w)}: ${p.note}`,
   billPhotoAdded: (p, w) => `Shtoi një foto te ${sqBill(p, w)}`,
   billPhotoRemoved: (p, w) => `Hoqi foton nga ${sqBill(p, w)}`,
+  customsAdded: (p, w) => `Shtoi deklaratën doganore te ${sqBill(p, w)}: TVSH ${w.money(p.vat)}, doganë ${w.money(p.duty)}`,
+  customsChanged: (p, w) => `Ndryshoi doganën te ${sqBill(p, w)}: TVSH ${w.money(p.vat)}, doganë ${w.money(p.duty)}`,
+  customsRemoved: (p, w) => `Hoqi deklaratën doganore nga ${sqBill(p, w)}`,
+  customsNone: (p, w) => `Shënoi se ${sqBill(p, w)} nuk ka deklaratë doganore`,
+  customsNoneUndone: (p, w) => `Tha se ${sqBill(p, w)} e ka deklaratën doganore`,
   billAdded: (p, w) =>
     p.supplier === null
       ? `Shtoi një shpenzim prej ${w.money(p.amount)}, të paguar në vend`

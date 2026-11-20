@@ -21,6 +21,7 @@ import { validatePricingTiers } from './pricing/bulkPricing.js';
 import { changeCost } from './PurchaseOrderService.js';
 import { assertMonthsOpen, monthOf, vatMonthForBill } from './vat/periodLock.js';
 import { placeWords } from '../repositories/MoneyRepository.js';
+import { type CustomsInput, currentPaper, paperMonth, releasePaper, setCustoms, setNoCustoms } from './bills/customsPapers.js';
 
 /** A bill due within this many days counts as "due soon". */
 export const BILL_DUE_SOON_DAYS = 7;
@@ -119,7 +120,22 @@ export interface SupplierBillDto {
   pricesIncludeVat: boolean;
   /** From a supplier abroad: an import. */
   abroad: boolean;
-  customs: { vat: number; duty: number; method: CustomsPaidMethod } | null;
+  /** Its customs paper: duty and excise land on the goods' cost; the VAT counts in the paper's month. */
+  customs: {
+    id: number;
+    vat: number;
+    duty: number;
+    excise: number;
+    method: CustomsPaidMethod;
+    number: string | null;
+    issuedOn: string;
+    /** "2026-10" when it counts in a later month than its own (its month was filed). */
+    vatMonth: string | null;
+  } | null;
+  /** An import with goods: it can take a customs paper. */
+  customsAllowed: boolean;
+  /** The owner said this import had no customs paper. */
+  noCustoms: boolean;
   withholding: { type: WithholdingType; rate: number; amount: number } | null;
   place: ExpensePlace;
   carwash: { id: number; name: string } | null;
@@ -418,6 +434,18 @@ export class SupplierBillService {
     return this.get(id);
   }
 
+  /** Put a customs paper on a saved import bill, change it, or take it off (null). */
+  async setCustoms(id: number, input: CustomsInput | null, actorId: number, now = new Date()): Promise<SupplierBillDto> {
+    await this.transactions.run((repos) => setCustoms(repos, id, input, actorId, { today: this.today(now) }));
+    return this.get(id);
+  }
+
+  /** "No customs on this one" (under the limit): the reminder stops. */
+  async setNoCustoms(id: number, value: boolean, actorId: number): Promise<SupplierBillDto> {
+    await this.transactions.run((repos) => setNoCustoms(repos, id, value, actorId));
+    return this.get(id);
+  }
+
   async setPhoto(id: number, upload: Buffer | null, actorId: number): Promise<SupplierBillDto> {
     const bill = await this.billRepository.findById(id);
     if (!bill) throw new NotFoundError(`Bill ${id} does not exist`);
@@ -667,6 +695,7 @@ async function planBill(
         spread: lineFigures.spread,
         selfVat: lineFigures.selfVat,
         orderLineId: null,
+        duty: lineFigures.duty,
       },
     };
   });
@@ -755,7 +784,6 @@ export async function createBill(
       createdBy: actorId,
       pricesIncludeVat: input.pricesIncludeVat ?? true,
       abroad: plan.abroad,
-      customs: plan.abroad && plan.hasGoods && input.customs && (input.customs.vat > 0 || input.customs.duty > 0) ? input.customs : null,
       withholdingType: withholding,
       withheld: typed ? figures.withheld : 0,
       paidNow: Boolean(input.paidNow),
@@ -778,6 +806,14 @@ export async function createBill(
   }
   await addBillAssets(repos, id, actorId);
   await placeInVatMonth(repos, id, input.issuedOn);
+  if (typed && plan.abroad && plan.hasGoods && input.customs && input.customs.vat + input.customs.duty > 0) {
+    // The bill form's customs: a paper dated with the bill. Its new costs already carry the duty.
+    await setCustoms(repos, id, { number: null, issuedOn: input.issuedOn, vat: input.customs.vat, duty: input.customs.duty, method: input.customs.method }, actorId, {
+      today: input.issuedOn > today ? input.issuedOn : today,
+      costs: false,
+      quiet: true,
+    });
+  }
 
   const who = supplier?.name ?? null;
   if (typed) {
@@ -1041,6 +1077,11 @@ export async function voidBill(repos: TransactionalRepositories, id: number, not
     await moveStock(repos, lines.filter((line) => line.order_line_id === null), -1, `Bill #${id} voided`, actorId, bill.location_id);
   }
   await voidBillAssets(repos, { id, kind: bill.kind }, actorId, now);
+  const paper = await currentPaper(repos, id);
+  if (paper) {
+    await assertMonthsOpen(repos.periods, [paperMonth(paper)]);
+    await releasePaper(repos, id);
+  }
   await repos.bills.void(id, actorId, note, now);
   await repos.activityLog.create({
     userId: actorId,
@@ -1145,9 +1186,20 @@ function toDto(bill: BillRecord, payments: PaymentRecord[], lines: BillLineRecor
     pricesIncludeVat: bill.prices_include_vat,
     abroad: bill.abroad,
     customs:
-      bill.customs_paid_method === null
+      bill.customs_id === null
         ? null
-        : { vat: customsVat, duty: bill.customs_duty === null ? 0 : Number(bill.customs_duty), method: bill.customs_paid_method },
+        : {
+            id: bill.customs_id,
+            vat: customsVat,
+            duty: Number(bill.customs_duty ?? 0),
+            excise: Number(bill.customs_excise ?? 0),
+            method: bill.customs_paid_method ?? 'bank',
+            number: bill.customs_number,
+            issuedOn: bill.customs_issued_on!,
+            vatMonth: bill.customs_vat_month && bill.customs_vat_month.slice(0, 7) !== bill.customs_issued_on!.slice(0, 7) ? bill.customs_vat_month.slice(0, 7) : null,
+          },
+    customsAllowed: !voided && !history && !isCredit && bill.abroad && lines.some((line) => line.bill_id === bill.id && (line.kind === 'product' || line.kind === 'equipment')),
+    noCustoms: bill.no_customs,
     withholding: bill.withholding_type === null ? null : { type: bill.withholding_type, rate: WITHHOLDING_RATES[bill.withholding_type], amount: withheld },
     place: bill.place,
     carwash: bill.carwash_id === null ? null : { id: bill.carwash_id, name: bill.carwash_name ?? '' },

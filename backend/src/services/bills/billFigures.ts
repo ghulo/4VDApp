@@ -33,6 +33,8 @@ export interface LineFigures {
   spread: boolean;
   /** VAT charged to yourself on a service from abroad. */
   selfVat: number;
+  /** The part of landed that is the customs duty (goods on an import only). */
+  duty: number;
   /** A product's new cost for one, VAT included like every cost in 4VD; null for other lines. */
   unitCost: number | null;
 }
@@ -87,21 +89,19 @@ export function billFigures(input: FigureInput): BillFigures {
     }
     const spread = input.abroad && hasGoods && line.kind === 'cost' && line.category === 'transport';
     const selfVat = input.abroad && line.kind === 'cost' && !spread ? roundMoney((net * SELF_CHARGE_VAT_RATE) / 100) : 0;
-    return { net, vat, landed: net, spread, selfVat, unitCost: null };
+    return { net, vat, landed: net, spread, selfVat, duty: 0, unitCost: null };
   });
 
-  // Duty and transport onto the goods, by value.
-  const pool = roundMoney((input.abroad ? (input.customs?.duty ?? 0) : 0) + lines.filter((line) => line.spread).reduce((sum, line) => sum + line.net, 0));
-  const goods = lines.map((line, index) => ({ line, index })).filter(({ index }) => isGoods(input.lines[index]!.kind));
-  const goodsValue = goods.reduce((sum, { line }) => sum + line.net, 0);
-  if (pool > 0 && goods.length > 0) {
-    let left = pool;
-    goods.forEach(({ line }, position) => {
-      const share = position === goods.length - 1 ? left : roundMoney(goodsValue > 0 ? (pool * line.net) / goodsValue : pool / goods.length);
-      line.landed = roundMoney(line.net + share);
-      left = roundMoney(left - share);
-    });
-  }
+  // Duty and transport onto the goods, by value; each line's duty is its share's duty part.
+  const duty = input.abroad ? roundMoney(input.customs?.duty ?? 0) : 0;
+  const pool = roundMoney(duty + lines.filter((line) => line.spread).reduce((sum, line) => sum + line.net, 0));
+  const goods = lines.filter((_line, index) => isGoods(input.lines[index]!.kind));
+  const shares = spreadByValue(pool, goods.map((line) => line.net));
+  const duties = spreadByValue(duty, shares);
+  goods.forEach((line, position) => {
+    line.landed = roundMoney(line.net + shares[position]!);
+    line.duty = duties[position]!;
+  });
   input.lines.forEach((line, index) => {
     const figures = lines[index]!;
     if (line.kind === 'product' && line.quantity) {
@@ -137,6 +137,22 @@ export function billFigures(input: FigureInput): BillFigures {
     withheld,
     owed: roundMoney(total - withheld),
   };
+}
+
+/**
+ * An amount spread over lines by their values, rounded to the cent; the last
+ * line takes the rounding so the shares add up exactly. Values that are all 0
+ * share it equally. Used for an import's duty and transport.
+ */
+export function spreadByValue(amount: number, values: number[]): number[] {
+  if (values.length === 0) return [];
+  const total = values.reduce((sum, value) => sum + value, 0);
+  let left = roundMoney(amount);
+  return values.map((value, index) => {
+    const share = index === values.length - 1 ? left : amount === 0 ? 0 : roundMoney(total > 0 ? (amount * value) / total : amount / values.length);
+    left = roundMoney(left - share);
+    return share;
+  });
 }
 
 /**

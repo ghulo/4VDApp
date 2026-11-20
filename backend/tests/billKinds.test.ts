@@ -131,8 +131,10 @@ describe('one bill form for every kind of bill', () => {
     const cost = await context.db.selectFrom('products').select('cost_price').where('id', '=', productId).executeTakeFirstOrThrow();
     // €14 each landed, with 18% VAT on top as 4VD keeps costs.
     expect(Number(cost.cost_price)).toBe(16.52);
-    const [entry] = await entriesFor('bill', saved.id);
-    expect(readLines(entry!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 140', '2000 Cr 120']);
+    // The bill posts the goods and transport; its customs paper posts on its own: VAT, duty onto stock, paid at the border.
+    const [entry, customs] = await entriesFor('bill', saved.id);
+    expect(readLines(entry!)).toEqual(['1340 Dr 120', '2000 Cr 120']);
+    expect(readLines(customs!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 20']);
   });
 
   it('lets a supplier abroad go without a Kosovo NUI, but not one at home', async () => {
@@ -312,9 +314,10 @@ describe('an import that came through a supplier order', () => {
     });
     // The typed form has no order link: the bill stands on its own and the order stays open.
     expect(saved).toMatchObject({ orderId: null, amount: 120, vatToClaim: 25.2 });
-    const [entry] = await entriesFor('bill', saved.id);
-    // Stock = goods 100 + transport 20 + duty 20; customs VAT claimed and, with the duty, paid from the bank.
-    expect(readLines(entry!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 140', '2000 Cr 120']);
+    const [entry, customs] = await entriesFor('bill', saved.id);
+    // Stock = goods 100 + transport 20, then duty 20 with the customs paper; customs VAT claimed and, with the duty, paid from the bank.
+    expect(readLines(entry!)).toEqual(['1340 Dr 120', '2000 Cr 120']);
+    expect(readLines(customs!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 20']);
     const boxes = await vatBoxes();
     expect([boxes[35], boxes[36]]).toEqual([140, 25.2]);
   });

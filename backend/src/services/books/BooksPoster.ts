@@ -36,6 +36,7 @@ const DIRECT_SOURCES: Record<string, string> = {
   bonus_payouts: 'bonus',
   payroll_months: 'payroll',
   payroll_payments: 'payroll_pay',
+  customs_papers: 'customs',
 };
 
 export const BOOKS_START_KEY = 'books_start';
@@ -122,6 +123,7 @@ export class BooksPoster {
         union all select 'bonus_payouts', id from bonus_payouts where day >= ${start}::date
         union all select 'payroll_months', id from payroll_months where voided_at is null
         union all select 'payroll_payments', id from payroll_payments where voided_at is null
+        union all select 'customs_papers', id from customs_papers where voided_at is null and bill_id is not null
         on conflict do nothing
       `.execute(trx);
     });
@@ -139,6 +141,9 @@ export class BooksPoster {
       // A bill's supplier shows on its payments' entries too.
       const payments = await db.selectFrom('supplier_payments').select('id').where('bill_id', 'in', billIds).execute();
       for (const payment of payments) keys.add(`payment:${payment.id}`);
+      // A bill voided or changed: its customs paper's entry follows (posted after the bill's).
+      const papers = await db.selectFrom('customs_papers').select('id').where('bill_id', 'in', billIds).execute();
+      for (const paper of papers) keys.add(`customs:${paper.id}`);
     }
 
     // After the bills, so a bill's entry comes before its payments'.

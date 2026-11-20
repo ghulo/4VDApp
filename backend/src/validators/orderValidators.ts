@@ -108,6 +108,19 @@ export const billLineSchema = z.object({
   expiresOn: calendarDaySchema.nullish(),
 });
 
+/** A customs paper put on (or changed on) a saved import bill. */
+export const customsSchema = z.object({
+  number: optional(60),
+  issuedOn: calendarDaySchema,
+  vat: money,
+  duty: money,
+  excise: money.default(0),
+  method: z.enum(CUSTOMS_PAID_METHODS).default('bank'),
+});
+
+/** An import marked as having no customs paper, or taken back. */
+export const noCustomsSchema = z.object({ value: z.boolean() });
+
 /** The one bill form: lines of products, costs and equipment, and what 4VD needs to work out the rest. */
 export const billFormSchema = z.object({
   supplierId: idSchema.nullish().transform((value) => value ?? null),

@@ -71,7 +71,7 @@ const RESET_TABLES = [
   'vat_months', 'document_notes', 'document_threads', 'counter_events', 'book_years', 'tax_instalments',
   'tax_declarations', 'offer_lines', 'offers', 'customer_deliveries', 'partner_addresses', 'partner_offsets',
   'bonus_payouts', 'attachments', 'depreciation_lines', 'depreciation_months', 'fixed_assets', 'bill_emails',
-  'bill_scans', 'stock_locations',
+  'bill_scans', 'stock_locations', 'customs_papers',
 ];
 
 /**

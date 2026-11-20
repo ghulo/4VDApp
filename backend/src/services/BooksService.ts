@@ -498,6 +498,8 @@ export class BooksService {
     const lookups: Array<[string, Promise<Array<{ id: number; target: number | null }>>, EntryTarget['page']]> = [];
     const payments = idsOf('payment');
     if (payments.length > 0) lookups.push(['payment', this.db.selectFrom('supplier_payments').select(['id', 'bill_id as target']).where('id', 'in', payments).execute(), 'bill']);
+    const papers = idsOf('customs');
+    if (papers.length > 0) lookups.push(['customs', this.db.selectFrom('customs_papers').select(['id', 'bill_id as target']).where('id', 'in', papers).execute(), 'bill']);
     const countLines = idsOf('count_line');
     if (countLines.length > 0) lookups.push(['count_line', this.db.selectFrom('stock_count_lines').select(['id', 'count_id as target']).where('id', 'in', countLines).execute(), 'count']);
     const adjustments = idsOf('adjustment');
@@ -529,7 +531,9 @@ export class BooksService {
     switch (source) {
       case 'bill': {
         const payments = await this.db.selectFrom('supplier_payments').select('id').where('bill_id', '=', id).execute();
-        return [`bill:${id}`, ...payments.map((payment) => `payment:${payment.id}`)];
+        // Its customs papers' entries too; a paper is never moved to another bill while it has an entry here.
+        const papers = await this.db.selectFrom('customs_papers').select('id').where('bill_id', '=', id).execute();
+        return [`bill:${id}`, ...papers.map((paper) => `customs:${paper.id}`), ...payments.map((payment) => `payment:${payment.id}`)];
       }
       case 'expense': {
         // An expense is a cost line on a bill paid on the spot; from before that, it may have its own old entry.

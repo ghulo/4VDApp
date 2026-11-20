@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { SupplierBillService } from '../services/SupplierBillService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { anyNewBillSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
+import { anyNewBillSchema, billFormSchema, billQuerySchema, billSchema, creditSchema, customsSchema, noCustomsSchema, paymentParamsSchema, paymentSchema, voidBillSchema } from '../validators/orderValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 import { uploadedImage } from './profileController.js';
 
@@ -62,6 +62,21 @@ export function createBillController(billService: SupplierBillService) {
       const { id } = parseInput(idParamsSchema, req.params);
       const { note } = parseInput(voidBillSchema, req.body);
       sendSuccess(res, await billService.void(id, note, req.user!.id), { message: 'Bill voided' });
+    },
+
+    async setCustoms(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.setCustoms(id, parseInput(customsSchema, req.body), req.user!.id), { message: 'Customs saved' });
+    },
+
+    async removeCustoms(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.setCustoms(id, null, req.user!.id), { message: 'Customs removed' });
+    },
+
+    async setNoCustoms(req: Request, res: Response): Promise<void> {
+      const { id } = parseInput(idParamsSchema, req.params);
+      sendSuccess(res, await billService.setNoCustoms(id, parseInput(noCustomsSchema, req.body).value, req.user!.id), { message: 'Saved' });
     },
 
     async setPhoto(req: Request, res: Response): Promise<void> {

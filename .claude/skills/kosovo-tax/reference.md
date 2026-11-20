@@ -11,6 +11,7 @@ Paths are under `backend/src/`. Each rule names the file and symbol that holds i
   - Customer returns (credit notes the shop issues): 18% → 53/54, 8% → 55/56. **Default, unconfirmed.**
   - Kosovo supplier bills: 18%/16% → 43/44, 8% → 45/46, equipment 47/48 and 49/50, no VAT → 31 (equipment 32).
   - Imports: customs VAT spread over the goods by value and rate → 35/36, 37/38, equipment 39/40, 41/42.
+  - Customs papers (`customs_papers`, `services/bills/customsPapers.ts`): an import's goods and their customs VAT count in the month of the **customs paper's date**, not the supplier bill's (`billItems`/`billBoxes` part 'goods' in `VatService.ts`); a paper dated in a filed month counts in the next open one (`vat_month`, like a late bill). Without a paper the goods sit in 31/32 in the bill's month. **Default, unconfirmed** (normal Kosovo rule: import VAT is claimed on the customs declaration). If the bill's month was filed before the paper came, the goods are in 31 there and in 35/37 again in the paper's month.
   - Service from abroad (reverse charge): 28/29 and 65/66.
   - Supplier returns/credits: 18% → 16/17, 8% → 18/19.
   - Fixed asset sold: like a sale, in the normal sales boxes. **Default, unconfirmed.**
@@ -86,7 +87,8 @@ All figures: `PAYROLL_RULES` in `services/payroll/payrollRules.ts`, one set per 
 
 - Payroll posting (6500, 6520, 2100, 2200/2210, 2310) is TREFIN's: **default, unconfirmed.**
 - **Money places** (`database/places.ts`, `accountForPlace`): each till, safe and bank has its own account. The shop till is 1110 itself, the first bank 1120 itself. New tills and safes get the next free number under 1110 (1111…1119, then 111010…), so the safe is usually 1111 and a carwash till 1112, but the number is given in order, not fixed. Carwash tills are outside the books (`loadPlaceAccounts`, `inBooks: false`). Handoff's money defaults: "cash" payments come from the safe; each carwash till gets its own sub-account. **Default, unconfirmed.**
-- **Customs paid in cash** come from the shop till (`bill` in `postingRules.ts`, `customs_paid_method`). **Default, unconfirmed.**
+- **Customs paper** posts its own entry on its own date (`customs` in `postingRules.ts`): VAT to 1260, duty and excise onto the goods (stock 1340, an equipment's asset account), paid from the bank or, in cash, from the shop till. **Cash from the till: default, unconfirmed.** The bill's entry posts the goods without the duty (`bill_lines.duty`, already in `landed`).
+- **Duty that comes after some units were sold** (customs put on a saved bill, `spreadDuty` in `customsPapers.ts`): goes onto the cost of the units still in stock; sold units keep their cost; none left → cost of sales 5000 (`bill_lines.duty_expensed`). Equipment's duty can't change after the bill is saved. **Default, unconfirmed.**
 - **Cash count differences** (till counts, `services/CashCountService.ts`) are **not posted**. **Default, unconfirmed.** Don't confuse with stock count lines, which do post to 5400.
 - **Stock in at net cost, cost of sales VAT-inclusive:** **default, unconfirmed.** TREFIN's trial balance is €976.78 off from 4VD's.
 - **Stock documents** (in/out) post to 5400 at current cost, goods received free included (`stockDocument`). **Default, unconfirmed.**

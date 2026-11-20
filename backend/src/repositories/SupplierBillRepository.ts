@@ -33,9 +33,17 @@ export interface BillRecord {
   returns_stock: boolean;
   prices_include_vat: boolean;
   abroad: boolean;
+  /** From its customs paper (customs_papers), null without one. */
+  customs_id: number | null;
   customs_vat: string | null;
   customs_duty: string | null;
+  customs_excise: string | null;
   customs_paid_method: CustomsPaidMethod | null;
+  customs_number: string | null;
+  customs_issued_on: string | null;
+  customs_vat_month: string | null;
+  /** The owner said it had no customs paper. */
+  no_customs: boolean;
   withholding_type: WithholdingType | null;
   withheld: string;
   paid_now: boolean;
@@ -86,7 +94,6 @@ export interface NewBill {
   returnsStock?: boolean;
   pricesIncludeVat?: boolean;
   abroad?: boolean;
-  customs?: { vat: number; duty: number; method: CustomsPaidMethod } | null;
   withholdingType?: WithholdingType | null;
   withheld?: number;
   paidNow?: boolean;
@@ -116,6 +123,8 @@ export interface BillLineRecord {
   spread: boolean;
   self_vat: string;
   order_line_id: number | null;
+  duty: string;
+  duty_expensed: string;
 }
 
 export interface NewBillLine {
@@ -133,6 +142,8 @@ export interface NewBillLine {
   spread: boolean;
   selfVat: number;
   orderLineId: number | null;
+  /** Its share of the customs duty, already in landed. */
+  duty?: number;
 }
 
 export interface BillFilters {
@@ -159,6 +170,7 @@ export class SupplierBillRepository {
       .leftJoin('users as u', 'u.id', 'b.created_by')
       .leftJoin('carwashes as w', 'w.id', 'b.carwash_id')
       .leftJoin('supplier_bills as original', 'original.id', 'b.credit_for_id')
+      .leftJoin('customs_papers as cp', (join) => join.onRef('cp.bill_id', '=', 'b.id').on('cp.voided_at', 'is', null))
       .select([
         'b.id',
         'b.supplier_id',
@@ -184,9 +196,15 @@ export class SupplierBillRepository {
         'b.returns_stock',
         'b.prices_include_vat',
         'b.abroad',
-        'b.customs_vat',
-        'b.customs_duty',
-        'b.customs_paid_method',
+        'cp.id as customs_id',
+        'cp.vat as customs_vat',
+        'cp.duty as customs_duty',
+        'cp.excise as customs_excise',
+        'cp.paid_method as customs_paid_method',
+        'cp.number as customs_number',
+        sql<string | null>`to_char(cp.issued_on, 'YYYY-MM-DD')`.as('customs_issued_on'),
+        sql<string | null>`to_char(cp.vat_month, 'YYYY-MM-DD')`.as('customs_vat_month'),
+        'b.no_customs',
         'b.withholding_type',
         'b.withheld',
         'b.paid_now',
@@ -304,9 +322,6 @@ export class SupplierBillRepository {
         returns_stock: bill.returnsStock ?? false,
         prices_include_vat: bill.pricesIncludeVat ?? true,
         abroad: bill.abroad ?? false,
-        customs_vat: bill.customs?.vat ?? null,
-        customs_duty: bill.customs?.duty ?? null,
-        customs_paid_method: bill.customs?.method ?? null,
         withholding_type: bill.withholdingType ?? null,
         withheld: bill.withheld ?? 0,
         paid_now: bill.paidNow ?? false,
@@ -344,6 +359,8 @@ export class SupplierBillRepository {
         'l.spread',
         'l.self_vat',
         'l.order_line_id',
+        'l.duty',
+        'l.duty_expensed',
       ])
       .where('l.bill_id', 'in', billIds)
       .orderBy('l.bill_id')
@@ -373,6 +390,7 @@ export class SupplierBillRepository {
           spread: line.spread,
           self_vat: line.selfVat,
           order_line_id: line.orderLineId,
+          duty: line.duty ?? 0,
         })),
       )
       .execute();

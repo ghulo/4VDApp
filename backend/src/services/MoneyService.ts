@@ -185,10 +185,10 @@ const movementsSql = (timeZone: string) => sql`
   where p.voided_at is null and p.group_id is not null
   group by g.id, s.id, s.name, g.note
   union all
-  select case when b.customs_paid_method = 'cash' then (select id from shop) else (select id from bank) end, b.issued_on, 'customs', b.id,
-    -(coalesce(b.customs_vat, 0) + coalesce(b.customs_duty, 0)), s.id, s.name, null, b.number, null, b.id, null
-  from supplier_bills b left join suppliers s on s.id = b.supplier_id
-  where b.voided_at is null and b.customs_paid_method is not null and coalesce(b.customs_vat, 0) + coalesce(b.customs_duty, 0) > 0
+  select case when cp.paid_method = 'cash' then (select id from shop) else (select id from bank) end, cp.issued_on, 'customs', b.id,
+    -(cp.vat + cp.duty + cp.excise), s.id, s.name, null, b.number, null, b.id, null
+  from customs_papers cp join supplier_bills b on b.id = cp.bill_id left join suppliers s on s.id = b.supplier_id
+  where cp.voided_at is null and b.voided_at is null and cp.vat + cp.duty + cp.excise > 0
   union all
   -- Wages paid, and the wage tax and pension paid to ATK: the detail says which, and the month ("tax 2026-10").
   select p.place_id, p.paid_on, 'payroll', p.id, -p.amount, null, null, null, p.kind || ' ' || to_char(pm.month, 'YYYY-MM'), null, null, p.note

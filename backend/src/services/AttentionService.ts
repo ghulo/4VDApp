@@ -28,7 +28,7 @@ export type TodoSeverity = 'urgent' | 'check' | 'idea';
 const EMAIL_READ_GRACE_MS = 5 * 60_000;
 
 export type TodoVerb = 'decide' | 'restock' | 'checkExpiry' | 'look' | 'openTab' | 'payBill' | 'markChecked' | 'closeDay' | 'endShift' | 'checkBill' | 'reviewDuplicates' | 'fileVat' | 'payTm' | 'fileDeclaration' | 'answer' | 'runPayroll' | 'payAtk';
-export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order' | 'import_done' | 'pin_locked';
+export type TodoKind = InsightKind | 'requests' | 'cash_difference' | 'close_day' | 'end_shift' | 'bill_scan' | 'bill_email' | 'duplicates' | 'vat_due' | 'tm_due' | 'declaration_due' | 'question' | 'offline_shortfall' | 'payroll_run' | 'payroll_atk' | 'portal_order' | 'import_done' | 'pin_locked' | 'customs_missing' | 'customs_waiting';
 
 export interface TodoItem {
   /** Stable while the cause lasts, so lists don't jump. */
@@ -115,6 +115,10 @@ export class AttentionService {
     private readonly declarations: Pick<DeclarationService, 'due'> | null = null,
     private readonly imports: { toCheck(): Promise<Array<{ id: number; products: number; day: Date }>> } | null = null,
     private readonly pinLocks: { lockedToday(): Promise<Array<{ id: number; name: string }>> } | null = null,
+    private readonly customs: {
+      missing(today: string): Promise<Array<{ id: number; supplier: string | null; number: string | null }>>;
+      waiting(): Promise<Array<{ id: number; number: string | null; supplier: string | null; issuedOn: string }>>;
+    } | null = null,
   ) {}
 
   async forUser(role: UserRole, t: ServerMessages = en, now = new Date()): Promise<Attention> {
@@ -203,6 +207,32 @@ export class AttentionService {
         verb: 'look',
         to: '/bills',
       });
+    }
+    // Imports from abroad: the customs paper, until it is on the bill or someone says there is none.
+    if (this.customs) {
+      const [missing, waiting] = await Promise.all([this.customs.missing(zonedDay(now, this.timeZone)), this.customs.waiting()]);
+      for (const bill of missing) {
+        items.push({
+          key: `customs_missing:${bill.id}`,
+          kind: 'customs_missing',
+          severity: 'check',
+          title: t.todo.customsMissingTitle({ supplier: bill.supplier, number: bill.number }),
+          detail: t.todo.customsMissingDetail,
+          verb: 'look',
+          to: `/bills/${bill.id}#customs`,
+        });
+      }
+      for (const paper of waiting) {
+        items.push({
+          key: `customs_waiting:${paper.id}`,
+          kind: 'customs_waiting',
+          severity: 'check',
+          title: t.todo.customsWaitingTitle({ number: paper.number, supplier: paper.supplier }),
+          detail: t.todo.customsWaitingDetail,
+          verb: 'look',
+          to: `/bills/customs/${paper.id}`,
+        });
+      }
     }
     for (const count of cash) {
       items.push({

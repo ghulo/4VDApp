@@ -20,6 +20,9 @@ export function createBillRoutes({ supplierBillService, guards }: Container): Ro
   router.post('/:id/payments/:paymentId/void', ...guards.oversee, controller.voidPayment);
   router.post('/:id/void', ...guards.oversee, controller.void);
   router.post('/:id/credit', ...guards.oversee, controller.credit);
+  router.put('/:id/customs', ...guards.oversee, controller.setCustoms);
+  router.delete('/:id/customs', ...guards.oversee, controller.removeCustoms);
+  router.put('/:id/no-customs', ...guards.oversee, controller.setNoCustoms);
   router.put('/:id/photo', ...guards.oversee, readImage, controller.setPhoto);
   router.delete('/:id/photo', ...guards.oversee, controller.removePhoto);
 

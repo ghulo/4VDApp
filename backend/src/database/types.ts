@@ -748,6 +748,32 @@ export interface BillLinesTable {
   spread: Generated<boolean>;
   self_vat: ColumnType<string, number | string | undefined, number | string>;
   order_line_id: number | null;
+  /** A goods line's share of its customs paper's duty and excise (already in landed). */
+  duty: ColumnType<string, number | string | undefined, number | string>;
+  /** The part of that share booked to cost of sales: none of the line's units were left in stock. */
+  duty_expensed: ColumnType<string, number | string | undefined, number | string>;
+}
+
+/** A Kosovo customs declaration for goods from abroad; bill_id null while it waits for its bill. */
+export interface CustomsPapersTable {
+  business_id: Generated<number>;
+  id: Generated<number>;
+  bill_id: number | null;
+  number: string | null;
+  issued_on: ColumnType<string, string, string>;
+  /** The VAT month it counts in when its own month was already filed; null: its own month. */
+  vat_month: ColumnType<string | null, string | null | undefined, string | null>;
+  vat: ColumnType<string, number | string | undefined, number | string>;
+  duty: ColumnType<string, number | string | undefined, number | string>;
+  excise: ColumnType<string, number | string | undefined, number | string>;
+  paid_method: CustomsPaidMethod;
+  scan_id: number | null;
+  supplier_name: string | null;
+  invoice_numbers: ColumnType<string[], string[] | undefined, string[]>;
+  declared_value: ColumnType<string | null, number | string | null | undefined, number | string | null>;
+  created_by: number | null;
+  created_at: Generated<Date>;
+  voided_at: Date | null;
 }
 
 /** A day a manager said had no expenses, so the end-of-day list can close. */
@@ -1097,6 +1123,8 @@ export interface SupplierBillsTable {
   customs_vat: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   customs_duty: ColumnType<string | null, number | string | null | undefined, number | string | null>;
   customs_paid_method: CustomsPaidMethod | null;
+  /** The owner said this import had no customs paper, so 4VD stops asking. */
+  no_customs: Generated<boolean>;
   withholding_type: WithholdingType | null;
   /** Tax held back for ATK: taken off `amount`, which is what the supplier is owed. */
   withheld: ColumnType<string, number | string | undefined, number | string>;
@@ -1809,6 +1837,7 @@ export interface Database {
   assistant_messages: AssistantMessagesTable;
   bill_repeats: BillRepeatsTable;
   bill_lines: BillLinesTable;
+  customs_papers: CustomsPapersTable;
   no_expense_days: NoExpenseDaysTable;
   customers: CustomersTable;
   tab_entries: TabEntriesTable;

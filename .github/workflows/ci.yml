@@ -2,10 +2,9 @@
 # shows up on GitHub (red cross) before it reaches the live app. On main, once
 # every check is green, the last job puts the dashboard live at 4vd.app.
 #
-# The repo is private and GitHub's free plan has 2,000 Actions minutes a month,
-# so each job only runs when its own folder (or this file) changed: a change to
+# Each job only runs when its own folder (or this file) changed: a change to
 # progress.md or the docs runs nothing, a dashboard-only change skips the
-# 20-minute backend suite. Pushes to other branches run nothing until they are
+# backend suite. Pushes to other branches run nothing until they are
 # opened as a pull request or merged into main.
 name: Checks
 
@@ -76,14 +75,49 @@ jobs:
               - *ci
               - 'desktop/**'
 
-  backend:
-    name: Backend (types and tests)
+  # The backend runs as three jobs side by side so a push waits about two
+  # minutes instead of six: the quick checks (audit, types, build), the test
+  # files split into four parts, each on its own runner with its own Postgres,
+  # and "Backend (types and tests)", which is green only when all of them are.
+  # The deploy jobs wait on that last one, so its name and id stay as before.
+  backend-checks:
+    name: Backend (audit, types and build)
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
-    # The full suite now runs past 15 minutes; a timeout shows as "cancelled"
-    # and holds back both Render and the dashboard deploy.
-    timeout-minutes: 30
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      # Stops on a high or critical security hole in a package that ships to
+      # users. Holes only in dev tools (vite, vitest…) warn instead: an advisory
+      # with no fixed version once blocked every deploy.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high || echo "::warning title=Dev tools::npm audit found a high or critical hole in a dev tool; see this step's log"
+      - run: npm run typecheck
+      - run: npm run build
+
+  backend-tests:
+    name: Backend tests (part ${{ matrix.part }} of 4)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    # One part takes about two minutes; a timeout shows as "cancelled" and
+    # holds back both Render and the dashboard deploy.
+    timeout-minutes: 15
+    strategy:
+      # Let every part finish, so one red run shows all the failing files.
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:18-alpine
@@ -103,7 +137,7 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/four_vd_app_test
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/four_vd_app_test
       JWT_SECRET: ci-only-secret-that-is-long-enough
-      # The runner may have only 2 cores; tests mostly wait on Postgres, so run 4 files at once anyway.
+      # Tests mostly wait on Postgres, so run 4 files at once on each runner.
       VITEST_MAX_WORKERS: 4
     defaults:
       run:
@@ -116,14 +150,25 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # Stops on a high or critical security hole in a package that ships to
-      # users. Holes only in dev tools (vite, vitest…) warn instead: an advisory
-      # with no fixed version once blocked every deploy.
-      - run: npm audit --omit=dev --audit-level=high
-      - run: npm audit --audit-level=high || echo "::warning title=Dev tools::npm audit found a high or critical hole in a dev tool; see this step's log"
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+      - run: npm test -- --shard=${{ matrix.part }}/4
+
+  backend:
+    name: Backend (types and tests)
+    needs: [changes, backend-checks, backend-tests]
+    if: always() && needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every backend part passed
+        env:
+          CHECKS: ${{ needs.backend-checks.result }}
+          TESTS: ${{ needs.backend-tests.result }}
+        run: |
+          echo "Audit, types and build: $CHECKS. Tests (all four parts): $TESTS."
+          if [ "$CHECKS" != "success" ] || [ "$TESTS" != "success" ]; then
+            echo "::error::A backend part did not pass (checks: $CHECKS, tests: $TESTS)"
+            exit 1
+          fi
 
   backend-image:
     name: Backend Docker image

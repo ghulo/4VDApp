@@ -45,12 +45,13 @@ test('the till: no shelf reload after a sale, Pay from the keyboard, a payment k
   await expect(table.getByRole('cell', { name: '€11.80' }).first()).toBeVisible();
   await scan.focus();
   await page.keyboard.press('Delete');
-  const first = page.getByRole('radio').first();
+  const reasons = page.locator('.counter-confirm__reason');
+  const first = reasons.first();
   await expect(first).toBeVisible();
   await page.keyboard.press('1');
-  await expect(first).toHaveAttribute('aria-checked', 'true');
+  await expect(first).toHaveAttribute('aria-pressed', 'true');
   await expect(table).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(reasons).toHaveCount(0);
   await expect(table.getByRole('cell', { name: '€11.80' })).toHaveCount(0);
 });

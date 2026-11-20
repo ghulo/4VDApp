@@ -105,12 +105,11 @@ function ReasonForm({ reasons, confirm, danger = true, onConfirm, onClose }: Rea
       <p id={promptId} className="counter-confirm__prompt">
         {t.counter.whyPick}
       </p>
-      <div className="counter-confirm__reasons" role="radiogroup" aria-labelledby={promptId}>
+      <div className="counter-confirm__reasons" role="group" aria-labelledby={promptId}>
         {keys.map((key, index) => (
           <Button
             key={key}
-            role="radio"
-            aria-checked={chosen === key}
+            aria-pressed={chosen === key}
             className="counter-confirm__reason"
             data-autofocus={index === 0 ? '' : undefined}
             aria-keyshortcuts={String(index + 1)}

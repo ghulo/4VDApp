@@ -732,8 +732,9 @@ export async function createBill(
     if (amount <= 0) throw new ValidationError('The bill has to come to more than 0');
   } else {
     amount = input.amount!;
-    vatAmount = input.vatAmount ?? null;
-    rows = input.orderId ? await deliveryLines(repos, input.orderId) : [];
+    // A supplier abroad charges no Kosovo VAT (as on the bill form): the whole paper is goods; customs VAT is on its own paper.
+    vatAmount = plan.abroad ? 0 : (input.vatAmount ?? null);
+    rows = input.orderId ? await deliveryLines(repos, input.orderId, plan.abroad) : [];
   }
   const withholding = typed && input.withholdingType ? input.withholdingType : null;
   const repeatId = options.repeatId ?? (input.repeatMonthly ? await addRepeat(repos, input, plan, amount, actorId) : null);
@@ -844,14 +845,14 @@ export async function createBill(
   return id;
 }
 
-/** The products a delivery brought, as the lines of its bill (their stock came in with the delivery). */
-async function deliveryLines(repos: TransactionalRepositories, orderId: number): Promise<NewBillLine[]> {
+/** The products a delivery brought, as the lines of its bill (their stock came in with the delivery). From abroad, they carry no Kosovo VAT. */
+async function deliveryLines(repos: TransactionalRepositories, orderId: number, abroad: boolean): Promise<NewBillLine[]> {
   const lines = await repos.orders.findLines([orderId]);
   const products = new Map((await repos.products.findByIds([...new Set(lines.map((line) => line.product_id))], true)).map((product) => [product.id, product]));
   return lines
     .filter((line) => (line.received_quantity ?? 0) > 0)
     .map((line) => {
-      const rate = products.get(line.product_id)?.vat_rate ?? 18;
+      const rate = abroad ? 0 : (products.get(line.product_id)?.vat_rate ?? 18);
       const gross = roundMoney(line.received_quantity! * Number(line.unit_cost ?? 0));
       const vat = vatOf(gross, rate);
       return {
@@ -862,7 +863,7 @@ async function deliveryLines(repos: TransactionalRepositories, orderId: number):
         category: null,
         description: null,
         vatRate: rate,
-        vatExempt: products.get(line.product_id)?.vat_exempt ?? false,
+        vatExempt: !abroad && (products.get(line.product_id)?.vat_exempt ?? false),
         net: roundMoney(gross - vat),
         vat,
         landed: roundMoney(gross - vat),

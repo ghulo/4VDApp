@@ -288,3 +288,56 @@ describe('repeating bills', () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe('an import that came through a supplier order', () => {
+  async function abroadOrder(units: number, unitCost: number) {
+    const supplierId = await supplier({ name: 'Istanbul Toys', abroad: true });
+    const order = await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId, quantity: units, unitCost }] });
+    expect(order.status, JSON.stringify(order.body)).toBe(201);
+    return { supplierId, order: order.body.data };
+  }
+  const vatBoxes = async () => {
+    const response = await api().get(`/api/vat/${today().slice(0, 7)}`).set(auth());
+    expect(response.status, JSON.stringify(response.body)).toBe(200);
+    return response.body.data.boxes as Record<string, number>;
+  };
+
+  it('a bill typed with customs and transport for an order is saved as a plain import, and balances', async () => {
+    const { supplierId, order } = await abroadOrder(10, 10);
+    const saved = await bill({
+      supplierId,
+      orderId: order.id,
+      lines: [product(10, 10), { kind: 'cost', category: 'transport', amount: 20 }],
+      customs: { vat: 25.2, duty: 20, method: 'bank' },
+    });
+    // The typed form has no order link: the bill stands on its own and the order stays open.
+    expect(saved).toMatchObject({ orderId: null, amount: 120, vatToClaim: 25.2 });
+    const [entry] = await entriesFor('bill', saved.id);
+    // Stock = goods 100 + transport 20 + duty 20; customs VAT claimed and, with the duty, paid from the bank.
+    expect(readLines(entry!)).toEqual(['1120 Cr 45.2', '1260 Dr 25.2', '1340 Dr 140', '2000 Cr 120']);
+    const boxes = await vatBoxes();
+    expect([boxes[35], boxes[36]]).toEqual([140, 25.2]);
+  });
+
+  it.each([
+    ['without its VAT', {}],
+    ['with a VAT typed by mistake', { vatAmount: 18 }],
+  ])('a delivery from abroad received with its bill %s claims no Kosovo VAT the supplier never charged', async (_label, vat) => {
+    const { order } = await abroadOrder(10, 11.8);
+    const received = await api()
+      .post(`/api/orders/${order.id}/receive`)
+      .set(auth())
+      .send({ lines: [{ lineId: order.lines[0].id, receivedQuantity: 10, unitCost: 11.8 }], bill: { number: 'IT-1', issuedOn: today(), dueOn: null, amount: 118, ...vat } });
+    expect(received.status, JSON.stringify(received.body)).toBe(200);
+    const billId = (await context.db.selectFrom('supplier_bills').select('id').where('order_id', '=', order.id).executeTakeFirstOrThrow()).id;
+    const saved = (await api().get(`/api/bills/${billId}`).set(auth())).body.data;
+    expect(saved).toMatchObject({ amount: 118, vatToClaim: 0 });
+    expect(saved.lines.map((line: { landed: number; vat: number }) => [line.landed, line.vat])).toEqual([[118, 0]]);
+    const [entry] = await entriesFor('bill', billId);
+    // A supplier abroad charges no Kosovo VAT: the whole paper is stock, owed to the supplier.
+    expect(readLines(entry!)).toEqual(['1340 Dr 118', '2000 Cr 118']);
+    const boxes = await vatBoxes();
+    // The return and the books agree: the whole paper is a purchase with no VAT to claim (no customs VAT was typed).
+    expect([boxes[31], boxes[36], boxes[44], boxes[67]]).toEqual([118, 0, 0, 0]);
+  });
+});

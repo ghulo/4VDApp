@@ -39,3 +39,44 @@ export function changeFor(draft: PayDraft, total: number): { given: number; chan
   if ((draft.paidBy !== 'cash' && draft.paidBy !== 'split') || !Number.isFinite(given)) return null;
   return { given, change: cents(given - cashDue(draft, total)) };
 }
+
+/** A payment half taken when Pay was left (Back, Esc): kept for that basket as long as nothing in it changes. */
+export interface KeptPay {
+  basketId: string;
+  /** What the basket held and cost when the payment was typed (basketSignature). */
+  basket: string;
+  draft: PayDraft;
+}
+
+/** What a payment depends on: the lines, rabat, customer, prices and total. Any change makes a kept payment stale. */
+export function basketSignature(
+  basket: { lines: ReadonlyArray<{ productId: number; quantity: number; discount?: string; offerPrice?: number }>; discount?: string; customerId?: number | null; wholesale?: boolean | null; offerId?: number | null; delivery?: unknown },
+  total: number,
+): string {
+  return JSON.stringify([
+    basket.lines.map((line) => [line.productId, line.quantity, line.discount ?? '', line.offerPrice ?? null]),
+    basket.discount ?? '',
+    basket.customerId ?? null,
+    basket.wholesale ?? null,
+    basket.offerId ?? null,
+    basket.delivery ?? null,
+    cents(total),
+  ]);
+}
+
+/** The payment Pay opens with: the one kept for this very basket, unchanged since; else a fresh one. */
+export function draftToOpen(kept: KeptPay | null, basketId: string, signature: string, fresh: PayDraft): PayDraft {
+  return kept && kept.basketId === basketId && kept.basket === signature ? kept.draft : fresh;
+}
+
+/**
+ * Pay's own keys: F1 cash, F2 card, F3 cash + card, F4 on the tab (not
+ * offline). Function keys, never letters or digits: a barcode scanned into Pay
+ * types those, and must not change how the customer pays.
+ */
+export const PAY_KEYS: Readonly<Record<string, PayDraft['paidBy']>> = { F1: 'cash', F2: 'card', F3: 'split', F4: 'tab' };
+
+export function payMethodForKey(key: string, offline: boolean): PayDraft['paidBy'] | null {
+  const method = PAY_KEYS[key] ?? null;
+  return method === 'tab' && offline ? null : method;
+}

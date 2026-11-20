@@ -59,7 +59,7 @@ import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
 import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, SerialSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
-import { changeFor, EMPTY_PAY, type PayDraft, splitFor } from './counter/payDraft';
+import { basketSignature, changeFor, draftToOpen, EMPTY_PAY, type KeptPay, type PayDraft, splitFor } from './counter/payDraft';
 import { InvoicesSheet } from './counter/InvoicesSheet';
 import { DeliverSheet } from './counter/DeliverSheet';
 import { ProductFinder } from './counter/ProductFinder';
@@ -275,6 +275,9 @@ export function CounterPage() {
   const [flash, setFlash] = useState<{ id: number; key: number } | null>(null);
   const [lastSale, setLastSale] = useState<LastSale | null>(null);
   const [payDraft, setPayDraft] = useState<PayDraft>(EMPTY_PAY);
+  // A payment half taken when Pay was left (Back, Esc): it comes back for the same basket while nothing in it changes.
+  const keptPay = useRef<KeptPay | null>(null);
+  const payToOpen = () => draftToOpen(keptPay.current, current.id, basketSignature(current, total), { ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
   const [printNote, setPrintNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [refundNumber, setRefundNumber] = useState<string | null>(null);
   const [finderQuery, setFinderQuery] = useState('');
@@ -1104,6 +1107,7 @@ export function CounterPage() {
       return;
     }
     const closed = closeBasket(basketId);
+    if (keptPay.current?.basketId === basketId) keptPay.current = null;
     setPanelState(null);
     // Recorded (or waiting on this PC): the till is free again while the receipt prints.
     setPayingNow(false);
@@ -1364,7 +1368,7 @@ export function CounterPage() {
       setPanel('serial');
       return;
     }
-    if (next === 'pay') setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
+    if (next === 'pay') setPayDraft(payToOpen());
     setPanel(next);
   };
   function newBasket() {
@@ -1741,7 +1745,10 @@ export function CounterPage() {
               customers={customers.data}
               draft={payDraft}
               offline={!online}
-              onChange={setPayDraft}
+              onChange={(draft) => {
+                setPayDraft(draft);
+                keptPay.current = { basketId: current.id, basket: basketSignature(current, total), draft };
+              }}
               onPay={pay}
               onBack={closePanel}
               canDecide={canOversee(user.role)}
@@ -1945,7 +1952,7 @@ export function CounterPage() {
             // The next line that still needs serials, else on to paying.
             const next = lines.find((line) => line.productId !== serialLine.productId && tracked.has(line.productId) && (line.serials?.length ?? 0) < Math.ceil(line.quantity));
             if (next) return setSerialFor(next.productId);
-            setPayDraft({ ...EMPTY_PAY, customerId: current.customerId ? String(current.customerId) : '' });
+            setPayDraft(payToOpen());
             setPanel('pay');
           }}
         />

@@ -26,7 +26,8 @@ export function Segmented<T extends string>({
 }: {
   label: string;
   value: T;
-  options: ReadonlyArray<{ value: T; label: string; disabled?: boolean }>;
+  /** `shortcut`: a key that picks the option (handled by the form), shown on it. */
+  options: ReadonlyArray<{ value: T; label: string; disabled?: boolean; shortcut?: string }>;
   onChange: (value: T) => void;
   size?: 'sm';
   describedBy?: string;
@@ -63,9 +64,11 @@ export function Segmented<T extends string>({
           tabIndex={stop === option.value ? 0 : -1}
           disabled={option.disabled}
           className="segmented__option"
+          aria-keyshortcuts={option.shortcut}
           onClick={() => onChange(option.value)}
         >
           {option.label}
+          {option.shortcut && <kbd aria-hidden="true">{option.shortcut}</kbd>}
         </button>
       ))}
     </div>

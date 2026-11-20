@@ -9,7 +9,7 @@ import { todayIso } from '../../utils/bills';
 import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
-import { cashDue, changeFor, type PayDraft, splitFor } from './payDraft';
+import { cashDue, changeFor, type PayDraft, payMethodForKey, splitFor } from './payDraft';
 import { BurstWatcher, DOUBLE_ENTER_MS, payEnter, SCANNER_GAP_MS, tenderedLooksWrong } from './tillRules';
 import type { Unprinted } from './useFiscalPrinter';
 
@@ -282,6 +282,44 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const back = () => {
     if (!sending.current) onBack();
   };
+  // After choosing how the customer pays (a key or a click, not the arrow keys), the focus goes where the next key belongs:
+  // the cash given, the card part, the customer, or Record sale itself, so Enter records a card sale.
+  const formRef = useRef<HTMLFormElement>(null);
+  const arrowAt = useRef(Number.NEGATIVE_INFINITY);
+  const focusMethod = useRef(true);
+  const choose = (paidBy: PayDraft['paidBy'], byArrow = false) => {
+    focusMethod.current = !byArrow;
+    set({ paidBy });
+  };
+  // F1–F4 pick how the customer pays, wherever the focus is. At the door it is cash only; while the sale is on its way nothing changes.
+  const chooseByKey = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  useEffect(() => {
+    chooseByKey.current = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.altKey || event.metaKey || document.querySelector('dialog[open]')) return;
+      const method = payMethodForKey(event.key, offline);
+      if (!method) return;
+      event.preventDefault();
+      if (!door && !sending.current) choose(method);
+    };
+  });
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => chooseByKey.current(event);
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
+  }, []);
+  useEffect(() => {
+    if (!focusMethod.current) return;
+    const form = formRef.current;
+    const target =
+      draft.paidBy === 'cash'
+        ? form?.querySelector<HTMLElement>('input[name="tendered"]')
+        : draft.paidBy === 'split'
+          ? form?.querySelector<HTMLElement>('input[name="card-part"]')
+          : draft.paidBy === 'tab'
+            ? form?.querySelector<HTMLElement>('select')
+            : form?.querySelector<HTMLElement>('.counter-pay-panel__record');
+    target?.focus();
+  }, [draft.paidBy]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -307,12 +345,14 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
 
   return (
     <form
+      ref={formRef}
       className="counter-form counter-pay-panel"
       onSubmit={submit}
       aria-label={t.counter.payTitle(formatMoney(saleTotal))}
       // The barcode scanner types a code and Enter in a burst: wherever the focus is, a product's code goes back to the basket, never into the cash or a press of Record sale.
       onKeyDownCapture={(event) => {
         if (event.ctrlKey || event.altKey || event.metaKey) return;
+        if (event.key.startsWith('Arrow')) arrowAt.current = event.timeStamp;
         // A scanner's second Enter (CR+LF) right after its code is part of the scan, never Record sale.
         if (event.key === 'Enter' && event.timeStamp - burstEnded.current < DOUBLE_ENTER_MS) {
           event.preventDefault();
@@ -348,12 +388,12 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
       <Segmented
         label={t.counter.paidBy}
         value={draft.paidBy}
-        onChange={(paidBy) => set({ paidBy })}
+        onChange={(paidBy) => choose(paidBy, performance.now() - arrowAt.current < 100)}
         options={[
-          { value: 'cash', label: t.counter.cash },
-          { value: 'card', label: t.counter.card },
-          { value: 'split', label: t.counter.split },
-          ...(offline && draft.paidBy !== 'tab' ? [] : [{ value: 'tab' as const, label: t.counter.tab }]),
+          { value: 'cash', label: t.counter.cash, shortcut: 'F1' },
+          { value: 'card', label: t.counter.card, shortcut: 'F2' },
+          { value: 'split', label: t.counter.split, shortcut: 'F3' },
+          ...(offline && draft.paidBy !== 'tab' ? [] : [{ value: 'tab' as const, label: t.counter.tab, shortcut: offline ? undefined : 'F4' }]),
         ]}
       />
       )}

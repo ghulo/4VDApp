@@ -61,12 +61,12 @@ test('says when it could not write', () => {
   assert.equal(journal.start(file, KEY, 'job'), false);
 });
 
-test('a print that throws is noted as failed, never left printing', async () => {
+test('a print that throws is noted as unknown (check the printer), never left printing', async () => {
   const file = fresh();
   await assert.rejects(journal.track(file, KEY, 'job', async () => {
-    throw new Error('C:\TEMP is read-only');
+    throw new Error('the day zip could not be read');
   }));
-  assert.equal(journal.lookup(file, KEY).status, 'failed');
+  assert.equal(journal.lookup(file, KEY).status, 'unknown');
   assert.equal(await journal.track(file, 'k2', 'job', async () => ({ status: 'printed', receiptNo: '9' })).then((a) => a.status), 'printed');
   assert.equal(journal.lookup(file, 'k2').receiptNo, '9');
   // Without a key it only prints.

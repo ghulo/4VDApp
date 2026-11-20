@@ -109,7 +109,9 @@ const note = (key: string, extra: Partial<SettledSale> = {}): SettledSale => ({
 describe('a fiscal number 4VD says not yet to', () => {
   it('should keep the number on a filed month, wait on no answer or another person, and drop it only on a clear no', () => {
     expect(fiscalFailure(new ApiError('October is filed', 409, 'PERIOD_FILED'))).toBe('blocked');
+    expect(fiscalFailure(new ApiError('2025 is closed', 409, 'YEAR_CLOSED'))).toBe('blocked');
     expect(fiscalFailure(new ApiError('Someone else is signed in', 409, 'OWNER_CHANGED'))).toBe('wait');
+    expect(fiscalFailure(new ApiError('TREFIN history', 409, null))).toBe('drop');
     expect(fiscalFailure(new TypeError('Failed to fetch'))).toBe('wait');
     expect(fiscalFailure(new ApiError('Busy', 503, null))).toBe('wait');
     expect(fiscalFailure(new ApiError('Signed out', 401, null))).toBe('wait');

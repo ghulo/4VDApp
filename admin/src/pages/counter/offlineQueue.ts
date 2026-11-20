@@ -118,12 +118,12 @@ export function isNetworkFailure(error: unknown): boolean {
  * kept on this PC:
  * - wait: no answer about it (no internet, someone else signed in now, a fault): it stays, the round stops;
  * - blocked: 4VD said not yet (a filed month, a closed year): it stays, with why, tried again later;
- * - drop: a clear no about the number itself (the invoice is gone): nothing more to do.
+ * - drop: any other clear no (the invoice is gone, it is TREFIN history): nothing more to do.
  */
 export function fiscalFailure(error: unknown): 'wait' | 'blocked' | 'drop' {
   const failure = queueFailure(error);
   if (failure !== 'refused') return 'wait';
-  return error instanceof ApiError && error.status === 409 ? 'blocked' : 'drop';
+  return error instanceof ApiError && (error.code === 'PERIOD_FILED' || error.code === 'YEAR_CLOSED') ? 'blocked' : 'drop';
 }
 
 export function queueFailure(error: unknown): 'network' | 'wait' | 'refused' {

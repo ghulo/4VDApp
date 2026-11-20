@@ -67,8 +67,10 @@ function lookup(file, key) {
 
 /**
  * Print one job for a sale, noted before it goes and with its answer. A print
- * that throws (C:\TEMP can't be written) is noted as failed, so the job never
- * stays "printing" until the app restarts. Without a valid key it just prints.
+ * that throws is noted as unknown (look at the printer): it may have thrown
+ * after F-Link took the job, so it is never called failed (that could print it
+ * twice), and it never stays "printing" until the app restarts. Without a
+ * valid key it just prints.
  */
 async function track(file, key, name, run) {
   if (!validKey(key)) return run();
@@ -78,7 +80,7 @@ async function track(file, key, name, run) {
     finish(file, key, answer);
     return answer;
   } catch (error) {
-    finish(file, key, { status: 'failed', message: error?.message ?? null });
+    finish(file, key, { status: 'unknown', message: error?.message ?? null });
     throw error;
   }
 }

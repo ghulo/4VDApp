@@ -146,7 +146,7 @@ export class CounterService {
   /** Record what happened at the counter; the drawer and the printer's reports also go in Activity. */
   async record(events: CounterEventInput[], userId: number): Promise<void> {
     await this.transactions.run(async (repos) => {
-      await repos.counter.create(
+      const fresh = await repos.counter.create(
         events.map((event) => ({
           kind: event.kind,
           userId,
@@ -155,9 +155,13 @@ export class CounterService {
           amount: 'amount' in event ? roundMoney(event.amount) : null,
           reason: 'reason' in event ? event.reason : null,
           documentId: 'documentId' in event ? (event.documentId ?? null) : null,
+          clientId: event.clientId ?? null,
+          at: event.at,
         })),
       );
       for (const event of events) {
+        // A copy sent again (its answer got lost) was recorded the first time.
+        if (event.clientId && !fresh.has(event.clientId)) continue;
         if (event.kind === 'drawer_opened') {
           await repos.activityLog.create({
             userId,

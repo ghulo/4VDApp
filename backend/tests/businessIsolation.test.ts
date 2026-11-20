@@ -53,6 +53,7 @@ describe('a second business never sees the first one’s data', () => {
     expect(JSON.stringify(search.body)).not.toContain(MARKER);
     expect((await request(context.app).get(`/api/products/${productId}`).set(as(otherToken))).status).toBe(404);
     expect((await request(context.app).get('/api/products/barcode/3830000000017').set(as(otherToken))).status).toBe(404);
+    expect((await request(context.app).get('/api/products/code/3830000000017').set(as(otherToken))).status).toBe(404);
     // The first business still sees it.
     expect(JSON.stringify((await request(context.app).get('/api/products').set(as(shopToken))).body)).toContain(MARKER);
   });

@@ -134,6 +134,7 @@ const ACCESS: Record<keyof typeof WHO, string[]> = {
     'GET /api/categories/',
     'GET /api/products/',
     'GET /api/products/barcode/:barcode',
+    'GET /api/products/code/:code',
     'GET /api/products/:id',
     'GET /api/inventory/',
     'GET /api/inventory/:productId',

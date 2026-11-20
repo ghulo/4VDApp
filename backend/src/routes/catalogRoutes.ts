@@ -47,6 +47,7 @@ export function createProductRoutes({ productService, activityLogService, priceS
 
   router.get('/', guards.authenticated, controller.list);
   router.get('/barcode/:barcode', guards.authenticated, controller.getByBarcode);
+  router.get('/code/:code', guards.authenticated, controller.getByCode);
   router.get('/:id', guards.authenticated, controller.getById);
   // Adding and editing products is for whoever runs the shop (owner included); deleting stays with managers.
   router.put('/:id/barcode', ...guards.products, controller.setBarcode);

@@ -6,6 +6,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import {
   addBarcodeSchema,
   barcodeParamsSchema,
+  codeParamsSchema,
   productBarcodeParamsSchema,
   createProductSchema,
   productQuerySchema,
@@ -30,6 +31,11 @@ export function createProductController(productService: ProductService, activity
     async getByBarcode(req: Request, res: Response): Promise<void> {
       const { barcode } = parseInput(barcodeParamsSchema, req.params);
       sendSuccess(res, await productService.getByBarcode(barcode, req.identity?.role));
+    },
+
+    async getByCode(req: Request, res: Response): Promise<void> {
+      const { code } = parseInput(codeParamsSchema, req.params);
+      sendSuccess(res, await productService.getByCode(code, req.identity?.role));
     },
 
     async setBarcode(req: Request, res: Response): Promise<void> {

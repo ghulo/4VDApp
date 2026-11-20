@@ -316,6 +316,18 @@ export class ProductRepository {
     return row?.id;
   }
 
+  /** The one live product with this SKU (any case); none when no product, or more than one, has it. */
+  async findIdBySku(sku: string): Promise<number | undefined> {
+    const rows = await this.db
+      .selectFrom('products as p')
+      .select('p.id')
+      .where(sql<boolean>`lower(p.sku) = lower(${sku})`)
+      .where('p.deleted_at', 'is', null)
+      .limit(2)
+      .execute();
+    return rows.length === 1 ? rows[0]!.id : undefined;
+  }
+
   /**
    * Gives the product another barcode. A deleted product still holding it
    * lets go first; the caller has checked no live product has it.

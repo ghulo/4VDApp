@@ -223,4 +223,40 @@ describe('what happens at the counter', () => {
     const activity = (await api().get('/api/activity?page=1').set(auth())).body.data.map((entry: { summary: string }) => entry.summary);
     expect(activity).toEqual(expect.arrayContaining(['Opened the drawer without a sale: Change for a €50 note', "Ran the fiscal printer's Z report (closes the fiscal day)"]));
   });
+
+  it('keeps an event sent twice once, and counts one sent late on the day it happened', async () => {
+    const send = (events: unknown[]) => api().post('/api/counter/events').set(auth(employeeToken)).send({ events });
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString();
+    const late = { kind: 'basket_cancelled', quantity: 2, amount: 9, reason: 'Left without paying', clientId: '7d1f8c1e-1111-4a2b-9c3d-000000000001', at: yesterday };
+    const drawer = { kind: 'drawer_opened', reason: 'Change', clientId: '7d1f8c1e-1111-4a2b-9c3d-000000000002' };
+    expect((await send([late, drawer])).status).toBe(201);
+    // The answer got lost and the PC sends the same two again.
+    expect((await send([late, drawer])).status).toBe(201);
+    const rows = await context.db.selectFrom('counter_events').select(['kind', 'created_at']).execute();
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.kind === 'basket_cancelled')!.created_at.toISOString()).toBe(yesterday);
+    const drawerLogs = (await api().get('/api/activity?page=1').set(auth())).body.data.filter((entry: { summary: string }) => entry.summary.startsWith('Opened the drawer'));
+    expect(drawerLogs).toHaveLength(1);
+    // Today's report doesn't count yesterday's basket.
+    expect((await api().get(`/api/counter/people?${PERIOD}`).set(auth())).body.data[0].basketsCancelled).toBe(0);
+
+    // Not in the future, not too old, at most 50 at once.
+    expect((await send([{ ...drawer, clientId: undefined, at: new Date(Date.now() + 3_600_000).toISOString() }])).status).toBe(400);
+    expect((await send([{ ...drawer, clientId: undefined, at: new Date(Date.now() - 40 * 86_400_000).toISOString() }])).status).toBe(400);
+    expect((await send(Array.from({ length: 51 }, () => ({ kind: 'drawer_opened', reason: 'Change' })))).status).toBe(400);
+  });
+});
+
+describe('finding a product by the code typed or scanned at the till', () => {
+  it('finds a barcode first, then a product number (any case), never part of a name', async () => {
+    const cola = await createTestProduct(context, adminToken, { name: 'Coca-Cola 77 cl', price: 1, stock: 5 });
+    const bread = await createTestProduct(context, adminToken, { name: 'Bread', price: 1, stock: 5 });
+    await context.db.updateTable('products').set({ sku: 'BR77' }).where('id', '=', bread).execute();
+    await context.db.updateTable('products').set({ barcode: 'BR77X' }).where('id', '=', cola).execute();
+    const find = (code: string) => api().get(`/api/products/code/${encodeURIComponent(code)}`).set(auth(employeeToken));
+    expect((await find('br77')).body.data.id).toBe(bread);
+    expect((await find('BR77X')).body.data.id).toBe(cola);
+    expect((await find('77')).status).toBe(404);
+    expect((await find('Coca')).status).toBe(404);
+  });
 });

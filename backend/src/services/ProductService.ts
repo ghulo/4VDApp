@@ -175,6 +175,16 @@ export class ProductService {
     return this.getById(id, viewerRole);
   }
 
+  /**
+   * The product a code names exactly, as the till asks: a barcode (main or
+   * other) first, then a product's own number (SKU, any case). Never a part of a name.
+   */
+  async getByCode(code: string, viewerRole: UserRole | undefined): Promise<ProductDto> {
+    const id = (await this.productRepository.findIdByBarcode(code)) ?? (await this.productRepository.findIdBySku(code));
+    if (!id) throw new NotFoundError(`No product has the code ${code}`);
+    return this.getById(id, viewerRole);
+  }
+
   /** Sets (or clears, with null) a product's barcode, usually the manufacturer's. */
   async setBarcode(id: number, barcode: string | null, actorId: number, logExtra?: Record<string, unknown>): Promise<ProductDto> {
     if (barcode !== null && !hasValidCheckDigit(barcode)) {

@@ -10,6 +10,10 @@ export interface NewCounterEvent {
   amount?: number | null;
   reason?: string | null;
   documentId?: number | null;
+  /** The shop PC's id for it: a second copy is dropped. */
+  clientId?: string | null;
+  /** When it happened; now when not given. */
+  at?: Date;
 }
 
 export interface CounterPersonRow {
@@ -52,9 +56,10 @@ const inDays = (column: ReturnType<typeof sql.ref>, from: string, to: string, ti
 export class CounterRepository {
   constructor(private readonly db: DatabaseClient) {}
 
-  async create(events: NewCounterEvent[]): Promise<void> {
-    if (events.length === 0) return;
-    await this.db
+  /** Saves the events; returns the shop PC ids that were new (a copy already kept is skipped). */
+  async create(events: NewCounterEvent[]): Promise<Set<string>> {
+    if (events.length === 0) return new Set();
+    const rows = await this.db
       .insertInto('counter_events')
       .values(
         events.map((event) => ({
@@ -65,9 +70,14 @@ export class CounterRepository {
           amount: event.amount ?? null,
           reason: event.reason ?? null,
           document_id: event.documentId ?? null,
+          client_id: event.clientId ?? null,
+          ...(event.at && { created_at: event.at }),
         })),
       )
+      .onConflict((conflict) => conflict.columns(['business_id', 'client_id']).where('client_id', 'is not', null).doNothing())
+      .returning('client_id')
       .execute();
+    return new Set(rows.flatMap((row) => (row.client_id ? [row.client_id] : [])));
   }
 
   /** The last time each of the printer's reports ran, with who ran it. */

@@ -1505,6 +1505,8 @@ export interface CounterEventsTable {
   reason: string | null;
   document_id: number | null;
   created_at: CreatedAt;
+  /** The id the shop PC gave the event; kept once per business. */
+  client_id: string | null;
 }
 
 /** Money taken from one place to another; one side empty when the owner put it in or took it out. */

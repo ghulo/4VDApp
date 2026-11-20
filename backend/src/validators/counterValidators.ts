@@ -19,8 +19,27 @@ export const counterSettingsSchema = z.object({
 
 const withReason = trimmedString(200);
 
+/** How far a shop PC's clock may run ahead, and how old an event sent late may be. */
+const CLOCK_SLACK_MS = 5 * 60_000;
+const OLDEST_DAYS = 35;
+
+/**
+ * Sent by the shop PC with each event: its own id (a copy sent twice is kept
+ * once) and when it happened (an event sent late counts on its own day).
+ */
+const eventOrigin = z.object({
+  clientId: z.string().uuid().optional(),
+  at: z
+    .string()
+    .datetime({ offset: true })
+    .transform((text) => new Date(text))
+    .refine((when) => when.getTime() <= Date.now() + CLOCK_SLACK_MS, 'at cannot be in the future')
+    .refine((when) => when.getTime() >= Date.now() - OLDEST_DAYS * 86_400_000, `at cannot be more than ${OLDEST_DAYS} days ago`)
+    .optional(),
+});
+
 /** What happened at the counter; a line, basket or drawer always says why. */
-const eventSchema = z.discriminatedUnion('kind', [
+const eventKindSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('line_removed'), productId: idSchema, quantity: quantitySchema(1_000_000), amount: z.number().min(0), reason: withReason }),
   z.object({ kind: z.literal('basket_cancelled'), amount: z.number().min(0), quantity: quantitySchema(1_000_000), reason: withReason }),
   z.object({ kind: z.literal('drawer_opened'), reason: withReason }),
@@ -29,6 +48,7 @@ const eventSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('x_report') }),
   z.object({ kind: z.literal('z_report') }),
 ]);
+const eventSchema = z.intersection(eventKindSchema, eventOrigin);
 
 export const counterEventsSchema = z.object({ events: z.array(eventSchema).min(1).max(50) });
 

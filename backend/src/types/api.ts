@@ -13,4 +13,6 @@ export interface ApiResponse<TData> {
   message: string;
   error: string | null;
   meta?: PaginationMeta;
+  /** A till sale refused for good: its key is closed, so no copy of it will ever be recorded (the till may free the basket). */
+  saleClosed?: boolean;
 }

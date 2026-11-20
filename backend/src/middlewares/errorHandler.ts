@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { AppError } from '../errors/httpErrors.js';
+import { AppError, SaleClosedError } from '../errors/httpErrors.js';
 import { isEmailTaken } from '../repositories/UserRepository.js';
 import { sendError } from '../utils/apiResponse.js';
 import { captureError, stripQuery } from '../utils/errorTracking.js';
@@ -9,7 +9,7 @@ import { logger } from '../utils/logger.js';
 // four parameters, so `_next` has to stay even though it is unused.
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof AppError) {
-    sendError(res, err.statusCode, err.code, err.message);
+    sendError(res, err.statusCode, err.code, err.message, err instanceof SaleClosedError ? { saleClosed: true } : {});
     return;
   }
 

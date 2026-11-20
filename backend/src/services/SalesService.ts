@@ -264,7 +264,7 @@ export class SalesService {
         throw new Error(`The sale was refused but its key could not be closed: ${closing instanceof Error ? closing.message : String(closing)}`);
       }
       if (recorded) return recorded;
-      throw new SaleClosedError(error.message, error.statusCode);
+      throw new SaleClosedError(error.message, error.statusCode, error.code);
     }
   }
 
@@ -327,6 +327,7 @@ export class SalesService {
                 ? 'This sale was stopped at the till and never recorded. Ring it up again.'
                 : `This sale was refused and never recorded${closed.message ? `: ${closed.message}` : ''}`,
               410,
+              'GONE',
             );
           }
           const sent = await repos.documents.findByClientKey(input.clientKey);

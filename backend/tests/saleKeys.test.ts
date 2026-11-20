@@ -52,7 +52,7 @@ async function holdKey(businessId: number, key: string) {
 /** Until `count` requests wait on an advisory lock (the one the test holds). */
 async function waitersOnLock(count: number) {
   for (let tries = 0; tries < 500; tries += 1) {
-    const { rows } = await sql<{ n: number }>`select count(*)::int as n from pg_locks where locktype = 'advisory' and not granted`.execute(context.db);
+    const { rows } = await sql<{ n: number }>`select count(*)::int as n from pg_locks where locktype = 'advisory' and not granted and classid = ${SALE_KEY_LOCK} and database = (select oid from pg_database where datname = current_database())`.execute(context.db);
     if (rows[0]!.n >= count) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -68,12 +68,12 @@ describe('Till sale keys', () => {
 
     const refused = await basket(employee.token, key, [{ productId: product, quantity: 5 }]);
     expect(refused.status).toBe(400);
-    expect(refused.body.error).toBe('SALE_CLOSED');
+    expect(refused.body).toMatchObject({ error: 'VALIDATION_ERROR', saleClosed: true });
 
     // The first copy of the sale arrives only now, and would fit: it never goes in.
     const late = await basket(employee.token, key, [{ productId: product, quantity: 2 }]);
     expect(late.status).toBe(410);
-    expect(late.body.error).toBe('SALE_CLOSED');
+    expect(late.body).toMatchObject({ error: 'GONE', saleClosed: true });
     expect(await documents()).toHaveLength(0);
 
     // A new key sells it.
@@ -93,7 +93,7 @@ describe('Till sale keys', () => {
     const resend = basket(employee.token, key, [{ productId: product, quantity: 2 }]).then((response) => response);
     await waitersOnLock(1);
     // Meanwhile the first copy's sale is in under this key.
-    await lock.trx().updateTable('documents').set({ client_key: key }).where('id', '=', other.body.data.invoice.id).execute();
+    await sql`update documents set client_key = ${key} where id = ${other.body.data.invoice.id}`.execute(lock.trx());
     await lock.release();
 
     const answer = await resend;
@@ -113,7 +113,7 @@ describe('Till sale keys', () => {
     // Refused before it takes the key (a promised day already gone); closing its key waits on the lock.
     const late = basket(admin.token, key, [{ productId: product, quantity: 1 }], { dueDate: '2020-01-01' }).then((response) => response);
     await waitersOnLock(1);
-    await lock.trx().updateTable('documents').set({ client_key: key }).where('id', '=', other.body.data.invoice.id).execute();
+    await sql`update documents set client_key = ${key} where id = ${other.body.data.invoice.id}`.execute(lock.trx());
     await lock.release();
 
     const answer = await late;
@@ -153,7 +153,7 @@ describe('Till sale keys', () => {
     expect(stopped.body.data).toEqual({ state: 'stopped' });
     const late = await basket(admin.token, unknown, [{ productId: product, quantity: 1 }]);
     expect(late.status).toBe(410);
-    expect(late.body.error).toBe('SALE_CLOSED');
+    expect(late.body).toMatchObject({ error: 'GONE', saleClosed: true });
     expect((await stop(unknown)).body.data).toEqual({ state: 'stopped' });
 
     const sold = randomUUID();
@@ -212,6 +212,7 @@ describe('Till writes for whoever was signed in', () => {
     const otherPerson = await send(`${employee.businessId}:${admin.id}`);
     expect(otherPerson.status).toBe(409);
     expect(otherPerson.body.error).toBe('OWNER_CHANGED');
+    expect(otherPerson.body.saleClosed).toBeUndefined();
     const otherBusiness = await send(`${employee.businessId + 1000}:${employee.id}`);
     expect(otherBusiness.body.error).toBe('OWNER_CHANGED');
     expect(await context.db.selectFrom('sale_key_closures').selectAll().execute()).toHaveLength(0);

@@ -68,11 +68,12 @@ export class ConflictError extends AppError {
 /**
  * A till sale refused for good: its key is closed, so no copy of it (one
  * still on its way included) will ever be recorded. Keeps the reason's own
- * status and words; the Counter frees the basket only on this code.
+ * status, code and words; the answer says `saleClosed: true`, and the Counter
+ * frees the basket only on that.
  */
 export class SaleClosedError extends AppError {
-  constructor(message: string, statusCode: number) {
-    super(message, statusCode, 'SALE_CLOSED');
+  constructor(message: string, statusCode: number, code: string) {
+    super(message, statusCode, code);
   }
 }
 

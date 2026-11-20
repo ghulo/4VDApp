@@ -9,6 +9,8 @@ import { type Kysely, sql } from 'kysely';
  * under a new key without it ever going in twice.
  */
 export async function up(db: Kysely<unknown>): Promise<void> {
+  // Its foreign keys touch businesses and users: wait a little for a lock, never block sign-ins.
+  await sql`SET LOCAL lock_timeout = '5s'`.execute(db);
   await sql`
     CREATE TABLE sale_key_closures (
       business_id INT NOT NULL DEFAULT current_business_id() REFERENCES businesses(id),

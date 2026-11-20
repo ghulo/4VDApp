@@ -18,12 +18,13 @@ export function sendSuccess<TData>(res: Response, data: TData, options: SuccessO
   res.status(options.statusCode ?? 200).json(body);
 }
 
-export function sendError(res: Response, statusCode: number, error: string, message: string): void {
+export function sendError(res: Response, statusCode: number, error: string, message: string, extra: Pick<ApiResponse<null>, 'saleClosed'> = {}): void {
   const body: ApiResponse<null> = {
     success: false,
     data: null,
     message,
     error,
+    ...extra,
   };
   res.status(statusCode).json(body);
 }

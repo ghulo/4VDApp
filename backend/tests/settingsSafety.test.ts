@@ -2,7 +2,7 @@ import request from 'supertest';
 import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedBooks } from '../src/database/books.js';
-import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
+import { createTestProduct, loginAs, resetData, setupTestApp, TEST_PASSWORD, type TestContext } from './helpers/testApp.js';
 
 let context: TestContext;
 let adminToken: string;
@@ -76,6 +76,23 @@ describe('selling with no stock', () => {
 
     await api().put('/api/settings/rules').set(auth()).send({ noStockSales: 'allow' });
     expect((await sell(2, employeeToken)).status).toBe(201);
+  });
+
+  it('should go by the role in this business, not the one on the account', async () => {
+    // The employee's account says employee, but here they are an admin; the admin's the other way round.
+    const role = (email: string, to: 'admin' | 'employee') =>
+      context.db
+        .updateTable('memberships')
+        .set({ role: to })
+        .where('user_id', '=', context.db.selectFrom('users').select('id').where('email', '=', email))
+        .execute();
+    await role('employee@test.local', 'admin');
+    await role('admin@test.local', 'employee');
+    const login = async (email: string) => (await api().post('/api/auth/login').send({ email, password: TEST_PASSWORD })).body.data.token as string;
+    const adminHere = await login('employee@test.local');
+    const employeeHere = await login('admin@test.local');
+    expect((await sell(7, employeeHere)).status).toBe(400);
+    expect((await sell(7, adminHere)).status).toBe(201);
   });
 });
 

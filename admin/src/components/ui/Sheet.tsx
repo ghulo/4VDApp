@@ -1,5 +1,6 @@
 import { X } from '@phosphor-icons/react';
 import { Fragment, type KeyboardEvent, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
+import { QueryClientContext } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
 import { LeaveGuardContext, SheetWorkContext } from './leaveGuardContext';
@@ -46,6 +47,15 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
   useEffect(() => {
     live.current = { open, guarded };
   });
+  // A save that keeps the card open (record another sale, the next duplicate) leaves nothing unsaved:
+  // a successful save anywhere while it is open starts the count again.
+  const queryClient = useContext(QueryClientContext);
+  useEffect(() => {
+    if (!open || !queryClient) return;
+    return queryClient.getMutationCache().subscribe((event) => {
+      if (event.type === 'updated' && event.action.type === 'success') typed.current = false;
+    });
+  }, [open, queryClient]);
   const { register } = leaveGuard;
   useEffect(() => register({ kind: 'sheet', active: () => live.current.open && live.current.guarded && typed.current }), [register]);
   const latestClose = useRef(onClose);
@@ -123,7 +133,17 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
       ref={ref}
       className={placement === 'center' ? (wide ? 'sheet sheet--center sheet--wide' : 'sheet sheet--center') : 'sheet sheet--card'}
       aria-labelledby={headingId}
-      onClose={onClose}
+      onClose={() => {
+        // A browser that wouldn't let Esc (or a phone's Back) be held closed the card with work in it:
+        // open it again, form and all, and ask. Leave (or the form's own Save) closes it for real.
+        const dialog = ref.current;
+        if (live.current.open && holdsWork() && dialog && !dialog.open) {
+          dialog.showModal?.();
+          requestClose();
+          return;
+        }
+        onClose();
+      }}
       // Esc (and a phone's Back on a modal): with typed work, ask instead of closing.
       onCancel={(event) => {
         if (!holdsWork()) return;

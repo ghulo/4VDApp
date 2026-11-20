@@ -64,6 +64,7 @@ export const ACTIVITY_ACTIONS = [
   'return.requested',
   'return.approved',
   'return.rejected',
+  'return.transfer_sent',
   'write_off.requested',
   'write_off.approved',
   'write_off.rejected',

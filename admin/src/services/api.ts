@@ -63,6 +63,9 @@ import type {
   ApprovalStatus,
   AppSettings,
   ReturnCondition,
+  RefundByInput,
+  RefundInfo,
+  RefundToPay,
   ReturnItem,
   StockCount,
   StockCountListItem,
@@ -1056,8 +1059,12 @@ export const returnsApi = {
   list: async (status?: ApprovalStatus) => (await apiRequest<ReturnItem[]>('/returns', { query: { status } })).data,
   request: async (
     saleId: number,
-    input: { quantity: number; condition: ReturnCondition; refundAmount?: number; notes: string | null },
+    input: { quantity: number; condition: ReturnCondition; refundAmount?: number; notes: string | null; refundBy?: RefundByInput },
   ) => (await apiRequest<ReturnItem>(`/sales/${saleId}/returns`, { method: 'POST', body: input })).data,
+  refundInfo: async (saleId: number) => (await apiRequest<RefundInfo>('/returns/refund-info', { query: { saleId } })).data,
+  toPay: async () => (await apiRequest<RefundToPay[]>('/money/refunds-to-pay')).data,
+  markSent: async (input: { returnIds: number[]; placeId: number; day: string }) =>
+    (await apiRequest<null>('/money/refunds-to-pay/sent', { method: 'POST', body: input })).data,
   approve: async (id: number) => (await apiRequest<ReturnItem>(`/returns/${id}/approve`, { method: 'POST' })).data,
   reject: async (id: number, note: string) =>
     (await apiRequest<ReturnItem>(`/returns/${id}/reject`, { method: 'POST', body: { note } })).data,

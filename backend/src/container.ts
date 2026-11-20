@@ -254,7 +254,7 @@ export function createContainer(config: AppConfig, db: DatabaseClient, options: 
   const serialService = new SerialService(db, transactions, config.shopTimeZone);
   const exportService = new ExportService(reportsRepository, reportsService, carwashRepository, expenseRepository, () => productRepository.priceRows(), (from, to) => stockDocumentService.linesBetween(from, to), (from, to) => stockMoveService.linesBetween(from, to), (range) => projectService.profit(range));
   const writeOffService = new WriteOffService(writeOffRepository, transactions);
-  const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService);
+  const returnService = new ReturnService(returnRepository, settingsService, transactions, documentService, config.shopTimeZone);
   const stockCountService = new StockCountService(stockCountRepository, transactions);
   const offerService = new OfferService(db);
   const salesDocumentService = new SalesDocumentService(new SalesDocumentRepository(db), transactions, config.shopTimeZone);

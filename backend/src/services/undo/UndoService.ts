@@ -243,6 +243,9 @@ async function planFor(
           undoIssues: 'invoice',
         },
         check: async (mode) => {
+          if (mode === 'undo' && (await repos.returns.transferSent(item.id))) {
+            throw new ConflictError('The refund was already sent to the customer by bank transfer, so this return can’t be undone.');
+          }
           if (mode !== 'restore') return;
           const sale = await repos.returns.lockSale(item.sale_id);
           if (!sale) throw new NotFoundError(`Sale ${item.sale_id} does not exist`);

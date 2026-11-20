@@ -230,6 +230,8 @@ export const DEFAULT_ACCOUNT_LINKS = {
   asset_gain: '7200',
   asset_loss: '8200',
   withholding: '2370',
+  /** A refund going back by bank transfer, owed to the customer until it is sent. Default until the accountant confirms (handoff.md). */
+  refunds_owed: '2430',
   /** The year's profit tax, below profit before tax; what is owed on it (TM paid in advance sits here too); where a closed year's profit goes. */
   profit_tax: '8900',
   profit_tax_payable: '2350',

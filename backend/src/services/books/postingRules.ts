@@ -75,7 +75,7 @@ export async function loadPlaceAccounts(db: DatabaseClient): Promise<PlaceAccoun
  * Prices and costs in 4VD include VAT; the VAT part is split off by the rate.
  */
 
-export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus' | 'payroll' | 'payroll_pay' | 'customs';
+export type SourceKind = 'checkout' | 'return' | 'write_off' | 'count_line' | 'adjustment' | 'stock_doc' | 'depreciation' | 'asset' | 'bill' | 'payment' | 'expense' | 'tab_payment' | 'move' | 'offset' | 'bonus' | 'payroll' | 'payroll_pay' | 'customs' | 'refund_sent';
 
 /** A sale's checkout, the same grouping the Sales page shows: its invoice, else its TREFIN receipt and day, else the sale alone. */
 export const checkoutKeySql = (timeZone: string) => sql<string>`coalesce(
@@ -134,6 +134,8 @@ export class PostingRules {
         return this.checkout(ref);
       case 'return':
         return this.saleReturn(Number(ref));
+      case 'refund_sent':
+        return this.refundSent(Number(ref));
       case 'write_off':
         return this.writeOff(Number(ref));
       case 'count_line':
@@ -251,8 +253,11 @@ export class PostingRules {
       product_name: string;
       off_tab: string;
       customer_id: number | null;
+      refund_card: string;
+      refund_transfer: string;
     }>`
       select ${zonedDaySql(sql.ref('r.decided_at'), this.timeZone)} as day, r.quantity, r.refund_amount as refund, s.unit_cost, p.name as product_name,
+        r.refund_card, r.refund_transfer,
         coalesce((select dl.vat_rate from document_lines dl where dl.sale_id = s.id order by dl.id desc limit 1), p.vat_rate) as vat_rate,
         coalesce((select sum(t.amount) from tab_entries t where t.return_id = r.id and t.kind = 'refund'), 0) as off_tab,
         (select t.customer_id from tab_entries t where t.return_id = r.id and t.kind = 'refund' limit 1) as customer_id
@@ -264,15 +269,38 @@ export class PostingRules {
     if (!row || this.tooEarly(row.day)) return null;
     const refund = Number(row.refund);
     const offTab = Number(row.off_tab);
+    const card = Number(row.refund_card);
+    const transfer = Number(row.refund_transfer);
     const vat = vatOf(refund, row.vat_rate);
+    // The money goes back the way it really went: off the tab, on the card terminal (the bank),
+    // owed to the customer until a bank transfer is sent, and the rest in cash out of the drawer.
     const entry = this.builder()
       .debit('sales_returns', refund - vat)
       .debit('vat_out', vat)
       .credit('receivables', offTab, { customerId: row.customer_id })
-      .credit(this.till, refund - offTab);
+      .credit({ accountId: this.places.defaultBank }, card)
+      .credit('refunds_owed', transfer)
+      .credit(this.till, roundMoney(refund - offTab - card - transfer));
     const cost = row.unit_cost === null ? 0 : row.quantity * Number(row.unit_cost);
     entry.debit('stock', cost).credit('cost_of_sales', cost);
     return entry.build(row.day, `${row.quantity} × ${row.product_name}`, row.unit_cost === null ? 'no_cost:1' : null);
+  }
+
+  /** A refund owed to a customer, sent by bank transfer: off what is owed, out of the place it left. */
+  private async refundSent(id: number): Promise<DraftEntry | null> {
+    const row = await this.db
+      .selectFrom('returns as r')
+      .innerJoin('sales as s', 's.id', 'r.sale_id')
+      .select([sql<string>`to_char(r.transfer_sent_on, 'YYYY-MM-DD')`.as('day'), 'r.refund_transfer', 'r.transfer_sent_from', 'r.refund_to'])
+      .where('r.id', '=', id)
+      .where('r.status', '=', 'approved')
+      .where('r.undone_at', 'is', null)
+      .where('s.undone_at', 'is', null)
+      .where('r.transfer_sent_on', 'is not', null)
+      .executeTakeFirst();
+    if (!row || this.tooEarly(row.day) || Number(row.refund_transfer) <= 0) return null;
+    const amount = Number(row.refund_transfer);
+    return this.builder().debit('refunds_owed', amount).credit(this.to(row.transfer_sent_from), amount).build(row.day, row.refund_to ?? '');
   }
 
   /** Stock lost at cost: stock corrections against stock. `quantity` is negative for a loss. */

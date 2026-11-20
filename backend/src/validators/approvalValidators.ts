@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { APPROVAL_STATUSES, RETURN_CONDITIONS, WRITE_OFF_REASONS } from '../constants/approvals.js';
 import { WIPE_PHRASE } from '../scripts/wipeShopData.js';
-import { idSchema, optionalText, quantitySchema, stockLevelSchema, trimmedString } from './validate.js';
+import { calendarDaySchema, idSchema, optionalText, quantitySchema, stockLevelSchema, trimmedString } from './validate.js';
 
 const MAX_UNITS = 1_000_000;
 
@@ -71,6 +71,26 @@ export const returnSchema = z.object({
   condition: z.enum(RETURN_CONDITIONS),
   refundAmount: z.number().min(0).max(10_000_000).optional(),
   notes: optionalText(1000),
+  /** How the money goes back; left out, it all comes out of the till (less a tab), as before. */
+  refundBy: z
+    .object({
+      card: z.number().min(0).max(10_000_000).default(0),
+      transfer: z.number().min(0).max(10_000_000).default(0),
+      tab: z.number().min(0).max(10_000_000).nullish().transform((value) => value ?? null),
+      approvalCode: optionalText(40),
+      customerName: optionalText(200),
+      iban: optionalText(40),
+      batch: z.uuid().nullish().transform((value) => value ?? null),
+    })
+    .optional(),
+});
+
+export const refundInfoQuerySchema = z.object({ saleId: z.coerce.number().int().positive() });
+
+export const refundsSentSchema = z.object({
+  returnIds: z.array(z.number().int().positive()).min(1).max(200),
+  placeId: z.number().int().positive(),
+  day: calendarDaySchema,
 });
 
 export const startCountSchema = z.object({ categoryId: idSchema.nullish().transform((value) => value ?? null), locationId: idSchema.nullish().transform((value) => value ?? null) });

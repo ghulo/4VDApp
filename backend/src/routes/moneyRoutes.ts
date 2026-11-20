@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import type { Container } from '../container.js';
 import { createMoneyController } from '../controllers/moneyController.js';
+import { createReturnsController } from '../controllers/returnsController.js';
 
 /** Where money is kept: whoever oversees the business and the accountant read the books; the people who run the shop move money and match statements. */
-export function createMoneyRoutes({ moneyService, statementService, guards }: Container): Router {
+export function createMoneyRoutes({ moneyService, statementService, returnService, guards }: Container): Router {
   const controller = createMoneyController(moneyService, statementService);
+  const refunds = createReturnsController(returnService);
   const router = Router();
 
   router.get('/places', ...guards.books, controller.places);
@@ -22,6 +24,9 @@ export function createMoneyRoutes({ moneyService, statementService, guards }: Co
   router.post('/moves', ...guards.oversee, controller.move);
   router.post('/moves/:id/void', ...guards.oversee, controller.voidMove);
   router.post('/pay-bills', ...guards.oversee, controller.payBills);
+  // Refunds going back by bank transfer, until someone sends them.
+  router.get('/refunds-to-pay', ...guards.books, refunds.toPay);
+  router.post('/refunds-to-pay/sent', ...guards.oversee, refunds.sent);
   router.get('/rules', ...guards.books, controller.rules);
   router.post('/rules', ...guards.oversee, controller.addRule);
   router.put('/rules/:id', ...guards.oversee, controller.updateRule);

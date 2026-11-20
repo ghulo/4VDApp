@@ -43,6 +43,8 @@ export function createReturnRoutes({ returnService, guards }: Container): Router
   const router = Router();
 
   router.get('/', ...guards.oversee, controller.list);
+  // The refund screen: anyone who sells reads their own sale's receipt and how it was paid.
+  router.get('/refund-info', ...guards.staff, controller.refundInfo);
   router.post('/:id/approve', ...guards.oversee, controller.approve);
   router.post('/:id/reject', ...guards.oversee, controller.reject);
 

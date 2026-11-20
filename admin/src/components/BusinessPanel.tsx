@@ -11,23 +11,10 @@ import { useT } from '../i18n/useT';
 import { cleanNui, isNui, NuiInput } from './NuiInput';
 import { HistoryCard } from './HistoryCard';
 import { BrandCard } from './BrandCard';
+import { cleanIban, isIbanOrEmpty } from '../utils/iban';
 import { BrandMark } from './BrandMark';
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
-
-/** An IBAN the way the server keeps it: no spaces, capitals. */
-const cleanIban = (value: string) => value.replace(/\s+/g, '').toUpperCase();
-
-/** Empty, or an IBAN whose check digits match (ISO 13616 mod 97), the same check the server makes. */
-function isIbanOrEmpty(value: string): boolean {
-  const iban = cleanIban(value);
-  if (!iban) return true;
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return false;
-  const digits = (iban.slice(4) + iban.slice(0, 4)).replace(/[A-Z]/g, (letter) => String(letter.charCodeAt(0) - 55));
-  let remainder = 0;
-  for (const digit of digits) remainder = (remainder * 10 + Number(digit)) % 97;
-  return remainder === 1;
-}
 
 // The time zones people in and around the shop's region are most likely to need, then everything else.
 const COMMON_ZONES = ['Europe/Belgrade', 'Europe/Budapest', 'Europe/Tirane', 'Europe/Skopje', 'Europe/Berlin', 'Europe/London'];

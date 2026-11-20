@@ -148,6 +148,8 @@ export class BooksPoster {
 
     // After the bills, so a bill's entry comes before its payments'.
     for (const [table, kind] of Object.entries(DIRECT_SOURCES)) for (const id of ids(table)) keys.add(`${kind}:${id}`);
+    // A return's bank-transfer refund posts again when it is marked sent, on that day.
+    for (const id of ids('returns')) keys.add(`refund_sent:${id}`);
 
     const saleIds = new Set(ids('sales'));
     const tabIds = ids('tab_entries');

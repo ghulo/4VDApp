@@ -357,6 +357,7 @@ const en = {
   tabPaid: (p: { name: string; amount: number; place?: Place }, w: Words) =>
     `${p.name} paid ${w.money(p.amount)} off their tab${p.place && !(p.place.kind === 'till' && p.place.name === null) ? ` into ${enPlace(p.place)}` : ''}`,
 
+  refundSent: (p: { name: string; amount: number; place: Place }, w: Words) => `Sent ${p.name} their refund of ${w.money(p.amount)} by bank transfer from ${enPlace(p.place)}`,
   placeAdded: (p: { place: Place }) => `Added ${enPlace(p.place)} as a place money is kept`,
   placeChanged: (p: { place: Place }) => `Changed the details of ${enPlace(p.place)}`,
   placeClosed: (p: { place: Place }) => `Closed ${enPlace(p.place)}`,
@@ -918,6 +919,7 @@ const sq: Templates = {
   tabPaid: (p, w) =>
     `${p.name} pagoi ${w.money(p.amount)} nga borxhi${p.place && !(p.place.kind === 'till' && p.place.name === null) ? ` në ${sqPlace(p.place, 'acc')}` : ''}`,
 
+  refundSent: (p, w) => `Ia dërgoi ${p.name} rimbursimin prej ${w.money(p.amount)} me transfer bankar nga ${sqPlace(p.place)}`,
   placeAdded: (p) => `Shtoi ${sqPlace(p.place, 'acc')} si vend ku mbahen paratë`,
   placeChanged: (p) => `Ndryshoi të dhënat e ${sqPlace(p.place, 'gen')}`,
   placeClosed: (p) => `Mbylli ${sqPlace(p.place, 'acc')}`,

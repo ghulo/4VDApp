@@ -8,13 +8,17 @@ import { useT } from '../../i18n/useT';
 import { counterApi, returnsApi } from '../../services/api';
 import type { CounterReceipt, ReturnCondition } from '../../services/types';
 import { errorMessage } from '../../utils/errors';
-import { formatMoney, formatTime } from '../../utils/format';
+import { formatDate, formatMoney, formatTime } from '../../utils/format';
 import { codeFromScan } from '../../utils/scanLinks';
+import { RefundMoney } from '../../components/RefundMoney';
+import { initialChoice, partsOf, type RefundChoice, refundByInput, refundProblem, waitsForOwner } from '../../utils/refundChoice';
+import { shareOverLines } from '../../utils/refundSplit';
 
 /**
  * Giving something back at the Counter: find the invoice (scanned, typed or
- * one of today's), say how many of each line come back and in what state.
- * The shop's usual approval limits apply; nothing prints.
+ * one of today's), say how many of each line come back and in what state,
+ * and how the money goes back (the way it was paid, unless changed). The
+ * shop's usual approval limits apply; nothing prints.
  */
 export function RefundSheet({ open, initialNumber, onClose, onDone }: { open: boolean; initialNumber: string | null; onClose: () => void; onDone: (message: string) => void }) {
   const t = useT();
@@ -116,19 +120,31 @@ function RefundLines({ receipt, onOther, onDone }: { receipt: CounterReceipt; on
   const chosen = lines
     .map((line) => ({ line, quantity: Math.min(Math.max(Math.floor(Number(counts[line.saleId] ?? 0)) || 0, 0), line.left) }))
     .filter((pick) => pick.quantity > 0);
-  const amount = Math.round(chosen.reduce((sum, pick) => sum + pick.quantity * pick.line.pricePerUnit, 0) * 100) / 100;
+  const lineAmounts = chosen.map((pick) => Math.round(pick.quantity * pick.line.pricePerUnit * 100) / 100);
+  const amount = Math.round(lineAmounts.reduce((sum, value) => sum + value, 0) * 100) / 100;
+  const firstSale = receipt.lines[0]?.saleId;
+  const info = useQuery({ queryKey: ['returns', 'refund-info', firstSale], queryFn: () => returnsApi.refundInfo(firstSale!), enabled: firstSale !== undefined });
+  const [picked, setPicked] = useState<RefundChoice | null>(null);
+  const choice = picked ?? (info.data ? initialChoice(info.data) : null);
+  const money = info.data && choice ? partsOf(choice, info.data, amount) : null;
+  const waits = info.data ? waitsForOwner(info.data, lineAmounts, condition === 'damaged') : false;
+  const problem = money && choice && chosen.length > 0 ? refundProblem(t, choice, money, amount, waits) : null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (chosen.length === 0) return setError(t.counter.nothingPicked);
+    if (!money || !choice || problem) return setError(problem);
     setBusy(true);
     setError(null);
     try {
       const results = [];
-      for (const pick of chosen) {
-        results.push(await returnsApi.request(pick.line.saleId, { quantity: pick.quantity, condition, notes: null }));
+      // One refund over several lines: each line gets its share of each way, and they show as one payment to make.
+      const shares = shareOverLines(lineAmounts, money);
+      const batch = chosen.length > 1 ? crypto.randomUUID() : null;
+      for (const [index, pick] of chosen.entries()) {
+        results.push(await returnsApi.request(pick.line.saleId, { quantity: pick.quantity, condition, notes: null, refundBy: refundByInput(choice, shares[index]!, batch) }));
       }
-      for (const key of ['returns', 'sales', 'inventory', 'products', 'counter', 'notifications', 'cash']) {
+      for (const key of ['returns', 'sales', 'inventory', 'products', 'counter', 'notifications', 'cash', 'money']) {
         void queryClient.invalidateQueries({ queryKey: [key] });
       }
       const waiting = results.some((result) => result.status === 'pending');
@@ -145,7 +161,7 @@ function RefundLines({ receipt, onOther, onDone }: { receipt: CounterReceipt; on
         <div>
           <p className="counter-refund-head__number">{receipt.number}</p>
           <p className="counter-refund-head__meta">
-            {formatTime(receipt.issuedAt)} · {t.counter.paidWith[receipt.paidBy]} · {formatMoney(receipt.total)}
+            {formatDate(receipt.issuedAt)} {formatTime(receipt.issuedAt)} · {t.counter.paidWith[receipt.paidBy]} · {formatMoney(receipt.total)}
             {receipt.fiscalReceiptNo ? ` · ${t.counter.fiscalNo(receipt.fiscalReceiptNo)}` : ''}
           </p>
         </div>
@@ -193,13 +209,25 @@ function RefundLines({ receipt, onOther, onDone }: { receipt: CounterReceipt; on
           ]}
         />
       </div>
+      {info.isError ? (
+        <p className="form-error" role="alert">
+          {t.refundMoney.loadFailed}
+        </p>
+      ) : (
+        info.data && choice && <RefundMoney info={info.data} amount={amount} waits={waits} choice={choice} onChange={setPicked} />
+      )}
+      {problem && chosen.length > 0 && !error && (
+        <p className="counter-hint" role="status">
+          {problem}
+        </p>
+      )}
       {error && (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
       <div className="form-actions">
-        <Button variant="primary" type="submit" wide loading={busy} disabled={chosen.length === 0}>
+        <Button variant="primary" type="submit" wide loading={busy} disabled={chosen.length === 0 || !money || problem !== null}>
           {chosen.length === 0 ? t.counter.nothingPicked : t.counter.refundAmount(formatMoney(amount))}
         </Button>
       </div>

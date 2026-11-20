@@ -70,6 +70,7 @@ All figures: `PAYROLL_RULES` in `services/payroll/payrollRules.ts`, one set per 
 | `vat_in` / `vat_out` | 1260 / 2340 | VAT to claim / VAT owed |
 | `stock` | 1340 | stock (goods ready for sale) |
 | `payables` | 2000 | owed to suppliers |
+| `refunds_owed` | 2430 | refunds owed to customers by bank transfer until marked sent (card refunds come off the bank `places.defaultBank` on the return day) — **default, unconfirmed** |
 | `revenue` / `sales_returns` | 4000 / 4200 | sales / returns and customer bonus |
 | `cost_of_sales` | 5000 | cost of goods sold |
 | `stock_corrections` | 5400 | write-offs, stock count lines, manual corrections, stock documents |

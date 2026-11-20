@@ -103,8 +103,24 @@ export const cardSalesSql = (timeZone: string) => sql`
     from documents d join document_lines dl on dl.document_id = d.id join sales s on s.id = dl.sale_id
     where d.kind = 'invoice' and d.card_amount is not null and s.undone_at is null
     group by d.id, d.card_amount
+    union all
+    -- Refunds given back on the card terminal come off that day's card money.
+    select (r.decided_at at time zone ${timeZone})::date, -r.refund_card
+    from returns r join sales s on s.id = r.sale_id
+    where r.status = 'approved' and r.undone_at is null and s.undone_at is null and r.refund_card > 0
   ) c
   group by day
+`;
+
+/**
+ * Refunds going back by bank transfer, by the day they were given (like returns
+ * in sales_ledger): they never left the drawer, so a till's takings add them back.
+ */
+export const transferRefundsSql = (timeZone: string) => sql`
+  select (r.decided_at at time zone ${timeZone})::date as day, sum(r.refund_transfer) as amount
+  from returns r join sales s on s.id = r.sale_id
+  where r.status = 'approved' and r.undone_at is null and s.undone_at is null and r.refund_transfer > 0
+  group by 1
 `;
 
 export class MoneyRepository {
@@ -292,6 +308,15 @@ export class MoneyRepository {
     const { rows } = await sql<{ day: string; amount: string }>`
       select to_char(c.day, 'YYYY-MM-DD') as day, c.amount from (${cardSalesSql(timeZone)}) c
       where c.day between ${from}::date and ${to}::date
+    `.execute(this.db);
+    return new Map(rows.map((row) => [row.day, Number(row.amount)]));
+  }
+
+  /** Bank-transfer refunds per shop day between two days (they never left the drawer). */
+  async transferRefundsByDay(from: string, to: string, timeZone: string): Promise<Map<string, number>> {
+    const { rows } = await sql<{ day: string; amount: string }>`
+      select to_char(t.day, 'YYYY-MM-DD') as day, t.amount from (${transferRefundsSql(timeZone)}) t
+      where t.day between ${from}::date and ${to}::date
     `.execute(this.db);
     return new Map(rows.map((row) => [row.day, Number(row.amount)]));
   }

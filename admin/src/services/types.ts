@@ -1647,6 +1647,54 @@ export interface ReturnItem {
   decidedBy: PersonRef | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  refundBy: RefundBy;
+}
+
+/** How a refund's money went back. */
+export interface RefundBy {
+  cash: number;
+  card: number;
+  transfer: number;
+  /** Null: off the tab first, as much as they owe (returns from before). */
+  tab: number | null;
+  approvalCode: string | null;
+  customerName: string | null;
+  iban: string | null;
+  transferSentOn: string | null;
+}
+
+/** How a new refund's money goes back; the rest is cash. */
+export interface RefundByInput {
+  card: number;
+  transfer: number;
+  tab: number | null;
+  approvalCode: string | null;
+  customerName: string | null;
+  iban: string | null;
+  batch: string | null;
+}
+
+/** The sale as the refund screen shows it. */
+export interface RefundInfo {
+  saleId: number;
+  soldAt: string;
+  receiptNumber: string | null;
+  paidBy: 'cash' | 'card' | 'split' | 'tab';
+  cardAmount: number | null;
+  receiptTotal: number | null;
+  tabCustomer: string | null;
+  /** Null: this person's returns never wait for the owner. */
+  approval: { limit: number; tooOld: boolean } | null;
+}
+
+/** A bank-transfer refund still to send. */
+export interface RefundToPay {
+  returnIds: number[];
+  customerName: string;
+  iban: string | null;
+  amount: number;
+  day: string;
+  receiptNumber: string | null;
 }
 
 /** A product someone at the counter asked to add; approving it creates the product. */
@@ -1938,6 +1986,7 @@ export const ACCOUNT_LINK_KEYS = [
   'vat_out',
   'revenue',
   'sales_returns',
+  'refunds_owed',
   'cost_of_sales',
   'stock_corrections',
   'expense:rent',
@@ -2290,7 +2339,7 @@ export interface MoneyPlace {
   lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
 }
 
-export type PlaceBookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'count';
+export type PlaceBookLineKind = 'takings' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'refund' | 'count';
 
 export interface PlaceBookLine {
   day: string;

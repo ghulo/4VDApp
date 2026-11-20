@@ -1016,6 +1016,19 @@ export interface ReturnsTable extends ApprovalColumns {
   undone_at: Date | null;
   undone_by: number | null;
   undo_note: string | null;
+  /** How the refund goes back (096): on the card terminal, by bank transfer, off the tab (null: the old rule); the rest is cash. */
+  refund_card: ColumnType<string, number | undefined, never>;
+  refund_transfer: ColumnType<string, number | undefined, never>;
+  refund_tab: ColumnType<string | null, number | null | undefined, never>;
+  card_approval_code: ColumnType<string | null, string | null | undefined, never>;
+  refund_to: ColumnType<string | null, string | null | undefined, never>;
+  refund_iban: ColumnType<string | null, string | null | undefined, never>;
+  refund_batch: ColumnType<string | null, string | null | undefined, never>;
+  /** A bank-transfer refund marked sent: the day, and the place it left. */
+  transfer_sent_on: ColumnType<string | null, never, string | null>;
+  transfer_sent_from: ColumnType<number | null, never, number | null>;
+  transfer_sent_by: ColumnType<number | null, never, number | null>;
+  transfer_sent_at: ColumnType<Date | null, never, Date | null>;
 }
 
 export interface WriteOffsTable extends ApprovalColumns {

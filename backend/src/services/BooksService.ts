@@ -550,12 +550,14 @@ export class BooksService {
         if (!document) throw new NotFoundError(`Document ${id} does not exist`);
         if (document.kind === 'invoice') return [`checkout:i${id}`];
         const lines = await this.db.selectFrom('document_lines').select('return_id').where('document_id', '=', id).where('return_id', 'is not', null).execute();
-        return lines.map((line) => `return:${line.return_id}`);
+        return lines.flatMap((line) => [`return:${line.return_id}`, `refund_sent:${line.return_id}`]);
       }
       case 'sale': {
         const { rows } = await sql<{ key: string }>`select ${checkoutKeySql(this.timeZone)} as key from sales s where s.id = ${id}`.execute(this.db);
         return rows.map((row) => `checkout:${row.key}`);
       }
+      case 'return':
+        return [`return:${id}`, `refund_sent:${id}`];
       default:
         return [`${source}:${id}`];
     }

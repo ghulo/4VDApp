@@ -1,10 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { returnsApi } from '../services/api';
 import type { ReturnCondition, Sale } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney, inGrams } from '../utils/format';
 import { Button } from './ui';
+import { ErrorNotice, Loading } from './Feedback';
+import { ReceiptLine, RefundMoney } from './RefundMoney';
+import { initialChoice, partsOf, type RefundChoice, refundByInput, refundProblem, waitsForOwner } from '../utils/refundChoice';
 import { useT } from '../i18n/useT';
 
 /** Return part or all of a sale. The owner's returns go through straight away. */
@@ -18,12 +21,18 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
   const [condition, setCondition] = useState<ReturnCondition>('resellable');
   const [refund, setRefund] = useState('');
   const [notes, setNotes] = useState('');
+  const info = useQuery({ queryKey: ['returns', 'refund-info', sale.id], queryFn: () => returnsApi.refundInfo(sale.id) });
+  const [picked, setPicked] = useState<RefundChoice | null>(null);
+  const choice = picked ?? (info.data ? initialChoice(info.data) : null);
 
   const units = Number(quantity);
   const isQuantityValid = (byKg ? inGrams(units) && units > 0 : Number.isInteger(units) && units >= 1) && units <= left;
   const paid = Math.round(units * sale.pricePerUnit * 100) / 100;
   const refundAmount = refund === '' ? paid : Number(refund);
   const isRefundValid = refundAmount >= 0 && refundAmount <= paid;
+  const money = info.data && choice ? partsOf(choice, info.data, isRefundValid ? refundAmount : 0) : null;
+  const waits = info.data ? waitsForOwner(info.data, [refundAmount], condition === 'damaged') : false;
+  const problem = money && choice && isRefundValid && isQuantityValid ? refundProblem(t, choice, money, refundAmount, waits) : null;
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -32,9 +41,10 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
         condition,
         ...(refund !== '' && { refundAmount }),
         notes: notes.trim() || null,
+        ...(money && choice && { refundBy: refundByInput(choice, money, null) }),
       }),
     onSuccess: (item) => {
-      for (const key of ['sales', 'reports', 'inventory', 'products', 'activity', 'approvals']) {
+      for (const key of ['sales', 'reports', 'inventory', 'products', 'activity', 'approvals', 'money', 'cash']) {
         queryClient.invalidateQueries({ queryKey: [key] });
       }
       onDone(
@@ -52,6 +62,7 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
 
   return (
     <form className="return-form" onSubmit={handleSubmit}>
+      {info.data && <ReceiptLine info={info.data} />}
       <div className="field-row">
         <label className="field">
           <span className="field__label">{t.returnForm.unitsBack}</span>
@@ -99,6 +110,14 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
         ))}
       </div>
 
+      {info.isPending ? (
+        <Loading />
+      ) : info.isError ? (
+        <ErrorNotice error={info.error} onRetry={() => info.refetch()} />
+      ) : (
+        choice && <RefundMoney info={info.data} amount={isRefundValid ? refundAmount : 0} waits={waits} choice={choice} onChange={setPicked} />
+      )}
+
       <label className="field">
         <span className="field__label">{t.returnForm.note}</span>
         <input type="text" maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
@@ -109,10 +128,15 @@ export function ReturnForm({ sale, onDone }: { sale: Sale; onDone: (message: str
           {errorMessage(mutation.error)}
         </p>
       )}
+      {problem && (
+        <p className="field__hint" role="status">
+          {problem}
+        </p>
+      )}
       <div className="form-actions">
         <Button type="submit"
          
-          disabled={!isQuantityValid || !isRefundValid || mutation.isPending} variant="primary">
+          disabled={!isQuantityValid || !isRefundValid || mutation.isPending || !money || problem !== null} variant="primary">
           {mutation.isPending
             ? t.returnForm.returning
             : t.returnForm.returnAndRefund(isRefundValid && isQuantityValid ? formatMoney(refundAmount) : '')}

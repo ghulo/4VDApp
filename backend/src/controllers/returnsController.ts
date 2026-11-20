@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ReturnService } from '../services/ReturnService.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { approvalListQuerySchema, decisionNoteSchema, returnSchema, saleIdParamsSchema } from '../validators/approvalValidators.js';
+import { approvalListQuerySchema, decisionNoteSchema, refundInfoQuerySchema, refundsSentSchema, returnSchema, saleIdParamsSchema } from '../validators/approvalValidators.js';
 import { idParamsSchema, parseInput } from '../validators/validate.js';
 
 export function createReturnsController(returnService: ReturnService) {
@@ -15,6 +15,20 @@ export function createReturnsController(returnService: ReturnService) {
       const item = await returnService.request(saleId, parseInput(returnSchema, req.body), req.user!);
       const message = item.status === 'pending' ? 'Sent for approval' : 'Returned';
       sendSuccess(res, item, { statusCode: 201, message });
+    },
+
+    async refundInfo(req: Request, res: Response): Promise<void> {
+      const { saleId } = parseInput(refundInfoQuerySchema, req.query);
+      sendSuccess(res, await returnService.refundInfo(saleId, req.user!));
+    },
+
+    async toPay(_req: Request, res: Response): Promise<void> {
+      sendSuccess(res, await returnService.refundsToPay());
+    },
+
+    async sent(req: Request, res: Response): Promise<void> {
+      await returnService.markRefundsSent(parseInput(refundsSentSchema, req.body), req.user!);
+      sendSuccess(res, null, { message: 'Marked sent' });
     },
 
     async approve(req: Request, res: Response): Promise<void> {

@@ -11,10 +11,11 @@ import type { ProductRequest, ReturnItem, WriteOff } from '../services/types';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { ButtonLink, Card, EmptyState } from './ui';
 import { useT } from '../i18n/useT';
+import type { Catalogue } from '../i18n/en';
 import { describeReason } from '../utils/approvalReasons';
 
 /** Everything that changes stock or money changes the reports and activity too. */
-const AFFECTED_QUERIES = ['returns', 'write-offs', 'product-requests', 'approvals', 'attention', 'sales', 'inventory', 'products', 'reports', 'activity'];
+const AFFECTED_QUERIES = ['returns', 'money', 'write-offs', 'product-requests', 'approvals', 'attention', 'sales', 'inventory', 'products', 'reports', 'activity'];
 
 function useInvalidateAll() {
   const queryClient = useQueryClient();
@@ -123,6 +124,7 @@ function ReturnRow({ item }: { item: ReturnItem }) {
         <span className="approval-row__why">
           {t.approvals.needsYou(item.needsApprovalBecause.map((reason) => describeReason(t, reason)).join(', '))}
         </span>
+        <span className="approval-row__meta">{refundWays(t, item)}</span>
         {item.notes && <span className="approval-row__meta">“{item.notes}”</span>}
       </div>
       <DecisionControls
@@ -234,4 +236,19 @@ function WriteOffRow({ item }: { item: WriteOff }) {
       />
     </li>
   );
+}
+
+/** How the refund's money goes back once approved: "On the card terminal €80" or "Cash from the till €5 · By bank transfer €10 (Arben K.)". */
+function refundWays(t: Catalogue, item: ReturnItem): string {
+  const by = item.refundBy;
+  const parts: Array<[keyof Catalogue['refundMoney']['parts'], number]> = [
+    ['cash', by.cash],
+    ['card', by.card],
+    ['transfer', by.transfer],
+    ['tab', by.tab ?? 0],
+  ];
+  return parts
+    .filter(([, amount]) => amount > 0)
+    .map(([way, amount]) => `${t.refundMoney.parts[way]} ${formatMoney(amount)}${way === 'transfer' && by.customerName ? ` (${by.customerName})` : ''}`)
+    .join(' · ');
 }

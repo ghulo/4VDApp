@@ -2,7 +2,7 @@ import { sql } from 'kysely';
 import type { DatabaseClient } from '../database/connection.js';
 import type { MoneyPlaceKind } from '../database/types.js';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/httpErrors.js';
-import { cardSalesSql, type MoneyRepository, type PlaceRecord, placeWords } from '../repositories/MoneyRepository.js';
+import { cardSalesSql, transferRefundsSql, type MoneyRepository, type PlaceRecord, placeWords } from '../repositories/MoneyRepository.js';
 import type { TransactionalRepositories, TransactionManager } from '../repositories/TransactionManager.js';
 import { formatEuro, roundMoney } from '../utils/money.js';
 import { zonedDay } from '../utils/zonedDates.js';
@@ -33,7 +33,7 @@ export interface PlaceDto {
   lastStatement: { lastDay: string | null; closingBalance: number | null } | null;
 }
 
-export type BookLineKind = 'takings' | 'card' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'count';
+export type BookLineKind = 'takings' | 'card' | 'carwash' | 'customer' | 'supplier' | 'group' | 'move' | 'customs' | 'payroll' | 'refund' | 'count';
 
 export interface BookLineDto {
   day: string;
@@ -135,7 +135,7 @@ export function validIban(iban: string): boolean {
   return rest === 1;
 }
 
-const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, card: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, payroll: 2, move: 3, count: 4 };
+const KIND_ORDER: Record<BookLineKind, number> = { takings: 0, card: 0, carwash: 0, customer: 1, customs: 2, supplier: 2, group: 2, payroll: 2, refund: 2, move: 3, count: 4 };
 
 /**
  * Every movement of money into or out of every place, read from the records
@@ -158,6 +158,9 @@ const movementsSql = (timeZone: string) => sql`
       where e.kind not in ('payment', 'credit') and (e.sale_id is null or s.undone_at is null) and (e.return_id is null or r.undone_at is null)
       union all
       select day, -amount from card
+      union all
+      -- A refund going back by bank transfer never left the drawer.
+      select day, amount from (${transferRefundsSql(timeZone)}) tr
     ) t group by day
   )
   select (select id from shop) as place_id, day, 'takings' as kind, null::int as ref_id, amount, null::int as party_id, null::text as party_name,
@@ -194,6 +197,12 @@ const movementsSql = (timeZone: string) => sql`
   select p.place_id, p.paid_on, 'payroll', p.id, -p.amount, null, null, null, p.kind || ' ' || to_char(pm.month, 'YYYY-MM'), null, null, p.note
   from payroll_payments p join payroll_months pm on pm.id = p.month_id
   where p.voided_at is null and pm.voided_at is null
+  union all
+  -- Refunds sent by bank transfer, the lines of one refund together.
+  select r.transfer_sent_from, r.transfer_sent_on, 'refund', min(r.id), -sum(r.refund_transfer), null, null, null, min(r.refund_to), null, null, null
+  from returns r join sales s on s.id = r.sale_id
+  where r.transfer_sent_on is not null and r.status = 'approved' and r.undone_at is null and s.undone_at is null
+  group by coalesce(r.refund_batch::text, 'r' || r.id), r.transfer_sent_from, r.transfer_sent_on
   union all
   select m.from_place_id, m.day, 'move', m.id, -m.amount, null, null, m.to_place_id, null, null, null, m.note
   from money_moves m where m.voided_at is null and m.from_place_id is not null

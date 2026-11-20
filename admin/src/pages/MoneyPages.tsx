@@ -9,6 +9,7 @@ import { ErrorNotice, Loading } from '../components/Feedback';
 import { Segmented } from '../components/BillLines';
 import { MoveForm, PlaceSelect, placeInSentence, placeName, useMoneyRefresh, usePlaces } from '../components/MoneyParts';
 import { Pagination } from '../components/Pagination';
+import { RefundsToPay } from '../components/RefundsToPay';
 import { SourceFilter, TrefinTag } from '../components/TrefinParts';
 import { PeriodPicker } from '../components/PeriodPicker';
 import {
@@ -118,6 +119,7 @@ export function MoneyPage() {
           </StatGrid>
         </Section>
       )}
+      <RefundsToPay places={places.data} writes={writes} />
       <RulesCard places={places.data} writes={writes} />
       <Sheet open={moving} onClose={() => setMoving(false)} title={t.money.move.title} description={t.money.move.hint}>
         {moving && <MoveForm places={places.data} onDone={() => setMoving(false)} />}

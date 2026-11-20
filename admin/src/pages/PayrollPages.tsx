@@ -256,7 +256,6 @@ function EmployeeForm({ employee, linkUserId, onSaved }: { employee?: EmployeeDe
     note: employee?.note ?? '',
   }));
   const [touched, setTouched] = useState(false);
-  useWarnBeforeLeaving(touched);
   const change = (patch: Partial<FormState>) => {
     setTouched(true);
     setForm((now) => ({ ...now, ...patch }));
@@ -346,6 +345,8 @@ function EmployeeForm({ employee, linkUserId, onSaved }: { employee?: EmployeeDe
       if (!employee) navigate(`/payroll/people/${saved.id}`);
     },
   });
+  // Not while saving or once saved: moving on to the saved record isn't leaving work behind.
+  useWarnBeforeLeaving(touched && !save.isPending && !save.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

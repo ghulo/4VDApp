@@ -318,7 +318,6 @@ function AssetForm({ asset, onSaved }: { asset?: FixedAssetDetail; onSaved: () =
   }));
   const set = (patch: Partial<FormState>) => setForm((now) => ({ ...now, ...patch }));
   const [touched, setTouched] = useState(false);
-  useWarnBeforeLeaving(touched);
 
   const cost = amountOf(form.cost);
   const residual = form.residual.trim() === '' ? 0 : amountOf(form.residual);
@@ -378,6 +377,8 @@ function AssetForm({ asset, onSaved }: { asset?: FixedAssetDetail; onSaved: () =
       if (!editing) navigate(`/books/assets/${saved.id}`);
     },
   });
+  // Not while saving or once saved: moving on to the saved record isn't leaving work behind.
+  useWarnBeforeLeaving(touched && !save.isPending && !save.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -499,7 +500,6 @@ function DisposeForm({ asset, onSaved }: { asset: FixedAssetDetail; onSaved: () 
   const [note, setNote] = useState('');
   const places = useQuery({ queryKey: ['money', 'places'], queryFn: moneyApi.places });
   const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list, enabled: onTab });
-  useWarnBeforeLeaving(amount !== '' || note !== '');
 
   // The shop till until something else is picked.
   const paidPlaceId = pickedPlaceId ?? places.data?.find((place) => place.kind === 'till' && !place.carwashId && !place.archived)?.id ?? null;
@@ -533,6 +533,8 @@ function DisposeForm({ asset, onSaved }: { asset: FixedAssetDetail; onSaved: () 
       onSaved();
     },
   });
+  // Not while saving or once saved: moving on to the saved record isn't leaving work behind.
+  useWarnBeforeLeaving((amount !== '' || note !== '') && !save.isPending && !save.isSuccess);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();

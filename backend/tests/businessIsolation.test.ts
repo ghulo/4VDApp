@@ -54,6 +54,12 @@ describe('a second business never sees the first one’s data', () => {
     expect((await request(context.app).get(`/api/products/${productId}`).set(as(otherToken))).status).toBe(404);
     expect((await request(context.app).get('/api/products/barcode/3830000000017').set(as(otherToken))).status).toBe(404);
     expect((await request(context.app).get('/api/products/code/3830000000017').set(as(otherToken))).status).toBe(404);
+    await context.db.updateTable('products').set({ sku: 'ISO-SKU-1' }).where('id', '=', productId).execute();
+    expect((await request(context.app).get('/api/products/code/ISO-SKU-1').set(as(otherToken))).status).toBe(404);
+    // A till event can't name another business's product.
+    const event = { kind: 'line_removed', productId, quantity: 1, amount: 1, reason: 'Scanned twice' };
+    expect((await request(context.app).post('/api/counter/events').set(as(otherToken)).send({ events: [event] })).status).toBe(400);
+    expect((await request(context.app).post('/api/counter/events').set(as(shopToken)).send({ events: [event] })).status).toBe(201);
     // The first business still sees it.
     expect(JSON.stringify((await request(context.app).get('/api/products').set(as(shopToken))).body)).toContain(MARKER);
   });

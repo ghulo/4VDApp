@@ -244,6 +244,19 @@ describe('what happens at the counter', () => {
     expect((await send([{ ...drawer, clientId: undefined, at: new Date(Date.now() + 3_600_000).toISOString() }])).status).toBe(400);
     expect((await send([{ ...drawer, clientId: undefined, at: new Date(Date.now() - 40 * 86_400_000).toISOString() }])).status).toBe(400);
     expect((await send(Array.from({ length: 51 }, () => ({ kind: 'drawer_opened', reason: 'Change' })))).status).toBe(400);
+    // A PC a few minutes fast is fine.
+    expect((await send([{ ...drawer, clientId: undefined, at: new Date(Date.now() + 10 * 60_000).toISOString() }])).status).toBe(201);
+  });
+
+  it('refuses one id twice in a request, and takes an id in capitals as the same event', async () => {
+    const send = (events: unknown[]) => api().post('/api/counter/events').set(auth(employeeToken)).send({ events });
+    const id = '7d1f8c1e-2222-4a2b-9c3d-00000000000a';
+    const drawer = { kind: 'drawer_opened', reason: 'Change', clientId: id };
+    expect((await send([drawer, { kind: 'x_report', clientId: id }])).status).toBe(400);
+    expect((await context.db.selectFrom('counter_events').select('id').execute())).toHaveLength(0);
+    expect((await send([drawer])).status).toBe(201);
+    expect((await send([{ ...drawer, clientId: id.toUpperCase() }])).status).toBe(201);
+    expect((await context.db.selectFrom('counter_events').select('id').execute())).toHaveLength(1);
   });
 });
 
@@ -258,5 +271,23 @@ describe('finding a product by the code typed or scanned at the till', () => {
     expect((await find('BR77X')).body.data.id).toBe(cola);
     expect((await find('77')).status).toBe(404);
     expect((await find('Coca')).status).toBe(404);
+  });
+
+  it('takes the barcode over a product number with the same text, and the exact case over another', async () => {
+    const byBarcode = await createTestProduct(context, adminToken, { name: 'Barcode one', price: 1, stock: 5 });
+    await context.db.updateTable('products').set({ barcode: '5550001' }).where('id', '=', byBarcode).execute();
+    const bySku = await createTestProduct(context, adminToken, { name: 'Number one', price: 1, stock: 5 });
+    await context.db.updateTable('products').set({ sku: '5550001' }).where('id', '=', bySku).execute();
+    const upper = await createTestProduct(context, adminToken, { name: 'Upper', price: 1, stock: 5 });
+    const lower = await createTestProduct(context, adminToken, { name: 'Lower', price: 1, stock: 5 });
+    await context.db.updateTable('products').set({ sku: 'Ab1' }).where('id', '=', upper).execute();
+    await context.db.updateTable('products').set({ sku: 'aB1' }).where('id', '=', lower).execute();
+    const find = (code: string) => api().get(`/api/products/code/${encodeURIComponent(code)}`).set(auth(employeeToken));
+    expect((await find('5550001')).body.data.id).toBe(byBarcode);
+    expect((await find('Ab1')).body.data.id).toBe(upper);
+    expect((await find('aB1')).body.data.id).toBe(lower);
+    // Neither as typed, and two in other cases: no guess.
+    expect((await find('ab1')).status).toBe(404);
+    expect((await find('x'.repeat(100))).status).toBe(404);
   });
 });

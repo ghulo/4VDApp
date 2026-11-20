@@ -19,8 +19,8 @@ export const counterSettingsSchema = z.object({
 
 const withReason = trimmedString(200);
 
-/** How far a shop PC's clock may run ahead, and how old an event sent late may be. */
-const CLOCK_SLACK_MS = 5 * 60_000;
+/** How far a shop PC's clock may run ahead (a PC that drifts a few minutes is common), and how old an event sent late may be. */
+const CLOCK_SLACK_MS = 15 * 60_000;
 const OLDEST_DAYS = 35;
 
 /**
@@ -28,7 +28,12 @@ const OLDEST_DAYS = 35;
  * once) and when it happened (an event sent late counts on its own day).
  */
 const eventOrigin = z.object({
-  clientId: z.string().uuid().optional(),
+  // Lower case, so the same id typed in other case is the same event.
+  clientId: z
+    .string()
+    .uuid()
+    .transform((id) => id.toLowerCase())
+    .optional(),
   at: z
     .string()
     .datetime({ offset: true })
@@ -50,7 +55,16 @@ const eventKindSchema = z.discriminatedUnion('kind', [
 ]);
 const eventSchema = z.intersection(eventKindSchema, eventOrigin);
 
-export const counterEventsSchema = z.object({ events: z.array(eventSchema).min(1).max(50) });
+export const counterEventsSchema = z.object({
+  events: z
+    .array(eventSchema)
+    .min(1)
+    .max(50)
+    .refine((events) => {
+      const ids = events.flatMap((event) => (event.clientId ? [event.clientId] : []));
+      return new Set(ids).size === ids.length;
+    }, 'the same event id is in this request twice'),
+});
 
 export const counterReportSchema = periodSchema;
 

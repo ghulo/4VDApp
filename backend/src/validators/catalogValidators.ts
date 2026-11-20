@@ -86,7 +86,8 @@ const barcodeSchema = z
 export const barcodeParamsSchema = z.object({ barcode: barcodeSchema });
 
 /** A code typed or scanned at the till: a barcode or a product's own number (SKU). */
-export const codeParamsSchema = z.object({ code: z.string().trim().min(1).max(64) });
+/** A barcode or a product number (SKU), as long as a SKU may be. */
+export const codeParamsSchema = z.object({ code: z.string().trim().min(1).max(100) });
 
 export const addBarcodeSchema = z
   .object({

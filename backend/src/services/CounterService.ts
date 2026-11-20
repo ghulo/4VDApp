@@ -1,3 +1,4 @@
+import { ValidationError } from '../errors/httpErrors.js';
 import type { CounterEventKind, TrefinReceiptLine } from '../database/types.js';
 import type { CounterRepository } from '../repositories/CounterRepository.js';
 import type { SettingsRepository } from '../repositories/SettingsRepository.js';
@@ -146,6 +147,13 @@ export class CounterService {
   /** Record what happened at the counter; the drawer and the printer's reports also go in Activity. */
   async record(events: CounterEventInput[], userId: number): Promise<void> {
     await this.transactions.run(async (repos) => {
+      // A product or invoice named by an event must be this business's own (the database's own links don't look at the business).
+      for (const productId of new Set(events.flatMap((event) => ('productId' in event ? [event.productId] : [])))) {
+        if (!(await repos.products.findById(productId, true))) throw new ValidationError(`Product ${productId} is not in this business`);
+      }
+      for (const documentId of new Set(events.flatMap((event) => ('documentId' in event && event.documentId ? [event.documentId] : [])))) {
+        if (!(await repos.documents.findById(documentId))) throw new ValidationError(`Document ${documentId} is not in this business`);
+      }
       const fresh = await repos.counter.create(
         events.map((event) => ({
           kind: event.kind,

@@ -320,12 +320,14 @@ export class ProductRepository {
   async findIdBySku(sku: string): Promise<number | undefined> {
     const rows = await this.db
       .selectFrom('products as p')
-      .select('p.id')
+      .select(['p.id', 'p.sku'])
       .where(sql<boolean>`lower(p.sku) = lower(${sku})`)
       .where('p.deleted_at', 'is', null)
-      .limit(2)
       .execute();
-    return rows.length === 1 ? rows[0]!.id : undefined;
+    // The number exactly as typed first; another case only when just one product has it.
+    const exact = rows.filter((row) => row.sku === sku);
+    if (exact.length === 1) return exact[0]!.id;
+    return exact.length === 0 && rows.length === 1 ? rows[0]!.id : undefined;
   }
 
   /**

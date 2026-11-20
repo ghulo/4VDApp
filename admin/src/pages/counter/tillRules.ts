@@ -36,6 +36,8 @@ export function stockDecision(p: { stock: number; already: number; wanted: numbe
 export const SCANNER_GAP_MS = 60;
 /** Some scanners wait a little before their Enter (a "suffix delay"): still the scan, up to this long. */
 export const SCAN_SUFFIX_MS = 1000;
+/** Keys typed with gaps under this belong to one run (a slow scanner's code, or an amount typed by hand). */
+export const RUN_GAP_MS = 1000;
 /** Keys the scanner presses along the way (capitals) that are not part of the code. */
 const PASS_THROUGH = new Set(['Shift', 'CapsLock']);
 
@@ -45,29 +47,40 @@ const PASS_THROUGH = new Set(['Shift', 'CapsLock']);
  * keydown; on Enter it says what was typed just before and whether it came
  * as a burst: at least two characters, each within 60 ms of the last, and
  * the Enter within a second (some scanners wait before it). Whether a burst is a product is for the caller to
- * check (a fast hand can type a burst too).
+ * check (a fast hand can type a burst too). `run` is everything typed
+ * without a pause of a second, however slowly: a slow scanner's whole code.
  */
 export class BurstWatcher {
   private chars: string[] = [];
+  private run: string[] = [];
   private last = Number.NEGATIVE_INFINITY;
 
-  /** A key went down at `time` (the event's timeStamp). On Enter: what came before it, and whether it was a burst. */
-  key(key: string, time: number): { code: string; burst: boolean } | null {
+  /** A key went down at `time` (the event's timeStamp). On Enter: what came before it, whether it was a burst, and the run it ends. */
+  key(key: string, time: number): { code: string; burst: boolean; run: string } | null {
     if (PASS_THROUGH.has(key)) return null;
     const gap = time - this.last;
     this.last = time;
     if (key === 'Enter') {
       const typed = this.chars;
+      const run = this.run;
       this.chars = [];
+      this.run = [];
       if (typed.length === 0) return null;
-      return { code: typed.join(''), burst: typed.length >= 2 && gap < SCAN_SUFFIX_MS };
+      return { code: typed.join(''), burst: typed.length >= 2 && gap < SCAN_SUFFIX_MS, run: run.join('') };
     }
     if (key.length !== 1) {
       this.chars = [];
+      this.run = [];
       return null;
     }
     this.chars = gap < SCANNER_GAP_MS ? [...this.chars, key] : [key];
+    this.run = gap < RUN_GAP_MS ? [...this.run, key] : [key];
     return null;
+  }
+
+  /** Whether a key at `time` starts a new run (the one before came a second or more ago, or there is none). */
+  startsRun(time: number): boolean {
+    return this.run.length === 0 || time - this.last >= RUN_GAP_MS;
   }
 
   /** How many characters of a burst have arrived so far (1 for a single hand-typed key). */
@@ -86,12 +99,23 @@ export const DOUBLE_ENTER_MS = 150;
  *   till doesn't know, or a very fast hand): the cash goes back as it was and
  *   nothing is recorded until the cashier says go on. Keys can't tell a short
  *   scan from a quick hand, so this side never guesses "cash";
+ * - maybe: typed slowly (a slow scanner, one that waits long before its Enter,
+ *   or a one-character code) but exactly a product's code: nothing is recorded
+ *   until the cashier says which it was. A hand typing an amount that is also a
+ *   product's number ("7") is asked once: the price of never taking a scan as cash;
  * - pay: typed by a hand: Record sale.
  */
-export function payEnter(typed: { code: string; burst: boolean } | null, isProductCode: (code: string) => boolean): { kind: 'product' | 'unknown'; code: string } | { kind: 'pay' } {
-  if (!typed?.burst) return { kind: 'pay' };
-  const code = typed.code.trim();
-  return isProductCode(code) ? { kind: 'product', code } : { kind: 'unknown', code };
+export function payEnter(
+  typed: { code: string; burst: boolean; run?: string } | null,
+  isProductCode: (code: string) => boolean,
+): { kind: 'product' | 'unknown' | 'maybe'; code: string } | { kind: 'pay' } {
+  if (!typed) return { kind: 'pay' };
+  if (typed.burst) {
+    const code = typed.code.trim();
+    return isProductCode(code) ? { kind: 'product', code } : { kind: 'unknown', code };
+  }
+  const run = (typed.run ?? typed.code).trim();
+  return run !== '' && isProductCode(run) ? { kind: 'maybe', code: run } : { kind: 'pay' };
 }
 
 /**
@@ -139,24 +163,26 @@ export function lookupFailure(error: unknown): 'notFound' | 'offline' | 'error' 
   return 'error';
 }
 
-/** The sale's own answers that say it was read and refused: bad data, a product or month gone, a clash. */
-const SALE_REFUSALS = new Set(['400:VALIDATION_ERROR', '404:NOT_FOUND', '409:CONFLICT', '410:GONE']);
-
 /**
  * What a failed Record sale means for the sale on its way:
- * - refused: nothing was recorded, so the basket is free again;
+ * - refused: nothing was recorded and never will be, so the basket is free again;
  * - offline: it never got there, or no answer came in time: it may or may not be in;
+ * - otherOwner: someone else is signed in now: nothing was recorded, and the
+ *   sale waits as it is for the person and business that made it;
  * - unclear: anything else: it may or may not be in.
- * A first send refused for any reason (4xx) was never recorded: no earlier
- * copy exists. A send again is freed only by the sale's own refusal: a
- * sign-in that ran out (401), a "too many requests" (429) or a timeout said
- * nothing about the first copy, which may have gone in.
+ * The server closes a sale's key when it says no to it (SALE_CLOSED), so no
+ * copy still on its way can go in after: that is the only answer that frees a
+ * sale sent before. A first send turned away before 4VD looked at the sale
+ * (a sign-in that ran out, a bad request) was never recorded either, and no
+ * other copy of it exists; a timeout or "too many requests" says nothing.
  * The others keep the same sale and key for Send it again.
  */
-export function payFailure(error: unknown, again = false): 'refused' | 'offline' | 'unclear' {
+export function payFailure(error: unknown, again = false): 'refused' | 'offline' | 'unclear' | 'otherOwner' {
   if (isNetworkFailure(error)) return 'offline';
   if (!(error instanceof ApiError)) return 'unclear';
-  if (again) return SALE_REFUSALS.has(`${error.status}:${error.code}`) ? 'refused' : 'unclear';
+  if (error.code === 'OWNER_CHANGED') return 'otherOwner';
+  if (error.code === 'SALE_CLOSED') return 'refused';
+  if (again) return 'unclear';
   return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429 ? 'refused' : 'unclear';
 }
 

@@ -124,6 +124,14 @@ interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined>;
   /** Ask as the signed-in person, even while the developer views 4VD as another role. */
   asMyself?: boolean;
+  /**
+   * Whose write this is (the Counter's sales and events): the server refuses it
+   * (409 OWNER_CHANGED) when someone else is signed in by the time it arrives,
+   * a resend after a refreshed sign-in included.
+   */
+  expectOwner?: { businessId: number; userId: number };
+  /** Stops the request (a timeout). It may still have reached the server: treat it as no answer, never as a no. */
+  signal?: AbortSignal;
 }
 
 async function send(path: string, options: RequestOptions): Promise<Response> {
@@ -138,6 +146,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   const viewAs = options.asMyself ? null : readViewAs();
   if (viewAs) headers['X-View-As'] = viewAs;
   if (options.fileName) headers['X-File-Name'] = encodeURIComponent(options.fileName);
+  if (options.expectOwner) headers['X-Expect-Owner'] = `${options.expectOwner.businessId}:${options.expectOwner.userId}`;
 
   try {
     return await fetch(url, {
@@ -145,6 +154,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
       credentials: 'include',
       headers,
       body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
+      signal: options.signal,
     });
   } catch {
     throw new ApiError(`Can't reach the server at ${API_URL}. Check that the backend is running.`, 0, 'NETWORK');
@@ -155,6 +165,8 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
 async function sendWithRefresh(path: string, options: RequestOptions): Promise<Response> {
   let response = await send(path, options);
   if (response.status === 401 && sessionHint.signedIn && !path.startsWith('/auth/')) {
+    // Stopped meanwhile (a timeout): no second copy goes out.
+    if (options.signal?.aborted) return response;
     if (await refreshSession()) {
       response = await send(path, options);
     } else {
@@ -179,6 +191,8 @@ export async function apiRequest<TData>(
 ): Promise<{ data: TData; meta?: PaginationMeta }> {
   const response = await sendWithRefresh(path, options);
   const body = (await response.json().catch(() => null)) as ApiResponse<TData> | null;
+  // Stopped while the answer was on its way: no answer, whatever the status said.
+  if (!body && options.signal?.aborted) throw new ApiError('The server did not answer in time', 0, 'NETWORK');
   if (!response.ok || !body?.success) throw toApiError(response, body);
   return { data: body.data, meta: body.meta };
 }

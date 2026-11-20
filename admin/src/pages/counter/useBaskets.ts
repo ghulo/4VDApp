@@ -213,8 +213,8 @@ export function useBaskets(userId: number) {
 
   const select = useCallback((id: string) => void apply((now) => (now.current === id ? now : { ...now, current: id })), [apply]);
 
-  /** Paid or cancelled: the basket goes, and the next waiting one comes up (or a fresh one). */
-  const close = useCallback((id: string) => void apply((now) => withoutBasket(now, id)), [apply]);
+  /** Paid or cancelled: the basket goes, and the next waiting one comes up (or a fresh one). False when that couldn't be written to this PC. */
+  const close = useCallback((id: string): boolean => apply((now) => withoutBasket(now, id)), [apply]);
 
   return { baskets: state.baskets, current, setLines, update, setPending, open, select, close };
 }

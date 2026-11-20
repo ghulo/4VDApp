@@ -42,7 +42,7 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import { type BasketSale, businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
 import { useFeatures } from '../utils/useFeatures';
 import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -65,7 +65,8 @@ import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
-import { newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
+import { localStore, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
+import { localSettledStore, notePrinted, noteSettled, settledSale, takeInterrupted } from './counter/settledSales';
 import { useWaitingSales } from './counter/useWaitingSales';
 
 type Panel =
@@ -137,6 +138,8 @@ const PAY_TIMEOUT_MS = 12_000;
 const LOOKUP_TIMEOUT_MS = 5_000;
 /** How long one batch of till events may take before it counts as no internet (and is tried again later). */
 const EVENTS_TIMEOUT_MS = 15_000;
+/** A receipt still marked printing this long after its sale was settled was cut off (the till closed): it goes to Not printed. */
+const INTERRUPTED_AFTER_MS = 90_000;
 /** The keys that change what a basket sells, closed while its sale waits for an answer. */
 const CHANGES_BASKET = new Set<Panel>(['quantity', 'price', 'discount', 'basketRabat', 'customer', 'remove', 'cancel', 'deliver', 'serial', 'find']);
 
@@ -303,18 +306,26 @@ export function CounterPage() {
   // Who is at the till right now: a send that started for someone else stops before its next request.
   const ownerNow = useRef(owner);
   ownerNow.current = owner;
-  const [refusedEvents, setRefusedEvents] = useState(() => refusedEntries(localEventStore, owner));
+  // The till notes 4VD refused, for whoever is at the till now: kept with whose they are, so another person or business never sees them.
+  const ownerKey = `${owner.businessId}:${owner.userId}`;
+  const [refusedNotes, setRefusedNotes] = useState(() => ({ owner: ownerKey, entries: refusedEntries(localEventStore, owner) }));
+  useEffect(() => setRefusedNotes({ owner: `${owner.businessId}:${owner.userId}`, entries: refusedEntries(localEventStore, owner) }), [owner]);
+  const refusedEvents = refusedNotes.owner === ownerKey ? refusedNotes.entries : [];
   const sendEvents = useCallback(
     () =>
       drain(
         localEventStore,
         owner,
-        // A request that hangs counts as no internet, so it never holds the rest (or Switch person) up.
-        (events) => withTimeout(counterApi.record(events), EVENTS_TIMEOUT_MS),
+        // A request that hangs counts as no internet (and is stopped), so it never holds the rest (or Switch person) up.
+        // The server refuses them once someone else is signed in, a resend after a refreshed sign-in included.
+        (events) => withTimeout((signal) => counterApi.record(events, { expectOwner: owner, signal }), EVENTS_TIMEOUT_MS),
         () => ownerNow.current === owner,
       )
         .catch(() => undefined)
-        .finally(() => setRefusedEvents(refusedEntries(localEventStore, owner))),
+        .finally(() => {
+          // A round that finished after a switch says nothing about the new person's notes.
+          if (ownerNow.current === owner) setRefusedNotes({ owner: `${owner.businessId}:${owner.userId}`, entries: refusedEntries(localEventStore, owner) });
+        }),
     [owner],
   );
   const record = useCallback(
@@ -542,7 +553,7 @@ export function CounterPage() {
     if (online) {
       const startedIn = current.id;
       try {
-        found = await withTimeout(productsApi.byCode(code), LOOKUP_TIMEOUT_MS);
+        found = await withTimeout(() => productsApi.byCode(code), LOOKUP_TIMEOUT_MS);
       } catch (error) {
         failure = lookupFailure(error);
       }
@@ -693,42 +704,119 @@ export function CounterPage() {
 
   // A basket whose Send it again got no clear answer either: the way to look it up, and the owner's way out.
   const [stuck, setStuck] = useState<string | null>(null);
-  const [forgetAsk, setForgetAsk] = useState(false);
+  // Stop asked for this basket's very sale ("<basket>:<key>"): a yes never carries over to another basket or sale.
+  const [forgetAsk, setForgetAsk] = useState<string | null>(null);
+  const askFor = (basket: Basket) => (basket.pending ? `${basket.id}:${basket.pending.key}` : null);
   const pendingHere = (pending: PendingSale | undefined) => pending !== undefined && pending.userId === user.id && pending.businessId === businessId;
+
+  /** Settled on this PC already (it waits in the queue, or the till noted it): the basket closes, and nothing is settled or printed again. */
+  function settledHere(basketId: string, pending: PendingSale): boolean {
+    const noted = settledSale(localSettledStore, pending.key);
+    if (!noted && !waiting.has(pending.key)) return false;
+    closeBasket(basketId);
+    setStuck(null);
+    say(noted && noted.documentId > 0 ? t.counter.alreadySettled(noted.number) : t.counter.soldOffline(formatMoney(pending.total)));
+    return true;
+  }
+
+  // A basket still showing a sale the till settled (the page closed or crashed in between): it closes, never settled twice.
+  useEffect(() => {
+    for (const basket of baskets) {
+      const key = basket.pending?.key;
+      if (key && (localStore.read().some((sale) => sale.key === key) || settledSale(localSettledStore, key))) closeBasket(basket.id);
+    }
+  }, [baskets, closeBasket]);
+
+  // Sales, baskets and notes waiting on this PC: ask the browser never to clear them to make room (it may say no).
+  useEffect(() => {
+    void navigator.storage?.persist?.().catch(() => false);
+  }, []);
+
+  // Receipts that were printing when the till closed: whether they came out is unknown, so they go to Not printed, to be checked.
+  const keepUnprinted = printer.keepUnprinted;
+  useEffect(() => {
+    const check = () => {
+      for (const sale of takeInterrupted(localSettledStore, Date.now() - INTERRUPTED_AFTER_MS)) {
+        keepUnprinted({ documentId: sale.documentId, number: sale.number, total: sale.total, at: sale.at, text: sale.text ?? '', reason: t.counter.printInterrupted, job: sale.job });
+      }
+    };
+    check();
+    const timer = window.setInterval(check, 60_000);
+    return () => window.clearInterval(timer);
+  }, [keepUnprinted, t]);
 
   /** A sale sent before without an answer: exactly that sale again, only by who made it, where they made it. */
   function sendAgain() {
     const pending = current.pending;
     if (!pending || payingRef.current) return;
     if (!pendingHere(pending)) return complain(t.counter.pendingOther);
-    // Already waiting on this PC (the page closed while it was being put there): it goes from there, once.
-    if (waiting.has(pending.key)) {
-      closeBasket(current.id);
-      return say(t.counter.soldOffline(formatMoney(pending.total)));
-    }
+    if (settledHere(current.id, pending)) return;
     void pay(pending.payment).catch((error: unknown) => complain(errorMessage(error)));
   }
 
-  /** The owner looked in Sales and the sale isn't there (or is): this basket's waiting sale is let go, and the basket is free again. */
-  function forgetPending() {
-    if (!current.pending || !canOversee(user.role)) return;
-    setPending(current.id, null);
+  /**
+   * The owner stops this basket's waiting sale. 4VD settles it under the
+   * sale's key: recorded after all, it is settled here as paid; otherwise it
+   * is stopped for good (a copy still on its way can never go in), and the
+   * basket is free to change and be paid again.
+   */
+  async function forgetPending() {
+    const basket = current;
+    const pending = basket.pending;
+    if (!pending || !canOversee(user.role) || payingRef.current || forgetAsk !== askFor(basket)) return;
+    setForgetAsk(null);
+    // Its key lives in the business it was made in: it is stopped only from there.
+    if (pending.businessId !== businessId) return complain(t.counter.pendingOther);
+    if (settledHere(basket.id, pending)) return;
+    setPayingNow(true);
+    let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
+    try {
+      answer = await withTimeout((signal) => salesApi.stopBasket(pending.key, { expectOwner: owner, signal }), PAY_TIMEOUT_MS);
+    } catch (error) {
+      setPayingNow(false);
+      return complain(payFailure(error) === 'offline' ? t.counter.stopNeedsAnswer : errorMessage(error));
+    }
+    if (answer.state === 'recorded') return settle(pending, basket, answer.sale);
+    setPending(basket.id, null);
     setStuck(null);
-    setForgetAsk(false);
+    setPayingNow(false);
     say(t.counter.forgotten);
   }
 
+  /** The receipt's lines as this till shows the basket (a sale not yet in 4VD). */
+  const basketReceiptLines = () =>
+    lines.flatMap((line) => {
+      const product = { id: line.productId, sku: line.product?.sku ?? null, name: line.product?.name ?? line.name, vatRate: line.product?.vatRate ?? 18 };
+      const rest = roundMoney(line.quantity - line.shortQuantity);
+      return [
+        ...(line.shortQuantity > 0 && line.shortUnitPrice !== null ? [{ product, unitPrice: line.shortUnitPrice, quantity: line.shortQuantity }] : []),
+        ...(rest > 0 ? [{ product, unitPrice: line.unitPrice, quantity: rest }] : []),
+      ];
+    });
+
+  /** The fiscal receipt's job; card and Cash + card print as cash, as the shop's receipts always have (the printer's change is the cash change). */
+  const receiptFor = (payment: Payment, receiptLines: ReceiptInput['lines']): ReceiptInput => {
+    const card = payment.paidBy === 'split' ? (payment.cardAmount ?? 0) : 0;
+    return { lines: receiptLines, payment: payment.paidBy === 'card' ? { by: 'card' } : { by: 'cash', tendered: payment.tendered === null ? null : roundMoney(payment.tendered + card) } };
+  };
+
   async function recordSale(chosen: Payment) {
-    const basketId = current.id;
-    const again = current.pending !== undefined;
-    if (current.pending && !pendingHere(current.pending)) throw new Error(t.counter.pendingOther);
+    const basket = current;
+    const basketId = basket.id;
+    const again = basket.pending !== undefined;
+    if (basket.pending && !pendingHere(basket.pending)) throw new Error(t.counter.pendingOther);
+    if (basket.pending && settledHere(basketId, basket.pending)) {
+      setPanelState(null);
+      setPayingNow(false);
+      return;
+    }
     if (!again) {
       // The shop's stock rule at the very moment of Record sale (the shelf may have changed while Pay was open).
       const stockNow = basketStockProblem(lines, noStockRule, canOversee(user.role));
       if (stockNow) throw new Error(stockNow.kind === 'unknown' ? t.counter.stockUnknown(stockNow.name) : t.counter.noMore(stockNow.product.name, stockNow.product.stock.quantity));
     }
     // Sent before without an answer: the same sale, key and payment again, whatever the screen says now.
-    const attempt: PendingSale = current.pending ?? {
+    const attempt: PendingSale = basket.pending ?? {
       key: newSaleKey(),
       businessId,
       userId: user.id,
@@ -741,51 +829,80 @@ export function CounterPage() {
     // Send it again tries as soon as the browser has a connection, not only after the half-minute check says 4VD is back.
     const reachable = again ? connected : online;
     if (payment.paidBy === 'tab' && !reachable) throw new Error(t.counter.offlineNoTab);
-    if (current.delivery && !reachable) throw new Error(t.counter.offlineNoDelivery);
+    if (basket.delivery && !reachable) throw new Error(t.counter.offlineNoDelivery);
     // Written to this PC before it goes, so a lost answer or a reload sends this very sale again, recorded once.
     // If this PC can't keep it, it isn't sent at all.
     if (!again && !setPending(basketId, attempt)) {
       setPending(basketId, null);
       throw new Error(t.counter.cantKeepSale);
     }
-    const delivered = current.delivery ?? null;
-    let result: Awaited<ReturnType<typeof salesApi.recordBasket>> | null = null;
-    // It may have gone in: the basket stays as sent until Send it again gets an answer.
-    const keepWaiting = (message: string) => {
+    const delivered = basket.delivery ?? null;
+    let result: BasketSale | null = null;
+    // It may have gone in (or waits for whoever made it): the basket stays as sent until Send it again gets an answer.
+    const keepWaiting = (message: string, unclear = true) => {
       setPayingNow(false);
       setPanelState(null);
-      if (again) setStuck(basketId);
+      if (again && unclear) setStuck(basketId);
       complain(message);
       focusScan();
     };
     if (reachable) {
       try {
         // Straight to the server: a query-library mutation would pause, not fail, when the browser says offline.
-        result = await withTimeout(salesApi.recordBasket({ ...body, clientKey: key }), PAY_TIMEOUT_MS);
+        // Sent for whoever made it: the server refuses it once someone else is signed in. A timeout stops the request.
+        result = await withTimeout(
+          (signal) => salesApi.recordBasket({ ...body, clientKey: key }, { expectOwner: { businessId: attempt.businessId, userId: attempt.userId }, signal }),
+          PAY_TIMEOUT_MS,
+        );
         setUnreachable(false);
       } catch (error) {
         const failure = payFailure(error, again);
-        // The sale itself was refused: nothing was recorded (a key the server knows gets its first answer back), so the basket is free again.
+        // 4VD closed the sale for good: nothing was recorded and no copy of it ever will be, so the basket is free again.
         if (failure === 'refused') {
           setPending(basketId, null);
           setStuck(null);
           throw error;
         }
+        if (failure === 'otherOwner') return keepWaiting(t.counter.pendingOther, false);
         if (failure === 'offline') setUnreachable(true);
         // A tab, a delivery or a server that broke mid-way can't wait on this PC.
         if (failure === 'unclear' || payment.paidBy === 'tab' || delivered) return keepWaiting(t.counter.unclearPay);
         // The internet went just now: the sale waits like any other made offline, with the same key.
       }
     }
-    // Offline: on this PC first; if it can't be kept there, nothing is shown as paid and the basket stays as sent.
-    if (!result && !waiting.add({ key, at, userId: user.id, businessId, body, total: attempt.total, receipt: null })) return keepWaiting(t.counter.cantKeepSale);
+    if (!result) {
+      // Offline: on this PC first, its receipt with it (marked printing until the printer answers); if it can't be kept there,
+      // nothing is shown as paid and the basket stays as sent.
+      const printsHere = settings.data?.printer.enabled === true && payment.paidBy !== 'tab' && delivered?.payment !== 'door';
+      const receipt = printsHere ? { text: '', printed: false, fiscalNo: null, reason: t.counter.printInterrupted, job: receiptFor(payment, basketReceiptLines()), interrupted: true } : null;
+      if (!waiting.add({ key, at, userId: attempt.userId, businessId: attempt.businessId, body, total: attempt.total, receipt })) return keepWaiting(t.counter.cantKeepSale);
+    }
+    return settle(attempt, basket, result);
+  }
+
+  /**
+   * A sale recorded (or kept on this PC to send): the basket closes, the
+   * customer sees the change, and the receipt prints. The till notes it first,
+   * so a reload, a crash or Send it again never settles or prints it twice.
+   */
+  async function settle(attempt: PendingSale, basket: Basket, result: BasketSale | null) {
+    const { key, payment, at } = attempt;
+    const basketId = basket.id;
+    const delivered = basket.delivery ?? null;
+    // Recorded by an earlier copy this till already settled: close the basket, nothing more.
+    if (result?.again && settledHere(basketId, attempt)) {
+      setPanelState(null);
+      setPayingNow(false);
+      focusScan();
+      return;
+    }
     const sold = result
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
       : { total: attempt.total, documentId: 0, number: t.counter.waitingToSend };
     if (result) {
       refreshAfterSale();
       if (delivered) void queryClient.invalidateQueries({ queryKey: TO_DELIVER_KEY });
-      if (current.offerId) void queryClient.invalidateQueries({ queryKey: ['offers'] });
+      if (basket.offerId) void queryClient.invalidateQueries({ queryKey: ['offers'] });
     } else {
       // This PC's shelf loses what was sold, so the next basket can't sell it again.
       const soldNow = new Map(lines.map((line) => [line.productId, line.quantity]));
@@ -801,15 +918,26 @@ export function CounterPage() {
           const product = byId.get(sale.productId);
           return { product: { id: sale.productId, sku: product?.sku ?? null, name: sale.productName, vatRate: product?.vatRate ?? 18 }, unitPrice: sale.pricePerUnit, quantity: sale.quantity };
         })
-      : lines.flatMap((line) => {
-          const product = { id: line.productId, sku: line.product?.sku ?? null, name: line.product?.name ?? line.name, vatRate: line.product?.vatRate ?? 18 };
-          const rest = roundMoney(line.quantity - line.shortQuantity);
-          return [
-            ...(line.shortQuantity > 0 && line.shortUnitPrice !== null ? [{ product, unitPrice: line.shortUnitPrice, quantity: line.shortQuantity }] : []),
-            ...(rest > 0 ? [{ product, unitPrice: line.unitPrice, quantity: rest }] : []),
-          ];
-        });
-    closeBasket(basketId);
+      : basketReceiptLines();
+    // Kept with a receipt that doesn't print, so Print again can build it once more.
+    const job = receiptFor(payment, receiptLines);
+    // Like a tab, a sale paid at the door prints no receipt here: the money isn't all in yet.
+    // A copy recorded earlier whose receipt printed (its fiscal number is on the invoice) isn't printed again.
+    const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab' && delivered?.payment !== 'door' && !result?.fiscalNo;
+    // The till's note that the sale is settled, before its basket closes and before it prints (a waiting sale's is its place in the queue).
+    const noted = result
+      ? noteSettled(localSettledStore, {
+          key,
+          documentId: result.invoice.id,
+          number: result.invoice.number,
+          total: result.total,
+          at,
+          settledAt: Date.now(),
+          print: willPrint ? 'printing' : result.fiscalNo ? 'printed' : 'none',
+          ...(willPrint && { job }),
+        })
+      : true;
+    const closed = closeBasket(basketId);
     setPanelState(null);
     // Recorded (or waiting on this PC): the till is free again while the receipt prints.
     setPayingNow(false);
@@ -819,9 +947,9 @@ export function CounterPage() {
     const change = payment.tendered !== null ? roundMoney(payment.tendered - (sold.total - card)) : null;
     const buyer = payment.paidBy === 'tab' ? customers.data?.find((one) => one.id === payment.customerId) : customer;
     say(result ? t.counter.sold(formatMoney(sold.total), sold.number) : t.counter.soldOffline(formatMoney(sold.total)));
+    // Neither the note nor the closed basket could be written: a reload would show this sale again.
+    if (!noted && !closed) complain(t.counter.notSavedHere);
     display(change !== null && change > 0 ? displayFor.change(change) : displayFor.thanks(sold.total));
-    // Like a tab, a sale paid at the door prints no receipt here: the money isn't all in yet.
-    const willPrint = settings.data?.printer.enabled === true && payment.paidBy !== 'tab' && delivered?.payment !== 'door';
     setLastSale({
       key,
       documentId: sold.documentId,
@@ -832,8 +960,8 @@ export function CounterPage() {
       change,
       cardAmount: payment.paidBy === 'split' ? card : null,
       customerName: buyer?.name ?? null,
-      print: willPrint ? 'printing' : 'none',
-      fiscalNo: null,
+      print: willPrint ? 'printing' : result?.fiscalNo ? 'printed' : 'none',
+      fiscalNo: result?.fiscalNo ?? null,
       products: summary.products,
       pieces: summary.pieces,
       offline: !result,
@@ -844,18 +972,15 @@ export function CounterPage() {
       return;
     }
 
-    // Kept with a receipt that doesn't print, so Print again can build it once more.
-    const job: ReceiptInput = {
-      lines: receiptLines,
-      // Card and Cash + card print as cash, as the shop's receipts always have; the printer's change is the cash change.
-      payment: payment.paidBy === 'card' ? { by: 'card' } : { by: 'cash', tendered: payment.tendered === null ? null : roundMoney(payment.tendered + card) },
-    };
     let text: string;
     try {
       text = buildReceipt(job);
     } catch (error) {
       const reason = receiptProblem(error);
-      if (result) return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason, job });
+      if (result) {
+        notePrinted(localSettledStore, key, 'failed');
+        return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason, job });
+      }
       waiting.printed(key, { text: '', printed: false, fiscalNo: null, reason, job });
       return offlinePrinted(key, { ok: false, message: reason });
     }
@@ -867,6 +992,7 @@ export function CounterPage() {
     }
     const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '', job };
     const printed = await printer.send(`4VD-${result.invoice.number}`, text);
+    notePrinted(localSettledStore, key, printed.ok ? 'printed' : 'failed');
     await afterPrint(item, printed, false);
   }
 
@@ -1432,6 +1558,7 @@ export function CounterPage() {
                     <p className="counter-opening__title">{t.counter.pendingSale(formatMoney(current.pending.total))}</p>
                     {!pendingHere(current.pending) && <p>{t.counter.pendingOther}</p>}
                     {(stuck === current.id || !pendingHere(current.pending)) && <p>{t.counter.checkSales}</p>}
+                    {forgetAsk !== null && forgetAsk === askFor(current) && <p>{t.counter.forgetAsk}</p>}
                   </div>
                   <div className="counter-opening__keys">
                     {pendingHere(current.pending) && (
@@ -1445,17 +1572,17 @@ export function CounterPage() {
                       </ButtonLink>
                     )}
                     {canOversee(user.role) && (stuck === current.id || !pendingHere(current.pending)) &&
-                      (forgetAsk ? (
+                      (forgetAsk !== null && forgetAsk === askFor(current) ? (
                         <>
-                          <Button size="sm" variant="danger" disabled={paying} onClick={forgetPending}>
+                          <Button size="sm" variant="danger" loading={paying} disabled={paying} onClick={() => void forgetPending()}>
                             {t.counter.forgetYes}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setForgetAsk(false)}>
+                          <Button size="sm" variant="ghost" disabled={paying} onClick={() => setForgetAsk(null)}>
                             {t.counter.keepIt}
                           </Button>
                         </>
                       ) : (
-                        <Button size="sm" variant="ghost" disabled={paying} onClick={() => setForgetAsk(true)}>
+                        <Button size="sm" variant="ghost" disabled={paying} onClick={() => setForgetAsk(askFor(current))}>
                           {t.counter.forget}
                         </Button>
                       ))}
@@ -1479,10 +1606,10 @@ export function CounterPage() {
                   <WarningCircle size={20} weight="bold" aria-hidden="true" />
                   <div className="counter-opening__text">
                     <p className="counter-opening__title">{t.counter.refusedTitle(waiting.refused.length)}</p>
-                    <p>{waiting.refused[0]!.refused}</p>
+                    <p>{waiting.refused[0]!.refused ?? t.counter.unplacedSale}</p>
                     <p>{t.counter.refusedHint}</p>
                   </div>
-                  <Button size="sm" icon={ArrowClockwise} disabled={!online} onClick={waiting.retry}>
+                  <Button size="sm" icon={ArrowClockwise} disabled={!online} onClick={() => void waiting.retry()}>
                     {t.counter.refusedRetry}
                   </Button>
                 </div>

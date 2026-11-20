@@ -71,7 +71,10 @@ UI and features (ask first):
 - [ ] The real scanner (if it sends Enter twice) doesn't open Pay after a scan; a hand's Enter on the empty box still does
 - [ ] A receipt that didn't print because a VAT rate had no printer tax group: set the tax group in Settings → Counter, then Print again prints it; "Leave it" asks first
 - [ ] Short-dated −30% key text and switches (dark mode) are readable; the change shows its amount at once on the Paid screen
-- [ ] A sale whose Send it again also gets no clear answer: "Look in Sales" with Open Sales; the owner (not an employee) can "Forget this sale" after a yes; five such sales still leave room for a new basket
+- [ ] A sale whose Send it again also gets no clear answer: the owner presses "Stop this sale" then "Yes, stop it": with internet, either it shows as paid (it had gone in) or the basket is free to pay again; Sales shows the sale once either way. Without internet it says it needs an answer from 4VD
+- [ ] On the shop PC with the printer: close the Windows app while a receipt prints; open it again: within about 2 minutes Not printed shows that receipt with "The till closed while this receipt was printing"; check the printer before Print again
+- [ ] The real scanner into Pay's cash box: a product's barcode, and a short product number (one or two characters), never become cash: either back to the basket or the question "also a product's code" with Put it in the basket / Go on
+- [ ] Switch person while sales made offline wait: the switch waits until they are sent; none shows in Sales under the new person
 - [ ] Switch person (or another business) with a sale waiting: the new person sees "made by someone else", no Send it again; the first person gets it back when they sign in again
 - [ ] A till note 4VD refuses (e.g. a PC clock far off): a banner "1 till note … was refused" with the reason and Send again
 - [ ] An employee with "Sell past stock" off while the product list hasn't loaded (slow internet at opening): Pay says 4VD can't see how many are left

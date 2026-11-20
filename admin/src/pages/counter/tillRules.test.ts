@@ -43,17 +43,17 @@ describe('telling the barcode scanner from a hand', () => {
   };
 
   it('sees a burst of keys ending in a quick Enter, short codes too', () => {
-    expect(type(new BurstWatcher(), '5449000000996', 1000, 8)).toEqual({ code: '5449000000996', burst: true });
-    expect(type(new BurstWatcher(), '77', 1000, 8)).toEqual({ code: '77', burst: true });
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8)).toEqual({ code: '5449000000996', burst: true, run: '5449000000996' });
+    expect(type(new BurstWatcher(), '77', 1000, 8)).toMatchObject({ code: '77', burst: true });
   });
 
   it('still sees the scan when the scanner waits a little before its Enter', () => {
-    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 200)).toEqual({ code: '5449000000996', burst: true });
-    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 1500)).toEqual({ code: '5449000000996', burst: false });
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 200)).toMatchObject({ code: '5449000000996', burst: true });
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 1500)).toMatchObject({ code: '5449000000996', burst: false });
   });
 
   it('sees a hand typing an amount', () => {
-    expect(type(new BurstWatcher(), '20', 1000, 180)).toEqual({ code: '0', burst: false });
+    expect(type(new BurstWatcher(), '20', 1000, 180)).toEqual({ code: '0', burst: false, run: '20' });
     expect(type(new BurstWatcher(), '2000', 1000, 120)?.burst).toBe(false);
   });
 
@@ -61,7 +61,7 @@ describe('telling the barcode scanner from a hand', () => {
     const watcher = new BurstWatcher();
     let time = 0;
     for (const key of ['Shift', 'C', 'Shift', 'C', '5', '0', '0']) watcher.key(key, (time += 5));
-    expect(watcher.key('Enter', time + 5)).toEqual({ code: 'CC500', burst: true });
+    expect(watcher.key('Enter', time + 5)).toMatchObject({ code: 'CC500', burst: true });
   });
 
   it('gives nothing for an Enter with nothing typed (a second Enter)', () => {
@@ -103,8 +103,44 @@ describe('an Enter in Pay', () => {
     expect(enter('20', 180)).toEqual({ kind: 'pay' });
     expect(enter('2000', 120)).toEqual({ kind: 'pay' });
     expect(enter('50', 90)).toEqual({ kind: 'pay' });
-    // Typed, then a pause, then Enter.
-    expect(enter('5449000000996', 8, 1500)).toEqual({ kind: 'pay' });
+    // Typed slowly, a pause, then Enter: no product has it.
+    expect(enter('4006381', 150, 1500)).toEqual({ kind: 'pay' });
+  });
+
+  it('never takes a slow or one-key scan of a product as cash: it asks', () => {
+    const withSeven = (code: string) => known(code) || code === '7';
+    const slow = (keys: string, gap: number, enterAfter = gap) => {
+      const watcher = new BurstWatcher();
+      let time = 1000;
+      for (const key of keys) {
+        watcher.key(key, time);
+        time += gap;
+      }
+      return payEnter(watcher.key('Enter', time - gap + enterAfter), withSeven);
+    };
+    // A one-character product number "7" scanned into a €5 sale: never €7 cash.
+    expect(slow('7', 8)).toEqual({ kind: 'maybe', code: '7' });
+    // A scanner with 80 ms between its keys.
+    expect(slow('5449000000996', 80)).toEqual({ kind: 'maybe', code: '5449000000996' });
+    // A scanner that waits 1.5 s before its Enter.
+    expect(slow('5449000000996', 8, 1500)).toEqual({ kind: 'maybe', code: '5449000000996' });
+    // Cash typed by hand, a pause, then a slow scan: only the scan is the run.
+    const watcher = new BurstWatcher();
+    watcher.key('2', 0);
+    watcher.key('0', 200);
+    watcher.key('7', 2000);
+    watcher.key('7', 2090);
+    expect(payEnter(watcher.key('Enter', 2180), withSeven)).toEqual({ kind: 'maybe', code: '77' });
+    // An amount that is no product's number pays.
+    expect(slow('20', 180)).toEqual({ kind: 'pay' });
+  });
+
+  it('starts a new run after a pause of a second', () => {
+    const watcher = new BurstWatcher();
+    expect(watcher.startsRun(0)).toBe(true);
+    watcher.key('2', 0);
+    expect(watcher.startsRun(500)).toBe(false);
+    expect(watcher.startsRun(1200)).toBe(true);
   });
 
   it('pays on a plain Enter with nothing typed just before', () => {
@@ -167,9 +203,14 @@ describe('finding what was scanned or typed', () => {
 
 describe('a Record sale that failed', () => {
   it('frees the basket only when the server said no', () => {
-    expect(payFailure(new ApiError('Not enough stock', 400, null))).toBe('refused');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'SALE_CLOSED'))).toBe('refused');
     expect(payFailure(new ApiError('Signed out', 401, null))).toBe('refused');
-    expect(payFailure(new ApiError('Month closed', 409, null))).toBe('refused');
+    expect(payFailure(new ApiError('Bad request', 400, 'VALIDATION_ERROR'))).toBe('refused');
+  });
+
+  it('keeps the sale for the person and business that made it when someone else is signed in now', () => {
+    expect(payFailure(new ApiError('Someone else', 409, 'OWNER_CHANGED'))).toBe('otherOwner');
+    expect(payFailure(new ApiError('Someone else', 409, 'OWNER_CHANGED'), true)).toBe('otherOwner');
   });
 
   it('keeps the same sale when it may have gone in', () => {
@@ -182,13 +223,17 @@ describe('a Record sale that failed', () => {
 });
 
 describe('a send again that failed', () => {
-  it('stays unclear unless the sale itself said no', () => {
+  it('stays unclear unless the server closed the sale for good', () => {
+    // A copy sent before may still go in after an ordinary refusal: only a closed key frees the basket.
+    expect(payFailure(new ApiError('Offer sold', 409, 'CONFLICT'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'SALE_CLOSED'), true)).toBe('refused');
+    expect(payFailure(new ApiError('Stopped', 410, 'SALE_CLOSED'), true)).toBe('refused');
     expect(payFailure(new ApiError('Too many requests', 429, 'RATE_LIMITED'), true)).toBe('unclear');
     expect(payFailure(new ApiError('Signed out', 401, 'UNAUTHORIZED'), true)).toBe('unclear');
     expect(payFailure(new ApiError('Forbidden', 403, 'FORBIDDEN'), true)).toBe('unclear');
     expect(payFailure(new ApiError('Bad JSON', 400, 'BAD_REQUEST'), true)).toBe('unclear');
-    expect(payFailure(new ApiError('Not enough stock', 400, 'VALIDATION_ERROR'), true)).toBe('refused');
-    expect(payFailure(new ApiError('Product gone', 404, 'NOT_FOUND'), true)).toBe('refused');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'VALIDATION_ERROR'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Product gone', 404, 'NOT_FOUND'), true)).toBe('unclear');
   });
 
   it('a first send refused for any reason was never recorded, except a timeout or too many requests', () => {

@@ -572,18 +572,41 @@ export const salesApi = {
     clientKey?: string;
     /** A sale the Counter made offline: when it was made (ISO). */
     soldAt?: string;
-  }) =>
-    (await apiRequest<{ sales: Sale[]; total: number; invoice: DocumentRef }>('/sales/basket', { method: 'POST', body: input })).data,
+  }, till?: TillRequest) =>
+    (await apiRequest<BasketSale>('/sales/basket', { method: 'POST', body: input, ...till })).data,
+  /**
+   * A till sale whose answer never came: the sale, if it was recorded, else it
+   * never will be (no copy still on its way can go in), and the basket may be sold again.
+   */
+  stopBasket: async (key: string, till?: TillRequest) =>
+    (await apiRequest<{ state: 'recorded'; sale: BasketSale } | { state: 'stopped' }>(`/sales/basket/${encodeURIComponent(key)}/stop`, { method: 'POST', body: {}, ...till })).data,
   record: async (input: { productId: number; quantity: number; notes: string | null; saleDate?: string; customerId?: number }) =>
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };
+
+/** A till write: for whom it is (refused once someone else is signed in) and how to stop it (a timeout). */
+export interface TillRequest {
+  expectOwner?: { businessId: number; userId: number };
+  signal?: AbortSignal;
+}
+
+/** A till sale as recorded. */
+export interface BasketSale {
+  sales: Sale[];
+  total: number;
+  invoice: DocumentRef;
+  /** Recorded before by an earlier copy of this sale (its answer was lost): never settle it twice. */
+  again: boolean;
+  /** The fiscal receipt number its invoice keeps, once one printed. */
+  fiscalNo: string | null;
+}
 
 export const counterApi = {
   settings: async () => (await apiRequest<CounterSettings>('/counter/settings')).data,
   updateSettings: async (input: CounterSettings) => (await apiRequest<CounterSettings>('/counter/settings', { method: 'PUT', body: input })).data,
   /** Each may carry the shop PC's id for it (sent twice, kept once) and when it happened. */
-  record: async (events: Array<CounterEventInput & { clientId?: string; at?: string }>) => {
-    await apiRequest('/counter/events', { method: 'POST', body: { events } });
+  record: async (events: Array<CounterEventInput & { clientId?: string; at?: string }>, till?: TillRequest) => {
+    await apiRequest('/counter/events', { method: 'POST', body: { events }, ...till });
   },
   today: async () => (await apiRequest<CounterToday>('/counter/today')).data,
   /** Today's receipts, or the one with this number. */

@@ -259,8 +259,11 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const [confirmed, setConfirmed] = useState<string | null>(null);
   // Keys as fast as a scanner that name no product came in: the cash went back as it was, and nothing is recorded until the cashier presses Go on.
   const [unknownScan, setUnknownScan] = useState<string | null>(null);
+  // Typed slowly, but exactly a product's code (a slow scanner, a one-key code): nothing is recorded until the cashier says which it was.
+  const [maybeScan, setMaybeScan] = useState<{ code: string; before: PayDraft } | null>(null);
   const burst = useRef(new BurstWatcher());
   const beforeBurst = useRef<PayDraft>(given);
+  const beforeRun = useRef<PayDraft>(given);
   const burstEnded = useRef(Number.NEGATIVE_INFINITY);
   // At the door: only the part paid now is taken here, and only in cash.
   const total = door ? (door.paidNow ?? 0) : saleTotal;
@@ -274,7 +277,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const takesCash = (draft.paidBy === 'cash' && total > 0) || (draft.paidBy === 'split' && split?.valid === true);
   const looksWrong = takesCash && cash !== null && tenderedLooksWrong(cash.given, due);
   const unchecked = looksWrong && confirmed !== draft.tendered;
-  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid) || unchecked || unknownScan !== null;
+  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid) || unchecked || unknownScan !== null || maybeScan !== null;
   const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
   const back = () => {
     if (!sending.current) onBack();
@@ -316,6 +319,8 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
           event.stopPropagation();
           return;
         }
+        // The cash as it was before this run of keys, to put back if the run was a scan.
+        if (event.key.length === 1 && burst.current.startsRun(event.timeStamp)) beforeRun.current = given;
         const typed = burst.current.key(event.key, event.timeStamp);
         if (event.key.length === 1 && burst.current.length === 1) beforeBurst.current = given;
         const meant = payEnter(typed, isProductCode);
@@ -325,6 +330,8 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
         event.preventDefault();
         event.stopPropagation();
         if (sending.current) return;
+        // Slow, but a product's code: ask which it was, and change nothing yet.
+        if (meant.kind === 'maybe') return setMaybeScan({ code: meant.code, before: beforeRun.current });
         // The cash goes back to what it was before the burst, either way.
         onChange(beforeBurst.current);
         if (meant.kind === 'unknown') return setUnknownScan(meant.code);
@@ -428,6 +435,27 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
           <p>{t.counter.unknownScanInPay(unknownScan)}</p>
           {/* Its own key: no Enter (a hand's or a scanner's) goes past this. */}
           <Button size="sm" variant="secondary" onClick={() => setUnknownScan(null)}>
+            {t.counter.goOn}
+          </Button>
+        </div>
+      )}
+      {maybeScan !== null && (
+        <div className="counter-warning counter-warning--act" role="alert">
+          <p>{t.counter.maybeScanInPay(maybeScan.code)}</p>
+          {/* Their own keys: no Enter (a hand's or a scanner's) decides this. */}
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              const { code, before } = maybeScan;
+              setMaybeScan(null);
+              onChange(before);
+              onScan?.(code);
+            }}
+          >
+            {t.counter.maybeToBasket}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setMaybeScan(null)}>
             {t.counter.goOn}
           </Button>
         </div>

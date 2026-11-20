@@ -59,6 +59,14 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Not losing typed work** (Task 2, 2026-11-20)
+- [ ] Phone (Android): type into an "Add" card, press the phone's Back: "Leave without saving?" appears; Keep editing keeps the text
+- [ ] Phone: pull a filled card down by its head: it springs back up and asks; Leave closes it
+- [ ] iPhone: the same two, plus a swipe-back from the screen edge on a long form (new bill)
+- [ ] Windows app: with a half-typed new bill, close the window or press Ctrl+R: it closes/reloads at once (no question there yet, and never stuck)
+- [ ] Deliveries on a phone: the number pad shows a comma for kg/l products; a whole-number pad for pieces
+- [ ] Inbox: approve a real return, press Undo in the message within ~9 s; the refund and stock come back
+
 **Till fixes before launch** (the Counter on the shop PC; F5 needs the next Windows app release)
 - [ ] Windows app: F5 on the Counter opens Customer and doesn't reload; F5 elsewhere still reloads; Ctrl+R reloads everywhere; F10 toggles Price check (Windows doesn't open a menu); F11 is still full screen
 - [ ] "Sell past stock" off: an employee scanning one more than the shelf holds sees "Switch to the owner"; the owner types their PIN and the product goes in under the owner's name. On: anyone sells it with "ask for a count" under the scan box

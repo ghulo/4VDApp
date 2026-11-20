@@ -1,6 +1,7 @@
 import { sql } from 'kysely';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { CounterRepository } from '../src/repositories/CounterRepository.js';
 import { gtinCheckDigit, hasValidCheckDigit, inStoreBarcode } from '../src/utils/barcodes.js';
 import { createTestProduct, loginAs, resetData, setupTestApp, type TestContext } from './helpers/testApp.js';
 
@@ -243,5 +244,14 @@ describe("the Counter's day figures", () => {
     // Moved to one second before today's midnight in the shop's time zone: no longer today.
     await sql`update documents set issued_at = (${today()}::date::timestamp at time zone ${context.config.shopTimeZone}) - interval '1 second'`.execute(context.db);
     expect((await request(context.app).get('/api/counter/today').set(auth())).body.data.mine).toMatchObject({ receipts: 0, total: 0 });
+  });
+
+  it('should keep both times of a midnight that comes twice (clocks put back at midnight) in the day they say', async () => {
+    // Havana put its clocks back at 01:00 on 1 Nov 2020, to 00:00: 04:30 and 05:30 UTC were both 00:30 on 1 November there.
+    await sql`insert into counter_events (kind, created_at) values ('drawer_opened', '2020-11-01T04:30:00Z'), ('drawer_opened', '2020-11-01T05:30:00Z'), ('drawer_opened', '2020-11-01T03:59:00Z')`.execute(context.db);
+    const repository = new CounterRepository(context.db);
+    const times = async (from: string, to: string) => (await repository.events(from, to, 'America/Havana')).map((row) => row.created_at.toISOString()).sort();
+    expect(await times('2020-11-01', '2020-11-01')).toEqual(['2020-11-01T04:30:00.000Z', '2020-11-01T05:30:00.000Z']);
+    expect(await times('2020-10-31', '2020-10-31')).toEqual(['2020-11-01T03:59:00.000Z']);
   });
 });

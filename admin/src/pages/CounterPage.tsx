@@ -42,7 +42,7 @@ import { CameraScanButton } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { type BasketSale, businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi, TO_DELIVER_KEY } from '../services/api';
+import { type BasketSale, businessApi, cashApi, counterApi, customersApi, documentsApi, expiryApi, offersApi, productsApi, salesApi, serialsApi, settingsApi } from '../services/api';
 import { useFeatures } from '../utils/useFeatures';
 import type { CounterEventInput, Customer, Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
@@ -53,6 +53,7 @@ import { drain, keep, localEventStore, type Owner, refusedEntries, unrefuse } fr
 import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
+import { afterSaleRefresh, shelfAfterSale } from './counter/shelfAfterSale';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
 import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, SerialSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
@@ -147,6 +148,11 @@ const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now 
 
 /** How long Pay waits for the server before the sale waits on the PC instead. */
 const PAY_TIMEOUT_MS = 12_000;
+/** The till's copy of the shelf. */
+const SHELF_KEY = ['products', 'counter-shelf'] as const;
+/** How often the till fetches its shelf again for stock that changed elsewhere (a sale here patches it at once). */
+const SHELF_REFRESH_MS = 3 * 60_000;
+
 /** How long a scan waits for the server to look up a code this PC's shelf doesn't know. */
 const LOOKUP_TIMEOUT_MS = 5_000;
 /** How long one batch of till events may take before it counts as no internet (and is tried again later). */
@@ -191,7 +197,8 @@ export function CounterPage() {
   const [unreachable, setUnreachable] = useState(false);
   const online = connected && !unreachable;
 
-  const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
+  // Patched after each sale here (shelfAfterSale), and fetched again every few minutes for what changed elsewhere (deliveries, other tills).
+  const products = useQuery({ queryKey: SHELF_KEY, queryFn: counterApi.products, staleTime: 60_000, refetchInterval: SHELF_REFRESH_MS });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
@@ -672,11 +679,37 @@ export function CounterPage() {
     ...(payment.paidBy !== 'tab' && current.customerId && { customerId: current.customerId, paidNow: true }),
   });
 
-  const refreshAfterSale = () => {
-    for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money', 'expiry']) {
-      void queryClient.invalidateQueries({ queryKey: [key] });
+  /**
+   * After a sale the till doesn't wait on, nor reload, the whole shelf: it takes what was sold off its own copy, fetches
+   * only its small day figures again, and marks the rest out of date for the pages that show it.
+   * Without a sale (waiting sales just sent): everything the till shows is fetched again.
+   */
+  const refreshAfterSale = (sold?: { sale: BasketSale; basket: Basket; payment: Payment }) => {
+    if (!sold) {
+      for (const key of ['sales', 'inventory', 'products', 'analytics', 'notifications', 'reports', 'activity', 'customers', 'cash', 'documents', 'money', 'expiry']) {
+        void queryClient.invalidateQueries({ queryKey: [key] });
+      }
+      void today.refetch();
+      return;
     }
-    void today.refetch();
+    const { sale, basket, payment } = sold;
+    const plan = afterSaleRefresh({
+      tab: payment.paidBy === 'tab',
+      customer: Boolean(basket.customerId),
+      shortDated: basket.lines.some((line) => Boolean(line.shortDated)),
+      delivery: Boolean(basket.delivery),
+      offer: Boolean(basket.offerId),
+    });
+    for (const key of plan.stale) void queryClient.invalidateQueries({ queryKey: key, refetchType: 'none' });
+    for (const key of plan.refetch) void queryClient.invalidateQueries({ queryKey: key });
+    if (sale.again) {
+      // Recorded by an earlier copy (sent before a reload): this PC's shelf may or may not count it already, so it is fetched.
+      void queryClient.invalidateQueries({ queryKey: SHELF_KEY });
+      return;
+    }
+    // A shelf fetch already on its way may not count this sale: it is dropped, and the copy here loses what was sold.
+    void queryClient.cancelQueries({ queryKey: SHELF_KEY });
+    queryClient.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, sale.sales.map((line) => ({ productId: line.productId, quantity: line.quantity }))));
   };
 
   const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);
@@ -1029,19 +1062,11 @@ export function CounterPage() {
     const sold = result
       ? { total: result.total, documentId: result.invoice.id, number: result.invoice.number }
       : { total: attempt.total, documentId: 0, number: t.counter.waitingToSend };
-    if (result) {
-      refreshAfterSale();
-      if (delivered) void queryClient.invalidateQueries({ queryKey: TO_DELIVER_KEY });
-      if (basket.offerId) void queryClient.invalidateQueries({ queryKey: ['offers'] });
-    } else {
+    if (result) refreshAfterSale({ sale: result, basket, payment });
+    else {
       // This PC's shelf loses what was sold, so the next basket can't sell it again.
-      const soldNow = new Map(lines.map((line) => [line.productId, line.quantity]));
-      queryClient.setQueryData<Product[]>(['products', 'counter-shelf'], (shelf) =>
-        shelf?.map((product) => {
-          const gone = soldNow.get(product.id);
-          return gone === undefined ? product : { ...product, stock: { ...product.stock, quantity: Math.max(0, toGram(product.stock.quantity - gone)) } };
-        }),
-      );
+      void queryClient.cancelQueries({ queryKey: SHELF_KEY });
+      queryClient.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, lines));
     }
     const receiptLines = result
       ? result.sales.map((sale) => {

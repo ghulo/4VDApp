@@ -20,7 +20,63 @@ import { bestPromotionFor } from './pricing/promotions.js';
 import { batchesLeft, shortDatedOffer } from './ExpiryService.js';
 import { listPrice } from './pricing/salePrice.js';
 import type { RecordSource } from '../validators/validate.js';
-import { readRules } from './shopRules.js';
+import { readRules, type ShopRules } from './shopRules.js';
+
+/**
+ * What every line of one checkout shares (the shop's rules, whether the month
+ * is open, the running promotions, the seller's role, the customer), looked up
+ * once per checkout instead of once per line. Lives for one transaction only.
+ */
+class CheckoutLookups {
+  private rules?: Promise<ShopRules>;
+  private pastStock?: Promise<boolean>;
+  private readonly openDays = new Map<string, Promise<void>>();
+  private promotionsAt?: { at: number; running: ReturnType<TransactionalRepositories['promotions']['findRunning']> };
+  private readonly customers = new Map<number, ReturnType<TransactionalRepositories['tabs']['findCustomer']>>();
+
+  /** The checkout's moment, for lines that carry no date of their own. */
+  readonly now = new Date();
+
+  constructor(private readonly repos: TransactionalRepositories) {}
+
+  shopRules(): Promise<ShopRules> {
+    return (this.rules ??= readRules(this.repos.settings));
+  }
+
+  monthOpen(day: string): Promise<void> {
+    let check = this.openDays.get(day);
+    if (!check) {
+      check = assertMonthsOpen(this.repos.periods, [day]);
+      this.openDays.set(day, check);
+    }
+    return check;
+  }
+
+  /** Lines without their own date share the checkout's moment, so they all see the same promotions. */
+  promotions(at: Date) {
+    if (this.promotionsAt?.at !== at.getTime()) this.promotionsAt = { at: at.getTime(), running: this.repos.promotions.findRunning(at) };
+    return this.promotionsAt.running;
+  }
+
+  customer(id: number) {
+    let found = this.customers.get(id);
+    if (!found) {
+      found = this.repos.tabs.findCustomer(id);
+      this.customers.set(id, found);
+    }
+    return found;
+  }
+
+  /** Whether a sale may go past what 4VD thinks is on the shelf: always when the shop says so, and for owners and admins even when it doesn't. */
+  sellsPastStock(soldBy: number): Promise<boolean> {
+    return (this.pastStock ??= (async () => {
+      if ((await this.shopRules()).noStockSales === 'allow') return true;
+      // Their role in this business, not in the business their account belongs to.
+      const seller = await this.repos.users.person(soldBy);
+      return canOversee(seller?.role);
+    })());
+  }
+}
 
 export interface SaleDto {
   id: number;
@@ -363,6 +419,7 @@ export class SalesService {
         }
         await assertMayWholesale(repos, seller.role, customerId, input.wholesale);
         const paidNow = atDoor ? false : input.paidNow;
+        const lookups = new CheckoutLookups(repos);
         const saleIds: number[] = [];
         for (const item of input.items) {
           const { offerPrice, serials: _serials, ...rest } = item;
@@ -380,11 +437,12 @@ export class SalesService {
                 wholesale: input.wholesale,
               },
               soldBy,
+              lookups,
             ),
           );
         }
-        const sold = await Promise.all(saleIds.map((id) => repos.sales.findById(id)));
-        const total = roundMoney(sold.reduce((sum, sale) => sum + Number(sale!.total_amount), 0));
+        const sold = await repos.sales.findByIds(saleIds);
+        const total = roundMoney(sold.reduce((sum, sale) => sum + Number(sale.total_amount), 0));
         if (customerId !== undefined && !paidNow && !atDoor) await this.checkPayLater(repos, seller, customerId, total, input.payLaterApproval);
         const invoice = await this.documents.invoiceSales(repos, {
           saleIds,
@@ -502,32 +560,26 @@ export class SalesService {
   }
 
   private async basketResult(saleIds: number[], invoice: DocumentRef, from: { again: boolean; fiscalNo: string | null }): Promise<BasketResult> {
-    const sales = (await Promise.all(saleIds.map((id) => this.salesRepository.findById(id)))).map((sale) => toSaleDto(sale!));
+    const sales = (await this.salesRepository.findByIds(saleIds)).map(toSaleDto);
     return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice, ...from };
   }
 
-  /**
-   * Whether a sale may go past what 4VD thinks is on the shelf: always when the
-   * shop says so, and for owners and admins even when it doesn't.
-   */
-  private async sellsPastStock(repos: TransactionalRepositories, soldBy: number): Promise<boolean> {
-    if ((await readRules(repos.settings)).noStockSales === 'allow') return true;
-    // Their role in this business, not in the business their account belongs to.
-    const seller = await repos.users.person(soldBy);
-    return canOversee(seller?.role);
-  }
-
-  private async recordInTransaction(repos: TransactionalRepositories, input: RecordSaleInput, soldBy: number): Promise<number> {
-    await assertMonthsOpen(repos.periods, [zonedDay(input.saleDate ?? new Date(), this.timeZone)]);
+  private async recordInTransaction(
+    repos: TransactionalRepositories,
+    input: RecordSaleInput,
+    soldBy: number,
+    lookups = new CheckoutLookups(repos),
+  ): Promise<number> {
+    await lookups.monthOpen(zonedDay(input.saleDate ?? new Date(), this.timeZone));
     const product = await repos.products.findById(input.productId, false);
     if (!product) throw new NotFoundError(`Product ${input.productId} does not exist or is hidden`);
 
-    const customer = input.customerId === undefined ? null : await repos.tabs.findCustomer(input.customerId);
+    const customer = input.customerId === undefined ? null : await lookups.customer(input.customerId);
     if (input.customerId !== undefined && (!customer || customer.archived_at)) {
       throw new NotFoundError(`Customer ${input.customerId} does not exist or their tab is closed`);
     }
     const tiers = await repos.pricingTiers.findByProductId(product.id);
-    const promotions = await repos.promotions.findRunning(input.saleDate ?? new Date());
+    const promotions = await lookups.promotions(input.saleDate ?? lookups.now);
     const priced = listPrice({
       shelfPrice: toMoney(product.base_price),
       wholesalePrice: toMoneyOrNull(product.wholesale_price),
@@ -543,7 +595,7 @@ export class SalesService {
     if (expiryDateId !== null) {
       const batches = batchesLeft(await repos.expiry.findOpen({ productId: product.id }));
       const batch = batches.find((candidate) => candidate.row.id === expiryDateId);
-      const offer = batch && shortDatedOffer(batch.row, zonedDay(input.saleDate ?? new Date(), this.timeZone), (await readRules(repos.settings)).shortDated);
+      const offer = batch && shortDatedOffer(batch.row, zonedDay(input.saleDate ?? new Date(), this.timeZone), (await lookups.shopRules()).shortDated);
       // Offline, the shelf decided and the customer already paid: sell what it can, never refuse.
       if (!input.offline) {
         if (!batch || !offer) throw new ValidationError(`${product.name} is no longer sold short-dated. Take it off the basket and scan it again.`);
@@ -581,7 +633,7 @@ export class SalesService {
     });
     // Offline, the shelf decided: what 4VD didn't know about is taken to 0 and asked to be counted.
     let taken = input.quantity;
-    if (input.offline || (await this.sellsPastStock(repos, soldBy))) {
+    if (input.offline || (await lookups.sellsPastStock(soldBy))) {
       if (!Number.isInteger(input.quantity) && !allowsParts(product.unit)) {
         throw new ValidationError(`${product.name} is sold by the piece: use a whole number, not ${input.quantity}`);
       }

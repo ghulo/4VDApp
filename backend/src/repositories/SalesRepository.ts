@@ -271,6 +271,34 @@ export class SalesRepository {
       .executeTakeFirst();
   }
 
+  /** Several sales in one query, in the order of `ids`; one that doesn't exist (or was undone) is left out. */
+  async findByIds(ids: number[]): Promise<SaleRecord[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.filteredQuery({})
+      .select([
+        's.id',
+        's.product_id',
+        'p.name as product_name',
+        's.quantity_sold',
+        's.price_per_unit',
+        's.discount_percent',
+        's.short_dated_percent',
+        's.total_amount',
+        'u.name as sold_by_name',
+        's.sale_date',
+        's.notes',
+        's.receipt_no',
+        's.wholesale',
+        returnedQuantity,
+        invoiceId,
+        invoiceNumber,
+      ])
+      .where('s.id', 'in', ids)
+      .execute();
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return ids.flatMap((id) => byId.get(id) ?? []);
+  }
+
   /** Dashboard totals from `sales_ledger`, so refunds count the same way as in reports. */
   async totals(range?: DateRange): Promise<{ salesCount: number; unitsSold: number; revenue: number; profit: number }> {
     const result = await sql<{ sales_count: string; units_sold: string; revenue: string; profit: string }>`

@@ -273,17 +273,27 @@ export class SalesService {
    * sale comes back (the till settles it as usual); otherwise its key is closed,
    * so no copy of it still on its way can go in, and the basket can be sold again.
    */
-  async stopBasket(key: string, seller: { id: number }): Promise<{ state: 'recorded'; sale: BasketResult } | { state: 'stopped' }> {
-    const recorded = await this.closeKey(key, 'stopped', null, seller.id);
+  async stopBasket(key: string, seller: { id: number; role: UserRole }): Promise<{ state: 'recorded'; sale: BasketResult } | { state: 'stopped' }> {
+    // Anyone else may only settle their own sale: give back one they recorded, or hear that one of theirs was closed already.
+    const onlyOwn = canOversee(seller.role) ? undefined : seller.id;
+    const recorded = await this.closeKey(key, 'stopped', null, seller.id, onlyOwn);
     return recorded ? { state: 'recorded', sale: recorded } : { state: 'stopped' };
   }
 
   /** Under the key's lock: the sale it recorded, or (none) the key closed for good. */
-  private async closeKey(key: string, reason: 'refused' | 'stopped', message: string | null, closedBy: number): Promise<BasketResult | undefined> {
+  private async closeKey(key: string, reason: 'refused' | 'stopped', message: string | null, closedBy: number, onlyOwn?: number): Promise<BasketResult | undefined> {
     const sent = await this.transactions.run(async (repos) => {
       await repos.documents.lockClientKey(key);
       const document = await repos.documents.findByClientKey(key);
-      if (document) return document;
+      if (document) {
+        if (onlyOwn !== undefined && document.issuedBy !== onlyOwn) throw new ForbiddenError('Only an owner can stop a sale someone else made');
+        return document;
+      }
+      if (onlyOwn !== undefined) {
+        const closure = await repos.documents.keyClosure(key);
+        if (closure?.closedBy !== onlyOwn) throw new ForbiddenError('Only an owner can stop this sale');
+        return undefined;
+      }
       await repos.documents.closeKey(key, reason, message, closedBy);
       return undefined;
     });

@@ -224,12 +224,12 @@ export class DocumentRepository {
    * sees what the first one did.
    */
   async lockClientKey(key: string): Promise<void> {
-    await sql`select pg_advisory_xact_lock(${SALE_KEY_LOCK}, hashtext(coalesce(current_business_id(), 0)::text || ':' || ${key}))`.execute(this.db);
+    await sql`select pg_advisory_xact_lock(${SALE_KEY_LOCK}, hashtext(coalesce(current_business_id(), 0)::text || ':' || ${key}::uuid::text))`.execute(this.db);
   }
 
   /** Why a till sale's key will never be recorded (refused or stopped), if it won't. */
-  async keyClosure(key: string): Promise<{ reason: 'refused' | 'stopped'; message: string | null } | undefined> {
-    return this.db.selectFrom('sale_key_closures').select(['reason', 'message']).where('client_key', '=', key).executeTakeFirst();
+  async keyClosure(key: string): Promise<{ reason: 'refused' | 'stopped'; message: string | null; closedBy: number | null } | undefined> {
+    return this.db.selectFrom('sale_key_closures').select(['reason', 'message', 'closed_by as closedBy']).where('client_key', '=', key).executeTakeFirst();
   }
 
   /** The key will never be recorded. Call it holding the key's lock, once no sale has it. */
@@ -242,10 +242,10 @@ export class DocumentRepository {
   }
 
   /** The invoice the Counter already sent with this key, and the sales on it. */
-  async findByClientKey(key: string): Promise<{ id: number; number: string; saleIds: number[]; fiscalNo: string | null } | undefined> {
-    const row = await this.db.selectFrom('documents').select(['id', 'number', 'fiscal_receipt_no']).where('client_key', '=', key).executeTakeFirst();
+  async findByClientKey(key: string): Promise<{ id: number; number: string; saleIds: number[]; fiscalNo: string | null; issuedBy: number | null } | undefined> {
+    const row = await this.db.selectFrom('documents').select(['id', 'number', 'fiscal_receipt_no', 'issued_by']).where('client_key', '=', key).executeTakeFirst();
     if (!row) return undefined;
-    const document = { id: row.id, number: row.number, fiscalNo: row.fiscal_receipt_no };
+    const document = { id: row.id, number: row.number, fiscalNo: row.fiscal_receipt_no, issuedBy: row.issued_by };
     const lines = await this.db
       .selectFrom('document_lines')
       .select('sale_id')

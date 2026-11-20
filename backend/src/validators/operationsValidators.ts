@@ -5,6 +5,12 @@ import { MIN_PASSWORD_LENGTH } from '../utils/password.js';
 import { addDays, startOfDay } from '../utils/zonedDates.js';
 import { booleanQuerySchema, calendarDaySchema, idSchema, optionalText, paginationSchema, quantitySchema, recordSourceSchema, trimmedString } from './validate.js';
 
+/** A till sale's key, always in small letters: the same key typed in capitals is the same sale (one lock, one closure). */
+const saleKey = z
+  .string()
+  .uuid()
+  .transform((key) => key.toLowerCase());
+
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'must be a date like 2026-10-01');
@@ -92,7 +98,7 @@ export const basketSchema = z
     /** An owner's one-time yes to a rabat over the limit, from the Counter. */
     rabatApproval: z.string().uuid().optional(),
     /** The key the Counter gave the sale at Pay: sent twice, it is recorded once. */
-    clientKey: z.string().uuid().optional(),
+    clientKey: saleKey.optional(),
     /** Made offline at the Counter: when, so it is recorded at that time. */
     soldAt: isoDate.transform((value) => new Date(value)).optional(),
     /** On a tab: the day the customer promised to pay. */
@@ -203,4 +209,4 @@ export const pushDeviceSchema = z.discriminatedUnion('kind', [
 export const removePushDeviceSchema = z.object({ token: z.string().min(1).max(2000) });
 
 /** A till sale's key, as the Counter gave it at Pay. */
-export const saleKeyParamsSchema = z.object({ key: z.string().uuid() });
+export const saleKeyParamsSchema = z.object({ key: saleKey });

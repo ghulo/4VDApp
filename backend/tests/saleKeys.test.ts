@@ -16,8 +16,8 @@ afterAll(() => context.db.destroy());
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-async function signIn(role: 'admin' | 'employee') {
-  const user = await createTestUser(context.db, role);
+async function signIn(role: 'admin' | 'employee', email?: string) {
+  const user = await createTestUser(context.db, role, email ? { email } : {});
   const response = await request(context.app).post('/api/auth/login').send({ email: user.email, password: TEST_PASSWORD });
   const businessId = (await context.db.selectFrom('memberships').select('business_id').where('user_id', '=', user.id).executeTakeFirstOrThrow()).business_id;
   return { id: user.id, token: response.body.data.token as string, businessId };
@@ -41,7 +41,7 @@ async function holdKey(businessId: number, key: string) {
   const done = context.db.transaction().execute(async (trx) => {
     inside = trx;
     await sql`select set_config('app.business_id', ${String(businessId)}, true)`.execute(trx);
-    await sql`select pg_advisory_xact_lock(${SALE_KEY_LOCK}, hashtext(coalesce(current_business_id(), 0)::text || ':' || ${key}))`.execute(trx);
+    await sql`select pg_advisory_xact_lock(${SALE_KEY_LOCK}, hashtext(coalesce(current_business_id(), 0)::text || ':' || ${key}::uuid::text))`.execute(trx);
     locked();
     await released;
   });
@@ -187,6 +187,56 @@ describe('Till sale keys', () => {
       expect(stopped.body.data).toEqual({ state: 'stopped' });
       expect(recorded).toBe(0);
     }
+  });
+
+  it('should treat a key in capitals as the same key: a stop in capitals waits for the sale in small letters', async () => {
+    const admin = await signIn('admin');
+    const product = await createTestProduct(context, admin.token, { name: 'Vase', price: 20, stock: 5 });
+    const other = await basket(admin.token, randomUUID(), [{ productId: product, quantity: 1 }]);
+    const key = randomUUID();
+
+    // A copy of the sale in small letters holds the key and is about to commit.
+    const lock = await holdKey(admin.businessId, key);
+    const stop = request(context.app).post(`/api/sales/basket/${key.toUpperCase()}/stop`).set(auth(admin.token)).send({}).then((response) => response);
+    await waitersOnLock(1);
+    await sql`update documents set client_key = ${key} where id = ${other.body.data.invoice.id}`.execute(lock.trx());
+    await lock.release();
+
+    const answer = await stop;
+    expect(answer.body.data.state).toBe('recorded');
+    expect(answer.body.data.sale.invoice).toEqual(other.body.data.invoice);
+    expect(await context.db.selectFrom('sale_key_closures').selectAll().execute()).toHaveLength(0);
+
+    // A sale sent in capitals after a stop in small letters is refused too.
+    const stopped = randomUUID();
+    await request(context.app).post(`/api/sales/basket/${stopped}/stop`).set(auth(admin.token)).send({});
+    expect((await basket(admin.token, stopped.toUpperCase(), [{ productId: product, quantity: 1 }])).status).toBe(410);
+  });
+
+  it('should let an employee stop only their own sale, and an owner any', async () => {
+    const admin = await signIn('admin');
+    const employee = await signIn('employee');
+    const colleague = await signIn('employee', 'colleague@test.local');
+    const product = await createTestProduct(context, admin.token, { name: 'Vase', price: 20, stock: 1 });
+    const stop = (key: string, token: string) => request(context.app).post(`/api/sales/basket/${key}/stop`).set(auth(token)).send({});
+
+    const sold = randomUUID();
+    expect((await basket(employee.token, sold, [{ productId: product, quantity: 1 }])).status).toBe(201);
+    expect((await stop(sold, employee.token)).body.data.state).toBe('recorded');
+    expect((await stop(sold, colleague.token)).status).toBe(403);
+
+    // A key nobody recorded: only an owner may close it (a colleague's sale could still be on its way).
+    const open = randomUUID();
+    expect((await stop(open, colleague.token)).status).toBe(403);
+    expect(await context.db.selectFrom('sale_key_closures').selectAll().execute()).toHaveLength(0);
+
+    // Their own refused sale: closed already, so it is stopped.
+    const refused = randomUUID();
+    expect((await basket(employee.token, refused, [{ productId: product, quantity: 5 }])).body.saleClosed).toBe(true);
+    expect((await stop(refused, employee.token)).body.data).toEqual({ state: 'stopped' });
+    expect((await stop(refused, colleague.token)).status).toBe(403);
+
+    expect((await stop(open, admin.token)).body.data).toEqual({ state: 'stopped' });
   });
 
   it('should say when an answer is a sale recorded before, with its fiscal receipt', async () => {

@@ -26,6 +26,9 @@ export interface StoredLine {
 /** One press of Record sale, as it went to the server. */
 export interface PendingSale {
   key: string;
+  /** Where and by whom it was made: it is sent again only there, by them. */
+  businessId: number;
+  userId: number;
   payment: Payment;
   body: QueuedSale['body'];
   /** The total the Counter showed. */
@@ -67,6 +70,15 @@ type State = BasketState;
 type Patch = Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater' | 'wholesale'>>;
 
 // What each change does to the baskets, kept apart from React so it can be tested.
+
+/** The baskets as kept on this PC: five at most, but a basket whose sale waits for an answer is never dropped. */
+export function restored(saved: State): State {
+  const open = saved.baskets.filter((basket) => !basket.pending).slice(0, MAX_BASKETS);
+  return { baskets: saved.baskets.filter((basket) => basket.pending || open.includes(basket)), current: saved.current };
+}
+
+/** Whether another basket may open: those whose sale waits for an answer don't count, so they can't block selling. */
+export const roomForAnother = (now: State) => now.baskets.some((basket) => basket.lines.length === 0) || now.baskets.filter((basket) => !basket.pending).length < MAX_BASKETS;
 
 /** New lines in the basket at the till; one whose sale is on its way stays exactly as it was sent. */
 export function changeLines(now: State, update: (lines: StoredLine[]) => StoredLine[], at = Date.now()): State {
@@ -114,17 +126,19 @@ function read(key: string): State | null {
   try {
     const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as State | null;
     if (!saved || !Array.isArray(saved.baskets) || saved.baskets.length === 0) return null;
-    return { baskets: saved.baskets.slice(0, MAX_BASKETS), current: saved.current };
+    return restored(saved);
   } catch {
     return null;
   }
 }
 
-function write(key: string, state: State) {
+/** False when this PC's storage refused it (full or blocked): the baskets still work until the page closes. */
+function write(key: string, state: State): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(state));
+    return true;
   } catch {
-    // Private window or full storage: the baskets still work until the page closes.
+    return false;
   }
 }
 
@@ -149,12 +163,14 @@ export function useBaskets(userId: number) {
   const keyRef = useRef(key);
   // Every change is written to this PC at once (not after the next paint), so a sale about to be sent is on disk first.
   const latest = useRef(state);
-  const apply = useCallback((change: (now: State) => State) => {
+  /** Change the baskets; false when it couldn't be written to this PC. */
+  const apply = useCallback((change: (now: State) => State): boolean => {
     const next = change(latest.current);
-    if (next === latest.current) return;
+    if (next === latest.current) return true;
     latest.current = next;
-    write(keyRef.current, next);
+    const saved = write(keyRef.current, next);
     setState(next);
+    return saved;
   }, []);
 
   // Switch person keeps the till's baskets: they move to the new person (an
@@ -172,13 +188,13 @@ export function useBaskets(userId: number) {
 
   const current = state.baskets.find((basket) => basket.id === state.current) ?? state.baskets[0]!;
 
-  const setLines = useCallback((update: (lines: StoredLine[]) => StoredLine[]) => apply((now) => changeLines(now, update)), [apply]);
+  const setLines = useCallback((update: (lines: StoredLine[]) => StoredLine[]) => void apply((now) => changeLines(now, update)), [apply]);
 
   /** Change the basket at the till: its customer or its rabat. */
-  const update = useCallback((patch: Patch) => apply((now) => changeBasket(now, patch)), [apply]);
+  const update = useCallback((patch: Patch) => void apply((now) => changeBasket(now, patch)), [apply]);
 
-  /** The sale about to be sent for this basket (on disk before it goes), or null once the server said no to it. */
-  const setPending = useCallback((id: string, pending: PendingSale | null) => apply((now) => withPending(now, id, pending)), [apply]);
+  /** The sale about to be sent for this basket, or null once the server said no to it. False when it couldn't be written to this PC. */
+  const setPending = useCallback((id: string, pending: PendingSale | null): boolean => apply((now) => withPending(now, id, pending)), [apply]);
 
   /** Park this basket and start another; false when five are open already. */
   const open = useCallback((): boolean => {
@@ -189,16 +205,16 @@ export function useBaskets(userId: number) {
       apply((was) => ({ ...was, current: empty.id }));
       return true;
     }
-    if (now.baskets.length >= MAX_BASKETS) return false;
+    if (!roomForAnother(now)) return false;
     const next = newBasket();
     apply((was) => ({ baskets: [...was.baskets, next], current: next.id }));
     return true;
   }, [apply]);
 
-  const select = useCallback((id: string) => apply((now) => (now.current === id ? now : { ...now, current: id })), [apply]);
+  const select = useCallback((id: string) => void apply((now) => (now.current === id ? now : { ...now, current: id })), [apply]);
 
   /** Paid or cancelled: the basket goes, and the next waiting one comes up (or a fresh one). */
-  const close = useCallback((id: string) => apply((now) => withoutBasket(now, id)), [apply]);
+  const close = useCallback((id: string) => void apply((now) => withoutBasket(now, id)), [apply]);
 
   return { baskets: state.baskets, current, setLines, update, setPending, open, select, close };
 }

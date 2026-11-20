@@ -17,6 +17,7 @@ const SEND_TIMEOUT_MS = 15_000;
 export function useWaitingSales(
   connected: boolean,
   userId: number,
+  businessId: number,
   /** Whether the server answered the last round. */
   onReach: (ok: boolean) => void,
   onSent: (sent: Array<{ sale: QueuedSale; result: Sent }>) => void,
@@ -40,7 +41,8 @@ export function useWaitingSales(
       const { sent, stoppedByNetwork } = await sendWaiting(
         localStore,
         (sale) => withTimeout(salesApi.recordBasket({ ...sale.body, clientKey: sale.key, soldAt: sale.at }), SEND_TIMEOUT_MS),
-        (sale) => sale.userId !== userId || printing.current.has(sale.key),
+        // Only the signed-in person's sales from this business; the others wait for them.
+        (sale) => sale.userId !== userId || (sale.businessId !== undefined && sale.businessId !== businessId) || printing.current.has(sale.key),
       );
       if (sent.length > 0 || stoppedByNetwork) reachRef.current(!stoppedByNetwork);
       if (sent.length > 0) sentRef.current(sent);
@@ -48,7 +50,7 @@ export function useWaitingSales(
       sending.current = false;
       refresh();
     }
-  }, [userId]);
+  }, [userId, businessId]);
 
   const pending = sales.filter((sale) => !sale.refused).length;
   useEffect(() => {
@@ -62,12 +64,15 @@ export function useWaitingSales(
   return {
     waiting: sales.filter((sale) => !sale.refused),
     refused: sales.filter((sale) => sale.refused),
-    /** Keep a sale made offline; its receipt prints next, so it waits for that. */
-    add(sale: QueuedSale) {
+    /** Keep a sale made offline; its receipt prints next, so it waits for that. False when this PC couldn't keep it. */
+    add(sale: QueuedSale): boolean {
+      if (localStore.write([...localStore.read(), sale]) === false) return false;
       printing.current.add(sale.key);
-      localStore.write([...localStore.read(), sale]);
       refresh();
+      return true;
     },
+    /** Whether a sale with this key waits on this PC already. */
+    has: (key: string) => localStore.read().some((sale) => sale.key === key),
     /** The printer answered: note how it went, and the sale may go. */
     printed(key: string, receipt: QueuedSale['receipt']) {
       localStore.write(localStore.read().map((sale) => (sale.key === key ? { ...sale, receipt } : sale)));

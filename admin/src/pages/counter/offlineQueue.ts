@@ -15,8 +15,9 @@ export interface QueuedSale {
   key: string;
   /** When the sale was made (ISO). */
   at: string;
-  /** Who sold it. */
+  /** Who sold it, and in which business: it is sent only while they are signed in there. */
   userId: number;
+  businessId?: number;
   /** The basket as the server takes it (POST /sales/basket). */
   body: {
     items: Array<{ productId: number; quantity: number; discountPercent?: number; offerPrice?: number; shortDatedId?: number }>;
@@ -41,7 +42,8 @@ export interface QueuedSale {
 
 export interface QueueStore {
   read(): QueuedSale[];
-  write(sales: QueuedSale[]): void;
+  /** False when this PC's storage refused it. */
+  write(sales: QueuedSale[]): boolean | void;
 }
 
 /** The browser's storage, which the Windows app keeps on the PC's disk. */
@@ -57,8 +59,10 @@ export const localStore: QueueStore = {
   write(sales) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
+      return true;
     } catch {
-      // Full or blocked storage: the sale still waits in memory until the page closes.
+      // Full or blocked storage: the caller is told, so a sale is never shown as kept when it isn't.
+      return false;
     }
   },
 };

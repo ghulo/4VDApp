@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../../services/apiClient';
 import type { Product } from '../../services/types';
-import { BurstWatcher, exactMatch, lookupFailure, nameMatches, payEnter, payFailure, stockDecision, tenderedLooksWrong } from './tillRules';
+import { BurstWatcher, exactMatch, lookupFailure, basketStockProblem, nameMatches, payEnter, payFailure, stockDecision, tenderedLooksWrong } from './tillRules';
 
 const shelf = [
-  { id: 1, name: 'Coca-Cola 500 ml', barcode: '5449000000996', otherBarcodes: ['5449000000002'], sku: 'CC500' },
-  { id: 2, name: 'Fanta 500 ml', barcode: '5449000011527', otherBarcodes: [], sku: null },
+  { id: 1, name: 'Coca-Cola 500 ml', barcode: '5449000000996', otherBarcodes: ['5449000000002'], sku: 'CC500', stock: { quantity: 10 } },
+  { id: 2, name: 'Fanta 500 ml', barcode: '5449000011527', otherBarcodes: [], sku: null, stock: { quantity: 3 } },
   { id: 3, name: 'Bukë e bardhë', barcode: null, otherBarcodes: [], sku: '77' },
 ] as unknown as Product[];
 
@@ -49,7 +49,7 @@ describe('telling the barcode scanner from a hand', () => {
 
   it('still sees the scan when the scanner waits a little before its Enter', () => {
     expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 200)).toEqual({ code: '5449000000996', burst: true });
-    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 400)).toEqual({ code: '5449000000996', burst: false });
+    expect(type(new BurstWatcher(), '5449000000996', 1000, 8, 1500)).toEqual({ code: '5449000000996', burst: false });
   });
 
   it('sees a hand typing an amount', () => {
@@ -88,19 +88,23 @@ describe('an Enter in Pay', () => {
     expect(enter('77', 8)).toEqual({ kind: 'product', code: '77' });
     // The scanner waits a little before its Enter (a suffix delay): still the product.
     expect(enter('77', 8, 250)).toEqual({ kind: 'product', code: '77' });
+    expect(enter('77', 8, 700)).toEqual({ kind: 'product', code: '77' });
   });
 
-  it('records nothing for a scanned code that is no product', () => {
+  it('records nothing for a scanned code that is no product, short ones too', () => {
     expect(enter('4006381333931', 8)).toEqual({ kind: 'unknown', code: '4006381333931' });
+    // "78" from a scanner (a product this till doesn't know yet) is never €78.
+    expect(enter('78', 8)).toEqual({ kind: 'unknown', code: '78' });
+    // A hand as fast as a scanner can't be told apart: it is asked too, never taken as cash.
+    expect(enter('50', 30)).toEqual({ kind: 'unknown', code: '50' });
   });
 
-  it('pays for cash typed by hand, and for a quick short amount', () => {
+  it('pays for cash typed by hand', () => {
     expect(enter('20', 180)).toEqual({ kind: 'pay' });
     expect(enter('2000', 120)).toEqual({ kind: 'pay' });
-    // A fast hand: "50" with the keys close together, not a product: still the cash.
-    expect(enter('50', 30)).toEqual({ kind: 'pay' });
+    expect(enter('50', 90)).toEqual({ kind: 'pay' });
     // Typed, then a pause, then Enter.
-    expect(enter('5449000000996', 8, 900)).toEqual({ kind: 'pay' });
+    expect(enter('5449000000996', 8, 1500)).toEqual({ kind: 'pay' });
   });
 
   it('pays on a plain Enter with nothing typed just before', () => {
@@ -124,6 +128,14 @@ describe('cash that is surely a mistake', () => {
 });
 
 describe('finding what was scanned or typed', () => {
+  it('finds the exact case of a product number first, and another case only when just one has it', () => {
+    const twins = [...shelf, { id: 4, name: 'A', barcode: null, otherBarcodes: [], sku: 'Ab1' }, { id: 5, name: 'B', barcode: null, otherBarcodes: [], sku: 'aB1' }, { id: 6, name: 'C', barcode: '5550001', otherBarcodes: [], sku: null }, { id: 7, name: 'D', barcode: null, otherBarcodes: [], sku: '5550001' }] as unknown as Product[];
+    expect(exactMatch('Ab1', twins)?.id).toBe(4);
+    expect(exactMatch('aB1', twins)?.id).toBe(5);
+    expect(exactMatch('ab1', twins)).toBeUndefined();
+    expect(exactMatch('5550001', twins)?.id).toBe(6);
+  });
+
   it('finds a barcode, another barcode, or the product number exactly', () => {
     expect(exactMatch('5449000000996', shelf)?.id).toBe(1);
     expect(exactMatch('5449000000002', shelf)?.id).toBe(1);
@@ -166,5 +178,36 @@ describe('a Record sale that failed', () => {
     expect(payFailure(new ApiError('Bad gateway', 502, null))).toBe('offline');
     expect(payFailure(new ApiError('Server error', 500, null))).toBe('unclear');
     expect(payFailure(new Error('something else'))).toBe('unclear');
+  });
+});
+
+describe('a send again that failed', () => {
+  it('stays unclear unless the sale itself said no', () => {
+    expect(payFailure(new ApiError('Too many requests', 429, 'RATE_LIMITED'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Signed out', 401, 'UNAUTHORIZED'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Forbidden', 403, 'FORBIDDEN'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Bad JSON', 400, 'BAD_REQUEST'), true)).toBe('unclear');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'VALIDATION_ERROR'), true)).toBe('refused');
+    expect(payFailure(new ApiError('Product gone', 404, 'NOT_FOUND'), true)).toBe('refused');
+  });
+
+  it('a first send refused for any reason was never recorded, except a timeout or too many requests', () => {
+    expect(payFailure(new ApiError('Signed out', 401, 'UNAUTHORIZED'))).toBe('refused');
+    expect(payFailure(new ApiError('Too many requests', 429, 'RATE_LIMITED'))).toBe('unclear');
+    expect(payFailure(new ApiError('Timeout', 408, null))).toBe('unclear');
+  });
+});
+
+describe('the stock rule over the whole basket', () => {
+  const line = (product: Product | undefined, quantity: number) => ({ productId: product?.id ?? 99, name: product?.name ?? 'Milk', quantity, product });
+  it('refuses an employee a line past the shelf, or one whose stock 4VD can’t see', () => {
+    expect(basketStockProblem([line(shelf[0], 1), line(shelf[1], 999)], 'block', false)).toEqual({ kind: 'over', product: shelf[1], quantity: 999 });
+    expect(basketStockProblem([line(undefined, 1)], 'block', false)).toEqual({ kind: 'unknown', name: 'Milk' });
+  });
+
+  it('lets an owner, or a shop that allows it, sell anything', () => {
+    expect(basketStockProblem([line(undefined, 1), line(shelf[1], 999)], 'block', true)).toBeNull();
+    expect(basketStockProblem([line(undefined, 1)], 'allow', false)).toBeNull();
+    expect(basketStockProblem([line(shelf[0], 1)], 'block', false)).toBeNull();
   });
 });

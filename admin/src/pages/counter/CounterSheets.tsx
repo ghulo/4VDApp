@@ -257,7 +257,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const [error, setError] = useState<string | null>(null);
   // Cash far over the total (a barcode scanned into the box?) records only once its own key says the amount is right; Enter never does.
   const [confirmed, setConfirmed] = useState<string | null>(null);
-  // A scanner's code that names no product came in: nothing is recorded until the cashier looks.
+  // Keys as fast as a scanner that name no product came in: the cash went back as it was, and nothing is recorded until the cashier presses Go on.
   const [unknownScan, setUnknownScan] = useState<string | null>(null);
   const burst = useRef(new BurstWatcher());
   const beforeBurst = useRef<PayDraft>(given);
@@ -274,11 +274,8 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const takesCash = (draft.paidBy === 'cash' && total > 0) || (draft.paidBy === 'split' && split?.valid === true);
   const looksWrong = takesCash && cash !== null && tenderedLooksWrong(cash.given, due);
   const unchecked = looksWrong && confirmed !== draft.tendered;
-  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid) || unchecked;
-  const set = (patch: Partial<PayDraft>) => {
-    setUnknownScan(null);
-    onChange({ ...draft, ...patch });
-  };
+  const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid) || unchecked || unknownScan !== null;
+  const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
   const back = () => {
     if (!sending.current) onBack();
   };
@@ -327,11 +324,11 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
         burstEnded.current = event.timeStamp;
         event.preventDefault();
         event.stopPropagation();
-        if (meant.kind === 'unknown') return setUnknownScan(meant.code);
         if (sending.current) return;
-        // A product: the cash goes back to what it was, and the product to the basket.
+        // The cash goes back to what it was before the burst, either way.
         onChange(beforeBurst.current);
-        setUnknownScan(null);
+        if (meant.kind === 'unknown') return setUnknownScan(meant.code);
+        // A product: to the basket.
         onScan?.(meant.code);
       }}
     >
@@ -427,9 +424,13 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
       )}
       {draft.paidBy === 'card' && <p className="counter-hint">{t.counter.cardHint}</p>}
       {unknownScan !== null && (
-        <p className="counter-warning" role="alert">
-          {t.counter.unknownScanInPay(unknownScan)}
-        </p>
+        <div className="counter-warning counter-warning--act" role="alert">
+          <p>{t.counter.unknownScanInPay(unknownScan)}</p>
+          {/* Its own key: no Enter (a hand's or a scanner's) goes past this. */}
+          <Button size="sm" variant="secondary" onClick={() => setUnknownScan(null)}>
+            {t.counter.goOn}
+          </Button>
+        </div>
       )}
       {draft.paidBy === 'tab' &&
         (customers && customers.length === 0 ? (

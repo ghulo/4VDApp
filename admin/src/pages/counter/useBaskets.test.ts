@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { type Basket, type BasketState, changeBasket, changeLines, type PendingSale, withoutBasket, withPending } from './useBaskets';
+import { type Basket, type BasketState, changeBasket, changeLines, type PendingSale, restored, roomForAnother, withoutBasket, withPending } from './useBaskets';
 
 const bread = { productId: 7, name: 'Bread', quantity: 1, discount: '' };
 const basket = (id: string, extra: Partial<Basket> = {}): Basket => ({ id, startedAt: 0, lines: [bread], ...extra });
 const sale: PendingSale = {
   key: 'key-1',
+  businessId: 1,
+  userId: 4,
   payment: { paidBy: 'tab', tendered: null, customerId: 3, cardAmount: null },
   body: { items: [{ productId: 7, quantity: 1 }], notes: null, customerId: 3, paidNow: false },
   total: 0.6,
@@ -44,6 +46,22 @@ describe('a basket whose sale is on its way', () => {
     expect(paid).toEqual({ baskets: [basket('b')], current: 'b' });
     const last = withoutBasket({ baskets: [basket('a', { pending: sale })], current: 'a' }, 'a', () => basket('fresh', { lines: [] }));
     expect(last).toEqual({ baskets: [{ id: 'fresh', startedAt: 0, lines: [] }], current: 'fresh' });
+  });
+});
+
+describe('five baskets whose sales wait for an answer', () => {
+  const stuck = (id: string) => basket(id, { pending: { ...sale, key: id } });
+  it('don’t block selling: another basket can open', () => {
+    const five: BasketState = { baskets: ['a', 'b', 'c', 'd', 'e'].map(stuck), current: 'a' };
+    expect(roomForAnother(five)).toBe(true);
+    expect(roomForAnother({ baskets: ['a', 'b', 'c', 'd', 'e'].map((id) => basket(id)), current: 'a' })).toBe(false);
+  });
+
+  it('are never dropped when the page opens again', () => {
+    const saved: BasketState = { baskets: [...['a', 'b'].map(stuck), ...['c', 'd', 'e', 'f', 'g', 'h'].map((id) => basket(id))], current: 'a' };
+    const back = restored(saved);
+    expect(back.baskets.filter((one) => one.pending)).toHaveLength(2);
+    expect(back.baskets.filter((one) => !one.pending)).toHaveLength(5);
   });
 });
 

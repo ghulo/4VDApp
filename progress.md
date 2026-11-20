@@ -63,7 +63,7 @@ UI and features (ask first):
 - [ ] Windows app: F5 on the Counter opens Customer and doesn't reload; F5 elsewhere still reloads; Ctrl+R reloads everywhere; F10 toggles Price check (Windows doesn't open a menu); F11 is still full screen
 - [ ] "Sell past stock" off: an employee scanning one more than the shelf holds sees "Switch to the owner"; the owner types their PIN and the product goes in under the owner's name. On: anyone sells it with "ask for a count" under the scan box
 - [ ] Price check (F10) and F3 find a product with 0 stock
-- [ ] With Pay open, scan a product into Tendered: back to the basket with the product added, the cash as it was, no sale recorded. Scan a code that is no product: a note, nothing recorded. Typing cash quickly by hand still records
+- [ ] With Pay open, scan a product into Tendered: back to the basket with the product added, the cash as it was, no sale recorded. Scan a code that is no product: a note, the cash as it was, Record sale off until "Go on". Cash typed by hand at a normal speed records; typed as fast as a scanner it asks first
 - [ ] Type 5000 as cash on a small sale: Record sale is off and Enter does nothing until "Yes, €5,000.00 is right" is pressed. Pressing Record sale twice fast records one sale; Back to basket, Esc and Not printed wait while it is sending
 - [ ] A tab sale when the internet drops mid-way: "This sale was sent, but no answer came" with Send it again; the basket can't change; once back online Send it again records it once (check the customer's tab), also after reloading the page
 - [ ] Change a line's quantity (F2) past the shelf as an employee with "Sell past stock" off: "Switch to the owner"; the owner's PIN sets the quantity
@@ -71,6 +71,10 @@ UI and features (ask first):
 - [ ] The real scanner (if it sends Enter twice) doesn't open Pay after a scan; a hand's Enter on the empty box still does
 - [ ] A receipt that didn't print because a VAT rate had no printer tax group: set the tax group in Settings → Counter, then Print again prints it; "Leave it" asks first
 - [ ] Short-dated −30% key text and switches (dark mode) are readable; the change shows its amount at once on the Paid screen
+- [ ] A sale whose Send it again also gets no clear answer: "Look in Sales" with Open Sales; the owner (not an employee) can "Forget this sale" after a yes; five such sales still leave room for a new basket
+- [ ] Switch person (or another business) with a sale waiting: the new person sees "made by someone else", no Send it again; the first person gets it back when they sign in again
+- [ ] A till note 4VD refuses (e.g. a PC clock far off): a banner "1 till note … was refused" with the reason and Send again
+- [ ] An employee with "Sell past stock" off while the product list hasn't loaded (slow internet at opening): Pay says 4VD can't see how many are left
 
 **Customs papers** (on 4vd.app after the deploy)
 - [ ] Receive an order from a supplier abroad with its bill; on the bill page the Customs card asks for the paper; add VAT and duty: the bill's "In the books" shows a Customs paper entry (1260, 1340, bank or till) and the product's cost goes up

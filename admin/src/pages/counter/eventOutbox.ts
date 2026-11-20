@@ -95,18 +95,28 @@ const isRefusal = (error: unknown) => error instanceof ApiError && (error.status
 /** How many wait to be sent (refused ones don't count). */
 export const waitingCount = (store: EventStore, owner: Owner) => store.read(owner).filter((entry) => !entry.refused).length;
 
+/** The ones the server refused, oldest first, for the owner to see. */
+export const refusedEntries = (store: EventStore, owner: Owner) => store.read(owner).filter((entry) => entry.refused);
+
+/** Try the refused ones again (the cause was fixed: a clock set right, a product back). */
+export function unrefuse(store: EventStore, owner: Owner): void {
+  store.write(owner, store.read(owner).map(({ refused: _was, ...entry }) => entry));
+}
+
 const running = new Map<string, Promise<void>>();
 
 /**
  * Send what waits, oldest first, 50 at a time; one at a time per owner (a
  * second call waits for the first). A batch the server confirms is removed;
  * a network failure stops (all stay); a refused batch is tried one by one so
- * only the event at fault is marked refused.
+ * only the event at fault is marked refused. `stillOwner` is asked before
+ * every request: once another person or business is signed in, the rest
+ * waits for its own owner (the request would go out as the new one).
  */
-export function drain(store: EventStore, owner: Owner, send: (events: SentEvent[]) => Promise<unknown>): Promise<void> {
+export function drain(store: EventStore, owner: Owner, send: (events: SentEvent[]) => Promise<unknown>, stillOwner: () => boolean = () => true): Promise<void> {
   const key = keyOf(owner);
   const before = running.get(key) ?? Promise.resolve();
-  const next = before.then(() => drainNow(store, owner, send));
+  const next = before.then(() => drainNow(store, owner, send, stillOwner));
   const settled = next.catch(() => undefined);
   running.set(key, settled);
   void settled.then(() => {
@@ -125,10 +135,10 @@ function markRefused(store: EventStore, owner: Owner, id: string, why: string) {
   store.write(owner, store.read(owner).map((entry) => (entry.id === id ? { ...entry, refused: why } : entry)));
 }
 
-async function drainNow(store: EventStore, owner: Owner, send: (events: SentEvent[]) => Promise<unknown>): Promise<void> {
+async function drainNow(store: EventStore, owner: Owner, send: (events: SentEvent[]) => Promise<unknown>, stillOwner: () => boolean): Promise<void> {
   for (;;) {
     const batch = store.read(owner).filter((entry) => !entry.refused).slice(0, BATCH);
-    if (batch.length === 0) return;
+    if (batch.length === 0 || !stillOwner()) return;
     try {
       await send(batch.map(toSent));
       remove(store, owner, new Set(batch.map((entry) => entry.id)));
@@ -142,6 +152,7 @@ async function drainNow(store: EventStore, owner: Owner, send: (events: SentEven
     }
     // Refused as a whole: one by one, so the good ones go and only the bad one stays.
     for (const entry of batch) {
+      if (!stillOwner()) return;
       try {
         await send([toSent(entry)]);
         remove(store, owner, new Set([entry.id]));

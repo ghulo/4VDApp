@@ -35,7 +35,7 @@ export function stockDecision(p: { stock: number; already: number; wanted: numbe
 /** Keys closer together than this come from the barcode scanner, not a hand. */
 export const SCANNER_GAP_MS = 60;
 /** Some scanners wait a little before their Enter (a "suffix delay"): still the scan, up to this long. */
-export const SCAN_SUFFIX_MS = 300;
+export const SCAN_SUFFIX_MS = 1000;
 /** Keys the scanner presses along the way (capitals) that are not part of the code. */
 const PASS_THROUGH = new Set(['Shift', 'CapsLock']);
 
@@ -44,7 +44,7 @@ const PASS_THROUGH = new Set(['Shift', 'CapsLock']);
  * code typed in a few milliseconds, then Enter) from a hand. Feed it every
  * keydown; on Enter it says what was typed just before and whether it came
  * as a burst: at least two characters, each within 60 ms of the last, and
- * the Enter within 300 ms. Whether a burst is a product is for the caller to
+ * the Enter within a second (some scanners wait before it). Whether a burst is a product is for the caller to
  * check (a fast hand can type a burst too).
  */
 export class BurstWatcher {
@@ -79,21 +79,19 @@ export class BurstWatcher {
 /** An Enter this soon after a scan's own Enter is the scanner's second one (CR+LF, or a double Enter), not a hand asking to pay. */
 export const DOUBLE_ENTER_MS = 150;
 
-/** A scanner's burst this long that names no product is a code 4VD doesn't know, never cash. */
-export const UNKNOWN_SCAN_LENGTH = 4;
-
 /**
  * What an Enter in Pay means, from what came just before it:
  * - product: the scanner read a product on this shelf; it goes back to the basket and the cash stays as it was;
- * - unknown: the scanner read a code that is no product; nothing is recorded until the cashier looks;
- * - pay: a hand typed the cash (or a short quick "20"): Record sale.
+ * - unknown: it came as fast as a scanner but is no product here (a code this
+ *   till doesn't know, or a very fast hand): the cash goes back as it was and
+ *   nothing is recorded until the cashier says go on. Keys can't tell a short
+ *   scan from a quick hand, so this side never guesses "cash";
+ * - pay: typed by a hand: Record sale.
  */
 export function payEnter(typed: { code: string; burst: boolean } | null, isProductCode: (code: string) => boolean): { kind: 'product' | 'unknown'; code: string } | { kind: 'pay' } {
   if (!typed?.burst) return { kind: 'pay' };
   const code = typed.code.trim();
-  if (isProductCode(code)) return { kind: 'product', code };
-  if (code.length >= UNKNOWN_SCAN_LENGTH) return { kind: 'unknown', code };
-  return { kind: 'pay' };
+  return isProductCode(code) ? { kind: 'product', code } : { kind: 'unknown', code };
 }
 
 /**
@@ -109,11 +107,14 @@ export function tenderedLooksWrong(given: number, due: number): boolean {
 
 /** The product a code names exactly on this shelf: a barcode (main or other) first, then its own number (SKU). */
 export function exactMatch(code: string, shelf: readonly Product[]): Product | undefined {
+  const barcode = shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code));
+  if (barcode) return barcode;
+  // The number exactly as typed; another case only when just one product has it (as the server does).
+  const exact = shelf.filter((product) => product.sku === code);
+  if (exact.length > 0) return exact.length === 1 ? exact[0] : undefined;
   const lower = code.toLowerCase();
-  return (
-    shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
-    shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower)
-  );
+  const other = shelf.filter((product) => product.sku !== null && product.sku.toLowerCase() === lower);
+  return other.length === 1 ? other[0] : undefined;
 }
 
 /**
@@ -138,15 +139,42 @@ export function lookupFailure(error: unknown): 'notFound' | 'offline' | 'error' 
   return 'error';
 }
 
+/** The sale's own answers that say it was read and refused: bad data, a product or month gone, a clash. */
+const SALE_REFUSALS = new Set(['400:VALIDATION_ERROR', '404:NOT_FOUND', '409:CONFLICT', '410:GONE']);
+
 /**
  * What a failed Record sale means for the sale on its way:
- * - refused: the server read it and said no (4xx), so nothing was recorded (a key it knows gets its first answer back instead);
+ * - refused: nothing was recorded, so the basket is free again;
  * - offline: it never got there, or no answer came in time: it may or may not be in;
- * - unclear: the server broke while working on it (5xx): it may or may not be in.
- * Only a refusal frees the basket; the others keep the same sale and key for Send it again.
+ * - unclear: anything else: it may or may not be in.
+ * A first send refused for any reason (4xx) was never recorded: no earlier
+ * copy exists. A send again is freed only by the sale's own refusal: a
+ * sign-in that ran out (401), a "too many requests" (429) or a timeout said
+ * nothing about the first copy, which may have gone in.
+ * The others keep the same sale and key for Send it again.
  */
-export function payFailure(error: unknown): 'refused' | 'offline' | 'unclear' {
+export function payFailure(error: unknown, again = false): 'refused' | 'offline' | 'unclear' {
   if (isNetworkFailure(error)) return 'offline';
-  if (error instanceof ApiError && error.status >= 400 && error.status < 500) return 'refused';
-  return 'unclear';
+  if (!(error instanceof ApiError)) return 'unclear';
+  if (again) return SALE_REFUSALS.has(`${error.status}:${error.code}`) ? 'refused' : 'unclear';
+  return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429 ? 'refused' : 'unclear';
+}
+
+/**
+ * Whether the shop's stock rule lets this basket be sold now, by this person:
+ * - over: a line holds more than 4VD thinks is on the shelf;
+ * - unknown: 4VD can't tell how many are left (the product list didn't load), so it can't check: no.
+ * Owners and admins, or the rule "allow", always may.
+ */
+export function basketStockProblem(
+  lines: ReadonlyArray<{ productId: number; name: string; quantity: number; product: Product | undefined }>,
+  rule: NoStockRule,
+  oversees: boolean,
+): { kind: 'over'; product: Product; quantity: number } | { kind: 'unknown'; name: string } | null {
+  if (rule === 'allow' || oversees) return null;
+  for (const line of lines) {
+    if (!line.product) return { kind: 'unknown', name: line.name };
+    if (line.quantity > line.product.stock.quantity) return { kind: 'over', product: line.product, quantity: line.quantity };
+  }
+  return null;
 }

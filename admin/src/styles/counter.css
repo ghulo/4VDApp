@@ -2660,6 +2660,13 @@
 /* Before the first sale: the opening cash still wants counting. */
 /* Before the first sale: the opening cash still wants counting. A callout on
    sunk paper in ink, like the Counter's other messages; the icon carries the colour. */
+.counter-opening__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
 .counter-opening {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;

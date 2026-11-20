@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../../services/apiClient';
 import type { CounterEventInput } from '../../services/types';
-import { drain, type EventStore, keep, MAX_KEPT, type Owner, type OutboxEntry, type SentEvent, waitingCount } from './eventOutbox';
+import { drain, type EventStore, keep, MAX_KEPT, type Owner, type OutboxEntry, refusedEntries, type SentEvent, unrefuse, waitingCount } from './eventOutbox';
 
 function memoryStore(): EventStore {
   const saved = new Map<string, OutboxEntry[]>();
@@ -104,5 +104,34 @@ describe('Counter events, written down first and sent in order', () => {
     expect(kept.some((entry) => entry.refused)).toBe(false);
     expect(kept.at(-1)?.event).toEqual(removed(9999));
     expect(kept[0]?.event).toEqual(removed(1));
+  });
+  it('stops when another person or business takes over the till mid-way', async () => {
+    const store = memoryStore();
+    keep(store, me, Array.from({ length: 120 }, (_, index) => removed(index)), new Date(), ids);
+    let signedIn = true;
+    let calls = 0;
+    await drain(
+      store,
+      me,
+      async () => {
+        calls += 1;
+        signedIn = false;
+      },
+      () => signedIn,
+    );
+    expect(calls).toBe(1);
+    expect(waitingCount(store, me)).toBe(70);
+  });
+
+  it('sends the refused ones again when asked', async () => {
+    const store = memoryStore();
+    keep(store, me, [removed(1)], new Date(), ids);
+    await drain(store, me, () => Promise.reject(new ApiError('at cannot be in the future', 400, 'VALIDATION_ERROR')));
+    expect(refusedEntries(store, me)).toHaveLength(1);
+    unrefuse(store, me);
+    let sent = 0;
+    await drain(store, me, async (events) => void (sent += events.length));
+    expect(sent).toBe(1);
+    expect(store.read(me)).toEqual([]);
   });
 });

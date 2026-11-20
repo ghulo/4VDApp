@@ -33,7 +33,7 @@ import {
   type Icon,
 } from '@phosphor-icons/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { canOversee, counterOnly } from '../auth/roles';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useSearchParams } from 'react-router';
@@ -54,6 +54,8 @@ import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMat
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { afterSaleRefresh, shelfAfterSale } from './counter/shelfAfterSale';
+import { ScanBox } from './counter/ScanBox';
+import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
 import { CountSheet, CustomerSheet, NumberSheet, PinSheet, PayPanel, type Payment, ReasonSheet, SerialSheet, UnprintedSheet, ZSheet } from './counter/CounterSheets';
@@ -144,7 +146,6 @@ const isTyping = (target: EventTarget | null) =>
 /** Kilos are kept to the gram; pieces stay whole. */
 const toGram = (amount: number) => Math.round(amount * 1000) / 1000;
 
-const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now - time) / 60_000));
 
 /** How long Pay waits for the server before the sale waits on the PC instead. */
 const PAY_TIMEOUT_MS = 12_000;
@@ -268,7 +269,6 @@ export function CounterPage() {
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = lines.find((line) => line.productId === selectedId) ?? lines[lines.length - 1] ?? null;
-  const [scan, setScan] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [alarm, setAlarm] = useState<Alarm | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -280,9 +280,15 @@ export function CounterPage() {
   const [finderQuery, setFinderQuery] = useState('');
   const [priceCheck, setPriceCheck] = useState(false);
   const [checked, setChecked] = useState<Product | null>(null);
-  const [now, setNow] = useState(() => Date.now());
-  // An owner's yes on this basket raises the rabat limit until it runs out.
-  const approval = current.approval && Date.parse(current.approval.expiresAt) > now ? current.approval : null;
+  // An owner's yes on this basket raises the rabat limit until it runs out (the till looks again the moment it does).
+  const [, setApprovalChecked] = useState(0);
+  useEffect(() => {
+    const left = current.approval ? Date.parse(current.approval.expiresAt) - Date.now() : 0;
+    if (left <= 0) return;
+    const timer = window.setTimeout(() => setApprovalChecked((count) => count + 1), left + 50);
+    return () => window.clearTimeout(timer);
+  }, [current.approval]);
+  const approval = current.approval && Date.parse(current.approval.expiresAt) > Date.now() ? current.approval : null;
   const rabatLimit = Math.max(discountLimit, approval?.percent ?? 0);
   // A rabat waiting for the owner's PIN, and what to do once they allow it.
   const [ask, setAsk] = useState<{ percent: number; apply: () => void } | null>(null);
@@ -297,11 +303,6 @@ export function CounterPage() {
   // A customer waiting for the owner's yes to pay later.
   const [askLater, setAskLater] = useState<Customer | null>(null);
 
-  // The clock in the status bar, and how long each basket's customer has waited.
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 10_000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const say = (text: string) => {
     setProblem(null);
@@ -536,7 +537,6 @@ export function CounterPage() {
     const multiplied = /^(\d{1,4})\s*[*xX]\s*(.+)$/.exec(raw.trim());
     const quantity = multiplied ? Math.max(1, Number(multiplied[1])) : 1;
     const code = codeFromScan(multiplied ? multiplied[2]! : raw);
-    setScan('');
     setAlarm(null);
     if (!code) return;
     // A pack barcode adds the whole pack: "2*" before a pack of 6 adds 12.
@@ -1453,20 +1453,14 @@ export function CounterPage() {
 
   // When the last scan's Enter came: a scanner that sends two (CR+LF, or a double Enter) must not open Pay.
   const lastScanEnter = useRef(Number.NEGATIVE_INFINITY);
-  function handleScanKey(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      if (scan.trim() === '') {
-        if (event.timeStamp - lastScanEnter.current < DOUBLE_ENTER_MS) return;
-        return hasLines && !priceCheck ? startPanel('pay') : undefined;
-      }
-      lastScanEnter.current = event.timeStamp;
-      return void handleScan(scan);
+  /** Enter in the scan box: the code goes in; on an empty box, Pay opens (unless it is a scanner's second Enter). */
+  function scanEnter(code: string, timeStamp: number) {
+    if (code === '') {
+      if (timeStamp - lastScanEnter.current < DOUBLE_ENTER_MS) return;
+      return hasLines && !priceCheck ? startPanel('pay') : undefined;
     }
-    if (scan === '' && (event.key === '+' || event.key === '-')) {
-      event.preventDefault();
-      nudge(event.key === '+' ? 1 : -1);
-    }
+    lastScanEnter.current = timeStamp;
+    void handleScan(code);
   }
 
   const closePanel = () => {
@@ -1488,10 +1482,6 @@ export function CounterPage() {
   const printerHint =
     printer.reach === 'off' ? t.counter.printer.offHint : printer.reach === 'browser' ? t.counter.printer.browserHint : printer.reach === 'notRunning' ? t.counter.printer.notRunningHint : undefined;
 
-  // "6*" typed and waiting for the scan: say so, so nobody wonders why six went in.
-  const pending = /^(\d{1,4})\s*[*xX]$/.exec(scan.trim());
-  const pendingCount = pending ? Math.max(1, Number(pending[1])) : null;
-  const clock = new Date(now).toISOString();
 
   // Reports and the drawer are needed once or twice a day, so they live in one menu in the bar.
   const reportsReady = keysEnabled && canPrint && printer.reach !== 'off';
@@ -1541,7 +1531,6 @@ export function CounterPage() {
                 return sum + (product ? afterDiscount(unitPriceFor(product, line.quantity, wholesaleOf(basket)), percent) * line.quantity : 0);
               }, 0),
             );
-            const minutes = minutesSince(basket.startedAt, now);
             return (
               <button
                 key={basket.id}
@@ -1561,7 +1550,7 @@ export function CounterPage() {
                 </span>
                 <span className="counter-basket__meta">
                   {/* An empty basket has no sale yet, so no age either. */}
-                  {basket.lines.length > 0 ? `${t.counter.basketLines(basket.lines.length)} · ${t.counter.age(minutes)}` : t.counter.basketReady}
+                  {basket.lines.length > 0 ? <BasketAge startedAt={basket.startedAt} lineCount={basket.lines.length} /> : t.counter.basketReady}
                 </span>
               </button>
             );
@@ -1620,9 +1609,7 @@ export function CounterPage() {
               {t.counter.back}
             </ButtonLink>
           )}
-          <time className="counter__clock" dateTime={clock} title={formatDate(clock)}>
-            {formatTime(clock)}
-          </time>
+          <TillClock />
         </div>
       </header>
 
@@ -1630,43 +1617,14 @@ export function CounterPage() {
         <section className="counter-till" aria-label={t.counter.title}>
           <div className="counter-toolbar">
             <div className="counter-scan">
-              <label className={priceCheck ? 'counter-scan__field counter-scan__field--check' : 'counter-scan__field'}>
-                <span className="counter-scan__icon" aria-hidden="true">
-                  {priceCheck ? <Tag size={24} weight="bold" /> : <Barcode size={24} weight="bold" />}
-                </span>
-                <span className="visually-hidden">{priceCheck ? t.counter.priceCheck : t.counter.scan}</span>
-                <input
-                  ref={scanRef}
-                  name="code"
-                  autoFocus
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder={priceCheck ? `${t.counter.priceCheck}…` : `${t.counter.scan}…`}
-                  aria-describedby="counter-scan-hint"
-                  value={scan}
-                  onChange={(event) => {
-                    setScan(event.target.value);
-                    setProblem(null);
-                  }}
-                  onKeyDown={handleScanKey}
-                />
-                {pendingCount !== null && (
-                  <span className="counter-chip counter-chip--accent" role="status">
-                    {t.counter.multiplier(pendingCount)}
-                  </span>
-                )}
-                {scan.trim() !== '' && pendingCount === null && (
-                  <kbd className="counter-scan__enter" aria-hidden="true">
-                    Enter
-                  </kbd>
-                )}
-                {priceCheck && (
-                  <button type="button" className="counter-chip counter-chip--button" onClick={togglePriceCheck}>
-                    {t.counter.priceCheckOff}
-                    <kbd aria-hidden="true">Esc</kbd>
-                  </button>
-                )}
-              </label>
+              <ScanBox
+                inputRef={scanRef}
+                priceCheck={priceCheck}
+                onEnter={scanEnter}
+                onNudge={nudge}
+                onType={() => setProblem(null)}
+                onPriceCheckOff={togglePriceCheck}
+              />
               {/* On a phone there's no USB scanner: the camera reads the code instead. */}
               <span className="counter-scan__camera">
                 <CameraScanButton iconOnly onScan={(code) => void handleScan(code)} />

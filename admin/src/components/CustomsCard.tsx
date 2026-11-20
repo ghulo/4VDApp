@@ -1,25 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
-import { Button, Card, DateField, Field, RemoveButton } from './ui';
-import { Segmented } from './BillLines';
+import { Button, Card, RemoveButton } from './ui';
+import { CustomsFields } from './CustomsFields';
 import { useT } from '../i18n/useT';
 import { billsApi } from '../services/api';
-import type { CustomsPaidMethod, SupplierBill } from '../services/types';
+import type { SupplierBill } from '../services/types';
+import { type CustomsDraft, customsDraftValid, customsInput, emptyCustomsDraft } from '../utils/customs';
 import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney } from '../utils/format';
 import { formatMonth } from '../utils/vat';
-import { todayIso } from '../utils/bills';
 
-interface Draft {
-  number: string;
-  issuedOn: string;
-  vat: string;
-  duty: string;
-  excise: string;
-  method: CustomsPaidMethod;
-}
-
-const toDraft = (bill: SupplierBill): Draft =>
+const toDraft = (bill: SupplierBill): CustomsDraft =>
   bill.customs
     ? {
         number: bill.customs.number ?? '',
@@ -29,9 +20,7 @@ const toDraft = (bill: SupplierBill): Draft =>
         excise: bill.customs.excise > 0 ? String(bill.customs.excise) : '',
         method: bill.customs.method,
       }
-    : { number: '', issuedOn: todayIso(), vat: '', duty: '', excise: '', method: 'bank' };
-
-const amount = (value: string) => (value.trim() === '' ? 0 : Number(value));
+    : emptyCustomsDraft();
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -52,7 +41,7 @@ export function CustomsCard({ bill, writes }: { bill: SupplierBill; writes: bool
   const w = t.bills.customsCard;
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<Draft>(() => toDraft(bill));
+  const [draft, setDraft] = useState<CustomsDraft>(() => toDraft(bill));
   const onSaved = (updated: SupplierBill) => {
     queryClient.setQueryData(['bills', updated.id], updated);
     for (const key of ['bills', 'cash', 'activity', 'attention', 'vat', 'books']) queryClient.invalidateQueries({ queryKey: [key] });
@@ -60,15 +49,7 @@ export function CustomsCard({ bill, writes }: { bill: SupplierBill; writes: bool
     setDraft(toDraft(updated));
   };
   const save = useMutation({
-    mutationFn: () =>
-      billsApi.setCustoms(bill.id, {
-        number: draft.number.trim() || null,
-        issuedOn: draft.issuedOn,
-        vat: amount(draft.vat),
-        duty: amount(draft.duty),
-        excise: amount(draft.excise),
-        method: draft.method,
-      }),
+    mutationFn: () => billsApi.setCustoms(bill.id, customsInput(draft)),
     onSuccess: onSaved,
   });
   const remove = useMutation({ mutationFn: () => billsApi.removeCustoms(bill.id), onSuccess: onSaved });
@@ -84,8 +65,7 @@ export function CustomsCard({ bill, writes }: { bill: SupplierBill; writes: bool
 
   const c = bill.customs;
   const hasEquipment = bill.lines.some((line) => line.kind === 'equipment');
-  const numbers = [draft.vat, draft.duty, draft.excise].map(amount);
-  const valid = draft.issuedOn !== '' && draft.issuedOn <= todayIso() && numbers.every((value) => Number.isFinite(value) && value >= 0) && numbers.some((value) => value > 0);
+  const valid = customsDraftValid(draft);
   const showForm = writes && (editing || (!c && !bill.noCustoms));
   const error = save.error ?? remove.error ?? none.error;
 
@@ -146,50 +126,7 @@ export function CustomsCard({ bill, writes }: { bill: SupplierBill; writes: bool
       {showForm && (
         <form className="settings-form" onSubmit={handleSubmit} noValidate>
           {!c && <p className="field-hint">{w.missing}</p>}
-          <div className="field-row">
-            <Field label={w.number}>
-              <input maxLength={60} autoComplete="off" value={draft.number} onChange={(event) => setDraft({ ...draft, number: event.target.value })} />
-            </Field>
-            <Field label={w.date}>
-              <DateField required max={todayIso()} value={draft.issuedOn} onChange={(value) => setDraft({ ...draft, issuedOn: value })} />
-            </Field>
-          </div>
-          <div className="field-row">
-            <Field label={w.vat}>
-              <input type="number" inputMode="decimal" min={0} step={0.01} value={draft.vat} onChange={(event) => setDraft({ ...draft, vat: event.target.value })} />
-            </Field>
-            <Field label={w.duty} hint={hasEquipment ? w.equipmentHint : undefined}>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step={0.01}
-                disabled={hasEquipment && Boolean(c)}
-                value={draft.duty}
-                onChange={(event) => setDraft({ ...draft, duty: event.target.value })}
-              />
-            </Field>
-            <Field label={w.excise}>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step={0.01}
-                disabled={hasEquipment && Boolean(c)}
-                value={draft.excise}
-                onChange={(event) => setDraft({ ...draft, excise: event.target.value })}
-              />
-            </Field>
-          </div>
-          <div className="field">
-            <span className="field__label">{w.method}</span>
-            <Segmented
-              label={w.method}
-              value={draft.method}
-              options={(['bank', 'cash'] as const).map((method) => ({ value: method, label: t.billForm.customsMethods[method] }))}
-              onChange={(method) => setDraft({ ...draft, method })}
-            />
-          </div>
+          <CustomsFields draft={draft} onChange={setDraft} dutyLocked={hasEquipment && Boolean(c)} dutyHint={hasEquipment ? w.equipmentHint : undefined} />
           {error && (
             <p className="form-error" role="alert">
               {errorMessage(error)}
@@ -212,10 +149,15 @@ export function CustomsCard({ bill, writes }: { bill: SupplierBill; writes: bool
                 {w.none}
               </Button>
             )}
-            <Button type="submit" variant="primary" disabled={!valid || save.isPending} loading={save.isPending}>
+            <Button type="submit" variant="primary" disabled={!valid || save.isPending} aria-describedby={valid ? undefined : 'customs-needs'} loading={save.isPending}>
               {c ? w.save : w.add}
             </Button>
           </div>
+          {!valid && (
+            <p id="customs-needs" className="field-hint">
+              {w.needsAmount}
+            </p>
+          )}
           {!c && !editing && <p className="field-hint">{w.noneHint}</p>}
         </form>
       )}

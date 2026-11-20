@@ -1828,6 +1828,9 @@ export interface SalesPatterns {
 
 /** What the AI read off a supplier's bill; anything it couldn't read is null. */
 export interface BillReading {
+  /** A customs declaration rather than a bill (older readings have no kind: bills). Then supplier is the foreign seller, number and issuedOn the declaration's. */
+  kind?: 'bill' | 'customs';
+  customs?: { vat: number; duty: number; excise: number; totalPaid: number | null; declaredValue: number | null; invoiceNumbers: string[] } | null;
   supplier: { name: string | null; nui: string | null };
   number: string | null;
   issuedOn: string | null;
@@ -1885,6 +1888,37 @@ export interface BillScan {
   orderId: number | null;
   /** The last confirm's choices, after a reopen. */
   previous: ConfirmScanInput | null;
+  /** A customs paper: the import bills it may go on, best first, and the one it clearly belongs to. */
+  customs: { bills: CustomsCandidate[]; matchId: number | null } | null;
+}
+
+/** An import bill a customs paper may go on, and why it was put forward. */
+export interface CustomsCandidate {
+  id: number;
+  supplier: string | null;
+  number: string | null;
+  issuedOn: string;
+  amount: number;
+  by: 'number' | 'amount' | null;
+}
+
+/** A customs paper on its own page: usually one waiting for its bill. */
+export interface CustomsPaper {
+  id: number;
+  billId: number | null;
+  status: 'waiting' | 'attached' | 'closed';
+  number: string | null;
+  issuedOn: string;
+  vat: number;
+  duty: number;
+  excise: number;
+  method: CustomsPaidMethod;
+  supplierName: string | null;
+  invoiceNumbers: string[];
+  declaredValue: number | null;
+  scanId: number | null;
+  bills: CustomsCandidate[];
+  matchId: number | null;
 }
 
 export interface WaitingScan {
@@ -1895,6 +1929,8 @@ export interface WaitingScan {
   scannedBy: string | null;
   emailFrom: string | null;
   scannedAt: string;
+  /** A customs declaration, not a bill. */
+  isCustoms?: boolean;
 }
 
 /** A file that came by email and has no scan yet. */

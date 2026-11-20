@@ -54,6 +54,7 @@ import type {
   ReportSettings,
   SupplierBill,
   CustomsInput,
+  CustomsPaper,
   SupplierPaymentMethod,
   DocumentKind,
   DocumentRef,
@@ -712,6 +713,10 @@ export const billsApi = {
   removeCustoms: async (id: number) => (await apiRequest<SupplierBill>(`/bills/${id}/customs`, { method: 'DELETE' })).data,
   /** "No customs on this one" (under the limit), or taken back. */
   setNoCustoms: async (id: number, value: boolean) => (await apiRequest<SupplierBill>(`/bills/${id}/no-customs`, { method: 'PUT', body: { value } })).data,
+  /** A customs paper waiting for its bill, with the bills it may go on. */
+  customsPaper: async (paperId: number) => (await apiRequest<CustomsPaper>(`/bills/customs/${paperId}`)).data,
+  attachCustomsPaper: async (paperId: number, billId: number) => (await apiRequest<SupplierBill>(`/bills/customs/${paperId}/attach`, { method: 'POST', body: { billId } })).data,
+  discardCustomsPaper: async (paperId: number) => apiRequest<null>(`/bills/customs/${paperId}`, { method: 'DELETE' }),
 };
 
 export const billScansApi = {
@@ -723,6 +728,9 @@ export const billScansApi = {
   confirm: async (id: number, input: ConfirmScanInput) =>
     (await apiRequest<{ billId: number; orderId: number }>(`/bill-scans/${id}/confirm`, { method: 'POST', body: input })).data,
   discard: async (id: number) => apiRequest<null>(`/bill-scans/${id}/discard`, { method: 'POST' }),
+  /** A scanned customs paper checked: onto its bill, or waiting for it (billId null). */
+  confirmCustoms: async (id: number, input: CustomsInput & { billId: number | null }) =>
+    (await apiRequest<{ billId: number | null; paperId: number }>(`/bill-scans/${id}/customs`, { method: 'POST', body: input })).data,
   /** Developer only: puts back everything the confirm did and makes the scan wait again. */
   reopen: async (id: number) => apiRequest<null>(`/bill-scans/${id}/reopen`, { method: 'POST' }),
 };

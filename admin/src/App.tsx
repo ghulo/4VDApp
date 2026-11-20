@@ -76,6 +76,7 @@ const TrefinOfferDetailPage = lazyPage(() => import('./pages/OffersPage'), 'Tref
 const ToDeliverPage = lazyPage(() => import('./pages/ToDeliverPage'), 'ToDeliverPage');
 const BillDetailPage = lazyPage(() => import('./pages/BillDetailPage'), 'BillDetailPage');
 const ScanCheckPage = lazyPage(() => import('./pages/ScanCheckPage'), 'ScanCheckPage');
+const CustomsPaperPage = lazyPage(() => import('./pages/CustomsPaperPage'), 'CustomsPaperPage');
 const BillsPage = lazyPage(() => import('./pages/BillsPage'), 'BillsPage');
 const OrderDetailPage = lazyPage(() => import('./pages/OrderDetailPage'), 'OrderDetailPage');
 const ReportPage = lazyPage(() => import('./pages/ReportPage'), 'ReportPage');
@@ -324,6 +325,7 @@ function App() {
                       <Route path="orders/:id" element={<OrderDetailPage />} />
                       <Route path="bills/new" element={<NewBillPage />} />
                       <Route path="bills/scans/:id" element={<ScanCheckPage />} />
+                      <Route path="bills/customs/:id" element={<CustomsPaperPage />} />
                       <Route path="bills/:id" element={<BillDetailPage />} />
                       <Route path="people" element={<UsersPage />} />
                       <Route path="people/:id" element={<PersonPage />} />

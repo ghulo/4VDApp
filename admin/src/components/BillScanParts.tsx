@@ -144,7 +144,7 @@ export function WaitingScans() {
               <span>
                 <strong>{supplier}</strong>
                 <span className="scan-waiting__meta">
-                  {[scan.number && t.bills.numbered(scan.number), t.scans.waitingRow({ by: scan.scannedBy, emailFrom: scan.emailFrom, when: formatDateTime(scan.scannedAt) })].filter(Boolean).join(' · ')}
+                  {[scan.isCustoms && t.customsPaper.title, scan.number && t.bills.numbered(scan.number), t.scans.waitingRow({ by: scan.scannedBy, emailFrom: scan.emailFrom, when: formatDateTime(scan.scannedAt) })].filter(Boolean).join(' · ')}
                 </span>
               </span>
               {scan.amount !== null && <span className="scan-waiting__amount">{formatMoney(scan.amount)}</span>}

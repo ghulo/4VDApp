@@ -16,6 +16,8 @@ import { errorMessage } from '../utils/errors';
 import { formatDateTime, formatMoney } from '../utils/format';
 import { orderSummary } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
+import { CustomsBillPicker, CustomsFields } from '../components/CustomsFields';
+import { customsDraftValid, customsInput, draftFromReading } from '../utils/customs';
 
 const STAMP_TONE: Record<ScanStamp, Tone> = { new: 'brand', unsure: 'warn', barcode: 'warn', price: 'info', match: 'ok' };
 const VAT_RATES = [18, 16, 8, 0] as const;
@@ -156,6 +158,19 @@ export function ScanCheckPage() {
     else next.delete('supplier');
     setParams(next, { replace: true });
   };
+
+  if (data.reading.kind === 'customs') {
+    return (
+      <>
+        <PageHeader
+          title={data.reading.number ? t.customsPaper.titleNo(data.reading.number) : t.customsPaper.title}
+          crumbs={crumbs}
+          description={(data.emailFrom ? t.scans.cameByEmail(data.emailFrom) : '') + t.customsPaper.scanDescription}
+        />
+        <CustomsCheck scan={data} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -400,6 +415,123 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
                     {t.scans.keep}
                   </Button>
                   <Button size="sm" variant="danger" disabled={discard.isPending} onClick={() => discard.mutate()}>
+                    {t.scans.yesDiscard}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Button size="sm" variant="danger-text" onClick={() => setDiscarding(true)}>
+                {t.scans.discard}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * A scanned customs declaration: its figures as read, to check, and the
+ * import bill it covers (the one it names picked already), or left waiting
+ * for its bill.
+ */
+function CustomsCheck({ scan }: { scan: BillScan }) {
+  const t = useT();
+  const w = t.customsPaper;
+  const navigate = useNavigate();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const { reading } = scan;
+  const bills = scan.customs?.bills ?? [];
+  const [draft, setDraft] = useState(() => draftFromReading(reading));
+  const [billId, setBillId] = useState(() => (scan.customs?.matchId ? String(scan.customs.matchId) : ''));
+  const [discarding, setDiscarding] = useState(false);
+  const valid = customsDraftValid(draft);
+
+  const done = () => {
+    for (const key of ['bill-scans', 'bills', 'products', 'attention', 'activity', 'books', 'vat', 'cash']) queryClient.invalidateQueries({ queryKey: [key] });
+  };
+  const save = useMutation({
+    mutationFn: () => billScansApi.confirmCustoms(scan.id, { ...customsInput(draft), billId: billId ? Number(billId) : null }),
+    onSuccess: (result) => {
+      done();
+      toast({ title: result.billId ? w.putOnToast : w.waitingToast });
+      navigate(result.billId ? `/bills/${result.billId}#customs` : '/bills');
+    },
+  });
+  const discard = useMutation({
+    mutationFn: () => billScansApi.discard(scan.id),
+    onSuccess: () => {
+      done();
+      navigate('/bills');
+    },
+  });
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (valid) save.mutate();
+  }
+
+  const read = reading.customs;
+  return (
+    <form className="product-layout" onSubmit={handleSubmit}>
+      <div className="product-layout__main">
+        {reading.remarks && <p className="notice">{t.scans.remarks(reading.remarks)}</p>}
+        <Card title={w.paper} description={w.paperHint}>
+          <div className="settings-form">
+            <CustomsFields draft={draft} onChange={setDraft} />
+          </div>
+        </Card>
+        <Card title={w.readFrom}>
+          <dl className="partner-facts">
+            <div>
+              <dt>{w.seller}</dt>
+              <dd>{reading.supplier.name ?? '–'}</dd>
+            </div>
+            <div>
+              <dt>{w.invoices}</dt>
+              <dd>{read && read.invoiceNumbers.length > 0 ? read.invoiceNumbers.join(', ') : '–'}</dd>
+            </div>
+            <div>
+              <dt>{w.declared}</dt>
+              <dd>{read?.declaredValue ? formatMoney(read.declaredValue) : '–'}</dd>
+            </div>
+          </dl>
+        </Card>
+      </div>
+
+      <div className="product-layout__side buy-side">
+        <Pages scan={scan} />
+        <Card title={w.bill}>
+          <CustomsBillPicker bills={bills} value={billId} onChange={setBillId} allowWaiting />
+          {save.isError && (
+            <p className="form-error" role="alert">
+              {errorMessage(save.error)}
+            </p>
+          )}
+          <Button type="submit" variant="primary" wide disabled={!valid || save.isPending} aria-describedby={valid ? undefined : 'customs-why'} loading={save.isPending}>
+            {billId ? w.putOn : w.keepWaiting}
+          </Button>
+          {!valid && (
+            <p id="customs-why" className="field-hint">
+              {w.needAmount}
+            </p>
+          )}
+          <div className="scan-discard">
+            {discarding ? (
+              <>
+                <p>{t.scans.discardSure}</p>
+                {discard.isError && (
+                  <p className="form-error" role="alert">
+                    {errorMessage(discard.error)}
+                  </p>
+                )}
+                <div className="form-actions">
+                  <Button size="sm" variant="ghost" onClick={() => setDiscarding(false)}>
+                    {t.scans.keep}
+                  </Button>
+                  <Button size="sm" variant="danger" disabled={discard.isPending} loading={discard.isPending} onClick={() => discard.mutate()}>
                     {t.scans.yesDiscard}
                   </Button>
                 </div>

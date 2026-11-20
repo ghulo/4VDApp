@@ -249,6 +249,18 @@ describe('Till sale keys', () => {
     const again = await basket(admin.token, key, [{ productId: product, quantity: 1 }]);
     expect(again.body.data).toMatchObject({ again: true, fiscalNo: '00042' });
   });
+  it('should give no answer to a resend once a line of its sale was undone, never the sale with that line missing', async () => {
+    const admin = await signIn('admin');
+    const vase = await createTestProduct(context, admin.token, { name: 'Vase', price: 20, stock: 5 });
+    const cup = await createTestProduct(context, admin.token, { name: 'Cup', price: 3, stock: 5 });
+    const key = randomUUID();
+    const items = [{ productId: vase, quantity: 1 }, { productId: cup, quantity: 1 }];
+    const first = await basket(admin.token, key, items);
+    expect(first.body.data.sales).toHaveLength(2);
+    await context.db.updateTable('sales').set({ undone_at: new Date() }).where('id', '=', first.body.data.sales[1].id).execute();
+    const again = await basket(admin.token, key, items);
+    expect(again.status).toBe(500);
+  });
 });
 
 describe('Till writes for whoever was signed in', () => {

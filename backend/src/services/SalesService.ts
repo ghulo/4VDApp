@@ -560,7 +560,10 @@ export class SalesService {
   }
 
   private async basketResult(saleIds: number[], invoice: DocumentRef, from: { again: boolean; fiscalNo: string | null }): Promise<BasketResult> {
-    const sales = (await this.salesRepository.findByIds(saleIds)).map(toSaleDto);
+    const found = await this.salesRepository.findByIds(saleIds);
+    // A line undone since (only an earlier copy's answer can meet one): no answer, rather than a sale with lines missing.
+    if (found.length !== saleIds.length) throw new Error(`Sales ${saleIds.join(', ')} are no longer all there`);
+    const sales = found.map(toSaleDto);
     return { sales, total: roundMoney(sales.reduce((sum, sale) => sum + sale.totalAmount, 0)), invoice, ...from };
   }
 

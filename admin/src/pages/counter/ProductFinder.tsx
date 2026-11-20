@@ -95,7 +95,6 @@ function FinderForm({ products, error, onRetry, initialQuery, onAdd }: FinderPro
   }, [active, shown.length]);
 
   function pick(product: Product) {
-    if (product.stock.quantity <= 0) return;
     onAdd(product);
     setAdded((last) => ({ id: product.id, name: product.name, count: last?.id === product.id ? last.count + 1 : 1 }));
     input.current?.focus();
@@ -212,7 +211,6 @@ function FinderForm({ products, error, onRetry, initialQuery, onAdd }: FinderPro
                 id={`counter-finder-${product.id}`}
                 role="option"
                 aria-selected={index === active}
-                aria-disabled={out || undefined}
                 className={out ? 'counter-finder__item counter-finder__item--out' : 'counter-finder__item'}
                 onMouseMove={() => index !== active && setActive(index)}
                 onClick={() => pick(product)}

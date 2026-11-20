@@ -1471,7 +1471,7 @@ input.switch::after {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--switch-knob);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
   transition: transform 0.12s;
 }
@@ -1481,6 +1481,8 @@ input.switch:checked {
 }
 
 input.switch:checked::after {
+  /* On the ink track: paper, which is white in light mode and near-black in dark, where the ink turns near-white. */
+  background: var(--surface);
   transform: translateX(16px);
 }
 

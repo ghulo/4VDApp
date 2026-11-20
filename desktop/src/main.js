@@ -7,6 +7,7 @@ const { pathToFileURL } = require('node:url');
 const { autoUpdater } = require('electron-updater');
 const fiscal = require('./fiscal.js');
 const setupStore = require('./setup.js');
+const { keyAction, pathOf } = require('./keys.js');
 
 // `npm start` can point at a local dashboard instead: DASHBOARD_URL=http://localhost:5173/
 const DASHBOARD_URL = (!app.isPackaged && process.env.DASHBOARD_URL) || 'https://4vd.app/';
@@ -124,17 +125,17 @@ function showEditMenu({ editFlags, isEditable, selectionText }) {
 }
 
 // With no menu bar the browser's reload and zoom keys are gone, so they come back here.
+// The Counter keeps F5 for itself (it picks the customer there): see keys.js.
 function handleKeys(event, input) {
-  if (input.type !== 'keyDown') return;
   const contents = win.webContents;
+  const action = keyAction(input, pathOf(contents.getURL()));
+  if (!action) return;
   const zoomBy = (step) => contents.setZoomLevel(Math.max(-3, Math.min(3, contents.getZoomLevel() + step)));
-  const key = input.key.toLowerCase();
-  if (key === 'f5' || (input.control && key === 'r')) contents.reload();
-  else if (key === 'f11') win.setFullScreen(!win.isFullScreen());
-  else if (input.control && (key === '=' || key === '+')) zoomBy(0.5);
-  else if (input.control && key === '-') zoomBy(-0.5);
-  else if (input.control && key === '0') contents.setZoomLevel(0);
-  else return;
+  if (action === 'reload') contents.reload();
+  else if (action === 'fullscreen') win.setFullScreen(!win.isFullScreen());
+  else if (action === 'zoomIn') zoomBy(0.5);
+  else if (action === 'zoomOut') zoomBy(-0.5);
+  else contents.setZoomLevel(0);
   event.preventDefault();
 }
 

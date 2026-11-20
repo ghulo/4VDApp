@@ -19,6 +19,7 @@ import type { Product } from '../../services/types';
 import { FAVORITES_KEY, teamApi } from '../../services/teamApi';
 import { errorMessage } from '../../utils/errors';
 import { formatMoney } from '../../utils/format';
+import { lookupFailure } from '../counter/tillRules';
 
 type Pick = 'writeOff' | 'expiry';
 const PICKS: Pick[] = ['writeOff', 'expiry'];
@@ -59,8 +60,9 @@ export function StaffProductsPage() {
     setScanProblem(null);
     try {
       open(await productsApi.byBarcode(code));
-    } catch {
-      setScanProblem(t.staff.camera.notFound(code));
+    } catch (error) {
+      // No such barcode, or no answer at all (no internet): two different things to do.
+      setScanProblem(lookupFailure(error) === 'notFound' ? t.staff.camera.notFound(code) : t.staff.camera.cantCheck(code));
     }
   }
 

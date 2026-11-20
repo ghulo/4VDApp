@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Catalogue } from '../../i18n/en';
-import { displayJob } from '../../utils/fiscalReceipt';
+import { displayJob, type ReceiptLine, type ReceiptPayment } from '../../utils/fiscalReceipt';
+
+/** What a receipt is built from, kept so it can be built again (a printer tax group set later, an empty text kept by an older version). */
+export interface ReceiptInput {
+  lines: ReceiptLine[];
+  payment: ReceiptPayment;
+}
 
 /** Whether this screen can print: only from the Windows app, with F-Link running beside it. */
 export type PrinterReach = 'checking' | 'off' | 'browser' | 'oldApp' | 'noFolder' | 'notRunning' | 'ready';
@@ -14,8 +20,10 @@ export interface Unprinted {
   number: string;
   total: number;
   at: string;
+  /** The printer's job; empty when it couldn't be built (then `job` builds it again). */
   text: string;
   reason: string;
+  job?: ReceiptInput;
 }
 
 const STORE = '4vd.counter.unprinted';

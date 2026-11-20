@@ -40,6 +40,12 @@ export interface Basket {
   payLater?: PayLaterApproval | null;
   /** Wholesale prices switched on or off for this basket; left out: what the customer pays. */
   wholesale?: boolean | null;
+  /**
+   * The key of the sale being paid, kept until it is recorded or the basket
+   * changes: Pay pressed again (an answer lost, a second press) sends the same
+   * key, so the server records the sale once.
+   */
+  saleKey?: string;
 }
 
 const newBasket = (): Basket => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, startedAt: Date.now(), lines: [] });
@@ -103,15 +109,24 @@ export function useBaskets(userId: number) {
       baskets: now.baskets.map((basket) => {
         if (basket.id !== now.current) return basket;
         const lines = update(basket.lines);
+        // Different lines are a different sale: the next Pay gets a new key.
+        const { saleKey: _old, ...rest } = basket;
         // A sale starts with its first product, not when the empty basket was opened (maybe last night).
-        return basket.lines.length === 0 && lines.length > 0 ? { ...basket, lines, startedAt: Date.now() } : { ...basket, lines };
+        return basket.lines.length === 0 && lines.length > 0 ? { ...rest, lines, startedAt: Date.now() } : { ...rest, lines };
       }),
     }));
   }, []);
 
-  /** Change the basket at the till: its customer or its rabat. */
-  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater' | 'wholesale'>>) => {
-    setState((now) => ({ ...now, baskets: now.baskets.map((basket) => (basket.id === now.current ? { ...basket, ...patch } : basket)) }));
+  /** Change the basket at the till: its customer or its rabat. Any change but the sale key itself drops the sale key. */
+  const update = useCallback((patch: Partial<Pick<Basket, 'customerId' | 'discount' | 'approval' | 'offerId' | 'offerNumber' | 'delivery' | 'payLater' | 'wholesale' | 'saleKey'>>) => {
+    setState((now) => ({
+      ...now,
+      baskets: now.baskets.map((basket) => {
+        if (basket.id !== now.current) return basket;
+        const { saleKey: _old, ...rest } = basket;
+        return 'saleKey' in patch ? { ...basket, ...patch } : { ...rest, ...patch };
+      }),
+    }));
   }, []);
 
   /** Park this basket and start another; false when five are open already. */

@@ -6,6 +6,7 @@
  */
 
 import { ApiError } from '../../services/apiClient';
+import type { ReceiptInput } from './useFiscalPrinter';
 
 const STORAGE_KEY = '4vd.counter.offline';
 
@@ -33,7 +34,7 @@ export interface QueuedSale {
    * The fiscal receipt, printed at once: its text, and whether it printed (with
    * the printer's number). One that didn't goes to Not printed once the sale is sent.
    */
-  receipt: { text: string; printed: boolean; fiscalNo: string | null; reason: string } | null;
+  receipt: { text: string; printed: boolean; fiscalNo: string | null; reason: string; job?: ReceiptInput } | null;
   /** The server refused it (not a network problem): why, for the owner to see. */
   refused?: string;
 }

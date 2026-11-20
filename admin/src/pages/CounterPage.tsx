@@ -1,4 +1,4 @@
-import { RollingNumber, RollUp, SuccessCheck } from '../components/ui';
+import { RollingNumber, SuccessCheck } from '../components/ui';
 import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
@@ -49,6 +49,8 @@ import { errorMessage } from '../utils/errors';
 import { formatDate, formatMoney, formatQuantity, formatTime } from '../utils/format';
 import { offersByProduct, tapShortDated as nextShortDated } from '../utils/shortDated';
 import { MissingTaxGroup, clearArticlesJob, displayFor, receiptJob, xReportJob, zReportJob } from '../utils/fiscalReceipt';
+import { flushEvents, localEventStore, sendEvents } from './counter/eventOutbox';
+import { DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -62,7 +64,7 @@ import { RefundSheet } from './counter/RefundSheet';
 import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { type Basket, useBaskets } from './counter/useBaskets';
-import { type PrintResult, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
+import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
 import { isNetworkFailure, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import { useWaitingSales } from './counter/useWaitingSales';
 
@@ -117,6 +119,8 @@ interface Alarm {
   title: string;
   detail: string;
   todo: string;
+  /** A way out besides Got it, such as switching to the owner. */
+  action?: { label: string; run: () => void };
 }
 
 const isTyping = (target: EventTarget | null) =>
@@ -129,6 +133,8 @@ const minutesSince = (time: number, now: number) => Math.max(0, Math.floor((now 
 
 /** How long Pay waits for the server before the sale waits on the PC instead. */
 const PAY_TIMEOUT_MS = 12_000;
+/** How long a scan waits for the server to look up a code this PC's shelf doesn't know. */
+const LOOKUP_TIMEOUT_MS = 5_000;
 
 /** Whether the browser says it is connected, kept up to date. */
 function useOnline(): boolean {
@@ -166,6 +172,9 @@ export function CounterPage() {
   const products = useQuery({ queryKey: ['products', 'counter-shelf'], queryFn: counterApi.products, staleTime: 60_000 });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
+  const shopRules = useQuery({ queryKey: ['settings', 'rules'], queryFn: settingsApi.rules, staleTime: 60_000 });
+  const noStockRule = shopRules.data?.noStockSales ?? 'block';
   // The Z report's header shows the business's own name (4VD's own business: 4VD).
   const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
@@ -271,26 +280,55 @@ export function CounterPage() {
 
   const focusScan = useCallback(() => scanRef.current?.focus({ preventScroll: true }), []);
 
-  const record = useCallback(
-    (events: CounterEventInput[]) => counterApi.record(events).catch(() => undefined),
-    [],
-  );
+  // Never in the way of the sale: without internet the events wait on this PC and go once it is back.
+  const record = useCallback((events: CounterEventInput[]) => sendEvents(localEventStore, user.id, events, counterApi.record), [user.id]);
+  useEffect(() => {
+    if (online) void flushEvents(localEventStore, user.id, counterApi.record);
+  }, [online, user.id]);
 
   /** The beep or the buzz after a scan, unless Settings → Counter turned them off. */
   const sound = (kind: 'ok' | 'fail') => {
     if (settings.data?.scanSounds !== false) playScanSound(kind);
   };
 
-  /** Put one or more of a product in the basket, never more than the shelf holds. False when not all of them went in. */
+  // A product refused past stock, put in once an owner or admin takes over the till.
+  // Only for a couple of minutes: a switch much later, for something else, adds nothing.
+  const [afterSwitch, setAfterSwitch] = useState<{ product: Product; quantity: number; until: number } | null>(null);
+
+  /** Past stock with the shop's rule against it: the big alarm, with the owner's way through when they can take over. */
+  function refuseStock(product: Product, wanted: number, inBasket: number) {
+    const stock = product.stock.quantity;
+    const text = stock <= 0 ? t.counter.outOfStock(product.name) : t.counter.noMore(product.name, stock);
+    alarmFor(text, {
+      title: stock <= 0 ? t.counter.alarm.outOfStock : t.counter.alarm.noMore,
+      detail: text,
+      todo: online ? t.counter.alarm.blockedTodo : t.counter.alarm.blockedOfflineTodo,
+      action: online
+        ? {
+            label: t.counter.alarm.switchToOwner,
+            run: () => {
+              setAfterSwitch({ product, quantity: toGram(wanted - inBasket), until: Date.now() + 2 * 60_000 });
+              startPanel('switch');
+            },
+          }
+        : undefined,
+    });
+  }
+
+  /**
+   * Put one or more of a product in the basket. Past what 4VD thinks is on the
+   * shelf it goes in with a word to count it, unless the shop refuses that and
+   * an employee is selling. False when not all of them went in.
+   */
   function add(product: Product, quantity = 1): boolean {
     const already = current.lines.find((line) => line.productId === product.id)?.quantity ?? 0;
     const stock = product.stock.quantity;
-    if (stock <= already) {
-      if (stock === 0) alarmFor(t.counter.outOfStock(product.name), { title: t.counter.alarm.outOfStock, detail: product.name, todo: t.counter.alarm.stockTodo });
-      else alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.stockTodo });
+    const decision = stockDecision({ stock, already, wanted: already + quantity, rule: noStockRule, oversees: canOversee(user.role) });
+    if (decision.kind === 'refused' && decision.quantity <= already) {
+      refuseStock(product, already + quantity, already);
       return false;
     }
-    const next = toGram(Math.min(already + quantity, stock));
+    const next = decision.quantity;
     setLines((now) =>
       now.some((line) => line.productId === product.id)
         ? now.map((line) => (line.productId === product.id ? { ...line, quantity: next } : line))
@@ -301,15 +339,25 @@ export function CounterPage() {
     setLastSale(null);
     setChecked(null);
     setPrintNote((note) => (note?.ok ? null : note));
-    if (next < toGram(already + quantity)) {
-      alarmFor(t.counter.noMore(product.name, stock), { title: t.counter.alarm.noMore, detail: t.counter.noMore(product.name, stock), todo: t.counter.alarm.partTodo(next) });
+    if (decision.kind === 'refused') {
+      refuseStock(product, already + quantity, next);
       return false;
     }
     setAlarm(null);
     setProblem(null);
-    setNotice(null);
+    setNotice(decision.kind === 'past' ? t.counter.pastStock(product.name, stock) : null);
     return true;
   }
+
+  // The owner took over after a refusal: what was refused goes in now.
+  useEffect(() => {
+    if (!afterSwitch) return;
+    setAfterSwitch(null);
+    const product = byId.get(afterSwitch.product.id);
+    if (canOversee(user.role) && product && Date.now() < afterSwitch.until) add(product, afterSwitch.quantity);
+    // Runs once per person at the till; add() reads the latest basket itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]);
 
   /** Price check: show the product, put nothing in the basket. */
   function showCheck(product: Product) {
@@ -386,10 +434,7 @@ export function CounterPage() {
       sound(add(product, quantity * piecesFor(product, code)) ? 'ok' : 'fail');
     };
     const shelf = products.data ?? [];
-    const lower = code.toLowerCase();
-    const exact =
-      shelf.find((product) => product.barcode === code || product.otherBarcodes.includes(code)) ??
-      shelf.find((product) => product.sku !== null && product.sku.toLowerCase() === lower);
+    const exact = exactMatch(code, shelf);
     // A product comes first: the shop's own number format could look like a product code.
     if (exact) return take(exact);
     const documentNumber = documentNumberFromScan(code);
@@ -411,24 +456,35 @@ export function CounterPage() {
       alarmFor(t.counter.alarm.noScalePlu(label.plu), { title: t.counter.alarm.noScalePlu(label.plu), detail: code, todo: t.counter.alarm.noScalePluTodo });
       return sound('fail');
     }
-    const named = shelf.filter((product) => product.name.toLowerCase().includes(lower));
-    if (named.length === 1) return take(named[0]!);
-    if (named.length > 1) {
+    // A barcode this PC's shelf doesn't know yet (a product added since): the server's answer comes before any name.
+    let failure: ReturnType<typeof lookupFailure> = online ? 'notFound' : 'offline';
+    if (online) {
+      try {
+        return take(await withTimeout(productsApi.byBarcode(code), LOOKUP_TIMEOUT_MS));
+      } catch (error) {
+        failure = lookupFailure(error);
+      }
+    }
+    // Typed words: one product by a real name goes in; digits or a couple of letters only open the finder.
+    const named = nameMatches(code, shelf);
+    if (named.addAtOnce) return take(named.products[0]!);
+    if (named.products.length > 0) {
       setFinderQuery(code);
       return setPanel('find');
     }
-    try {
-      take(await productsApi.byBarcode(code));
-    } catch {
-      alarmFor(t.counter.notFound(code), { title: t.counter.alarm.notFound, detail: code, todo: t.counter.alarm.notFoundTodo });
-      sound('fail');
-    }
+    if (failure === 'notFound') alarmFor(t.counter.notFound(code), { title: t.counter.alarm.notFound, detail: code, todo: t.counter.alarm.notFoundTodo });
+    else alarmFor(t.counter.cantCheck(code), { title: t.counter.alarm.cantCheck, detail: code, todo: t.counter.alarm.cantCheckTodo });
+    sound('fail');
   }
 
   function setQuantity(productId: number, quantity: number) {
     const product = byId.get(productId);
-    const capped = product ? Math.min(quantity, product.stock.quantity) : quantity;
-    if (product && capped < quantity) complain(t.counter.noMore(product.name, product.stock.quantity));
+    const already = current.lines.find((line) => line.productId === productId)?.quantity ?? 0;
+    // Fewer is always fine, even on a line already past stock.
+    const decision = product && quantity > already ? stockDecision({ stock: product.stock.quantity, already, wanted: quantity, rule: noStockRule, oversees: canOversee(user.role) }) : null;
+    const capped = decision ? decision.quantity : quantity;
+    if (product && decision?.kind === 'refused') complain(t.counter.noMore(product.name, product.stock.quantity));
+    if (product && decision?.kind === 'past') say(t.counter.pastStock(product.name, product.stock.quantity));
     const least = allowsParts(product?.unit) ? 0.001 : 1;
     setLines((now) => now.map((line) => (line.productId === productId ? { ...line, quantity: Math.max(least, toGram(capped)) } : line)));
   }
@@ -512,7 +568,7 @@ export function CounterPage() {
     for (const { sale, result } of sent) {
       if (sale.receipt?.printed && sale.receipt.fiscalNo) void documentsApi.setFiscalReceipt(result.invoice.id, sale.receipt.fiscalNo).catch(() => undefined);
       if (sale.receipt && !sale.receipt.printed) {
-        printer.keepUnprinted({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at: sale.at, text: sale.receipt.text, reason: sale.receipt.reason });
+        printer.keepUnprinted({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at: sale.at, text: sale.receipt.text, reason: sale.receipt.reason, job: sale.receipt.job });
         void record([{ kind: 'print_failed', documentId: result.invoice.id, reason: sale.receipt.reason.slice(0, 200) }]);
       }
       setLastSale((last) => (last?.key === sale.key ? { ...last, documentId: result.invoice.id, number: result.invoice.number } : last));
@@ -520,13 +576,33 @@ export function CounterPage() {
     refreshAfterSale();
   });
 
+  // A sale on its way to the server: Back, Esc, the basket tabs and Switch person wait for it.
+  const [paying, setPaying] = useState(false);
+  const payingRef = useRef(false);
+  const setPayingNow = (on: boolean) => {
+    payingRef.current = on;
+    setPaying(on);
+  };
+
   async function pay(payment: Payment) {
+    setPayingNow(true);
+    try {
+      await recordSale(payment);
+    } catch (error) {
+      // Recorded sales free the till themselves before printing; this is only for a sale that failed.
+      setPayingNow(false);
+      throw error;
+    }
+  }
+
+  async function recordSale(payment: Payment) {
     const basketId = current.id;
-    // Made now, so a sale sent twice (the answer got lost) is recorded once.
-    const key = newSaleKey();
-    const body = basketBody(payment);
     if (payment.paidBy === 'tab' && !online) throw new Error(t.counter.offlineNoTab);
     if (current.delivery && !online) throw new Error(t.counter.offlineNoDelivery);
+    // One key per basket until it is paid or changes, so Pay pressed again (the answer got lost) records the sale once.
+    const key = current.saleKey ?? newSaleKey();
+    if (!current.saleKey) updateBasket({ saleKey: key });
+    const body = basketBody(payment);
     const delivered = current.delivery ?? null;
     let result: Awaited<ReturnType<typeof salesApi.recordBasket>> | null = null;
     if (online) {
@@ -573,6 +649,8 @@ export function CounterPage() {
         });
     closeBasket(basketId);
     setPanel(null);
+    // Recorded (or waiting on this PC): the till is free again while the receipt prints.
+    setPayingNow(false);
     setSelectedId(null);
     setFlash(null);
     const card = payment.paidBy === 'split' ? (payment.cardAmount ?? 0) : 0;
@@ -604,31 +682,28 @@ export function CounterPage() {
       return;
     }
 
+    // Kept with a receipt that doesn't print, so Print again can build it once more.
+    const job: ReceiptInput = {
+      lines: receiptLines,
+      // Card and Cash + card print as cash, as the shop's receipts always have; the printer's change is the cash change.
+      payment: payment.paidBy === 'card' ? { by: 'card' } : { by: 'cash', tendered: payment.tendered === null ? null : roundMoney(payment.tendered + card) },
+    };
     let text: string;
     try {
-      text = receiptJob({
-        lines: receiptLines,
-        footer: settings.data.receiptFooter,
-        taxGroups: settings.data.printer.taxGroups,
-        // Card and Cash + card print as cash, as the shop's receipts always have; the printer's change is the cash change.
-        payment:
-          payment.paidBy === 'card'
-            ? { by: 'card' }
-            : { by: 'cash', tendered: payment.tendered === null ? null : roundMoney(payment.tendered + card) },
-      });
+      text = buildReceipt(job);
     } catch (error) {
-      const reason = error instanceof MissingTaxGroup ? t.counter.printer.noTaxGroup(error.rate) : errorMessage(error);
-      if (result) return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason });
-      waiting.printed(key, { text: '', printed: false, fiscalNo: null, reason });
+      const reason = receiptProblem(error);
+      if (result) return printFailed({ documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text: '', reason, job });
+      waiting.printed(key, { text: '', printed: false, fiscalNo: null, reason, job });
       return offlinePrinted(key, { ok: false, message: reason });
     }
     if (!result) {
       // Offline the fiscal receipt still prints at once; 4VD's invoice number comes when the sale is sent.
       const printed = await printer.send(`4VD-OFF-${key.slice(0, 8)}`, text);
-      waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message });
+      waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message, job });
       return offlinePrinted(key, printed);
     }
-    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '' };
+    const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '', job };
     const printed = await printer.send(`4VD-${result.invoice.number}`, text);
     await afterPrint(item, printed, false);
   }
@@ -659,10 +734,33 @@ export function CounterPage() {
     if (again) void record([{ kind: 'reprinted', documentId: item.documentId }]);
   }
 
+  /** The printer's job for a receipt, with today's footer and tax groups. Throws when a VAT rate has no tax group. */
+  function buildReceipt(job: ReceiptInput): string {
+    if (!settings.data) throw new Error(t.counter.printer.unknown);
+    return receiptJob({ ...job, footer: settings.data.receiptFooter, taxGroups: settings.data.printer.taxGroups });
+  }
+  const receiptProblem = (error: unknown) => (error instanceof MissingTaxGroup ? t.counter.printer.noTaxGroup(error.rate) : errorMessage(error));
+
+  /** A receipt that can't go to the printer at all: say why, on screen and in Not printed. */
+  function cantPrint(item: Unprinted, reason: string) {
+    printer.keepUnprinted({ ...item, reason });
+    setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'failed' } : sale));
+    setPrintNote({ ok: false, text: reason });
+  }
+
   async function printAgain(item: Unprinted) {
-    if (!item.text) return;
-    const printed = await printer.send(`4VD-${item.number}`, item.text);
-    await afterPrint(item, printed, true);
+    let text = item.text;
+    // Built again when it couldn't be the first time (a tax group set since, or an older 4VD kept no text).
+    if (!text) {
+      if (!item.job) return cantPrint(item, t.counter.noReceiptKept);
+      try {
+        text = buildReceipt(item.job);
+      } catch (error) {
+        return cantPrint(item, receiptProblem(error));
+      }
+    }
+    const printed = await printer.send(`4VD-${item.number}`, text);
+    await afterPrint({ ...item, text }, printed, true);
   }
 
   async function runReport(kind: 'x' | 'z') {
@@ -730,7 +828,8 @@ export function CounterPage() {
     if (panel === 'pay') {
       if (event.key === 'Escape') {
         event.preventDefault();
-        closePanel();
+        // While the sale is on its way, going back could let it be paid twice.
+        if (!payingRef.current) closePanel();
       }
       return;
     }
@@ -784,10 +883,16 @@ export function CounterPage() {
     return () => window.removeEventListener('keydown', listener);
   }, []);
 
+  // When the last scan's Enter came: a scanner that sends two (CR+LF, or a double Enter) must not open Pay.
+  const lastScanEnter = useRef(Number.NEGATIVE_INFINITY);
   function handleScanKey(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (scan.trim() === '') return hasLines && !priceCheck ? startPanel('pay') : undefined;
+      if (scan.trim() === '') {
+        if (event.timeStamp - lastScanEnter.current < DOUBLE_ENTER_MS) return;
+        return hasLines && !priceCheck ? startPanel('pay') : undefined;
+      }
+      lastScanEnter.current = event.timeStamp;
       return void handleScan(scan);
     }
     if (scan === '' && (event.key === '+' || event.key === '-')) {
@@ -875,6 +980,7 @@ export function CounterPage() {
                 type="button"
                 className="counter-basket"
                 aria-pressed={basket.id === current.id}
+                disabled={paying}
                 onClick={() => {
                   selectBasket(basket.id);
                   setSelectedId(null);
@@ -892,7 +998,7 @@ export function CounterPage() {
               </button>
             );
           })}
-          <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} title="F8" aria-keyshortcuts="F8">
+          <Button size="sm" variant="ghost" icon={Plus} onClick={newBasket} disabled={paying} title="F8" aria-keyshortcuts="F8">
             {t.counter.newBasket}
           </Button>
         </div>
@@ -928,7 +1034,7 @@ export function CounterPage() {
           )}
           <span className="counter__divider" aria-hidden="true" />
           {tillItems.length > 0 && <MenuButton label={t.counter.groups.till} icon={CashRegister} items={tillItems} />}
-          <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
+          <Button size="sm" variant="ghost" icon={UsersThree} disabled={!online || paying} onClick={() => startPanel('switch')} aria-label={t.counter.switchKey} title={t.counter.switchKey}>
             <span className="counter__bar-label">{t.counter.switchKey}</span>
           </Button>
           {counterOnly(user.role) ? (
@@ -1119,6 +1225,14 @@ export function CounterPage() {
                 setPanel('approvePayLater');
               }}
               door={current.delivery?.payment === 'door' ? current.delivery : null}
+              // A barcode scanned while paying: back to the basket, and the product goes in.
+              onScan={(code) => {
+                if (payingRef.current) return;
+                // A scanner that sends a second Enter must not open Pay again from the empty scan box.
+                lastScanEnter.current = performance.now();
+                closePanel();
+                void handleScan(code);
+              }}
             />
           ) : (
             <>
@@ -1271,10 +1385,11 @@ export function CounterPage() {
             confirm={t.counter.confirmRemove}
             onClose={closePanel}
             onConfirm={async (reason) => {
-              await counterApi.record([{ kind: 'line_removed', productId: selected.productId, quantity: selected.quantity, amount: selected.total, reason }]);
+              // The basket first: without internet the line still goes, and the owner's record of it waits on this PC.
               setLines((now) => now.filter((line) => line.productId !== selected.productId));
               setSelectedId(null);
               closePanel();
+              void record([{ kind: 'line_removed', productId: selected.productId, quantity: selected.quantity, amount: selected.total, reason }]);
             }}
           />
         </>
@@ -1384,10 +1499,10 @@ export function CounterPage() {
         confirm={t.counter.confirmCancel}
         onClose={closePanel}
         onConfirm={async (reason) => {
-          await counterApi.record([{ kind: 'basket_cancelled', quantity: Math.max(1, summary.pieces), amount: total, reason }]);
           closeBasket(current.id);
           setSelectedId(null);
           closePanel();
+          void record([{ kind: 'basket_cancelled', quantity: Math.max(1, summary.pieces), amount: total, reason }]);
         }}
       />
       <ReasonSheet
@@ -1410,9 +1525,12 @@ export function CounterPage() {
         initialQuery={finderQuery}
         onClose={closePanel}
         onAdd={(product) => {
-          if (!priceCheck) return void add(product);
-          showCheck(product);
-          closePanel();
+          if (priceCheck) {
+            showCheck(product);
+            return closePanel();
+          }
+          // Refused (past stock): the finder steps aside so the alarm, and the owner's way through, can be seen.
+          if (!add(product)) closePanel();
         }}
       />
       <InvoicesSheet
@@ -1568,7 +1686,7 @@ function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprint
         <div className="counter-sold__change">
           <p className="counter-sold__change-label">{t.counter.giveBack}</p>
           <p className="counter-sold__change-amount">
-            <RollUp value={formatMoney(sale.change)} from={formatMoney(0)} />
+            {formatMoney(sale.change)}
           </p>
           {sale.tendered !== null && <p className="counter-sold__change-note">{p.gaveOf(formatMoney(sale.tendered), formatMoney(cashDue))}</p>}
         </div>
@@ -1591,7 +1709,7 @@ function PaidScreen({ sale, unprinted, onPrintAgain }: { sale: LastSale; unprint
         {sale.print === 'failed' && (
           <>
             <span className="counter-stamp counter-stamp--failed">{t.counter.printer.failed}</span>
-            {unprinted?.text && (
+            {unprinted && (
               <Button size="sm" icon={Printer} onClick={() => onPrintAgain(unprinted)}>
                 {p.printAgain}
               </Button>
@@ -1749,6 +1867,11 @@ function ScanAlarm({ alarm, onClose }: { alarm: Alarm; onClose: () => void }) {
         <Badge tone="danger">{alarm.title}</Badge>
         <p className="counter-alarm__detail">{alarm.detail}</p>
         <p className="counter-alarm__todo">{alarm.todo}</p>
+        {alarm.action && (
+          <Button variant="primary" icon={UsersThree} onClick={alarm.action.run}>
+            {alarm.action.label}
+          </Button>
+        )}
         <Button variant="secondary" onClick={onClose} aria-keyshortcuts="Escape">
           {t.counter.alarm.ok}
           <kbd className="counter-key__hotkey" aria-hidden="true">

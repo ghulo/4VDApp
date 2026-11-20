@@ -325,7 +325,7 @@ function InvoiceDetail({
       </div>
 
       <div className="counter-invoice__actions">
-        {unprinted?.text && (
+        {unprinted && (
           <Button icon={Printer} onClick={() => onPrintAgain(unprinted)}>
             {t.counter.paidScreen.printAgain}
           </Button>

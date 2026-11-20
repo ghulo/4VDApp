@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win",
-    "test": "node --test src/fiscal.test.js src/setup.test.js"
+    "test": "node --test src/fiscal.test.js src/setup.test.js src/keys.test.js"
   },
   "build": {
     "appId": "app.4vd.desktop",

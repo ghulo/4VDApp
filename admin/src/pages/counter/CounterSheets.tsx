@@ -10,15 +10,13 @@ import { errorMessage } from '../../utils/errors';
 import { formatDateTime, formatMoney, formatTime } from '../../utils/format';
 import { changeIn, likelyNotes } from './changeCoach';
 import { cashDue, changeFor, type PayDraft, splitFor } from './payDraft';
+import { BurstWatcher, DOUBLE_ENTER_MS, SCANNER_GAP_MS, tenderedLooksWrong } from './tillRules';
 import type { Unprinted } from './useFiscalPrinter';
 
 /** "7,5" or "7.5" as a number; NaN when it isn't one. */
 export const parseAmount = (text: string) => (text.trim() === '' ? Number.NaN : Number(text.replace(',', '.')));
 
 export type ReasonKey = 'scannedTwice' | 'changedMind' | 'wrongProduct' | 'leftWithout' | 'change' | 'other';
-
-/** Keys closer together than this come from the barcode scanner, not a hand. */
-const SCANNER_GAP_MS = 60;
 
 interface ReasonProps {
   reasons: ReasonKey[];
@@ -234,6 +232,8 @@ interface PayProps {
   onAskOwner?: (customer: Customer) => void;
   /** A delivery whose rest is collected at the door: only the part paid now is taken, in cash. */
   door?: DeliveryInput | null;
+  /** The barcode scanner fired while paying: the code it sent (the cash typed before it is kept). */
+  onScan?: (code: string) => void;
 }
 
 /** Whether this customer may put `total` on their tab without asking the owner. */
@@ -247,10 +247,17 @@ export function mayPayLater(customer: Customer, total: number, approval: PayLate
  * give it), card on the bank's terminal, part of each, or on a customer's tab. The receipt
  * beside it shows what was paid and the change as it is typed.
  */
-export function PayPanel({ total: saleTotal, customers, draft: given, offline = false, onChange, onPay, onBack, canDecide = false, payLater, onAskOwner, door = null }: PayProps) {
+export function PayPanel({ total: saleTotal, customers, draft: given, offline = false, onChange, onPay, onBack, canDecide = false, payLater, onAskOwner, door = null, onScan }: PayProps) {
   const t = useT();
   const [busy, setBusy] = useState(false);
+  // Set at once, so a second Enter before the screen shows "busy" doesn't record the sale twice.
+  const sending = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  // Cash far over the total (a barcode scanned into the box?) records only on a second press with the same amount.
+  const [checking, setChecking] = useState<string | null>(null);
+  const burst = useRef(new BurstWatcher());
+  const beforeBurst = useRef<PayDraft>(given);
+  const burstEnded = useRef(Number.NEGATIVE_INFINITY);
   // At the door: only the part paid now is taken here, and only in cash.
   const total = door ? (door.paidNow ?? 0) : saleTotal;
   const draft: PayDraft = door ? { ...given, paidBy: 'cash' } : given;
@@ -263,10 +270,16 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
   const blocked = (draft.paidBy === 'tab' && (draft.customerId === '' || offline || needsOwner)) || short || (draft.paidBy === 'split' && !split?.valid);
   const takesCash = (draft.paidBy === 'cash' && total > 0) || (draft.paidBy === 'split' && split?.valid === true);
   const set = (patch: Partial<PayDraft>) => onChange({ ...draft, ...patch });
+  const back = () => {
+    if (!sending.current) onBack();
+  };
+  const looksWrong = cash !== null && tenderedLooksWrong(cash.given, due);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (blocked) return;
+    if (blocked || sending.current) return;
+    if (looksWrong && checking !== draft.tendered) return setChecking(draft.tendered);
+    sending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -280,11 +293,36 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
     } catch (failure) {
       setError(errorMessage(failure));
       setBusy(false);
+    } finally {
+      sending.current = false;
     }
   }
 
   return (
-    <form className="counter-form counter-pay-panel" onSubmit={submit} aria-label={t.counter.payTitle(formatMoney(saleTotal))}>
+    <form
+      className="counter-form counter-pay-panel"
+      onSubmit={submit}
+      aria-label={t.counter.payTitle(formatMoney(saleTotal))}
+      // The barcode scanner types a code and Enter in a burst: wherever the focus is, that is a product, never cash or a press of Record sale.
+      onKeyDownCapture={(event) => {
+        if (event.ctrlKey || event.altKey || event.metaKey) return;
+        // A scanner's second Enter (CR+LF) right after its code is part of the scan, never Record sale.
+        if (event.key === 'Enter' && event.timeStamp - burstEnded.current < DOUBLE_ENTER_MS) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        const code = burst.current.key(event.key, event.timeStamp);
+        if (event.key.length === 1 && burst.current.length === 1) beforeBurst.current = given;
+        if (!code) return;
+        burstEnded.current = event.timeStamp;
+        event.preventDefault();
+        event.stopPropagation();
+        if (sending.current) return;
+        onChange(beforeBurst.current);
+        onScan?.(code);
+      }}
+    >
       {door ? (
         <p className="counter-split-due counter-door" role="status">
           <Truck size={18} weight="bold" aria-hidden="true" />
@@ -321,7 +359,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
               value={draft.card}
               onChange={(event) => set({ card: event.target.value })}
               onKeyDown={(event) => {
-                if (event.key === 'Escape') onBack();
+                if (event.key === 'Escape') back();
               }}
             />
           </Field>
@@ -341,10 +379,15 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
               value={draft.tendered}
               onChange={(event) => set({ tendered: event.target.value })}
               onKeyDown={(event) => {
-                if (event.key === 'Escape') onBack();
+                if (event.key === 'Escape') back();
               }}
             />
           </Field>
+          {looksWrong && checking === draft.tendered && cash && (
+            <p className="counter-warning" role="alert">
+              {t.counter.tenderedCheck(formatMoney(cash.given), formatMoney(due))}
+            </p>
+          )}
           <div className="counter-notes" role="group" aria-label={t.counter.tendered}>
             <Button size="sm" onClick={() => set({ tendered: due.toFixed(2) })}>
               {t.counter.exact}
@@ -413,7 +456,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
         </p>
       )}
       <div className="counter-pay-panel__actions">
-        <Button variant="ghost" icon={ArrowLeft} onClick={onBack} title="Esc">
+        <Button variant="ghost" icon={ArrowLeft} onClick={back} disabled={busy} title="Esc">
           {t.counter.backToBasket}
         </Button>
         <Button variant="primary" type="submit" loading={busy} disabled={blocked} className="counter-pay-panel__record">
@@ -487,6 +530,8 @@ export function UnprintedSheet({
 }) {
   const t = useT();
   const [printing, setPrinting] = useState<number | null>(null);
+  // Leaving one unprinted means the customer never gets the fiscal receipt: it takes a second press.
+  const [leaving, setLeaving] = useState<number | null>(null);
   return (
     <Sheet open={open} onClose={onClose} title={t.counter.notPrintedTitle} description={t.counter.notPrintedHint} placement="center" wide>
       {items.length === 0 ? (
@@ -501,6 +546,11 @@ export function UnprintedSheet({
                 </p>
                 <p className="counter-unprinted__meta">{formatDateTime(item.at)}</p>
                 <p className="counter-unprinted__reason">{item.reason}</p>
+                {leaving === item.documentId && (
+                  <p className="counter-unprinted__reason" role="alert">
+                    {t.counter.dismissWarn(item.number)}
+                  </p>
+                )}
               </div>
               <div className="counter-unprinted__actions">
                 <Button
@@ -517,9 +567,20 @@ export function UnprintedSheet({
                 >
                   {t.counter.printAgain}
                 </Button>
-                <Button size="sm" variant="ghost" aria-label={t.counter.dismissLabel(item.number)} onClick={() => onLeave(item)}>
-                  {t.counter.dismiss}
-                </Button>
+                {leaving === item.documentId ? (
+                  <>
+                    <Button size="sm" variant="danger" autoFocus onClick={() => onLeave(item)}>
+                      {t.counter.dismissConfirm}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setLeaving(null)}>
+                      {t.counter.keepIt}
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="ghost" aria-label={t.counter.dismissLabel(item.number)} disabled={printing === item.documentId} onClick={() => setLeaving(item.documentId)}>
+                    {t.counter.dismiss}
+                  </Button>
+                )}
               </div>
             </li>
           ))}

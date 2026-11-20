@@ -59,6 +59,17 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Till fixes before launch** (the Counter on the shop PC; F5 needs the next Windows app release)
+- [ ] Windows app: F5 on the Counter opens Customer and doesn't reload; F5 elsewhere still reloads; Ctrl+R reloads everywhere; F10 toggles Price check (Windows doesn't open a menu); F11 is still full screen
+- [ ] "Sell past stock" off: an employee scanning one more than the shelf holds sees "Switch to the owner"; the owner types their PIN and the product goes in under the owner's name. On: anyone sells it with "ask for a count" under the scan box
+- [ ] Price check (F10) and F3 find a product with 0 stock
+- [ ] With Pay open, scan a barcode into Tendered: back to the basket with the product added, no sale recorded
+- [ ] Type 5000 as cash on a small sale: it asks first; Record sale again records it. Pressing Record sale twice fast records one sale; Back to basket and Esc wait while it is sending
+- [ ] Pull the network cable: remove a line and cancel a basket (both work); plug it back: the Counter report shows them
+- [ ] The real scanner (if it sends Enter twice) doesn't open Pay after a scan; a hand's Enter on the empty box still does
+- [ ] A receipt that didn't print because a VAT rate had no printer tax group: set the tax group in Settings → Counter, then Print again prints it; "Leave it" asks first
+- [ ] Short-dated −30% key text and switches (dark mode) are readable; the change shows its amount at once on the Paid screen
+
 **Customs papers** (on 4vd.app after the deploy)
 - [ ] Receive an order from a supplier abroad with its bill; on the bill page the Customs card asks for the paper; add VAT and duty: the bill's "In the books" shows a Customs paper entry (1260, 1340, bank or till) and the product's cost goes up
 - [ ] Change and remove the paper; the entry is reversed and rewritten; the VAT return for the paper's month shows the customs VAT in boxes 35/36

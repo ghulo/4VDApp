@@ -28,6 +28,8 @@
   --ink-muted: var(--neutral-700);
   --line: var(--neutral-200);
   --line-strong: var(--neutral-300);
+  /* A switch's knob when off: light on the grey track in both themes (dark keeps this value). */
+  --switch-knob: var(--neutral-50);
   --brand: var(--amber-700);
   --brand-ink: #ffffff;
   --brand-soft: var(--amber-100);

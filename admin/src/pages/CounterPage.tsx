@@ -2158,6 +2158,7 @@ export function CounterPage() {
         title={t.counter.drawerTitle}
         reasons={['change']}
         confirm={t.counter.confirmDrawer}
+        danger={false}
         onClose={closePanel}
         onConfirm={async (reason) => {
           await counterApi.record([{ kind: 'drawer_opened', reason }]);

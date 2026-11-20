@@ -2784,10 +2784,16 @@
   text-align: left;
 }
 
-.counter-confirm__reason[aria-expanded='true'] {
+/* The reason picked: pressed in, like a chosen key; the confirm key below does it. */
+.counter-confirm__reason[aria-checked='true'] {
   background: var(--info-soft);
   color: var(--info);
   box-shadow: var(--shadow-inset), inset 0 0 0 1px var(--info);
+}
+
+.counter-confirm__reason[aria-checked='true'] .counter-confirm__number {
+  box-shadow: inset 0 0 0 1px var(--info);
+  color: var(--info);
 }
 
 .counter-confirm__number {
@@ -2806,6 +2812,11 @@
 
 .counter-confirm__back {
   justify-content: flex-end;
+}
+
+.counter-confirm__back kbd {
+  margin-inline-start: var(--space-2);
+  font-family: var(--font-mono);
 }
 
 /* A delivery paid at the door: only the part paid now is taken here. */

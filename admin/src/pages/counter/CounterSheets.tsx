@@ -21,6 +21,8 @@ export type ReasonKey = 'scannedTwice' | 'changedMind' | 'wrongProduct' | 'leftW
 interface ReasonProps {
   reasons: ReasonKey[];
   confirm: string;
+  /** The confirm key is red (something goes); false for one that only opens something, like the drawer. */
+  danger?: boolean;
   onConfirm: (reason: string) => Promise<void>;
   onClose: () => void;
 }
@@ -28,7 +30,7 @@ interface ReasonProps {
 /**
  * Asks why before a line, a basket or the drawer goes: the owner reads it in
  * the Counter report. A short question in the middle of the screen, showing
- * what goes; each reason is a numbered key that answers and confirms at once.
+ * what goes; each reason is a numbered choice, and Enter (or the confirm key) does it.
  */
 export function ReasonSheet({ open, title, summary, ...form }: ReasonProps & { open: boolean; title: string; summary?: ReactNode }) {
   return (
@@ -38,35 +40,40 @@ export function ReasonSheet({ open, title, summary, ...form }: ReasonProps & { o
   );
 }
 
-function ReasonForm({ reasons, confirm, onConfirm, onClose }: ReasonProps) {
+function ReasonForm({ reasons, confirm, danger = true, onConfirm, onClose }: ReasonProps) {
   const t = useT();
   const promptId = useId();
-  const [writing, setWriting] = useState(false);
+  const [chosen, setChosen] = useState<ReasonKey | null>(null);
   const [other, setOther] = useState('');
-  const [busy, setBusy] = useState<ReasonKey | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const keys = [...reasons, 'other' as const];
-  const lastKey = useRef(0);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const lastKey = useRef(Number.NEGATIVE_INFINITY);
   const pending = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(pending.current), []);
 
-  async function done(key: ReasonKey, reason: string) {
+  async function done() {
     if (busy) return;
+    if (!chosen) return setError(t.counter.pickReasonFirst);
+    const reason = chosen === 'other' ? other.trim() : t.counter.reasons[chosen];
     if (!reason) return setError(t.counter.reasonNeeded);
-    setBusy(key);
+    setBusy(true);
     setError(null);
     try {
       await onConfirm(reason);
     } catch (failure) {
       setError(errorMessage(failure));
-      setBusy(null);
+      setBusy(false);
     }
   }
 
+  /** A reason picked: it shows as chosen, and the next Enter does it ("Something else" first asks for the words). */
   function pick(key: ReasonKey) {
-    if (key !== 'other') return void done(key, t.counter.reasons[key]);
-    setWriting(true);
+    if (busy) return;
+    setChosen(key);
     setError(null);
+    if (key !== 'other') confirmRef.current?.focus();
   }
 
   return (
@@ -74,15 +81,20 @@ function ReasonForm({ reasons, confirm, onConfirm, onClose }: ReasonProps) {
       className="counter-form counter-confirm"
       onSubmit={(event: FormEvent) => {
         event.preventDefault();
-        void done('other', other.trim());
+        void done();
       }}
-      // 1, 2, 3… answer, as on the till keys; typing a reason isn't interrupted.
-      // A scanner types a whole code in a burst: those digits never answer.
+      // 1, 2, 3… pick, as on the till keys; typing a reason isn't interrupted.
+      // A scanner types a whole code and Enter in a burst: those keys never pick, nor confirm.
       onKeyDown={(event) => {
-        if (event.target instanceof HTMLInputElement || event.ctrlKey || event.altKey || event.metaKey) return;
+        if (event.ctrlKey || event.altKey || event.metaKey) return;
         const now = event.timeStamp;
         const burst = now - lastKey.current < SCANNER_GAP_MS;
         lastKey.current = now;
+        if (event.key === 'Enter') {
+          if (burst) event.preventDefault();
+          return;
+        }
+        if (event.target instanceof HTMLInputElement) return;
         window.clearTimeout(pending.current);
         const key = keys[Number(event.key) - 1];
         if (!key) return;
@@ -93,16 +105,16 @@ function ReasonForm({ reasons, confirm, onConfirm, onClose }: ReasonProps) {
       <p id={promptId} className="counter-confirm__prompt">
         {t.counter.whyPick}
       </p>
-      <div className="counter-confirm__reasons" role="group" aria-labelledby={promptId}>
+      <div className="counter-confirm__reasons" role="radiogroup" aria-labelledby={promptId}>
         {keys.map((key, index) => (
           <Button
             key={key}
+            role="radio"
+            aria-checked={chosen === key}
             className="counter-confirm__reason"
             data-autofocus={index === 0 ? '' : undefined}
             aria-keyshortcuts={String(index + 1)}
-            aria-expanded={key === 'other' ? writing : undefined}
-            loading={busy === key}
-            disabled={busy !== null && busy !== key}
+            disabled={busy}
             onClick={() => pick(key)}
           >
             <kbd className="counter-confirm__number" aria-hidden="true">
@@ -112,15 +124,10 @@ function ReasonForm({ reasons, confirm, onConfirm, onClose }: ReasonProps) {
           </Button>
         ))}
       </div>
-      {writing && (
-        <>
-          <Field label={t.counter.why} hint={t.counter.whyHint}>
-            <input value={other} maxLength={200} autoFocus onChange={(event) => setOther(event.target.value)} />
-          </Field>
-          <Button variant="danger" type="submit" loading={busy === 'other'}>
-            {confirm}
-          </Button>
-        </>
+      {chosen === 'other' && (
+        <Field label={t.counter.why} hint={t.counter.whyHint}>
+          <input value={other} maxLength={200} autoFocus onChange={(event) => setOther(event.target.value)} />
+        </Field>
       )}
       {error && (
         <p className="form-error" role="alert">
@@ -128,8 +135,12 @@ function ReasonForm({ reasons, confirm, onConfirm, onClose }: ReasonProps) {
         </p>
       )}
       <div className="form-actions counter-confirm__back">
-        <Button variant="ghost" disabled={busy !== null} onClick={onClose}>
+        <Button variant="ghost" disabled={busy} onClick={onClose}>
           {t.counter.goBack}
+        </Button>
+        <Button ref={confirmRef} variant={danger ? 'danger' : 'primary'} type="submit" loading={busy} aria-keyshortcuts="Enter">
+          {confirm}
+          <kbd aria-hidden="true">Enter</kbd>
         </Button>
       </div>
     </form>

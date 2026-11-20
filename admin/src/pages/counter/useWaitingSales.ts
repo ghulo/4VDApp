@@ -176,8 +176,11 @@ export function useWaitingSales(
       const owner = { ...ownerRef.current };
       const settled: Array<{ sale: QueuedSale; result: Sent }> = [];
       let needsOwner = false;
+      // A receipt still marked as printing is settled from the Windows app's journal first: a new key would lose its entry there.
+      const { holding } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key));
       for (const sale of localStore.read()) {
         if (sale.refused === undefined || sale.businessId !== owner.businessId || (sale.userId !== owner.userId && !overseesRef.current)) continue;
+        if (holding.has(sale.key)) continue;
         let answer: Awaited<ReturnType<typeof salesApi.stopBasket>>;
         try {
           answer = await withTimeout((signal) => salesApi.stopBasket(sale.key, { expectOwner: owner, signal }), SEND_TIMEOUT_MS);

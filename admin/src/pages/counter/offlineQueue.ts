@@ -113,6 +113,19 @@ export function isNetworkFailure(error: unknown): boolean {
  *   is, the round stops, and it goes again later with the same key;
  * - refused: the server read it and said no. It stays, marked, for someone to look at.
  */
+/**
+ * What a failed fiscal-number write (PUT fiscal-receipt) means for the number
+ * kept on this PC:
+ * - wait: no answer about it (no internet, someone else signed in now, a fault): it stays, the round stops;
+ * - blocked: 4VD said not yet (a filed month, a closed year): it stays, with why, tried again later;
+ * - drop: a clear no about the number itself (the invoice is gone): nothing more to do.
+ */
+export function fiscalFailure(error: unknown): 'wait' | 'blocked' | 'drop' {
+  const failure = queueFailure(error);
+  if (failure !== 'refused') return 'wait';
+  return error instanceof ApiError && error.status === 409 ? 'blocked' : 'drop';
+}
+
 export function queueFailure(error: unknown): 'network' | 'wait' | 'refused' {
   if (isNetworkFailure(error)) return 'network';
   if (!(error instanceof ApiError)) return 'wait';

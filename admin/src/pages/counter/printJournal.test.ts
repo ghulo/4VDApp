@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { en } from '../../i18n/en';
-import { type QueuedSale, type QueueStore, settleInterrupted } from './offlineQueue';
+import { ApiError } from '../../services/apiClient';
+import { fiscalFailure, type QueuedSale, type QueueStore, settleInterrupted } from './offlineQueue';
 import { blockedIn, followUpDone, markCheck, noteBlocked, type SettledSale, type SettledStore, settledSale } from './settledSales';
 import { journalOutcome, type PrintOutcome } from './useFiscalPrinter';
 
@@ -106,6 +107,15 @@ const note = (key: string, extra: Partial<SettledSale> = {}): SettledSale => ({
 });
 
 describe('a fiscal number 4VD says not yet to', () => {
+  it('should keep the number on a filed month, wait on no answer or another person, and drop it only on a clear no', () => {
+    expect(fiscalFailure(new ApiError('October is filed', 409, 'PERIOD_FILED'))).toBe('blocked');
+    expect(fiscalFailure(new ApiError('Someone else is signed in', 409, 'OWNER_CHANGED'))).toBe('wait');
+    expect(fiscalFailure(new TypeError('Failed to fetch'))).toBe('wait');
+    expect(fiscalFailure(new ApiError('Busy', 503, null))).toBe('wait');
+    expect(fiscalFailure(new ApiError('Signed out', 401, null))).toBe('wait');
+    expect(fiscalFailure(new ApiError('No such invoice', 404, null))).toBe('drop');
+  });
+
   it('should stay with why, show in its business, and go only once it is on the invoice or let go', () => {
     const store = notes([note('a', { followUp: { fiscalNo: '00042' } }), note('b', { businessId: 9, followUp: { fiscalNo: '1' } })]);
     noteBlocked(store, 'a', 'October is filed with ATK');

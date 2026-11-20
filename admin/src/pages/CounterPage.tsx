@@ -65,8 +65,7 @@ import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
-import { localStore, newSaleKey, queueFailure, type QueuedSale, withTimeout } from './counter/offlineQueue';
-import { ApiError } from '../services/apiClient';
+import { fiscalFailure, localStore, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import {
   blockedIn,
   followUpDone,
@@ -756,13 +755,15 @@ export function CounterPage() {
           try {
             await withTimeout((signal) => documentsApi.setFiscalReceipt(sale.documentId, fiscalNo, { expectOwner: who, signal }), EVENTS_TIMEOUT_MS);
           } catch (error) {
+            const failure = fiscalFailure(error);
+            // No answer about it (no internet, someone else signed in now): it waits, the round stops.
+            if (failure === 'wait') return;
             // A filed month or a closed year: the number stays on this PC, with why, and is tried again (after the accountant reopens it).
-            if (error instanceof ApiError && error.status === 409) {
-              noteBlocked(localSettledStore, sale.key, error.message);
+            if (failure === 'blocked') {
+              noteBlocked(localSettledStore, sale.key, errorMessage(error));
               continue;
             }
-            // A clear no from 4VD (the invoice is gone, the number is wrong): nothing more to do. Anything else: it waits.
-            if (queueFailure(error) !== 'refused') return;
+            // A clear no about the number itself (the invoice is gone): nothing more to do.
           }
           followUpDone(localSettledStore, sale.key, 'fiscalNo');
         }
@@ -851,7 +852,7 @@ export function CounterPage() {
     }
     // A reprint whose answer the page never got: printed after all, its number is kept and it leaves Not printed.
     for (const item of unprintedNow.current) {
-      if (!item.printKey || printing.current.has(item.documentId)) continue;
+      if (!item.printKey || item.businessId !== ownerNow.current.businessId || printing.current.has(item.documentId)) continue;
       const outcome = await lookupPrint(item.printKey);
       if (outcome?.kind === 'done' && outcome.result.ok) settleReprint(item, outcome.result.receiptNo);
     }
@@ -1300,9 +1301,9 @@ export function CounterPage() {
     setPrintNote({ ok: true, text: kind === 'x' ? t.counter.xDone : t.counter.zDone });
   }
 
-  // Kept by an older 4VD without their business: shown only to an account with one business, where they can only be its own.
+  // Kept by an older 4VD without their business: shown only on an account with one business, where they can only be its own (the sales to an owner).
   const oneBusiness = (user.businesses?.length ?? 0) === 1;
-  const unplacedMine = oneBusiness ? waiting.unplaced.filter((sale) => sale.userId === user.id) : [];
+  const unplacedMine = oneBusiness && canOversee(user.role) ? waiting.unplaced : [];
   // Receipts sold in the business the till is in.
   const unprintedHere = printer.unprinted.filter((item) => item.businessId === businessId || (item.businessId === undefined && oneBusiness));
 

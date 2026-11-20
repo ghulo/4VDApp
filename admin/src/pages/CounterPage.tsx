@@ -738,8 +738,10 @@ export function CounterPage() {
       at: new Date().toISOString(),
     };
     const { key, body, payment, at } = attempt;
-    if (payment.paidBy === 'tab' && !online) throw new Error(t.counter.offlineNoTab);
-    if (current.delivery && !online) throw new Error(t.counter.offlineNoDelivery);
+    // Send it again tries as soon as the browser has a connection, not only after the half-minute check says 4VD is back.
+    const reachable = again ? connected : online;
+    if (payment.paidBy === 'tab' && !reachable) throw new Error(t.counter.offlineNoTab);
+    if (current.delivery && !reachable) throw new Error(t.counter.offlineNoDelivery);
     // Written to this PC before it goes, so a lost answer or a reload sends this very sale again, recorded once.
     // If this PC can't keep it, it isn't sent at all.
     if (!again && !setPending(basketId, attempt)) {
@@ -756,10 +758,11 @@ export function CounterPage() {
       complain(message);
       focusScan();
     };
-    if (online) {
+    if (reachable) {
       try {
         // Straight to the server: a query-library mutation would pause, not fail, when the browser says offline.
         result = await withTimeout(salesApi.recordBasket({ ...body, clientKey: key }), PAY_TIMEOUT_MS);
+        setUnreachable(false);
       } catch (error) {
         const failure = payFailure(error, again);
         // The sale itself was refused: nothing was recorded (a key the server knows gets its first answer back), so the basket is free again.

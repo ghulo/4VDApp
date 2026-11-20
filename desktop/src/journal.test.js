@@ -60,3 +60,15 @@ test('says when it could not write', () => {
   const file = path.join(fresh(), 'missing-folder', 'journal.json');
   assert.equal(journal.start(file, KEY, 'job'), false);
 });
+
+test('a print that throws is noted as failed, never left printing', async () => {
+  const file = fresh();
+  await assert.rejects(journal.track(file, KEY, 'job', async () => {
+    throw new Error('C:\TEMP is read-only');
+  }));
+  assert.equal(journal.lookup(file, KEY).status, 'failed');
+  assert.equal(await journal.track(file, 'k2', 'job', async () => ({ status: 'printed', receiptNo: '9' })).then((a) => a.status), 'printed');
+  assert.equal(journal.lookup(file, 'k2').receiptNo, '9');
+  // Without a key it only prints.
+  assert.deepEqual(await journal.track(file, undefined, 'job', async () => ({ status: 'printed', receiptNo: null })), { status: 'printed', receiptNo: null });
+});

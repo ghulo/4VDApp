@@ -235,11 +235,7 @@ ipcMain.handle('fiscal:send', async (event, job) => {
     return { status: 'failed', message: null };
   }
   // A sale's receipt is noted here before it goes and again with F-Link's answer, even if the page that asked is gone by then.
-  const key = journal.validKey(job.key) ? job.key : null;
-  if (key) journal.start(journalFile(), key, job.name);
-  const answer = await fiscal.send({ name: job.name, text: job.text });
-  if (key) journal.finish(journalFile(), key, answer);
-  return answer;
+  return journal.track(journalFile(), job.key, job.name, () => fiscal.send({ name: job.name, text: job.text }));
 });
 // What happened to a sale's last receipt (journal.js), or null.
 ipcMain.handle('fiscal:lookup', (event, key) => (fromDashboard(event) ? journal.lookup(journalFile(), key) : null));

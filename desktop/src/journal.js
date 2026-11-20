@@ -65,6 +65,24 @@ function lookup(file, key) {
   return entry ? { key: entry.key, job: entry.job ?? null, status: entry.status, receiptNo: entry.receiptNo ?? null, message: entry.message ?? null, at: entry.at } : null;
 }
 
+/**
+ * Print one job for a sale, noted before it goes and with its answer. A print
+ * that throws (C:\TEMP can't be written) is noted as failed, so the job never
+ * stays "printing" until the app restarts. Without a valid key it just prints.
+ */
+async function track(file, key, name, run) {
+  if (!validKey(key)) return run();
+  start(file, key, name);
+  try {
+    const answer = await run();
+    finish(file, key, answer);
+    return answer;
+  } catch (error) {
+    finish(file, key, { status: 'failed', message: error?.message ?? null });
+    throw error;
+  }
+}
+
 /** At start: a job left "printing" was cut off when the app closed, so whether it printed is unknown. */
 function settleStale(file, now = Date.now()) {
   const entries = read(file);
@@ -72,4 +90,4 @@ function settleStale(file, now = Date.now()) {
   return write(file, entries.map((entry) => (entry.status === 'printing' ? { ...entry, status: 'unknown' } : entry)), now);
 }
 
-module.exports = { start, finish, lookup, settleStale, validKey, MAX_ENTRIES };
+module.exports = { start, finish, lookup, settleStale, track, validKey, MAX_ENTRIES };

@@ -530,8 +530,9 @@ export const documentsApi = {
   get: async (id: number) => (await apiRequest<SalesDocumentDetail>(`/documents/${id}`)).data,
   /** The printable A4 page, in the reader's language unless another is asked for. */
   printPage: async (id: number, language?: Language) => (await apiDownload(`/documents/${id}/print`, { language })).blob.text(),
-  setFiscalReceipt: async (id: number, fiscalReceiptNo: string | null) =>
-    (await apiRequest<SalesDocumentDetail>(`/documents/${id}/fiscal-receipt`, { method: 'PUT', body: { fiscalReceiptNo } })).data,
+  /** From the till: sent for whoever sold it, so it is refused once someone else is signed in. */
+  setFiscalReceipt: async (id: number, fiscalReceiptNo: string | null, till?: TillRequest) =>
+    (await apiRequest<SalesDocumentDetail>(`/documents/${id}/fiscal-receipt`, { method: 'PUT', body: { fiscalReceiptNo }, ...till })).data,
 };
 
 export const salesApi = {

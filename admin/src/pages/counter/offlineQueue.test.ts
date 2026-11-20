@@ -118,9 +118,18 @@ describe('the offline queue', () => {
         switched = true;
       },
       () => switched,
-      (one) => heard.push({ key: one.key, stillQueued: store.sales.some((queued) => queued.key === one.key) }),
+      (one) => heard.push({ key: one.key, stillQueued: store.sales.some((queued) => queued.key === one.key) }) > 0,
     );
     expect(heard).toEqual([{ key: 'a', stillQueued: true }]);
     expect(store.sales.map((one) => one.key)).toEqual(['b']);
+  });
+
+  it('should keep a sent sale in the queue, and stop, when its note could not be written', async () => {
+    const store = memoryStore([sale('a', '2026-10-19T10:00:00Z'), sale('b', '2026-10-19T10:05:00Z')]);
+    const tried: string[] = [];
+    const result = await sendWaiting(store, async (one) => tried.push(one.key), undefined, () => false);
+    expect(result).toMatchObject({ sent: [], unsaved: true });
+    expect(tried).toEqual(['a']);
+    expect(store.sales.map((one) => one.key)).toEqual(['a', 'b']);
   });
 });

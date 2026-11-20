@@ -126,21 +126,23 @@ export function queueFailure(error: unknown): 'network' | 'wait' | 'refused' {
  * the sale, stops the round (the rest wait). A sale without its business
  * (kept by an older 4VD) never goes by itself. `skip` is asked before each
  * one, so a person switched meanwhile stops the round's other sales.
- * `onEach` hears each sale the server took before it leaves the queue.
+ * `onEach` keeps each sale the server took (its settled note) before it
+ * leaves the queue; if that can't be written, the sale stays and the round stops.
  */
 export async function sendWaiting<T>(
   store: QueueStore,
   send: (sale: QueuedSale & { businessId: number }) => Promise<T>,
   /** Sales to leave for now (a receipt still printing, another person's sale). */
   skip: (sale: QueuedSale) => boolean = () => false,
-  onEach: (sale: QueuedSale, result: T) => void = () => undefined,
-): Promise<{ sent: Array<{ sale: QueuedSale; result: T }>; stoppedByNetwork: boolean }> {
+  onEach: (sale: QueuedSale, result: T) => boolean = () => true,
+): Promise<{ sent: Array<{ sale: QueuedSale; result: T }>; stoppedByNetwork: boolean; unsaved?: boolean }> {
   const sent: Array<{ sale: QueuedSale; result: T }> = [];
   for (const sale of [...store.read()].sort((a, b) => a.at.localeCompare(b.at))) {
     if (sale.refused || sale.businessId === undefined || skip(sale)) continue;
     try {
       const result = await send({ ...sale, businessId: sale.businessId });
-      onEach(sale, result);
+      // Its note couldn't be written: it stays in the queue (sent again later, 4VD gives the same sale back).
+      if (!onEach(sale, result)) return { sent, stoppedByNetwork: false, unsaved: true };
       sent.push({ sale, result });
       store.write(store.read().filter((one) => one.key !== sale.key));
     } catch (error) {

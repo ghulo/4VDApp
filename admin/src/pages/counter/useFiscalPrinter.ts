@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Catalogue } from '../../i18n/en';
 import { displayJob, type ReceiptLine, type ReceiptPayment } from '../../utils/fiscalReceipt';
 
@@ -24,9 +24,20 @@ export interface Unprinted {
   text: string;
   reason: string;
   job?: ReceiptInput;
+  /** The business it was sold in: it shows only there (left out by an older 4VD). */
+  businessId?: number;
 }
 
 const STORE = '4vd.counter.unprinted';
+
+function writeUnprinted(items: Unprinted[]): boolean {
+  try {
+    localStorage.setItem(STORE, JSON.stringify(items));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function readUnprinted(): Unprinted[] {
   try {
@@ -76,14 +87,14 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
   const [busy, setBusy] = useState(false);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const [unprinted, setUnprinted] = useState<Unprinted[]>(readUnprinted);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORE, JSON.stringify(unprinted));
-    } catch {
-      // The list still works until the page closes.
-    }
-  }, [unprinted]);
+  // Written to this PC at once (not after the next render), so a receipt handed over to the list is never lost in between.
+  const list = useRef(unprinted);
+  const change = useCallback((next: Unprinted[]): boolean => {
+    list.current = next;
+    setUnprinted(next);
+    // If it can't be written, the list still works until the page closes.
+    return writeUnprinted(next);
+  }, []);
 
   /** Hand one job to F-Link; jobs wait for each other, so two receipts never mix. */
   const send = useCallback(
@@ -133,10 +144,9 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
     [bridge, enabled],
   );
 
-  const keepUnprinted = useCallback((item: Unprinted) => {
-    setUnprinted((now) => [item, ...now.filter((other) => other.documentId !== item.documentId)]);
-  }, []);
-  const forget = useCallback((documentId: number) => setUnprinted((now) => now.filter((item) => item.documentId !== documentId)), []);
+  /** False when this PC couldn't write it down (it shows until the page closes). */
+  const keepUnprinted = useCallback((item: Unprinted): boolean => change([item, ...list.current.filter((other) => other.documentId !== item.documentId)]), [change]);
+  const forget = useCallback((documentId: number) => void change(list.current.filter((item) => item.documentId !== documentId)), [change]);
 
   return { reach, path: status.data?.path ?? 'C:\\TEMP', busy, send, show, unprinted, keepUnprinted, forget, recheck: () => status.refetch() };
 }

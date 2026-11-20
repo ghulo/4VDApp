@@ -36,7 +36,7 @@ jobs:
       mail: ${{ steps.filter.outputs.mail }}
       desktop: ${{ steps.filter.outputs.desktop }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # On main, compare with the last commit whose checks all passed, not just
@@ -50,7 +50,7 @@ jobs:
         run: |
           sha=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1" -q '.workflow_runs[0].head_sha' || true)
           echo "sha=${sha:-${{ github.event.before }}}" >> "$GITHUB_OUTPUT"
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           base: ${{ steps.base.outputs.sha }}
@@ -90,8 +90,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -143,8 +143,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Only checks the image builds; Render builds its own copy to run.
       - run: docker build -t 4vd-backend backend
 
@@ -191,8 +191,8 @@ jobs:
       run:
         working-directory: admin
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -217,8 +217,8 @@ jobs:
       run:
         working-directory: mail
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -244,8 +244,8 @@ jobs:
       run:
         working-directory: desktop
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       # The fiscal printer and setup tests need no installed packages.
@@ -279,8 +279,8 @@ jobs:
       # Throwaway values for the test run only; nothing here is a real secret.
       E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/four_vd_app_e2e
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -298,7 +298,7 @@ jobs:
         working-directory: e2e
       - run: npx playwright test
         working-directory: e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: browser-test-report
@@ -325,8 +325,8 @@ jobs:
       run:
         working-directory: admin
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

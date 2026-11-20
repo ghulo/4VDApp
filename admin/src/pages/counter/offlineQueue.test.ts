@@ -96,7 +96,7 @@ describe('the offline queue', () => {
       expect(store.sales.every((one) => one.refused === undefined)).toBe(true);
       expect(queueFailure(answer)).toBe('wait');
     }
-    expect(queueFailure(new ApiError('closed', 400, 'SALE_CLOSED'))).toBe('refused');
+    expect(queueFailure(new ApiError('closed', 400, 'VALIDATION_ERROR', true))).toBe('refused');
   });
 
   it('should never send by itself a sale kept without its business', async () => {

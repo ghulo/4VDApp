@@ -170,7 +170,7 @@ export function lookupFailure(error: unknown): 'notFound' | 'offline' | 'error' 
  * - otherOwner: someone else is signed in now: nothing was recorded, and the
  *   sale waits as it is for the person and business that made it;
  * - unclear: anything else: it may or may not be in.
- * The server closes a sale's key when it says no to it (SALE_CLOSED), so no
+ * The server closes a sale's key when it says no to it (saleClosed), so no
  * copy still on its way can go in after: that is the only answer that frees a
  * sale sent before. A first send turned away before 4VD looked at the sale
  * (a sign-in that ran out, a bad request) was never recorded either, and no
@@ -181,7 +181,7 @@ export function payFailure(error: unknown, again = false): 'refused' | 'offline'
   if (isNetworkFailure(error)) return 'offline';
   if (!(error instanceof ApiError)) return 'unclear';
   if (error.code === 'OWNER_CHANGED') return 'otherOwner';
-  if (error.code === 'SALE_CLOSED') return 'refused';
+  if (error.saleClosed) return 'refused';
   if (again) return 'unclear';
   return error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429 ? 'refused' : 'unclear';
 }

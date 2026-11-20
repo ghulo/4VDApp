@@ -203,7 +203,7 @@ describe('finding what was scanned or typed', () => {
 
 describe('a Record sale that failed', () => {
   it('frees the basket only when the server said no', () => {
-    expect(payFailure(new ApiError('Not enough stock', 400, 'SALE_CLOSED'))).toBe('refused');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'VALIDATION_ERROR', true))).toBe('refused');
     expect(payFailure(new ApiError('Signed out', 401, null))).toBe('refused');
     expect(payFailure(new ApiError('Bad request', 400, 'VALIDATION_ERROR'))).toBe('refused');
   });
@@ -226,8 +226,8 @@ describe('a send again that failed', () => {
   it('stays unclear unless the server closed the sale for good', () => {
     // A copy sent before may still go in after an ordinary refusal: only a closed key frees the basket.
     expect(payFailure(new ApiError('Offer sold', 409, 'CONFLICT'), true)).toBe('unclear');
-    expect(payFailure(new ApiError('Not enough stock', 400, 'SALE_CLOSED'), true)).toBe('refused');
-    expect(payFailure(new ApiError('Stopped', 410, 'SALE_CLOSED'), true)).toBe('refused');
+    expect(payFailure(new ApiError('Not enough stock', 400, 'VALIDATION_ERROR', true), true)).toBe('refused');
+    expect(payFailure(new ApiError('Stopped', 410, 'GONE', true), true)).toBe('refused');
     expect(payFailure(new ApiError('Too many requests', 429, 'RATE_LIMITED'), true)).toBe('unclear');
     expect(payFailure(new ApiError('Signed out', 401, 'UNAUTHORIZED'), true)).toBe('unclear');
     expect(payFailure(new ApiError('Forbidden', 403, 'FORBIDDEN'), true)).toBe('unclear');

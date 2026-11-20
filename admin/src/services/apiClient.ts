@@ -8,17 +8,21 @@ interface ApiResponse<TData> {
   message: string;
   error: string | null;
   meta?: PaginationMeta;
+  saleClosed?: boolean;
 }
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | null;
+  /** A till sale 4VD refused for good: no copy of it will ever be recorded. */
+  readonly saleClosed: boolean;
 
-  constructor(message: string, status: number, code: string | null) {
+  constructor(message: string, status: number, code: string | null, saleClosed = false) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.saleClosed = saleClosed;
   }
 }
 
@@ -182,6 +186,7 @@ function toApiError(response: Response, body: ApiResponse<unknown> | null): ApiE
     body?.message ?? `The server answered with status ${response.status}`,
     response.status,
     body?.error ?? null,
+    body?.saleClosed === true,
   );
 }
 

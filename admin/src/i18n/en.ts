@@ -4726,6 +4726,7 @@ export const en = {
     forgetAsk: '4VD checks first: if the sale went in, it shows as paid; if not, it is stopped for good and can never go in later.',
     forgotten: 'The sale was stopped: 4VD never recorded it and never will. The basket can change and be paid again.',
     stopNeedsAnswer: 'Stopping a sale needs an answer from 4VD. Try again once the internet is back.',
+    tillLoading: 'The till is still loading who is signed in. Try again in a moment.',
     alreadySettled: (number: string) => `This sale is in 4VD already (${number}) and was settled on this till: nothing more to do.`,
     printInterrupted: 'The till closed while this receipt was printing. Look at the printer: print it again only if no receipt came out.',
     notSavedHere: 'The sale is recorded, but this PC couldn’t save that it is (its storage is full or blocked). Don’t reload until the next sale goes through.',

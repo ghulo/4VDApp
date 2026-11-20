@@ -4700,6 +4700,7 @@ export const sq: Catalogue = {
     forgetAsk: '4VD shikon së pari: nëse shitja kaloi, shfaqet si e paguar; nëse jo, ndalet përgjithmonë dhe s’mund të kalojë më vonë.',
     forgotten: 'Shitja u ndal: 4VD s’e regjistroi kurrë dhe s’do ta regjistrojë. Shporta mund të ndryshojë dhe të paguhet prapë.',
     stopNeedsAnswer: 'Për ta ndalur shitjen duhet një përgjigje nga 4VD. Provo prapë kur të kthehet interneti.',
+    tillLoading: 'Arka po ngarkon ende kush është i kyçur. Provo prapë pas pak.',
     alreadySettled: (number: string) => `Kjo shitje është tashmë në 4VD (${number}) dhe u mbyll në këtë arkë: s’ka më asgjë për të bërë.`,
     printInterrupted: 'Arka u mbyll ndërsa ky kupon po shtypej. Shiko printerin: shtype prapë vetëm nëse s’doli asnjë kupon.',
     notSavedHere: 'Shitja u regjistrua, por ky kompjuter s’e ruajti dot këtë (hapësira është plot ose e bllokuar). Mos e rifresko faqen derisa të kalojë shitja e radhës.',

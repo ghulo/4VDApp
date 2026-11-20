@@ -318,7 +318,8 @@ export function CounterPage() {
         owner,
         // A request that hangs counts as no internet (and is stopped), so it never holds the rest (or Switch person) up.
         // The server refuses them once someone else is signed in, a resend after a refreshed sign-in included.
-        (events) => withTimeout((signal) => counterApi.record(events, { expectOwner: owner, signal }), EVENTS_TIMEOUT_MS),
+        // (Not while the business is still unknown, just after a switch: those wait under no business, as before.)
+        (events) => withTimeout((signal) => counterApi.record(events, { ...(owner.businessId > 0 && { expectOwner: owner }), signal }), EVENTS_TIMEOUT_MS),
         () => ownerNow.current === owner,
       )
         .catch(() => undefined)
@@ -810,6 +811,8 @@ export function CounterPage() {
       setPayingNow(false);
       return;
     }
+    // The business isn't known yet (just after Switch person): a sale made now would belong to no business, so it waits a moment.
+    if (!again && businessId === 0) throw new Error(t.counter.tillLoading);
     if (!again) {
       // The shop's stock rule at the very moment of Record sale (the shelf may have changed while Pay was open).
       const stockNow = basketStockProblem(lines, noStockRule, canOversee(user.role));

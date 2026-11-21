@@ -809,3 +809,15 @@
 :root:not([data-motion='full']) .success-check--busy .success-check__arc {
   animation: check-spin 0.8s linear infinite !important;
 }
+
+/* "Loading" still waits 300ms under Reduced and Off, so a quick answer never
+   flashes it; it then appears at once instead of fading in. */
+@keyframes show-late {
+  from {
+    opacity: 0;
+  }
+}
+
+:root:not([data-motion='full']) .loading {
+  animation: show-late 0s linear 300ms backwards !important;
+}

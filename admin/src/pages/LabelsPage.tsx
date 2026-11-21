@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router';
@@ -13,6 +13,7 @@ import { productsApi } from '../services/api';
 import type { Product } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatMoney } from '../utils/format';
+import { useProductSearch } from '../utils/useProductSearch';
 import { Button, Card, Field, PageHeader } from '../components/ui';
 
 type Layout = 'sheet' | 'roll';
@@ -21,6 +22,8 @@ const LAYOUTS: Layout[] = ['sheet', 'roll'];
 type Symbols = 'barcode' | 'qr' | 'both';
 const SYMBOLS: Symbols[] = ['barcode', 'qr', 'both'];
 const MAX_COPIES = 100;
+/** Products listed for a search; more are found by typing more. */
+const SEARCH_SHOWN = 50;
 
 /** Page sizes for printing: an A4 sticker sheet, or one small label at a time on a label printer. */
 const PAGE_CSS: Record<Layout, string> = {
@@ -35,7 +38,6 @@ export function LabelsPage() {
   const { role } = useCurrentUser();
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
-  const products = useQuery({ queryKey: ['products', 'all-for-labels'], queryFn: () => productsApi.list({ page: 1, limit: 100 }) });
   const [copies, setCopies] = useState<Record<number, number>>(() =>
     Object.fromEntries((params.get('products') ?? '').split(',').filter(Boolean).map((id) => [Number(id), 1])),
   );
@@ -43,8 +45,22 @@ export function LabelsPage() {
   const [symbols, setSymbols] = useState<Symbols>('barcode');
   const [showCountry, setShowCountry] = useState(true);
   const [search, setSearch] = useState('');
-
-  const chosen = (products.data?.items ?? []).filter((product) => (copies[product.id] ?? 0) > 0);
+  // Every product can be found: the server searches as you type.
+  const found = useProductSearch(search, { limit: SEARCH_SHOWN });
+  // Ticked products are kept (and fetched afresh, e.g. after making their barcodes) whatever the search shows.
+  const [seen, setSeen] = useState<Record<number, Product>>({});
+  const tickedIds = Object.keys(copies)
+    .map(Number)
+    .filter((id) => (copies[id] ?? 0) > 0);
+  const tickedQueries = useQueries({
+    queries: tickedIds.map((id) => ({
+      queryKey: ['products', 'one', id],
+      queryFn: () => productsApi.get(id),
+      initialData: seen[id],
+      staleTime: 60_000,
+    })),
+  });
+  const chosen = tickedQueries.flatMap((query) => (query.data ? [query.data] : []));
   const missing = chosen.filter((product) => !product.barcode);
   const createMissing = useMutation({
     mutationFn: async () => {
@@ -53,10 +69,8 @@ export function LabelsPage() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   });
 
-  const query = search.trim().toLowerCase();
-  const shown = (products.data?.items ?? []).filter(
-    (product) => !query || product.name.toLowerCase().includes(query) || product.barcode?.includes(query) || product.sku?.toLowerCase().includes(query),
-  );
+  // The ticked ones first, then what the search found.
+  const shown = [...chosen, ...found.items.filter((product) => !chosen.some((one) => one.id === product.id))];
   const labels = chosen.filter((product) => product.barcode).flatMap((product) => Array.from({ length: copies[product.id]! }, () => product));
 
   const sheet = labels.map((product, index) => (
@@ -80,6 +94,7 @@ export function LabelsPage() {
   ));
 
   function setCount(product: Product, value: number) {
+    setSeen((current) => (current[product.id] ? current : { ...current, [product.id]: product }));
     setCopies((current) => ({ ...current, [product.id]: Math.max(0, Math.min(MAX_COPIES, value)) }));
   }
 
@@ -92,8 +107,9 @@ export function LabelsPage() {
         <Field label={t.labels.search}>
           <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} />
         </Field>
-        {products.isPending && <Loading />}
-        {products.isError && <ErrorNotice error={products.error} onRetry={() => products.refetch()} />}
+        {found.items.length === 0 && found.searching && <Loading />}
+        {found.error && <ErrorNotice error={found.error} />}
+        {found.settled && found.items.length === 0 && search.trim() !== '' && <p className="field-hint">{t.kit.noMatch}</p>}
         <ul className="label-picker">
           {shown.map((product) => (
             <li key={product.id} className="label-picker__row">
@@ -119,6 +135,7 @@ export function LabelsPage() {
             </li>
           ))}
         </ul>
+        {found.total > found.items.length && <p className="field-hint">{t.kit.keepTyping}</p>}
       </Card>
 
       <Card title={t.labels.print} description={t.labels.count(labels.length)}>

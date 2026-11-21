@@ -59,6 +59,11 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Owner and accountant bills** (Task 7b, 2026-11-21)
+- [ ] Sign in as an owner: the menu shows every page (Counter, Day, Books, Settings) with no "More"; Overview and Sales offer Record a sale; the owner can sell, close the day, post a books entry, change products, stock, people and settings. Settings → Roles stays main admin only, and the owner can't invite an admin or main admin
+- [ ] Goods to send out (was "To deliver"): the map pin icon on staff Home, the Counter and the page; Albanian "Dërgesat te klientët"
+- [ ] Sign in as the accountant: Bills shows Add bill (no Scan); the form offers costs and equipment lines but no products; a bill by its total and a cost bill save; void and pay stay hidden
+
 **Words and sign-in** (copy task, 2026-11-21: 1150f712, 6ef62deb)
 - [ ] In Shqip: price promotions say "Zbritje/Zbritjet" (menu, page title, the Counter), price quotes still say "Oferta"; Updates says "Njoftimet" (To do tabs, the bell)
 - [ ] Sign in as an owner, an employee and the accountant (password, Google, passkey if set): each lands in 4VD itself; nothing mentions "the team app" or sends you to another app

@@ -155,6 +155,20 @@ describe('products', () => {
     expect(inStockOnly.body.meta).toEqual({ page: 1, limit: 20, total: 1 });
   });
 
+  it('should find a name by each typed word, ignoring accents and case', async () => {
+    await createProduct({ name: 'Çokollatë Milka 100g', sku: 'MILKA-100' });
+    await createProduct({ name: 'Kafe Prince 500g', sku: 'KAFE-500' });
+
+    const names = async (search: string) =>
+      (await request(context.app).get(`/api/products?search=${encodeURIComponent(search)}`).set(asBrowser())).body.data.map((p: { name: string }) => p.name);
+
+    expect(await names('cokollate')).toEqual(['Çokollatë Milka 100g']);
+    expect(await names('milka ÇOK')).toEqual(['Çokollatë Milka 100g']);
+    expect(await names('kafe 500')).toEqual(['Kafe Prince 500g']);
+    expect(await names('kafe milka')).toEqual([]);
+    expect(await names('milka-100')).toEqual(['Çokollatë Milka 100g']);
+  });
+
   it('should treat % in a search as plain text', async () => {
     await createProduct({ name: '50% Off Chair' });
     await createProduct({ name: 'Plain Chair', sku: 'CHAIR-2' });

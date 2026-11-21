@@ -3,6 +3,17 @@ import type { DatabaseClient } from '../database/connection.js';
 import type { ProductUnit } from '../database/types.js';
 import { escapeLikePattern } from '../utils/databaseErrors.js';
 
+/** Accented letters a name may hold, and the plain letter each searches as (same order). */
+const ACCENTED = 'çëéèêäáàâãíìîïóòôöõúùûüñšžćč';
+const PLAIN = 'ceeeeaaaaaiiiiooooouuuunszcc';
+
+/** Lower case without accents, the way names are compared in a search. */
+const foldText = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+
 export interface ProductFilters {
   categoryId?: number;
   search?: string;
@@ -152,10 +163,21 @@ export class ProductRepository {
       query = query.where((eb) => eb.or([eb('i.quantity_on_hand', '=', 0), eb('i.quantity_on_hand', 'is', null)]));
     }
     if (filters.search) {
-      const pattern = `%${escapeLikePattern(filters.search)}%`;
-      // A scanned barcode matches exactly; names and SKUs match in part.
+      // A scanned barcode matches exactly. Otherwise every typed word must be in
+      // the name (any case, accents ignored: "cokollate" finds "Çokollatë") or the SKU.
+      const words = filters.search.trim().split(/\s+/).filter(Boolean);
       query = query.where((eb) =>
-        eb.or([eb('p.name', 'ilike', pattern), eb('p.sku', 'ilike', pattern), hasBarcode(filters.search!.trim())]),
+        eb.or([
+          eb.and(
+            words.map((word) =>
+              eb.or([
+                eb(sql<string>`translate(lower(p.name), ${ACCENTED}, ${PLAIN})`, 'like', `%${escapeLikePattern(foldText(word))}%`),
+                eb('p.sku', 'ilike', `%${escapeLikePattern(word)}%`),
+              ]),
+            ),
+          ),
+          hasBarcode(filters.search!.trim()),
+        ]),
       );
     }
 

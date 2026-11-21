@@ -86,6 +86,7 @@ UI and features (ask first):
 - [ ] F-Link stopped with a receipt waiting in C:\TEMP: Print again (owner says none came out) does not send a second one; the till says the printer still has it. Start F-Link: one receipt comes out
 - [ ] A receipt marked "check the printer": a week later Print again still asks an owner to look first
 - [ ] Two Counter windows on the shop PC: sell the last unit in one, leave the other open a few minutes, then restart offline: the unit is still shown as sold
+- [ ] Two tabs (Counter in one, dashboard in the other): switch business in the dashboard tab with the cable pulled at the click: the Counter tab says "Checking who is signed in here after the switch" on Pay and Print again; plug back in: within about half a minute both tabs show the business 4VD says and Pay works again
 - [ ] Print again on a receipt marked "check the printer": as staff it says to ask an owner; as an owner it asks "Did a receipt come out for this sale?" and prints only after OK
 - [ ] Same PC, sign out of one business and sign in to the other, open the Counter, go offline and restart: only the second business's products and customers
 - [ ] Counter: Switch person with a PIN, then pull the cable and restart: the new person is signed in, not the one who left

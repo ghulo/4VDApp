@@ -70,7 +70,7 @@ import { readScaleLabel } from './counter/scaleLabel';
 import { playScanSound } from './counter/scanSound';
 import { type Basket, type PendingSale, useBaskets } from './counter/useBaskets';
 import { type PrintResult, type ReceiptInput, type Unprinted, useFiscalPrinter } from './counter/useFiscalPrinter';
-import { fiscalFailure, localStore, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
+import { fiscalFailure, isNetworkFailure, localStore, newSaleKey, type QueuedSale, withTimeout } from './counter/offlineQueue';
 import {
   blockedIn,
   followUpDone,
@@ -1442,11 +1442,30 @@ export function CounterPage() {
     setPrintNote({ ok: true, text: kind === 'x' ? t.counter.xDone : t.counter.zDone });
   }
 
-  // Kept by an older 4VD without their business: shown only on an account with one business, where they can only be its own (the sales to an owner).
-  const oneBusiness = (user.businesses?.length ?? 0) === 1;
-  const unplacedMine = oneBusiness && canOversee(user.role) ? waiting.unplaced : [];
-  // Receipts sold in the business the till is in.
-  const unprintedHere = printer.unprinted.filter((item) => item.businessId === businessId || (item.businessId === undefined && oneBusiness));
+  // Kept by an older 4VD without their business (the PC's storage is shared by every business that uses it): shown to an owner
+  // only when the sale itself proves it is this business's, every product in it on this business's shelf (a product belongs to one business).
+  const unplacedMine = canOversee(user.role)
+    ? waiting.unplaced.filter((sale) => sale.body.items.length > 0 && sale.body.items.every((item) => byId.has(item.productId)))
+    : [];
+  // Receipts sold in the business the till is in. One kept by an older 4VD shows only once 4VD said its invoice is this business's (below).
+  const unprintedHere = printer.unprinted.filter((item) => item.businessId === businessId);
+  // Not printed rows kept by an older 4VD without their business: each is placed once 4VD shows its invoice in this business
+  // (another business's is not found); until then nothing of it shows here.
+  const legacyChecked = useRef(new Set<string>());
+  const keepUnprintedRow = printer.keepUnprinted;
+  useEffect(() => {
+    if (!online || businessId === 0) return;
+    for (const item of printer.unprinted) {
+      const check = `${businessId}:${item.documentId}`;
+      if (item.businessId !== undefined || legacyChecked.current.has(check)) continue;
+      legacyChecked.current.add(check);
+      documentsApi.get(item.documentId).then(
+        () => void keepUnprintedRow({ ...item, businessId }),
+        // No answer: asked again later. A clear no (not found here): it stays hidden in this business.
+        (error: unknown) => void (isNetworkFailure(error) && legacyChecked.current.delete(check)),
+      );
+    }
+  }, [online, businessId, printer.unprinted, keepUnprintedRow]);
 
   // ---- Keys ----
   const keysEnabled = panel === null;

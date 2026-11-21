@@ -181,6 +181,8 @@ export async function settleInterrupted(
   store: QueueStore,
   lookup: ((key: string) => Promise<PrintOutcome | null>) | undefined,
   busy: (key: string) => boolean,
+  /** Its outcome is noted on the sale now: the Windows app's journal may let it go in time. */
+  ack: (key: string) => void = () => undefined,
 ): Promise<{ holding: Set<string>; notNoted: boolean }> {
   const holding = new Set<string>();
   let notNoted = false;
@@ -198,7 +200,7 @@ export async function settleInterrupted(
     if (store.write(store.read().map((one) => (one.key === sale.key ? { ...one, receipt } : one))) === false) {
       holding.add(sale.key);
       notNoted = true;
-    }
+    } else ack(sale.key);
   }
   return { holding, notNoted };
 }

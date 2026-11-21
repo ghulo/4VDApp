@@ -272,6 +272,7 @@ export function CounterPage() {
     () => complain(t.counter.queueNotSaved),
     canOversee(user.role),
     printer.lookup,
+    printer.ack,
   );
   // Sales on their way from a basket (Pay pressed, no answer yet) are named too: a shelf that counts one already says so.
   // What this till needs to sell, kept on this PC; a start without internet sells from it.
@@ -971,6 +972,7 @@ export function CounterPage() {
   const printingKeys = useRef(new Set<string>());
   const loadedAt = useRef(Date.now());
   const lookupPrint = printer.lookup;
+  const ackPrint = printer.ack;
   const unprintedNow = useRef(printer.unprinted);
   unprintedNow.current = printer.unprinted;
   const checkPrints = useCallback(async () => {
@@ -981,8 +983,9 @@ export function CounterPage() {
       const outcome = await lookupPrint(sale.key);
       if (outcome === null || outcome.kind === 'none') continue;
       if (outcome.kind === 'printing') appHas.add(sale.key);
-      else if (outcome.kind === 'unknown') markCheck(localSettledStore, sale.key, t.counter.printInterrupted);
-      else notePrinted(localSettledStore, sale.key, outcome.result.ok ? { ok: true, fiscalNo: outcome.result.receiptNo } : { ok: false, reason: outcome.result.message });
+      else if (outcome.kind === 'unknown') {
+        if (markCheck(localSettledStore, sale.key, t.counter.printInterrupted)) ackPrint(sale.key);
+      } else if (notePrinted(localSettledStore, sale.key, outcome.result.ok ? { ok: true, fiscalNo: outcome.result.receiptNo } : { ok: false, reason: outcome.result.message })) ackPrint(sale.key);
     }
     // A reprint whose answer the page never got: printed after all, its number is kept and it leaves Not printed.
     for (const item of unprintedNow.current) {
@@ -996,7 +999,7 @@ export function CounterPage() {
     }
     void followUp();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- settleReprint is a plain function of this render
-  }, [followUp, lookupPrint, t]);
+  }, [followUp, lookupPrint, ackPrint, t]);
   useEffect(() => {
     void checkPrints();
     const later = window.setTimeout(() => void checkPrints(), DESKTOP_JOB_MS);
@@ -1254,7 +1257,7 @@ export function CounterPage() {
     if (!result) {
       // Offline the fiscal receipt still prints at once; 4VD's invoice number comes when the sale is sent.
       const printed = await printer.send(`4VD-OFF-${key.slice(0, 8)}`, text, key);
-      waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message, job });
+      if (waiting.printed(key, { text, printed: printed.ok, fiscalNo: printed.ok ? printed.receiptNo : null, reason: printed.ok ? '' : printed.message, job })) printer.ack(key);
       return offlinePrinted(key, printed);
     }
     const item: Unprinted = { documentId: result.invoice.id, number: result.invoice.number, total: result.total, at, text, reason: '', job, businessId: attempt.businessId };
@@ -1278,6 +1281,8 @@ export function CounterPage() {
    */
   function printedOnline(attempt: PendingSale, item: Unprinted, printed: PrintResult) {
     const noted = notePrinted(localSettledStore, attempt.key, printed.ok ? { ok: true, fiscalNo: printed.receiptNo } : { ok: false, reason: printed.message });
+    // Noted here: the Windows app's journal may let its entry go in time (not noted: it keeps it, to hand the outcome over later).
+    if (noted) printer.ack(attempt.key);
     if (printed.ok) {
       printer.forget(item.documentId);
       setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo: printed.receiptNo } : sale));
@@ -1331,6 +1336,7 @@ export function CounterPage() {
     setLastSale((sale) => (sale?.documentId === item.documentId ? { ...sale, print: 'printed', fiscalNo } : sale));
     setPrintNote({ ok: true, text: fiscalNo ? t.counter.printer.printed(fiscalNo) : t.counter.printer.printedNoNumber });
     if (noted) {
+      if (item.printKey) printer.ack(item.printKey);
       printer.forget(item.documentId);
       void followUp();
       return;
@@ -1367,6 +1373,9 @@ export function CounterPage() {
     setPrintNote({ ok: false, text: reason });
   }
 
+  /** The key a receipt's prints go to the Windows app with: its sale's (from the till's note), else one made from its invoice. */
+  const printKeyFor = (item: Unprinted) => localSettledStore.read().find((sale) => sale.documentId === item.documentId)?.key ?? `reprint:${item.documentId}`;
+
   // One print per receipt at a time: Print again on the Paid screen and in Not printed can't both send it.
   const printing = useRef(new Set<number>());
   async function printAgain(item: Unprinted) {
@@ -1385,11 +1394,10 @@ export function CounterPage() {
         item = { ...item, businessId };
       }
       // Its last print: the Windows app still has it (wait), or it came out after all (its number is kept, nothing prints again).
-      if (item.printKey) {
-        const outcome = await printer.lookup(item.printKey);
-        if (outcome?.kind === 'printing') return complain(t.counter.printerHasIt);
-        if (outcome?.kind === 'done' && outcome.result.ok) return void (await settleReprint(item, outcome.result.receiptNo));
-      }
+      // Asked under the key its prints go with, kept on the row or worked out the same way printOnce does: a row saved without its key is found too.
+      const outcome = await printer.lookup(item.printKey ?? printKeyFor(item));
+      if (outcome?.kind === 'printing') return complain(t.counter.printerHasIt);
+      if (outcome?.kind === 'done' && outcome.result.ok) return void (await settleReprint(item, outcome.result.receiptNo));
       await printOnce(item);
     } finally {
       printing.current.delete(item.documentId);
@@ -1409,8 +1417,12 @@ export function CounterPage() {
     }
     // Until the printer answers, Not printed says to check the printer: a reload mid-print leaves that, not the old reason.
     // The print goes with a key, so the Windows app's journal can say later how it came out.
-    const printKey = localSettledStore.read().find((sale) => sale.documentId === item.documentId)?.key ?? `reprint:${item.documentId}`;
-    printer.keepUnprinted({ ...item, text, reason: t.counter.printInterrupted, printKey });
+    const printKey = item.printKey ?? printKeyFor(item);
+    // Only once Not printed keeps the key on this PC's disk does it go: a result nobody could look up again could print it twice.
+    if (!printer.keepUnprinted({ ...item, text, reason: t.counter.printInterrupted, printKey })) {
+      setPrintNote({ ok: false, text: t.counter.printer.notKept });
+      return;
+    }
     const printed = await printer.send(`4VD-${item.number}`, text, printKey);
     await afterPrint({ ...item, text, printKey }, printed, true);
   }

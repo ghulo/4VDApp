@@ -4894,6 +4894,8 @@ export const sq: Catalogue = {
       browserHint: 'Kuponët printohen vetëm nga aplikacioni 4VD për Windows në kompjuterin e dyqanit.',
       oldApp: 'Përditëso aplikacionin e Windows për të printuar',
       noFolder: (path: string) => `Dosja e F-Link ${path} mungon në këtë kompjuter`,
+      notNoted: 'Nuk u shtyp: aplikacioni i Windows nuk mundi ta shënonte kuponin në diskun e këtij kompjuteri (i mbushur, ose i zënë nga një program tjetër), prandaj nuk e dërgoi. Shtype prapë pas pak.',
+      notKept: 'Nuk u shtyp: hapësira e këtij kompjuteri është e mbushur, prandaj kuponi nuk mund të ruhej për t’u gjetur sërish. Liro vend (mbyll skedat e tjera) dhe shtype prapë.',
       notRunning: 'F-Link nuk është ndezur',
       notRunningHint: 'Ndiz F-Link në këtë kompjuter, pastaj printo përsëri.',
       failed: 'Nuk u printua',

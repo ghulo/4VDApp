@@ -38,6 +38,15 @@ describe('the settled sales note', () => {
     expect(noteSettled(memoryStore([], false), sale('a'))).toBe(false);
   });
 
+  it('should never drop a note whose receipt is still printing (its outcome is still to come from the Windows app)', () => {
+    const store = memoryStore();
+    noteSettled(store, sale('printing', { print: 'printing', settledAt: 1_000 }), 1_000);
+    for (let index = 0; index < MAX_SETTLED + 5; index += 1) noteSettled(store, sale(`k${index}`, { settledAt: 1_000 }), 2_000);
+    expect(settledSale(store, 'printing')).toBeDefined();
+    noteSettled(store, sale('late', { settledAt: 30 * 24 * 3600_000 }), 30 * 24 * 3600_000);
+    expect(store.sales.map((one) => one.key)).toEqual(['printing', 'late']);
+  });
+
   it('should keep the newest notes only, but never drop one with something still to do', () => {
     const store = memoryStore();
     noteSettled(store, sale('todo', { followUp: { fiscalNo: '00042' } }), 2_000);

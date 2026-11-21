@@ -131,6 +131,7 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
           if (answer.status === 'printed') return { ok: true, receiptNo: answer.receiptNo };
           if (answer.status === 'failed') return { ok: false, message: plainReason(answer.message, t) };
           if (answer.status === 'not_running') return { ok: false, message: `${t.printer.notRunning}. ${t.printer.notRunningHint}` };
+          if (answer.status === 'not_saved') return { ok: false, message: t.printer.notNoted };
           return { ok: false, message: t.printer.noFolder(status.data?.path ?? 'C:\\TEMP') };
         } catch (error) {
           return { ok: false, message: error instanceof Error ? error.message : t.printer.unknown };
@@ -185,5 +186,13 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
     [bridge, t],
   );
 
-  return { reach, path: status.data?.path ?? 'C:\\TEMP', busy, send, lookup, show, unprinted, keepUnprinted, forget, recheck: () => status.refetch() };
+  /** The till noted how that sale's receipt came out (Windows app 0.5.0 and later): the app's journal may let it go in time. */
+  const ack = useCallback(
+    (key: string) => {
+      void bridge?.fiscalAck?.(key).catch(() => false);
+    },
+    [bridge],
+  );
+
+  return { reach, path: status.data?.path ?? 'C:\\TEMP', busy, send, lookup, ack, show, unprinted, keepUnprinted, forget, recheck: () => status.refetch() };
 }

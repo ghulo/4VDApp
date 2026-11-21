@@ -49,6 +49,7 @@ describe('the Windows app’s print journal, as the Counter reads it', () => {
       unknown: { kind: 'unknown' },
     };
     const asked: string[] = [];
+    const acked: string[] = [];
     const { holding, notNoted } = await settleInterrupted(
       store,
       async (key) => {
@@ -56,8 +57,11 @@ describe('the Windows app’s print journal, as the Counter reads it', () => {
         return answers[key] ?? { kind: 'none' };
       },
       (key) => key === 'mine',
+      (key) => acked.push(key),
     );
     expect(asked).toEqual(['printed', 'failed', 'busy', 'unknown']);
+    // Only outcomes noted on the sale are acknowledged to the Windows app's journal.
+    expect(acked).toEqual(['printed', 'failed']);
     expect([...holding]).toEqual(['busy']);
     expect(notNoted).toBe(false);
     const receipt = (key: string) => store.sales.find((one) => one.key === key)!.receipt;

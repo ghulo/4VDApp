@@ -73,6 +73,8 @@ export function useWaitingSales(
   oversees = false,
   /** How a sale's receipt came out, by the Windows app's journal (null: this screen can't ask). */
   lookupPrint?: (key: string) => Promise<PrintOutcome | null>,
+  /** The till noted that receipt's outcome here: the Windows app's journal may let it go in time. */
+  ackPrint?: (key: string) => void,
 ) {
   const [sales, setSales] = useState<QueuedSale[]>(() => localStore.read());
   // Sent and taken by 4VD, but not yet in a shelf the till has: still kept off it (sentHolds.ts).
@@ -86,6 +88,7 @@ export function useWaitingSales(
   const ownerRef = useRef({ userId, businessId });
   const overseesRef = useRef(oversees);
   const lookupRef = useRef(lookupPrint);
+  const ackRef = useRef(ackPrint);
   const sentRef = useRef(onSent);
   const reachRef = useRef(onReach);
   const unsavedRef = useRef(onUnsaved);
@@ -96,6 +99,7 @@ export function useWaitingSales(
     ownerRef.current = { userId, businessId };
     overseesRef.current = oversees;
     lookupRef.current = lookupPrint;
+    ackRef.current = ackPrint;
   });
   const refresh = () => {
     setSales(localStore.read());
@@ -108,7 +112,7 @@ export function useWaitingSales(
       try {
         // A receipt still marked as printing (the page closed or reloaded mid-print): the Windows app's journal says how it came out.
         // Still printing there, or its outcome couldn't be noted here: the sale waits, so nothing is released on a guess.
-        const { holding, notNoted } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key));
+        const { holding, notNoted } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key), (key) => ackRef.current?.(key));
         if (notNoted) unsavedRef.current();
         const { sent, stoppedByNetwork, unsaved } = await gate.sending(() =>
           sendWaiting(
@@ -204,11 +208,13 @@ export function useWaitingSales(
      * The printer answered (or never got it): note how it went, and the sale may go.
      * If that can't be noted, the sale stays marked as printing, and the Windows app's journal settles it before it goes.
      */
-    printed(key: string, receipt: QueuedSale['receipt']) {
-      if (localStore.write(localStore.read().map((sale) => (sale.key === key ? { ...sale, receipt } : sale))) === false) unsavedRef.current();
+    printed(key: string, receipt: QueuedSale['receipt']): boolean {
+      const kept = localStore.write(localStore.read().map((sale) => (sale.key === key ? { ...sale, receipt } : sale))) !== false;
+      if (!kept) unsavedRef.current();
       printing.current.delete(key);
       refresh();
       if (navigator.onLine) void flush();
+      return kept;
     },
     /**
      * Send the refused ones again (after the cause was fixed, like a month
@@ -225,7 +231,7 @@ export function useWaitingSales(
       const settled: Array<{ sale: QueuedSale; result: Sent }> = [];
       let needsOwner = false;
       // A receipt still marked as printing is settled from the Windows app's journal first: a new key would lose its entry there.
-      const { holding } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key));
+      const { holding } = await settleInterrupted(localStore, lookupRef.current, (key) => printing.current.has(key), (key) => ackRef.current?.(key));
       for (const sale of localStore.read()) {
         if (sale.refused === undefined || sale.businessId !== owner.businessId || (sale.userId !== owner.userId && !overseesRef.current)) continue;
         if (holding.has(sale.key)) continue;

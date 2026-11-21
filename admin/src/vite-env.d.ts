@@ -24,8 +24,17 @@ interface Window {
     fiscalStatus?(): Promise<{ folder: boolean; flink: boolean; path: string }>;
     /** With a sale's key (Windows app 0.4.6 and later), the app notes the job and F-Link's answer on its disk. */
     fiscalSend?(job: { name: string; text: string; key?: string }): Promise<
-      { status: 'printed'; receiptNo: string | null } | { status: 'failed'; message: string | null } | { status: 'not_running' } | { status: 'no_folder' }
+      | { status: 'printed'; receiptNo: string | null }
+      | { status: 'failed'; message: string | null }
+      | { status: 'not_running' }
+      | { status: 'no_folder' }
+      /** 0.5.0 and later: the app couldn't note the job on its disk, so nothing printed. */
+      | { status: 'not_saved'; message: string | null }
     >;
+    /** The Counter noted that sale's receipt outcome on its side (0.5.0 and later): the journal may let it go in time. */
+    fiscalAck?(key: string): Promise<boolean>;
+    /** 0.5.0 and later: the app asks "Leave without saving?" itself before closing or reloading over typed work. */
+    confirmsLeave?: boolean;
     /** What happened to a sale's last receipt, from the app's own job journal; missing before 0.4.6. */
     fiscalLookup?(key: string): Promise<{
       status: 'printing' | 'printed' | 'failed' | 'not_running' | 'no_folder' | 'unknown';

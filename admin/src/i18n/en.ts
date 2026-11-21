@@ -4921,6 +4921,8 @@ export const en = {
       browserHint: 'Receipts print only from the 4VD Windows app on the shop PC.',
       oldApp: 'Update the Windows app to print',
       noFolder: (path: string) => `F-Link’s folder ${path} is missing on this PC`,
+      notNoted: 'Not printed: the Windows app couldn’t note the receipt on this PC’s disk (full, or held by another program), so it didn’t send it. Print again in a moment.',
+      notKept: 'Not printed: this PC’s storage is full, so the receipt couldn’t be kept to be found again. Make room (close other tabs) and print again.',
       notRunning: 'F-Link is not running',
       notRunningHint: 'Start F-Link on this PC, then print again.',
       failed: 'Not printed',

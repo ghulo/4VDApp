@@ -76,17 +76,19 @@ export const localSettledStore: SettledStore = {
 };
 
 const hasFollowUp = (sale: SettledSale) => sale.followUp?.fiscalNo !== undefined || sale.followUp?.unprinted !== undefined;
+/** Still to settle: something to do, or a receipt whose outcome isn't known yet (the Windows app's journal has it). Never let go by the cap or by age. */
+const unsettled = (sale: SettledSale) => hasFollowUp(sale) || sale.print === 'printing';
 
 /** The note for this key, if the till settled that sale. */
 export const settledSale = (store: SettledStore, key: string): SettledSale | undefined => store.read().find((sale) => sale.key === key);
 
-/** Note a settled sale (or change its note); old notes beyond the cap go, never one with something still to do. False when it couldn't be written. */
+/** Note a settled sale (or change its note); old notes beyond the cap go, never one with something still to do or still printing. False when it couldn't be written. */
 export function noteSettled(store: SettledStore, sale: SettledSale, now = Date.now()): boolean {
-  const others = store.read().filter((one) => one.key !== sale.key && (hasFollowUp(one) || now - one.settledAt < KEEP_MS));
+  const others = store.read().filter((one) => one.key !== sale.key && (unsettled(one) || now - one.settledAt < KEEP_MS));
   const all = [...others, sale];
   let over = all.length - MAX_SETTLED;
   const kept = all.filter((one) => {
-    if (over <= 0 || hasFollowUp(one) || one === sale) return true;
+    if (over <= 0 || unsettled(one) || one === sale) return true;
     over -= 1;
     return false;
   });

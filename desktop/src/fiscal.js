@@ -142,8 +142,9 @@ function isAllowedJob(text) {
  *   { status: 'failed', message }      F-Link refused it (out of paper, …)
  *   { status: 'not_running' }          nobody picked it up; the job was taken back
  *   { status: 'no_folder' }            no C:\TEMP on this PC
+ * `onFile` hears the name the job's file got in the folder, before it goes (the journal keeps it to find the answer after a restart).
  */
-async function send({ name, text }) {
+async function send({ name, text }, onFile = () => undefined) {
   if (!exists(FOLDER)) return { status: 'no_folder' };
   let job = safeName(name);
   // A name F-Link already used would mix up the answers.
@@ -151,6 +152,7 @@ async function send({ name, text }) {
     job = `${safeName(name)}-${n}`;
   }
   const inp = path.join(FOLDER, `${job}.inp`);
+  onFile(job);
   // Written under another name first, so F-Link never reads half a file.
   const temp = path.join(FOLDER, `${job}.4vd`);
   fs.writeFileSync(temp, encode(text));
@@ -186,6 +188,35 @@ async function send({ name, text }) {
   }
 }
 
+/**
+ * How a job F-Link was given went, read from its folder afterwards (the app
+ * closed mid-print): failed (in PrintErrors), printed (its answer beside it or
+ * in Printed\<day>.zip of the day it went or the next), or null when the folder
+ * can't say. A job still waiting in the folder (F-Link not running) is taken
+ * back, so it can't print by itself later and be printed twice: not printed.
+ */
+function answerFor(job, at = Date.now(), folder = FOLDER) {
+  const name = safeName(job);
+  const inp = path.join(folder, `${name}.inp`);
+  if (exists(inp)) {
+    try {
+      fs.unlinkSync(inp);
+      return { status: 'not_running' };
+    } catch {
+      return null;
+    }
+  }
+  if (exists(path.join(folder, 'PrintErrors', `${name}.inp`))) return { status: 'failed', message: null };
+  const days = [new Date(at), new Date(at + 24 * 3600_000)];
+  const answer =
+    safeRead(path.join(folder, `${name}.in$`)) ??
+    days.map((day) => readFromZip(path.join(folder, 'Printed', `${dayName(day)}.zip`), `${name}.in$`)).find(Boolean) ??
+    safeRead(path.join(folder, 'Printed', `${name}.in$`));
+  if (!answer) return null;
+  const parsed = parseAnswer(answer);
+  return parsed.ok ? { status: 'printed', receiptNo: parsed.receiptNo } : { status: 'failed', message: parsed.message };
+}
+
 function safeRead(file) {
   try {
     return fs.readFileSync(file, 'latin1');
@@ -194,4 +225,4 @@ function safeRead(file) {
   }
 }
 
-module.exports = { send, status, parseAnswer, readFromZip, encode, safeName, isAllowedJob, FOLDER };
+module.exports = { send, status, answerFor, parseAnswer, readFromZip, encode, safeName, isAllowedJob, FOLDER };

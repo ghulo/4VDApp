@@ -1,95 +1,231 @@
-// The fiscal printer's job journal, on this PC's disk (the app's settings
-// folder), by the sale's key: written when a receipt goes to F-Link and again
-// when F-Link answers. It lives in the app itself, not in the dashboard's
-// storage, so a receipt's fate and its fiscal number survive a reload of the
-// page, a crash of the page mid-print and a full browser storage: the Counter
-// asks here before it lets go of a sale whose receipt was printing.
+// The fiscal printer's job journal, by the sale's key: written when a receipt
+// goes to F-Link and again when F-Link answers. It lives in the app itself
+// (memory first, then the app's settings folder on this PC's disk), not in the
+// dashboard's storage, so a receipt's fate and its fiscal number survive a
+// reload of the page, a crash of the page mid-print and a full browser
+// storage: the Counter asks here before it lets go of a sale whose receipt
+// was printing, and tells the journal (ack) once it has noted the outcome.
 //
-// A job still "printing" when the app starts was cut off by the app closing:
-// it becomes "unknown" (look at the printer). So "printing" always means this
-// running app still has the job.
-const fs = require('node:fs');
+// - Memory is the truth while the app runs: a lookup answers from it even when
+//   the disk can't be written (locked by an antivirus, full), and the disk is
+//   written again until it takes it.
+// - A receipt is only sent once the journal could note it is going (so it can
+//   always be found again); if the disk refuses that, nothing prints.
+// - A key that already printed is never printed again: its answer comes back.
+//   A key still printing waits for that job instead of sending a second one.
+// - "printing" means this running app has the job. One left "printing" when the
+//   app starts was cut off by the app closing: F-Link's own folder says how it
+//   went if it can (printed with its number, or failed), else it is "unknown"
+//   (look at the printer).
+// - Entries the Counter hasn't acknowledged stay until it does (up to a hard
+//   cap); acknowledged ones go after MAX_ENTRIES or KEEP_MS.
+// - A journal file that can't be read is never written over: a broken one is
+//   moved aside first, a locked one waits until it can be read.
+const realFs = require('node:fs');
 
-/** Enough for weeks of receipts; the oldest go first. */
+/** Acknowledged entries: enough for weeks of receipts; the oldest go first. */
 const MAX_ENTRIES = 500;
 const KEEP_MS = 30 * 24 * 3600_000;
+/** Entries the Counter never acknowledged (an older dashboard, a lost page): kept far longer, but not for ever. */
+const MAX_UNACKED = 3000;
+const KEEP_UNACKED_MS = 120 * 24 * 3600_000;
+/** How often a write the disk refused is tried again. */
+const RETRY_MS = 5_000;
 const KEY = /^[A-Za-z0-9:-]{1,80}$/;
 const OUTCOMES = new Set(['printed', 'failed', 'not_running', 'no_folder']);
 
 const validKey = (key) => typeof key === 'string' && KEY.test(key);
 
-function read(file) {
-  try {
-    const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Array.isArray(saved) ? saved.filter((entry) => entry && validKey(entry.key)) : [];
-  } catch {
-    return [];
-  }
-}
+/** What a lookup gives the dashboard. */
+const view = (entry) => ({ key: entry.key, job: entry.job ?? null, status: entry.status, receiptNo: entry.receiptNo ?? null, message: entry.message ?? null, at: entry.at });
 
-/** Written under another name first, so a crash mid-write never leaves half a journal. False when it couldn't be. */
-function write(file, entries, now = Date.now()) {
-  const kept = entries.filter((entry) => now - entry.at < KEEP_MS).slice(-MAX_ENTRIES);
-  try {
-    fs.writeFileSync(`${file}.tmp`, JSON.stringify(kept));
-    fs.renameSync(`${file}.tmp`, file);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function put(file, key, change, now = Date.now()) {
-  if (!validKey(key)) return false;
-  const entries = read(file);
-  const old = entries.find((entry) => entry.key === key);
-  const others = entries.filter((entry) => entry.key !== key);
-  return write(file, [...others, { ...old, ...change, key, at: now }], now);
-}
-
-/** A receipt for this sale goes to F-Link now. */
-function start(file, key, job, now = Date.now()) {
-  return put(file, key, { job: String(job).slice(0, 80), status: 'printing', receiptNo: null, message: null }, now);
-}
-
-/** F-Link answered ({ status, receiptNo?, message? } as fiscal.send gives it). */
-function finish(file, key, answer, now = Date.now()) {
-  const status = OUTCOMES.has(answer?.status) ? answer.status : 'unknown';
-  return put(file, key, { status, receiptNo: answer?.receiptNo ?? null, message: answer?.message ?? null }, now);
-}
-
-/** What happened to this sale's last receipt, or null if none went to the printer from this app. */
-function lookup(file, key) {
-  if (!validKey(key)) return null;
-  const entry = read(file).find((one) => one.key === key);
-  return entry ? { key: entry.key, job: entry.job ?? null, status: entry.status, receiptNo: entry.receiptNo ?? null, message: entry.message ?? null, at: entry.at } : null;
-}
+/** The answer a print gives back, from a noted outcome. */
+const answerOf = (entry) =>
+  entry.status === 'printed' ? { status: 'printed', receiptNo: entry.receiptNo ?? null } : { status: entry.status, message: entry.message ?? null };
 
 /**
- * Print one job for a sale, noted before it goes and with its answer. A print
- * that throws is noted as unknown (look at the printer): it may have thrown
- * after F-Link took the job, so it is never called failed (that could print it
- * twice), and it never stays "printing" until the app restarts. Without a
- * valid key it just prints.
+ * One journal on one file.
+ * @param {string} file
+ * @param {{ fs?: typeof realFs, now?: () => number, recover?: (entry: object) => ({ status: string, receiptNo?: string | null, message?: string | null } | null), retryMs?: number }} [options]
+ *   recover: how a job cut off by the app closing went, from F-Link's folder (fiscal.js answerFor), or null when it can't say.
  */
-async function track(file, key, name, run) {
-  if (!validKey(key)) return run();
-  start(file, key, name);
-  try {
-    const answer = await run();
-    finish(file, key, answer);
-    return answer;
-  } catch (error) {
-    finish(file, key, { status: 'unknown', message: error?.message ?? null });
-    throw error;
+function openJournal(file, options = {}) {
+  const fs = options.fs ?? realFs;
+  const now = options.now ?? Date.now;
+  const retryMs = options.retryMs ?? RETRY_MS;
+  /** key → entry; the order of insertion is the order of the last change. */
+  const entries = new Map();
+  /** key → the running print's promise: a second print of it waits for this one. */
+  const inflight = new Map();
+  // The disk's journal could be read (or there is none): only then is it written.
+  let loaded = false;
+  let dirty = false;
+  let timer = null;
+
+  /** Read the disk's journal into memory, under what memory already has (memory is newer). */
+  function load() {
+    if (loaded) return true;
+    let text;
+    try {
+      text = fs.readFileSync(file, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') return false;
+      loaded = true;
+      return true;
+    }
+    let saved;
+    try {
+      saved = JSON.parse(text);
+      if (!Array.isArray(saved)) throw new Error('not a list');
+    } catch {
+      // Broken: kept beside it for a person to look at, never written over.
+      try {
+        fs.renameSync(file, `${file}.broken-${now()}`);
+      } catch {
+        return false;
+      }
+      loaded = true;
+      return true;
+    }
+    const mine = [...entries.values()];
+    entries.clear();
+    for (const entry of saved) if (entry && validKey(entry.key)) entries.set(entry.key, entry);
+    for (const entry of mine) {
+      entries.delete(entry.key);
+      entries.set(entry.key, entry);
+    }
+    loaded = true;
+    return true;
   }
+
+  function pruned() {
+    const at = now();
+    const all = [...entries.values()];
+    const acked = all.filter((entry) => entry.acked && entry.status !== 'printing' && at - entry.at < KEEP_MS).slice(-MAX_ENTRIES);
+    const open = all.filter((entry) => !entry.acked || entry.status === 'printing').filter((entry) => at - entry.at < KEEP_UNACKED_MS).slice(-MAX_UNACKED);
+    const keep = new Set([...acked, ...open]);
+    for (const entry of all) if (!keep.has(entry)) entries.delete(entry.key);
+    return all.filter((entry) => keep.has(entry));
+  }
+
+  /** Written under another name first, so a crash mid-write never leaves half a journal. False when it couldn't be. */
+  function persist() {
+    dirty = true;
+    if (!load()) return schedule(), false;
+    try {
+      fs.writeFileSync(`${file}.tmp`, JSON.stringify(pruned()));
+      fs.renameSync(`${file}.tmp`, file);
+      dirty = false;
+      return true;
+    } catch {
+      schedule();
+      return false;
+    }
+  }
+
+  function schedule() {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      if (dirty) persist();
+    }, retryMs);
+    timer.unref?.();
+  }
+
+  function put(key, change) {
+    const old = entries.get(key);
+    entries.delete(key);
+    entries.set(key, { ...old, ...change, key, at: now() });
+    return persist();
+  }
+
+  /** What happened to this sale's last receipt, or null if none went to the printer from this app. */
+  function lookup(key) {
+    if (!validKey(key)) return null;
+    load();
+    const entry = entries.get(key);
+    if (!entry) return null;
+    // "printing" only while this app really has the job; otherwise it was cut off, and how it went is unknown.
+    if (entry.status === 'printing' && !inflight.has(key)) return { ...view(entry), status: 'unknown' };
+    return view(entry);
+  }
+
+  /**
+   * Print one job for a sale, noted before it goes and with its answer. Without
+   * a valid key it just prints. `run(onFile)` prints and may tell the file name
+   * F-Link got (kept, so a restart can find its answer).
+   */
+  async function track(key, name, run) {
+    if (!validKey(key)) return run(() => undefined);
+    load();
+    const running = inflight.get(key);
+    if (running) return running;
+    const known = entries.get(key);
+    // Printed already: a second fiscal receipt for one sale must never print. Its answer comes back instead.
+    if (known?.status === 'printed') return answerOf(known);
+    const job = (async () => {
+      // Yield first, so the job is listed as running before any of it happens.
+      await null;
+      // The journal must be able to find this print again before it goes; if the disk refuses, nothing prints.
+      if (!put(key, { job: String(name).slice(0, 80), status: 'printing', receiptNo: null, message: null, file: null, acked: false })) {
+        entries.delete(key);
+        if (known) entries.set(key, known);
+        return { status: 'not_saved', message: null };
+      }
+      let answer;
+      try {
+        answer = await run((fileName) => {
+          const entry = entries.get(key);
+          if (entry) entries.set(key, { ...entry, file: String(fileName).slice(0, 80) });
+          persist();
+        });
+      } catch (error) {
+        // It may have thrown after F-Link took the job: never called failed (that could print it twice).
+        put(key, { status: 'unknown', message: error?.message ?? null });
+        throw error;
+      }
+      const status = OUTCOMES.has(answer?.status) ? answer.status : 'unknown';
+      put(key, { status, receiptNo: answer?.receiptNo ?? null, message: answer?.message ?? null });
+      return answer;
+    })();
+    inflight.set(key, job);
+    try {
+      return await job;
+    } finally {
+      inflight.delete(key);
+    }
+  }
+
+  /** The Counter noted this outcome on its side: the entry may go in time. */
+  function ack(key) {
+    if (!validKey(key)) return false;
+    load();
+    const entry = entries.get(key);
+    if (!entry || entry.status === 'printing' || entry.acked) return Boolean(entry);
+    entries.set(key, { ...entry, acked: true });
+    return persist();
+  }
+
+  /** At start: a job left "printing" was cut off when the app closed. F-Link's folder says how it went, if it can; else it is unknown. */
+  function settleStale() {
+    load();
+    let changed = false;
+    for (const entry of [...entries.values()]) {
+      if (entry.status !== 'printing' || inflight.has(entry.key)) continue;
+      let found = null;
+      try {
+        found = entry.file && options.recover ? options.recover(entry) : null;
+      } catch {
+        found = null;
+      }
+      const status = found && OUTCOMES.has(found.status) ? found.status : 'unknown';
+      entries.set(entry.key, { ...entry, status, receiptNo: found?.receiptNo ?? null, message: found?.message ?? entry.message ?? null });
+      changed = true;
+    }
+    return changed ? persist() : true;
+  }
+
+  return { lookup, track, ack, settleStale, flush: () => (dirty ? persist() : true) };
 }
 
-/** At start: a job left "printing" was cut off when the app closed, so whether it printed is unknown. */
-function settleStale(file, now = Date.now()) {
-  const entries = read(file);
-  if (!entries.some((entry) => entry.status === 'printing')) return true;
-  return write(file, entries.map((entry) => (entry.status === 'printing' ? { ...entry, status: 'unknown' } : entry)), now);
-}
-
-module.exports = { start, finish, lookup, settleStale, track, validKey, MAX_ENTRIES };
+module.exports = { openJournal, validKey, MAX_ENTRIES, MAX_UNACKED, KEEP_MS };

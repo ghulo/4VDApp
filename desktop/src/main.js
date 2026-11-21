@@ -51,6 +51,8 @@ function logUpdate(message) {
 function journalFile() {
   return path.join(app.getPath('userData'), 'fiscal-journal.json');
 }
+// Opened once the app is ready (the settings folder is known then).
+let printJournal = null;
 
 function setupFile() {
   return path.join(app.getPath('userData'), 'setup.json');
@@ -235,10 +237,13 @@ ipcMain.handle('fiscal:send', async (event, job) => {
     return { status: 'failed', message: null };
   }
   // A sale's receipt is noted here before it goes and again with F-Link's answer, even if the page that asked is gone by then.
-  return journal.track(journalFile(), job.key, job.name, () => fiscal.send({ name: job.name, text: job.text }));
+  // A sale's receipt that printed already comes back as it was, never printed twice; one that can't be noted doesn't print.
+  return printJournal.track(job.key, job.name, (onFile) => fiscal.send({ name: job.name, text: job.text }, onFile));
 });
 // What happened to a sale's last receipt (journal.js), or null.
-ipcMain.handle('fiscal:lookup', (event, key) => (fromDashboard(event) ? journal.lookup(journalFile(), key) : null));
+ipcMain.handle('fiscal:lookup', (event, key) => (fromDashboard(event) ? printJournal.lookup(key) : null));
+// The Counter noted that receipt's outcome on its side: the journal may let it go in time.
+ipcMain.handle('fiscal:ack', (event, key) => (fromDashboard(event) ? printJournal.ack(key) : false));
 // The welcome screen and Settings → This computer.
 ipcMain.handle('setup:get', (event) =>
   fromDashboard(event) ? { ...setup, openAtLogin: openAtLogin(), canOpenAtLogin: app.isPackaged, version: app.getVersion() } : null);
@@ -269,8 +274,9 @@ app.on('second-instance', () => {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   setup = setupStore.read(setupFile());
-  // A receipt still printing when the app last closed: whether it came out is unknown.
-  journal.settleStale(journalFile());
+  // A receipt still printing when the app last closed: F-Link's folder says how it went, else it is unknown.
+  printJournal = journal.openJournal(journalFile(), { recover: (entry) => fiscal.answerFor(entry.file, entry.at) });
+  printJournal.settleStale();
   createWindow();
   // Only an installed copy can update itself; `npm start` skips this.
   if (app.isPackaged) {

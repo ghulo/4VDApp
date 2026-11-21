@@ -59,6 +59,20 @@ UI and features (ask first):
 
 ## To test by hand
 
+**A delivery came** (Task 7b, 2026-11-21)
+- [ ] Staff Home: one "A delivery came" row (saying how many orders are on their way); no Deliveries tile, no "A supplier brought goods"
+- [ ] A delivery came, supplier with one order: it opens; blank boxes say "type how many", kg takes decimals; leave the page and come back: the typing is still there; save → photo step → send a photo of the bill, or "No bill came"
+- [ ] Supplier with two orders: chips to choose which one; "It wasn't on an order" switches to counting
+- [ ] No order: find a product by name and scan another with the camera, type how many and a best-before date, add the bill's photo, save: stock goes up at once. Turn the network off before saving, then on and save again: the goods go in only once
+- [ ] Make the photo fail (network off after the count is saved): it says the goods are in stock but the photo didn't send, and Send tries again
+- [ ] Owner: Njoftimet shows "Delivery from <supplier>, without an order" with a link to the order; the bill check page says who counted it and what, has no order choice, and Confirm with the bill's amount sets the costs without adding the goods again (stock unchanged; a product on the bill that wasn't counted goes in)
+- [ ] On a phone with bad signal: save a count, lose the network before the answer: the count locks ("Sent, but no answer came yet"); back online, Send again puts it in once. Tick off an order the same way and reload: it asks "Did that delivery go in?"; Send again takes it once
+- [ ] Reload right after a delivery went in: the bill photo step is still there
+- [ ] Sign in as the accountant: a delivery's bill photo is in To do; open it, type the amount and VAT, Confirm: the bill is saved and stock doesn't change; there is no Discard. A bill with a product staff didn't count is refused for the accountant (the owner does it)
+- [ ] A delivery whose bill shows another supplier's tax number: the check page warns, and the phone check sends it to the dashboard
+- [ ] While a tick-off waits for its answer, "Change supplier", the order chips and "It wasn't on an order" are greyed out; an owner who ticks off an order staff already did (with a bill typed in) is told "already ticked off", nothing is dropped quietly
+- [ ] Accountant on a delivery's bill check: no "Update the cost" or barcode ticks
+
 **Owner and accountant bills** (Task 7b, 2026-11-21)
 - [ ] Sign in as an owner: the menu shows every page (Counter, Day, Books, Settings) with no "More"; Overview and Sales offer Record a sale; the owner can sell, close the day, post a books entry, change products, stock, people and settings. Settings → Roles stays main admin only, and the owner can't invite an admin or main admin
 - [ ] Goods to send out (was "To deliver"): the map pin icon on staff Home, the Counter and the page; Albanian "Dërgesat te klientët"

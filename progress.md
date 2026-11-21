@@ -59,6 +59,17 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Windows app 0.5.0: offline start, print journal, leave question** (Task 5 + 1c, 2026-11-21; needs the 0.5.0 release on the shop PC)
+- [ ] Shop PC: open the Counter once with internet, then pull the network cable and restart the app: the Counter opens signed in, its products are there, a cash sale prints its fiscal receipt and waits to be sent; plug back in: it goes to 4VD and the shelf is right
+- [ ] Shop PC, Wi-Fi up but no internet (router unplugged from the line): the app starts the Counter within about 10 seconds, not the sign-in page
+- [ ] A new PC that never opened 4VD, offline: the "Can't reach 4VD" page says a copy is saved the first time it opens online
+- [ ] After a dashboard release: the till keeps working while open; after a reload it shows the new release
+- [ ] Sign out on the shop PC, go offline, restart: the sign-in page (nothing of the last person kept)
+- [ ] F-Link: print a sale, close the app while the receipt is printing, open it again: Not printed says printed (with its number) or "check the printer", never prints it twice
+- [ ] Print again on a Not printed row whose receipt did come out: no second receipt, its number goes on the invoice
+- [ ] A form with typed work (a new bill), press Ctrl R or close the window: "Leave without saving?" asks, Stay keeps the work, Leave goes
+- [ ] A PC that two businesses use: a sale or Not printed receipt from one never shows in the other
+
 **Accountant month, figures, pickers** (Task 6, 2026-11-21)
 - [ ] VAT → pick last month → Sales book → Purchase book → VAT: the same month stays picked on each tab
 - [ ] VAT page "Filing, step by step": both EDI downloads give that month's files and EDI accepts them; "Mark as filed" in step 3 shows "<month>: pay €x.xx by …" with cents; after filing, all three steps show ticks

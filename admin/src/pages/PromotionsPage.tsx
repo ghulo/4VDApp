@@ -5,7 +5,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { canManage } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading } from '../components/Feedback';
-import { categoriesApi, productsApi, promotionsApi } from '../services/api';
+import { categoriesApi, promotionsApi } from '../services/api';
+import { ProductPicker } from '../components/ProductPicker';
 import type { Promotion, PromotionStatus } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { formatDateWith, formatHeadlineMoney, formatMoney, formatPromotionDay } from '../utils/format';
@@ -281,10 +282,6 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
   const queryClient = useQueryClient();
   const t = useT();
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
-  const products = useQuery({
-    queryKey: ['products', 'all-for-promotions'],
-    queryFn: () => productsApi.list({ page: 1, limit: 100 }),
-  });
 
   const [name, setName] = useState(from?.name ?? '');
   const [percentOff, setPercentOff] = useState(from ? String(from.percentOff) : '');
@@ -294,14 +291,16 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
   const percent = Number(percentOff);
   const percentValid = percent > 0 && percent <= 90;
   const [kind, targetId] = target.split(':');
+  // "product:" is the one-product choice before a product is picked.
+  const chosen = target !== '' && !(kind === 'product' && !targetId);
   const targetInput = kind === 'product' ? { productId: Number(targetId) } : { categoryId: Number(targetId) };
   const preview = useQuery({
     queryKey: ['promotions', 'preview', percent, target],
     queryFn: () => promotionsApi.preview({ percentOff: percent, ...targetInput }),
-    enabled: percentValid && target !== '',
+    enabled: percentValid && chosen,
     placeholderData: keepPreviousData,
   });
-  const lines = percentValid && target !== '' ? (preview.data ?? []) : [];
+  const lines = percentValid && chosen ? (preview.data ?? []) : [];
   const tooLow = lines.filter((line) => line.tooLow).length;
 
   const typed = name !== (from?.name ?? '') || percentOff !== (from ? String(from.percentOff) : '') || target !== (from ? targetOf(from) : '');
@@ -320,7 +319,7 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
     create.mutate();
   }
 
-  const isValid = name.trim() !== '' && target !== '' && percentValid && dates.startsAt !== '' && dates.endsAt >= dates.startsAt && tooLow === 0;
+  const isValid = name.trim() !== '' && chosen && percentValid && dates.startsAt !== '' && dates.endsAt >= dates.startsAt && tooLow === 0;
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
@@ -342,7 +341,7 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
         </Field>
       </div>
       <Field label={t.promotions.appliesTo}>
-        <select required value={target} onChange={(event) => setTarget(event.target.value)}>
+        <select required value={kind === 'product' ? 'product:' : target} onChange={(event) => setTarget(event.target.value)}>
           <option value="">{t.promotions.choose}</option>
           <optgroup label={t.promotions.wholeCategory}>
             {categories.data?.map((category) => (
@@ -351,15 +350,18 @@ function PromotionForm({ from, onDone }: { from?: Promotion; onDone: (created: P
               </option>
             ))}
           </optgroup>
-          <optgroup label={t.promotions.oneProduct}>
-            {products.data?.items.map((product) => (
-              <option key={product.id} value={`product:${product.id}`}>
-                {product.name}
-              </option>
-            ))}
-          </optgroup>
+          <option value="product:">{t.promotions.oneProduct}</option>
         </select>
       </Field>
+      {kind === 'product' && (
+        <ProductPicker
+          label={t.promotions.oneProduct}
+          placeholder={t.promotions.findProduct}
+          required
+          value={targetId ?? ''}
+          onPick={(product) => setTarget(product ? `product:${product.id}` : 'product:')}
+        />
+      )}
       <Field label={t.promotions.quick}>
         <div className="promo-dates">
           {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map((key) => (

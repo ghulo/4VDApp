@@ -3309,6 +3309,7 @@ export const en = {
     choose: 'Choose a category or product…',
     wholeCategory: 'Whole category',
     oneProduct: 'One product',
+    findProduct: 'Type its name or barcode',
     firstDay: 'First day',
     lastDay: 'Last day',
     marginHint: 'A discount that would take any product below cost plus your minimum margin (see Settings) is refused.',

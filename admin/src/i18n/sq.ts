@@ -3285,6 +3285,7 @@ export const sq: Catalogue = {
     choose: 'Zgjidh një kategori ose produkt…',
     wholeCategory: 'Kategori e tërë',
     oneProduct: 'Një produkt',
+    findProduct: 'Shkruaj emrin ose barkodin',
     firstDay: 'Dita e parë',
     lastDay: 'Dita e fundit',
     marginHint: 'Refuzohet një zbritje që do ta çonte ndonjë produkt nën kosto plus marzhin tënd minimal (shiko Cilësimet).',

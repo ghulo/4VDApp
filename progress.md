@@ -59,6 +59,15 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Effort, weight and copy** (Task 7, 2026-11-21)
+- [ ] Stock → Add product: the cursor is in the Barcode box; scan or type a code, fill name, category and price, save with no photo: the product opens with its barcode. A code already used by another product: the product is still saved and its page says the barcode was refused
+- [ ] Expenses → Add: the cursor is in Amount, the category says "Choose a category" and Save stays grey until you pick one
+- [ ] Products and Stock lists show 50 rows a page
+- [ ] Switch to Shqip and back (sign-in page and Profile): the page changes at once, a reload keeps it; the search box (Ctrl K) still finds "stock" while in Shqip
+- [ ] A product with a country: its flag shows on the product page, Labels and the country list in the form; pages with only history lists (a customer page) show no flag and load quickly
+- [ ] Settings: open every section on a phone-speed connection; each shows its Loading bar for a moment, then its form
+- [ ] Read a few Albanian screens (returns, refunds, Windows app "This computer") for the new words: kthim, lavazh, Paneli
+
 **Windows app 0.5.0: offline start, print journal, leave question** (Task 5 + 1c, 2026-11-21; needs the 0.5.0 release on the shop PC)
 - [ ] Shop PC: open the Counter once with internet, then pull the network cable and restart the app: the Counter opens signed in, its products are there, a cash sale prints its fiscal receipt and waits to be sent; plug back in: it goes to 4VD and the shelf is right
 - [ ] Shop PC, Wi-Fi up but no internet (router unplugged from the line): the app starts the Counter within about 10 seconds, not the sign-in page

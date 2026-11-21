@@ -1,6 +1,6 @@
 // The Windows app: a window onto the live dashboard, so every dashboard deploy
 // reaches it at once. Updates to the app itself come from GitHub Releases.
-const { app, BrowserWindow, Menu, ipcMain, nativeTheme, screen, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, nativeTheme, screen, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -112,6 +112,12 @@ function saveWindowState() {
   }
 }
 
+/** The question before typed work is lost, in the dashboard's language. */
+const LEAVE_WORDS = {
+  en: { message: 'Leave without saving?', detail: 'What you typed here hasn’t been saved yet and will be lost.', leave: 'Leave', stay: 'Stay' },
+  sq: { message: 'Të dalësh pa ruajtur?', detail: 'Ajo që shkrove këtu ende nuk është ruajtur dhe do të humbasë.', leave: 'Dil', stay: 'Qëndro' },
+};
+
 const EDIT_LABELS = app.getLocale().startsWith('sq')
   ? { cut: 'Prit', copy: 'Kopjo', paste: 'Ngjit', selectAll: 'Zgjidh të gjitha' }
   : { cut: 'Cut', copy: 'Copy', paste: 'Paste', selectAll: 'Select all' };
@@ -187,6 +193,22 @@ function createWindow() {
     win.show();
   });
   win.on('close', saveWindowState);
+  // The dashboard holds typed work (beforeunload): Windows' own question before the window closes or reloads.
+  // preventDefault lets the page go; doing nothing keeps it.
+  win.webContents.on('will-prevent-unload', (event) => {
+    const words = LEAVE_WORDS[pageLanguage()] ?? LEAVE_WORDS.en;
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: [words.leave, words.stay],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+      title: '4VD',
+      message: words.message,
+      detail: words.detail,
+    });
+    if (choice === 0) event.preventDefault();
+  });
 
   win.webContents.setVisualZoomLevelLimits(1, 1);
   win.webContents.on('before-input-event', handleKeys);

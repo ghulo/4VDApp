@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('fourvdDesktop', {
   fiscalLookup: (key) => ipcRenderer.invoke('fiscal:lookup', key),
   /** The Counter noted that sale's receipt outcome on its side: the journal may let it go in time. */
   fiscalAck: (key) => ipcRenderer.invoke('fiscal:ack', key),
+  /** This app asks "Leave without saving?" itself when the dashboard holds typed work (older apps closed silently). */
+  confirmsLeave: true,
   /** { done, role: "counter" | "office", openAtLogin, canOpenAtLogin, version }. */
   getSetup: () => ipcRenderer.invoke('setup:get'),
   /** Change any of { done, role, openAtLogin }; resolves with the new setup. */

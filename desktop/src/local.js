@@ -8,6 +8,7 @@ const WORDS = {
     title: 'Nuk lidhet me 4VD',
     body: 'Kontrolloni internetin e këtij kompjuteri. Do të provojmë sërish çdo disa sekonda.',
     retry: 'Provo sërish',
+    first: '4VD mban një kopje në këtë kompjuter për t’u hapur pa internet, të ruajtur herën e parë që hapet me internet. Ky kompjuter ende nuk e ka.',
   },
 };
 

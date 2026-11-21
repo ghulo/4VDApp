@@ -17,7 +17,7 @@ import { Badge, ButtonLink, DataTable, EmptyState, PageHeader, StatGrid, StatTil
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 /** "Running out soon": a week or less left at the current pace. */
 const SOON_DAYS = 7;
 

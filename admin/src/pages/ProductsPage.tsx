@@ -15,6 +15,9 @@ import { canManage } from '../auth/roles';
 import { useT } from '../i18n/useT';
 import type { Catalogue } from '../i18n/en';
 
+/** Thousands of products: 20 a page meant a lot of clicking. */
+const PAGE_SIZE = 50;
+
 const columns = (t: Catalogue): Column<Product>[] => [
   {
     header: t.products.product,
@@ -74,8 +77,8 @@ export function ProductsPage() {
 
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
   const products = useQuery({
-    queryKey: ['products', { page, search, categoryId }],
-    queryFn: () => productsApi.list({ page, search, categoryId }),
+    queryKey: ['products', { page, search, categoryId, limit: PAGE_SIZE }],
+    queryFn: () => productsApi.list({ page, limit: PAGE_SIZE, search, categoryId }),
     placeholderData: keepPreviousData,
   });
 

@@ -295,7 +295,9 @@ describe('review fixes: replays, races, zero lines, the accountant', () => {
 
   it('should take an ordered delivery ticked off twice at once only once, and answer the same resend with success', async () => {
     const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }] })).body.data;
-    const send = (quantity = 4) => api().post(`/api/orders/${ordered.id}/receive`).set(auth(staffToken)).send({ lines: [{ lineId: ordered.lines[0].id, receivedQuantity: quantity }] });
+    const keys = { 4: randomUUID(), 3: randomUUID() } as Record<number, string>;
+    const send = (quantity: number, key = keys[quantity]) =>
+      api().post(`/api/orders/${ordered.id}/receive`).set(auth(staffToken)).send({ requestKey: key, lines: [{ lineId: ordered.lines[0].id, receivedQuantity: quantity }] });
 
     const both = await Promise.all([send(4), send(3)]);
     expect(both.map((response) => response.status).sort()).toEqual([200, 409]);
@@ -304,7 +306,9 @@ describe('review fixes: replays, races, zero lines, the accountant', () => {
 
     // The winner's answer lost on the way and sent again: done, nothing added.
     expect((await send(count)).status).toBe(200);
+    // The loser's press, or the winner's key with other counts: refused.
     expect((await send(count === 4 ? 3 : 4)).status).toBe(409);
+    expect((await send(count === 4 ? 3 : 4, keys[count])).status).toBe(409);
     expect(await stockOf(chairId)).toBe(10 + count);
   });
 
@@ -379,5 +383,119 @@ describe('review fixes: replays, races, zero lines, the accountant', () => {
 
     expect((await api().get(`/api/bill-scans/${id}`).set(auth())).body.data.arrival.billSupplier).toBe('Other Co');
     expect((await api().get(`/api/bill-scans/${id}/quick`).set(auth())).body.data.blockers).toContain('supplier');
+  });
+});
+
+describe('second review fixes', () => {
+  /** How much of a product each location holds, by location name. */
+  async function where(productId: number): Promise<Record<string, number>> {
+    const rows = await context.db
+      .selectFrom('location_stock as s')
+      .innerJoin('stock_locations as l', 'l.id', 's.location_id')
+      .select(['l.name', 's.quantity'])
+      .where('s.product_id', '=', productId)
+      .execute();
+    return Object.fromEntries(rows.filter((row) => Number(row.quantity) !== 0).map((row) => [row.name, Number(row.quantity)]));
+  }
+  const openDates = async (productId: number) =>
+    (await context.db.selectFrom('expiry_dates').select('id').where('product_id', '=', productId).where('cleared_at', 'is', null).execute()).length;
+  const receive = (orderId: number, body: Record<string, unknown>, token = staffToken) => api().post(`/api/orders/${orderId}/receive`).set(auth(token)).send(body);
+  const twoLineOrder = async () =>
+    (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }, { productId: tableId, quantity: 1, unitCost: 200 }] })).body.data;
+
+  it('should reopen from the place the confirm put the goods, and clear the best-before dates it added', async () => {
+    const developerToken = await loginAs(context, 'developer');
+    const depo = (await api().post('/api/locations').set(auth(ownerToken)).send({ name: 'Depo' })).body.data.id;
+    await api().patch(`/api/locations/${depo}`).set(auth(ownerToken)).send({ receivesHere: true }).expect(200);
+    const ordered = await twoLineOrder();
+    await receive(ordered.id, { lines: [{ lineId: ordered.lines[0].id, receivedQuantity: 0 }, { lineId: ordered.lines[1].id, receivedQuantity: 1 }] }).expect(200);
+    const { id } = await photo(ordered.id);
+
+    // No place picked: the chairs on the bill go where goods are received.
+    await api()
+      .post(`/api/bill-scans/${id}/confirm`)
+      .set(auth())
+      .send(confirmBody(null, [{ pieces: 4, unitCost: 55, expiresOn: '2027-03-01' }, { productId: tableId, pieces: 1, unitCost: 190 }], 410))
+      .expect(200);
+    expect(await where(chairId)).toEqual({ 'Shop floor': 10, Depo: 4 });
+    expect(await openDates(chairId)).toBe(1);
+
+    await api().post(`/api/bill-scans/${id}/reopen`).set(auth(developerToken)).expect(200);
+    // They leave the depot again; the shop floor's own chairs stay.
+    expect(await where(chairId)).toEqual({ 'Shop floor': 10 });
+    expect(await openDates(chairId)).toBe(0);
+  });
+
+  it('should answer a resend of a delivery by what it first sent: another best-before date is refused, a bill added since is not', async () => {
+    const key = randomUUID();
+    const first = { key, lines: [{ productId: chairId, quantity: 3, expiresOn: '2027-01-31' }] };
+    const { id: orderId } = (await arrive(first).expect(201)).body.data;
+    const otherDate = await arrive({ key, lines: [{ productId: chairId, quantity: 3, expiresOn: null }] });
+    expect(otherDate.status).toBe(409);
+
+    // The bill brings a table staff didn't count; the very same press sent again is still "done".
+    const { id } = await photo(orderId);
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody(null, [{}, { productId: tableId, pieces: 1, unitCost: 180 }], 330)).expect(200);
+    expect((await arrive(first)).status).toBe(200);
+    expect(await stockOf(chairId)).toBe(13);
+    expect(await stockOf(tableId)).toBe(1);
+  });
+
+  it('should answer a lost ordered tick-off by what it sent, even after its bill filled a line ticked off as 0', async () => {
+    const ordered = await twoLineOrder();
+    const press = { requestKey: randomUUID(), lines: [{ lineId: ordered.lines[0].id, receivedQuantity: 0 }, { lineId: ordered.lines[1].id, receivedQuantity: 1 }] };
+    await receive(ordered.id, press).expect(200);
+    const { id } = await photo(ordered.id);
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody(null, [{ pieces: 4 }, { productId: tableId, pieces: 1, unitCost: 190 }], 390)).expect(200);
+
+    expect((await receive(ordered.id, press)).status).toBe(200);
+    expect(await stockOf(chairId)).toBe(14);
+    expect(await stockOf(tableId)).toBe(1);
+  });
+
+  it("should keep the accountant off products' costs and the supplier's codes", async () => {
+    const accountantToken = await loginAs(context, 'accountant');
+    const { id: orderId } = (await arrive()).body.data;
+    const { id } = await photo(orderId);
+
+    const withCost = await api().post(`/api/bill-scans/${id}/confirm`).set(auth(accountantToken)).send(confirmBody(null, [{ updateCost: true, unitCost: 50 }]));
+    expect(withCost.status).toBe(403);
+    expect(withCost.body.message).toMatch(/what a product costs/);
+
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth(accountantToken)).send(confirmBody(null, [{ code: 'FF-CH-1' }])).expect(200);
+    expect((await api().get(`/api/products/${chairId}`).set(auth())).body.data.costPrice).toBe(60);
+    const codes = await context.db.selectFrom('supplier_product_codes').select('code').where('supplier_id', '=', supplierId).execute();
+    expect(codes).toEqual([]);
+  });
+
+  it('should refuse a second tick-off that brings a bill or other details, not answer it with "done"', async () => {
+    const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }] })).body.data;
+    const lines = [{ lineId: ordered.lines[0].id, receivedQuantity: 4 }];
+    await receive(ordered.id, { requestKey: randomUUID(), lines }).expect(200);
+
+    // The owner's form, same count, with the bill typed in: nothing is dropped quietly.
+    const withBill = await receive(ordered.id, { requestKey: randomUUID(), lines, bill: { number: 'FF-1', issuedOn: today(), amount: 240 } }, adminToken);
+    expect(withBill.status).toBe(409);
+    expect(withBill.body.message).toMatch(/already ticked off/);
+    const noKey = await receive(ordered.id, { lines }, adminToken);
+    expect(noKey.status).toBe(409);
+    expect((await order(ordered.id)).bill).toBeNull();
+    expect(await stockOf(chairId)).toBe(14);
+  });
+
+  it('should never cancel an order a delivery was ticked off on at the same moment', async () => {
+    for (let round = 0; round < 3; round += 1) {
+      const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 2, unitCost: 60 }] })).body.data;
+      const before = await stockOf(chairId);
+      const [cancelled, received] = await Promise.all([
+        api().post(`/api/orders/${ordered.id}/cancel`).set(auth()),
+        receive(ordered.id, { requestKey: randomUUID(), lines: [{ lineId: ordered.lines[0].id, receivedQuantity: 2 }] }),
+      ]);
+      expect([cancelled.status, received.status].sort()).toEqual([200, 409]);
+      const after = await order(ordered.id);
+      // Whichever came first, the order and the stock agree.
+      expect(after.status).toBe(received.status === 200 ? 'received' : 'cancelled');
+      expect(await stockOf(chairId)).toBe(before + (received.status === 200 ? 2 : 0));
+    }
   });
 });

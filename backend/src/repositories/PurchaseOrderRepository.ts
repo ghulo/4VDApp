@@ -166,6 +166,16 @@ export class PurchaseOrderRepository {
   }
 
   /** The order staff made for a delivery that came without one, by the key of that press. */
+  /** The press that ticked this order off and the fingerprint of what it sent (both null when it was sent without a key). */
+  async receivedBy(id: number): Promise<{ key: string | null; hash: string | null } | undefined> {
+    const row = await this.db.selectFrom('purchase_orders').select(['received_key', 'received_hash']).where('id', '=', id).executeTakeFirst();
+    return row && { key: row.received_key, hash: row.received_hash };
+  }
+
+  async setReceivedBy(id: number, key: string, hash: string): Promise<void> {
+    await this.db.updateTable('purchase_orders').set({ received_key: key, received_hash: hash }).where('id', '=', id).execute();
+  }
+
   async findByArrivalKey(key: string): Promise<number | undefined> {
     return (await this.db.selectFrom('purchase_orders').select('id').where('arrival_key', '=', key).executeTakeFirst())?.id;
   }

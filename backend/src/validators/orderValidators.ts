@@ -54,6 +54,8 @@ export const newOrderSchema = z.object({
 });
 
 export const receiveOrderSchema = z.object({
+  /** The key of this press, made by the page: the same press sent again (a lost answer) is told "done", nothing else is. */
+  requestKey: z.string().uuid().optional(),
   locationId: idSchema.nullish(),
   lines: z
     .array(

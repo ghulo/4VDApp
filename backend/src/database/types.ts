@@ -959,6 +959,9 @@ export interface PurchaseOrdersTable {
   closed_at: Date | null;
   /** Set when staff ticked off a delivery that came without an order: the key of that press (one delivery per key). */
   arrival_key: ColumnType<string | null, string | null | undefined, never>;
+  /** The press that ticked the order off (its key) and a fingerprint of what it sent: only that same press sent again is "done". */
+  received_key: string | null;
+  received_hash: string | null;
 }
 
 export interface PurchaseOrderLinesTable {

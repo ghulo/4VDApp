@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
-import { copyOf, COPY_MAX_AGE_MS, answerSettles, currentIdentity, definiteRefusal, holdSavedMe, switchEnded, switchSettled, switchUnsettled, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { copyOf, COPY_MAX_AGE_MS, answerSettles, currentIdentity, definiteRefusal, holdSavedMe, setSignInUnsure, switchDone, switchEnded, switchSettled, switchUnsettled, tillKey, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
 import { replacesSaved, tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { ApiError } from '../services/apiClient';
 
@@ -51,15 +51,16 @@ describe('the saved sign-in', () => {
   });
 
   it('only a check asked after the switch request was over says who is signed in', () => {
-    holdSavedMe(1_000);
+    const first = holdSavedMe(1_000);
     // Asked before the switch, or while it was on its way: it may name the person being left.
     expect(answerSettles(500, 1_200)).toBe(false);
     expect(answerSettles(1_100, 1_200)).toBe(false);
-    switchEnded(1_300);
+    switchEnded(first.id, 1_300);
     expect(answerSettles(1_250, 1_400)).toBe(false);
     // Asked the moment it ended (the recheck right after a lost answer) settles it.
     expect(answerSettles(1_300, 1_400)).toBe(true);
     // A switch whose tab closed before it ended: over by two minutes later.
+    switchSettled();
     holdSavedMe(10_000);
     expect(answerSettles(20_000, 30_000)).toBe(false);
     expect(answerSettles(131_000, 131_500)).toBe(true);
@@ -68,12 +69,50 @@ describe('the saved sign-in', () => {
   });
 
   it('says when a switch was already in doubt, so a no to the next one saves nobody', () => {
-    expect(holdSavedMe()).toBe(false);
+    expect(holdSavedMe().already).toBe(false);
     // The first switch got no answer; the retry is refused ("at the Counter already"): still unsettled.
-    expect(holdSavedMe()).toBe(true);
+    expect(holdSavedMe().already).toBe(true);
     switchSettled();
-    expect(holdSavedMe()).toBe(false);
+    expect(holdSavedMe().already).toBe(false);
     switchSettled();
+  });
+
+  it('two switches at once (two tabs) each have their own note: a no to one never ends the other', () => {
+    const wrongPin = holdSavedMe(1_000);
+    const other = holdSavedMe(1_100);
+    expect(wrongPin.id).not.toBe(other.id);
+    // The first is refused: only its own note goes, the other is still on its way.
+    switchEnded(wrongPin.id, 1_200);
+    expect(switchDone(wrongPin.id)).toBe(true);
+    expect(switchUnsettled()).toBe(true);
+    saveMe(user, null, 1_250);
+    expect(savedMe(1_300)).toBeNull();
+    // A check asked now still may name the person being left.
+    expect(answerSettles(1_300, 1_300)).toBe(false);
+    switchEnded(other.id, 1_400);
+    expect(answerSettles(1_350, 1_500)).toBe(false);
+    expect(answerSettles(1_400, 1_500)).toBe(true);
+    // Done with the last one: nothing is on hold any more.
+    expect(switchDone(other.id)).toBe(false);
+    expect(switchUnsettled()).toBe(false);
+  });
+
+  it('reads a note from before switches had their own ids as one still on its way', () => {
+    localStorage.setItem('4vd.offline.switch', JSON.stringify({ began: 1_000 }));
+    expect(switchUnsettled()).toBe(true);
+    expect(answerSettles(1_100, 1_200)).toBe(false);
+    expect(holdSavedMe(1_300).already).toBe(true);
+    switchSettled();
+  });
+
+  it('this tab saves nobody while it is unsure who is signed in, even once the other tab settled the switch', () => {
+    setSignInUnsure(true);
+    expect(switchUnsettled()).toBe(false);
+    saveMe(user, null, 1_000);
+    expect(savedMe(1_100)).toBeNull();
+    setSignInUnsure(false);
+    saveMe(user, null, 1_200);
+    expect(savedMe(1_300)?.user.id).toBe(user.id);
   });
 
   it('only a clear no to a switch counts as refused; a lost answer may hide a switch that happened', () => {
@@ -119,13 +158,30 @@ describe("the till's saved data", () => {
     const [shelf, settings] = tillCopyKeys(3);
     client.setQueryData(settings!, { printer: { enabled: false } });
     const copy = { savedAt: 10_000, queries: [{ key: shelf!, data: { products: [1] }, updatedAt: 8_000 }, { key: settings!, data: { printer: { enabled: true } }, updatedAt: 8_000 }] };
-    expect(fillFrom(client, copy, 11_000)).toBe(true);
+    expect(fillFrom(client, copy, 3, 11_000)).toBe(true);
     expect(client.getQueryData(shelf!)).toEqual({ products: [1] });
     expect(client.getQueryState(shelf!)?.dataUpdatedAt).toBe(8_000);
     // What 4VD answered wins.
     expect(client.getQueryData(settings!)).toEqual({ printer: { enabled: false } });
-    expect(fillFrom(new QueryClient(), copy, 10_000 + COPY_MAX_AGE_MS + 1)).toBe(false);
-    expect(fillFrom(new QueryClient(), null)).toBe(false);
+    expect(fillFrom(new QueryClient(), copy, 3, 10_000 + COPY_MAX_AGE_MS + 1)).toBe(false);
+    expect(fillFrom(new QueryClient(), null, 3)).toBe(false);
+    // Another business's copy fills nothing here.
+    expect(fillFrom(new QueryClient(), copy, 4, 11_000)).toBe(false);
+  });
+
+  it('keeps only the till’s own lists, never what another screen fetched under the shared names', () => {
+    const client = new QueryClient();
+    // The Customers page (another tab, during a switch) fills the shared list: not the till's.
+    client.setQueryData(['customers'], [{ id: 99, business: 'B' }]);
+    client.setQueryData(['settings'], { name: 'B' });
+    expect(copyOf(client, 3).queries).toEqual([]);
+    client.setQueryData(tillKey(3, 'customers'), [{ id: 1 }]);
+    expect(copyOf(client, 3).queries.map((one) => one.key)).toEqual([tillKey(3, 'customers')]);
+    // A copy saved before the till had its own names fills nothing.
+    const old = { savedAt: 10_000, queries: [{ key: ['customers'], data: [{ id: 99 }], updatedAt: 9_000 }] };
+    const fresh = new QueryClient();
+    expect(fillFrom(fresh, old, 3, 11_000)).toBe(false);
+    expect(fresh.getQueryData(['customers'])).toBeUndefined();
   });
 });
 
@@ -192,14 +248,14 @@ describe("the till's copy on this PC", () => {
     vi.stubGlobal('indexedDB', api);
     const client = new QueryClient();
     client.setQueryData(tillShelfKey(3), shelf);
-    client.setQueryData(['customers'], [{ id: 1 }]);
+    client.setQueryData(tillKey(3, 'customers'), [{ id: 1 }]);
     expect(await saveTillCopy(client, owner, currentIdentity())).toEqual(shelf);
     expect([...rows.keys()].sort()).toEqual(['3:7', 'shelf:3']);
     // Another cashier of the same business: the same saved shelf.
     const other = new QueryClient();
     expect(await restoreTillCopy(other, { businessId: 3, userId: 8 }, currentIdentity())).toBe(true);
     expect(other.getQueryData(tillShelfKey(3))).toEqual(shelf);
-    expect(other.getQueryData(['customers'])).toBeUndefined();
+    expect(other.getQueryData(tillKey(3, 'customers'))).toBeUndefined();
   });
 
   it('never puts an older shelf over a newer one another Counter on this PC saved', async () => {
@@ -213,7 +269,7 @@ describe("the till's copy on this PC", () => {
     // Counter B still has the shelf from before the sale (asked at 10): its customers are kept, its shelf is not.
     const b = new QueryClient();
     b.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 1 }], counted: [], askedAt: 10 });
-    b.setQueryData(['customers'], [{ id: 5 }]);
+    b.setQueryData(tillKey(3, 'customers'), [{ id: 5 }]);
     expect(await saveTillCopy(b, { businessId: 3, userId: 8 }, currentIdentity())).toBeNull();
     expect(savedShelf()).toEqual({ products: [{ id: 1, stock: 0 }], counted: [], askedAt: 20 });
     expect(rows.has('3:8')).toBe(true);
@@ -282,6 +338,11 @@ describe("the till's copy on this PC", () => {
     expect(await saveTillCopy(client, owner, currentIdentity())).toBeNull();
     expect(rows.size).toBe(0);
     switchSettled();
+    // Settled in another tab, but this one hasn't heard who is signed in yet: still nothing.
+    setSignInUnsure(true);
+    expect(await saveTillCopy(client, owner, currentIdentity())).toBeNull();
+    expect(rows.size).toBe(0);
+    setSignInUnsure(false);
     expect(await saveTillCopy(client, owner, currentIdentity())).not.toBeNull();
     // A restore started for the last person, finishing after the next one signed in: nothing filled.
     const fresh = new QueryClient();
@@ -296,7 +357,7 @@ describe("the till's copy on this PC", () => {
     vi.stubGlobal('indexedDB', api);
     const client = new QueryClient();
     client.setQueryData(tillShelfKey(3), shelf);
-    client.setQueryData(['customers'], [{ id: 1 }]);
+    client.setQueryData(tillKey(3, 'customers'), [{ id: 1 }]);
     expect(await saveTillCopy(client, owner, currentIdentity(), false)).toBeNull();
     expect([...rows.keys()]).toEqual(['3:7']);
   });
@@ -305,7 +366,7 @@ describe("the till's copy on this PC", () => {
     const { rows, api } = fakeIndexedDB();
     vi.stubGlobal('indexedDB', api);
     const client = new QueryClient();
-    client.setQueryData(['customers'], [{ id: 1 }]);
+    client.setQueryData(tillKey(3, 'customers'), [{ id: 1 }]);
     const since = currentIdentity();
     // Signed out before the write began…
     forgetSaved();

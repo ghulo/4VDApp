@@ -55,6 +55,7 @@ import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMat
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { useTillCopy } from '../offline/useTillCopy';
+import { switchUnsettled, tillKey } from '../offline/savedCopy';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
@@ -226,15 +227,16 @@ export function CounterPage() {
   });
   // The till's other saved data is asked for the same way (useTillCopy keeps it on this PC). Not named while the business
   // isn't known yet (a Switch person under way): nothing is saved for business 0 anyway.
-  const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: () => counterApi.settings(tillOwner) });
-  const shopSettings = useQuery({ queryKey: ['settings'], queryFn: () => settingsApi.get(tillOwner) });
+  // Under the till's own names (tillKey): only these, fetched naming their owner, are kept on this PC for an offline start.
+  const settings = useQuery({ queryKey: tillKey(businessId, 'counter', 'settings'), queryFn: () => counterApi.settings(tillOwner) });
+  const shopSettings = useQuery({ queryKey: tillKey(businessId, 'settings'), queryFn: () => settingsApi.get(tillOwner) });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
-  const shopRules = useQuery({ queryKey: ['settings', 'rules'], queryFn: () => settingsApi.rules(tillOwner), staleTime: 60_000 });
+  const shopRules = useQuery({ queryKey: tillKey(businessId, 'settings', 'rules'), queryFn: () => settingsApi.rules(tillOwner), staleTime: 60_000 });
   const noStockRule = shopRules.data?.noStockSales ?? 'block';
   // The Z report's header shows the business's own name (4VD's own business: 4VD).
-  const business = useQuery({ queryKey: ['business'], queryFn: () => businessApi.get(tillOwner) });
+  const business = useQuery({ queryKey: tillKey(businessId, 'business'), queryFn: () => businessApi.get(tillOwner) });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
-  const customers = useQuery({ queryKey: ['customers'], queryFn: () => customersApi.list(tillOwner) });
+  const customers = useQuery({ queryKey: tillKey(businessId, 'customers'), queryFn: () => customersApi.list(tillOwner) });
   // The shop drawer today: its opening cash and whether it was counted (never what 4VD expects).
   const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
   const shopDrawer = cash.data?.find((drawer) => drawer.place === 'shop') ?? null;
@@ -946,7 +948,7 @@ export function CounterPage() {
   async function pay(payment: Payment) {
     if (payingRef.current) return;
     // A switch isn't settled: this may no longer be the person (or business) signed in, so nothing is sold or printed as them.
-    if (signInUnsure) return complain(t.counter.checkingWho);
+    if (signInUnsure || switchUnsettled()) return complain(t.counter.checkingWho);
     setPayingNow(true);
     try {
       await recordSale(payment);
@@ -1036,7 +1038,7 @@ export function CounterPage() {
   function sendAgain() {
     const pending = current.pending;
     if (!pending || payingRef.current) return;
-    if (signInUnsure) return complain(t.counter.checkingWho);
+    if (signInUnsure || switchUnsettled()) return complain(t.counter.checkingWho);
     if (!pendingHere(pending)) return complain(t.counter.pendingOther);
     if (settledHere(current.id, pending)) return;
     void pay(pending.payment).catch((error: unknown) => complain(errorMessage(error)));
@@ -1404,7 +1406,7 @@ export function CounterPage() {
   const printing = useRef(new Set<number>());
   async function printAgain(item: Unprinted) {
     if (printing.current.has(item.documentId)) return;
-    if (signInUnsure) return complain(t.counter.checkingWho);
+    if (signInUnsure || switchUnsettled()) return complain(t.counter.checkingWho);
     // Sold in another business: printed only from there.
     if (item.businessId !== undefined && item.businessId !== businessId) return complain(t.counter.pendingOther);
     printing.current.add(item.documentId);
@@ -1462,7 +1464,7 @@ export function CounterPage() {
   }
 
   async function runReport(kind: 'x' | 'z') {
-    if (signInUnsure) return complain(t.counter.checkingWho);
+    if (signInUnsure || switchUnsettled()) return complain(t.counter.checkingWho);
     const printed = await printer.send(kind === 'x' ? '4VD-X' : '4VD-Z', kind === 'x' ? xReportJob() : zReportJob(business.data?.brand.name ?? '4VD'));
     if (!printed.ok) {
       setPrintNote({ ok: false, text: printed.message });
@@ -2332,14 +2334,14 @@ export function CounterPage() {
           // The PC changes hands now: the sign-in saved for a start without internet can't name the last person any more
           // (4VD ends their session). If the takeover is refused for certain, they stay and are saved again; with no answer
           // it may have happened, so nobody is saved until 4VD says who is signed in.
-          const alreadyUnsettled = beginSwitch();
+          const started = beginSwitch();
           let result;
           try {
             result = await counterApi.switchTo({ userId, pin });
           } catch (error) {
             // A clear no: they stay and are saved again. No answer, or a no after an earlier switch that got none ("you are
             // at the Counter already"): it may have happened, so 4VD is asked who is signed in, and the till waits.
-            switchFailed(error, alreadyUnsettled);
+            switchFailed(error, started);
             throw error;
           }
           switchDone.current = true;
@@ -2349,7 +2351,7 @@ export function CounterPage() {
           // (the screen may change before adoptSession returns); the same person again is simply fetched again now.
           const samePerson = result.user.id === user.id;
           refetchAsNew.current = !samePerson;
-          await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses });
+          await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses }, started);
           if (samePerson) void queryClient.invalidateQueries();
           say(t.counter.switchedTo(result.user.name));
         }}

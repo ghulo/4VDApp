@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { LoginResult, SignInStep, User, UserRole } from '../services/types';
+import type { SwitchStart } from '../offline/savedCopy';
 
 export type AuthState =
   | { status: 'loading' }
@@ -15,15 +16,15 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */
   /** `place`: the Counter handing over keeps its business and the businesses for the picker. */
-  adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>) => Promise<'signedIn' | 'notAdmin'>;
+  adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart) => Promise<'signedIn' | 'notAdmin'>;
   /** Replace the signed-in person's details after they edit their profile. */
   updateUser: (user: User) => void;
   /** A switch (here or in another tab) isn't settled: who is signed in is being checked, and the till doesn't sell meanwhile. */
   signInUnsure: boolean;
   /** A switch is about to be sent: nothing is saved and older checks are ignored until it settles. True when one was unsettled already. */
-  beginSwitch: () => boolean;
+  beginSwitch: () => SwitchStart;
   /** The switch failed (refused, or no answer): saved again on a clear no, else 4VD is asked who is signed in. */
-  switchFailed: (error: unknown, alreadyUnsettled: boolean) => void;
+  switchFailed: (error: unknown, started: SwitchStart) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

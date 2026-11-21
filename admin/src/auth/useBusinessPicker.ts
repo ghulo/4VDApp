@@ -10,7 +10,7 @@ import { errorMessage } from '../utils/errors';
 import { useAuth, useCurrentUser } from './useAuth';
 import { announceSwitch } from './businessSwitch';
 import { forgetViewAs } from './viewAs';
-import { switchSettled } from '../offline/savedCopy';
+import { switchDone } from '../offline/savedCopy';
 
 /**
  * The business picker, as items for the account menu: one per business the
@@ -47,17 +47,18 @@ export function useSwitchBusiness(): (businessId: number) => Promise<void> {
       return;
     }
     // The saved sign-in names the business being left: an offline start right after the switch must not reopen it.
-    const alreadyUnsettled = beginSwitch();
+    const started = beginSwitch();
     try {
       await authApi.switchBusiness(businessId);
-      // 4VD switched: settled (the page opens again and asks who is signed in).
-      switchSettled();
+      // 4VD switched: this switch is settled (the page opens again and asks who is signed in; another switch still on
+      // its way elsewhere keeps it on hold until that one is over too).
+      switchDone(started.id);
       forgetViewAs();
       announceSwitch(businessId);
       window.location.assign('/');
     } catch (error) {
       // A clear no: still in the same business, saved again. No answer: it may have happened, so 4VD is asked.
-      switchFailed(error, alreadyUnsettled);
+      switchFailed(error, started);
       toast({ title: t.nav.switchFailed, detail: errorMessage(error), tone: 'danger' });
     }
   };

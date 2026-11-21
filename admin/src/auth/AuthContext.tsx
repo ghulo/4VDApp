@@ -14,7 +14,10 @@ import {
   sameSignIn,
   savedMe,
   saveMe,
+  setSignInUnsure,
   SWITCH_KEY,
+  type SwitchStart,
+  switchDone,
   switchEnded,
   switchSettled,
   switchUnsettled,
@@ -61,7 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [fromSaved, setFromSaved] = useState(false);
   // A switch (in this tab or another) isn't settled: who is signed in here is unsure, so 4VD is asked again until it
   // says, and the till doesn't sell meanwhile.
-  const [unsure, setUnsure] = useState(switchUnsettled);
+  const [unsure, setUnsureState] = useState(() => {
+    const open = switchUnsettled();
+    setSignInUnsure(open);
+    return open;
+  });
+  /** Unsure who is signed in: shown (the till doesn't sell) and known to the saved copy at once (nothing is saved). */
+  const setUnsure = useCallback((value: boolean) => {
+    setSignInUnsure(value);
+    setUnsureState(value);
+  }, []);
   /** The generation a check of the sign-in is running for (one per generation at a time). */
   const checking = useRef<number | null>(null);
   /** Who the screens show now: a check that names someone else (another person, another business) starts them from nothing. */
@@ -83,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnsure(false);
     setState({ status: 'signedOut' });
     queryClient.clear();
-  }, [queryClient]);
+  }, [queryClient, setUnsure]);
 
   /** Ask 4VD who is signed in. No answer at all: the sign-in saved here (and the till's saved data), if there is one. */
   const restore = useCallback(
@@ -143,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (checking.current === asked) checking.current = null;
         });
     },
-    [setLanguage, queryClient, endSession],
+    [setLanguage, queryClient, endSession, setUnsure],
   );
 
   // Restore the session on page load if we still have a token.
@@ -159,24 +171,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * A switch is about to be sent from here: checks of the sign-in already on their way are ignored (they may answer
    * for the person being left), nothing is saved and the till doesn't sell until it is settled. Every other tab hears
-   * it too (SWITCH_KEY). Answers whether one was unsettled already.
+   * it too (SWITCH_KEY). Answers this switch's id and whether another was unsettled already.
    */
-  const beginSwitch = useCallback((): boolean => {
+  const beginSwitch = useCallback((): SwitchStart => {
     generation.current += 1;
     setUnsure(true);
     return holdSavedMe();
-  }, []);
+  }, [setUnsure]);
 
   /**
    * The switch failed. A clear no (and no earlier switch in doubt): nothing changed, the person here is saved again.
    * Anything else (no answer, a cut-off one): it may have happened, so 4VD is asked who is signed in, until it says.
    */
   const switchFailed = useCallback(
-    (error: unknown, alreadyUnsettled: boolean) => {
-      switchEnded();
+    (error: unknown, started: SwitchStart) => {
+      switchEnded(started.id);
       const shown = shownRef.current;
-      if (!alreadyUnsettled && definiteRefusal(error)) {
-        switchSettled();
+      // Only this switch's own note goes: another one still on its way (another tab) keeps everything on hold.
+      if (!started.already && definiteRefusal(error) && !switchDone(started.id)) {
         setUnsure(false);
         if (shown.status === 'signedIn' && shown.user.businessId !== undefined) saveMe(shown.user, currentPermissions());
         return;
@@ -184,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       generation.current += 1;
       restore(false);
     },
-    [restore],
+    [restore, setUnsure],
   );
 
   // Another tab starts a switch: checks on their way here are ignored and the till here stops selling until it is
@@ -192,16 +204,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const heard = (event: StorageEvent) => {
       if (event.key !== SWITCH_KEY) return;
-      // Settled there: ask now.
-      if (event.newValue === null) return restore(false);
-      // Begun, or its request is over: what is on its way here is ignored, and once it is over 4VD is asked.
+      // Begun, over or settled there: what is on its way here is ignored, and 4VD is asked now (an answer settles only
+      // once every switch is over). Until then nothing is saved here and the till doesn't sell.
       generation.current += 1;
       setUnsure(true);
-      if (event.newValue.includes('"ended"')) restore(false);
+      if (event.newValue === null || event.newValue.includes('"ended"')) restore(false);
     };
     window.addEventListener('storage', heard);
     return () => window.removeEventListener('storage', heard);
-  }, [restore]);
+  }, [restore, setUnsure]);
 
   // Started without internet (or a switch isn't settled): 4VD is asked again when the connection comes back, and every half minute.
   useEffect(() => {
@@ -293,14 +304,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ status: 'signedIn', user: settleLanguage(user) });
     loadPlace();
     return null;
-  }, [settleLanguage, loadPlace, queryClient]);
+  }, [settleLanguage, loadPlace, queryClient, setUnsure]);
 
   /**
    * Keep a session started elsewhere (invite accepted, Google sign-in). Only
    * the developer, admins, the owner and the accountant use the dashboard; for anyone else the
    * tokens are dropped and the caller sends them to the team app instead.
    */
-  const adoptSession = useCallback(async (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>): Promise<'signedIn' | 'notAdmin'> => {
+  const adoptSession = useCallback(async (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>, switched?: SwitchStart): Promise<'signedIn' | 'notAdmin'> => {
     sessionHint.set();
     await loadPermissions();
     if (!canUseDashboard(result.user.role)) {
@@ -313,14 +324,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Checks of the sign-in still on their way from before name the last person: ignored.
     generation.current += 1;
     setFromSaved(false);
-    setUnsure(false);
+    // A switch made here (a takeover at the Counter) ends only its own note: another still on its way (another tab)
+    // keeps everything on hold until 4VD, asked after it is over, names who is signed in.
+    const stillOpen = switched ? switchDone(switched.id) : (switchSettled(), false);
+    setUnsure(stillOpen);
     newIdentity();
     if (!place) queryClient.clear();
-    switchSettled();
     setState({ status: 'signedIn', user: settleLanguage(place ? { ...result.user, ...place } : result.user) });
     loadPlace();
+    if (stillOpen) restore(false);
     return 'signedIn';
-  }, [settleLanguage, loadPlace, queryClient]);
+  }, [settleLanguage, loadPlace, queryClient, setUnsure, restore]);
 
   const logout = useCallback(async () => {
     // The next person to use this browser shouldn't get the owner's alerts.

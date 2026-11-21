@@ -37,10 +37,19 @@ export interface SavedMe {
   savedAt: number;
 }
 
+/**
+ * Whether this tab is unsure who is signed in (AuthContext says, as it changes): a switch's outcome it hasn't heard
+ * named yet. Another tab may have settled it already; this one still saves nothing until its own check answers.
+ */
+let unsureHere = false;
+export function setSignInUnsure(unsure: boolean): void {
+  unsureHere = unsure;
+}
+
 /** Signed in (or checked) just now: keep who it is, for a start without internet. */
 export function saveMe(user: User, permissions: Permissions | null, now = Date.now()): void {
-  // A switch whose outcome isn't known yet (in any tab): nobody is saved until 4VD names who is signed in here.
-  if (switchUnsettled()) return;
+  // A switch whose outcome isn't known yet (in any tab, or not yet heard in this one): nobody is saved until 4VD names who is signed in here.
+  if (unsureHere || switchUnsettled()) return;
   try {
     localStorage.setItem(ME_KEY, JSON.stringify({ user, permissions, savedAt: now } satisfies SavedMe));
   } catch {
@@ -82,8 +91,9 @@ export function definiteRefusal(error: unknown): boolean {
 }
 
 /**
- * A switch (business, or cashier at the Counter) whose outcome isn't settled yet, kept in the browser's storage so
- * every tab knows (the sign-in cookies are shared): when it began and, once its request is over, when it ended.
+ * The switches (business, or cashier at the Counter) whose outcome isn't settled yet, kept in the browser's storage so
+ * every tab knows (the sign-in cookies are shared). Each request has its own note (when it began and, once it is over,
+ * when it ended): two switches at once from two tabs never end each other's.
  */
 export const SWITCH_KEY = '4vd.offline.switch';
 /** A switch request still unanswered after this long is over by now (whatever it did). */
@@ -92,68 +102,100 @@ interface SwitchNote {
   began: number;
   ended?: number;
 }
-/** This tab's own note, in case the browser's storage refuses it. */
-let switchHere: SwitchNote | null = null;
+type Switches = Record<string, SwitchNote>;
+/** One switch request, as beginSwitch answers it: its own id, and whether another was unsettled already. */
+export interface SwitchStart {
+  id: string;
+  already: boolean;
+}
+/** This tab's own notes, in case the browser's storage refuses them (or doesn't keep what it is given). */
+let switchesHere: Switches = {};
+let storageKeeps = true;
 
-function readSwitch(): SwitchNote | null {
+const isNote = (note: unknown): note is SwitchNote => typeof (note as SwitchNote | null)?.began === 'number';
+
+function readSwitches(): Switches {
+  if (!storageKeeps) return switchesHere;
   try {
-    const note = JSON.parse(localStorage.getItem(SWITCH_KEY) ?? 'null') as SwitchNote | null;
-    if (note && typeof note.began === 'number') return note;
+    const raw = localStorage.getItem(SWITCH_KEY);
+    if (raw === null) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    // One note without an id (written before switches had their own): kept as one open switch.
+    if (isNote(parsed)) return { earlier: parsed };
+    if (parsed && typeof parsed === 'object') return Object.fromEntries(Object.entries(parsed).filter(([, note]) => isNote(note))) as Switches;
+    return {};
   } catch {
-    // Unreadable: this tab's own note.
+    // Unreadable: this tab's own notes.
+    return switchesHere;
   }
-  return switchHere;
 }
 
-function writeSwitch(note: SwitchNote | null): void {
-  switchHere = note;
+function writeSwitches(switches: Switches): void {
+  switchesHere = switches;
   try {
-    if (note) localStorage.setItem(SWITCH_KEY, JSON.stringify(note));
+    const written = Object.keys(switches).length > 0 ? JSON.stringify(switches) : null;
+    if (written !== null) localStorage.setItem(SWITCH_KEY, written);
     else localStorage.removeItem(SWITCH_KEY);
+    storageKeeps = localStorage.getItem(SWITCH_KEY) === written;
   } catch {
     // Blocked storage: this tab still knows.
+    storageKeeps = false;
   }
 }
 
-/** Whether a switch is unsettled: until then nobody is saved for an offline start, the till's copy isn't written and the till doesn't sell. */
+/** Whether any switch is unsettled: until then nobody is saved for an offline start, the till's copy isn't written and the till doesn't sell. */
 export function switchUnsettled(): boolean {
-  return readSwitch() !== null;
+  return Object.keys(readSwitches()).length > 0;
 }
 
 /**
  * A switch is about to be sent: the saved sign-in is forgotten and nothing is saved again until 4VD names who is
  * signed in (switchSettled), so an offline start never reopens the person or business being left (it shows the
- * sign-in page meanwhile). Answers whether one was unsettled already (an earlier switch got no answer): then a
- * refusal of this one proves nothing about who is signed in now.
+ * sign-in page meanwhile). Answers its id and whether one was unsettled already (an earlier switch got no answer, or
+ * is still on its way): then a refusal of this one proves nothing about who is signed in now.
  */
-export function holdSavedMe(now = Date.now()): boolean {
-  const already = switchUnsettled();
-  writeSwitch({ began: now });
+export function holdSavedMe(now = Date.now()): SwitchStart {
+  const switches = readSwitches();
+  const already = Object.keys(switches).length > 0;
+  const id = now + "-" + Math.random().toString(36).slice(2, 10);
+  writeSwitches({ ...switches, [id]: { began: now } });
   forgetSavedMe();
-  return already;
+  return { id, already };
 }
 
-/** The switch request is over (an answer, an error, no answer): an auth/me asked from now on names who is signed in. */
-export function switchEnded(now = Date.now()): void {
-  const note = readSwitch();
-  if (note && note.ended === undefined) writeSwitch({ ...note, ended: now });
+/** This switch request is over (an answer, an error, no answer): an auth/me asked from now on may name who is signed in. */
+export function switchEnded(id: string, now = Date.now()): void {
+  const switches = readSwitches();
+  const note = switches[id];
+  if (note && note.ended === undefined) writeSwitches({ ...switches, [id]: { ...note, ended: now } });
 }
 
 /**
- * Whether an auth/me asked at `askedAt` names who is signed in now: no switch is unsettled, or it was asked after the
- * switch request was over. One asked before (or while it was on its way) may name the person being left.
+ * This switch's outcome is known for certain (4VD did it, or refused it): only its own note goes. Answers whether
+ * another switch is still unsettled (then who is signed in is still unsure).
  */
-export function answerSettles(askedAt: number, now = Date.now()): boolean {
-  const note = readSwitch();
-  if (!note) return true;
-  const ended = note.ended ?? (now - note.began > SWITCH_MAX_MS ? note.began + SWITCH_MAX_MS : undefined);
-  // The same moment counts: the switch's cookies were set before its end was noted.
-  return ended !== undefined && askedAt >= ended;
+export function switchDone(id: string): boolean {
+  const rest = { ...readSwitches() };
+  delete rest[id];
+  writeSwitches(rest);
+  return Object.keys(rest).length > 0;
 }
 
-/** 4VD named who is signed in here (or refused the switch for certain): the saved sign-in may be written again. */
+/**
+ * Whether an auth/me asked at askedAt names who is signed in now: no switch is unsettled, or it was asked after every
+ * one of them was over. One asked before (or while one was on its way) may name the person being left.
+ */
+export function answerSettles(askedAt: number, now = Date.now()): boolean {
+  return Object.values(readSwitches()).every((note) => {
+    const ended = note.ended ?? (now - note.began > SWITCH_MAX_MS ? note.began + SWITCH_MAX_MS : undefined);
+    // The same moment counts: the switch's cookies were set before its end was noted.
+    return ended !== undefined && askedAt >= ended;
+  });
+}
+
+/** 4VD named who is signed in here after every switch was over (or someone signed in afresh): the saved sign-in may be written again. */
 export function switchSettled(): void {
-  writeSwitch(null);
+  writeSwitches({});
 }
 
 /** Whether 4VD's answer names the same person in the same business as the one the screens show. */
@@ -177,14 +219,22 @@ export function forgetSaved(): void {
   void withStore('readwrite', (store) => store.clear()).catch(() => undefined);
 }
 
-/** The queries the till needs to sell, for this business. */
+/**
+ * The till's own query for one of the lists it needs, in this business. Fetched only by the Counter, naming the person
+ * and business it is for (4VD refuses it for anyone else), so what lands under it is surely this business's: another
+ * screen's fetch (Customers in another tab during a switch) never does. It sits under the shared name, so whatever marks
+ * those out of date marks it too.
+ */
+export const tillKey = (businessId: number, ...name: string[]): QueryKey => [...name, { till: businessId }];
+
+/** The queries the till needs to sell, for this business: only the till's own. */
 export const tillCopyKeys = (businessId: number): QueryKey[] => [
   tillShelfKey(businessId),
-  ['counter', 'settings'],
-  ['settings'],
-  ['settings', 'rules'],
-  ['business'],
-  ['customers'],
+  tillKey(businessId, 'counter', 'settings'),
+  tillKey(businessId, 'settings'),
+  tillKey(businessId, 'settings', 'rules'),
+  tillKey(businessId, 'business'),
+  tillKey(businessId, 'customers'),
 ];
 
 export interface TillCopy {
@@ -206,11 +256,13 @@ export function copyOf(client: QueryClient, businessId: number, now = Date.now()
  * (what 4VD answered always wins). Each keeps the time it was fetched, so it
  * is fetched again as soon as 4VD can be reached. False when there was nothing to fill.
  */
-export function fillFrom(client: QueryClient, copy: TillCopy | null, now = Date.now()): boolean {
+export function fillFrom(client: QueryClient, copy: TillCopy | null, businessId: number, now = Date.now()): boolean {
   if (!copy || now - copy.savedAt > COPY_MAX_AGE_MS) return false;
+  // Only the till's own queries for this business (a copy saved before they had their own names fills nothing).
+  const allowed = new Set(tillCopyKeys(businessId).map((key) => hashKey(key)));
   let filled = false;
   for (const { key, data, updatedAt } of copy.queries) {
-    if (client.getQueryData(key) !== undefined) continue;
+    if (!allowed.has(hashKey(key)) || client.getQueryData(key) !== undefined) continue;
     client.setQueryData(key, data, { updatedAt });
     filled = true;
   }
@@ -257,8 +309,8 @@ async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectSto
  * let go only once a saved shelf counts them.
  */
 export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number, withShelf = true): Promise<TillShelf | null> {
-  // A switch isn't settled: what the screens hold may not be this person's or this business's.
-  if (since !== identity || switchUnsettled()) return null;
+  // A switch isn't settled (anywhere, or not yet in this tab): what the screens hold may not be this person's or this business's.
+  if (since !== identity || unsureHere || switchUnsettled()) return null;
   if (copyOf(client, owner.businessId).queries.length === 0) return null;
   let written: TillShelf | null = null;
   const db = await open();
@@ -268,7 +320,7 @@ export async function saveTillCopy(client: QueryClient, owner: { businessId: num
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB refused'));
       transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB aborted'));
-      if (since !== identity || switchUnsettled()) {
+      if (since !== identity || unsureHere || switchUnsettled()) {
         transaction.abort();
         return reject(new Error('Another person is signed in here now'));
       }
@@ -308,8 +360,8 @@ export async function restoreTillCopy(client: QueryClient, owner: { businessId: 
     // Only the business's own saved shelf, never one kept inside a person's copy.
     const rest = mine && { ...mine, queries: mine.queries.filter((query) => !isShelf(query.key, owner.businessId)) };
     if (since !== identity) return false;
-    const filledRest = fillFrom(client, rest);
-    return fillFrom(client, shelf) || filledRest;
+    const filledRest = fillFrom(client, rest, owner.businessId);
+    return fillFrom(client, shelf, owner.businessId) || filledRest;
   } catch {
     return false;
   }

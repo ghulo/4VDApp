@@ -26,6 +26,8 @@ function CounterSettingsForm({ initial }: { initial: CounterSettings }) {
     mutationFn: () => counterApi.updateSettings(draft),
     onSuccess: (updated) => {
       queryClient.setQueryData(['counter', 'settings'], updated);
+      // The till's own copy (tillKey, under the same name) is fetched again, naming its owner.
+      void queryClient.invalidateQueries({ queryKey: ['counter', 'settings'], exact: false, predicate: (query) => query.queryKey.length > 2 });
       void queryClient.invalidateQueries({ queryKey: ['activity'] });
       setSaved(true);
     },

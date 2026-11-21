@@ -281,3 +281,30 @@ describe('the bill photographed with it', () => {
     expect(await stockOf(chairId)).toBe(13);
   });
 });
+
+describe('review fixes: replays, races, zero lines, the accountant', () => {
+  it('should refuse a resend whose counts changed after the first copy went in', async () => {
+    const key = randomUUID();
+    await arrive({ key }).expect(201);
+    const changed = await arrive({ key, lines: [{ productId: chairId, quantity: 5, expiresOn: null }] });
+    expect(changed.status).toBe(409);
+    expect(changed.body.message).toMatch(/already put into stock with other counts/);
+    expect((await arrive({ key })).status).toBe(200);
+    expect(await stockOf(chairId)).toBe(13);
+  });
+
+  it('should take an ordered delivery ticked off twice at once only once, and answer the same resend with success', async () => {
+    const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }] })).body.data;
+    const send = (quantity = 4) => api().post(`/api/orders/${ordered.id}/receive`).set(auth(staffToken)).send({ lines: [{ lineId: ordered.lines[0].id, receivedQuantity: quantity }] });
+
+    const both = await Promise.all([send(4), send(3)]);
+    expect(both.map((response) => response.status).sort()).toEqual([200, 409]);
+    const count = (await order(ordered.id)).lines[0].receivedQuantity;
+    expect(await stockOf(chairId)).toBe(10 + count);
+
+    // The winner's answer lost on the way and sent again: done, nothing added.
+    expect((await send(count)).status).toBe(200);
+    expect((await send(count === 4 ? 3 : 4)).status).toBe(409);
+    expect(await stockOf(chairId)).toBe(10 + count);
+  });
+});

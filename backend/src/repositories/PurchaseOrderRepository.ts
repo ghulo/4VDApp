@@ -183,6 +183,14 @@ export class PurchaseOrderRepository {
     return this.ordersQuery().where('o.id', '=', id).executeTakeFirst();
   }
 
+  /**
+   * Holds the order until the transaction ends, so two people ticking off the
+   * same delivery at once take turns: the second sees it already received.
+   */
+  async lock(id: number): Promise<void> {
+    await this.db.selectFrom('purchase_orders').select('id').where('id', '=', id).forUpdate().execute();
+  }
+
   /** Bills for these orders; voided ones left out. */
   async findBills(orderIds: number[]): Promise<OrderBillRecord[]> {
     if (orderIds.length === 0) return [];

@@ -257,8 +257,23 @@ export class PurchaseOrderService {
     if (!actor.canSetCosts) {
       input = { lines: input.lines.map((line) => ({ ...line, unitCost: undefined })), updateCostPrices: false };
     }
-    await this.transactions.run((repos) => receiveOrder(repos, id, input, actorId, now));
+    try {
+      await this.transactions.run((repos) => receiveOrder(repos, id, input, actorId, now));
+    } catch (error) {
+      // An answer lost on the way, sent again: the same counts are already in, so it is done.
+      if (error instanceof ConflictError && (await this.receivedAs(id, input))) return this.get(id);
+      throw error;
+    }
     return this.get(id);
+  }
+
+  /** Whether the order was already received with exactly these counts (what isn't sent counts as 0). */
+  private async receivedAs(id: number, input: ReceiveInput): Promise<boolean> {
+    const order = await this.orderRepository.findOrder(id);
+    if (order?.status !== 'received') return false;
+    const sent = new Map(input.lines.map((line) => [line.lineId, line.receivedQuantity]));
+    const lines = await this.orderRepository.findLines([id]);
+    return lines.every((line) => Number(line.received_quantity ?? 0) === (sent.get(line.id) ?? 0));
   }
 
   /**
@@ -273,7 +288,7 @@ export class PurchaseOrderService {
    */
   async arrived(input: ArrivalInput, actor: { id: number; name: string }, now = new Date()): Promise<{ id: number; repeated: boolean }> {
     const earlier = await this.orderRepository.findByArrivalKey(input.key);
-    if (earlier !== undefined) return { id: earlier, repeated: true };
+    if (earlier !== undefined) return this.repeatOf(earlier, input);
     const productIds = input.lines.map((line) => line.productId);
     if (new Set(productIds).size !== productIds.length) throw new ValidationError('Each product can only be on a delivery once');
     const supplier = await this.orderRepository.findSupplier(input.supplierId);
@@ -321,10 +336,26 @@ export class PurchaseOrderService {
       // The same press arrived twice at once: the other copy put the goods in.
       if (isUniqueViolation(error)) {
         const first = await this.orderRepository.findByArrivalKey(input.key);
-        if (first !== undefined) return { id: first, repeated: true };
+        if (first !== undefined) return this.repeatOf(first, input);
       }
       throw error;
     }
+  }
+
+  /**
+   * The same key again is the same press sent twice, but only when it says
+   * the same: a count changed after the first copy went in is refused, so
+   * nobody is told 5 went in when 3 did.
+   */
+  private async repeatOf(orderId: number, input: ArrivalInput): Promise<{ id: number; repeated: true }> {
+    const order = await this.orderRepository.findOrder(orderId);
+    const lines = await this.orderRepository.findLines([orderId]);
+    const saved = lines.map((line) => `${line.product_id}:${Number(line.received_quantity ?? line.quantity)}`).sort();
+    const sent = input.lines.map((line) => `${line.productId}:${line.quantity}`).sort();
+    if (order?.supplier_id !== input.supplierId || saved.join(',') !== sent.join(',')) {
+      throw new ConflictError(`This delivery was already put into stock with other counts (order #${orderId}). Check that order; don't count it again.`);
+    }
+    return { id: orderId, repeated: true };
   }
 
   async cancel(id: number, actorId: number, now = new Date()): Promise<OrderDto> {
@@ -369,6 +400,7 @@ export async function changeCost(
 }
 
 export async function receiveOrder(repos: TransactionalRepositories, id: number, input: ReceiveInput, actorId: number, now: Date): Promise<void> {
+    await repos.orders.lock(id);
     const order = await repos.orders.findOrder(id);
     if (!order) throw new NotFoundError(`Order ${id} does not exist`);
     if (order.status !== 'open') throw new ConflictError('This order is already closed');

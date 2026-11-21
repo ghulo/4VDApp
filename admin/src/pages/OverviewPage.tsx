@@ -1,6 +1,5 @@
 import { ChartLine, ClipboardText, Coins, Drop, FileArrowDown, MoonStars, Package, Receipt } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import { Link } from 'react-router';
 import { useCurrentUser } from '../auth/useAuth';
 import { EmptyState, ErrorNotice, Loading } from '../components/Feedback';
@@ -17,6 +16,7 @@ import { ButtonLink, Card, DayBars, StatGrid, StatTile } from '../components/ui'
 import { useT } from '../i18n/useT';
 import { useCarwashes } from '../utils/useCarwashes';
 import { shownTo } from '../navigation/sections';
+import { dayRange, startOfDay, useNow } from '../utils/today';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Days in the Today card's dot strip. */
@@ -106,7 +106,7 @@ function greeting(t: ReturnType<typeof useT>, hour: number): string {
 function OverviewHero() {
   const t = useT();
   const user = useCurrentUser();
-  const [now] = useState(() => new Date());
+  const now = useNow();
   const firstName = user.name.split(' ')[0] || user.name;
   return (
     <header className="overview-hero">
@@ -144,16 +144,21 @@ function QuickActions() {
   );
 }
 
-/** Today so far, against the same hours of the same weekday last week. */
-function todayRange(now = new Date()) {
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const weekAgo = (date: Date) => new Date(date.getTime() - 7 * MS_PER_DAY).toISOString();
-  return {
-    startDate: midnight.toISOString(),
-    endDate: now.toISOString(),
-    previousStartDate: weekAgo(midnight),
-    previousEndDate: weekAgo(now),
-  };
+/**
+ * Today so far against the same hours last week. The day moves on at midnight
+ * (or when the page comes back into view), and each refetch counts up to the
+ * moment it runs, so sales made after the page opened are in.
+ */
+function useTodaySummary() {
+  const midnight = startOfDay(useNow());
+  const day = midnight.toISOString();
+  const today = useQuery({
+    queryKey: ['reports', 'summary', 'today', day],
+    queryFn: () => reportsApi.summary(dayRange(new Date(day))),
+    // The team keeps selling while this page is open, so today's figures check again every minute.
+    refetchInterval: 60_000,
+  });
+  return { midnight, today };
 }
 
 /**
@@ -162,20 +167,13 @@ function todayRange(now = new Date()) {
  */
 function TodayCard() {
   const t = useT();
-  // Fixed once per visit so the query key doesn't change on every render.
-  const [range] = useState(() => todayRange());
-  // The team keeps selling while this page is open, so today's figures check again every minute.
-  const today = useQuery({
-    queryKey: ['reports', 'summary', 'today', range.startDate],
-    queryFn: () => reportsApi.summary(range),
-    refetchInterval: 60_000,
-  });
-  const weekday = formatDateWith(new Date(range.endDate), { weekday: 'long' });
+  const { midnight, today } = useTodaySummary();
+  const weekday = formatDateWith(midnight, { weekday: 'long' });
   const current = today.data?.current;
   const previous = today.data?.previous;
   const change = today.data?.change.revenue ?? null;
   const lastDays = useQuery({
-    queryKey: ['analytics', 'revenue', 'daily', DOT_DAYS],
+    queryKey: ['analytics', 'revenue', 'daily', DOT_DAYS, midnight.toISOString()],
     // Start of the day 29 days ago, so the strip shows exactly 30 whole days.
     queryFn: () => analyticsApi.revenue('daily', new Date(Date.now() - (DOT_DAYS - 1) * MS_PER_DAY).toISOString().slice(0, 10)),
   });
@@ -221,14 +219,9 @@ function TodayCard() {
  */
 function TodayFigures({ lowCount }: { lowCount: number | undefined }) {
   const t = useT();
-  const [range] = useState(() => todayRange());
   const { places: openCarwashes } = useCarwashes();
   // Same query as the Today strip, so this costs no extra request.
-  const today = useQuery({
-    queryKey: ['reports', 'summary', 'today', range.startDate],
-    queryFn: () => reportsApi.summary(range),
-    refetchInterval: 60_000,
-  });
+  const { today } = useTodaySummary();
   const day = useDayChecklist();
   // Checked on each refetch (every minute), not on every render.
   const closingDue = Boolean(day.data && !day.data.allDone) && new Date(day.dataUpdatedAt).getHours() >= CLOSING_HOUR;

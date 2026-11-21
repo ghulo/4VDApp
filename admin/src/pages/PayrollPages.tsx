@@ -41,7 +41,7 @@ import {
   type StaffPlace,
 } from '../services/payroll';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDateTime, formatDateWith, formatMoney } from '../utils/format';
 import { printHtml } from '../utils/printPage';
 import { thisMonth, formatMonth } from '../utils/vat';
 import { useMonthParam } from '../utils/vatMonth';
@@ -137,8 +137,8 @@ export function PayrollPeoplePage() {
         <>
           <StatGrid compact>
             <StatTile label={w.tiles.people} value={String(working.length)} />
-            <StatTile label={w.tiles.gross} value={formatHeadlineMoney(gross)} />
-            <StatTile label={w.tiles.cost} value={formatHeadlineMoney(Math.round(cost * 100) / 100)} />
+            <StatTile label={w.tiles.gross} value={formatMoney(gross)} />
+            <StatTile label={w.tiles.cost} value={formatMoney(Math.round(cost * 100) / 100)} />
             <StatTile label={w.tiles.leave} value={w.days(Math.round(leave * 10) / 10)} />
           </StatGrid>
           <DataTable

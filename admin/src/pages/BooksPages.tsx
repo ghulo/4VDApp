@@ -55,7 +55,7 @@ import {
 } from '../services/types';
 import { todayIso } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
-import { formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatMoney } from '../utils/format';
 import { BOOKS_PERIOD_KEYS, periodDays } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
@@ -252,13 +252,13 @@ function BalanceTiles({ rows, accounts, search }: { rows: TrialBalanceRow[]; acc
 
   return (
     <StatGrid compact>
-      <StatTile label={t.books.tiles.cashAndBank} value={formatHeadlineMoney(cashAndBank)} to="/money" />
-      <StatTile label={t.books.tiles.stock} value={formatHeadlineMoney(closing('stock'))} to={to('stock')} />
-      <StatTile label={t.books.tiles.suppliers} value={formatHeadlineMoney(0 - closing('payables'))} to={to('payables')} />
-      <StatTile label={t.books.tiles.customers} value={formatHeadlineMoney(closing('receivables'))} to={to('receivables')} />
+      <StatTile label={t.books.tiles.cashAndBank} value={formatMoney(cashAndBank)} to="/money" />
+      <StatTile label={t.books.tiles.stock} value={formatMoney(closing('stock'))} to={to('stock')} />
+      <StatTile label={t.books.tiles.suppliers} value={formatMoney(0 - closing('payables'))} to={to('payables')} />
+      <StatTile label={t.books.tiles.customers} value={formatMoney(closing('receivables'))} to={to('receivables')} />
       <StatTile
         label={t.books.tiles.vat}
-        value={formatHeadlineMoney(vatDue)}
+        value={formatMoney(vatDue)}
         words={vatDue < 0 && t.books.tiles.vatBack(formatMoney(-vatDue))}
         hint={t.books.tiles.vatHint}
         to={to('vat_out')}

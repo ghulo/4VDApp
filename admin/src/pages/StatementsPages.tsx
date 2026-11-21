@@ -50,7 +50,7 @@ import {
 } from '../services/statements';
 import { todayIso } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
-import { formatHeadlineMoney, formatMoney, formatPercent } from '../utils/format';
+import { formatMoney, formatPercent } from '../utils/format';
 import { BOOKS_PERIOD_KEYS, periodDays } from '../utils/periods';
 import { printHtml } from '../utils/printPage';
 import { usePeriodParams } from '../utils/usePeriodParams';
@@ -191,7 +191,7 @@ function changeWords(t: Catalogue, current: number, previous: number | null, lab
   if (previous === null || label === null) return undefined;
   const difference = current - previous;
   if (cents(difference) === 0) return t.statements.you.same(label);
-  return difference > 0 ? t.statements.you.more(formatHeadlineMoney(difference), label) : t.statements.you.less(formatHeadlineMoney(-difference), label);
+  return difference > 0 ? t.statements.you.more(formatMoney(difference), label) : t.statements.you.less(formatMoney(-difference), label);
 }
 
 function ForYou({
@@ -242,15 +242,15 @@ function IncomeForYou({ data, currentLabel, compareLabel, days }: { data: Income
     <>
       <Outcome
         label={currentLabel}
-        sentence={net.amount >= 0 ? w.profit(formatHeadlineMoney(net.amount)) : w.loss(formatHeadlineMoney(-net.amount))}
+        sentence={net.amount >= 0 ? w.profit(formatMoney(net.amount)) : w.loss(formatMoney(-net.amount))}
         hint={changeWords(t, net.amount, net.compare, compareLabel)}
       />
       <StatGrid>
-        <StatTile label={w.tiles.revenue} value={formatHeadlineMoney(totals.revenue.amount)} hint={changeWords(t, totals.revenue.amount, totals.revenue.compare, compareLabel)} />
-        <StatTile label={w.tiles.costOfSales} value={formatHeadlineMoney(totals.costOfSales.amount)} />
-        <StatTile label={w.tiles.grossProfit} value={formatHeadlineMoney(totals.grossProfit.amount)} hint={margin === null ? undefined : w.tiles.margin(formatPercent(margin))} />
-        <StatTile label={w.tiles.expenses} value={formatHeadlineMoney(totals.expenses.amount + totals.otherExpenses.amount)} />
-        <StatTile label={w.tiles.profitTax} value={formatHeadlineMoney(totals.profitTax.amount)} words={cents(totals.profitTax.amount) === 0 ? w.tiles.noTaxYet : undefined} hint={w.tiles.profitTaxHint} />
+        <StatTile label={w.tiles.revenue} value={formatMoney(totals.revenue.amount)} hint={changeWords(t, totals.revenue.amount, totals.revenue.compare, compareLabel)} />
+        <StatTile label={w.tiles.costOfSales} value={formatMoney(totals.costOfSales.amount)} />
+        <StatTile label={w.tiles.grossProfit} value={formatMoney(totals.grossProfit.amount)} hint={margin === null ? undefined : w.tiles.margin(formatPercent(margin))} />
+        <StatTile label={w.tiles.expenses} value={formatMoney(totals.expenses.amount + totals.otherExpenses.amount)} />
+        <StatTile label={w.tiles.profitTax} value={formatMoney(totals.profitTax.amount)} words={cents(totals.profitTax.amount) === 0 ? w.tiles.noTaxYet : undefined} hint={w.tiles.profitTaxHint} />
       </StatGrid>
       {costs.length > 0 && (
         <Section title={w.whereMoneyWent} description={w.whereMoneyWentHint}>
@@ -296,13 +296,13 @@ function BalanceForYou({ data, currentLabel, compareLabel, days }: { data: Balan
     <>
       <Outcome
         label={currentLabel}
-        sentence={w.balance(formatHeadlineMoney(totals.assets.amount), formatHeadlineMoney(totals.liabilities.amount), formatHeadlineMoney(totals.equity.amount))}
+        sentence={w.balance(formatMoney(totals.assets.amount), formatMoney(totals.liabilities.amount), formatMoney(totals.equity.amount))}
         hint={changeWords(t, totals.equity.amount, totals.equity.compare, compareLabel)}
       />
       <StatGrid>
-        <StatTile label={w.tiles.own} value={formatHeadlineMoney(totals.assets.amount)} hint={w.tiles.ownHint} />
-        <StatTile label={w.tiles.owe} value={formatHeadlineMoney(totals.liabilities.amount)} hint={w.tiles.oweHint} />
-        <StatTile label={w.tiles.yours} value={formatHeadlineMoney(totals.equity.amount)} hint={w.tiles.yoursHint} />
+        <StatTile label={w.tiles.own} value={formatMoney(totals.assets.amount)} hint={w.tiles.ownHint} />
+        <StatTile label={w.tiles.owe} value={formatMoney(totals.liabilities.amount)} hint={w.tiles.oweHint} />
+        <StatTile label={w.tiles.yours} value={formatMoney(totals.equity.amount)} hint={w.tiles.yoursHint} />
       </StatGrid>
       <div className="statements-pair">
         {owned.length > 0 && (
@@ -329,7 +329,7 @@ function CashForYou({ data, currentLabel, compareLabel, days }: { data: CashFlow
   const w = t.statements.you;
   const { totals } = data;
   const section = (key: 'operating' | 'investing' | 'financing') => data.sections.find((candidate) => candidate.key === key)!;
-  const signed = (amount: number) => (amount > 0 ? `+${formatHeadlineMoney(amount)}` : amount < 0 ? `−${formatHeadlineMoney(-amount)}` : formatHeadlineMoney(0));
+  const signed = (amount: number) => (amount > 0 ? `+${formatMoney(amount)}` : amount < 0 ? `−${formatMoney(-amount)}` : formatMoney(0));
   const biggest = linesOf(section('operating'))
     .filter((line) => cents(line.amount) !== 0)
     .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
@@ -339,15 +339,15 @@ function CashForYou({ data, currentLabel, compareLabel, days }: { data: CashFlow
     <>
       <Outcome
         label={currentLabel}
-        sentence={w.cash(formatHeadlineMoney(totals.opening.amount), formatHeadlineMoney(totals.closing.amount))}
+        sentence={w.cash(formatMoney(totals.opening.amount), formatMoney(totals.closing.amount))}
         hint={changeWords(t, totals.net.amount, totals.net.compare, compareLabel)}
       />
       <StatGrid>
-        <StatTile label={w.tiles.cashStart} value={formatHeadlineMoney(totals.opening.amount)} />
+        <StatTile label={w.tiles.cashStart} value={formatMoney(totals.opening.amount)} />
         <StatTile label={t.statements.sections.operating} value={signed(section('operating').amount)} hint={w.tiles.operatingHint} />
         <StatTile label={t.statements.sections.investing} value={signed(section('investing').amount)} words={cents(section('investing').amount) === 0 ? w.tiles.none : undefined} hint={w.tiles.investingHint} />
         <StatTile label={t.statements.sections.financing} value={signed(section('financing').amount)} words={cents(section('financing').amount) === 0 ? w.tiles.none : undefined} hint={w.tiles.financingHint} />
-        <StatTile label={w.tiles.cashEnd} value={formatHeadlineMoney(totals.closing.amount)} />
+        <StatTile label={w.tiles.cashEnd} value={formatMoney(totals.closing.amount)} />
       </StatGrid>
       {biggest.length > 0 && (
         <Section title={w.cashMoves} description={w.cashMovesHint}>
@@ -366,11 +366,11 @@ function EquityForYou({ data, currentLabel, days }: { data: EquityChanges; curre
   if (data.rows.length === 0) return <StatementEmpty />;
   return (
     <>
-      <Outcome label={currentLabel} sentence={w.equity(formatHeadlineMoney(data.total.start), formatHeadlineMoney(data.total.end))} hint={w.equityHint} />
+      <Outcome label={currentLabel} sentence={w.equity(formatMoney(data.total.start), formatMoney(data.total.end))} hint={w.equityHint} />
       <StatGrid>
-        <StatTile label={w.tiles.equityStart} value={formatHeadlineMoney(data.total.start)} />
-        <StatTile label={data.profit >= 0 ? w.tiles.profit : w.tiles.lossTile} value={formatHeadlineMoney(Math.abs(data.profit))} />
-        <StatTile label={w.tiles.equityEnd} value={formatHeadlineMoney(data.total.end)} />
+        <StatTile label={w.tiles.equityStart} value={formatMoney(data.total.start)} />
+        <StatTile label={data.profit >= 0 ? w.tiles.profit : w.tiles.lossTile} value={formatMoney(Math.abs(data.profit))} />
+        <StatTile label={w.tiles.equityEnd} value={formatMoney(data.total.end)} />
       </StatGrid>
       <EquityTable data={data} days={days} official={false} />
     </>

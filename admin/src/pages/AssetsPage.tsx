@@ -32,7 +32,7 @@ import { useLanguage, useT } from '../i18n/useT';
 import { assetsApi, customersApi, moneyApi } from '../services/api';
 import { ASSET_CATEGORIES, type AssetCategory, type AssetStatus, DEFAULT_ASSET_RATES, type FixedAsset, type FixedAssetDetail } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDateWith, formatMoney } from '../utils/format';
 import { useWarnBeforeLeaving } from '../utils/useWarnBeforeLeaving';
 
 /** "2026-10-04": today on this computer's calendar. */
@@ -94,9 +94,9 @@ export function AssetsPage() {
       {assets.data && (
         <>
           <StatGrid compact>
-            <StatTile label={w.tiles.cost} value={formatHeadlineMoney(sum((asset) => asset.cost))} />
-            <StatTile label={w.tiles.depreciated} value={formatHeadlineMoney(sum((asset) => asset.depreciated))} />
-            <StatTile label={w.tiles.value} value={formatHeadlineMoney(sum((asset) => asset.value))} />
+            <StatTile label={w.tiles.cost} value={formatMoney(sum((asset) => asset.cost))} />
+            <StatTile label={w.tiles.depreciated} value={formatMoney(sum((asset) => asset.depreciated))} />
+            <StatTile label={w.tiles.value} value={formatMoney(sum((asset) => asset.value))} />
             <StatTile label={w.tiles.month} value={thisMonth > 0 ? formatMoney(thisMonth) : undefined} words={thisMonth > 0 ? undefined : w.tiles.noMonth} />
           </StatGrid>
           <DataTable

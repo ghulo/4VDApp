@@ -27,7 +27,7 @@ import { type BookKind, vatApi } from '../services/api';
 import { rowWords, useMonthParam } from '../utils/vatMonth';
 import type { Over500Row, VatCheck, VatItem, VatMonth, VatYearRow, WithholdingRow } from '../services/types';
 import { errorMessage } from '../utils/errors';
-import { formatDate, formatDateTime, formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
+import { formatDate, formatDateTime, formatDateWith, formatMoney } from '../utils/format';
 import { printHtml } from '../utils/printPage';
 import { addMonths, formatMonth, bookBoxes, bookItems, bookTotal, boxSum, CHARGED_ROWS, CLAIM_ROWS, itemLink, thisMonth, VAT_18, VAT_8, type VatRowDef } from '../utils/vat';
 
@@ -197,9 +197,9 @@ function Outcome({ data }: { data: VatMonth }) {
   const t = useT();
   const sentence =
     data.outcome === 'pay'
-      ? t.vat.outcome.pay(formatHeadlineMoney(data.boxes[72]!), formatDueDay(data.dueOn))
+      ? t.vat.outcome.pay(formatMoney(data.boxes[72]!), formatDueDay(data.dueOn))
       : data.outcome === 'carry'
-        ? t.vat.outcome.carry(formatHeadlineMoney(data.boxes[71]!))
+        ? t.vat.outcome.carry(formatMoney(data.boxes[71]!))
         : t.vat.outcome.nothing;
   const hint = data.outcome === 'pay' ? t.vat.outcome.payHint : data.outcome === 'carry' ? t.vat.outcome.carryHint : t.vat.outcome.nothingHint;
   return (

@@ -72,6 +72,19 @@ interface ComboboxProps {
   required?: boolean;
   /** Empties the field after each pick, for adding one item after another. */
   resetAfterPick?: boolean;
+  /**
+   * The server searches instead (a list too long to load): told each typed
+   * text, it sends back `options` already matched, so they aren't filtered here.
+   */
+  onSearch?: (typed: string) => void;
+  /** A search for the typed text is on its way. */
+  searching?: boolean;
+  /** More matched than are listed: the list says to keep typing. */
+  more?: boolean;
+  /** The chosen option's name when it isn't among `options` (a server search that moved on). */
+  chosenLabel?: string;
+  /** Sits in a toolbar: the label is for screen readers only and the field has no space under it. */
+  inToolbar?: boolean;
 }
 
 /**
@@ -79,11 +92,28 @@ interface ComboboxProps {
  * supplier, a product): the list narrows as you type, ignoring accents,
  * arrow keys walk it, Enter picks, Esc puts back the last choice.
  */
-export function Combobox({ label, options, value, onChange, placeholder, hint, error, disabled, limit = 50, required, resetAfterPick }: ComboboxProps) {
+export function Combobox({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  error,
+  disabled,
+  limit = 50,
+  required,
+  resetAfterPick,
+  onSearch,
+  searching,
+  more,
+  chosenLabel,
+  inToolbar,
+}: ComboboxProps) {
   const t = useT();
   const id = useId();
   const listId = `${id}-list`;
-  const chosen = options.find((option) => option.value === value);
+  const chosen = options.find((option) => option.value === value) ?? (value && chosenLabel !== undefined ? { value, label: chosenLabel } : undefined);
   const [query, setQuery] = useState(chosen?.label ?? '');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -93,13 +123,27 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
 
   // A choice made elsewhere (or cleared) shows in the field.
   const [shownValue, setShownValue] = useState(value);
-  if (shownValue !== value) {
+  // Its name may come later (a server search, or a product looked up by id): it fills the field unless something is being typed.
+  const chosenText = chosen?.label ?? '';
+  const [shownText, setShownText] = useState(chosenText);
+  if (shownValue !== value || shownText !== chosenText) {
+    if (shownValue !== value || query === shownText) setQuery(chosenText);
     setShownValue(value);
-    setQuery(chosen?.label ?? '');
+    setShownText(chosenText);
   }
 
   const typed = chosen && query === chosen.label ? '' : query;
-  const matches = useMemo(() => matchOptions(options, typed).slice(0, limit), [options, typed, limit]);
+  const serverSide = onSearch !== undefined;
+  const found = useMemo(() => (serverSide ? options : matchOptions(options, typed)), [serverSide, options, typed]);
+  const matches = found.slice(0, limit);
+  // Never a silent cap: when more match than are listed, the list says so.
+  const cut = more || found.length > matches.length;
+  // The server is told what to look for as the words change (the caller waits for a pause in typing).
+  const searchRef = useRef(onSearch);
+  useEffect(() => {
+    searchRef.current = onSearch;
+  });
+  useEffect(() => searchRef.current?.(typed), [typed]);
 
   useEffect(() => setPopover(listRef.current, open), [open]);
   // Typed words that match nothing chosen don't fill a required field.
@@ -135,8 +179,8 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
 
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
   return (
-    <div className={open ? 'field combobox combobox--open' : 'field combobox'}>
-      <label className="field__label" htmlFor={id}>
+    <div className={['field combobox', open && 'combobox--open', inToolbar && 'combobox--toolbar'].filter(Boolean).join(' ')}>
+      <label className={inToolbar ? 'visually-hidden' : 'field__label'} htmlFor={id}>
         {label}
       </label>
       <div className="combobox__box">
@@ -175,7 +219,7 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
       <ul ref={listRef} id={listId} role="listbox" aria-label={label} popover="manual" className="combobox__list">
         {matches.length === 0 ? (
           <li className="combobox__empty" role="presentation">
-            {t.kit.noMatch}
+            {searching ? t.kit.searching : t.kit.noMatch}
           </li>
         ) : (
           matches.map((option, index) => (
@@ -208,6 +252,11 @@ export function Combobox({ label, options, value, onChange, placeholder, hint, e
               {option.value === value && <Check size={14} weight="bold" aria-hidden="true" />}
             </li>
           ))
+        )}
+        {matches.length > 0 && cut && (
+          <li className="combobox__empty" role="presentation">
+            {t.kit.keepTyping}
+          </li>
         )}
       </ul>
       {hint && (

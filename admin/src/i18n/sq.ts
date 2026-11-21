@@ -5644,6 +5644,8 @@ export const sq: Catalogue = {
     developerHint: 'Zhvillues i 4VD: mund të hapë çdo biznes',
     noMatch: 'Asgjë nuk përputhet. Kontrollo shkrimin ose shkruaj më pak.',
     pickFromList: 'Zgjidh një nga lista.',
+    searching: 'Duke kërkuar…',
+    keepTyping: 'Ka edhe të tjera. Shkruaj më shumë nga emri për t’i gjetur.',
     notifications: 'Njoftimet',
     dismiss: 'Hiqe',
     stepOf: (n, total) => `Hapi ${n} nga ${total}`,

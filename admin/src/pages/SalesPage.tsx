@@ -10,7 +10,8 @@ import { PeriodPicker } from '../components/PeriodPicker';
 import { SearchInput } from '../components/SearchInput';
 import { SourceFilter, sourceFrom, TrefinTag } from '../components/TrefinParts';
 import { useSalesSeries } from '../components/useSalesSeries';
-import { productsApi, reportsApi, salesApi, usersApi } from '../services/api';
+import { reportsApi, salesApi, usersApi } from '../services/api';
+import { ProductPicker } from '../components/ProductPicker';
 import { formatDateWith, formatHeadlineMoney, formatMoney } from '../utils/format';
 import type { PeriodKey } from '../utils/periods';
 import { usePeriodParams } from '../utils/usePeriodParams';
@@ -123,11 +124,7 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
   const soldBy = params.get('seller') ?? '';
   const search = params.get('search') ?? '';
   const source = sourceFrom(params);
-  // Every product, sold out or not, and everyone who has ever sold: history keeps them all.
-  const products = useQuery({
-    queryKey: ['products', { page: 1, limit: 100, purpose: 'filter' }],
-    queryFn: () => productsApi.list({ page: 1, limit: 100 }),
-  });
+  // Everyone who has ever sold: history keeps them all. Products are searched as you type (any product, sold out or not).
   const people = useQuery({ queryKey: ['users'], queryFn: () => usersApi.list(1) });
 
   // The checkout that is open to show its lines, and the line being returned.
@@ -194,14 +191,13 @@ function SalesHistory({ range }: { range: { startDate: string; endDate: string }
           toolbar={
             <>
               <SearchInput value={search} onChange={(value) => updateParams({ search: value })} label={t.sales.search} />
-              <select aria-label={t.sales.product} value={productId} onChange={(event) => updateParams({ product: event.target.value })}>
-                <option value="">{t.sales.anyProduct}</option>
-                {products.data?.items.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
+              <ProductPicker
+                inToolbar
+                label={t.sales.product}
+                placeholder={t.sales.anyProduct}
+                value={productId}
+                onPick={(product) => updateParams({ product: product ? String(product.id) : '' })}
+              />
               <select aria-label={t.sales.soldBy} value={soldBy} onChange={(event) => updateParams({ seller: event.target.value })}>
                 <option value="">{t.sales.anyone}</option>
                 {people.data?.items.map((person) => (

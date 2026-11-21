@@ -421,6 +421,16 @@ describe('newer kit pieces', () => {
     expect(matchOptions(options, '  ')).toHaveLength(3);
   });
 
+  it('should show a chosen name the server search no longer lists, and say when more match', async () => {
+    const { Combobox } = await import('./Combobox');
+    const chosen = render(<Combobox label="Product" options={[]} value="9" onChange={() => {}} onSearch={() => {}} chosenLabel="Kafe Prince" />);
+    expect(chosen).toContain('value="Kafe Prince"');
+    const cut = render(<Combobox label="Product" options={[{ value: '1', label: 'Kafe' }]} value="" onChange={() => {}} onSearch={() => {}} more />);
+    expect(cut).toContain('Type more of the name');
+    const searching = render(<Combobox label="Product" options={[]} value="" onChange={() => {}} onSearch={() => {}} searching />);
+    expect(searching).toContain('Searching');
+  });
+
   it('should keep the four biggest donut slices and add up the rest as Other', async () => {
     const { donutSlices } = await import('./DonutChart');
     const slices = [1, 2, 3, 4, 5, 6, 0].map((value) => ({ key: value, label: String(value), value, display: String(value) }));

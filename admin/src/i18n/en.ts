@@ -5672,6 +5672,8 @@ export const en = {
     developerHint: '4VD developer: can open every business',
     noMatch: 'Nothing matches. Check the spelling or type less.',
     pickFromList: 'Pick one from the list.',
+    searching: 'Searching…',
+    keepTyping: 'More match. Type more of the name to find the rest.',
     notifications: 'Notifications',
     dismiss: 'Dismiss',
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,

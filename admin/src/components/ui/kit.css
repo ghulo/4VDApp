@@ -72,6 +72,17 @@
   position: relative;
 }
 
+/* In a toolbar, beside its selects: no label above, no space below. */
+.combobox--toolbar {
+  inline-size: min(100%, 16rem);
+  margin-bottom: 0;
+}
+
+.combobox--toolbar .combobox__input {
+  block-size: var(--control-h);
+  font-size: var(--text-sm);
+}
+
 .combobox__input {
   inline-size: 100%;
   padding-inline-end: var(--space-6);

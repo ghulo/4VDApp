@@ -120,6 +120,13 @@ describe('viewing 4VD as another role', () => {
     expect(response.body.error).toBe('VIEWING_AS');
   });
 
+  it('should still let the till ask for its shelf (a POST that only reads)', async () => {
+    const response = await request(context.app).post('/api/counter/shelf').set(asRole('employee')).send({ held: [] });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.counted).toEqual([]);
+  });
+
   it('should ignore the header from anyone but the developer', async () => {
     const employeeToken = await loginAs(context, 'employee');
 

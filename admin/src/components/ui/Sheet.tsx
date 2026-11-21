@@ -3,9 +3,13 @@ import { Fragment, type KeyboardEvent, type ReactNode, useCallback, useContext, 
 import { QueryClientContext } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { touchPhone } from '../../utils/touchPhone';
 import { LeaveGuardContext, SheetWorkContext } from './leaveGuardContext';
 import { Tooltip } from './Tooltip';
 import { useSwipeToDismiss } from './useSwipeToDismiss';
+
+/** Fields that bring up the on-screen keyboard. */
+const TYPED = 'textarea, input:not([type=checkbox], [type=radio], [type=button], [type=submit], [type=file], [type=range], [type=color])';
 
 interface SheetProps {
   open: boolean;
@@ -109,8 +113,10 @@ export function Sheet({ open, onClose, title, description, placement = 'side', w
       trigger.current = active instanceof HTMLElement && active !== document.body ? active : null;
       growFrom(dialog, trigger.current);
       dialog.showModal?.();
-      // Start in the form's first field, ready to type or scan, not on the close button.
-      dialog.querySelector<HTMLElement>('.sheet__body :is(input, select, textarea, [data-autofocus]):not([disabled])')?.focus();
+      // Start in the form's first field, ready to type or scan, not on the close button;
+      // on a phone not in a text field, so the keyboard doesn't jump up before the card is read.
+      const first = dialog.querySelector<HTMLElement>('.sheet__body :is(input, select, textarea, [data-autofocus]):not([disabled])');
+      if (!(touchPhone() && first?.matches(TYPED))) first?.focus();
     }
     if (!open) {
       // Esc closes the dialog itself before this runs. Fold back into the key

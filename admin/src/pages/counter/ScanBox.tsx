@@ -1,6 +1,7 @@
 import { Barcode, Tag } from '@phosphor-icons/react';
 import { type KeyboardEvent, type RefObject, useState } from 'react';
 import { useT } from '../../i18n/useT';
+import { touchPhone } from '../../utils/touchPhone';
 
 /**
  * The till's scan box. What is typed stays in here, so a scanner's dozen
@@ -26,6 +27,8 @@ export function ScanBox({
 }) {
   const t = useT();
   const [scan, setScan] = useState('');
+  // On a phone the keyboard would cover the basket and Pay: the camera is the way in there, the box waits for a tap.
+  const [phone] = useState(touchPhone);
   // "6*" typed and waiting for the scan: say so, so nobody wonders why six went in.
   const pending = /^(\d{1,4})\s*[*xX]$/.exec(scan.trim());
   const pendingCount = pending ? Math.max(1, Number(pending[1])) : null;
@@ -53,7 +56,8 @@ export function ScanBox({
       <input
         ref={inputRef}
         name="code"
-        autoFocus
+        autoFocus={!phone}
+        inputMode="numeric"
         autoComplete="off"
         spellCheck={false}
         placeholder={priceCheck ? `${t.counter.priceCheck}…` : `${t.counter.scan}…`}

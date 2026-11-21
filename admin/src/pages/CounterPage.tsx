@@ -84,6 +84,7 @@ import {
   stillPrinting,
 } from './counter/settledSales';
 import { useWaitingSales } from './counter/useWaitingSales';
+import { touchPhone } from '../utils/touchPhone';
 
 type Panel =
   | 'find'
@@ -362,7 +363,10 @@ export function CounterPage() {
     setAlarm(next);
   };
 
-  const focusScan = useCallback(() => scanRef.current?.focus({ preventScroll: true }), []);
+  // Back to the scan box after each step, ready for the next scan; not on a phone, where it would pop the keyboard up over the sale.
+  const focusScan = useCallback(() => {
+    if (!touchPhone()) scanRef.current?.focus({ preventScroll: true });
+  }, []);
 
   // Never in the way of the sale: each event is written to this PC first, then sent in order; without internet it waits.
   const owner = useMemo<Owner>(() => ({ businessId, userId: user.id }), [businessId, user.id]);

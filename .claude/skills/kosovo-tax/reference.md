@@ -93,6 +93,7 @@ All figures: `PAYROLL_RULES` in `services/payroll/payrollRules.ts`, one set per 
 - **Cash count differences** (till counts, `services/CashCountService.ts`) are **not posted**. **Default, unconfirmed.** Don't confuse with stock count lines, which do post to 5400.
 - **Stock in at net cost, cost of sales VAT-inclusive:** **default, unconfirmed.** TREFIN's trial balance is €976.78 off from 4VD's.
 - **Stock documents** (in/out) post to 5400 at current cost, goods received free included (`stockDocument`). **Default, unconfirmed.**
+- **A delivery received before its bill** (an order ticked off, or staff's "A delivery came" with no order, `PurchaseOrderService.arrived`): the units go into stock at once at the order line's cost (no order: the product's cost price then), and nothing is booked until the bill. The order-linked bill then posts stock 1340 at the paper's total less its VAT (`bill` in `postingRules.ts`, "the paper's total wins"), whatever staff counted. A scanned bill linked to a no-order delivery (`bill_scans.arrived_order_id`) sets the lines' costs and saves the bill without adding the counted goods again.
 - **Customer bonus:** 4200 against 1230 (`bonus`). Whether VAT applies to it: **default, unconfirmed.**
 - **Make** (`services/MakeService.ts`): parts and made product are both stock 1340, so a Make posts nothing. **Default, unconfirmed.**
 - **Profit by project** (`services/ProjectService.ts`): income without VAT, costs as kept (stock cost is VAT-inclusive). **Default, unconfirmed.**

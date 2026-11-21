@@ -88,6 +88,7 @@ describe('supplier orders', () => {
     expect(deliveries).toEqual([
       {
         id: order.id,
+        supplierId: freshFoods,
         supplierName: 'Fresh Foods',
         note: null,
         createdAt: order.createdAt,

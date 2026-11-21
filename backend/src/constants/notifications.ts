@@ -26,6 +26,8 @@ export const NOTIFICATION_TYPES = {
   BILL_EMAIL: 'bill_email',
   /** A business customer sent an order from the portal. */
   PORTAL_ORDER: 'portal_order',
+  /** Staff put a delivery that came without an order into stock. */
+  DELIVERY_ARRIVED: 'delivery_arrived',
 } as const;
 
 /** Pushed whatever the topic switches say. */
@@ -42,6 +44,7 @@ const TOPIC_BY_TYPE: Record<string, PushTopic> = {
   [NOTIFICATION_TYPES.UNDONE]: 'decisions',
   [NOTIFICATION_TYPES.BILL_EMAIL]: 'approvals',
   [NOTIFICATION_TYPES.PORTAL_ORDER]: 'approvals',
+  [NOTIFICATION_TYPES.DELIVERY_ARRIVED]: 'stock',
 };
 
 /** Null for notification types that are never pushed. */

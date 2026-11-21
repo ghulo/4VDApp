@@ -82,6 +82,8 @@ export interface OrderRecord {
   created_at: Date;
   closed_by_name: string | null;
   closed_at: Date | null;
+  /** Staff ticked it off when it came without an order: made and received in one go. */
+  came_unordered: boolean;
 }
 
 /** The supplier's bill for an order, with what is still owed on it. */
@@ -159,7 +161,13 @@ export class PurchaseOrderRepository {
         'o.created_at',
         'c.name as closed_by_name',
         'o.closed_at',
+        sql<boolean>`o.arrival_key is not null`.as('came_unordered'),
       ]);
+  }
+
+  /** The order staff made for a delivery that came without one, by the key of that press. */
+  async findByArrivalKey(key: string): Promise<number | undefined> {
+    return (await this.db.selectFrom('purchase_orders').select('id').where('arrival_key', '=', key).executeTakeFirst())?.id;
   }
 
   /** Open orders first (oldest first), then the most recent closed ones. */
@@ -209,10 +217,12 @@ export class PurchaseOrderRepository {
     note: string | null;
     createdBy: number;
     lines: Array<{ productId: number; quantity: number; unitCost: number | null }>;
+    /** A delivery that came without an order: the key of the press that ticked it off. */
+    arrivalKey?: string;
   }): Promise<number> {
     const order = await this.db
       .insertInto('purchase_orders')
-      .values({ supplier_id: input.supplierId, note: input.note, created_by: input.createdBy })
+      .values({ supplier_id: input.supplierId, note: input.note, created_by: input.createdBy, ...(input.arrivalKey && { arrival_key: input.arrivalKey }) })
       .returning('id')
       .executeTakeFirstOrThrow();
     await this.db
@@ -253,6 +263,10 @@ export class PurchaseOrderRepository {
       .set({ received_quantity: receivedQuantity, unit_cost: unitCost })
       .where('id', '=', lineId)
       .execute();
+  }
+
+  async setLineCost(lineId: number, unitCost: number | null): Promise<void> {
+    await this.db.updateTable('purchase_order_lines').set({ unit_cost: unitCost }).where('id', '=', lineId).execute();
   }
 
   async close(id: number, status: 'received' | 'cancelled', by: number, at: Date): Promise<void> {

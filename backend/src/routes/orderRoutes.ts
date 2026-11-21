@@ -20,6 +20,9 @@ export function createOrderRoutes({ purchaseOrderService, guards }: Container): 
 
   router.get('/', ...guards.books, controller.list);
   router.get('/deliveries', ...guards.staff, controller.deliveries);
+  // Goods that came without an order: the counter picks the supplier (names only) and puts what came into stock.
+  router.get('/delivery-suppliers', ...guards.staff, controller.supplierNames);
+  router.post('/arrived', ...guards.staff, controller.arrived);
   router.get('/usual-suppliers', ...guards.oversee, controller.usualSuppliers);
   router.get('/:id', ...guards.books, controller.get);
   router.post('/', ...guards.manage, controller.create);

@@ -126,6 +126,7 @@ export const ACTIVITY_ACTIONS = [
   'supplier.removed',
   'order.created',
   'order.received',
+  'order.arrived',
   'order.cancelled',
   'bill.scanned',
   'bill.emailed',

@@ -118,6 +118,10 @@ const en = {
     `Checked a scanned customs paper${p.number ? ` no. ${p.number}` : ''}${p.supplier ? ` for goods from ${p.supplier}` : ''}${p.waiting ? '; it waits for its bill' : ''}`,
   customsPaperDiscarded: (p: { number: string | null; supplier: string | null }) => `Threw away a customs paper${p.number ? ` no. ${p.number}` : ''}${p.supplier ? ` for goods from ${p.supplier}` : ''} that was waiting for its bill`,
   orderFromScan: (p: { orderId: number }) => `Made order #${p.orderId} from a scanned bill`,
+  deliveryArrived: (p: { orderId: number; supplier: string; units: number }) =>
+    `Took in a delivery from ${p.supplier} that came without an order: ${p.units} ${p.units === 1 ? 'unit' : 'units'} into stock (order #${p.orderId})`,
+  arrivalBillConfirmed: (p: { supplier: string; orderId: number; extra: number }) =>
+    `Confirmed the scanned bill from ${p.supplier} for order #${p.orderId}, whose goods were already in stock${p.extra > 0 ? `; ${p.extra} more pieces into stock` : ''}`,
   barcodePutBack: (p: { product: string; to: string | null }) =>
     `Put the barcode of ${p.product} back${p.to ? ` to ${p.to}` : ''} (scanned bill reopened)`,
   billScanReopened: (p: { supplier: string | null; undone: boolean }) =>
@@ -709,6 +713,9 @@ const sq: Templates = {
     `Kontrolloi një deklaratë doganore të skanuar${p.number ? ` nr. ${p.number}` : ''}${p.supplier ? ` për mallin nga ${p.supplier}` : ''}${p.waiting ? '; pret faturën e saj' : ''}`,
   customsPaperDiscarded: (p) => `Hodhi poshtë një deklaratë doganore${p.number ? ` nr. ${p.number}` : ''}${p.supplier ? ` për mallin nga ${p.supplier}` : ''} që priste faturën e saj`,
   orderFromScan: (p) => `Krijoi porosinë #${p.orderId} nga një faturë e skanuar`,
+  deliveryArrived: (p) => `Pranoi një furnizim nga ${p.supplier} që erdhi pa porosi: ${p.units} copë në stok (porosia #${p.orderId})`,
+  arrivalBillConfirmed: (p) =>
+    `Konfirmoi faturën e skanuar nga ${p.supplier} për porosinë #${p.orderId}, malli i së cilës ishte tashmë në stok${p.extra > 0 ? `; ${p.extra} copë të tjera në stok` : ''}`,
   barcodePutBack: (p) => `Ktheu barkodin e ${p.product}${p.to ? ` në ${p.to}` : ''} (fatura e skanuar u rihap)`,
   billScanReopened: (p) =>
     `Rihapi faturën e skanuar${p.supplier ? ` nga ${p.supplier}` : ''}${p.undone ? ': stoku, fatura dhe porosia u kthyen' : ''}`,

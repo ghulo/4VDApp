@@ -97,6 +97,7 @@ import * as customsPapers from './095_customs_papers.js';
 import * as refundMethods from './096_refund_methods.js';
 import * as counterEventIds from './097_counter_event_ids.js';
 import * as saleKeyClosures from './098_sale_key_closures.js';
+import * as deliveryWithoutOrder from './099_delivery_without_order.js';
 
 /**
  * Every migration, keyed by name. Kysely runs them in key order, so always
@@ -203,4 +204,5 @@ export const migrations: Record<string, Migration> = {
   '096_refund_methods': refundMethods,
   '097_counter_event_ids': counterEventIds,
   '098_sale_key_closures': saleKeyClosures,
+  '099_delivery_without_order': deliveryWithoutOrder,
 };

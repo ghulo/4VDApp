@@ -7,8 +7,8 @@ import { idParamsSchema, parseInput } from '../validators/validate.js';
 export function createBillScanController(scanService: BillScanService) {
   return {
     async scan(req: Request, res: Response): Promise<void> {
-      const { pages } = parseInput(scanUploadSchema, req.body);
-      sendSuccess(res, await scanService.scan(pages, req.user!), { statusCode: 201, message: 'Bill read' });
+      const { pages, arrivedOrderId } = parseInput(scanUploadSchema, req.body);
+      sendSuccess(res, await scanService.scan(pages, req.user!, arrivedOrderId ?? null), { statusCode: 201, message: 'Bill read' });
     },
 
     async waiting(_req: Request, res: Response): Promise<void> {

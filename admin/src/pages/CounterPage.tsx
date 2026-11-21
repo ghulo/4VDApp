@@ -2343,10 +2343,13 @@ export function CounterPage() {
           }
           switchDone.current = true;
           closePanel();
-          await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses });
           // Everything on screen was the last person's (My day, permissions, the lists): fetched again once the screen is
-          // the new person's, so the till's reads name them, not the one who left.
-          refetchAsNew.current = true;
+          // the new person's, so the till's reads name them, not the one who left. Marked before the new person is shown
+          // (the screen may change before adoptSession returns); the same person again is simply fetched again now.
+          const samePerson = result.user.id === user.id;
+          refetchAsNew.current = !samePerson;
+          await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses });
+          if (samePerson) void queryClient.invalidateQueries();
           say(t.counter.switchedTo(result.user.name));
         }}
       />

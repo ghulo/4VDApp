@@ -1,6 +1,6 @@
-import { CaretLeft, CaretRight, CheckCircle, FileCsv, FilePdf, FileXls, LockSimple, LockSimpleOpen, Receipt } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Check, CheckCircle, FileCsv, FilePdf, FileXls, LockSimple, LockSimpleOpen, Receipt } from '@phosphor-icons/react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { canReopen } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
@@ -123,19 +123,12 @@ export function VatPage() {
         actions={
           data &&
           data.month === month &&
-          (data.status === 'open' ? (
-            data.canFile && (
-              <Button variant="primary" icon={LockSimple} onClick={() => setFiling(true)}>
-                {t.vat.markFiled}
-              </Button>
-            )
-          ) : (
-            canReopen(role) && (
-              <Button icon={LockSimpleOpen} onClick={() => setReopening(true)}>
-                {t.vat.reopen}
-              </Button>
-            )
-          ))
+          data.status === 'filed' &&
+          canReopen(role) && (
+            <Button icon={LockSimpleOpen} onClick={() => setReopening(true)}>
+              {t.vat.reopen}
+            </Button>
+          )
         }
       />
       <div className="toolbar">
@@ -152,6 +145,7 @@ export function VatPage() {
           <div className="inspector-layout__list vat-month" aria-busy={vat.isFetching}>
             <Outcome data={data} />
             {data.status === 'open' && data.canFile && <Checks checks={data.checks} />}
+            <FilingSteps data={data} current={data.month === month} onFile={() => setFiling(true)} />
             <BoxPart
               title={t.vat.charged.title}
               description={t.vat.charged.description}
@@ -222,6 +216,98 @@ function Outcome({ data }: { data: VatMonth }) {
         !data.canFile && <p className="vat-outcome__note">{t.vat.notOver}</p>
       )}
     </Card>
+  );
+}
+
+/** What the month comes to, with its exact cents: the sentence the filing confirm repeats. */
+function fileWhat(t: Catalogue, data: VatMonth): string {
+  const month = formatMonth(data.month);
+  if (data.outcome === 'pay') return t.vat.fileWhat.pay(month, formatMoney(data.boxes[72]!), formatDueDay(data.dueOn));
+  if (data.outcome === 'carry') return t.vat.fileWhat.carry(month, formatMoney(data.boxes[71]!));
+  return t.vat.fileWhat.nothing(month);
+}
+
+/** Filing in order: the month's two EDI files, filing in EDI, then marking it filed here. */
+function FilingSteps({ data, current, onFile }: { data: VatMonth; current: boolean; onFile: () => void }) {
+  const t = useT();
+  const { language } = useLanguage();
+  const w = t.vat.steps;
+  const download = useMutation({ mutationFn: (kind: BookKind) => vatApi.downloadBook(data.month, kind, 'edi', language, false) });
+  const filed = data.status === 'filed';
+  const step = (index: number, name: string, body: ReactNode, done: boolean) => (
+    <li className={done ? 'vat-steps__step steps__step--done' : 'vat-steps__step'}>
+      <span className="steps__mark" aria-hidden="true">
+        {done ? <Check size={12} weight="bold" /> : index}
+      </span>
+      <div className="vat-steps__body">
+        <p className="vat-steps__name">
+          {name}
+          {done && <span className="visually-hidden"> ({w.done})</span>}
+        </p>
+        {body}
+      </div>
+    </li>
+  );
+  return (
+    <Section title={w.title} description={w.description}>
+      <ol className="vat-steps">
+        {step(
+          1,
+          w.download,
+          <>
+            <p className="vat-steps__hint">{w.downloadHint}</p>
+            <div className="vat-steps__actions">
+              {(['sales', 'purchases'] as const).map((kind) => (
+                <Button
+                  key={kind}
+                  size="sm"
+                  icon={FileCsv}
+                  disabled={!current || (download.isPending && download.variables !== kind)}
+                  loading={download.isPending && download.variables === kind}
+                  onClick={() => download.mutate(kind)}
+                >
+                  {kind === 'sales' ? w.salesFile : w.purchaseFile}
+                </Button>
+              ))}
+            </div>
+            {download.isError && (
+              <p className="form-error" role="alert">
+                {errorMessage(download.error)}
+              </p>
+            )}
+          </>,
+          filed,
+        )}
+        {step(
+          2,
+          w.edi,
+          <p className="vat-steps__hint">
+            {w.ediHint}
+            {data.outcome === 'pay' && ` ${w.ediPay(formatMoney(data.boxes[72]!), formatDueDay(data.dueOn))}`}
+          </p>,
+          filed,
+        )}
+        {step(
+          3,
+          w.mark,
+          filed ? (
+            <p className="vat-steps__hint">{data.filedBy && data.filedAt ? t.vat.filedBy(data.filedBy, formatDateTime(data.filedAt)) : t.vat.stamp.filed}</p>
+          ) : data.canFile ? (
+            <>
+              <p className="vat-steps__hint">{w.markHint}</p>
+              <div className="vat-steps__actions">
+                <Button size="sm" variant="primary" icon={LockSimple} disabled={!current} onClick={onFile}>
+                  {t.vat.markFiled}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="vat-steps__hint">{w.notYet}</p>
+          ),
+          filed,
+        )}
+      </ol>
+    </Section>
   );
 }
 
@@ -517,6 +603,7 @@ function FileForm({ data, onDone }: { data: VatMonth; onDone: () => void }) {
         file.mutate();
       }}
     >
+      <p className="vat-file__what">{fileWhat(t, data)}</p>
       <p>{t.vat.fileBody}</p>
       {data.checks.length > 0 && <p className="notice notice--warn">{t.vat.fileChecks(data.checks.length)}</p>}
       {file.isError && (

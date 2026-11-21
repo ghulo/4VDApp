@@ -59,6 +59,15 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Till speed** (Task 3, 2026-11-20)
+- [ ] Shop PC with the full shelf: after Record sale, Paid shows at once and the next scan goes in without a pause; the sold product's stock in F3 is lower straight away
+- [ ] A delivery received on a phone shows on the till's stock within about 3 minutes, without a reload
+- [ ] Pay: F1 cash, F2 card (then Enter records), F3 cash + card (cursor in the card part), F4 tab; Esc back to the basket and F9 again: same method and amounts; change the basket and the payment starts fresh
+- [ ] Pay open on basket 1, click basket 2 (or New basket): Pay closes; back on basket 1, F9 brings its payment back
+- [ ] Without internet, cashier A sells the last unit, then Switch person to B; internet back, wait over 3 minutes (the shelf reloads): the product still shows 0 while A's sale waits
+- [ ] Switch person with only one other person who can take over: they are picked and the cursor is in the PIN box
+- [ ] Delete on a line: pressing 1 only picks the reason; Enter (or the red key) takes the line off; the owner sees the reason in Reports → Counter
+
 **Not losing typed work** (Task 2, 2026-11-20)
 - [ ] Phone (Android): type into an "Add" card, press the phone's Back: "Leave without saving?" appears; Keep editing keeps the text
 - [ ] Phone: pull a filled card down by its head: it springs back up and asks; Leave closes it

@@ -10,6 +10,8 @@ import { errorMessage } from '../utils/errors';
 import { useCurrentUser } from './useAuth';
 import { announceSwitch } from './businessSwitch';
 import { forgetViewAs } from './viewAs';
+import { forgetSavedMe, saveMe } from '../offline/savedCopy';
+import { currentPermissions } from './permissions';
 
 /**
  * The business picker, as items for the account menu: one per business the
@@ -44,12 +46,16 @@ export function useSwitchBusiness(): (businessId: number) => Promise<void> {
       toast({ title: t.nav.switchBlocked, detail: t.nav.switchBlockedDetail, tone: 'danger' });
       return;
     }
+    // The saved sign-in names the business being left: an offline start right after the switch must not reopen it.
+    forgetSavedMe();
     try {
       await authApi.switchBusiness(businessId);
       forgetViewAs();
       announceSwitch(businessId);
       window.location.assign('/');
     } catch (error) {
+      // Still in the same business: it is saved again.
+      if (user.businessId !== undefined) saveMe(user, currentPermissions());
       toast({ title: t.nav.switchFailed, detail: errorMessage(error), tone: 'danger' });
     }
   };

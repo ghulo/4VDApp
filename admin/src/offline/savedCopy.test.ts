@@ -1,7 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
-import { copyOf, COPY_MAX_AGE_MS, fillFrom, forgetSaved, savedMe, saveMe, tillCopyKeys } from './savedCopy';
+import { copyOf, COPY_MAX_AGE_MS, currentIdentity, fillFrom, forgetSaved, newIdentity, noAnswer, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { ApiError } from '../services/apiClient';
 
 const user = { id: 7, name: 'Ana', role: 'employee', businessId: 3, language: 'sq' } as User;
 
@@ -21,6 +22,15 @@ describe('the saved sign-in', () => {
     expect(savedMe(1_000 + COPY_MAX_AGE_MS + 1)).toBeNull();
     forgetSaved();
     expect(savedMe(2_000)).toBeNull();
+  });
+
+  it('is used only when 4VD gives no answer, never when it says no', () => {
+    expect(noAnswer(new TypeError('Failed to fetch'))).toBe(true);
+    expect(noAnswer(new ApiError('no answer', 0, 'NETWORK'))).toBe(true);
+    expect(noAnswer(new ApiError('busy', 503, null))).toBe(true);
+    expect(noAnswer(new ApiError('slow down', 429, null))).toBe(true);
+    expect(noAnswer(new ApiError('signed out', 401, null))).toBe(false);
+    expect(noAnswer(new ApiError('not allowed', 403, null))).toBe(false);
   });
 
   it('reads nothing from a broken note', () => {
@@ -54,5 +64,71 @@ describe("the till's saved data", () => {
     expect(client.getQueryData(settings!)).toEqual({ printer: { enabled: false } });
     expect(fillFrom(new QueryClient(), copy, 10_000 + COPY_MAX_AGE_MS + 1)).toBe(false);
     expect(fillFrom(new QueryClient(), null)).toBe(false);
+  });
+});
+
+/** Just enough IndexedDB for savedCopy.ts: one store, each request answered on a later tick, a transaction done after its requests. */
+function fakeIndexedDB() {
+  const rows = new Map<string, unknown>();
+  const later = (fn: () => void) => setTimeout(fn, 0);
+  const db = {
+    close() {},
+    transaction() {
+      const tx: { oncomplete?: () => void; objectStore: () => unknown } = { objectStore: () => store };
+      let open = 0;
+      const ask = <T,>(run: () => T) => {
+        const request: { result?: T } = {};
+        open += 1;
+        later(() => {
+          request.result = run();
+          open -= 1;
+          if (open === 0) tx.oncomplete?.();
+        });
+        return request;
+      };
+      const store = {
+        put: (value: unknown, key: string) => ask(() => (rows.set(key, structuredClone(value)), key)),
+        get: (key: string) => ask(() => rows.get(key)),
+        clear: () => ask(() => rows.clear()),
+      };
+      return tx;
+    },
+  };
+  const api = {
+    open: () => {
+      const request: { result?: unknown; onsuccess?: () => void } = {};
+      later(() => {
+        request.result = db;
+        request.onsuccess?.();
+      });
+      return request;
+    },
+  };
+  return { rows, api };
+}
+
+describe("the till's copy on this PC", () => {
+  const owner = { businessId: 3, userId: 7 };
+
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+
+  it('never writes a copy for someone who signed out while it was on its way', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const client = new QueryClient();
+    client.setQueryData(['customers'], [{ id: 1 }]);
+    const since = currentIdentity();
+    // Signed out before the write began…
+    forgetSaved();
+    expect(await saveTillCopy(client, owner, since)).toBeFalsy();
+    // …and while the store was opening.
+    const started = currentIdentity();
+    const writing = saveTillCopy(client, owner, started);
+    newIdentity();
+    await expect(writing).rejects.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(rows.size).toBe(0);
   });
 });

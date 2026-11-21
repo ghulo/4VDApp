@@ -13,9 +13,19 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import type { Permissions } from '../auth/permissions';
 import type { User } from '../services/types';
+import { ApiError } from '../services/apiClient';
 import { tillShelfKey } from '../pages/counter/shelfAfterSale';
 
 const ME_KEY = '4vd.offline.me';
+
+/**
+ * 4VD gave no answer about the sign-in (no internet, a timeout, a busy or broken server): only then may the
+ * sign-in saved on this PC start the till. Any other answer (refused, gone) means it can't.
+ */
+export function noAnswer(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return true;
+  return error.status === 0 || error.status === 408 || error.status === 429 || error.status >= 500;
+}
 const DB_NAME = '4vd-offline';
 const STORE = 'till';
 /** A copy older than this is too old to sell from (prices, stock): the till waits for the internet instead. */
@@ -47,13 +57,32 @@ export function savedMe(now = Date.now()): SavedMe | null {
   }
 }
 
-/** Signed out (or the sign-in is over): nothing of this person stays for a start without internet. */
-export function forgetSaved(): void {
+/**
+ * Which sign-in the till copies being written belong to: it moves on whenever the person here changes
+ * (signed out, the sign-in over, another person signed in). A write started under an earlier one is dropped.
+ */
+let identity = 0;
+export const currentIdentity = (): number => identity;
+
+/** The person here changes (signed out, another one signed in): copies still being written for the last one are dropped. */
+export function newIdentity(): number {
+  identity += 1;
+  return identity;
+}
+
+/** The saved sign-in no longer names who is signed in (a switch of business or cashier is under way): an offline start shows the sign-in page until 4VD names the new one. */
+export function forgetSavedMe(): void {
   try {
     localStorage.removeItem(ME_KEY);
   } catch {
     // Nothing kept.
   }
+}
+
+/** Signed out (or the sign-in is over): nothing of this person stays for a start without internet. */
+export function forgetSaved(): void {
+  newIdentity();
+  forgetSavedMe();
   void withStore('readwrite', (store) => store.clear()).catch(() => undefined);
 }
 
@@ -110,6 +139,7 @@ function open(): Promise<IDBDatabase> {
 }
 
 async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+  // The transaction is made and its work queued in one go (no await between): a sign-out's clear comes before or after it, never inside.
   const db = await open();
   try {
     return await new Promise<T>((resolve, reject) => {
@@ -124,11 +154,20 @@ async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectSto
   }
 }
 
-/** Keep the till's data for this person in this business (the newest copy replaces the last). */
-export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }): Promise<void> {
+/**
+ * Keep the till's data for this person in this business (the newest copy replaces the last). Only while the sign-in
+ * it was started under (`since`, from currentIdentity) is still the one here: checked as the write is queued, so a
+ * sign-out's clear always comes after it or refuses it.
+ */
+export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number): Promise<boolean> {
+  if (since !== identity) return false;
   const copy = copyOf(client, owner.businessId);
-  if (copy.queries.length === 0) return;
-  await withStore('readwrite', (store) => store.put(copy, copyId(owner)));
+  if (copy.queries.length === 0) return false;
+  await withStore('readwrite', (store) => {
+    if (since !== identity) throw new Error('Another person is signed in here now');
+    return store.put(copy, copyId(owner));
+  });
+  return true;
 }
 
 /** Fill the till's empty queries from this person's saved copy for this business. False when there was none (or it is too old). */

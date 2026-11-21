@@ -55,6 +55,8 @@ import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMat
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { useTillCopy } from '../offline/useTillCopy';
+import { forgetSavedMe, saveMe } from '../offline/savedCopy';
+import { currentPermissions } from '../auth/permissions';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
@@ -2294,10 +2296,19 @@ export function CounterPage() {
           // Sales made offline and the till's events go first, so each is recorded as the person who made it.
           await waiting.flush();
           await sendEvents();
-          const result = await counterApi.switchTo({ userId, pin });
+          // The PC changes hands now: the sign-in saved for a start without internet can't name the last person any more
+          // (4VD ends their session). If the takeover is refused, they stay and are saved again.
+          forgetSavedMe();
+          let result;
+          try {
+            result = await counterApi.switchTo({ userId, pin });
+          } catch (error) {
+            if (user.businessId !== undefined) saveMe(user, currentPermissions());
+            throw error;
+          }
           switchDone.current = true;
           closePanel();
-          await adoptSession(result);
+          await adoptSession(result, { businessId: user.businessId ?? businessId, businesses: user.businesses });
           // Everything on screen was the last person's: My day, permissions, the lists.
           void queryClient.invalidateQueries();
           say(t.counter.switchedTo(result.user.name));

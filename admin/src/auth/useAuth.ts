@@ -14,7 +14,8 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<SignInStep | null>;
   logout: () => Promise<void>;
   /** Keep a session from an invite or Google; 'notAdmin' means send them to the employee app. */
-  adoptSession: (result: LoginResult) => Promise<'signedIn' | 'notAdmin'>;
+  /** `place`: the Counter handing over keeps its business and the businesses for the picker. */
+  adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>) => Promise<'signedIn' | 'notAdmin'>;
   /** Replace the signed-in person's details after they edit their profile. */
   updateUser: (user: User) => void;
 }

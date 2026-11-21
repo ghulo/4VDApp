@@ -1,6 +1,6 @@
 import { hashKey, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { restoreTillCopy, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { currentIdentity, restoreTillCopy, saveTillCopy, tillCopyKeys } from './savedCopy';
 
 /** How long after a change the copy is written: a burst of answers (the till starting) makes one write. */
 const SAVE_AFTER_MS = 3_000;
@@ -17,12 +17,14 @@ export function useTillCopy(owner: { businessId: number; userId: number }, shelf
 
   useEffect(() => {
     if (businessId === 0) return;
+    // Written only while this person is still the one signed in here: a write left over after a sign-out is dropped.
+    const since = currentIdentity();
     const watched = new Set(tillCopyKeys(businessId).map((key) => hashKey(key)));
     let timer: number | undefined;
     const save = () => {
       window.clearTimeout(timer);
       timer = undefined;
-      void saveTillCopy(client, { businessId, userId }).catch(() => undefined);
+      void saveTillCopy(client, { businessId, userId }, since).catch(() => undefined);
     };
     const unsubscribe = client.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated' || event.action.type !== 'success' || !watched.has(event.query.queryHash)) return;

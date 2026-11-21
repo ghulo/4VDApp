@@ -82,6 +82,9 @@ const browser = await chromium.launch({ channel: 'chromium' }).catch(() => chrom
 const isAuth = (url) => /\/api\/auth\/(login|refresh|logout|two-step|passkeys?\/)/.test(url);
 const BLOCK_BODY = '{"error":{"message":"blocked by verify (real database)"}}';
 const lines = [];
+// POSTs that only read (they write nothing on the server), let through on the real database too.
+// POST /api/counter/shelf: the till's shelf, sent with the keys of the sales it holds (a list too long for an address).
+const READ_POSTS = new Set(['/api/counter/shelf']);
 const blocked = [];
 let failures = 0;
 let screens = 0;
@@ -97,6 +100,7 @@ for (const [role, pathSet] of groups) {
     await context.route('**/api/**', (route) => {
       const req = route.request();
       if (['GET', 'HEAD', 'OPTIONS'].includes(req.method()) || isAuth(req.url())) return route.continue();
+      if (req.method() === 'POST' && READ_POSTS.has(new URL(req.url()).pathname)) return route.continue();
       blocked.push(`${req.method()} ${new URL(req.url()).pathname}`);
       blockedUrls.add(req.url());
       return route.fulfill({ status: 409, contentType: 'application/json', body: BLOCK_BODY });

@@ -91,6 +91,8 @@ UI and features (ask first):
 - [ ] Same PC, sign out of one business and sign in to the other, open the Counter, go offline and restart: only the second business's products and customers
 - [ ] Counter: Switch person with a PIN, then pull the cable and restart: the new person is signed in, not the one who left
 - [ ] Counter online: Switch person with a PIN: products, customers and My day reload as the new person with no error message, and a sale goes through
+- [ ] Two Counter tabs: Switch person in both at once, a wrong PIN in the first: the second still says "Checking who is signed in" on Pay until its own switch is over, then works
+- [ ] After this release, open the Counter online once before trying an offline start (copies saved before it are not used)
 - [ ] Two Counter windows on one PC: sell the last unit in one, close both, go offline and restart: the product shows 0, not 1 (known open: Task 5b item 5)
 
 **Accountant month, figures, pickers** (Task 6, 2026-11-21)

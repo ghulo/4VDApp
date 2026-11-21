@@ -76,7 +76,7 @@ export function StaffProductsPage() {
 
   return (
     <>
-      <PageHeader title={then ? t.staff.products.pickFor[then] : t.staff.products.title} actions={<CameraScanButton onScan={scanned} />} />
+      <PageHeader title={then ? t.staff.products.pickFor[then] : t.staff.products.title} actions={<CameraScanButton onScan={scanned} className="staff-scan-top" />} />
       <div className="staff-page">
         {then && (
           <p className="staff-pick">
@@ -143,6 +143,10 @@ export function StaffProductsPage() {
           </ul>
         )}
         {category !== 'favourites' && products.data && products.data.meta.total > products.data.meta.limit && <Pagination meta={products.data.meta} itemLabel={t.products.items} onPageChange={setPage} />}
+        {/* On a phone the camera key sits at the bottom, in reach of the thumb. */}
+        <div className="staff-scan-bar">
+          <CameraScanButton onScan={scanned} className="staff-scan-bar__key" />
+        </div>
       </div>
     </>
   );

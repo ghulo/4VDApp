@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowSquareOut,
   Barcode,
+  Camera,
   Calculator,
   CaretDown,
   CashRegister,
@@ -38,7 +39,7 @@ import { canOversee, counterOnly } from '../auth/roles';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
 import { useSearchParams } from 'react-router';
 import { afterDiscount, parsePercent, roundMoney, unitPriceFor } from '../components/BasketForm';
-import { CameraScanButton } from '../components/CameraScanner';
+import { CameraScanSheet, type ScanStatus } from '../components/CameraScanner';
 import { LogoMark } from '../components/LogoMark';
 import { Badge, Button, ButtonLink, MenuButton, type MenuItem } from '../components/ui';
 import { useT } from '../i18n/useT';
@@ -655,6 +656,38 @@ export function CounterPage() {
     else now.alarmFor(t.counter.cantCheck(code), { title: t.counter.alarm.cantCheck, detail: code, todo: t.counter.alarm.cantCheckTodo });
     now.sound('fail');
   }
+
+  // ---- The phone camera, scanning on ----
+  // Each code goes the scan box's way (handleScan); what it did is read off the basket after, to show under the picture.
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraRead, setCameraRead] = useState<{ serial: number; code: string; before: Map<number, number>; done: boolean } | null>(null);
+  const cameraSerial = useRef(0);
+  async function scanByCamera(code: string) {
+    // A price check shows its card on the till: the camera steps aside for it.
+    if (priceCheck) {
+      setCameraOpen(false);
+      return handleScan(code);
+    }
+    const serial = ++cameraSerial.current;
+    setCameraRead({ serial, code, before: new Map(lines.map((line) => [line.productId, line.quantity])), done: false });
+    try {
+      await handleScan(code);
+    } finally {
+      setCameraRead((read) => (read?.serial === serial ? { ...read, done: true } : read));
+    }
+  }
+  // The scan opened something (the product finder, a refund): the camera closes so it can be used.
+  useEffect(() => {
+    if (panel !== null) setCameraOpen(false);
+  }, [panel]);
+  const cameraStatus = ((): ScanStatus | null => {
+    if (!cameraRead) return null;
+    if (!cameraRead.done) return { tone: 'busy', text: t.staff.camera.checking(cameraRead.code) };
+    const grew = lines.find((line) => line.quantity > (cameraRead.before.get(line.productId) ?? 0));
+    if (grew) return { tone: 'ok', text: t.staff.camera.added(grew.name, formatQuantity(grew.quantity, grew.product?.unit)) };
+    const why = alarm ? alarm.title : problem;
+    return { tone: 'fail', text: why ? `${t.staff.camera.notAdded(cameraRead.code)} · ${why}` : t.staff.camera.notAdded(cameraRead.code) };
+  })();
 
   function setQuantity(productId: number, quantity: number) {
     if (current.pending) return complain(t.counter.pendingLocked);
@@ -1667,7 +1700,16 @@ export function CounterPage() {
               />
               {/* On a phone there's no USB scanner: the camera reads the code instead. */}
               <span className="counter-scan__camera">
-                <CameraScanButton iconOnly onScan={(code) => void handleScan(code)} />
+                <Button
+                  icon={Camera}
+                  aria-label={t.staff.camera.open}
+                  title={t.staff.camera.open}
+                  onClick={() => {
+                    setCameraRead(null);
+                    setCameraOpen(true);
+                  }}
+                />
+                <CameraScanSheet open={cameraOpen} onClose={() => setCameraOpen(false)} onScan={scanByCamera} status={cameraStatus} beep={false} />
               </span>
               <p id="counter-scan-hint" className="visually-hidden">
                 {priceCheck ? t.counter.priceCheckOn : t.counter.scanHint}

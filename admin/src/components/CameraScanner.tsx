@@ -1,13 +1,16 @@
-import { Camera } from '@phosphor-icons/react';
+import { Camera, Flashlight } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n/useT';
+import { playScanSound } from '../pages/counter/scanSound';
+import { aimArea } from '../utils/cameraAim';
 import { codeFromScan } from '../utils/scanLinks';
 import { Button, Sheet } from './ui';
 
 /** Product barcodes, the Code 128 some suppliers print, and the shop's own QR codes. */
 const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'qr_code'];
 const SCAN_EVERY_MS = 200;
-const SAME_CODE_PAUSE_MS = 1500;
+/** A code counts again only after it has been out of sight this long: one held in view goes in once. */
+const GONE_MS = 1000;
 /** Frames are scaled down to this width before decoding: sharp enough for a label, quick on a phone. */
 const MAX_FRAME_WIDTH = 1280;
 interface Detector {
@@ -28,25 +31,38 @@ async function createDetector(): Promise<Detector> {
   return new BarcodeDetector({ formats: FORMATS as never });
 }
 
+/** What happened to the last code, shown under the picture while scanning on. */
+export interface ScanStatus {
+  tone: 'ok' | 'fail' | 'busy';
+  text: string;
+}
+
 /**
- * The phone or laptop camera as a barcode scanner. Each frame is drawn onto a
- * canvas and decoded: the one way that works the same in every browser,
- * Safari on iPhone included. `onScan` gets each new code once.
+ * The phone or laptop camera as a barcode scanner. Each frame's aim box is
+ * drawn onto a canvas and decoded: the one way that works the same in every
+ * browser, Safari on iPhone included. `onScan` gets each code once while it
+ * stays in view, and again only after it has left the picture; reads wait
+ * for the one before to finish. A read buzzes the phone (and beeps, unless
+ * `beep` is off because the page makes its own sound).
  */
-export function CameraView({ onScan }: { onScan: (code: string) => void }) {
+export function CameraView({ onScan, status, beep = true }: { onScan: (code: string) => void | Promise<void>; status?: ScanStatus | null; beep?: boolean }) {
   const t = useT();
   const video = useRef<HTMLVideoElement>(null);
   const onScanRef = useRef(onScan);
+  const beepRef = useRef(beep);
   useEffect(() => {
     onScanRef.current = onScan;
+    beepRef.current = beep;
   });
   const [problem, setProblem] = useState<string | null>(null);
+  const [torch, setTorch] = useState<{ track: MediaStreamTrack; on: boolean } | null>(null);
 
   useEffect(() => {
     let stopped = false;
     let stream: MediaStream | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    let last: { code: string; at: number } | null = null;
+    let busy = false;
+    const seen = new Map<string, number>();
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -54,7 +70,7 @@ export function CameraView({ onScan }: { onScan: (code: string) => void }) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: false,
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
         });
       } catch (error) {
         setProblem((error as Error).name === 'NotAllowedError' ? t.staff.camera.denied : t.staff.camera.failed((error as Error).message));
@@ -63,6 +79,9 @@ export function CameraView({ onScan }: { onScan: (code: string) => void }) {
       if (stopped || !video.current) return stream.getTracks().forEach((track) => track.stop());
       video.current.srcObject = stream;
       await video.current.play().catch(() => undefined);
+      const track = stream.getVideoTracks()[0];
+      // A light to switch on (Chrome on Android); the DOM types don't know `torch` yet.
+      if (track && (track.getCapabilities?.() as { torch?: boolean } | undefined)?.torch) setTorch({ track, on: false });
 
       let detector: Detector;
       try {
@@ -75,18 +94,29 @@ export function CameraView({ onScan }: { onScan: (code: string) => void }) {
       const scan = async () => {
         if (stopped) return;
         const element = video.current;
-        if (element && context && element.readyState >= element.HAVE_CURRENT_DATA && element.videoWidth > 0) {
-          const scale = Math.min(1, MAX_FRAME_WIDTH / element.videoWidth);
-          canvas.width = Math.round(element.videoWidth * scale);
-          canvas.height = Math.round(element.videoHeight * scale);
-          context.drawImage(element, 0, 0, canvas.width, canvas.height);
+        if (element && context && element.readyState >= element.HAVE_CURRENT_DATA && element.videoWidth > 0 && element.clientWidth > 0) {
+          // Only the aim box is read: a quarter of the work, and a code beside it isn't taken by mistake.
+          const area = aimArea({ width: element.videoWidth, height: element.videoHeight }, { width: element.clientWidth, height: element.clientHeight });
+          const scale = Math.min(1, MAX_FRAME_WIDTH / area.width);
+          canvas.width = Math.round(area.width * scale);
+          canvas.height = Math.round(area.height * scale);
+          context.drawImage(element, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height);
           try {
+            const now = Date.now();
             for (const result of await detector.detect(context.getImageData(0, 0, canvas.width, canvas.height))) {
               const code = codeFromScan(result.rawValue);
-              const now = Date.now();
-              if (last && last.code === code && now - last.at < SAME_CODE_PAUSE_MS) continue;
-              last = { code, at: now };
-              onScanRef.current(code);
+              const before = seen.get(code) ?? Number.NEGATIVE_INFINITY;
+              seen.set(code, now);
+              // Still in view since last time, or the one before is still going in: not again.
+              if (now - before < GONE_MS || busy || stopped) continue;
+              navigator.vibrate?.(40);
+              if (beepRef.current) playScanSound('ok');
+              busy = true;
+              try {
+                await onScanRef.current(code);
+              } finally {
+                busy = false;
+              }
             }
             setProblem(null);
           } catch (error) {
@@ -106,28 +136,101 @@ export function CameraView({ onScan }: { onScan: (code: string) => void }) {
     };
   }, [t]);
 
+  async function switchTorch() {
+    if (!torch) return;
+    const on = !torch.on;
+    try {
+      await torch.track.applyConstraints({ advanced: [{ torch: on } as MediaTrackConstraintSet] });
+      setTorch({ ...torch, on });
+    } catch {
+      setTorch(null);
+    }
+  }
+
+  const line = problem ? { tone: 'fail' as const, text: problem } : (status ?? null);
   return (
     <div className="camera-view">
-      {/* playsInline keeps iPhone Safari from opening the camera full screen. */}
-      <video ref={video} className="camera-view__video" playsInline muted autoPlay aria-label={t.staff.camera.title} />
-      <p className={problem ? 'camera-view__hint camera-view__hint--problem' : 'camera-view__hint'} role="status">
-        {problem ?? t.staff.camera.hint}
+      <div className="camera-view__picture">
+        {/* playsInline keeps iPhone Safari from opening the camera full screen. */}
+        <video ref={video} className="camera-view__video" playsInline muted autoPlay aria-label={t.staff.camera.title} />
+        <span className="camera-view__aim" aria-hidden="true" />
+        {torch && (
+          <span className="camera-view__torch">
+            <Button size="sm" icon={Flashlight} aria-pressed={torch.on} onClick={() => void switchTorch()}>
+              {torch.on ? t.staff.camera.torchOff : t.staff.camera.torchOn}
+            </Button>
+          </span>
+        )}
+      </div>
+      <p className={line ? `camera-view__hint camera-view__hint--${line.tone}` : 'camera-view__hint'} role="status">
+        {line?.text ?? t.staff.camera.hint}
       </p>
     </div>
   );
 }
 
 /**
- * A "Scan with the camera" key that opens the camera in a panel; the first
- * code read closes it and goes to `onScan`. For phones without a USB scanner.
+ * The camera in a card that stays open: each code read goes to `onScan`, and
+ * `status` says what came of it ("Added: … ×2"); Done closes it. For the till,
+ * where one product after another goes in.
  */
-export function CameraScanButton({ onScan, label, size, iconOnly }: { onScan: (code: string) => void; label?: string; size?: 'sm' | 'md'; iconOnly?: boolean }) {
+export function CameraScanSheet({
+  open,
+  onClose,
+  onScan,
+  status,
+  beep,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onScan: (code: string) => void | Promise<void>;
+  status?: ScanStatus | null;
+  beep?: boolean;
+}) {
+  const t = useT();
+  return (
+    <Sheet open={open} onClose={onClose} title={t.staff.camera.title} description={t.staff.camera.keepHint} guard={false}>
+      {open && <CameraView onScan={onScan} status={status} beep={beep} />}
+      <div className="form-actions">
+        <Button variant="primary" onClick={onClose}>
+          {t.staff.camera.done}
+        </Button>
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * A "Scan with the camera" key that opens the camera in a panel; the first
+ * code read closes it and goes to `onScan`. For one code at a time (find a
+ * product, fill a barcode field).
+ */
+export function CameraScanButton({
+  onScan,
+  label,
+  size,
+  iconOnly,
+  className,
+}: {
+  onScan: (code: string) => void;
+  label?: string;
+  size?: 'sm' | 'md';
+  iconOnly?: boolean;
+  className?: string;
+}) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const text = label ?? t.staff.camera.open;
   return (
     <>
-      <Button icon={Camera} size={size} onClick={() => setOpen(true)} aria-label={iconOnly ? text : undefined} title={iconOnly ? text : undefined}>
+      <Button
+        icon={Camera}
+        size={size}
+        className={className}
+        onClick={() => setOpen(true)}
+        aria-label={iconOnly ? text : undefined}
+        title={iconOnly ? text : undefined}
+      >
         {iconOnly ? undefined : text}
       </Button>
       <Sheet open={open} onClose={() => setOpen(false)} title={t.staff.camera.title}>

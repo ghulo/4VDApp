@@ -163,11 +163,32 @@
   background: var(--surface-sunk);
 }
 
+.camera-view__picture {
+  position: relative;
+  overflow: hidden;
+}
+
 .camera-view__video {
   display: block;
   width: 100%;
   height: min(60vh, 320px);
   object-fit: cover;
+}
+
+/* Where to hold the code: only this part of the picture is read (CameraScanner.tsx AIM_*). */
+.camera-view__aim {
+  position: absolute;
+  inset: 22% 8%;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-small);
+  box-shadow: 0 0 0 100vmax var(--scrim);
+  pointer-events: none;
+}
+
+.camera-view__torch {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-end: var(--space-3);
 }
 
 .camera-view__hint {
@@ -179,8 +200,47 @@
   text-align: center;
 }
 
-.camera-view__hint--problem {
+.camera-view__hint--fail {
+  background: var(--danger-soft);
   color: var(--danger);
+  font-weight: 600;
+}
+
+.camera-view__hint--ok {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The big Scan key along the bottom on a phone (staff Products); the top one hides there. */
+.staff-scan-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .staff-scan-top {
+    display: none;
+  }
+
+  .staff-scan-bar {
+    position: sticky;
+    inset-block-end: calc(var(--bottom-bar-h, 0px) + var(--space-3));
+    z-index: 4;
+    display: flex;
+    justify-content: center;
+    margin-block-start: var(--space-4);
+  }
+
+  .staff-scan-bar__key.button {
+    width: 100%;
+    max-width: calc(var(--space-7) * 8);
+    height: var(--space-7);
+    box-shadow: var(--shadow-float);
+  }
+
+  /* Typing a search: the keyboard has the bottom. */
+  :root[data-keyboard] .staff-scan-bar {
+    display: none;
+  }
 }
 
 /* ---------- Shared page pieces ---------- */

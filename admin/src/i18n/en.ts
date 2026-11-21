@@ -5775,6 +5775,13 @@ export const en = {
       readFailed: (reason: string) => `The scanner couldn’t read the camera: ${reason}`,
       notFound: (code: string) => `No product has the barcode ${code}.`,
       cantCheck: (code: string) => `Couldn’t look up ${code}: no internet, or 4VD didn’t answer. Try again.`,
+      keepHint: 'Scan one after another: each code goes in. Done when finished.',
+      done: 'Done',
+      torchOn: 'Light on',
+      torchOff: 'Light off',
+      added: (name: string, quantity: string) => `Added: ${name} ×${quantity}`,
+      checking: (code: string) => `Checking ${code}…`,
+      notAdded: (code: string) => `Not added: ${code}`,
     },
     home: {
       morning: 'Good morning',

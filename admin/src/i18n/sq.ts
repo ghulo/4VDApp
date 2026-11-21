@@ -5748,6 +5748,13 @@ export const sq: Catalogue = {
       readFailed: (reason) => `Skaneri nuk e lexoi dot kamerën: ${reason}`,
       notFound: (code) => `Asnjë produkt nuk e ka barkodin ${code}.`,
       cantCheck: (code) => `S’u kontrollua dot ${code}: s’ka internet, ose 4VD nuk u përgjigj. Provo përsëri.`,
+      keepHint: 'Skano njërin pas tjetrit: çdo kod futet. Mbaro kur të kesh kryer.',
+      done: 'Mbaro',
+      torchOn: 'Ndiz dritën',
+      torchOff: 'Fik dritën',
+      added: (name, quantity) => `U shtua: ${name} ×${quantity}`,
+      checking: (code) => `Po kontrollohet ${code}…`,
+      notAdded: (code) => `Nuk u fut: ${code}`,
     },
     home: {
       morning: 'Mirëmëngjes',

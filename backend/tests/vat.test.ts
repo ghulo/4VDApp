@@ -226,7 +226,8 @@ describe('the accountant', () => {
     }
     expect((await api().post('/api/sales').set(auth(accountantToken)).send({ productId, quantity: 1 })).status).toBe(403);
     expect((await api().put(`/api/products/${productId}`).set(auth(accountantToken)).send({ price: 1 })).status).toBe(403);
-    expect((await api().post('/api/bills').set(auth(accountantToken)).send({ supplierId, issuedOn: `${LAST}-01`, amount: 1 })).status).toBe(403);
+    // The accountant may add a bill, but never products on it (those go into stock): accountantBills.test.ts.
+    expect((await api().post('/api/bills').set(auth(accountantToken)).send({ supplierId, issuedOn: `${LAST}-01`, lines: [{ kind: 'product', productId, quantity: 1, unitPrice: 1 }] })).status).toBe(403);
     expect((await api().post('/api/invites').set(auth(accountantToken)).send({ email: 'x@test.local', role: 'employee' })).status).toBe(403);
     expect((await api().get(`/api/vat/${LAST}`).set(auth(employeeToken))).status).toBe(403);
   });

@@ -1,24 +1,10 @@
 import { Books, CashRegister, DownloadSimple, EnvelopeSimple, Desktop, Drop, Hammer, ListNumbers, PuzzlePiece, RocketLaunch, Scales, ShieldCheck, Storefront, Trash, Warehouse, Warning } from '@phosphor-icons/react';
-import { BinPanel } from '../components/BinPanel';
-import { ImportPanel } from '../components/ImportPanel';
 import { hasPower } from '../auth/permissions';
-import { SupportVisitsPanel } from '../components/SupportVisitsPanel';
 import { isTopRole } from '../auth/roles';
-import { BillEmailPanel } from '../components/BillEmailParts';
-import { ShopRulesPanel } from '../components/ShopRulesPanel';
-import { FeaturesPanel } from '../components/FeaturesPanel';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { BooksSettingsPanel } from '../components/BooksSettingsPanel';
-import { BusinessPanel } from '../components/BusinessPanel';
-import { CarwashesPanel } from '../components/CarwashesPanel';
-import { LocationsPanel } from '../components/LocationsPanel';
-import { CounterSettingsPanel } from '../components/CounterSettingsPanel';
 import { LaunchChecklist } from '../components/LaunchChecklist';
-import { RolesPanel } from '../components/RolesPanel';
-import { ThisComputerPanel } from '../components/ThisComputerPanel';
 import { desktopBridge } from '../desktop/desktopSetup';
-import { WipeDataPanel } from '../components/WipeDataPanel';
 import { canOversee } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { ErrorNotice, Loading, SavedToast } from '../components/Feedback';
@@ -28,6 +14,23 @@ import type { AppSettings } from '../services/types';
 import { errorMessage } from '../utils/errors';
 import { ManagersOnly } from '../components/ManagersOnly';
 import { useT } from '../i18n/useT';
+import { lazyNamed } from '../utils/lazyNamed';
+
+// Each panel's code loads when its section is opened (the layout shows Loading meanwhile), not with the whole Settings page.
+const BinPanel = lazyNamed(() => import('../components/BinPanel'), 'BinPanel');
+const ImportPanel = lazyNamed(() => import('../components/ImportPanel'), 'ImportPanel');
+const SupportVisitsPanel = lazyNamed(() => import('../components/SupportVisitsPanel'), 'SupportVisitsPanel');
+const BillEmailPanel = lazyNamed(() => import('../components/BillEmailParts'), 'BillEmailPanel');
+const ShopRulesPanel = lazyNamed(() => import('../components/ShopRulesPanel'), 'ShopRulesPanel');
+const FeaturesPanel = lazyNamed(() => import('../components/FeaturesPanel'), 'FeaturesPanel');
+const BooksSettingsPanel = lazyNamed(() => import('../components/BooksSettingsPanel'), 'BooksSettingsPanel');
+const BusinessPanel = lazyNamed(() => import('../components/BusinessPanel'), 'BusinessPanel');
+const CarwashesPanel = lazyNamed(() => import('../components/CarwashesPanel'), 'CarwashesPanel');
+const LocationsPanel = lazyNamed(() => import('../components/LocationsPanel'), 'LocationsPanel');
+const CounterSettingsPanel = lazyNamed(() => import('../components/CounterSettingsPanel'), 'CounterSettingsPanel');
+const RolesPanel = lazyNamed(() => import('../components/RolesPanel'), 'RolesPanel');
+const ThisComputerPanel = lazyNamed(() => import('../components/ThisComputerPanel'), 'ThisComputerPanel');
+const WipeDataPanel = lazyNamed(() => import('../components/WipeDataPanel'), 'WipeDataPanel');
 
 export function SettingsPage() {
   const t = useT();

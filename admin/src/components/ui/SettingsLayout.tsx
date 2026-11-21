@@ -1,7 +1,8 @@
 import type { Icon } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { type ReactNode, Suspense } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router';
 import { useT } from '../../i18n/useT';
+import { Loading } from '../Feedback';
 
 export interface SettingsSection {
   id: string;
@@ -45,7 +46,7 @@ export function SettingsLayout({ base, sections }: { base: string; sections: Set
         })}
       </nav>
       <div className="settings-layout__body" key={active.id}>
-        {active.content}
+        <Suspense fallback={<Loading />}>{active.content}</Suspense>
       </div>
     </div>
   );

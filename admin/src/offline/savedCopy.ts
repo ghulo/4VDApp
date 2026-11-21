@@ -86,11 +86,14 @@ let held = false;
 /**
  * A switch (business, or cashier at the Counter) is on its way: the saved sign-in is forgotten and nothing is saved
  * again until 4VD names who is signed in (a confirmed answer: releaseSavedMe), so an offline start never reopens the
- * person or business being left. An offline start meanwhile shows the sign-in page.
+ * person or business being left. An offline start meanwhile shows the sign-in page. Answers whether one was already on
+ * hold (an earlier switch got no answer): then a refusal of this one proves nothing about who is signed in now.
  */
-export function holdSavedMe(): void {
+export function holdSavedMe(): boolean {
+  const already = held;
   held = true;
   forgetSavedMe();
+  return already;
 }
 
 /** 4VD named who is signed in here (or refused the switch for certain): the saved sign-in may be written again. */

@@ -46,6 +46,15 @@ describe('the saved sign-in', () => {
     expect(savedMe(2_000)?.user.businessId).toBe(4);
   });
 
+  it('says when a switch was already in doubt, so a no to the next one saves nobody', () => {
+    expect(holdSavedMe()).toBe(false);
+    // The first switch got no answer; the retry is refused ("at the Counter already"): still on hold.
+    expect(holdSavedMe()).toBe(true);
+    releaseSavedMe();
+    expect(holdSavedMe()).toBe(false);
+    releaseSavedMe();
+  });
+
   it('only a clear no to a switch counts as refused; a lost answer may hide a switch that happened', () => {
     expect(definiteRefusal(new ApiError('wrong PIN', 422, 'WRONG_PIN'))).toBe(true);
     expect(definiteRefusal(new ApiError('locked', 429, 'PIN_LOCKED'))).toBe(true);

@@ -48,15 +48,15 @@ export function useSwitchBusiness(): (businessId: number) => Promise<void> {
       return;
     }
     // The saved sign-in names the business being left: an offline start right after the switch must not reopen it.
-    holdSavedMe();
+    const unsure = holdSavedMe();
     try {
       await authApi.switchBusiness(businessId);
       forgetViewAs();
       announceSwitch(businessId);
       window.location.assign('/');
     } catch (error) {
-      if (definiteRefusal(error)) {
-        // 4VD said no: still in the same business, saved again.
+      if (!unsure && definiteRefusal(error)) {
+        // 4VD said no (and no earlier switch is in doubt): still in the same business, saved again.
         releaseSavedMe();
         if (user.businessId !== undefined) saveMe(user, currentPermissions());
       } else {

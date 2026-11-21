@@ -2316,12 +2316,13 @@ export function CounterPage() {
           // The PC changes hands now: the sign-in saved for a start without internet can't name the last person any more
           // (4VD ends their session). If the takeover is refused for certain, they stay and are saved again; with no answer
           // it may have happened, so nobody is saved until 4VD says who is signed in.
-          holdSavedMe();
+          const unsure = holdSavedMe();
           let result;
           try {
             result = await counterApi.switchTo({ userId, pin });
           } catch (error) {
-            if (definiteRefusal(error)) {
+            // A no after an earlier switch that got no answer ("you are at the Counter already") proves nothing: 4VD is asked.
+            if (!unsure && definiteRefusal(error)) {
               releaseSavedMe();
               if (user.businessId !== undefined) saveMe(user, currentPermissions());
             } else recheck();

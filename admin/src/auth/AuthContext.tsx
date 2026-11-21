@@ -217,6 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     applyTheme(user.theme);
     // A new person here: nothing fetched before belongs to them.
+    // Checks of the sign-in still on their way from before name the last person: ignored.
+    generation.current += 1;
+    setFromSaved(false);
+    setUnsure(false);
     newIdentity();
     queryClient.clear();
     releaseSavedMe();
@@ -240,6 +244,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyTheme(result.user.theme);
     // A new person here. The Counter handing over keeps its business (`place`): its data stays, only the person changes,
     // and the new person is saved for a start without internet at once. Anyone else starts from nothing.
+    // Checks of the sign-in still on their way from before name the last person: ignored.
+    generation.current += 1;
+    setFromSaved(false);
+    setUnsure(false);
     newIdentity();
     if (!place) queryClient.clear();
     releaseSavedMe();

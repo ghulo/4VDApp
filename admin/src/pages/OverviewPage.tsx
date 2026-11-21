@@ -278,14 +278,13 @@ function DayFigures({ books }: { books: boolean }) {
       <StatTile
         label={t.overview.marginTile}
         value={marginKnown ? formatPercent(current.margin ?? 0) : '–'}
-        words={current.salesCount === 0 ? t.overview.noSalesYet : !marginKnown && t.overview.marginUnknown}
-        hint={
+        // A tile with words is a quiet row without its hint (StatGrid), so the words carry the reason.
+        words={
           current.salesCount === 0
-            ? undefined
-            : marginKnown
-              ? t.overview.marginProfit(formatMoney(current.profit))
-              : t.overview.marginNoCost(withoutCost)
+            ? t.overview.noSalesYet
+            : !marginKnown && (withoutCost > 0 ? t.overview.marginNoCost(withoutCost) : t.overview.marginUnknown)
         }
+        hint={marginKnown ? t.overview.marginProfit(formatMoney(current.profit)) : undefined}
         to={!marginKnown && seesPrices && current.salesCount > 0 ? '/prices?show=noCost' : '/sales'}
       />
       {carwashes.length > 0 && (

@@ -5946,6 +5946,7 @@ export const sq: Catalogue = {
       nothingYet: 'Ende asgjë.',
       remove: (name) => `Hiq ${name}`,
       needLine: 'Shto të paktën një produkt.',
+      countZero: 'Shkruaj sa erdhën. Nëse s’erdhi asnjë, hiqe rreshtin.',
       billPhoto: 'Foto e faturës',
       billPhotoHint: 'Nëse fatura erdhi me mallin. Pronari e kontrollon dhe fut sa kushtoi.',
       photoTitle: 'Bëj foto faturën',

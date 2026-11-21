@@ -67,8 +67,9 @@ export function DeliveriesPage() {
 
   function finished(message: string) {
     setInStock(null);
-    setDone(message);
+    // After choose(), which clears the last message.
     choose(null);
+    setDone(message);
   }
 
   if (deliveries.isPending || suppliers.isPending) return <Shell>{<Loading />}</Shell>;
@@ -283,12 +284,21 @@ function CameField({
   value: string;
   unit: Product['unit'] | undefined;
   hint?: string;
-  problem: 'number' | 'blank' | 'invalid';
+  problem: 'number' | 'blank' | 'invalid' | 'zero';
   onChange: (value: string) => void;
 }) {
   const t = useT();
   const parts = allowsParts(unit);
-  const error = problem === 'number' ? undefined : problem === 'blank' ? t.staff.deliveries.typeCame : parts ? t.staff.deliveries.notAmount : t.staff.deliveries.wholeOnly;
+  const error =
+    problem === 'number'
+      ? undefined
+      : problem === 'blank'
+        ? t.staff.deliveries.typeCame
+        : problem === 'zero'
+          ? t.staff.deliveries.countZero
+          : parts
+            ? t.staff.deliveries.notAmount
+            : t.staff.deliveries.wholeOnly;
   return (
     <Field label={t.staff.deliveries.came} hint={hint} error={error}>
       <input type="text" inputMode={parts ? 'decimal' : 'numeric'} autoComplete="off" data-came="" value={value} onChange={(event) => onChange(event.target.value)} />
@@ -378,7 +388,7 @@ function CountForm({
         ) : (
           lines.map((line, index) => {
             const reading = readings[index]!;
-            const problem = !tried ? 'number' : reading.kind === 'number' && reading.value <= 0 ? 'blank' : reading.kind;
+            const problem = !tried ? 'number' : reading.kind === 'number' && reading.value <= 0 ? 'zero' : reading.kind;
             const change = (patch: Partial<ArrivalDraft['lines'][number]>) => update(lines.map((one) => (one.productId === line.productId ? { ...one, ...patch } : one)));
             return (
               <fieldset key={line.productId} className="staff-receive-line">

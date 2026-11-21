@@ -5977,6 +5977,7 @@ export const en = {
       nothingYet: 'Nothing added yet.',
       remove: (name: string) => `Remove ${name}`,
       needLine: 'Add at least one product.',
+      countZero: 'Type how many came. If none did, remove the line.',
       billPhoto: 'Photo of the bill',
       billPhotoHint: 'If the bill came with the goods. The owner checks it and enters what it cost.',
       photoTitle: 'Photograph the bill',

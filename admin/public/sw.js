@@ -47,6 +47,17 @@ async function saveRelease() {
   }
   await Promise.all(copies);
   await cache.addAll(fetchFresh);
+  // The page fetched just now must be this release's: during a deploy it can already be the next one, whose code this
+  // worker never saved (an offline start would then find nothing to run). Then this release doesn't take over.
+  const page = await cache.match('/', { ignoreVary: true });
+  const html = page ? await page.text() : '';
+  const saved = new Set(PRECACHE);
+  for (const [, url] of html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/g)) {
+    if (!saved.has(url)) {
+      await caches.delete(SHELL);
+      throw new Error(`The page names ${url}, which this release doesn't have`);
+    }
+  }
 }
 
 self.addEventListener('activate', (event) => {

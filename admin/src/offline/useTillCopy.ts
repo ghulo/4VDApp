@@ -12,7 +12,7 @@ const SAVE_AFTER_MS = 3_000;
  * closed. And when its shelf can't be fetched and it has none, it takes the
  * saved one: a start without internet still sells.
  */
-export function useTillCopy(owner: { businessId: number; userId: number }, shelfFailed: boolean, hasShelf: boolean, onSaved: (shelf: TillShelf) => void): void {
+export function useTillCopy(owner: { businessId: number; userId: number }, shelfFailed: boolean, hasShelf: boolean, onSaved: (shelf: TillShelf, businessId: number) => void): void {
   const client = useQueryClient();
   const { businessId, userId } = owner;
   const savedRef = useRef(onSaved);
@@ -38,7 +38,8 @@ export function useTillCopy(owner: { businessId: number; userId: number }, shelf
       void saveTillCopy(client, { businessId, userId }, since, upTo > shelfSaved)
         .then((shelf) => {
           shelfSaved = Math.max(shelfSaved, upTo);
-          if (shelf) savedRef.current(shelf);
+          // Named with the business it was saved for: a save that ends after a switch never lets go of the next one's sales.
+          if (shelf) savedRef.current(shelf, businessId);
         })
         .catch(() => undefined);
     };
@@ -66,6 +67,6 @@ export function useTillCopy(owner: { businessId: number; userId: number }, shelf
 
   useEffect(() => {
     if (businessId === 0 || hasShelf || !shelfFailed) return;
-    void restoreTillCopy(client, { businessId, userId });
+    void restoreTillCopy(client, { businessId, userId }, currentIdentity());
   }, [client, businessId, userId, shelfFailed, hasShelf]);
 }

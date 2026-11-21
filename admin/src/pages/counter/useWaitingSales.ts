@@ -179,8 +179,8 @@ export function useWaitingSales(
       return kept;
     },
     /** The till has this shelf now: sent sales it counts are no longer held. */
-    settleShelf(shelf: TillShelf) {
-      dropCounted(localSentStore, ownerRef.current.businessId, shelf);
+    settleShelf(shelf: TillShelf, businessId: number) {
+      dropCounted(localSentStore, businessId, shelf);
       setSentHolds(localSentStore.read());
     },
     waiting: sales.filter((sale) => !sale.refused && !unplaced(sale)),

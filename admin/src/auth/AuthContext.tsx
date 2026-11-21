@@ -2,7 +2,23 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { authApi, meApi, permissionsApi } from '../services/api';
 import { currentPermissions, DEFAULT_PERMISSIONS, setPermissions } from './permissions';
-import { forgetSaved, newIdentity, noAnswer, releaseSavedMe, restoreTillCopy, sameSignIn, savedMe, saveMe } from '../offline/savedCopy';
+import {
+  answerSettles,
+  currentIdentity,
+  definiteRefusal,
+  forgetSaved,
+  holdSavedMe,
+  newIdentity,
+  noAnswer,
+  restoreTillCopy,
+  sameSignIn,
+  savedMe,
+  saveMe,
+  SWITCH_KEY,
+  switchEnded,
+  switchSettled,
+  switchUnsettled,
+} from '../offline/savedCopy';
 
 import { moveOldSignIn, sessionHint, setSessionExpiredHandler } from '../services/apiClient';
 import { disablePush, reregisterPush } from '../push/browserPush';
@@ -43,15 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   // Started from the sign-in saved on this PC because 4VD couldn't be reached: asked again until it answers.
   const [fromSaved, setFromSaved] = useState(false);
-  // A switch got no answer: who is signed in here is unsure, so 4VD is asked again until it says.
-  const [unsure, setUnsure] = useState(false);
-  const checking = useRef(false);
+  // A switch (in this tab or another) isn't settled: who is signed in here is unsure, so 4VD is asked again until it
+  // says, and the till doesn't sell meanwhile.
+  const [unsure, setUnsure] = useState(switchUnsettled);
+  /** The generation a check of the sign-in is running for (one per generation at a time). */
+  const checking = useRef<number | null>(null);
   /** Who the screens show now: a check that names someone else (another person, another business) starts them from nothing. */
   const shownRef = useRef(state);
   useEffect(() => {
     shownRef.current = state;
   }, [state]);
-  /** Moves on at every sign-out: a check of the sign-in still on its way from before then is ignored. */
+  /** Moves on at every sign-out, sign-in and switch: a check of the sign-in still on its way from before then is ignored. */
   const generation = useRef(0);
 
   /**
@@ -70,11 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Ask 4VD who is signed in. No answer at all: the sign-in saved here (and the till's saved data), if there is one. */
   const restore = useCallback(
     (firstTime: boolean) => {
-      if (checking.current) return;
-      checking.current = true;
       const asked = generation.current;
+      if (checking.current === asked) return;
+      checking.current = asked;
+      let askedAt = Date.now();
       moveOldSignIn()
-        .then(() => meInTime())
+        .then(() => {
+          askedAt = Date.now();
+          return meInTime();
+        })
         .then(async (user) => {
           await loadPermissions();
           if (asked !== generation.current) return;
@@ -85,10 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             newIdentity();
             queryClient.clear();
           }
+          // Asked while a switch was still on its way (here or in another tab): it may name the person being left. It is
+          // shown, but nobody is saved and the till doesn't sell until an answer asked after the switch says.
+          const settled = answerSettles(askedAt);
+          if (settled) switchSettled();
           setLanguage(user.language);
           setFromSaved(false);
-          setUnsure(false);
-          releaseSavedMe();
+          setUnsure(!settled);
           setState({ status: 'signedIn', user });
         })
         .catch(async (error: unknown) => {
@@ -109,13 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setPermissions(saved.permissions ?? DEFAULT_PERMISSIONS);
           setLanguage(saved.user.language);
-          if (saved.user.businessId !== undefined) await restoreTillCopy(queryClient, { businessId: saved.user.businessId, userId: saved.user.id });
+          if (saved.user.businessId !== undefined) await restoreTillCopy(queryClient, { businessId: saved.user.businessId, userId: saved.user.id }, currentIdentity());
           if (asked !== generation.current) return;
           setFromSaved(true);
           setState({ status: 'signedIn', user: saved.user });
         })
         .finally(() => {
-          checking.current = false;
+          if (checking.current === asked) checking.current = null;
         });
     },
     [setLanguage, queryClient, endSession],
@@ -131,13 +156,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     restore(true);
   }, [restore, endSession]);
 
-  /** Ask 4VD again who is signed in here (a switch got no answer): whoever it names is shown and saved. */
-  const recheck = useCallback(() => {
+  /**
+   * A switch is about to be sent from here: checks of the sign-in already on their way are ignored (they may answer
+   * for the person being left), nothing is saved and the till doesn't sell until it is settled. Every other tab hears
+   * it too (SWITCH_KEY). Answers whether one was unsettled already.
+   */
+  const beginSwitch = useCallback((): boolean => {
+    generation.current += 1;
     setUnsure(true);
-    restore(false);
+    return holdSavedMe();
+  }, []);
+
+  /**
+   * The switch failed. A clear no (and no earlier switch in doubt): nothing changed, the person here is saved again.
+   * Anything else (no answer, a cut-off one): it may have happened, so 4VD is asked who is signed in, until it says.
+   */
+  const switchFailed = useCallback(
+    (error: unknown, alreadyUnsettled: boolean) => {
+      switchEnded();
+      const shown = shownRef.current;
+      if (!alreadyUnsettled && definiteRefusal(error)) {
+        switchSettled();
+        setUnsure(false);
+        if (shown.status === 'signedIn' && shown.user.businessId !== undefined) saveMe(shown.user, currentPermissions());
+        return;
+      }
+      generation.current += 1;
+      restore(false);
+    },
+    [restore],
+  );
+
+  // Another tab starts a switch: checks on their way here are ignored and the till here stops selling until it is
+  // settled; once it is, 4VD is asked at once who is signed in.
+  useEffect(() => {
+    const heard = (event: StorageEvent) => {
+      if (event.key !== SWITCH_KEY) return;
+      // Settled there: ask now.
+      if (event.newValue === null) return restore(false);
+      // Begun, or its request is over: what is on its way here is ignored, and once it is over 4VD is asked.
+      generation.current += 1;
+      setUnsure(true);
+      if (event.newValue.includes('"ended"')) restore(false);
+    };
+    window.addEventListener('storage', heard);
+    return () => window.removeEventListener('storage', heard);
   }, [restore]);
 
-  // Started without internet (or a switch got no answer): 4VD is asked again when the connection comes back, and every half minute.
+  // Started without internet (or a switch isn't settled): 4VD is asked again when the connection comes back, and every half minute.
   useEffect(() => {
     if (!fromSaved && !unsure) return;
     const again = () => restore(false);
@@ -223,7 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnsure(false);
     newIdentity();
     queryClient.clear();
-    releaseSavedMe();
+    switchSettled();
     setState({ status: 'signedIn', user: settleLanguage(user) });
     loadPlace();
     return null;
@@ -250,7 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnsure(false);
     newIdentity();
     if (!place) queryClient.clear();
-    releaseSavedMe();
+    switchSettled();
     setState({ status: 'signedIn', user: settleLanguage(place ? { ...result.user, ...place } : result.user) });
     loadPlace();
     return 'signedIn';
@@ -274,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The developer previewing another role: every screen draws as that role (the API answers as it too).
     const viewingAs = state.status === 'signedIn' && (state.user.role === 'developer' || state.user.role === 'main_admin') ? readViewAs() : null;
     const shown: AuthState = viewingAs && state.status === 'signedIn' ? { status: 'signedIn', user: { ...state.user, role: viewingAs } } : state;
-    return { state: shown, viewingAs, login, logout, adoptSession, updateUser, recheck };
-  }, [state, login, logout, adoptSession, updateUser, recheck]);
+    return { state: shown, viewingAs, login, logout, adoptSession, updateUser, signInUnsure: unsure, beginSwitch, switchFailed };
+  }, [state, login, logout, adoptSession, updateUser, unsure, beginSwitch, switchFailed]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

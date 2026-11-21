@@ -4771,6 +4771,7 @@ export const en = {
     notSavedKeepBasket: 'The sale is recorded, but this PC couldn’t save it, so the receipt wasn’t printed and the basket stays. Free some space on the PC, then press Pay: the same sale finishes and prints, never recorded twice.',
     fiscalNotSaved: (number: string) => `Printed as receipt ${number}, but that number isn’t on the invoice yet (this PC is full and 4VD didn’t answer). The Windows app keeps it and hands it over later; write it down just in case.`,
     printerHasIt: 'The printer still has this receipt. Wait until it’s done, then look whether it came out.',
+    checkingWho: 'Checking who is signed in here after the switch: the till takes no payment and prints nothing until 4VD answers. If it doesn’t, connect this PC to the internet.',
     fiscalBlockedTitle: (count: number) => `${count === 1 ? 'A fiscal receipt number waits' : `${count} fiscal receipt numbers wait`} to go on ${count === 1 ? 'its invoice' : 'their invoices'}:`,
     fiscalBlockedHint: 'Kept on this PC and tried again on its own once the accountant reopens the period. An owner can let them go instead.',
     fiscalBlockedForget: 'Let them go',

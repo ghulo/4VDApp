@@ -55,8 +55,6 @@ import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMat
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
 import { useTillCopy } from '../offline/useTillCopy';
-import { definiteRefusal, holdSavedMe, releaseSavedMe, saveMe } from '../offline/savedCopy';
-import { currentPermissions } from '../auth/permissions';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
@@ -194,7 +192,7 @@ export function CounterPage() {
   const t = useT();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
-  const { logout, adoptSession, recheck } = useAuth();
+  const { logout, adoptSession, signInUnsure, beginSwitch, switchFailed } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
   const connected = useOnline();
   // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
@@ -216,21 +214,25 @@ export function CounterPage() {
     queryFn: (): Promise<TillShelf> =>
       gate.load(shelfKey, async () => {
         const askedAt = Date.now();
-        return { ...(await counterApi.tillShelf(heldKeys.current())), askedAt };
+        // For this person in this business only: once someone else is signed in here (a switch, another tab), 4VD refuses
+        // it, so another business's shelf never lands under this one (nor is saved as it).
+        return { ...(await counterApi.tillShelf(heldKeys.current(), { expectOwner: { businessId, userId: user.id } })), askedAt };
       }),
     staleTime: 60_000,
     refetchInterval: SHELF_REFRESH_MS,
     enabled: businessId !== 0,
   });
-  const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
-  const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
+  // The till's other saved data is asked for the same way (useTillCopy keeps it on this PC).
+  const tillOwner = { expectOwner: { businessId, userId: user.id } };
+  const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: () => counterApi.settings(tillOwner) });
+  const shopSettings = useQuery({ queryKey: ['settings'], queryFn: () => settingsApi.get(tillOwner) });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
-  const shopRules = useQuery({ queryKey: ['settings', 'rules'], queryFn: settingsApi.rules, staleTime: 60_000 });
+  const shopRules = useQuery({ queryKey: ['settings', 'rules'], queryFn: () => settingsApi.rules(tillOwner), staleTime: 60_000 });
   const noStockRule = shopRules.data?.noStockSales ?? 'block';
   // The Z report's header shows the business's own name (4VD's own business: 4VD).
-  const business = useQuery({ queryKey: ['business'], queryFn: businessApi.get });
+  const business = useQuery({ queryKey: ['business'], queryFn: () => businessApi.get(tillOwner) });
   const today = useQuery({ queryKey: ['counter', 'today'], queryFn: counterApi.today });
-  const customers = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
+  const customers = useQuery({ queryKey: ['customers'], queryFn: () => customersApi.list(tillOwner) });
   // The shop drawer today: its opening cash and whether it was counted (never what 4VD expects).
   const cash = useQuery({ queryKey: ['cash', 'today'], queryFn: cashApi.today });
   const shopDrawer = cash.data?.find((drawer) => drawer.place === 'shop') ?? null;
@@ -934,6 +936,8 @@ export function CounterPage() {
   // One sale at a time: Back, Esc, Not printed, the basket tabs and Switch person wait until the server answered or the sale is kept on this PC.
   async function pay(payment: Payment) {
     if (payingRef.current) return;
+    // A switch isn't settled: this may no longer be the person (or business) signed in, so nothing is sold or printed as them.
+    if (signInUnsure) return complain(t.counter.checkingWho);
     setPayingNow(true);
     try {
       await recordSale(payment);
@@ -1390,6 +1394,7 @@ export function CounterPage() {
   const printing = useRef(new Set<number>());
   async function printAgain(item: Unprinted) {
     if (printing.current.has(item.documentId)) return;
+    if (signInUnsure) return complain(t.counter.checkingWho);
     // Sold in another business: printed only from there.
     if (item.businessId !== undefined && item.businessId !== businessId) return complain(t.counter.pendingOther);
     printing.current.add(item.documentId);
@@ -2316,16 +2321,14 @@ export function CounterPage() {
           // The PC changes hands now: the sign-in saved for a start without internet can't name the last person any more
           // (4VD ends their session). If the takeover is refused for certain, they stay and are saved again; with no answer
           // it may have happened, so nobody is saved until 4VD says who is signed in.
-          const unsure = holdSavedMe();
+          const alreadyUnsettled = beginSwitch();
           let result;
           try {
             result = await counterApi.switchTo({ userId, pin });
           } catch (error) {
-            // A no after an earlier switch that got no answer ("you are at the Counter already") proves nothing: 4VD is asked.
-            if (!unsure && definiteRefusal(error)) {
-              releaseSavedMe();
-              if (user.businessId !== undefined) saveMe(user, currentPermissions());
-            } else recheck();
+            // A clear no: they stay and are saved again. No answer, or a no after an earlier switch that got none ("you are
+            // at the Counter already"): it may have happened, so 4VD is asked who is signed in, and the till waits.
+            switchFailed(error, alreadyUnsettled);
             throw error;
           }
           switchDone.current = true;

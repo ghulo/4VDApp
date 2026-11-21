@@ -4744,6 +4744,7 @@ export const sq: Catalogue = {
     notSavedKeepBasket: 'Shitja u regjistrua, por ky kompjuter s’e ruajti dot, prandaj kuponi s’u shtyp dhe shporta mbetet. Liro pak hapësirë në kompjuter, pastaj shtyp Paguaj: e njëjta shitje përfundon dhe shtypet, kurrë e regjistruar dy herë.',
     fiscalNotSaved: (number: string) => `U shtyp si kuponi ${number}, por ky numër s’është ende në faturë (ky kompjuter është plot dhe 4VD s’u përgjigj). Aplikacioni i Windows-it e ruan dhe e dorëzon më vonë; shënoje për çdo rast.`,
     printerHasIt: 'Printeri e ka ende këtë kupon. Prit sa të mbarojë, pastaj shiko nëse doli.',
+    checkingWho: 'Po kontrollohet kush është i kyçur këtu pas ndërrimit: arka nuk merr pagesë dhe nuk shtyp asgjë derisa të përgjigjet 4VD. Nëse nuk përgjigjet, lidhe këtë PC me internetin.',
     fiscalBlockedTitle: (count: number) => `${count === 1 ? 'Një numër kuponi fiskal pret' : `${count} numra kuponash fiskalë presin`} të shkojnë në faturë:`,
     fiscalBlockedHint: 'Ruhen në këtë kompjuter dhe provohen prapë vetë sapo kontabilisti ta rihapë periudhën. Pronari mund t’i lërë.',
     fiscalBlockedForget: 'Lëri',

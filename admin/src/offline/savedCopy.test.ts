@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
-import { copyOf, COPY_MAX_AGE_MS, currentIdentity, definiteRefusal, holdSavedMe, releaseSavedMe, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { copyOf, COPY_MAX_AGE_MS, answerSettles, currentIdentity, definiteRefusal, holdSavedMe, switchEnded, switchSettled, switchUnsettled, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
 import { tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { ApiError } from '../services/apiClient';
 
@@ -34,25 +34,45 @@ describe('the saved sign-in', () => {
     expect(noAnswer(new ApiError('not allowed', 403, null))).toBe(false);
   });
 
-  it('a switch on its way saves nobody until 4VD names who is signed in', () => {
+  it('a switch on its way saves nobody, in any tab, until 4VD names who is signed in', () => {
     saveMe(user, null, 1_000);
-    holdSavedMe();
+    holdSavedMe(1_000);
     expect(savedMe(2_000)).toBeNull();
+    // Kept in the browser's storage: every tab sees it.
+    expect(localStorage.getItem('4vd.offline.switch')).not.toBeNull();
+    expect(switchUnsettled()).toBe(true);
     // A profile save meanwhile (the screens still show the person being left) saves nothing.
     saveMe(user, null, 1_500);
     expect(savedMe(2_000)).toBeNull();
-    releaseSavedMe();
+    switchSettled();
+    expect(switchUnsettled()).toBe(false);
     saveMe({ ...user, businessId: 4 }, null, 1_600);
     expect(savedMe(2_000)?.user.businessId).toBe(4);
   });
 
+  it('only a check asked after the switch request was over says who is signed in', () => {
+    holdSavedMe(1_000);
+    // Asked before the switch, or while it was on its way: it may name the person being left.
+    expect(answerSettles(500, 1_200)).toBe(false);
+    expect(answerSettles(1_100, 1_200)).toBe(false);
+    switchEnded(1_300);
+    expect(answerSettles(1_250, 1_400)).toBe(false);
+    expect(answerSettles(1_301, 1_400)).toBe(true);
+    // A switch whose tab closed before it ended: over by two minutes later.
+    holdSavedMe(10_000);
+    expect(answerSettles(20_000, 30_000)).toBe(false);
+    expect(answerSettles(131_000, 131_500)).toBe(true);
+    switchSettled();
+    expect(answerSettles(0)).toBe(true);
+  });
+
   it('says when a switch was already in doubt, so a no to the next one saves nobody', () => {
     expect(holdSavedMe()).toBe(false);
-    // The first switch got no answer; the retry is refused ("at the Counter already"): still on hold.
+    // The first switch got no answer; the retry is refused ("at the Counter already"): still unsettled.
     expect(holdSavedMe()).toBe(true);
-    releaseSavedMe();
+    switchSettled();
     expect(holdSavedMe()).toBe(false);
-    releaseSavedMe();
+    switchSettled();
   });
 
   it('only a clear no to a switch counts as refused; a lost answer may hide a switch that happened', () => {
@@ -176,7 +196,7 @@ describe("the till's copy on this PC", () => {
     expect([...rows.keys()].sort()).toEqual(['3:7', 'shelf:3']);
     // Another cashier of the same business: the same saved shelf.
     const other = new QueryClient();
-    expect(await restoreTillCopy(other, { businessId: 3, userId: 8 })).toBe(true);
+    expect(await restoreTillCopy(other, { businessId: 3, userId: 8 }, currentIdentity())).toBe(true);
     expect(other.getQueryData(tillShelfKey(3))).toEqual(shelf);
     expect(other.getQueryData(['customers'])).toBeUndefined();
   });
@@ -203,6 +223,24 @@ describe("the till's copy on this PC", () => {
     before.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }, { id: 2, stock: 4 }], counted: [], askedAt: 20 });
     expect(await saveTillCopy(before, owner, currentIdentity())).toBeNull();
     expect(savedShelf()).toMatchObject({ patchedAt: 30 });
+  });
+
+  it('saves nothing of the till while a switch isn’t settled, and never fills screens for the next person', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const client = new QueryClient();
+    client.setQueryData(tillShelfKey(3), shelf);
+    holdSavedMe();
+    expect(await saveTillCopy(client, owner, currentIdentity())).toBeNull();
+    expect(rows.size).toBe(0);
+    switchSettled();
+    expect(await saveTillCopy(client, owner, currentIdentity())).not.toBeNull();
+    // A restore started for the last person, finishing after the next one signed in: nothing filled.
+    const fresh = new QueryClient();
+    const since = currentIdentity();
+    newIdentity();
+    expect(await restoreTillCopy(fresh, owner, since)).toBe(false);
+    expect(fresh.getQueryData(tillShelfKey(3))).toBeUndefined();
   });
 
   it('writes the shelf only when it changed in this page, never because the customers did', async () => {

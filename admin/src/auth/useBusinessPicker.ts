@@ -10,8 +10,7 @@ import { errorMessage } from '../utils/errors';
 import { useAuth, useCurrentUser } from './useAuth';
 import { announceSwitch } from './businessSwitch';
 import { forgetViewAs } from './viewAs';
-import { definiteRefusal, holdSavedMe, releaseSavedMe, saveMe } from '../offline/savedCopy';
-import { currentPermissions } from './permissions';
+import { switchSettled } from '../offline/savedCopy';
 
 /**
  * The business picker, as items for the account menu: one per business the
@@ -38,7 +37,7 @@ export function useBusinessPicker(): MenuItem[] {
 /** Opens the app again from Home in another business (the picker, and Add business's "Open it now"). */
 export function useSwitchBusiness(): (businessId: number) => Promise<void> {
   const user = useCurrentUser();
-  const { recheck } = useAuth();
+  const { beginSwitch, switchFailed } = useAuth();
   const t = useT();
   const toast = useToast();
   return async (businessId: number) => {
@@ -48,21 +47,17 @@ export function useSwitchBusiness(): (businessId: number) => Promise<void> {
       return;
     }
     // The saved sign-in names the business being left: an offline start right after the switch must not reopen it.
-    const unsure = holdSavedMe();
+    const alreadyUnsettled = beginSwitch();
     try {
       await authApi.switchBusiness(businessId);
+      // 4VD switched: settled (the page opens again and asks who is signed in).
+      switchSettled();
       forgetViewAs();
       announceSwitch(businessId);
       window.location.assign('/');
     } catch (error) {
-      if (!unsure && definiteRefusal(error)) {
-        // 4VD said no (and no earlier switch is in doubt): still in the same business, saved again.
-        releaseSavedMe();
-        if (user.businessId !== undefined) saveMe(user, currentPermissions());
-      } else {
-        // No answer: the switch may have happened. Nothing is saved until 4VD says which business this is.
-        recheck();
-      }
+      // A clear no: still in the same business, saved again. No answer: it may have happened, so 4VD is asked.
+      switchFailed(error, alreadyUnsettled);
       toast({ title: t.nav.switchFailed, detail: errorMessage(error), tone: 'danger' });
     }
   };

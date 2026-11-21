@@ -39,8 +39,8 @@ export interface SavedMe {
 
 /** Signed in (or checked) just now: keep who it is, for a start without internet. */
 export function saveMe(user: User, permissions: Permissions | null, now = Date.now()): void {
-  // A switch whose outcome isn't known yet: nobody is saved until 4VD names who is signed in here.
-  if (held) return;
+  // A switch whose outcome isn't known yet (in any tab): nobody is saved until 4VD names who is signed in here.
+  if (switchUnsettled()) return;
   try {
     localStorage.setItem(ME_KEY, JSON.stringify({ user, permissions, savedAt: now } satisfies SavedMe));
   } catch {
@@ -81,24 +81,78 @@ export function definiteRefusal(error: unknown): boolean {
   return error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 408;
 }
 
-let held = false;
+/**
+ * A switch (business, or cashier at the Counter) whose outcome isn't settled yet, kept in the browser's storage so
+ * every tab knows (the sign-in cookies are shared): when it began and, once its request is over, when it ended.
+ */
+export const SWITCH_KEY = '4vd.offline.switch';
+/** A switch request still unanswered after this long is over by now (whatever it did). */
+const SWITCH_MAX_MS = 120_000;
+interface SwitchNote {
+  began: number;
+  ended?: number;
+}
+/** This tab's own note, in case the browser's storage refuses it. */
+let switchHere: SwitchNote | null = null;
+
+function readSwitch(): SwitchNote | null {
+  try {
+    const note = JSON.parse(localStorage.getItem(SWITCH_KEY) ?? 'null') as SwitchNote | null;
+    if (note && typeof note.began === 'number') return note;
+  } catch {
+    // Unreadable: this tab's own note.
+  }
+  return switchHere;
+}
+
+function writeSwitch(note: SwitchNote | null): void {
+  switchHere = note;
+  try {
+    if (note) localStorage.setItem(SWITCH_KEY, JSON.stringify(note));
+    else localStorage.removeItem(SWITCH_KEY);
+  } catch {
+    // Blocked storage: this tab still knows.
+  }
+}
+
+/** Whether a switch is unsettled: until then nobody is saved for an offline start, the till's copy isn't written and the till doesn't sell. */
+export function switchUnsettled(): boolean {
+  return readSwitch() !== null;
+}
 
 /**
- * A switch (business, or cashier at the Counter) is on its way: the saved sign-in is forgotten and nothing is saved
- * again until 4VD names who is signed in (a confirmed answer: releaseSavedMe), so an offline start never reopens the
- * person or business being left. An offline start meanwhile shows the sign-in page. Answers whether one was already on
- * hold (an earlier switch got no answer): then a refusal of this one proves nothing about who is signed in now.
+ * A switch is about to be sent: the saved sign-in is forgotten and nothing is saved again until 4VD names who is
+ * signed in (switchSettled), so an offline start never reopens the person or business being left (it shows the
+ * sign-in page meanwhile). Answers whether one was unsettled already (an earlier switch got no answer): then a
+ * refusal of this one proves nothing about who is signed in now.
  */
-export function holdSavedMe(): boolean {
-  const already = held;
-  held = true;
+export function holdSavedMe(now = Date.now()): boolean {
+  const already = switchUnsettled();
+  writeSwitch({ began: now });
   forgetSavedMe();
   return already;
 }
 
+/** The switch request is over (an answer, an error, no answer): an auth/me asked from now on names who is signed in. */
+export function switchEnded(now = Date.now()): void {
+  const note = readSwitch();
+  if (note && note.ended === undefined) writeSwitch({ ...note, ended: now });
+}
+
+/**
+ * Whether an auth/me asked at `askedAt` names who is signed in now: no switch is unsettled, or it was asked after the
+ * switch request was over. One asked before (or while it was on its way) may name the person being left.
+ */
+export function answerSettles(askedAt: number, now = Date.now()): boolean {
+  const note = readSwitch();
+  if (!note) return true;
+  const ended = note.ended ?? (now - note.began > SWITCH_MAX_MS ? note.began + SWITCH_MAX_MS : undefined);
+  return ended !== undefined && askedAt > ended;
+}
+
 /** 4VD named who is signed in here (or refused the switch for certain): the saved sign-in may be written again. */
-export function releaseSavedMe(): void {
-  held = false;
+export function switchSettled(): void {
+  writeSwitch(null);
 }
 
 /** Whether 4VD's answer names the same person in the same business as the one the screens show. */
@@ -202,7 +256,8 @@ async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectSto
  * let go only once a saved shelf counts them.
  */
 export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number, withShelf = true): Promise<TillShelf | null> {
-  if (since !== identity) return null;
+  // A switch isn't settled: what the screens hold may not be this person's or this business's.
+  if (since !== identity || switchUnsettled()) return null;
   if (copyOf(client, owner.businessId).queries.length === 0) return null;
   let written: TillShelf | null = null;
   const db = await open();
@@ -212,7 +267,7 @@ export async function saveTillCopy(client: QueryClient, owner: { businessId: num
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB refused'));
       transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB aborted'));
-      if (since !== identity) {
+      if (since !== identity || switchUnsettled()) {
         transaction.abort();
         return reject(new Error('Another person is signed in here now'));
       }
@@ -239,14 +294,19 @@ export async function saveTillCopy(client: QueryClient, owner: { businessId: num
   return written;
 }
 
-/** Fill the till's empty queries from this person's saved copy for this business. False when there was none (or it is too old). */
-export async function restoreTillCopy(client: QueryClient, owner: { businessId: number; userId: number }): Promise<boolean> {
+/**
+ * Fill the till's empty queries from this person's saved copy for this business. False when there was none (or it is
+ * too old). Only while the sign-in it was started under (`since`) is still the one here: a copy read for the last
+ * person is never put in the next one's screens.
+ */
+export async function restoreTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number): Promise<boolean> {
   try {
     const read = (id: string) => withStore<TillCopy | undefined>('readonly', (store) => store.get(id) as IDBRequest<TillCopy | undefined>);
     const mine = (await read(copyId(owner))) ?? null;
     const shelf = (await read(shelfId(owner.businessId))) ?? null;
     // Only the business's own saved shelf, never one kept inside a person's copy.
     const rest = mine && { ...mine, queries: mine.queries.filter((query) => !isShelf(query.key, owner.businessId)) };
+    if (since !== identity) return false;
     const filledRest = fillFrom(client, rest);
     return fillFrom(client, shelf) || filledRest;
   } catch {

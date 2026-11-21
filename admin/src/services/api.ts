@@ -379,7 +379,7 @@ export const brandApi = {
 };
 
 export const businessApi = {
-  get: async () => (await apiRequest<Business>('/business')).data,
+  get: async (till?: TillRead) => (await apiRequest<Business>('/business', { expectOwner: till?.expectOwner })).data,
   update: async (changes: Partial<Omit<Business, 'currency' | 'logoUrl'>>) =>
     (await apiRequest<Business>('/business', { method: 'PUT', body: changes })).data,
   uploadLogo: async (file: Blob) => (await apiRequest<Business>('/business/logo', { method: 'PUT', file })).data,
@@ -585,6 +585,13 @@ export const salesApi = {
     (await apiRequest<Sale>('/sales', { method: 'POST', body: input })).data,
 };
 
+/**
+ * A till read for whom it is: 4VD refuses it once someone else is signed in here, so another person's or business's
+ * answer never lands in the till (nor is saved on this PC as its own). Other keys are ignored: screens may pass these
+ * functions straight to a query, which calls them with its own context.
+ */
+export type TillRead = { expectOwner?: { businessId: number; userId: number }; [other: string]: unknown };
+
 /** A till write: for whom it is (refused once someone else is signed in) and how to stop it (a timeout). */
 export interface TillRequest {
   expectOwner?: { businessId: number; userId: number };
@@ -603,7 +610,7 @@ export interface BasketSale {
 }
 
 export const counterApi = {
-  settings: async () => (await apiRequest<CounterSettings>('/counter/settings')).data,
+  settings: async (till?: TillRead) => (await apiRequest<CounterSettings>('/counter/settings', { expectOwner: till?.expectOwner })).data,
   updateSettings: async (input: CounterSettings) => (await apiRequest<CounterSettings>('/counter/settings', { method: 'PUT', body: input })).data,
   /** Each may carry the shop PC's id for it (sent twice, kept once) and when it happened. */
   record: async (events: Array<CounterEventInput & { clientId?: string; at?: string }>, till?: TillRequest) => {
@@ -630,12 +637,12 @@ export const counterApi = {
    * The till's own shelf: every product on sale, and which of the sales it holds off it (by key) 4VD already counts.
    * An older 4VD can't say (it has no such question): then `counted` is null and every held sale stays off.
    */
-  tillShelf: async (held: string[]): Promise<{ products: Product[]; counted: string[] | null }> => {
+  tillShelf: async (held: string[], till?: TillRead): Promise<{ products: Product[]; counted: string[] | null; asOf?: { from: number; to: number } }> => {
     try {
-      return (await apiRequest<{ products: Product[]; counted: string[] }>('/counter/shelf', { method: 'POST', body: { held: held.slice(-5000) } })).data;
+      return (await apiRequest<{ products: Product[]; counted: string[]; asOf?: { from: number; to: number } }>('/counter/shelf', { method: 'POST', body: { held: held.slice(-5000) }, expectOwner: till?.expectOwner })).data;
     } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) throw error;
-      return { products: (await apiRequest<Product[]>('/counter/shelf')).data, counted: null };
+      return { products: (await apiRequest<Product[]>('/counter/shelf', { expectOwner: till?.expectOwner })).data, counted: null };
     }
   },
 };
@@ -900,7 +907,7 @@ export interface SupplierInput extends Partial<PartnerDetails> {
 }
 
 export const customersApi = {
-  list: async () => (await apiRequest<Customer[]>('/customers')).data,
+  list: async (till?: TillRead) => (await apiRequest<Customer[]>('/customers', { expectOwner: till?.expectOwner })).data,
   detail: async (id: number) => (await apiRequest<CustomerDetail>(`/customers/${id}`)).data,
   create: async (input: CustomerInput) => (await apiRequest<Customer>('/customers', { method: 'POST', body: input })).data,
   update: async (id: number, input: CustomerInput) =>
@@ -1024,9 +1031,9 @@ export const activityApi = {
 };
 
 export const settingsApi = {
-  get: async () => (await apiRequest<AppSettings>('/settings')).data,
+  get: async (till?: TillRead) => (await apiRequest<AppSettings>('/settings', { expectOwner: till?.expectOwner })).data,
   update: async (input: Partial<AppSettings>) => (await apiRequest<AppSettings>('/settings', { method: 'PUT', body: input })).data,
-  rules: async () => (await apiRequest<ShopRules>('/settings/rules')).data,
+  rules: async (till?: TillRead) => (await apiRequest<ShopRules>('/settings/rules', { expectOwner: till?.expectOwner })).data,
   updateRules: async (input: Partial<Omit<ShopRules, 'shortDated' | 'features'>> & { shortDated?: Partial<ShopRules['shortDated']>; features?: Partial<ShopRules['features']> }) => (await apiRequest<ShopRules>('/settings/rules', { method: 'PUT', body: input })).data,
   /** Developer only. */
   launchChecklist: async () => (await apiRequest<LaunchStep[]>('/settings/launch-checklist')).data,

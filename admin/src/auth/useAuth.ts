@@ -18,8 +18,12 @@ export interface AuthContextValue {
   adoptSession: (result: LoginResult, place?: Pick<User, 'businessId' | 'businesses'>) => Promise<'signedIn' | 'notAdmin'>;
   /** Replace the signed-in person's details after they edit their profile. */
   updateUser: (user: User) => void;
-  /** Ask 4VD again who is signed in here (a switch got no answer); whoever it names is shown and saved for an offline start. */
-  recheck: () => void;
+  /** A switch (here or in another tab) isn't settled: who is signed in is being checked, and the till doesn't sell meanwhile. */
+  signInUnsure: boolean;
+  /** A switch is about to be sent: nothing is saved and older checks are ignored until it settles. True when one was unsettled already. */
+  beginSwitch: () => boolean;
+  /** The switch failed (refused, or no answer): saved again on a clear no, else 4VD is asked who is signed in. */
+  switchFailed: (error: unknown, alreadyUnsettled: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

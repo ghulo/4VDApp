@@ -8,6 +8,7 @@ export interface TotalsRow {
   revenue: string;
   refunds: string;
   revenue_without_cost: string;
+  products_without_cost: string;
   cost: string;
   profit: string;
 }
@@ -142,6 +143,7 @@ export class ReportsRepository {
         coalesce(sum(l.revenue), 0) as revenue,
         coalesce(-sum(l.revenue) filter (where l.return_id is not null), 0) as refunds,
         coalesce(sum(l.revenue) filter (where l.unit_cost is null), 0) as revenue_without_cost,
+        count(distinct l.product_id) filter (where l.unit_cost is null and l.return_id is null) as products_without_cost,
         coalesce(sum(l.cost) filter (where l.unit_cost is not null), 0) as cost,
         coalesce(sum(l.revenue - l.cost) filter (where l.unit_cost is not null), 0) as profit
       from sales_ledger l

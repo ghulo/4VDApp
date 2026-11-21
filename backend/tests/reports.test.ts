@@ -75,6 +75,7 @@ describe('GET /api/reports/summary', () => {
     expect(response.body.data.current).toEqual({
       revenue: 300,
       revenueWithoutCost: 0,
+      productsWithoutCost: 0,
       cost: 180,
       profit: 120,
       margin: 0.4,
@@ -96,7 +97,7 @@ describe('GET /api/reports/summary', () => {
 
     const response = await request(context.app).get(`/api/reports/summary?${MARCH}`).set(auth(adminToken));
 
-    expect(response.body.data.current).toMatchObject({ revenue: 200, revenueWithoutCost: 100, profit: 40, margin: 0.4 });
+    expect(response.body.data.current).toMatchObject({ revenue: 200, revenueWithoutCost: 100, productsWithoutCost: 1, profit: 40, margin: 0.4 });
   });
 
   it('should report no change instead of infinity when the previous period was empty', async () => {

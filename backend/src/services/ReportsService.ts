@@ -15,6 +15,8 @@ export interface PeriodTotals {
   /** Refunds approved in the period, as a positive amount. */
   refunds: number;
   revenueWithoutCost: number;
+  /** Products sold in the period with no cost price: their sales are left out of profit. */
+  productsWithoutCost: number;
   cost: number;
   profit: number;
   margin: number | null;
@@ -109,6 +111,7 @@ function toPeriodTotals(row: TotalsRow, losses: StockLossRow): PeriodTotals {
     revenue,
     refunds: Number(row.refunds),
     revenueWithoutCost,
+    productsWithoutCost: Number(row.products_without_cost),
     cost: Number(row.cost),
     profit,
     margin: margin(profit, revenue - revenueWithoutCost),

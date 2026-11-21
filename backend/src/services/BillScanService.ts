@@ -171,6 +171,10 @@ export interface ScanConfirmation {
    * the confirm changed that: a line ticked off as 0 that the bill brought).
    */
   arrival?: { lines: Array<{ id: number; unitCost: number | null; receivedQuantity?: number }> };
+  /** Where the goods went in (the receiving place when none was picked), so a reopen takes them from there. */
+  locationId?: number | null;
+  /** Best-before batches the confirm added for a delivery already in stock, cleared again on reopen. */
+  expiryIds?: number[];
 }
 
 /**
@@ -509,6 +513,9 @@ export class BillScanService {
       if (onlyTheBill) {
         if (!arrival) throw new ForbiddenError('Only the owner can confirm this bill: it puts its goods into stock');
         if (input.lines.some((line) => line.productId === null || line.updateBarcode)) throw new ForbiddenError('Only the owner can add products or change barcodes from a bill');
+        if (input.lines.some((line) => line.updateCost)) {
+          throw new ForbiddenError('Only the owner can change what a product costs. The bill keeps its own prices: untick "Update the cost".');
+        }
       }
       // A delivery already in stock may have a bill with no lines read: its figures alone are the bill.
       if (!arrival && input.lines.length === 0) throw new ValidationError('Nothing to receive: every line was skipped');
@@ -535,7 +542,8 @@ export class BillScanService {
           else confirmation.costs.find((cost) => cost.productId === product.id)!.to = line.unitCost;
           await changeCost(repos, { productId: product.id, productName: product.name, from: product.cost_price === null ? null : Number(product.cost_price), to: line.unitCost, actorId, because: { scan: supplier.name } });
         }
-        if (line.code) {
+        // The supplier's codes are the shop's to teach: the accountant's confirm leaves them as they are.
+        if (line.code && !onlyTheBill) {
           const code = line.code.trim().toLowerCase();
           if (!confirmation.codes.some((row) => row.code === code)) {
             const before = await repos.billScans.findCode(supplier.id, code);
@@ -560,13 +568,14 @@ export class BillScanService {
       } else {
         confirmation.order = await this.orderFor(repos, input, received, actorId);
         confirmation.received = [...received].map(([productId, came]) => ({ productId, pieces: came.pieces }));
+        confirmation.locationId = await pickLocation(repos, input.locationId, 'in');
         const lines = await repos.orders.findLines([confirmation.order.id]);
         await receiveOrder(
           repos,
           confirmation.order.id,
           {
             updateCostPrices: false,
-            locationId: input.locationId ?? null,
+            locationId: confirmation.locationId,
             lines: lines.map((line) => {
               const came = received.get(line.product_id);
               return { lineId: line.id, receivedQuantity: came?.pieces ?? 0, ...(came && came.cost !== null && { unitCost: came.cost }), ...(came?.expiresOn && { expiresOn: came.expiresOn }) };
@@ -673,7 +682,7 @@ export class BillScanService {
     input: ConfirmScanInput,
     actorId: number,
     onlyTheBill = false,
-  ): Promise<Pick<ScanConfirmation, 'order' | 'received' | 'arrival'>> {
+  ): Promise<Pick<ScanConfirmation, 'order' | 'received' | 'arrival' | 'locationId' | 'expiryIds'>> {
     const lines = await repos.orders.findLines([order.id]);
     const before: NonNullable<ScanConfirmation['arrival']>['lines'] = lines.map((line) => ({ id: line.id, unitCost: line.unit_cost === null ? null : Number(line.unit_cost) }));
     const onOrder = new Map(lines.map((line) => [line.product_id, line]));
@@ -695,6 +704,7 @@ export class BillScanService {
       ...extras.map(([productId, came], index) => ({ productId, came, lineId: addedLineIds[index]! })),
     ];
     const locationId = coming.length > 0 ? await pickLocation(repos, input.locationId, 'in') : null;
+    const expiryIds: number[] = [];
     for (const { productId, came, lineId } of coming) {
       await repos.orders.setReceived(lineId, came.pieces, came.cost);
       const product = (await repos.products.findById(productId, true))!;
@@ -709,13 +719,15 @@ export class BillScanService {
         locationId,
       });
       if (came.expiresOn) {
-        await repos.expiry.add({ productId, quantity: came.pieces, expiresOn: came.expiresOn, note: `Order #${order.id} from ${order.supplier_name}`, orderLineId: lineId, createdBy: actorId });
+        expiryIds.push(await repos.expiry.add({ productId, quantity: came.pieces, expiresOn: came.expiresOn, note: `Order #${order.id} from ${order.supplier_name}`, orderLineId: lineId, createdBy: actorId }));
       }
     }
     return {
       order: { id: order.id, created: false, lines: [], addedLineIds },
       received: coming.map(({ productId, came }) => ({ productId, pieces: came.pieces })),
       arrival: { lines: before },
+      locationId,
+      expiryIds,
     };
   }
 
@@ -786,7 +798,8 @@ export class BillScanService {
               notes: `Scanned bill from ${supplierName} reopened`,
               adjustedBy: actorId,
               reorderLevel: product.reorder_level ?? 0,
-              locationId: done.input.locationId ?? null,
+              // Where the confirm put them: older confirmations didn't note it, so their input stands.
+              locationId: done.locationId !== undefined ? done.locationId : (done.input.locationId ?? null),
             });
           } catch (error) {
             if (error instanceof ValidationError) {
@@ -804,6 +817,11 @@ export class BillScanService {
           await repos.bills.detachOrder(scan.bill_id);
         }
 
+        // Best-before dates for units that just left again would match other stock later.
+        for (const expiryId of done.expiryIds ?? []) {
+          const batch = await repos.expiry.findById(expiryId);
+          if (batch && batch.cleared_at === null) await repos.expiry.clear(expiryId, actorId, now);
+        }
         if (done.arrival) {
           // The delivery staff put in stays in stock: only the costs the bill set go back.
           for (const line of done.arrival.lines) {

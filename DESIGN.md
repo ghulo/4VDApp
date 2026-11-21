@@ -367,10 +367,17 @@ own reading width (descriptions 68ch, card hints 60ch). Then one of these shapes
   left. Same placement on every form.
 - **Settings**: setting rows (what it is on the left, control on the right).
 - **Report page**: the only dense page: metric grid, charts, tables.
-- **Overview**: the morning page. Order: header → **To do** list (largest,
-  first) → the Today strip (the day in one serif sentence, the 30-day bars, a
-  small sunrise) → Get 4VD ready (while unfinished) → Needs restocking → link
-  to Reports.
+- **Overview**: a status board, no hero and no logo (2026-11-21). Order:
+  header with **Open Counter** and a **New ▾** menu (sale, bill, count) →
+  Get 4VD ready (while unfinished) → the **Today strip** (date, takings so far
+  rolling in serif with the sales count, the comparison with the same weekday,
+  when it was updated) → **To do** (wide) beside **Yesterday** (takings, closed
+  or not, and today's closing checks after 18:00) → the day's tiles (Profit with
+  its margin only when at least 90% of the takings have a known cost, else "Not
+  known yet" linking to the prices missing a cost; carwash when there is one;
+  bills due) → **Takings, 30 days** (dated columns in the amber steps, today
+  strong, a dashed line for the usual day) → **Needs restocking** beside **Bills
+  due this week** (books readers only). One Restock list, no footer link.
 
 The staff layout follows the same ideas on a phone: a serif title, one primary
 action, a full-width primary key at the bottom of forms.
@@ -916,10 +923,9 @@ and till for shops in Kosovo". No second panel, no moving scene, no story.
 
 ## 11. The printed finish (vintage, used sparingly)
 
-- **The big mark** (`admin/src/components/ui/ShopSunrise.tsx`): the logo (the hand-drawn family home on its soft amber tile) drawn large and flat, as it is (2026-11-11). The
-  Overview hero and big empty pages, nowhere else. It is
-  **never larger than the information beside it**: up to 360px in the Overview
-  hero (standing on the page rule), 240px in empty states. Hidden from screen readers;
+- **The big mark** (`admin/src/components/ui/ShopSunrise.tsx`): the logo (the hand-drawn family home on its soft amber tile) drawn large and flat, as it is (2026-11-11).
+  Used on the staff Home and big empty pages, nowhere else (the Overview has no hero since 2026-11-21). It is
+  **never larger than the information beside it**: up to 240px in empty states. Hidden from screen readers;
   the tile settles in once, off under reduced motion.
 - **No paper grain**: the noise overlay was removed (2026-10-12); the canvas
   is clean with only the faint tick weave.

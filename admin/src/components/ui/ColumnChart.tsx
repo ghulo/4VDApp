@@ -24,12 +24,24 @@ const HEIGHT = 168;
  * top with a break, so the others keep their shape. Drawn by Recharts in
  * 4VD's look (charts/RechartsViews.tsx), loaded only when a page shows one.
  */
-export function ColumnChart({ columns, label }: { columns: ChartColumn[]; label: string }) {
+export function ColumnChart({
+  columns,
+  label,
+  highlight,
+  average,
+}: {
+  columns: ChartColumn[];
+  label: string;
+  /** The column drawn in the strong amber (e.g. today); without it, the busiest. */
+  highlight?: ChartColumn['key'];
+  /** Draws a dashed hairline at this value (the usual day). */
+  average?: number;
+}) {
   return (
     <figure className="column-chart" aria-label={label}>
       <div className="column-chart__plot" aria-hidden="true" style={{ minBlockSize: HEIGHT }}>
         <Suspense fallback={null}>
-          <ColumnView columns={columns} height={HEIGHT} />
+          <ColumnView columns={columns} height={HEIGHT} highlight={highlight} average={average} />
         </Suspense>
       </div>
       <ol className="visually-hidden">

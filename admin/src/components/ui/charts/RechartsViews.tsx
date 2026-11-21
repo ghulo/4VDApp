@@ -9,6 +9,7 @@ import {
   Cell,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -79,10 +80,22 @@ export function AreaView({ points, height, formatValue }: { points: ChartColumn[
   );
 }
 
-export function ColumnView({ columns, height }: { columns: ChartColumn[]; height: number }) {
+export function ColumnView({
+  columns,
+  height,
+  highlight,
+  average,
+}: {
+  columns: ChartColumn[];
+  height: number;
+  highlight?: ChartColumn['key'];
+  average?: number;
+}) {
   const [active, setActive] = useState<number | null>(null);
   const values = columns.map((column) => column.value);
   const busiest = Math.max(...values, 0);
+  // The strong column: the one asked for (e.g. today), else the busiest.
+  const strong = (column: ChartColumn) => (highlight !== undefined ? column.key === highlight : busiest > 0 && column.value === busiest);
   const { top, outlier } = scaleTop(values);
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -97,12 +110,14 @@ export function ColumnView({ columns, height }: { columns: ChartColumn[]; height
         <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} axisLine={{ style: { stroke: 'var(--line-strong)' } }} interval="preserveStartEnd" tickMargin={6} />
         <YAxis hide domain={[0, outlier === null || !top ? 'auto' : top]} allowDataOverflow={outlier !== null} />
         <Tooltip content={<Tip />} cursor={false} isAnimationActive={false} />
+        {/* A hairline at the average, so a day reads as above or below the usual. */}
+        {average !== undefined && average > 0 && <ReferenceLine y={average} ifOverflow="discard" style={{ stroke: 'var(--ink-muted)', strokeDasharray: '3 3', strokeWidth: 1 }} />}
         <Bar dataKey="value" maxBarSize={40} radius={[3, 3, 0, 0]} shape={ColumnShape(outlier)} {...animate()}>
           {columns.map((column, index) => (
             <Cell
               key={column.key}
               style={{
-                fill: (busiest > 0 && column.value === busiest) || active === index ? 'var(--chart-strong)' : 'var(--chart-series)',
+                fill: strong(column) || active === index ? 'var(--chart-strong)' : 'var(--chart-series)',
                 // Pointing at one column lets the others step back.
                 opacity: active === null || active === index ? 1 : 0.45,
                 transition: 'opacity var(--dur-small) var(--ease), fill var(--dur-small) var(--ease)',

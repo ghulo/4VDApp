@@ -181,29 +181,9 @@
 }
 
 
-/* ---------- Overview hero ---------- */
+/* ---------- Overview (DESIGN.md 3.8): a status board ---------- */
 
-/* The shop front: one raised panel with the date, the greeting and the day so
-   far with its 30 days of bars. Sized to its words, no empty sky. */
-.overview-hero {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  margin-bottom: var(--space-4);
-  padding: var(--space-5) var(--space-6);
-  border-radius: var(--radius-panel);
-  background: var(--sheen), var(--light-raise), var(--surface);
-  box-shadow: var(--shadow-raise);
-}
-
-.overview-hero__text {
-  flex: 1;
-  display: grid;
-  align-content: start;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
+/* The staff Home's greeting (StaffHomePage) keeps these two. */
 .overview-hero__kicker {
   color: var(--ink-muted);
   font-size: var(--text-sm);
@@ -219,129 +199,213 @@
   text-wrap: balance;
 }
 
-/* The logo at the hero's right, the one place it is shown larger inside the app.
-   Kept below the greeting's weight: the day's news leads, the logo signs it. */
-.overview-hero__mark {
-  flex: none;
-  align-self: flex-start;
-  line-height: 0;
+@media (max-width: 599px) {
+  .overview-hero__title {
+    font-size: var(--text-figure);
+  }
 }
 
-.overview-hero__mark .logo-mark {
-  width: clamp(72px, 7vw, 104px);
-  height: auto;
+.overview-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-:root[data-motion='full'] .overview-hero__mark {
-  animation: tile-rise 1.2s var(--ease) both;
-}
-
-/* ---------- Today (inside the hero) ---------- */
-
-/* The day so far under the greeting, set apart by a hairline: a serif
-   sentence, how it compares with last week, and the last 30 days as bars. */
-/* Wide: the sentence on the left, the 30 days filling the right. */
-.today {
+/* The day in one line: date, takings so far with the sales count, the comparison. */
+.overview-strip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 440px);
-  align-items: end;
-  gap: var(--space-4) var(--space-6);
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line);
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  margin-bottom: var(--gap-block);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-panel);
+  background: var(--light-raise), var(--surface);
+  box-shadow: var(--shadow-raise);
+}
+
+.overview-strip > * {
+  margin: 0;
+}
+
+.overview-strip__date {
+  grid-column: 1 / -1;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.overview-strip__label {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.overview-strip__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.overview-strip__amount {
+  font-family: var(--font-display);
+  font-size: var(--text-figure);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.overview-strip__count,
+.overview-strip__compare,
+.overview-strip__none {
+  color: var(--ink-muted);
+}
+
+.overview-strip__compare {
+  justify-self: end;
+  text-align: end;
+  font-size: var(--text-sm);
+}
+
+.overview-strip__updated {
+  white-space: nowrap;
 }
 
 @media (max-width: 899px) {
-  .today {
+  .overview-strip {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+
+  .overview-strip__compare {
+    justify-self: start;
+    text-align: start;
+  }
+}
+
+/* To do (wide) beside Yesterday and the closing checks (narrow); stacked on phones. */
+.overview-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+  align-items: start;
+  gap: var(--gap-block);
+  margin-bottom: var(--gap-block);
+}
+
+.overview-desk > .overview-section,
+.overview-desk > .card {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1099px) {
+  .overview-desk {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
-.today .day-bars__base {
-  fill: var(--line-strong);
-}
-
-.today .day-bars__break {
-  fill: var(--surface);
-}
-
-.today__headline {
-  max-width: 30ch;
-  font-family: var(--font-display);
-  font-size: var(--text-figure);
-  font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  font-variant-numeric: lining-nums;
-  text-wrap: balance;
-}
-
-.today__compare {
-  max-width: 60ch;
-  color: var(--ink-muted);
-}
-
-/* A quiet line under the day's figures, e.g. what profit leaves out. */
-.overview-note {
-  margin: calc(var(--space-2) * -1) 0 0;
-  max-width: 68ch;
-  color: var(--ink-muted);
-  font-size: var(--text-sm);
-}
-
-.today__text {
+.overview-day {
   display: grid;
   gap: var(--space-1);
 }
 
-/* The last 30 days as slim bars, the latest in ink. */
-.today__dots {
-  display: grid;
-  gap: var(--space-1);
-  width: 100%;
-  max-width: 440px;
+.overview-day > * {
   margin: 0;
 }
 
-.today__dots figcaption {
+.overview-day__label {
   color: var(--ink-muted);
   font-size: var(--text-sm);
 }
 
-/* ---------- Quick actions ---------- */
-
-/* The jobs people open 4VD for, as a row of keys under the shop front. */
-.quick-actions {
+.overview-day__figure {
   display: flex;
   flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--space-2);
-  margin-bottom: var(--space-6);
+  color: var(--ink-muted);
 }
 
-/* Phones: a tighter panel, and the keys share the width two by two. */
-@media (max-width: 599px) {
-  .overview-hero {
-    align-items: flex-start;
-    gap: var(--space-3);
-    padding: var(--space-4);
-  }
+.overview-day__figure strong {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
-  .overview-hero__mark .logo-mark {
-    width: 64px;
-  }
+.overview-day__close {
+  justify-self: start;
+  margin-top: var(--space-1);
+  border-radius: var(--radius-small);
+}
 
-  .overview-hero__title {
-    font-size: var(--text-figure);
-  }
+/* Today's closing checks under yesterday, a hairline between, the whole row opens the Day page. */
+.overview-day--link {
+  margin: var(--space-4) calc(-1 * var(--space-2)) 0;
+  padding: var(--space-3) var(--space-2) var(--space-1);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius-small) var(--radius-small);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-small) var(--ease);
+}
 
-  .quick-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.overview-day--link:hover {
+  background: var(--surface-sunk);
+}
+
+.overview-day--link:focus-visible,
+.overview-day__close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.overview-day--due .overview-day__figure span {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* Restock beside Bills due on wide screens. */
+.overview-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--gap-block);
+}
+
+.overview-pair > .card {
+  margin-bottom: 0;
+}
+
+.overview-pair--one,
+.overview-pair:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 999px) {
+  .overview-pair {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-.overview__more {
-  margin-top: var(--space-2);
+.overview-quiet {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+/* A bill due: supplier, when, what is left. */
+.bills-due__row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.bills-due__when--late {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.bills-due__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: end;
 }
 
 /* A titled section on the canvas (no box around it): the To do groups. */

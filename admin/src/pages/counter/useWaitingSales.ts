@@ -4,7 +4,7 @@ import { type BasketSale, salesApi } from '../../services/api';
 import { ApiError } from '../../services/apiClient';
 import { localStore, newSaleKey, type QueuedSale, sendWaiting, settleInterrupted, withTimeout } from './offlineQueue';
 import { localSettledStore, noteSettled, type SettledStore } from './settledSales';
-import { localSentStore, keepSent, dropCounted, type SentHold } from './sentHolds';
+import { localSentStore, keepSent, dropCounted, type SentHold, holdsFor } from './sentHolds';
 import { type Hold, shelfGate, type TillShelf } from './shelfAfterSale';
 import type { PrintOutcome } from './useFiscalPrinter';
 
@@ -154,11 +154,9 @@ export function useWaitingSales(
 
   // The sales kept on this PC for the business the till is in (refused ones too: the goods left), whoever sold them, and those
   // 4VD took that the till's shelf doesn't count yet: each stays off the shelf until a shelf from 4VD counts it (shelfAfterSale heldOff).
+  // One hold per sale: a crash between keeping a sent hold and taking the sale out of the queue leaves both, and it must not count twice.
   const held = useMemo<Hold[]>(
-    () => [
-      ...sales.filter((sale) => sale.businessId === businessId).map((sale) => ({ key: sale.key, items: sale.body.items })),
-      ...sentHolds.filter((hold) => hold.businessId === businessId),
-    ],
+    () => holdsFor(sales.map((sale) => ({ key: sale.key, items: sale.body.items, businessId: sale.businessId })), sentHolds, businessId),
     [sales, sentHolds, businessId],
   );
 
@@ -166,8 +164,10 @@ export function useWaitingSales(
     held,
     /** The keys of every sale held off this business's shelf, read from this PC's storage at the moment of asking (the shelf fetch sends them). */
     heldKeys: (): string[] => [
-      ...localStore.read().filter((sale) => sale.businessId === ownerRef.current.businessId).map((sale) => sale.key),
-      ...localSentStore.read().filter((hold) => hold.businessId === ownerRef.current.businessId).map((hold) => hold.key),
+      ...new Set([
+        ...localStore.read().filter((sale) => sale.businessId === ownerRef.current.businessId).map((sale) => sale.key),
+        ...localSentStore.read().filter((hold) => hold.businessId === ownerRef.current.businessId).map((hold) => hold.key),
+      ]),
     ],
     /**
      * A sale 4VD just recorded at Pay: it stays off the shelf until a shelf asked for from now on counts it, like a sent

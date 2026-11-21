@@ -278,17 +278,11 @@ export function CounterPage() {
   );
   // Sales on their way from a basket (Pay pressed, no answer yet) are named too: a shelf that counts one already says so.
   // What this till needs to sell, kept on this PC; a start without internet sells from it.
-  useTillCopy({ businessId, userId: user.id }, products.isError, products.data !== undefined);
+  // A sent sale is let go only once the shelf saved on this PC counts it (settleShelf), so a crash never brings a sold unit back.
+  useTillCopy({ businessId, userId: user.id }, products.isError, products.data !== undefined, waiting.settleShelf);
   heldKeys.current = () => [...waiting.heldKeys(), ...baskets.flatMap((basket) => (basket.pending?.businessId === businessId ? [basket.pending.key] : []))];
   // The shelf as this till sees it: 4VD's, less what the sales held on this PC took that it doesn't count yet.
   const shelf = useMemo(() => shelfAfterSale(products.data?.products, heldOff(waiting.held, products.data)), [products.data, waiting.held]);
-  // A new shelf: the sent sales it counts are no longer held.
-  const settleShelf = waiting.settleShelf;
-  useEffect(() => {
-    if (products.data) settleShelf(products.data);
-    // settleShelf reads the business from a ref; the shelf is what matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products.data]);
 
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
   const byId = useMemo(() => new Map((shelf ?? []).map((product) => [product.id, product])), [shelf]);

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Product } from '../../services/types';
 import { QueryClient } from '@tanstack/react-query';
 import { afterSaleRefresh, counts, heldOff, patchShelf, ShelfGate, shelfAfterSale, type TillShelf, tillShelfKey } from './shelfAfterSale';
-import { dropCounted, keepSent, type SentHold, type SentStore } from './sentHolds';
+import { dropCounted, holdsFor, keepSent, type SentHold, type SentStore } from './sentHolds';
+import { COPY_MAX_AGE_MS } from '../../offline/savedCopy';
 
 const KEY = tillShelfKey(1);
 const tillShelf = (products: Product[], counted: string[] | null = [], askedAt = 0): TillShelf => ({ products, counted, askedAt });
@@ -172,6 +173,17 @@ describe('held sales', () => {
     expect(counts(undefined, sent)).toBe(false);
   });
 
+  it('holds each sale once, even when a crash left it both queued and sent', () => {
+    const items = [{ productId: 1, quantity: 1 }];
+    const held = holdsFor(
+      [{ key: 'ABC', items, businessId: 1 }, { key: 'x', items, businessId: 2 }],
+      [{ key: 'abc', items, businessId: 1, ackedAt: 1 }, { key: 'd', items, businessId: 1, ackedAt: 1 }, { key: 'e', items, businessId: 2, ackedAt: 1 }],
+      1,
+    );
+    expect(held.map((hold) => hold.key)).toEqual(['ABC', 'd']);
+    expect(heldOff(held, undefined)).toEqual([{ productId: 1, quantity: 1 }, { productId: 1, quantity: 1 }]);
+  });
+
   it('keeps sent holds on this PC until a shelf for their business counts them', () => {
     let saved: SentHold[] = [];
     const store: SentStore = { read: () => saved, write: (holds) => ((saved = holds), true) };
@@ -181,8 +193,10 @@ describe('held sales', () => {
     expect(saved.map((hold) => hold.key)).toEqual(['a', 'b']);
     dropCounted(store, 1, tillShelf([], [], 1_500), 2_000);
     expect(saved.map((hold) => hold.key)).toEqual(['b']);
-    // Two days on, a hold that was never counted (the sale undone since) goes too.
-    dropCounted(store, 1, tillShelf([], [], 0), 1_000 + 2 * 24 * 3600_000);
+    // A hold outlives any saved shelf that could still be sold from (7 days): at 7 it stays, a day past it it goes.
+    dropCounted(store, 1, tillShelf([], [], 0), 1_000 + COPY_MAX_AGE_MS);
+    expect(saved.map((hold) => hold.key)).toEqual(['b']);
+    dropCounted(store, 1, tillShelf([], [], 0), 1_000 + COPY_MAX_AGE_MS + 24 * 3600_000);
     expect(saved).toEqual([]);
     const full: SentStore = { read: () => [], write: () => false };
     expect(keepSent(full, { key: 'c', businessId: 1, items: [], ackedAt: 1 })).toBe(false);

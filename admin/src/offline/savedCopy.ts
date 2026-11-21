@@ -10,11 +10,11 @@
  * Both go when someone signs out here, so the next person never sees them.
  */
 
-import type { QueryClient, QueryKey } from '@tanstack/react-query';
+import { hashKey, type QueryClient, type QueryKey } from '@tanstack/react-query';
 import type { Permissions } from '../auth/permissions';
 import type { User } from '../services/types';
 import { ApiError } from '../services/apiClient';
-import { tillShelfKey } from '../pages/counter/shelfAfterSale';
+import { tillShelfKey, type TillShelf } from '../pages/counter/shelfAfterSale';
 
 const ME_KEY = '4vd.offline.me';
 
@@ -127,6 +127,9 @@ export function fillFrom(client: QueryClient, copy: TillCopy | null, now = Date.
 }
 
 const copyId = (owner: { businessId: number; userId: number }) => `${owner.businessId}:${owner.userId}`;
+/** The shelf is kept once per business, not per person: one saved shelf, so a sale held off it is let go only against that one. */
+const shelfId = (businessId: number) => `shelf:${businessId}`;
+const isShelf = (key: QueryKey, businessId: number) => hashKey(key) === hashKey(tillShelfKey(businessId));
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -155,26 +158,36 @@ async function withStore<T>(mode: IDBTransactionMode, work: (store: IDBObjectSto
 }
 
 /**
- * Keep the till's data for this person in this business (the newest copy replaces the last). Only while the sign-in
- * it was started under (`since`, from currentIdentity) is still the one here: checked as the write is queued, so a
- * sign-out's clear always comes after it or refuses it.
+ * Keep the till's data for this person in this business (the newest copy replaces the last; the shelf is the business's).
+ * Only while the sign-in it was started under (`since`, from currentIdentity) is still the one here: checked as the write
+ * is queued, so a sign-out's clear always comes after it or refuses it. Answers the shelf that is now saved (null: none
+ * was written), so the sales held off it can be let go only once a saved shelf counts them.
  */
-export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number): Promise<boolean> {
-  if (since !== identity) return false;
+export async function saveTillCopy(client: QueryClient, owner: { businessId: number; userId: number }, since: number): Promise<TillShelf | null> {
+  if (since !== identity) return null;
   const copy = copyOf(client, owner.businessId);
-  if (copy.queries.length === 0) return false;
+  if (copy.queries.length === 0) return null;
+  const shelf = copy.queries.filter((query) => isShelf(query.key, owner.businessId));
+  const rest = { savedAt: copy.savedAt, queries: copy.queries.filter((query) => !isShelf(query.key, owner.businessId)) };
   await withStore('readwrite', (store) => {
     if (since !== identity) throw new Error('Another person is signed in here now');
-    return store.put(copy, copyId(owner));
+    // One transaction: both are written, or neither.
+    const last = store.put(rest, copyId(owner));
+    return shelf.length > 0 ? store.put({ savedAt: copy.savedAt, queries: shelf } satisfies TillCopy, shelfId(owner.businessId)) : last;
   });
-  return true;
+  return (shelf[0]?.data as TillShelf | undefined) ?? null;
 }
 
 /** Fill the till's empty queries from this person's saved copy for this business. False when there was none (or it is too old). */
 export async function restoreTillCopy(client: QueryClient, owner: { businessId: number; userId: number }): Promise<boolean> {
   try {
-    const copy = (await withStore<TillCopy | undefined>('readonly', (store) => store.get(copyId(owner)) as IDBRequest<TillCopy | undefined>)) ?? null;
-    return fillFrom(client, copy);
+    const read = (id: string) => withStore<TillCopy | undefined>('readonly', (store) => store.get(id) as IDBRequest<TillCopy | undefined>);
+    const mine = (await read(copyId(owner))) ?? null;
+    const shelf = (await read(shelfId(owner.businessId))) ?? null;
+    // Only the business's own saved shelf, never one kept inside a person's copy.
+    const rest = mine && { ...mine, queries: mine.queries.filter((query) => !isShelf(query.key, owner.businessId)) };
+    const filledRest = fillFrom(client, rest);
+    return fillFrom(client, shelf) || filledRest;
   } catch {
     return false;
   }

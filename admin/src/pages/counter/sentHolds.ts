@@ -10,10 +10,14 @@
 
 import type { Hold, TillShelf } from './shelfAfterSale';
 import { counts } from './shelfAfterSale';
+import { COPY_MAX_AGE_MS } from '../../offline/savedCopy';
 
 const STORAGE_KEY = '4vd.counter.sent';
-/** A shelf is fetched every few minutes: a hold this old has long been counted (or the sale undone). */
-const KEEP_MS = 2 * 24 * 3600_000;
+/**
+ * A hold is let go once the shelf saved on this PC counts it. Kept longer than a saved shelf may be used (a day past it):
+ * a hold that old can't be needed, because any saved shelf that doesn't count it is too old to sell from.
+ */
+const KEEP_MS = COPY_MAX_AGE_MS + 24 * 3600_000;
 
 export interface SentHold extends Hold {
   businessId: number;
@@ -51,7 +55,17 @@ export function keepSent(store: SentStore, hold: SentHold, now = Date.now()): bo
   return store.write([...others, { key: hold.key, businessId: hold.businessId, items: hold.items.map(({ productId, quantity }) => ({ productId, quantity })), ackedAt: hold.ackedAt }]);
 }
 
-/** The till has a shelf for this business: the holds it counts go (and very old ones). */
+/**
+ * What this business's sales held on this PC took off the shelf: the queued ones and the sent ones, one hold per sale.
+ * A crash between keeping a sent hold and taking the sale out of the queue leaves both, and it must not count twice.
+ */
+export function holdsFor(queued: ReadonlyArray<Hold & { businessId?: number }>, sent: readonly SentHold[], businessId: number): Hold[] {
+  const mine = queued.filter((sale) => sale.businessId === businessId).map(({ key, items }) => ({ key, items }));
+  const inQueue = new Set(mine.map((hold) => hold.key.toLowerCase()));
+  return [...mine, ...sent.filter((hold) => hold.businessId === businessId && !inQueue.has(hold.key.toLowerCase()))];
+}
+
+/** This business's shelf is saved on this PC now: the holds it counts go (and very old ones). Only ever with the saved shelf, never one only in memory. */
 export function dropCounted(store: SentStore, businessId: number, shelf: TillShelf, now = Date.now()): void {
   const all = store.read();
   const kept = all.filter((hold) => now - hold.ackedAt < KEEP_MS && !(hold.businessId === businessId && counts(shelf, hold)));

@@ -632,7 +632,7 @@ export const counterApi = {
    */
   tillShelf: async (held: string[]): Promise<{ products: Product[]; counted: string[] | null }> => {
     try {
-      return (await apiRequest<{ products: Product[]; counted: string[] }>('/counter/shelf', { method: 'POST', body: { held } })).data;
+      return (await apiRequest<{ products: Product[]; counted: string[] }>('/counter/shelf', { method: 'POST', body: { held: held.slice(-5000) } })).data;
     } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) throw error;
       return { products: (await apiRequest<Product[]>('/counter/shelf')).data, counted: null };

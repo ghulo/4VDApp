@@ -1,5 +1,6 @@
 import { hashKey, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import type { TillShelf } from '../pages/counter/shelfAfterSale';
 import { currentIdentity, restoreTillCopy, saveTillCopy, tillCopyKeys } from './savedCopy';
 
 /** How long after a change the copy is written: a burst of answers (the till starting) makes one write. */
@@ -11,9 +12,13 @@ const SAVE_AFTER_MS = 3_000;
  * closed. And when its shelf can't be fetched and it has none, it takes the
  * saved one: a start without internet still sells.
  */
-export function useTillCopy(owner: { businessId: number; userId: number }, shelfFailed: boolean, hasShelf: boolean): void {
+export function useTillCopy(owner: { businessId: number; userId: number }, shelfFailed: boolean, hasShelf: boolean, onSaved: (shelf: TillShelf) => void): void {
   const client = useQueryClient();
   const { businessId, userId } = owner;
+  const savedRef = useRef(onSaved);
+  useEffect(() => {
+    savedRef.current = onSaved;
+  });
 
   useEffect(() => {
     if (businessId === 0) return;
@@ -24,7 +29,12 @@ export function useTillCopy(owner: { businessId: number; userId: number }, shelf
     const save = () => {
       window.clearTimeout(timer);
       timer = undefined;
-      void saveTillCopy(client, { businessId, userId }, since).catch(() => undefined);
+      // Once the shelf is saved, the sales it counts may stop being held (never before: a crash in between would bring them back).
+      void saveTillCopy(client, { businessId, userId }, since)
+        .then((shelf) => {
+          if (shelf) savedRef.current(shelf);
+        })
+        .catch(() => undefined);
     };
     const unsubscribe = client.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated' || event.action.type !== 'success' || !watched.has(event.query.queryHash)) return;

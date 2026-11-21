@@ -1,7 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
-import { copyOf, COPY_MAX_AGE_MS, currentIdentity, fillFrom, forgetSaved, newIdentity, noAnswer, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { copyOf, COPY_MAX_AGE_MS, currentIdentity, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
+import { tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { ApiError } from '../services/apiClient';
 
 const user = { id: 7, name: 'Ana', role: 'employee', businessId: 3, language: 'sq' } as User;
@@ -109,9 +110,25 @@ function fakeIndexedDB() {
 
 describe("the till's copy on this PC", () => {
   const owner = { businessId: 3, userId: 7 };
+  const shelf = { products: [], counted: ['k1'], askedAt: 5 };
 
   beforeEach(() => {
     vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => undefined, removeItem: () => undefined });
+  });
+
+  it('keeps the shelf once for the business and the rest per person, and answers the shelf it saved', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const client = new QueryClient();
+    client.setQueryData(tillShelfKey(3), shelf);
+    client.setQueryData(['customers'], [{ id: 1 }]);
+    expect(await saveTillCopy(client, owner, currentIdentity())).toEqual(shelf);
+    expect([...rows.keys()].sort()).toEqual(['3:7', 'shelf:3']);
+    // Another cashier of the same business: the same saved shelf.
+    const other = new QueryClient();
+    expect(await restoreTillCopy(other, { businessId: 3, userId: 8 })).toBe(true);
+    expect(other.getQueryData(tillShelfKey(3))).toEqual(shelf);
+    expect(other.getQueryData(['customers'])).toBeUndefined();
   });
 
   it('never writes a copy for someone who signed out while it was on its way', async () => {

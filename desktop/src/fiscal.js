@@ -198,6 +198,8 @@ async function send({ name, text }, onFile = () => true) {
  * in Printed\<day>.zip of the day it went or the next), or null when the folder
  * can't say. A job still waiting in the folder (F-Link not running) is taken
  * back, so it can't print by itself later and be printed twice: not printed.
+ * One still there that can't be taken back (F-Link has it open) may print yet:
+ * still_queued, and nothing may be sent for it, even after an owner's look.
  */
 function answerFor(job, at = Date.now(), folder = FOLDER) {
   const name = safeName(job);
@@ -207,7 +209,7 @@ function answerFor(job, at = Date.now(), folder = FOLDER) {
       fs.unlinkSync(inp);
       return { status: 'not_running' };
     } catch {
-      return null;
+      return { status: 'still_queued', message: null };
     }
   }
   if (exists(path.join(folder, 'PrintErrors', `${name}.inp`))) return { status: 'failed', message: null };

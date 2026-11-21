@@ -35,6 +35,8 @@ interface Window {
       | { status: 'check_printer'; message: null }
       /** 0.5.0 and later: F-Link didn't take it in time and it couldn't be taken back: it may still print. */
       | { status: 'unknown'; message: string | null }
+      /** 0.5.0 and later: the last receipt for this key is still in F-Link's folder and can't be taken back: nothing printed. */
+      | { status: 'still_queued'; message: null }
     >;
     /** The Counter noted that sale's receipt outcome on its side (0.5.0 and later): the journal may let it go in time. */
     fiscalAck?(key: string): Promise<boolean>;

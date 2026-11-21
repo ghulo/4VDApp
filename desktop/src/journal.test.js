@@ -143,6 +143,33 @@ test('F-Link’s folder: a printed job gives its number, a refused one fails, on
   assert.deepEqual(fiscal.answerFor('J-3', Date.now(), folder), { status: 'not_running' });
   assert.equal(fs.existsSync(path.join(folder, 'J-3.inp')), false);
   assert.equal(fiscal.answerFor('J-4', Date.now(), folder), null);
+  // Still in the folder and it can't be taken back (F-Link has it open; here a folder, which unlink refuses): it may print yet.
+  fs.mkdirSync(path.join(folder, 'J-5.inp'));
+  assert.deepEqual(fiscal.answerFor('J-5', Date.now(), folder), { status: 'still_queued', message: null });
+  assert.equal(fs.existsSync(path.join(folder, 'J-5.inp')), true);
+});
+
+test('a job F-Link still has and that can’t be taken back is never sent again, not even after an owner’s look', async () => {
+  const file = fresh();
+  fs.writeFileSync(file, JSON.stringify([{ key: KEY, job: 'job', status: 'unknown', file: 'J-9', at: Date.now() }]));
+  let sent = 0;
+  const run = async () => {
+    sent += 1;
+    return { status: 'printed', receiptNo: '12' };
+  };
+  const journal = openJournal(file, { recover: () => ({ status: 'still_queued', message: null }) });
+  assert.deepEqual(await journal.track(KEY, 'job', run), { status: 'still_queued', message: null });
+  assert.deepEqual(await journal.track(KEY, 'job', run, { confirmed: true }), { status: 'still_queued', message: null });
+  assert.equal(sent, 0);
+  // It stays "unknown" (never noted as an outcome), so the next try asks F-Link's folder again.
+  assert.equal(journal.lookup(KEY).status, 'unknown');
+
+  // Cut off by the app closing while F-Link still has it: unknown after a restart, never "still_queued".
+  const stale = fresh();
+  fs.writeFileSync(stale, JSON.stringify([{ key: 'p', job: 'job', status: 'printing', file: 'J-7', at: Date.now() }]));
+  const restarted = openJournal(stale, { recover: () => ({ status: 'still_queued', message: null }) });
+  restarted.settleStale();
+  assert.equal(restarted.lookup('p').status, 'unknown');
 });
 
 test('unacknowledged entries stay; acknowledged ones go after the cap', async () => {

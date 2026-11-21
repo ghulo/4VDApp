@@ -133,6 +133,8 @@ export function useFiscalPrinter(enabled: boolean, t: Catalogue['counter']) {
           if (answer.status === 'not_running') return { ok: false, message: `${t.printer.notRunning}. ${t.printer.notRunningHint}` };
           if (answer.status === 'not_saved') return { ok: false, message: t.printer.notNoted };
           if (answer.status === 'check_printer') return { ok: false, message: t.printer.checkFirst };
+          // F-Link still has the last one for this sale: it may print yet, so nothing went.
+          if (answer.status === 'still_queued') return { ok: false, message: t.printerHasIt };
           if (answer.status === 'unknown') return { ok: false, message: t.printInterrupted };
           return { ok: false, message: t.printer.noFolder(status.data?.path ?? 'C:\\TEMP') };
         } catch (error) {

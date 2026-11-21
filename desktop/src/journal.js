@@ -156,11 +156,14 @@ function openJournal(file, options = {}) {
     return view(entry);
   }
 
-  /** How a job no longer running went, from F-Link's folder (null: it can't say). */
+  /**
+   * How a job no longer running went, from F-Link's folder (null: it can't say). still_queued: its file is still in
+   * F-Link's folder and can't be taken back, so it may print yet (never noted as an outcome; the entry stays unknown).
+   */
   function recovered(entry) {
     try {
       const found = entry.file && options.recover ? options.recover(entry) : null;
-      return found && OUTCOMES.has(found.status) ? found : null;
+      return found && (OUTCOMES.has(found.status) || found.status === 'still_queued') ? found : null;
     } catch {
       return null;
     }
@@ -184,6 +187,9 @@ function openJournal(file, options = {}) {
     // It may have printed (the app closed mid-print, F-Link didn't answer in time): F-Link's folder first.
     if (known && AMBIGUOUS.has(known.status)) {
       const found = recovered(known);
+      // F-Link still has its file and it can't be taken back: it may print yet, so a second one never goes, not even
+      // when an owner says none came out (it hasn't, yet).
+      if (found?.status === 'still_queued') return { status: 'still_queued', message: null };
       if (found) {
         put(key, { status: found.status, receiptNo: found.receiptNo ?? null, message: found.message ?? null });
         known = entries.get(key);
@@ -251,7 +257,7 @@ function openJournal(file, options = {}) {
     for (const entry of [...entries.values()]) {
       if (entry.status !== 'printing' || inflight.has(entry.key)) continue;
       const found = recovered(entry);
-      const status = found ? found.status : 'unknown';
+      const status = found && found.status !== 'still_queued' ? found.status : 'unknown';
       entries.set(entry.key, { ...entry, status, receiptNo: found?.receiptNo ?? null, message: found?.message ?? entry.message ?? null });
       changed = true;
     }

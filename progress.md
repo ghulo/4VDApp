@@ -59,6 +59,17 @@ UI and features (ask first):
 
 ## To test by hand
 
+**The look: motion, sign-in, Overview** (Task 8, 2026-11-21: 2e83ad05, 6fea3874, 9c08f79d, bb60be87, 2d43a91e, 167e6d25)
+- [ ] Profile → Look → Motion: Automatic, Full, Reduced, Off each change the feel at once on this device only (another PC keeps its own); Off: sheets, toasts and pages appear with no movement; the arrow keys move between the choices
+- [ ] The top bar's sliding pill under the menu now snaps to its new width instead of stretching; say if that feels worse
+- [ ] Pages arrive with a short fade-up; sheets grow from the key that opened them; nothing blurs while moving; the Windows app on an older PC (4 GB) starts on Reduced
+- [ ] Sign-in: one centred card, language and theme top right; Passkey and Google sit side by side as equal keys under "or"; 2FA code step and the "set up two-step again" step look right on the card; phone width too
+- [ ] A business's own sign-in link (4vd.app/login?b=<short name> for a business other than 4VD): its mark and name sit above the title and the line under the card says "Runs on 4VD"
+- [ ] Windows app PC set up for the Counter: the sign-in page shows the printer line (ready / F-Link not running / no folder)
+- [ ] Rolling numbers: Overview figures roll in from the right on first load and only the changed digits roll on updates; on the Counter the basket total and the Paid change roll fast and never hold up the next scan; the Paid change never shows €0.00
+- [ ] Overview as owner: Open Counter and New (sale, bill, count) top right; the day's line; To do beside Yesterday (closed badge opens that day, today's closing checks turn amber after 18:00); Margin shows only when costs are known, else "Not known yet" opens the prices missing a cost; the 30-day chart has dates, today strong and a dashed usual-day line; Restock beside Bills due this week
+- [ ] Overview at phone width: everything stacks, nothing sideways
+
 **A delivery came** (Task 7b, 2026-11-21)
 - [ ] Staff Home: one "A delivery came" row (saying how many orders are on their way); no Deliveries tile, no "A supplier brought goods"
 - [ ] A delivery came, supplier with one order: it opens; blank boxes say "type how many", kg takes decimals; leave the page and come back: the typing is still there; save → photo step → send a photo of the bill, or "No bill came"

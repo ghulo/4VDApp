@@ -3,8 +3,8 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { authApi, meApi, permissionsApi } from '../services/api';
 import { currentPermissions, DEFAULT_PERMISSIONS, setPermissions } from './permissions';
 import { forgetSaved, restoreTillCopy, savedMe, saveMe } from '../offline/savedCopy';
-import { isNetworkFailure } from '../pages/counter/offlineQueue';
-import { moveOldSignIn, sessionHint, setSessionExpiredHandler } from '../services/apiClient';
+
+import { ApiError, moveOldSignIn, sessionHint, setSessionExpiredHandler } from '../services/apiClient';
 import { disablePush, reregisterPush } from '../push/browserPush';
 import type { LoginResult, User } from '../services/types';
 import { applyTheme } from '../theme/theme';
@@ -58,14 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setState({ status: 'signedIn', user });
         })
         .catch(async (error: unknown) => {
-          if (!isNetworkFailure(error) && !(error instanceof DOMException && error.name === 'AbortError')) {
-            // 4VD said no (the sign-in is over): signed out, and nothing of it stays on this PC.
+          if (error instanceof ApiError && error.status === 401) {
+            // 4VD said the sign-in is over: signed out, and nothing of it stays on this PC.
             sessionHint.clear();
             forgetSaved();
             setFromSaved(false);
             setState({ status: 'signedOut' });
             return;
           }
+          // Any other trouble (no internet, a timeout, a busy or broken server): no answer about the sign-in.
           if (!firstTime) return;
           const saved = savedMe();
           if (!saved) {

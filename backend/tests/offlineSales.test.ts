@@ -113,6 +113,11 @@ describe("The till's shelf with the sales it holds", () => {
     expect(shelf.status).toBe(200);
     expect(shelf.body.data.counted).toEqual([recorded]);
     expect(shelf.body.data.products.find((one: { id: number }) => one.id === product).stock.quantity).toBe(7);
+    // When the server read it, by its own clock: a later answer's window starts no earlier.
+    const { from, to } = shelf.body.data.asOf as { from: number; to: number };
+    expect(from).toBeLessThanOrEqual(to);
+    const again = await request(context.app).post('/api/counter/shelf').set(auth(employee.token)).send({ held: [] });
+    expect(again.body.data.asOf.from).toBeGreaterThanOrEqual(to);
 
     // Nothing held: the shelf alone. Bad keys are refused.
     expect((await request(context.app).post('/api/counter/shelf').set(auth(employee.token)).send({})).body.data.counted).toEqual([]);

@@ -103,9 +103,64 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* On a phone, language, look and sign out fold into one menu (PortalApp). */
+.portal-app__narrow {
+  display: none;
+}
+
 @media (max-width: 760px) {
-  .portal-app .topbar__end .segmented {
+  .portal-app .topbar__end .portal-app__wide {
     display: none;
+  }
+
+  .portal-app__narrow {
+    display: contents;
+  }
+}
+
+/* The basket on a phone or tablet: a bar along the bottom, above the tabs, that opens it. */
+.portal-basket-bar {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: var(--bottom-bar-h, 0px);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) max(var(--space-4), env(safe-area-inset-right)) calc(var(--space-3) + env(safe-area-inset-bottom))
+    max(var(--space-4), env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  background: var(--glass-bg-strong);
+  box-shadow: var(--shadow-float);
+}
+
+.portal-basket-bar__what {
+  display: grid;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.portal-basket-bar__total {
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The last products scroll clear of the bar. */
+.portal-order:has(.portal-basket-bar) {
+  padding-block-end: calc(var(--space-7) + var(--space-6));
+}
+
+:root[data-keyboard] .portal-basket-bar {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* The tab bar under it already keeps clear of the home bar. */
+  .portal-basket-bar {
+    padding-block-end: var(--space-3);
   }
 }
 

@@ -82,7 +82,7 @@
   }
 
   :root:has(.staff-app__bottom-tabs) {
-    --bottom-bar-h: calc(72px + env(safe-area-inset-bottom));
+    --bottom-bar-h: calc(73px + env(safe-area-inset-bottom));
   }
 
   :root[data-keyboard]:has(.staff-app__bottom-tabs) {

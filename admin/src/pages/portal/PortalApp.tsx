@@ -1,6 +1,6 @@
-import { ArrowCounterClockwise, Basket as BasketIcon, Check, DownloadSimple, FilePdf, Minus, Package, Plus, Printer, Receipt, SignOut, Storefront, Trash, Wallet } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Basket as BasketIcon, Check, Desktop, DotsThreeVertical, DownloadSimple, FilePdf, Minus, Moon, Package, Plus, Printer, Receipt, SignOut, Storefront, Sun, Trash, Wallet } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, Suspense, useDeferredValue, useEffect, useState } from 'react';
+import { type FormEvent, Suspense, useDeferredValue, useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
@@ -10,11 +10,12 @@ import { showBrand } from '../../theme/applyBrand';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { SearchInput } from '../../components/SearchInput';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from '../../components/SkipLink';
-import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, PageHeader, useToast } from '../../components/ui';
+import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, Field, MenuButton, type MenuItem, PageHeader, Sheet, useToast } from '../../components/ui';
 import { useLanguage, useT } from '../../i18n/useT';
 import { ApiError } from '../../services/apiClient';
 import { type PortalDocument, type PortalOrder, type PortalProduct, portalApi } from '../../services/portalApi';
 import type { ProductUnit } from '../../services/types';
+import { useThemePreference } from '../../theme/theme';
 import { ThemeSwitch } from '../../theme/ThemeSwitch';
 import { formatDate, formatMoney } from '../../utils/format';
 import { OrderChangeList } from './OrderChange';
@@ -45,6 +46,8 @@ export function PortalLayout() {
   const { setLanguage, language } = useLanguage();
   useFocusOnRouteChange();
   const { count } = useBasket();
+  const [theme, setTheme] = useThemePreference();
+  const [askSignOut, setAskSignOut] = useState(false);
   // The whole portal in the shop's own colours.
   const portalBrand = me.data?.brand;
   useEffect(() => showBrand(portalBrand), [portalBrand]);
@@ -75,6 +78,19 @@ export function PortalLayout() {
     queryClient.removeQueries({ queryKey: ['portal'] });
     navigate('/portal', { replace: true });
   }
+
+  const chooseLanguage = (next: 'sq' | 'en') => {
+    setLanguage(next);
+    portalApi.setLanguage(next).catch(() => undefined);
+  };
+  const settingsItems: MenuItem[] = [
+    { label: t.language.albanian, checked: language === 'sq', onSelect: () => chooseLanguage('sq') },
+    { label: t.language.english, checked: language === 'en', onSelect: () => chooseLanguage('en') },
+    { label: t.theme.light, icon: Sun, checked: theme === 'light', divider: true, onSelect: () => setTheme('light') },
+    { label: t.theme.dark, icon: Moon, checked: theme === 'dark', onSelect: () => setTheme('dark') },
+    { label: t.theme.auto, icon: Desktop, checked: theme === 'system', onSelect: () => setTheme('system') },
+    { label: t.portal.signOut, icon: SignOut, divider: true, onSelect: () => setAskSignOut(true) },
+  ];
 
   const tabs = (
     <nav className="staff-tabs" aria-label={t.portal.tabBar}>
@@ -112,9 +128,15 @@ export function PortalLayout() {
         </Link>
         <div className="staff-app__wide-tabs">{tabs}</div>
         <div className="topbar__end">
-          <PortalLanguagePick signedIn />
-          <ThemeSwitch persist compact />
-          <Button variant="ghost" icon={SignOut} onClick={signOut} aria-label={t.portal.signOut} title={t.portal.signOut} />
+          {/* The theme stays on this phone: a portal customer has no staff profile to save it to. */}
+          <span className="portal-app__wide">
+            <PortalLanguagePick signedIn />
+          </span>
+          <ThemeSwitch compact className="portal-app__wide" />
+          <Button variant="ghost" icon={SignOut} className="portal-app__wide" onClick={() => setAskSignOut(true)} aria-label={t.portal.signOut} title={t.portal.signOut} />
+          <span className="portal-app__narrow">
+            <MenuButton label={t.portal.settings} icon={DotsThreeVertical} items={settingsItems} />
+          </span>
         </div>
       </header>
       <main className="main staff-app__main" id={MAIN_ID} tabIndex={-1}>
@@ -135,6 +157,16 @@ export function PortalLayout() {
         </div>
       </main>
       <div className="staff-app__bottom-tabs">{tabs}</div>
+      <Sheet open={askSignOut} onClose={() => setAskSignOut(false)} title={t.portal.signOutAsk} description={count > 0 ? t.portal.signOutHint : undefined} placement="center">
+        <div className="form-actions">
+          <Button variant="ghost" onClick={() => setAskSignOut(false)}>
+            {t.portal.stay}
+          </Button>
+          <Button variant="danger" icon={SignOut} onClick={() => void signOut()}>
+            {t.portal.signOut}
+          </Button>
+        </div>
+      </Sheet>
     </div>
   );
 }
@@ -186,8 +218,50 @@ function QuantityStepper({ product, quantity }: { product: Pick<PortalProduct, '
   );
 }
 
+const WIDE = '(min-width: 1024px)';
+const watchWide = (changed: () => void) => {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener('change', changed);
+  return () => query.removeEventListener('change', changed);
+};
+/** A computer-wide screen, where the basket sits beside the products. */
+const useWide = () => useSyncExternalStore(watchWide, () => window.matchMedia(WIDE).matches);
+
+/**
+ * The basket on a phone: a bar along the bottom ("3 products · €24.60 · Review")
+ * that opens it as a card from the bottom edge, so adding a product never
+ * pushes the list under the thumb.
+ */
+function BasketBar() {
+  const t = useT();
+  const me = usePortalMe();
+  const { count } = useBasket();
+  const quote = useQuote();
+  const [open, setOpen] = useState(false);
+  // Sent or emptied: nothing left to show.
+  if (open && count === 0) setOpen(false);
+  if (count === 0 || me.data?.canOrder === false) return null;
+  return (
+    <>
+      <div className="portal-basket-bar">
+        <span className="portal-basket-bar__what">
+          <span>{t.portal.order.basketCount(count)}</span>
+          {quote.data && <span className="portal-basket-bar__total">{formatMoney(quote.data.total)}</span>}
+        </span>
+        <Button variant="primary" icon={BasketIcon} onClick={() => setOpen(true)}>
+          {t.portal.order.review}
+        </Button>
+      </div>
+      <Sheet open={open} onClose={() => setOpen(false)} title={t.portal.order.basket}>
+        <BasketCard />
+      </Sheet>
+    </>
+  );
+}
+
 export function PortalOrderPage() {
   const t = useT();
+  const wide = useWide();
   const me = usePortalMe();
   const { basket, set } = useBasket();
   const [search, setSearch] = useState('');
@@ -203,9 +277,13 @@ export function PortalOrderPage() {
     <>
       <PageHeader title={t.portal.order.title} description={me.data && !me.data.canOrder ? t.portal.order.orderingOff : undefined} />
       <div className="portal-order">
-      <aside className="portal-order__basket">
-        <BasketCard />
-      </aside>
+      {wide ? (
+        <aside className="portal-order__basket">
+          <BasketCard />
+        </aside>
+      ) : (
+        <BasketBar />
+      )}
       <div className="portal-order__shop">
       <div className="portal-filters">
         <SearchInput value={search} onChange={setSearch} label={t.portal.order.search} />
@@ -265,6 +343,7 @@ function BasketCard() {
   const { count, clear } = useBasket();
   const quote = useQuote();
   const [note, setNote] = useState('');
+  const [askClear, setAskClear] = useState(false);
   const send = useMutation({
     mutationFn: () => portalApi.send({ lines: (quote.data?.lines ?? []).map((line) => ({ productId: line.productId, quantity: line.quantity })), note: note.trim() || null }),
     onSuccess: (order) => {
@@ -287,7 +366,24 @@ function BasketCard() {
   }
 
   return (
-    <Card title={`${t.portal.order.basket} · ${t.portal.order.basketCount(count)}`} actions={<Button variant="ghost" size="sm" onClick={clear}>{t.portal.order.clear}</Button>} className="portal-basket">
+    <Card title={`${t.portal.order.basket} · ${t.portal.order.basketCount(count)}`} actions={<Button variant="ghost" size="sm" onClick={() => setAskClear(true)}>{t.portal.order.clear}</Button>} className="portal-basket">
+      <Sheet open={askClear} onClose={() => setAskClear(false)} title={t.portal.order.clearAsk} description={t.portal.order.clearHint(t.portal.order.basketCount(count))} placement="center">
+        <div className="form-actions">
+          <Button variant="ghost" onClick={() => setAskClear(false)}>
+            {t.portal.stay}
+          </Button>
+          <Button
+            variant="danger"
+            icon={Trash}
+            onClick={() => {
+              setAskClear(false);
+              clear();
+            }}
+          >
+            {t.portal.order.clear}
+          </Button>
+        </div>
+      </Sheet>
       {quote.isPending ? (
         <Loading label={t.portal.order.pricing} />
       ) : quote.isError ? (

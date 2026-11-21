@@ -217,8 +217,9 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
   const [categoryId, setCategoryId] = useState(() => (scan.previous?.categoryId ? String(scan.previous.categoryId) : ''));
   const [locationId, setLocationId] = useState<number | null>(scan.previous?.locationId ?? null);
   const [discarding, setDiscarding] = useState(false);
-  // The accountant saves a delivery's bill; throwing a scan away stays with those who run the shop.
+  // The accountant saves a delivery's bill; throwing a scan away, product costs and barcodes stay with those who run the shop.
   const mayDiscard = canOversee(useCurrentUser().role);
+  const runsShop = mayDiscard;
 
   const kept = decisions.filter((decision) => decision.choice !== SKIP);
   const anyNew = kept.some((decision) => decision.choice === NEW);
@@ -264,9 +265,9 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
               pieces: Number(decision.pieces),
               unitsPerPack: Number(decision.perPack),
               unitCost: decision.unitCost.trim() === '' ? null : Number(decision.unitCost),
-              updateCost: !isNew && decision.updateCost,
+              updateCost: runsShop && !isNew && decision.updateCost,
               barcode: read.barcode,
-              updateBarcode: !isNew && decision.updateBarcode,
+              updateBarcode: runsShop && !isNew && decision.updateBarcode,
               ...(!isNew && decision.expiresOn && { expiresOn: decision.expiresOn }),
             },
           ];
@@ -587,6 +588,8 @@ interface ScanLineProps {
 }
 
 function ScanLine({ index, line, decision, products, onChange, onPack }: ScanLineProps) {
+  // The accountant keeps the bill's own prices: what a product costs and its barcode are the shop's.
+  const runsShop = canOversee(useCurrentUser().role);
   const t = useT();
   const { read, match } = line;
   const isNew = decision.choice === NEW;
@@ -599,9 +602,9 @@ function ScanLine({ index, line, decision, products, onChange, onPack }: ScanLin
     read.code ? t.scans.code(read.code) : null,
     read.barcode ? t.scans.barcode(read.barcode) : null,
   ].filter(Boolean);
-  const showBarcode = !isNew && !skipped && read.barcode !== null && (!sameProduct || match.stamp === 'barcode');
+  const showBarcode = runsShop && !isNew && !skipped && read.barcode !== null && (!sameProduct || match.stamp === 'barcode');
   // Offered only when the cost may differ: a new price, or a product other than the one matched.
-  const showCost = !isNew && !skipped && decision.unitCost.trim() !== '' && (!sameProduct || match.oldCost !== null || match.stamp === 'price');
+  const showCost = runsShop && !isNew && !skipped && decision.unitCost.trim() !== '' && (!sameProduct || match.oldCost !== null || match.stamp === 'price');
 
   return (
     <li className={['scan-line', skipped && 'scan-line--skipped'].filter(Boolean).join(' ')}>

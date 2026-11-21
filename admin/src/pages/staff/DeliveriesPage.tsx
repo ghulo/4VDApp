@@ -77,6 +77,8 @@ function Deliveries({ scope, owner }: { scope: string; owner: Owner | undefined 
   const theirs = orders.filter((order) => order.supplierId === supplierId);
   const order = counting ? undefined : (theirs.find((entry) => entry.id === pickedOrderId) ?? theirs[0]);
   const supplierName = supplierId === null ? '' : (named.get(supplierId) ?? theirs[0]?.supplierName ?? '');
+  // A tick-off on its way: who and which order stay put until its answer comes, so nothing replaces it.
+  const sending = step?.kind === 'sending';
 
   // Kept in the tab, without orders put into stock or cancelled elsewhere meanwhile.
   const listed = deliveries.data?.map((entry) => entry.id).join(',');
@@ -141,14 +143,22 @@ function Deliveries({ scope, owner }: { scope: string; owner: Owner | undefined 
         <>
           <div className="delivery-who">
             <p className="delivery-who__name">{supplierName}</p>
-            <Button size="sm" variant="ghost" onClick={() => choose(null)} disabled={arrival !== null && arrival.lines.length > 0}>
+            <Button size="sm" variant="ghost" onClick={() => choose(null)} disabled={sending || (arrival !== null && arrival.lines.length > 0)}>
               {t.staff.deliveries.changeSupplier}
             </Button>
           </div>
           {theirs.length > 1 && !counting && (
             <div className="chip-row" role="radiogroup" aria-label={t.staff.deliveries.which}>
               {theirs.map((entry) => (
-                <button key={entry.id} type="button" role="radio" className="chip" aria-checked={entry.id === order?.id} onClick={() => setPickedOrderId(entry.id)}>
+                <button
+                  key={entry.id}
+                  type="button"
+                  role="radio"
+                  className="chip"
+                  aria-checked={entry.id === order?.id}
+                  disabled={sending}
+                  onClick={() => setPickedOrderId(entry.id)}
+                >
                   {t.staff.deliveries.orderLabel(formatDate(entry.createdAt), entry.lines.length)}
                 </button>
               ))}
@@ -162,7 +172,7 @@ function Deliveries({ scope, owner }: { scope: string; owner: Owner | undefined 
                 owner={owner}
                 draft={drafts[order.id]}
                 onDraft={(draft) => setDrafts((current) => ({ ...current, [order.id]: draft }))}
-                onSending={(lines) => setStep({ kind: 'sending', orderId: order.id, supplierName: order.supplierName, lines })}
+                onSending={(lines, requestKey) => setStep({ kind: 'sending', orderId: order.id, supplierName: order.supplierName, requestKey, lines })}
                 onLost={() => setLost(true)}
                 onRefused={() => setStep(null)}
                 onDone={(message) => {
@@ -170,7 +180,7 @@ function Deliveries({ scope, owner }: { scope: string; owner: Owner | undefined 
                   inStock(order.id, message);
                 }}
               />
-              <Button variant="ghost" onClick={() => setCounting(true)}>
+              <Button variant="ghost" onClick={() => setCounting(true)} disabled={sending}>
                 {t.staff.deliveries.notOnOrder}
               </Button>
             </>
@@ -262,7 +272,7 @@ function ReceiveForm({
   draft: DeliveryDraft | undefined;
   onDraft: (draft: DeliveryDraft) => void;
   /** Kept before it goes, so a reload mid-save can send the same counts again. */
-  onSending: (lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => void;
+  onSending: (lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>, requestKey: string) => void;
   /** No answer: it may be in, so it is sent again as it was. */
   onLost: () => void;
   /** A clear no: nothing went in, the form stays to fix it. */
@@ -281,7 +291,8 @@ function ReceiveForm({
   const [tried, setTried] = useState(false);
 
   const receive = useMutation({
-    mutationFn: (lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => teamApi.receive(order.id, lines, owner),
+    mutationFn: (sent: { lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>; requestKey: string }) =>
+      teamApi.receive(order.id, sent.lines, owner, sent.requestKey),
     onSuccess: () => {
       for (const key of TOUCHED) queryClient.invalidateQueries({ queryKey: [key] });
       onDone(t.staff.deliveries.done(amounts.filter((amount) => amount !== null && amount > 0).length, order.supplierName));
@@ -298,8 +309,10 @@ function ReceiveForm({
       return;
     }
     const lines = order.lines.map((line, index) => ({ lineId: line.id, receivedQuantity: amounts[index]!, expiresOn: expires[line.id] || null }));
-    onSending(lines);
-    receive.mutate(lines);
+    // One key per press, kept with the step: sent again after a lost answer, only this press is told "done".
+    const requestKey = crypto.randomUUID();
+    onSending(lines, requestKey);
+    receive.mutate({ lines, requestKey });
   }
 
   return (
@@ -365,7 +378,7 @@ function SendAgain({
   const t = useT();
   const queryClient = useQueryClient();
   const send = useMutation({
-    mutationFn: () => teamApi.receive(step.orderId, step.lines, owner),
+    mutationFn: () => teamApi.receive(step.orderId, step.lines, owner, step.requestKey),
     onSuccess: () => {
       for (const key of TOUCHED) queryClient.invalidateQueries({ queryKey: [key] });
       onSaved(t.staff.deliveries.done(step.lines.filter((line) => line.receivedQuantity > 0).length, step.supplierName));
@@ -455,12 +468,18 @@ function CountForm({
   const [tried, setTried] = useState(false);
   const [scanProblem, setScanProblem] = useState<string | null>(null);
   const readings = lines.map((line) => parseReceived(line.came, line.unit));
+  // The draft as it is now: a barcode lookup answered after Save must not write over what Save froze.
+  const latest = useRef(draft);
+  latest.current = draft;
 
   const update = (next: ArrivalDraft['lines']) => onDraft({ supplierId, key: draft?.key ?? crypto.randomUUID(), lines: next });
   function add(product: Product) {
     setScanProblem(null);
-    if (lines.some((line) => line.productId === product.id)) return;
-    update([...lines, { productId: product.id, name: product.name, unit: product.unit, came: '', expires: '' }]);
+    const now = latest.current;
+    if (now?.sent) return;
+    const current = now?.lines ?? [];
+    if (current.some((line) => line.productId === product.id)) return;
+    onDraft({ supplierId, key: now?.key ?? crypto.randomUUID(), lines: [...current, { productId: product.id, name: product.name, unit: product.unit, came: '', expires: '' }] });
   }
   async function scanned(code: string) {
     setScanProblem(null);
@@ -497,7 +516,8 @@ function CountForm({
       return;
     }
     const sent = lines.map((line, index) => ({ productId: line.productId, quantity: (readings[index] as { value: number }).value, expiresOn: line.expires || null }));
-    onDraft({ ...draft, sent });
+    latest.current = { ...draft, sent };
+    onDraft(latest.current);
     save.mutate({ key: draft.key, lines: sent });
   }
 

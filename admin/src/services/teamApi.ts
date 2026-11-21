@@ -107,8 +107,9 @@ export const teamApi = {
   arrived: async (input: { key: string; supplierId: number; lines: Array<{ productId: number; quantity: number; expiresOn: string | null }> }, owner?: Owner) =>
     (await apiRequest<{ id: number; repeated: boolean }>('/orders/arrived', { method: 'POST', body: input, expectOwner: owner })).data,
   /** Sent again with the same counts after a lost answer, it is taken once and answers success. */
-  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>, owner?: Owner) => {
-    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines }, expectOwner: owner });
+  /** `requestKey`: made once per press and sent with every try, so only that same press is told "done". */
+  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>, owner?: Owner, requestKey?: string) => {
+    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines, ...(requestKey && { requestKey }) }, expectOwner: owner });
   },
 
   carwashToday: async () => (await apiRequest<{ day: string; carwashes: CarwashToday[] }>('/carwash/today')).data,

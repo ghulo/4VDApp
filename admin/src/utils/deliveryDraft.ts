@@ -135,7 +135,7 @@ export function saveArrival(scope: DraftScope, draft: ArrivalDraft | null): void
  * photo is still to send.
  */
 export type DeliveryStep =
-  | { kind: 'sending'; orderId: number; supplierName: string; lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }> }
+  | { kind: 'sending'; orderId: number; supplierName: string; requestKey?: string; lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }> }
   | { kind: 'photo'; orderId: number; message: string };
 
 const STEP_KEY = (scope: DraftScope) => `4vd.deliveryStep.${scope ?? 'none'}`;
@@ -147,7 +147,12 @@ export function loadStep(scope: DraftScope): DeliveryStep | null {
     if (parsed.kind === 'photo' && typeof parsed.message === 'string') return { kind: 'photo', orderId: parsed.orderId, message: parsed.message };
     if (parsed.kind === 'sending' && typeof parsed.supplierName === 'string' && Array.isArray(parsed.lines)) {
       const lines = parsed.lines.filter((line) => !!line && typeof line.lineId === 'number' && typeof line.receivedQuantity === 'number');
-      return { kind: 'sending', orderId: parsed.orderId, supplierName: parsed.supplierName, lines: lines.map((line) => ({ ...line, expiresOn: typeof line.expiresOn === 'string' ? line.expiresOn : null })) };
+      return {
+        kind: 'sending',
+        orderId: parsed.orderId,
+        supplierName: parsed.supplierName,
+        ...(typeof parsed.requestKey === 'string' && { requestKey: parsed.requestKey }),
+        lines: lines.map((line) => ({ ...line, expiresOn: typeof line.expiresOn === 'string' ? line.expiresOn : null })) };
     }
     return null;
   } catch {

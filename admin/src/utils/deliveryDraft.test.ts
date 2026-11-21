@@ -98,7 +98,8 @@ describe('delivery drafts', () => {
   it('keeps where the page stopped (a tick-off without its answer, a photo to send) and drops junk', () => {
     const storage = memoryStorage();
     vi.stubGlobal('sessionStorage', storage);
-    const sending = { kind: 'sending' as const, orderId: 5, supplierName: 'Fresh', lines: [{ lineId: 50, receivedQuantity: 2, expiresOn: null }] };
+    // The press key goes with it, so a resend after a reload is the same press.
+    const sending = { kind: 'sending' as const, orderId: 5, supplierName: 'Fresh', requestKey: 'k-1', lines: [{ lineId: 50, receivedQuantity: 2, expiresOn: null }] };
     saveStep('1:7', sending);
     expect(loadStep('1:7')).toEqual(sending);
     expect(loadStep('1:8')).toBeNull();

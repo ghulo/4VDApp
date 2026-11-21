@@ -4,6 +4,7 @@ import { meApi } from '../services/api';
 import type { Language } from './language';
 import { useLanguage, useT } from './useT';
 import { rememberSignInPick } from './signInLanguage';
+import { radioKeys } from '../components/ui/radioKeys';
 
 interface LanguageSwitchProps {
   className?: string;
@@ -46,10 +47,12 @@ export function LanguageSwitch({ className = '', persist = false }: LanguageSwit
           type="button"
           role="radio"
           aria-checked={language === option.value}
+          tabIndex={language === option.value ? 0 : -1}
           lang={option.value}
           translate="no"
           className="segmented__option"
           onClick={() => choose(option.value)}
+          onKeyDown={radioKeys}
         >
           {option.label}
         </button>

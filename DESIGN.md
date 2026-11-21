@@ -936,7 +936,7 @@ and till for shops in Kosovo". No second panel, no moving scene, no story.
 
 ## 12. Motion and accessibility
 
-- Motion explains, never decorates; money never moves. One vocabulary in
+- Motion explains, never decorates, and never holds anyone up. One vocabulary in
   `admin/src/styles/motion.css` on one duration scale in `tokens.css`:
   - `--dur-press` 80ms (a key, a knob, a tick), `--dur-small` 140ms (hover,
     colour, tooltip, a word swap), `--dur-medium` 220ms (menus, popovers,
@@ -980,9 +980,16 @@ and till for shops in Kosovo". No second panel, no moving scene, no story.
     cross-fades.
   - Small changes, from the pieces in `components/ui/Motion.tsx`, never
     written per page:
-    - A dashboard figure changes: only its changed digits roll, up when it
-      grows, down when it shrinks (`RollingNumber`; stat tiles and metric
-      cards do it on their own), never on first show. At rest it is plain text.
+    - Figures roll (`RollingNumber`; stat tiles, metric cards and the
+      Counter's totals and change do it on their own): when a figure first
+      shows, its digits roll up into place one after another from the right;
+      when it changes, only the changed digits roll, up when it grows, down
+      when it shrinks. Each digit rides the spring over `--roll-time` (300ms),
+      `--roll-step` (30ms) after the one to its right; the euro sign, a minus
+      and the separators stand still; tabular figures, so nothing shifts. The
+      real figure is in the page from the first frame and at rest it is plain
+      text. On the Counter it is quicker (160ms + 15ms steps) so it never holds
+      up the next scan. Reduced: the new digits fade in; Off: at once.
     - An error shakes once: every `.form-error` as it appears, and a field
       again on each wrong try (`shake()`, the Counter PIN). `--motion-shake`
       240ms on `--shake-curve`, the one curve that isn't the spring.
@@ -991,8 +998,8 @@ and till for shops in Kosovo". No second panel, no moving scene, no story.
       spinning arc first that turns into the check.
     - The one big moment, the Counter's Paid screen: the check pops a little
       past its size and settles (`--pop` over `--dur-large`, the only
-      overshoot in 4VD) and a soft ring spreads out from it once. Never on
-      everyday screens.
+      overshoot in 4VD), a soft ring spreads out from it once, and the change
+      to give back rolls into place. Never on everyday screens.
     - Words that change swap in place (`SwapText`): "Saving… → Saved",
       "Reading the bill… → Ready to check".
     - While Claude reads (a bill photo, an emailed bill, a bank statement) the
@@ -1004,10 +1011,9 @@ and till for shops in Kosovo". No second panel, no moving scene, no story.
     - Menus and floating panels open from the edge they hang from and close
       the same way (scale 0.96 + fade); a tooltip fades in and goes at once;
       the centred question grows in from the middle.
-  - **Never animated:** money on the till (basket totals, prices, the change
-    to give back, receipts: they swap at once), anything on the till between
-    a key press and the next scan (motion never delays focus or input), and
-    focus moves.
+  - **Never held up by motion:** anything on the till between a key press
+    and the next scan (motion never delays focus or input; prices and
+    receipts don't move), and focus moves.
   - Only `transform` and `opacity` move (plus `background-color` for a
     flash). No blur in motion, no width or height animation, no bounce,
     parallax or looping motion, except two loops that only run while 4VD

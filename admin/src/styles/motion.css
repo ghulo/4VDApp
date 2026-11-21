@@ -375,7 +375,20 @@
   --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ---------- A figure changes: its changed digits roll in place ---------- */
+/* ---------- Figures roll: digits roll into place, then only the changed ones ----------
+   Each digit rolls on the spring over --roll-time, one --roll-step after the
+   digit to its right (the step comes from RollingNumber as --i). The Counter
+   rolls quicker, so its totals and the change never hold up the next scan. */
+
+:root {
+  --roll-time: var(--dur-large);
+  --roll-step: 30ms;
+}
+
+.counter {
+  --roll-time: 160ms;
+  --roll-step: 15ms;
+}
 
 /* Every digit as wide as the next, so a rolling figure never wobbles sideways. */
 .num {
@@ -644,16 +657,19 @@
   }
 }
 
-/* Each changed digit starts a beat after the one to its right (--ripple, set in Motion.tsx);
+/* Each digit starts --roll-step after the one to its right (its step is --i, set in Motion.tsx);
    the old digit stays and the new one waits hidden until its turn. */
 
-:root[data-motion='full'] .num__in {
+.num__in {
   display: inline-block;
-  animation: num-in var(--dur-medium) var(--spring) var(--ripple, 0ms) backwards;
+}
+
+:root[data-motion='full'] .num__in {
+  animation: num-in var(--roll-time) var(--spring) calc(var(--i, 0) * var(--roll-step)) backwards;
 }
 
 :root[data-motion='full'] .num__out {
-  animation: num-out var(--dur-medium) var(--spring) var(--ripple, 0ms) both;
+  animation: num-out var(--roll-time) var(--spring) calc(var(--i, 0) * var(--roll-step)) both;
 }
 
 :root[data-motion='full'] [data-dir='down'] > .num__cell > .num__in {
@@ -766,6 +782,11 @@
   --dur-small: 0ms;
   --dur-medium: 0ms;
   --dur-large: 0ms;
+}
+
+/* Reduced: a rolling figure fades its new digits in instead. */
+:root[data-motion='reduced'] .num__in {
+  animation: fade var(--dur-small) var(--ease) !important;
 }
 
 /* Reduced: a toast and a tooltip only fade, quickly. */

@@ -1005,8 +1005,8 @@
   font-size: var(--text-sm);
 }
 
-/* The change to give back is money: it stands still from the first frame. */
-:root[data-motion='full'] .counter-sold__head {
+:root[data-motion='full'] .counter-sold__head,
+:root[data-motion='full'] .counter-sold__change {
   animation: counter-sold-in var(--dur-medium) var(--spring) both;
 }
 

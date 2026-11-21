@@ -241,9 +241,12 @@ describe('Badge, StatTile and EmptyState', () => {
       </StatGrid>,
     );
 
-    // The cents sit in their own span (smaller), but read as one figure.
+    // The cents sit in their own span (smaller), but read as one figure; on
+    // first show only the digits roll in, the euro sign and the point stand still.
     expect(html.replace(/<[^>]+>/g, '')).toContain('€120.00');
-    expect(html).toContain('<span class="num__minor">.00</span>');
+    const minor = /<span class="num__minor">(.*?)<\/span><\/span><\/span>/.exec(html)?.[1] ?? '';
+    expect(minor.replace(/<[^>]+>/g, '')).toBe('.00');
+    expect(html).toMatch(/<span class="num"[^>]*>€<span class="num__cell"/);
     expect(html).toContain('Sold today');
     expect(html).toMatch(/<a [^>]*href="\/sales"/);
   });

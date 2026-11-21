@@ -1,11 +1,11 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
-import { motionLevel } from '../../theme/motion';
 
-/** How long a change shows before the piece settles back to plain text: --dur-medium plus the longest digit ripple. */
-const SETTLE_MS = 320;
-/** Changed digits roll one after another from the right, this far apart, the ripple capped at four steps. */
-const RIPPLE_MS = 20;
+/** How long a roll shows before the piece settles back to plain text: --roll-time (300ms) plus the longest ripple (4 × 30ms), with room to spare. */
+const SETTLE_MS = 480;
+/** Digits roll one after another from the right (--roll-step apart in motion.css), the ripple capped at four steps. */
 const RIPPLE_STEPS = 4;
+/** Only digits roll; the euro sign, a minus and the separators stand still. */
+const DIGIT = /\d/;
 
 /*
  * Small moving pieces of the shared motion vocabulary (DESIGN.md 12). The
@@ -56,14 +56,64 @@ export function splitMinor(text: string): [string, string] {
   return match ? [text.slice(0, match.index), match[0]] : [text, ''];
 }
 
+/** True for a moment after the piece first shows, then false: long enough for the first roll to finish. */
+function useArriving(): boolean {
+  const [arriving, setArriving] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setArriving(false), SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return arriving;
+}
+
+/** One digit rolling into place, the ripple step from the right in --i. */
+function rollingDigit(key: string, char: string, step: number, old?: string) {
+  return (
+    <span key={key} className="num__cell" style={{ '--i': step } as CSSProperties}>
+      {old !== undefined && (
+        <span className="num__out" aria-hidden="true">
+          {old}
+        </span>
+      )}
+      <span className="num__in">{char}</span>
+    </span>
+  );
+}
+
+/** The cents keep their smaller size while they roll, so nothing jumps. */
+function withMinor(name: string, now: string, cells: ReactNode[], dir: 'up' | 'down') {
+  const majorLength = splitMinor(now)[0].length;
+  return (
+    <span className={name} data-dir={dir}>
+      {cells.slice(0, majorLength)}
+      {majorLength < cells.length && <span className="num__minor">{cells.slice(majorLength)}</span>}
+    </span>
+  );
+}
+
 /**
- * A figure whose changed digits roll in place: the old digit leaves, the new
- * one arrives from below (going up) or above (going down). At rest it is
- * plain text, so it reads and copies like any other number.
+ * A figure whose digits roll in place (DESIGN.md 12). When it first shows,
+ * its digits roll up into place one after another from the right; when it
+ * changes, only the changed digits roll: the old one leaves, the new one
+ * arrives from below (going up) or above (going down). The euro sign, the
+ * minus and the separators stay still, every digit is as wide as the next,
+ * and the real figure is in the page from the first frame, so nothing waits
+ * on it. At rest it is plain text, so it reads and copies like any other
+ * number. Motion: Reduced fades instead; Off shows it at once (motion.css).
  */
 export function RollingNumber({ value, className }: { value: string; className?: string }) {
   const { now, before, turn } = useChange(value);
+  const arriving = useArriving();
   const name = ['num', className].filter(Boolean).join(' ');
+  if (turn === 0 && arriving) {
+    let digit = 0;
+    const cells = [...now]
+      .map((char, index) => ({ char, index }))
+      .reverse()
+      .map(({ char, index }) => (DIGIT.test(char) ? rollingDigit(`in-${index}`, char, Math.min(digit++, RIPPLE_STEPS)) : char))
+      .reverse();
+    return withMinor(name, now, cells, 'up');
+  }
   if (turn === 0 || now === before) {
     const [major, minor] = splitMinor(now);
     return (
@@ -76,33 +126,14 @@ export function RollingNumber({ value, className }: { value: string; className?:
   const dir = direction(before, now);
   // Digits line up from the right, so "9.99" → "10.00" rolls each place.
   // Each changed digit waits a little longer than the one to its right: an odometer ripple.
+  // A sign or separator that moved simply stands in its new place.
   let changed = 0;
   const cells = [...now]
     .map((char, index) => ({ char, index, old: before[before.length - (now.length - index)] }))
     .reverse()
-    .map(({ char, index, old }) => {
-      if (old === char) return char;
-      const delay = Math.min(changed++, RIPPLE_STEPS) * RIPPLE_MS;
-      return (
-        <span key={`${turn}-${index}`} className="num__cell" style={{ '--ripple': `${delay}ms` } as CSSProperties}>
-        {old !== undefined && (
-          <span className="num__out" aria-hidden="true">
-            {old}
-          </span>
-        )}
-        <span className="num__in">{char}</span>
-        </span>
-      );
-    })
+    .map(({ char, index, old }) => (old === char || !DIGIT.test(char) ? char : rollingDigit(`${turn}-${index}`, char, Math.min(changed++, RIPPLE_STEPS), old)))
     .reverse();
-  // The cents keep their smaller size while they roll, so nothing jumps.
-  const majorLength = splitMinor(now)[0].length;
-  return (
-    <span className={name} data-dir={dir}>
-      {cells.slice(0, majorLength)}
-      {majorLength < cells.length && <span className="num__minor">{cells.slice(majorLength)}</span>}
-    </span>
-  );
+  return withMinor(name, now, cells, dir);
 }
 
 /** A figure that may be a string or something else: strings roll, the rest show as they are. */
@@ -176,28 +207,16 @@ export function SuccessCheck({ size = 20, busy = false, className }: { size?: nu
   );
 }
 
-/** How long a big figure waits before rolling up, so it lands after its screen has arrived. */
-const ROLL_UP_DELAY_MS = 120;
-
 /**
- * A big figure that rolls up from zero when it first shows (the change to
- * give back on the Paid screen). Screen readers get the real figure at once;
- * under reduced motion it simply shows.
+ * A big figure that rolls up into place when it first shows (the change to
+ * give back on the Paid screen). The real figure is in the page from the
+ * first frame and only its digits move, so it can never stop on "€0.00".
+ * `from` is kept for older callers and no longer used.
  */
-export function RollUp({ value, from, className }: { value: string; from: string; className?: string }) {
-  const still = motionLevel() !== 'full';
-  const [shown, setShown] = useState(still ? value : from);
-  useEffect(() => {
-    if (shown === value) return;
-    const timer = window.setTimeout(() => setShown(value), ROLL_UP_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [shown, value]);
+export function RollUp({ value, className }: { value: string; from?: string; className?: string }) {
   return (
     <span className={className}>
-      <span className="visually-hidden">{value}</span>
-      <span aria-hidden="true">
-        <RollingNumber value={shown} />
-      </span>
+      <RollingNumber value={value} />
     </span>
   );
 }

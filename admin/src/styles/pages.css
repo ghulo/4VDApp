@@ -1204,16 +1204,6 @@ form.product-form > .form-actions {
 
 /* ---------- Sales page ---------- */
 
-.sale-preview {
-  font-weight: 600;
-  margin-bottom: var(--space-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.section-title {
-  margin-bottom: var(--space-3);
-}
-
 .inline-field {
   display: inline-flex;
   align-items: center;
@@ -1260,45 +1250,6 @@ form.product-form > .form-actions {
   }
 }
 
-/* ---------- People & alerts ---------- */
-
-.user-row {
-  grid-template-columns: 1fr auto auto;
-}
-
-.user-row select {
-  width: auto;
-}
-
-/* Everything you can do to a person sits behind one "Manage" button, in a
-   panel under their row, so the list stays a list. */
-.user-row__manage {
-  display: grid;
-  gap: var(--space-3);
-  grid-column: 1 / -1;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-small);
-  background: var(--surface-sunk);
-}
-
-.user-row__caret {
-  transition: transform var(--fast) var(--ease);
-}
-
-.user-row__manage-toggle.is-open .user-row__caret {
-  transform: rotate(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .user-row__caret {
-    transition: none;
-  }
-}
-
-.user-row--inactive .category-list__name {
-  color: var(--steel);
-}
-
 .inline-form {
   display: flex;
   flex-wrap: wrap;
@@ -1310,51 +1261,9 @@ form.product-form > .form-actions {
 }
 
 @media (max-width: 760px) {
-  .user-row,
   .category-list__row {
     grid-template-columns: 1fr;
   }
-}
-
-/* One set of columns for every alert, so the times line up whether or not a row has a button. */
-@media (min-width: 761px) {
-  .alert-list {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-  }
-
-  .alert-list > .alert-row {
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-  }
-}
-
-.alert-row--unread .category-list__name {
-  font-weight: 600;
-}
-
-.alert-row__dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: var(--space-2);
-  border-radius: 50%;
-  background: var(--steel);
-  vertical-align: 1px;
-}
-
-.alert-row__dot--low_stock {
-  background: var(--signal-low);
-}
-
-.alert-row__dot--out_of_stock {
-  background: var(--signal-out);
-}
-
-
-
-.activity-row {
-  grid-template-columns: 1fr auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1444,37 +1353,6 @@ form.product-form > .form-actions {
   width: 260px;
 }
 
-.status-pill {
-  display: inline-block;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-pill);
-  color: var(--steel);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 20px;
-  white-space: nowrap;
-}
-
-/* Waiting on the owner borrows the low-stock yellow: it means "look at me". */
-.status-pill--pending,
-.status-pill--submitted {
-  border-color: var(--signal-low);
-  color: var(--signal-low-ink);
-}
-
-.status-pill--approved,
-.status-pill--match,
-.status-pill--closed {
-  border-color: var(--stock-ok);
-  color: var(--stock-ok);
-}
-
-.status-pill--rejected {
-  border-color: var(--signal-out);
-  color: var(--signal-out);
-}
-
 
 
 .return-form,
@@ -1488,53 +1366,6 @@ form.product-form > .form-actions {
 .settings-form > .button,
 .settings-form > .segmented {
   justify-self: start;
-}
-
-.push-device {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.push-device__status {
-  margin: 0;
-}
-
-.push-topics {
-  display: grid;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.push-topic {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  cursor: pointer;
-}
-
-.push-topic input {
-  /* Undo the full-width text-field styling every input gets. */
-  flex: none;
-  width: 18px;
-  height: 18px;
-  min-height: 0;
-  margin: 2px 0 0;
-  padding: 0;
-  accent-color: var(--ink);
-}
-
-.push-topic > span {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.push-topic__label {
-  font-weight: 600;
 }
 
 @media (max-width: 760px) {
@@ -1552,10 +1383,6 @@ form.product-form > .form-actions {
   .decision__reject input {
     width: 100%;
   }
-}
-
-.page-intro--wide {
-  max-width: none;
 }
 
 .form-actions--spaced:not(:empty) {
@@ -2155,26 +1982,6 @@ form.product-form > .form-actions {
 /* Initials sit on a small round key: lit along the top, a soft drop below. */
 .avatar--initials {
   box-shadow: var(--key-shine), var(--key-drop);
-}
-
-
-.user-row__name {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.profile-photo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-5);
-}
-
-.profile-photo__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .business-logo {
@@ -2873,14 +2680,6 @@ form.product-form > .form-actions {
 }
 
 /* ---------- Setup guide, answers and suggestions ---------- */
-
-.ask-history li {
-  padding: var(--space-4) var(--space-5);
-}
-
-.ask-history li + li {
-  border-top: 0;
-}
 
 .price-suggestion__result {
   border: 0;

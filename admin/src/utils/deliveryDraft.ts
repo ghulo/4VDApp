@@ -65,3 +65,37 @@ function strings(value: unknown): Record<number, string> {
   if (!value || typeof value !== 'object') return {};
   return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([, text]) => typeof text === 'string')) as Record<number, string>;
 }
+
+/** A delivery that came without an order, as typed so far: the supplier, the key of its save, and each product with how many came. */
+export interface ArrivalDraft {
+  supplierId: number;
+  /** Made once per delivery and sent with every try, so a save sent twice puts the goods in once. */
+  key: string;
+  lines: Array<{ productId: number; name: string; unit: ProductUnit; came: string; expires: string }>;
+}
+
+const ARRIVAL_KEY = (businessId: number | null | undefined) => `4vd.arrivalDraft.${businessId ?? 'none'}`;
+
+/** The no-order delivery being typed in this tab for one business, if any. */
+export function loadArrival(businessId: number | null | undefined): ArrivalDraft | null {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(ARRIVAL_KEY(businessId)) ?? 'null') as Partial<ArrivalDraft> | null;
+    if (!parsed || typeof parsed.supplierId !== 'number' || typeof parsed.key !== 'string' || !Array.isArray(parsed.lines)) return null;
+    const lines = parsed.lines.filter(
+      (line): line is ArrivalDraft['lines'][number] => !!line && typeof line.productId === 'number' && typeof line.name === 'string' && typeof line.came === 'string',
+    );
+    return { supplierId: parsed.supplierId, key: parsed.key, lines: lines.map((line) => ({ ...line, unit: line.unit ?? 'piece', expires: typeof line.expires === 'string' ? line.expires : '' })) };
+  } catch {
+    return null;
+  }
+}
+
+/** Keep it (null: it went into stock or was dropped). Full or blocked storage keeps it in memory only. */
+export function saveArrival(businessId: number | null | undefined, draft: ArrivalDraft | null): void {
+  try {
+    if (draft === null) sessionStorage.removeItem(ARRIVAL_KEY(businessId));
+    else sessionStorage.setItem(ARRIVAL_KEY(businessId), JSON.stringify(draft));
+  } catch {
+    // Kept in memory for this visit.
+  }
+}

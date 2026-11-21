@@ -9,7 +9,6 @@ import {
   MapPinLine,
   Notebook,
   Package,
-  Receipt,
   Sparkle,
   Truck,
 } from '@phosphor-icons/react';
@@ -119,7 +118,12 @@ export function StaffHomePage() {
           <ActionRow to="/catalog?then=writeOff" icon={Package} title={t.staff.home.happened.damage} hint={t.staff.home.happened.damageHint} />
           <ActionRow to="/catalog?then=expiry" icon={CalendarX} title={t.staff.home.happened.expiry} hint={t.staff.home.happened.expiryHint} />
           <ActionRow to="/new-product" icon={Sparkle} title={t.staff.home.happened.newProduct} hint={t.staff.home.happened.newProductHint} />
-          <ActionRow to="/scan-bill" icon={Receipt} title={t.staff.home.happened.supplierBill} hint={t.staff.home.happened.supplierBillHint} />
+          <ActionRow
+            to="/deliveries"
+            icon={Truck}
+            title={t.staff.home.happened.delivery}
+            hint={(deliveries.data?.length ?? 0) > 0 ? t.staff.home.happened.deliveryWaiting(deliveries.data!.length) : t.staff.home.happened.deliveryHint}
+          />
           {hasCarwash && <ActionRow to="/shift#carwash" icon={Car} title={t.staff.home.happened.carwash} hint={t.staff.home.happened.carwashHint} />}
         </ul>
       </StaffSection>
@@ -142,10 +146,6 @@ export function StaffHomePage() {
               : t.staff.home.tabsNone
           }
         />
-        {/* Only while something is on its way, so Home stays calm the rest of the time. */}
-        {(deliveries.data?.length ?? 0) > 0 && (
-          <JobTile to="/deliveries" icon={Truck} title={t.staff.home.deliveries} detail={t.staff.home.deliveriesWaiting(deliveries.data!.length)} />
-        )}
         {outgoing.length > 0 && (
           <JobTile to="/to-deliver" icon={MapPinLine} title={t.toDeliver.title} detail={outgoing.some((delivery) => delivery.late) ? t.toDeliver.late : t.toDeliver.count(outgoing.length)} />
         )}

@@ -33,6 +33,8 @@ export interface MyRequest {
 /** A supplier order on its way, as the counter sees it (no costs). */
 export interface Delivery {
   id: number;
+  /** Left out by an older server. */
+  supplierId?: number;
   supplierName: string;
   note: string | null;
   createdAt: string;
@@ -92,6 +94,11 @@ export const teamApi = {
   },
 
   deliveries: async () => (await apiRequest<Delivery[]>('/orders/deliveries')).data,
+  /** The suppliers to pick from when goods come: names only. */
+  deliverySuppliers: async () => (await apiRequest<Array<{ id: number; name: string }>>('/orders/delivery-suppliers')).data,
+  /** A delivery that came without an order: into stock at once. The same key twice puts it in once. */
+  arrived: async (input: { key: string; supplierId: number; lines: Array<{ productId: number; quantity: number; expiresOn: string | null }> }) =>
+    (await apiRequest<{ id: number; repeated: boolean }>('/orders/arrived', { method: 'POST', body: input })).data,
   receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => {
     await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines } });
   },

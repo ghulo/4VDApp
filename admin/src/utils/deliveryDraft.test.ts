@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { keepListed, loadDrafts, parseReceived, saveDrafts } from './deliveryDraft';
+import { keepListed, loadArrival, loadDrafts, parseReceived, saveArrival, saveDrafts } from './deliveryDraft';
 
 describe('parseReceived', () => {
   it('reads a blank box as not entered, never as 0', () => {
@@ -67,6 +67,21 @@ describe('delivery drafts', () => {
     storage.setItem('4vd.deliveryDrafts.1', '{"7":{"came":{"70":5,"71":"2"},"expires":null},"8":3}');
     vi.stubGlobal('sessionStorage', storage);
     expect(loadDrafts(1)).toEqual({ 7: { came: { 71: '2' }, expires: {} } });
+  });
+
+  it('keeps a delivery without an order per business, with the key of its save, and survives junk', () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('sessionStorage', storage);
+    const draft = { supplierId: 4, key: 'k-1', lines: [{ productId: 9, name: 'Milk', unit: 'piece' as const, came: '', expires: '' }] };
+    saveArrival(1, draft);
+    expect(loadArrival(1)).toEqual(draft);
+    expect(loadArrival(2)).toBeNull();
+    saveArrival(1, null);
+    expect(storage.store.size).toBe(0);
+    storage.setItem('4vd.arrivalDraft.1', '{"supplierId":4,"key":"k","lines":[{"productId":"x"},{"productId":9,"name":"Milk","came":"2"}]}');
+    expect(loadArrival(1)).toEqual({ supplierId: 4, key: 'k', lines: [{ productId: 9, name: 'Milk', unit: 'piece', came: '2', expires: '' }] });
+    storage.setItem('4vd.arrivalDraft.1', 'not json');
+    expect(loadArrival(1)).toBeNull();
   });
 
   it('drops drafts of orders no longer on their way', () => {

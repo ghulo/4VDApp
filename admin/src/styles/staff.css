@@ -656,6 +656,46 @@ button.staff-row {
   border-top: 1px solid var(--line);
 }
 
+/* A delivery came (DeliveriesPage): who brought it, then the order or the count. */
+.delivery-who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.delivery-who__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
+
+.delivery-waiting {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.delivery-add {
+  display: flex;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.delivery-add > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-line__head {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 /* To deliver: one card per sale taken to a customer's door (ToDeliverPage). */
 .to-deliver__list {
   display: grid;

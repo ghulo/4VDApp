@@ -103,7 +103,7 @@ function ExpenseForm() {
   const [params] = useSearchParams();
   const [day, setDay] = useState(() => params.get('day') ?? today());
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('rent');
+  const [category, setCategory] = useState<ExpenseCategory | ''>('');
   // "shop", "both" or "carwash:<id>", so each carwash has its own choice.
   const [place, setPlace] = useState('shop');
   const { places: carwashes, several } = useCarwashes();
@@ -115,7 +115,7 @@ function ExpenseForm() {
 
   const add = useMutation({
     mutationFn: () => {
-      const input = { day, amount: Number(amount), category, note: note.trim() || null, repeatMonthly, supplierId: supplierId ? Number(supplierId) : null, projectId };
+      const input = { day, amount: Number(amount), category: category as ExpenseCategory, note: note.trim() || null, repeatMonthly, supplierId: supplierId ? Number(supplierId) : null, projectId };
       return place.startsWith('carwash:')
         ? expensesApi.add({ ...input, place: 'carwash', carwashId: Number(place.split(':')[1]) })
         : expensesApi.add({ ...input, place: place as ExpensePlace });
@@ -135,15 +135,12 @@ function ExpenseForm() {
     add.mutate();
   }
 
-  const isValid = day !== '' && day <= today() && Number(amount) > 0;
+  const isValid = day !== '' && day <= today() && Number(amount) > 0 && category !== '';
   const repeatDay = Math.min(Number(day.slice(8, 10)) || 1, LAST_REPEAT_DAY);
 
   return (
     <form className="settings-form" onSubmit={handleSubmit}>
       <div className="field-row">
-        <Field label={t.expenses.day}>
-          <DateField required max={today()} value={day} onChange={(value) => setDay(value)} />
-        </Field>
         <Field label={t.expenses.amount}>
           <input
             type="number"
@@ -158,10 +155,16 @@ function ExpenseForm() {
             }}
           />
         </Field>
+        <Field label={t.expenses.day}>
+          <DateField required max={today()} value={day} onChange={(value) => setDay(value)} />
+        </Field>
       </div>
       <div className="field-row">
         <Field label={t.expenses.category} hint={t.expenses.stockHint}>
-          <select value={category} onChange={(event) => setCategory(event.target.value as ExpenseCategory)}>
+          <select required value={category} onChange={(event) => setCategory(event.target.value as ExpenseCategory | '')}>
+            <option value="" disabled>
+              {t.expenses.chooseCategory}
+            </option>
             {EXPENSE_CATEGORIES.map((option) => (
               <option key={option} value={option}>
                 {t.expenses.categories[option]}

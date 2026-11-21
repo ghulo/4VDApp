@@ -3104,6 +3104,7 @@ export const sq: Catalogue = {
     notePlaceholder: 'p.sh. fatura e tetorit',
     repeat: 'Përsërite çdo muaj',
     repeatHint: (day: number) => `E shton vetë të njëjtin shpenzim në ditën ${day} të çdo muaji.`,
+    chooseCategory: 'Zgjidh një kategori',
     stockHint: 'Malli që blen për ta rishitur nuk është shpenzim këtu: kostoja e tij llogaritet kur shitet.',
     save: 'Shto shpenzimin',
     saved: 'U shtua.',

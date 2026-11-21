@@ -3128,6 +3128,7 @@ export const en = {
     notePlaceholder: 'e.g. October bill',
     repeat: 'Repeat every month',
     repeatHint: (day: number) => `Adds the same expense on day ${day} of every month, by itself.`,
+    chooseCategory: 'Choose a category',
     stockHint: "Stock you buy to resell isn’t an expense here: its cost already counts when it sells.",
     save: 'Add expense',
     saved: 'Added.',

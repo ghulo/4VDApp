@@ -24,7 +24,7 @@ import {
   SignOut,
   Tag,
   Trash,
-  Truck,
+  MapPinLine,
   User,
   UsersThree,
   WarningCircle,
@@ -2105,7 +2105,7 @@ export function CounterPage() {
                 <CounterKey icon={User} label={t.counter.customer} hotkey="F5" disabled={!keysEnabled} onClick={() => startPanel('customer')} />
                 <CounterKey icon={SealPercent} label={t.counter.basketRabat} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('basketRabat')} />
                 <CounterKey icon={Tag} label={t.counter.priceCheckKey} hotkey="F10" disabled={!keysEnabled} pressed={priceCheck} onClick={togglePriceCheck} />
-                <CounterKey icon={Truck} label={current.delivery ? t.counter.deliveryKeyOn : t.counter.deliverKey} pressed={Boolean(current.delivery)} disabled={!keysEnabled || !hasLines || !online} onClick={() => startPanel('deliver')} />
+                <CounterKey icon={MapPinLine} label={current.delivery ? t.counter.deliveryKeyOn : t.counter.deliverKey} pressed={Boolean(current.delivery)} disabled={!keysEnabled || !hasLines || !online} onClick={() => startPanel('deliver')} />
                 <CounterKey icon={X} label={t.counter.cancelBasket} disabled={!keysEnabled || !hasLines} onClick={() => startPanel('cancel')} />
               </KeyGroup>
 

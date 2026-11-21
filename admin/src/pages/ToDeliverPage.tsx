@@ -1,4 +1,4 @@
-import { MapPin, Phone, Truck } from '@phosphor-icons/react';
+import { MapPin, MapPinLine, Phone } from '@phosphor-icons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { useCurrentUser } from '../auth/useAuth';
@@ -44,7 +44,7 @@ export function ToDeliverPage() {
         {deliveries.isPending && <Loading />}
         {deliveries.isError && <ErrorNotice error={deliveries.error} onRetry={() => deliveries.refetch()} />}
         {deliveries.data && all.length === 0 && (
-          <EmptyState icon={Truck} title={t.toDeliver.none}>
+          <EmptyState icon={MapPinLine} title={t.toDeliver.none}>
             {t.toDeliver.noneHint}
           </EmptyState>
         )}

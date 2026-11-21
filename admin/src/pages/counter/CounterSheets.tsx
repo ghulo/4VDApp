@@ -1,5 +1,5 @@
 import { shake } from '../../components/ui';
-import { ArrowLeft, LockKey, Printer, Truck, X } from '@phosphor-icons/react';
+import { ArrowLeft, LockKey, MapPinLine, Printer, X } from '@phosphor-icons/react';
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Segmented } from '../../components/BillLines';
 import { Button, DateField, Field, Sheet } from '../../components/ui';
@@ -391,7 +391,7 @@ export function PayPanel({ total: saleTotal, customers, draft: given, offline = 
     >
       {door ? (
         <p className="counter-split-due counter-door" role="status">
-          <Truck size={18} weight="bold" aria-hidden="true" />
+          <MapPinLine size={18} weight="bold" aria-hidden="true" />
           {total > 0 ? t.counter.doorTake(formatMoney(total), formatMoney(saleTotal - total)) : t.counter.doorNothing(formatMoney(saleTotal))}
         </p>
       ) : (

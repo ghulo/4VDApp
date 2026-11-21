@@ -6,6 +6,7 @@ import {
   ClipboardText,
   Coins,
   type Icon,
+  MapPinLine,
   Notebook,
   Package,
   Receipt,
@@ -146,7 +147,7 @@ export function StaffHomePage() {
           <JobTile to="/deliveries" icon={Truck} title={t.staff.home.deliveries} detail={t.staff.home.deliveriesWaiting(deliveries.data!.length)} />
         )}
         {outgoing.length > 0 && (
-          <JobTile to="/to-deliver" icon={Truck} title={t.toDeliver.title} detail={outgoing.some((delivery) => delivery.late) ? t.toDeliver.late : t.toDeliver.count(outgoing.length)} />
+          <JobTile to="/to-deliver" icon={MapPinLine} title={t.toDeliver.title} detail={outgoing.some((delivery) => delivery.late) ? t.toDeliver.late : t.toDeliver.count(outgoing.length)} />
         )}
       </div>
 

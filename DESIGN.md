@@ -453,6 +453,7 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Stock close to its best-before date, sold cheaper per stickered unit | **short-dated**; button **Short-dated −30%** | **me afat të shkurtër**; **Afat i shkurtër −30%** *(confirm)* | clearance, markdown, batch |
 | Counting the shelves | **stock count** | **numërim stoku** | inventory check |
 | Goods arriving from a supplier | **delivery** | **furnizim** | |
+| Goods taken out to a customer's door (page, map-pin icon, never the truck) | **Goods to send out** | **Dërgesat te klientët** | To deliver |
 | What the shop asks a supplier for | **order** | **porosi** | purchase order |
 | Something staff ask the owner | **request**; **Approve** / **Reject** | **kërkesë**; **Mirato** / **Refuzo** | |
 | Needs someone to act | **To do** | **Për t'u bërë** *(confirm)* | alert, waiting |

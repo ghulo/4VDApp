@@ -457,6 +457,8 @@ New Albanian wording marked *(confirm)* needs the owner's check before shipping.
 | Something staff ask the owner | **request**; **Approve** / **Reject** | **kërkesë**; **Mirato** / **Refuzo** | |
 | Needs someone to act | **To do** | **Për t'u bërë** *(confirm)* | alert, waiting |
 | Happened, for information | **Updates** | **Njoftimet** | alerts |
+| A price cut on products for some days | **Promotion** | **Zbritja** (not Oferta) | offer, deal |
+| A printed price quote to a buyer | **Offer** | **Oferta** | quote |
 | Who did what, when | **Activity** | **Aktiviteti** | log |
 | Carwash takings | **carwash** (Lavazhi) + **change** (Këmbimi) | **Lavazhi** + **Këmbimi** | car wash |
 | The person account screen | **Account** | **Llogaria** | Me, Profile |

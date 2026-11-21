@@ -5620,6 +5620,8 @@ export const en = {
     tryAgain: 'Try again',
     crashed: 'This page hit a problem and couldn’t show. Reload to try again; if it keeps happening, tell the developer.',
     reload: 'Reload',
+    offlinePage: 'No internet, so this page couldn’t load. Try again once you’re back online.',
+    stillOffline: 'Still no internet. Check Wi-Fi or mobile data.',
     somethingWrong: 'Something went wrong',
     periodFiled: 'That date is in a VAT month already filed with ATK, so nothing in it can be added, changed or removed. The accountant or the owner can reopen the month on the VAT page.',
     yearClosed: 'That date is in a year that is closed, so nothing in it can be added, changed or removed. The owner or the accountant can reopen the year on the Year page.',

@@ -12,7 +12,10 @@ startKeyboardInset()
 
 // Pages load on demand. After a new release, a tab left open may ask for page files
 // that no longer exist, so reload once to pick up the new release instead of failing.
+// Without internet a reload only shows the browser's "No internet" page: the error goes
+// on to the page's notice instead, which offers Try again (components/ErrorBoundary.tsx).
 window.addEventListener('vite:preloadError', (event) => {
+  if (!navigator.onLine) return
   const key = '4vd:reloaded-for-release'
   try {
     const last = Number(sessionStorage.getItem(key) ?? 0)

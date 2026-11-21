@@ -1,6 +1,7 @@
 import { Suspense, useEffect, type ReactNode } from 'react';
 import { lazyNamed } from './utils/lazyNamed';
 import { CrashNotice, ErrorBoundary } from './components/ErrorBoundary';
+import { offlineLoadError } from './utils/offlineLoad';
 import { reportError } from './errorTracking';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider, useRouteError } from 'react-router';
@@ -199,9 +200,9 @@ function RootCrash() {
   const error = useRouteError();
   useEffect(() => {
     console.error(error);
-    reportError(error);
+    if (!offlineLoadError(error)) reportError(error);
   }, [error]);
-  return <CrashNotice />;
+  return <CrashNotice error={error} />;
 }
 
 const router = createBrowserRouter(

@@ -5593,6 +5593,8 @@ export const sq: Catalogue = {
     tryAgain: 'Provo përsëri',
     crashed: 'Kjo faqe pati një problem dhe nuk u shfaq. Ringarkoje për të provuar përsëri; nëse ndodh sërish, njofto zhvilluesin.',
     reload: 'Ringarko',
+    offlinePage: 'S’ka internet, ndaj kjo faqe nuk u hap. Provo përsëri kur të kesh internet.',
+    stillOffline: 'Ende s’ka internet. Kontrollo Wi-Fi-n ose internetin e telefonit.',
     somethingWrong: 'Diçka shkoi keq',
     periodFiled: 'Ajo datë është në një muaj TVSH-je që është deklaruar në ATK, ndaj asgjë në të nuk mund të shtohet, ndryshohet ose hiqet. Kontabilisti ose pronari mund ta rihapë muajin te faqja e TVSH-së.',
     yearClosed: 'Ajo datë është në një vit të mbyllur, ndaj asgjë në të nuk mund të shtohet, ndryshohet ose hiqet. Pronari ose kontabilisti mund ta rihapë vitin te faqja Viti.',

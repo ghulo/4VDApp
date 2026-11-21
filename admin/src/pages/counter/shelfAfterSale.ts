@@ -52,15 +52,32 @@ export interface TillShelf {
   counted: string[] | null;
   /** When the till asked for it (ms): a sale 4VD answered before this is in it. */
   askedAt: number;
-  /** When this till last took a sale off it itself (ms): of two copies of one fetch, the later one has more sales off. */
+  /** When this till last took a sale off it itself (ms, this PC's clock, after 4VD answered that sale). */
   patchedAt?: number;
+  /**
+   * When 4VD read it, by the server's clock (missing from an older 4VD): it has every sale finished before `from`
+   * and none finished after `to`.
+   */
+  asOf?: { from: number; to: number };
 }
 
-/** Whether this shelf is older than that one: asked for earlier, or the same fetch with fewer of this till's sales taken off. */
-export function olderShelf(shelf: Pick<TillShelf, 'askedAt' | 'patchedAt'>, than: Partial<Pick<TillShelf, 'askedAt' | 'patchedAt'>> | undefined): boolean {
-  if (typeof than?.askedAt !== 'number') return false;
-  if (shelf.askedAt !== than.askedAt) return shelf.askedAt < than.askedAt;
-  return (shelf.patchedAt ?? 0) < (than.patchedAt ?? 0);
+type Ordered = Pick<TillShelf, 'askedAt' | 'patchedAt' | 'asOf'>;
+
+const sameFetch = (one: Ordered, other: Ordered) =>
+  one.asOf && other.asOf ? one.asOf.from === other.asOf.from && one.asOf.to === other.asOf.to : one.askedAt === other.askedAt;
+
+/**
+ * Whether this shelf may replace the one saved on this PC: it surely has everything the saved one has. The same fetch
+ * with at least as many of this till's sales taken off; or one 4VD read only after it had read the saved one (by the
+ * server's clock: two requests can reach it in the other order than they were asked) and, if the saved one had sales
+ * taken off here, asked for only after the last of them was answered (so 4VD counts them).
+ */
+export function replacesSaved(shelf: Ordered, saved: Partial<Ordered> | undefined): boolean {
+  if (typeof saved?.askedAt !== 'number') return true;
+  const old = saved as Ordered;
+  if (sameFetch(shelf, old)) return (shelf.patchedAt ?? 0) >= (old.patchedAt ?? 0);
+  const later = shelf.asOf && old.asOf ? shelf.asOf.from >= old.asOf.to : shelf.askedAt > old.askedAt;
+  return later && (old.patchedAt === undefined || shelf.askedAt >= old.patchedAt);
 }
 
 /** Every till shelf (each business has its own); under ['products'], so whatever marks products out of date marks it too. */

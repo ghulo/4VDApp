@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { User } from '../services/types';
 import { copyOf, COPY_MAX_AGE_MS, answerSettles, currentIdentity, definiteRefusal, holdSavedMe, switchEnded, switchSettled, switchUnsettled, fillFrom, forgetSaved, newIdentity, noAnswer, restoreTillCopy, sameSignIn, savedMe, saveMe, saveTillCopy, tillCopyKeys } from './savedCopy';
-import { tillShelfKey } from '../pages/counter/shelfAfterSale';
+import { replacesSaved, tillShelfKey } from '../pages/counter/shelfAfterSale';
 import { ApiError } from '../services/apiClient';
 
 const user = { id: 7, name: 'Ana', role: 'employee', businessId: 3, language: 'sq' } as User;
@@ -223,6 +223,40 @@ describe("the till's copy on this PC", () => {
     before.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }, { id: 2, stock: 4 }], counted: [], askedAt: 20 });
     expect(await saveTillCopy(before, owner, currentIdentity())).toBeNull();
     expect(savedShelf()).toMatchObject({ patchedAt: 30 });
+  });
+
+  it('orders two Counters’ shelves by when 4VD read them, not by when this PC asked', async () => {
+    const { rows, api } = fakeIndexedDB();
+    vi.stubGlobal('indexedDB', api);
+    const savedShelf = () => (rows.get('shelf:3') as { queries: Array<{ data: { asOf?: unknown } }> } | undefined)?.queries[0]?.data;
+    // A asked first but reached 4VD after the last unit's sale went in: it counts the sale and has none left.
+    const a = new QueryClient();
+    a.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }], counted: ['k1'], askedAt: 100, asOf: { from: 500, to: 510 } });
+    expect(await saveTillCopy(a, owner, currentIdentity())).not.toBeNull();
+    // B asked later but 4VD read it before the sale: one unit. Its answer comes late; it must not go over A's.
+    const b = new QueryClient();
+    b.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 1 }], counted: [], askedAt: 200, asOf: { from: 300, to: 310 } });
+    expect(await saveTillCopy(b, owner, currentIdentity())).toBeNull();
+    expect(savedShelf()?.asOf).toEqual({ from: 500, to: 510 });
+    // Read while A was being read (the two overlap): it can't be told newer, so A stays.
+    b.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 1 }], counted: [], askedAt: 210, asOf: { from: 505, to: 520 } });
+    expect(await saveTillCopy(b, owner, currentIdentity())).toBeNull();
+    // Read after A was: it replaces it.
+    b.setQueryData(tillShelfKey(3), { products: [{ id: 1, stock: 0 }], counted: [], askedAt: 220, asOf: { from: 600, to: 610 } });
+    expect(await saveTillCopy(b, owner, currentIdentity())).not.toBeNull();
+  });
+
+  it('keeps a shelf with this till’s own sales taken off over one asked before the last of them was answered', () => {
+    // Saved: fetched at 100, then a sale here answered at 150 was taken off it.
+    const saved = { askedAt: 100, patchedAt: 150, asOf: { from: 1_000, to: 1_010 } };
+    // Another Counter asked at 120 (4VD read it later, but maybe before that sale went in): not over it.
+    expect(replacesSaved({ askedAt: 120, asOf: { from: 1_100, to: 1_110 } }, saved)).toBe(false);
+    // Asked after the sale was answered: 4VD counts it.
+    expect(replacesSaved({ askedAt: 160, asOf: { from: 1_200, to: 1_210 } }, saved)).toBe(true);
+    // An older 4VD (no server times): this PC's clock.
+    expect(replacesSaved({ askedAt: 90 }, { askedAt: 100 })).toBe(false);
+    expect(replacesSaved({ askedAt: 110 }, { askedAt: 100 })).toBe(true);
+    expect(replacesSaved({ askedAt: 1 }, undefined)).toBe(true);
   });
 
   it('saves nothing of the till while a switch isn’t settled, and never fills screens for the next person', async () => {

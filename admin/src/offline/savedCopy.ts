@@ -14,7 +14,7 @@ import { hashKey, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { Permissions } from '../auth/permissions';
 import type { User } from '../services/types';
 import { ApiError } from '../services/apiClient';
-import { olderShelf, tillShelfKey, type TillShelf } from '../pages/counter/shelfAfterSale';
+import { replacesSaved, tillShelfKey, type TillShelf } from '../pages/counter/shelfAfterSale';
 
 const ME_KEY = '4vd.offline.me';
 
@@ -283,7 +283,7 @@ export async function saveTillCopy(client: QueryClient, owner: { businessId: num
       const stored = store.get(shelfId(owner.businessId)) as IDBRequest<TillCopy | undefined>;
       stored.onsuccess = () => {
         const theirs = stored.result?.queries[0]?.data as Partial<TillShelf> | undefined;
-        if (olderShelf(mine, theirs)) return;
+        if (!replacesSaved(mine, theirs)) return;
         store.put({ savedAt: copy.savedAt, queries: [shelf] } satisfies TillCopy, shelfId(owner.businessId));
         written = mine;
       };

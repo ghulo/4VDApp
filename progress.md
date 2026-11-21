@@ -59,6 +59,15 @@ UI and features (ask first):
 
 ## To test by hand
 
+**Accountant month, figures, pickers** (Task 6, 2026-11-21)
+- [ ] VAT → pick last month → Sales book → Purchase book → VAT: the same month stays picked on each tab
+- [ ] VAT page "Filing, step by step": both EDI downloads give that month's files and EDI accepts them; "Mark as filed" in step 3 shows "<month>: pay €x.xx by …" with cents; after filing, all three steps show ticks
+- [ ] A long month's purchase book (after the TREFIN import): 100 lines a page, Previous/Next work, totals at the bottom are for the whole month
+- [ ] Leave the Overview open past midnight (or overnight): the next morning it shows the new day; a sale made while it is open shows within a minute
+- [ ] Sell a product with no cost price: under the Overview figures "Profit leaves out 1 product sold without a cost price" and its link opens Prices filtered to "No cost"
+- [ ] Pickers on the shop's real catalogue (after the TREFIN import): Sales filter, New order "Add a product", Promotions "One product", Labels search and Record a sale on Sales each find a product past the first 100 by name without ç/ë, and by barcode
+- [ ] Record a sale on Sales with the USB scanner: each scan adds the right product once, also quickly one after another
+
 **Phones** (Task 4, 2026-11-21)
 - [ ] iPhone (Safari and Add to Home Screen): nothing sits under the notch or the home bar; turned sideways, nothing under the notch
 - [ ] iPhone: tap a field in an Add card near the bottom: the card moves up above the keyboard, Save stays visible; the bottom tabs hide while typing

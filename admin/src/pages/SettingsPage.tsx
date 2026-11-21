@@ -36,7 +36,7 @@ export function SettingsPage() {
   const t = useT();
   const { role } = useCurrentUser();
   const isDeveloper = role === 'developer';
-  const leads = isDeveloper || role === 'main_admin' || role === 'admin';
+  const leads = isDeveloper || role === 'main_admin' || role === 'owner' || role === 'admin';
   const settings = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,

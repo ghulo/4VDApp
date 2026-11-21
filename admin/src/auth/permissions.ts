@@ -14,29 +14,31 @@ export interface Permissions {
   lockedPowers: Power[];
 }
 
-const OVERSEERS: UserRole[] = ['developer', 'main_admin', 'admin', 'owner'];
+/** Always every power, whatever the grid says (as the API's EVERYTHING). */
+const EVERYTHING: UserRole[] = ['developer', 'main_admin', 'owner'];
+const OVERSEERS: UserRole[] = [...EVERYTHING, 'admin'];
 const SELLERS: UserRole[] = [...OVERSEERS, 'employee'];
 /** The usual rules, used until the API's answer arrives (and if it can't be reached). */
 const DEFAULT_GRANTS: Grants = {
   sell: SELLERS,
   oversee: OVERSEERS,
   products: OVERSEERS,
-  manage: ['developer', 'main_admin', 'admin'],
+  manage: [...EVERYTHING, 'admin'],
   books: [...OVERSEERS, 'accountant'],
   filing: [...OVERSEERS, 'accountant'],
-  reopen: ['developer', 'main_admin', 'owner', 'accountant'],
-  entries: ['developer', 'main_admin', 'admin', 'accountant'],
+  reopen: [...EVERYTHING, 'accountant'],
+  entries: [...EVERYTHING, 'admin', 'accountant'],
   customers: [...SELLERS, 'accountant'],
   documents: [...SELLERS, 'accountant'],
-  payroll: ['developer', 'main_admin', 'owner', 'accountant'],
-  import: ['developer', 'main_admin'],
+  payroll: [...EVERYTHING, 'accountant'],
+  import: EVERYTHING,
 };
 
 export const DEFAULT_PERMISSIONS: Permissions = {
   powers: DEFAULT_GRANTS,
   pages: {},
   defaults: DEFAULT_GRANTS,
-  editableRoles: ['admin', 'owner', 'employee', 'accountant', 'family'],
+  editableRoles: ['admin', 'employee', 'accountant', 'family'],
   lockedPowers: ['manage'],
 };
 
@@ -51,7 +53,7 @@ export function setPermissions(permissions: Permissions): void {
 export const currentPermissions = (): Permissions => current;
 
 /** A power the server doesn't list yet (an older API during a deploy) follows its default. */
-export const hasPower = (role: UserRole, power: Power): boolean => (current.powers[power] ?? DEFAULT_GRANTS[power]).includes(role);
+export const hasPower = (role: UserRole, power: Power): boolean => EVERYTHING.includes(role) || (current.powers[power] ?? DEFAULT_GRANTS[power]).includes(role);
 
 /** The roles chosen for a menu page, or undefined when it follows the usual rules. */
 export const pageRoles = (path: string): UserRole[] | undefined => current.pages[path];

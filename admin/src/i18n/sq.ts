@@ -1340,7 +1340,7 @@ export const sq: Catalogue = {
     onPromotion: (p) => `Në zbritje: ${p.name}, −${p.percent}% (${p.price}) deri më ${p.until}.`,
     needCategory: 'Produktet duhet të kenë një kategori. Krijo një fillimisht.',
     goToCategories: 'Shko te kategoritë',
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund ta ndryshojë këtë.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund ta ndryshojë këtë.',
     details: 'Të dhënat',
     name: 'Emri',
     category: 'Kategoria',
@@ -2074,7 +2074,7 @@ export const sq: Catalogue = {
   orders: {
     title: 'Porositë',
     description: 'Çdo porosi, nga dita kur e bën deri te furnizimi dhe fatura. Kur pranon furnizimin, stoku shtohet vetë.',
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të porosisë ose të pranojë dorëzime.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të porosisë ose të pranojë dorëzime.',
     suppliers: 'Furnitorët',
     suppliersCaption: 'Furnitorët',
     noSuppliers: 'Ende asnjë furnitor',
@@ -2228,7 +2228,7 @@ export const sq: Catalogue = {
     history: 'Historiku',
     noChanges: 'Ende pa ndryshime',
     nowAt: (quantity) => `Stoku tani është ${quantity}.`,
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund ta korrigjojë stokun. Raporto dëmtime ose humbje nga telefoni yt.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund ta korrigjojë stokun. Raporto dëmtime ose humbje nga telefoni yt.',
     addOrRemove: 'Shto ose hiq stok',
     add: 'Shto stok',
     remove: 'Hiq stok',
@@ -2284,7 +2284,7 @@ export const sq: Catalogue = {
   categories: {
     title: 'Kategori',
     description: 'Çdo produkt i përket një kategorie. Njerëzit filtrojnë sipas tyre në telefonat e tyre.',
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të shtojë, riemërtojë ose fshijë kategori.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të shtojë, riemërtojë ose fshijë kategori.',
     new: 'Kategori e re',
     none: 'Ende pa kategori',
     noneHint: 'Shto një më sipër për të nisur katalogun.',
@@ -2421,7 +2421,7 @@ export const sq: Catalogue = {
     openingHow:
       'Cakto ditën kur fillojnë librat (Cilësimet → Librat), ekzekuto npm run opening:trefin -- <dosja e eksportit> për të mbushur shifrat, pastaj numëro arkat, shkruaj gjendjen e bankës dhe konfirmo çdo rresht me kontabilistin.',
     shopDetailsHow: 'Adresa, telefoni dhe NUI futen te Dyqani yt, pjesa e parë këtu.',
-    ownerHow: 'Butoni hap formën e ftesës me rolin Pronar të zgjedhur. Ai sheh gjithçka dhe vendos për kërkesat.',
+    ownerHow: 'Butoni hap formën e ftesës me rolin Pronar të zgjedhur. Pronari mund të bëjë gjithçka: të shesë, të mbyllë ditën, të mbajë librat dhe të ndryshojë stokun, njerëzit dhe cilësimet.',
     teamHow: 'Butoni hap formën e ftesës me rolin Punonjës të zgjedhur. Ata hyjnë te 4vd.app.',
     teamCount: (count: number) => `${count} punonjës deri tani.`,
     reportsHow: 'Janë aktive, përveç nëse pronari i ka fikur të dyja te Raportet e tua në faqen e Profilit.',
@@ -2662,9 +2662,9 @@ export const sq: Catalogue = {
   permissions: {
     title: 'Rolet',
     powersTitle: 'Çfarë mund të bëjë secili rol',
-    powersHint: 'Serveri i ndjek menjëherë, që në veprimin e ardhshëm. Administratori kryesor dhe zhvilluesi i 4VD mund të bëjnë gjithmonë gjithçka.',
+    powersHint: 'Serveri i ndjek menjëherë, që në veprimin e ardhshëm. Pronari, administratori kryesor dhe zhvilluesi i 4VD mund të bëjnë gjithmonë gjithçka dhe shohin çdo faqe.',
     power: 'E drejta',
-    locked: 'Mbetet te administratori kryesor dhe administratorët, që dikush të mund të menaxhojë gjithmonë njerëzit dhe cilësimet.',
+    locked: 'Mbetet te pronari, administratori kryesor dhe administratorët, që dikush të mund të menaxhojë gjithmonë njerëzit dhe cilësimet.',
     powers: {
       sell: { title: 'Shit', hint: 'Përdor Arkën, regjistro shitje dhe dërgo kërkesa.' },
       oversee: { title: 'Shih kostot, raportet dhe aktivitetin', hint: 'Çmimet e kostos, fitimi, Aktiviteti dhe vendimi për kthimet, shlyerjet dhe numërimet.' },
@@ -2708,7 +2708,7 @@ export const sq: Catalogue = {
   settings: {
     title: 'Cilësimet',
     description: 'Të dhënat e dyqanit, kur një kthim duhet të presë për ty, dhe sa poshtë mund ta çojë një zbritje çmimin.',
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të ndryshojë cilësimet e dyqanit.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të ndryshojë cilësimet e dyqanit.',
     approvals: 'Miratime dhe çmime',
     approvalsHint: 'Stoku i dëmtuar, heqjet nga stoku dhe ndryshimet e numërimit presin gjithmonë për ty. Kthimet e tua kalojnë menjëherë.',
     saved: 'U ruajt.',
@@ -3066,7 +3066,7 @@ export const sq: Catalogue = {
   expenses: {
     title: 'Shpenzimet',
     description: (period: string) => `Sa shpenzuan dyqani dhe lavazhi në ${period}. Raportet i zbresin nga fitimi.`,
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të shtojë ose heqë shpenzime.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të shtojë ose heqë shpenzime.',
     total: 'U shpenzuan',
     places: { shop: 'Dyqani', carwash: 'Lavazhi', both: 'Të dyja' },
     categories: {
@@ -3229,7 +3229,7 @@ export const sq: Catalogue = {
     place: 'Vendi',
     allCarwashes: 'Të gjitha lavazhet',
     description: (period: string) => `Sa bënë lavazhi dhe makina e këmbimit në ${period}.`,
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të fusë të ardhurat.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të fusë të ardhurat.',
     carwash: 'Lavazhi',
     change: 'Këmbimi',
     changeHint: 'Kartmonedha të këmbyera në monedha',
@@ -3259,7 +3259,7 @@ export const sq: Catalogue = {
     title: 'Zbritjet',
     description:
       'Një zbritje për një produkt ose një kategori të tërë. Zbatohet vetë në çdo shitje sa është aktive, dhe çmimet kthehen kur mbaron. Zbritjet nuk mblidhen, dhe çmimet me shumicë fitojnë kur janë më të lira.',
-    managersOnly: 'Vetëm administratori kryesor ose një administrator mund të nisë ose ndalë zbritje.',
+    managersOnly: 'Vetëm pronari, administratori kryesor ose një administrator mund të nisë ose ndalë zbritje.',
     new: 'Zbritje e re',
     none: 'Ende pa zbritje',
     noneHint: 'Krijo një më sipër, p.sh. 15% zbritje te Ndriçimi për një javë.',

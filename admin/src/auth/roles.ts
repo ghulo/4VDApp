@@ -24,7 +24,7 @@ export const canSell = (role: UserRole): boolean => hasPower(role, 'sell');
 export const canUseDashboard = (role: UserRole): boolean => canOversee(role) || canReadBooks(role) || staffLayout(role);
 /** Reopen a filed VAT month: the accountant, the owner and the main admin. */
 export const canReopen = (role: UserRole): boolean => hasPower(role, 'reopen');
-/** Write hand-written entries in the books: managers and the accountant. */
+/** Write hand-written entries in the books: managers, the owner and the accountant. */
 export const canWriteEntries = (role: UserRole): boolean => hasPower(role, 'entries');
 
 const TOP_ROLES: UserRole[] = ['main_admin', 'admin', 'owner', 'accountant'];

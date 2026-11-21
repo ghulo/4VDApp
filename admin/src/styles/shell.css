@@ -260,36 +260,6 @@
   flex: none;
 }
 
-/* The owner's More: a row like the others that opens the rest of the menu. */
-.sidebar__more {
-  width: 100%;
-  margin-top: var(--space-1);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-}
-
-.sidebar__more:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-}
-
-.sidebar__more-caret {
-  flex: none;
-  transition: transform var(--fast) var(--ease);
-}
-
-.sidebar__more--open .sidebar__more-caret {
-  transform: rotate(180deg);
-}
-
-.app--collapsed .sidebar__more-caret {
-  display: none;
-}
-
 /* The bar along the bottom on a phone (FullLayout); only shown under 900px. */
 .tab-bar {
   display: none;
@@ -400,8 +370,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tab-bar__icon,
-  .sidebar__more-caret {
+  .tab-bar__icon {
     transition: none;
   }
 }

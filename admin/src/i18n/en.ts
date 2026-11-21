@@ -1354,7 +1354,7 @@ export const en = {
       `On promotion: ${p.name}, −${p.percent}% (${p.price}) until ${p.until}.`,
     needCategory: 'Products need a category. Create one first.',
     goToCategories: 'Go to categories',
-    managersOnly: 'Only a main admin or an admin can change this.',
+    managersOnly: 'Only the owner, a main admin or an admin can change this.',
     details: 'Details',
     name: 'Name',
     category: 'Category',
@@ -2096,7 +2096,7 @@ export const en = {
   orders: {
     title: 'Orders',
     description: 'Every order from the day you make it to its delivery and bill. Receiving a delivery puts the stock in by itself.',
-    managersOnly: 'Only a main admin or an admin can order or receive deliveries.',
+    managersOnly: 'Only the owner, a main admin or an admin can order or receive deliveries.',
     suppliers: 'Suppliers',
     suppliersCaption: 'Suppliers',
     noSuppliers: 'No suppliers yet',
@@ -2250,7 +2250,7 @@ export const en = {
     history: 'History',
     noChanges: 'No changes yet',
     nowAt: (quantity: number) => `Stock is now ${quantity}.`,
-    managersOnly: 'Only a main admin or an admin can correct stock. Report damage or losses from your phone.',
+    managersOnly: 'Only the owner, a main admin or an admin can correct stock. Report damage or losses from your phone.',
     addOrRemove: 'Add or remove stock',
     add: 'Add stock',
     remove: 'Remove stock',
@@ -2306,7 +2306,7 @@ export const en = {
   categories: {
     title: 'Categories',
     description: 'Every product belongs to one category. People filter by these on their phones.',
-    managersOnly: 'Only a main admin or an admin can add, rename or delete categories.',
+    managersOnly: 'Only the owner, a main admin or an admin can add, rename or delete categories.',
     new: 'New category',
     none: 'No categories yet',
     noneHint: 'Add one above to start your catalog.',
@@ -2443,7 +2443,7 @@ export const en = {
     openingHow:
       'Set the day the books start (Settings → Books), run npm run opening:trefin -- <export folder> to fill the figures, then count the tills, type the bank balance and confirm every line with the accountant.',
     shopDetailsHow: 'The address, phone and NUI go in Your shop, the first section here.',
-    ownerHow: 'The button opens the invite form with the Owner role chosen. He sees everything and decides requests.',
+    ownerHow: 'The button opens the invite form with the Owner role chosen. The owner can do everything: sell, run the day, keep the books, and change stock, people and settings.',
     teamHow: 'The button opens the invite form with the Employee role chosen. They sign in at 4vd.app.',
     teamCount: (count: number) => `${count} ${count === 1 ? 'employee' : 'employees'} so far.`,
     reportsHow: 'They are on unless the owner switched both off under Your reports on their Profile page.',
@@ -2684,9 +2684,9 @@ export const en = {
   permissions: {
     title: 'Roles',
     powersTitle: 'What each role may do',
-    powersHint: 'The server follows these at once, on the next thing anyone does. The main admin and 4VD’s developer can always do everything.',
+    powersHint: 'The server follows these at once, on the next thing anyone does. The owner, the main admin and 4VD’s developer can always do everything and see every page.',
     power: 'Power',
-    locked: 'Stays with the main admin and admins, so someone can always manage people and settings.',
+    locked: 'Stays with the owner, the main admin and admins, so someone can always manage people and settings.',
     powers: {
       sell: { title: 'Sell', hint: 'Use the Counter, record sales and send requests.' },
       oversee: { title: 'See costs, reports and activity', hint: 'Cost prices, profit, Activity, and deciding returns, damage or loss and counts.' },
@@ -2730,7 +2730,7 @@ export const en = {
   settings: {
     title: 'Settings',
     description: "Your shop’s details, when a return has to wait for you, and how low a promotion may take a price.",
-    managersOnly: "Only a main admin or an admin can change the shop’s settings.",
+    managersOnly: "Only the owner, a main admin or an admin can change the shop’s settings.",
     approvals: 'Approvals and prices',
     approvalsHint: 'Damaged or lost stock and count differences always wait for you. Your own returns go straight through.',
     saved: 'Saved.',
@@ -3090,7 +3090,7 @@ export const en = {
   expenses: {
     title: 'Expenses',
     description: (period: string) => `What the shop and the carwash spent in ${period}. Reports take it off profit.`,
-    managersOnly: 'Only a main admin or an admin can add or remove expenses.',
+    managersOnly: 'Only the owner, a main admin or an admin can add or remove expenses.',
     total: 'Spent',
     places: { shop: 'Shop', carwash: 'Carwash', both: 'Both' },
     categories: {
@@ -3253,7 +3253,7 @@ export const en = {
     place: 'Place',
     allCarwashes: 'All carwashes',
     description: (period: string) => `What the carwash and the change machine made in ${period}.`,
-    managersOnly: 'Only a main admin or an admin can enter takings.',
+    managersOnly: 'Only the owner, a main admin or an admin can enter takings.',
     carwash: 'Carwash',
     change: 'Change',
     changeHint: 'Notes changed into coins',
@@ -3283,7 +3283,7 @@ export const en = {
     title: 'Promotions',
     description:
       "A discount for one product or a whole category. It applies by itself to every sale while it runs, and prices go back when it ends. Discounts never stack, and bulk prices win when they’re cheaper.",
-    managersOnly: 'Only a main admin or an admin can start or end promotions.',
+    managersOnly: 'Only the owner, a main admin or an admin can start or end promotions.',
     new: 'New promotion',
     none: 'No promotions yet',
     noneHint: 'Create one above, e.g. 15% off Lighting for a week.',

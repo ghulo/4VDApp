@@ -1,17 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { mainItemsFor, phoneTabsFor, SECTIONS, tabSearch } from './sections';
+import { setPermissions, DEFAULT_PERMISSIONS } from '../auth/permissions';
+import { NAV_GROUPS, phoneTabsFor, SECTIONS, shownTo, tabSearch } from './sections';
 
 const paths = (items: Array<{ to: string }> | null) => items?.map((item) => item.to) ?? null;
 
-describe('mainItemsFor', () => {
-  it('should give the owner the pages they look at, in order', () => {
-    expect(paths(mainItemsFor('owner'))).toEqual(['/', '/inbox', '/sales', '/inventory', '/report', '/ask']);
+describe('shownTo', () => {
+  const every = NAV_GROUPS.flatMap((group) => group.items);
+
+  it('should show the owner every page, the Counter, Day, Books and Settings too', () => {
+    expect(every.filter((item) => !shownTo('owner', item))).toEqual([]);
+    expect(['/counter', '/day', '/books', '/settings'].every((to) => shownTo('owner', { to }))).toBe(true);
   });
 
-  it('should give everyone else the whole menu', () => {
-    expect(mainItemsFor('developer')).toBeNull();
-    expect(mainItemsFor('admin')).toBeNull();
-    expect(mainItemsFor('accountant')).toBeNull();
+  it('should keep showing the owner every page when Settings → Roles hides one', () => {
+    setPermissions({ ...DEFAULT_PERMISSIONS, pages: { '/books': ['accountant'] } });
+    try {
+      expect(shownTo('owner', every.find((item) => item.to === '/books')!)).toBe(true);
+      expect(shownTo('admin', every.find((item) => item.to === '/books')!)).toBe(false);
+    } finally {
+      setPermissions(DEFAULT_PERMISSIONS);
+    }
+  });
+
+  it('should keep Settings from the accountant', () => {
+    expect(shownTo('accountant', every.find((item) => item.to === '/settings')!)).toBe(false);
   });
 });
 

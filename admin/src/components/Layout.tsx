@@ -1,4 +1,4 @@
-import { CaretDoubleLeft, CaretDoubleRight, CaretDown, DotsThree, List, ListMagnifyingGlass, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
+import { CaretDoubleLeft, CaretDoubleRight, List, ListMagnifyingGlass, MagnifyingGlass, Plus, SignOut, UserCircle, X } from '@phosphor-icons/react';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth, useCurrentUser } from '../auth/useAuth';
@@ -16,9 +16,8 @@ import { useBrand } from '../theme/useBrand';
 import { Button, DeveloperMark, Kbd, MenuButton, Tooltip } from './ui';
 import { useSwipeToDismiss } from './ui/useSwipeToDismiss';
 import { useT } from '../i18n/useT';
-import { isCurrent, mainItemsFor, NAV_GROUPS, type NavItem, phoneTabsFor, shownTo } from '../navigation/sections';
+import { isCurrent, NAV_GROUPS, type NavItem, phoneTabsFor, shownTo } from '../navigation/sections';
 import { staffLayout } from '../auth/roles';
-import type { UserRole } from '../services/types';
 import { StaffLayout } from './StaffLayout';
 import { AddBusinessSheet } from './AddBusinessSheet';
 import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
@@ -27,7 +26,6 @@ import { MAIN_ID, SkipLink, useFocusOnRouteChange } from './SkipLink';
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 const COLLAPSED_KEY = '4vd.sidebar.collapsed';
-const MORE_KEY = '4vd.sidebar.more';
 
 function readYes(key: string): boolean {
   try {
@@ -43,13 +41,6 @@ function saveYes(key: string, yes: boolean) {
   } catch {
     // Blocked storage: remembered for this visit only.
   }
-}
-
-/** Whether the page is one of those under the owner's More. */
-function underMore(role: UserRole, pathname: string): boolean {
-  const main = mainItemsFor(role);
-  if (!main) return false;
-  return NAV_GROUPS.some((group) => group.items.some((item) => shownTo(role, item) && !main.includes(item) && isCurrent(item, pathname)));
 }
 
 /** The signed-in frame: the full dashboard, or the simple staff one for the counter staff. */
@@ -82,7 +73,6 @@ function FullLayout() {
     : businesses;
 
   const [collapsed, setCollapsed] = useState(() => readYes(COLLAPSED_KEY));
-  const [moreOpen, setMoreOpen] = useState(() => readYes(MORE_KEY) || underMore(user.role, location.pathname));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -92,21 +82,10 @@ function FullLayout() {
     saveYes(COLLAPSED_KEY, next);
   }
 
-  function toggleMore() {
-    setMoreOpen(!moreOpen);
-    saveYes(MORE_KEY, !moreOpen);
-  }
-
-  // The menu: everything, grouped by the job; or, for the owner, the pages they
-  // look at, with the rest under More.
+  // The menu: everything the person may open, grouped by the job.
   const groups = NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => shownTo(user.role, item)) })).filter(
     (group) => group.items.length > 0,
   );
-  const mainItems = mainItemsFor(user.role);
-  const restGroups = mainItems
-    ? groups.map((group) => ({ ...group, items: group.items.filter((item) => !mainItems.includes(item)) })).filter((group) => group.items.length > 0)
-    : groups;
-  const showRest = !mainItems || moreOpen;
 
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
@@ -128,8 +107,6 @@ function FullLayout() {
   if (location.pathname !== lastPath) {
     setLastPath(location.pathname);
     setDrawerOpen(false);
-    // A page under More opens More, so the menu shows where you are.
-    if (underMore(user.role, location.pathname)) setMoreOpen(true);
   }
 
   // On a short screen the menu scrolls: keep the page you are on in view.
@@ -250,31 +227,14 @@ function FullLayout() {
           <Button variant="ghost" icon={X} aria-label={t.nav.closeMenu} onClick={closeDrawer} />
         </div>
         <nav className="sidebar__nav" aria-label={t.nav.main}>
-          {mainItems && <div className="sidebar__group">{mainItems.map(navLink)}</div>}
-          {mainItems && (
-            <button
-              type="button"
-              className={showRest ? 'sidebar__link sidebar__more sidebar__more--open' : 'sidebar__link sidebar__more'}
-              aria-expanded={showRest}
-              aria-controls={showRest ? 'sidebar-more' : undefined}
-              title={collapsed ? t.nav.more : undefined}
-              onClick={toggleMore}
-            >
-              <DotsThree size={18} weight="bold" className="sidebar__icon" aria-hidden="true" />
-              <span className="sidebar__label">{t.nav.more}</span>
-              <CaretDown size={12} weight="bold" className="sidebar__more-caret" aria-hidden="true" />
-            </button>
-          )}
-          {showRest && (
-            <div id="sidebar-more" className="sidebar__rest">
-              {restGroups.map((group) => (
-                <div key={group.key} className="sidebar__group">
-                  <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
-                  {group.items.map(navLink)}
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="sidebar__rest">
+            {groups.map((group) => (
+              <div key={group.key} className="sidebar__group">
+                <p className="sidebar__group-label">{t.nav.groups[group.key]}</p>
+                {group.items.map(navLink)}
+              </div>
+            ))}
+          </div>
         </nav>
         <Tooltip label={collapsed ? t.nav.expand : t.nav.collapseMenu} side="top">
           <button

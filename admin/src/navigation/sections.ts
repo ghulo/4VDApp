@@ -73,7 +73,7 @@ export interface NavItem {
   also?: string[];
   /** Which waiting count to show next to it, if any. */
   badge?: 'inbox';
-  /** Hidden from the owner, who sees the business but doesn't change its setup. */
+  /** Only for those who change the business's setup (managers and the owner). */
   managersOnly?: boolean;
   /** Only for those who oversee the business (managers and the owner), like the books. */
   overseersOnly?: boolean;
@@ -205,16 +205,6 @@ export const NAV_GROUPS: Array<{ key: keyof Catalogue['nav']['groups']; items: N
 const ALL_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 const itemsAt = (paths: string[]) => paths.flatMap((path) => ALL_ITEMS.filter((item) => item.to === path));
 
-/**
- * The owner looks at how the shop is doing and answers requests; they don't run
- * it day to day. Their menu shows those pages, and the rest waits under More.
- * Null: the whole menu, grouped (everyone else).
- */
-export function mainItemsFor(role: UserRole): NavItem[] | null {
-  if (role !== 'owner') return null;
-  return itemsAt(['/', '/inbox', '/sales', '/inventory', '/report', '/ask']).filter((item) => shownTo(role, item));
-}
-
 /** The bar along the bottom on a phone: the first four of these the person may open; Menu opens the rest. */
 export function phoneTabsFor(role: UserRole): NavItem[] {
   return itemsAt(['/', '/inbox', '/sales', '/inventory', '/books'])
@@ -222,9 +212,12 @@ export function phoneTabsFor(role: UserRole): NavItem[] {
     .slice(0, 4);
 }
 
+/** The roles that see every page, whatever Settings → Roles says: the owner runs the whole business. */
+const SEES_EVERYTHING: UserRole[] = ['developer', 'main_admin', 'owner'];
+
 /** Whether this person sees the menu item or tab: as chosen in Settings → Roles, else the accountant sees only the money side. */
 export function shownTo(role: UserRole, item: { to: string; managersOnly?: boolean; overseersOnly?: boolean; accountant?: boolean; power?: Power }): boolean {
-  return role === 'developer' || role === 'main_admin' || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
+  return SEES_EVERYTHING.includes(role) || (pageRoles(item.to)?.includes(role) ?? usuallyShownTo(role, item));
 }
 
 /** The usual rule, before any change in Settings → Roles. */

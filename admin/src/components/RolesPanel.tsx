@@ -14,7 +14,8 @@ import { Button, Card } from './ui';
 
 const KEY = ['permissions'];
 /** The roles that use the full dashboard menu; employees have their own four tabs and family has no dashboard. */
-const MENU_ROLES: UserRole[] = ['admin', 'owner', 'accountant'];
+/** The owner, like the main admin, always sees every page: not a choice here. */
+const MENU_ROLES: UserRole[] = ['admin', 'accountant'];
 const MENU_ITEMS = NAV_GROUPS.flatMap((group) => group.items).filter((item) => item.to !== '/');
 
 /** Settings → Roles: what each role may do and which menu pages it sees. The developer's own tool. */

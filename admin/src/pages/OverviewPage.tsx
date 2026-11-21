@@ -127,7 +127,7 @@ function QuickActions() {
   const t = useT();
   const user = useCurrentUser();
   const actions = [
-    user.role !== 'owner' && shownTo(user.role, { to: '/sales' }) && { to: '/sales?new=1', label: t.sales.record, icon: Receipt, primary: true },
+    shownTo(user.role, { to: '/sales' }) && { to: '/sales?new=1', label: t.sales.record, icon: Receipt, primary: true },
     shownTo(user.role, { to: '/suppliers', accountant: true }) && { to: '/bills/new', label: t.overview.actionBill, icon: FileArrowDown },
     shownTo(user.role, { to: '/counts' }) && { to: '/counts', label: t.overview.actionCount, icon: ClipboardText },
     shownTo(user.role, { to: '/report', accountant: true }) && { to: '/report', label: t.nav.items.reports, icon: ChartLine },

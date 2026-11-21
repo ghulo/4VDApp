@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { staffMayOpen, staffTabs } from '../navigation/staff';
-import { assignableRoles, browseOnly, canHandOut, canManage, canOversee, canSell, canUseDashboard, counterOnly, staffLayout } from './roles';
+import { assignableRoles, browseOnly, canHandOut, canManage, canOversee, canSell, canUseDashboard, canWriteEntries, counterOnly, staffLayout } from './roles';
 
 describe('roles', () => {
-  it('should let the developer, admins and the owner into the dashboard, but only managers change things', () => {
+  it('should let the developer, admins and the owner into the dashboard, and the owner change everything', () => {
     expect(['developer', 'admin', 'owner'].every((role) => canOversee(role as never))).toBe(true);
     expect(canOversee('employee')).toBe(false);
-    expect(canManage('owner')).toBe(false);
+    expect(canManage('owner')).toBe(true);
+    expect(canWriteEntries('owner')).toBe(true);
     expect(canManage('admin')).toBe(true);
+    expect(canManage('accountant')).toBe(false);
   });
 
   it('should let employees in for the Counter only', () => {
@@ -32,7 +34,7 @@ describe('roles', () => {
     expect(assignableRoles('developer')).toEqual(['main_admin', 'admin', 'owner', 'accountant', 'employee', 'family']);
     expect(canHandOut('main_admin', 'developer')).toBe(false);
     expect(assignableRoles('admin')).toEqual(['employee', 'family']);
-    expect(assignableRoles('owner')).toEqual([]);
+    expect(assignableRoles('owner')).toEqual(['employee', 'family']);
     expect(canHandOut('admin', 'owner')).toBe(false);
     expect(canHandOut('developer', 'owner')).toBe(true);
     expect(canHandOut('admin', 'accountant')).toBe(false);

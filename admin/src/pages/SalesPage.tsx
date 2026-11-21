@@ -41,7 +41,7 @@ export function SalesPage() {
       <PageHeader
         title={t.nav.items.sales}
         actions={
-          user.role !== 'owner' && user.role !== 'accountant' && (
+          user.role !== 'accountant' && (
             <Button variant="primary" icon={Receipt} onClick={() => setRecording(true)}>
               {t.sales.record}
             </Button>

@@ -28,6 +28,14 @@ window.addEventListener('vite:preloadError', (event) => {
   window.location.reload()
 })
 
+// The saved copy of 4VD on this device (public/sw.js), so it opens without internet (the Counter at the shop sells from it).
+// Registered on every load, alerts or not; the same worker shows the alerts. Only the built app has a copy to save.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

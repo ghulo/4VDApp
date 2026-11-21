@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { motionLevel } from '../../../theme/motion';
 import {
   Area,
   AreaChart as RAreaChart,
@@ -24,9 +25,8 @@ import { scaleTop } from '../sparkline';
  * Colours go in `style`, not SVG attributes, so the tokens follow the theme.
  */
 
-/** Under reduced motion the charts appear at once instead of growing in. */
-const calm = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-const ANIMATE = { isAnimationActive: !calm, animationDuration: 280, animationEasing: 'ease-out' as const };
+/** Charts grow in once only under Motion: full; otherwise they appear at once. Read when drawn, so the setting applies without a reload. */
+const animate = () => ({ isAnimationActive: motionLevel() === 'full', animationDuration: 220, animationEasing: 'ease-out' as const });
 
 const AXIS_TICK = { fill: 'var(--ink-muted)', fontSize: 12, fontFamily: 'var(--font-body)' };
 
@@ -72,7 +72,7 @@ export function AreaView({ points, height, formatValue }: { points: ChartColumn[
           style={{ stroke: 'var(--data-line)', fill: `url(#${fillId})` }}
           strokeWidth={2}
           activeDot={{ r: 5, style: { fill: 'var(--data-line)', stroke: 'var(--surface)', strokeWidth: 2 } }}
-          {...ANIMATE}
+          {...animate()}
         />
       </RAreaChart>
     </ResponsiveContainer>
@@ -97,7 +97,7 @@ export function ColumnView({ columns, height }: { columns: ChartColumn[]; height
         <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} axisLine={{ style: { stroke: 'var(--line-strong)' } }} interval="preserveStartEnd" tickMargin={6} />
         <YAxis hide domain={[0, outlier === null || !top ? 'auto' : top]} allowDataOverflow={outlier !== null} />
         <Tooltip content={<Tip />} cursor={false} isAnimationActive={false} />
-        <Bar dataKey="value" maxBarSize={40} radius={[3, 3, 0, 0]} shape={ColumnShape(outlier)} {...ANIMATE}>
+        <Bar dataKey="value" maxBarSize={40} radius={[3, 3, 0, 0]} shape={ColumnShape(outlier)} {...animate()}>
           {columns.map((column, index) => (
             <Cell
               key={column.key}
@@ -105,7 +105,7 @@ export function ColumnView({ columns, height }: { columns: ChartColumn[]; height
                 fill: (busiest > 0 && column.value === busiest) || active === index ? 'var(--chart-strong)' : 'var(--chart-series)',
                 // Pointing at one column lets the others step back.
                 opacity: active === null || active === index ? 1 : 0.45,
-                transition: 'opacity var(--fast) var(--ease), fill var(--fast) var(--ease)',
+                transition: 'opacity var(--dur-small) var(--ease), fill var(--dur-small) var(--ease)',
               }}
             />
           ))}
@@ -164,7 +164,7 @@ export function RingView({ slices, shades, active, onActive }: { slices: RingSli
           stroke="none"
           onMouseEnter={(_, index) => onActive(slices[index]?.key ?? null)}
           onMouseLeave={() => onActive(null)}
-          {...ANIMATE}
+          {...animate()}
         >
           {(slices.length ? slices : [{ key: 'none' }]).map((slice, index) => (
             <Cell
@@ -172,7 +172,7 @@ export function RingView({ slices, shades, active, onActive }: { slices: RingSli
               style={{
                 fill: slices.length ? shades[index] : 'var(--surface-sunk)',
                 opacity: active === null || active === slice.key ? 1 : 0.25,
-                transition: 'opacity var(--fast) var(--ease)',
+                transition: 'opacity var(--dur-small) var(--ease)',
                 outline: 'none',
               }}
             />

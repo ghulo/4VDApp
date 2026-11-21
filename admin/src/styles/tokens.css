@@ -287,17 +287,21 @@
   /* A record docked beside its list (wide screens). */
   --inspector-width: 400px;
 
-  /* Motion: quick and soft, never bouncy (the behaviours live in
-     styles/motion.css). Anything that moves, both ways, rides --spring over
-     --spring-time: Apple's critically damped spring (response 0.34s, no
-     overshoot), half-way at 50ms, 90% there at 120ms, settled at 280ms.
-     Colour and hover changes are --fast on --ease; a press is --instant.
-     A swipe hands its finger speed to --ease (useSwipeToDismiss). */
+  /* Motion (DESIGN.md 12; the behaviours live in styles/motion.css): one
+     scale of four durations. Entrances and moves ride --spring, Apple's
+     critically damped spring (no overshoot, half-way at 40ms); an exit is
+     ×0.7 of its entrance on --ease-in, so things leave quicker than they came.
+     Colour and hover changes are --dur-small on --ease. A swipe hands its
+     finger speed to --ease (useSwipeToDismiss). Under Motion: Off
+     (html[data-motion='off']) every duration is 0. */
+  --dur-press: 80ms; /* a key going down or up, a toggle knob, a checkbox */
+  --dur-small: 140ms; /* hover, colour, tooltip, a word swap, a row appearing */
+  --dur-medium: 220ms; /* menus, popovers, toasts, a card opening, a page arriving */
+  --dur-large: 300ms; /* the phone card sliding up, the theme cross-fade, the Paid check */
+  --exit: 0.7;
   --spring: linear(0, 0.015 2%, 0.053 4%, 0.107 6%, 0.169 8%, 0.236 10%, 0.304 12%, 0.403 15%, 0.495 18%, 0.577 21%, 0.671 25%, 0.764 30%, 0.833 35%, 0.883 40%, 0.93 47%, 0.962 55%, 0.983 65%, 0.995 80%, 1);
-  --spring-time: 280ms;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --instant: 100ms;
-  --fast: 150ms;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 /* Phones: bigger controls for thumbs, like SBB's element sizes (44px minimum). */

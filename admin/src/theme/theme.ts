@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { motionLevel } from './motion';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type Theme = 'light' | 'dark';
@@ -42,8 +43,7 @@ export function applyTheme(preference: ThemePreference): void {
     root.dataset.theme = theme;
   };
   // A real change cross-fades (motion.css) instead of flashing the whole screen.
-  const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
-  if (root.dataset.theme && root.dataset.theme !== theme && !calm && document.startViewTransition) {
+  if (root.dataset.theme && root.dataset.theme !== theme && motionLevel() === 'full' && document.startViewTransition) {
     document.startViewTransition(paint);
   } else {
     paint();

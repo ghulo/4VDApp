@@ -12,6 +12,15 @@
     choice = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   document.documentElement.dataset.theme = choice;
+  // The Motion setting (same rules as src/theme/motion.ts): Automatic follows the device,
+  // and the Windows app on a PC with 4 GB or less starts on Reduced.
+  var motion = window.fourvdDesktop && navigator.deviceMemory && navigator.deviceMemory <= 4 ? 'reduced' : 'auto';
+  try {
+    var savedMotion = localStorage.getItem('4vd.motion');
+    if (savedMotion === 'auto' || savedMotion === 'full' || savedMotion === 'reduced' || savedMotion === 'off') motion = savedMotion;
+  } catch (e) {}
+  if (motion === 'auto') motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full';
+  document.documentElement.dataset.motion = motion;
   // A business in its own colours: put them back before the first paint (src/theme/applyBrand.ts keeps them).
   try {
     var brand = localStorage.getItem('4vd.brand');

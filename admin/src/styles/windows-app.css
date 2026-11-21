@@ -39,7 +39,7 @@
   border-radius: var(--radius-pill);
   background: var(--fill);
   box-shadow: var(--shadow-inset);
-  transition: width var(--spring-time) var(--spring), background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 .welcome__dots li.is-done {
@@ -99,7 +99,7 @@
   background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   cursor: pointer;
-  transition: box-shadow var(--fast) var(--ease), background-color var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease), background-color var(--dur-small) var(--ease);
 }
 
 .choice-card:hover {

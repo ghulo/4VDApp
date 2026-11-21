@@ -162,7 +162,7 @@
   box-shadow: var(--shadow-raise), inset 0 0 0 1px var(--line-strong);
   color: var(--ink);
   cursor: text;
-  transition: box-shadow var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease);
 }
 
 .counter-scan__field:hover {
@@ -322,8 +322,8 @@
   font: inherit;
   cursor: pointer;
   transition:
-    background-color var(--fast) var(--ease),
-    color var(--fast) var(--ease);
+    background-color var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease);
 }
 
 .counter-basket:hover {
@@ -473,7 +473,7 @@
   border-radius: var(--radius-panel);
   background: var(--surface);
   box-shadow: var(--shadow-float), inset 0 0 0 1px var(--danger);
-  animation: counter-alarm-in var(--fast) var(--ease);
+  animation: counter-alarm-in var(--dur-small) var(--ease);
 }
 
 /* On a phone the basket is short: the alarm still needs room for its words and key. */
@@ -504,10 +504,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .counter-alarm__card {
-    animation: none;
-  }
+:root:not([data-motion='full']) .counter-alarm__card {
+  animation: none;
 }
 
 /* ---------- The sale's header ---------- */
@@ -535,7 +533,7 @@
   font-size: var(--text-sm);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--line-strong);
-  transition: box-shadow var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease);
 }
 
 .counter-head__customer:hover {
@@ -700,7 +698,7 @@
 
 .counter-row {
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 .counter-row:hover td {
@@ -824,22 +822,19 @@
 
 /* A line just scanned flashes once, so the eye finds it: a green wash behind
    the text fades out (opacity only, so it stays smooth). */
-@media (prefers-reduced-motion: no-preference) {
-  .counter-row--new td {
-    position: relative;
-    isolation: isolate;
-  }
-
-  .counter-row--new td::after {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: var(--ok-soft);
-    opacity: 0;
-    pointer-events: none;
-    content: '';
-    animation: counter-flash 1.2s var(--ease);
-  }
+:root[data-motion='full'] .counter-row--new td {
+  position: relative;
+  isolation: isolate;
+}
+:root[data-motion='full'] .counter-row--new td::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--ok-soft);
+  opacity: 0;
+  pointer-events: none;
+  content: '';
+  animation: counter-flash 1.2s var(--ease);
 }
 
 @keyframes counter-flash {
@@ -1010,25 +1005,20 @@
   font-size: var(--text-sm);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .counter-sold__head,
-  .counter-sold__change {
-    animation: counter-sold-in var(--spring-time) var(--spring) both;
-  }
+/* The change to give back is money: it stands still from the first frame. */
+:root[data-motion='full'] .counter-sold__head {
+  animation: counter-sold-in var(--dur-medium) var(--spring) both;
+}
 
-  .counter-sold__change {
-    animation-delay: 60ms;
-  }
+/* The one big moment at the Counter: the check pops in a little past its
+   size and settles, and a soft ring spreads out from it once. */
 
-  /* The one big moment at the Counter: the check pops in a little past its
-     size and settles, and a soft ring spreads out from it once. */
-  .counter-sold__tick {
-    animation: counter-tick-pop var(--pop-time) var(--pop) both;
-  }
+:root[data-motion='full'] .counter-sold__tick {
+  animation: counter-tick-pop var(--dur-large) var(--pop) both;
+}
 
-  .counter-sold__tick::after {
-    animation: counter-tick-ring 600ms var(--ease) 120ms both;
-  }
+:root[data-motion='full'] .counter-sold__tick::after {
+  animation: counter-tick-ring 600ms var(--ease) 120ms both;
 }
 
 .counter-sold__tick::after {
@@ -1086,10 +1076,8 @@
   color: var(--danger);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .counter-stamp {
-    animation: counter-stamp var(--spring-time) var(--spring) both;
-  }
+:root[data-motion='full'] .counter-stamp {
+  animation: counter-stamp var(--dur-medium) var(--spring) both;
 }
 
 @keyframes counter-stamp {
@@ -1383,7 +1371,7 @@
 
 .counter-card__caret {
   flex-shrink: 0;
-  transition: transform var(--fast) var(--ease);
+  transition: transform var(--dur-small) var(--ease);
 }
 
 .counter-card[open] .counter-card__caret {

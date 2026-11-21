@@ -7,9 +7,11 @@ import { startErrorTracking } from './errorTracking'
 import { readLanguage, safeStorage } from './i18n/language'
 import { loadCatalogue } from './i18n/useT'
 import { startKeyboardInset } from './utils/keyboardInset'
+import { startMotion } from './theme/motion'
 
 // Start fetching the shown language's words now; the page waits for them (i18n/I18nProvider.tsx).
 void loadCatalogue(readLanguage(safeStorage(), navigator.languages ?? [navigator.language])).catch(() => undefined)
+startMotion()
 startSelectionPills()
 startErrorTracking()
 startKeyboardInset()

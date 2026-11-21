@@ -36,6 +36,14 @@ export const sq: Catalogue = {
     description: 'E përdorin paneli, njoftimet dhe emailet.',
   },
   theme: { label: 'Pamja', light: 'E çelët', dark: 'E errët', auto: 'Auto' },
+  motion: {
+    label: 'Lëvizja',
+    hint: 'Automatik ndjek cilësimin e kësaj pajisjeje. Ruhet vetëm në këtë pajisje.',
+    auto: 'Automatik',
+    full: 'E plotë',
+    reduced: 'E pakësuar',
+    off: 'Fikur',
+  },
   shell: {
     headline: 'Dyqani yt, stoku yt dhe ekipi yt në një vend.',
     smallPrint: '4VD mban emrin e katër vëllezërve Dacaj.',

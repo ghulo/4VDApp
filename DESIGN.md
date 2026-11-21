@@ -918,25 +918,41 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
 
 ## 12. Motion and accessibility
 
-- Motion: Apple's fluid motion, quiet; entrances inside
-  `prefers-reduced-motion: no-preference`, and base.css stops every
-  transition under reduce. One vocabulary in `admin/src/styles/motion.css`:
-  - Anything that moves rides `--spring` over `--spring-time` (280ms): a
-    critically damped spring (no overshoot, half-way at 50ms),
-    the same in and out. Colour/hover is `--fast` 150ms on `--ease`.
-  - Pages show at once: no entrance animation on pages or their sections,
-    so moving around never waits on motion.
+- Motion explains, never decorates; money never moves. One vocabulary in
+  `admin/src/styles/motion.css` on one duration scale in `tokens.css`:
+  - `--dur-press` 80ms (a key, a knob, a tick), `--dur-small` 140ms (hover,
+    colour, tooltip, a word swap), `--dur-medium` 220ms (menus, popovers,
+    toasts, a card opening, a page arriving), `--dur-large` 300ms (the phone
+    card sliding up, the theme cross-fade, the Paid check). Entrances and
+    moves ride `--spring` (Apple's critically damped spring, no overshoot);
+    an exit is `--exit` (×0.7) of its entrance on `--ease-in`, so things
+    leave quicker than they came. Colour and hover are `--dur-small` on `--ease`.
+  - **Motion setting** (Profile → Look, per device in localStorage
+    `4vd.motion`, `theme/motion.ts`; `public/boot.js` applies it before the
+    first paint): Automatic · Full · Reduced · Off. It puts `data-motion` on
+    `<html>`: `full` runs everything (Automatic gives it unless the device
+    asks for reduced motion), `reduced` keeps short fades (cards, toasts,
+    tooltips) and drops every movement, roll and stagger, `off` sets every
+    duration to 0. Busy spinners keep spinning under all three (a frozen one
+    reads as broken). The Windows app on a PC with 4 GB or less starts on
+    Reduced. CSS writes motion under `:root[data-motion='full']`, never
+    `@media (prefers-reduced-motion)`; script asks `motionLevel()` when it
+    moves.
+  - A page arrives: its main column fades up 6px from 0.6 opacity over
+    `--dur-medium` (`playArrival`, on a path change, never on first load);
+    the menu and top bar never move. Sections inside a page show at once.
   - Selection glides: the chosen segment of every segmented track and the
     current sidebar item (with its orange tick) are one highlight that slides
-    to the next choice (`selectionPills.ts`, no per-screen code).
+    to the next choice (`selectionPills.ts`); its size changes at once, only
+    its place glides.
   - A flow of steps on one card (Settings → Import: drop, found, check,
     bring in) slides the next step in from the right on the spring, and Back
     brings the earlier one in from the left; it answers a key press, so it is
     not a page entrance.
-  - Panels leave the way they came: the form card grows out of the key that
-    opened it (from the middle when opened by a link) and folds back into it,
-    its words a beat behind the paper, form still on it; on a phone it rises
-    from the bottom edge and goes back down; the phone drawer with its backdrop.
+  - Panels leave the way they came: the form card grows from 0.96 toward the
+    key that opened it (from the middle when opened by a link) and goes back
+    quicker; on a phone it slides up from the bottom edge and goes back down;
+    the phone drawer with its backdrop.
   - Swipe on touch (`useSwipeToDismiss`): the phone drawer sideways and the
     phone form card down by its head (grab handle) follow the finger 1:1, rubber-band past the open edge, and on release
     project the flick to decide close or stay, starting at the finger's speed.
@@ -944,11 +960,11 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
   - Keys sink into their edge on press. Charts grow in once from their base.
     "Loading" waits 300ms, so a quick answer never flashes it; then a slow wave (opacity, 1.8s, a beat per row) runs down the skeleton so a slow answer never looks frozen. Light/dark
     cross-fades.
-  - Small changes are quicker: `--motion-quick` (220ms) on the spring, from the
-    pieces in `components/ui/Motion.tsx`, never written per page:
-    - A figure changes: only its changed digits roll, up when it grows, down
-      when it shrinks (`RollingNumber`; stat tiles, metric cards and the
-      Counter totals do it on their own). At rest it is plain text.
+  - Small changes, from the pieces in `components/ui/Motion.tsx`, never
+    written per page:
+    - A dashboard figure changes: only its changed digits roll, up when it
+      grows, down when it shrinks (`RollingNumber`; stat tiles and metric
+      cards do it on their own), never on first show. At rest it is plain text.
     - An error shakes once: every `.form-error` as it appears, and a field
       again on each wrong try (`shake()`, the Counter PIN). `--motion-shake`
       240ms on `--shake-curve`, the one curve that isn't the spring.
@@ -956,24 +972,30 @@ Count badge: Ink pill with Paper text, To do count only (3.3).
       Counter's Paid screen and every "done" toast). With `busy` it is a
       spinning arc first that turns into the check.
     - The one big moment, the Counter's Paid screen: the check pops a little
-      past its size and settles (`--pop`, 380ms, the only overshoot in 4VD),
-      a soft ring spreads out from it once, and the change to give back rolls
-      up from zero (`RollUp`). Never on everyday screens.
-    - Words that change swap with a soft blur (`SwapText`): "Saving… → Saved",
+      past its size and settles (`--pop` over `--dur-large`, the only
+      overshoot in 4VD) and a soft ring spreads out from it once. Never on
+      everyday screens.
+    - Words that change swap in place (`SwapText`): "Saving… → Saved",
       "Reading the bill… → Ready to check".
     - While Claude reads (a bill photo, an emailed bill, a bank statement) the
       words shimmer: a soft wave of opacity runs word by word, in the text's
       own ink (`ShimmerText`, or `SwapText shimmer`). Never a coloured sweep.
     - Toasts stack three deep: the newest in front, older ones peek out above
       it, smaller; pointing at the stack or tabbing into it fans them out.
-      A toast rises in sharpening from a little blur and fades away when it goes.
+      A toast rises 8px as it fades in and fades away when it goes.
     - Menus and floating panels open from the edge they hang from and close
       the same way (scale 0.96 + fade); a tooltip fades in and goes at once;
       the centred question grows in from the middle.
-  - Only `transform` and `opacity` move (plus the highlight's size), and a
-    small blur (`filter`, 4px at most) on small pieces like a digit, a word or
-    a toast. No bounce, parallax or looping motion, except two loops that
-    only run while 4VD waits: the loading wave and the reading shimmer.
+  - **Never animated:** money on the till (basket totals, prices, the change
+    to give back, receipts: they swap at once), anything on the till between
+    a key press and the next scan (motion never delays focus or input), and
+    focus moves.
+  - Only `transform` and `opacity` move (plus `background-color` for a
+    flash). No blur in motion, no width or height animation, no bounce,
+    parallax or looping motion, except two loops that only run while 4VD
+    waits: the loading wave and the reading shimmer. No glass
+    (`backdrop-filter`) on the Counter (`html[data-till]`) or in the
+    Windows app (`html[data-shell='desktop']`): panes turn to solid paper.
 - WCAG AA contrast in both themes (contrast test). 44px touch targets on phones.
 - Keyboard: every action reachable, visible focus, one tab stop per chart
   (arrows walk the data), dialogs trap focus and return it.

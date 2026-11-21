@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 import { useT } from '../i18n/useT';
+import { playArrival } from '../theme/motion';
 
 export const MAIN_ID = 'main';
 
@@ -15,7 +16,8 @@ export function SkipLink() {
 }
 
 /** After moving to another page, puts focus on its heading so screen readers
-    and keyboards start there, not at the menu link that was clicked. */
+    and keyboards start there, not at the menu link that was clicked, and
+    lets the new page arrive (theme/motion.ts; the menu and top bar stay still). */
 export function useFocusOnRouteChange() {
   const { pathname } = useLocation();
   const first = useRef(true);
@@ -25,6 +27,7 @@ export function useFocusOnRouteChange() {
       first.current = false;
       return;
     }
+    playArrival(document.getElementById(MAIN_ID));
     let tries = 0;
     let frame = 0;
     const focusHeading = () => {

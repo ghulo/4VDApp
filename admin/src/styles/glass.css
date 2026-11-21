@@ -60,3 +60,19 @@
     backdrop-filter: none;
   }
 }
+
+/* No glass on the Counter (html[data-till], set while it is open) or in the
+   Windows app: a blur behind moving content costs the shop PC's graphics on
+   every frame. The panes turn to solid paper instead. */
+:root:is([data-shell='desktop'], [data-till]) {
+  --glass-bg: var(--surface);
+  --glass-bg-strong: var(--surface);
+}
+
+:root:is([data-shell='desktop'], [data-till]) *,
+:root:is([data-shell='desktop'], [data-till]) *::before,
+:root:is([data-shell='desktop'], [data-till]) *::after,
+:root:is([data-shell='desktop'], [data-till]) .sheet::backdrop {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

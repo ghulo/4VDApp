@@ -232,7 +232,7 @@
 }
 
 .sidebar__link {
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease), color var(--dur-small) var(--ease);
 }
 
 /* Where you are: a quiet grey row and the amber tick at the edge. One mark,
@@ -332,7 +332,7 @@
     display: inline-flex;
     padding: var(--space-1) var(--space-4);
     border-radius: var(--radius-pill);
-    transition: background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+    transition: background-color var(--dur-small) var(--ease), transform var(--dur-small) var(--ease);
   }
 
   .tab-bar__tab:hover .tab-bar__icon {
@@ -369,10 +369,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tab-bar__icon {
-    transition: none;
-  }
+:root:not([data-motion='full']) .tab-bar__icon {
+  transition: none;
 }
 
 .sidebar__label {
@@ -548,7 +546,7 @@
     height: 100vh;
     height: 100dvh;
     transform: translateX(-105%);
-    transition: transform var(--spring-time) var(--spring);
+    transition: transform var(--dur-medium) var(--spring);
     box-shadow: var(--shadow-float);
   }
 
@@ -604,7 +602,7 @@
     backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity var(--spring-time) var(--spring);
+    transition: opacity var(--dur-medium) var(--spring);
   }
 
   .drawer-backdrop--open {
@@ -697,10 +695,10 @@
   cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);
   transition:
-    background-color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease),
-    color var(--fast) var(--ease),
-    transform var(--instant) var(--ease);
+    background-color var(--dur-small) var(--ease),
+    box-shadow var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 .chip:hover {
@@ -741,8 +739,8 @@
   font-weight: 400;
   box-shadow: inset 0 0 0 1px var(--line), var(--key-shine-paper), var(--key-drop);
   transition:
-    box-shadow var(--fast) var(--ease),
-    color var(--fast) var(--ease);
+    box-shadow var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease);
 }
 
 .toolbar select:hover,
@@ -925,10 +923,8 @@
   box-shadow: var(--shadow-float);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .palette {
-    animation: palette-in var(--fast) var(--ease);
-  }
+:root[data-motion='full'] .palette {
+  animation: palette-in var(--dur-small) var(--ease);
 }
 
 @keyframes palette-in {
@@ -1091,7 +1087,7 @@
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
-  transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+  transition: color var(--dur-small) var(--ease), background-color var(--dur-small) var(--ease);
 }
 
 .section-tabs__tab:hover {

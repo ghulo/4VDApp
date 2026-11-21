@@ -25,10 +25,10 @@
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease),
-    color var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+    background-color var(--dur-small) var(--ease),
+    box-shadow var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease),
+    transform var(--dur-small) var(--ease);
 }
 
 .button:has(> svg:first-child):not(.button--icon, .button--busy-label) {
@@ -38,17 +38,15 @@
 /* Going down is instant, like a real key; coming back up rides the spring. */
 .button:not(:disabled):active {
   transform: translateY(1px);
-  transition-duration: var(--instant);
+  transition-duration: var(--dur-press);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .button {
-    transition:
-      background-color var(--fast) var(--ease),
-      box-shadow var(--fast) var(--ease),
-      color var(--fast) var(--ease),
-      transform var(--spring-time) var(--spring);
-  }
+:root[data-motion='full'] .button {
+  transition:
+    background-color var(--dur-small) var(--ease),
+    box-shadow var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease),
+    transform var(--dur-medium) var(--spring);
 }
 
 /* Hover lights the key from above. A gradient can't fade into another, so
@@ -61,7 +59,7 @@
   background: var(--key-light);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--fast) var(--ease);
+  transition: opacity var(--dur-small) var(--ease);
   content: '';
 }
 
@@ -750,7 +748,7 @@
 
 .table td,
 .table tbody th {
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 .table tbody tr:hover td,
@@ -994,7 +992,7 @@
   /* A hairline on the left and top of every cell. On the panel's outer edge
      they fall outside it and are clipped, so only the lines between show. */
   box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line);
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 /* A figure that opens its page says so: an arrow by the label on hover and focus. */
@@ -1005,8 +1003,8 @@
   opacity: 0;
   transform: translateX(-4px);
   transition:
-    opacity var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+    opacity var(--dur-small) var(--ease),
+    transform var(--dur-small) var(--ease);
 }
 
 .stat--link:hover,
@@ -1119,7 +1117,7 @@
 
 .stat-quiet__row--link {
   border-radius: var(--radius-small);
-  transition: color var(--fast) var(--ease);
+  transition: color var(--dur-small) var(--ease);
 }
 
 .stat-quiet__row--link:hover .stat-quiet__words,
@@ -1143,11 +1141,9 @@
   justify-content: flex-start;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .stat--link .stat__label::after {
-    transform: none;
-    transition: none;
-  }
+:root:not([data-motion='full']) .stat--link .stat__label::after {
+  transform: none;
+  transition: none;
 }
 
 /* ---------- Badge ---------- */
@@ -1404,8 +1400,8 @@ input[type='checkbox']:not(.switch) {
   box-shadow: var(--shadow-inset);
   cursor: pointer;
   transition:
-    background-color var(--fast) var(--ease),
-    border-color var(--fast) var(--ease);
+    background-color var(--dur-small) var(--ease),
+    border-color var(--dur-small) var(--ease);
 }
 
 input[type='checkbox']:not(.switch)::before {
@@ -1442,11 +1438,10 @@ input[type='checkbox']:not(.switch):focus-visible {
   outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* The tick turns in on the spring, a beat quicker than a menu. */
-  input[type='checkbox']:not(.switch)::before {
-    transition: transform var(--motion-quick) var(--spring);
-  }
+/* The tick turns in on the spring, a beat quicker than a menu. */
+
+:root[data-motion='full'] input[type='checkbox']:not(.switch)::before {
+  transition: transform var(--dur-medium) var(--spring);
 }
 
 /* ---------- Switch (a checkbox with role="switch") ---------- */
@@ -1565,10 +1560,8 @@ input.switch:focus-visible {
 }
 
 /* The one moment: the tile settles into the wall when the drawing appears. */
-@media (prefers-reduced-motion: no-preference) {
-  .shop-sunrise__rise {
-    animation: tile-rise 1.2s var(--ease) both;
-  }
+:root[data-motion='full'] .shop-sunrise__rise {
+  animation: tile-rise 1.2s var(--ease) both;
 }
 
 .shop-sunrise__rise {
@@ -1659,7 +1652,7 @@ input.switch:focus-visible {
   margin: calc(var(--space-1) * -1.5) calc(var(--space-1) * -1.5) calc(var(--space-1) * -1.5) 0;
   border-radius: var(--radius-small);
   color: var(--ink-muted);
-  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease), color var(--dur-small) var(--ease);
 }
 
 .metric__more:hover {
@@ -1806,10 +1799,8 @@ input.switch:focus-visible {
   flex: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .button__spinner {
-    animation: spin 0.8s linear infinite;
-  }
+:root[data-motion='full'] .button__spinner {
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -1889,8 +1880,8 @@ input.switch:focus-visible {
   font-weight: 500;
   text-decoration: none;
   transition:
-    background-color var(--fast) var(--ease),
-    color var(--fast) var(--ease);
+    background-color var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease);
 }
 
 .settings-nav__link:hover {
@@ -2165,16 +2156,14 @@ input.switch:focus-visible {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   transition:
-    background-color var(--fast) var(--ease),
-    color var(--fast) var(--ease),
-    transform var(--spring-time) var(--spring);
+    background-color var(--dur-small) var(--ease),
+    color var(--dur-small) var(--ease);
 }
 
 .sheet--card .sheet__body form:has(> :is(.field, .field-row) ~ :is(.field, .field-row) ~ :is(.field, .field-row)) > :is(.field, .field-row):focus-within::before {
   background: var(--amber-face);
   box-shadow: var(--amber-key);
   color: var(--cta-ink);
-  transform: scale(1.1);
 }
 
 /* A field with a problem marks its step red. */

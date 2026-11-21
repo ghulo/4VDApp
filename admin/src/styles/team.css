@@ -59,7 +59,7 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--line);
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 .todo-row:first-child,
@@ -284,7 +284,7 @@
 @media (hover: hover) {
   .alert-feed__actions .button {
     opacity: 0;
-    transition: opacity var(--fast) var(--ease);
+    transition: opacity var(--dur-small) var(--ease);
   }
 
   .alert-feed__row:hover .alert-feed__actions .button,
@@ -404,7 +404,7 @@
 
 .is-refreshing {
   opacity: 0.6;
-  transition: opacity var(--fast) var(--ease);
+  transition: opacity var(--dur-small) var(--ease);
 }
 
 /* ---------- Settings layout: sections as their own pages ---------- */
@@ -600,10 +600,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .progress-ring__fill {
-    transition: none;
-  }
+:root:not([data-motion='full']) .progress-ring__fill {
+  transition: none;
 }
 
 /* ---------- Profile ---------- */

@@ -122,9 +122,9 @@ textarea {
   font: inherit;
   font-size: var(--text-field);
   transition:
-    border-color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease),
-    background-color var(--fast) var(--ease);
+    border-color var(--dur-small) var(--ease),
+    box-shadow var(--dur-small) var(--ease),
+    background-color var(--dur-small) var(--ease);
 }
 
 /* Figures line up digit under digit while you type them. */
@@ -231,13 +231,13 @@ kbd {
   text-align: center;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition: none !important;
-    animation: none !important;
-  }
+/* Motion: Reduced or Off (theme/motion.ts) stops every transition and
+   animation; styles/motion.css puts back the short fades and the spinners. */
+:root:not([data-motion='full']) *,
+:root:not([data-motion='full']) *::before,
+:root:not([data-motion='full']) *::after {
+  transition: none !important;
+  animation: none !important;
 }
 
 /* Hidden until Tab reaches it, then it sits over the top bar. */

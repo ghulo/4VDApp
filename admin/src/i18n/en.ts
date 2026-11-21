@@ -40,6 +40,14 @@ export const en = {
     description: 'The dashboard, alerts and emails all use it.',
   },
   theme: { label: 'Theme', light: 'Light', dark: 'Dark', auto: 'Auto' },
+  motion: {
+    label: 'Motion',
+    hint: 'Automatic follows this device’s own setting. Saved on this device only.',
+    auto: 'Automatic',
+    full: 'Full',
+    reduced: 'Reduced',
+    off: 'Off',
+  },
   shell: {
     headline: 'Your shop, your stock and your team in one place.',
     smallPrint: '4VD is named for the four Dacaj brothers.',

@@ -1,9 +1,15 @@
 /* Shared motion (DESIGN.md 12). One vocabulary for the whole dashboard, on the
-   tokens in tokens.css: everything that moves rides --spring, Apple's
-   critically damped spring, in and out alike, and leaves the way it came.
-   Only transform and opacity move (plus the size of a sliding highlight), so
-   it stays smooth on phones. Under reduced motion base.css stops every
-   transition and animation; the entrances sit inside no-preference.
+   duration scale in tokens.css: entrances and moves ride --spring, Apple's
+   critically damped spring; exits are shorter (×--exit) on --ease-in and
+   leave the way they came. Only transform and opacity move, never blur, a
+   width or a height, so it stays smooth on phones and the shop PC.
+
+   The Motion setting (theme/motion.ts, Settings → Display) puts one word on
+   <html data-motion>: 'full' runs everything below (Automatic gives 'full'
+   unless the device asks for less motion); 'reduced' keeps short fades and
+   drops every movement, roll and stagger; 'off' sets every duration to 0.
+   Busy spinners keep spinning under all three: a frozen spinner reads as
+   broken. Money and the till's typing never animate and never wait.
 
    Reusable pieces:
    selectionPills.ts  the selected segment or sidebar item is one highlight
@@ -121,215 +127,245 @@
   transition: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Floating labels and panels fade in; a toast rises into its corner. */
-  /* A tooltip fades in and goes at once; panels and menus open from where
-     they hang and close the same way (see "Small transitions" below). */
-  .tooltip:popover-open {
-    animation: fade var(--fast) var(--ease);
-  }
-
-  /* A toast rises into its corner, sharpening as it comes. */
-  .toast {
-    animation: toast-in var(--motion-quick) var(--spring);
-  }
-
-  @keyframes toast-in {
-    from {
-      opacity: 0;
-      transform: translateY(var(--space-3)) scale(0.96);
-      filter: blur(4px);
-    }
-  }
-
-  /* ---------- Arriving ----------
-     Pages and their sections show at once: no entrance, so moving around
-     4VD never waits on an animation. */
-
-  /* "Loading" only shows when loading is slow enough to notice, so a quick
-     answer never flashes it. */
-  .loading {
-    animation: fade var(--spring-time) var(--spring) 300ms backwards;
-  }
-
-  /* While it waits, a slow wave runs down the placeholder, one piece a beat
-     after the other, so a slow answer never looks frozen. The one loop in
-     4VD: opacity only, and gone under reduced motion. */
-  .skeleton [style*='--i'] {
-    animation: skeleton-wave 1.8s ease-in-out infinite;
-    animation-delay: calc(300ms + var(--i) * 110ms);
-  }
-
-  @keyframes skeleton-wave {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.45;
-    }
-  }
-
-  .palette-backdrop {
-    animation: fade var(--fast) var(--ease);
-  }
-
-  /* ---------- The highlight glides to the new choice ---------- */
-
-  [data-pill='live']::before,
-  [data-pill='live']::after {
-    transition:
-      transform var(--spring-time) var(--spring),
-      width var(--spring-time) var(--spring),
-      height var(--spring-time) var(--spring),
-      opacity var(--fast) var(--ease);
-  }
-
-  /* In the menu the orange tick follows the pill a beat behind, so the move
-     reads as the mark travelling to the new page. */
-  .sidebar__nav[data-pill='live']::before {
-    transition-delay: calc(var(--fast) / 3);
-  }
-
-  /* ---------- The form card: grows out of the key that opened it ---------- */
-
-  /* Closed, it is a small faded card on the key (--from-x/--from-y, set by
-     Sheet.tsx; the middle when opened from a link). It grows to its place as
-     it fades in, and folds back into the key the same way. */
-  /* Its own layer on the graphics card, so the growth runs smoothly even
-     while the form inside is still being drawn; a touch longer than the
-     usual spring, because it travels further. Not from tiny: text scaled up
-     from a fifth of its size shimmers as it grows. */
-  .sheet--card {
-    --card-time: calc(var(--spring-time) * 1.25);
+@keyframes toast-in {
+  from {
     opacity: 0;
-    transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.5);
-    will-change: transform, opacity;
-    backface-visibility: hidden;
-    transition:
-      display var(--card-time) allow-discrete,
-      overlay var(--card-time) allow-discrete,
-      opacity calc(var(--card-time) * 0.6) var(--ease),
-      transform var(--card-time) var(--spring);
+    transform: translateY(var(--space-2));
   }
+}
 
-  /* The words come in a beat after the card, so it reads as paper unfolding. */
-  .sheet--card .sheet__head,
-  .sheet--card .sheet__body {
-    opacity: 0;
-    transition: opacity var(--fast) var(--ease);
-  }
-
-  .sheet--card[open] .sheet__head,
-  .sheet--card[open] .sheet__body {
+@keyframes skeleton-wave {
+  0%,
+  100% {
     opacity: 1;
-    transition-delay: calc(var(--spring-time) / 3);
-    will-change: opacity;
   }
+  50% {
+    opacity: 0.45;
+  }
+}
 
-  .sheet::backdrop {
+/* A tooltip fades in and goes at once; panels and menus open from where
+   they hang and close the same way (see "Small transitions" below). */
+:root[data-motion='full'] .tooltip:popover-open {
+  animation: fade var(--dur-small) var(--ease);
+}
+
+/* A toast rises 8px into its corner as it fades in. */
+:root[data-motion='full'] .toast {
+  animation: toast-in var(--dur-medium) var(--spring);
+}
+
+/* ---------- Arriving ----------
+   A new page's main column fades up 6px from 0.6 (theme/pageArrive.ts plays
+   it on the element, so the page never remounts); the sidebar and header
+   never move, and it starts at 0.6, not 0, so nothing waits on it. Sections
+   inside a page show at once. */
+
+/* "Loading" only shows when loading is slow enough to notice, so a quick
+   answer never flashes it. */
+
+:root[data-motion='full'] .loading {
+  animation: fade var(--dur-medium) var(--spring) 300ms backwards;
+}
+
+/* While it waits, a slow wave runs down the placeholder, one piece a beat
+   after the other, so a slow answer never looks frozen. The one loop in
+   4VD: opacity only, and gone under Reduced and Off. */
+:root[data-motion='full'] .skeleton [style*='--i'] {
+  animation: skeleton-wave 1.8s ease-in-out infinite;
+  animation-delay: calc(300ms + var(--i) * 110ms);
+}
+
+:root[data-motion='full'] .palette-backdrop {
+  animation: fade var(--dur-small) var(--ease);
+}
+
+/* ---------- The highlight glides to the new choice ---------- */
+
+:root[data-motion='full'] [data-pill='live']::before,
+:root[data-motion='full'] [data-pill='live']::after {
+  transition:
+    transform var(--dur-medium) var(--spring),
+    opacity var(--dur-small) var(--ease);
+}
+
+/* In the menu the orange tick follows the pill a beat behind, so the move
+   reads as the mark travelling to the new page. */
+
+:root[data-motion='full'] .sidebar__nav[data-pill='live']::before {
+  transition-delay: calc(var(--dur-small) / 3);
+}
+
+/* ---------- The form card: grows out of the key that opened it ----------
+   Closed, it is a faded card a touch smaller, anchored on the key that
+   opened it (--from-x/--from-y, the key's offset from the card's middle, set
+   by Sheet.tsx; the middle when opened from a link). It grows to full size
+   as it fades in, and goes back the same way, quicker. On its own layer, so
+   the growth stays smooth while the form inside is still being drawn. */
+
+:root[data-motion='full'] .sheet--card {
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: calc(50% + var(--from-x, 0px)) calc(50% + var(--from-y, 0px));
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition:
+    display calc(var(--dur-medium) * var(--exit)) allow-discrete,
+    overlay calc(var(--dur-medium) * var(--exit)) allow-discrete,
+    opacity calc(var(--dur-medium) * var(--exit)) var(--ease-in),
+    transform calc(var(--dur-medium) * var(--exit)) var(--ease-in);
+}
+
+:root[data-motion='full'] .sheet--card[open] {
+  opacity: 1;
+  transform: none;
+  transition:
+    display var(--dur-medium) allow-discrete,
+    overlay var(--dur-medium) allow-discrete,
+    opacity var(--dur-small) var(--ease),
+    transform var(--dur-medium) var(--spring);
+}
+
+:root[data-motion='full'] .sheet::backdrop {
+  opacity: 0;
+  transition:
+    display calc(var(--dur-medium) * var(--exit)) allow-discrete,
+    overlay calc(var(--dur-medium) * var(--exit)) allow-discrete,
+    opacity calc(var(--dur-medium) * var(--exit)) var(--ease-in);
+}
+
+:root[data-motion='full'] .sheet[open]::backdrop {
+  opacity: 1;
+  transition:
+    display var(--dur-medium) allow-discrete,
+    overlay var(--dur-medium) allow-discrete,
+    opacity var(--dur-medium) var(--ease);
+}
+
+@starting-style {
+  :root[data-motion='full'] .sheet--card[open] {
     opacity: 0;
-    transition:
-      display var(--spring-time) allow-discrete,
-      overlay var(--spring-time) allow-discrete,
-      opacity var(--spring-time) var(--spring);
+    transform: scale(0.96);
   }
 
-  .sheet--card[open] {
+  :root[data-motion='full'] .sheet[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* On a phone it slides up from the bottom edge instead, and goes back down. */
+
+@media (max-width: 600px) {
+  :root[data-motion='full'] .sheet--card {
     opacity: 1;
+    transform: translateY(100%);
+    transition:
+      display calc(var(--dur-large) * var(--exit)) allow-discrete,
+      overlay calc(var(--dur-large) * var(--exit)) allow-discrete,
+      transform calc(var(--dur-large) * var(--exit)) var(--ease-in);
+  }
+
+  :root[data-motion='full'] .sheet--card[open] {
     transform: none;
+    transition:
+      display var(--dur-large) allow-discrete,
+      overlay var(--dur-large) allow-discrete,
+      transform var(--dur-large) var(--spring);
   }
 
   @starting-style {
-    .sheet--card[open] {
-      opacity: 0;
-      transform: translate(var(--from-x, 0px), var(--from-y, 0px)) scale(0.5);
-    }
-
-    .sheet--card[open] .sheet__head,
-    .sheet--card[open] .sheet__body {
-      opacity: 0;
-    }
-
-    .sheet[open]::backdrop {
-      opacity: 0;
-    }
-  }
-
-  /* On a phone it rises from the bottom edge instead, and goes back down. */
-  @media (max-width: 600px) {
-    .sheet--card {
+    :root[data-motion='full'] .sheet--card[open] {
       opacity: 1;
       transform: translateY(100%);
     }
-
-    @starting-style {
-      .sheet--card[open] {
-        opacity: 1;
-        transform: translateY(100%);
-      }
-    }
   }
+}
 
-  /* The centred question grows in from the middle as it fades in, and back. */
-  .sheet--center {
+/* The centred question grows in from the middle as it fades in, and back. */
+
+:root[data-motion='full'] .sheet--center {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    display calc(var(--dur-small) * var(--exit)) allow-discrete,
+    overlay calc(var(--dur-small) * var(--exit)) allow-discrete,
+    opacity calc(var(--dur-small) * var(--exit)) var(--ease-in),
+    transform calc(var(--dur-small) * var(--exit)) var(--ease-in);
+}
+
+:root[data-motion='full'] .sheet--center[open] {
+  opacity: 1;
+  transform: none;
+  transition:
+    display var(--dur-medium) allow-discrete,
+    overlay var(--dur-medium) allow-discrete,
+    opacity var(--dur-small) var(--ease),
+    transform var(--dur-medium) var(--spring);
+}
+
+@starting-style {
+  :root[data-motion='full'] .sheet--center[open] {
     opacity: 0;
     transform: scale(0.96);
-    transition:
-      display var(--fast) allow-discrete,
-      overlay var(--fast) allow-discrete,
-      opacity var(--fast) var(--ease),
-      transform var(--spring-time) var(--spring);
   }
+}
 
-  .sheet--center[open] {
-    opacity: 1;
-    transform: none;
+/* Reduced: panels only fade, quickly, and nothing moves. */
+
+:root[data-motion='reduced'] .sheet,
+:root[data-motion='reduced'] .sheet::backdrop {
+  opacity: 0;
+  transition:
+    display var(--dur-small) allow-discrete,
+    overlay var(--dur-small) allow-discrete,
+    opacity var(--dur-small) var(--ease) !important;
+}
+
+:root[data-motion='reduced'] .sheet[open],
+:root[data-motion='reduced'] .sheet[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  :root[data-motion='reduced'] .sheet[open],
+  :root[data-motion='reduced'] .sheet[open]::backdrop {
+    opacity: 0;
   }
+}
 
-  @starting-style {
-    .sheet--center[open] {
-      opacity: 0;
-      transform: scale(0.96);
-    }
-  }
+/* ---------- Data grows in once ---------- */
 
-  /* ---------- Data grows in once ---------- */
+:root[data-motion='full'] .bar-list__bar {
+  transform-origin: left;
+  animation: grow-x var(--dur-medium) var(--spring);
+}
 
-  .bar-list__bar {
-    transform-origin: left;
-    animation: grow-x var(--spring-time) var(--spring);
-  }
+:root[data-motion='full'] .day-bars__bar {
+  transform-origin: bottom;
+  animation: grow-y var(--dur-medium) var(--spring);
+}
 
-  .day-bars__bar {
-    transform-origin: bottom;
-    animation: grow-y var(--spring-time) var(--spring);
-  }
+:root[data-motion='full'] .day-bars__bar {
+  transform-box: fill-box;
+}
 
-  .day-bars__bar {
-    transform-box: fill-box;
-  }
+/* ---------- Theme change: one soft cross-fade instead of a flash ---------- */
 
-  /* ---------- Theme change: one soft cross-fade instead of a flash ---------- */
-
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: var(--spring-time);
-    animation-timing-function: var(--spring);
-  }
+:root[data-motion='full']::view-transition-old(root),
+:root[data-motion='full']::view-transition-new(root) {
+  animation-duration: var(--dur-large);
+  animation-timing-function: var(--spring);
 }
 
 /* ==========================================================================
    Small transitions (DESIGN.md 12, "Small changes"): figures that roll, an
-   error that shakes, a check that turns into place, words that swap with a
-   blur, words that shimmer while 4VD reads, toasts that stack. Quick (under
-   250ms), on transform, opacity and a little blur on small pieces only.
+   error that shakes, a check that turns into place, words that swap, words
+   that shimmer while 4VD reads, toasts that stack. Quick (under 250ms), on
+   transform and opacity only.
    The pieces are in components/ui/Motion.tsx.
    ========================================================================== */
 
 :root {
-  /* A small change: a digit, a word, a check, a menu. */
-  --motion-quick: 220ms;
   /* The error shake: a quick back-and-forth that settles. The one curve that
      isn't the spring, because a "no" should feel like a shake of the head. */
   --motion-shake: 240ms;
@@ -337,7 +373,6 @@
   /* A big moment (the Counter's Paid check): pops a little past its size and
      settles. The only overshoot in 4VD; never on everyday screens. */
   --pop: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --pop-time: 380ms;
 }
 
 /* ---------- A figure changes: its changed digits roll in place ---------- */
@@ -359,7 +394,7 @@
   opacity: 0;
 }
 
-/* ---------- Words swap with a blur ---------- */
+/* ---------- Words swap in place ---------- */
 
 .swap-text {
   display: inline-grid;
@@ -490,236 +525,266 @@
   transform-origin: bottom right;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Each changed digit starts a beat after the one to its right (--ripple, set in Motion.tsx);
-     the old digit stays and the new one waits hidden until its turn. */
-  .num__in {
-    display: inline-block;
-    animation: num-in var(--motion-quick) var(--spring) var(--ripple, 0ms) backwards;
+@keyframes num-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+
+@keyframes num-out {
+  from {
+    opacity: 1;
+    transform: none;
   }
 
-  .num__out {
-    animation: num-out var(--motion-quick) var(--spring) var(--ripple, 0ms) both;
+  to {
+    opacity: 0;
+    transform: translateY(-0.4em);
+  }
+}
+
+@keyframes num-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4em);
+  }
+}
+
+@keyframes num-out-down {
+  from {
+    opacity: 1;
+    transform: none;
   }
 
-  [data-dir='down'] > .num__cell > .num__in {
-    animation-name: num-in-down;
+  to {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@keyframes swap-out {
+  from {
+    opacity: 1;
+    transform: none;
   }
 
-  [data-dir='down'] > .num__cell > .num__out {
-    animation-name: num-out-down;
+  to {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes shake {
+  20% {
+    transform: translateX(-6px);
   }
 
-  @keyframes num-in {
-    from {
-      opacity: 0;
-      transform: translateY(0.4em);
-      filter: blur(2px);
-    }
+  40% {
+    transform: translateX(5px);
   }
 
-  @keyframes num-out {
-    from {
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
-
-    to {
-      opacity: 0;
-      transform: translateY(-0.4em);
-      filter: blur(2px);
-    }
+  60% {
+    transform: translateX(-3px);
   }
 
-  @keyframes num-in-down {
-    from {
-      opacity: 0;
-      transform: translateY(-0.4em);
-      filter: blur(2px);
-    }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  60%,
+  100% {
+    opacity: 1;
   }
 
-  @keyframes num-out-down {
-    from {
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
-
-    to {
-      opacity: 0;
-      transform: translateY(0.4em);
-      filter: blur(2px);
-    }
+  30% {
+    opacity: 0.4;
   }
+}
 
-  .swap-text__in {
-    animation: swap-in var(--motion-quick) var(--spring);
+@keyframes check-spin {
+  to {
+    transform: rotate(1turn);
   }
+}
 
-  .swap-text__out {
-    animation: swap-out var(--motion-quick) var(--spring);
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: rotate(-45deg) scale(0.6);
   }
+}
 
-  @keyframes swap-in {
-    from {
-      opacity: 0;
-      transform: translateY(2px);
-      filter: blur(4px);
-    }
+@keyframes tick-in {
+  from {
+    stroke-dashoffset: 1;
   }
+}
 
-  @keyframes swap-out {
-    from {
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
-
-    to {
-      opacity: 0;
-      transform: translateY(-2px);
-      filter: blur(4px);
-    }
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(var(--space-2));
   }
+}
 
-  /* ---------- An error shakes once ----------
-     Every form's error line shakes as it appears; shake() in Motion.tsx
-     plays it again on a field (the Counter's PIN) for each wrong try. */
-
-  .form-error,
-  .shake {
-    animation: shake var(--motion-shake) var(--shake-curve);
+@keyframes fade-out {
+  to {
+    opacity: 0;
   }
+}
 
-  @keyframes shake {
-    20% {
-      transform: translateX(-6px);
-    }
+/* Each changed digit starts a beat after the one to its right (--ripple, set in Motion.tsx);
+   the old digit stays and the new one waits hidden until its turn. */
 
-    40% {
-      transform: translateX(5px);
-    }
+:root[data-motion='full'] .num__in {
+  display: inline-block;
+  animation: num-in var(--dur-medium) var(--spring) var(--ripple, 0ms) backwards;
+}
 
-    60% {
-      transform: translateX(-3px);
-    }
+:root[data-motion='full'] .num__out {
+  animation: num-out var(--dur-medium) var(--spring) var(--ripple, 0ms) both;
+}
 
-    80% {
-      transform: translateX(2px);
-    }
-  }
+:root[data-motion='full'] [data-dir='down'] > .num__cell > .num__in {
+  animation-name: num-in-down;
+}
 
-  /* ---------- Thinking: a soft wave of light runs over the words ----------
-     The second loop in 4VD, after the loading wave: only while Claude reads,
-     in the text's own ink (opacity only, never a coloured sweep). */
+:root[data-motion='full'] [data-dir='down'] > .num__cell > .num__out {
+  animation-name: num-out-down;
+}
 
-  .shimmer-text > span {
-    animation: shimmer 1.6s ease-in-out infinite;
-    animation-delay: calc(var(--i, 0) * 90ms);
-  }
+:root[data-motion='full'] .swap-text__in {
+  animation: swap-in var(--dur-medium) var(--spring);
+}
 
-  @keyframes shimmer {
-    0%,
-    60%,
-    100% {
-      opacity: 1;
-    }
+:root[data-motion='full'] .swap-text__out {
+  animation: swap-out var(--dur-medium) var(--spring);
+}
 
-    30% {
-      opacity: 0.4;
-    }
-  }
+/* ---------- An error shakes once ----------
+   Every form's error line shakes as it appears; shake() in Motion.tsx
+   plays it again on a field (the Counter's PIN) for each wrong try. */
 
-  /* ---------- The check ---------- */
+:root[data-motion='full'] .form-error,
+:root[data-motion='full'] .shake {
+  animation: shake var(--motion-shake) var(--shake-curve);
+}
 
-  .success-check--busy .success-check__arc {
-    animation: check-spin 0.8s linear infinite;
-  }
+/* ---------- Thinking: a soft wave of light runs over the words ----------
+   The second loop in 4VD, after the loading wave: only while Claude reads,
+   in the text's own ink (opacity only, never a coloured sweep). */
 
-  .success-check__arc,
-  .success-check__mark {
-    transition: opacity var(--fast) var(--ease);
-  }
+:root[data-motion='full'] .shimmer-text > span {
+  animation: shimmer 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
 
-  .success-check--done .success-check__mark {
-    animation: check-in var(--motion-quick) var(--spring);
-  }
+/* ---------- The check ---------- */
 
-  .success-check--done .success-check__tick {
-    stroke-dasharray: 1;
-    animation: tick-in var(--motion-quick) var(--ease) 90ms backwards;
-  }
+:root[data-motion='full'] .success-check--busy .success-check__arc {
+  animation: check-spin 0.8s linear infinite;
+}
 
-  @keyframes check-spin {
-    to {
-      transform: rotate(1turn);
-    }
-  }
+:root[data-motion='full'] .success-check__arc,
+:root[data-motion='full'] .success-check__mark {
+  transition: opacity var(--dur-small) var(--ease);
+}
 
-  @keyframes check-in {
-    from {
-      opacity: 0;
-      transform: rotate(-45deg) scale(0.6);
-      filter: blur(2px);
-    }
-  }
+:root[data-motion='full'] .success-check--done .success-check__mark {
+  animation: check-in var(--dur-medium) var(--spring);
+}
 
-  /* The tick draws itself, short stroke then long, as a pen would. */
-  @keyframes tick-in {
-    from {
-      stroke-dashoffset: 1;
-    }
-  }
+:root[data-motion='full'] .success-check--done .success-check__tick {
+  stroke-dasharray: 1;
+  animation: tick-in var(--dur-medium) var(--ease) 90ms backwards;
+}
 
-  /* ---------- Toasts fan out, and fade away when they go ---------- */
+/* The tick draws itself, short stroke then long, as a pen would. */
 
-  .toasts__list > .toast {
-    transition: transform var(--motion-quick) var(--spring);
-  }
+/* ---------- Toasts fan out, and fade away when they go ---------- */
 
-  .toasts__list > .toast > * {
-    transition: opacity var(--fast) var(--ease);
-  }
+:root[data-motion='full'] .toasts__list > .toast {
+  transition: transform var(--dur-medium) var(--spring);
+}
 
-  .toasts__list > .toast[data-leaving] {
-    animation: toast-out var(--fast) var(--ease) forwards;
-  }
+:root[data-motion='full'] .toasts__list > .toast > * {
+  transition: opacity var(--dur-small) var(--ease);
+}
 
-  @keyframes toast-out {
-    to {
-      opacity: 0;
-      transform: translateY(var(--space-2)) scale(0.96);
-      filter: blur(2px);
-    }
-  }
+:root[data-motion='full'] .toasts__list > .toast[data-leaving] {
+  animation: toast-out calc(var(--dur-medium) * var(--exit)) var(--ease-in) forwards;
+}
 
-  /* ---------- Menus and panels: open from where they hang, close the same way ---------- */
+/* ---------- Menus and panels: open from where they hang, close the same way ---------- */
 
-  .menu,
-  .popover,
-  .combobox__list {
-    transition:
-      display var(--fast) allow-discrete,
-      overlay var(--fast) allow-discrete,
-      opacity var(--fast) var(--ease),
-      transform var(--motion-quick) var(--spring);
-  }
+:root[data-motion='full'] .menu,
+:root[data-motion='full'] .popover,
+:root[data-motion='full'] .combobox__list {
+  transition:
+    display var(--dur-small) allow-discrete,
+    overlay var(--dur-small) allow-discrete,
+    opacity var(--dur-small) var(--ease),
+    transform var(--dur-medium) var(--spring);
+}
 
-  .menu[hidden],
-  .popover:not(:popover-open),
-  .combobox__list:not(:popover-open) {
+:root[data-motion='full'] .menu[hidden],
+:root[data-motion='full'] .popover:not(:popover-open),
+:root[data-motion='full'] .combobox__list:not(:popover-open) {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+@starting-style {
+  :root[data-motion='full'] .menu:not([hidden]),
+  :root[data-motion='full'] .popover:popover-open,
+  :root[data-motion='full'] .combobox__list:popover-open {
     opacity: 0;
     transform: scale(0.96);
   }
+}
 
-  @starting-style {
-    .menu:not([hidden]),
-    .popover:popover-open,
-    .combobox__list:popover-open {
-      opacity: 0;
-      transform: scale(0.96);
-    }
-  }
+/* ==========================================================================
+   Motion: Reduced and Off (theme/motion.ts). base.css stops every transition
+   and animation unless the motion is 'full'; these put back what still helps.
+   ========================================================================== */
+
+/* Off: every duration is 0, so a piece that waits for its own transition
+   (a closing card, a leaving toast) finishes at once. */
+:root[data-motion='off'] {
+  --dur-press: 0ms;
+  --dur-small: 0ms;
+  --dur-medium: 0ms;
+  --dur-large: 0ms;
+}
+
+/* Reduced: a toast and a tooltip only fade, quickly. */
+:root[data-motion='reduced'] .toast,
+:root[data-motion='reduced'] .tooltip:popover-open {
+  animation: fade var(--dur-small) var(--ease) !important;
+}
+
+:root[data-motion='reduced'] .toasts__list > .toast[data-leaving] {
+  animation: fade-out calc(var(--dur-small) * var(--exit)) var(--ease-in) forwards !important;
+}
+
+/* Busy spinners keep spinning under Reduced and Off: a frozen one reads as
+   broken. Rotation only, in place. */
+:root:not([data-motion='full']) .button__spinner,
+:root:not([data-motion='full']) .board-head__refresh.is-busy svg {
+  animation: spin 0.8s linear infinite !important;
+}
+
+:root:not([data-motion='full']) .success-check--busy .success-check__arc {
+  animation: check-spin 0.8s linear infinite !important;
 }

@@ -27,8 +27,8 @@ const STAY_MS = 5000;
 const STAY_WITH_ACTION_MS = 9000;
 /** Older ones go when a fourth arrives. */
 const MOST = 3;
-/** How long a toast takes to fade out (--fast); also the fallback when no animation runs (reduced motion). */
-const LEAVE_MS = 150;
+/** How long a leaving toast stays in the list: its fade out (--dur-medium × --exit, motion.css), a timer so it also goes under Motion: Off. */
+const LEAVE_MS = 160;
 
 const ToastContext = createContext<(toast: ToastInput) => void>(() => undefined);
 

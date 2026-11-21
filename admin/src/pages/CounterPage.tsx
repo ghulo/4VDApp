@@ -1,4 +1,4 @@
-import { RollingNumber, SuccessCheck } from '../components/ui';
+import { SuccessCheck } from '../components/ui';
 import { allowsParts, piecesFor, unitSymbol } from '../utils/units';
 import {
   ArrowClockwise,
@@ -58,6 +58,7 @@ import { useTillCopy } from '../offline/useTillCopy';
 import { switchUnsettled, tillKey } from '../offline/savedCopy';
 import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
+import { useTillMark } from '../theme/motion';
 import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
 import { CASH_TOLERANCE } from '../components/CashCount';
@@ -196,6 +197,7 @@ export function CounterPage() {
   const { logout, adoptSession, signInUnsure, beginSwitch, switchFailed } = useAuth();
   const scanRef = useRef<HTMLInputElement>(null);
   const connected = useOnline();
+  useTillMark();
   // The business comes a moment after a Switch person (the Counter stays in its business): keep the last one known meanwhile.
   const lastBusiness = useRef(user.businessId);
   if (user.businessId !== undefined) lastBusiness.current = user.businessId;
@@ -1723,7 +1725,7 @@ export function CounterPage() {
               >
                 <span className="counter-basket__head">
                   <span className="counter-basket__name">{t.counter.basketTab(index + 1)}</span>
-                  <span className="counter-basket__total">{basket.lines.length > 0 ? <RollingNumber value={formatMoney(basketTotal)} /> : t.counter.basketEmpty}</span>
+                  <span className="counter-basket__total">{basket.lines.length > 0 ? formatMoney(basketTotal) : t.counter.basketEmpty}</span>
                 </span>
                 <span className="counter-basket__meta">
                   {/* An empty basket has no sale yet, so no age either. */}

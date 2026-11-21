@@ -11,6 +11,7 @@ import { meApi } from '../services/api';
 import { useT } from '../i18n/useT';
 import type { User } from '../services/types';
 import { ThemeSwitch } from '../theme/ThemeSwitch';
+import { MotionSwitch } from '../theme/MotionSwitch';
 import { LanguageSwitch } from '../i18n/LanguageSwitch';
 import { errorMessage } from '../utils/errors';
 import { formatDate } from '../utils/format';
@@ -70,6 +71,9 @@ export function ProfilePage() {
               <Card title={t.profile.look}>
                 <SettingRow title={t.theme.label} description={t.profile.themeHint}>
                   <ThemeSwitch persist />
+                </SettingRow>
+                <SettingRow title={t.motion.label} description={t.motion.hint}>
+                  <MotionSwitch />
                 </SettingRow>
                 <SettingRow title={t.language.label} description={t.language.description}>
                   <LanguageSwitch persist />

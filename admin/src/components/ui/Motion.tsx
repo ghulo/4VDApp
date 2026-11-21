@@ -1,6 +1,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { motionLevel } from '../../theme/motion';
 
-/** How long a change shows before the piece settles back to plain text: --motion-quick plus the longest digit ripple. */
+/** How long a change shows before the piece settles back to plain text: --dur-medium plus the longest digit ripple. */
 const SETTLE_MS = 320;
 /** Changed digits roll one after another from the right, this far apart, the ripple capped at four steps. */
 const RIPPLE_MS = 20;
@@ -184,7 +185,7 @@ const ROLL_UP_DELAY_MS = 120;
  * under reduced motion it simply shows.
  */
 export function RollUp({ value, from, className }: { value: string; from: string; className?: string }) {
-  const still = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const still = motionLevel() !== 'full';
   const [shown, setShown] = useState(still ? value : from);
   useEffect(() => {
     if (shown === value) return;

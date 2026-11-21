@@ -232,10 +232,8 @@
   height: auto;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .overview-hero__mark {
-    animation: tile-rise 1.2s var(--ease) both;
-  }
+:root[data-motion='full'] .overview-hero__mark {
+  animation: tile-rise 1.2s var(--ease) both;
 }
 
 /* ---------- Today (inside the hero) ---------- */
@@ -855,29 +853,28 @@ form.product-form > .form-actions {
   opacity: 0.55;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* Each line feeds out of the slot (the paper rises) and its ink comes in as a few raster passes. */
-  .till__row {
-    animation: till-feed 0.3s var(--ease) both;
-  }
+/* Each line feeds out of the slot (the paper rises) and its ink comes in as a few raster passes. */
 
-  .till__ink {
-    animation: till-ink 0.24s steps(4) both;
-  }
+:root[data-motion='full'] .till__row {
+  animation: till-feed 0.3s var(--ease) both;
+}
 
-  .till__row--beeped .till__ink {
-    animation:
-      till-ink 0.24s steps(4) both,
-      till-beep 1.8s var(--ease) both;
-  }
+:root[data-motion='full'] .till__ink {
+  animation: till-ink 0.24s steps(4) both;
+}
 
-  .till__printer--busy .till__light {
-    animation: till-blink 0.5s steps(2) infinite;
-  }
+:root[data-motion='full'] .till__row--beeped .till__ink {
+  animation:
+    till-ink 0.24s steps(4) both,
+    till-beep 1.8s var(--ease) both;
+}
 
-  .till__paper--torn {
-    animation: till-tear 0.85s var(--ease) both;
-  }
+:root[data-motion='full'] .till__printer--busy .till__light {
+  animation: till-blink 0.5s steps(2) infinite;
+}
+
+:root[data-motion='full'] .till__paper--torn {
+  animation: till-tear 0.85s var(--ease) both;
 }
 
 @keyframes till-feed {
@@ -1173,7 +1170,7 @@ form.product-form > .form-actions {
 }
 
 .chart__bar {
-  transition: fill var(--fast) var(--ease);
+  transition: fill var(--dur-small) var(--ease);
 }
 
 .chart__bar--active {
@@ -1263,13 +1260,6 @@ form.product-form > .form-actions {
 @media (max-width: 760px) {
   .category-list__row {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    animation: none !important;
   }
 }
 
@@ -1452,7 +1442,7 @@ form.product-form > .form-actions {
   display: flex;
   align-items: center;
   border-radius: var(--radius-small);
-  transition: background var(--fast) var(--ease);
+  transition: background var(--dur-small) var(--ease);
 }
 
 .ask-chat:hover {
@@ -1501,7 +1491,7 @@ form.product-form > .form-actions {
 .ask-chat__delete {
   margin-inline-end: var(--space-1);
   opacity: 0;
-  transition: opacity var(--fast) var(--ease);
+  transition: opacity var(--dur-small) var(--ease);
 }
 
 .ask-chat:hover .ask-chat__delete,
@@ -1609,8 +1599,8 @@ form.product-form > .form-actions {
   text-align: start;
   cursor: pointer;
   transition:
-    box-shadow var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+    box-shadow var(--dur-small) var(--ease),
+    transform var(--dur-small) var(--ease);
 }
 
 .ask-starter svg {
@@ -1743,7 +1733,7 @@ form.product-form > .form-actions {
   color: var(--ink);
   font-size: var(--text-sm);
   text-decoration: none;
-  transition: background var(--fast) var(--ease);
+  transition: background var(--dur-small) var(--ease);
 }
 
 .answer-link:hover {
@@ -1775,18 +1765,16 @@ form.product-form > .form-actions {
   opacity: 0.35;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .ask-thinking__dots span {
-    animation: ask-dot 1.2s var(--ease) infinite;
-  }
+:root[data-motion='full'] .ask-thinking__dots span {
+  animation: ask-dot 1.2s var(--ease) infinite;
+}
 
-  .ask-thinking__dots span:nth-child(2) {
-    animation-delay: 0.15s;
-  }
+:root[data-motion='full'] .ask-thinking__dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
 
-  .ask-thinking__dots span:nth-child(3) {
-    animation-delay: 0.3s;
-  }
+:root[data-motion='full'] .ask-thinking__dots span:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 @keyframes ask-dot {
@@ -2533,7 +2521,7 @@ form.product-form > .form-actions {
   border-radius: var(--radius-small);
   cursor: pointer;
   box-shadow: var(--key-shine), inset 0 -2px 0 rgb(0 0 0 / 0.18), var(--key-drop);
-  transition: transform var(--fast) var(--ease);
+  transition: transform var(--dur-small) var(--ease);
 }
 
 .brand-swatch:hover {
@@ -2654,10 +2642,8 @@ form.product-form > .form-actions {
   font-weight: 700;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .brand-swatch {
-    transition: none;
-  }
+:root:not([data-motion='full']) .brand-swatch {
+  transition: none;
 }
 
 /* ---------- Lists inside cards ---------- */
@@ -3343,7 +3329,7 @@ form.product-form > .form-actions {
   border-radius: var(--radius-small);
   box-shadow: var(--shadow-raise);
   overflow: hidden;
-  transition: box-shadow var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease);
 }
 
 .bill-photo:hover {
@@ -3460,7 +3446,7 @@ form.product-form > .form-actions {
 
 .bill-search__option {
   cursor: pointer;
-  transition: background var(--fast) var(--ease);
+  transition: background var(--dur-small) var(--ease);
 }
 
 .bill-search__option:hover,
@@ -4561,7 +4547,7 @@ fieldset.report-sections {
   box-shadow: var(--shadow-raise);
   color: var(--ink);
   text-decoration: none;
-  transition: box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease), transform var(--dur-small) var(--ease);
 }
 
 .count-card:hover {
@@ -4622,7 +4608,7 @@ fieldset.report-sections {
 }
 
 .count-card__action svg {
-  transition: transform var(--fast) var(--ease);
+  transition: transform var(--dur-small) var(--ease);
 }
 
 .count-result {
@@ -4713,7 +4699,7 @@ fieldset.report-sections {
   background: var(--sheen), var(--light-raise), var(--fill);
   box-shadow: var(--shadow-raise);
   cursor: pointer;
-  transition: box-shadow var(--fast) var(--ease), background var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease), background var(--dur-small) var(--ease);
 }
 
 .duplicate-side:hover {
@@ -6060,11 +6046,9 @@ fieldset.report-sections {
   font-weight: 600;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .statements[aria-busy='true'],
-  .year-page[aria-busy='true'] {
-    transition: none;
-  }
+:root:not([data-motion='full']) .statements[aria-busy='true'],
+:root:not([data-motion='full']) .year-page[aria-busy='true'] {
+  transition: none;
 }
 
 /* ---------- Settings → Roles ---------- */
@@ -6401,7 +6385,7 @@ fieldset.report-sections {
 }
 .files-drop {
   border-radius: var(--radius-panel);
-  transition: box-shadow var(--fast) var(--ease);
+  transition: box-shadow var(--dur-small) var(--ease);
 }
 .files-drop--over {
   box-shadow: 0 0 0 2px var(--amber-rim);
@@ -7048,15 +7032,13 @@ fieldset.payroll-pick {
   margin-left: auto;
 }
 .all-logs__visit-actions svg {
-  transition: transform var(--fast) var(--ease);
+  transition: transform var(--dur-small) var(--ease);
 }
 .all-logs__caret--open {
   transform: rotate(180deg);
 }
-@media (prefers-reduced-motion: reduce) {
-  .all-logs__visit-actions svg {
-    transition: none;
-  }
+:root:not([data-motion='full']) .all-logs__visit-actions svg {
+  transition: none;
 }
 
 /* ───────────── Settings → Import ─────────────
@@ -7169,8 +7151,8 @@ fieldset.payroll-pick {
   box-shadow: var(--shadow-inset);
   text-align: center;
   transition:
-    border-color var(--fast) var(--ease),
-    background-color var(--fast) var(--ease);
+    border-color var(--dur-small) var(--ease),
+    background-color var(--dur-small) var(--ease);
 }
 
 .import-drop--over {
@@ -7193,7 +7175,7 @@ fieldset.payroll-pick {
   background: var(--light-raise), var(--surface);
   box-shadow: var(--shadow-raise);
   color: var(--ink);
-  transition: transform var(--spring-time) var(--spring);
+  transition: transform var(--dur-medium) var(--spring);
 }
 
 .import-drop--over .import-drop__mark {
@@ -7247,7 +7229,7 @@ fieldset.payroll-pick {
   background: var(--amber-key);
   box-shadow: var(--bar-depth);
   transform-origin: left center;
-  transition: transform var(--spring-time) var(--spring);
+  transition: transform var(--dur-medium) var(--spring);
 }
 
 .import-run__figures {
@@ -7476,7 +7458,7 @@ fieldset.payroll-pick {
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   list-style: none;
-  transition: background-color var(--fast) var(--ease);
+  transition: background-color var(--dur-small) var(--ease);
 }
 
 .import-problem__head::-webkit-details-marker {
@@ -7505,7 +7487,7 @@ fieldset.payroll-pick {
 
 .import-problem__caret {
   color: var(--ink-muted);
-  transition: transform var(--spring-time) var(--spring);
+  transition: transform var(--dur-medium) var(--spring);
 }
 
 .import-problem[open] .import-problem__caret {
@@ -7633,14 +7615,11 @@ fieldset.payroll-pick {
 }
 
 /* A new step slides in from the side the flow is going; Back comes from the left. */
-@media (prefers-reduced-motion: no-preference) {
-  .import-step {
-    animation: import-step-in var(--spring-time) var(--spring) both;
-  }
-
-  .import-step--back {
-    animation-name: import-step-back;
-  }
+:root[data-motion='full'] .import-step {
+  animation: import-step-in var(--dur-medium) var(--spring) both;
+}
+:root[data-motion='full'] .import-step--back {
+  animation-name: import-step-back;
 }
 
 @keyframes import-step-in {
@@ -7686,16 +7665,14 @@ fieldset.payroll-pick {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .import-drop__mark,
-  .import-problem__caret,
-  .import-meter__fill {
-    transition: none;
-  }
+:root:not([data-motion='full']) .import-drop__mark,
+:root:not([data-motion='full']) .import-problem__caret,
+:root:not([data-motion='full']) .import-meter__fill {
+  transition: none;
+}
 
-  .import-drop--over .import-drop__mark {
-    transform: none;
-  }
+:root:not([data-motion='full']) .import-drop--over .import-drop__mark {
+  transform: none;
 }
 
 /* ---------- Refunds: how the money goes back ---------- */

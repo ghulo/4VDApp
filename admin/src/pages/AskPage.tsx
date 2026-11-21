@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router';
 import { AnswerChart, AnswerLinks, AnswerTable, AnswerText } from '../components/AnswerParts';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Button, PageHeader } from '../components/ui';
+import { useCurrentUser } from '../auth/useAuth';
 import { useT } from '../i18n/useT';
 import { ApiError } from '../services/apiClient';
 import { assistantApi } from '../services/api';
@@ -22,6 +23,7 @@ const chatKey = (id: number) => ['assistant', 'chat', id] as const;
  */
 export function AskPage() {
   const t = useT();
+  const isDeveloper = useCurrentUser().role === 'developer';
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const chatId = Number(params.get('chat')) || undefined;
@@ -95,8 +97,14 @@ export function AskPage() {
       {status.data && !enabled && (
         <div className="notice">
           <p>
-            {t.ask.offBefore} <code>backend/.env</code> {t.ask.offAs} <code>GEMINI_API_KEY=…</code>
-            {t.ask.offAfter}
+            {isDeveloper ? (
+              <>
+                {t.ask.offBefore} <code>backend/.env</code> {t.ask.offAs} <code>GEMINI_API_KEY=…</code>
+                {t.ask.offAfter}
+              </>
+            ) : (
+              t.ask.off
+            )}
           </p>
         </div>
       )}

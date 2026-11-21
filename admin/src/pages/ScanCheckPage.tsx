@@ -13,7 +13,7 @@ import { mediaSrc } from '../services/apiClient';
 import type { BillScan, ScanStamp } from '../services/types';
 import { type BillDraft, isBillValid, todayIso, toBillInput } from '../utils/bills';
 import { errorMessage } from '../utils/errors';
-import { formatDateTime, formatMoney } from '../utils/format';
+import { formatDate, formatDateTime, formatMoney, formatQuantity } from '../utils/format';
 import { orderSummary } from '../utils/orders';
 import { HistoryCard } from '../components/HistoryCard';
 import { CustomsBillPicker, CustomsFields } from '../components/CustomsFields';
@@ -181,6 +181,23 @@ export function ScanCheckPage() {
   );
 }
 
+/** A delivery staff already put into stock: what they counted, so its bill only sets the costs. */
+function ArrivalNotice({ arrival }: { arrival: NonNullable<BillScan['arrival']> }) {
+  const t = useT();
+  return (
+    <div className="notice" role="status">
+      <div>
+        <p>
+          <strong>{t.scans.arrivalTitle(arrival.by ?? t.scans.arrivalSomeone, formatDate(arrival.at))}</strong>
+        </p>
+        {arrival.lines.length > 0 && <p>{arrival.lines.map((line) => `${line.productName} × ${formatQuantity(line.quantity)}`).join(', ')}</p>}
+        <p>{t.scans.arrivalHint}</p>
+      </div>
+      <Link to={`/orders/${arrival.orderId}`}>{t.scans.arrivalOrder(arrival.orderId)}</Link>
+    </div>
+  );
+}
+
 function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: string) => void }) {
   const t = useT();
   const navigate = useNavigate();
@@ -192,6 +209,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
   const [bill, setBill] = useState(() => firstBill(scan));
   const [orderId, setOrderId] = useState(() => {
     const previous = scan.previous?.orderId;
+    if (scan.arrival) return '';
     if (previous && scan.openOrders.some((order) => order.id === previous)) return String(previous);
     return scan.openOrders[0] ? String(scan.openOrders[0].id) : '';
   });
@@ -205,7 +223,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
   const products = new Set(kept.map((decision, index) => (decision.choice === NEW ? `new-${index}` : decision.choice))).size;
   const blocker = !scan.supplier
     ? t.scans.needSupplier
-    : kept.length === 0
+    : kept.length === 0 && !scan.arrival
       ? t.scans.needLines
       : kept.some((decision) => decision.choice === '' || !filled(decision.pieces) || !filled(decision.perPack))
         ? t.scans.needProduct
@@ -303,6 +321,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
             {t.scans.totalsOff({ lines: formatMoney(totals.linesTotal), printed: formatMoney(totals.printedTotal) })}
           </p>
         )}
+        {scan.arrival && <ArrivalNotice arrival={scan.arrival} />}
         {scan.previous && <p className="notice">{t.scans.previousChoices}</p>}
         {reading.remarks && <p className="notice">{t.scans.remarks(reading.remarks)}</p>}
 
@@ -317,7 +336,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
               onChange={onSupplier}
               options={(suppliers.data ?? []).map((supplier) => ({ value: String(supplier.id), label: supplier.name, hint: supplier.nui ?? supplier.phone ?? undefined }))}
             />
-            {scan.supplier && (
+            {scan.supplier && !scan.arrival && (
               <Field label={t.scans.order} hint={scan.openOrders.length > 0 ? t.scans.orderHint : undefined}>
                 <select value={orderId} onChange={(event) => setOrderId(event.target.value)}>
                   {scan.openOrders.map((order) => (
@@ -399,7 +418,7 @@ function CheckForm({ scan, onSupplier }: { scan: BillScan; onSupplier: (id: stri
             {t.scans.confirm}
           </Button>
           <p id="scan-why" className="field-hint">
-            {blocker ?? t.scans.afterConfirm}
+            {blocker ?? (scan.arrival ? t.scans.arrivalAfter : t.scans.afterConfirm)}
           </p>
           <div className="scan-discard">
             {discarding ? (

@@ -29,13 +29,25 @@ self.addEventListener('install', (event) => {
     return;
   }
   // All or nothing: if one file can't be saved, this release doesn't take over and the last one stays.
-  event.waitUntil(
-    caches
-      .open(SHELL)
-      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' }))))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(saveRelease().then(() => self.skipWaiting()));
 });
+
+/**
+ * Save this release's files. Code files keep their content's hash in their name, so one the last release saved already
+ * is copied over instead of downloaded again; the page and the files without a hash in their name are always fetched fresh.
+ */
+async function saveRelease() {
+  const cache = await caches.open(SHELL);
+  const fetchFresh = [];
+  const copies = [];
+  for (const url of PRECACHE) {
+    const saved = url.startsWith('/assets/') ? await caches.match(url, { ignoreVary: true }) : undefined;
+    if (saved) copies.push(cache.put(url, saved));
+    else fetchFresh.push(new Request(url, { cache: 'reload' }));
+  }
+  await Promise.all(copies);
+  await cache.addAll(fetchFresh);
+}
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -82,7 +94,10 @@ async function page(request) {
  * Vary is ignored: files are saved without the Origin header the page's module scripts send.
  */
 async function file(request) {
-  const saved = await caches.match(request, { ignoreSearch: true, ignoreVary: true });
+  // This release's own first: boot.js, the icons and the scanner have the same names in every release.
+  const saved =
+    (await caches.match(request, { cacheName: SHELL, ignoreSearch: true, ignoreVary: true })) ??
+    (await caches.match(request, { ignoreSearch: true, ignoreVary: true }));
   return saved ?? fetch(request);
 }
 

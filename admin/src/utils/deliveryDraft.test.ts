@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { keepListed, loadArrival, loadDrafts, parseReceived, saveArrival, saveDrafts } from './deliveryDraft';
+import { keepListed, loadArrival, loadDrafts, loadStep, parseReceived, saveArrival, saveDrafts, saveStep } from './deliveryDraft';
 
 describe('parseReceived', () => {
   it('reads a blank box as not entered, never as 0', () => {
@@ -82,6 +82,32 @@ describe('delivery drafts', () => {
     expect(loadArrival(1)).toEqual({ supplierId: 4, key: 'k', lines: [{ productId: 9, name: 'Milk', unit: 'piece', came: '2', expires: '' }] });
     storage.setItem('4vd.arrivalDraft.1', 'not json');
     expect(loadArrival(1)).toBeNull();
+  });
+
+  it('keeps what Save sent, frozen, per person and business', () => {
+    vi.stubGlobal('sessionStorage', memoryStorage());
+    const sent = [{ productId: 9, quantity: 3, expiresOn: null }];
+    const draft = { supplierId: 4, key: 'k-1', lines: [{ productId: 9, name: 'Milk', unit: 'piece' as const, came: '5', expires: '' }], sent };
+    saveArrival('1:7', draft);
+    // What was sent wins over what was typed after: a resend says the same as the first try.
+    expect(loadArrival('1:7')?.sent).toEqual(sent);
+    expect(loadArrival('1:8')).toBeNull();
+    expect(loadArrival('2:7')).toBeNull();
+  });
+
+  it('keeps where the page stopped (a tick-off without its answer, a photo to send) and drops junk', () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('sessionStorage', storage);
+    const sending = { kind: 'sending' as const, orderId: 5, supplierName: 'Fresh', lines: [{ lineId: 50, receivedQuantity: 2, expiresOn: null }] };
+    saveStep('1:7', sending);
+    expect(loadStep('1:7')).toEqual(sending);
+    expect(loadStep('1:8')).toBeNull();
+    saveStep('1:7', { kind: 'photo', orderId: 5, message: 'In stock.' });
+    expect(loadStep('1:7')).toEqual({ kind: 'photo', orderId: 5, message: 'In stock.' });
+    saveStep('1:7', null);
+    expect(storage.store.size).toBe(0);
+    storage.setItem('4vd.deliveryStep.1:7', '{"kind":"photo","orderId":"5"}');
+    expect(loadStep('1:7')).toBeNull();
   });
 
   it('drops drafts of orders no longer on their way', () => {

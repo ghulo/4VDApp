@@ -76,6 +76,9 @@ export const MY_SALES_KEY = ['reports', 'my-sales'];
 export const DELIVERIES_KEY = ['orders', 'deliveries'];
 export const FAVORITES_KEY = ['favorites'];
 
+/** Who a write is for: the business and the person signed in when it was made. */
+export type Owner = { businessId: number; userId: number };
+
 export const teamApi = {
   mySales: async ({ startDate, endDate, previousStartDate, previousEndDate }: RangeWithPrevious) =>
     (await apiRequest<MySales>('/reports/my-sales', { query: { startDate, endDate, previousStartDate, previousEndDate } })).data,
@@ -96,11 +99,16 @@ export const teamApi = {
   deliveries: async () => (await apiRequest<Delivery[]>('/orders/deliveries')).data,
   /** The suppliers to pick from when goods come: names only. */
   deliverySuppliers: async () => (await apiRequest<Array<{ id: number; name: string }>>('/orders/delivery-suppliers')).data,
-  /** A delivery that came without an order: into stock at once. The same key twice puts it in once. */
-  arrived: async (input: { key: string; supplierId: number; lines: Array<{ productId: number; quantity: number; expiresOn: string | null }> }) =>
-    (await apiRequest<{ id: number; repeated: boolean }>('/orders/arrived', { method: 'POST', body: input })).data,
-  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>) => {
-    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines } });
+  /**
+   * A delivery that came without an order: into stock at once. The same key
+   * with the same counts twice puts it in once. `owner`: who pressed Save;
+   * refused (409) if someone else is signed in by the time it arrives.
+   */
+  arrived: async (input: { key: string; supplierId: number; lines: Array<{ productId: number; quantity: number; expiresOn: string | null }> }, owner?: Owner) =>
+    (await apiRequest<{ id: number; repeated: boolean }>('/orders/arrived', { method: 'POST', body: input, expectOwner: owner })).data,
+  /** Sent again with the same counts after a lost answer, it is taken once and answers success. */
+  receive: async (orderId: number, lines: Array<{ lineId: number; receivedQuantity: number; expiresOn: string | null }>, owner?: Owner) => {
+    await apiRequest(`/orders/${orderId}/receive`, { method: 'POST', body: { lines }, expectOwner: owner });
   },
 
   carwashToday: async () => (await apiRequest<{ day: string; carwashes: CarwashToday[] }>('/carwash/today')).data,

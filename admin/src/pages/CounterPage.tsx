@@ -54,7 +54,7 @@ import { drain, keep, localEventStore, type Owner, refusedEntries, unrefuse } fr
 import { basketStockProblem, DOUBLE_ENTER_MS, exactMatch, lookupFailure, nameMatches, payFailure, stockDecision } from './counter/tillRules';
 import { codeFromScan, documentNumberFromScan } from '../utils/scanLinks';
 import { priceLine, summarise } from './counter/basketMath';
-import { afterSaleRefresh, patchShelf, SHELF_KEY, shelfAfterSale, shelfGate } from './counter/shelfAfterSale';
+import { afterSaleRefresh, heldOff, patchShelf, shelfAfterSale, shelfGate, type TillShelf, tillShelfKey } from './counter/shelfAfterSale';
 import { ScanBox } from './counter/ScanBox';
 import { BasketAge, TillClock } from './counter/TillClock';
 import { BasketSummaryFoot, BasketTable, SaleHead } from './counter/BasketTable';
@@ -205,7 +205,20 @@ export function CounterPage() {
   // Patched after each sale here (shelfAfterSale), and fetched again every few minutes for what changed elsewhere (deliveries, other tills).
   // A fetch that a sale on its way may or may not count is not trusted (ShelfGate): each sale comes off it exactly once.
   const gate = shelfGate(queryClient);
-  const products = useQuery({ queryKey: SHELF_KEY, queryFn: () => gate.load(counterApi.products), staleTime: 60_000, refetchInterval: SHELF_REFRESH_MS });
+  // The till's own query (no other page fills it): each fetch names the sales held off it, and the answer says which 4VD counts already.
+  const shelfKey = tillShelfKey(businessId);
+  const heldKeys = useRef<() => string[]>(() => []);
+  const products = useQuery({
+    queryKey: shelfKey,
+    queryFn: (): Promise<TillShelf> =>
+      gate.load(shelfKey, async () => {
+        const askedAt = Date.now();
+        return { ...(await counterApi.tillShelf(heldKeys.current())), askedAt };
+      }),
+    staleTime: 60_000,
+    refetchInterval: SHELF_REFRESH_MS,
+    enabled: businessId !== 0,
+  });
   const settings = useQuery({ queryKey: ['counter', 'settings'], queryFn: counterApi.settings });
   const shopSettings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
   // Whether anyone may sell past what 4VD thinks is on the shelf; refused until the rule is known.
@@ -251,8 +264,7 @@ export function CounterPage() {
       for (const { sale, result } of sent) {
         setLastSale((last) => (last?.key === sale.key ? { ...last, documentId: result.invoice.id, number: result.invoice.number } : last));
       }
-      // In 4VD now, so no longer held on this PC: off the shelf here once (one an earlier copy put in already: the shelf is fetched).
-      for (const { result } of sent) if (!result.again) patchShelf(queryClient, result.sales);
+      // In 4VD now: each stays held (sentHolds) until a shelf fetched from here on counts it, never taken off by hand as well.
       refreshAfterSale();
       void followUp();
     },
@@ -260,8 +272,16 @@ export function CounterPage() {
     canOversee(user.role),
     printer.lookup,
   );
-  // The shelf as this till sees it: 4VD's, less what sales waiting on this PC took (they aren't in 4VD's stock yet).
-  const shelf = useMemo(() => shelfAfterSale(products.data, waiting.held), [products.data, waiting.held]);
+  heldKeys.current = waiting.heldKeys;
+  // The shelf as this till sees it: 4VD's, less what the sales held on this PC took that it doesn't count yet.
+  const shelf = useMemo(() => shelfAfterSale(products.data?.products, heldOff(waiting.held, products.data)), [products.data, waiting.held]);
+  // A new shelf: the sent sales it counts are no longer held.
+  const settleShelf = waiting.settleShelf;
+  useEffect(() => {
+    if (products.data) settleShelf(products.data);
+    // settleShelf reads the business from a ref; the shelf is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products.data]);
 
   const discountLimit = canOversee(user.role) ? 100 : (shopSettings.data?.employeeDiscountLimit ?? 0);
   const byId = useMemo(() => new Map((shelf ?? []).map((product) => [product.id, product])), [shelf]);
@@ -789,11 +809,11 @@ export function CounterPage() {
     for (const key of plan.refetch) void queryClient.invalidateQueries({ queryKey: key });
     if (sale.again) {
       // Recorded by an earlier copy (sent before a reload): this PC's shelf may or may not count it already, so it is fetched.
-      void queryClient.invalidateQueries({ queryKey: SHELF_KEY });
+      void queryClient.invalidateQueries({ queryKey: shelfKey });
       return;
     }
     // The shelf here was fetched before the sale went (ShelfGate threw away any fetch that may count it): it loses what was sold.
-    patchShelf(queryClient, sale.sales);
+    patchShelf(queryClient, businessId, sale.sales);
   };
 
   const setReached = useCallback((ok: boolean) => setUnreachable(!ok), []);

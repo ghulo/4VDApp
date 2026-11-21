@@ -41,16 +41,31 @@ export function afterSaleRefresh(sale: { tab: boolean; customer: boolean; datedB
   return { refetch, stale };
 }
 
-/** The till's copy of the shelf. */
-export const SHELF_KEY = ['products', 'counter-shelf'] as const;
+/**
+ * The till's copy of the shelf, per business: the products as 4VD answered,
+ * which of the sales the till held off it 4VD already counts (null: an older
+ * 4VD that can't say), and when it was asked. Kept as one object, so a shelf
+ * and what it counts never come apart (ShelfGate may keep an older one).
+ */
+export interface TillShelf {
+  products: Product[];
+  counted: string[] | null;
+  /** When the till asked for it (ms): a sale 4VD answered before this is in it. */
+  askedAt: number;
+}
+
+/** Every till shelf (each business has its own); under ['products'], so whatever marks products out of date marks it too. */
+export const TILL_SHELF = ['products', 'till-shelf'] as const;
+/** The till's own shelf query, used by nothing else: a shelf fetched elsewhere never lands on it. */
+export const tillShelfKey = (businessId: number) => [...TILL_SHELF, businessId] as const;
 
 /**
  * Takes a recorded sale off the till's shelf, once. The shelf it changes is
  * one fetched before the sale was sent: ShelfGate throws away every fetch
  * that may already count it.
  */
-export function patchShelf(client: QueryClient, sold: ReadonlyArray<{ productId: number; quantity: number }>): void {
-  client.setQueryData<Product[]>(SHELF_KEY, (shelf) => shelfAfterSale(shelf, sold));
+export function patchShelf(client: QueryClient, businessId: number, sold: ReadonlyArray<{ productId: number; quantity: number }>): void {
+  client.setQueryData<TillShelf>(tillShelfKey(businessId), (shelf) => (shelf ? { ...shelf, products: shelfAfterSale(shelf.products, sold)! } : shelf));
 }
 
 /**
@@ -83,20 +98,20 @@ export class ShelfGate {
       this.turn += 1;
       if (this.open === 0 && this.missed) {
         this.missed = false;
-        void this.client.invalidateQueries({ queryKey: SHELF_KEY });
+        void this.client.invalidateQueries({ queryKey: TILL_SHELF });
       }
     }
   }
 
   /** The shelf query's fetch: the server's shelf, unless a send overlapped it (then the shelf the till has). */
-  async load(fetchShelf: () => Promise<Product[]>): Promise<Product[]> {
+  async load(key: readonly unknown[], fetchShelf: () => Promise<TillShelf>): Promise<TillShelf> {
     const from = this.turn;
     const quiet = this.open === 0;
     const shelf = await fetchShelf();
     if (quiet && this.open === 0 && this.turn === from) return shelf;
     if (this.open > 0) this.missed = true;
-    else setTimeout(() => void this.client.invalidateQueries({ queryKey: SHELF_KEY }), 0);
-    return this.client.getQueryData<Product[]>(SHELF_KEY) ?? shelf;
+    else setTimeout(() => void this.client.invalidateQueries({ queryKey: TILL_SHELF }), 0);
+    return this.client.getQueryData<TillShelf>(key) ?? shelf;
   }
 }
 
@@ -112,7 +127,26 @@ export function shelfGate(client: QueryClient): ShelfGate {
   return gate;
 }
 
-/** What sales waiting on this PC took off the shelf, by product (they are not in 4VD's stock yet). */
-export function heldBy(sales: ReadonlyArray<{ body: { items: ReadonlyArray<{ productId: number; quantity: number }> } }>): Array<{ productId: number; quantity: number }> {
-  return sales.flatMap((sale) => sale.body.items.map(({ productId, quantity }) => ({ productId, quantity })));
+/**
+ * A sale the till keeps off its shelf: one waiting on this PC (4VD's stock
+ * doesn't count it yet), or one 4VD took (`ackedAt`) that the shelf the till
+ * has was fetched before.
+ */
+export interface Hold {
+  key: string;
+  items: ReadonlyArray<{ productId: number; quantity: number }>;
+  /** When 4VD said it has it (ms). */
+  ackedAt?: number;
+}
+
+/** Whether this shelf already counts that sale: it says so, or it was asked for after 4VD took the sale. */
+export function counts(shelf: TillShelf | undefined, hold: Hold): boolean {
+  if (!shelf) return false;
+  if (shelf.counted?.includes(hold.key.toLowerCase())) return true;
+  return hold.ackedAt !== undefined && shelf.askedAt > hold.ackedAt;
+}
+
+/** What the held sales this shelf doesn't count yet took off it, line by line. */
+export function heldOff(holds: readonly Hold[], shelf: TillShelf | undefined): Array<{ productId: number; quantity: number }> {
+  return holds.filter((hold) => !counts(shelf, hold)).flatMap((hold) => hold.items.map(({ productId, quantity }) => ({ productId, quantity })));
 }

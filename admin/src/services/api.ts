@@ -1,4 +1,4 @@
-import { apiDownload, apiRequest, saveDownload, sessionHint } from './apiClient';
+import { ApiError, apiDownload, apiRequest, saveDownload, sessionHint } from './apiClient';
 import type { AuthenticationResponseJSON, PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON, RegistrationResponseJSON } from '@simplewebauthn/browser';
 import type { Grants, Permissions, Power } from '../auth/permissions';
 import type { Language } from '../i18n/language';
@@ -626,6 +626,18 @@ export const counterApi = {
     (await apiRequest<PayLaterApproval>('/counter/pay-later-approvals', { method: 'POST', body: input })).data,
   /** Every product on sale, in one answer, for the Counter's shelf. */
   products: async () => (await apiRequest<Product[]>('/counter/shelf')).data,
+  /**
+   * The till's own shelf: every product on sale, and which of the sales it holds off it (by key) 4VD already counts.
+   * An older 4VD can't say (it has no such question): then `counted` is null and every held sale stays off.
+   */
+  tillShelf: async (held: string[]): Promise<{ products: Product[]; counted: string[] | null }> => {
+    try {
+      return (await apiRequest<{ products: Product[]; counted: string[] }>('/counter/shelf', { method: 'POST', body: { held } })).data;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      return { products: (await apiRequest<Product[]>('/counter/shelf')).data, counted: null };
+    }
+  },
 };
 
 export const analyticsApi = {

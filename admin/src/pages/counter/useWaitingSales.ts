@@ -4,7 +4,8 @@ import { type BasketSale, salesApi } from '../../services/api';
 import { ApiError } from '../../services/apiClient';
 import { localStore, newSaleKey, type QueuedSale, sendWaiting, settleInterrupted, withTimeout } from './offlineQueue';
 import { localSettledStore, noteSettled, type SettledStore } from './settledSales';
-import { heldBy, shelfGate } from './shelfAfterSale';
+import { localSentStore, keepSent, dropCounted, type SentHold } from './sentHolds';
+import { type Hold, shelfGate, type TillShelf } from './shelfAfterSale';
 import type { PrintOutcome } from './useFiscalPrinter';
 
 type Sent = BasketSale;
@@ -44,6 +45,12 @@ export function noteSent(sale: QueuedSale & { businessId: number }, result: Sent
   });
 }
 
+/** 4VD took this waiting sale: it stays off the shelf until a shelf counts it. False when that couldn't be written (it then stays in the queue). */
+function keepHeld(sale: QueuedSale & { businessId?: number }): boolean {
+  if (sale.businessId === undefined) return true;
+  return keepSent(localSentStore, { key: sale.key, businessId: sale.businessId, items: sale.body.items, ackedAt: Date.now() });
+}
+
 /**
  * The Counter's sales waiting for the internet: kept on this PC, sent oldest
  * first as soon as it is back (and every half minute while any wait). Only the
@@ -68,6 +75,8 @@ export function useWaitingSales(
   lookupPrint?: (key: string) => Promise<PrintOutcome | null>,
 ) {
   const [sales, setSales] = useState<QueuedSale[]>(() => localStore.read());
+  // Sent and taken by 4VD, but not yet in a shelf the till has: still kept off it (sentHolds.ts).
+  const [sentHolds, setSentHolds] = useState<SentHold[]>(() => localSentStore.read());
   // Sent sales change 4VD's stock: no shelf fetch overlapping them is trusted (shelfAfterSale ShelfGate).
   const gate = shelfGate(useQueryClient());
   // The round in progress: a second call (Switch person) waits for it instead of returning at once.
@@ -88,7 +97,10 @@ export function useWaitingSales(
     overseesRef.current = oversees;
     lookupRef.current = lookupPrint;
   });
-  const refresh = () => setSales(localStore.read());
+  const refresh = () => {
+    setSales(localStore.read());
+    setSentHolds(localSentStore.read());
+  };
 
   const flush = useCallback((): Promise<void> => {
     if (running.current) return running.current;
@@ -108,7 +120,7 @@ export function useWaitingSales(
               ),
             // Only whoever is at the till now, in the business they are in; the others wait for them.
             (sale) => sale.userId !== ownerRef.current.userId || sale.businessId !== ownerRef.current.businessId || printing.current.has(sale.key) || holding.has(sale.key),
-            (sale, result) => noteSent({ ...sale, businessId: sale.businessId! }, result),
+            (sale, result) => noteSent({ ...sale, businessId: sale.businessId! }, result) && keepHeld(sale),
           ),
         );
         if (sent.length > 0 || stoppedByNetwork) reachRef.current(!stoppedByNetwork);
@@ -136,12 +148,28 @@ export function useWaitingSales(
     return () => window.clearInterval(timer);
   }, [connected, pending, flush]);
 
-  // What the sales kept on this PC for the business the till is in took off the shelf (refused ones too: the goods left),
-  // whoever sold them: 4VD's stock doesn't count them until they are sent, so the till keeps them off every shelf it fetches.
-  const held = useMemo(() => heldBy(sales.filter((sale) => sale.businessId === businessId)), [sales, businessId]);
+  // The sales kept on this PC for the business the till is in (refused ones too: the goods left), whoever sold them, and those
+  // 4VD took that the till's shelf doesn't count yet: each stays off the shelf until a shelf from 4VD counts it (shelfAfterSale heldOff).
+  const held = useMemo<Hold[]>(
+    () => [
+      ...sales.filter((sale) => sale.businessId === businessId).map((sale) => ({ key: sale.key, items: sale.body.items })),
+      ...sentHolds.filter((hold) => hold.businessId === businessId),
+    ],
+    [sales, sentHolds, businessId],
+  );
 
   return {
     held,
+    /** The keys of every sale held off this business's shelf, read from this PC's storage at the moment of asking (the shelf fetch sends them). */
+    heldKeys: (): string[] => [
+      ...localStore.read().filter((sale) => sale.businessId === ownerRef.current.businessId).map((sale) => sale.key),
+      ...localSentStore.read().filter((hold) => hold.businessId === ownerRef.current.businessId).map((hold) => hold.key),
+    ],
+    /** The till has this shelf now: sent sales it counts are no longer held. */
+    settleShelf(shelf: TillShelf) {
+      dropCounted(localSentStore, ownerRef.current.businessId, shelf);
+      setSentHolds(localSentStore.read());
+    },
     waiting: sales.filter((sale) => !sale.refused && !unplaced(sale)),
     /** Refused by the server, in the business the till is in: the signed-in person's own (an owner: everyone's), to look at. */
     refused: sales.filter((sale) => mine(sale) && sale.refused !== undefined),
@@ -205,7 +233,7 @@ export function useWaitingSales(
         }
         if (answer.state === 'recorded') {
           // Its note first: if it can't be written, the sale stays as it is (a later try finds the same sale).
-          if (!noteSent({ ...sale, businessId: owner.businessId }, answer.sale)) break;
+          if (!noteSent({ ...sale, businessId: owner.businessId }, answer.sale) || !keepHeld({ ...sale, businessId: owner.businessId })) break;
           settled.push({ sale, result: answer.sale });
           localStore.write(localStore.read().filter((one) => one.key !== sale.key));
           continue;

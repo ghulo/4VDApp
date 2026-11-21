@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Product } from '../../services/types';
 import { QueryClient } from '@tanstack/react-query';
-import { afterSaleRefresh, heldBy, patchShelf, SHELF_KEY, ShelfGate, shelfAfterSale } from './shelfAfterSale';
+import { afterSaleRefresh, counts, heldOff, patchShelf, ShelfGate, shelfAfterSale, type TillShelf, tillShelfKey } from './shelfAfterSale';
+import { dropCounted, keepSent, type SentHold, type SentStore } from './sentHolds';
+
+const KEY = tillShelfKey(1);
+const tillShelf = (products: Product[], counted: string[] | null = [], askedAt = 0): TillShelf => ({ products, counted, askedAt });
 
 const product = (id: number, quantity: number, reorderLevel = 2): Product =>
   ({ id, name: `P${id}`, stock: { quantity, reorderLevel, isInStock: quantity > 0, isLowStock: quantity <= reorderLevel } }) as Product;
@@ -56,19 +60,19 @@ describe('ShelfGate', () => {
   function setup(start = 10) {
     const client = new QueryClient();
     const gate = new ShelfGate(client);
-    client.setQueryData(SHELF_KEY, [product(1, start)]);
+    client.setQueryData(KEY, tillShelf([product(1, start)]));
     const fetchShelf = () => {
-      let answer!: (shelf: Product[]) => void;
-      const done = client.fetchQuery({ queryKey: SHELF_KEY, queryFn: () => gate.load(() => new Promise<Product[]>((resolve) => (answer = resolve))), staleTime: 0 });
-      return { answer: (quantity: number) => answer([product(1, quantity)]), done };
+      let answer!: (shelf: TillShelf) => void;
+      const done = client.fetchQuery({ queryKey: KEY, queryFn: () => gate.load(KEY, () => new Promise<TillShelf>((resolve) => (answer = resolve))), staleTime: 0 });
+      return { answer: (quantity: number) => answer(tillShelf([product(1, quantity)])), done };
     };
     const send = () => {
       let answer!: () => void;
       const done = gate.sending(() => new Promise<void>((resolve) => (answer = resolve)));
       return { answer, done };
     };
-    const onShelf = () => client.getQueryData<Product[]>(SHELF_KEY)![0]!.stock.quantity;
-    const refetchAsked = () => client.getQueryState(SHELF_KEY)!.isInvalidated;
+    const onShelf = () => client.getQueryData<TillShelf>(KEY)!.products[0]!.stock.quantity;
+    const refetchAsked = () => client.getQueryState(KEY)!.isInvalidated;
     return { client, gate, fetchShelf, send, onShelf, refetchAsked };
   }
 
@@ -81,7 +85,7 @@ describe('ShelfGate', () => {
     await fetch.done;
     sale.answer();
     await sale.done;
-    patchShelf(client, [{ productId: 1, quantity: 1 }]);
+    patchShelf(client, 1, [{ productId: 1, quantity: 1 }]);
     expect(onShelf()).toBe(1);
   });
 
@@ -91,7 +95,7 @@ describe('ShelfGate', () => {
     const sale = send();
     sale.answer();
     await sale.done;
-    patchShelf(client, [{ productId: 1, quantity: 1 }]);
+    patchShelf(client, 1, [{ productId: 1, quantity: 1 }]);
     fetch.answer(1);
     await fetch.done;
     expect(onShelf()).toBe(1);
@@ -111,7 +115,7 @@ describe('ShelfGate', () => {
     await sale.done;
     // Fetched again once nothing is on its way (the till's query starts it at once; the sale's patch tides it over).
     expect(refetchAsked()).toBe(true);
-    patchShelf(client, [{ productId: 1, quantity: 1 }]);
+    patchShelf(client, 1, [{ productId: 1, quantity: 1 }]);
     expect(onShelf()).toBe(1);
   });
 
@@ -141,9 +145,46 @@ describe('ShelfGate', () => {
   });
 });
 
-describe('heldBy', () => {
-  it('lists what each waiting sale took, line by line', () => {
-    const held = heldBy([{ body: { items: [{ productId: 1, quantity: 2 }] } }, { body: { items: [{ productId: 1, quantity: 1 }, { productId: 2, quantity: 0.5 }] } }]);
-    expect(shelfAfterSale([product(1, 3), product(2, 1)], held)!.map((one) => one.stock.quantity)).toEqual([0, 0.5]);
+describe('held sales', () => {
+  const vase = (key: string, quantity: number, ackedAt?: number) => ({ key, items: [{ productId: 1, quantity }], ...(ackedAt !== undefined && { ackedAt }) });
+
+  it('keeps every held sale off a shelf that does not count it', () => {
+    const shelf = tillShelf([product(1, 3), product(2, 1)], []);
+    const held = heldOff([vase('a', 2), { key: 'b', items: [{ productId: 1, quantity: 1 }, { productId: 2, quantity: 0.5 }] }], shelf);
+    expect(shelfAfterSale(shelf.products, held)!.map((one) => one.stock.quantity)).toEqual([0, 0.5]);
+  });
+
+  it('never takes off twice a waiting sale 4VD already has (its answer was lost): the shelf names it', () => {
+    // 2 on the shelf, the server recorded a 1-unit sale whose answer never came, so it also waits on this PC.
+    const shelf = tillShelf([product(1, 1)], ['0b6f6c2e-6a1d-4c8e-9a43-3d2b7f1e5a10']);
+    const held = heldOff([vase('0B6F6C2E-6A1D-4C8E-9A43-3D2B7F1E5A10', 1)], shelf);
+    expect(held).toEqual([]);
+    expect(shelfAfterSale(shelf.products, held)![0]!.stock.quantity).toBe(1);
+  });
+
+  it('keeps a sent sale off a shelf asked for before 4VD took it, until one asked for after (or that names it)', () => {
+    const sent = vase('k', 1, 1_000);
+    expect(counts(tillShelf([product(1, 1)], [], 900), sent)).toBe(false);
+    expect(counts(tillShelf([product(1, 0)], [], 1_001), sent)).toBe(true);
+    // An older 4VD that names nothing: only the time says.
+    expect(counts(tillShelf([product(1, 1)], null, 900), sent)).toBe(false);
+    expect(counts(tillShelf([product(1, 1)], null, 900), vase('k', 1))).toBe(false);
+    expect(counts(undefined, sent)).toBe(false);
+  });
+
+  it('keeps sent holds on this PC until a shelf for their business counts them', () => {
+    let saved: SentHold[] = [];
+    const store: SentStore = { read: () => saved, write: (holds) => ((saved = holds), true) };
+    expect(keepSent(store, { key: 'a', businessId: 1, items: [{ productId: 1, quantity: 1 }], ackedAt: 1_000 }, 1_000)).toBe(true);
+    expect(keepSent(store, { key: 'b', businessId: 2, items: [{ productId: 1, quantity: 1 }], ackedAt: 1_000 }, 1_000)).toBe(true);
+    dropCounted(store, 1, tillShelf([], [], 900), 2_000);
+    expect(saved.map((hold) => hold.key)).toEqual(['a', 'b']);
+    dropCounted(store, 1, tillShelf([], [], 1_500), 2_000);
+    expect(saved.map((hold) => hold.key)).toEqual(['b']);
+    // Two days on, a hold that was never counted (the sale undone since) goes too.
+    dropCounted(store, 1, tillShelf([], [], 0), 1_000 + 2 * 24 * 3600_000);
+    expect(saved).toEqual([]);
+    const full: SentStore = { read: () => [], write: () => false };
+    expect(keepSent(full, { key: 'c', businessId: 1, items: [], ackedAt: 1 })).toBe(false);
   });
 });

@@ -189,14 +189,16 @@ export class BillScanService {
 
   /**
    * Store and read a bill. `arrivedOrderId`: the bill of a delivery staff just
-   * put into stock without an order; it is kept even when it can't be read
+   * put into stock (ticked off, or come without an order); it is kept even when it can't be read
    * (the owner then types its figures), and sent twice it is kept once.
    */
   async scan(pages: UploadedPage[], actor: PublicUser, arrivedOrderId: number | null = null): Promise<ScanReceiptDto> {
     const actorId = actor.id;
     const arrival = arrivedOrderId === null ? null : await this.orderRepository.findOrder(arrivedOrderId);
     if (arrivedOrderId !== null) {
-      if (!arrival?.came_unordered || arrival.status !== 'received') throw new ValidationError('That is not a delivery that came without an order');
+      // A delivery already in stock (ticked off, or come without an order) whose bill isn't in 4VD yet.
+      if (arrival?.status !== 'received') throw new ValidationError('That delivery is not in stock yet: tick it off first');
+      if ((await this.orderRepository.findBills([arrivedOrderId])).length > 0) throw new ConflictError('That delivery already has its bill');
       const earlier = await this.scanRepository.findForArrival(arrivedOrderId);
       if (earlier) {
         const reading = parseReading(earlier);

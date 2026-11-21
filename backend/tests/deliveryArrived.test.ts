@@ -149,6 +149,17 @@ describe('a delivery that came without an order', () => {
 });
 
 describe('the bill photographed with it', () => {
+  it('should take the bill of an ordered delivery staff ticked off too, without putting its goods in again', async () => {
+    const ordered = (await api().post('/api/orders').set(auth()).send({ supplierId, lines: [{ productId: chairId, quantity: 4, unitCost: 60 }] })).body.data;
+    await api().post(`/api/orders/${ordered.id}/receive`).set(auth(staffToken)).send({ lines: [{ lineId: ordered.lines[0].id, receivedQuantity: 4 }] }).expect(200);
+    const { id } = await photo(ordered.id);
+
+    await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody(null, [{ pieces: 4, unitCost: 55 }], 220)).expect(200);
+
+    expect(await stockOf(chairId)).toBe(14);
+    expect((await order(ordered.id)).lines[0]).toMatchObject({ receivedQuantity: 4, unitCost: 55 });
+  });
+
   it('should wait in To do for its supplier, showing what staff counted and no order to fill', async () => {
     const { id: orderId } = (await arrive()).body.data;
     const { id } = await photo(orderId);
@@ -235,8 +246,12 @@ describe('the bill photographed with it', () => {
     expect((await api().post(`/api/bill-scans/${id}/confirm`).set(auth()).send(confirmBody(null, [{}]))).status).toBe(409);
     expect(await stockOf(chairId)).toBe(13);
 
+    // An order still on its way: tick it off first.
     const refused = await api().post('/api/bill-scans').set(auth(staffToken)).send({ pages: [{ mime: 'image/png', data: PNG }], arrivedOrderId: ordinary.id });
     expect(refused.status).toBe(400);
+    // Its bill already added: no photo for it.
+    const billed = await api().post('/api/bill-scans').set(auth(staffToken)).send({ pages: [{ mime: 'image/png', data: PNG }], arrivedOrderId: orderId });
+    expect(billed.status).toBe(409);
   });
 
   it('should reopen by putting back only what the confirm did: costs, the bill and the goods it added', async () => {

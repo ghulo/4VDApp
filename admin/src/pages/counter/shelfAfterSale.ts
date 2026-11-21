@@ -59,25 +59,40 @@ export interface TillShelf {
    * and none finished after `to`.
    */
   asOf?: { from: number; to: number };
+  /** Names this one fetch (made here as it is asked): two fetches 4VD read within the same moment are never taken for one. */
+  fetchId?: string;
 }
 
-type Ordered = Pick<TillShelf, 'askedAt' | 'patchedAt' | 'asOf'>;
+type Ordered = Pick<TillShelf, 'askedAt' | 'patchedAt' | 'asOf' | 'fetchId'>;
 
 const sameFetch = (one: Ordered, other: Ordered) =>
-  one.asOf && other.asOf ? one.asOf.from === other.asOf.from && one.asOf.to === other.asOf.to : one.askedAt === other.askedAt;
+  one.fetchId !== undefined || other.fetchId !== undefined
+    ? one.fetchId === other.fetchId
+    : one.asOf && other.asOf
+      ? one.asOf.from === other.asOf.from && one.asOf.to === other.asOf.to
+      : one.askedAt === other.askedAt;
+
+/**
+ * Whether 4VD surely read this shelf after the saved one. By the server's clock (two requests can reach it in the other
+ * order than they were asked): only one it started reading after the saved one's reading was over, strictly (two reads
+ * within the same millisecond can't be told apart, so neither replaces the other). One from an older 4VD (no time of
+ * its own) never replaces one that has it; between two of those, the order they were asked in.
+ */
+function readAfter(shelf: Ordered, old: Ordered): boolean {
+  if (old.asOf) return shelf.asOf !== undefined && shelf.asOf.from > old.asOf.to;
+  return shelf.askedAt > old.askedAt;
+}
 
 /**
  * Whether this shelf may replace the one saved on this PC: it surely has everything the saved one has. The same fetch
- * with at least as many of this till's sales taken off; or one 4VD read only after it had read the saved one (by the
- * server's clock: two requests can reach it in the other order than they were asked) and, if the saved one had sales
- * taken off here, asked for only after the last of them was answered (so 4VD counts them).
+ * with at least as many of this till's sales taken off; or one 4VD read only after it had read the saved one and, if
+ * the saved one had sales taken off here, asked for only after the last of them was answered (so 4VD counts them).
  */
 export function replacesSaved(shelf: Ordered, saved: Partial<Ordered> | undefined): boolean {
   if (typeof saved?.askedAt !== 'number') return true;
   const old = saved as Ordered;
   if (sameFetch(shelf, old)) return (shelf.patchedAt ?? 0) >= (old.patchedAt ?? 0);
-  const later = shelf.asOf && old.asOf ? shelf.asOf.from >= old.asOf.to : shelf.askedAt > old.askedAt;
-  return later && (old.patchedAt === undefined || shelf.askedAt >= old.patchedAt);
+  return readAfter(shelf, old) && (old.patchedAt === undefined || shelf.askedAt >= old.patchedAt);
 }
 
 /** Every till shelf (each business has its own); under ['products'], so whatever marks products out of date marks it too. */

@@ -217,7 +217,8 @@ export function CounterPage() {
     queryFn: (): Promise<TillShelf> =>
       gate.load(shelfKey, async () => {
         const askedAt = Date.now();
-        return { ...(await counterApi.tillShelf(heldKeys.current(), tillOwner)), askedAt };
+        const fetchId = `${askedAt}-${Math.random().toString(36).slice(2, 10)}`;
+        return { ...(await counterApi.tillShelf(heldKeys.current(), tillOwner)), askedAt, fetchId };
       }),
     staleTime: 60_000,
     refetchInterval: SHELF_REFRESH_MS,

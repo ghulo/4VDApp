@@ -254,10 +254,23 @@ describe("the till's copy on this PC", () => {
     expect(replacesSaved({ askedAt: 120, asOf: { from: 1_100, to: 1_110 } }, saved)).toBe(false);
     // Asked after the sale was answered: 4VD counts it.
     expect(replacesSaved({ askedAt: 160, asOf: { from: 1_200, to: 1_210 } }, saved)).toBe(true);
-    // An older 4VD (no server times): this PC's clock.
+    // An older 4VD (no server times): this PC's clock, between two of those only.
     expect(replacesSaved({ askedAt: 90 }, { askedAt: 100 })).toBe(false);
+    expect(replacesSaved({ askedAt: 5_000 }, saved)).toBe(false);
     expect(replacesSaved({ askedAt: 110 }, { askedAt: 100 })).toBe(true);
     expect(replacesSaved({ askedAt: 1 }, undefined)).toBe(true);
+  });
+
+  it('never takes two reads 4VD made within the same moment for one, nor lets either replace the other', () => {
+    const counted = { askedAt: 100, fetchId: 'a', asOf: { from: 1_000, to: 1_000 } };
+    const stale = { askedAt: 101, fetchId: 'b', asOf: { from: 1_000, to: 1_000 } };
+    expect(replacesSaved(stale, counted)).toBe(false);
+    expect(replacesSaved(counted, stale)).toBe(false);
+    // Read a moment later: newer.
+    expect(replacesSaved({ askedAt: 102, fetchId: 'c', asOf: { from: 1_001, to: 1_002 } }, counted)).toBe(true);
+    // The same fetch with a sale taken off here since: kept.
+    expect(replacesSaved({ ...counted, patchedAt: 150 }, counted)).toBe(true);
+    expect(replacesSaved(counted, { ...counted, patchedAt: 150 })).toBe(false);
   });
 
   it('saves nothing of the till while a switch isn’t settled, and never fills screens for the next person', async () => {

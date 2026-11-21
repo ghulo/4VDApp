@@ -177,16 +177,18 @@ interface BillLinesProps {
   fromBill?: boolean;
   /** On a return the price for one stays as billed; on a price credit it is what the price went down by. */
   lockPrices?: boolean;
+  /** The accountant: costs and equipment only; products go into stock, which is the owner's. */
+  noProducts?: boolean;
 }
 
 /** The lines of a bill: each one a product into stock, a cost in its category, or equipment. */
-export function BillLines({ lines, onChange, abroad, supplier, sums, fromBill, lockPrices }: BillLinesProps) {
+export function BillLines({ lines, onChange, abroad, supplier, sums, fromBill, lockPrices, noProducts }: BillLinesProps) {
   const t = useT();
   const set = (key: number, patch: Partial<DraftLine>) => onChange(lines.map((line) => (line.key === key ? { ...line, ...patch } : line)));
   const categoryName = (line: DraftLine) =>
     (line.kind === 'cost' ? (t.expenses.categories as Record<string, string>) : (t.bills.equipmentCategories as Record<string, string>))[line.category] ??
     line.category;
-  const kindOptions = BILL_LINE_KINDS.map((kind) => ({ value: kind, label: t.bills.kinds[kind] }));
+  const kindOptions = BILL_LINE_KINDS.filter((kind) => !noProducts || kind !== 'product').map((kind) => ({ value: kind, label: t.bills.kinds[kind] }));
   const root = useRef<HTMLDivElement>(null);
   // The field that had focus can disappear (a picked product, a removed line): focus moves on, after the render.
   const focusNext = (selector: string) => requestAnimationFrame(() => root.current?.querySelector<HTMLElement>(selector)?.focus());
@@ -364,7 +366,7 @@ export function BillLines({ lines, onChange, abroad, supplier, sums, fromBill, l
       })}
       {!fromBill && (
         <div>
-          <Button size="sm" icon={Plus} data-add-line onClick={() => onChange([...lines, emptyLine(supplier)])}>
+          <Button size="sm" icon={Plus} data-add-line onClick={() => onChange([...lines, emptyLine(supplier, noProducts)])}>
             {t.billForm.addLine}
           </Button>
         </div>

@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { Badge, Button, ButtonLink, DataTable, EmptyState, PageHeader, Sheet, useNewSheet } from '../components/ui';
 import { useT } from '../i18n/useT';
-import { canOversee } from '../auth/roles';
+import { canOversee, canReadBooks } from '../auth/roles';
 import { useCurrentUser } from '../auth/useAuth';
 import { billsApi, suppliersApi } from '../services/api';
 import type { SupplierBill } from '../services/types';
@@ -39,7 +39,8 @@ export function BillsPage() {
   const source = sourceFrom(params);
   const [scanning, setScanning] = useNewSheet('scan');
   // The accountant reads the bills; adding and paying them stays with the people who run the shop.
-  const writes = canOversee(useCurrentUser().role);
+  const { role } = useCurrentUser();
+  const writes = canOversee(role);
   const summary = useQuery({ queryKey: ['bills', 'summary'], queryFn: billsApi.summary });
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   // Overdue and due-this-week are the unpaid list narrowed down here, so they share its request.
@@ -75,15 +76,18 @@ export function BillsPage() {
         title={t.nav.items.suppliers}
        
         actions={
-          writes && (
-          <>
-            <ButtonLink to={newBill} icon={Plus}>
-              {t.bills.add}
-            </ButtonLink>
-            <Button variant="primary" icon={Scan} onClick={() => setScanning(true)}>
-              {t.scans.scan}
-            </Button>
-          </>
+          // The accountant adds bills too (no products on them); scanning stays with the shop.
+          (writes || canReadBooks(role)) && (
+            <>
+              <ButtonLink to={newBill} icon={Plus}>
+                {t.bills.add}
+              </ButtonLink>
+              {writes && (
+                <Button variant="primary" icon={Scan} onClick={() => setScanning(true)}>
+                  {t.scans.scan}
+                </Button>
+              )}
+            </>
           )
         }
       />
@@ -92,8 +96,13 @@ export function BillsPage() {
         <ScanBillForm onDone={() => setScanning(false)} />
       </Sheet>
 
-      <WaitingScans />
-      <EmailedBills />
+      {/* Scanned and emailed bills wait for the shop to check them (they move stock). */}
+      {writes && (
+        <>
+          <WaitingScans />
+          <EmailedBills />
+        </>
+      )}
 
       {bills.isError && <ErrorNotice error={bills.error} onRetry={() => bills.refetch()} />}
       <DataTable<SupplierBill>

@@ -39,9 +39,13 @@ export const rateOf = (choice: string) => (choice === EXEMPT ? 0 : Number(choice
 let nextKey = 1;
 export const lineKey = () => nextKey++;
 
-/** A new line, started the way the supplier's bills usually are. */
-export const emptyLine = (supplier?: Supplier | null): DraftLine => {
-  const kind = supplier?.usualKind ?? 'product';
+/**
+ * A new line, started the way the supplier's bills usually are. `noProducts`:
+ * the accountant, who adds bills but never products (they go into stock).
+ */
+export const emptyLine = (supplier?: Supplier | null, noProducts = false): DraftLine => {
+  const usual = supplier?.usualKind ?? 'product';
+  const kind = noProducts && usual === 'product' ? 'cost' : usual;
   return {
     key: lineKey(),
     kind,

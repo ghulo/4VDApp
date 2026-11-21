@@ -2,6 +2,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { LocationSelect } from '../components/LocationSelect';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
+import { canOversee } from '../auth/roles';
+import { useCurrentUser } from '../auth/useAuth';
 import { BillLines, Segmented } from '../components/BillLines';
 import { ErrorNotice, Loading } from '../components/Feedback';
 import { PlaceSelect, usePlaces, usualPlace } from '../components/MoneyParts';
@@ -63,6 +65,8 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const [params] = useSearchParams();
   const { places: carwashes, several } = useCarwashes();
   const initialSupplier = suppliers.find((row) => String(row.id) === params.get('supplier')) ?? null;
+  // The accountant adds the bill only: no product lines (those put goods into stock).
+  const noProducts = !canOversee(useCurrentUser().role);
 
   const [supplierId, setSupplierId] = useState(initialSupplier ? String(initialSupplier.id) : '');
   const supplier = suppliers.find((row) => String(row.id) === supplierId) ?? null;
@@ -71,7 +75,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
   const [issuedOn, setIssuedOn] = useState(todayIso());
   const [dueOn, setDueOn] = useState('');
   const [note, setNote] = useState('');
-  const [lines, setLines] = useState<DraftLine[]>(() => [emptyLine(initialSupplier)]);
+  const [lines, setLines] = useState<DraftLine[]>(() => [emptyLine(initialSupplier, noProducts)]);
   const [pricesIncludeVat, setPricesIncludeVat] = useState(true);
   const [customsVat, setCustomsVat] = useState('');
   const [duty, setDuty] = useState('');
@@ -96,7 +100,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
     setSupplierId(id);
     setWithholding(next?.withholdingType ?? '');
     // Only untouched lines follow the supplier; anything typed stays.
-    setLines((current) => current.map((line) => (line.product === null && line.amount === '' && line.unitPrice === '' && line.description === '' ? { ...emptyLine(next), key: line.key } : line)));
+    setLines((current) => current.map((line) => (line.product === null && line.amount === '' && line.unitPrice === '' && line.description === '' ? { ...emptyLine(next, noProducts), key: line.key } : line)));
   }
 
   const done = lines.filter(isLineDone);
@@ -219,7 +223,7 @@ function NewBillForm({ suppliers }: { suppliers: Supplier[] }) {
             )
           }
         >
-          <BillLines lines={lines} onChange={setLines} abroad={abroad} supplier={supplier} sums={sums} />
+          <BillLines lines={lines} onChange={setLines} abroad={abroad} supplier={supplier} sums={sums} noProducts={noProducts} />
           {!abroad && !pricesIncludeVat && <p className="field-hint">{t.billForm.pricesIncludeVatHint}</p>}
         </Card>
 
